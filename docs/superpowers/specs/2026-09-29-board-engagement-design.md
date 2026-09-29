@@ -67,7 +67,7 @@ All six are changed through the existing `PATCH /retros/{retro}/settings` (facil
 ### Local preferences (`localStorage`, no server state)
 
 - `skrum.hideMyCursor` — "Hide my cursor".
-- `skrum.readComments.{retroId}` — map of card id → last-seen comment timestamp, for unread dots.
+- `skrum.readComments.{retroId}` — map of card id → `createdAt` of the newest comment seen on that card, for unread dots. A card shows an unread dot when the viewer is a notification recipient for it (card author, or has commented in a thread on it) and it has a comment not written by the viewer with `createdAt` later than the stored value; this is derived from the snapshot, so it survives a reload. Live notifications are an extra trigger.
 
 ## 3. Ephemeral realtime: cursors and flying reactions
 
@@ -94,7 +94,7 @@ All six are changed through the existing `PATCH /retros/{retro}/settings` (facil
 - Rendering: mouse → arrow; touch/pen → dot. Both carry a label.
 - Label: participant display name. On anonymous retros the label is the translated "Participant" and no avatar is shown; colour stays stable per participant.
 - Colour: library hash of the participant id.
-- Shown in every phase except `Completed`, only when `cursors_enabled`.
+- Shown in every phase except `Voting` and `Completed`, only when `cursors_enabled`. During `Voting` no cursor is sent or shown, because a named pointer clicking a card's vote button would reveal who votes where (§9).
 - "Hide my cursor" (switch in the board header; the board page has no user menu) stops sending for all pointer types; the viewer still sees others' cursors.
 
 ### 3a. Emoji picker data (self-hosted)
@@ -107,7 +107,7 @@ All six are changed through the existing `PATCH /retros/{retro}/settings` (facil
 ### Flying reactions
 
 - Bar with the six quick emoji plus a `+` opening the `frimousse` picker, bottom-centre of the board.
-- Each reaction rises from above the sender's avatar in the presence strip; if its position is unknown, from a random point near the centre.
+- Each reaction rises from above the sender's avatar in the presence strip; if its position is unknown, or the retro is anonymous, from a random point near the centre (an avatar origin would reveal who reacted).
 - Same emoji from several senders within the library window gathers into a growing bubble (library default).
 - Available in every phase except `Completed`, only when `reactions_enabled`.
 - `prefers-reduced-motion`: emoji fade in place instead of flying (library default).
