@@ -14,11 +14,14 @@ docker run --rm --entrypoint php ghcr.io/<owner>/skrum:latest artisan key:genera
 
 The last command prints the value for `APP_KEY`. The copied `.env` ships development defaults, so edit it before starting:
 
-- set `APP_KEY`, `APP_URL` and `SERVER_NAME`;
-- replace the default `DB_PASSWORD=password` with a strong value (required);
+- set `APP_NAME`, `APP_KEY`, `APP_URL` and `SERVER_NAME`;
+- set `APP_ENV=production`, `APP_DEBUG=false`, `LOG_CHANNEL=stderr` and `LOG_LEVEL=warning`;
+- replace the default `DB_USERNAME=sail` with your own user name, and `DB_PASSWORD=password` with a strong value (required);
 - set `REVERB_APP_ID`, `REVERB_APP_KEY` and `REVERB_APP_SECRET` to random strings;
 - add `SKRUM_IMAGE=ghcr.io/<owner>/skrum:latest`;
 - mail goes to the log (`MAIL_MAILER=log`) until you set the `MAIL_*` variables.
+
+Compose reads `.env` from the project directory twice: to fill the `${...}` values in `compose.production.yaml` (image, ports, database name, user and password) and as the app container's environment. To use a file with another name, pass `--env-file <file>` to every `docker compose` command; it feeds the `${...}` values, so also point the `env_file:` entry of the `app` service at that file.
 
 Then empty the realtime client settings, keeping the keys with empty values, so browsers use the page's own host through Caddy:
 
@@ -34,7 +37,20 @@ Start it:
 docker compose -f compose.production.yaml up -d
 ```
 
-The first account to sign up becomes the instance admin.
+> [!WARNING]
+> The first account to sign up becomes the instance admin. Create it right after starting, and consider `SKRUM_SIGNUP_MODE` to control who can sign up afterwards.
+
+If a container keeps restarting, `docker compose -f compose.production.yaml logs app` shows why (for example a missing variable, or `APP_DEBUG` left enabled).
+
+### Upgrading
+
+Back up the `pgsql-data` volume first, then pull the new image and recreate the containers:
+
+```bash
+docker compose -f compose.production.yaml pull && docker compose -f compose.production.yaml up -d
+```
+
+Migrations run automatically when the container starts. Prefer pinning `SKRUM_IMAGE` to a version tag over `latest`, so upgrades happen when you choose.
 
 ### SERVER_NAME
 
@@ -47,28 +63,28 @@ Several addresses, or a domain with an explicit port, are not supported by the c
 
 Certificates live in the `caddy-data` volume. Keep `/data` and `/config` on named volumes as in `compose.production.yaml`; if you switch to bind mounts, they must be writable by uid 82 (`www-data`) or Caddy cannot store certificates.
 
-Web traffic and websockets share one port: Caddy proxies Reverb's `/app/*` and `/apps/*` paths to Reverb inside the container, so nothing else needs to be exposed. Host ports are set with `SKRUM_HTTP_PORT` (default `80`) and `SKRUM_HTTPS_PORT` (default `443`). Changing them away from 443 and 80 breaks automatic HTTPS certificate issuance, so use them only with `SERVER_NAME=:80` behind a proxy or for local testing. `SKRUM_ENV_FILE` selects another env file (default `.env`).
+Web traffic and websockets share one port: Caddy proxies Reverb's `/app/*` and `/apps/*` paths to Reverb inside the container, so nothing else needs to be exposed. Host ports are set with `SKRUM_HTTP_PORT` (default `80`) and `SKRUM_HTTPS_PORT` (default `443`). Changing them away from 443 and 80 breaks automatic HTTPS certificate issuance, so use them only with `SERVER_NAME=:80` behind a proxy or for local testing.
 
 ## Configuration
 
 All configuration is read from the environment. `.env.example` documents every variable.
 
-| Variable                                                           | Purpose                                                                                          |
-| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------ |
-| `APP_URL`                                                          | Public URL of the instance.                                                                      |
-| `SERVER_NAME`                                                      | Address Caddy serves, see above.                                                                 |
-| `DB_PASSWORD`                                                      | PostgreSQL password. Required.                                                                   |
-| `TRUSTED_PROXIES`                                                  | `*` or a comma-separated list of proxy IPs, when a reverse proxy sits in front.                  |
-| `SKRUM_SIGNUP_MODE`                                                | Who may create an account (default `invite`).                                                    |
-| `SKRUM_ALLOWED_EMAIL_DOMAINS`                                      | Optional list of email domains allowed to sign up.                                               |
-| `SKRUM_AVATAR_STYLE`                                               | DiceBear avatar style (default `thumbs`).                                                        |
-| `GOOGLE_*`, `GITHUB_*`, `ENTRA_*`, `OIDC_*`                        | Single sign-on providers; a provider is enabled when all its values are set. See `.env.example`. |
-| `MAIL_*`                                                           | Outgoing mail settings (Laravel mailer configuration).                                           |
-| `REVERB_APP_ID`, `REVERB_APP_KEY`, `REVERB_APP_SECRET`             | Reverb credentials. The container refuses to start without them.                                 |
-| `REVERB_CLIENT_HOST`, `REVERB_CLIENT_PORT`, `REVERB_CLIENT_SCHEME` | Where browsers connect. Leave empty in production.                                               |
-| `SKRUM_RUN_MIGRATIONS`                                             | Run migrations at container start (default `true`).                                              |
-| `OCTANE_WORKERS`                                                   | Octane worker count (default `auto`, one per CPU).                                               |
-| `OCTANE_MAX_REQUESTS`                                              | Requests per worker before it is recycled (default `500`).                                       |
+| Variable                                                           | Purpose                                                                                                                                  |
+| ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `APP_URL`                                                          | Public URL of the instance.                                                                                                              |
+| `SERVER_NAME`                                                      | Address Caddy serves, see above.                                                                                                         |
+| `DB_PASSWORD`                                                      | PostgreSQL password. Required.                                                                                                           |
+| `TRUSTED_PROXIES`                                                  | `*` or a comma-separated list of proxy IPs, when a reverse proxy sits in front.                                                          |
+| `SKRUM_SIGNUP_MODE`                                                | Who may create an account (default `invite`).                                                                                            |
+| `SKRUM_ALLOWED_EMAIL_DOMAINS`                                      | Optional list of email domains allowed to sign up.                                                                                       |
+| `SKRUM_AVATAR_STYLE`                                               | DiceBear avatar style (default `thumbs`).                                                                                                |
+| `GOOGLE_*`, `GITHUB_*`, `ENTRA_*`, `OIDC_*`                        | Single sign-on providers; a provider is enabled when all its values are set. See `.env.example`.                                         |
+| `MAIL_*`                                                           | Outgoing mail settings (Laravel mailer configuration).                                                                                   |
+| `REVERB_APP_ID`, `REVERB_APP_KEY`, `REVERB_APP_SECRET`             | Reverb credentials. The container refuses to start without them.                                                                         |
+| `REVERB_CLIENT_HOST`, `REVERB_CLIENT_PORT`, `REVERB_CLIENT_SCHEME` | Where browsers connect. Leave empty in production.                                                                                       |
+| `SKRUM_RUN_MIGRATIONS`                                             | Run migrations at container start (default `true`).                                                                                      |
+| `OCTANE_WORKERS`                                                   | Octane worker count. With the default `auto`, Octane sets no count and FrankenPHP starts 2 workers per CPU; set a number on large hosts. |
+| `OCTANE_MAX_REQUESTS`                                              | Requests per worker before it is recycled (default `500`).                                                                               |
 
 `APP_KEY` is also required; the container stops with an explanation if it is missing.
 
