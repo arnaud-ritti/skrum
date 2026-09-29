@@ -191,6 +191,8 @@ Each endpoint: resolve participant → authorize (policy + phase rule) → persi
 | Own votes / remaining | — | — | visible | visible |
 | Vote totals | — | — | hidden | visible |
 
+> **Changed by** `2026-09-29-board-engagement-design.md` §9: vote totals are visible live during `Voting` unless the facilitator turns on "Hide vote counts". Voter identity stays never exposed.
+
 - On `PhaseChanged` out of `Writing` (reveal) — and on any phase change — clients refetch the snapshot rather than receiving N card events.
 - On websocket reconnect, clients refetch the snapshot.
 - Vote events broadcast to others carry no card or participant data during `Voting` (only "votes changed" for progress display, e.g. "12/40 votes cast").
