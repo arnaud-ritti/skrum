@@ -1,12 +1,24 @@
 <?php
 
+use App\Actions\Auth\SignupGate;
 use App\Http\Controllers\CurrentWorkspaceController;
+use App\Http\Controllers\InvitationAcceptancesController;
+use App\Http\Controllers\InvitationLinksController;
 use App\Http\Controllers\LocalesController;
 use App\Http\Controllers\WorkspacesController;
 use App\Http\Middleware\RememberCurrentWorkspace;
 use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 
-Route::inertia('/', 'welcome')->name('home');
+Route::get('/', fn () => Inertia::render('welcome', [
+    'canRegister' => app(SignupGate::class)->canShowRegistration(),
+]))->name('home');
+
+Route::get('invitations/{token}', [InvitationLinksController::class, 'show'])->name('invitations.show');
+
+Route::post('invitations/{token}/acceptance', [InvitationAcceptancesController::class, 'store'])
+    ->middleware('auth')
+    ->name('invitations.acceptance.store');
 
 Route::put('locale', [LocalesController::class, 'update'])->name('locale.update');
 

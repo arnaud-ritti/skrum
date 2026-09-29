@@ -414,5 +414,12 @@
     "or, enter the code manually": "ou saisissez le code manuellement",
     "results": "résultats",
     "status": "statut",
-    "to": "à"
+    "to": "à",
+    "Signups are restricted on this instance.": "Les inscriptions sont restreintes sur cette instance.",
+    "Invitation": "Invitation",
+    "Join :workspace": "Rejoindre :workspace",
+    "This invitation was sent to :email.": "Cette invitation a été envoyée à :email.",
+    "This invitation has expired or was already used.": "Cette invitation a expiré ou a déjà été utilisée.",
+    "Accept invitation": "Accepter l'invitation",
+    "You are logged in with another email address. Log out and sign in as :email to accept.": "Vous êtes connecté avec une autre adresse e-mail. Déconnectez-vous et connectez-vous avec :email pour accepter."
 }

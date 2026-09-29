@@ -16,9 +16,14 @@ import { useTrans } from '@/hooks/use-trans';
 type Props = {
     status?: string;
     canResetPassword: boolean;
+    canRegister: boolean;
 };
 
-export default function Login({ status, canResetPassword }: Props) {
+export default function Login({
+    status,
+    canResetPassword,
+    canRegister,
+}: Props) {
     const { t } = useTrans();
 
     return (
@@ -101,12 +106,14 @@ export default function Login({ status, canResetPassword }: Props) {
                             </Button>
                         </div>
 
-                        <div className="text-center text-sm text-muted-foreground">
-                            {t("Don't have an account?")}{' '}
-                            <TextLink href={register()} tabIndex={5}>
-                                {t('Sign up')}
-                            </TextLink>
-                        </div>
+                        {canRegister && (
+                            <div className="text-center text-sm text-muted-foreground">
+                                {t("Don't have an account?")}{' '}
+                                <TextLink href={register()} tabIndex={5}>
+                                    {t('Sign up')}
+                                </TextLink>
+                            </div>
+                        )}
                     </>
                 )}
             </Form>

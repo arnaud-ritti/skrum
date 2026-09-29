@@ -149,5 +149,12 @@
     "login using a recovery code": "login using a recovery code",
     "login using an authentication code": "login using an authentication code",
     "or you can": "or you can",
-    "or, enter the code manually": "or, enter the code manually"
+    "or, enter the code manually": "or, enter the code manually",
+    "Signups are restricted on this instance.": "Signups are restricted on this instance.",
+    "Invitation": "Invitation",
+    "Join :workspace": "Join :workspace",
+    "This invitation was sent to :email.": "This invitation was sent to :email.",
+    "This invitation has expired or was already used.": "This invitation has expired or was already used.",
+    "Accept invitation": "Accept invitation",
+    "You are logged in with another email address. Log out and sign in as :email to accept.": "You are logged in with another email address. Log out and sign in as :email to accept."
 }

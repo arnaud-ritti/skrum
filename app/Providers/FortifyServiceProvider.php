@@ -2,8 +2,10 @@
 
 namespace App\Providers;
 
+use App\Actions\Auth\SignupGate;
 use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
+use App\Models\WorkspaceInvitation;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -50,6 +52,7 @@ class FortifyServiceProvider extends ServiceProvider
     {
         Fortify::loginView(fn (Request $request) => Inertia::render('auth/login', [
             'canResetPassword' => Features::enabled(Features::resetPasswords()),
+            'canRegister' => app(SignupGate::class)->canShowRegistration($this->followedInvitation($request)),
             'status' => $request->session()->get('status'),
         ]));
 
@@ -67,13 +70,25 @@ class FortifyServiceProvider extends ServiceProvider
             'status' => $request->session()->get('status'),
         ]));
 
-        Fortify::registerView(fn () => Inertia::render('auth/register', [
-            'passwordRules' => Password::defaults()->toPasswordRulesString(),
-        ]));
+        Fortify::registerView(function (Request $request) {
+            $invitation = $this->followedInvitation($request);
+
+            abort_unless(app(SignupGate::class)->canShowRegistration($invitation), 403);
+
+            return Inertia::render('auth/register', [
+                'passwordRules' => Password::defaults()->toPasswordRulesString(),
+                'invitationEmail' => $invitation?->isPending() ? $invitation->email : null,
+            ]);
+        });
 
         Fortify::twoFactorChallengeView(fn () => Inertia::render('auth/two-factor-challenge'));
 
         Fortify::confirmPasswordView(fn () => Inertia::render('auth/confirm-password'));
+    }
+
+    private function followedInvitation(Request $request): ?WorkspaceInvitation
+    {
+        return WorkspaceInvitation::findByToken($request->session()->get('invitation_token'));
     }
 
     /**

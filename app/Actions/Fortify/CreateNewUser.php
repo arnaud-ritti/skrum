@@ -2,19 +2,23 @@
 
 namespace App\Actions\Fortify;
 
+use App\Actions\Auth\SignupGate;
+use App\Actions\Workspaces\AcceptWorkspaceInvitation;
 use App\Concerns\PasswordValidationRules;
 use App\Concerns\ProfileValidationRules;
 use App\Models\User;
+use App\Models\WorkspaceInvitation;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
 use Laravel\Fortify\Contracts\CreatesNewUsers;
 
 class CreateNewUser implements CreatesNewUsers
 {
-    use PasswordValidationRules, ProfileValidationRules;
+    use PasswordValidationRules;
+    use ProfileValidationRules;
 
     /**
-     * Validate and create a newly registered user.
-     *
      * @param  array<string, string>  $input
      */
     public function create(array $input): User
@@ -24,10 +28,35 @@ class CreateNewUser implements CreatesNewUsers
             'password' => $this->passwordRules(),
         ])->validate();
 
-        return User::create([
-            'name' => $input['name'],
-            'email' => $input['email'],
-            'password' => $input['password'],
-        ]);
+        $invitation = WorkspaceInvitation::findByToken(request()->session()->get('invitation_token'));
+
+        if (! app(SignupGate::class)->allows($input['email'], $invitation)) {
+            throw ValidationException::withMessages([
+                'email' => __('Signups are restricted on this instance.'),
+            ]);
+        }
+
+        return DB::transaction(function () use ($input, $invitation): User {
+            $isFirstUser = User::query()->doesntExist();
+
+            $user = User::create([
+                'name' => $input['name'],
+                'email' => $input['email'],
+                'password' => $input['password'],
+                'locale' => app()->getLocale(),
+            ]);
+
+            $user->forceFill(['is_instance_admin' => $isFirstUser])->save();
+
+            if ($invitation?->isPending() && $invitation->matchesEmail($user->email)) {
+                $user->forceFill(['email_verified_at' => now()])->save();
+
+                app(AcceptWorkspaceInvitation::class)->handle($invitation, $user);
+
+                request()->session()->forget('invitation_token');
+            }
+
+            return $user;
+        });
     }
 }

@@ -12,9 +12,10 @@ import { useTrans } from '@/hooks/use-trans';
 
 type Props = {
     passwordRules: string;
+    invitationEmail: string | null;
 };
 
-export default function Register({ passwordRules }: Props) {
+export default function Register({ passwordRules, invitationEmail }: Props) {
     const { t } = useTrans();
 
     return (
@@ -58,6 +59,8 @@ export default function Register({ passwordRules }: Props) {
                                     tabIndex={2}
                                     autoComplete="email"
                                     name="email"
+                                    defaultValue={invitationEmail ?? undefined}
+                                    readOnly={invitationEmail !== null}
                                     placeholder={t('email@example.com')}
                                 />
                                 <InputError message={errors.email} />
