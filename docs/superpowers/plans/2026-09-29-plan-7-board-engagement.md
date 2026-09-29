@@ -15,6 +15,7 @@
 - Commands through Sail: `vendor/bin/sail artisan …`, `vendor/bin/sail bin pint --dirty --format agent`, `vendor/bin/sail bin phpstan analyse --no-progress` (level 7, 0 errors). npm on the host.
 - New npm dependencies: exactly `live-cursors`, `live-reactions`, `frimousse`. No composer dependencies.
 - Redaction invariant from the parent spec: nobody but the author receives `Writing`-phase content (now including GIFs), anonymous authorship (cards, comments, reactions, notifications, cursor labels) is never serialized to others, and voter identity is never exposed.
+- Browsers never contact GIPHY, Tenor or jsDelivr: GIFs (Task 5) and emoji picker data (Task 5b) are always served through skrum.
 - Every mutation keeps the controller pattern: guards on the route-bound retro, then again on the `lockForUpdate` retro inside `DB::transaction`, broadcasts via `->sendToOthers()` inside the transaction.
 - Every user-facing string via `t()` / `__()` with real translations in `lang/{en,fr,es,de}.json` (German "du", French "vous", Spanish "tú"); add only missing keys; `tests/Feature/TranslationKeysTest.php` stays green.
 - Board API calls go through `retroRequest()`; Wayfinder route functions, no hard-coded URLs. Run `vendor/bin/sail artisan wayfinder:generate --with-form` after route changes.
@@ -42,6 +43,7 @@
 | Reactions | `app/Rules/SingleEmoji.php`, migration `create_card_reactions_table`, `app/Models/CardReaction.php`, `app/Actions/Retros/SummarizeReactions.php`, `app/Http/Controllers/Retros/CardReactionsController.php`, `app/Events/Retros/CardReactionsChanged.php` |
 | Comments | migration `create_card_comments_table`, `app/Models/CardComment.php`, `app/Actions/Retros/PresentComment.php`, `app/Http/Controllers/Retros/CardCommentsController.php`, events `CommentCreated`, `CommentUpdated`, `CommentDeleted`, `OwnCommentSaved`, `CommentNotification` |
 | GIFs | `config/services.php`, `.env.example`, `app/Support/Gifs/{Gif,GifProvider,GiphyProvider,TenorProvider,GifCatalog}.php`, `app/Http/Controllers/Retros/RetroGifsController.php`, `app/Http/Controllers/GifsController.php`, migration `add_gif_to_cards_table`, `PresentCard`, `AppServiceProvider` (rate limiter) |
+| Emoji data | `config/services.php`, `app/Http/Controllers/EmojiDataController.php`, `routes/web.php`, `BuildBoardSnapshot` |
 | Frontend core | `resources/js/lib/retro/{types,board-reducer,emoji,whisper-transport}.ts`, `resources/js/hooks/{use-retro-channel,use-retro-board,use-local-preference,use-comment-notifications}.ts`, `board-context.tsx`, `board.tsx` |
 | Frontend UI | `resources/js/components/retro/{emoji-picker,card-reactions,card-comments,gif-picker,card-gif,live-cursor-layer,flying-reactions,presentation-overlay,lock-badge}.tsx`, `retro-card.tsx`, `card-composer.tsx`, `card-editor.tsx`, `vote-controls.tsx`, `settings-dialog.tsx`, `board-header.tsx`, `presence-strip.tsx`, `action-items-panel.tsx`, `retro-column.tsx` |
 
@@ -2620,6 +2622,239 @@ git commit -m "feat: attach gifs to cards through a server-side proxy"
 
 ---
 
+### Task 5b: Self-hosted emoji picker data
+
+**Files:**
+- Modify: `config/services.php`, `routes/web.php`, `app/Actions/Retros/BuildBoardSnapshot.php`, `lang/*.json`
+- Create: `app/Http/Controllers/EmojiDataController.php`
+- Test: create `tests/Feature/EmojiDataTest.php`; `tests/Feature/Retros/BoardSnapshotTest.php`
+
+**Interfaces:**
+- Consumes: nothing from earlier tasks.
+- Produces: `config('services.emoji_data.version')` = `'17.0.0'`; `EmojiDataController::EmojibaseLocales` (`['en' => 'en', 'fr' => 'fr', 'es' => 'es', 'de' => 'de']`, app locale → Emojibase locale); route `emoji-data.show` (GET/HEAD `emoji-data/{version}/{locale}/{file}`, `file` ∈ `data.json`, `messages.json`); snapshot `emojiData: {baseUrl: string, locale: string}` (base URL without the locale, e.g. `/emoji-data/17.0.0`, and the Emojibase locale for the request's app locale, falling back to `en`).
+
+frimousse (0.4, `dist/index.js`) requests exactly `${emojibaseUrl}/${locale}/data.json` and `${emojibaseUrl}/${locale}/messages.json` (GET), and on later sessions sends `HEAD` to both to compare their `ETag` with its `localStorage` copy; it refetches the full files when an `ETag` is missing or changed. Its `locale` must be one of its supported Emojibase locales — `en`, `fr`, `es`, `de` all are, so the mapping is the identity today but stays explicit.
+
+- [ ] **Step 1: Write the failing tests**
+
+`tests/Feature/EmojiDataTest.php`:
+
+```php
+<?php
+
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
+
+beforeEach(function () {
+    Storage::fake();
+    config(['services.emoji_data.version' => '17.0.0']);
+});
+
+it('fetches emoji data once from the cdn and then serves it from storage', function () {
+    Http::fake(['cdn.jsdelivr.net/*' => Http::response('[{"emoji":"👍"}]')]);
+
+    $this->get(route('emoji-data.show', ['version' => '17.0.0', 'locale' => 'fr', 'file' => 'data.json']))
+        ->assertOk()
+        ->assertHeader('Content-Type', 'application/json')
+        ->assertHeader('Cache-Control', 'immutable, max-age=31536000, public')
+        ->assertHeader('ETag', '"'.md5('[{"emoji":"👍"}]').'"')
+        ->assertContent('[{"emoji":"👍"}]');
+
+    $this->get(route('emoji-data.show', ['version' => '17.0.0', 'locale' => 'fr', 'file' => 'data.json']))->assertOk();
+
+    Http::assertSentCount(1);
+    Http::assertSent(fn ($request) => $request->url() === 'https://cdn.jsdelivr.net/npm/emojibase-data@17.0.0/fr/data.json');
+    Storage::assertExists('emoji-data/17.0.0/fr/data.json');
+});
+
+it('answers head requests with the etag used for revalidation', function () {
+    Storage::put('emoji-data/17.0.0/en/messages.json', '{"groups":[]}');
+    Http::fake();
+
+    $this->call('HEAD', route('emoji-data.show', ['version' => '17.0.0', 'locale' => 'en', 'file' => 'messages.json']))
+        ->assertOk()
+        ->assertHeader('ETag', '"'.md5('{"groups":[]}').'"');
+
+    Http::assertNothingSent();
+});
+
+it('refuses unknown versions, locales and files', function (string $version, string $locale, string $file) {
+    Http::fake();
+
+    $this->get(route('emoji-data.show', ['version' => $version, 'locale' => $locale, 'file' => $file]))->assertNotFound();
+
+    Http::assertNothingSent();
+})->with([
+    'other version' => ['16.0.0', 'en', 'data.json'],
+    'locale skrum does not ship' => ['17.0.0', 'ja', 'data.json'],
+    'file frimousse never asks for' => ['17.0.0', 'en', 'compact.json'],
+]);
+
+it('answers 502 when the cdn fails and nothing is cached', function (Closure $response) {
+    Http::fake(['cdn.jsdelivr.net/*' => $response]);
+
+    $this->getJson(route('emoji-data.show', ['version' => '17.0.0', 'locale' => 'de', 'file' => 'data.json']))
+        ->assertStatus(502)
+        ->assertJsonPath('message', 'Emoji list unavailable');
+
+    Storage::assertMissing('emoji-data/17.0.0/de/data.json');
+})->with([
+    'server error' => [fn () => Http::response('down', 500)],
+    'not json' => [fn () => Http::response('<html>', 200)],
+]);
+
+it('keeps serving cached data while the cdn is down', function () {
+    Storage::put('emoji-data/17.0.0/es/data.json', '[]');
+    Http::fake(['cdn.jsdelivr.net/*' => Http::response('down', 500)]);
+
+    $this->get(route('emoji-data.show', ['version' => '17.0.0', 'locale' => 'es', 'file' => 'data.json']))->assertOk();
+});
+```
+
+Append to `tests/Feature/Retros/BoardSnapshotTest.php`:
+
+```php
+it('points the emoji picker at the self-hosted emoji data in the viewer locale', function () {
+    $retro = Retro::factory()->create();
+    [, $viewer] = retroMember($retro);
+    app()->setLocale('fr');
+
+    expect(snapshotFor($retro, $viewer)['emojiData'])->toBe([
+        'baseUrl' => '/emoji-data/'.config('services.emoji_data.version'),
+        'locale' => 'fr',
+    ]);
+});
+```
+
+- [ ] **Step 2: Run the tests to verify they fail**
+
+Run: `vendor/bin/sail artisan test --compact tests/Feature/EmojiDataTest.php tests/Feature/Retros/BoardSnapshotTest.php`
+Expected: FAIL — route `emoji-data.show` not defined, no `emojiData` key.
+
+- [ ] **Step 3: Configuration**
+
+`config/services.php` (a code change is the only way to move to another Emojibase release, so cached files stay valid):
+
+```php
+    'emoji_data' => [
+        'version' => '17.0.0',
+    ],
+```
+
+- [ ] **Step 4: Controller and route**
+
+`app/Http/Controllers/EmojiDataController.php`:
+
+```php
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\RequestException;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
+
+class EmojiDataController extends Controller
+{
+    /** App locale => Emojibase locale. */
+    public const EmojibaseLocales = [
+        'en' => 'en',
+        'fr' => 'fr',
+        'es' => 'es',
+        'de' => 'de',
+    ];
+
+    private const Files = ['data.json', 'messages.json'];
+
+    public static function emojibaseLocale(string $appLocale): string
+    {
+        return self::EmojibaseLocales[$appLocale] ?? 'en';
+    }
+
+    public function show(string $version, string $locale, string $file): Response
+    {
+        abort_unless($version === config('services.emoji_data.version'), 404);
+        abort_unless(in_array($locale, self::EmojibaseLocales, true), 404);
+        abort_unless(in_array($file, self::Files, true), 404);
+
+        $disk = Storage::disk();
+        $path = "emoji-data/{$version}/{$locale}/{$file}";
+
+        if (! $disk->exists($path)) {
+            $disk->put($path, $this->download($version, $locale, $file));
+        }
+
+        $body = (string) $disk->get($path);
+
+        return response($body, 200, [
+            'Content-Type' => 'application/json',
+            'Cache-Control' => 'public, max-age=31536000, immutable',
+            'ETag' => '"'.md5($body).'"',
+        ]);
+    }
+
+    private function download(string $version, string $locale, string $file): string
+    {
+        try {
+            $body = Http::timeout(10)
+                ->get("https://cdn.jsdelivr.net/npm/emojibase-data@{$version}/{$locale}/{$file}")
+                ->throw()
+                ->body();
+        } catch (RequestException|ConnectionException) {
+            abort(502, __('Emoji list unavailable'));
+        }
+
+        abort_unless(json_validate($body), 502, __('Emoji list unavailable'));
+
+        return $body;
+    }
+}
+```
+
+`routes/web.php`, next to the avatars route (public, outside the retro group; Laravel answers `HEAD` on `GET` routes):
+
+```php
+Route::get('emoji-data/{version}/{locale}/{file}', [EmojiDataController::class, 'show'])
+    ->where(['version' => '[0-9.]+', 'locale' => '[a-z-]+', 'file' => '[a-z]+\.json'])
+    ->middleware('throttle:120,1')
+    ->name('emoji-data.show');
+```
+
+- [ ] **Step 5: Snapshot**
+
+`BuildBoardSnapshot::handle`, top-level key after `'links'` (import `App\Http\Controllers\EmojiDataController`):
+
+```php
+            'emojiData' => [
+                'baseUrl' => '/emoji-data/'.config('services.emoji_data.version'),
+                'locale' => EmojiDataController::emojibaseLocale(app()->getLocale()),
+            ],
+```
+
+- [ ] **Step 6: Translations**
+
+| key | fr | es | de |
+|---|---|---|---|
+| Emoji list unavailable | Liste des emoji indisponible | Lista de emoji no disponible | Emoji-Liste nicht verfügbar |
+
+- [ ] **Step 7: Run the tests to verify they pass**
+
+Run: `vendor/bin/sail artisan test --compact tests/Feature/EmojiDataTest.php tests/Feature/Retros tests/Feature/TranslationKeysTest.php`
+Expected: PASS.
+
+- [ ] **Step 8: Format, analyse, commit**
+
+Run: `vendor/bin/sail bin pint --dirty --format agent && vendor/bin/sail bin phpstan analyse --no-progress` → clean.
+
+```bash
+git add app config routes lang tests
+git commit -m "feat: serve emoji picker data from skrum instead of a cdn"
+```
+
+---
+
 ### Task 6: Frontend foundation — dependencies, types, reducer, events, settings, lock, vote totals
 
 **Files:**
@@ -2645,7 +2880,7 @@ export type CommentNotificationPayload = {
 };
 ```
 
-  `CardPayload` gains `hidden: boolean`, `gif: CardGif | null`; `BoardCard` gains `reactions: ReactionSummary[]`, `commentCount: number`, `comments: CommentThread[]`; `Snapshot.retro` gains `reactionsEnabled`, `cursorsEnabled`, `gifsEnabled`, `hideVoteCounts`, `isLocked`, `presentationMode` (boolean) and `gifProvider: 'giphy' | 'tenor' | null`.
+  `CardPayload` gains `hidden: boolean`, `gif: CardGif | null`; `BoardCard` gains `reactions: ReactionSummary[]`, `commentCount: number`, `comments: CommentThread[]`; `Snapshot.retro` gains `reactionsEnabled`, `cursorsEnabled`, `gifsEnabled`, `hideVoteCounts`, `isLocked`, `presentationMode` (boolean) and `gifProvider: 'giphy' | 'tenor' | null`; `Snapshot` gains `emojiData: { baseUrl: string; locale: string }` (Task 5b).
   `BoardAction` gains `{ type: 'reactions.set'; cardId: string; reactions: Array<Omit<ReactionSummary, 'mine'> & { mine?: boolean }> }`, `{ type: 'comment.upsert'; comment: CardComment }`, `{ type: 'comment.remove'; cardId: string; commentId: string; soft: boolean }`, and `votes.cast` gains optional `cardId?: string; total?: number`.
   `useRetroChannel(retroId, participantId, enabled, handlers: RetroChannelHandlers)` with `RetroChannelHandlers = { onEvent, onResync, onJoining, onOwnCard, onOwnComment: (comment: CardComment) => void, onCommentNotification: (notification: CommentNotificationPayload) => void }`, returns `{ online, connected, reconnecting, presence: WhisperChannel | null }`.
   `BoardContextValue` gains `online: PresenceMember[]`, `presence: WhisperChannel | null`, `isEditable: boolean` (`!board.retro.isLocked`), `unreadCardIds: Set<string>`, `markCommentsRead: (cardId: string) => void`.
@@ -3063,7 +3298,7 @@ git commit -m "feat: wire engagement settings, lock state and live vote totals i
 - Modify: `resources/js/components/retro/retro-card.tsx`, `lang/*.json`
 
 **Interfaces:**
-- Consumes: Task 3 routes (Wayfinder `CardReactionsController.update/destroy`), Task 6 `reactions.set`, `ctx.isEditable`.
+- Consumes: Task 3 routes (Wayfinder `CardReactionsController.update/destroy`), Task 5b `board.emojiData`, Task 6 `reactions.set`, `ctx.isEditable`.
 - Produces: `QuickEmoji: readonly string[]` (`['👍', '❤️', '👏', '🎉', '🤔', '👎']`), `isSingleEmoji(value: unknown): value is string`, `EmojiPicker({ onPick, label, children })` (dropdown with the quick emoji and "More emoji…" opening a dialog with the full picker), `CardReactions({ card })`.
 
 - [ ] **Step 1: Emoji helpers**
@@ -3101,8 +3336,12 @@ export function isSingleEmoji(value: unknown): value is string {
 `resources/js/components/retro/emoji-picker.tsx`:
 
 ```tsx
-import { EmojiPicker as Frimousse } from 'frimousse';
-import { useState, type ReactNode } from 'react';
+import {
+    defaultEmojiDataResolver,
+    EmojiPicker as Frimousse,
+    type EmojiDataResolver,
+} from 'frimousse';
+import { useCallback, useState, type ReactNode } from 'react';
 import {
     Dialog,
     DialogContent,
@@ -3117,6 +3356,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useTrans } from '@/hooks/use-trans';
 import { QuickEmoji } from '@/lib/retro/emoji';
+import { useBoard } from './board-context';
 
 type Props = {
     onPick: (emoji: string) => void;
@@ -3126,7 +3366,32 @@ type Props = {
 
 export function EmojiPicker({ onPick, label, children }: Props) {
     const { t } = useTrans();
+    const { board } = useBoard();
     const [browsing, setBrowsing] = useState(false);
+    const [unavailable, setUnavailable] = useState(false);
+
+    /**
+     * frimousse only logs a failed load and keeps showing its loading
+     * state, so the failure is caught here to tell the viewer.
+     */
+    const resolveEmojiData = useCallback<EmojiDataResolver>(
+        async (locale, options) => {
+            try {
+                const data = await defaultEmojiDataResolver(locale, options);
+
+                setUnavailable(false);
+
+                return data;
+            } catch (error) {
+                if (!options.signal?.aborted) {
+                    setUnavailable(true);
+                }
+
+                throw error;
+            }
+        },
+        [],
+    );
 
     return (
         <>
@@ -3156,8 +3421,16 @@ export function EmojiPicker({ onPick, label, children }: Props) {
             <Dialog open={browsing} onOpenChange={setBrowsing}>
                 <DialogContent aria-describedby={undefined} className="max-w-sm">
                     <DialogTitle>{label}</DialogTitle>
+                    {unavailable && (
+                        <p role="alert" className="text-sm text-destructive">
+                            {t('Emoji list unavailable')}
+                        </p>
+                    )}
                     <Frimousse.Root
                         className="flex h-80 flex-col"
+                        locale={board.emojiData.locale}
+                        emojibaseUrl={board.emojiData.baseUrl}
+                        resolveEmojiData={resolveEmojiData}
                         onEmojiSelect={({ emoji }) => {
                             setBrowsing(false);
                             onPick(emoji);
@@ -3169,9 +3442,11 @@ export function EmojiPicker({ onPick, label, children }: Props) {
                             aria-label={t('Search emoji…')}
                         />
                         <Frimousse.Viewport className="relative flex-1">
-                            <Frimousse.Loading className="p-2 text-sm text-muted-foreground">
-                                {t('Loading…')}
-                            </Frimousse.Loading>
+                            {!unavailable && (
+                                <Frimousse.Loading className="p-2 text-sm text-muted-foreground">
+                                    {t('Loading…')}
+                                </Frimousse.Loading>
+                            )}
                             <Frimousse.Empty className="p-2 text-sm text-muted-foreground">
                                 {t('No emoji found.')}
                             </Frimousse.Empty>
@@ -3205,7 +3480,7 @@ export function EmojiPicker({ onPick, label, children }: Props) {
 }
 ```
 
-(frimousse downloads Emojibase data from `cdn.jsdelivr.net` on first open and caches it in `localStorage`; see the report note in "Open points".)
+(`emojibaseUrl` points frimousse at skrum's own `/emoji-data/{version}` route (Task 5b), so the browser never contacts jsDelivr; frimousse builds `${emojibaseUrl}/${locale}/data.json` and `…/messages.json` and caches them in `localStorage`, revalidating by `ETag`. When loading fails the dialog shows "Emoji list unavailable"; the six quick emoji in the dropdown never depend on this data.)
 
 - [ ] **Step 3: Card reactions**
 
@@ -3363,7 +3638,7 @@ In `retro-card.tsx`, render `<CardReactions card={card} />` right after the cont
 - [ ] **Step 5: Verify and commit**
 
 Run: `npm run types:check && npm run check` → clean; `vendor/bin/sail artisan test --compact tests/Feature/TranslationKeysTest.php` → PASS.
-Manual: react with a quick emoji and a picker emoji (e.g. 👨‍👩‍👧‍👦) in one browser; the chip appears in the other; toggling off removes it.
+Manual: react with a quick emoji and a picker emoji (e.g. 👨‍👩‍👧‍👦) in one browser; the chip appears in the other; toggling off removes it. The network panel shows the picker loading `/emoji-data/17.0.0/{locale}/data.json` and `messages.json` from the Skrum origin, nothing from jsdelivr.net. With `services.emoji_data.version` temporarily set to `0.0.0` (so the server's CDN fetch fails with nothing cached) and frimousse's `localStorage` entries cleared, the picker shows "Emoji list unavailable" and the quick emoji still work; restore the version afterwards.
 
 ```bash
 git add resources/js lang
@@ -4593,25 +4868,21 @@ No new feature. Prove the acceptance criteria, fix what breaks (one commit per f
   2. Flying reactions (quick and picker) from both browsers gather into a bubble.
   3. Card reactions with a picker emoji; chip tooltip shows names; anonymous retro shows none.
   4. Threaded replies; notification toast and unread dot; dot survives reload only until read.
-  5. GIF search and display; network panel shows no request to giphy.com / tenor.com.
+  5. GIF search and display, and the emoji picker; network panel shows no request to giphy.com, tenor.com or jsdelivr.net.
   6. Anonymous retro: "Participant" cursor labels, no names on chips, comments or notification toasts.
   7. Each of the six toggles takes effect live in the other browser.
   8. Close for editing blocks every edit (cards, drag, votes, reactions, comments, action items) and shows the badge; facilitator can still change phase and timer.
   9. Presentation overlay follows the highlight.
   10. Vote totals: visible live during Voting; hidden with "Hide vote counts"; always visible in Discussing.
+  11. Forged sender: in browser A's devtools console, whisper a reaction whose payload `id` is browser B's participant id (`Echo.join('retro.<id>').whisper('reaction', {v: 1, t: 'r', id: '<B id>', e: '🎉'})`); browser B labels it with A's name (anonymous retro: no label), proving the Reverb stamp is used, not the payload.
 - [ ] **Step 4: Report** — each acceptance criterion of spec §11 with its evidence (test name or walkthrough step); defects with fix commits; open points below.
 
 ---
 
-## Open points (for the user before or during execution)
+## Notes
 
-1. **Spoofing is closed rather than accepted.** Spec §3 accepts that a member can claim another's id. Reverb in `members` mode stamps every relayed client event with the sender's authenticated presence `user_id` (`vendor/laravel/reverb/src/Protocols/Pusher/ClientEvent.php:65-75`) and pusher-js passes it as `metadata.user_id` (`node_modules/pusher-js/src/core/channels/presence_channel.ts:67-71`), so this plan takes the sender from there (Task 10). The roster check stays as specified.
-2. **Emoji size limit.** Spec §2 caps `emoji` at 16 bytes, which rejects valid picker emoji such as families (👨‍👩‍👧‍👦 = 25 bytes) and couples with skin tones (~35 bytes). The plan uses 64 bytes. Confirm or ask for a spec update.
-3. **frimousse fetches emoji data from `cdn.jsdelivr.net`** (Emojibase) on first open, sending viewer IPs to a third party — the opposite of the GIF proxy's intent. Options: accept, or add a small cached proxy route and pass `emojibaseUrl` (not in the spec, not planned).
-4. **Reaction names in the tooltip vs "no participant data" in broadcasts.** Spec §4 asks for names in chip tooltips (unless anonymous) and no participant data in `card.reactions.changed`. The plan broadcasts display names (never participant ids) when the retro is not anonymous, so tooltips stay live; on anonymous retros `names` is always empty.
-5. **"User menu" for "Hide my cursor".** The board page has no user menu (`resources/js/components/retro/board-header.tsx`); the switch goes in the board header (Task 10).
-6. **Hidden cards in the snapshot** carry `reactions: []`, `commentCount: 0`, `comments: []`, `gif: null` rather than omitting the keys, so the TypeScript shape stays uniform; the redaction is the same.
-7. **New `hidden` flag on card payloads.** A GIF-only card has `content: null` like a hidden card; the frontend used `content === null` to mean "hidden", so payloads gain `hidden: bool` (Task 5) and the UI switches to it (Task 6).
+- **Whisper sender.** Reverb in `members` mode stamps every relayed client event with the sender's authenticated presence `user_id` (`vendor/laravel/reverb/src/Protocols/Pusher/ClientEvent.php:65-75`) and pusher-js passes it as `metadata.user_id` (`node_modules/pusher-js/src/core/channels/presence_channel.ts:67-71`); the transport (Task 10) takes the sender from there, as spec §3 requires.
+- **Emojibase version.** `17.0.0` is the current `emojibase-data` release on npm at planning time; moving to a newer one is a one-line change in `config/services.php` (Task 5b).
 
 ## Spec coverage
 
@@ -4625,6 +4896,7 @@ No new feature. Prove the acceptance criteria, fix what breaks (one commit per f
 | §3 transport, identity, abuse, AC1 | 10, 11 |
 | §3 live cursors (mouse, touch, pen) | 10 |
 | §3 flying reactions | 11 |
+| §3a self-hosted emoji data, AC5 | 5b, 7 |
 | §4 reactions rules and endpoints, AC2 | 3, 7 |
 | §4 comments, replies, soft delete, AC3 | 4, 8 |
 | §4 notifications, AC4 | 4, 6, 8 |
