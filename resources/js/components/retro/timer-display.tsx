@@ -2,6 +2,7 @@ import { Timer } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { formatSeconds, useCountdown } from '@/hooks/use-countdown';
+import { useIsMounted } from '@/hooks/use-is-mounted';
 import { useTrans } from '@/hooks/use-trans';
 import { cn } from '@/lib/utils';
 
@@ -24,6 +25,7 @@ type Props = { endsAt: string | null; offset: number };
 export function TimerDisplay({ endsAt, offset }: Props) {
     const { t } = useTrans();
     const remaining = useCountdown(endsAt, offset);
+    const isMounted = useIsMounted();
     const announced = useRef<string | null>(null);
     const sawRunning = useRef<string | null>(null);
 
@@ -56,7 +58,7 @@ export function TimerDisplay({ endsAt, offset }: Props) {
         }
     }, [remaining, endsAt, t]);
 
-    if (remaining === null) {
+    if (remaining === null || !isMounted) {
         return null;
     }
 
