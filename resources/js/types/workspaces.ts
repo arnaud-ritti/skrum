@@ -1,3 +1,5 @@
+import type { ColumnColor } from '@/lib/retro/types';
+
 export type WorkspaceRole = 'owner' | 'admin' | 'member';
 
 export type WorkspaceSummary = {
@@ -43,4 +45,35 @@ export type RetroSummary = {
 export type TemplateOption = {
     value: string;
     label: string;
+};
+
+export type TemplateCategory =
+    | 'essentials'
+    | 'team_mood'
+    | 'themed'
+    | 'ideas'
+    | 'analysis';
+
+export type CategoryOption = { value: TemplateCategory; label: string };
+
+export type TemplateColumn = {
+    title: string;
+    description: string | null;
+    color: ColumnColor;
+};
+
+export type CatalogueTemplate = {
+    key: string;
+    name: string;
+    category: TemplateCategory | null;
+    isCommon: boolean;
+    isWorkspace: boolean;
+    columns: TemplateColumn[];
+};
+
+export type WorkspaceTemplateSummary = {
+    id: string;
+    name: string;
+    category: TemplateCategory;
+    columns: TemplateColumn[];
 };

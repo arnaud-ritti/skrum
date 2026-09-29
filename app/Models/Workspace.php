@@ -56,6 +56,12 @@ class Workspace extends Model
         return $this->hasMany(WorkspaceInvitation::class);
     }
 
+    /** @return HasMany<WorkspaceTemplate, $this> */
+    public function templates(): HasMany
+    {
+        return $this->hasMany(WorkspaceTemplate::class);
+    }
+
     /** @return HasMany<Team, $this> */
     public function teams(): HasMany
     {

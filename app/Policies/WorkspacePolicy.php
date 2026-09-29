@@ -18,6 +18,11 @@ class WorkspacePolicy
         return $user->canManage($workspace);
     }
 
+    public function manageTemplates(User $user, Workspace $workspace): bool
+    {
+        return $user->canManage($workspace);
+    }
+
     public function delete(User $user, Workspace $workspace): bool
     {
         return $user->roleIn($workspace) === WorkspaceRole::Owner;

@@ -9,6 +9,8 @@ class TemplateCatalogue
 {
     public const Custom = 'custom';
 
+    public const Workspace = 'workspace';
+
     private const CommonCount = 8;
 
     /**

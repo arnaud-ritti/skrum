@@ -36,6 +36,7 @@ use App\Http\Controllers\TeamsController;
 use App\Http\Controllers\WorkspaceInvitationsController;
 use App\Http\Controllers\WorkspaceMembersController;
 use App\Http\Controllers\WorkspacesController;
+use App\Http\Controllers\WorkspaceTemplatesController;
 use App\Http\Middleware\RememberCurrentWorkspace;
 use App\Http\Middleware\ResolveRetroParticipant;
 use Illuminate\Support\Facades\Route;
@@ -94,6 +95,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::delete('members/{member}', [WorkspaceMembersController::class, 'destroy'])->name('workspaces.members.destroy')->whereUuid('member');
             Route::post('invitations', [WorkspaceInvitationsController::class, 'store'])->name('workspaces.invitations.store')->middleware('throttle:20,1');
             Route::delete('invitations/{invitation}', [WorkspaceInvitationsController::class, 'destroy'])->name('workspaces.invitations.destroy');
+
+            Route::get('templates', [WorkspaceTemplatesController::class, 'index'])->name('workspaces.templates.index');
+            Route::post('templates', [WorkspaceTemplatesController::class, 'store'])->name('workspaces.templates.store');
+            Route::patch('templates/{template}', [WorkspaceTemplatesController::class, 'update'])->name('workspaces.templates.update')->whereUuid('template');
+            Route::delete('templates/{template}', [WorkspaceTemplatesController::class, 'destroy'])->name('workspaces.templates.destroy')->whereUuid('template');
         });
 });
 

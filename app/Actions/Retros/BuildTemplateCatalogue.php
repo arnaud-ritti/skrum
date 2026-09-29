@@ -1,0 +1,51 @@
+<?php
+
+namespace App\Actions\Retros;
+
+use App\Models\Workspace;
+use App\Models\WorkspaceTemplate;
+use App\Support\RetroTemplates\TemplateCatalogue;
+use App\Support\RetroTemplates\TemplateDefinition;
+
+class BuildTemplateCatalogue
+{
+    /**
+     * @return array<int, array{
+     *     key: string,
+     *     name: string,
+     *     category: ?string,
+     *     isCommon: bool,
+     *     isWorkspace: bool,
+     *     columns: array<int, array{title: string, description: ?string, color: string}>
+     * }>
+     */
+    public function handle(Workspace $workspace): array
+    {
+        $workspaceTemplates = $workspace->templates()->with('columns')->orderBy('name')->get()
+            ->map(fn (WorkspaceTemplate $template) => [
+                'key' => $template->catalogueKey(),
+                'name' => $template->name,
+                'category' => $template->category->value,
+                'isCommon' => false,
+                'isWorkspace' => true,
+                'columns' => $template->presentColumns(),
+            ])
+            ->values()
+            ->all();
+
+        $builtIns = array_map(fn (TemplateDefinition $definition) => [
+            'key' => $definition->key,
+            'name' => $definition->name(),
+            'category' => $definition->category?->value,
+            'isCommon' => $definition->isCommon,
+            'isWorkspace' => false,
+            'columns' => array_map(fn (array $column) => [
+                'title' => $column['title'],
+                'description' => $column['description'],
+                'color' => $column['color']->value,
+            ], $definition->translatedColumns()),
+        ], TemplateCatalogue::all());
+
+        return [...$workspaceTemplates, ...$builtIns];
+    }
+}

@@ -33,6 +33,7 @@ use Illuminate\Support\Carbon;
  * @property bool $presentation_mode
  * @property bool $health_check_enabled
  * @property bool $icebreaker_enabled
+ * @property string|null $workspace_template_id
  * @property string $guest_token
  * @property Carbon|null $timer_ends_at
  * @property string|null $highlighted_card_id
@@ -44,7 +45,7 @@ use Illuminate\Support\Carbon;
     'title', 'template', 'phase', 'facilitator_participant_id', 'is_anonymous', 'votes_per_participant',
     'guest_access_enabled', 'guest_token', 'timer_ends_at', 'highlighted_card_id', 'completed_at',
     'reactions_enabled', 'cursors_enabled', 'gifs_enabled', 'hide_vote_counts', 'is_locked', 'presentation_mode',
-    'health_check_enabled', 'icebreaker_enabled',
+    'health_check_enabled', 'icebreaker_enabled', 'workspace_template_id',
 ])]
 #[Hidden(['guest_token'])]
 class Retro extends Model
@@ -65,6 +66,12 @@ class Retro extends Model
             : $this->cards()->whereNull('parent_card_id')->count();
 
         return min(10, $topLevelCards + 3);
+    }
+
+    /** @return BelongsTo<WorkspaceTemplate, $this> */
+    public function workspaceTemplate(): BelongsTo
+    {
+        return $this->belongsTo(WorkspaceTemplate::class);
     }
 
     /** @return BelongsTo<Team, $this> */
