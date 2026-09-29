@@ -523,5 +523,11 @@
     "Guest": "Gast",
     "Phases": "Phasen",
     "Something went wrong. Please try again.": "Etwas ist schiefgelaufen. Bitte versuch es erneut.",
-    ":count more": ":count weitere"
+    ":count more": ":count weitere",
+    "Add a card…": "Karte hinzufügen…",
+    "Edit card": "Karte bearbeiten",
+    "Delete card": "Karte löschen",
+    "Someone is writing…": "Jemand schreibt gerade…",
+    "You": "Du",
+    "No columns yet.": "Noch keine Spalten."
 }

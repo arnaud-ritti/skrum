@@ -1,0 +1,63 @@
+import { useState } from 'react';
+import CardsController from '@/actions/App/Http/Controllers/Retros/CardsController';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { useTrans } from '@/hooks/use-trans';
+import { retroRequest } from '@/lib/retro/api';
+import type { BoardCard, CardPayload } from '@/lib/retro/types';
+import type { BoardContextValue } from './board';
+
+export function CardEditor({
+    card,
+    ctx,
+    onDone,
+}: {
+    card: BoardCard;
+    ctx: BoardContextValue;
+    onDone: () => void;
+}) {
+    const { t } = useTrans();
+    const [content, setContent] = useState(card.content ?? '');
+
+    const save = async () => {
+        const response = await ctx.run(
+            retroRequest<{ card: CardPayload }>(
+                CardsController.update({
+                    retro: ctx.board.retro.id,
+                    card: card.id,
+                }),
+                { content: content.trim() },
+            ),
+        );
+
+        if (response) {
+            ctx.dispatch({ type: 'cards.upsert', cards: [response.card] });
+        }
+
+        onDone();
+    };
+
+    return (
+        <div className="space-y-2">
+            <Textarea
+                value={content}
+                maxLength={1000}
+                autoFocus
+                aria-label={t('Edit card')}
+                onChange={(event) => setContent(event.target.value)}
+            />
+            <div className="flex justify-end gap-2">
+                <Button size="sm" variant="ghost" onClick={onDone}>
+                    {t('Cancel')}
+                </Button>
+                <Button
+                    size="sm"
+                    disabled={content.trim() === ''}
+                    onClick={() => void save()}
+                >
+                    {t('Save')}
+                </Button>
+            </div>
+        </div>
+    );
+}

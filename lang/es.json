@@ -523,5 +523,11 @@
     "Guest": "Invitado",
     "Phases": "Fases",
     "Something went wrong. Please try again.": "Algo salió mal. Inténtalo de nuevo.",
-    ":count more": ":count más"
+    ":count more": ":count más",
+    "Add a card…": "Añadir una tarjeta…",
+    "Edit card": "Editar tarjeta",
+    "Delete card": "Eliminar tarjeta",
+    "Someone is writing…": "Alguien está escribiendo…",
+    "You": "Tú",
+    "No columns yet.": "Todavía no hay columnas."
 }

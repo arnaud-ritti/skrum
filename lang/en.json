@@ -260,5 +260,11 @@
     "Guest": "Guest",
     "Phases": "Phases",
     "Something went wrong. Please try again.": "Something went wrong. Please try again.",
-    ":count more": ":count more"
+    ":count more": ":count more",
+    "Add a card…": "Add a card…",
+    "Edit card": "Edit card",
+    "Delete card": "Delete card",
+    "Someone is writing…": "Someone is writing…",
+    "You": "You",
+    "No columns yet.": "No columns yet."
 }
