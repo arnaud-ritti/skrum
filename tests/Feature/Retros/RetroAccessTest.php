@@ -47,8 +47,26 @@ it('forbids members of the workspace outside the team', function () {
         ->assertJsonPath('message', 'You no longer have access to this retrospective.');
 });
 
-it('sends logged out visitors to the login page', function () {
+it('sends logged out visitors to the login page when guest access is disabled', function () {
     $this->get(route('retros.show', Retro::factory()->create()))->assertRedirect(route('login'));
+});
+
+it('tells logged out visitors of a guest-enabled retro that their session ended', function () {
+    $retro = Retro::factory()->withGuestAccess()->create();
+
+    $this->get(route('retros.show', $retro))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->component('retros/session-ended'))
+        ->assertSessionHas('url.intended', route('retros.show', $retro));
+});
+
+it('still shows a guest-enabled board to members with a session', function () {
+    $retro = Retro::factory()->withGuestAccess()->create();
+    [$user] = retroMember($retro);
+
+    $this->actingAs($user)
+        ->get(route('retros.show', $retro))
+        ->assertInertia(fn (Assert $page) => $page->component('retros/show'));
 });
 
 it('answers logged-out json requests with 401', function () {

@@ -50,6 +50,7 @@ void createInertiaApp({
             case name === 'welcome':
                 return null;
             case name === 'retros/join':
+            case name === 'retros/session-ended':
                 return AuthLayout;
             case name === 'retros/show':
                 return null;

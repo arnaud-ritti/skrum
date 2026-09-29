@@ -350,5 +350,7 @@
     "Your session has expired.": "Your session has expired.",
     "Reload": "Reload",
     "The phase changed before your edit was saved.": "The phase changed before your edit was saved.",
-    "You no longer have access to this retrospective.": "You no longer have access to this retrospective."
+    "You no longer have access to this retrospective.": "You no longer have access to this retrospective.",
+    "Your session has ended.": "Your session has ended.",
+    "Guests: ask the facilitator for the guest link.": "Guests: ask the facilitator for the guest link."
 }

@@ -7,6 +7,7 @@ use App\Actions\Retros\ResolveParticipant;
 use App\Models\Retro;
 use Closure;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\Response;
 
 class ResolveRetroParticipant
@@ -22,7 +23,7 @@ class ResolveRetroParticipant
         $participant = $this->resolveParticipant->handle($request, $retro);
 
         if ($participant === null && $request->user() === null && ! $request->expectsJson()) {
-            return redirect()->guest(route('login'));
+            return $this->sendToLogin($request, $retro);
         }
 
         if ($participant === null) {
@@ -36,5 +37,20 @@ class ResolveRetroParticipant
         $request->attributes->set('participant', $participant);
 
         return $next($request);
+    }
+
+    /**
+     * Once the guest cookie is gone, an expired guest cannot be told apart
+     * from a logged-out member, so guest-enabled retros explain both ways back.
+     */
+    private function sendToLogin(Request $request, Retro $retro): Response
+    {
+        if (! $retro->guest_access_enabled) {
+            return redirect()->guest(route('login'));
+        }
+
+        redirect()->setIntendedUrl($request->fullUrl());
+
+        return Inertia::render('retros/session-ended')->toResponse($request);
     }
 }

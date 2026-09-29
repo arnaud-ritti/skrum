@@ -611,5 +611,7 @@
     "Your session has expired.": "Deine Sitzung ist abgelaufen.",
     "Reload": "Neu laden",
     "The phase changed before your edit was saved.": "Die Phase hat sich geändert, bevor deine Änderung gespeichert wurde.",
-    "You no longer have access to this retrospective.": "Du hast keinen Zugriff mehr auf diese Retrospektive."
+    "You no longer have access to this retrospective.": "Du hast keinen Zugriff mehr auf diese Retrospektive.",
+    "Your session has ended.": "Deine Sitzung ist beendet.",
+    "Guests: ask the facilitator for the guest link.": "Gäste: Bitte den Moderator um den Gastlink."
 }
