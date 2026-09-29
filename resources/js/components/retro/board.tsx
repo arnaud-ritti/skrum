@@ -28,6 +28,7 @@ import { BoardProvider, type BoardContextValue } from './board-context';
 import { parseDndId, useDragAccessibility } from './dnd';
 import { FlyingReactions } from './flying-reactions';
 import { HideMyCursorKey, LiveCursorLayer } from './live-cursor-layer';
+import { PresentationOverlay } from './presentation-overlay';
 import { CardPreview } from './retro-card';
 import { RetroColumn } from './retro-column';
 import { SessionExpiredBanner } from './session-expired-banner';
@@ -270,6 +271,7 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
                 </div>
             </div>
             <FlyingReactions />
+            <PresentationOverlay />
         </BoardProvider>
     );
 }
