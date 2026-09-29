@@ -8,12 +8,17 @@ import { initializeTheme } from '@/hooks/use-appearance';
 import AppLayout from '@/layouts/app-layout';
 import AuthLayout from '@/layouts/auth-layout';
 import SettingsLayout from '@/layouts/settings/layout';
+import { echoConnection } from '@/lib/reverb-config';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
-if (typeof window !== 'undefined') {
+const connection = typeof window !== 'undefined' ? echoConnection() : null;
+
+if (connection) {
     configureEcho({
         broadcaster: 'reverb',
+        ...connection,
+        enabledTransports: ['ws', 'wss'],
         channelAuthorization: {
             customHandler: ({ socketId, channelName }, callback) => {
                 http.getClient()

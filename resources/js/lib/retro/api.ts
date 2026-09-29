@@ -1,6 +1,8 @@
 import { http, HttpResponseError } from '@inertiajs/core';
 import { echo, echoIsConfigured } from '@laravel/echo-react';
 
+const RequestTimeoutMs = 15_000;
+
 type Route = { url: string; method: string };
 
 type ErrorPayload = { message?: string; errors?: Record<string, string[]> };
@@ -48,6 +50,7 @@ export async function retroRequest<T = null>(
             url: route.url,
             data,
             headers,
+            signal: AbortSignal.timeout(RequestTimeoutMs),
         });
 
         return (response.data === '' ? null : JSON.parse(response.data)) as T;
