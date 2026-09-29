@@ -13,15 +13,21 @@ use App\Http\Controllers\Controller;
 use App\Models\Card;
 use App\Models\Participant;
 use App\Models\Retro;
+use App\Support\Gifs\Gif;
+use App\Support\Gifs\GifCatalog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class CardsController extends Controller
 {
-    public function __construct(private PresentCard $presentCard) {}
+    public function __construct(
+        private PresentCard $presentCard,
+        private GifCatalog $gifCatalog,
+    ) {}
 
     public function store(Request $request, Retro $retro): JsonResponse
     {
@@ -32,14 +38,21 @@ class CardsController extends Controller
 
         $validated = $request->validate([
             'column_id' => ['required', 'uuid', Rule::exists('columns', 'id')->where('retro_id', $retro->id)],
-            'content' => ['required', 'string', 'max:1000'],
+            'content' => ['required_without:gif_id', 'nullable', 'string', 'max:1000'],
+            'gif_id' => ['nullable', 'string', 'max:64', 'regex:/^[A-Za-z0-9_-]+$/'],
         ]);
+
+        $this->ensureGif($retro, $validated['gif_id'] ?? null);
 
         [$card, $presentingRetro] = DB::transaction(function () use ($retro, $participant, $validated): array {
             $locked = Retro::query()->whereKey($retro->id)->lockForUpdate()->firstOrFail();
 
             RetroGuard::phase($locked, RetroPhase::Writing);
             RetroGuard::unlocked($locked);
+
+            if (($validated['gif_id'] ?? null) !== null) {
+                RetroGuard::gifsEnabled($locked, $this->gifCatalog);
+            }
 
             $column = $locked->columns()->whereKey($validated['column_id'])->firstOrFail();
 
@@ -51,7 +64,8 @@ class CardsController extends Controller
             $card = $locked->cards()->create([
                 'column_id' => $column->id,
                 'participant_id' => $participant->id,
-                'content' => $validated['content'],
+                'content' => $validated['content'] ?? null,
+                'gif_id' => $validated['gif_id'] ?? null,
                 'position' => $position === null ? 0 : $position + 1,
             ]);
 
@@ -73,8 +87,13 @@ class CardsController extends Controller
         RetroGuard::author($card, $participant);
 
         $validated = $request->validate([
-            'content' => ['required', 'string', 'max:1000'],
+            'content' => ['sometimes', 'nullable', 'string', 'max:1000'],
+            'gif_id' => ['sometimes', 'nullable', 'string', 'max:64', 'regex:/^[A-Za-z0-9_-]+$/'],
         ]);
+
+        if (($validated['gif_id'] ?? null) !== null && $validated['gif_id'] !== $card->gif_id) {
+            $this->ensureGif($retro, $validated['gif_id']);
+        }
 
         [$card, $presentingRetro] = DB::transaction(function () use ($retro, $card, $participant, $validated): array {
             $locked = Retro::query()->whereKey($retro->id)->lockForUpdate()->firstOrFail();
@@ -86,7 +105,18 @@ class CardsController extends Controller
 
             RetroGuard::author($fresh, $participant);
 
-            $fresh->update(['content' => $validated['content']]);
+            $content = array_key_exists('content', $validated) ? $validated['content'] : $fresh->content;
+            $gifId = array_key_exists('gif_id', $validated) ? $validated['gif_id'] : $fresh->gif_id;
+
+            if ($gifId !== null && $gifId !== $fresh->gif_id) {
+                RetroGuard::gifsEnabled($locked, $this->gifCatalog);
+            }
+
+            if ($content === null && $gifId === null) {
+                throw ValidationException::withMessages(['content' => __('A card needs text or a GIF.')]);
+            }
+
+            $fresh->update(['content' => $content, 'gif_id' => $gifId]);
 
             (new CardUpdated($locked->id, $this->presentCard->handle($fresh, $locked, null)))->sendToOthers();
             (new OwnCardSaved($locked->id, $participant->id, $this->presentCard->handle($fresh, $locked, $participant)))->sendToOthers();
@@ -136,5 +166,23 @@ class CardsController extends Controller
         });
 
         return response()->noContent();
+    }
+
+    private function ensureGif(Retro $retro, ?string $gifId): void
+    {
+        if ($gifId === null) {
+            return;
+        }
+
+        RetroGuard::gifsEnabled($retro, $this->gifCatalog);
+
+        $gif = $this->gifCatalog->attempt(
+            fn (): ?Gif => $this->gifCatalog->resolve($gifId),
+            __('GIF search is unavailable.'),
+        );
+
+        if ($gif === null) {
+            throw ValidationException::withMessages(['gif_id' => __('This GIF could not be found.')]);
+        }
     }
 }

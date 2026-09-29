@@ -7,6 +7,7 @@ use App\Models\Card;
 use App\Models\CardComment;
 use App\Models\Participant;
 use App\Models\Retro;
+use App\Support\Gifs\GifCatalog;
 use Illuminate\Auth\Access\AuthorizationException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
@@ -37,6 +38,15 @@ class RetroGuard
         }
 
         throw new AuthorizationException(__('Reactions are turned off for this board.'));
+    }
+
+    public static function gifsEnabled(Retro $retro, GifCatalog $gifCatalog): void
+    {
+        if ($retro->gifs_enabled && $gifCatalog->isAvailable()) {
+            return;
+        }
+
+        throw new AuthorizationException(__('GIFs are turned off for this board.'));
     }
 
     public static function facilitator(Retro $retro, Participant $participant): void

@@ -618,5 +618,10 @@
     "Reactions are turned off for this board.": "Les réactions sont désactivées pour ce tableau.",
     "You can only change your own comments.": "Vous ne pouvez modifier que vos propres commentaires.",
     "The reply must belong to a comment on the same card.": "La réponse doit concerner un commentaire de la même carte.",
-    "Choose a single emoji.": "Choisissez un seul emoji."
+    "Choose a single emoji.": "Choisissez un seul emoji.",
+    "GIFs are turned off for this board.": "Les GIF sont désactivés pour ce tableau.",
+    "GIF search is unavailable.": "La recherche de GIF est indisponible.",
+    "This GIF could not be found.": "Ce GIF est introuvable.",
+    "This GIF could not be loaded.": "Ce GIF n'a pas pu être chargé.",
+    "A card needs text or a GIF.": "Une carte doit contenir du texte ou un GIF."
 }

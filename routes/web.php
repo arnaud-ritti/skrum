@@ -4,6 +4,7 @@ use App\Actions\Auth\SignupGate;
 use App\Http\Controllers\AvatarsController;
 use App\Http\Controllers\BroadcastAuthorizationsController;
 use App\Http\Controllers\CurrentWorkspaceController;
+use App\Http\Controllers\GifsController;
 use App\Http\Controllers\InvitationAcceptancesController;
 use App\Http\Controllers\InvitationLinksController;
 use App\Http\Controllers\LocalesController;
@@ -18,6 +19,7 @@ use App\Http\Controllers\Retros\CardVotesController;
 use App\Http\Controllers\Retros\ColumnOrdersController;
 use App\Http\Controllers\Retros\ColumnsController;
 use App\Http\Controllers\Retros\RetroFacilitatorsController;
+use App\Http\Controllers\Retros\RetroGifsController;
 use App\Http\Controllers\Retros\RetroGuestTokensController;
 use App\Http\Controllers\Retros\RetroHighlightsController;
 use App\Http\Controllers\Retros\RetroPhasesController;
@@ -45,6 +47,11 @@ Route::get('/', fn () => Inertia::render('welcome', [
 Route::get('invitations/{token}', [InvitationLinksController::class, 'show'])->name('invitations.show');
 
 Route::get('avatars/{seed}.svg', [AvatarsController::class, 'show'])->where('seed', '[a-f0-9]{32}')->name('avatars.show');
+
+Route::get('gifs/{gif}/{size}', [GifsController::class, 'show'])
+    ->where(['gif' => '[A-Za-z0-9_-]{1,64}', 'size' => 'preview|full'])
+    ->middleware('throttle:240,1')
+    ->name('gifs.show');
 
 Route::post('invitations/{token}/acceptance', [InvitationAcceptancesController::class, 'store'])
     ->middleware('auth')
@@ -109,6 +116,7 @@ Route::prefix('retros/{retro}')
         Route::post('cards', [CardsController::class, 'store'])->name('retros.cards.store');
         Route::patch('cards/{card}', [CardsController::class, 'update'])->name('retros.cards.update')->whereUuid('card');
         Route::delete('cards/{card}', [CardsController::class, 'destroy'])->name('retros.cards.destroy')->whereUuid('card');
+        Route::get('gifs', [RetroGifsController::class, 'index'])->name('retros.gifs.index')->middleware('throttle:gif-search');
         Route::put('cards/{card}/position', [CardPositionsController::class, 'update'])->name('retros.cards.position.update')->whereUuid('card');
         Route::put('cards/{card}/group', [CardGroupsController::class, 'update'])->name('retros.cards.group.update')->whereUuid('card');
         Route::delete('cards/{card}/group', [CardGroupsController::class, 'destroy'])->name('retros.cards.group.destroy')->whereUuid('card');

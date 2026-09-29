@@ -15,12 +15,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string $retro_id
  * @property string $column_id
  * @property string $participant_id
- * @property string $content
+ * @property string|null $content
+ * @property string|null $gif_id
  * @property int $position
  * @property string|null $parent_card_id
  * @property-read Participant $participant
  */
-#[Fillable(['column_id', 'participant_id', 'content', 'position', 'parent_card_id'])]
+#[Fillable(['column_id', 'participant_id', 'content', 'gif_id', 'position', 'parent_card_id'])]
 class Card extends Model
 {
     /** @use HasFactory<CardFactory> */

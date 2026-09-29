@@ -12,6 +12,7 @@ use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\User;
 use App\Models\Vote;
+use Illuminate\Support\Facades\DB;
 
 function snapshotFor(Retro $retro, Participant $viewer): array
 {
@@ -222,3 +223,64 @@ it('lists comment threads with replies and counts visible comments', function ()
         ->and($presented['comments'][0]['replies'])->toHaveCount(1)
         ->and($presented['comments'][1])->toMatchArray(['deleted' => true, 'content' => null, 'author' => null]);
 });
+
+it('hides gifs, reactions and comments of others when the facilitator steps back to writing', function () {
+    $retro = Retro::factory()->inPhase(RetroPhase::Grouping)->create();
+    [, $viewer] = retroMember($retro);
+    $card = Card::factory()->create(['retro_id' => $retro->id, 'gif_id' => 'abc123']);
+    CardReaction::factory()->create(['retro_id' => $retro->id, 'card_id' => $card->id]);
+    CardComment::factory()->create(['retro_id' => $retro->id, 'card_id' => $card->id]);
+
+    $retro->update(['phase' => RetroPhase::Writing]);
+
+    expect(snapshotCard(snapshotFor($retro, $viewer), $card))->toMatchArray([
+        'hidden' => true,
+        'content' => null,
+        'gif' => null,
+        'reactions' => [],
+        'commentCount' => 0,
+        'comments' => [],
+    ]);
+});
+
+it('loads reactions and comments with a constant number of queries', function () {
+    $retro = Retro::factory()->inPhase(RetroPhase::Discussing)->create();
+    [, $viewer] = retroMember($retro);
+
+    $seed = function (int $cards) use ($retro): void {
+        Card::factory()->count($cards)->create(['retro_id' => $retro->id])->each(function (Card $card) use ($retro): void {
+            CardReaction::factory()->count(2)->create(['retro_id' => $retro->id, 'card_id' => $card->id]);
+            $thread = CardComment::factory()->create(['retro_id' => $retro->id, 'card_id' => $card->id]);
+            CardComment::factory()->create(['retro_id' => $retro->id, 'card_id' => $card->id, 'parent_comment_id' => $thread->id]);
+        });
+    };
+
+    $countQueries = function () use ($retro, $viewer): int {
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+        snapshotFor($retro, $viewer);
+        DB::disableQueryLog();
+
+        return count(DB::getQueryLog());
+    };
+
+    $seed(2);
+    $small = $countQueries();
+
+    $seed(6);
+
+    expect($countQueries())->toBe($small);
+});
+
+it('names the gif provider only when gifs can be used', function (?string $provider, ?string $key, ?string $expected) {
+    config(['services.gifs' => ['provider' => $provider, 'key' => $key, 'rating' => 'pg']]);
+    $retro = Retro::factory()->create();
+    [, $viewer] = retroMember($retro);
+
+    expect(snapshotFor($retro, $viewer)['retro']['gifProvider'])->toBe($expected);
+})->with([
+    'giphy' => ['giphy', 'secret-key', 'giphy'],
+    'tenor' => ['tenor', 'secret-key', 'tenor'],
+    'no key' => ['giphy', null, null],
+    'no provider' => [null, 'secret-key', null],
+]);

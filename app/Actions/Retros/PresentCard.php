@@ -16,7 +16,9 @@ class PresentCard
      *     parentCardId: ?string,
      *     position: int,
      *     isMine: bool,
+     *     hidden: bool,
      *     content: ?string,
+     *     gif: ?array{id: string, previewUrl: string, url: string},
      *     author: ?array{id: string, name: string}
      * }
      */
@@ -32,7 +34,13 @@ class PresentCard
             'parentCardId' => $card->parent_card_id,
             'position' => $card->position,
             'isMine' => $isMine,
+            'hidden' => $isHidden,
             'content' => $isHidden ? null : $card->content,
+            'gif' => $isHidden || $card->gif_id === null ? null : [
+                'id' => $card->gif_id,
+                'previewUrl' => route('gifs.show', ['gif' => $card->gif_id, 'size' => 'preview'], false),
+                'url' => route('gifs.show', ['gif' => $card->gif_id, 'size' => 'full'], false),
+            ],
             'author' => $showsAuthor
                 ? ['id' => $card->participant_id, 'name' => $card->participant->displayName()]
                 : null,

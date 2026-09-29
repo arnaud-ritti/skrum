@@ -41,6 +41,12 @@ return [
         'redirect' => rtrim((string) env('APP_URL', ''), '/').'/auth/google/callback',
     ],
 
+    'gifs' => [
+        'provider' => env('SKRUM_GIF_PROVIDER'),
+        'key' => env('SKRUM_GIF_API_KEY'),
+        'rating' => env('SKRUM_GIF_RATING', 'pg'),
+    ],
+
     'github' => [
         'client_id' => env('GITHUB_CLIENT_ID'),
         'client_secret' => env('GITHUB_CLIENT_SECRET'),

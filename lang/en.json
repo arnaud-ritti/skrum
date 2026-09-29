@@ -357,5 +357,10 @@
     "Reactions are turned off for this board.": "Reactions are turned off for this board.",
     "You can only change your own comments.": "You can only change your own comments.",
     "The reply must belong to a comment on the same card.": "The reply must belong to a comment on the same card.",
-    "Choose a single emoji.": "Choose a single emoji."
+    "Choose a single emoji.": "Choose a single emoji.",
+    "GIFs are turned off for this board.": "GIFs are turned off for this board.",
+    "GIF search is unavailable.": "GIF search is unavailable.",
+    "This GIF could not be found.": "This GIF could not be found.",
+    "This GIF could not be loaded.": "This GIF could not be loaded.",
+    "A card needs text or a GIF.": "A card needs text or a GIF."
 }

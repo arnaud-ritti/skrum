@@ -10,6 +10,7 @@ use App\Models\CardComment;
 use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\User;
+use App\Support\Gifs\GifCatalog;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -21,6 +22,7 @@ class BuildBoardSnapshot
         private PresentActionItem $presentActionItem,
         private SummarizeReactions $summarizeReactions,
         private PresentComment $presentComment,
+        private GifCatalog $gifCatalog,
     ) {}
 
     /**
@@ -52,6 +54,7 @@ class BuildBoardSnapshot
                 'reactionsEnabled' => $retro->reactions_enabled,
                 'cursorsEnabled' => $retro->cursors_enabled,
                 'gifsEnabled' => $retro->gifs_enabled,
+                'gifProvider' => $this->gifCatalog->providerName(),
                 'hideVoteCounts' => $retro->hide_vote_counts,
                 'isLocked' => $retro->is_locked,
                 'presentationMode' => $retro->presentation_mode,
@@ -75,7 +78,7 @@ class BuildBoardSnapshot
             'columns' => $this->presentColumns->handle($retro),
             'cards' => $retro->cards->sortBy('position')->map(function (Card $card) use ($retro, $viewer, $showsTotals, $voteTotals, $myVotes) {
                 $presented = $this->presentCard->handle($card, $retro, $viewer);
-                $isHidden = $presented['content'] === null && ! $presented['isMine'] && $retro->phase === RetroPhase::Writing;
+                $isHidden = $presented['hidden'];
 
                 return [
                     ...$presented,

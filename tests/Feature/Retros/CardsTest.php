@@ -12,6 +12,7 @@ use App\Models\CardReaction;
 use App\Models\Column;
 use App\Models\Retro;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Http;
 
 beforeEach(function () {
     Event::fake();
@@ -33,6 +34,7 @@ it('writes a card at the end of a column and hides it from others', function () 
 
     Event::assertDispatched(CardCreated::class, fn (CardCreated $event) => $event->retroId === $retro->id
         && $event->card['id'] === $response->json('card.id')
+        && $event->card['hidden'] === true
         && $event->card['content'] === null
         && $event->card['author'] === null
         && $event->socket === '111.222');
@@ -267,4 +269,40 @@ it('deletes comments and reactions with their card', function () {
     $this->actingAs($user)->deleteJson(route('retros.cards.destroy', [$retro, $card]))->assertNoContent();
 
     expect(CardComment::count())->toBe(0)->and(CardReaction::count())->toBe(0);
+});
+
+it('hides a gif from others while writing but sends it to its author', function () {
+    config(['services.gifs' => ['provider' => 'giphy', 'key' => 'secret-key', 'rating' => 'pg']]);
+    Http::fake(['api.giphy.com/v1/gifs/abc123*' => Http::response(['data' => [
+        'id' => 'abc123',
+        'images' => [
+            'fixed_width' => ['url' => 'https://media.giphy.com/abc123/200w.gif', 'width' => '200', 'height' => '150'],
+            'original' => ['url' => 'https://media.giphy.com/abc123/giphy.gif', 'width' => '480', 'height' => '360'],
+        ],
+    ]])]);
+    $retro = Retro::factory()->create();
+    $column = Column::factory()->create(['retro_id' => $retro->id]);
+    [$user] = retroMember($retro);
+
+    $this->actingAs($user)
+        ->postJson(route('retros.cards.store', $retro), ['column_id' => $column->id, 'gif_id' => 'abc123'])
+        ->assertCreated();
+
+    Event::assertDispatched(CardCreated::class, fn (CardCreated $event) => $event->card['hidden'] === true && $event->card['gif'] === null);
+    Event::assertDispatched(OwnCardSaved::class, fn (OwnCardSaved $event) => $event->card['hidden'] === false && $event->card['gif']['id'] === 'abc123');
+});
+
+it('refuses gif changes on cards of others', function () {
+    config(['services.gifs' => ['provider' => 'giphy', 'key' => 'secret-key', 'rating' => 'pg']]);
+    Http::fake();
+    $retro = Retro::factory()->inPhase(RetroPhase::Grouping)->create();
+    [$user] = retroMember($retro);
+    $card = Card::factory()->create(['retro_id' => $retro->id]);
+
+    $this->actingAs($user)
+        ->patchJson(route('retros.cards.update', [$retro, $card]), ['gif_id' => 'abc123'])
+        ->assertForbidden();
+
+    expect($card->fresh()->gif_id)->toBeNull();
+    Http::assertNothingSent();
 });
