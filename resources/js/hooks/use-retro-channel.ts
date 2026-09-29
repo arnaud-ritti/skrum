@@ -122,7 +122,8 @@ export function useRetroChannel(
             .private(ownChannel)
             .listen('.own-card.saved', (payload: { card: CardPayload }) =>
                 handlers.current.onOwnCard(payload.card),
-            );
+            )
+            .error(() => handlers.current.onResync());
 
         return () => {
             echo().leave(name);

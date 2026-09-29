@@ -4,6 +4,8 @@ use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\User;
 use Illuminate\Support\Str;
+use Illuminate\Testing\TestResponse;
+use Tests\TestCase;
 
 beforeEach(function () {
     config([
@@ -145,4 +147,56 @@ it('refuses unknown or malformed participant channels', function (string $partic
 })->with([
     'unknown uuid' => fn () => (string) Str::uuid7(),
     'not a uuid' => 'abc',
+]);
+
+it('refuses participant channels to anyone but their owner', function (Closure $requestChannel) {
+    $requestChannel($this)->assertForbidden();
+})->with([
+    'guest asking for a member channel' => function (TestCase $test): TestResponse {
+        $retro = Retro::factory()->withGuestAccess()->create();
+        [, $member] = retroMember($retro);
+        $guest = Participant::factory()->guest()->create(['retro_id' => $retro->id]);
+
+        return $test->withCookies(retroGuestCookie($guest))
+            ->withCredentials()
+            ->postJson(route('broadcasting.auth'), authorizeParticipantChannel($member->id));
+    },
+    'member asking for a guest channel' => function (TestCase $test): TestResponse {
+        $retro = Retro::factory()->withGuestAccess()->create();
+        [$user] = retroMember($retro);
+        $guest = Participant::factory()->guest()->create(['retro_id' => $retro->id]);
+
+        return $test->actingAs($user)
+            ->postJson(route('broadcasting.auth'), authorizeParticipantChannel($guest->id));
+    },
+    'guest after guest access is disabled' => function (TestCase $test): TestResponse {
+        $retro = Retro::factory()->create();
+        $guest = Participant::factory()->guest()->create(['retro_id' => $retro->id]);
+
+        return $test->withCookies(retroGuestCookie($guest))
+            ->withCredentials()
+            ->postJson(route('broadcasting.auth'), authorizeParticipantChannel($guest->id));
+    },
+    'guest revoked by a link regeneration' => function (TestCase $test): TestResponse {
+        $retro = Retro::factory()->withGuestAccess()->create();
+        $guest = Participant::factory()->guest()->create(['retro_id' => $retro->id]);
+        $guest->update(['guest_secret_hash' => null]);
+
+        return $test->withCookies(retroGuestCookie($guest))
+            ->withCredentials()
+            ->postJson(route('broadcasting.auth'), authorizeParticipantChannel($guest->id));
+    },
+    'unauthenticated request without a cookie' => function (TestCase $test): TestResponse {
+        $retro = Retro::factory()->withGuestAccess()->create();
+        $guest = Participant::factory()->guest()->create(['retro_id' => $retro->id]);
+
+        return $test->postJson(route('broadcasting.auth'), authorizeParticipantChannel($guest->id));
+    },
+    'uppercase alias of the own id' => function (TestCase $test): TestResponse {
+        $retro = Retro::factory()->create();
+        [$user, $participant] = retroMember($retro);
+
+        return $test->actingAs($user)
+            ->postJson(route('broadcasting.auth'), authorizeParticipantChannel(strtoupper($participant->id)));
+    },
 ]);

@@ -211,3 +211,24 @@ it('sends the author their own card on their private channel', function () {
 
     Event::assertDispatched(OwnCardSaved::class, fn (OwnCardSaved $event) => $event->card['content'] === 'Deploys are faster');
 });
+
+it('sends the author their own content and authorship in anonymous retros while others stay redacted', function () {
+    $retro = Retro::factory()->anonymous()->create();
+    $column = Column::factory()->create(['retro_id' => $retro->id]);
+    [$user, $participant] = retroMember($retro);
+
+    $response = $this->actingAs($user)
+        ->postJson(route('retros.cards.store', $retro), ['column_id' => $column->id, 'content' => 'Deploys are slow'])
+        ->assertCreated();
+
+    Event::assertDispatched(OwnCardSaved::class, fn (OwnCardSaved $event) => $event->participantId === $participant->id
+        && $event->card['id'] === $response->json('card.id')
+        && $event->card['content'] === 'Deploys are slow'
+        && $event->card['author']['id'] === $participant->id
+        && $event->card['isMine'] === true);
+
+    Event::assertDispatched(CardCreated::class, fn (CardCreated $event) => $event->card['id'] === $response->json('card.id')
+        && $event->card['content'] === null
+        && $event->card['author'] === null
+        && $event->card['isMine'] === false);
+});
