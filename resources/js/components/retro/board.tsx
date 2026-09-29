@@ -38,6 +38,7 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
         apply,
         run,
         handleError,
+        hasActiveCard,
         refetch,
         status,
         online,
@@ -77,6 +78,7 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
         apply,
         run,
         handleError,
+        hasActiveCard,
         refetch,
         sessionExpired,
     };

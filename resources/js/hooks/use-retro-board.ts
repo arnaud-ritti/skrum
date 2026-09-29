@@ -268,6 +268,17 @@ export function useRetroBoard(initial: Snapshot) {
         [refetch, handleError],
     );
 
+    /**
+     * Reads the latest committed board rather than a render's copy, so
+     * effect cleanups can tell why a card's component is going away.
+     */
+    const hasActiveCard = useCallback(
+        (cardId: string): boolean =>
+            isActive.current &&
+            latestBoard.current.cards.some((card) => card.id === cardId),
+        [],
+    );
+
     return {
         board,
         dispatch,
@@ -279,6 +290,7 @@ export function useRetroBoard(initial: Snapshot) {
         reconnecting,
         run,
         handleError,
+        hasActiveCard,
         sessionExpired,
     };
 }

@@ -29,10 +29,20 @@ export function CardEditor({
     });
 
     const closedIntentionally = useRef(false);
+    const saveInFlight = useRef(false);
+    const { hasActiveCard } = ctx;
 
     useEffect(
         () => () => {
             if (closedIntentionally.current) {
+                return;
+            }
+
+            if (saveInFlight.current) {
+                return;
+            }
+
+            if (!hasActiveCard(card.id)) {
                 return;
             }
 
@@ -71,6 +81,7 @@ export function CardEditor({
             return;
         }
 
+        saveInFlight.current = true;
         setIsSaving(true);
 
         const response = await ctx.run(
@@ -83,6 +94,7 @@ export function CardEditor({
             ),
         );
 
+        saveInFlight.current = false;
         setIsSaving(false);
 
         if (!response) {

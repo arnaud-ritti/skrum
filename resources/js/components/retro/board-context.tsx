@@ -13,6 +13,7 @@ export type BoardContextValue = {
     apply: (action: BoardAction) => void;
     run: <T>(mutation: Promise<T>) => Promise<T | undefined>;
     handleError: (error: unknown) => string | null;
+    hasActiveCard: (cardId: string) => boolean;
     refetch: () => Promise<void>;
     sessionExpired: boolean;
 };
