@@ -18,8 +18,15 @@ export function CardEditor({
 }) {
     const { t } = useTrans();
     const [content, setContent] = useState(card.content ?? '');
+    const [isSaving, setIsSaving] = useState(false);
 
     const save = async () => {
+        if (isSaving) {
+            return;
+        }
+
+        setIsSaving(true);
+
         const response = await ctx.run(
             retroRequest<{ card: CardPayload }>(
                 CardsController.update({
@@ -30,10 +37,13 @@ export function CardEditor({
             ),
         );
 
-        if (response) {
-            ctx.dispatch({ type: 'cards.upsert', cards: [response.card] });
+        setIsSaving(false);
+
+        if (!response) {
+            return;
         }
 
+        ctx.dispatch({ type: 'cards.upsert', cards: [response.card] });
         onDone();
     };
 
@@ -52,7 +62,7 @@ export function CardEditor({
                 </Button>
                 <Button
                     size="sm"
-                    disabled={content.trim() === ''}
+                    disabled={isSaving || content.trim() === ''}
                     onClick={() => void save()}
                 >
                     {t('Save')}
