@@ -91,3 +91,18 @@ it('refuses to retract a vote the participant never cast', function () {
 
     $this->actingAs($user)->deleteJson(route('retros.cards.votes.destroy', [$retro, $card]))->assertUnprocessable();
 });
+
+it('refuses to retract a vote outside voting', function () {
+    [$retro, $user, $participant, $card] = votingRetro();
+    Vote::factory()->create(['retro_id' => $retro->id, 'card_id' => $card->id, 'participant_id' => $participant->id]);
+    $retro->update(['phase' => RetroPhase::Discussing]);
+
+    $this->actingAs($user)->deleteJson(route('retros.cards.votes.destroy', [$retro, $card]))->assertForbidden();
+});
+
+it('refuses to retract a vote on a grouped card without votes', function () {
+    [$retro, $user, , $card] = votingRetro();
+    $child = Card::factory()->create(['retro_id' => $retro->id, 'parent_card_id' => $card->id]);
+
+    $this->actingAs($user)->deleteJson(route('retros.cards.votes.destroy', [$retro, $child]))->assertUnprocessable();
+});

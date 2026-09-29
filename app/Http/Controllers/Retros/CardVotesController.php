@@ -24,9 +24,11 @@ class CardVotesController extends Controller
         RetroGuard::phase($retro, RetroPhase::Voting);
 
         DB::transaction(function () use ($retro, $card, $participant): void {
-            Retro::query()->whereKey($retro->id)->lockForUpdate()->first();
+            $locked = Retro::query()->whereKey($retro->id)->lockForUpdate()->firstOrFail();
 
-            $card = $retro->cards()->whereKey($card->id)->firstOrFail();
+            RetroGuard::phase($locked, RetroPhase::Voting);
+
+            $card = $locked->cards()->whereKey($card->id)->firstOrFail();
 
             if (! $card->isTopLevel()) {
                 throw ValidationException::withMessages(['votes' => __('Votes can only be cast on cards that are not grouped under another card.')]);
@@ -34,18 +36,18 @@ class CardVotesController extends Controller
 
             Participant::query()->whereKey($participant->id)->lockForUpdate()->first();
 
-            $used = $retro->votes()->where('participant_id', $participant->id)->count();
+            $used = $locked->votes()->where('participant_id', $participant->id)->count();
 
-            if ($used >= $retro->votes_per_participant) {
+            if ($used >= $locked->votes_per_participant) {
                 throw ValidationException::withMessages(['votes' => __('You have no votes left.')]);
             }
 
-            $retro->votes()->create([
+            $locked->votes()->create([
                 'card_id' => $card->id,
                 'participant_id' => $participant->id,
             ]);
 
-            (new VoteCast($retro->id, $retro->votes()->count()))->sendToOthers();
+            (new VoteCast($locked->id, $locked->votes()->count()))->sendToOthers();
         });
 
         return response()->json($this->tally($retro, $card, $participant), 201);
@@ -58,7 +60,11 @@ class CardVotesController extends Controller
         RetroGuard::phase($retro, RetroPhase::Voting);
 
         DB::transaction(function () use ($retro, $card, $participant): void {
-            $vote = $card->votes()->where('participant_id', $participant->id)->latest()->first();
+            $locked = Retro::query()->whereKey($retro->id)->lockForUpdate()->firstOrFail();
+
+            RetroGuard::phase($locked, RetroPhase::Voting);
+
+            $vote = $card->votes()->where('participant_id', $participant->id)->latest()->lockForUpdate()->first();
 
             if ($vote === null) {
                 throw ValidationException::withMessages(['votes' => __('You have not voted for this card.')]);
@@ -66,7 +72,7 @@ class CardVotesController extends Controller
 
             $vote->delete();
 
-            (new VoteRetracted($retro->id, $retro->votes()->count()))->sendToOthers();
+            (new VoteRetracted($locked->id, $locked->votes()->count()))->sendToOthers();
         });
 
         return response()->json($this->tally($retro, $card, $participant));
