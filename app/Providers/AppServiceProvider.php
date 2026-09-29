@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Models\Passkey;
 use Carbon\CarbonImmutable;
+use Illuminate\Foundation\DevCommands;
 use Illuminate\Mail\Markdown;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -29,6 +30,10 @@ class AppServiceProvider extends ServiceProvider
         $this->configureDefaults();
         Markdown::withSecuredEncoding();
         Passkeys::usePasskeyModel(Passkey::class);
+
+        if ($this->app->environment('local')) {
+            DevCommands::artisan('reverb:start --host=0.0.0.0 --port=8080', 'reverb');
+        }
     }
 
     /**

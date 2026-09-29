@@ -3,10 +3,12 @@
 use App\Actions\Retros\BuildBoardSnapshot;
 use App\Actions\Retros\PresentCard;
 use App\Enums\RetroPhase;
+use App\Enums\WorkspaceRole;
 use App\Models\ActionItem;
 use App\Models\Card;
 use App\Models\Participant;
 use App\Models\Retro;
+use App\Models\User;
 use App\Models\Vote;
 
 function snapshotFor(Retro $retro, Participant $viewer): array
@@ -128,4 +130,29 @@ it('lists action items with assignees', function () {
         'isDone' => false,
         'assignee' => ['id' => $viewer->id, 'name' => $viewer->displayName()],
     ]]);
+});
+
+it('reports the server time for clock offsets', function () {
+    $retro = Retro::factory()->create();
+    [, $viewer] = retroMember($retro);
+    $this->freezeTime();
+
+    expect(snapshotFor($retro, $viewer)['serverTime'])->toBe(now()->utc()->format('Y-m-d\TH:i:s.v\Z'));
+});
+
+it('lists handover candidates for the facilitator only', function () {
+    $retro = Retro::factory()->create();
+    [$facilitatorUser, $facilitator] = retroFacilitator($retro);
+    [$memberUser, $member] = retroMember($retro);
+    $admin = User::factory()->create(['name' => 'Aaron Admin']);
+    $retro->team->workspace->members()->attach($admin, ['role' => WorkspaceRole::Admin->value]);
+    $outsider = User::factory()->create();
+    $retro->team->workspace->members()->attach($outsider, ['role' => WorkspaceRole::Member->value]);
+
+    $candidates = snapshotFor($retro, $facilitator)['viewer']['transferCandidates'];
+
+    expect(collect($candidates)->pluck('userId')->all())->toBe(collect([$admin, $memberUser])->sortBy('name')->pluck('id')->values()->all())
+        ->and(collect($candidates)->pluck('userId'))->not->toContain($facilitatorUser->id)
+        ->and(collect($candidates)->pluck('userId'))->not->toContain($outsider->id)
+        ->and(snapshotFor($retro, $member)['viewer']['transferCandidates'])->toBe([]);
 });

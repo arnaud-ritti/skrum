@@ -3,10 +3,12 @@
 namespace App\Actions\Retros;
 
 use App\Enums\RetroPhase;
+use App\Enums\WorkspaceRole;
 use App\Models\ActionItem;
 use App\Models\Card;
 use App\Models\Participant;
 use App\Models\Retro;
+use App\Models\User;
 
 class BuildBoardSnapshot
 {
@@ -63,6 +65,7 @@ class BuildBoardSnapshot
                 'isFacilitator' => $retro->isFacilitator($viewer),
                 'isGuest' => $viewer->isGuest(),
                 'remainingVotes' => max(0, $retro->votes_per_participant - (int) $myVotes->sum()),
+                'transferCandidates' => $retro->isFacilitator($viewer) ? $this->transferCandidates($retro, $viewer) : [],
             ],
             'columns' => $this->presentColumns->handle($retro),
             'cards' => $retro->cards->sortBy('position')->map(fn (Card $card) => [
@@ -83,6 +86,32 @@ class BuildBoardSnapshot
             'links' => [
                 'team' => $viewer->isGuest() ? null : route('teams.show', [$retro->team->workspace, $retro->team]),
             ],
+            'serverTime' => now()->utc()->format('Y-m-d\TH:i:s.v\Z'),
         ];
+    }
+
+    /**
+     * @return array<int, array{
+     *     userId: string,
+     *     name: string
+     * }>
+     */
+    private function transferCandidates(Retro $retro, Participant $viewer): array
+    {
+        $team = $retro->team;
+
+        $managerIds = $team->workspace->members()
+            ->wherePivotIn('role', [WorkspaceRole::Owner->value, WorkspaceRole::Admin->value])
+            ->pluck('users.id');
+
+        return User::query()
+            ->where(fn ($query) => $query
+                ->whereIn('id', $team->members()->select('users.id'))
+                ->orWhereIn('id', $managerIds))
+            ->when($viewer->user_id !== null, fn ($query) => $query->whereKeyNot($viewer->user_id))
+            ->orderBy('name')
+            ->get(['id', 'name'])
+            ->map(fn (User $user) => ['userId' => $user->id, 'name' => $user->name])
+            ->all();
     }
 }
