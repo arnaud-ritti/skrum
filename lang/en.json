@@ -245,5 +245,8 @@
     "This card is not grouped.": "This card is not grouped.",
     "Votes can only be cast on cards that are not grouped under another card.": "Votes can only be cast on cards that are not grouped under another card.",
     "You have no votes left.": "You have no votes left.",
-    "You have not voted for this card.": "You have not voted for this card."
+    "You have not voted for this card.": "You have not voted for this card.",
+    "The retrospective can only move to the previous or next phase.": "The retrospective can only move to the previous or next phase.",
+    "Anonymity can only be turned off before any card is written.": "Anonymity can only be turned off before any card is written.",
+    "The facilitator must be a member of this team.": "The facilitator must be a member of this team."
 }

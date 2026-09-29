@@ -12,8 +12,14 @@ use App\Http\Controllers\Retros\CardGroupsController;
 use App\Http\Controllers\Retros\CardPositionsController;
 use App\Http\Controllers\Retros\CardsController;
 use App\Http\Controllers\Retros\CardVotesController;
+use App\Http\Controllers\Retros\RetroFacilitatorsController;
+use App\Http\Controllers\Retros\RetroGuestTokensController;
+use App\Http\Controllers\Retros\RetroHighlightsController;
+use App\Http\Controllers\Retros\RetroPhasesController;
 use App\Http\Controllers\Retros\RetrosController;
+use App\Http\Controllers\Retros\RetroSettingsController;
 use App\Http\Controllers\Retros\RetroSnapshotsController;
+use App\Http\Controllers\Retros\RetroTimersController;
 use App\Http\Controllers\SsoCallbacksController;
 use App\Http\Controllers\SsoRedirectsController;
 use App\Http\Controllers\TeamMembersController;
@@ -83,6 +89,13 @@ Route::prefix('retros/{retro}')
     ->scopeBindings()
     ->group(function () {
         Route::get('/', [RetrosController::class, 'show'])->name('retros.show');
+        Route::delete('/', [RetrosController::class, 'destroy'])->name('retros.destroy');
+        Route::put('phase', [RetroPhasesController::class, 'update'])->name('retros.phase.update');
+        Route::put('timer', [RetroTimersController::class, 'update'])->name('retros.timer.update');
+        Route::put('highlight', [RetroHighlightsController::class, 'update'])->name('retros.highlight.update');
+        Route::patch('settings', [RetroSettingsController::class, 'update'])->name('retros.settings.update');
+        Route::post('guest-token', [RetroGuestTokensController::class, 'store'])->name('retros.guest-token.store');
+        Route::put('facilitator', [RetroFacilitatorsController::class, 'update'])->name('retros.facilitator.update');
         Route::get('snapshot', [RetroSnapshotsController::class, 'show'])->name('retros.snapshot.show');
         Route::post('cards', [CardsController::class, 'store'])->name('retros.cards.store');
         Route::patch('cards/{card}', [CardsController::class, 'update'])->name('retros.cards.update')->whereUuid('card');

@@ -506,5 +506,8 @@
     "This card is not grouped.": "Cette carte n'est pas groupée.",
     "Votes can only be cast on cards that are not grouped under another card.": "Les votes ne peuvent être donnés que sur des cartes qui ne sont pas groupées sous une autre carte.",
     "You have no votes left.": "Vous n'avez plus de votes.",
-    "You have not voted for this card.": "Vous n'avez pas voté pour cette carte."
+    "You have not voted for this card.": "Vous n'avez pas voté pour cette carte.",
+    "The retrospective can only move to the previous or next phase.": "La rétrospective ne peut passer qu'à la phase précédente ou suivante.",
+    "Anonymity can only be turned off before any card is written.": "L'anonymat ne peut être désactivé qu'avant l'écriture de toute carte.",
+    "The facilitator must be a member of this team.": "L'animateur doit être membre de cette équipe."
 }
