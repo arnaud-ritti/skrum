@@ -36,7 +36,7 @@ The first account to sign up becomes the instance admin.
 
 Several addresses, or a domain with an explicit port, are not supported by the container healthcheck.
 
-Certificates live in the `caddy-data` volume. Keep `/data` and `/config` on named volumes as in `compose.production.yaml`; if you switch to bind mounts, they must be writable by uid 33 (`www-data`) or Caddy cannot store certificates.
+Certificates live in the `caddy-data` volume. Keep `/data` and `/config` on named volumes as in `compose.production.yaml`; if you switch to bind mounts, they must be writable by uid 82 (`www-data`) or Caddy cannot store certificates.
 
 Web traffic and websockets share one port: Caddy proxies Reverb's `/app/*` and `/apps/*` paths to Reverb inside the container, so nothing else needs to be exposed. Host ports are set with `SKRUM_HTTP_PORT` (default `80`) and `SKRUM_HTTPS_PORT` (default `443`). `SKRUM_ENV_FILE` selects another env file (default `.env`).
 

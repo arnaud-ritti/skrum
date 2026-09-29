@@ -3,16 +3,14 @@
 ARG PHP_VERSION=8.4
 ARG NODE_VERSION=22
 
-FROM node:${NODE_VERSION}-bookworm-slim AS node
+FROM node:${NODE_VERSION}-alpine AS node
 
-FROM dunglas/frankenphp:1-php${PHP_VERSION}-bookworm AS base
+FROM dunglas/frankenphp:1-php${PHP_VERSION}-alpine AS base
 
 ARG S6_OVERLAY_VERSION=3.2.1.0
 ARG TARGETARCH
 
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends curl libcap2-bin xz-utils \
-    && rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache curl libcap-setcap xz
 
 RUN install-php-extensions bcmath intl opcache pcntl pdo_pgsql zip \
     && cp "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
