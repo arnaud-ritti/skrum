@@ -27,6 +27,7 @@ class BroadcastAuthorizationsController extends Controller
         $retro = Retro::query()->find($retroId);
 
         abort_if($retro === null, 403);
+        abort_unless($retro->id === $retroId, 403);
 
         $participant = $resolveParticipant->handle($request, $retro);
 

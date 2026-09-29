@@ -73,12 +73,16 @@ it('refuses other channels and malformed names', function (string $channel) {
     [$user] = retroMember($retro);
 
     $this->actingAs($user)
-        ->postJson(route('broadcasting.auth'), ['socket_id' => '1234.5678', 'channel_name' => $channel])
+        ->postJson(route('broadcasting.auth'), [
+            'socket_id' => '1234.5678',
+            'channel_name' => str_replace('{retro}', strtoupper($retro->id), $channel),
+        ])
         ->assertForbidden();
 })->with([
     'private channel' => 'private-App.Models.User.1',
     'not a uuid' => 'presence-retro.nope',
-    'unknown retro' => 'presence-retro.'.fake()->uuid(),
+    'unknown retro' => 'presence-retro.00000000-0000-4000-8000-000000000000',
+    'uppercase uuid alias' => 'presence-retro.{retro}',
 ]);
 
 it('validates the socket id', function () {

@@ -7,6 +7,7 @@ use Illuminate\Broadcasting\PresenceChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
 use Illuminate\Foundation\Events\Dispatchable;
+use Illuminate\Support\Facades\DB;
 
 abstract class RetroBroadcastEvent implements ShouldBroadcastNow, ShouldDispatchAfterCommit
 {
@@ -14,6 +15,15 @@ abstract class RetroBroadcastEvent implements ShouldBroadcastNow, ShouldDispatch
     use InteractsWithSockets;
 
     public function __construct(public string $retroId) {}
+
+    public function sendToOthers(): void
+    {
+        DB::afterCommit(function (): void {
+            rescue(function (): void {
+                broadcast($this)->toOthers();
+            });
+        });
+    }
 
     public function broadcastOn(): PresenceChannel
     {
