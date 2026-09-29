@@ -71,3 +71,17 @@ it('shows validation errors in the active locale', function () {
 
     expect(session('errors')->first('email'))->toContain('obligatoire');
 });
+
+it('falls back to the configured app locale', function () {
+    config(['app.locale' => 'de']);
+
+    $this->get(route('login'), ['Accept-Language' => ''])
+        ->assertInertia(fn (Assert $page) => $page->where('locale', 'de'));
+});
+
+it('falls back to english when the configured app locale is unsupported', function () {
+    config(['app.locale' => 'ja']);
+
+    $this->get(route('login'), ['Accept-Language' => ''])
+        ->assertInertia(fn (Assert $page) => $page->where('locale', 'en'));
+});

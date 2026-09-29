@@ -32,6 +32,18 @@ class SetLocale
             return $cookieLocale;
         }
 
-        return $request->getPreferredLanguage($supportedLocales) ?? $supportedLocales[0];
+        $acceptedLanguages = filled($request->header('Accept-Language')) ? $request->getLanguages() : [];
+
+        foreach ($acceptedLanguages as $language) {
+            $primaryLanguage = strtolower(strtok($language, '_-'));
+
+            if (in_array($primaryLanguage, $supportedLocales, true)) {
+                return $primaryLanguage;
+            }
+        }
+
+        $defaultLocale = config('app.locale');
+
+        return in_array($defaultLocale, $supportedLocales, true) ? $defaultLocale : 'en';
     }
 }

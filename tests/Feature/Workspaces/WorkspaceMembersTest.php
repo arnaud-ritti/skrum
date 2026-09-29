@@ -119,3 +119,12 @@ it('forbids members from removing others', function () {
         ->delete(route('workspaces.members.destroy', [$workspace, $other]))
         ->assertForbidden();
 });
+
+it('returns 404 for a malformed member id', function () {
+    $owner = User::factory()->create();
+    $workspace = Workspace::factory()->withMember($owner, WorkspaceRole::Owner)->create();
+
+    $this->actingAs($owner)
+        ->patch("/w/{$workspace->slug}/members/not-a-uuid", ['role' => 'admin'])
+        ->assertNotFound();
+});
