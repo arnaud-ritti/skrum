@@ -500,5 +500,8 @@
     "This guest link is no longer valid.": "Dieser Gästelink ist nicht mehr gültig.",
     "Choose the name other participants will see.": "Wähle den Namen, den die anderen Teilnehmenden sehen.",
     "Display name": "Anzeigename",
-    "Join": "Beitreten"
+    "Join": "Beitreten",
+    "A card cannot be grouped with itself.": "Eine Karte kann nicht mit sich selbst gruppiert werden.",
+    "Cards can only be grouped under a card that is not grouped itself.": "Karten können nur unter einer Karte gruppiert werden, die nicht selbst gruppiert ist.",
+    "This card is not grouped.": "Diese Karte ist nicht gruppiert."
 }

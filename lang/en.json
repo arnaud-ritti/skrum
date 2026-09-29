@@ -239,5 +239,8 @@
     "This guest link is no longer valid.": "This guest link is no longer valid.",
     "Choose the name other participants will see.": "Choose the name other participants will see.",
     "Display name": "Display name",
-    "Join": "Join"
+    "Join": "Join",
+    "A card cannot be grouped with itself.": "A card cannot be grouped with itself.",
+    "Cards can only be grouped under a card that is not grouped itself.": "Cards can only be grouped under a card that is not grouped itself.",
+    "This card is not grouped.": "This card is not grouped."
 }
