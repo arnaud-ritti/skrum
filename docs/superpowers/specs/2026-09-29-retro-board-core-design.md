@@ -48,6 +48,10 @@ cards ─< votes
 retros ─< action_items
 ```
 
+### Identifiers
+
+Every table uses a UUID primary key (Eloquent `HasUuids`, time-ordered UUIDv7) — including `users` and framework tables that reference users (`sessions.user_id`, etc.). Foreign keys are `foreignUuid`. No auto-increment ids exist anywhere, so no id in a URL, payload or channel name is guessable or enumerable. The existing scaffold migrations are adjusted accordingly (no production data exists yet).
+
 ### Tables (key columns)
 
 - **users**: Fortify defaults + `is_instance_admin` (bool), `current_workspace_id` (nullable FK).
@@ -229,6 +233,9 @@ Each endpoint: resolve participant → authorize (policy + phase rule) → persi
 - AC4: An SSO provider button appears only when all its env credentials are set.
 - AC5: SSO login links to an existing account only when the provider reports the email verified; otherwise it follows the signup gate.
 - AC6: SSO-created users are email-verified.
+
+### Identifiers
+- AC0: Every application table has a UUID primary key and UUID foreign keys; no auto-increment id column exists in the schema.
 
 ### Tenancy
 - AC7: A user can create a workspace, becomes its Owner, and can switch between workspaces they belong to.
