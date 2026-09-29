@@ -2,6 +2,7 @@
 
 namespace App\Events\Retros;
 
+use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PresenceChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
@@ -25,7 +26,7 @@ abstract class RetroBroadcastEvent implements ShouldBroadcastNow, ShouldDispatch
         });
     }
 
-    public function broadcastOn(): PresenceChannel
+    public function broadcastOn(): Channel
     {
         return new PresenceChannel("retro.{$this->retroId}");
     }

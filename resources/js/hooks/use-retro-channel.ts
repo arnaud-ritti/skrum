@@ -4,7 +4,7 @@ import {
     type ConnectionStatus,
 } from '@laravel/echo-react';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import type { PresenceMember } from '@/lib/retro/types';
+import type { CardPayload, PresenceMember } from '@/lib/retro/types';
 
 export const RetroEvents = [
     'card.created',
@@ -66,17 +66,19 @@ export function useSafeConnectionStatus(): ConnectionStatus {
 
 export function useRetroChannel(
     retroId: string,
+    participantId: string,
     enabled: boolean,
     onEvent: (event: RetroEvent) => void,
     onResync: () => void,
     onJoining: (member: PresenceMember) => void,
+    onOwnCard: (card: CardPayload) => void,
 ) {
     const [online, setOnline] = useState<PresenceMember[]>([]);
     const status = useSafeConnectionStatus();
-    const handlers = useRef({ onEvent, onResync, onJoining });
+    const handlers = useRef({ onEvent, onResync, onJoining, onOwnCard });
     const [wasConnected, setWasConnected] = useState(false);
 
-    handlers.current = { onEvent, onResync, onJoining };
+    handlers.current = { onEvent, onResync, onJoining, onOwnCard };
 
     if (status === 'connected' && !wasConnected) {
         setWasConnected(true);
@@ -114,11 +116,20 @@ export function useRetroChannel(
             );
         }
 
+        const ownChannel = `participant.${participantId}`;
+
+        echo<'reverb'>()
+            .private(ownChannel)
+            .listen('.own-card.saved', (payload: { card: CardPayload }) =>
+                handlers.current.onOwnCard(payload.card),
+            );
+
         return () => {
             echo().leave(name);
+            echo().leave(ownChannel);
             setOnline([]);
         };
-    }, [retroId, enabled]);
+    }, [retroId, participantId, enabled]);
 
     const connected = status === 'connected';
     const reconnecting = status === 'failed' || (wasConnected && !connected);

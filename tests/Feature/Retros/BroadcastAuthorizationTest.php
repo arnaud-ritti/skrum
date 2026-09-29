@@ -3,6 +3,7 @@
 use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\User;
+use Illuminate\Support\Str;
 
 beforeEach(function () {
     config([
@@ -94,3 +95,54 @@ it('validates the socket id', function () {
         ->postJson(route('broadcasting.auth'), ['socket_id' => 'evil', 'channel_name' => "presence-retro.{$retro->id}"])
         ->assertUnprocessable();
 });
+
+function authorizeParticipantChannel(string $participantId): array
+{
+    return [
+        'socket_id' => '1234.5678',
+        'channel_name' => "private-participant.{$participantId}",
+    ];
+}
+
+it('lets a member subscribe to their own participant channel', function () {
+    $retro = Retro::factory()->create();
+    [$user, $participant] = retroMember($retro);
+
+    $response = $this->actingAs($user)
+        ->postJson(route('broadcasting.auth'), authorizeParticipantChannel($participant->id))
+        ->assertOk();
+
+    expect($response->json('auth'))->toStartWith('test-key:');
+});
+
+it('lets a guest subscribe to their own participant channel', function () {
+    $retro = Retro::factory()->withGuestAccess()->create();
+    $guest = Participant::factory()->guest()->create(['retro_id' => $retro->id]);
+
+    $this->withCookies(retroGuestCookie($guest))
+        ->withCredentials()
+        ->postJson(route('broadcasting.auth'), authorizeParticipantChannel($guest->id))
+        ->assertOk();
+});
+
+it('refuses another participant channel of the same retro', function () {
+    $retro = Retro::factory()->create();
+    [$user] = retroMember($retro);
+    [, $other] = retroMember($retro);
+
+    $this->actingAs($user)
+        ->postJson(route('broadcasting.auth'), authorizeParticipantChannel($other->id))
+        ->assertForbidden();
+});
+
+it('refuses unknown or malformed participant channels', function (string $participantId) {
+    $retro = Retro::factory()->create();
+    [$user] = retroMember($retro);
+
+    $this->actingAs($user)
+        ->postJson(route('broadcasting.auth'), authorizeParticipantChannel($participantId))
+        ->assertForbidden();
+})->with([
+    'unknown uuid' => fn () => (string) Str::uuid7(),
+    'not a uuid' => 'abc',
+]);

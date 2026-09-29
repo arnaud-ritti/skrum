@@ -8,6 +8,7 @@ use App\Enums\RetroPhase;
 use App\Events\Retros\CardCreated;
 use App\Events\Retros\CardDeleted;
 use App\Events\Retros\CardUpdated;
+use App\Events\Retros\OwnCardSaved;
 use App\Http\Controllers\Controller;
 use App\Models\Card;
 use App\Models\Participant;
@@ -53,6 +54,7 @@ class CardsController extends Controller
             ]);
 
             (new CardCreated($locked->id, $this->presentCard->handle($card, $locked, null)))->sendToOthers();
+            (new OwnCardSaved($locked->id, $participant->id, $this->presentCard->handle($card, $locked, $participant)))->sendToOthers();
 
             return [$card, $locked];
         });
@@ -83,6 +85,7 @@ class CardsController extends Controller
             $fresh->update(['content' => $validated['content']]);
 
             (new CardUpdated($locked->id, $this->presentCard->handle($fresh, $locked, null)))->sendToOthers();
+            (new OwnCardSaved($locked->id, $participant->id, $this->presentCard->handle($fresh, $locked, $participant)))->sendToOthers();
 
             return [$fresh, $locked];
         });

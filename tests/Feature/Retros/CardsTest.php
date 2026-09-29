@@ -5,6 +5,7 @@ use App\Events\Retros\CardCreated;
 use App\Events\Retros\CardDeleted;
 use App\Events\Retros\CardsMoved;
 use App\Events\Retros\CardUpdated;
+use App\Events\Retros\OwnCardSaved;
 use App\Models\Card;
 use App\Models\Column;
 use App\Models\Retro;
@@ -185,4 +186,28 @@ it('keeps content hidden from others in grouping broadcasts only when anonymous 
     $this->actingAs($user)->patchJson(route('retros.cards.update', [$retro, $card]), ['content' => 'Visible text']);
 
     Event::assertDispatched(CardUpdated::class, fn (CardUpdated $event) => $event->card['content'] === 'Visible text' && $event->card['author'] === null);
+});
+
+it('sends the author their own card on their private channel', function () {
+    $retro = Retro::factory()->create();
+    $column = Column::factory()->create(['retro_id' => $retro->id]);
+    [$user, $participant] = retroMember($retro);
+
+    $response = $this->actingAs($user)
+        ->withHeader('X-Socket-ID', '111.222')
+        ->postJson(route('retros.cards.store', $retro), ['column_id' => $column->id, 'content' => 'Deploys are slow'])
+        ->assertCreated();
+
+    Event::assertDispatched(OwnCardSaved::class, fn (OwnCardSaved $event) => $event->participantId === $participant->id
+        && $event->card['id'] === $response->json('card.id')
+        && $event->card['content'] === 'Deploys are slow'
+        && $event->card['isMine'] === true
+        && $event->socket === '111.222'
+        && $event->broadcastOn()->name === "private-participant.{$participant->id}");
+
+    $this->actingAs($user)
+        ->patchJson(route('retros.cards.update', [$retro, $response->json('card.id')]), ['content' => 'Deploys are faster'])
+        ->assertOk();
+
+    Event::assertDispatched(OwnCardSaved::class, fn (OwnCardSaved $event) => $event->card['content'] === 'Deploys are faster');
 });

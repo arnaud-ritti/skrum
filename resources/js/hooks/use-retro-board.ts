@@ -17,24 +17,6 @@ const SessionExpiredStatuses = [401, 419];
 
 export type BoardStatus = 'active' | 'ended' | 'deleted';
 
-/**
- * Broadcasts are presented without a viewer, so an update to the viewer's own
- * card made from another tab arrives with its content redacted.
- */
-function isOwnRedactedCard(board: Snapshot, card: CardPayload): boolean {
-    if (card.content !== null) {
-        return false;
-    }
-
-    if (card.author?.id === board.viewer.participantId) {
-        return true;
-    }
-
-    return board.cards.some(
-        (existing) => existing.id === card.id && existing.isMine,
-    );
-}
-
 export function useRetroBoard(initial: Snapshot) {
     const { t } = useTrans();
     const [board, dispatch] = useReducer(boardReducer, initial);
@@ -128,17 +110,12 @@ export function useRetroBoard(initial: Snapshot) {
         ({ name, payload }: RetroEvent) => {
             switch (name) {
                 case 'card.created':
-                case 'card.updated': {
-                    const card = payload.card as CardPayload;
-
-                    if (isOwnRedactedCard(latestBoard.current, card)) {
-                        void refetch();
-                        break;
-                    }
-
-                    apply({ type: 'cards.upsert', cards: [card] });
+                case 'card.updated':
+                    apply({
+                        type: 'cards.upsert',
+                        cards: [payload.card as CardPayload],
+                    });
                     break;
-                }
                 case 'card.deleted':
                     apply({
                         type: 'card.remove',
@@ -216,12 +193,19 @@ export function useRetroBoard(initial: Snapshot) {
         [refetch],
     );
 
+    const onOwnCard = useCallback(
+        (card: CardPayload) => apply({ type: 'cards.upsert', cards: [card] }),
+        [apply],
+    );
+
     const { online, connected, reconnecting } = useRetroChannel(
         retroId,
+        initial.viewer.participantId,
         status === 'active',
         onEvent,
         refetch,
         onJoining,
+        onOwnCard,
     );
 
     const errorMessage = useCallback(
