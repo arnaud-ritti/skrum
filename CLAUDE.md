@@ -11,3 +11,7 @@ Every feature or behavior change follows this order. No code before an approved 
 5. **Verify** every acceptance criterion before claiming done (`superpowers:verification-before-completion`).
 
 If implementation reveals the spec is wrong or incomplete, update the spec first, then the code.
+
+## Laravel Boost Guidelines
+
+@AGENTS.md
