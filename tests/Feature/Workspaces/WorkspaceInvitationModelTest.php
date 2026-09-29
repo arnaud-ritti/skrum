@@ -48,8 +48,8 @@ it('is only pending while unexpired and unaccepted', function () {
 });
 
 it('adds the invitee with the invited role and marks the invitation accepted', function () {
-    $invitation = WorkspaceInvitation::factory()->create(['role' => WorkspaceRole::Admin]);
     $user = User::factory()->create();
+    $invitation = WorkspaceInvitation::factory()->create(['role' => WorkspaceRole::Admin, 'email' => $user->email]);
 
     app(AcceptWorkspaceInvitation::class)->handle($invitation, $user);
 
@@ -61,9 +61,35 @@ it('adds the invitee with the invited role and marks the invitation accepted', f
 it('never changes the role of an existing member', function () {
     $user = User::factory()->create();
     $workspace = Workspace::factory()->withMember($user, WorkspaceRole::Owner)->create();
-    $invitation = WorkspaceInvitation::factory()->for($workspace)->create(['role' => WorkspaceRole::Member]);
+    $invitation = WorkspaceInvitation::factory()->for($workspace)->create(['role' => WorkspaceRole::Member, 'email' => $user->email]);
 
     app(AcceptWorkspaceInvitation::class)->handle($invitation, $user);
 
     expect($user->roleIn($workspace))->toBe(WorkspaceRole::Owner);
+});
+
+it('refuses to accept an expired invitation', function () {
+    $user = User::factory()->create();
+    $invitation = WorkspaceInvitation::factory()->expired()->create(['email' => $user->email]);
+
+    expect(fn () => app(AcceptWorkspaceInvitation::class)->handle($invitation, $user))
+        ->toThrow(InvalidArgumentException::class)
+        ->and($user->belongsToWorkspace($invitation->workspace))->toBeFalse();
+});
+
+it('refuses to accept an already accepted invitation', function () {
+    $user = User::factory()->create();
+    $invitation = WorkspaceInvitation::factory()->accepted()->create(['email' => $user->email]);
+
+    expect(fn () => app(AcceptWorkspaceInvitation::class)->handle($invitation, $user))
+        ->toThrow(InvalidArgumentException::class);
+});
+
+it('refuses to accept an invitation sent to another email address', function () {
+    $user = User::factory()->create();
+    $invitation = WorkspaceInvitation::factory()->create(['email' => 'someone-else@example.com']);
+
+    expect(fn () => app(AcceptWorkspaceInvitation::class)->handle($invitation, $user))
+        ->toThrow(InvalidArgumentException::class)
+        ->and($user->belongsToWorkspace($invitation->workspace))->toBeFalse();
 });
