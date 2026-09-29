@@ -12,6 +12,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class RetroHighlightsController extends Controller
 {
@@ -36,6 +37,14 @@ class RetroHighlightsController extends Controller
 
             RetroGuard::facilitator($locked, $participant);
             RetroGuard::phase($locked, RetroPhase::Discussing);
+
+            if ($validated['card_id'] !== null) {
+                $isTopLevel = $locked->cards()->whereKey($validated['card_id'])->whereNull('parent_card_id')->exists();
+
+                if (! $isTopLevel) {
+                    throw ValidationException::withMessages(['card_id' => __('The selected card must be a top-level card of this retrospective.')]);
+                }
+            }
 
             $locked->update(['highlighted_card_id' => $validated['card_id']]);
 

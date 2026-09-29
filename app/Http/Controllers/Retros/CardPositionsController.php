@@ -33,16 +33,26 @@ class CardPositionsController extends Controller
             'index' => ['required', 'integer', 'min:0'],
         ]);
 
-        $changed = DB::transaction(function () use ($retro, $card, $validated, $placeCard, $presentCard) {
-            $changed = $placeCard->handle($card, $retro->columns()->whereKey($validated['column_id'])->firstOrFail(), (int) $validated['index']);
+        [$changed, $presentingRetro] = DB::transaction(function () use ($retro, $card, $participant, $validated, $placeCard, $presentCard): array {
+            $locked = Retro::query()->whereKey($retro->id)->lockForUpdate()->firstOrFail();
 
-            (new CardsMoved($retro->id, $changed->map(fn (Card $moved) => $presentCard->handle($moved, $retro, null))->all()))->sendToOthers();
+            RetroGuard::phase($locked, RetroPhase::Writing, RetroPhase::Grouping);
 
-            return $changed;
+            $fresh = $locked->cards()->whereKey($card->id)->firstOrFail();
+
+            if ($locked->phase === RetroPhase::Writing) {
+                RetroGuard::author($fresh, $participant);
+            }
+
+            $changed = $placeCard->handle($fresh, $locked->columns()->whereKey($validated['column_id'])->firstOrFail(), (int) $validated['index']);
+
+            (new CardsMoved($locked->id, $changed->map(fn (Card $moved) => $presentCard->handle($moved, $locked, null))->all()))->sendToOthers();
+
+            return [$changed, $locked];
         });
 
         return response()->json([
-            'cards' => $changed->map(fn (Card $moved) => $presentCard->handle($moved, $retro, $participant))->all(),
+            'cards' => $changed->map(fn (Card $moved) => $presentCard->handle($moved, $presentingRetro, $participant))->all(),
         ]);
     }
 }

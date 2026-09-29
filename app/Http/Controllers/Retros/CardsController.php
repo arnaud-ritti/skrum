@@ -33,25 +33,29 @@ class CardsController extends Controller
             'content' => ['required', 'string', 'max:1000'],
         ]);
 
-        $card = DB::transaction(function () use ($retro, $participant, $validated): Card {
-            $position = $retro->cards()
+        [$card, $presentingRetro] = DB::transaction(function () use ($retro, $participant, $validated): array {
+            $locked = Retro::query()->whereKey($retro->id)->lockForUpdate()->firstOrFail();
+
+            RetroGuard::phase($locked, RetroPhase::Writing);
+
+            $position = $locked->cards()
                 ->where('column_id', $validated['column_id'])
                 ->whereNull('parent_card_id')
                 ->max('position');
 
-            $card = $retro->cards()->create([
+            $card = $locked->cards()->create([
                 'column_id' => $validated['column_id'],
                 'participant_id' => $participant->id,
                 'content' => $validated['content'],
                 'position' => $position === null ? 0 : $position + 1,
             ]);
 
-            (new CardCreated($retro->id, $this->presentCard->handle($card, $retro, null)))->sendToOthers();
+            (new CardCreated($locked->id, $this->presentCard->handle($card, $locked, null)))->sendToOthers();
 
-            return $card;
+            return [$card, $locked];
         });
 
-        return response()->json(['card' => $this->presentCard->handle($card, $retro, $participant)], 201);
+        return response()->json(['card' => $this->presentCard->handle($card, $presentingRetro, $participant)], 201);
     }
 
     public function update(Request $request, Retro $retro, Card $card): JsonResponse
@@ -65,13 +69,23 @@ class CardsController extends Controller
             'content' => ['required', 'string', 'max:1000'],
         ]);
 
-        DB::transaction(function () use ($retro, $card, $validated): void {
-            $card->update(['content' => $validated['content']]);
+        [$card, $presentingRetro] = DB::transaction(function () use ($retro, $card, $participant, $validated): array {
+            $locked = Retro::query()->whereKey($retro->id)->lockForUpdate()->firstOrFail();
 
-            (new CardUpdated($retro->id, $this->presentCard->handle($card, $retro, null)))->sendToOthers();
+            RetroGuard::phase($locked, RetroPhase::Writing, RetroPhase::Grouping);
+
+            $fresh = $locked->cards()->whereKey($card->id)->firstOrFail();
+
+            RetroGuard::author($fresh, $participant);
+
+            $fresh->update(['content' => $validated['content']]);
+
+            (new CardUpdated($locked->id, $this->presentCard->handle($fresh, $locked, null)))->sendToOthers();
+
+            return [$fresh, $locked];
         });
 
-        return response()->json(['card' => $this->presentCard->handle($card, $retro, $participant)]);
+        return response()->json(['card' => $this->presentCard->handle($card, $presentingRetro, $participant)]);
     }
 
     public function destroy(Request $request, Retro $retro, Card $card): Response
@@ -81,13 +95,21 @@ class CardsController extends Controller
         RetroGuard::phase($retro, RetroPhase::Writing, RetroPhase::Grouping);
         RetroGuard::author($card, $participant);
 
-        DB::transaction(function () use ($retro, $card): void {
+        DB::transaction(function () use ($retro, $card, $participant): void {
+            $locked = Retro::query()->whereKey($retro->id)->lockForUpdate()->firstOrFail();
+
+            RetroGuard::phase($locked, RetroPhase::Writing, RetroPhase::Grouping);
+
+            $card = $locked->cards()->whereKey($card->id)->firstOrFail();
+
+            RetroGuard::author($card, $participant);
+
             $children = $card->children()->orderBy('position')->get();
 
             $card->delete();
 
-            $ungroupedCards = $children->map(function (Card $child) use ($retro): array {
-                $lastPosition = $retro->cards()
+            $ungroupedCards = $children->map(function (Card $child) use ($locked): array {
+                $lastPosition = $locked->cards()
                     ->where('column_id', $child->column_id)
                     ->whereNull('parent_card_id')
                     ->max('position');
@@ -96,10 +118,10 @@ class CardsController extends Controller
                 $child->position = $lastPosition === null ? 0 : $lastPosition + 1;
                 $child->save();
 
-                return $this->presentCard->handle($child, $retro, null);
+                return $this->presentCard->handle($child, $locked, null);
             })->all();
 
-            (new CardDeleted($retro->id, $card->id, $ungroupedCards))->sendToOthers();
+            (new CardDeleted($locked->id, $card->id, $ungroupedCards))->sendToOthers();
         });
 
         return response()->noContent();

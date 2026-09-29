@@ -60,6 +60,8 @@ it('reserves facilitation to the facilitator', function (Closure $request) {
     'timer' => [fn ($test, $retro) => $test->putJson(route('retros.timer.update', $retro), ['seconds' => 60])],
     'settings' => [fn ($test, $retro) => $test->patchJson(route('retros.settings.update', $retro), ['title' => 'Mine'])],
     'guest token' => [fn ($test, $retro) => $test->postJson(route('retros.guest-token.store', $retro))],
+    'highlight' => [fn ($test, $retro) => $test->putJson(route('retros.highlight.update', $retro), ['card_id' => null])],
+    'facilitator' => [fn ($test, $retro) => $test->putJson(route('retros.facilitator.update', $retro), ['user_id' => User::factory()->create()->id])],
     'delete' => [fn ($test, $retro) => $test->deleteJson(route('retros.destroy', $retro))],
 ]);
 
@@ -155,6 +157,7 @@ it('regenerates the guest link and locks out existing guests', function () {
     expect($retro->fresh()->guest_token)->not->toBe($oldToken)
         ->and($response->json('guestUrl'))->toBe(route('retros.join.show', $retro->fresh()->guest_token));
     Event::assertDispatched(RetroSettingsChanged::class);
+    $this->get(route('retros.join.show', $oldToken))->assertNotFound();
 });
 
 it('locks guests out when guest access is disabled', function () {
