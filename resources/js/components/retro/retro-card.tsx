@@ -1,12 +1,13 @@
-import { Pencil, Trash2 } from 'lucide-react';
+import { Pencil, Trash2, Ungroup } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import CardsController from '@/actions/App/Http/Controllers/Retros/CardsController';
+import CardGroupsController from '@/actions/App/Http/Controllers/Retros/CardGroupsController';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useTrans } from '@/hooks/use-trans';
 import { retroRequest } from '@/lib/retro/api';
 import { childrenOf } from '@/lib/retro/board-reducer';
-import type { BoardCard } from '@/lib/retro/types';
+import type { BoardCard, CardPayload } from '@/lib/retro/types';
 import { cn } from '@/lib/utils';
 import type { BoardContextValue } from './board';
 import { CardEditor } from './card-editor';
@@ -46,6 +47,21 @@ export function RetroCard({ card, ctx, isChild = false, footer }: Props) {
         }
     };
 
+    const ungroup = async () => {
+        const response = await ctx.run(
+            retroRequest<{ cards: CardPayload[] }>(
+                CardGroupsController.destroy({
+                    retro: ctx.board.retro.id,
+                    card: card.id,
+                }),
+            ),
+        );
+
+        if (response) {
+            ctx.dispatch({ type: 'cards.upsert', cards: response.cards });
+        }
+    };
+
     return (
         <article
             id={`card-${card.id}`}
@@ -79,6 +95,17 @@ export function RetroCard({ card, ctx, isChild = false, footer }: Props) {
                         )}
                         <div className="ml-auto flex items-center gap-1">
                             {footer}
+                            {isChild && phase === 'grouping' && (
+                                <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    className="size-7"
+                                    aria-label={t('Ungroup')}
+                                    onClick={() => void ungroup()}
+                                >
+                                    <Ungroup className="size-3.5" />
+                                </Button>
+                            )}
                             {canChange && (
                                 <>
                                     <Button
