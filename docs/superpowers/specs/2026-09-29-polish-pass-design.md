@@ -54,6 +54,8 @@ Vote totals are also ordered: the retro keeps a `votes_version` integer, increme
 
 ### A4 — Expired session
 
+Board API requests (JSON) with no authenticated user and no guest cookie for that retro are answered **401** (a logged-out or expired member session); 403 remains for revoked or disabled guest cookies and members without access, and every 403 carries a translated message ("You no longer have access to this retrospective."). Page visits keep redirecting to login.
+
 When any board request or refetch receives 401 or 419:
 
 - a persistent banner "Your session has expired." with a **Reload** button (`role="alert"`) is shown;
@@ -95,6 +97,7 @@ Every new string goes through `t()` with real translations in `lang/{en,fr,es,de
 - **PA2** A participant with two tabs on the same board sees, in the second tab, the full content of a card created or edited in the first tab during Writing; other participants still see it hidden.
 - **PA3** Only the owning participant can subscribe to `private-participant.{id}` (member and guest); any other request is refused with 403.
 - **PA4** A board request that times out shows "The server did not respond in time. Please try again." in the active locale.
+- **PA5a** A board API request from a logged-out member (no session, no guest cookie) is answered 401; a revoked guest cookie still gets 403 with a translated message; no toast is ever blank.
 - **PA5** A 401 or 419 on any board request or refetch shows the persistent session-expired banner with a Reload button and makes everything but the banner non-interactive (header included), without repeated error toasts.
 - **PB1** A dragged card is never clipped by the board's scroll container.
 - **PB2** Vote +/− and card delete cannot send a second request while the first is in flight.
