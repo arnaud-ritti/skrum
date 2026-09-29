@@ -1,7 +1,7 @@
 # Skrum — Planning poker — Design
 
 Date: 2026-09-29
-Status: Draft — open decisions pending
+Status: Approved decisions, awaiting spec review
 Parent spec: `docs/superpowers/specs/2026-09-29-retro-board-core-design.md` (tenancy, roles, guests, realtime, redaction, i18n and packaging rules apply unless this spec says otherwise). Latest conventions: `docs/superpowers/specs/2026-09-29-board-engagement-design.md`.
 Research: `docs/superpowers/research/qretro/` (QRetro parity roadmap, spec 4 of 7; `research.md` § Planning poker, `docs-inventory.md` § Planning poker, `screens/poker-game.png`, `screens/poker-systems.png`)
 
@@ -283,13 +283,13 @@ Pest feature tests in `tests/Feature/Poker/`, `Event::fake()` for broadcasts; un
 12. Tasks have nullable external reference columns, unused and not client-writable in this spec.
 13. All new strings are translated in en/fr/es/de; suite, phpstan, type-check and lint are green; the walkthrough passes.
 
-## Open decisions
+## Decisions (2026-09-29)
 
-1. **Player model.** (a) Parallel `poker_players` table + shared `HasGuestIdentity` trait and scoped `GuestCookie` — isolates poker from retro redaction and queries, small duplication of resolution/join code. (b) Generalise `participants` to be polymorphic (`session_type`, `session_id`) — one identity model, but touches every retro query, unique index, policy and test. (c) One workspace-level guest identity reused across sessions — fewer name prompts, but new cross-session tracking and cookie scope. **Recommended: (a).**
-2. **Source of the final estimate.** (a) Any non-special deck card, only after reveal, UI preselects nearest card / mode — lets the team settle after discussion (common practice). (b) Only a value someone actually played in the revealed round — strictest reading of "only from revealed votes", but blocks "we agreed on 5 between 3 and 8". (c) Also allow the raw average — non-card estimates break Jira/Linear write-back scales later. **Recommended: (a).**
-3. **Who adds and edits tasks.** (a) Facilitator only — QRetro-like (owner controls the game), bottleneck for large backlogs. (b) Facilitator + non-guest players — team members prepare the backlog together; guests can't inject content. (c) Everyone including guests — simplest, but anyone holding the link can add content. **Recommended: (b).**
-4. **Absent facilitator.** (a) Transfer only, as in retros — the game stalls when the facilitator is gone. (b) Any non-guest team player can "Take control" — self-service, trust within the team, visible via `game.changed`. (c) Only workspace Owners/Admins can take over — safer, but they are often not in the session. **Recommended: (b).**
-5. **Guest access default.** (a) Off, facilitator enables it (same as retros, safer). (b) On at creation — matches QRetro's "share the link" flow, one fewer click. **Recommended: (a)**, for consistency and because the link reveals task descriptions.
-6. **Where games live.** (a) Section on the team page + team estimation history page — no new navigation. (b) A workspace-wide "Planning poker" sidebar entry listing games across the user's teams — QRetro parity, more UI to build. **Recommended: (a)**; (b) can come with a future navigation pass.
-7. **Show who has voted before reveal.** (a) Yes, face-down cards per player — standard poker UX, helps chase stragglers; reveals participation, not values. (b) Count only — more private, but the facilitator can't see who is missing. **Recommended: (a).**
-8. **Reserve external-reference columns now.** (a) Add nullable `external_source/id/url` now, unused — spec 6 needs no migration and payloads already carry `external`. (b) Add them in spec 6 — strict YAGNI, one more migration on a populated table. **Recommended: (a).**
+1. Player model: separate `poker_players` table with a shared `HasGuestIdentity` trait and scoped `GuestCookie`.
+2. Final estimate: any non-special deck card, only after reveal; the UI preselects the nearest card / mode.
+3. Tasks: added and edited by the facilitator and non-guest players; guests cannot.
+4. Absent facilitator: any non-guest team player can take control.
+5. Guest access: off by default; the facilitator enables it.
+6. Navigation: section on the team page plus a team estimation history page; no new sidebar entry.
+7. Before reveal: face-down cards show who has voted, never values.
+8. External-reference columns (`external_source`, `external_id`, `external_url`) are added now, nullable and unused until spec 6.
