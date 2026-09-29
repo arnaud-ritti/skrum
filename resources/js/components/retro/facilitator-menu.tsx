@@ -9,7 +9,6 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useTrans } from '@/hooks/use-trans';
-import { useBoard } from './board-context';
 import { DeleteRetroDialog } from './delete-retro-dialog';
 import { GuestLinkDialog } from './guest-link-dialog';
 import { HandoverDialog } from './handover-dialog';
@@ -18,7 +17,6 @@ import { SettingsDialog } from './settings-dialog';
 type OpenDialog = 'settings' | 'guests' | 'handover' | 'delete' | null;
 
 export function FacilitatorMenu() {
-    const ctx = useBoard();
     const { t } = useTrans();
     const [open, setOpen] = useState<OpenDialog>(null);
     const close = (isOpen: boolean) => {
