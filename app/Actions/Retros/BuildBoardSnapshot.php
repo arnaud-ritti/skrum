@@ -4,6 +4,7 @@ namespace App\Actions\Retros;
 
 use App\Enums\RetroPhase;
 use App\Enums\WorkspaceRole;
+use App\Http\Controllers\EmojiDataController;
 use App\Models\ActionItem;
 use App\Models\Card;
 use App\Models\CardComment;
@@ -102,6 +103,10 @@ class BuildBoardSnapshot
             'votesVersion' => $votesVersion,
             'links' => [
                 'team' => $viewer->isGuest() ? null : route('teams.show', [$retro->team->workspace, $retro->team]),
+            ],
+            'emojiData' => [
+                'baseUrl' => '/emoji-data/'.config('services.emoji_data.version'),
+                'locale' => EmojiDataController::emojibaseLocale(app()->getLocale()),
             ],
             'serverTime' => now()->utc()->format('Y-m-d\TH:i:s.v\Z'),
         ];

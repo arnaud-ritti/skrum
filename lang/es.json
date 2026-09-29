@@ -623,5 +623,6 @@
     "GIF search is unavailable.": "La búsqueda de GIF no está disponible.",
     "This GIF could not be found.": "No se encontró este GIF.",
     "This GIF could not be loaded.": "No se pudo cargar este GIF.",
-    "A card needs text or a GIF.": "Una tarjeta necesita texto o un GIF."
+    "A card needs text or a GIF.": "Una tarjeta necesita texto o un GIF.",
+    "Emoji list unavailable": "Lista de emoji no disponible"
 }

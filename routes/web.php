@@ -4,6 +4,7 @@ use App\Actions\Auth\SignupGate;
 use App\Http\Controllers\AvatarsController;
 use App\Http\Controllers\BroadcastAuthorizationsController;
 use App\Http\Controllers\CurrentWorkspaceController;
+use App\Http\Controllers\EmojiDataController;
 use App\Http\Controllers\GifsController;
 use App\Http\Controllers\InvitationAcceptancesController;
 use App\Http\Controllers\InvitationLinksController;
@@ -47,6 +48,10 @@ Route::get('/', fn () => Inertia::render('welcome', [
 Route::get('invitations/{token}', [InvitationLinksController::class, 'show'])->name('invitations.show');
 
 Route::get('avatars/{seed}.svg', [AvatarsController::class, 'show'])->where('seed', '[a-f0-9]{32}')->name('avatars.show');
+Route::get('emoji-data/{version}/{locale}/{file}', [EmojiDataController::class, 'show'])
+    ->where(['version' => '[0-9.]+', 'locale' => '[a-z-]+', 'file' => '[a-z]+\.json'])
+    ->middleware('throttle:120,1')
+    ->name('emoji-data.show');
 
 Route::get('gifs/{gif}/{size}', [GifsController::class, 'show'])
     ->where(['gif' => '[A-Za-z0-9_-]{1,64}', 'size' => 'preview|full'])

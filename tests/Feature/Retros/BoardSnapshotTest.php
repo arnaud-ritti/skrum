@@ -306,3 +306,14 @@ it('presents a card gif through the proxy when a provider is configured', functi
         'url' => '/gifs/abc123/full',
     ]);
 });
+
+it('points the emoji picker at the self-hosted emoji data in the viewer locale', function () {
+    $retro = Retro::factory()->create();
+    [, $viewer] = retroMember($retro);
+    app()->setLocale('fr');
+
+    expect(snapshotFor($retro, $viewer)['emojiData'])->toBe([
+        'baseUrl' => '/emoji-data/'.config('services.emoji_data.version'),
+        'locale' => 'fr',
+    ]);
+});

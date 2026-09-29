@@ -47,6 +47,10 @@ return [
         'rating' => env('SKRUM_GIF_RATING', 'pg'),
     ],
 
+    'emoji_data' => [
+        'version' => '17.0.0',
+    ],
+
     'github' => [
         'client_id' => env('GITHUB_CLIENT_ID'),
         'client_secret' => env('GITHUB_CLIENT_SECRET'),
