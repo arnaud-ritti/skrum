@@ -587,5 +587,15 @@
     "Purple": "Lila",
     "Slate": "Schiefer",
     "Delete the column :title?": "Die Spalte :title löschen?",
-    "Only empty columns can be edited or deleted.": "Nur leere Spalten können bearbeitet oder gelöscht werden."
+    "Only empty columns can be edited or deleted.": "Nur leere Spalten können bearbeitet oder gelöscht werden.",
+    "Action items": "Aktionspunkte",
+    "Add an action item…": "Aktionspunkt hinzufügen…",
+    "Assignee": "Zuständig",
+    "Unassigned": "Nicht zugewiesen",
+    "Mark as done": "Als erledigt markieren",
+    "Delete action item": "Aktionspunkt löschen",
+    "Edit action item": "Aktionspunkt bearbeiten",
+    "No action items yet.": "Noch keine Aktionspunkte.",
+    "Top topics": "Wichtigste Themen",
+    "Retrospective completed on :date": "Retrospektive abgeschlossen am :date"
 }

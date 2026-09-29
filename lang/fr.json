@@ -587,5 +587,15 @@
     "Purple": "Violet",
     "Slate": "Ardoise",
     "Delete the column :title?": "Supprimer la colonne :title ?",
-    "Only empty columns can be edited or deleted.": "Seules les colonnes vides peuvent être modifiées ou supprimées."
+    "Only empty columns can be edited or deleted.": "Seules les colonnes vides peuvent être modifiées ou supprimées.",
+    "Action items": "Actions à mener",
+    "Add an action item…": "Ajouter une action…",
+    "Assignee": "Responsable",
+    "Unassigned": "Non assignée",
+    "Mark as done": "Marquer comme terminée",
+    "Delete action item": "Supprimer l'action",
+    "Edit action item": "Modifier l'action",
+    "No action items yet.": "Aucune action pour le moment.",
+    "Top topics": "Sujets principaux",
+    "Retrospective completed on :date": "Rétrospective terminée le :date"
 }

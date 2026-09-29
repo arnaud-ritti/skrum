@@ -325,5 +325,15 @@
     "Purple": "Purple",
     "Slate": "Slate",
     "Delete the column :title?": "Delete the column :title?",
-    "Only empty columns can be edited or deleted.": "Only empty columns can be edited or deleted."
+    "Only empty columns can be edited or deleted.": "Only empty columns can be edited or deleted.",
+    "Action items": "Action items",
+    "Add an action item…": "Add an action item…",
+    "Assignee": "Assignee",
+    "Unassigned": "Unassigned",
+    "Mark as done": "Mark as done",
+    "Delete action item": "Delete action item",
+    "Edit action item": "Edit action item",
+    "No action items yet.": "No action items yet.",
+    "Top topics": "Top topics",
+    "Retrospective completed on :date": "Retrospective completed on :date"
 }

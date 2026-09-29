@@ -587,5 +587,15 @@
     "Purple": "Morado",
     "Slate": "Pizarra",
     "Delete the column :title?": "¿Eliminar la columna :title?",
-    "Only empty columns can be edited or deleted.": "Solo se pueden editar o eliminar columnas vacías."
+    "Only empty columns can be edited or deleted.": "Solo se pueden editar o eliminar columnas vacías.",
+    "Action items": "Acciones a realizar",
+    "Add an action item…": "Añadir una acción…",
+    "Assignee": "Responsable",
+    "Unassigned": "Sin asignar",
+    "Mark as done": "Marcar como hecha",
+    "Delete action item": "Eliminar acción",
+    "Edit action item": "Editar acción",
+    "No action items yet.": "Aún no hay acciones.",
+    "Top topics": "Temas principales",
+    "Retrospective completed on :date": "Retrospectiva completada el :date"
 }

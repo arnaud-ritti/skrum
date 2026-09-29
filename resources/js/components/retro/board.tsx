@@ -16,9 +16,11 @@ import { useTrans } from '@/hooks/use-trans';
 import { retroRequest } from '@/lib/retro/api';
 import { topLevelCards, type BoardAction } from '@/lib/retro/board-reducer';
 import type { CardPayload, Snapshot } from '@/lib/retro/types';
+import { ActionItemsPanel } from './action-items-panel';
 import { AddColumn } from './add-column';
 import { BoardEnded } from './board-ended';
 import { BoardHeader } from './board-header';
+import { CompletedSummary } from './completed-summary';
 import { ConnectionBanner } from './connection-banner';
 import { parseDndId } from './dnd';
 import { RetroColumn } from './retro-column';
@@ -159,31 +161,39 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
                 }
             />
             <ConnectionBanner reconnecting={reconnecting} />
-            <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragEnd={(event) => void handleDragEnd(event)}
-            >
-                <main className="flex flex-1 items-start gap-4 overflow-x-auto p-4">
-                    {board.columns.length === 0 && (
-                        <p className="text-sm text-muted-foreground">
-                            {t('No columns yet.')}
-                        </p>
-                    )}
-                    {board.columns.map((column, index) => (
-                        <RetroColumn
-                            key={column.id}
-                            column={column}
-                            ctx={ctx}
-                            index={index}
-                        />
-                    ))}
-                    {board.viewer.isFacilitator &&
-                        board.retro.phase === 'writing' && (
-                            <AddColumn ctx={ctx} />
+            {board.retro.phase === 'completed' && (
+                <CompletedSummary board={board} />
+            )}
+            <div className="flex flex-1 flex-col lg:min-h-0 lg:flex-row">
+                <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={(event) => void handleDragEnd(event)}
+                >
+                    <main className="flex min-w-0 flex-1 items-start gap-4 overflow-x-auto p-4">
+                        {board.columns.length === 0 && (
+                            <p className="text-sm text-muted-foreground">
+                                {t('No columns yet.')}
+                            </p>
                         )}
-                </main>
-            </DndContext>
+                        {board.columns.map((column, index) => (
+                            <RetroColumn
+                                key={column.id}
+                                column={column}
+                                ctx={ctx}
+                                index={index}
+                            />
+                        ))}
+                        {board.viewer.isFacilitator &&
+                            board.retro.phase === 'writing' && (
+                                <AddColumn ctx={ctx} />
+                            )}
+                    </main>
+                </DndContext>
+                {board.retro.phase === 'discussing' && (
+                    <ActionItemsPanel ctx={ctx} />
+                )}
+            </div>
         </div>
     );
 }
