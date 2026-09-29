@@ -25,11 +25,11 @@ RUN case "${TARGETARCH}" in \
     && curl -fsSL "https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-noarch.tar.xz" | tar -C / -Jxp \
     && curl -fsSL "https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-${s6_arch}.tar.xz" | tar -C / -Jxp
 
-COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
-
 WORKDIR /app
 
 FROM base AS build
+
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 COPY --from=node /usr/local/bin/node /usr/local/bin/node
 COPY --from=node /usr/local/lib/node_modules /usr/local/lib/node_modules
@@ -42,10 +42,11 @@ COPY package.json package-lock.json ./
 RUN npm ci
 
 COPY . .
-RUN composer dump-autoload --no-dev --optimize --classmap-authoritative \
+RUN mkdir -p storage/app/private storage/app/public storage/framework/cache/data storage/framework/sessions storage/framework/testing storage/framework/views storage/logs \
+    && composer dump-autoload --no-dev --optimize --classmap-authoritative \
     && npm run build \
     && cp vendor/laravel/octane/src/Commands/stubs/frankenphp-worker.php public/frankenphp-worker.php \
-    && rm -rf node_modules resources/js/actions resources/js/routes resources/js/wayfinder
+    && rm -rf node_modules resources/js/actions resources/js/routes resources/js/wayfinder storage/framework/views/*
 
 FROM base AS runtime
 

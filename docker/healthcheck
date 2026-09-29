@@ -1,5 +1,7 @@
 #!/bin/sh
 server_name="${SERVER_NAME:-:80}"
+server_name="${server_name#http://}"
+server_name="${server_name#https://}"
 
 case "$server_name" in
     :*)
