@@ -62,7 +62,8 @@ class BuildBoardSnapshot
                 'hideVoteCounts' => $retro->hide_vote_counts,
                 'isLocked' => $retro->is_locked,
                 'presentationMode' => $retro->presentation_mode,
-                'votesPerParticipant' => $retro->votes_per_participant,
+                'votesPerParticipant' => $retro->voteLimit(),
+                'votesAuto' => $retro->votes_per_participant === null,
                 'guestAccessEnabled' => $retro->guest_access_enabled,
                 'guestUrl' => $retro->guest_access_enabled && $retro->isFacilitator($viewer)
                     ? route('retros.join.show', $retro->guest_token)
@@ -76,7 +77,7 @@ class BuildBoardSnapshot
                 'participantId' => $viewer->id,
                 'isFacilitator' => $retro->isFacilitator($viewer),
                 'isGuest' => $viewer->isGuest(),
-                'remainingVotes' => max(0, $retro->votes_per_participant - (int) $myVotes->sum()),
+                'remainingVotes' => max(0, $retro->voteLimit() - (int) $myVotes->sum()),
                 'transferCandidates' => $retro->isFacilitator($viewer) ? $this->transferCandidates($retro, $viewer) : [],
             ],
             'columns' => $this->presentColumns->handle($retro),

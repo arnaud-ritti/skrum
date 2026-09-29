@@ -22,7 +22,7 @@ use Illuminate\Support\Carbon;
  * @property RetroPhase $phase
  * @property string|null $facilitator_participant_id
  * @property bool $is_anonymous
- * @property int $votes_per_participant
+ * @property int|null $votes_per_participant
  * @property int $votes_version
  * @property bool $guest_access_enabled
  * @property bool $reactions_enabled
@@ -53,6 +53,19 @@ class Retro extends Model
     use HasFactory;
 
     use HasUuids;
+
+    public function voteLimit(): int
+    {
+        if ($this->votes_per_participant !== null) {
+            return $this->votes_per_participant;
+        }
+
+        $topLevelCards = $this->relationLoaded('cards')
+            ? $this->cards->whereNull('parent_card_id')->count()
+            : $this->cards()->whereNull('parent_card_id')->count();
+
+        return min(10, $topLevelCards + 3);
+    }
 
     /** @return BelongsTo<Team, $this> */
     public function team(): BelongsTo

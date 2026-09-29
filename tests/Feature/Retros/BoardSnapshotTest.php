@@ -340,3 +340,14 @@ it('exposes the enabled phases and toggles', function () {
         'icebreakerEnabled' => true,
     ]);
 });
+
+it('sends the effective vote limit and whether it is automatic', function () {
+    $retro = Retro::factory()->inPhase(RetroPhase::Voting)->create(['votes_per_participant' => null]);
+    [, $viewer] = retroMember($retro);
+    Card::factory()->count(2)->create(['retro_id' => $retro->id]);
+
+    $snapshot = snapshotFor($retro, $viewer);
+
+    expect($snapshot['retro'])->toMatchArray(['votesPerParticipant' => 5, 'votesAuto' => true])
+        ->and($snapshot['viewer']['remainingVotes'])->toBe(5);
+});

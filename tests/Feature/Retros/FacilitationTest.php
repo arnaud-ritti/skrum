@@ -339,3 +339,12 @@ it('accepts the timer and engagement settings in the pre-writing phases', functi
     $this->actingAs($user)->putJson(route('retros.timer.update', $retro), ['seconds' => 120])->assertOk();
     $this->actingAs($user)->patchJson(route('retros.settings.update', $retro), ['cursors_enabled' => false])->assertNoContent();
 })->with([RetroPhase::HealthCheck, RetroPhase::Icebreaker]);
+
+it('switches the vote limit to automatic before voting', function (RetroPhase $phase) {
+    $retro = Retro::factory()->withHealthCheck()->withIcebreaker()->inPhase($phase)->create(['votes_per_participant' => 5]);
+    [$user] = retroFacilitator($retro);
+
+    $this->actingAs($user)->patchJson(route('retros.settings.update', $retro), ['votes_per_participant' => null])->assertNoContent();
+
+    expect($retro->fresh()->votes_per_participant)->toBeNull();
+})->with([RetroPhase::HealthCheck, RetroPhase::Icebreaker, RetroPhase::Writing, RetroPhase::Grouping]);

@@ -29,7 +29,7 @@ class RetroSettingsController extends Controller
         $validated = $request->validate([
             'title' => ['sometimes', 'required', 'string', 'max:120'],
             'is_anonymous' => ['sometimes', 'boolean'],
-            'votes_per_participant' => ['sometimes', 'integer', 'min:1', 'max:20'],
+            'votes_per_participant' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:20'],
             'guest_access_enabled' => ['sometimes', 'boolean'],
             'reactions_enabled' => ['sometimes', 'boolean'],
             'cursors_enabled' => ['sometimes', 'boolean'],
@@ -51,7 +51,7 @@ class RetroSettingsController extends Controller
             }
 
             if (array_key_exists('votes_per_participant', $validated)) {
-                RetroGuard::phase($locked, RetroPhase::Writing, RetroPhase::Grouping);
+                RetroGuard::phase($locked, RetroPhase::HealthCheck, RetroPhase::Icebreaker, RetroPhase::Writing, RetroPhase::Grouping);
             }
 
             $this->ensureCurrentPhaseStaysOn($locked, $validated);

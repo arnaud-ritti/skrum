@@ -21,6 +21,7 @@ class RetroFactory extends Factory
             'title' => fake()->sentence(3),
             'template' => RetroTemplate::StartStopContinue,
             'phase' => RetroPhase::Writing,
+            'votes_per_participant' => 5,
             'guest_token' => Str::random(40),
         ];
     }
