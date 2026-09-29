@@ -3,9 +3,10 @@ import { Check } from 'lucide-react';
 import { useIsMounted } from '@/hooks/use-is-mounted';
 import { useTrans } from '@/hooks/use-trans';
 import { sortByVotes } from '@/lib/retro/board-reducer';
-import type { Snapshot } from '@/lib/retro/types';
+import { useBoard } from './board-context';
 
-export function CompletedSummary({ board }: { board: Snapshot }) {
+export function CompletedSummary() {
+    const { board } = useBoard();
     const { t } = useTrans();
     const { locale } = usePage().props;
     const isMounted = useIsMounted();

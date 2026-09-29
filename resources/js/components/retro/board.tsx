@@ -182,14 +182,14 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
                         online={online}
                         actions={
                             board.retro.phase === 'voting' ? (
-                                <VoteProgress board={board} />
+                                <VoteProgress />
                             ) : undefined
                         }
                     />
                     <ConnectionBanner reconnecting={reconnecting} />
                     <div className="flex flex-1 flex-col lg:min-h-0">
                         {board.retro.phase === 'completed' && (
-                            <CompletedSummary board={board} />
+                            <CompletedSummary />
                         )}
                         <div className="flex flex-1 flex-col lg:min-h-0 lg:flex-row">
                             <DndContext

@@ -1,7 +1,8 @@
 import { useTrans } from '@/hooks/use-trans';
-import type { Snapshot } from '@/lib/retro/types';
+import { useBoard } from './board-context';
 
-export function VoteProgress({ board }: { board: Snapshot }) {
+export function VoteProgress() {
+    const { board } = useBoard();
     const { t } = useTrans();
     const total = board.participants.length * board.retro.votesPerParticipant;
     const cast = board.votesCast ?? 0;
