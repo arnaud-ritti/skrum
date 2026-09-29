@@ -224,5 +224,9 @@
     "Mad, Sad, Glad": "Mad, Sad, Glad",
     "Liked, Learned, Lacked, Longed for": "Liked, Learned, Lacked, Longed for",
     "Went well, To improve, Action ideas": "Went well, To improve, Action ideas",
-    "Former member": "Former member"
+    "Former member": "Former member",
+    "This action is not available in the current phase.": "This action is not available in the current phase.",
+    "Only the facilitator can do this.": "Only the facilitator can do this.",
+    "You can only change your own cards.": "You can only change your own cards.",
+    "The board is being built.": "The board is being built."
 }

@@ -485,5 +485,9 @@
     "Mad, Sad, Glad": "Wütend, Traurig, Froh",
     "Liked, Learned, Lacked, Longed for": "Gemocht, Gelernt, Vermisst, Gewünscht",
     "Went well, To improve, Action ideas": "Lief gut, Zu verbessern, Aktionsideen",
-    "Former member": "Ehemaliges Mitglied"
+    "Former member": "Ehemaliges Mitglied",
+    "This action is not available in the current phase.": "Diese Aktion ist in der aktuellen Phase nicht verfügbar.",
+    "Only the facilitator can do this.": "Das kann nur der Moderator tun.",
+    "You can only change your own cards.": "Du kannst nur deine eigenen Karten ändern.",
+    "The board is being built.": "Das Board wird gerade aufgebaut."
 }

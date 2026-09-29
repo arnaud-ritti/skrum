@@ -6,6 +6,8 @@ use App\Http\Controllers\CurrentWorkspaceController;
 use App\Http\Controllers\InvitationAcceptancesController;
 use App\Http\Controllers\InvitationLinksController;
 use App\Http\Controllers\LocalesController;
+use App\Http\Controllers\Retros\RetrosController;
+use App\Http\Controllers\Retros\RetroSnapshotsController;
 use App\Http\Controllers\SsoCallbacksController;
 use App\Http\Controllers\SsoRedirectsController;
 use App\Http\Controllers\TeamMembersController;
@@ -14,6 +16,7 @@ use App\Http\Controllers\WorkspaceInvitationsController;
 use App\Http\Controllers\WorkspaceMembersController;
 use App\Http\Controllers\WorkspacesController;
 use App\Http\Middleware\RememberCurrentWorkspace;
+use App\Http\Middleware\ResolveRetroParticipant;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -62,5 +65,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::delete('invitations/{invitation}', [WorkspaceInvitationsController::class, 'destroy'])->name('workspaces.invitations.destroy');
         });
 });
+
+Route::prefix('retros/{retro}')
+    ->whereUuid('retro')
+    ->middleware(ResolveRetroParticipant::class)
+    ->scopeBindings()
+    ->group(function () {
+        Route::get('/', [RetrosController::class, 'show'])->name('retros.show');
+        Route::get('snapshot', [RetroSnapshotsController::class, 'show'])->name('retros.snapshot.show');
+    });
 
 require __DIR__.'/settings.php';

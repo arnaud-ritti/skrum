@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\Retros\GuestCookie;
 use App\Enums\WorkspaceRole;
 use App\Models\Participant;
 use App\Models\Retro;
@@ -72,4 +73,12 @@ function retroFacilitator(Retro $retro): array
     $retro->forceFill(['facilitator_participant_id' => $participant->id])->save();
 
     return [$user, $participant];
+}
+
+/**
+ * @return array<string, string>
+ */
+function retroGuestCookie(Participant $participant, string $secret = 'secret'): array
+{
+    return [GuestCookie::name($participant->retro_id) => "{$participant->id}|{$secret}"];
 }
