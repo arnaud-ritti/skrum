@@ -41,6 +41,9 @@ function Reactions({ presence }: { presence: WhisperChannel }) {
     const rosterKey = online.map((member) => member.id).join(',');
     const roster = useRef(new Set<string>());
     const buckets = useRef(new Map<string, TokenBucket>());
+    const isAnonymous = useRef(board.retro.isAnonymous);
+
+    isAnonymous.current = board.retro.isAnonymous;
 
     useEffect(() => {
         roster.current = new Set(rosterKey === '' ? [] : rosterKey.split(','));
@@ -70,7 +73,7 @@ function Reactions({ presence }: { presence: WhisperChannel }) {
     const { reactions, send } = useReactions({
         transport: () => transport,
         selfId: board.viewer.participantId,
-        origin: originOf,
+        origin: (senderId) => originOf(senderId, isAnonymous.current),
     });
 
     const nameOf = (senderId: string) =>
@@ -115,16 +118,23 @@ function Reactions({ presence }: { presence: WhisperChannel }) {
     );
 }
 
-function originOf(senderId: string): number {
-    const avatar = document.querySelector(
-        `[data-presence-id="${CSS.escape(senderId)}"]`,
-    );
+/**
+ * On anonymous retros an avatar origin would reveal who reacted, so every
+ * reaction rises from near the centre.
+ */
+function originOf(senderId: string, isAnonymous: boolean): number {
+    const avatar = isAnonymous
+        ? null
+        : document.querySelector(
+              `[data-presence-id="${CSS.escape(senderId)}"]`,
+          );
 
     if (!avatar) {
         return 0.4 + Math.random() * 0.2;
     }
 
     const rect = avatar.getBoundingClientRect();
+    const origin = (rect.left + rect.width / 2) / window.innerWidth;
 
-    return (rect.left + rect.width / 2) / window.innerWidth;
+    return Math.min(1, Math.max(0, origin));
 }
