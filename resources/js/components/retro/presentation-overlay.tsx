@@ -11,7 +11,13 @@ import { CardComments } from './card-comments';
 import { CardGif } from './card-gif';
 import { CardReactions } from './card-reactions';
 
-function PresentedContent({ card }: { card: BoardCard }) {
+function PresentedContent({
+    card,
+    className,
+}: {
+    card: BoardCard;
+    className: string;
+}) {
     if (card.hidden) {
         return null;
     }
@@ -20,9 +26,7 @@ function PresentedContent({ card }: { card: BoardCard }) {
         <>
             {card.gif && <CardGif gif={card.gif} />}
             {card.content !== null && (
-                <p className="text-2xl break-words whitespace-pre-wrap">
-                    {card.content}
-                </p>
+                <p className={className}>{card.content}</p>
             )}
         </>
     );
@@ -52,9 +56,16 @@ export function PresentationOverlay() {
     }
 
     const open =
-        retro.presentationMode && retro.phase === 'discussing' && !dismissed;
+        retro.presentationMode &&
+        retro.phase === 'discussing' &&
+        !card.hidden &&
+        !dismissed;
 
     const stopPresenting = async () => {
+        if (stopping) {
+            return;
+        }
+
         setStopping(true);
 
         const response = await ctx.run(
@@ -78,31 +89,36 @@ export function PresentationOverlay() {
         <Dialog
             open={open}
             onOpenChange={(isOpen) => {
-                if (!isOpen && !viewer.isFacilitator) {
-                    setDismissed(true);
+                if (isOpen) {
+                    return;
                 }
+
+                if (viewer.isFacilitator) {
+                    void stopPresenting();
+
+                    return;
+                }
+
+                setDismissed(true);
             }}
         >
             <DialogContent aria-describedby={undefined} className="max-w-3xl">
                 <DialogTitle className="sr-only">
                     {t('Presentation mode')}
                 </DialogTitle>
-                <PresentedContent card={card} />
+                <PresentedContent
+                    card={card}
+                    className="text-2xl break-words whitespace-pre-wrap"
+                />
                 {childrenOf(board.cards, card.id).map((child) => (
                     <div
                         key={child.id}
                         className="space-y-2 border-l-2 pl-3 text-lg text-muted-foreground"
                     >
-                        {child.hidden ? null : (
-                            <>
-                                {child.gif && <CardGif gif={child.gif} />}
-                                {child.content !== null && (
-                                    <p className="break-words whitespace-pre-wrap">
-                                        {child.content}
-                                    </p>
-                                )}
-                            </>
-                        )}
+                        <PresentedContent
+                            card={child}
+                            className="break-words whitespace-pre-wrap"
+                        />
                     </div>
                 ))}
                 <div className="flex items-center gap-3 text-sm text-muted-foreground">
