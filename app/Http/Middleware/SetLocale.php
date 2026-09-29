@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
 
 class SetLocale
@@ -35,7 +36,7 @@ class SetLocale
         $acceptedLanguages = filled($request->header('Accept-Language')) ? $request->getLanguages() : [];
 
         foreach ($acceptedLanguages as $language) {
-            $primaryLanguage = strtolower(strtok($language, '_-'));
+            $primaryLanguage = Str::lower(Str::before(str_replace('_', '-', $language), '-'));
 
             if (in_array($primaryLanguage, $supportedLocales, true)) {
                 return $primaryLanguage;

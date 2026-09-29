@@ -6,6 +6,7 @@ use App\Enums\WorkspaceRole;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceInvitation;
+use App\Models\WorkspaceMembership;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -25,7 +26,7 @@ class WorkspaceMembersController extends Controller
             'workspace' => $workspace->only(['id', 'name', 'slug']),
             'members' => $workspace->members()->orderBy('name')->get()->map(fn (User $member) => [
                 ...$member->only(['id', 'name', 'email']),
-                'role' => $member->membership->role->value,
+                'role' => $this->membershipOf($member)->role->value,
             ]),
             'invitations' => $workspace->invitations()->whereNull('accepted_at')->latest()->get()
                 ->map(fn (WorkspaceInvitation $invitation) => [
@@ -118,5 +119,10 @@ class WorkspaceMembersController extends Controller
     private function isLastOwner(Workspace $workspace): bool
     {
         return $workspace->owners()->count() === 1;
+    }
+
+    private function membershipOf(User $member): WorkspaceMembership
+    {
+        return $member->getRelation('membership');
     }
 }
