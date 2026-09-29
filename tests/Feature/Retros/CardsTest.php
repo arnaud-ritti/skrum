@@ -76,7 +76,7 @@ it('lets authors edit and delete their cards in writing and grouping', function 
     $this->actingAs($user)->deleteJson(route('retros.cards.destroy', [$retro, $card]))->assertNoContent();
 
     Event::assertDispatched(CardUpdated::class);
-    Event::assertDispatched(CardDeleted::class, fn (CardDeleted $event) => $event->cardId === $card->id);
+    Event::assertDispatched(CardDeleted::class, fn (CardDeleted $event) => $event->cardId === $card->id && $event->ungroupedCards === []);
     expect(Card::find($card->id))->toBeNull();
 })->with([RetroPhase::Writing, RetroPhase::Grouping]);
 
@@ -110,12 +110,16 @@ it('ungroups children when their lead card is deleted', function () {
     $retro = Retro::factory()->inPhase(RetroPhase::Grouping)->create();
     [$user, $participant] = retroMember($retro);
     $lead = Card::factory()->create(['retro_id' => $retro->id, 'participant_id' => $participant->id]);
-    $child = Card::factory()->create(['retro_id' => $retro->id, 'column_id' => $lead->column_id, 'parent_card_id' => $lead->id]);
+    $child = Card::factory()->create(['retro_id' => $retro->id, 'column_id' => $lead->column_id, 'parent_card_id' => $lead->id, 'position' => 0]);
+    $other = Card::factory()->create(['retro_id' => $retro->id, 'column_id' => $lead->column_id, 'position' => 0]);
 
     $this->actingAs($user)->deleteJson(route('retros.cards.destroy', [$retro, $lead]))->assertNoContent();
 
-    expect($child->fresh()->parent_card_id)->toBeNull();
-    Event::assertDispatched(CardDeleted::class, fn (CardDeleted $event) => $event->ungroupedCardIds === [$child->id]);
+    expect($child->fresh()->parent_card_id)->toBeNull()
+        ->and($child->fresh()->position)->toBe(1)
+        ->and($other->fresh()->position)->toBe(0);
+    Event::assertDispatched(CardDeleted::class, fn (CardDeleted $event) => collect($event->ungroupedCards)->pluck('id')->all() === [$child->id]
+        && $event->ungroupedCards[0]['position'] === 1);
 });
 
 it('moves own cards between columns while writing and resequences positions', function () {

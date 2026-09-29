@@ -5,9 +5,9 @@ namespace App\Events\Retros;
 class CardDeleted extends RetroBroadcastEvent
 {
     /**
-     * @param  array<int, string>  $ungroupedCardIds
+     * @param  array<int, array<string, mixed>>  $ungroupedCards
      */
-    public function __construct(string $retroId, public string $cardId, public array $ungroupedCardIds)
+    public function __construct(string $retroId, public string $cardId, public array $ungroupedCards)
     {
         parent::__construct($retroId);
     }
@@ -19,6 +19,6 @@ class CardDeleted extends RetroBroadcastEvent
 
     public function broadcastWith(): array
     {
-        return ['cardId' => $this->cardId, 'ungroupedCardIds' => $this->ungroupedCardIds];
+        return ['cardId' => $this->cardId, 'ungroupedCards' => $this->ungroupedCards];
     }
 }

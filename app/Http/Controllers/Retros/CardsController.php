@@ -82,11 +82,24 @@ class CardsController extends Controller
         RetroGuard::author($card, $participant);
 
         DB::transaction(function () use ($retro, $card): void {
-            $ungroupedCardIds = $card->children()->pluck('id')->all();
+            $children = $card->children()->orderBy('position')->get();
 
             $card->delete();
 
-            (new CardDeleted($retro->id, $card->id, $ungroupedCardIds))->sendToOthers();
+            $ungroupedCards = $children->map(function (Card $child) use ($retro): array {
+                $lastPosition = $retro->cards()
+                    ->where('column_id', $child->column_id)
+                    ->whereNull('parent_card_id')
+                    ->max('position');
+
+                $child->parent_card_id = null;
+                $child->position = $lastPosition === null ? 0 : $lastPosition + 1;
+                $child->save();
+
+                return $this->presentCard->handle($child, $retro, null);
+            })->all();
+
+            (new CardDeleted($retro->id, $card->id, $ungroupedCards))->sendToOthers();
         });
 
         return response()->noContent();
