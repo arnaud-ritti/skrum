@@ -12,6 +12,7 @@ import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { useEffect, useState } from 'react';
 import CardGroupsController from '@/actions/App/Http/Controllers/Retros/CardGroupsController';
 import CardPositionsController from '@/actions/App/Http/Controllers/Retros/CardPositionsController';
+import { useLocalPreference } from '@/hooks/use-local-preference';
 import { useRetroBoard } from '@/hooks/use-retro-board';
 import { useTrans } from '@/hooks/use-trans';
 import { retroRequest } from '@/lib/retro/api';
@@ -25,6 +26,7 @@ import { CompletedSummary } from './completed-summary';
 import { ConnectionBanner } from './connection-banner';
 import { BoardProvider, type BoardContextValue } from './board-context';
 import { parseDndId, useDragAccessibility } from './dnd';
+import { HideMyCursorKey, LiveCursorLayer } from './live-cursor-layer';
 import { CardPreview } from './retro-card';
 import { RetroColumn } from './retro-column';
 import { SessionExpiredBanner } from './session-expired-banner';
@@ -57,6 +59,11 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
 
     const [activeCardId, setActiveCardId] = useState<string | null>(null);
     const [activeCardWidth, setActiveCardWidth] = useState<number>();
+    const [boardElement, setBoardElement] = useState<HTMLElement | null>(null);
+    const [hideMyCursor, setHideMyCursor] = useLocalPreference(
+        HideMyCursorKey,
+        false,
+    );
     const dragAccessibility = useDragAccessibility(board);
     const highlightedCardId = board.retro.highlightedCardId;
 
@@ -189,6 +196,8 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
                 <div className="flex flex-1 flex-col" inert={sessionExpired}>
                     <BoardHeader
                         online={online}
+                        hideMyCursor={hideMyCursor}
+                        onHideMyCursorChange={setHideMyCursor}
                         actions={
                             board.retro.phase === 'voting' ? (
                                 <VoteProgress />
@@ -218,7 +227,10 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
                                 onDragCancel={() => setActiveCardId(null)}
                                 onDragEnd={(event) => void handleDragEnd(event)}
                             >
-                                <main className="flex min-w-0 flex-1 items-start gap-4 overflow-x-auto p-4">
+                                <main
+                                    ref={setBoardElement}
+                                    className="relative flex min-w-0 flex-1 items-start gap-4 overflow-x-auto p-4"
+                                >
                                     {board.columns.length === 0 && (
                                         <p className="text-sm text-muted-foreground">
                                             {t('No columns yet.')}
@@ -235,6 +247,10 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
                                         board.retro.phase === 'writing' && (
                                             <AddColumn />
                                         )}
+                                    <LiveCursorLayer
+                                        container={boardElement}
+                                        hidden={hideMyCursor}
+                                    />
                                 </main>
                                 <DragOverlay>
                                     {activeCard ? (

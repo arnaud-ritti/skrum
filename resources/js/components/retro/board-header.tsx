@@ -1,7 +1,8 @@
 import { Link } from '@inertiajs/react';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, MousePointer2, MousePointerBan } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { LanguageSwitcher } from '@/components/language-switcher';
+import { Button } from '@/components/ui/button';
 import { useServerOffset } from '@/hooks/use-countdown';
 import { useTrans } from '@/hooks/use-trans';
 import type { PresenceMember } from '@/lib/retro/types';
@@ -15,10 +16,17 @@ import { TimerDisplay } from './timer-display';
 
 type Props = {
     online: PresenceMember[];
+    hideMyCursor: boolean;
+    onHideMyCursorChange: (hidden: boolean) => void;
     actions?: ReactNode;
 };
 
-export function BoardHeader({ online, actions }: Props) {
+export function BoardHeader({
+    online,
+    hideMyCursor,
+    onHideMyCursorChange,
+    actions,
+}: Props) {
     const ctx = useBoard();
     const { t } = useTrans();
     const { board } = ctx;
@@ -55,6 +63,26 @@ export function BoardHeader({ online, actions }: Props) {
                     </>
                 )}
                 <PresenceStrip members={online} />
+                {board.retro.cursorsEnabled &&
+                    board.retro.phase !== 'completed' && (
+                        <Button
+                            size="icon"
+                            variant="ghost"
+                            aria-pressed={hideMyCursor}
+                            aria-label={
+                                hideMyCursor
+                                    ? t('Show my cursor')
+                                    : t('Hide my cursor')
+                            }
+                            onClick={() => onHideMyCursorChange(!hideMyCursor)}
+                        >
+                            {hideMyCursor ? (
+                                <MousePointerBan className="size-4" />
+                            ) : (
+                                <MousePointer2 className="size-4" />
+                            )}
+                        </Button>
+                    )}
                 {board.viewer.isGuest && <LanguageSwitcher />}
             </div>
         </header>

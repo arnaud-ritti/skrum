@@ -659,5 +659,8 @@
     "No GIFs found.": "Aucun GIF trouvé.",
     "Powered by :provider": "Fourni par :provider",
     "Too many searches, wait a moment.": "Trop de recherches, patientez un instant.",
-    "Choose this GIF": "Choisissez ce GIF"
+    "Choose this GIF": "Choisissez ce GIF",
+    "Participant": "Participant",
+    "Hide my cursor": "Masquer mon curseur",
+    "Show my cursor": "Afficher mon curseur"
 }
