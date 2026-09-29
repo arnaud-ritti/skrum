@@ -13,15 +13,24 @@ ARG TARGETARCH
 RUN apk add --no-cache curl xz
 
 RUN install-php-extensions bcmath intl opcache pcntl pdo_pgsql zip \
-    && cp "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
+    && cp "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini" \
+    && printf 'expose_php = Off\n' > "$PHP_INI_DIR/conf.d/zz-skrum.ini"
 
 RUN case "${TARGETARCH}" in \
         amd64) s6_arch=x86_64 ;; \
         arm64) s6_arch=aarch64 ;; \
         *) echo "Unsupported architecture: ${TARGETARCH}" >&2; exit 1 ;; \
     esac \
-    && curl -fsSL "https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-noarch.tar.xz" | tar -C / -Jxp \
-    && curl -fsSL "https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-${s6_arch}.tar.xz" | tar -C / -Jxp
+    && cd /tmp \
+    && for tarball in s6-overlay-noarch.tar.xz "s6-overlay-${s6_arch}.tar.xz"; do \
+        curl -fsSLO "https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/${tarball}" \
+        && curl -fsSLO "https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/${tarball}.sha256" \
+        && sha256sum -c "${tarball}.sha256" \
+        && tar -C / -Jxpf "${tarball}" \
+        && rm "${tarball}" "${tarball}.sha256" \
+        || exit 1; \
+    done \
+    && apk del --no-cache xz
 
 WORKDIR /app
 
@@ -56,12 +65,13 @@ ENV APP_ENV=production \
     S6_CMD_WAIT_FOR_SERVICES_MAXTIME=0 \
     S6_KILL_GRACETIME=10000
 
-COPY --from=build --chown=www-data:www-data /app /app
+COPY --from=build /app /app
 COPY docker/s6-rc.d /etc/s6-overlay/s6-rc.d
 COPY docker/scripts /etc/s6-overlay/scripts
 COPY docker/healthcheck /usr/local/bin/skrum-healthcheck
 
 RUN chmod +x /etc/s6-overlay/scripts/* /etc/s6-overlay/s6-rc.d/*/run /usr/local/bin/skrum-healthcheck \
+    && chown -R www-data:www-data /app/storage /app/bootstrap/cache \
     && mkdir -p /data/caddy /config/caddy \
     && chown -R www-data:www-data /data /config
 
