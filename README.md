@@ -12,12 +12,21 @@ curl -o .env https://raw.githubusercontent.com/<owner>/skrum/main/.env.example
 docker run --rm --entrypoint php ghcr.io/<owner>/skrum:latest artisan key:generate --show
 ```
 
-The last command prints the value for `APP_KEY`. Then edit `.env`:
+The last command prints the value for `APP_KEY`. The copied `.env` ships development defaults, so edit it before starting:
 
-- set `APP_KEY`, `APP_URL`, `SERVER_NAME` and `DB_PASSWORD` (required);
+- set `APP_KEY`, `APP_URL` and `SERVER_NAME`;
+- replace the default `DB_PASSWORD=password` with a strong value (required);
 - set `REVERB_APP_ID`, `REVERB_APP_KEY` and `REVERB_APP_SECRET` to random strings;
-- clear `REVERB_CLIENT_HOST`, `REVERB_CLIENT_PORT` and `REVERB_CLIENT_SCHEME`, so browsers connect to the page's own origin;
-- add `SKRUM_IMAGE=ghcr.io/<owner>/skrum:latest`.
+- add `SKRUM_IMAGE=ghcr.io/<owner>/skrum:latest`;
+- mail goes to the log (`MAIL_MAILER=log`) until you set the `MAIL_*` variables.
+
+Then empty the realtime client settings, keeping the keys with empty values, so browsers use the page's own host through Caddy:
+
+```dotenv
+REVERB_CLIENT_HOST=
+REVERB_CLIENT_PORT=
+REVERB_CLIENT_SCHEME=
+```
 
 Start it:
 
@@ -38,7 +47,7 @@ Several addresses, or a domain with an explicit port, are not supported by the c
 
 Certificates live in the `caddy-data` volume. Keep `/data` and `/config` on named volumes as in `compose.production.yaml`; if you switch to bind mounts, they must be writable by uid 82 (`www-data`) or Caddy cannot store certificates.
 
-Web traffic and websockets share one port: Caddy proxies Reverb's `/app/*` and `/apps/*` paths to Reverb inside the container, so nothing else needs to be exposed. Host ports are set with `SKRUM_HTTP_PORT` (default `80`) and `SKRUM_HTTPS_PORT` (default `443`). `SKRUM_ENV_FILE` selects another env file (default `.env`).
+Web traffic and websockets share one port: Caddy proxies Reverb's `/app/*` and `/apps/*` paths to Reverb inside the container, so nothing else needs to be exposed. Host ports are set with `SKRUM_HTTP_PORT` (default `80`) and `SKRUM_HTTPS_PORT` (default `443`). Changing them away from 443 and 80 breaks automatic HTTPS certificate issuance, so use them only with `SERVER_NAME=:80` behind a proxy or for local testing. `SKRUM_ENV_FILE` selects another env file (default `.env`).
 
 ## Configuration
 
