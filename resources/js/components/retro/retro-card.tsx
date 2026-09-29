@@ -1,7 +1,8 @@
-import { EyeOff, Pencil, Trash2, Ungroup } from 'lucide-react';
+import { Crosshair, EyeOff, Pencil, Trash2, Ungroup } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import CardsController from '@/actions/App/Http/Controllers/Retros/CardsController';
 import CardGroupsController from '@/actions/App/Http/Controllers/Retros/CardGroupsController';
+import RetroHighlightsController from '@/actions/App/Http/Controllers/Retros/RetroHighlightsController';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useTrans } from '@/hooks/use-trans';
@@ -45,6 +46,22 @@ export function RetroCard({ card, ctx, isChild = false, footer }: Props) {
                 ungroupedCards: [],
             });
             await ctx.refetch();
+        }
+    };
+
+    const toggleHighlight = async () => {
+        const response = await ctx.run(
+            retroRequest<{ highlightedCardId: string | null }>(
+                RetroHighlightsController.update(ctx.board.retro.id),
+                { card_id: isHighlighted ? null : card.id },
+            ),
+        );
+
+        if (response) {
+            ctx.dispatch({
+                type: 'highlight.set',
+                cardId: response.highlightedCardId,
+            });
         }
     };
 
@@ -114,6 +131,22 @@ export function RetroCard({ card, ctx, isChild = false, footer }: Props) {
                                     >
                                         {card.votes ?? 0}
                                     </Badge>
+                                )}
+                            {!isChild &&
+                                phase === 'discussing' &&
+                                ctx.board.viewer.isFacilitator && (
+                                    <Button
+                                        size="sm"
+                                        variant={
+                                            isHighlighted ? 'default' : 'ghost'
+                                        }
+                                        className="h-7"
+                                        aria-pressed={isHighlighted}
+                                        onClick={() => void toggleHighlight()}
+                                    >
+                                        <Crosshair className="size-3.5" />
+                                        {t('Discuss')}
+                                    </Button>
                                 )}
                             {isChild && phase === 'grouping' && (
                                 <Button

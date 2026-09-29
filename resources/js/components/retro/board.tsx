@@ -8,7 +8,7 @@ import {
     type DragEndEvent,
 } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
-import type { Dispatch } from 'react';
+import { useEffect, type Dispatch } from 'react';
 import CardGroupsController from '@/actions/App/Http/Controllers/Retros/CardGroupsController';
 import CardPositionsController from '@/actions/App/Http/Controllers/Retros/CardPositionsController';
 import { useRetroBoard } from '@/hooks/use-retro-board';
@@ -40,6 +40,20 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
             coordinateGetter: sortableKeyboardCoordinates,
         }),
     );
+
+    const highlightedCardId = board.retro.highlightedCardId;
+
+    useEffect(() => {
+        if (!highlightedCardId) {
+            return;
+        }
+
+        document.getElementById(`card-${highlightedCardId}`)?.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center',
+            inline: 'center',
+        });
+    }, [highlightedCardId]);
 
     if (status !== 'active') {
         return <BoardEnded reason={status} teamUrl={board.links.team} />;
@@ -135,7 +149,7 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
     return (
         <div className="flex min-h-dvh flex-col">
             <BoardHeader
-                board={board}
+                ctx={ctx}
                 online={online}
                 actions={
                     board.retro.phase === 'voting' ? (

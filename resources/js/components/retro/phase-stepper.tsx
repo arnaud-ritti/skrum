@@ -1,6 +1,10 @@
+import RetroPhasesController from '@/actions/App/Http/Controllers/Retros/RetroPhasesController';
+import { Button } from '@/components/ui/button';
 import { useTrans } from '@/hooks/use-trans';
+import { retroRequest } from '@/lib/retro/api';
 import { Phases, type RetroPhase } from '@/lib/retro/types';
 import { cn } from '@/lib/utils';
+import type { BoardContextValue } from './board';
 
 export const PhaseLabels: Record<RetroPhase, string> = {
     writing: 'Writing',
@@ -10,28 +14,81 @@ export const PhaseLabels: Record<RetroPhase, string> = {
     completed: 'Completed',
 };
 
-export function PhaseStepper({ phase }: { phase: RetroPhase }) {
+type Props = {
+    phase: RetroPhase;
+    ctx?: BoardContextValue;
+    onChanged?: () => void;
+};
+
+export function PhaseStepper({ phase, ctx, onChanged }: Props) {
     const { t } = useTrans();
     const current = Phases.indexOf(phase);
+    const previous = Phases[current - 1];
+    const next = Phases[current + 1];
+
+    const move = async (target: RetroPhase) => {
+        if (!ctx) {
+            return;
+        }
+
+        const response = await ctx.run(
+            retroRequest<{ phase: RetroPhase }>(
+                RetroPhasesController.update(ctx.board.retro.id),
+                { phase: target },
+            ),
+        );
+
+        if (response) {
+            onChanged?.();
+        }
+    };
+
+    const isFacilitator = ctx?.board.viewer.isFacilitator === true;
 
     return (
-        <ol
-            className="flex items-center gap-1 text-xs"
-            aria-label={t('Phases')}
-        >
-            {Phases.map((step, index) => (
-                <li
-                    key={step}
-                    aria-current={step === phase ? 'step' : undefined}
-                    className={cn(
-                        'rounded-full px-2 py-0.5',
-                        index < current && 'text-muted-foreground',
-                        step === phase && 'bg-primary text-primary-foreground',
-                    )}
+        <div className="flex items-center gap-2">
+            {isFacilitator && previous && phase !== 'completed' && (
+                <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => void move(previous)}
                 >
-                    {t(PhaseLabels[step])}
-                </li>
-            ))}
-        </ol>
+                    {t('Previous')}
+                </Button>
+            )}
+            <ol
+                className="flex items-center gap-1 text-xs"
+                aria-label={t('Phases')}
+            >
+                {Phases.map((step, index) => (
+                    <li
+                        key={step}
+                        aria-current={step === phase ? 'step' : undefined}
+                        className={cn(
+                            'rounded-full px-2 py-0.5',
+                            index < current && 'text-muted-foreground',
+                            step === phase &&
+                                'bg-primary text-primary-foreground',
+                        )}
+                    >
+                        {t(PhaseLabels[step])}
+                    </li>
+                ))}
+            </ol>
+            {isFacilitator && next && (
+                <Button size="sm" onClick={() => void move(next)}>
+                    {t(next === 'completed' ? 'Complete' : 'Next')}
+                </Button>
+            )}
+            {isFacilitator && phase === 'completed' && (
+                <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => void move('discussing')}
+                >
+                    {t('Reopen')}
+                </Button>
+            )}
+        </div>
     );
 }
