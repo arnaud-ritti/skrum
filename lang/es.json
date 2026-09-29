@@ -510,5 +510,7 @@
     "The retrospective can only move to the previous or next phase.": "La retrospectiva solo puede pasar a la fase anterior o siguiente.",
     "Anonymity can only be turned off before any card is written.": "El anonimato solo se puede desactivar antes de que se escriba ninguna tarjeta.",
     "The facilitator must be a member of this team.": "El facilitador debe ser miembro de este equipo.",
-    "The selected card must be a top-level card of this retrospective.": "La tarjeta seleccionada debe ser una tarjeta de nivel superior de esta retrospectiva."
+    "The selected card must be a top-level card of this retrospective.": "La tarjeta seleccionada debe ser una tarjeta de nivel superior de esta retrospectiva.",
+    "This column still has cards.": "Esta columna todavía tiene tarjetas.",
+    "Send every column of this retrospective exactly once.": "Envía cada columna de esta retrospectiva exactamente una vez."
 }

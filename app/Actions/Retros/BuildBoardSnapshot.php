@@ -5,7 +5,6 @@ namespace App\Actions\Retros;
 use App\Enums\RetroPhase;
 use App\Models\ActionItem;
 use App\Models\Card;
-use App\Models\Column;
 use App\Models\Participant;
 use App\Models\Retro;
 
@@ -13,6 +12,7 @@ class BuildBoardSnapshot
 {
     public function __construct(
         private PresentCard $presentCard,
+        private PresentColumns $presentColumns,
         private PresentActionItem $presentActionItem,
     ) {}
 
@@ -23,7 +23,6 @@ class BuildBoardSnapshot
     {
         $retro->loadMissing([
             'team.workspace',
-            'columns',
             'participants.user',
             'cards.participant.user',
             'actionItems.assignee.user',
@@ -65,12 +64,7 @@ class BuildBoardSnapshot
                 'isGuest' => $viewer->isGuest(),
                 'remainingVotes' => max(0, $retro->votes_per_participant - (int) $myVotes->sum()),
             ],
-            'columns' => $retro->columns->map(fn (Column $column) => [
-                'id' => $column->id,
-                'title' => $column->title,
-                'color' => $column->color->value,
-                'position' => $column->position,
-            ])->values()->all(),
+            'columns' => $this->presentColumns->handle($retro),
             'cards' => $retro->cards->sortBy('position')->map(fn (Card $card) => [
                 ...$this->presentCard->handle($card, $retro, $viewer),
                 'votes' => $showsTotals ? (int) ($voteTotals[$card->id] ?? 0) : null,

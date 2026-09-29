@@ -249,5 +249,7 @@
     "The retrospective can only move to the previous or next phase.": "The retrospective can only move to the previous or next phase.",
     "Anonymity can only be turned off before any card is written.": "Anonymity can only be turned off before any card is written.",
     "The facilitator must be a member of this team.": "The facilitator must be a member of this team.",
-    "The selected card must be a top-level card of this retrospective.": "The selected card must be a top-level card of this retrospective."
+    "The selected card must be a top-level card of this retrospective.": "The selected card must be a top-level card of this retrospective.",
+    "This column still has cards.": "This column still has cards.",
+    "Send every column of this retrospective exactly once.": "Send every column of this retrospective exactly once."
 }
