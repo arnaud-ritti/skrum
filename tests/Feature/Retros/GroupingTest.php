@@ -104,3 +104,18 @@ it('does not leak authors of anonymous retros in grouping broadcasts', function 
 
     Event::assertDispatched(CardGrouped::class, fn (CardGrouped $event) => collect($event->cards)->every(fn (array $card) => $card['author'] === null));
 });
+
+it('refuses a lead that was grouped by an earlier request', function () {
+    [$retro, $user] = groupingRetro();
+    $cardA = Card::factory()->create(['retro_id' => $retro->id]);
+    $cardB = Card::factory()->create(['retro_id' => $retro->id]);
+    $cardC = Card::factory()->create(['retro_id' => $retro->id]);
+
+    $this->actingAs($user)->putJson(route('retros.cards.group.update', [$retro, $cardB]), ['parent_card_id' => $cardC->id])->assertOk();
+
+    $this->actingAs($user)
+        ->putJson(route('retros.cards.group.update', [$retro, $cardA]), ['parent_card_id' => $cardB->id])
+        ->assertUnprocessable();
+
+    expect($cardA->fresh()->parent_card_id)->toBeNull();
+});

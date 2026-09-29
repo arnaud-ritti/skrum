@@ -12,6 +12,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Card;
 use App\Models\Participant;
 use App\Models\Retro;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -36,6 +37,9 @@ class CardGroupsController extends Controller
         ]);
 
         $changed = DB::transaction(function () use ($retro, $card, $validated): Collection {
+            Retro::query()->whereKey($retro->id)->lockForUpdate()->first();
+
+            $card = $retro->cards()->whereKey($card->id)->firstOrFail();
             $lead = $retro->cards()->whereKey($validated['parent_card_id'])->firstOrFail();
 
             $changed = $this->groupCard->group($card, $lead);
@@ -55,6 +59,10 @@ class CardGroupsController extends Controller
         RetroGuard::phase($retro, RetroPhase::Grouping);
 
         $changed = DB::transaction(function () use ($retro, $card): Collection {
+            Retro::query()->whereKey($retro->id)->lockForUpdate()->first();
+
+            $card = $retro->cards()->whereKey($card->id)->firstOrFail();
+
             $changed = $this->groupCard->ungroup($card);
 
             (new CardUngrouped($retro->id, $this->present($changed, $retro, null)))->sendToOthers();
@@ -71,6 +79,9 @@ class CardGroupsController extends Controller
      */
     private function present(Collection $cards, Retro $retro, ?Participant $viewer): array
     {
+        $cards = new EloquentCollection($cards->all());
+        $cards->load('participant.user');
+
         return $cards->map(fn (Card $card) => $this->presentCard->handle($card, $retro, $viewer))->values()->all();
     }
 }
