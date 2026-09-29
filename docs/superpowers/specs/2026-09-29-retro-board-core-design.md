@@ -16,6 +16,7 @@ Skrum is an open-source, self-hostable alternative to QRetro. Anyone can deploy 
 - Guest participation via per-retro link
 - Realtime board: templates, hidden writing phase, grouping, voting, facilitator-driven phases, shared timer, anonymous cards, basic action items
 - Presence (who is online) with DiceBear avatars
+- UI fully available in English, French, Spanish and German
 - Docker image based on FrankenPHP + Laravel Octane, processes supervised by s6-overlay
 
 ### Out of scope (later specs)
@@ -30,7 +31,6 @@ Skrum is an open-source, self-hostable alternative to QRetro. Anyone can deploy 
 ### Assumptions
 
 - PostgreSQL is the only supported database.
-- UI copy is English, all strings go through `__()` so translations can be added later.
 - Existing stack stays: Laravel 13, Inertia v3 + React 19, Tailwind 4, Fortify, Wayfinder, Pest.
 
 ## 2. Domain model
@@ -71,7 +71,7 @@ Every table uses a UUID primary key (Eloquent `HasUuids`, time-ordered UUIDv7) �
 ### Modelling decisions
 
 - **Participant** unifies members and guests. Cards, votes and action items reference a participant, never a user directly.
-- **Templates** are a PHP enum `RetroTemplate` (`StartStopContinue`, `MadSadGlad`, `FourLs`, `WentWellToImproveActions`, `Custom`) exposing default column definitions. On creation, columns are copied into `columns`. Columns can be added/renamed/reordered/removed by the facilitator only while the retro is in `Writing` phase and has no cards in the affected column.
+- **Templates** are a PHP enum `RetroTemplate` (`StartStopContinue`, `MadSadGlad`, `FourLs`, `WentWellToImproveActions`, `Custom`) exposing default column definitions. On creation, columns are copied into `columns` with titles translated into the creator's locale at that moment (stored text, not translation keys). Columns can be added/renamed/reordered/removed by the facilitator only while the retro is in `Writing` phase and has no cards in the affected column.
 - **Grouping**: `parent_card_id` points to the group's lead card. Only one level of nesting: a lead card cannot itself have a parent. Grouping a lead card onto another card moves its children too. Votes target top-level cards only; if a card that already has votes (facilitator stepped back from Voting) is grouped under another card, its votes are reassigned to the new lead card.
 - **Phases**: enum `RetroPhase` = `Writing`, `Grouping`, `Voting`, `Discussing`, `Completed`.
 - **Anonymous**: the author is always stored (to allow editing/deleting own cards) but is never serialized to other participants when `is_anonymous` is true.
@@ -197,7 +197,17 @@ Each endpoint: resolve participant → authorize (policy + phase rule) → persi
 - Timer: facilitator sets a duration (or clears it) in any phase except `Completed`. At zero clients play a soft sound and show "time's up". Phases never auto-advance.
 - Presence: an avatar strip shows online participants (from the presence channel).
 
-## 5. Packaging and deployment
+## 5. Internationalization
+
+- Supported locales: `en` (default and fallback), `fr`, `es`, `de`. Configured in `config/skrum.php` (`locales`), default from `APP_LOCALE`.
+- **Locale resolution** per request, first match wins: authenticated user's `users.locale` → `locale` cookie (guests and logged-out visitors) → best match from `Accept-Language` → `en`. Done in a middleware; nothing stored in static state (Octane).
+- **Switching:** members choose their language in settings (persisted to `users.locale`); logged-out visitors and guests use a language switcher on auth and guest pages (sets the cookie).
+- **App strings:** one source of truth in `lang/{en,fr,es,de}.json`. PHP uses `__()`. Only the current locale's JSON is shared to React as an Inertia prop; a `useTrans()` hook exposes `t(key, replacements)` with the same `:placeholder` syntax as Laravel. No frontend i18n dependency.
+- **Framework strings** (validation, auth, passwords, pagination) for `fr`, `es`, `de` come from `laravel-lang/common` as a dev dependency; generated `lang/` files are committed so production does not need the package.
+- Every user-facing string — including the existing starter-kit auth and settings pages, emails and toast messages — goes through translation. A test fails if a key used in `en.json` is missing from any other locale file.
+- Emails are sent in the recipient's locale when known (`users.locale`); invitations to unknown recipients use the inviter's locale.
+
+## 6. Packaging and deployment
 
 - Single Docker image based on **FrankenPHP** (Caddy built in) running **Laravel Octane** in worker mode. No nginx/PHP-FPM.
 - Caddyfile reverse-proxies Reverb's websocket paths (`/app/*`, `/apps/*`) to Reverb on localhost, so only one port is exposed. Automatic HTTPS applies when `SERVER_NAME` is a public domain.
@@ -207,7 +217,7 @@ Each endpoint: resolve participant → authorize (policy + phase rule) → persi
 - Local development keeps Sail, with a Reverb service added.
 - **Octane constraint:** no request-specific state in singletons or static properties. The current participant and current workspace are resolved per request (request attributes / scoped bindings).
 
-## 6. Error handling
+## 7. Error handling
 
 - Rejected mutation (phase rule, vote limit, policy) → 403/422 JSON with a translated message → client rolls back and shows a toast.
 - Target deleted concurrently → 404 → client removes the item locally.
@@ -215,7 +225,7 @@ Each endpoint: resolve participant → authorize (policy + phase rule) → persi
 - Revoked or disabled guest link → join page shows "This link is no longer valid".
 - SSO signup refused by `SignupGate` → login page shows "Signups are restricted on this instance".
 
-## 7. Testing
+## 8. Testing
 
 - Pest feature tests per endpoint covering permissions, phase rules and vote limits.
 - **Redaction is the main security invariant**: tests assert that neither the snapshot nor any broadcast payload delivered to another participant contains Writing-phase card content, anonymous authorship or voter identity.
@@ -224,7 +234,7 @@ Each endpoint: resolve participant → authorize (policy + phase rule) → persi
 - SSO callback tests with Socialite fakes (link by verified email, refuse unverified email linking, signup gate applied).
 - Frontend: TypeScript type-check and existing lint. No browser E2E in v1.
 
-## 8. Acceptance criteria
+## 9. Acceptance criteria
 
 ### Signup and SSO
 - AC1: With an empty `users` table, the first registration succeeds in every signup mode and that user has `is_instance_admin = true`.
@@ -272,6 +282,11 @@ Each endpoint: resolve participant → authorize (policy + phase rule) → persi
 
 ### Action items
 - AC30: In Discussing, any participant can create, edit, complete and delete action items and assign them to a participant; the Completed summary lists them.
+
+### Internationalization
+- AC34: The UI can be used entirely in each of `en`, `fr`, `es`, `de`; `lang/{fr,es,de}.json` contain every key of `lang/en.json`.
+- AC35: Locale resolves in order user preference → cookie → `Accept-Language` → `en`; members can change it in settings and visitors via the switcher.
+- AC36: Validation errors are shown in the active locale.
 
 ### Packaging
 - AC31: `docker compose up` with the example compose file and a filled `.env` yields a working instance (web + websocket on one port) with migrations applied.
