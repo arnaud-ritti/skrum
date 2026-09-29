@@ -54,6 +54,10 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
             return;
         }
 
+        if (target.kind === 'card' && target.id === dragged.id) {
+            return;
+        }
+
         const retroId = board.retro.id;
 
         if (
@@ -92,12 +96,23 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
         const siblings = topLevelCards(board.cards, columnId).filter(
             (card) => card.id !== dragged.id,
         );
-        const index = Math.max(
-            targetCard
-                ? siblings.findIndex((card) => card.id === targetCard.id)
-                : siblings.length,
-            0,
+        const columnCards = topLevelCards(board.cards, columnId);
+        const draggedIndex = columnCards.findIndex(
+            (card) => card.id === dragged.id,
         );
+        const targetIndex = targetCard
+            ? columnCards.findIndex((card) => card.id === targetCard.id)
+            : -1;
+        const movesDownWithinColumn =
+            draggedIndex !== -1 && draggedIndex < targetIndex;
+        const index = targetCard
+            ? Math.max(
+                  movesDownWithinColumn
+                      ? targetIndex
+                      : siblings.findIndex((card) => card.id === targetCard.id),
+                  0,
+              )
+            : siblings.length;
 
         dispatch({ type: 'card.place', cardId: dragged.id, columnId, index });
 

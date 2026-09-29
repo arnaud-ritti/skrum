@@ -36,7 +36,10 @@ export function SortableCard({
         transform,
         transition,
         isDragging,
-    } = useSortable({ id: `card:${id}`, disabled });
+    } = useSortable({
+        id: `card:${id}`,
+        disabled: { draggable: disabled, droppable: false },
+    });
 
     return (
         <div
