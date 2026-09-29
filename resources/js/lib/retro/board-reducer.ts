@@ -18,6 +18,8 @@ export type BoardAction =
           cardId: string;
           myVotes: number;
           remainingVotes: number;
+          /** Absent on the optimistic tally dispatched before the request. */
+          votesVersion?: number;
       }
     | { type: 'timer.set'; timerEndsAt: string | null }
     | { type: 'highlight.set'; cardId: string | null }
@@ -154,6 +156,13 @@ export function boardReducer(state: Snapshot, action: BoardAction): Snapshot {
                 votesVersion: action.votesVersion,
             };
         case 'votes.tally':
+            if (
+                action.votesVersion !== undefined &&
+                action.votesVersion < state.votesVersion
+            ) {
+                return state;
+            }
+
             return {
                 ...state,
                 viewer: {

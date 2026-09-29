@@ -1,5 +1,5 @@
 import { Minus, Plus } from 'lucide-react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import CardVotesController from '@/actions/App/Http/Controllers/Retros/CardVotesController';
 import { Button } from '@/components/ui/button';
 import { useTrans } from '@/hooks/use-trans';
@@ -19,13 +19,15 @@ export function VoteControls({ card }: { card: BoardCard }) {
     const ctx = useBoard();
     const { t } = useTrans();
     const [busy, setBusy] = useState(false);
+    const inFlight = useRef(false);
     const route = { retro: ctx.board.retro.id, card: card.id };
 
     const vote = async (delta: 1 | -1) => {
-        if (busy) {
+        if (inFlight.current) {
             return;
         }
 
+        inFlight.current = true;
         setBusy(true);
 
         ctx.dispatch({
@@ -43,7 +45,10 @@ export function VoteControls({ card }: { card: BoardCard }) {
                         : CardVotesController.destroy(route),
                 ),
             )
-            .finally(() => setBusy(false));
+            .finally(() => {
+                inFlight.current = false;
+                setBusy(false);
+            });
 
         if (tally) {
             ctx.apply({
@@ -51,6 +56,7 @@ export function VoteControls({ card }: { card: BoardCard }) {
                 cardId: tally.cardId,
                 myVotes: tally.myVotes,
                 remainingVotes: tally.remainingVotes,
+                votesVersion: tally.votesVersion,
             });
             ctx.apply({
                 type: 'votes.cast',

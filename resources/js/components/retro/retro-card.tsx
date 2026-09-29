@@ -1,5 +1,5 @@
 import { Crosshair, EyeOff, Pencil, Trash2, Ungroup } from 'lucide-react';
-import { useState, type ReactNode } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import CardsController from '@/actions/App/Http/Controllers/Retros/CardsController';
 import CardGroupsController from '@/actions/App/Http/Controllers/Retros/CardGroupsController';
 import RetroHighlightsController from '@/actions/App/Http/Controllers/Retros/RetroHighlightsController';
@@ -26,16 +26,18 @@ export function RetroCard({ card, isChild = false, footer }: Props) {
     const [editing, setEditing] = useState(false);
     const [highlighting, setHighlighting] = useState(false);
     const [removing, setRemoving] = useState(false);
+    const removeInFlight = useRef(false);
     const phase = ctx.board.retro.phase;
     const canChange =
         card.isMine && (phase === 'writing' || phase === 'grouping');
     const isHighlighted = ctx.board.retro.highlightedCardId === card.id;
 
     const remove = async () => {
-        if (removing) {
+        if (removeInFlight.current) {
             return;
         }
 
+        removeInFlight.current = true;
         setRemoving(true);
 
         const result = await ctx
@@ -47,7 +49,10 @@ export function RetroCard({ card, isChild = false, footer }: Props) {
                     }),
                 ),
             )
-            .finally(() => setRemoving(false));
+            .finally(() => {
+                removeInFlight.current = false;
+                setRemoving(false);
+            });
 
         if (result !== undefined) {
             ctx.apply({
