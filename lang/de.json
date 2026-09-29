@@ -652,5 +652,11 @@
     "Comment deleted": "Kommentar gelöscht",
     "Edit comment": "Kommentar bearbeiten",
     "Delete comment": "Kommentar löschen",
-    "Anonymous": "Anonym"
+    "Anonymous": "Anonym",
+    "Choose a GIF": "GIF auswählen",
+    "Search GIFs…": "GIFs suchen…",
+    "Remove GIF": "GIF entfernen",
+    "No GIFs found.": "Keine GIFs gefunden.",
+    "Powered by :provider": "Bereitgestellt von :provider",
+    "Too many searches, wait a moment.": "Zu viele Suchen, warte einen Moment."
 }

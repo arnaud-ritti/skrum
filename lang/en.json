@@ -391,5 +391,11 @@
     "Comment deleted": "Comment deleted",
     "Edit comment": "Edit comment",
     "Delete comment": "Delete comment",
-    "Anonymous": "Anonymous"
+    "Anonymous": "Anonymous",
+    "Choose a GIF": "Choose a GIF",
+    "Search GIFs…": "Search GIFs…",
+    "Remove GIF": "Remove GIF",
+    "No GIFs found.": "No GIFs found.",
+    "Powered by :provider": "Powered by :provider",
+    "Too many searches, wait a moment.": "Too many searches, wait a moment."
 }

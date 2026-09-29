@@ -12,6 +12,7 @@ import type { BoardCard, CardPayload } from '@/lib/retro/types';
 import { cn } from '@/lib/utils';
 import { useBoard } from './board-context';
 import { CardEditor } from './card-editor';
+import { CardGif } from './card-gif';
 import { CardComments } from './card-comments';
 import { CardReactions } from './card-reactions';
 import { VoteControls } from './vote-controls';
@@ -126,9 +127,14 @@ export function RetroCard({ card, isChild = false, footer }: Props) {
                             {t('Hidden until writing ends')}
                         </p>
                     ) : (
-                        <p className="break-words whitespace-pre-wrap">
-                            {card.content}
-                        </p>
+                        <>
+                            {card.gif && <CardGif gif={card.gif} />}
+                            {card.content !== null && (
+                                <p className="break-words whitespace-pre-wrap">
+                                    {card.content}
+                                </p>
+                            )}
+                        </>
                     )}
                     <CardReactions card={card} />
                     <CardComments card={card} />
@@ -247,9 +253,20 @@ export function CardPreview({
                     {t('Hidden until writing ends')}
                 </p>
             ) : (
-                <p className="break-words whitespace-pre-wrap">
-                    {card.content}
-                </p>
+                <>
+                    {card.gif && (
+                        <img
+                            src={card.gif.previewUrl}
+                            alt=""
+                            className="mb-2 h-auto w-full rounded-md"
+                        />
+                    )}
+                    {card.content !== null && (
+                        <p className="break-words whitespace-pre-wrap">
+                            {card.content}
+                        </p>
+                    )}
+                </>
             )}
             {card.author && (
                 <p className="mt-2 text-xs text-muted-foreground">
