@@ -22,7 +22,11 @@ export function whisperTransport(
 ) {
     return {
         send(message: unknown) {
-            channel.whisper(event, message);
+            try {
+                channel.whisper(event, message);
+            } catch {
+                // The channel was left (board unmounting): nothing to send to.
+            }
         },
         onMessage(handler: (raw: unknown, senderId?: string) => void) {
             const listener = (
@@ -45,4 +49,20 @@ export function whisperTransport(
             };
         },
     };
+}
+
+const channelKeys = new WeakMap<object, number>();
+let channelKeyCounter = 0;
+
+/** A stable key per channel object, so consumers rebuild when Echo swaps it. */
+export function channelKey(channel: object): number {
+    let key = channelKeys.get(channel);
+
+    if (key === undefined) {
+        channelKeyCounter += 1;
+        key = channelKeyCounter;
+        channelKeys.set(channel, key);
+    }
+
+    return key;
 }

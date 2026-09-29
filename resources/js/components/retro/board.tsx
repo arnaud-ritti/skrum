@@ -26,6 +26,7 @@ import { CompletedSummary } from './completed-summary';
 import { ConnectionBanner } from './connection-banner';
 import { BoardProvider, type BoardContextValue } from './board-context';
 import { parseDndId, useDragAccessibility } from './dnd';
+import { FlyingReactions } from './flying-reactions';
 import { HideMyCursorKey, LiveCursorLayer } from './live-cursor-layer';
 import { CardPreview } from './retro-card';
 import { RetroColumn } from './retro-column';
@@ -268,6 +269,7 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
                     </div>
                 </div>
             </div>
+            <FlyingReactions />
         </BoardProvider>
     );
 }

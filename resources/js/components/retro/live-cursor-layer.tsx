@@ -9,6 +9,7 @@ import { MousePointer2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useTrans } from '@/hooks/use-trans';
 import {
+    channelKey,
     whisperTransport,
     type WhisperChannel,
 } from '@/lib/retro/whisper-transport';
@@ -38,7 +39,7 @@ export function LiveCursorLayer({ container, hidden }: Props) {
 
     return (
         <Cursors
-            key={board.retro.id}
+            key={`${board.retro.id}:${channelKey(presence)}`}
             presence={presence}
             container={container}
             hidden={hidden}

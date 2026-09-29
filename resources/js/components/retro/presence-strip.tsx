@@ -24,6 +24,7 @@ export function PresenceStrip({ members }: { members: PresenceMember[] }) {
                         <img
                             src={member.avatarUrl}
                             alt={member.name}
+                            data-presence-id={member.id}
                             className="size-8 rounded-full border-2 border-background bg-muted"
                         />
                     </TooltipTrigger>
