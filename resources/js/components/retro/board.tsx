@@ -157,53 +157,52 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
     return (
         <BoardProvider value={ctx}>
             <div className="flex min-h-dvh flex-col">
-                <BoardHeader
-                    online={online}
-                    actions={
-                        board.retro.phase === 'voting' ? (
-                            <VoteProgress board={board} />
-                        ) : undefined
-                    }
-                />
-                <ConnectionBanner reconnecting={reconnecting} />
                 {sessionExpired && <SessionExpiredBanner />}
-                <div
-                    className="flex flex-1 flex-col lg:min-h-0"
-                    inert={sessionExpired}
-                >
-                    {board.retro.phase === 'completed' && (
-                        <CompletedSummary board={board} />
-                    )}
-                    <div className="flex flex-1 flex-col lg:min-h-0 lg:flex-row">
-                        <DndContext
-                            id="retro-board"
-                            sensors={sensors}
-                            accessibility={dragAccessibility}
-                            collisionDetection={closestCenter}
-                            onDragEnd={(event) => void handleDragEnd(event)}
-                        >
-                            <main className="flex min-w-0 flex-1 items-start gap-4 overflow-x-auto p-4">
-                                {board.columns.length === 0 && (
-                                    <p className="text-sm text-muted-foreground">
-                                        {t('No columns yet.')}
-                                    </p>
-                                )}
-                                {board.columns.map((column, index) => (
-                                    <RetroColumn
-                                        key={column.id}
-                                        column={column}
-                                        index={index}
-                                    />
-                                ))}
-                                {board.viewer.isFacilitator &&
-                                    board.retro.phase === 'writing' && (
-                                        <AddColumn />
-                                    )}
-                            </main>
-                        </DndContext>
-                        {board.retro.phase === 'discussing' && (
-                            <ActionItemsPanel />
+                <div className="flex flex-1 flex-col" inert={sessionExpired}>
+                    <BoardHeader
+                        online={online}
+                        actions={
+                            board.retro.phase === 'voting' ? (
+                                <VoteProgress board={board} />
+                            ) : undefined
+                        }
+                    />
+                    <ConnectionBanner reconnecting={reconnecting} />
+                    <div className="flex flex-1 flex-col lg:min-h-0">
+                        {board.retro.phase === 'completed' && (
+                            <CompletedSummary board={board} />
                         )}
+                        <div className="flex flex-1 flex-col lg:min-h-0 lg:flex-row">
+                            <DndContext
+                                id="retro-board"
+                                sensors={sensors}
+                                accessibility={dragAccessibility}
+                                collisionDetection={closestCenter}
+                                onDragEnd={(event) => void handleDragEnd(event)}
+                            >
+                                <main className="flex min-w-0 flex-1 items-start gap-4 overflow-x-auto p-4">
+                                    {board.columns.length === 0 && (
+                                        <p className="text-sm text-muted-foreground">
+                                            {t('No columns yet.')}
+                                        </p>
+                                    )}
+                                    {board.columns.map((column, index) => (
+                                        <RetroColumn
+                                            key={column.id}
+                                            column={column}
+                                            index={index}
+                                        />
+                                    ))}
+                                    {board.viewer.isFacilitator &&
+                                        board.retro.phase === 'writing' && (
+                                            <AddColumn />
+                                        )}
+                                </main>
+                            </DndContext>
+                            {board.retro.phase === 'discussing' && (
+                                <ActionItemsPanel />
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>

@@ -47,7 +47,9 @@ class CardVotesController extends Controller
                 'participant_id' => $participant->id,
             ]);
 
-            (new VoteCast($locked->id, $locked->votes()->count()))->sendToOthers();
+            $locked->increment('votes_version');
+
+            (new VoteCast($locked->id, $locked->votes()->count(), $locked->votes_version))->sendToOthers();
         });
 
         return response()->json($this->tally($retro, $card, $participant), 201);
@@ -72,7 +74,9 @@ class CardVotesController extends Controller
 
             $vote->delete();
 
-            (new VoteRetracted($locked->id, $locked->votes()->count()))->sendToOthers();
+            $locked->increment('votes_version');
+
+            (new VoteRetracted($locked->id, $locked->votes()->count(), $locked->votes_version))->sendToOthers();
         });
 
         return response()->json($this->tally($retro, $card, $participant));
@@ -83,7 +87,8 @@ class CardVotesController extends Controller
      *     cardId: string,
      *     myVotes: int,
      *     remainingVotes: int,
-     *     votesCast: int
+     *     votesCast: int,
+     *     votesVersion: int
      * }
      */
     private function tally(Retro $retro, Card $card, Participant $participant): array
@@ -95,6 +100,7 @@ class CardVotesController extends Controller
             'myVotes' => $card->votes()->where('participant_id', $participant->id)->count(),
             'remainingVotes' => max(0, $retro->votes_per_participant - $used),
             'votesCast' => $retro->votes()->count(),
+            'votesVersion' => (int) Retro::query()->whereKey($retro->id)->value('votes_version'),
         ];
     }
 }

@@ -30,7 +30,7 @@ it('casts votes and broadcasts only the overall count', function () {
         ->assertJson(['cardId' => $card->id, 'myVotes' => 1, 'remainingVotes' => 2]);
 
     Event::assertDispatched(VoteCast::class, fn (VoteCast $event) => $event->votesCast === 1
-        && array_keys($event->broadcastWith()) === ['votesCast']);
+        && array_keys($event->broadcastWith()) === ['votesCast', 'votesVersion']);
 });
 
 it('allows several votes on one card up to the limit', function () {
@@ -122,4 +122,24 @@ it('returns the retro vote total with every tally', function () {
         ->deleteJson(route('retros.cards.votes.destroy', [$retro, $card]))
         ->assertOk()
         ->assertJsonPath('votesCast', 1);
+});
+
+it('orders vote totals by a version that grows with every cast and retraction', function () {
+    [$retro, $user, , $card] = votingRetro();
+
+    $cast = $this->actingAs($user)
+        ->postJson(route('retros.cards.votes.store', [$retro, $card]))
+        ->assertCreated()
+        ->json('votesVersion');
+
+    $retracted = $this->actingAs($user)
+        ->deleteJson(route('retros.cards.votes.destroy', [$retro, $card]))
+        ->assertOk()
+        ->json('votesVersion');
+
+    expect($retracted)->toBeGreaterThan($cast);
+
+    Event::assertDispatched(VoteCast::class, fn (VoteCast $event) => $event->votesVersion === $cast);
+    Event::assertDispatched(VoteRetracted::class, fn (VoteRetracted $event) => $event->votesVersion === $retracted);
+    expect($retro->fresh()->votes_version)->toBe($retracted);
 });

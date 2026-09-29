@@ -4,7 +4,7 @@ namespace App\Events\Retros;
 
 class VoteCast extends RetroBroadcastEvent
 {
-    public function __construct(string $retroId, public int $votesCast)
+    public function __construct(string $retroId, public int $votesCast, public int $votesVersion)
     {
         parent::__construct($retroId);
     }
@@ -16,6 +16,9 @@ class VoteCast extends RetroBroadcastEvent
 
     public function broadcastWith(): array
     {
-        return ['votesCast' => $this->votesCast];
+        return [
+            'votesCast' => $this->votesCast,
+            'votesVersion' => $this->votesVersion,
+        ];
     }
 }

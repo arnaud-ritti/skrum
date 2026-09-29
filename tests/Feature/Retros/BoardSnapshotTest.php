@@ -156,3 +156,10 @@ it('lists handover candidates for the facilitator only', function () {
         ->and(collect($candidates)->pluck('userId'))->not->toContain($outsider->id)
         ->and(snapshotFor($retro, $member)['viewer']['transferCandidates'])->toBe([]);
 });
+
+it('exposes the current vote version', function () {
+    $retro = Retro::factory()->inPhase(RetroPhase::Voting)->create(['votes_version' => 7]);
+    [, $viewer] = retroMember($retro);
+
+    expect(snapshotFor($retro, $viewer)['votesVersion'])->toBe(7);
+});

@@ -79,6 +79,7 @@ export type Snapshot = {
     participants: BoardParticipant[];
     actionItems: ActionItem[];
     votesCast: number | null;
+    votesVersion: number;
     links: { team: string | null };
     serverTime: string;
 };

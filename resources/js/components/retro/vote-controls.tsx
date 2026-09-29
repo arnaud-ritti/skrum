@@ -11,6 +11,7 @@ type Tally = {
     myVotes: number;
     remainingVotes: number;
     votesCast: number;
+    votesVersion: number;
 };
 
 export function VoteControls({ card }: { card: BoardCard }) {
@@ -41,7 +42,11 @@ export function VoteControls({ card }: { card: BoardCard }) {
                 myVotes: tally.myVotes,
                 remainingVotes: tally.remainingVotes,
             });
-            ctx.apply({ type: 'votes.cast', votesCast: tally.votesCast });
+            ctx.apply({
+                type: 'votes.cast',
+                votesCast: tally.votesCast,
+                votesVersion: tally.votesVersion,
+            });
         }
     };
 

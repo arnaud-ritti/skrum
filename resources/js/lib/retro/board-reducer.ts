@@ -12,7 +12,7 @@ export type BoardAction =
     | { type: 'card.remove'; cardId: string; ungroupedCards: CardPayload[] }
     | { type: 'card.place'; cardId: string; columnId: string; index: number }
     | { type: 'columns.set'; columns: BoardColumn[] }
-    | { type: 'votes.cast'; votesCast: number }
+    | { type: 'votes.cast'; votesCast: number; votesVersion: number }
     | {
           type: 'votes.tally';
           cardId: string;
@@ -144,7 +144,15 @@ export function boardReducer(state: Snapshot, action: BoardAction): Snapshot {
                 ),
             };
         case 'votes.cast':
-            return { ...state, votesCast: action.votesCast };
+            if (action.votesVersion <= state.votesVersion) {
+                return state;
+            }
+
+            return {
+                ...state,
+                votesCast: action.votesCast,
+                votesVersion: action.votesVersion,
+            };
         case 'votes.tally':
             return {
                 ...state,

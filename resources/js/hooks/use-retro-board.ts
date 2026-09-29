@@ -136,6 +136,7 @@ export function useRetroBoard(initial: Snapshot) {
                     apply({
                         type: 'votes.cast',
                         votesCast: payload.votesCast as number,
+                        votesVersion: payload.votesVersion as number,
                     });
                     break;
                 case 'timer.changed':

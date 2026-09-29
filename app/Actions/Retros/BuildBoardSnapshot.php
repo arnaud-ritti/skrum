@@ -83,6 +83,7 @@ class BuildBoardSnapshot
                 ->map(fn (ActionItem $item) => $this->presentActionItem->handle($item))
                 ->values()->all(),
             'votesCast' => $retro->phase === RetroPhase::Voting ? (int) $voteTotals->sum() : null,
+            'votesVersion' => (int) $retro->votes_version,
             'links' => [
                 'team' => $viewer->isGuest() ? null : route('teams.show', [$retro->team->workspace, $retro->team]),
             ],
