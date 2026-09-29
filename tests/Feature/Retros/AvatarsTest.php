@@ -2,13 +2,16 @@
 
 use App\Models\Participant;
 use App\Models\User;
+use Illuminate\Support\Facades\Cache;
 
 it('renders a cacheable svg avatar', function () {
     $response = $this->get(route('avatars.show', str_repeat('a', 32)));
 
     $response->assertOk()
         ->assertHeader('Content-Type', 'image/svg+xml')
-        ->assertHeader('Cache-Control', 'immutable, max-age=31536000, public');
+        ->assertHeader('Cache-Control', 'immutable, max-age=31536000, public')
+        ->assertHeader('X-Content-Type-Options', 'nosniff')
+        ->assertHeader('Content-Security-Policy', "default-src 'none'; style-src 'unsafe-inline'");
 
     expect($response->getContent())->toStartWith('<svg');
 });
@@ -18,6 +21,16 @@ it('renders the same avatar for the same seed', function () {
 
     expect($this->get(route('avatars.show', $seed))->getContent())
         ->toBe($this->get(route('avatars.show', $seed))->getContent());
+});
+
+it('does not cache avatars to the store', function () {
+    Cache::flush();
+    $seed = str_repeat('d', 32);
+    $cacheKey = "avatars.thumbs.{$seed}";
+
+    $this->get(route('avatars.show', $seed));
+
+    expect(Cache::has($cacheKey))->toBeFalse();
 });
 
 it('rejects malformed seeds', function (string $seed) {

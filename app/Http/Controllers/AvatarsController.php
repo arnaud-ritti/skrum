@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use DiceBear\Avatar;
 use DiceBear\Style;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Cache;
 
 class AvatarsController extends Controller
 {
@@ -14,16 +13,14 @@ class AvatarsController extends Controller
     public function show(string $seed): Response
     {
         $style = $this->style();
-
-        $svg = Cache::rememberForever("avatars.{$style}.{$seed}", function () use ($style, $seed): string {
-            $definition = Style::fromJson((string) file_get_contents($this->stylePath($style)));
-
-            return (string) new Avatar($definition, ['seed' => $seed]);
-        });
+        $definition = Style::fromJson((string) file_get_contents($this->stylePath($style)));
+        $svg = (string) new Avatar($definition, ['seed' => $seed]);
 
         return response($svg, 200, [
             'Content-Type' => 'image/svg+xml',
             'Cache-Control' => 'public, max-age=31536000, immutable',
+            'X-Content-Type-Options' => 'nosniff',
+            'Content-Security-Policy' => "default-src 'none'; style-src 'unsafe-inline'",
         ]);
     }
 
