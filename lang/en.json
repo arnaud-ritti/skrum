@@ -379,5 +379,6 @@
     "Search emoji…": "Search emoji…",
     "No emoji found.": "No emoji found.",
     ":emoji, :count reactions": ":emoji, :count reactions",
-    "Loading…": "Loading…"
+    "Loading…": "Loading…",
+    ":emoji, :count reaction": ":emoji, :count reaction"
 }

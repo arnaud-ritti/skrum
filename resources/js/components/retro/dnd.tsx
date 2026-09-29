@@ -7,7 +7,7 @@ import {
 } from '@dnd-kit/core';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import type { ReactNode } from 'react';
+import type { KeyboardEvent, PointerEvent, ReactNode } from 'react';
 import { useTrans } from '@/hooks/use-trans';
 import type { Snapshot } from '@/lib/retro/types';
 import { cn } from '@/lib/utils';
@@ -121,6 +121,16 @@ export function SortableCard({
         </div>
     );
 }
+
+/**
+ * Spread onto interactive content rendered inside a draggable card (also
+ * portaled content such as dialogs and menus, whose React events still bubble
+ * to the card) so typing and clicking never start a drag.
+ */
+export const dragIsolation = {
+    onKeyDown: (event: KeyboardEvent) => event.stopPropagation(),
+    onPointerDown: (event: PointerEvent) => event.stopPropagation(),
+};
 
 export function GroupableCard({
     id,

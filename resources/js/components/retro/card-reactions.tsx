@@ -11,6 +11,7 @@ import { retroRequest } from '@/lib/retro/api';
 import type { BoardCard, ReactionSummary } from '@/lib/retro/types';
 import { cn } from '@/lib/utils';
 import { useBoard } from './board-context';
+import { dragIsolation } from './dnd';
 import { EmojiPicker } from './emoji-picker';
 
 type Response = { cardId: string; reactions: ReactionSummary[] };
@@ -62,28 +63,42 @@ export function CardReactions({ card }: { card: BoardCard }) {
     };
 
     return (
-        <div className="mt-2 flex flex-wrap items-center gap-1">
+        <div
+            {...dragIsolation}
+            className="mt-2 flex flex-wrap items-center gap-1"
+        >
             {card.reactions.map((reaction) => (
                 <Tooltip key={reaction.emoji}>
                     <TooltipTrigger asChild>
-                        <Button
-                            size="sm"
-                            variant="outline"
-                            className={cn(
-                                'h-6 gap-1 rounded-full px-2 text-xs',
-                                reaction.mine && 'border-primary bg-primary/10',
-                            )}
-                            aria-pressed={reaction.mine}
-                            aria-label={t(':emoji, :count reactions', {
-                                emoji: reaction.emoji,
-                                count: reaction.count,
-                            })}
-                            disabled={!canReact}
-                            onClick={() => void toggle(reaction.emoji)}
+                        <span
+                            tabIndex={canReact ? -1 : 0}
+                            className="inline-flex"
                         >
-                            <span>{reaction.emoji}</span>
-                            <span>{reaction.count}</span>
-                        </Button>
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                className={cn(
+                                    'h-6 gap-1 rounded-full px-2 text-xs',
+                                    reaction.mine &&
+                                        'border-primary bg-primary/10',
+                                )}
+                                aria-pressed={reaction.mine}
+                                aria-label={t(
+                                    reaction.count === 1
+                                        ? ':emoji, :count reaction'
+                                        : ':emoji, :count reactions',
+                                    {
+                                        emoji: reaction.emoji,
+                                        count: reaction.count,
+                                    },
+                                )}
+                                disabled={!canReact}
+                                onClick={() => void toggle(reaction.emoji)}
+                            >
+                                <span>{reaction.emoji}</span>
+                                <span>{reaction.count}</span>
+                            </Button>
+                        </span>
                     </TooltipTrigger>
                     {reaction.names.length > 0 && (
                         <TooltipContent>

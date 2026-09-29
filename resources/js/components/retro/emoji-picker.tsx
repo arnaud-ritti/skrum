@@ -15,6 +15,7 @@ import {
 import { useTrans } from '@/hooks/use-trans';
 import { QuickEmoji } from '@/lib/retro/emoji';
 import { useBoard } from './board-context';
+import { dragIsolation } from './dnd';
 
 type Props = {
     onPick: (emoji: string) => void;
@@ -57,7 +58,10 @@ export function EmojiPicker({ onPick, label, children }: Props) {
                 <DropdownMenuTrigger asChild aria-label={label}>
                     {children}
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="flex flex-wrap gap-1 p-1">
+                <DropdownMenuContent
+                    {...dragIsolation}
+                    className="flex flex-wrap gap-1 p-1"
+                >
                     {QuickEmoji.map((emoji) => (
                         <DropdownMenuItem
                             key={emoji}
@@ -78,6 +82,7 @@ export function EmojiPicker({ onPick, label, children }: Props) {
             </DropdownMenu>
             <Dialog open={browsing} onOpenChange={setBrowsing}>
                 <DialogContent
+                    {...dragIsolation}
                     aria-describedby={undefined}
                     className="max-w-sm"
                 >

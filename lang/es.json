@@ -640,5 +640,6 @@
     "Search emoji…": "Buscar emoji…",
     "No emoji found.": "No se encontró ningún emoji.",
     ":emoji, :count reactions": ":emoji, :count reacciones",
-    "Loading…": "Cargando…"
+    "Loading…": "Cargando…",
+    ":emoji, :count reaction": ":emoji, :count reacción"
 }
