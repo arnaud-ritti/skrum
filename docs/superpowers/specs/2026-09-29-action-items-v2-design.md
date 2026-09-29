@@ -1,7 +1,7 @@
 # Skrum — Action items v2 — Design
 
 Date: 2026-09-29
-Status: Draft — open decisions pending
+Status: Approved decisions, awaiting spec review
 Parent spec: `docs/superpowers/specs/2026-09-29-retro-board-core-design.md` (all its rules apply unless this spec changes them explicitly — see §10). Also builds on `docs/superpowers/specs/2026-09-29-board-engagement-design.md` (lock, broadcast conventions).
 Research: `docs/superpowers/research/qretro/` (QRetro parity roadmap, spec 3 of 7; `docs-inventory.md` → "Action items", `research.md` → "Tasks drawer", `screens/retro-actions.png`)
 
@@ -13,7 +13,7 @@ Turn action items from a per-retro checklist into the team's follow-up list, on 
 
 ### In scope
 
-- New fields: priority, due date (+ derived overdue), status (via `completed_at`), team-member assignee, creator shown.
+- New fields: priority, due date (+ derived overdue), status (via `completed_at`), team-member assignee, creator always shown (also on anonymous retros).
 - Permission model for editing, completing, deleting and commenting (§4).
 - Flat comments on action items.
 - Global page `/w/{workspace}/action-items` with status / assignee / team filters, deep link to one item.
@@ -26,7 +26,7 @@ Turn action items from a per-retro checklist into the team's follow-up list, on 
 - Creating an action item outside a retro (on the global page). Items are always born on a board.
 - Email, Slack or in-app notifications about assignment, due dates or comments (spec 6 covers outbound integrations).
 - Live updates on the global page (it refreshes on focus and after own mutations).
-- A dedicated "Review" phase (see Open decision 3), reminders, recurring items, sub-tasks, attachments, reactions or GIFs on items, threaded replies.
+- A dedicated "Review" phase (see Decision 3), reminders, recurring items, sub-tasks, attachments, reactions or GIFs on items, threaded replies.
 - Export to Jira/Linear, MCP tools (specs 6 and 5).
 - Per-user time zones: "overdue" uses the instance time zone (§3).
 
@@ -96,7 +96,7 @@ Guests have no access to workspace endpoints (they are not authenticated users o
 
 ## 4. Permissions
 
-Recommended model (Open decision 2): QRetro parity — the author and the retro's owner edit; the assignee completes.
+Model (Decision 2): QRetro parity — the author, the facilitator and workspace admins edit and delete; the assignee completes; the facilitator can do everything during the meeting.
 
 Let the **managers** of an item be: its author (the creating participant; for members also any request by the same user), the facilitator of the item's retro, and workspace Owners/Admins.
 
@@ -106,7 +106,7 @@ Let the **managers** of an item be: its author (the creating participant; for me
 | Edit content, priority, due date, assignee | Managers |
 | Delete | Managers |
 | Complete / reopen | Managers, the assignee (member: same user; guest: same participant), and the facilitator of any retro of the same team that is not `Completed` (the "review facilitator") |
-| Read | Participants of the item's retro (board); users who can view the item's team (global page, carry-over panel). Guests never see carried items (Open decision 4). |
+| Read | Participants of the item's retro (board); users who can view the item's team (global page, carry-over panel). Guests never see carried items (Decision 4). |
 | Comment | Anyone who can read the item on that surface |
 | Edit own comment | Its author |
 | Delete comment | Its author and the item's managers |
@@ -154,7 +154,7 @@ Let the **managers** of an item be: its author (the creating participant; for me
   id, retroId, teamId, content, priority, dueOn: 'YYYY-MM-DD'|null, isOverdue,
   status: 'open'|'completed', completedAt,
   assignee: {kind: 'member'|'guest', id, name, avatarUrl, isTeamMember} | null,
-  createdBy: {name, avatarUrl} | null,     // null on anonymous retros except for the author (Open decision 5)
+  createdBy: {name, avatarUrl} | null,     // always present, even on anonymous retros (Decision 5); null only if the author is unknown
   isMine: bool,                            // viewer is the author
   commentCount,
   source: {retroTitle, retroCreatedAt, retroUrl|null},  // retroUrl null for viewers who cannot open the retro
@@ -168,7 +168,7 @@ Let the **managers** of an item be: its author (the creating participant; for me
 
 ### Comment payload
 
-`{id, actionItemId, content, author: {name, avatarUrl} | null, isMine, createdAt, updatedAt}`. `author` is null on items of anonymous retros for everyone but the author, and "Former member" when both author references are gone.
+`{id, actionItemId, content, author: {name, avatarUrl} | null, isMine, createdAt, updatedAt}`. `author` is always present, even on items of anonymous retros (Decision 5); it shows "Former member" when both author references are gone.
 
 ### Broadcast events (via `RetroBroadcastEvent`: after commit, `toOthers()`, report-don't-throw)
 
@@ -204,21 +204,23 @@ Let the **managers** of an item be: its author (the creating participant; for me
 
 ## 7. Redaction and privacy
 
-- Action items are **not** anonymous by default: assignee is always shown. On an anonymous retro (`is_anonymous`), the creator and comment authors are hidden from everyone except themselves, on every surface, including the global page and broadcasts (Open decision 5). Permission checks still use the stored author.
+- Action items and action-item comments are **always named**, including on anonymous retros (`is_anonymous`): creator, comment authors and assignee are shown to everyone who can read the item, on every surface, including snapshots, responses, broadcasts and the global page (Decision 5). Anonymity of cards and card comments (other specs) is unchanged.
+- Because of that, the action-item create form and comment box show a notice on anonymous retros so nobody is surprised (§8).
 - Guests: see only their own retro's items and comments; never carried items (neither in the snapshot nor on any channel they can join); never team member emails.
 - Global page and carry-over only show items of teams the user can view; a Member removed from a team loses access to its items immediately.
 - `source.retroUrl` is set only if the viewer may open the retro (team view permission).
-- Deleting a retro deletes its action items and their comments (cascade, unchanged; Open decision 6). The delete-retro dialog shows "This also deletes N open action items." when N > 0.
+- Deleting a retro deletes its action items and their comments (cascade, unchanged; Decision 6). The delete-retro dialog shows "This also deletes N open action items." when N > 0.
 - No change to vote or card redaction.
 
 ## 8. UI
 
-All new strings in `lang/{en,fr,es,de}.json`.
+All new strings in `lang/{en,fr,es,de}.json`, including "Action items are not anonymous: your name is shown." and "This also deletes N open action items.".
 
 ### Board action item panel (`action-items-panel.tsx`, `Discussing`)
 
 - Create form: content, priority select (icons: arrow-up red High, circle amber Medium, arrow-down slate Low), due date input, assignee select grouped "In this retro" (participants; guests suffixed "(guest)") and "Team" (members not in the retro).
-- Item card, as in `screens/retro-actions.png`: creator avatar + name (or none on anonymous retros), content, complete toggle, priority select, assignee select, due date chip ("Due 3 Oct", red "Overdue" badge when `isOverdue`), edit (pencil opens inline edit) and delete buttons, comment button with count opening an inline flat thread (list + textarea, edit/delete own; delete for managers).
+- Item card, as in `screens/retro-actions.png`: creator avatar + name (always shown), content, complete toggle, priority select, assignee select, due date chip ("Due 3 Oct", red "Overdue" badge when `isOverdue`), edit (pencil opens inline edit) and delete buttons, comment button with count opening an inline flat thread (list + textarea, edit/delete own; delete for managers).
+- On anonymous retros (`is_anonymous`), the create form and the comment box show the notice "Action items are not anonymous: your name is shown." (translated, above the input; not shown on named retros).
 - Controls the viewer may not use are hidden (edit/delete) or disabled (complete), per §4.
 
 ### Carry-over panel (new `carried-action-items-panel.tsx`)
@@ -272,11 +274,11 @@ Pest feature tests in `tests/Feature/Retros/ActionItemsTest.php` (extended), new
 - **Surfaces**: board rules unchanged for phases (create only in `Discussing`, `Completed` read-only); workspace endpoints work in any phase; 423 when the item's retro is locked and not `Completed`; guests get 401/403 on workspace endpoints; 404 across workspaces and for teams the user cannot view.
 - **Carry-over**: included = earlier retros of the same team, open or completed since R started; excluded = own retro, later retros, other teams, items completed before R; cap 200; guests get `[]`.
 - **Broadcasts**: board and workspace mutations send `action-item.saved/deleted` to the item's retro only when not `Completed`; carried events go to `private-retro-members.*` of each in-progress carrying retro and never to a presence channel; channel auth refuses guests on `retro-members.*`; broadcast payloads carry `isMine: false`.
-- **Anonymity**: on anonymous retros `createdBy` and comment `author` are null for others in snapshot, responses, broadcasts and the global page; present for the author.
+- **Anonymity**: on anonymous retros `createdBy` and comment `author` are present (named) for every viewer in snapshot, responses, broadcasts (`action-item.saved`, `carried-action-item.saved`) and the global page; the create form and comment box render the "Action items are not anonymous" notice on anonymous retros and not on named ones.
 - **Global page**: ordering; each filter; default `status=open`; unknown values ignored; `item` deep link; constant query count; Members see only their teams, Owners/Admins all teams.
 - **Comments**: create/edit/delete with validation (1–500); author-only edit; manager delete; from board (participant author) and workspace (user author); count in payloads; cascade on item deletion.
 - **Retro deletion** removes its items and comments.
-- **Walkthrough** (two browsers, a member and a guest): create items with priority, due date (one overdue), member and guest assignees; guest completes their own item; complete retro; start a new retro of the same team → panel opens in `Writing`, member completes a carried item and the other member's panel updates live, guest sees no panel; global page filters, deep link, reassign the guest item to a member; anonymous retro hides creators.
+- **Walkthrough** (two browsers, a member and a guest): create items with priority, due date (one overdue), member and guest assignees; guest completes their own item; complete retro; start a new retro of the same team → panel opens in `Writing`, member completes a carried item and the other member's panel updates live, guest sees no panel; global page filters, deep link, reassign the guest item to a member; on an anonymous retro the notice shows and creators and comment authors are named.
 
 Type-check and lint stay green; no frontend test runner is added.
 
@@ -289,16 +291,16 @@ Type-check and lint stay green; no frontend test runner is added.
 5. `/w/{workspace}/action-items` lists exactly the items of teams the user can view, ordered and filtered as in §6, with a working `?item=` deep link.
 6. A new retro shows its team's carried items (§3) to members in the "Previous action items" panel, opening once automatically in `Writing`; guests never receive carried items in any snapshot or broadcast.
 7. Changes to items and item comments reach open boards in realtime through the events in §5.
-8. On anonymous retros, item creators and comment authors are hidden from everyone but themselves (§7).
+8. Item creators and comment authors are always named, including on anonymous retros, in payloads and broadcasts; on anonymous retros the create form and comment box show the translated notice "Action items are not anonymous: your name is shown." (§7, §8).
 9. All new strings are translated in en/fr/es/de.
 10. Suite, phpstan, type-check and lint are green; walkthrough passes.
 
-## Open decisions
+## Decisions (2026-09-29)
 
-1. **Assignee identity.** (a) Member (user) or guest participant of the item's retro — *recommended*: follows people across retros, still lets a guest own an item. (b) Members only: simplest, but a guest contractor can never be assigned. (c) Participants only (today): cannot follow people across retros; the global "assigned to me" filter would need participant→user joins and fails for guests anyway.
-2. **Permissions.** (a) QRetro parity (§4): managers edit/delete, assignee completes — *recommended*; the facilitator can still do everything during the meeting. (b) Collaborative as today: any participant/team member edits everything — least friction, no accountability. (c) Collaborative on the live board, strict elsewhere — keeps parent AC30 but doubles the rule set and tests.
-3. **Carry-over form.** (a) Phase-independent "Previous action items" panel, auto-opened in `Writing` — *recommended*: no phase-model change, no conflict with spec 2. (b) A new `Review` phase before `Writing`: explicit ritual, but changes `RetroPhase`, the stepper and phase rules while spec 2 is also adding phases. (c) Both.
-4. **Guests and carried items.** (a) Hidden — *recommended*: earlier retros may contain team-internal commitments; guests are outsiders by definition. (b) Read-only for guests: better for regular external collaborators, but leaks history to anyone holding the link.
-5. **Anonymity.** (a) Follow the retro's `is_anonymous` for creators and comment authors — *recommended*: consistent with cards and comments. (b) Always named: stronger accountability (QRetro shows the author), but surprises people who expected an anonymous retro.
-6. **Retro deletion.** (a) Cascade with a warning showing the open item count — *recommended*: simple, matches today. (b) Keep items (make `retro_id` nullable, show "Deleted retro" as source): protects follow-ups but adds a nullable-retro path everywhere. (c) Block deletion while open items exist: safe but annoying for test retros.
-7. **Global page scope.** (a) Workspace-wide page with a team filter — *recommended*: one place for "my items" across teams. (b) One page per team under `/w/{workspace}/teams/{team}/action-items`: simpler authorization, but no cross-team "assigned to me" view.
+1. **Assignee identity:** a team member (user) or a guest participant of the item's retro.
+2. **Permissions:** QRetro model — author, facilitator and workspace admins edit/delete; the assignee can complete; the facilitator can do everything during the meeting.
+3. **Carry-over form:** phase-independent "Previous action items" panel, auto-opened in `Writing`; no new phase.
+4. **Guests and carried items:** carried items from previous retros are hidden from guests.
+5. **Anonymity:** action items and action-item comments are always named, even on anonymous retros (deliberately not the recommendation); the create form and comment box show a notice on anonymous retros. Card and card-comment anonymity is unchanged.
+6. **Retro deletion:** cascade, with a warning showing the open item count.
+7. **Global page scope:** workspace-wide page with a team filter.
