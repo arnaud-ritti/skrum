@@ -307,5 +307,8 @@
     "New facilitator": "New facilitator",
     "No one else can facilitate this retrospective yet.": "No one else can facilitate this retrospective yet.",
     "Delete this retrospective? Everyone loses access to it.": "Delete this retrospective? Everyone loses access to it.",
-    "Delete": "Delete"
+    "Delete": "Delete",
+    "Guest link": "Guest link",
+    "Hand over facilitation": "Hand over facilitation",
+    "Delete retrospective": "Delete retrospective"
 }

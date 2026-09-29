@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import {
     Dialog,
     DialogContent,
-    DialogDescription,
     DialogFooter,
     DialogTitle,
 } from '@/components/ui/dialog';
@@ -54,11 +53,8 @@ export function HandoverDialog({ ctx, open, onOpenChange }: Props) {
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent>
-                <DialogTitle>{t('Hand over facilitation…')}</DialogTitle>
-                <DialogDescription className="sr-only">
-                    {t('Hand over facilitation…')}
-                </DialogDescription>
+            <DialogContent aria-describedby={undefined}>
+                <DialogTitle>{t('Hand over facilitation')}</DialogTitle>
 
                 {candidates.length === 0 ? (
                     <p className="text-sm text-muted-foreground">

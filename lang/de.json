@@ -569,5 +569,8 @@
     "Hand over": "Übergeben",
     "New facilitator": "Neue Moderation",
     "No one else can facilitate this retrospective yet.": "Noch niemand sonst kann diese Retrospektive moderieren.",
-    "Delete this retrospective? Everyone loses access to it.": "Diese Retrospektive löschen? Alle verlieren den Zugriff."
+    "Delete this retrospective? Everyone loses access to it.": "Diese Retrospektive löschen? Alle verlieren den Zugriff.",
+    "Guest link": "Gastlink",
+    "Hand over facilitation": "Moderation übergeben",
+    "Delete retrospective": "Retrospektive löschen"
 }

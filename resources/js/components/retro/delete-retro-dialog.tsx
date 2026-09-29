@@ -1,6 +1,7 @@
 import { router } from '@inertiajs/react';
 import { useState } from 'react';
 import RetrosController from '@/actions/App/Http/Controllers/Retros/RetrosController';
+import { dashboard } from '@/routes';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -33,14 +34,14 @@ export function DeleteRetroDialog({ ctx, open, onOpenChange }: Props) {
         setBusy(false);
 
         if (result !== undefined) {
-            router.visit(ctx.board.links.team ?? '/dashboard');
+            router.visit(ctx.board.links.team ?? dashboard().url);
         }
     };
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent>
-                <DialogTitle>{t('Delete retrospective…')}</DialogTitle>
+                <DialogTitle>{t('Delete retrospective')}</DialogTitle>
                 <DialogDescription>
                     {t(
                         'Delete this retrospective? Everyone loses access to it.',

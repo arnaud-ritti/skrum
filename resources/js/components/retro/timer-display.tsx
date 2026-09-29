@@ -15,6 +15,7 @@ function beep() {
     gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.6);
     oscillator.connect(gain).connect(context.destination);
     oscillator.start();
+    oscillator.onended = () => void context.close();
     oscillator.stop(context.currentTime + 0.6);
 }
 
@@ -24,11 +25,22 @@ export function TimerDisplay({ endsAt, offset }: Props) {
     const { t } = useTrans();
     const remaining = useCountdown(endsAt, offset);
     const announced = useRef<string | null>(null);
+    const sawRunning = useRef<string | null>(null);
 
     useEffect(() => {
+        if (endsAt === null) {
+            return;
+        }
+
+        if (remaining !== null && remaining > 0) {
+            sawRunning.current = endsAt;
+
+            return;
+        }
+
         if (
             remaining !== 0 ||
-            endsAt === null ||
+            sawRunning.current !== endsAt ||
             announced.current === endsAt
         ) {
             return;
@@ -40,7 +52,7 @@ export function TimerDisplay({ endsAt, offset }: Props) {
         try {
             beep();
         } catch {
-            // Audio can be blocked until the user interacts with the page.
+            // Audio can be unavailable or blocked until the user interacts.
         }
     }, [remaining, endsAt, t]);
 

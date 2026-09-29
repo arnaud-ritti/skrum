@@ -1,4 +1,5 @@
 import { AlarmClock } from 'lucide-react';
+import { useState } from 'react';
 import RetroTimersController from '@/actions/App/Http/Controllers/Retros/RetroTimersController';
 import { Button } from '@/components/ui/button';
 import {
@@ -16,14 +17,19 @@ const Minutes = [1, 3, 5, 10];
 
 export function TimerControl({ ctx }: { ctx: BoardContextValue }) {
     const { t } = useTrans();
+    const [busy, setBusy] = useState(false);
 
     const set = async (seconds: number | null) => {
+        setBusy(true);
+
         const response = await ctx.run(
             retroRequest<{ timerEndsAt: string | null }>(
                 RetroTimersController.update(ctx.board.retro.id),
                 { seconds },
             ),
         );
+
+        setBusy(false);
 
         if (response) {
             ctx.dispatch({
@@ -44,6 +50,7 @@ export function TimerControl({ ctx }: { ctx: BoardContextValue }) {
                 {Minutes.map((minutes) => (
                     <DropdownMenuItem
                         key={minutes}
+                        disabled={busy}
                         onSelect={() => void set(minutes * 60)}
                     >
                         {t(':count min', { count: minutes })}
@@ -51,7 +58,7 @@ export function TimerControl({ ctx }: { ctx: BoardContextValue }) {
                 ))}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
-                    disabled={ctx.board.retro.timerEndsAt === null}
+                    disabled={busy || ctx.board.retro.timerEndsAt === null}
                     onSelect={() => void set(null)}
                 >
                     {t('Stop timer')}

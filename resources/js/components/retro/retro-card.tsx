@@ -24,6 +24,7 @@ type Props = {
 export function RetroCard({ card, ctx, isChild = false, footer }: Props) {
     const { t } = useTrans();
     const [editing, setEditing] = useState(false);
+    const [highlighting, setHighlighting] = useState(false);
     const phase = ctx.board.retro.phase;
     const canChange =
         card.isMine && (phase === 'writing' || phase === 'grouping');
@@ -50,12 +51,16 @@ export function RetroCard({ card, ctx, isChild = false, footer }: Props) {
     };
 
     const toggleHighlight = async () => {
+        setHighlighting(true);
+
         const response = await ctx.run(
             retroRequest<{ highlightedCardId: string | null }>(
                 RetroHighlightsController.update(ctx.board.retro.id),
                 { card_id: isHighlighted ? null : card.id },
             ),
         );
+
+        setHighlighting(false);
 
         if (response) {
             ctx.dispatch({
@@ -142,6 +147,7 @@ export function RetroCard({ card, ctx, isChild = false, footer }: Props) {
                                         }
                                         className="h-7"
                                         aria-pressed={isHighlighted}
+                                        disabled={highlighting}
                                         onClick={() => void toggleHighlight()}
                                     >
                                         <Crosshair className="size-3.5" />

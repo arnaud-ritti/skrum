@@ -4,12 +4,7 @@ import RetroGuestTokensController from '@/actions/App/Http/Controllers/Retros/Re
 import RetroSettingsController from '@/actions/App/Http/Controllers/Retros/RetroSettingsController';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogTitle,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useTrans } from '@/hooks/use-trans';
@@ -74,11 +69,8 @@ export function GuestLinkDialog({ ctx, open, onOpenChange }: Props) {
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent>
-                <DialogTitle>{t('Guest link…')}</DialogTitle>
-                <DialogDescription className="sr-only">
-                    {t('Guest link…')}
-                </DialogDescription>
+            <DialogContent aria-describedby={undefined}>
+                <DialogTitle>{t('Guest link')}</DialogTitle>
 
                 <div className="flex items-center gap-2">
                     <Checkbox
@@ -98,7 +90,7 @@ export function GuestLinkDialog({ ctx, open, onOpenChange }: Props) {
                             <Input
                                 readOnly
                                 value={retro.guestUrl}
-                                aria-label={t('Guest link…')}
+                                aria-label={t('Guest link')}
                                 onFocus={(event) => event.target.select()}
                             />
                             <Button

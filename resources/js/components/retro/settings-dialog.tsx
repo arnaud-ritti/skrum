@@ -6,7 +6,6 @@ import { Checkbox } from '@/components/ui/checkbox';
 import {
     Dialog,
     DialogContent,
-    DialogDescription,
     DialogFooter,
     DialogTitle,
 } from '@/components/ui/dialog';
@@ -25,7 +24,7 @@ type Props = {
 export function SettingsDialog({ ctx, open, onOpenChange }: Props) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent>
+            <DialogContent aria-describedby={undefined}>
                 {open && (
                     <SettingsForm
                         ctx={ctx}
@@ -101,9 +100,6 @@ function SettingsForm({
     return (
         <form onSubmit={(event) => void save(event)} className="space-y-4">
             <DialogTitle>{t('Retrospective settings')}</DialogTitle>
-            <DialogDescription className="sr-only">
-                {t('Retrospective settings')}
-            </DialogDescription>
 
             <div className="grid gap-2">
                 <Label htmlFor="retro-title">{t('Title')}</Label>

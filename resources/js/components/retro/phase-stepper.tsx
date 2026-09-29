@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import RetroPhasesController from '@/actions/App/Http/Controllers/Retros/RetroPhasesController';
 import { Button } from '@/components/ui/button';
 import { useTrans } from '@/hooks/use-trans';
@@ -22,6 +23,7 @@ type Props = {
 
 export function PhaseStepper({ phase, ctx, onChanged }: Props) {
     const { t } = useTrans();
+    const [busy, setBusy] = useState(false);
     const current = Phases.indexOf(phase);
     const previous = Phases[current - 1];
     const next = Phases[current + 1];
@@ -31,12 +33,16 @@ export function PhaseStepper({ phase, ctx, onChanged }: Props) {
             return;
         }
 
+        setBusy(true);
+
         const response = await ctx.run(
             retroRequest<{ phase: RetroPhase }>(
                 RetroPhasesController.update(ctx.board.retro.id),
                 { phase: target },
             ),
         );
+
+        setBusy(false);
 
         if (response) {
             onChanged?.();
@@ -51,6 +57,7 @@ export function PhaseStepper({ phase, ctx, onChanged }: Props) {
                 <Button
                     size="sm"
                     variant="outline"
+                    disabled={busy}
                     onClick={() => void move(previous)}
                 >
                     {t('Previous')}
@@ -76,7 +83,11 @@ export function PhaseStepper({ phase, ctx, onChanged }: Props) {
                 ))}
             </ol>
             {isFacilitator && next && (
-                <Button size="sm" onClick={() => void move(next)}>
+                <Button
+                    size="sm"
+                    disabled={busy}
+                    onClick={() => void move(next)}
+                >
                     {t(next === 'completed' ? 'Complete' : 'Next')}
                 </Button>
             )}
@@ -84,6 +95,7 @@ export function PhaseStepper({ phase, ctx, onChanged }: Props) {
                 <Button
                     size="sm"
                     variant="outline"
+                    disabled={busy}
                     onClick={() => void move('discussing')}
                 >
                     {t('Reopen')}

@@ -18,10 +18,18 @@ export function useCountdown(
             return;
         }
 
-        const interval = window.setInterval(
-            () => setNow(Date.now() + offset),
-            250,
-        );
+        const tick = () => {
+            const current = Date.now() + offset;
+
+            setNow(current);
+
+            if (current >= new Date(endsAt).getTime()) {
+                window.clearInterval(interval);
+            }
+        };
+        const interval = window.setInterval(tick, 250);
+
+        tick();
 
         return () => window.clearInterval(interval);
     }, [endsAt, offset]);
