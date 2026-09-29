@@ -30,7 +30,7 @@ Make the board feel alive and conversational, on par with QRetro: people see eac
 ### Dependencies (approved by the user on 2026-09-29)
 
 - `live-cursors`, `live-reactions` (npm, MIT, zero runtime deps, React bindings, by QRetro).
-- `frimousse` (npm, headless React emoji picker).
+- `frimousse` (npm, headless React emoji picker). Its Emojibase data is served by skrum itself (§3a), never loaded from a CDN by the browser.
 
 ## 2. Data model
 
@@ -50,12 +50,13 @@ All six are changed through the existing `PATCH /retros/{retro}/settings` (facil
 ### `cards` — new column
 
 - `gif_id` (nullable string): provider GIF id. `content` becomes nullable; a card must have non-empty `content` or a `gif_id` (validation: `content` 1–1000 characters when present).
+- Card payloads gain `hidden: bool` (true for others' cards in `Writing`). Clients decide "hidden" from this flag, never from `content === null`, since a GIF-only card also has `content: null`.
 
 ### `card_reactions` — new table
 
 - `id` (UUID), `retro_id`, `card_id` (cascade on delete), `participant_id`, `emoji` (string), timestamps.
 - Unique (`card_id`, `participant_id`, `emoji`).
-- `emoji` validation (shared rule `SingleEmoji`): exactly one extended grapheme cluster that matches the Unicode emoji property (`\p{Extended_Pictographic}` or a regional-indicator pair / keycap sequence), at most 16 bytes.
+- `emoji` validation (shared rule `SingleEmoji`): exactly one extended grapheme cluster that matches the Unicode emoji property (`\p{Extended_Pictographic}` or a regional-indicator pair / keycap sequence), at most 64 bytes (a ZWJ family emoji is 25 bytes).
 - Quick set shown first in the UI: `👍 ❤️ 👏 🎉 🤔 👎` (a frontend constant, not a server restriction).
 
 ### `card_comments` — new table
@@ -79,8 +80,8 @@ All six are changed through the existing `PATCH /retros/{retro}/settings` (facil
 
 ### Identity and abuse (receive side)
 
-- The payload `id` is the sender's participant id. Messages whose `id` is not in the current presence roster (`here` / `joining`, minus `leaving`) are dropped.
-- A member can still claim another member's id. Accepted risk: it only affects ephemeral visuals. Documented in the spec and in a code comment.
+- With `accept_client_events_from: 'members'`, Reverb stamps every relayed whisper with the sender's verified presence `user_id` (`vendor/laravel/reverb/src/Protocols/Pusher/ClientEvent.php`), and pusher-js passes it to listeners. The transport takes the sender id from that stamp, never from the payload, so a member cannot impersonate another.
+- Messages whose sender is not in the current presence roster (`here` / `joining`, minus `leaving`) are dropped.
 - Flying reactions: messages whose emoji fails the same single-emoji check as `SingleEmoji` (client-side port) are dropped; each sender is rate-limited on receipt with a token bucket (burst 5, 2/s), mirroring the send-side limit.
 - Messages failing parsing, roster, emoji or rate checks are dropped silently.
 
@@ -94,7 +95,14 @@ All six are changed through the existing `PATCH /retros/{retro}/settings` (facil
 - Label: participant display name. On anonymous retros the label is the translated "Participant" and no avatar is shown; colour stays stable per participant.
 - Colour: library hash of the participant id.
 - Shown in every phase except `Completed`, only when `cursors_enabled`.
-- "Hide my cursor" (user menu switch) stops sending for all pointer types; the viewer still sees others' cursors.
+- "Hide my cursor" (switch in the board header; the board page has no user menu) stops sending for all pointer types; the viewer still sees others' cursors.
+
+### 3a. Emoji picker data (self-hosted)
+
+- `frimousse` normally fetches Emojibase data from `cdn.jsdelivr.net` in the browser. skrum passes `emojibaseUrl` pointing to its own route instead.
+- `GET /emoji-data/{version}/{locale}/{file}` (public, no auth; `locale` ∈ app locales mapped to Emojibase locales, `file` ∈ the files frimousse requests): on first request the server fetches the file from `https://cdn.jsdelivr.net/npm/emojibase-data@{version}/…`, stores it on the default disk under `emoji-data/`, and serves it with long-lived cache headers; later requests are served from disk.
+- The version is pinned in `config/services.php` (`emoji_data.version`). Unknown version, locale or file → 404. Upstream failure with nothing cached → 502; the picker shows "Emoji list unavailable" and the six quick emoji keep working.
+- The browser never contacts jsDelivr.
 
 ### Flying reactions
 
@@ -131,7 +139,7 @@ Invalid emoji → 422. A `parentCommentId` from another card → 422. Error mess
 
 Via `RetroBroadcastEvent`: after commit, `toOthers()`, report-don't-throw.
 
-- `card.reactions.changed` — `{cardId, reactions: [{emoji, count}]}` (ordered by count desc, then first use). No participant data. The acting client sets its own `mine` flag from its own action; the snapshot provides `mine` on load.
+- `card.reactions.changed` — `{cardId, reactions: [{emoji, count, names}]}` (ordered by count desc, then first use). `names` lists display names for the tooltip; it is always empty on anonymous retros. Participant ids are never included. The acting client sets its own `mine` flag from its own action; the snapshot provides `mine` on load.
 - `comment.created`, `comment.updated` — the comment presented for others (author omitted on anonymous retros). `comment.deleted` — `{cardId, commentId, soft: bool}`.
 - The author's other tabs receive `own-comment.saved` on the private `participant.{participantId}` channel with the comment presented for the author (same mechanism as `own-card.saved`).
 
@@ -145,9 +153,9 @@ Via `RetroBroadcastEvent`: after commit, `toOthers()`, report-don't-throw.
 
 ### Snapshot
 
-- Each visible card gains `gif` (`{id, previewUrl, url}` or null), `reactions: [{emoji, count, mine}]`, `commentCount`, `comments: CommentPayload[]` (top-level oldest first, each with `replies[]` oldest first, `deleted: bool`).
+- Each visible card gains `gif` (`{id, previewUrl, url}` or null), `reactions: [{emoji, count, names, mine}]`, `commentCount`, `comments: CommentPayload[]` (top-level oldest first, each with `replies[]` oldest first, `deleted: bool`).
 - Loaded with one query per relation (no N+1); query count constant as cards grow.
-- Others' cards in `Writing` keep the existing redaction and carry none of these fields (including `gif`).
+- Others' cards in `Writing` keep the existing redaction: `hidden: true`, `content: null`, `gif: null`, `reactions: []`, `commentCount: 0`, `comments: []`, so every card has the same shape.
 
 ## 5. GIFs in cards
 
@@ -182,7 +190,7 @@ Via `RetroBroadcastEvent`: after commit, `toOthers()`, report-don't-throw.
 - Card: GIF shown above the text (proxied preview, full on click). Card editor gains a "GIF" button opening a search popover (grid, infinite scroll not required, "Powered by GIPHY/Tenor" attribution).
 - Card footer: reaction chips (emoji + count; tooltip with names unless anonymous), `+☺` button opening the six quick emoji and the full picker; comment button with count and unread dot, opening an inline thread under the card: top-level comments with collapsed replies ("3 replies"), reply box, edit/delete on own comments, delete on any for the facilitator.
 - Flying reaction bar bottom-centre with `+` picker; cursor layer over the board scroll container.
-- User menu: "Hide my cursor" switch.
+- Board header: "Hide my cursor" switch.
 - Facilitator settings dialog: six new switches (GIF switch only when a provider is configured).
 - Header: "Board closed for editing" badge when locked.
 - Toasts for comment notifications.
@@ -212,14 +220,16 @@ The parent redaction table hides vote totals during `Voting`. This spec aligns w
 
 Pest feature tests, alongside the existing `tests/Feature/Retros/*` files. Provider HTTP calls are faked with `Http::fake()`.
 
-- **Card reactions:** add idempotent; remove idempotent; `SingleEmoji` accepts ZWJ sequences, skin tones, flags and keycaps, rejects text, two emoji and oversized strings (422); 403 in `Writing` and `Completed` and when `reactions_enabled` is off; 423 when locked; response and broadcast carry no participant data; snapshot `mine` flag.
+- **Card reactions:** add idempotent; remove idempotent; `SingleEmoji` accepts ZWJ sequences, skin tones, flags and keycaps, rejects text, two emoji and oversized strings (422); 403 in `Writing` and `Completed` and when `reactions_enabled` is off; 423 when locked; response and broadcast carry names but never participant ids, and no names on anonymous retros; snapshot `mine` flag.
 - **Comments:** create/edit/delete with validation (1–500); edit author-only; delete by author or facilitator, 403 for others; reply to a reply attaches to the top-level comment; parent from another card 422; soft delete of a parent with replies and hard delete once the last reply goes; phase and lock rules; no author in broadcast or snapshot on anonymous retros; `own-comment.saved` delivered only on the author's private channel; card deletion cascades comments and reactions.
 - **Notifications:** recipients are the card author plus thread participants minus the commenter; none in `Completed`; anonymous retro payload has no `authorName`; sent only on private channels.
 - **GIFs:** endpoints hidden without provider config; search rules (phase, lock, `gifs_enabled`, rate limit, caching); proxy serves only known ids and never exposes the provider key; card attach/remove follows content rules; `Writing` redaction hides others' GIFs; provider failure → 502.
 - **Settings:** each of the six toggles is facilitator-only, rejected in `Completed`, and broadcasts `settings.changed`.
 - **Lock:** every mutation endpoint listed in §6 returns 423 while locked; phase change, timer, highlight and settings still succeed.
 - **Vote totals:** during `Voting`, vote responses, broadcasts and snapshot include totals when `hide_vote_counts` is false and omit them when true; totals visible in `Discussing` either way; voter identity never present.
-- **Snapshot:** new fields present from `Grouping`; `Writing` redaction intact; constant query count.
+- **Snapshot:** new fields present from `Grouping`; `Writing` redaction intact (`hidden: true`, empty fields); constant query count.
+- **Emoji data:** served from local storage after the first fetch; unknown locale or version → 404; provider failure → 502; no request reaches the CDN from the browser.
+- **Whisper sender:** the transport uses Reverb's `user_id` stamp, not the payload id (covered in the walkthrough: a forged payload id is ignored).
 - **Reverb config:** `accept_client_events_from` is `members`.
 - **Manual two-browser walkthrough** (one desktop, one phone or touch emulation): mouse and touch cursors appear, follow scrolling, disappear on blur / lift / "Hide my cursor"; flying reactions (quick and picker) from both browsers gather; card reactions with a picker emoji; threaded replies and notifications toast + unread dot; GIF search and display; anonymous retro shows "Participant" labels and no names on chips, comments or notifications; toggles take effect live; lock blocks edits; presentation overlay follows highlight.
 
@@ -227,11 +237,11 @@ Type-check and lint stay green; no frontend test runner is added.
 
 ## 11. Acceptance criteria
 
-1. Cursors (mouse, touch, pen) and flying reactions travel only as presence-channel whispers, are validated against the roster, the single-emoji rule and the receive rate limit, and are never persisted.
+1. Cursors (mouse, touch, pen) and flying reactions travel only as presence-channel whispers, carry a Reverb-verified sender id, are validated against the roster, the single-emoji rule and the receive rate limit, and are never persisted.
 2. Card reactions accept any single emoji and follow the phase, lock and enablement rules in §4.
 3. Comments support one level of replies, soft deletion of parents with replies, authorship and anonymity rules in §4.
 4. Comment notifications reach exactly the recipients in §4, only on private channels, without revealing anonymous authors.
-5. GIFs work only with a configured provider, are always served through the proxy, and follow card content and redaction rules (§5).
+5. GIFs and emoji picker data are always served through skrum (no browser request to GIPHY, Tenor or jsDelivr); GIFs work only with a configured provider and follow card content and redaction rules (§5).
 6. The six settings behave as in §6.
 7. Vote totals follow §9; voter identity is never exposed.
 8. Snapshot additions respect `Writing` redaction and have a constant query count.
