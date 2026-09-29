@@ -3,7 +3,11 @@ import { toast } from 'sonner';
 import RetroSnapshotsController from '@/actions/App/Http/Controllers/Retros/RetroSnapshotsController';
 import { useTrans } from '@/hooks/use-trans';
 import { RetroRequestError, retroRequest } from '@/lib/retro/api';
-import { boardReducer, type BoardAction } from '@/lib/retro/board-reducer';
+import {
+    boardReducer,
+    seedTotalVersions,
+    type BoardAction,
+} from '@/lib/retro/board-reducer';
 import type {
     ActionItem,
     BoardColumn,
@@ -23,7 +27,11 @@ export type BoardStatus = 'active' | 'ended' | 'deleted';
 
 export function useRetroBoard(initial: Snapshot) {
     const { t } = useTrans();
-    const [board, dispatch] = useReducer(boardReducer, initial);
+    const [board, dispatch] = useReducer(
+        boardReducer,
+        initial,
+        seedTotalVersions,
+    );
     const [status, setStatus] = useState<BoardStatus>('active');
     const [sessionExpired, setSessionExpired] = useState(false);
     const isActive = useRef(true);

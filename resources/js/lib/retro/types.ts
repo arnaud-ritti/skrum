@@ -62,6 +62,11 @@ export type BoardCard = CardPayload & {
     reactions: ReactionSummary[];
     commentCount: number;
     comments: CommentThread[];
+    /**
+     * Client-only: the votes version `votes` was last set at. Totals are
+     * ordered per card because the votes version is global to the retro.
+     */
+    totalVersion?: number;
 };
 
 export type BoardColumn = {

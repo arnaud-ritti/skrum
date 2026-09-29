@@ -135,7 +135,12 @@ function ActionItemRow({ item }: { item: ActionItem }) {
 
         const trimmed = draft.trim();
 
-        if (save && trimmed !== '' && trimmed !== item.content) {
+        if (
+            save &&
+            ctx.isEditable &&
+            trimmed !== '' &&
+            trimmed !== item.content
+        ) {
             void patch({ content: trimmed });
         }
     };
@@ -156,6 +161,7 @@ function ActionItemRow({ item }: { item: ActionItem }) {
                     <Input
                         autoFocus
                         value={draft}
+                        disabled={!ctx.isEditable}
                         maxLength={500}
                         className="h-7"
                         aria-label={t('Edit action item')}

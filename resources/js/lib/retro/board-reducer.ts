@@ -84,6 +84,7 @@ function upsertCards(cards: BoardCard[], payloads: CardPayload[]): BoardCard[] {
         byId.set(payload.id, {
             votes: existing?.votes ?? null,
             myVotes: existing?.myVotes ?? 0,
+            totalVersion: existing?.totalVersion,
             reactions: existing?.reactions ?? [],
             commentCount: existing?.commentCount ?? 0,
             comments: existing?.comments ?? [],
@@ -201,6 +202,43 @@ function updateCard(
     };
 }
 
+/**
+ * Stamps every card with the snapshot's votes version, so a total from an
+ * event older than the snapshot is never applied over the snapshot's.
+ */
+export function seedTotalVersions(snapshot: Snapshot): Snapshot {
+    return {
+        ...snapshot,
+        cards: snapshot.cards.map((card) => ({
+            ...card,
+            totalVersion: snapshot.votesVersion,
+        })),
+    };
+}
+
+function applyCardTotal(
+    cards: BoardCard[],
+    cardId: string | undefined,
+    total: number | undefined,
+    votesVersion: number,
+): BoardCard[] {
+    const target = cards.find((card) => card.id === cardId);
+
+    if (target === undefined || total === undefined) {
+        return cards;
+    }
+
+    if (votesVersion <= (target.totalVersion ?? 0)) {
+        return cards;
+    }
+
+    return cards.map((card) =>
+        card === target
+            ? { ...card, votes: total, totalVersion: votesVersion }
+            : card,
+    );
+}
+
 export function placeCard(
     cards: BoardCard[],
     cardId: string,
@@ -243,7 +281,7 @@ export function placeCard(
 export function boardReducer(state: Snapshot, action: BoardAction): Snapshot {
     switch (action.type) {
         case 'replace':
-            return action.snapshot;
+            return seedTotalVersions(action.snapshot);
         case 'cards.upsert':
             return { ...state, cards: upsertCards(state.cards, action.cards) };
         case 'card.remove':
@@ -271,24 +309,25 @@ export function boardReducer(state: Snapshot, action: BoardAction): Snapshot {
                     (a, b) => a.position - b.position,
                 ),
             };
-        case 'votes.cast':
+        case 'votes.cast': {
+            const cards = applyCardTotal(
+                state.cards,
+                action.cardId,
+                action.total,
+                action.votesVersion,
+            );
+
             if (action.votesVersion <= state.votesVersion) {
-                return state;
+                return cards === state.cards ? state : { ...state, cards };
             }
 
             return {
                 ...state,
                 votesCast: action.votesCast,
                 votesVersion: action.votesVersion,
-                cards:
-                    action.cardId === undefined || action.total === undefined
-                        ? state.cards
-                        : state.cards.map((card) =>
-                              card.id === action.cardId
-                                  ? { ...card, votes: action.total ?? null }
-                                  : card,
-                          ),
+                cards,
             };
+        }
         case 'votes.tally':
             if (
                 action.votesVersion !== undefined &&
