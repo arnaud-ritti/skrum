@@ -32,6 +32,7 @@ it('signs presence data for a team member', function () {
     expect($response->json('auth'))->toStartWith('test-key:')
         ->and($channelData['user_id'])->toBe($participant->id)
         ->and($channelData['user_info'])->toBe([
+            'id' => $participant->id,
             'name' => $user->name,
             'avatarUrl' => $participant->avatarUrl(),
             'isGuest' => false,

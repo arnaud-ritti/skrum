@@ -42,6 +42,7 @@ class BroadcastAuthorizationsController extends Controller
             $validated['socket_id'],
             $participant->id,
             [
+                'id' => $participant->id,
                 'name' => $participant->displayName(),
                 'avatarUrl' => $participant->avatarUrl(),
                 'isGuest' => $participant->isGuest(),

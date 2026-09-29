@@ -85,7 +85,9 @@ export type Snapshot = {
 
 export type PresenceMember = {
     id: string;
-    info: { name: string; avatarUrl: string; isGuest: boolean };
+    name: string;
+    avatarUrl: string;
+    isGuest: boolean;
 };
 
 export const Phases: RetroPhase[] = [

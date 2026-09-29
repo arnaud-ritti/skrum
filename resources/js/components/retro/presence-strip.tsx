@@ -22,14 +22,14 @@ export function PresenceStrip({ members }: { members: PresenceMember[] }) {
                 <Tooltip key={member.id}>
                     <TooltipTrigger asChild>
                         <img
-                            src={member.info.avatarUrl}
-                            alt={member.info.name}
+                            src={member.avatarUrl}
+                            alt={member.name}
                             className="size-8 rounded-full border-2 border-background bg-muted"
                         />
                     </TooltipTrigger>
                     <TooltipContent>
-                        {member.info.name}
-                        {member.info.isGuest && ` · ${t('Guest')}`}
+                        {member.name}
+                        {member.isGuest && ` · ${t('Guest')}`}
                     </TooltipContent>
                 </Tooltip>
             ))}
