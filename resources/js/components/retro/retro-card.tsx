@@ -12,6 +12,7 @@ import type { BoardCard, CardPayload } from '@/lib/retro/types';
 import { cn } from '@/lib/utils';
 import { useBoard } from './board-context';
 import { CardEditor } from './card-editor';
+import { CardReactions } from './card-reactions';
 import { VoteControls } from './vote-controls';
 
 type Props = {
@@ -128,6 +129,7 @@ export function RetroCard({ card, isChild = false, footer }: Props) {
                             {card.content}
                         </p>
                     )}
+                    <CardReactions card={card} />
                     <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
                         {card.author && <span>{card.author.name}</span>}
                         {card.isMine && (

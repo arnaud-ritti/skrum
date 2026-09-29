@@ -634,5 +634,11 @@
     "Presentation mode": "Präsentationsmodus",
     "New comment on your card": "Neuer Kommentar zu deiner Karte",
     "New reply in a thread you follow": "Neue Antwort in einem Thread, dem du folgst",
-    "GIF": "GIF"
+    "GIF": "GIF",
+    "Add a reaction": "Reaktion hinzufügen",
+    "More emoji…": "Mehr Emoji…",
+    "Search emoji…": "Emoji suchen…",
+    "No emoji found.": "Kein Emoji gefunden.",
+    ":emoji, :count reactions": ":emoji, :count Reaktionen",
+    "Loading…": "Wird geladen…"
 }

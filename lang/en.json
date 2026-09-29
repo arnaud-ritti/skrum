@@ -373,5 +373,11 @@
     "Presentation mode": "Presentation mode",
     "New comment on your card": "New comment on your card",
     "New reply in a thread you follow": "New reply in a thread you follow",
-    "GIF": "GIF"
+    "GIF": "GIF",
+    "Add a reaction": "Add a reaction",
+    "More emoji…": "More emoji…",
+    "Search emoji…": "Search emoji…",
+    "No emoji found.": "No emoji found.",
+    ":emoji, :count reactions": ":emoji, :count reactions",
+    "Loading…": "Loading…"
 }
