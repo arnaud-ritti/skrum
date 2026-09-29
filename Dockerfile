@@ -10,7 +10,7 @@ FROM dunglas/frankenphp:1-php${PHP_VERSION}-alpine AS base
 ARG S6_OVERLAY_VERSION=3.2.1.0
 ARG TARGETARCH
 
-RUN apk add --no-cache curl libcap-setcap xz
+RUN apk add --no-cache curl xz
 
 RUN install-php-extensions bcmath intl opcache pcntl pdo_pgsql zip \
     && cp "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
@@ -62,7 +62,6 @@ COPY docker/scripts /etc/s6-overlay/scripts
 COPY docker/healthcheck /usr/local/bin/skrum-healthcheck
 
 RUN chmod +x /etc/s6-overlay/scripts/* /etc/s6-overlay/s6-rc.d/*/run /usr/local/bin/skrum-healthcheck \
-    && setcap CAP_NET_BIND_SERVICE=+eip /usr/local/bin/frankenphp \
     && mkdir -p /data/caddy /config/caddy \
     && chown -R www-data:www-data /data /config
 
