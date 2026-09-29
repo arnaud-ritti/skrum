@@ -21,6 +21,7 @@ import { BoardHeader } from './board-header';
 import { ConnectionBanner } from './connection-banner';
 import { parseDndId } from './dnd';
 import { RetroColumn } from './retro-column';
+import { VoteProgress } from './vote-progress';
 
 export type BoardContextValue = {
     board: Snapshot;
@@ -133,7 +134,15 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
 
     return (
         <div className="flex min-h-dvh flex-col">
-            <BoardHeader board={board} online={online} />
+            <BoardHeader
+                board={board}
+                online={online}
+                actions={
+                    board.retro.phase === 'voting' ? (
+                        <VoteProgress board={board} />
+                    ) : undefined
+                }
+            />
             <ConnectionBanner reconnecting={reconnecting} />
             <DndContext
                 sensors={sensors}

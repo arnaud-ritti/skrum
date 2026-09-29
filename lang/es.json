@@ -531,5 +531,13 @@
     "Drag cards onto each other to group them.": "Arrastra las tarjetas unas sobre otras para agruparlas.",
     "Someone is writing…": "Alguien está escribiendo…",
     "You": "Tú",
-    "No columns yet.": "Todavía no hay columnas."
+    "No columns yet.": "Todavía no hay columnas.",
+    "Remove a vote": "Quitar un voto",
+    "Add a vote": "Añadir un voto",
+    "Your votes: :count": "Tus votos: :count",
+    "Votes left: :count": "Votos restantes: :count",
+    "Votes cast": "Votos emitidos",
+    ":cast of :total votes cast": ":cast de :total votos emitidos",
+    ":count votes": ":count votos",
+    "Sort by votes": "Ordenar por votos"
 }

@@ -268,5 +268,13 @@
     "Drag cards onto each other to group them.": "Drag cards onto each other to group them.",
     "Someone is writing…": "Someone is writing…",
     "You": "You",
-    "No columns yet.": "No columns yet."
+    "No columns yet.": "No columns yet.",
+    "Remove a vote": "Remove a vote",
+    "Add a vote": "Add a vote",
+    "Your votes: :count": "Your votes: :count",
+    "Votes left: :count": "Votes left: :count",
+    "Votes cast": "Votes cast",
+    ":cast of :total votes cast": ":cast of :total votes cast",
+    ":count votes": ":count votes",
+    "Sort by votes": "Sort by votes"
 }

@@ -11,6 +11,7 @@ import type { BoardCard, CardPayload } from '@/lib/retro/types';
 import { cn } from '@/lib/utils';
 import type { BoardContextValue } from './board';
 import { CardEditor } from './card-editor';
+import { VoteControls } from './vote-controls';
 
 type Props = {
     card: BoardCard;
@@ -95,6 +96,21 @@ export function RetroCard({ card, ctx, isChild = false, footer }: Props) {
                         )}
                         <div className="ml-auto flex items-center gap-1">
                             {footer}
+                            {!isChild && phase === 'voting' && (
+                                <VoteControls card={card} ctx={ctx} />
+                            )}
+                            {!isChild &&
+                                (phase === 'discussing' ||
+                                    phase === 'completed') && (
+                                    <Badge
+                                        variant="secondary"
+                                        aria-label={t(':count votes', {
+                                            count: card.votes ?? 0,
+                                        })}
+                                    >
+                                        {card.votes ?? 0}
+                                    </Badge>
+                                )}
                             {isChild && phase === 'grouping' && (
                                 <Button
                                     size="icon"

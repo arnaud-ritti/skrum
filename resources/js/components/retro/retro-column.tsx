@@ -2,6 +2,9 @@ import {
     SortableContext,
     verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
+import { ArrowDownWideNarrow } from 'lucide-react';
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
 import { useTrans } from '@/hooks/use-trans';
 import { topLevelCards } from '@/lib/retro/board-reducer';
 import { columnAccent } from '@/lib/retro/colors';
@@ -21,8 +24,18 @@ export function RetroColumn({
     ctx: BoardContextValue;
 }) {
     const { t } = useTrans();
-    const cards = topLevelCards(ctx.board.cards, column.id);
+    const [sortByVotes, setSortByVotes] = useState(true);
     const phase = ctx.board.retro.phase;
+    const canSortByVotes = phase === 'discussing' || phase === 'completed';
+    const orderedCards = topLevelCards(ctx.board.cards, column.id);
+    const cards =
+        canSortByVotes && sortByVotes
+            ? [...orderedCards].sort(
+                  (a, b) =>
+                      (b.votes ?? 0) - (a.votes ?? 0) ||
+                      a.position - b.position,
+              )
+            : orderedCards;
 
     const renderCard = (card: (typeof cards)[number]) => {
         const content = <RetroCard card={card} ctx={ctx} />;
@@ -62,6 +75,18 @@ export function RetroColumn({
                 className="flex flex-col gap-2 rounded-md"
             >
                 <ColumnHeader column={column} count={cards.length} />
+                {canSortByVotes && (
+                    <Button
+                        size="sm"
+                        variant={sortByVotes ? 'secondary' : 'ghost'}
+                        className="self-start"
+                        aria-pressed={sortByVotes}
+                        onClick={() => setSortByVotes((current) => !current)}
+                    >
+                        <ArrowDownWideNarrow className="size-3.5" />
+                        {t('Sort by votes')}
+                    </Button>
+                )}
                 {phase === 'grouping' && (
                     <p className="text-xs text-muted-foreground">
                         {t('Drag cards onto each other to group them.')}
