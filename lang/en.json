@@ -194,5 +194,6 @@
     "Remove :name from this workspace?": "Remove :name from this workspace?",
     "Leave this workspace?": "Leave this workspace?",
     "They will lose access to the workspace and be removed from all of its teams.": "They will lose access to the workspace and be removed from all of its teams.",
-    "You will lose access to the workspace and be removed from all of its teams.": "You will lose access to the workspace and be removed from all of its teams."
+    "You will lose access to the workspace and be removed from all of its teams.": "You will lose access to the workspace and be removed from all of its teams.",
+    "Single sign-on": "Single sign-on"
 }

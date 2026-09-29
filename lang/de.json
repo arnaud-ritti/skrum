@@ -457,5 +457,6 @@
     "Remove :name from this workspace?": ":name aus diesem Arbeitsbereich entfernen?",
     "Leave this workspace?": "Diesen Arbeitsbereich verlassen?",
     "They will lose access to the workspace and be removed from all of its teams.": "Die Person verliert den Zugriff auf den Arbeitsbereich und wird aus allen seinen Teams entfernt.",
-    "You will lose access to the workspace and be removed from all of its teams.": "Du verlierst den Zugriff auf den Arbeitsbereich und wirst aus allen seinen Teams entfernt."
+    "You will lose access to the workspace and be removed from all of its teams.": "Du verlierst den Zugriff auf den Arbeitsbereich und wirst aus allen seinen Teams entfernt.",
+    "Single sign-on": "Single Sign-on"
 }
