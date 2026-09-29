@@ -36,4 +36,9 @@ class TeamPolicy
     {
         return $user->canManage($team->workspace);
     }
+
+    public function createRetro(User $user, Team $team): bool
+    {
+        return $this->view($user, $team);
+    }
 }

@@ -31,3 +31,16 @@ export type PendingInvitation = {
     role: WorkspaceRole;
     isExpired: boolean;
 };
+
+export type RetroSummary = {
+    id: string;
+    title: string;
+    phase: string;
+    phaseLabel: string;
+    createdAt: string;
+};
+
+export type TemplateOption = {
+    value: string;
+    label: string;
+};

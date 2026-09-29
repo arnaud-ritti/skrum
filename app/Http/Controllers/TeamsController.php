@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\RetroTemplate;
+use App\Models\Retro;
 use App\Models\Team;
 use App\Models\User;
 use App\Models\Workspace;
@@ -42,6 +44,15 @@ class TeamsController extends Controller
                     ->map(fn (User $member) => $member->only(['id', 'name', 'email']))
                 : [],
             'canManage' => $canManage,
+            'retros' => $team->retros()->latest()->get()->map(fn (Retro $retro) => [
+                'id' => $retro->id,
+                'title' => $retro->title,
+                'phase' => $retro->phase->value,
+                'phaseLabel' => $retro->phase->label(),
+                'createdAt' => $retro->created_at?->toIso8601String(),
+            ]),
+            'templates' => RetroTemplate::options(),
+            'canCreateRetro' => $request->user()->can('createRetro', $team),
         ]);
     }
 

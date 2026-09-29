@@ -489,5 +489,11 @@
     "This action is not available in the current phase.": "Diese Aktion ist in der aktuellen Phase nicht verfügbar.",
     "Only the facilitator can do this.": "Das kann nur der Moderator tun.",
     "You can only change your own cards.": "Du kannst nur deine eigenen Karten ändern.",
-    "The board is being built.": "Das Board wird gerade aufgebaut."
+    "The board is being built.": "Das Board wird gerade aufgebaut.",
+    "Retrospectives of this team": "Retrospektiven dieses Teams",
+    "Retrospectives": "Retrospektiven",
+    "Retrospective title": "Titel der Retrospektive",
+    "Template": "Vorlage",
+    "Start a retrospective": "Retrospektive starten",
+    "No retrospectives yet.": "Noch keine Retrospektiven."
 }

@@ -1,9 +1,12 @@
-import { Form, Head } from '@inertiajs/react';
+import { Form, Head, Link } from '@inertiajs/react';
+import RetrosController from '@/actions/App/Http/Controllers/Retros/RetrosController';
+import TeamRetrosController from '@/actions/App/Http/Controllers/TeamRetrosController';
 import TeamMembersController from '@/actions/App/Http/Controllers/TeamMembersController';
 import TeamsController from '@/actions/App/Http/Controllers/TeamsController';
 import ConfirmFormDialog from '@/components/confirm-form-dialog';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -14,7 +17,13 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { useTrans } from '@/hooks/use-trans';
-import type { MemberSummary, TeamSummary, WorkspaceSummary } from '@/types';
+import type {
+    MemberSummary,
+    RetroSummary,
+    TeamSummary,
+    TemplateOption,
+    WorkspaceSummary,
+} from '@/types';
 
 type Props = {
     workspace: WorkspaceSummary;
@@ -22,6 +31,9 @@ type Props = {
     members: MemberSummary[];
     availableMembers: MemberSummary[];
     canManage: boolean;
+    retros: RetroSummary[];
+    templates: TemplateOption[];
+    canCreateRetro: boolean;
 };
 
 export default function ShowTeam({
@@ -30,6 +42,9 @@ export default function ShowTeam({
     members,
     availableMembers,
     canManage,
+    retros,
+    templates,
+    canCreateRetro,
 }: Props) {
     const { t } = useTrans();
     const params = { workspace: workspace.slug, team: team.id };
@@ -40,7 +55,7 @@ export default function ShowTeam({
             <div className="max-w-2xl space-y-8 p-4">
                 <Heading
                     title={team.name}
-                    description={t('Retrospectives will appear here.')}
+                    description={t('Retrospectives of this team')}
                 />
 
                 {canManage && (
@@ -67,6 +82,84 @@ export default function ShowTeam({
                         )}
                     </Form>
                 )}
+
+                <section className="space-y-3">
+                    <Heading variant="small" title={t('Retrospectives')} />
+
+                    {canCreateRetro && (
+                        <Form
+                            {...TeamRetrosController.store.form(params)}
+                            className="flex flex-wrap items-start gap-2"
+                        >
+                            {({ processing, errors }) => (
+                                <>
+                                    <div className="min-w-64 flex-1">
+                                        <Input
+                                            name="title"
+                                            required
+                                            maxLength={120}
+                                            placeholder={t(
+                                                'Retrospective title',
+                                            )}
+                                            aria-label={t(
+                                                'Retrospective title',
+                                            )}
+                                        />
+                                        <InputError message={errors.title} />
+                                    </div>
+                                    <Select
+                                        name="template"
+                                        defaultValue={templates[0]?.value}
+                                    >
+                                        <SelectTrigger
+                                            className="w-64"
+                                            aria-label={t('Template')}
+                                        >
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {templates.map((template) => (
+                                                <SelectItem
+                                                    key={template.value}
+                                                    value={template.value}
+                                                >
+                                                    {template.label}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <Button disabled={processing}>
+                                        {t('Start a retrospective')}
+                                    </Button>
+                                </>
+                            )}
+                        </Form>
+                    )}
+
+                    {retros.length === 0 && (
+                        <p className="text-muted-foreground">
+                            {t('No retrospectives yet.')}
+                        </p>
+                    )}
+
+                    <ul className="divide-y rounded-md border">
+                        {retros.map((retro) => (
+                            <li key={retro.id}>
+                                <Link
+                                    href={RetrosController.show(retro.id)}
+                                    className="flex items-center justify-between p-3 hover:bg-muted"
+                                >
+                                    <span className="font-medium">
+                                        {retro.title}
+                                    </span>
+                                    <Badge variant="secondary">
+                                        {retro.phaseLabel}
+                                    </Badge>
+                                </Link>
+                            </li>
+                        ))}
+                    </ul>
+                </section>
 
                 <section className="space-y-3">
                     <Heading variant="small" title={t('Members')} />

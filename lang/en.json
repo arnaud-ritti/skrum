@@ -228,5 +228,11 @@
     "This action is not available in the current phase.": "This action is not available in the current phase.",
     "Only the facilitator can do this.": "Only the facilitator can do this.",
     "You can only change your own cards.": "You can only change your own cards.",
-    "The board is being built.": "The board is being built."
+    "The board is being built.": "The board is being built.",
+    "Retrospectives of this team": "Retrospectives of this team",
+    "Retrospectives": "Retrospectives",
+    "Retrospective title": "Retrospective title",
+    "Template": "Template",
+    "Start a retrospective": "Start a retrospective",
+    "No retrospectives yet.": "No retrospectives yet."
 }
