@@ -30,3 +30,10 @@ export type TwoFactorSetupData = {
 export type TwoFactorSecretKey = {
     secretKey: string;
 };
+
+export type SsoProviderKey = 'google' | 'github' | 'entra' | 'oidc';
+
+export type SsoProviderOption = {
+    key: SsoProviderKey;
+    label: string;
+};

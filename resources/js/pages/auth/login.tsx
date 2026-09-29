@@ -11,18 +11,22 @@ import { register } from '@/routes';
 import { store } from '@/routes/login';
 import { request } from '@/routes/password';
 import PasskeyVerify from '@/components/passkey-verify';
+import { SsoButtons } from '@/components/sso-buttons';
 import { useTrans } from '@/hooks/use-trans';
+import type { SsoProviderOption } from '@/types';
 
 type Props = {
     status?: string;
     canResetPassword: boolean;
     canRegister: boolean;
+    ssoProviders: SsoProviderOption[];
 };
 
 export default function Login({
     status,
     canResetPassword,
     canRegister,
+    ssoProviders,
 }: Props) {
     const { t } = useTrans();
 
@@ -104,6 +108,8 @@ export default function Login({
                                 {processing && <Spinner />}
                                 {t('Log in')}
                             </Button>
+
+                            <SsoButtons providers={ssoProviders} />
                         </div>
 
                         {canRegister && (

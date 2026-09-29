@@ -8,14 +8,21 @@ import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { login } from '@/routes';
 import { store } from '@/routes/register';
+import { SsoButtons } from '@/components/sso-buttons';
 import { useTrans } from '@/hooks/use-trans';
+import type { SsoProviderOption } from '@/types';
 
 type Props = {
     passwordRules: string;
     invitationEmail: string | null;
+    ssoProviders: SsoProviderOption[];
 };
 
-export default function Register({ passwordRules, invitationEmail }: Props) {
+export default function Register({
+    passwordRules,
+    invitationEmail,
+    ssoProviders,
+}: Props) {
     const { t } = useTrans();
 
     return (
@@ -109,6 +116,8 @@ export default function Register({ passwordRules, invitationEmail }: Props) {
                                 {processing && <Spinner />}
                                 {t('Create account')}
                             </Button>
+
+                            <SsoButtons providers={ssoProviders} />
                         </div>
 
                         <div className="text-center text-sm text-muted-foreground">

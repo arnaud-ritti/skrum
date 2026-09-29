@@ -462,5 +462,7 @@
     "An account already uses this email address. Log in with your password instead.": "Ein Konto verwendet bereits diese E-Mail-Adresse. Melde dich stattdessen mit deinem Passwort an.",
     ":provider did not share an email address with us.": ":provider hat uns keine E-Mail-Adresse mitgeteilt.",
     ":provider did not confirm your email address.": ":provider hat deine E-Mail-Adresse nicht bestätigt.",
-    "Sign-in with :provider failed. Please try again.": "Die Anmeldung mit :provider ist fehlgeschlagen. Bitte versuche es erneut."
+    "Sign-in with :provider failed. Please try again.": "Die Anmeldung mit :provider ist fehlgeschlagen. Bitte versuche es erneut.",
+    "or": "oder",
+    "Continue with :provider": "Weiter mit :provider"
 }

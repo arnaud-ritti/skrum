@@ -199,5 +199,7 @@
     "An account already uses this email address. Log in with your password instead.": "An account already uses this email address. Log in with your password instead.",
     ":provider did not share an email address with us.": ":provider did not share an email address with us.",
     ":provider did not confirm your email address.": ":provider did not confirm your email address.",
-    "Sign-in with :provider failed. Please try again.": "Sign-in with :provider failed. Please try again."
+    "Sign-in with :provider failed. Please try again.": "Sign-in with :provider failed. Please try again.",
+    "or": "or",
+    "Continue with :provider": "Continue with :provider"
 }
