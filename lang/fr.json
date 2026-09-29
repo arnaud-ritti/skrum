@@ -613,5 +613,7 @@
     "The phase changed before your edit was saved.": "La phase a changé avant l'enregistrement de votre modification.",
     "You no longer have access to this retrospective.": "Vous n'avez plus accès à cette rétrospective.",
     "Your session has ended.": "Votre session a pris fin.",
-    "Guests: ask the facilitator for the guest link.": "Invités : demandez le lien invité à l'animateur."
+    "Guests: ask the facilitator for the guest link.": "Invités : demandez le lien invité à l'animateur.",
+    "The board is closed for editing.": "Le tableau est fermé aux modifications.",
+    "Reactions are turned off for this board.": "Les réactions sont désactivées pour ce tableau."
 }

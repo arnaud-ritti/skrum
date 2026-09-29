@@ -23,6 +23,7 @@ class CardPositionsController extends Controller
         $participant = Participant::current($request);
 
         RetroGuard::phase($retro, RetroPhase::Writing, RetroPhase::Grouping);
+        RetroGuard::unlocked($retro);
 
         if ($retro->phase === RetroPhase::Writing) {
             RetroGuard::author($card, $participant);
@@ -37,6 +38,7 @@ class CardPositionsController extends Controller
             $locked = Retro::query()->whereKey($retro->id)->lockForUpdate()->firstOrFail();
 
             RetroGuard::phase($locked, RetroPhase::Writing, RetroPhase::Grouping);
+            RetroGuard::unlocked($locked);
 
             $fresh = $locked->cards()->whereKey($card->id)->firstOrFail();
 

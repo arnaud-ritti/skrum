@@ -6,6 +6,7 @@ use App\Models\Card;
 use App\Models\Participant;
 use App\Models\Retro;
 use Illuminate\Auth\Access\AuthorizationException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 it('allows listed phases and refuses others with a translated message', function () {
     $retro = Retro::factory()->inPhase(RetroPhase::Voting)->make();
@@ -35,4 +36,23 @@ it('allows only the author of a card', function () {
 
     expect(fn () => RetroGuard::author($card, $other))
         ->toThrow(AuthorizationException::class, 'You can only change your own cards.');
+});
+
+it('refuses changes to a board closed for editing with a 423', function () {
+    $retro = Retro::factory()->make(['is_locked' => false]);
+
+    RetroGuard::unlocked($retro);
+
+    $retro->is_locked = true;
+
+    expect(fn () => RetroGuard::unlocked($retro))
+        ->toThrow(fn (HttpException $exception) => expect($exception->getStatusCode())->toBe(423)
+            ->and($exception->getMessage())->toBe('The board is closed for editing.'));
+});
+
+it('refuses reactions when they are turned off', function () {
+    $retro = Retro::factory()->make(['reactions_enabled' => false]);
+
+    expect(fn () => RetroGuard::reactionsEnabled($retro))
+        ->toThrow(AuthorizationException::class, 'Reactions are turned off for this board.');
 });

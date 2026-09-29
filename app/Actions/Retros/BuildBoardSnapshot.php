@@ -43,6 +43,12 @@ class BuildBoardSnapshot
                 'template' => $retro->template->value,
                 'phase' => $retro->phase->value,
                 'isAnonymous' => $retro->is_anonymous,
+                'reactionsEnabled' => $retro->reactions_enabled,
+                'cursorsEnabled' => $retro->cursors_enabled,
+                'gifsEnabled' => $retro->gifs_enabled,
+                'hideVoteCounts' => $retro->hide_vote_counts,
+                'isLocked' => $retro->is_locked,
+                'presentationMode' => $retro->presentation_mode,
                 'votesPerParticipant' => $retro->votes_per_participant,
                 'guestAccessEnabled' => $retro->guest_access_enabled,
                 'guestUrl' => $retro->guest_access_enabled && $retro->isFacilitator($viewer)

@@ -178,3 +178,17 @@ it('reads the vote version together with the vote counts rather than from a stal
     expect($snapshot['votesCast'])->toBe(1)
         ->and($snapshot['votesVersion'])->toBe(1);
 });
+
+it('describes the engagement settings', function () {
+    $retro = Retro::factory()->create(['cursors_enabled' => false, 'is_locked' => true]);
+    [, $viewer] = retroMember($retro);
+
+    expect(snapshotFor($retro, $viewer)['retro'])->toMatchArray([
+        'reactionsEnabled' => true,
+        'cursorsEnabled' => false,
+        'gifsEnabled' => true,
+        'hideVoteCounts' => false,
+        'isLocked' => true,
+        'presentationMode' => false,
+    ]);
+});

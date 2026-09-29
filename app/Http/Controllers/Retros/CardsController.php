@@ -28,6 +28,7 @@ class CardsController extends Controller
         $participant = Participant::current($request);
 
         RetroGuard::phase($retro, RetroPhase::Writing);
+        RetroGuard::unlocked($retro);
 
         $validated = $request->validate([
             'column_id' => ['required', 'uuid', Rule::exists('columns', 'id')->where('retro_id', $retro->id)],
@@ -38,6 +39,7 @@ class CardsController extends Controller
             $locked = Retro::query()->whereKey($retro->id)->lockForUpdate()->firstOrFail();
 
             RetroGuard::phase($locked, RetroPhase::Writing);
+            RetroGuard::unlocked($locked);
 
             $column = $locked->columns()->whereKey($validated['column_id'])->firstOrFail();
 
@@ -67,6 +69,7 @@ class CardsController extends Controller
         $participant = Participant::current($request);
 
         RetroGuard::phase($retro, RetroPhase::Writing, RetroPhase::Grouping);
+        RetroGuard::unlocked($retro);
         RetroGuard::author($card, $participant);
 
         $validated = $request->validate([
@@ -77,6 +80,7 @@ class CardsController extends Controller
             $locked = Retro::query()->whereKey($retro->id)->lockForUpdate()->firstOrFail();
 
             RetroGuard::phase($locked, RetroPhase::Writing, RetroPhase::Grouping);
+            RetroGuard::unlocked($locked);
 
             $fresh = $locked->cards()->whereKey($card->id)->firstOrFail();
 
@@ -98,12 +102,14 @@ class CardsController extends Controller
         $participant = Participant::current($request);
 
         RetroGuard::phase($retro, RetroPhase::Writing, RetroPhase::Grouping);
+        RetroGuard::unlocked($retro);
         RetroGuard::author($card, $participant);
 
         DB::transaction(function () use ($retro, $card, $participant): void {
             $locked = Retro::query()->whereKey($retro->id)->lockForUpdate()->firstOrFail();
 
             RetroGuard::phase($locked, RetroPhase::Writing, RetroPhase::Grouping);
+            RetroGuard::unlocked($locked);
 
             $card = $locked->cards()->whereKey($card->id)->firstOrFail();
 

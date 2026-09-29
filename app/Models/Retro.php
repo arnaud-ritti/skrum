@@ -25,6 +25,12 @@ use Illuminate\Support\Carbon;
  * @property int $votes_per_participant
  * @property int $votes_version
  * @property bool $guest_access_enabled
+ * @property bool $reactions_enabled
+ * @property bool $cursors_enabled
+ * @property bool $gifs_enabled
+ * @property bool $hide_vote_counts
+ * @property bool $is_locked
+ * @property bool $presentation_mode
  * @property string $guest_token
  * @property Carbon|null $timer_ends_at
  * @property string|null $highlighted_card_id
@@ -35,6 +41,7 @@ use Illuminate\Support\Carbon;
 #[Fillable([
     'title', 'template', 'phase', 'facilitator_participant_id', 'is_anonymous', 'votes_per_participant',
     'guest_access_enabled', 'guest_token', 'timer_ends_at', 'highlighted_card_id', 'completed_at',
+    'reactions_enabled', 'cursors_enabled', 'gifs_enabled', 'hide_vote_counts', 'is_locked', 'presentation_mode',
 ])]
 #[Hidden(['guest_token'])]
 class Retro extends Model

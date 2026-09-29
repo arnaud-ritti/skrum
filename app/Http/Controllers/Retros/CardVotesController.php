@@ -22,11 +22,13 @@ class CardVotesController extends Controller
         $participant = Participant::current($request);
 
         RetroGuard::phase($retro, RetroPhase::Voting);
+        RetroGuard::unlocked($retro);
 
         $totals = DB::transaction(function () use ($retro, $card, $participant): array {
             $locked = Retro::query()->whereKey($retro->id)->lockForUpdate()->firstOrFail();
 
             RetroGuard::phase($locked, RetroPhase::Voting);
+            RetroGuard::unlocked($locked);
 
             $card = $locked->cards()->whereKey($card->id)->firstOrFail();
 
@@ -64,11 +66,13 @@ class CardVotesController extends Controller
         $participant = Participant::current($request);
 
         RetroGuard::phase($retro, RetroPhase::Voting);
+        RetroGuard::unlocked($retro);
 
         $totals = DB::transaction(function () use ($retro, $card, $participant): array {
             $locked = Retro::query()->whereKey($retro->id)->lockForUpdate()->firstOrFail();
 
             RetroGuard::phase($locked, RetroPhase::Voting);
+            RetroGuard::unlocked($locked);
 
             $vote = $card->votes()->where('participant_id', $participant->id)->latest()->lockForUpdate()->first();
 

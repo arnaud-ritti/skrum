@@ -224,3 +224,39 @@ it('deletes the retro', function () {
     expect(Retro::find($retro->id))->toBeNull();
     Event::assertDispatched(RetroDeleted::class, fn (RetroDeleted $event) => $event->retroId === $retro->id);
 });
+
+it('updates the engagement settings and asks clients to refetch', function () {
+    [$retro, $user] = facilitatedRetro(RetroPhase::Discussing);
+
+    $this->actingAs($user)->patchJson(route('retros.settings.update', $retro), [
+        'reactions_enabled' => false,
+        'cursors_enabled' => false,
+        'gifs_enabled' => false,
+        'hide_vote_counts' => true,
+        'is_locked' => true,
+        'presentation_mode' => true,
+    ])->assertNoContent();
+
+    expect($retro->fresh()->only([
+        'reactions_enabled', 'cursors_enabled', 'gifs_enabled', 'hide_vote_counts', 'is_locked', 'presentation_mode',
+    ]))->toBe([
+        'reactions_enabled' => false,
+        'cursors_enabled' => false,
+        'gifs_enabled' => false,
+        'hide_vote_counts' => true,
+        'is_locked' => true,
+        'presentation_mode' => true,
+    ]);
+    Event::assertDispatched(RetroSettingsChanged::class);
+});
+
+it('refuses engagement settings from others and once completed', function (string $setting) {
+    [$retro, $facilitator] = facilitatedRetro();
+    [$member] = retroMember($retro);
+
+    $this->actingAs($member)->patchJson(route('retros.settings.update', $retro), [$setting => true])->assertForbidden();
+
+    $retro->update(['phase' => RetroPhase::Completed]);
+
+    $this->actingAs($facilitator)->patchJson(route('retros.settings.update', $retro), [$setting => true])->assertForbidden();
+})->with(['reactions_enabled', 'cursors_enabled', 'gifs_enabled', 'hide_vote_counts', 'is_locked', 'presentation_mode']);

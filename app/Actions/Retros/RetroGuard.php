@@ -7,6 +7,7 @@ use App\Models\Card;
 use App\Models\Participant;
 use App\Models\Retro;
 use Illuminate\Auth\Access\AuthorizationException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class RetroGuard
 {
@@ -17,6 +18,24 @@ class RetroGuard
         }
 
         throw new AuthorizationException(__('This action is not available in the current phase.'));
+    }
+
+    public static function unlocked(Retro $retro): void
+    {
+        if (! $retro->is_locked) {
+            return;
+        }
+
+        throw new HttpException(423, __('The board is closed for editing.'));
+    }
+
+    public static function reactionsEnabled(Retro $retro): void
+    {
+        if ($retro->reactions_enabled) {
+            return;
+        }
+
+        throw new AuthorizationException(__('Reactions are turned off for this board.'));
     }
 
     public static function facilitator(Retro $retro, Participant $participant): void

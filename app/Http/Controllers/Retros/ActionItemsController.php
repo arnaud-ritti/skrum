@@ -26,6 +26,7 @@ class ActionItemsController extends Controller
         $participant = Participant::current($request);
 
         RetroGuard::phase($retro, RetroPhase::Discussing);
+        RetroGuard::unlocked($retro);
 
         $validated = $request->validate([
             'content' => ['required', 'string', 'max:500'],
@@ -36,6 +37,7 @@ class ActionItemsController extends Controller
             $locked = Retro::query()->whereKey($retro->id)->lockForUpdate()->firstOrFail();
 
             RetroGuard::phase($locked, RetroPhase::Discussing);
+            RetroGuard::unlocked($locked);
 
             $actionItem = $locked->actionItems()->create([
                 ...$validated,
@@ -57,6 +59,7 @@ class ActionItemsController extends Controller
         Participant::current($request);
 
         RetroGuard::phase($retro, RetroPhase::Discussing);
+        RetroGuard::unlocked($retro);
 
         $validated = $request->validate([
             'content' => ['sometimes', 'required', 'string', 'max:500'],
@@ -68,6 +71,7 @@ class ActionItemsController extends Controller
             $locked = Retro::query()->whereKey($retro->id)->lockForUpdate()->firstOrFail();
 
             RetroGuard::phase($locked, RetroPhase::Discussing);
+            RetroGuard::unlocked($locked);
 
             $fresh = $locked->actionItems()->whereKey($actionItem->id)->firstOrFail();
 
@@ -87,11 +91,13 @@ class ActionItemsController extends Controller
         Participant::current($request);
 
         RetroGuard::phase($retro, RetroPhase::Discussing);
+        RetroGuard::unlocked($retro);
 
         DB::transaction(function () use ($retro, $actionItem): void {
             $locked = Retro::query()->whereKey($retro->id)->lockForUpdate()->firstOrFail();
 
             RetroGuard::phase($locked, RetroPhase::Discussing);
+            RetroGuard::unlocked($locked);
 
             $fresh = $locked->actionItems()->whereKey($actionItem->id)->firstOrFail();
 

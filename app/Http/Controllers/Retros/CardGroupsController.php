@@ -31,6 +31,7 @@ class CardGroupsController extends Controller
         $participant = Participant::current($request);
 
         RetroGuard::phase($retro, RetroPhase::Grouping);
+        RetroGuard::unlocked($retro);
 
         $validated = $request->validate([
             'parent_card_id' => ['required', 'uuid', Rule::exists('cards', 'id')->where('retro_id', $retro->id)],
@@ -40,6 +41,7 @@ class CardGroupsController extends Controller
             $locked = Retro::query()->whereKey($retro->id)->lockForUpdate()->firstOrFail();
 
             RetroGuard::phase($locked, RetroPhase::Grouping);
+            RetroGuard::unlocked($locked);
 
             $card = $locked->cards()->whereKey($card->id)->firstOrFail();
             $lead = $locked->cards()->whereKey($validated['parent_card_id'])->firstOrFail();
@@ -59,11 +61,13 @@ class CardGroupsController extends Controller
         $participant = Participant::current($request);
 
         RetroGuard::phase($retro, RetroPhase::Grouping);
+        RetroGuard::unlocked($retro);
 
         [$changed, $presentingRetro] = DB::transaction(function () use ($retro, $card): array {
             $locked = Retro::query()->whereKey($retro->id)->lockForUpdate()->firstOrFail();
 
             RetroGuard::phase($locked, RetroPhase::Grouping);
+            RetroGuard::unlocked($locked);
 
             $card = $locked->cards()->whereKey($card->id)->firstOrFail();
 
