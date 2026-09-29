@@ -64,6 +64,12 @@ class Card extends Model
         return $this->hasMany(Vote::class);
     }
 
+    /** @return HasMany<CardReaction, $this> */
+    public function reactions(): HasMany
+    {
+        return $this->hasMany(CardReaction::class)->oldest();
+    }
+
     public function isTopLevel(): bool
     {
         return $this->parent_card_id === null;

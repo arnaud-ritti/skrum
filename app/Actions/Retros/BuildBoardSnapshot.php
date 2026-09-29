@@ -18,6 +18,7 @@ class BuildBoardSnapshot
         private PresentCard $presentCard,
         private PresentColumns $presentColumns,
         private PresentActionItem $presentActionItem,
+        private SummarizeReactions $summarizeReactions,
     ) {}
 
     /**
@@ -29,6 +30,7 @@ class BuildBoardSnapshot
             'team.workspace',
             'participants.user',
             'cards.participant.user',
+            'cards.reactions.participant.user',
             'actionItems.assignee.user',
         ]);
 
@@ -68,11 +70,17 @@ class BuildBoardSnapshot
                 'transferCandidates' => $retro->isFacilitator($viewer) ? $this->transferCandidates($retro, $viewer) : [],
             ],
             'columns' => $this->presentColumns->handle($retro),
-            'cards' => $retro->cards->sortBy('position')->map(fn (Card $card) => [
-                ...$this->presentCard->handle($card, $retro, $viewer),
-                'votes' => $showsTotals ? (int) ($voteTotals[$card->id] ?? 0) : null,
-                'myVotes' => (int) ($myVotes[$card->id] ?? 0),
-            ])->values()->all(),
+            'cards' => $retro->cards->sortBy('position')->map(function (Card $card) use ($retro, $viewer, $showsTotals, $voteTotals, $myVotes) {
+                $presented = $this->presentCard->handle($card, $retro, $viewer);
+                $isHidden = $presented['content'] === null && ! $presented['isMine'] && $retro->phase === RetroPhase::Writing;
+
+                return [
+                    ...$presented,
+                    'votes' => $showsTotals ? (int) ($voteTotals[$card->id] ?? 0) : null,
+                    'myVotes' => (int) ($myVotes[$card->id] ?? 0),
+                    'reactions' => $isHidden ? [] : $this->summarizeReactions->handle($card->reactions, $retro, $viewer),
+                ];
+            })->values()->all(),
             'participants' => $retro->participants->map(fn (Participant $participant) => [
                 'id' => $participant->id,
                 'name' => $participant->displayName(),

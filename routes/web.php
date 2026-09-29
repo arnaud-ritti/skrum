@@ -11,6 +11,7 @@ use App\Http\Controllers\RetroJoinsController;
 use App\Http\Controllers\Retros\ActionItemsController;
 use App\Http\Controllers\Retros\CardGroupsController;
 use App\Http\Controllers\Retros\CardPositionsController;
+use App\Http\Controllers\Retros\CardReactionsController;
 use App\Http\Controllers\Retros\CardsController;
 use App\Http\Controllers\Retros\CardVotesController;
 use App\Http\Controllers\Retros\ColumnOrdersController;
@@ -112,6 +113,8 @@ Route::prefix('retros/{retro}')
         Route::delete('cards/{card}/group', [CardGroupsController::class, 'destroy'])->name('retros.cards.group.destroy')->whereUuid('card');
         Route::post('cards/{card}/votes', [CardVotesController::class, 'store'])->name('retros.cards.votes.store')->whereUuid('card');
         Route::delete('cards/{card}/votes', [CardVotesController::class, 'destroy'])->name('retros.cards.votes.destroy')->whereUuid('card');
+        Route::put('cards/{card}/reactions', [CardReactionsController::class, 'update'])->name('retros.cards.reactions.update')->whereUuid('card');
+        Route::delete('cards/{card}/reactions', [CardReactionsController::class, 'destroy'])->name('retros.cards.reactions.destroy')->whereUuid('card');
         Route::post('action-items', [ActionItemsController::class, 'store'])->name('retros.action-items.store');
         Route::patch('action-items/{actionItem}', [ActionItemsController::class, 'update'])->name('retros.action-items.update')->whereUuid('actionItem');
         Route::delete('action-items/{actionItem}', [ActionItemsController::class, 'destroy'])->name('retros.action-items.destroy')->whereUuid('actionItem');

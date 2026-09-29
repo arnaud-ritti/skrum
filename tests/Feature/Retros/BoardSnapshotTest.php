@@ -6,6 +6,7 @@ use App\Enums\RetroPhase;
 use App\Enums\WorkspaceRole;
 use App\Models\ActionItem;
 use App\Models\Card;
+use App\Models\CardReaction;
 use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\User;
@@ -192,4 +193,14 @@ it('describes the engagement settings', function () {
         'isLocked' => true,
         'presentationMode' => false,
     ]);
+});
+
+it('lists reactions on visible cards with the viewer own flag', function () {
+    $retro = Retro::factory()->inPhase(RetroPhase::Grouping)->create();
+    [, $viewer] = retroMember($retro);
+    $card = Card::factory()->create(['retro_id' => $retro->id]);
+    CardReaction::factory()->create(['retro_id' => $retro->id, 'card_id' => $card->id, 'participant_id' => $viewer->id, 'emoji' => '👍']);
+
+    expect(snapshotCard(snapshotFor($retro, $viewer), $card)['reactions'])
+        ->toBe([['emoji' => '👍', 'count' => 1, 'mine' => true, 'names' => [$viewer->displayName()]]]);
 });
