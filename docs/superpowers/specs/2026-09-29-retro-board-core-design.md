@@ -76,6 +76,12 @@ Every table uses a UUID primary key (Eloquent `HasUuids`, time-ordered UUIDv7) �
 - **Phases**: enum `RetroPhase` = `Writing`, `Grouping`, `Voting`, `Discussing`, `Completed`.
 - **Anonymous**: the author is always stored (to allow editing/deleting own cards) but is never serialized to other participants when `is_anonymous` is true.
 - **Timer**: only `timer_ends_at` is stored; clients render the countdown locally.
+- **Custom template** starts with no columns; the facilitator adds them during `Writing`.
+- **Column colors** are palette keys (`green`, `red`, `blue`, `amber`, `purple`, `slate`), mapped to styles by the UI.
+- **Column edits** (facilitator, `Writing` only): adding and reordering are always allowed; renaming and removing require the column to have no cards.
+- **Anonymity** can be switched on at any time, but switched off only while the retro has no cards (people wrote assuming anonymity).
+- **Votes per participant** (1–20) can be changed only in `Writing` or `Grouping`.
+- Card content: 1–1000 characters; action item content: 1–500 characters; guest display name: 1–50 characters.
 
 ## 3. Authentication, tenancy and access
 
@@ -118,7 +124,7 @@ The register page is hidden (and the route returns 403) when mode is `invite` an
 - After first login, a user with no workspace lands on "create workspace" (skipped when they joined via invitation).
 - The creator becomes `Owner`. A workspace always has at least one owner; the last owner cannot leave or be demoted.
 - Users with several workspaces switch via a sidebar switcher which updates `current_workspace_id`.
-- URLs are scoped by slug: `/w/{workspace}/teams/{team}/retros/{retro}`.
+- Workspace and team pages are scoped by slug: `/w/{workspace}/teams/{team}`. A retro board lives at `/retros/{retro}` (UUID, unguessable) because members and guests share it; every board endpoint is nested under it (`/retros/{retro}/cards/{card}`, …) and access is decided per request by resolving the viewer's participant.
 - Invitations are sent by email. If `MAIL_MAILER=log`, the invite UI also shows a copyable invitation link.
 
 ### Roles and permissions (policies)
@@ -173,7 +179,7 @@ Each endpoint: resolve participant → authorize (policy + phase rule) → persi
 
 ### Events
 
-`CardCreated`, `CardUpdated`, `CardDeleted`, `CardMoved`, `CardGrouped`, `CardUngrouped`, `VoteCast`, `VoteRetracted`, `PhaseChanged`, `TimerChanged`, `CardHighlighted`, `ActionItemSaved`, `ActionItemDeleted`, `RetroSettingsChanged`, `ColumnsChanged`.
+`CardCreated`, `CardUpdated`, `CardDeleted`, `CardMoved`, `CardGrouped`, `CardUngrouped`, `VoteCast`, `VoteRetracted`, `PhaseChanged`, `TimerChanged`, `CardHighlighted`, `ActionItemSaved`, `ActionItemDeleted`, `RetroSettingsChanged`, `ColumnsChanged`, `RetroDeleted`. `RetroSettingsChanged` (settings, guest access, facilitator transfer) makes clients refetch the snapshot, like `PhaseChanged`. Broadcast payloads never contain the guest token.
 
 ### Redaction rules
 
