@@ -2,6 +2,9 @@ import {
     defaultEmojiDataResolver,
     EmojiPicker as Frimousse,
     type EmojiDataResolver,
+    type EmojiPickerListCategoryHeaderProps,
+    type EmojiPickerListComponents,
+    type EmojiPickerListEmojiProps,
 } from 'frimousse';
 import { useCallback, useState, type ReactNode } from 'react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
@@ -21,6 +24,36 @@ type Props = {
     onPick: (emoji: string) => void;
     label: string;
     children: ReactNode;
+};
+
+function CategoryHeader({
+    category,
+    ...props
+}: EmojiPickerListCategoryHeaderProps) {
+    return (
+        <div
+            className="bg-background px-1 pt-2 pb-1 text-xs font-medium text-muted-foreground"
+            {...props}
+        >
+            {category.label}
+        </div>
+    );
+}
+
+function Emoji({ emoji, ...props }: EmojiPickerListEmojiProps) {
+    return (
+        <button
+            className="flex size-8 items-center justify-center rounded text-lg data-[active]:bg-accent"
+            {...props}
+        >
+            {emoji.emoji}
+        </button>
+    );
+}
+
+const ListComponents: Partial<EmojiPickerListComponents> = {
+    CategoryHeader,
+    Emoji,
 };
 
 export function EmojiPicker({ onPick, label, children }: Props) {
@@ -118,27 +151,7 @@ export function EmojiPicker({ onPick, label, children }: Props) {
                             </Frimousse.Empty>
                             <Frimousse.List
                                 className="select-none"
-                                components={{
-                                    CategoryHeader: ({
-                                        category,
-                                        ...props
-                                    }) => (
-                                        <div
-                                            className="bg-background px-1 pt-2 pb-1 text-xs font-medium text-muted-foreground"
-                                            {...props}
-                                        >
-                                            {category.label}
-                                        </div>
-                                    ),
-                                    Emoji: ({ emoji, ...props }) => (
-                                        <button
-                                            className="flex size-8 items-center justify-center rounded text-lg data-[active]:bg-accent"
-                                            {...props}
-                                        >
-                                            {emoji.emoji}
-                                        </button>
-                                    ),
-                                }}
+                                components={ListComponents}
                             />
                         </Frimousse.Viewport>
                     </Frimousse.Root>
