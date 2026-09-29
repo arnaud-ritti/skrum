@@ -1,0 +1,27 @@
+#!/command/with-contenv sh
+set -e
+
+cd /app
+
+missing=""
+
+for variable in APP_KEY REVERB_APP_ID REVERB_APP_KEY REVERB_APP_SECRET DB_PASSWORD; do
+    eval "value=\${$variable:-}"
+
+    if [ -z "$value" ]; then
+        missing="$missing $variable"
+    fi
+done
+
+if [ -n "$missing" ]; then
+    echo "skrum: missing required environment variables:$missing (see .env.example)" >&2
+    exit 1
+fi
+
+s6-setuidgid www-data php artisan optimize
+
+if [ "${SKRUM_RUN_MIGRATIONS:-true}" = "true" ]; then
+    s6-setuidgid www-data php artisan migrate --force
+else
+    echo "skrum: SKRUM_RUN_MIGRATIONS is not true, skipping migrations"
+fi

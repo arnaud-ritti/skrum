@@ -1,0 +1,10 @@
+#!/command/with-contenv sh
+cd /app
+
+exec s6-setuidgid www-data php artisan octane:frankenphp \
+    --host=0.0.0.0 \
+    --port=80 \
+    --admin-port=2019 \
+    --caddyfile=/app/docker/Caddyfile \
+    --workers="${OCTANE_WORKERS:-auto}" \
+    --max-requests="${OCTANE_MAX_REQUESTS:-500}"

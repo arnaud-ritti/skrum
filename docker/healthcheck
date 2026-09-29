@@ -1,0 +1,11 @@
+#!/bin/sh
+server_name="${SERVER_NAME:-:80}"
+
+case "$server_name" in
+    :*)
+        exec curl -fsS -o /dev/null "http://127.0.0.1${server_name}/up"
+        ;;
+    *)
+        exec curl -fsSk -o /dev/null --resolve "${server_name}:443:127.0.0.1" "https://${server_name}/up"
+        ;;
+esac
