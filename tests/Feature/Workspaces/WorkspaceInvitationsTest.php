@@ -88,3 +88,32 @@ it('encrypts the queued invitation so the token never sits in plain text in the 
 
     expect($notification)->toBeInstanceOf(ShouldBeEncrypted::class);
 });
+
+it('does not render markdown links injected through the workspace name', function () {
+    $notification = new WorkspaceInvitationNotification(
+        '[x](https://evil.test)',
+        '[y](https://evil.test)',
+        'https://skrum.test/invitations/token',
+        now()->addDays(7),
+    );
+
+    $html = (string) $notification->toMail(new User)->render();
+
+    expect($html)->not->toContain('href="https://evil.test"');
+});
+
+it('rate limits invitations per user', function () {
+    Notification::fake();
+    $admin = User::factory()->create();
+    $workspace = Workspace::factory()->withMember($admin, WorkspaceRole::Admin)->create();
+
+    foreach (range(1, 20) as $number) {
+        $this->actingAs($admin)
+            ->post(route('workspaces.invitations.store', $workspace), ['email' => "person{$number}@example.com", 'role' => 'member'])
+            ->assertRedirect();
+    }
+
+    $this->actingAs($admin)
+        ->post(route('workspaces.invitations.store', $workspace), ['email' => 'one-too-many@example.com', 'role' => 'member'])
+        ->assertStatus(429);
+});

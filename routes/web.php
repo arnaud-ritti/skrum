@@ -43,12 +43,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::patch('teams/{team}', [TeamsController::class, 'update'])->name('teams.update');
             Route::delete('teams/{team}', [TeamsController::class, 'destroy'])->name('teams.destroy');
             Route::post('teams/{team}/members', [TeamMembersController::class, 'store'])->name('teams.members.store');
-            Route::delete('teams/{team}/members/{member}', [TeamMembersController::class, 'destroy'])->name('teams.members.destroy');
+            Route::delete('teams/{team}/members/{member}', [TeamMembersController::class, 'destroy'])->name('teams.members.destroy')->whereUuid('member');
 
             Route::get('members', [WorkspaceMembersController::class, 'index'])->name('workspaces.members.index');
-            Route::patch('members/{member}', [WorkspaceMembersController::class, 'update'])->name('workspaces.members.update');
-            Route::delete('members/{member}', [WorkspaceMembersController::class, 'destroy'])->name('workspaces.members.destroy');
-            Route::post('invitations', [WorkspaceInvitationsController::class, 'store'])->name('workspaces.invitations.store');
+            Route::patch('members/{member}', [WorkspaceMembersController::class, 'update'])->name('workspaces.members.update')->whereUuid('member');
+            Route::delete('members/{member}', [WorkspaceMembersController::class, 'destroy'])->name('workspaces.members.destroy')->whereUuid('member');
+            Route::post('invitations', [WorkspaceInvitationsController::class, 'store'])->name('workspaces.invitations.store')->middleware('throttle:20,1');
             Route::delete('invitations/{invitation}', [WorkspaceInvitationsController::class, 'destroy'])->name('workspaces.invitations.destroy');
         });
 });
