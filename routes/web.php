@@ -8,6 +8,8 @@ use App\Http\Controllers\InvitationAcceptancesController;
 use App\Http\Controllers\InvitationLinksController;
 use App\Http\Controllers\LocalesController;
 use App\Http\Controllers\RetroJoinsController;
+use App\Http\Controllers\Retros\CardPositionsController;
+use App\Http\Controllers\Retros\CardsController;
 use App\Http\Controllers\Retros\RetrosController;
 use App\Http\Controllers\Retros\RetroSnapshotsController;
 use App\Http\Controllers\SsoCallbacksController;
@@ -80,6 +82,10 @@ Route::prefix('retros/{retro}')
     ->group(function () {
         Route::get('/', [RetrosController::class, 'show'])->name('retros.show');
         Route::get('snapshot', [RetroSnapshotsController::class, 'show'])->name('retros.snapshot.show');
+        Route::post('cards', [CardsController::class, 'store'])->name('retros.cards.store');
+        Route::patch('cards/{card}', [CardsController::class, 'update'])->name('retros.cards.update')->whereUuid('card');
+        Route::delete('cards/{card}', [CardsController::class, 'destroy'])->name('retros.cards.destroy')->whereUuid('card');
+        Route::put('cards/{card}/position', [CardPositionsController::class, 'update'])->name('retros.cards.position.update')->whereUuid('card');
     });
 
 Route::post('broadcasting/auth', [BroadcastAuthorizationsController::class, 'store'])->name('broadcasting.auth');
