@@ -92,6 +92,10 @@ export function CardEditor({
         saveInFlight.current = true;
         setIsSaving(true);
 
+        // Without a provider the card's gif is hidden but still stored, so
+        // an unchanged gif is left out rather than sent as null.
+        const gifChanged = (gif?.id ?? null) !== (card.gif?.id ?? null);
+
         const response = await ctx.run(
             retroRequest<{ card: CardPayload }>(
                 CardsController.update({
@@ -100,7 +104,7 @@ export function CardEditor({
                 }),
                 {
                     content: content.trim() === '' ? null : content.trim(),
-                    gif_id: gif?.id ?? null,
+                    ...(gifChanged && { gif_id: gif?.id ?? null }),
                 },
             ),
         );

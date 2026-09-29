@@ -148,6 +148,19 @@ it('attaches a gif to a card and keeps text optional', function () {
         ->assertUnprocessable();
 });
 
+it('keeps the stored gif when a card is edited without gif_id', function () {
+    config(['services.gifs.provider' => null]);
+    $retro = Retro::factory()->create();
+    [$user, $participant] = retroMember($retro);
+    $card = Card::factory()->create(['retro_id' => $retro->id, 'participant_id' => $participant->id, 'gif_id' => 'abc123']);
+
+    $this->actingAs($user)
+        ->patchJson(route('retros.cards.update', [$retro, $card]), ['content' => 'edited'])
+        ->assertOk();
+
+    expect($card->fresh())->content->toBe('edited')->gif_id->toBe('abc123');
+});
+
 it('refuses unknown gifs and gifs when turned off', function () {
     Http::fake(['api.giphy.com/*' => Http::response(['data' => []], 404)]);
     $retro = Retro::factory()->create();
