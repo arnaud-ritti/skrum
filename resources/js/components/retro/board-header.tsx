@@ -42,6 +42,7 @@ export function BoardHeader({ ctx, online, actions }: Props) {
             />
             <div className="ml-auto flex items-center gap-3">
                 <TimerDisplay
+                    key={board.retro.timerEndsAt ?? 'none'}
                     endsAt={board.retro.timerEndsAt}
                     offset={offset}
                 />
