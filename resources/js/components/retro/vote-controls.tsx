@@ -1,4 +1,5 @@
 import { Minus, Plus } from 'lucide-react';
+import { useState } from 'react';
 import CardVotesController from '@/actions/App/Http/Controllers/Retros/CardVotesController';
 import { Button } from '@/components/ui/button';
 import { useTrans } from '@/hooks/use-trans';
@@ -17,9 +18,16 @@ type Tally = {
 export function VoteControls({ card }: { card: BoardCard }) {
     const ctx = useBoard();
     const { t } = useTrans();
+    const [busy, setBusy] = useState(false);
     const route = { retro: ctx.board.retro.id, card: card.id };
 
     const vote = async (delta: 1 | -1) => {
+        if (busy) {
+            return;
+        }
+
+        setBusy(true);
+
         ctx.dispatch({
             type: 'votes.tally',
             cardId: card.id,
@@ -27,13 +35,15 @@ export function VoteControls({ card }: { card: BoardCard }) {
             remainingVotes: ctx.board.viewer.remainingVotes - delta,
         });
 
-        const tally = await ctx.run(
-            retroRequest<Tally>(
-                delta === 1
-                    ? CardVotesController.store(route)
-                    : CardVotesController.destroy(route),
-            ),
-        );
+        const tally = await ctx
+            .run(
+                retroRequest<Tally>(
+                    delta === 1
+                        ? CardVotesController.store(route)
+                        : CardVotesController.destroy(route),
+                ),
+            )
+            .finally(() => setBusy(false));
 
         if (tally) {
             ctx.apply({
@@ -57,7 +67,7 @@ export function VoteControls({ card }: { card: BoardCard }) {
                 variant="ghost"
                 className="size-7"
                 aria-label={t('Remove a vote')}
-                disabled={card.myVotes === 0}
+                disabled={busy || card.myVotes === 0}
                 onClick={() => void vote(-1)}
             >
                 <Minus className="size-3.5" />
@@ -83,7 +93,7 @@ export function VoteControls({ card }: { card: BoardCard }) {
                 variant="ghost"
                 className="size-7"
                 aria-label={t('Add a vote')}
-                disabled={ctx.board.viewer.remainingVotes === 0}
+                disabled={busy || ctx.board.viewer.remainingVotes === 0}
                 onClick={() => void vote(1)}
             >
                 <Plus className="size-3.5" />

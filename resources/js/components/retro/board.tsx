@@ -1,6 +1,7 @@
 import {
     closestCenter,
     DndContext,
+    DragOverlay,
     KeyboardSensor,
     PointerSensor,
     useSensor,
@@ -8,7 +9,7 @@ import {
     type DragEndEvent,
 } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import CardGroupsController from '@/actions/App/Http/Controllers/Retros/CardGroupsController';
 import CardPositionsController from '@/actions/App/Http/Controllers/Retros/CardPositionsController';
 import { useRetroBoard } from '@/hooks/use-retro-board';
@@ -24,6 +25,7 @@ import { CompletedSummary } from './completed-summary';
 import { ConnectionBanner } from './connection-banner';
 import { BoardProvider, type BoardContextValue } from './board-context';
 import { parseDndId, useDragAccessibility } from './dnd';
+import { CardPreview } from './retro-card';
 import { RetroColumn } from './retro-column';
 import { SessionExpiredBanner } from './session-expired-banner';
 import { VoteProgress } from './vote-progress';
@@ -48,6 +50,7 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
         }),
     );
 
+    const [activeCardId, setActiveCardId] = useState<string | null>(null);
     const dragAccessibility = useDragAccessibility(board);
     const highlightedCardId = board.retro.highlightedCardId;
 
@@ -69,7 +72,12 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
 
     const ctx: BoardContextValue = { board, dispatch, apply, run, refetch };
 
+    const activeCard =
+        board.cards.find((card) => card.id === activeCardId) ?? null;
+
     const handleDragEnd = async ({ active, over }: DragEndEvent) => {
+        setActiveCardId(null);
+
         const dragged = parseDndId(active.id);
         const target = parseDndId(over?.id);
 
@@ -178,6 +186,12 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
                                 sensors={sensors}
                                 accessibility={dragAccessibility}
                                 collisionDetection={closestCenter}
+                                onDragStart={(event) =>
+                                    setActiveCardId(
+                                        parseDndId(event.active.id)?.id ?? null,
+                                    )
+                                }
+                                onDragCancel={() => setActiveCardId(null)}
                                 onDragEnd={(event) => void handleDragEnd(event)}
                             >
                                 <main className="flex min-w-0 flex-1 items-start gap-4 overflow-x-auto p-4">
@@ -198,6 +212,11 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
                                             <AddColumn />
                                         )}
                                 </main>
+                                <DragOverlay>
+                                    {activeCard ? (
+                                        <CardPreview card={activeCard} />
+                                    ) : null}
+                                </DragOverlay>
                             </DndContext>
                             {board.retro.phase === 'discussing' && (
                                 <ActionItemsPanel />

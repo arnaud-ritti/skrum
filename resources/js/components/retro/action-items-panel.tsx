@@ -264,6 +264,7 @@ export function ActionItemsPanel() {
                     value={assigneeId}
                     participants={ctx.board.participants}
                     onChange={setAssigneeId}
+                    disabled={sending}
                 />
                 <Button
                     type="submit"

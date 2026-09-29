@@ -136,7 +136,6 @@ export function GroupableCard({
                 drag.setNodeRef(node);
                 drop.setNodeRef(node);
             }}
-            style={{ transform: CSS.Translate.toString(drag.transform) }}
             className={cn(
                 'cursor-grab rounded-md',
                 drag.isDragging && 'opacity-50',

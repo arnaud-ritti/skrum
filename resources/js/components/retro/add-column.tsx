@@ -40,6 +40,7 @@ export function AddColumn() {
         if (response) {
             ctx.apply({ type: 'columns.set', columns: response.columns });
             setTitle('');
+            setColor('green');
         }
     };
 

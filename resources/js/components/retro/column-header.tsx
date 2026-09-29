@@ -49,9 +49,11 @@ export function ColumnHeader({ column, count, index, total, hasCards }: Props) {
     const canEdit =
         ctx.board.viewer.isFacilitator && ctx.board.retro.phase === 'writing';
 
-    const apply = async (request: Promise<{ columns: BoardColumn[] }>) => {
+    const applyColumns = async (
+        request: Promise<{ columns: BoardColumn[] }>,
+    ) => {
         if (busy) {
-            return;
+            return undefined;
         }
 
         setBusy(true);
@@ -61,10 +63,12 @@ export function ColumnHeader({ column, count, index, total, hasCards }: Props) {
         if (response) {
             ctx.apply({ type: 'columns.set', columns: response.columns });
         }
+
+        return response;
     };
 
     const update = (data: { title?: string; color?: ColumnColor }) =>
-        apply(
+        applyColumns(
             retroRequest<{ columns: BoardColumn[] }>(
                 ColumnsController.update({
                     retro: ctx.board.retro.id,
@@ -100,7 +104,7 @@ export function ColumnHeader({ column, count, index, total, hasCards }: Props) {
         const from = ids.indexOf(column.id);
         [ids[from], ids[from + offset]] = [ids[from + offset], ids[from]];
 
-        await apply(
+        await applyColumns(
             retroRequest<{ columns: BoardColumn[] }>(
                 ColumnOrdersController.update(ctx.board.retro.id),
                 { column_ids: ids },
@@ -109,7 +113,7 @@ export function ColumnHeader({ column, count, index, total, hasCards }: Props) {
     };
 
     const destroy = async () => {
-        await apply(
+        const response = await applyColumns(
             retroRequest<{ columns: BoardColumn[] }>(
                 ColumnsController.destroy({
                     retro: ctx.board.retro.id,
@@ -117,7 +121,10 @@ export function ColumnHeader({ column, count, index, total, hasCards }: Props) {
                 }),
             ),
         );
-        setConfirmingDelete(false);
+
+        if (response) {
+            setConfirmingDelete(false);
+        }
     };
 
     return (

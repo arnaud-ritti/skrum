@@ -348,5 +348,6 @@
     "Cancelled moving :card.": "Cancelled moving :card.",
     "The server did not respond in time. Please try again.": "The server did not respond in time. Please try again.",
     "Your session has expired.": "Your session has expired.",
-    "Reload": "Reload"
+    "Reload": "Reload",
+    "The phase changed before your edit was saved.": "The phase changed before your edit was saved."
 }

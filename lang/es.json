@@ -609,5 +609,6 @@
     "Cancelled moving :card.": "Se canceló el movimiento de :card.",
     "The server did not respond in time. Please try again.": "El servidor no respondió a tiempo. Inténtalo de nuevo.",
     "Your session has expired.": "Tu sesión ha caducado.",
-    "Reload": "Recargar"
+    "Reload": "Recargar",
+    "The phase changed before your edit was saved.": "La fase cambió antes de que se guardara tu cambio."
 }

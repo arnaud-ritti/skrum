@@ -25,20 +25,29 @@ export function RetroCard({ card, isChild = false, footer }: Props) {
     const { t } = useTrans();
     const [editing, setEditing] = useState(false);
     const [highlighting, setHighlighting] = useState(false);
+    const [removing, setRemoving] = useState(false);
     const phase = ctx.board.retro.phase;
     const canChange =
         card.isMine && (phase === 'writing' || phase === 'grouping');
     const isHighlighted = ctx.board.retro.highlightedCardId === card.id;
 
     const remove = async () => {
-        const result = await ctx.run(
-            retroRequest(
-                CardsController.destroy({
-                    retro: ctx.board.retro.id,
-                    card: card.id,
-                }),
-            ),
-        );
+        if (removing) {
+            return;
+        }
+
+        setRemoving(true);
+
+        const result = await ctx
+            .run(
+                retroRequest(
+                    CardsController.destroy({
+                        retro: ctx.board.retro.id,
+                        card: card.id,
+                    }),
+                ),
+            )
+            .finally(() => setRemoving(false));
 
         if (result !== undefined) {
             ctx.apply({
@@ -95,7 +104,11 @@ export function RetroCard({ card, isChild = false, footer }: Props) {
             )}
         >
             {editing ? (
-                <CardEditor card={card} onDone={() => setEditing(false)} />
+                <CardEditor
+                    card={card}
+                    editable={canChange}
+                    onDone={() => setEditing(false)}
+                />
             ) : (
                 <>
                     {card.content === null ? (
@@ -177,6 +190,7 @@ export function RetroCard({ card, isChild = false, footer }: Props) {
                                         variant="ghost"
                                         className="size-7"
                                         aria-label={t('Delete card')}
+                                        disabled={removing}
                                         onClick={() => void remove()}
                                     >
                                         <Trash2 className="size-3.5" />
@@ -193,6 +207,29 @@ export function RetroCard({ card, isChild = false, footer }: Props) {
                         <RetroCard card={child} isChild />
                     </div>
                 ))}
+        </article>
+    );
+}
+
+export function CardPreview({ card }: { card: BoardCard }) {
+    const { t } = useTrans();
+
+    return (
+        <article className="w-64 rounded-md border bg-card p-3 text-sm shadow-lg">
+            {card.content === null ? (
+                <p className="text-muted-foreground italic">
+                    {t('Hidden until writing ends')}
+                </p>
+            ) : (
+                <p className="break-words whitespace-pre-wrap">
+                    {card.content}
+                </p>
+            )}
+            {card.author && (
+                <p className="mt-2 text-xs text-muted-foreground">
+                    {card.author.name}
+                </p>
+            )}
         </article>
     );
 }

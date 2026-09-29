@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import CardsController from '@/actions/App/Http/Controllers/Retros/CardsController';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -9,15 +10,37 @@ import { useBoard } from './board-context';
 
 export function CardEditor({
     card,
+    editable,
     onDone,
 }: {
     card: BoardCard;
+    editable: boolean;
     onDone: () => void;
 }) {
     const ctx = useBoard();
     const { t } = useTrans();
     const [content, setContent] = useState(card.content ?? '');
     const [isSaving, setIsSaving] = useState(false);
+
+    const latest = useRef({ content, savedContent: card.content, onDone });
+
+    useEffect(() => {
+        latest.current = { content, savedContent: card.content, onDone };
+    });
+
+    useEffect(() => {
+        if (editable) {
+            return;
+        }
+
+        const { content, savedContent, onDone } = latest.current;
+
+        if (content.trim() !== (savedContent ?? '').trim()) {
+            toast(t('The phase changed before your edit was saved.'));
+        }
+
+        onDone();
+    }, [editable]);
 
     const save = async () => {
         if (isSaving) {
