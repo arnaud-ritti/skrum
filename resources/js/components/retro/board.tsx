@@ -16,6 +16,7 @@ import { useTrans } from '@/hooks/use-trans';
 import { retroRequest } from '@/lib/retro/api';
 import { topLevelCards, type BoardAction } from '@/lib/retro/board-reducer';
 import type { CardPayload, Snapshot } from '@/lib/retro/types';
+import { AddColumn } from './add-column';
 import { BoardEnded } from './board-ended';
 import { BoardHeader } from './board-header';
 import { ConnectionBanner } from './connection-banner';
@@ -169,13 +170,18 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
                             {t('No columns yet.')}
                         </p>
                     )}
-                    {board.columns.map((column) => (
+                    {board.columns.map((column, index) => (
                         <RetroColumn
                             key={column.id}
                             column={column}
                             ctx={ctx}
+                            index={index}
                         />
                     ))}
+                    {board.viewer.isFacilitator &&
+                        board.retro.phase === 'writing' && (
+                            <AddColumn ctx={ctx} />
+                        )}
                 </main>
             </DndContext>
         </div>

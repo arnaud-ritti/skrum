@@ -19,9 +19,11 @@ import { RetroCard } from './retro-card';
 export function RetroColumn({
     column,
     ctx,
+    index,
 }: {
     column: BoardColumn;
     ctx: BoardContextValue;
+    index: number;
 }) {
     const { t } = useTrans();
     const [sortByVotes, setSortByVotes] = useState(true);
@@ -74,7 +76,16 @@ export function RetroColumn({
                 id={column.id}
                 className="flex flex-col gap-2 rounded-md"
             >
-                <ColumnHeader column={column} count={cards.length} />
+                <ColumnHeader
+                    column={column}
+                    count={cards.length}
+                    ctx={ctx}
+                    index={index}
+                    total={ctx.board.columns.length}
+                    hasCards={ctx.board.cards.some(
+                        (card) => card.columnId === column.id,
+                    )}
+                />
                 {canSortByVotes && (
                     <Button
                         size="sm"

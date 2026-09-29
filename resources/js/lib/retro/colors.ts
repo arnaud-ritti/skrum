@@ -17,3 +17,21 @@ export const ColumnColors: ColumnColor[] = [
     'purple',
     'slate',
 ];
+
+export const columnSwatch: Record<ColumnColor, string> = {
+    green: 'bg-emerald-500',
+    red: 'bg-rose-500',
+    blue: 'bg-sky-500',
+    amber: 'bg-amber-500',
+    purple: 'bg-violet-500',
+    slate: 'bg-slate-500',
+};
+
+export const columnColorLabel: Record<ColumnColor, string> = {
+    green: 'Green',
+    red: 'Red',
+    blue: 'Blue',
+    amber: 'Amber',
+    purple: 'Purple',
+    slate: 'Slate',
+};

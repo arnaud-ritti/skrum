@@ -572,5 +572,20 @@
     "Delete this retrospective? Everyone loses access to it.": "Supprimer cette rétrospective ? Tout le monde perdra l'accès.",
     "Guest link": "Lien invité",
     "Hand over facilitation": "Passer l'animation",
-    "Delete retrospective": "Supprimer la rétrospective"
+    "Delete retrospective": "Supprimer la rétrospective",
+    "Column menu": "Menu de la colonne",
+    "Color": "Couleur",
+    "Move left": "Déplacer à gauche",
+    "Move right": "Déplacer à droite",
+    "Delete column": "Supprimer la colonne",
+    "Only empty columns can be renamed or deleted.": "Seules les colonnes vides peuvent être renommées ou supprimées.",
+    "Add column": "Ajouter une colonne",
+    "Column title": "Titre de la colonne",
+    "Green": "Vert",
+    "Red": "Rouge",
+    "Blue": "Bleu",
+    "Amber": "Ambre",
+    "Purple": "Violet",
+    "Slate": "Ardoise",
+    "Delete the column :title?": "Supprimer la colonne :title ?"
 }
