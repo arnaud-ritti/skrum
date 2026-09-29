@@ -53,7 +53,7 @@ class CreateNewUser implements CreatesNewUsers
 
                 app(AcceptWorkspaceInvitation::class)->handle($invitation, $user);
 
-                request()->session()->forget('invitation_token');
+                request()->session()->forget(['invitation_token', 'url.intended']);
             }
 
             return $user;

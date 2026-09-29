@@ -17,6 +17,10 @@ class InvitationAcceptancesController extends Controller
         abort_unless($invitation->isPending(), 410);
         abort_unless($invitation->matchesEmail($request->user()->email), 403);
 
+        if ($request->user()->email_verified_at === null) {
+            $request->user()->forceFill(['email_verified_at' => now()])->save();
+        }
+
         $acceptInvitation->handle($invitation, $request->user());
 
         $request->session()->forget('invitation_token');

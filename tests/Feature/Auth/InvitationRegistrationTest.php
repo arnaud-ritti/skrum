@@ -57,7 +57,8 @@ it('registers an invited person, verifies the email and joins the workspace', fu
     $this->get(route('register'))
         ->assertInertia(fn (Assert $page) => $page->where('invitationEmail', 'Invited@Example.com'));
 
-    $this->post(route('register.store'), registrationPayload('invited@example.com'));
+    $this->post(route('register.store'), registrationPayload('invited@example.com'))
+        ->assertRedirect(route('dashboard'));
 
     $user = User::firstWhere('email', 'invited@example.com');
 
@@ -131,3 +132,22 @@ it('tells the login page whether registration is available', function (string $m
     ['invite', false],
     ['open', true],
 ]);
+
+it('redirects a workspace member following an invitation link to the workspace', function () {
+    $invitation = WorkspaceInvitation::factory()->withToken('secret-token')->create();
+    $member = User::factory()->create();
+    $invitation->workspace->members()->attach($member, ['role' => WorkspaceRole::Member]);
+
+    $this->actingAs($member)
+        ->get(route('invitations.show', 'secret-token'))
+        ->assertRedirect(route('workspaces.show', $invitation->workspace));
+});
+
+it('verifies the email of an unverified user accepting an invitation', function () {
+    $user = User::factory()->unverified()->create(['email' => 'member@example.com']);
+    WorkspaceInvitation::factory()->withToken('secret-token')->create(['email' => 'member@example.com']);
+
+    $this->actingAs($user)->post(route('invitations.acceptance.store', 'secret-token'));
+
+    expect($user->fresh()->email_verified_at)->not->toBeNull();
+});
