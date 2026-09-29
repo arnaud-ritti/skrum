@@ -479,7 +479,6 @@
     "This action is not available in the current phase.": "Diese Aktion ist in der aktuellen Phase nicht verfügbar.",
     "Only the facilitator can do this.": "Das kann nur der Moderator tun.",
     "You can only change your own cards.": "Du kannst nur deine eigenen Karten ändern.",
-    "The board is being built.": "Das Board wird gerade aufgebaut.",
     "Retrospectives of this team": "Retrospektiven dieses Teams",
     "Retrospectives": "Retrospektiven",
     "Retrospective title": "Titel der Retrospektive",
@@ -515,5 +514,13 @@
     "Retro column: Longed for": "Gewünscht",
     "Retro column: Went well": "Lief gut",
     "Retro column: To improve": "Zu verbessern",
-    "Retro column: Action ideas": "Aktionsideen"
+    "Retro column: Action ideas": "Aktionsideen",
+    "Reconnecting…": "Verbindung wird wiederhergestellt…",
+    "This retrospective has been deleted.": "Diese Retrospektive wurde gelöscht.",
+    "Your access to this retrospective has ended.": "Dein Zugriff auf diese Retrospektive ist beendet.",
+    "Back to the team": "Zurück zum Team",
+    ":count online": ":count online",
+    "Guest": "Gast",
+    "Phases": "Phasen",
+    "Something went wrong. Please try again.": "Etwas ist schiefgelaufen. Bitte versuch es erneut."
 }

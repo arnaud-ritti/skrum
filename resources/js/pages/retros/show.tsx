@@ -1,25 +1,12 @@
 import { Head } from '@inertiajs/react';
-import Heading from '@/components/heading';
-import { useTrans } from '@/hooks/use-trans';
+import { Board } from '@/components/retro/board';
+import type { Snapshot } from '@/lib/retro/types';
 
-type Props = {
-    snapshot: {
-        retro: { id: string; title: string; phase: string };
-    };
-};
-
-export default function ShowRetro({ snapshot }: Props) {
-    const { t } = useTrans();
-
+export default function ShowRetro({ snapshot }: { snapshot: Snapshot }) {
     return (
         <>
             <Head title={snapshot.retro.title} />
-            <div className="mx-auto max-w-3xl p-6">
-                <Heading
-                    title={snapshot.retro.title}
-                    description={t('The board is being built.')}
-                />
-            </div>
+            <Board snapshot={snapshot} />
         </>
     );
 }

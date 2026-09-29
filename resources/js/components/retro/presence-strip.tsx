@@ -1,0 +1,42 @@
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { useTrans } from '@/hooks/use-trans';
+import type { PresenceMember } from '@/lib/retro/types';
+
+const Visible = 8;
+
+export function PresenceStrip({ members }: { members: PresenceMember[] }) {
+    const { t } = useTrans();
+    const hidden = members.length - Visible;
+
+    return (
+        <div
+            className="flex items-center -space-x-2"
+            aria-label={t(':count online', { count: members.length })}
+        >
+            {members.slice(0, Visible).map((member) => (
+                <Tooltip key={member.id}>
+                    <TooltipTrigger asChild>
+                        <img
+                            src={member.info.avatarUrl}
+                            alt={member.info.name}
+                            className="size-8 rounded-full border-2 border-background bg-muted"
+                        />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        {member.info.name}
+                        {member.info.isGuest && ` · ${t('Guest')}`}
+                    </TooltipContent>
+                </Tooltip>
+            ))}
+            {hidden > 0 && (
+                <span className="flex size-8 items-center justify-center rounded-full border-2 border-background bg-muted text-xs">
+                    +{hidden}
+                </span>
+            )}
+        </div>
+    );
+}

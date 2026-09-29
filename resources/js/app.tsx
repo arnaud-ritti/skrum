@@ -1,4 +1,7 @@
+import { http } from '@inertiajs/core';
 import { createInertiaApp } from '@inertiajs/react';
+import { configureEcho } from '@laravel/echo-react';
+import BroadcastAuthorizationsController from '@/actions/App/Http/Controllers/BroadcastAuthorizationsController';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { initializeTheme } from '@/hooks/use-appearance';
@@ -7,6 +10,23 @@ import AuthLayout from '@/layouts/auth-layout';
 import SettingsLayout from '@/layouts/settings/layout';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
+
+configureEcho({
+    broadcaster: 'reverb',
+    channelAuthorization: {
+        customHandler: ({ socketId, channelName }, callback) => {
+            http.getClient()
+                .request({
+                    method: 'post',
+                    url: BroadcastAuthorizationsController.store.url(),
+                    data: { socket_id: socketId, channel_name: channelName },
+                    headers: { Accept: 'application/json' },
+                })
+                .then((response) => callback(null, JSON.parse(response.data)))
+                .catch((error: Error) => callback(error, null));
+        },
+    },
+});
 
 void createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),
