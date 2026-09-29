@@ -7,8 +7,11 @@
     "skills": [
         "infer-conventions",
         "deploying-to-cloud",
+        "fortify-development",
         "laravel-best-practices",
         "testing-best-practices",
+        "wayfinder-development",
+        "inertia-react-development",
         "tailwindcss-development"
     ]
 }
