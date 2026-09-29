@@ -13,6 +13,7 @@ export type BoardAction =
     | { type: 'card.place'; cardId: string; columnId: string; index: number }
     | { type: 'columns.set'; columns: BoardColumn[] }
     | { type: 'votes.cast'; votesCast: number }
+    | { type: 'votes.adjust'; delta: number }
     | {
           type: 'votes.tally';
           cardId: string;
@@ -128,6 +129,11 @@ export function boardReducer(state: Snapshot, action: BoardAction): Snapshot {
             };
         case 'votes.cast':
             return { ...state, votesCast: action.votesCast };
+        case 'votes.adjust':
+            return {
+                ...state,
+                votesCast: (state.votesCast ?? 0) + action.delta,
+            };
         case 'votes.tally':
             return {
                 ...state,

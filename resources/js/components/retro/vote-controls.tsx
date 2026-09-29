@@ -36,6 +36,7 @@ export function VoteControls({
 
         if (tally) {
             ctx.dispatch({ type: 'votes.tally', ...tally });
+            ctx.dispatch({ type: 'votes.adjust', delta });
         }
     };
 
@@ -53,9 +54,19 @@ export function VoteControls({
             </Button>
             <span
                 className="min-w-4 text-center font-medium"
-                aria-label={t('Your votes: :count', { count: card.myVotes })}
+                aria-hidden="true"
             >
                 {card.myVotes}
+            </span>
+            <span className="sr-only">
+                {t(
+                    card.myVotes === 1
+                        ? 'Your vote: :count'
+                        : 'Your votes: :count',
+                    {
+                        count: card.myVotes,
+                    },
+                )}
             </span>
             <Button
                 size="icon"

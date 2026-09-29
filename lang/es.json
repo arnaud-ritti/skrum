@@ -539,5 +539,8 @@
     "Votes cast": "Votos emitidos",
     ":cast of :total votes cast": ":cast de :total votos emitidos",
     ":count votes": ":count votos",
-    "Sort by votes": "Ordenar por votos"
+    "Sort by votes": "Ordenar por votos",
+    "Your vote: :count": "Tu voto: :count",
+    ":count vote": ":count voto",
+    ":cast of :total vote cast": ":cast de :total voto emitido"
 }

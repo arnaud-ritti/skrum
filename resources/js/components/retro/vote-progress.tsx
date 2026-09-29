@@ -28,7 +28,12 @@ export function VoteProgress({ board }: { board: Snapshot }) {
                 />
             </div>
             <span className="text-muted-foreground">
-                {t(':cast of :total votes cast', { cast, total })}
+                {t(
+                    cast === 1
+                        ? ':cast of :total vote cast'
+                        : ':cast of :total votes cast',
+                    { cast, total },
+                )}
             </span>
         </div>
     );

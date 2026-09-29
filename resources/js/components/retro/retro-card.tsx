@@ -104,9 +104,12 @@ export function RetroCard({ card, ctx, isChild = false, footer }: Props) {
                                     phase === 'completed') && (
                                     <Badge
                                         variant="secondary"
-                                        aria-label={t(':count votes', {
-                                            count: card.votes ?? 0,
-                                        })}
+                                        aria-label={t(
+                                            card.votes === 1
+                                                ? ':count vote'
+                                                : ':count votes',
+                                            { count: card.votes ?? 0 },
+                                        )}
                                     >
                                         {card.votes ?? 0}
                                     </Badge>
