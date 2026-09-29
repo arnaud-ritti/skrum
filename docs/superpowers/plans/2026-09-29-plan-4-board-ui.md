@@ -921,7 +921,7 @@ Claude-Session: https://claude.ai/code/session_01FcMxGGHCZcDTndQCc57VPC"
 - Consumes: `useRetroBoard` (`board`, `dispatch`, `run`), `topLevelCards`, `childrenOf`, `columnAccent`, `retroRequest`.
 - Produces: `<RetroColumn column board ctx />`, `<RetroCard card board ctx />` where `ctx = { board, dispatch, run }` is a `BoardContext` object built in `Board` (type `BoardContextValue` exported from `board.tsx`). Later tasks add props/slots to these components.
 
-Rules: composer only in Writing; own cards editable/deletable in Writing and Grouping; hidden cards (`content === null`) render a muted placeholder "Someone is writing…" with no author; author label only when `author !== null`; own cards get a subtle "You" badge; children render nested under their lead (indented, smaller).
+Rules: composer only in Writing; own cards editable/deletable in Writing and Grouping; hidden cards (`content === null`) render a muted placeholder "Hidden until writing ends" (eye-off icon) with no author; author label only when `author !== null`; own cards get a subtle "You" badge; children render nested under their lead (indented, smaller).
 
 - [ ] **Step 1: Textarea primitive**
 
@@ -1129,7 +1129,7 @@ export function RetroCard({ card, ctx, isChild = false, footer }: Props) {
             ) : (
                 <>
                     {card.content === null ? (
-                        <p className="text-muted-foreground italic">{t('Someone is writing…')}</p>
+                        <p className="text-muted-foreground italic">{t('Hidden until writing ends')}</p>
                     ) : (
                         <p className="break-words whitespace-pre-wrap">{card.content}</p>
                     )}
@@ -1217,9 +1217,9 @@ export function RetroColumn({ column, ctx }: { column: BoardColumn; ctx: BoardCo
 
 `board.tsx` — render `<RetroColumn key={column.id} column={column} ctx={ctx} />` for each column. When there are no columns show `t('No columns yet.')` (the facilitator adds them in Task 7).
 
-Add keys: `Add a card…`, `Add` (exists), `Edit card`, `Delete card`, `Save` (exists?), `Cancel` (exists?), `Someone is writing…`, `You`, `No columns yet.` — skip existing keys.
+Add keys: `Add a card…`, `Add` (exists), `Edit card`, `Delete card`, `Save` (exists?), `Cancel` (exists?), `Hidden until writing ends`, `You`, `No columns yet.` — skip existing keys.
 
-- [ ] **Step 7: Verify** — types/lint as in Global Constraints. Manual: two members in one retro during Writing: A writes cards → B sees "Someone is writing…" placeholders (no author, no text); A edits/deletes own card; B cannot edit A's card. Move the retro to Grouping via tinker (`->update(['phase' => 'grouping'])` + reload) → content and authors visible; make it anonymous → no author names for others' cards.
+- [ ] **Step 7: Verify** — types/lint as in Global Constraints. Manual: two members in one retro during Writing: A writes cards → B sees "Hidden until writing ends" placeholders (no author, no text); A edits/deletes own card; B cannot edit A's card. Move the retro to Grouping via tinker (`->update(['phase' => 'grouping'])` + reload) → content and authors visible; make it anonymous → no author names for others' cards.
 
 - [ ] **Step 8: Commit** — `feat: write, edit and delete cards on the board`.
 

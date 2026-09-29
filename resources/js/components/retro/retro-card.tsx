@@ -1,4 +1,4 @@
-import { Pencil, Trash2, Ungroup } from 'lucide-react';
+import { EyeOff, Pencil, Trash2, Ungroup } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import CardsController from '@/actions/App/Http/Controllers/Retros/CardsController';
 import CardGroupsController from '@/actions/App/Http/Controllers/Retros/CardGroupsController';
@@ -81,8 +81,9 @@ export function RetroCard({ card, ctx, isChild = false, footer }: Props) {
             ) : (
                 <>
                     {card.content === null ? (
-                        <p className="text-muted-foreground italic">
-                            {t('Someone is writing…')}
+                        <p className="flex items-center gap-1.5 text-muted-foreground italic">
+                            <EyeOff className="size-4" aria-hidden="true" />
+                            {t('Hidden until writing ends')}
                         </p>
                     ) : (
                         <p className="break-words whitespace-pre-wrap">
