@@ -36,6 +36,8 @@ Before a first public release, remove the known rough edges left after Plans 4 (
 
 `useRetroBoard` already buffers realtime events while a snapshot refetch is in flight and replays them after `replace`. Server-derived updates from the viewer's own mutation responses go through the same path: the context exposes `apply(action)` (buffered while a refetch is pending, dispatched immediately otherwise) alongside `dispatch` (always immediate, used only for optimistic updates). Every place that dispatches from a mutation response uses `apply`.
 
+Replayed actions must be absolute, never relative: the vote endpoints' response gains `votesCast` (the retro's current vote total), and the client applies it as an absolute value instead of adding ±1, so a replay after a refetch cannot double-count.
+
 ### A2 — Own cards in the participant's other tabs
 
 - New private channel `private-participant.{participantId}` (participant UUID).
