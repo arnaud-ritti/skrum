@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\WorkspaceRole;
+use App\Models\Column;
 use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\User;
@@ -54,6 +55,16 @@ it('answers logged-out json requests with 401', function () {
     $this->getJson(route('retros.snapshot.show', Retro::factory()->create()))
         ->assertUnauthorized()
         ->assertJsonPath('message', 'Your session has expired.');
+});
+
+it('answers logged-out json mutations with 401', function () {
+    $retro = Retro::factory()->create();
+    $column = Column::factory()->create(['retro_id' => $retro->id]);
+
+    $this->postJson(route('retros.cards.store', $retro), ['column_id' => $column->id, 'content' => 'Deploys are slow'])
+        ->assertUnauthorized();
+
+    expect($retro->cards()->count())->toBe(0);
 });
 
 it('recognises a guest by cookie while guest access is enabled', function () {

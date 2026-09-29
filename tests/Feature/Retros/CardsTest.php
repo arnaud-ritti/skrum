@@ -206,10 +206,32 @@ it('sends the author their own card on their private channel', function () {
         && $event->broadcastOn()->name === "private-participant.{$participant->id}");
 
     $this->actingAs($user)
+        ->withHeader('X-Socket-ID', '333.444')
         ->patchJson(route('retros.cards.update', [$retro, $response->json('card.id')]), ['content' => 'Deploys are faster'])
         ->assertOk();
 
-    Event::assertDispatched(OwnCardSaved::class, fn (OwnCardSaved $event) => $event->card['content'] === 'Deploys are faster');
+    Event::assertDispatched(OwnCardSaved::class, fn (OwnCardSaved $event) => $event->card['content'] === 'Deploys are faster'
+        && $event->socket === '333.444');
+});
+
+it('does not send the author their card again when it is moved, grouped or deleted', function () {
+    $retro = Retro::factory()->inPhase(RetroPhase::Grouping)->create();
+    [$user, $participant] = retroMember($retro);
+    $column = Column::factory()->create(['retro_id' => $retro->id]);
+    $card = Card::factory()->create(['retro_id' => $retro->id, 'column_id' => $column->id, 'participant_id' => $participant->id]);
+    $lead = Card::factory()->create(['retro_id' => $retro->id, 'column_id' => $column->id]);
+
+    $this->actingAs($user)
+        ->putJson(route('retros.cards.position.update', [$retro, $card]), ['column_id' => $column->id, 'index' => 1])
+        ->assertOk();
+    $this->actingAs($user)
+        ->putJson(route('retros.cards.group.update', [$retro, $card]), ['parent_card_id' => $lead->id])
+        ->assertOk();
+    $this->actingAs($user)
+        ->deleteJson(route('retros.cards.destroy', [$retro, $card]))
+        ->assertNoContent();
+
+    Event::assertNotDispatched(OwnCardSaved::class);
 });
 
 it('sends the author their own content and authorship in anonymous retros while others stay redacted', function () {

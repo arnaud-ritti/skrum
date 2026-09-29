@@ -143,3 +143,16 @@ it('orders vote totals by a version that grows with every cast and retraction', 
     Event::assertDispatched(VoteRetracted::class, fn (VoteRetracted $event) => $event->votesVersion === $retracted);
     expect($retro->fresh()->votes_version)->toBe($retracted);
 });
+
+it('answers a retraction with the same total and version it broadcasts', function () {
+    [$retro, $user, , $card] = votingRetro();
+
+    $this->actingAs($user)->postJson(route('retros.cards.votes.store', [$retro, $card]))->assertCreated();
+
+    $response = $this->actingAs($user)
+        ->deleteJson(route('retros.cards.votes.destroy', [$retro, $card]))
+        ->assertOk();
+
+    Event::assertDispatched(VoteRetracted::class, fn (VoteRetracted $event) => $event->votesCast === $response->json('votesCast')
+        && $event->votesVersion === $response->json('votesVersion'));
+});
