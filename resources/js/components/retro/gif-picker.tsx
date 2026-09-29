@@ -24,7 +24,8 @@ export function GifPicker({ open, onOpenChange, onPick }: Props) {
     const { t } = useTrans();
     const [query, setQuery] = useState('');
     const [gifs, setGifs] = useState<Result[]>([]);
-    const [error, setError] = useState<string | null>(null);
+    const [error, setError] = useState<'rate' | 'unavailable' | null>(null);
+    const [loaded, setLoaded] = useState(false);
 
     useEffect(() => {
         if (!open) {
@@ -32,6 +33,8 @@ export function GifPicker({ open, onOpenChange, onPick }: Props) {
         }
 
         let stale = false;
+
+        setError(null);
 
         const timer = setTimeout(() => {
             retroRequest<{ gifs: Result[] }>(
@@ -45,7 +48,7 @@ export function GifPicker({ open, onOpenChange, onPick }: Props) {
                     }
 
                     setGifs(response.gifs);
-                    setError(null);
+                    setLoaded(true);
                 })
                 .catch((caught: unknown) => {
                     if (stale) {
@@ -56,11 +59,7 @@ export function GifPicker({ open, onOpenChange, onPick }: Props) {
                         caught instanceof RetroRequestError &&
                         caught.status === 429;
 
-                    setError(
-                        tooMany
-                            ? t('Too many searches, wait a moment.')
-                            : t('GIF search is unavailable.'),
-                    );
+                    setError(tooMany ? 'rate' : 'unavailable');
                 });
         }, SearchDelayMs);
 
@@ -68,7 +67,7 @@ export function GifPicker({ open, onOpenChange, onPick }: Props) {
             stale = true;
             clearTimeout(timer);
         };
-    }, [open, query, board.retro.id, t]);
+    }, [open, query, board.retro.id]);
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -89,7 +88,9 @@ export function GifPicker({ open, onOpenChange, onPick }: Props) {
                 </div>
                 {error && (
                     <p role="alert" className="text-sm text-destructive">
-                        {error}
+                        {error === 'rate'
+                            ? t('Too many searches, wait a moment.')
+                            : t('GIF search is unavailable.')}
                     </p>
                 )}
                 <div className="grid max-h-96 grid-cols-3 gap-2 overflow-y-auto">
@@ -97,6 +98,7 @@ export function GifPicker({ open, onOpenChange, onPick }: Props) {
                         <button
                             key={gif.id}
                             type="button"
+                            aria-label={t('Choose this GIF')}
                             className="overflow-hidden rounded-md focus-visible:ring-2 focus-visible:ring-primary"
                             onClick={() => {
                                 onPick({
@@ -117,7 +119,7 @@ export function GifPicker({ open, onOpenChange, onPick }: Props) {
                         </button>
                     ))}
                 </div>
-                {!error && gifs.length === 0 && (
+                {!error && loaded && gifs.length === 0 && (
                     <p className="text-sm text-muted-foreground">
                         {t('No GIFs found.')}
                     </p>
