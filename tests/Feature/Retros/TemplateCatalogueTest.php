@@ -92,4 +92,12 @@ it('translates every template within the column limits', function (string $local
     foreach (TemplateCategory::cases() as $category) {
         expect($category->label())->not->toBe("templates.categories.{$category->value}");
     }
-})->with(['en']);
+})->with(['en', 'fr', 'es', 'de']);
+
+it('copies the existing french titles of the original templates', function () {
+    app()->setLocale('fr');
+
+    expect(array_column(TemplateCatalogue::find('start_stop_continue')?->translatedColumns() ?? [], 'title'))
+        ->toBe(['Commencer', 'Arrêter', 'Continuer'])
+        ->and(TemplateCatalogue::find('mad_sad_glad')?->name())->toBe('En colère, Triste, Content');
+});
