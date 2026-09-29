@@ -2,7 +2,11 @@
 
 namespace App\Enums;
 
-use Laravel\Socialite\Contracts\User as SocialiteUser;
+use Illuminate\Support\Str;
+use Laravel\Socialite\AbstractUser;
+use Laravel\Socialite\Contracts\Provider;
+use Laravel\Socialite\Facades\Socialite;
+use Laravel\Socialite\Two\AbstractProvider;
 
 enum SsoProvider: string
 {
@@ -43,6 +47,17 @@ enum SsoProvider: string
         };
     }
 
+    public function socialiteDriver(): Provider
+    {
+        $driver = Socialite::driver($this->driver());
+
+        if ($this === self::Google && $driver instanceof AbstractProvider) {
+            $driver->enablePKCE();
+        }
+
+        return $driver;
+    }
+
     public function label(): string
     {
         return match ($this) {
@@ -64,7 +79,7 @@ enum SsoProvider: string
         return true;
     }
 
-    public function verifiedEmail(SocialiteUser $user): ?string
+    public function verifiedEmail(AbstractUser $user): ?string
     {
         $email = $user->getEmail();
 
@@ -77,7 +92,7 @@ enum SsoProvider: string
         $isVerified = match ($this) {
             self::Google, self::Oidc => self::isTruthyClaim($claims['email_verified'] ?? null),
             self::GitHub => true,
-            self::Entra => self::isTruthyClaim($claims['xms_edov'] ?? null),
+            self::Entra => self::isTruthyClaim($claims['xms_edov'] ?? null) && self::emailClaimMatches($claims['email'] ?? null, $email),
         };
 
         return $isVerified ? $email : null;
@@ -94,6 +109,17 @@ enum SsoProvider: string
             self::Entra => ['oidc.connections.entra.client_id', 'oidc.connections.entra.client_secret'],
             self::Oidc => ['oidc.connections.generic.base_url', 'oidc.connections.generic.client_id', 'oidc.connections.generic.client_secret'],
         };
+    }
+
+    private static function emailClaimMatches(mixed $claim, string $email): bool
+    {
+        if (! is_string($claim)) {
+            return false;
+        }
+
+        $claim = trim($claim);
+
+        return $claim !== '' && Str::lower($claim) === Str::lower(trim($email));
     }
 
     private static function isTruthyClaim(mixed $value): bool

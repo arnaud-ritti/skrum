@@ -10,7 +10,8 @@ use App\Models\WorkspaceInvitation;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Laravel\Socialite\Facades\Socialite;
+use Laravel\Fortify\Fortify;
+use Laravel\Socialite\AbstractUser;
 use Throwable;
 
 class SsoCallbacksController extends Controller
@@ -20,11 +21,15 @@ class SsoCallbacksController extends Controller
         abort_unless($provider->isEnabled(), 404);
 
         try {
-            $ssoUser = Socialite::driver($provider->driver())->user();
+            $ssoUser = $provider->socialiteDriver()->user();
         } catch (Throwable $exception) {
             report($exception);
 
-            return $this->backToLogin(__('Sign-in with :provider failed. Please try again.', ['provider' => $provider->label()]));
+            return $this->backToLogin(SsoLoginRefused::providerFailed($provider)->getMessage());
+        }
+
+        if (! $ssoUser instanceof AbstractUser) {
+            return $this->backToLogin(SsoLoginRefused::providerFailed($provider)->getMessage());
         }
 
         $invitation = WorkspaceInvitation::findByToken($request->session()->get('invitation_token'));
@@ -59,6 +64,10 @@ class SsoCallbacksController extends Controller
     {
         if ($user->two_factor_secret === null) {
             return false;
+        }
+
+        if (! Fortify::confirmsTwoFactorAuthentication()) {
+            return true;
         }
 
         return $user->two_factor_confirmed_at !== null;

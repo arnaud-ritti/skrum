@@ -7,6 +7,11 @@ use Exception;
 
 class SsoLoginRefused extends Exception
 {
+    public static function providerFailed(SsoProvider $provider): self
+    {
+        return new self(__('Sign-in with :provider failed. Please try again.', ['provider' => $provider->label()]));
+    }
+
     public static function signupsRestricted(): self
     {
         return new self(__('Signups are restricted on this instance.'));

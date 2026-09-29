@@ -10,7 +10,7 @@ use App\Models\User;
 use App\Models\WorkspaceInvitation;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use Laravel\Socialite\Contracts\User as SocialiteUser;
+use Laravel\Socialite\AbstractUser;
 
 class ResolveSsoUser
 {
@@ -19,9 +19,13 @@ class ResolveSsoUser
         private AcceptWorkspaceInvitation $acceptInvitation,
     ) {}
 
-    public function handle(SsoProvider $provider, SocialiteUser $ssoUser, ?WorkspaceInvitation $invitation): User
+    public function handle(SsoProvider $provider, AbstractUser $ssoUser, ?WorkspaceInvitation $invitation): User
     {
         $providerUserId = (string) $ssoUser->getId();
+
+        if ($providerUserId === '') {
+            throw SsoLoginRefused::providerFailed($provider);
+        }
 
         $linkedAccount = SocialAccount::query()
             ->where('provider', $provider->value)
@@ -74,7 +78,7 @@ class ResolveSsoUser
 
     private function createUser(
         SsoProvider $provider,
-        SocialiteUser $ssoUser,
+        AbstractUser $ssoUser,
         string $providerUserId,
         string $email,
         ?WorkspaceInvitation $invitation,
@@ -107,7 +111,7 @@ class ResolveSsoUser
         });
     }
 
-    private function displayName(SocialiteUser $ssoUser, string $email): string
+    private function displayName(AbstractUser $ssoUser, string $email): string
     {
         $name = trim((string) $ssoUser->getName());
 

@@ -59,6 +59,48 @@ it('sends users with two-factor authentication to the challenge', function () {
     expect(session('login.id'))->toBe($user->id);
 });
 
+it('accepts a user without a confirmed secret when confirmation is disabled', function () {
+    config(['fortify-options.two-factor-authentication.confirm' => false]);
+    $user = User::factory()->withTwoFactor()->create(['two_factor_confirmed_at' => null]);
+    SocialAccount::factory()->for($user)->create(['provider' => 'google', 'provider_user_id' => 'g-6']);
+    Socialite::fake('google', SocialiteUser::fake(['id' => 'g-6']));
+
+    $this->get(route('sso.callback', 'google'))->assertRedirect(route('two-factor.login'));
+
+    $this->assertGuest();
+});
+
+it('logs in a user with an unconfirmed secret when confirmation is required', function () {
+    config(['fortify-options.two-factor-authentication.confirm' => true]);
+    $user = User::factory()->withTwoFactor()->create(['two_factor_confirmed_at' => null]);
+    SocialAccount::factory()->for($user)->create(['provider' => 'google', 'provider_user_id' => 'g-7']);
+    Socialite::fake('google', SocialiteUser::fake(['id' => 'g-7']));
+
+    $this->get(route('sso.callback', 'google'))->assertRedirect(route('dashboard'));
+
+    $this->assertAuthenticatedAs($user);
+});
+
+it('returns to the login page when the redirect step fails', function () {
+    config([
+        'oidc.connections.generic.base_url' => 'http://id.example.test',
+        'oidc.connections.generic.client_id' => 'id',
+        'oidc.connections.generic.client_secret' => 'secret',
+        'services.oidc_generic' => [
+            'base_url' => 'http://id.example.test',
+            'client_id' => 'id',
+            'client_secret' => 'secret',
+            'redirect' => 'https://skrum.test/auth/oidc/callback',
+        ],
+    ]);
+
+    $this->get(route('sso.redirect', 'oidc'))
+        ->assertRedirect(route('login'))
+        ->assertSessionHasErrors(['email' => 'Sign-in with Single sign-on failed. Please try again.']);
+
+    $this->assertGuest();
+});
+
 it('returns to the login page when the provider fails', function () {
     Socialite::fake('google', fn () => throw new InvalidStateException);
 

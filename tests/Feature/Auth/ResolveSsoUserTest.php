@@ -150,3 +150,10 @@ it('ignores an invitation addressed to someone else', function () {
 
     expect($invitation->fresh()->accepted_at)->toBeNull();
 });
+
+it('refuses a provider user without an id', function () {
+    expect(fn () => resolveSso(SsoProvider::Google, ['id' => '', 'email' => 'ann@acme.test', 'email_verified' => true]))
+        ->toThrow(SsoLoginRefused::class, 'Sign-in with Google failed. Please try again.');
+
+    expect(User::count())->toBe(0);
+});
