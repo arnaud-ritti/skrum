@@ -167,6 +167,7 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
             )}
             <div className="flex flex-1 flex-col lg:min-h-0 lg:flex-row">
                 <DndContext
+                    id="retro-board"
                     sensors={sensors}
                     accessibility={dragAccessibility}
                     collisionDetection={closestCenter}
