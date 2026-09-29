@@ -107,8 +107,8 @@ The register page is hidden (and the route returns 403) when mode is `invite` an
 - **Verified email per provider:** Google and generic OIDC → `email_verified` claim is true; GitHub → the primary verified email returned by the API (Socialite only returns that one); Entra → only when Microsoft's `xms_edov` optional claim is true (it must be enabled in the app registration). Anything else counts as unverified.
 - Callback resolution order:
   1. `social_accounts` match (provider + provider user id) → log in.
-  2. Existing user with the same email (case-insensitive) **and** a verified provider email → create the `social_accounts` link, mark the user's email verified if it wasn't, log in.
-  3. Existing user with the same email but an unverified provider email → refuse ("An account already uses this email address. Log in with your password instead.").
+  2. Existing user with the same email (case-insensitive) whose own email is verified **and** a verified provider email → create the `social_accounts` link, log in.
+  3. Existing user with the same email but an unverified provider email, **or** an existing account whose email was never verified → refuse ("An account already uses this email address. Log in with your password instead."). Linking into an unverified account would let whoever registered that address first (possibly an attacker) keep password access to the victim's account (pre-account takeover). The owner can log in with their password, verify the email, and then use SSO.
   4. No existing user → account creation requires a verified provider email, **or** a pending invitation token in the session matching the email (the token proves mailbox access). Then `SignupGate` check → create the user (email verified, random password — they can set one via "Forgot password") + link, accept the invitation if one matches, log in. Otherwise refuse with the matching translated message ("Signups are restricted on this instance." / "… did not confirm your email address.").
 - A user with confirmed two-factor authentication who signs in through SSO still goes through the Fortify two-factor challenge.
 - Provider errors (user cancels, invalid state, IdP unreachable) return to the login page with a translated "Sign-in with :provider failed." message.
@@ -247,7 +247,7 @@ Each endpoint: resolve participant → authorize (policy + phase rule) → persi
 - AC2: In `invite` mode, registration without a valid invitation token matching the email is refused; with one, it succeeds and the user joins the inviting workspace with the invited role.
 - AC3: In `domain` mode, registration succeeds for allow-listed domains and with a valid matching invitation token, and is refused otherwise.
 - AC4: An SSO provider button appears only when all its env credentials are set.
-- AC5: SSO login links to an existing account only when the provider reports the email verified; otherwise it follows the signup gate.
+- AC5: SSO login links to an existing account only when the provider reports the email verified and the existing account's email is verified; otherwise it is refused.
 - AC6: SSO-created users are email-verified; creation requires a verified provider email or a matching invitation token.
 - AC37: A user with confirmed two-factor authentication signing in through SSO must pass the two-factor challenge before being logged in.
 - AC38: Entra sign-ins link to an existing account only when the `xms_edov` claim is true.
