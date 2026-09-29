@@ -503,5 +503,8 @@
     "Join": "Beitreten",
     "A card cannot be grouped with itself.": "Eine Karte kann nicht mit sich selbst gruppiert werden.",
     "Cards can only be grouped under a card that is not grouped itself.": "Karten können nur unter einer Karte gruppiert werden, die nicht selbst gruppiert ist.",
-    "This card is not grouped.": "Diese Karte ist nicht gruppiert."
+    "This card is not grouped.": "Diese Karte ist nicht gruppiert.",
+    "Votes can only be cast on cards that are not grouped under another card.": "Stimmen können nur für Karten abgegeben werden, die nicht unter einer anderen Karte gruppiert sind.",
+    "You have no votes left.": "Du hast keine Stimmen mehr.",
+    "You have not voted for this card.": "Du hast nicht für diese Karte gestimmt."
 }
