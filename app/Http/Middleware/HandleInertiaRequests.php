@@ -42,6 +42,23 @@ class HandleInertiaRequests extends Middleware
                 'user' => $request->user(),
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+            'locale' => app()->getLocale(),
+            'locales' => config('skrum.locales'),
+            'translations' => fn () => $this->translations(app()->getLocale()),
         ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function translations(string $locale): array
+    {
+        $path = lang_path("{$locale}.json");
+
+        if (! is_file($path)) {
+            return [];
+        }
+
+        return json_decode((string) file_get_contents($path), true) ?? [];
     }
 }

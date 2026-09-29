@@ -1,9 +1,13 @@
 import { Head } from '@inertiajs/react';
 import AppearanceTabs from '@/components/appearance-tabs';
 import Heading from '@/components/heading';
+import { LanguageSwitcher } from '@/components/language-switcher';
+import { useTrans } from '@/hooks/use-trans';
 import { edit as editAppearance } from '@/routes/appearance';
 
 export default function Appearance() {
+    const { t } = useTrans();
+
     return (
         <>
             <Head title="Appearance settings" />
@@ -17,6 +21,15 @@ export default function Appearance() {
                     description="Update the appearance settings for your account"
                 />
                 <AppearanceTabs />
+            </div>
+
+            <div className="space-y-6">
+                <Heading
+                    variant="small"
+                    title={t('Language')}
+                    description={t('Choose the language of the interface')}
+                />
+                <LanguageSwitcher />
             </div>
         </>
     );

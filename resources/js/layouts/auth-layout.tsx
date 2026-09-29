@@ -1,3 +1,4 @@
+import { LanguageSwitcher } from '@/components/language-switcher';
 import AuthLayoutTemplate from '@/layouts/auth/auth-simple-layout';
 
 export default function AuthLayout({
@@ -10,8 +11,13 @@ export default function AuthLayout({
     children: React.ReactNode;
 }) {
     return (
-        <AuthLayoutTemplate title={title} description={description}>
-            {children}
-        </AuthLayoutTemplate>
+        <div className="relative">
+            <div className="absolute top-4 right-4 z-10">
+                <LanguageSwitcher />
+            </div>
+            <AuthLayoutTemplate title={title} description={description}>
+                {children}
+            </AuthLayoutTemplate>
+        </div>
     );
 }
