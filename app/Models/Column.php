@@ -15,10 +15,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string $id
  * @property string $retro_id
  * @property string $title
+ * @property string|null $description
  * @property ColumnColor $color
  * @property int $position
  */
-#[Fillable(['title', 'color', 'position'])]
+#[Fillable(['title', 'description', 'color', 'position'])]
 class Column extends Model
 {
     /** @use HasFactory<ColumnFactory> */

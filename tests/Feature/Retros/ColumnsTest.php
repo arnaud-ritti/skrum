@@ -70,7 +70,8 @@ it('validates titles and colors', function (array $payload) {
     $this->actingAs($user)->postJson(route('retros.columns.store', $retro), $payload)->assertUnprocessable();
 })->with([
     [['title' => '', 'color' => 'green']],
-    [['title' => str_repeat('a', 61), 'color' => 'green']],
+    [['title' => str_repeat('a', 101), 'color' => 'green']],
+    [['title' => 'Ok', 'color' => 'green', 'description' => str_repeat('a', 201)]],
     [['title' => 'Ok', 'color' => 'pink']],
 ]);
 
@@ -103,3 +104,42 @@ it('lets the facilitator prepare columns before writing', function (RetroPhase $
         ->putJson(route('retros.columns.order.update', $retro), ['column_ids' => [$second->id, $first->id, Column::query()->where('retro_id', $retro->id)->where('title', 'Kudos')->value('id')]])
         ->assertOk();
 })->with([RetroPhase::HealthCheck, RetroPhase::Icebreaker]);
+
+it('accepts titles up to 100 characters and a description', function () {
+    [$retro, $user] = columnsRetro();
+
+    $this->actingAs($user)
+        ->postJson(route('retros.columns.store', $retro), [
+            'title' => str_repeat('a', 100),
+            'color' => 'green',
+            'description' => 'What pushed us forward',
+        ])
+        ->assertCreated()
+        ->assertJsonPath('columns.2.description', 'What pushed us forward');
+});
+
+it('edits the description of a column with cards but not its title', function () {
+    [$retro, $user, $first] = columnsRetro();
+    Card::factory()->create(['retro_id' => $retro->id, 'column_id' => $first->id]);
+
+    $this->actingAs($user)
+        ->patchJson(route('retros.columns.update', [$retro, $first]), ['description' => 'Clarified'])
+        ->assertOk()
+        ->assertJsonPath('columns.0.description', 'Clarified');
+
+    $this->actingAs($user)
+        ->patchJson(route('retros.columns.update', [$retro, $first]), ['title' => 'Renamed', 'description' => 'Again'])
+        ->assertUnprocessable();
+
+    expect($first->fresh()->only(['title', 'description']))->toBe(['title' => 'First', 'description' => 'Clarified']);
+    Event::assertDispatched(ColumnsChanged::class, fn (ColumnsChanged $event) => $event->columns[0]['description'] === 'Clarified');
+});
+
+it('clears a description with null', function () {
+    [$retro, $user, $first] = columnsRetro();
+    $first->update(['description' => 'Old']);
+
+    $this->actingAs($user)->patchJson(route('retros.columns.update', [$retro, $first]), ['description' => null])->assertOk();
+
+    expect($first->fresh()->description)->toBeNull();
+});
