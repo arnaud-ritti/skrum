@@ -2,10 +2,13 @@
 
 use App\Enums\RetroPhase;
 use App\Enums\RetroTemplate;
+use App\Models\ActionItem;
 use App\Models\Card;
+use App\Models\Column;
 use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\User;
+use App\Models\Vote;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
@@ -91,4 +94,38 @@ it('attaches retro helpers to the team', function () {
     expect($retro->team->hasMember($user))->toBeTrue()
         ->and($user->belongsToWorkspace($retro->team->workspace))->toBeTrue()
         ->and(User::count())->toBeGreaterThanOrEqual(1);
+});
+
+it('deletes every retro row when the retro is deleted', function () {
+    $retro = Retro::factory()->create();
+    [$facilitatorUser, $facilitator] = retroFacilitator($retro);
+    $column = Column::factory()->create(['retro_id' => $retro->id]);
+    $lead = Card::factory()->create([
+        'retro_id' => $retro->id,
+        'column_id' => $column->id,
+        'participant_id' => $facilitator->id,
+    ]);
+    Card::factory()->create([
+        'retro_id' => $retro->id,
+        'column_id' => $column->id,
+        'participant_id' => $facilitator->id,
+        'parent_card_id' => $lead->id,
+    ]);
+    $retro->forceFill(['highlighted_card_id' => $lead->id])->save();
+    Vote::factory()->create(['retro_id' => $retro->id, 'card_id' => $lead->id, 'participant_id' => $facilitator->id]);
+    Participant::factory()->guest()->create(['retro_id' => $retro->id]);
+    ActionItem::factory()->create([
+        'retro_id' => $retro->id,
+        'assignee_participant_id' => $facilitator->id,
+        'created_by_participant_id' => $facilitator->id,
+    ]);
+
+    $retro->delete();
+
+    expect(Participant::where('retro_id', $retro->id)->count())->toBe(0)
+        ->and(Column::where('retro_id', $retro->id)->count())->toBe(0)
+        ->and(Card::where('retro_id', $retro->id)->count())->toBe(0)
+        ->and(Vote::where('retro_id', $retro->id)->count())->toBe(0)
+        ->and(ActionItem::where('retro_id', $retro->id)->count())->toBe(0)
+        ->and(User::find($facilitatorUser->id))->not->toBeNull();
 });
