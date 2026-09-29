@@ -38,13 +38,15 @@ class CardsController extends Controller
 
             RetroGuard::phase($locked, RetroPhase::Writing);
 
+            $column = $locked->columns()->whereKey($validated['column_id'])->firstOrFail();
+
             $position = $locked->cards()
-                ->where('column_id', $validated['column_id'])
+                ->where('column_id', $column->id)
                 ->whereNull('parent_card_id')
                 ->max('position');
 
             $card = $locked->cards()->create([
-                'column_id' => $validated['column_id'],
+                'column_id' => $column->id,
                 'participant_id' => $participant->id,
                 'content' => $validated['content'],
                 'position' => $position === null ? 0 : $position + 1,

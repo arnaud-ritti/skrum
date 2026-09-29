@@ -36,20 +36,22 @@ class CardGroupsController extends Controller
             'parent_card_id' => ['required', 'uuid', Rule::exists('cards', 'id')->where('retro_id', $retro->id)],
         ]);
 
-        $changed = DB::transaction(function () use ($retro, $card, $validated): Collection {
-            Retro::query()->whereKey($retro->id)->lockForUpdate()->first();
+        [$changed, $presentingRetro] = DB::transaction(function () use ($retro, $card, $validated): array {
+            $locked = Retro::query()->whereKey($retro->id)->lockForUpdate()->firstOrFail();
 
-            $card = $retro->cards()->whereKey($card->id)->firstOrFail();
-            $lead = $retro->cards()->whereKey($validated['parent_card_id'])->firstOrFail();
+            RetroGuard::phase($locked, RetroPhase::Grouping);
+
+            $card = $locked->cards()->whereKey($card->id)->firstOrFail();
+            $lead = $locked->cards()->whereKey($validated['parent_card_id'])->firstOrFail();
 
             $changed = $this->groupCard->group($card, $lead);
 
-            (new CardGrouped($retro->id, $this->present($changed, $retro, null)))->sendToOthers();
+            (new CardGrouped($locked->id, $this->present($changed, $locked, null)))->sendToOthers();
 
-            return $changed;
+            return [$changed, $locked];
         });
 
-        return response()->json(['cards' => $this->present($changed, $retro, $participant)]);
+        return response()->json(['cards' => $this->present($changed, $presentingRetro, $participant)]);
     }
 
     public function destroy(Request $request, Retro $retro, Card $card): JsonResponse
@@ -58,19 +60,21 @@ class CardGroupsController extends Controller
 
         RetroGuard::phase($retro, RetroPhase::Grouping);
 
-        $changed = DB::transaction(function () use ($retro, $card): Collection {
-            Retro::query()->whereKey($retro->id)->lockForUpdate()->first();
+        [$changed, $presentingRetro] = DB::transaction(function () use ($retro, $card): array {
+            $locked = Retro::query()->whereKey($retro->id)->lockForUpdate()->firstOrFail();
 
-            $card = $retro->cards()->whereKey($card->id)->firstOrFail();
+            RetroGuard::phase($locked, RetroPhase::Grouping);
+
+            $card = $locked->cards()->whereKey($card->id)->firstOrFail();
 
             $changed = $this->groupCard->ungroup($card);
 
-            (new CardUngrouped($retro->id, $this->present($changed, $retro, null)))->sendToOthers();
+            (new CardUngrouped($locked->id, $this->present($changed, $locked, null)))->sendToOthers();
 
-            return $changed;
+            return [$changed, $locked];
         });
 
-        return response()->json(['cards' => $this->present($changed, $retro, $participant)]);
+        return response()->json(['cards' => $this->present($changed, $presentingRetro, $participant)]);
     }
 
     /**
