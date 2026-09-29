@@ -2,6 +2,7 @@
 
 use App\Actions\Auth\SignupGate;
 use App\Http\Controllers\AvatarsController;
+use App\Http\Controllers\BroadcastAuthorizationsController;
 use App\Http\Controllers\CurrentWorkspaceController;
 use App\Http\Controllers\InvitationAcceptancesController;
 use App\Http\Controllers\InvitationLinksController;
@@ -80,5 +81,7 @@ Route::prefix('retros/{retro}')
         Route::get('/', [RetrosController::class, 'show'])->name('retros.show');
         Route::get('snapshot', [RetroSnapshotsController::class, 'show'])->name('retros.snapshot.show');
     });
+
+Route::post('broadcasting/auth', [BroadcastAuthorizationsController::class, 'store'])->name('broadcasting.auth');
 
 require __DIR__.'/settings.php';
