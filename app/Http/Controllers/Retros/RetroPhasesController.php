@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers\Retros;
 
+use App\Actions\Retros\ChangeRetroPhase;
 use App\Actions\Retros\RetroGuard;
 use App\Enums\RetroPhase;
-use App\Events\Retros\PhaseChanged;
 use App\Http\Controllers\Controller;
 use App\Models\Participant;
 use App\Models\Retro;
@@ -12,10 +12,11 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\ValidationException;
 
 class RetroPhasesController extends Controller
 {
+    public function __construct(private ChangeRetroPhase $changeRetroPhase) {}
+
     public function update(Request $request, Retro $retro): JsonResponse
     {
         $participant = Participant::current($request);
@@ -33,22 +34,7 @@ class RetroPhasesController extends Controller
 
             RetroGuard::facilitator($locked, $participant);
 
-            if (! $locked->phase->isAdjacentTo($phase)) {
-                throw ValidationException::withMessages(['phase' => __('The retrospective can only move to the previous or next phase.')]);
-            }
-
-            $isCompleting = $phase === RetroPhase::Completed;
-
-            $isLeavingDiscussing = $locked->phase === RetroPhase::Discussing && $phase !== RetroPhase::Discussing;
-
-            $locked->update([
-                'phase' => $phase,
-                'highlighted_card_id' => $isLeavingDiscussing ? null : $locked->highlighted_card_id,
-                'completed_at' => $isCompleting ? now() : null,
-                'timer_ends_at' => $isCompleting ? null : $locked->timer_ends_at,
-            ]);
-
-            (new PhaseChanged($locked->id, $phase->value))->sendToOthers();
+            $this->changeRetroPhase->handle($locked, $phase);
         });
 
         return response()->json(['phase' => $phase->value]);

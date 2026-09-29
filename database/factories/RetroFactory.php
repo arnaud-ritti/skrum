@@ -39,4 +39,14 @@ class RetroFactory extends Factory
     {
         return $this->state(fn () => ['guest_access_enabled' => true]);
     }
+
+    public function withHealthCheck(): static
+    {
+        return $this->state(fn () => ['health_check_enabled' => true]);
+    }
+
+    public function withIcebreaker(): static
+    {
+        return $this->state(fn () => ['icebreaker_enabled' => true]);
+    }
 }

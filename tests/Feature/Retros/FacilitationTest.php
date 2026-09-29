@@ -260,3 +260,25 @@ it('refuses engagement settings from others and once completed', function (strin
 
     $this->actingAs($facilitator)->patchJson(route('retros.settings.update', $retro), [$setting => true])->assertForbidden();
 })->with(['reactions_enabled', 'cursors_enabled', 'gifs_enabled', 'hide_vote_counts', 'is_locked', 'presentation_mode']);
+
+it('moves through the enabled pre-writing phases', function () {
+    $retro = Retro::factory()->withHealthCheck()->withIcebreaker()->inPhase(RetroPhase::HealthCheck)->create();
+    [$user] = retroFacilitator($retro);
+
+    $this->actingAs($user)->putJson(route('retros.phase.update', $retro), ['phase' => 'writing'])->assertUnprocessable();
+    $this->actingAs($user)->putJson(route('retros.phase.update', $retro), ['phase' => 'icebreaker'])->assertOk();
+    $this->actingAs($user)->putJson(route('retros.phase.update', $retro), ['phase' => 'writing'])->assertOk();
+    $this->actingAs($user)->putJson(route('retros.phase.update', $retro), ['phase' => 'icebreaker'])->assertOk();
+
+    expect($retro->fresh()->phase)->toBe(RetroPhase::Icebreaker);
+    Event::assertDispatched(PhaseChanged::class, 3);
+});
+
+it('never moves into a disabled phase', function () {
+    [$retro, $user] = facilitatedRetro();
+
+    $this->actingAs($user)
+        ->putJson(route('retros.phase.update', $retro), ['phase' => 'icebreaker'])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['phase' => 'The retrospective can only move to the previous or next phase.']);
+});
