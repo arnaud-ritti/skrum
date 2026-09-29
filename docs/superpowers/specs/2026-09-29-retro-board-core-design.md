@@ -50,7 +50,7 @@ retros ─< action_items
 
 ### Identifiers
 
-Every table uses a UUID primary key (Eloquent `HasUuids`, time-ordered UUIDv7) — including `users` and framework tables that reference users (`sessions.user_id`, etc.). Foreign keys are `foreignUuid`. No auto-increment ids exist anywhere, so no id in a URL, payload or channel name is guessable or enumerable. The existing scaffold migrations are adjusted accordingly (no production data exists yet).
+Every table uses a UUID primary key (Eloquent `HasUuids`, time-ordered UUIDv7) — including `users` and framework tables that reference users (`sessions.user_id`, etc.). Foreign keys are `foreignUuid`. No id in a URL, payload or channel name is guessable or enumerable. Pivot tables use a composite primary key of their UUID foreign keys. Framework-internal queue/migration tables keep integer ids (required by Laravel's database queue, never exposed). The existing scaffold migrations are adjusted accordingly (no production data exists yet).
 
 ### Tables (key columns)
 
@@ -247,7 +247,7 @@ Each endpoint: resolve participant → authorize (policy + phase rule) → persi
 - AC6: SSO-created users are email-verified.
 
 ### Identifiers
-- AC0: Every application table has a UUID primary key and UUID foreign keys; no auto-increment id column exists in the schema.
+- AC0: Every application table has a UUID primary key (pivot tables: composite key of UUID foreign keys) and UUID foreign keys. Only framework-internal tables (`migrations`, `jobs`, `failed_jobs`, `job_batches`) keep integer ids, because Laravel's database queue requires them; they are never exposed.
 
 ### Tenancy
 - AC7: A user can create a workspace, becomes its Owner, and can switch between workspaces they belong to.
