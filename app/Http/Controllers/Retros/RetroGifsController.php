@@ -56,7 +56,7 @@ class RetroGifsController extends Controller
         $key = "gif-search:{$participant->id}";
 
         if (RateLimiter::tooManyAttempts($key, self::SearchesPerMinute)) {
-            throw new ThrottleRequestsException('Too Many Attempts.', null, ['Retry-After' => RateLimiter::availableIn($key)]);
+            throw new ThrottleRequestsException(__('Too many searches, wait a moment.'), null, ['Retry-After' => RateLimiter::availableIn($key)]);
         }
 
         RateLimiter::hit($key);

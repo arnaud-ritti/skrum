@@ -76,7 +76,11 @@ it('rate limits gif searches per participant', function () {
         $this->actingAs($user)->getJson(route('retros.gifs.index', ['retro' => $retro, 'q' => "q{$attempt}"]))->assertOk();
     }
 
-    $this->actingAs($user)->getJson(route('retros.gifs.index', ['retro' => $retro, 'q' => 'one more']))->assertTooManyRequests();
+    $user->update(['locale' => 'fr']);
+
+    $this->actingAs($user)->getJson(route('retros.gifs.index', ['retro' => $retro, 'q' => 'one more']))
+        ->assertTooManyRequests()
+        ->assertJsonPath('message', 'Trop de recherches, patientez un instant.');
     $this->actingAs($other)->getJson(route('retros.gifs.index', ['retro' => $retro, 'q' => 'one more']))->assertOk();
 });
 
