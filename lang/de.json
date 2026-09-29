@@ -578,7 +578,6 @@
     "Move left": "Nach links verschieben",
     "Move right": "Nach rechts verschieben",
     "Delete column": "Spalte löschen",
-    "Only empty columns can be renamed or deleted.": "Nur leere Spalten können umbenannt oder gelöscht werden.",
     "Add column": "Spalte hinzufügen",
     "Column title": "Spaltentitel",
     "Green": "Grün",
@@ -587,5 +586,6 @@
     "Amber": "Bernstein",
     "Purple": "Lila",
     "Slate": "Schiefer",
-    "Delete the column :title?": "Die Spalte :title löschen?"
+    "Delete the column :title?": "Die Spalte :title löschen?",
+    "Only empty columns can be edited or deleted.": "Nur leere Spalten können bearbeitet oder gelöscht werden."
 }

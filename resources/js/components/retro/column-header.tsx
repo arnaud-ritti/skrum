@@ -176,7 +176,7 @@ export function ColumnHeader({
                             onCloseAutoFocus={(event) => event.preventDefault()}
                         >
                             <DropdownMenuItem
-                                disabled={busy}
+                                disabled={busy || hasCards}
                                 onSelect={startRename}
                             >
                                 {t('Rename')}
@@ -188,7 +188,9 @@ export function ColumnHeader({
                                 {ColumnColors.map((option) => (
                                     <DropdownMenuItem
                                         key={option}
-                                        disabled={busy}
+                                        disabled={busy || hasCards}
+                                        role="menuitemradio"
+                                        aria-checked={column.color === option}
                                         aria-label={t(columnColorLabel[option])}
                                         className="size-6 justify-center rounded-full p-0"
                                         onSelect={() =>
@@ -230,7 +232,7 @@ export function ColumnHeader({
                             {hasCards && (
                                 <p className="max-w-48 px-2 py-1 text-xs text-muted-foreground">
                                     {t(
-                                        'Only empty columns can be renamed or deleted.',
+                                        'Only empty columns can be edited or deleted.',
                                     )}
                                 </p>
                             )}

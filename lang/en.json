@@ -316,7 +316,6 @@
     "Move left": "Move left",
     "Move right": "Move right",
     "Delete column": "Delete column",
-    "Only empty columns can be renamed or deleted.": "Only empty columns can be renamed or deleted.",
     "Add column": "Add column",
     "Column title": "Column title",
     "Green": "Green",
@@ -325,5 +324,6 @@
     "Amber": "Amber",
     "Purple": "Purple",
     "Slate": "Slate",
-    "Delete the column :title?": "Delete the column :title?"
+    "Delete the column :title?": "Delete the column :title?",
+    "Only empty columns can be edited or deleted.": "Only empty columns can be edited or deleted."
 }

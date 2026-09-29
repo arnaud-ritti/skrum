@@ -578,7 +578,6 @@
     "Move left": "Déplacer à gauche",
     "Move right": "Déplacer à droite",
     "Delete column": "Supprimer la colonne",
-    "Only empty columns can be renamed or deleted.": "Seules les colonnes vides peuvent être renommées ou supprimées.",
     "Add column": "Ajouter une colonne",
     "Column title": "Titre de la colonne",
     "Green": "Vert",
@@ -587,5 +586,6 @@
     "Amber": "Ambre",
     "Purple": "Violet",
     "Slate": "Ardoise",
-    "Delete the column :title?": "Supprimer la colonne :title ?"
+    "Delete the column :title?": "Supprimer la colonne :title ?",
+    "Only empty columns can be edited or deleted.": "Seules les colonnes vides peuvent être modifiées ou supprimées."
 }
