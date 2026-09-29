@@ -163,3 +163,18 @@ it('exposes the current vote version', function () {
 
     expect(snapshotFor($retro, $viewer)['votesVersion'])->toBe(7);
 });
+
+it('reads the vote version together with the vote counts rather than from a stale retro', function () {
+    $retro = Retro::factory()->inPhase(RetroPhase::Voting)->create();
+    [, $viewer] = retroMember($retro);
+    $card = Card::factory()->create(['retro_id' => $retro->id]);
+    $staleRetro = $retro->fresh();
+
+    Vote::factory()->create(['retro_id' => $retro->id, 'card_id' => $card->id, 'participant_id' => $viewer->id]);
+    Retro::query()->whereKey($retro->id)->increment('votes_version');
+
+    $snapshot = app(BuildBoardSnapshot::class)->handle($staleRetro, $viewer);
+
+    expect($snapshot['votesCast'])->toBe(1)
+        ->and($snapshot['votesVersion'])->toBe(1);
+});

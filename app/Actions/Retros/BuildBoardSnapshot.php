@@ -9,6 +9,8 @@ use App\Models\Card;
 use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\User;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class BuildBoardSnapshot
 {
@@ -32,16 +34,7 @@ class BuildBoardSnapshot
 
         $showsTotals = in_array($retro->phase, [RetroPhase::Discussing, RetroPhase::Completed], true);
 
-        $voteTotals = $retro->votes()
-            ->selectRaw('card_id, count(*) as total')
-            ->groupBy('card_id')
-            ->pluck('total', 'card_id');
-
-        $myVotes = $retro->votes()
-            ->where('participant_id', $viewer->id)
-            ->selectRaw('card_id, count(*) as total')
-            ->groupBy('card_id')
-            ->pluck('total', 'card_id');
+        [$votesVersion, $voteTotals, $myVotes] = $this->readVotes($retro, $viewer);
 
         return [
             'retro' => [
@@ -83,12 +76,38 @@ class BuildBoardSnapshot
                 ->map(fn (ActionItem $item) => $this->presentActionItem->handle($item))
                 ->values()->all(),
             'votesCast' => $retro->phase === RetroPhase::Voting ? (int) $voteTotals->sum() : null,
-            'votesVersion' => (int) $retro->votes_version,
+            'votesVersion' => $votesVersion,
             'links' => [
                 'team' => $viewer->isGuest() ? null : route('teams.show', [$retro->team->workspace, $retro->team]),
             ],
             'serverTime' => now()->utc()->format('Y-m-d\TH:i:s.v\Z'),
         ];
+    }
+
+    /**
+     * Votes are cast under a lock on the retro row, so reading its version
+     * under a shared lock keeps the version and the vote counts consistent.
+     *
+     * @return array{
+     *     0: int,
+     *     1: Collection<array-key, mixed>,
+     *     2: Collection<array-key, mixed>
+     * }
+     */
+    private function readVotes(Retro $retro, Participant $viewer): array
+    {
+        return DB::transaction(fn (): array => [
+            Retro::query()->whereKey($retro->id)->sharedLock()->firstOrFail(['id', 'votes_version'])->votes_version,
+            $retro->votes()
+                ->selectRaw('card_id, count(*) as total')
+                ->groupBy('card_id')
+                ->pluck('total', 'card_id'),
+            $retro->votes()
+                ->where('participant_id', $viewer->id)
+                ->selectRaw('card_id, count(*) as total')
+                ->groupBy('card_id')
+                ->pluck('total', 'card_id'),
+        ]);
     }
 
     /**

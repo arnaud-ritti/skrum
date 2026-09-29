@@ -53,7 +53,7 @@ class CardVotesController extends Controller
 
             (new VoteCast($locked->id, $votesCast, $locked->votes_version))->sendToOthers();
 
-            return ['votesCast' => $votesCast, 'votesVersion' => (int) $locked->votes_version];
+            return ['votesCast' => $votesCast, 'votesVersion' => $locked->votes_version];
         });
 
         return response()->json($this->tally($retro, $card, $participant, $totals), 201);
@@ -84,7 +84,7 @@ class CardVotesController extends Controller
 
             (new VoteRetracted($locked->id, $votesCast, $locked->votes_version))->sendToOthers();
 
-            return ['votesCast' => $votesCast, 'votesVersion' => (int) $locked->votes_version];
+            return ['votesCast' => $votesCast, 'votesVersion' => $locked->votes_version];
         });
 
         return response()->json($this->tally($retro, $card, $participant, $totals));

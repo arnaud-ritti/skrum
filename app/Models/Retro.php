@@ -23,6 +23,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $facilitator_participant_id
  * @property bool $is_anonymous
  * @property int $votes_per_participant
+ * @property int $votes_version
  * @property bool $guest_access_enabled
  * @property string $guest_token
  * @property Carbon|null $timer_ends_at
@@ -98,6 +99,7 @@ class Retro extends Model
             'is_anonymous' => 'boolean',
             'guest_access_enabled' => 'boolean',
             'votes_per_participant' => 'integer',
+            'votes_version' => 'integer',
             'timer_ends_at' => 'datetime',
             'completed_at' => 'datetime',
         ];
