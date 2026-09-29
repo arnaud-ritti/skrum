@@ -5,6 +5,8 @@ use App\Http\Controllers\CurrentWorkspaceController;
 use App\Http\Controllers\InvitationAcceptancesController;
 use App\Http\Controllers\InvitationLinksController;
 use App\Http\Controllers\LocalesController;
+use App\Http\Controllers\SsoCallbacksController;
+use App\Http\Controllers\SsoRedirectsController;
 use App\Http\Controllers\TeamMembersController;
 use App\Http\Controllers\TeamsController;
 use App\Http\Controllers\WorkspaceInvitationsController;
@@ -23,6 +25,11 @@ Route::get('invitations/{token}', [InvitationLinksController::class, 'show'])->n
 Route::post('invitations/{token}/acceptance', [InvitationAcceptancesController::class, 'store'])
     ->middleware('auth')
     ->name('invitations.acceptance.store');
+
+Route::middleware('guest')->group(function () {
+    Route::get('auth/{provider}/redirect', [SsoRedirectsController::class, 'show'])->name('sso.redirect');
+    Route::get('auth/{provider}/callback', [SsoCallbacksController::class, 'show'])->name('sso.callback');
+});
 
 Route::put('locale', [LocalesController::class, 'update'])->name('locale.update');
 

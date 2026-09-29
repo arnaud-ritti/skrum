@@ -461,5 +461,6 @@
     "Single sign-on": "Inicio de sesión único",
     "An account already uses this email address. Log in with your password instead.": "Ya existe una cuenta con esta dirección de correo. Inicia sesión con tu contraseña.",
     ":provider did not share an email address with us.": ":provider no nos ha compartido una dirección de correo electrónico.",
-    ":provider did not confirm your email address.": ":provider no ha confirmado tu dirección de correo electrónico."
+    ":provider did not confirm your email address.": ":provider no ha confirmado tu dirección de correo electrónico.",
+    "Sign-in with :provider failed. Please try again.": "El inicio de sesión con :provider falló. Inténtalo de nuevo."
 }
