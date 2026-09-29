@@ -39,9 +39,18 @@ export function CompletedSummary() {
                                 key={card.id}
                                 className="flex items-start justify-between gap-3 rounded-md border p-2 text-sm"
                             >
-                                <span className="min-w-0 break-words">
-                                    {card.content}
-                                </span>
+                                {card.content === null && card.gif ? (
+                                    <img
+                                        src={card.gif.previewUrl}
+                                        alt={t('GIF')}
+                                        loading="lazy"
+                                        className="h-16 w-auto rounded-sm"
+                                    />
+                                ) : (
+                                    <span className="min-w-0 break-words">
+                                        {card.content}
+                                    </span>
+                                )}
                                 <span className="shrink-0 font-medium tabular-nums">
                                     {card.votes ?? 0}
                                 </span>

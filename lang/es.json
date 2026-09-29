@@ -624,5 +624,15 @@
     "This GIF could not be found.": "No se encontró este GIF.",
     "This GIF could not be loaded.": "No se pudo cargar este GIF.",
     "A card needs text or a GIF.": "Una tarjeta necesita texto o un GIF.",
-    "Emoji list unavailable": "Lista de emoji no disponible"
+    "Emoji list unavailable": "Lista de emoji no disponible",
+    "Board closed for editing": "Tablero cerrado a los cambios",
+    "Show reactions": "Mostrar reacciones",
+    "Show live cursors": "Mostrar cursores en directo",
+    "Allow GIFs": "Permitir GIF",
+    "Hide vote counts": "Ocultar el número de votos",
+    "Close for editing": "Cerrar a los cambios",
+    "Presentation mode": "Modo presentación",
+    "New comment on your card": "Nuevo comentario en tu tarjeta",
+    "New reply in a thread you follow": "Nueva respuesta en un hilo que sigues",
+    "GIF": "GIF"
 }

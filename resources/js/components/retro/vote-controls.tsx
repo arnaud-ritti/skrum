@@ -13,6 +13,7 @@ type Tally = {
     remainingVotes: number;
     votesCast: number;
     votesVersion: number;
+    total: number | null;
 };
 
 export function VoteControls({ card }: { card: BoardCard }) {
@@ -62,6 +63,8 @@ export function VoteControls({ card }: { card: BoardCard }) {
                 type: 'votes.cast',
                 votesCast: tally.votesCast,
                 votesVersion: tally.votesVersion,
+                cardId: tally.cardId,
+                total: tally.total ?? undefined,
             });
         }
     };
@@ -73,7 +76,7 @@ export function VoteControls({ card }: { card: BoardCard }) {
                 variant="ghost"
                 className="size-7"
                 aria-label={t('Remove a vote')}
-                disabled={busy || card.myVotes === 0}
+                disabled={busy || !ctx.isEditable || card.myVotes === 0}
                 onClick={() => void vote(-1)}
             >
                 <Minus className="size-3.5" />
@@ -99,7 +102,11 @@ export function VoteControls({ card }: { card: BoardCard }) {
                 variant="ghost"
                 className="size-7"
                 aria-label={t('Add a vote')}
-                disabled={busy || ctx.board.viewer.remainingVotes === 0}
+                disabled={
+                    busy ||
+                    !ctx.isEditable ||
+                    ctx.board.viewer.remainingVotes === 0
+                }
                 onClick={() => void vote(1)}
             >
                 <Plus className="size-3.5" />

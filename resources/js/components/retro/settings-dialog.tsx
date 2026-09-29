@@ -30,6 +30,32 @@ export function SettingsDialog({ open, onOpenChange }: Props) {
     );
 }
 
+function SettingCheckbox({
+    id,
+    label,
+    checked,
+    disabled,
+    onChange,
+}: {
+    id: string;
+    label: string;
+    checked: boolean;
+    disabled: boolean;
+    onChange: (checked: boolean) => void;
+}) {
+    return (
+        <div className="flex items-center gap-2">
+            <Checkbox
+                id={id}
+                checked={checked}
+                disabled={disabled}
+                onCheckedChange={(value) => onChange(value === true)}
+            />
+            <Label htmlFor={id}>{label}</Label>
+        </div>
+    );
+}
+
 function SettingsForm({ onDone }: { onDone: () => void }) {
     const ctx = useBoard();
     const { t } = useTrans();
@@ -37,10 +63,21 @@ function SettingsForm({ onDone }: { onDone: () => void }) {
     const [title, setTitle] = useState(retro.title);
     const [isAnonymous, setIsAnonymous] = useState(retro.isAnonymous);
     const [votes, setVotes] = useState(String(retro.votesPerParticipant));
+    const [reactionsEnabled, setReactionsEnabled] = useState(
+        retro.reactionsEnabled,
+    );
+    const [cursorsEnabled, setCursorsEnabled] = useState(retro.cursorsEnabled);
+    const [gifsEnabled, setGifsEnabled] = useState(retro.gifsEnabled);
+    const [hideVoteCounts, setHideVoteCounts] = useState(retro.hideVoteCounts);
+    const [isLocked, setIsLocked] = useState(retro.isLocked);
+    const [presentationMode, setPresentationMode] = useState(
+        retro.presentationMode,
+    );
     const [error, setError] = useState<string | null>(null);
     const [saving, setSaving] = useState(false);
     const anonymityLocked = retro.isAnonymous && ctx.board.cards.length > 0;
     const votesLocked = !['writing', 'grouping'].includes(retro.phase);
+    const engagementLocked = retro.phase === 'completed';
 
     const save = async (event: FormEvent) => {
         event.preventDefault();
@@ -57,6 +94,30 @@ function SettingsForm({ onDone }: { onDone: () => void }) {
 
         if (Number(votes) !== retro.votesPerParticipant) {
             changes.votes_per_participant = Number(votes);
+        }
+
+        if (reactionsEnabled !== retro.reactionsEnabled) {
+            changes.reactions_enabled = reactionsEnabled;
+        }
+
+        if (cursorsEnabled !== retro.cursorsEnabled) {
+            changes.cursors_enabled = cursorsEnabled;
+        }
+
+        if (gifsEnabled !== retro.gifsEnabled) {
+            changes.gifs_enabled = gifsEnabled;
+        }
+
+        if (hideVoteCounts !== retro.hideVoteCounts) {
+            changes.hide_vote_counts = hideVoteCounts;
+        }
+
+        if (isLocked !== retro.isLocked) {
+            changes.is_locked = isLocked;
+        }
+
+        if (presentationMode !== retro.presentationMode) {
+            changes.presentation_mode = presentationMode;
         }
 
         if (Object.keys(changes).length === 0) {
@@ -140,6 +201,53 @@ function SettingsForm({ onDone }: { onDone: () => void }) {
                     value={votes}
                     disabled={votesLocked}
                     onChange={(event) => setVotes(event.target.value)}
+                />
+            </div>
+
+            <div className="grid gap-2">
+                <SettingCheckbox
+                    id="retro-reactions"
+                    label={t('Show reactions')}
+                    checked={reactionsEnabled}
+                    disabled={engagementLocked}
+                    onChange={setReactionsEnabled}
+                />
+                <SettingCheckbox
+                    id="retro-cursors"
+                    label={t('Show live cursors')}
+                    checked={cursorsEnabled}
+                    disabled={engagementLocked}
+                    onChange={setCursorsEnabled}
+                />
+                {retro.gifProvider !== null && (
+                    <SettingCheckbox
+                        id="retro-gifs"
+                        label={t('Allow GIFs')}
+                        checked={gifsEnabled}
+                        disabled={engagementLocked}
+                        onChange={setGifsEnabled}
+                    />
+                )}
+                <SettingCheckbox
+                    id="retro-hide-vote-counts"
+                    label={t('Hide vote counts')}
+                    checked={hideVoteCounts}
+                    disabled={engagementLocked}
+                    onChange={setHideVoteCounts}
+                />
+                <SettingCheckbox
+                    id="retro-locked"
+                    label={t('Close for editing')}
+                    checked={isLocked}
+                    disabled={engagementLocked}
+                    onChange={setIsLocked}
+                />
+                <SettingCheckbox
+                    id="retro-presentation"
+                    label={t('Presentation mode')}
+                    checked={presentationMode}
+                    disabled={engagementLocked}
+                    onChange={setPresentationMode}
                 />
             </div>
 

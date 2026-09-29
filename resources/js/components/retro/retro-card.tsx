@@ -29,7 +29,9 @@ export function RetroCard({ card, isChild = false, footer }: Props) {
     const removeInFlight = useRef(false);
     const phase = ctx.board.retro.phase;
     const canChange =
-        card.isMine && (phase === 'writing' || phase === 'grouping');
+        ctx.isEditable &&
+        card.isMine &&
+        (phase === 'writing' || phase === 'grouping');
     const isHighlighted = ctx.board.retro.highlightedCardId === card.id;
 
     const remove = async () => {
@@ -116,7 +118,7 @@ export function RetroCard({ card, isChild = false, footer }: Props) {
                 />
             ) : (
                 <>
-                    {card.content === null ? (
+                    {card.hidden ? (
                         <p className="flex items-center gap-1.5 text-muted-foreground italic">
                             <EyeOff className="size-4" aria-hidden="true" />
                             {t('Hidden until writing ends')}
@@ -137,7 +139,8 @@ export function RetroCard({ card, isChild = false, footer }: Props) {
                                 <VoteControls card={card} />
                             )}
                             {!isChild &&
-                                (phase === 'discussing' ||
+                                ((phase === 'voting' && card.votes !== null) ||
+                                    phase === 'discussing' ||
                                     phase === 'completed') && (
                                     <Badge
                                         variant="secondary"
@@ -168,17 +171,19 @@ export function RetroCard({ card, isChild = false, footer }: Props) {
                                         {t('Discuss')}
                                     </Button>
                                 )}
-                            {isChild && phase === 'grouping' && (
-                                <Button
-                                    size="icon"
-                                    variant="ghost"
-                                    className="size-7"
-                                    aria-label={t('Ungroup')}
-                                    onClick={() => void ungroup()}
-                                >
-                                    <Ungroup className="size-3.5" />
-                                </Button>
-                            )}
+                            {isChild &&
+                                phase === 'grouping' &&
+                                ctx.isEditable && (
+                                    <Button
+                                        size="icon"
+                                        variant="ghost"
+                                        className="size-7"
+                                        aria-label={t('Ungroup')}
+                                        onClick={() => void ungroup()}
+                                    >
+                                        <Ungroup className="size-3.5" />
+                                    </Button>
+                                )}
                             {canChange && (
                                 <>
                                     <Button
@@ -233,7 +238,7 @@ export function CardPreview({
             )}
             style={{ width }}
         >
-            {card.content === null ? (
+            {card.hidden ? (
                 <p className="text-muted-foreground italic">
                     {t('Hidden until writing ends')}
                 </p>

@@ -363,5 +363,15 @@
     "This GIF could not be found.": "This GIF could not be found.",
     "This GIF could not be loaded.": "This GIF could not be loaded.",
     "A card needs text or a GIF.": "A card needs text or a GIF.",
-    "Emoji list unavailable": "Emoji list unavailable"
+    "Emoji list unavailable": "Emoji list unavailable",
+    "Board closed for editing": "Board closed for editing",
+    "Show reactions": "Show reactions",
+    "Show live cursors": "Show live cursors",
+    "Allow GIFs": "Allow GIFs",
+    "Hide vote counts": "Hide vote counts",
+    "Close for editing": "Close for editing",
+    "Presentation mode": "Presentation mode",
+    "New comment on your card": "New comment on your card",
+    "New reply in a thread you follow": "New reply in a thread you follow",
+    "GIF": "GIF"
 }

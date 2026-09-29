@@ -7,10 +7,14 @@ import { boardReducer, type BoardAction } from '@/lib/retro/board-reducer';
 import type {
     ActionItem,
     BoardColumn,
+    CardComment,
     CardPayload,
+    CommentNotificationPayload,
     PresenceMember,
+    ReactionSummary,
     Snapshot,
 } from '@/lib/retro/types';
+import { useCommentNotifications } from './use-comment-notifications';
 import { useRetroChannel, type RetroEvent } from './use-retro-channel';
 
 const SessionExpiredStatuses = [401, 419];
@@ -137,6 +141,32 @@ export function useRetroBoard(initial: Snapshot) {
                         type: 'votes.cast',
                         votesCast: payload.votesCast as number,
                         votesVersion: payload.votesVersion as number,
+                        cardId: payload.cardId as string | undefined,
+                        total: payload.total as number | undefined,
+                    });
+                    break;
+                case 'card.reactions.changed':
+                    apply({
+                        type: 'reactions.set',
+                        cardId: payload.cardId as string,
+                        reactions: payload.reactions as Array<
+                            Omit<ReactionSummary, 'mine'>
+                        >,
+                    });
+                    break;
+                case 'comment.created':
+                case 'comment.updated':
+                    apply({
+                        type: 'comment.upsert',
+                        comment: payload.comment as CardComment,
+                    });
+                    break;
+                case 'comment.deleted':
+                    apply({
+                        type: 'comment.remove',
+                        cardId: payload.cardId as string,
+                        commentId: payload.commentId as string,
+                        soft: payload.soft as boolean,
                     });
                     break;
                 case 'timer.changed':
@@ -199,14 +229,42 @@ export function useRetroBoard(initial: Snapshot) {
         [apply],
     );
 
-    const { online, connected, reconnecting } = useRetroChannel(
+    const notifications = useCommentNotifications(retroId);
+
+    const onOwnComment = useCallback(
+        (comment: CardComment) => apply({ type: 'comment.upsert', comment }),
+        [apply],
+    );
+
+    const onCommentNotification = useCallback(
+        (notification: CommentNotificationPayload) => {
+            notifications.notify(notification.cardId);
+            toast(
+                notification.threadId === notification.commentId
+                    ? t('New comment on your card')
+                    : t('New reply in a thread you follow'),
+                {
+                    description: notification.authorName
+                        ? `${notification.authorName}: ${notification.excerpt}`
+                        : notification.excerpt,
+                },
+            );
+        },
+        [notifications.notify, t],
+    );
+
+    const { online, connected, reconnecting, presence } = useRetroChannel(
         retroId,
         initial.viewer.participantId,
         status === 'active',
-        onEvent,
-        refetch,
-        onJoining,
-        onOwnCard,
+        {
+            onEvent,
+            onResync: refetch,
+            onJoining,
+            onOwnCard,
+            onOwnComment,
+            onCommentNotification,
+        },
     );
 
     const errorMessage = useCallback(
@@ -288,6 +346,9 @@ export function useRetroBoard(initial: Snapshot) {
         online,
         connected,
         reconnecting,
+        presence,
+        unreadCardIds: notifications.unreadCardIds,
+        markCommentsRead: notifications.markRead,
         run,
         handleError,
         hasActiveCard,

@@ -146,7 +146,7 @@ function ActionItemRow({ item }: { item: ActionItem }) {
                 <Checkbox
                     className="mt-1"
                     checked={item.isDone}
-                    disabled={busy}
+                    disabled={busy || !ctx.isEditable}
                     aria-label={t('Mark as done')}
                     onCheckedChange={(checked) =>
                         void patch({ is_done: checked === true })
@@ -177,6 +177,7 @@ function ActionItemRow({ item }: { item: ActionItem }) {
                     <button
                         type="button"
                         title={t('Edit action item')}
+                        disabled={!ctx.isEditable}
                         className={`min-w-0 flex-1 text-left text-sm break-words ${item.isDone ? 'text-muted-foreground line-through' : ''}`}
                         onClick={startEditing}
                     >
@@ -187,7 +188,7 @@ function ActionItemRow({ item }: { item: ActionItem }) {
                     size="icon"
                     variant="ghost"
                     className="size-7 shrink-0"
-                    disabled={busy}
+                    disabled={busy || !ctx.isEditable}
                     aria-label={t('Delete action item')}
                     onClick={() => void remove()}
                 >
@@ -197,7 +198,7 @@ function ActionItemRow({ item }: { item: ActionItem }) {
             <AssigneeSelect
                 value={item.assignee?.id ?? null}
                 participants={ctx.board.participants}
-                disabled={busy}
+                disabled={busy || !ctx.isEditable}
                 onChange={(participantId) =>
                     void patch({ assignee_participant_id: participantId })
                 }
@@ -256,6 +257,7 @@ export function ActionItemsPanel() {
                 <Input
                     value={content}
                     maxLength={500}
+                    disabled={!ctx.isEditable}
                     placeholder={t('Add an action item…')}
                     aria-label={t('Add an action item…')}
                     onChange={(event) => setContent(event.target.value)}
@@ -264,13 +266,15 @@ export function ActionItemsPanel() {
                     value={assigneeId}
                     participants={ctx.board.participants}
                     onChange={setAssigneeId}
-                    disabled={sending}
+                    disabled={sending || !ctx.isEditable}
                 />
                 <Button
                     type="submit"
                     size="sm"
                     className="w-full"
-                    disabled={sending || content.trim() === ''}
+                    disabled={
+                        sending || !ctx.isEditable || content.trim() === ''
+                    }
                 >
                     {t('Add')}
                 </Button>

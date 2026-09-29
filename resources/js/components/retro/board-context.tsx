@@ -5,7 +5,8 @@ import {
     type ReactNode,
 } from 'react';
 import type { BoardAction } from '@/lib/retro/board-reducer';
-import type { Snapshot } from '@/lib/retro/types';
+import type { PresenceMember, Snapshot } from '@/lib/retro/types';
+import type { WhisperChannel } from '@/lib/retro/whisper-transport';
 
 export type BoardContextValue = {
     board: Snapshot;
@@ -16,6 +17,11 @@ export type BoardContextValue = {
     hasActiveCard: (cardId: string) => boolean;
     refetch: () => Promise<void>;
     sessionExpired: boolean;
+    online: PresenceMember[];
+    presence: WhisperChannel | null;
+    isEditable: boolean;
+    unreadCardIds: Set<string>;
+    markCommentsRead: (cardId: string) => void;
 };
 
 const BoardContext = createContext<BoardContextValue | null>(null);

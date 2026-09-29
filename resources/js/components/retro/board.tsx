@@ -42,6 +42,9 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
         refetch,
         status,
         online,
+        presence,
+        unreadCardIds,
+        markCommentsRead,
         reconnecting,
         sessionExpired,
     } = useRetroBoard(snapshot);
@@ -82,6 +85,11 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
         hasActiveCard,
         refetch,
         sessionExpired,
+        online,
+        presence,
+        isEditable: !board.retro.isLocked,
+        unreadCardIds,
+        markCommentsRead,
     };
 
     const activeCard =

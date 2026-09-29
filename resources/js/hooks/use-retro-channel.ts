@@ -4,7 +4,13 @@ import {
     type ConnectionStatus,
 } from '@laravel/echo-react';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import type { CardPayload, PresenceMember } from '@/lib/retro/types';
+import type {
+    CardComment,
+    CardPayload,
+    CommentNotificationPayload,
+    PresenceMember,
+} from '@/lib/retro/types';
+import type { WhisperChannel } from '@/lib/retro/whisper-transport';
 
 export const RetroEvents = [
     'card.created',
@@ -23,6 +29,10 @@ export const RetroEvents = [
     'action-item.saved',
     'action-item.deleted',
     'retro.deleted',
+    'card.reactions.changed',
+    'comment.created',
+    'comment.updated',
+    'comment.deleted',
 ] as const;
 
 /**
@@ -36,6 +46,15 @@ export type RetroEventName = (typeof RetroEvents)[number];
 export type RetroEvent = {
     name: RetroEventName;
     payload: Record<string, unknown>;
+};
+
+export type RetroChannelHandlers = {
+    onEvent: (event: RetroEvent) => void;
+    onResync: () => void;
+    onJoining: (member: PresenceMember) => void;
+    onOwnCard: (card: CardPayload) => void;
+    onOwnComment: (comment: CardComment) => void;
+    onCommentNotification: (notification: CommentNotificationPayload) => void;
 };
 
 function subscribeToConnection(onChange: () => void): () => void {
@@ -74,17 +93,15 @@ export function useRetroChannel(
     retroId: string,
     participantId: string,
     enabled: boolean,
-    onEvent: (event: RetroEvent) => void,
-    onResync: () => void,
-    onJoining: (member: PresenceMember) => void,
-    onOwnCard: (card: CardPayload) => void,
+    channelHandlers: RetroChannelHandlers,
 ) {
     const [online, setOnline] = useState<PresenceMember[]>([]);
+    const [presence, setPresence] = useState<WhisperChannel | null>(null);
     const status = useSafeConnectionStatus();
-    const handlers = useRef({ onEvent, onResync, onJoining, onOwnCard });
+    const handlers = useRef(channelHandlers);
     const [wasConnected, setWasConnected] = useState(false);
 
-    handlers.current = { onEvent, onResync, onJoining, onOwnCard };
+    handlers.current = channelHandlers;
 
     if (status === 'connected' && !wasConnected) {
         setWasConnected(true);
@@ -129,6 +146,8 @@ export function useRetroChannel(
             )
             .error(scheduleResync);
 
+        setPresence(channel as unknown as WhisperChannel);
+
         for (const event of RetroEvents) {
             channel.listen(`.${event}`, (payload: Record<string, unknown>) =>
                 handlers.current.onEvent({ name: event, payload }),
@@ -143,6 +162,14 @@ export function useRetroChannel(
             .listen('.own-card.saved', (payload: { card: CardPayload }) =>
                 handlers.current.onOwnCard(payload.card),
             )
+            .listen('.own-comment.saved', (payload: { comment: CardComment }) =>
+                handlers.current.onOwnComment(payload.comment),
+            )
+            .listen(
+                '.comment.notification',
+                (payload: CommentNotificationPayload) =>
+                    handlers.current.onCommentNotification(payload),
+            )
             .error(scheduleResync);
 
         return () => {
@@ -153,11 +180,12 @@ export function useRetroChannel(
             echo().leave(name);
             echo().leave(ownChannel);
             setOnline([]);
+            setPresence(null);
         };
     }, [retroId, participantId, enabled]);
 
     const connected = status === 'connected';
     const reconnecting = status === 'failed' || (wasConnected && !connected);
 
-    return { online, connected, reconnecting };
+    return { online, connected, reconnecting, presence };
 }

@@ -2,7 +2,10 @@ import type {
     ActionItem,
     BoardCard,
     BoardColumn,
+    CardComment,
     CardPayload,
+    CommentThread,
+    ReactionSummary,
     Snapshot,
 } from './types';
 
@@ -12,7 +15,13 @@ export type BoardAction =
     | { type: 'card.remove'; cardId: string; ungroupedCards: CardPayload[] }
     | { type: 'card.place'; cardId: string; columnId: string; index: number }
     | { type: 'columns.set'; columns: BoardColumn[] }
-    | { type: 'votes.cast'; votesCast: number; votesVersion: number }
+    | {
+          type: 'votes.cast';
+          votesCast: number;
+          votesVersion: number;
+          cardId?: string;
+          total?: number;
+      }
     | {
           type: 'votes.tally';
           cardId: string;
@@ -24,7 +33,19 @@ export type BoardAction =
     | { type: 'timer.set'; timerEndsAt: string | null }
     | { type: 'highlight.set'; cardId: string | null }
     | { type: 'actionItem.upsert'; actionItem: ActionItem }
-    | { type: 'actionItem.remove'; actionItemId: string };
+    | { type: 'actionItem.remove'; actionItemId: string }
+    | {
+          type: 'reactions.set';
+          cardId: string;
+          reactions: Array<Omit<ReactionSummary, 'mine'> & { mine?: boolean }>;
+      }
+    | { type: 'comment.upsert'; comment: CardComment }
+    | {
+          type: 'comment.remove';
+          cardId: string;
+          commentId: string;
+          soft: boolean;
+      };
 
 export function sortByVotes<
     T extends { votes: number | null; position: number },
@@ -63,16 +84,121 @@ function upsertCards(cards: BoardCard[], payloads: CardPayload[]): BoardCard[] {
         byId.set(payload.id, {
             votes: existing?.votes ?? null,
             myVotes: existing?.myVotes ?? 0,
+            reactions: existing?.reactions ?? [],
+            commentCount: existing?.commentCount ?? 0,
+            comments: existing?.comments ?? [],
             ...payload,
             ...(keepsOwnView && {
                 isMine: true,
+                hidden: false,
                 content: payload.content ?? existing.content,
+                gif: payload.gif ?? existing.gif,
                 author: payload.author ?? existing.author,
             }),
         });
     }
 
     return [...byId.values()];
+}
+
+function countComments(threads: CommentThread[]): number {
+    return threads.reduce(
+        (total, thread) =>
+            total +
+            (thread.deleted ? 0 : 1) +
+            thread.replies.filter((reply) => !reply.deleted).length,
+        0,
+    );
+}
+
+/**
+ * Comment broadcasts are presented without a viewer, so they never mark a
+ * comment as mine and drop the author on anonymous retros; the viewer's
+ * own copy keeps both.
+ */
+function mergeComment<T extends CardComment>(existing: T, incoming: T): T {
+    if (!existing.isMine || incoming.isMine) {
+        return incoming;
+    }
+
+    return {
+        ...incoming,
+        isMine: true,
+        author: incoming.author ?? existing.author,
+    };
+}
+
+export function upsertComment(
+    threads: CommentThread[],
+    comment: CardComment,
+): CommentThread[] {
+    if (comment.parentCommentId === null) {
+        const exists = threads.some((thread) => thread.id === comment.id);
+
+        return exists
+            ? threads.map((thread) =>
+                  thread.id === comment.id
+                      ? {
+                            ...mergeComment<CardComment>(thread, comment),
+                            replies: thread.replies,
+                        }
+                      : thread,
+              )
+            : [...threads, { ...comment, replies: [] }];
+    }
+
+    return threads.map((thread) => {
+        if (thread.id !== comment.parentCommentId) {
+            return thread;
+        }
+
+        const exists = thread.replies.some((reply) => reply.id === comment.id);
+
+        return {
+            ...thread,
+            replies: exists
+                ? thread.replies.map((reply) =>
+                      reply.id === comment.id
+                          ? mergeComment(reply, comment)
+                          : reply,
+                  )
+                : [...thread.replies, comment],
+        };
+    });
+}
+
+export function removeComment(
+    threads: CommentThread[],
+    commentId: string,
+    soft: boolean,
+): CommentThread[] {
+    if (soft) {
+        return threads.map((thread) =>
+            thread.id === commentId
+                ? { ...thread, deleted: true, content: null, author: null }
+                : thread,
+        );
+    }
+
+    return threads
+        .filter((thread) => thread.id !== commentId)
+        .map((thread) => ({
+            ...thread,
+            replies: thread.replies.filter((reply) => reply.id !== commentId),
+        }));
+}
+
+function updateCard(
+    state: Snapshot,
+    cardId: string,
+    change: (card: BoardCard) => BoardCard,
+): Snapshot {
+    return {
+        ...state,
+        cards: state.cards.map((card) =>
+            card.id === cardId ? change(card) : card,
+        ),
+    };
 }
 
 export function placeCard(
@@ -154,6 +280,14 @@ export function boardReducer(state: Snapshot, action: BoardAction): Snapshot {
                 ...state,
                 votesCast: action.votesCast,
                 votesVersion: action.votesVersion,
+                cards:
+                    action.cardId === undefined || action.total === undefined
+                        ? state.cards
+                        : state.cards.map((card) =>
+                              card.id === action.cardId
+                                  ? { ...card, votes: action.total ?? null }
+                                  : card,
+                          ),
             };
         case 'votes.tally':
             if (
@@ -208,5 +342,43 @@ export function boardReducer(state: Snapshot, action: BoardAction): Snapshot {
                     (item) => item.id !== action.actionItemId,
                 ),
             };
+        case 'reactions.set':
+            return updateCard(state, action.cardId, (card) => ({
+                ...card,
+                reactions: action.reactions.map((reaction) => ({
+                    ...reaction,
+                    mine:
+                        reaction.mine ??
+                        card.reactions.some(
+                            (existing) =>
+                                existing.emoji === reaction.emoji &&
+                                existing.mine,
+                        ),
+                })),
+            }));
+        case 'comment.upsert':
+            return updateCard(state, action.comment.cardId, (card) => {
+                const comments = upsertComment(card.comments, action.comment);
+
+                return {
+                    ...card,
+                    comments,
+                    commentCount: countComments(comments),
+                };
+            });
+        case 'comment.remove':
+            return updateCard(state, action.cardId, (card) => {
+                const comments = removeComment(
+                    card.comments,
+                    action.commentId,
+                    action.soft,
+                );
+
+                return {
+                    ...card,
+                    comments,
+                    commentCount: countComments(comments),
+                };
+            });
     }
 }

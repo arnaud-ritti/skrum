@@ -42,7 +42,7 @@ export function RetroColumn({
                 <SortableCard
                     key={card.id}
                     id={card.id}
-                    disabled={!card.isMine}
+                    disabled={!ctx.isEditable || !card.isMine}
                 >
                     {content}
                 </SortableCard>
@@ -51,7 +51,11 @@ export function RetroColumn({
 
         if (phase === 'grouping') {
             return (
-                <GroupableCard key={card.id} id={card.id}>
+                <GroupableCard
+                    key={card.id}
+                    id={card.id}
+                    disabled={!ctx.isEditable}
+                >
                     {content}
                 </GroupableCard>
             );
@@ -112,7 +116,7 @@ export function RetroColumn({
                     )}
                 </div>
             </ColumnDropZone>
-            {phase === 'writing' && (
+            {phase === 'writing' && ctx.isEditable && (
                 <div className="mt-3">
                     <CardComposer columnId={column.id} />
                 </div>

@@ -14,19 +14,54 @@ export type ColumnColor =
 
 export type Person = { id: string; name: string };
 
+export type CardGif = { id: string; previewUrl: string; url: string };
+
 export type CardPayload = {
     id: string;
     columnId: string;
     parentCardId: string | null;
     position: number;
     isMine: boolean;
+    hidden: boolean;
+    content: string | null;
+    gif: CardGif | null;
+    author: Person | null;
+};
+
+export type ReactionSummary = {
+    emoji: string;
+    count: number;
+    mine: boolean;
+    names: string[];
+};
+
+export type CardComment = {
+    id: string;
+    cardId: string;
+    parentCommentId: string | null;
+    isMine: boolean;
+    deleted: boolean;
     content: string | null;
     author: Person | null;
+    createdAt: string;
+};
+
+export type CommentThread = CardComment & { replies: CardComment[] };
+
+export type CommentNotificationPayload = {
+    cardId: string;
+    commentId: string;
+    threadId: string;
+    excerpt: string;
+    authorName?: string;
 };
 
 export type BoardCard = CardPayload & {
     votes: number | null;
     myVotes: number;
+    reactions: ReactionSummary[];
+    commentCount: number;
+    comments: CommentThread[];
 };
 
 export type BoardColumn = {
@@ -59,6 +94,13 @@ export type Snapshot = {
         template: string;
         phase: RetroPhase;
         isAnonymous: boolean;
+        reactionsEnabled: boolean;
+        cursorsEnabled: boolean;
+        gifsEnabled: boolean;
+        gifProvider: 'giphy' | 'tenor' | null;
+        hideVoteCounts: boolean;
+        isLocked: boolean;
+        presentationMode: boolean;
         votesPerParticipant: number;
         guestAccessEnabled: boolean;
         facilitatorParticipantId: string | null;
@@ -81,6 +123,7 @@ export type Snapshot = {
     votesCast: number | null;
     votesVersion: number;
     links: { team: string | null };
+    emojiData: { baseUrl: string; locale: string };
     serverTime: string;
 };
 

@@ -7,6 +7,7 @@ import { useTrans } from '@/hooks/use-trans';
 import type { PresenceMember } from '@/lib/retro/types';
 import { useBoard } from './board-context';
 import { FacilitatorMenu } from './facilitator-menu';
+import { LockBadge } from './lock-badge';
 import { PhaseStepper } from './phase-stepper';
 import { PresenceStrip } from './presence-strip';
 import { TimerControl } from './timer-control';
@@ -35,6 +36,7 @@ export function BoardHeader({ online, actions }: Props) {
                 </Link>
             )}
             <h1 className="text-lg font-semibold">{board.retro.title}</h1>
+            <LockBadge />
             <PhaseStepper
                 phase={board.retro.phase}
                 onChanged={() => void ctx.refetch()}

@@ -45,11 +45,13 @@ export function useDragAccessibility(board: Snapshot): {
             return t('column :title', { title });
         }
 
-        const content = board.cards.find(
-            (card) => card.id === target?.id,
-        )?.content;
+        const card = board.cards.find((card) => card.id === target?.id);
 
-        return content ? `“${content}”` : t('a hidden card');
+        if (!card || card.hidden) {
+            return t('a hidden card');
+        }
+
+        return card.content === null ? t('GIF') : `“${card.content}”`;
     };
 
     return {
@@ -122,12 +124,14 @@ export function SortableCard({
 
 export function GroupableCard({
     id,
+    disabled,
     children,
 }: {
     id: string;
+    disabled: boolean;
     children: ReactNode;
 }) {
-    const drag = useDraggable({ id: `card:${id}` });
+    const drag = useDraggable({ id: `card:${id}`, disabled });
     const drop = useDroppable({ id: `card:${id}` });
 
     return (
@@ -137,7 +141,8 @@ export function GroupableCard({
                 drop.setNodeRef(node);
             }}
             className={cn(
-                'cursor-grab rounded-md',
+                'rounded-md',
+                !disabled && 'cursor-grab',
                 drag.isDragging && 'opacity-50',
                 drop.isOver &&
                     !drag.isDragging &&
