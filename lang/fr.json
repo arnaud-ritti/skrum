@@ -458,5 +458,8 @@
     "Leave this workspace?": "Quitter cet espace de travail ?",
     "They will lose access to the workspace and be removed from all of its teams.": "Cette personne perdra l'accès à l'espace de travail et sera retirée de toutes ses équipes.",
     "You will lose access to the workspace and be removed from all of its teams.": "Vous perdrez l'accès à l'espace de travail et serez retiré de toutes ses équipes.",
-    "Single sign-on": "Authentification unique"
+    "Single sign-on": "Authentification unique",
+    "An account already uses this email address. Log in with your password instead.": "Un compte utilise déjà cette adresse e-mail. Connectez-vous plutôt avec votre mot de passe.",
+    ":provider did not share an email address with us.": ":provider ne nous a pas communiqué d'adresse e-mail.",
+    ":provider did not confirm your email address.": ":provider n'a pas confirmé votre adresse e-mail."
 }
