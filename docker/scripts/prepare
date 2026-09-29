@@ -18,6 +18,23 @@ if [ -n "$missing" ]; then
     exit 1
 fi
 
+case "${APP_DEBUG:-}" in
+    true | 1)
+        if [ "${SKRUM_ALLOW_DEBUG:-}" != "true" ]; then
+            echo "skrum: APP_DEBUG is enabled; debug pages expose configuration. Set APP_DEBUG=false (or SKRUM_ALLOW_DEBUG=true to override)." >&2
+            exit 1
+        fi
+        ;;
+esac
+
+if [ "${APP_ENV:-}" != "production" ]; then
+    echo "skrum: warning: APP_ENV is '${APP_ENV:-}', not 'production'" >&2
+fi
+
+if [ "${LOG_CHANNEL:-}" != "stderr" ]; then
+    echo "skrum: warning: LOG_CHANNEL is '${LOG_CHANNEL:-}', not 'stderr'; logs will not reach docker logs" >&2
+fi
+
 s6-setuidgid www-data php artisan optimize
 
 if [ "${SKRUM_RUN_MIGRATIONS:-true}" = "true" ]; then
