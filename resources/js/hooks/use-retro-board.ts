@@ -237,7 +237,7 @@ export function useRetroBoard(initial: Snapshot) {
         [apply],
     );
 
-    const notifications = useCommentNotifications(retroId);
+    const notifications = useCommentNotifications(retroId, board.cards);
 
     const onOwnComment = useCallback(
         (comment: CardComment) => apply({ type: 'comment.upsert', comment }),
