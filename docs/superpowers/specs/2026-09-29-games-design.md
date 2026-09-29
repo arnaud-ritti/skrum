@@ -1,7 +1,7 @@
 # Skrum — Games — Design
 
 Date: 2026-09-29
-Status: Draft — open decisions pending
+Status: Approved decisions, awaiting spec review
 Parent spec: `docs/superpowers/specs/2026-09-29-retro-board-core-design.md` (all its rules apply unless this spec changes them explicitly). Builds on `docs/superpowers/specs/2026-09-29-board-engagement-design.md` (whispers with verified senders, GIF proxy, `SingleEmoji`, board lock) and on spec 2 "Retro flow extras" (Icebreaker phase, see §1 Dependencies).
 Research: `docs/superpowers/research/qretro/` (QRetro parity roadmap, spec 7 of 7; `docs-inventory.md` "Games", `screens/game-*.{jpg,svg}`)
 
@@ -15,7 +15,7 @@ Give teams four short real-time games, playable in standalone game rooms or as t
 
 - Game rooms per team: create, list, rename, delete; team-only or open by link; at most 12 players online and 10 rooms per team; last 20 rounds kept.
 - The four games with QRetro's rules (§4), one engine shared by rooms and the retro icebreaker.
-- Icebreaker: how a game runs inside the Icebreaker phase and how the board timer closes turns (§6).
+- Icebreaker: how a game runs inside the Icebreaker phase and how the board timer ends turns (§6).
 - Word dictionaries and GIF questions in en/fr/es/de, no repeated word until the pool is exhausted.
 - Drawing transport (live whispers + server-committed operations) and drawing persistence for round history.
 
@@ -24,16 +24,16 @@ Give teams four short real-time games, playable in standalone game rooms or as t
 - Personal (non-team) game rooms.
 - GIF uploads (skrum has no uploads; GIFs come from search only, for everyone).
 - Scores, leaderboards, streaks.
-- Slack/Telegram invites to rooms (spec 6 may add them).
+- Slack/Telegram invites to rooms (not built by spec 6 either; its link share, spec 6 §5.1, can be reused later).
 - "Games we played" on the retro Results view (spec 2 owns Results; it can read `game_rounds` of the icebreaker room later).
 - LLM-generated words or questions: lists are deterministic files.
 - A frontend test runner or browser E2E suite.
 
 ### Dependencies
 
-- **Spec 2 assumption (drafted in parallel):** spec 2 adds an optional `Icebreaker` case to `RetroPhase`, placed before `Writing`, reachable only when a retro-level toggle (assumed `retros.icebreaker_enabled`) is on, with the same adjacent-phase navigation and facilitator-only control as other phases. If spec 2 also stores which game the icebreaker starts with, this spec uses that column instead of adding `retros.icebreaker_game` (§2).
+- **Spec 2 (retro flow extras):** `RetroPhase::Icebreaker` (`icebreaker`) sits after the optional `HealthCheck` and before `Writing`; it is in the flow only when `retros.icebreaker_enabled` is on (default off, set at creation and through `PATCH /retros/{retro}/settings`), and the facilitator moves to it like any phase (`Retro::canMoveTo` over the enabled phases). `RetroPhase::isOpen()` includes it (timer), and others' cards stay hidden in it. Spec 2 stores no game choice, so this spec adds `retros.icebreaker_game` (§2), and its game panel replaces spec 2's "Warm-up" placeholder (spec 2 §2.5).
 - Spec 1: `whisperTransport` (`resources/js/lib/retro/whisper-transport.ts`) and Reverb `accept_client_events_from: 'members'` (`config/reverb.php`), `GifCatalog` / `GifsController` / `RetroGifsController`, `SingleEmoji` (`app/Rules/SingleEmoji.php`), `RetroGuard::unlocked`.
-- Existing infrastructure: the database queue worker (s6 service) runs delayed jobs for timer expiry; `BroadcastAuthorizationsController` authorizes presence channels.
+- Existing infrastructure: the database queue worker (s6 service) runs the delayed job that ends a round when the host timer expires; `BroadcastAuthorizationsController` authorizes presence channels.
 - No new PHP or npm dependency. The canvas and flood fill use the browser Canvas 2D API.
 
 ## 2. Data model
@@ -58,8 +58,7 @@ Give teams four short real-time games, playable in standalone game rooms or as t
 | `locale` | string, one of `config('skrum.locales')` | Word/question language; creator's locale at creation, host can change |
 | `access` | `GameRoomAccess`, default `team` | Standalone only; icebreaker access follows the retro |
 | `guest_token` | unique string | For `/play/{guestToken}`; hidden from serialization |
-| `turn_seconds` | nullable int (30–600) | Auto turn timer (§5); default 90 for rooms, null for icebreakers |
-| `timer_ends_at` | nullable timestamp | Standalone timer; icebreakers use `retros.timer_ends_at` |
+| `timer_ends_at` | nullable timestamp | Host-set room timer (manual, §5); icebreakers use `retros.timer_ends_at` |
 | `current_round_id` | nullable FK game_rounds, null on delete | Active or last round |
 | timestamps | | |
 
@@ -94,7 +93,7 @@ Give teams four short real-time games, playable in standalone game rooms or as t
 
 ### `game_guesses` — new table
 
-- `id`, `game_round_id` (cascade), `player_id` (FK game_players, cascade), `text` (1–50), `is_near_miss` (bool), `is_correct` (bool), `created_at`.
+- `id`, `game_round_id` (cascade), `player_id` (FK game_players, cascade), `text` (1–50), `is_near_miss` (bool; "very close" flag, delivered only to the guesser), `is_correct` (bool), `created_at`.
 
 ### `game_gif_answers` — new table
 
@@ -102,11 +101,11 @@ Give teams four short real-time games, playable in standalone game rooms or as t
 
 ### `game_used_words` — new table
 
-- `team_id` (cascade), `locale`, `word`, `created_at`; primary key (`team_id`, `locale`, `word`). Word history is per team, shared by the team's rooms and icebreakers (Open decision 3).
+- `team_id` (cascade), `locale`, `word`, `created_at`; primary key (`team_id`, `locale`, `word`). Word history is per team, shared by the team's rooms and icebreakers (Decision 3).
 
 ### `retros` — new column
 
-- `icebreaker_game` (`GameKind`, default `draw`): game the icebreaker room starts with, chosen next to spec 2's Icebreaker toggle in the create dialog and settings. Omitted if spec 2 already defines it (§1).
+- `icebreaker_game` (`GameKind`, default `draw`): game the icebreaker room starts with, chosen next to spec 2's Icebreaker toggle in the create dialog (`POST /w/{workspace}/teams/{team}/retros`) and the settings dialog (`PATCH /retros/{retro}/settings`, facilitator only, any phase except `Completed`, broadcasting `settings.changed`); `gif` is refused (422) when no GIF provider is configured.
 
 ### Word and question files
 
@@ -118,22 +117,22 @@ Give teams four short real-time games, playable in standalone game rooms or as t
 
 ### Standalone rooms
 
-- **List/create** on the team page, tab "Games" (`GET /w/{workspace}/teams/{team}/games`). Any team member (and workspace Owner/Admin, per `TeamPolicy::view`) can create a room and see the team's rooms (Open decision 4). A team holds at most 10 rooms (icebreaker rooms do not count) → 422 "This team already has 10 game rooms."
+- **List/create** on the team page, tab "Games" (`GET /w/{workspace}/teams/{team}/games`). Any team member (and workspace Owner/Admin, per `TeamPolicy::view`) can create a room and see the team's rooms (Decision 4). A team holds at most 10 rooms (icebreaker rooms do not count) → 422 "This team already has 10 game rooms."
 - Room card: name, game, access mode, number of players who ever joined, number of rounds kept.
-- **Settings** (host, creator, or workspace Owner/Admin): name, access, locale, `turn_seconds`, regenerate the guest link. **Delete** (creator or workspace Owner/Admin) removes the room, players and rounds, and broadcasts `game.room.deleted`.
+- **Settings** (host, creator, or workspace Owner/Admin): name, access, locale, regenerate the guest link. **Delete** (creator or workspace Owner/Admin) removes the room, players and rounds, and broadcasts `game.room.deleted`.
 - **Host:** the creator on creation. The host can hand hosting to any other member player (guests never host). The creator and workspace Owners/Admins can take hosting at any time ("Become host"), so a room never stays stuck with an absent host.
 - A room opens directly on its current state; if no round is active, the host sees "Start".
 
 ### Joining
 
 - `team` access: team members (per `TeamPolicy::view`) only. A player row is created on first visit.
-- `link` access: also `/play/{guestToken}`. Same rules as retro guests (core spec §3): a visitor enters a display name (prefilled with a random "Adjective Animal" name in their locale), gets a player with a hashed secret and an encrypted cookie `game_guest_{roomId}`; a returning guest resumes; a logged-in team member joins as themselves; a logged-in non-member joins as a guest without team access. Regenerating the token revokes the link and clears existing guest secrets. Switching access to `team` blocks every guest request (403).
-- **12-player cap:** enforced when authorizing `presence-game.{roomId}`: the server asks Reverb for the channel's members (`Pusher::getPresenceUsers`); if 12 distinct members are online and the requester is not one of them → 403 "This room is full." If Reverb cannot be reached the join is allowed (soft cap, fail open). The room page shows the same message (Open decision 5).
+- `link` access: also `/play/{guestToken}`. Same rules as retro guests (core spec §3): a visitor enters a display name (prefilled with a random "Adjective Animal" name in their locale, editable; Decision 8), gets a player with a hashed secret and an encrypted cookie `game_guest_{roomId}`; a returning guest resumes; a logged-in team member joins as themselves; a logged-in non-member joins as a guest without team access. Regenerating the token revokes the link and clears existing guest secrets. Switching access to `team` blocks every guest request (403).
+- **12-player cap:** enforced when authorizing `presence-game.{roomId}`: the server asks Reverb for the channel's members (`Pusher::getPresenceUsers`); if 12 distinct members are online and the requester is not one of them → 403 "This room is full." If Reverb cannot be reached the join is allowed (soft cap, fail open). The room page shows the same message (Decision 5).
 - Guests of a room see nothing of the team, its retros or other rooms.
 
 ### Icebreaker room
 
-- One per retro, created by the `EnsureIcebreakerRoom` action the first time the retro enters `Icebreaker` (also lazily from the snapshot), with `game = retros.icebreaker_game`, `locale` = the facilitator's locale at that moment, `turn_seconds = null`.
+- One per retro, created by the `EnsureIcebreakerRoom` action the first time the retro enters `Icebreaker` (also lazily from the snapshot), with `game = retros.icebreaker_game`, `locale` = the facilitator's locale at that moment.
 - Players are the retro's participants (member or guest); a `game_players` row with `participant_id` is created on a participant's first game request. Access follows the retro (`ResolveParticipant`); no player cap.
 - Host = the retro facilitator (follows facilitation transfer). The icebreaker room never appears in the team's Games list and cannot be renamed, shared or deleted on its own (it goes with the retro).
 
@@ -155,13 +154,13 @@ Common rules:
 - **Tools:** 6 colours (`black`, `red`, `orange`, `green`, `blue`, `purple`), 3 sizes (4, 10, 24 canvas units), eraser (a stroke in the canvas background colour `white`), fill, undo (last operation), clear (removes all operations, not undoable).
 - **Canvas:** logical 1000 × 750 (4:3); coordinates are integers in range; clients scale to their size. Fill is a flood fill computed client-side on an 800 × 600 offscreen raster by replaying operations in order, so every client gets the same image.
 - **Operations** (`drawing` jsonb): `{type: "stroke", color, size, points: [[x,y], …]}` (1–1000 points) or `{type: "fill", color, x, y}`. Caps per round: 500 operations and 20 000 points → 422 "The drawing is full. Clear it to keep drawing."
-- **Transport** (Open decision 1): while drawing, the drawer whispers `game-stroke` on the room's presence channel `{v: 1, id, color, size, points}` (≤ 100 points per message, 40 ms throttle) so others see the line live. On pointer-up the drawer POSTs the complete stroke (`clientOpId` = whisper `id`); the server validates, appends, and broadcasts `game.drawing.op-added {roundId, op, clientOpId}`; receivers replace the matching live preview with the committed operation. Fill, undo and clear are HTTP only. Receivers drop whispers whose Reverb-stamped sender is not the current drawer's presence id, whose round is not active, or whose fields are out of range. Late joiners and reconnects render from the snapshot's committed operations.
+- **Transport** (Decision 1): while drawing, the drawer whispers `game-stroke` on the room's presence channel `{v: 1, id, color, size, points}` (≤ 100 points per message, 40 ms throttle) so others see the line live. On pointer-up the drawer POSTs the complete stroke (`clientOpId` = whisper `id`); the server validates, appends, and broadcasts `game.drawing.op-added {roundId, op, clientOpId}`; receivers replace the matching live preview with the committed operation. Fill, undo and clear are HTTP only. Receivers drop whispers whose Reverb-stamped sender is not the current drawer's presence id, whose round is not active, or whose fields are out of range. Late joiners and reconnects render from the snapshot's committed operations.
 - **Hints:** the drawer reveals one random unrevealed letter per request, up to `floor(letters / 2)` → 422 beyond. Broadcast `game.hint.revealed {mask}`.
-- **Guessing:** any player except the drawer (403). Response to the guesser: `{result: "wrong" | "near" | "correct"}`.
-  - Wrong: stored; broadcast `game.guess.made {playerId, text}` to others; shown in the chat.
-  - Near miss: stored; the guesser's own client shows it with "Very close!"; **not broadcast** (the text is close to the word; Open decision 6).
+- **Guessing:** any player except the drawer (403). Response to the guesser: `{result: "wrong" | "near" | "correct", guessId}`.
+  - Wrong: stored; broadcast `game.guess.made {guessId, playerId, text}` to others; shown in the chat.
+  - Near miss (Decision 6): stored; the text is broadcast like any wrong guess (`game.guess.made`, no flag) and shown to everyone in the chat. Only the guesser learns it was close: the response `{result: "near", guessId}` (and their own snapshot entries) carry the "Very close!" flag; the broadcast and other players' snapshots never do. Accepted trade-off: the near-miss text leaks a hint to everyone.
   - Correct: the round ends as `Guessed` with `winner_player_id`; the guess text is never broadcast or serialized to anyone (history shows who got it and the word).
-- **Other ends:** timer expiry → `TimedOut`; drawer or host "Pass" → `Passed`. Each reveals the word.
+- **Other ends:** the host timer reaching zero → `TimedOut`; drawer or host "Pass" → `Passed`. Each reveals the word.
 
 ### 4.2 Sprint in one GIF (1+ players)
 
@@ -170,13 +169,13 @@ Common rules:
 - **Answering:** every player (host included) searches through `GET /games/{room}/gifs?q=` (proxy, same limits and caching as spec 1 §5: 20/min per player, 24 results) and sets one answer, replaceable or removable until reveal. Others receive only `game.answer.changed {playerId, answered: bool}`; gif ids of other players are never sent before reveal (snapshot or broadcast). The answerer's own snapshot includes their answer.
 - **Reveal:** host or timer → outcome `Revealed`, broadcast `game.round.ended` with `answers: [{playerId, gif}]`. After reveal answers are read-only; the host starts a new round.
 - `GifCatalog::servable()` also accepts ids present in `game_gif_answers`, so revealed answers keep loading after the search cache expires.
-- Authors are shown with each revealed GIF, except in the icebreaker of an anonymous retro (Open decision 7).
+- Authors are shown with each revealed GIF, except in the icebreaker of an anonymous retro (Decision 7).
 
 ### 4.3 Hangman (1+ players)
 
 - **Start:** host; random word from the full pool (§4.5); no leader. Everyone sees the mask.
 - **Letters:** any player picks a letter `a–z`; no turns. A letter already picked → 409. A hit reveals every position whose folded letter matches (`é` is revealed by `e`); a miss increments `misses`. Broadcast `game.letter.picked {playerId, letter, hit, mask, misses}`.
-- **End:** all letters revealed → `Solved`, winner = player who picked the last letter; 6 misses → `Lost`; timer expiry → `TimedOut`; host "Give up" → `Passed`. The word is revealed; the host starts the next word.
+- **End:** all letters revealed → `Solved`, winner = player who picked the last letter; 6 misses → `Lost`; host timer reaching zero → `TimedOut`; host "Give up" → `Passed`. The word is revealed; the host starts the next word.
 
 ### 4.4 Decoded (2+ players)
 
@@ -191,9 +190,11 @@ Common rules:
 
 ## 5. Timers
 
-- **Standalone rooms:** the host sets or clears `game_rooms.timer_ends_at` (10–7200 s, same control as the board timer). When `turn_seconds` is set, starting a round sets the timer to `now + turn_seconds` automatically (Open decision 2).
-- **Icebreaker:** the board timer (`retros.timer_ends_at`, `PUT /retros/{retro}/timer`) is the game timer. If `turn_seconds` is set on the icebreaker room, starting a round sets the board timer and broadcasts the existing `timer.changed`.
-- **Expiry closes the round**, server-side: whenever a timer is set while a round is active, or a round starts with a timer running, a `CloseExpiredGameRound(roundId, endsAt)` job is dispatched with a delay until `endsAt`. When it runs it ends the round only if the round is still active and the timer still equals `endsAt` (a changed or cleared timer makes stale jobs no-ops). Every game endpoint and snapshot also applies the same check first, so a late queue never shows a stale round. Outcome: `TimedOut` (Draw & Guess, Decoded, Hangman), `Revealed` (Sprint in one GIF).
+Turns are timed manually by the host (Decision 2); there is no per-turn setting and no automatic start. A turn ends on a correct guess, a pass/give-up/reveal by the host (or leader), or when the host's timer reaches zero.
+
+- **Standalone rooms:** the host sets or clears `game_rooms.timer_ends_at` (10–7200 s, same control as the board timer) whenever they want; starting a round never touches it.
+- **Icebreaker:** the board timer (`retros.timer_ends_at`, `PUT /retros/{retro}/timer`) is the game timer, set by the facilitator with the existing `timer.changed` broadcast.
+- **Expiry closes the active round**, server-side: whenever a timer is set while a round is active, or a round starts while a host timer is already running, a `CloseExpiredGameRound(roundId, endsAt)` job is dispatched with a delay until `endsAt`. When it runs it ends the round only if the round is still active and the timer still equals `endsAt` (a changed or cleared timer makes stale jobs no-ops). Every game endpoint and snapshot also applies the same check first, so a late queue never shows a stale round. Outcome: `TimedOut` (Draw & Guess, Decoded, Hangman), `Revealed` (Sprint in one GIF).
 - A timer that expires with no active round only plays the existing "time's up" feedback.
 
 ## 6. Icebreaker inside a retro
@@ -203,7 +204,7 @@ Common rules:
 - Game events travel on the retro's `presence-retro.{retroId}` channel; the board snapshot gains `icebreaker: GameSnapshot | null` (non-null only in `Icebreaker` phase).
 - Game mutations on an icebreaker room: only in `Icebreaker` phase (403 otherwise), not on a `Completed` retro, and 423 while `is_locked` (spec 1 §6). The history endpoints stay readable in every phase.
 - Leaving `Icebreaker` ends the active round as `Abandoned` (in the phase-change transaction); coming back resumes with no active round.
-- Retro anonymity (`is_anonymous`) covers board content. Games show player names like the presence strip does, except Sprint in one GIF authors on anonymous retros (Open decision 7).
+- Retro anonymity (`is_anonymous`) covers board content. Games show player names like the presence strip does, except Sprint in one GIF authors on anonymous retros (Decision 7).
 - Deleting the retro deletes its icebreaker room (cascade).
 
 ## 7. Endpoints, channels and events
@@ -230,7 +231,7 @@ Under `/games/{room}/…` (middleware `ResolveGamePlayer`: resolves the player f
 | Method | Path | Who | Body / response |
 |---|---|---|---|
 | GET | `snapshot` | player | `GameSnapshot` for the viewer |
-| PATCH | `/` | host, creator, Owner/Admin | `{name?, access?, locale?, turnSeconds?}` (standalone; icebreaker: `turnSeconds`, `locale` only) |
+| PATCH | `/` | host, creator, Owner/Admin | `{name?, access?, locale?}` (standalone; icebreaker: `locale` only) |
 | DELETE | `/` | creator, Owner/Admin | 204 (standalone only) |
 | POST | `guest-token` | host, creator, Owner/Admin | regenerate link |
 | PUT | `host` | host → member player; creator/Owner/Admin → self | `{playerId}` (standalone only) |
@@ -257,11 +258,11 @@ Round-scoped mutations on a round that is not the room's active round, or on the
 
 ### Snapshot (`GameSnapshot`, built for the viewer by one `BuildGameSnapshot` class; all game redaction lives there and in its presenters)
 
-- `room`: `{id, name, game, locale, access, turnSeconds, timerEndsAt, isHost, canManage, hostPlayerId, guestUrl}` (`guestUrl` only for managers of a `link` room; never the token alone in broadcasts).
+- `room`: `{id, name, game, locale, access, timerEndsAt, isHost, canManage, hostPlayerId, guestUrl}` (`guestUrl` only for managers of a `link` room; never the token alone in broadcasts).
 - `players`: `[{id, presenceId, name, avatarUrl, isGuest}]`.
 - `round`: null or `{id, game, leaderPlayerId, startedAt, mask?, misses?, pickedLetters?, clue?, question?, drawing?, guesses?, answers?, myAnswer?, word?}` where:
   - `word` only for the leader of an active Draw & Guess / Decoded round;
-  - `guesses`: last 50 of the round, wrong guesses of everyone plus the viewer's own near misses; never correct guesses;
+  - `guesses`: last 50 of the round, `{id, playerId, text, veryClose?}` for wrong and near-miss guesses of everyone, with `veryClose: true` only on the viewer's own near misses; never correct guesses;
   - `answers`: before reveal `[{playerId, answered: true}]`; `myAnswer` only the viewer's gif.
 - `history`: last 20 ended rounds `{id, game, outcome, word, question, leaderName, winnerName, endedAt}`.
 - Constant query count as players, rounds and guesses grow.
@@ -270,7 +271,7 @@ Round-scoped mutations on a round that is not the room's active round, or on the
 
 Base class `GameBroadcastEvent` (same pattern as `RetroBroadcastEvent`: after commit, `toOthers()`, report-don't-throw); `broadcastOn()` returns the retro channel for icebreaker rooms and `presence-game.{roomId}` otherwise.
 
-`game.room.changed` (settings, host, game switch → clients refetch the game snapshot), `game.room.deleted`, `game.timer.changed {timerEndsAt}`, `game.round.started {round}` (public payload, never the word), `game.round.ended {roundId, outcome, word, winnerPlayerId, leaderPlayerId, answers?}`, `game.hint.revealed {roundId, mask}`, `game.drawing.op-added {roundId, op, clientOpId}`, `game.drawing.undone {roundId}`, `game.drawing.cleared {roundId}`, `game.clue.changed {roundId, clue}`, `game.guess.made {roundId, playerId, text}` (wrong guesses only), `game.letter.picked {…}`, `game.question.changed {roundId, question}`, `game.answer.changed {roundId, playerId, answered}`.
+`game.room.changed` (settings, host, game switch → clients refetch the game snapshot), `game.room.deleted`, `game.timer.changed {timerEndsAt}`, `game.round.started {round}` (public payload, never the word), `game.round.ended {roundId, outcome, word, winnerPlayerId, leaderPlayerId, answers?}`, `game.hint.revealed {roundId, mask}`, `game.drawing.op-added {roundId, op, clientOpId}`, `game.drawing.undone {roundId}`, `game.drawing.cleared {roundId}`, `game.clue.changed {roundId, clue}`, `game.guess.made {roundId, guessId, playerId, text}` (wrong and near-miss guesses, no near-miss flag; never correct guesses), `game.letter.picked {…}`, `game.question.changed {roundId, question}`, `game.answer.changed {roundId, playerId, answered}`.
 
 Client events (whispers): `game-stroke` only (§4.1).
 
@@ -278,7 +279,8 @@ Client events (whispers): `game-stroke` only (§4.1).
 
 - The secret word leaves the server only: to the leader (snapshot, `secret` endpoint) during the round, and to everyone in `game.round.ended`, history and round detail after it ends. It is `$hidden` on the model; tests assert its absence from every other payload.
 - Hangman and hint state goes out as a mask only.
-- Correct guess texts are never serialized. Near-miss texts reach only their author.
+- Correct guess texts are never serialized.
+- Near-miss texts are broadcast and shown to everyone like other wrong guesses; only the "very close" flag is private to the guesser (response and own snapshot entries; never in a broadcast or another player's snapshot). Accepted trade-off (Decision 6): a near-miss text is a hint that leaks to every player, including those who are not guessing well; correct guesses stay hidden.
 - GIF answers of others are never serialized before reveal; the round detail endpoint 404s while a round is active.
 - The drawer cannot guess (403); the leader is fixed for the round (host cannot move the drawer mid-round, only pass).
 - Stroke whispers are accepted only from the current drawer (Reverb-stamped sender, spec 1 §3); the committed drawing is written only by the drawer through HTTP.
@@ -308,31 +310,37 @@ Client events (whispers): `game-stroke` only (§4.1).
 - Full room → "This room is full." page with a retry button.
 - Websocket reconnect → refetch game snapshot (drawing re-rendered from committed ops).
 
-## 11. Testing
+## 11. Changes to other specs
+
+- **Retro flow extras (spec 2):** the `Icebreaker` phase shows the game panel instead of the "Warm-up" placeholder (§6); `retros` gains `icebreaker_game`, accepted at creation and by `PATCH /retros/{retro}/settings` (§2); leaving `Icebreaker` abandons the active round inside the phase-change transaction (§6). Phase, toggle and adjacency rules are unchanged.
+- **Board engagement (spec 1):** `GifCatalog::servable()` also serves ids stored in `game_gif_answers` (§4.2); in an icebreaker the `game-stroke` whisper travels on `presence-retro.{retroId}` next to `cursor` and `reaction`, with the same Reverb-stamped sender check (§4.1). Card GIF, whisper and lock rules are otherwise unchanged.
+- **Core spec:** `BroadcastAuthorizationsController` gains the `presence-game.{roomId}` branch (§7); the retro channel's authorization is unchanged.
+
+## 12. Testing
 
 Pest feature tests under `tests/Feature/Games/*`; provider HTTP faked with `Http::fake()`, broadcasts with `Event::fake()`, the queue with `Queue::fake()` / `travelTo()`.
 
 - **Rooms:** create by team member; 11th room → 422; icebreaker rooms not counted; list scoped to team; guest cannot list; settings and delete permissions (creator, Owner/Admin, host); host transfer to member only; "Become host".
 - **Access:** `team` room refuses guests; `link` room guest join, resume by cookie, token regeneration revokes; switching to `team` blocks guests; non-member logged-in joins as guest without team access.
 - **Player cap:** channel auth refuses a 13th member when Reverb reports 12 (Pusher client mocked), allows a present member to reconnect, allows when Reverb errors.
-- **Secrecy (main invariant):** for each game, the word is absent from non-leaders' snapshots, every broadcast before `game.round.ended`, `rounds` history of active rounds and `rounds/{round}` (404 while active); `secret` 403 for non-leaders; correct guess text absent everywhere; near-miss text only in its author's response and snapshot; GIF ids of others absent before reveal.
-- **Draw & Guess:** drawer-only ops, undo, clear; point/op caps 422; coordinate/colour/size validation; hints up to half the letters; guess results wrong/near/correct with normalization (case, accents, spaces); correct guess ends the round with the winner; drawer guess 403; pass by drawer or host; rate limit 429.
+- **Secrecy (main invariant):** for each game, the word is absent from non-leaders' snapshots, every broadcast before `game.round.ended`, `rounds` history of active rounds and `rounds/{round}` (404 while active); `secret` 403 for non-leaders; correct guess text absent everywhere; near-miss text broadcast like wrong guesses while the "very close" flag appears only in its author's response and snapshot; GIF ids of others absent before reveal.
+- **Draw & Guess:** drawer-only ops, undo, clear; point/op caps 422; coordinate/colour/size validation; hints up to half the letters; guess results wrong/near/correct with normalization, near-miss text broadcast without the flag (case, accents, spaces); correct guess ends the round with the winner; drawer guess 403; pass by drawer or host; rate limit 429.
 - **Sprint in one GIF:** hidden without provider / with `gifs_enabled` off in an icebreaker; question shuffle/custom until first answer then 409; one answer per player, replace/remove until reveal; reveal by host; proxy serves revealed answer ids.
 - **Hangman:** hit/miss, accent folding, duplicate letter 409, solved credits the last picker, 6 misses → lost.
 - **Decoded:** clue ≤ 5, `SingleEmoji`, rejects keycaps, flags, letter-like emoji and text.
 - **Words:** no repeat per team+locale until pool exhausted, then reset; drawable filter for Draw & Guess; dictionary files meet §2 constraints (sizes, allowed characters, all four locales).
-- **Timers:** job ends the active round at expiry with the right outcome; stale job no-op after timer change; lazy expiry on the next request; `turn_seconds` auto-start; icebreaker uses the board timer and `timer.changed`.
+- **Timers:** starting a round never sets a timer; job ends the active round when the host timer expires with the right outcome; stale job no-op after timer change or clear; lazy expiry on the next request; icebreaker uses the board timer and `timer.changed`.
 - **Icebreaker:** room created on entering the phase; host = facilitator (follows transfer); mutations 403 outside the phase, 423 when locked; leaving the phase abandons the round; events on the retro channel; retro deletion cascades; anonymous retro hides GIF authors.
 - **Retention:** 21st ended round prunes the oldest with its guesses and answers.
 - **Snapshot:** constant query count.
-- **Manual two-browser walkthrough** (desktop + phone): live strokes appear while drawing and match after pointer-up; fill identical on both; late joiner sees the drawing; near miss shown only to its author; correct guess ends the turn without showing the text; GIF answers hidden then revealed by the timer; Hangman with accents; Decoded rejects `1️⃣`; icebreaker switches game mid-round; room link guest join; 13th browser refused.
+- **Manual two-browser walkthrough** (desktop + phone): live strokes appear while drawing and match after pointer-up; fill identical on both; late joiner sees the drawing; near miss shown to everyone but flagged "very close" only for its author; correct guess ends the turn without showing the text; GIF answers hidden then revealed by the timer; Hangman with accents; Decoded rejects `1️⃣`; icebreaker switches game mid-round; room link guest join; 13th browser refused.
 
-## 12. Acceptance criteria
+## 13. Acceptance criteria
 
 1. Team members can create up to 10 standalone rooms per team, with team-only or link access; guests join link rooms only, as for retros; deleting a room removes its players and rounds.
 2. A standalone room admits at most 12 online players (soft cap, fail open when Reverb is unreachable).
 3. Draw & Guess, Sprint in one GIF, Hangman and Decoded follow §4, with one shared engine for rooms and icebreakers.
-4. No snapshot, response or broadcast gives a secret word to anyone but the leader before the round ends; correct guess texts are never exposed; near misses reach only their author; GIF answers stay hidden until reveal (§8).
+4. No snapshot, response or broadcast gives a secret word to anyone but the leader before the round ends; correct guess texts are never exposed; near-miss texts are shown to everyone but the "very close" flag reaches only the guesser (accepted hint leak); GIF answers stay hidden until reveal (§8).
 5. Live strokes travel as presence whispers accepted only from the current drawer; committed operations are server-validated, persisted, and rebuild the drawing for late joiners and history.
 6. Words come from per-locale dictionaries (en/fr/es/de), exclude undrawable words from Draw & Guess, and never repeat within a team and locale until the pool is exhausted.
 7. Timer expiry ends the active round server-side (job + lazy check), in rooms and with the board timer in the icebreaker.
@@ -341,13 +349,13 @@ Pest feature tests under `tests/Feature/Games/*`; provider HTTP faked with `Http
 10. GIFs are only fetched through skrum's proxy; the GIF game is unavailable without a provider.
 11. All new strings are translated in en/fr/es/de; suite, phpstan, type-check and lint are green; the walkthrough passes.
 
-## Open decisions
+## Decisions (2026-09-30)
 
-1. **Stroke transport.** (a) Hybrid: live whispers + HTTP-committed strokes *(recommended: live feel with no server load per point, verified sender, persisted drawing for late joiners and history)*; (b) HTTP only, server broadcasts every batch (simplest trust model, but ~25 requests/s per drawer through Octane and visible lag); (c) whispers only, drawer uploads the final drawing (lightest, but late joiners see a blank canvas and history depends on the drawer's client).
-2. **Turn timer.** (a) Optional `turn_seconds` auto-starting the timer each round, default 90 s for rooms and off for icebreakers *(recommended: rooms run without a host clicking the timer every turn)*; (b) manual host timer only (strict QRetro parity, less setting surface); (c) fixed per-game durations (no setting, less flexible).
-3. **Word history scope.** (a) Per team and locale *(recommended: consecutive retros of a team do not replay the same words)*; (b) per room (simpler, but every new icebreaker starts fresh and repeats); (c) none, random with replacement (simplest, repeats noticeable with ~150 drawable words).
-4. **Who creates rooms.** (a) Any team member, delete by creator or workspace Owner/Admin *(recommended: matches who can create retros)*; (b) workspace Owner/Admin only (closer to QRetro's owner/admin/facilitator, but skrum has no team-level roles).
-5. **Player cap enforcement.** (a) Count presence members through Reverb's HTTP API at channel auth, fail open *(recommended: counts who is actually online)*; (b) count players who made a request in the last N minutes (no Reverb call, approximate); (c) no cap (simplest; 12 is only a UI/perf guideline).
-6. **Near-miss visibility.** (a) Shown only to the guesser, not broadcast *(recommended: a near-miss text almost gives the word away)*; (b) shown to everyone in the chat, flagged only for the guesser (possibly closer to QRetro's chat, leaks hints).
-7. **Anonymous retros in the icebreaker.** (a) Names shown in games except Sprint in one GIF authors *(recommended: presence already shows who is there; GIF answers are opinions, closer to card content)*; (b) all game names shown; (c) every player shown as "Participant" with a colour (hard to play Draw & Guess turns).
-8. **Guest names in rooms.** (a) Guest types a display name, prefilled with a random "Adjective Animal" *(recommended: retro join parity plus QRetro's quick start)*; (b) random name assigned, renameable later (QRetro parity, extra rename endpoint); (c) empty display name field as for retros.
+1. Stroke transport: hybrid, live whispers from a verified sender plus HTTP-committed strokes persisted for late joiners and history.
+2. Turn timer: manual host timer only (QRetro parity); no `turn_seconds`, no auto-start; turns end on a correct guess, a host pass, or the host timer reaching zero (server-side expiry job kept).
+3. Word history: per team and locale.
+4. Rooms: any team member creates; delete by the creator or a workspace Owner/Admin.
+5. Player cap: count presence members through Reverb's HTTP API at channel auth, fail open.
+6. Near-miss: text shown to everyone in the chat, "very close" flag only for the guesser (hint leak accepted); correct guesses never shown.
+7. Anonymous retros in the icebreaker: names shown in games except "Sprint in one GIF" answer authors.
+8. Guest names: guest types a display name, prefilled with a random "Adjective Animal".

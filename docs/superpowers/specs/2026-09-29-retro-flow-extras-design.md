@@ -20,14 +20,15 @@ Give a retrospective the structure QRetro offers around the board: an optional t
 - **ROTI** (return on time invested, 1–5) collected at the end of the meeting.
 - **Automatic vote limit** (top-level cards + 3, max 10) next to the existing fixed `votes_per_participant`.
 - **Template catalogue** (all 52 QRetro templates) with translated names, column titles and column descriptions; column descriptions stored on columns and shown under titles; a creation dialog with search and preview.
-- **Optional LLM features** (only when an admin configures a provider key): generate a survey draft from a prompt; generate a results summary automatically when the retro is completed (per-retro opt-out) or on demand.
+- **Optional LLM features** (only when the instance admin configures a provider, §9): generate a survey draft from a prompt; generate a results summary automatically when the retro is completed (per-retro opt-out) or on demand.
+- **Suggested actions and card insights** (same LLM job as the summary): themes (clusters of cards), suggested actions the facilitator can promote to action items or reject, and per-card `sentiment` and `category` (§6.5).
 
 ### Out of scope (deferred)
 
 - Icebreaker games (spec 7). This spec only adds the phase, its toggle and a placeholder screen.
 - Custom or editable health-check statements; health check outside the pre-writing slot.
 - Reactions and comments on surveys; multiple-choice or free-text surveys.
-- "Send to email", Slack/Telegram sharing of results (spec 6), "Games we played" (spec 7), LLM "recommended next steps" / suggested actions (spec 3), automatic group names.
+- "Send to email", Slack/Telegram sharing of results (spec 6), "Games we played" (not in spec 7 either; it could later read the icebreaker rounds spec 7 stores), automatic group names.
 - Action item changes (priority, due date, global list: spec 3).
 - Workspace-level custom templates stored in the DB, template categories.
 - Health data in MCP (spec 5 reads what this spec stores).
@@ -86,7 +87,7 @@ Until spec 7 adds games, the `Icebreaker` phase shows a "Warm-up" panel with one
 | `ai_summary_enabled` | bool, DB default `false` | Automatic results summary at completion (§6.3). Existing retros never opted in; a new retro gets `true` when a provider is configured and the creator did not opt out |
 | `summary` | text, nullable | LLM-generated results summary (plain text, ≤ 2000 characters) |
 | `summary_generated_at` | timestamp, nullable | When `summary` was generated |
-| `summary_status` | string, nullable | `pending`, `ready` or `failed`; `null` = never requested |
+| `summary_status` | string, nullable | `pending`, `ready` or `failed`; `null` = never requested. Covers the whole generation (summary, themes, suggested actions, card insights) |
 
 `votes_per_participant` becomes nullable: `null` means automatic (§7). Existing rows keep their value. `template` stops being cast to the `RetroTemplate` enum and becomes a plain string validated against the catalogue (§8).
 
@@ -94,6 +95,23 @@ Until spec 7 adds games, the `Icebreaker` phase shows a "Warm-up" panel with one
 
 - New `description` (nullable string, ≤ 200 characters).
 - `title` limit raised from 60 to 100 characters (the longest catalogue title is 81), in the migration and in `ColumnsController` validation.
+
+### `cards` — new columns
+
+- `sentiment` (string, nullable): `positive`, `neutral` or `negative`. `category` (string, nullable, ≤ 40 characters): short label in the output language. Both are written only by the generation job (§6.5), never by users, and are `null` when nothing was generated.
+
+### `retro_themes` — new table
+
+- `id` (UUID), `retro_id` (cascade), `name` (string, ≤ 80), `position` (int), timestamps.
+
+### `retro_theme_cards` — new table
+
+- `theme_id` (cascade), `card_id` (cascade). Unique (`theme_id`, `card_id`). A card belongs to at most one theme.
+
+### `suggested_actions` — new table
+
+- `id` (UUID), `retro_id` (cascade), `theme_id` (nullable, null on delete), `content` (string, ≤ 500, the wording), `position` (int), `status` (string: `pending`, `promoted`, `rejected`; default `pending`), `action_item_id` (nullable, null on delete; set when promoted), `handled_by_participant_id` (nullable), `handled_at` (nullable timestamp), timestamps.
+- A suggestion is handled once: only a `pending` suggestion can be promoted or rejected.
 
 ### `health_check_answers` — new table
 
@@ -197,11 +215,11 @@ When the retro is `Completed`, the board page shows two tabs: **Results** (defau
 ### 6.2 Sections
 
 1. **Thanks for participating** — every participant of the retro (avatar and name). This lists who joined, never who wrote what; it is shown on anonymous retros too, like the presence strip.
-2. **Summary** — when `ai_summary_enabled` and a provider is configured: the stored LLM summary; a "Generating the summary…" skeleton while `summary_status` is `pending`; nothing but, for the facilitator, "The summary could not be generated" with a Retry button when `failed`. The facilitator also has "Regenerate" and "Remove" (§6.3), and "Generate summary" when none exists (e.g. opted out). Without a provider the section is absent.
+2. **Summary, themes and suggested actions** — when `ai_summary_enabled` and a provider is configured: the stored LLM summary; a "Generating the summary…" skeleton while `summary_status` is `pending`; nothing but, for the facilitator, "The summary could not be generated" with a Retry button when `failed`. The facilitator also has "Regenerate" and "Remove" (§6.3), and "Generate summary" when none exists (e.g. opted out). Below the summary: the **themes** (name and the cards they group, with the card's sentiment as a small icon and its category as a chip) and the **suggested actions** (§6.5): pending ones with Promote and Reject buttons for those allowed to (§6.5), promoted ones with a link to their action item, rejected ones collapsed under "Dismissed (n)". Without a provider the section is absent.
 3. **Team health** (when `health_check_enabled` and at least one answer) — radar (6 axes, 0–10; axes without answers drawn as gaps and labelled "No answers"), score `x.x/10`, participation `n / m participants`, top strength and growth area with their averages, alignment `n/10` with its level, assessment sentence, and the trend sparkline with delta (members only).
 4. **Surveys** — every survey with its final counts and percentages, and the voters per option when `show_voters` is on (all surveys are closed at this point).
 5. **Top topics** — the 5 top-level cards with the most votes (existing `sortByVotes`), with the number of grouped cards.
-6. **Action items** — as today.
+6. **Action items** — the retro's items, read-only, with the fields and link that spec 3 §8 lists for this section (priority, due date, overdue badge, assignee, status, theme).
 7. **ROTI** — the viewer's own rating control (§6.4) and the distribution (1–5 bars), the average (one decimal) and the respondent count.
 
 ### 6.3 LLM summary (optional)
@@ -220,6 +238,21 @@ When the retro is `Completed`, the board page shows two tabs: **Results** (defau
 - Allowed in `Discussing` and `Completed`. This is an explicit exception to "Completed is read-only": ROTI is feedback on the meeting, not board content. `is_locked` does not block it.
 - In `Discussing` a compact "How was this retro?" prompt (1–5 with labels: Time wasted, Not really worth it, Break-even, Good use of time, Excellent use of time) sits under the action items panel; in `Completed` it is part of the Results view.
 - The distribution and average are sent only in `Completed`, whatever the number of ratings (aligned with the health check); before `Completed` only the respondent count and the viewer's own score are sent. Individual ratings are never exposed.
+
+### 6.5 Suggested actions and card insights (optional)
+
+- **Same job, same conditions:** `GenerateRetroSummary` also produces themes, suggested actions and per-card insights in the same provider call, when a provider is configured and `ai_summary_enabled` is true at `Completed`. It is regenerated by `POST /summary` (Generate, Regenerate, Retry) and cleared by `DELETE /summary`. The input, redaction and privacy notice of §6.3 apply unchanged, with these additions: card ids are sent as opaque per-request indexes (never the UUIDs), and only top-level and grouped card contents already revealed at `Completed` are sent. Nothing is sent per author: no names, ids or authorship, also on named retros.
+- **Output** (validated; anything invalid is dropped, and a fully invalid output fails the job like an invalid summary):
+  - **Themes:** 1–8 clusters `{name, cardIds}`; ids must belong to the retro, a card appears in at most one theme, unknown ids are ignored.
+  - **Suggested actions:** 0–8 items `{content, theme?}` (content ≤ 500 characters, plain text, in the output language of §6.3), each optionally attached to one theme by name.
+  - **Card insights:** `{cardId, sentiment, category}` per card; `sentiment` outside `positive|neutral|negative` or an empty category is stored as `null`. Sentiment and category describe the card, never its author; there is no per-participant aggregate.
+- **Storage:** on success, in one transaction, existing themes, `pending` suggestions and card insights of the retro are replaced. Suggestions already `promoted` or `rejected` are kept (history is not rewritten) and are not proposed again when their wording equals a new one. On failure or `DELETE /summary`, themes, `pending` suggestions and card `sentiment`/`category` are cleared to `null`/empty; handled suggestions stay.
+- **Without a provider, or when the retro opted out:** no themes, no suggestions, `sentiment` and `category` are `null` on every card.
+- **Actions:** promote and reject are the actions `App\Actions\Retros\PromoteSuggestedAction` and `RejectSuggestedAction`, called by the controllers below and by the MCP tools `retro.board.suggested_actions.promote|reject` (spec 5), so both surfaces share rules, locking and broadcasts.
+- **Promote** (`POST /retros/{retro}/suggested-actions/{suggestedAction}/promotion`): creates an action item through spec 3's `CreateActionItem` action with the suggestion's `content` unchanged, no assignee, default priority, the acting participant as author, and a reference to the theme it came from (`action_items.theme_id`, spec 3 §2: nullable, null on theme deletion; `PresentActionItem` exposes `themeId`/`themeName` and the theme name is shown next to the item). Then sets `status = promoted`, `action_item_id`, `handled_by_participant_id`, `handled_at`. Returns the action item and the suggestion. Already handled → 422 "This suggestion was already handled."
+- **Reject** (`DELETE /retros/{retro}/suggested-actions/{suggestedAction}`): sets `status = rejected` with the same handling fields (the row is kept, so it is not proposed again). Already handled → 422.
+- **Who and when:** available in `Discussing` and `Completed`, when the suggestion is `pending`. Allowed to the facilitator and to anyone whom spec 3 lets create action items in that phase; in `Discussing` that is every participant, in `Completed` (where nobody creates action items) only the facilitator and workspace Owners/Admins (`viewer.canManageActionItems`). Others → 403. `is_locked` blocks it in `Discussing` (423) but not in `Completed`. **Exception to "Completed is read-only":** like ROTI, handling a suggestion in `Completed` is allowed, and promoting there creates an action item in a completed retro (spec 3's phase rule on board creation does not apply to this action, which is called with the promote permission above). Promoting or rejecting in other phases → 403.
+- **Results and Discussing UI:** see §13. Promotion broadcasts `action-item.saved` (spec 3) only outside `Completed` and always `insights.changed`.
 
 ## 7. Automatic vote limit
 
@@ -267,7 +300,7 @@ When the retro is `Completed`, the board page shows two tabs: **Results** (defau
 - `config/services.php` → `llm`: `provider` (`anthropic` | `openai`, env `SKRUM_LLM_PROVIDER`), `key` (`SKRUM_LLM_API_KEY`), `model` (`SKRUM_LLM_MODEL`, required), `base_url` (`SKRUM_LLM_BASE_URL`, optional; for `openai` it allows any OpenAI-compatible server, including a self-hosted one).
 - The features exist only when provider, key and model are set. Otherwise: endpoints return 404, buttons are hidden, the snapshot flag `features.llm` is false.
 - `App\Support\Llm\LlmClient` (interface) with `AnthropicClient` and `OpenAiCompatibleClient`, built on `Http::` with a 60 s timeout, bound per request (no static state, Octane-safe). Requests go from the server only (the summary from a queued job that reads the config at run time); the browser never contacts the provider. The key never appears in payloads, logs or error messages.
-- Prompts ask for JSON (survey draft) or plain text (summary); card contents are passed as quoted data, and outputs are validated and rendered as text, so injected instructions cannot produce markup or bypass limits.
+- Prompts ask for JSON (survey draft; summary with themes, suggested actions and card insights, §6.5); card contents are passed as quoted data, and outputs are validated and rendered as text, so injected instructions cannot produce markup or bypass limits.
 - `.env.example` documents the four variables and states that board content is sent to the configured provider when a facilitator uses the survey draft, and automatically when a retro with the AI summary enabled is completed.
 
 ## 10. Endpoints and events
@@ -288,10 +321,12 @@ When the retro is `Completed`, the board page shows two tabs: **Results** (defau
 | POST | `/survey-drafts` | `{prompt}` | facilitator | `{question, description, options[]}` |
 | PUT | `/roti` | `{score}` | participant | `{myScore, respondents}` |
 | DELETE | `/roti` | — | participant | `{myScore: null, respondents}` |
-| POST | `/summary` | — | facilitator | 202 `{status}` (queued job, §6.3) |
+| POST | `/summary` | — | facilitator | 202 `{status}` (queued job, §6.3; also regenerates themes, suggestions and card insights, §6.5) |
+| POST | `/suggested-actions/{suggestedAction}/promotion` | — | facilitator or who may create action items (§6.5) | `{suggestedAction, actionItem}` |
+| DELETE | `/suggested-actions/{suggestedAction}` | — | same | `{suggestedAction}` (rejected) |
 | DELETE | `/summary` | — | facilitator | 204 |
 
-Unknown `statement` → 404. An `optionId` from another survey → 422. `PATCH /settings` also accepts `ai_summary_enabled`. Every mutation locks the retro row like existing endpoints and broadcasts after commit (`RetroBroadcastEvent`, `toOthers()`, report-don't-throw). Error messages are translated.
+Unknown `statement` → 404; a `suggestedAction` of another retro → 404. An `optionId` from another survey → 422. `PATCH /settings` also accepts `ai_summary_enabled`. Every mutation locks the retro row like existing endpoints and broadcasts after commit (`RetroBroadcastEvent`, `toOthers()`, report-don't-throw). Error messages are translated.
 
 ### 10.2 Broadcast events (presence channel `retro.{id}`)
 
@@ -301,9 +336,10 @@ Unknown `statement` → 404. An `optionId` from another survey → 422. `PATCH /
 | `survey.changed` | `{surveyId, version, responseCount}` | refetch `GET /surveys/{id}` (debounced 1 s) when `version` changed or the viewer can see its results; otherwise update `responseCount` |
 | `survey.deleted` | `{surveyId}` | remove |
 | `roti.changed` | `{respondents}` | update count; in `Completed`, refetch the snapshot (debounced 1 s) |
+| `insights.changed` | `{}` | refetch the snapshot (debounced 1 s); sent when themes, suggestions or card insights are generated, cleared, promoted or rejected |
 | `results.changed` | `{}` | refetch the snapshot (also sent when the summary becomes pending, ready or failed, or is removed) |
 
-`settings.changed` also covers the two phase toggles and the vote limit. No payload contains a score, a rating or a chosen option, and none links a participant to one (`health.answered` only says who answered a statement, never with what score).
+`insights.changed` carries no content, and card `sentiment`/`category` never travel in broadcasts other than through the snapshot refetch. `settings.changed` also covers the two phase toggles and the vote limit. No payload contains a score, a rating or a chosen option, and none links a participant to one (`health.answered` only says who answered a statement, never with what score).
 
 ### 10.3 Snapshot additions
 
@@ -312,6 +348,7 @@ Unknown `statement` → 404. An `optionId` from another survey → 422. `PATCH /
 - `healthCheck`: `{statements: [{key, count, answeredBy, myScore}]}` when enabled or when answers exist.
 - `surveys`: survey payloads (§5.2) ordered by position.
 - `roti`: `{myScore, respondents}`.
+- `insights`: `{themes: [{id, name, cardIds}], suggestedActions: [{id, content, themeId, status, actionItemId}]}` in `Discussing` and `Completed` (else `null`), with suggestions and themes empty when nothing was generated. Cards in `cards[]` gain `sentiment` and `category` (`null` when absent), only for revealed cards and identical for every viewer. `viewer.canHandleSuggestions` says whether the viewer may promote or reject (§6.5). Action items gain `themeId`/`themeName` (spec 3 `PresentActionItem`).
 - `results` (only in `Completed`, else `null`): `{participants, health, healthTrend, surveys, roti: {distribution, average, respondents}, summary: {text, generatedAt, status} | null}` (`status`: `pending`, `ready`, `failed`); `health` follows §4.4, `healthTrend` is `null` for guests.
 - Query count stays constant as cards, surveys and answers grow (one query per relation; health and ROTI aggregates computed in SQL).
 
@@ -322,7 +359,8 @@ Unknown `statement` → 404. An `optionId` from another survey → 422. `PATCH /
 - **ROTI:** aggregates only, in `Completed`, whatever the number of ratings.
 - **Cards before `Writing`:** hidden from others, like in `Writing` (§2.4).
 - **Trend:** never sent to guests.
-- **LLM:** only enabled by an admin. The survey draft is triggered by the facilitator. The results summary is sent automatically at completion unless the facilitator opted the retro out (creation dialog or settings, until completion), so content leaves the instance without a per-retro deliberate action; the notice in §6.3 says so and names the provider. Nothing hidden during `Writing` is ever sent (the job runs only in `Completed`), no personal data or author information is sent, and anonymous retros are covered by the same rule (§6.3).
+- **Insights:** themes, suggestions, sentiment and category are derived from revealed content only, sent to the provider without any author information, exposed per card (not per author) and never in broadcasts. Sentiment/category cannot be edited by users and are `null` without a provider or when opted out.
+- **LLM:** only enabled by the instance admin (§9). The survey draft is triggered by the facilitator. The results summary is sent automatically at completion unless the facilitator opted the retro out (creation dialog or settings, until completion), so content leaves the instance without a per-retro deliberate action; the notice in §6.3 says so and names the provider. Nothing hidden during `Writing` is ever sent (the job runs only in `Completed`), no personal data or author information is sent, and anonymous retros are covered by the same rule (§6.3).
 
 ## 12. Changes to the parent spec
 
@@ -330,7 +368,8 @@ Unknown `statement` → 404. An `optionId` from another survey → 422. `PATCH /
 - Redaction table: "Others' card content / author hidden" applies to `HealthCheck` and `Icebreaker` as well as `Writing`.
 - Templates: the `RetroTemplate` enum is replaced by the catalogue (§8); column titles go up to 100 characters and columns gain a description.
 - Votes per participant: nullable (automatic), changeable in every phase before `Voting`.
-- Completed read-only: ROTI (and the facilitator's summary actions) are allowed in `Completed`.
+- Completed read-only: ROTI, the facilitator's summary actions and promoting/rejecting suggested actions (§6.5) are allowed in `Completed`.
+- Cards gain nullable `sentiment` and `category`; `action_items` gains a nullable `theme_id`, defined in spec 3 §2 (its model, `CreateActionItem` and `PresentActionItem` carry it, §6.5).
 - The parent "summary view (top-voted cards + action items)" becomes the Results view (§6).
 
 ## 13. UI
@@ -341,6 +380,7 @@ Unknown `statement` → 404. An `optionId` from another survey → 422. `PATCH /
 - **Surveys:** a leftmost "Surveys" column appears in `Writing`–`Discussing` when the retro has surveys. Each survey card shows question, description, options as buttons; after answering (or when closed) each option shows a percentage bar and count, the own choice is marked, voter avatars (names on hover) under each option when "Show who answered" is on, "n responses" at the bottom; facilitator ⋮ menu: Edit (only without responses), Close / Reopen, Delete. Toolbar "Add survey" (facilitator) opens a dialog with question, description, dynamic option list (2–10), a "Show who answered" switch (off by default; disabled with an explanatory hint on anonymous retros), and, when `features.llm`, a "Generate from a prompt" field.
 - **Results view** (§6) with inline-SVG `HealthRadar` and `HealthTrend` components; `prefers-reduced-motion` respected (no chart animation).
 - **ROTI:** five labelled buttons in `Discussing` (under action items) and in Results.
+- **Suggested actions and themes:** in `Discussing`, a "Suggestions" panel next to the action items panel lists themes and pending suggestions with Promote / Reject (for those allowed, §6.5; others see them read-only); in `Completed`, the same content is part of the Results view. Promote turns the row into a link to the new action item, which shows its theme name. Card headers show the sentiment icon and category chip when present. Nothing appears without a provider or when the retro opted out.
 - **Settings dialog:** switches "Health check" and "Icebreaker"; vote limit becomes "Automatic" or a number; "Automatic AI summary" switch (only when `features.llm`, disabled once `Completed`) with the privacy notice of §6.3.
 - **Column header:** description under the title; column menu edits it.
 - **Team page:** "New retrospective" dialog (§8.4).
@@ -366,8 +406,9 @@ Pest feature tests alongside `tests/Feature/Retros/*`; LLM calls faked with `Htt
 - **Templates:** every catalogue key creates a retro with its columns and descriptions in the creator's locale; unknown key → 422; existing keys still resolve; all four locales have every template key; title up to 100 characters accepted; description editable with cards, title not.
 - **Results:** `results` only in `Completed`; participants listed; `POST`/`DELETE /summary` facilitator-only, `Completed`-only, 404 without provider; survey draft validated (invalid JSON or 11 options → 502) and not persisted.
 - **AI summary:** with `Queue::fake()`, moving to `Completed` dispatches `GenerateRetroSummary` only when a provider is configured and `ai_summary_enabled` is true (not when opted out, not without provider); new retros default `ai_summary_enabled` true with a provider and false without; the flag is togglable by the facilitator until `Completed` (422 without provider, 403 for others, rejected in `Completed`); running the job with `Http::fake()` stores summary, timestamp, `ready` and broadcasts `results.changed`; the request body contains no participant names or ids, no author information (also on anonymous retros) and only revealed content; the job aborts without calling the provider if the retro is no longer `Completed`; provider failure → retries, then `failed` with no summary, results still render, and `POST /summary` re-queues (202, `pending`); a second `POST` while pending dispatches no second job; `DELETE` clears the summary.
+- **Suggested actions and insights:** with `Http::fake()` returning themes, suggestions and card insights, the job stores themes with card ids, `pending` suggestions and per-card `sentiment`/`category`; invalid sentiment → `null`, unknown card ids ignored, a card in two themes kept once; the request body has no participant names or ids, no author information (also on anonymous retros), and card ids are opaque indexes; regeneration replaces pending suggestions and cards' insights but keeps promoted/rejected ones and does not re-propose an identical handled wording; `DELETE /summary` and failure clear themes, pending suggestions and insights; without provider or when opted out: no themes, no suggestions, `sentiment`/`category` null on all cards; promote creates an action item with unchanged wording and `theme_id`, sets `promoted`, `action_item_id` and handler, and calls spec 3's `CreateActionItem`; reject sets `rejected`; a second promote/reject → 422; allowed in `Discussing` (participants per spec 3; 423 when locked) and in `Completed` for the facilitator and workspace Owners/Admins only (a plain participant or guest → 403; locked does not block), 403 in other phases; another retro's suggestion → 404; `insights` is `null` before `Discussing`; snapshot `sentiment`/`category` are the same for every viewer and never in broadcasts.
 - **Translations:** `TranslationKeysTest` passes for JSON and `templates.php`.
-- **Manual two-browser walkthrough** (one guest): create a retro from the dialog with health check and icebreaker on; answer the health check in both browsers (avatars appear, no scores); icebreaker panel; surveys created, answered, results appear only after answering, closed; automatic vote limit shown; complete; Results view with radar, alignment, surveys, ROTI (distribution visible from the first rating), trend visible to the member and not to the guest; a survey with "Show who answered" on shows voters, and the switch is disabled on an anonymous retro; with an LLM key configured, generate a survey draft, complete a retro and see the summary appear automatically (and a retro created with the summary off gets none until the facilitator generates one); without a key, no LLM control anywhere.
+- **Manual two-browser walkthrough** (one guest): create a retro from the dialog with health check and icebreaker on; answer the health check in both browsers (avatars appear, no scores); icebreaker panel; surveys created, answered, results appear only after answering, closed; automatic vote limit shown; complete; Results view with radar, alignment, surveys, ROTI (distribution visible from the first rating), trend visible to the member and not to the guest; a survey with "Show who answered" on shows voters, and the switch is disabled on an anonymous retro; with an LLM key configured, generate a survey draft, complete a retro and see the summary, themes, suggested actions and card sentiment/category appear automatically, promote one suggestion (an action item appears with the same wording and its theme) and reject another (and a retro created with the summary off gets none until the facilitator generates one); without a key, no LLM control anywhere.
 
 Type-check and lint stay green; no frontend test runner is added.
 
@@ -382,7 +423,8 @@ Type-check and lint stay green; no frontend test runner is added.
 7. The automatic vote limit equals min(10, top-level cards + 3) and fixed limits behave as before (§7).
 8. The catalogue offers the templates of §8 in en/fr/es/de with column descriptions stored and shown; the creation dialog previews them and sets the new options.
 9. LLM features appear only with a configured provider, run server-side, send no personal data or hidden content, the automatic summary is opt-out per retro (creation and settings, until completion) with a privacy notice, and every screen works without them (§9, §6.3, §5.3).
-10. All new strings are translated in en/fr/es/de; suite, phpstan, type-check and lint are green; no new dependency; walkthrough passes.
+10. Themes, suggested actions and per-card sentiment/category are generated with the summary (same job, conditions and redaction, §6.5); they can be promoted (wording and theme kept) or rejected once, in `Discussing` and `Completed`, by those allowed; without a provider or when opted out, there are none and sentiment/category are `null`.
+11. All new strings are translated in en/fr/es/de; suite, phpstan, type-check and lint are green; no new dependency; walkthrough passes.
 
 ## Decisions (2026-09-29)
 
@@ -395,3 +437,4 @@ Type-check and lint stay green; no frontend test runner is added.
 7. LLM providers: Anthropic and any OpenAI-compatible endpoint (configurable base URL).
 8. Results summary: generated automatically on completion by a queued job when a provider is configured, with a per-retro opt-out (`ai_summary_enabled`, set at creation, editable until completion); the facilitator can regenerate or retry on demand.
 9. ROTI: average and distribution always shown (aligned with health check).
+10. Suggested actions, themes and card sentiment/category are generated with the AI summary (added 2026-09-30 for the MCP contract).

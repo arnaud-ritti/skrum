@@ -33,7 +33,7 @@ Turn action items from a per-retro checklist into the team's follow-up list, on 
 ### Dependencies
 
 - None new. Date input uses the native `<input type="date">`; dates are formatted with `Intl.DateTimeFormat` in the active locale.
-- Spec 2 (Retro flow extras) may add phases before `Writing`; the carry-over panel is phase-independent, so it needs no change when those land.
+- Spec 2 (Retro flow extras) adds the optional phases `HealthCheck` and `Icebreaker` before `Writing`; the carry-over panel is phase-independent, so it needs no change for them. Spec 2's Results view replaces `completed-summary.tsx` (§8), and its suggested-action promotion creates items through `CreateActionItem` with a theme reference (§2, §3).
 
 ## 2. Data model
 
@@ -47,12 +47,13 @@ Turn action items from a per-retro checklist into the team's follow-up list, on 
 | `completed_at` | nullable timestamp | Status: `null` = open, set = completed. Replaces `is_done`. |
 | `assignee_user_id` | nullable `foreignUuid` → `users`, null on delete | Assignee when it is a member (user). |
 | `assignee_participant_id` | existing, nullable | Now only used when the assignee is a **guest** participant of the item's own retro. |
+| `theme_id` | nullable `foreignUuid` → `retro_themes` (spec 2 §3), null on delete | Theme the item was promoted from (spec 2 §6.5). Set only by a promotion, never client-writable. |
 
 - Backfill, in the same migration: `completed_at = updated_at` where `is_done`; for rows whose `assignee_participant_id` points to a participant with a `user_id`, set `assignee_user_id` to it and clear `assignee_participant_id`. Then drop `is_done`.
 - Check constraint: `assignee_user_id` and `assignee_participant_id` are never both non-null.
 - Indexes: (`team_id`, `completed_at`, `due_on`), (`assignee_user_id`, `completed_at`). The existing `retro_id` index stays.
 - `created_by_participant_id` is unchanged. The item's **author** is that participant; for a member, the author is also matched by `participant.user_id` when acting outside the board.
-- Model: `ActionItem` gains `team()`, `assigneeUser()`, `comments()`, casts (`priority` → enum, `due_on` → `date`, `completed_at` → `datetime`), helpers `isCompleted()`, `isOverdue(CarbonInterface $today)`. `Team` gains `actionItems()`.
+- Model: `ActionItem` gains `team()`, `assigneeUser()`, `comments()`, `theme()`, casts (`priority` → enum, `due_on` → `date`, `completed_at` → `datetime`), helpers `isCompleted()`, `isOverdue(CarbonInterface $today)`. `Team` gains `actionItems()`.
 - Factory states: `completed()`, `overdue()`, `assignedTo(User)`, `assignedToGuest(Participant)`, `priority(ActionItemPriority)`.
 
 ### `action_item_comments` — new table
@@ -94,15 +95,17 @@ For a retro R of team T, **carried items** are the action items of T whose retro
 
 Guests have no access to workspace endpoints (they are not authenticated users of the workspace), so a guest acts only on their own retro's items, only in `Discussing`.
 
+**Promotion exception (spec 2 §6.5):** promoting a suggested action calls `CreateActionItem` with the suggestion's content and `theme_id`, in `Discussing` (same lock rule as the board) or in `Completed` (facilitator and workspace Owners/Admins only, lock ignored). This is the only way an item is created in a `Completed` retro.
+
 ## 4. Permissions
 
-Model (Decision 2): QRetro parity — the author, the facilitator and workspace admins edit and delete; the assignee completes; the facilitator can do everything during the meeting.
+Model (Decision 2): QRetro parity — the author, the facilitator and workspace Owners/Admins edit and delete; the assignee completes; the facilitator can do everything during the meeting.
 
 Let the **managers** of an item be: its author (the creating participant; for members also any request by the same user), the facilitator of the item's retro, and workspace Owners/Admins.
 
 | Action | Allowed for |
 |---|---|
-| Create | Any participant of the retro, on the board, in `Discussing` |
+| Create | Any participant of the retro, on the board, in `Discussing`; promotions per §3 |
 | Edit content, priority, due date, assignee | Managers |
 | Delete | Managers |
 | Complete / reopen | Managers, the assignee (member: same user; guest: same participant), and the facilitator of any retro of the same team that is not `Completed` (the "review facilitator") |
@@ -158,6 +161,7 @@ Let the **managers** of an item be: its author (the creating participant; for me
   isMine: bool,                            // viewer is the author
   commentCount,
   source: {retroTitle, retroCreatedAt, retroUrl|null},  // retroUrl null for viewers who cannot open the retro
+  themeId: uuid|null, themeName: string|null,          // spec 2 theme the item was promoted from
   createdAt
 }
 ```
@@ -230,9 +234,9 @@ All new strings in `lang/{en,fr,es,de}.json`, including "Action items are not an
 - Opens automatically once per viewer and retro, on first load while the phase is `Writing` (`localStorage` `skrum.carriedSeen.{retroId}`), so the review happens at the start.
 - Footer link "Open the action items page".
 
-### Completed summary (`completed-summary.tsx`)
+### Results view — action items (spec 2 §6.2, which replaces `completed-summary.tsx`)
 
-- Lists the retro's items with priority, due date, overdue badge, assignee, status (read-only), plus link "View the team's action items" (members only).
+- Lists the retro's items with priority, due date, overdue badge, assignee, status and theme name when set (read-only), plus link "View the team's action items" (members only).
 
 ### Global page (`resources/js/pages/action-items/index.tsx`)
 
@@ -246,14 +250,15 @@ All new strings in `lang/{en,fr,es,de}.json`, including "Action items are not an
 
 ## 9. Future hooks (not built here)
 
-- **MCP (spec 5)**: tools `retro.actions.list/create/update/complete`, `retro.board.actions.list` map onto `ActionItemQuery`, `ActionItemPermissions`, and new single-purpose actions `CreateActionItem`, `UpdateActionItem`, `SetActionItemStatus`, `DeleteActionItem`, `AddActionItemComment` in `app/Actions/ActionItems/`. Controllers must call these actions (no logic in controllers) so MCP reuses the same validation, permissions and broadcasts. `ActionItemActor` already accepts a user without a participant.
-- **Jira/Linear export (spec 6)**: will add its own table (e.g. `action_item_external_links`); nothing is reserved now. The deep link `?item=` and `PresentActionItem` give a stable URL and payload for the issue body.
-- **Notifications (spec 6)**: `SetActionItemStatus` and `UpdateActionItem` dispatch plain Laravel events `ActionItemAssigned`, `ActionItemCompleted` (non-broadcast, no listeners yet) for integrations to subscribe to.
+- **MCP (spec 5)**: tools `retro.actions.list/create/update/complete`, `retro.board.actions.list` map onto `ActionItemQuery`, `ActionItemPermissions`, and new single-purpose actions `CreateActionItem`, `UpdateActionItem`, `SetActionItemStatus`, `DeleteActionItem`, `AddActionItemComment` in `app/Actions/ActionItems/`. Controllers must call these actions (no logic in controllers) so MCP reuses the same validation, permissions and broadcasts. `ActionItemActor` already accepts a user without a participant. `CreateActionItem` also serves spec 2's promotion (§3), with an optional `theme_id`.
+- **Jira/Linear export (spec 6)**: adds its own table `action_item_external_links` and `PresentActionItem.externalLinks` (spec 6 §3, §7); nothing is reserved here. The deep link `?item=` and `PresentActionItem` give a stable URL and payload for the issue body.
+- **Notifications**: `SetActionItemStatus` and `UpdateActionItem` dispatch plain Laravel events `ActionItemAssigned`, `ActionItemCompleted` (non-broadcast, no listeners) for a later integration to subscribe to; spec 6 leaves them unsubscribed (event notifications are deferred there).
 
 ## 10. Changes to the parent spec
 
 - Parent AC30 ("any participant can create, edit, complete and delete action items and assign them to a participant") becomes: any participant creates in `Discussing`; edit/delete/complete follow §4; assignees are team members or guests of the retro (§3). The parent spec gets a note pointing here, as for the vote-totals change.
 - Parent "Out of scope: action-item carry-over across retros" is delivered by this spec.
+- Parent AC16 ("Completed retros are read-only"): besides spec 2's exceptions, the workspace endpoints (§3) change items of a `Completed` retro; the board stays read-only.
 
 ## 11. Error handling
 
@@ -278,6 +283,7 @@ Pest feature tests in `tests/Feature/Retros/ActionItemsTest.php` (extended), new
 - **Global page**: ordering; each filter; default `status=open`; unknown values ignored; `item` deep link; constant query count; Members see only their teams, Owners/Admins all teams.
 - **Comments**: create/edit/delete with validation (1–500); author-only edit; manager delete; from board (participant author) and workspace (user author); count in payloads; cascade on item deletion.
 - **Retro deletion** removes its items and comments.
+- **Theme**: `theme_id` is ignored when sent to any board or workspace endpoint; `themeId`/`themeName` are presented when set and become `null` when the theme is deleted (promotion itself is tested in spec 2).
 - **Walkthrough** (two browsers, a member and a guest): create items with priority, due date (one overdue), member and guest assignees; guest completes their own item; complete retro; start a new retro of the same team → panel opens in `Writing`, member completes a carried item and the other member's panel updates live, guest sees no panel; global page filters, deep link, reassign the guest item to a member; on an anonymous retro the notice shows and creators and comment authors are named.
 
 Type-check and lint stay green; no frontend test runner is added.
@@ -298,7 +304,7 @@ Type-check and lint stay green; no frontend test runner is added.
 ## Decisions (2026-09-29)
 
 1. **Assignee identity:** a team member (user) or a guest participant of the item's retro.
-2. **Permissions:** QRetro model — author, facilitator and workspace admins edit/delete; the assignee can complete; the facilitator can do everything during the meeting.
+2. **Permissions:** QRetro model — author, facilitator and workspace Owners/Admins edit/delete; the assignee can complete; the facilitator can do everything during the meeting.
 3. **Carry-over form:** phase-independent "Previous action items" panel, auto-opened in `Writing`; no new phase.
 4. **Guests and carried items:** carried items from previous retros are hidden from guests.
 5. **Anonymity:** action items and action-item comments are always named, even on anonymous retros (deliberately not the recommendation); the create form and comment box show a notice on anonymous retros. Card and card-comment anonymity is unchanged.

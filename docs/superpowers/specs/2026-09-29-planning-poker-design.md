@@ -36,7 +36,7 @@ Give each team a realtime planning-poker room: the facilitator lists tasks, pick
 
 ## 2. Data model
 
-### Player identity: a parallel `poker_players` table (Open decision 1)
+### Player identity: a parallel `poker_players` table (Decision 1)
 
 `participants` has a non-null `retro_id`, a unique (`retro_id`, `user_id`), a per-retro guest cookie and is referenced by cards, votes, comments and action items. Poker gets its own table with the same shape rather than a polymorphic participant, so no retro query, policy or redaction test changes. Shared behaviour is extracted, not duplicated:
 
@@ -62,7 +62,7 @@ Give each team a realtime planning-poker room: the facilitator lists tasks, pick
 - **Special cards** `?` and `☕` are never counted in results, in any deck.
 - **Numeric deck**: a deck is numeric when every non-special card parses as a number (`½` = 0.5, otherwise a decimal matching `^\d+(\.\d+)?$`). Built-in decks: all numeric except T-shirt. A custom deck is numeric or not by the same rule. `PokerDeck::numericValue(string $card): ?float` is the single parser.
 - **Rounds**: a task has 0..n rounds; only its highest-numbered round (the *latest round*) accepts votes, and only while unrevealed. "Re-vote" creates round n+1; earlier rounds and their votes are kept forever (history).
-- **External reference** columns exist so spec 6 can import and write back without a migration on a live table; spec 4 never writes them, validation rejects them from clients, and task payloads carry `external: null` or `{source, id, url}`.
+- **External reference** columns exist so spec 6 can import and write back without a migration on a live table; spec 4 never writes them, validation rejects them from clients, and task payloads carry `external: null` or `{source, id, url}`. Spec 6 adds the remaining sync columns in its own migration (`external_site`, `external_key`, `external_assignee`, `external_estimate`, `external_refreshed_at`, `needs_sync`, `sync_error`, `synced_at`, spec 6 §3) and extends the `external` payload (spec 6 §6.6).
 - **Game ended** (`ended_at` set) is read-only for everyone except "Reopen" and "Delete" (§3).
 
 ## 3. Roles and rules
@@ -79,14 +79,14 @@ Give each team a realtime planning-poker room: the facilitator lists tasks, pick
 Initially the creator. Facilitator-only actions: select the current task, reveal, re-vote, set/clear the estimate, delete or reorder tasks, change settings (title, deck, guest access), regenerate the guest link, end/reopen the game.
 
 - **Transfer**: the facilitator hands over to any team member (or workspace Owner/Admin, added as a player if needed). Guests never facilitate.
-- **Take over** (Open decision 4): any non-guest player who can view the team may make themselves facilitator at any time ("Take control"). Poker sessions span days and a missing facilitator would otherwise freeze the game; the retro rule (transfer only) stays unchanged.
+- **Take over** (Decision 4): any non-guest player who can view the team may make themselves facilitator at any time ("Take control"). Poker sessions span days and a missing facilitator would otherwise freeze the game; the retro rule (transfer only) stays unchanged.
 
-### Tasks (Open decision 3)
+### Tasks (Decision 3)
 
 - Add and edit (title, description): the facilitator and any non-guest player. Guests cannot add or edit tasks.
 - Delete and reorder: facilitator only. Deleting a task deletes its rounds and votes; deleting the current task clears `current_task_id`.
 - At most 200 tasks per game (422 beyond). New tasks are appended (position = max + 1).
-- Allowed while the game is not ended; the title and description of a task can be edited in any round state.
+- Allowed while the game is not ended; the title and description of a task can be edited in any round state, except for tasks imported by spec 6, whose title and description are read-only (spec 6 §6.4).
 
 ### Voting flow
 
@@ -100,7 +100,7 @@ Initially the creator. Facilitator-only actions: select the current task, reveal
    - `consensus: true` when there is at least one countable vote and all countable votes are equal.
    - No countable vote → `average: null`, `mode: []`, `consensus: false`.
 5. **Re-vote** (`POST tasks/{task}/rounds`): facilitator only, for the current task, only when its latest round is revealed (422 otherwise). Creates the next round; the existing estimate is kept until a new one is set.
-6. **Final estimate** (`PUT tasks/{task}/estimate`) (Open decision 2): facilitator only; `value` must be a non-special card of the game's deck; allowed only when the task's latest round is revealed and has at least one countable vote (422 "Reveal the votes before setting an estimate."). Stores `estimate`, `estimate_numeric`, `estimated_at`. `value: null` clears it at any time. The UI preselects `nearestCard` (numeric) or the single mode (non-numeric; none on a tie).
+6. **Final estimate** (`PUT tasks/{task}/estimate`) (Decision 2): facilitator only; `value` must be a non-special card of the game's deck; allowed only when the task's latest round is revealed and has at least one countable vote (422 "Reveal the votes before setting an estimate."). Stores `estimate`, `estimate_numeric`, `estimated_at`. `value: null` clears it at any time. The UI preselects `nearestCard` (numeric) or the single mode (non-numeric; none on a tie). Spec 6 dispatches the tracker write-back from this action for imported tasks (spec 6 §6.5); spec 5's `poker.game.task.reveal` chains reveal and this action with the same preselection rule.
 
 ### Settings
 
@@ -124,7 +124,7 @@ Game-scoped, prefix `poker/{game}` (`whereUuid`, middleware `ResolvePokerPlayer`
 |---|---|---|---|---|
 | GET | `/` | — | player | Inertia `poker/show` with snapshot |
 | GET | `snapshot` | — | player | snapshot JSON |
-| DELETE | `/` | — | facilitator, ws Owner/Admin | 204, `game.deleted` |
+| DELETE | `/` | — | facilitator, workspace Owner/Admin | 204, `game.deleted` |
 | PATCH | `settings` | `{title?, deck?, customCards?, guestAccessEnabled?}` | facilitator | 204, `game.changed` |
 | PUT | `status` | `{ended: bool}` | facilitator | 204, `game.changed` |
 | POST | `guest-token` | — | facilitator | `{guestUrl}`, `game.changed` |
@@ -143,7 +143,7 @@ Game-scoped, prefix `poker/{game}` (`whereUuid`, middleware `ResolvePokerPlayer`
 
 Join: `GET /poker/join/{guestToken}` and `POST /poker/join/{guestToken}` (`throttle:10,1`), same behaviour as `RetroJoinsController`; invalid or disabled link → 404 page "This link is no longer valid".
 
-Each mutation: resolve player → authorize → persist in a transaction with `lockForUpdate` on the game row (votes also lock the round row, as `CardVotesController` does) → re-check rules inside the lock → dispatch the event after commit to others. Controllers live in `app/Http/Controllers/Poker/`, actions in `app/Actions/Poker/`, a `PokerGuard` mirrors `RetroGuard` (`facilitator`, `notEnded`, `canEditTasks`, `openRound`).
+Each mutation: resolve player → authorize → persist in a transaction with `lockForUpdate` on the game row (votes also lock the round row, as `CardVotesController` does) → re-check rules inside the lock → dispatch the event after commit to others. Controllers live in `app/Http/Controllers/Poker/`, actions in `app/Actions/Poker/` (among them `CreatePokerGame`, `AddPokerTask`, `SelectPokerTask`, `RevealPokerRound`, `SetPokerEstimate`, which the MCP tools of spec 5 and the imports of spec 6 reuse), a `PokerGuard` mirrors `RetroGuard` (`facilitator`, `notEnded`, `canEditTasks`, `openRound`).
 
 ### Realtime
 
@@ -172,7 +172,7 @@ Each mutation: resolve player → authorize → persist in a transaction with `l
 |---|---|---|
 | Own vote value | visible to self | visible |
 | Others' vote values | never | visible to all players |
-| Who has voted | visible (face-down card) (Open decision 7) | visible |
+| Who has voted | visible (face-down card) (Decision 7) | visible |
 | Vote count | visible | visible |
 | Result (average, distribution, mode, consensus) | absent | visible |
 
@@ -211,7 +211,7 @@ Snapshot (`GET snapshot` and the Inertia page prop):
 
 ## 7. UI
 
-### Team page (`resources/js/pages/teams/show.tsx`, Open decision 6)
+### Team page (`resources/js/pages/teams/show.tsx`, Decision 6)
 
 - New "Planning poker" section under Retrospectives: "New game" form (title, default "Poker {date}"; deck select showing each deck with its cards like `screens/poker-systems.png`; custom deck → comma-separated input plus `?`/`☕` checkboxes), then two lists: Active games and Ended games, each row with title, deck, "12 tasks · 9 estimated · 34 points", last activity. Link "Estimation history".
 
@@ -261,7 +261,7 @@ Pest feature tests in `tests/Feature/Poker/`, `Event::fake()` for broadcasts; un
 - **Markdown:** `<script>` escaped; `javascript:` links dropped; images rendered as links, never `<img>`; external links carry `rel="noopener noreferrer nofollow"`.
 - **Access and guests:** team member auto-joins; non-member 403; guest join, cookie resume, regeneration signs guests out, disabled access blocks; guest cannot reach team pages or estimates page; retro guest cookie does not grant poker access and vice versa.
 - **Facilitation:** transfer to a team member; take over by a team member; guests can neither.
-- **Settings:** deck change blocked once votes exist; end/reopen; delete by facilitator or ws Owner/Admin only.
+- **Settings:** deck change blocked once votes exist; end/reopen; delete by facilitator or workspace Owner/Admin only.
 - **Broadcast auth:** `presence-poker.{id}` authorized for players only, presence data shape; unknown or malformed ids 403.
 - **Snapshot:** constant query count as tasks, rounds and players grow.
 - **Regression:** existing retro suites untouched and green after the `HasGuestIdentity` / `GuestCookie` extraction.

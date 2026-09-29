@@ -1,9 +1,9 @@
 # Skrum — Integrations — Design
 
 Date: 2026-09-29
-Status: Draft — open decisions pending
+Status: Approved decisions, awaiting spec review
 Parent spec: `docs/superpowers/specs/2026-09-29-retro-board-core-design.md` (tenancy, roles, guests, redaction, i18n and packaging rules apply unless this spec says otherwise — see §14). Latest conventions: `docs/superpowers/specs/2026-09-29-board-engagement-design.md`.
-Builds on the draft specs `2026-09-29-retro-flow-extras-design.md` (Results view, summary, ROTI), `2026-09-29-action-items-v2-design.md` (action items, `ActionItemPermissions`, deep link) and `2026-09-29-planning-poker-design.md` (poker tasks with reserved external-reference columns). Their "Open decisions" recommendations are taken as the working assumption; §1 lists the ones this spec depends on.
+Builds on specs `2026-09-29-retro-flow-extras-design.md` (Results view, summary, ROTI, suggested actions), `2026-09-29-action-items-v2-design.md` (action items, `ActionItemPermissions`, deep link) and `2026-09-29-planning-poker-design.md` (poker tasks with reserved external-reference columns). Their decisions are settled (2026-09-29/30); §1 lists the ones this spec depends on. It also backs the poker tools of the MCP contract `docs/superpowers/research/qretro/mcp-readme.md` (§9.1).
 Research: `docs/superpowers/research/qretro/` (QRetro parity roadmap, spec 6 of 7; `docs-inventory.md` § Integrations and § Planning poker, `research.md` § Integrations)
 
 ## 1. Intent
@@ -29,19 +29,20 @@ Connect a team's retros, poker games and action items to the tools it already us
 - Slack slash commands or interactive buttons; Slack user sign-in (SSO is the core spec's business).
 - Several Slack channels or Telegram chats per team; several Jira sites or Linear workspaces per team.
 - Assignee mapping on export (skrum users → Jira/Linear accounts), Jira priority mapping, reporter import.
-- Game room invites (spec 7 can reuse the link share of §5.1).
-- Personal (per-user) integrations; MCP tools for integrations (spec 5 is independent).
+- Game room invites (not in spec 7 either; a later change can reuse the link share of §5.1).
+- Personal (per-user) integrations; MCP tools for Slack, Telegram, email and action item export (the MCP tools this spec backs are the poker ones, §9.1).
 
 ### Dependencies
 
 - **None new.** OAuth 2.0 flows, the Slack, Telegram, Jira and Linear APIs, and Jira ADF conversion are written against Laravel's HTTP client (`Http::`), following the provider-interface pattern of `app/Support/Gifs/GifProvider.php`. Socialite (installed for SSO) is not used: it models a user signing in, not a team-owned token with refresh and scopes, and a Slack/Atlassian/Linear driver would need `socialiteproviders/*` packages. No Slack, Atlassian or Linear SDK.
 - Uses the existing queue worker (`docker/s6-rc.d/queue/run`, database queue) and scheduler services, and Laravel's `encrypted:array` cast (APP_KEY; `APP_PREVIOUS_KEYS` keeps old credentials readable after key rotation).
 
-### Working assumptions from earlier draft specs
+### Settled by earlier specs
 
-- Spec 2: Results view exists for `Completed` retros with `results.changed` refetch; ROTI aggregates only with ≥ 3 ratings (OD 1/5); the LLM summary is generated on demand and stored in `retros.summary` (OD 8).
-- Spec 3: assignees are team members or guests of the retro (OD 1); managers = author, facilitator, workspace Owner/Admin (OD 2, `ActionItemPermissions::canEdit`); creators hidden on anonymous retros (OD 5); `?item=` deep link on `/w/{workspace}/action-items`.
-- Spec 4: separate `poker_players` (OD 1); final estimate is any non-special deck card (OD 2); facilitator and non-guest players add tasks (OD 3); `poker_tasks.external_source/external_id/external_url` exist (OD 8).
+- Spec 2 (retro flow extras): Results view exists for `Completed` retros with `results.changed` refetch; health and ROTI averages are always shown whatever the number of answers (decisions 1, 9); the survey "Show who answered" switch is forced off on anonymous retros (decision 2); the AI summary is generated automatically on completion by a queued job unless the retro opted out (`ai_summary_enabled`) or no provider is configured, stored in `retros.summary` with `summary_status` (decision 8); themes, suggested actions and card sentiment/category come from the same job (decision 10).
+- Spec 3 (action items v2): assignees are team members or guests of the retro (decision 1); managers = author, facilitator, workspace Owner/Admin (`ActionItemPermissions::canEdit`, decision 2); action items and their comments are always named, even on anonymous retros, while card authorship stays hidden (decision 5); `?item=` deep link on `/w/{workspace}/action-items`.
+- Spec 4 (planning poker): separate `poker_players` (decision 1); final estimate is any non-special deck card, set by `SetPokerEstimate` (decision 2); facilitator and non-guest players add tasks (decision 3); `poker_tasks.external_source/external_id/external_url` exist (decision 8).
+- MCP contract (`docs/superpowers/research/qretro/mcp-readme.md`): the poker tools `poker.sources.list`, `poker.iterations.list`, `poker.game.tasks.import` and `poker.game.task.sync` are backed by this spec's services (§9.1).
 
 ## 2. Configuration and availability
 
@@ -75,7 +76,7 @@ All tables use UUID primary keys and `foreignUuid`, as the rest of the schema. M
 |---|---|---|
 | `team_id` | FK → teams, cascade | Owner team |
 | `provider` | string | `IntegrationProvider` |
-| `status` | string | Enum `IntegrationStatus`: `Active`, `SetupRequired` (Jira with several sites, §4.3), `ReconnectRequired` |
+| `status` | string | Enum `IntegrationStatus`: `Active` (`active`), `SetupRequired` (`setup_required`, Jira with several sites, §4.3), `ReconnectRequired` (`reconnect_required`) |
 | `access` | string | `read` or `write` (Jira/Linear); `write` for Slack/Telegram |
 | `credentials` | text, `encrypted:array` cast, `$hidden` | Slack: `webhook_url`, `access_token`. Jira/Linear: `access_token`, `refresh_token`, `expires_at`. Telegram: none (bot token is instance-wide) |
 | `settings` | json | Non-secret metadata, see below |
@@ -121,7 +122,7 @@ All tables use UUID primary keys and `foreignUuid`, as the rest of the schema. M
 
 ## 4. Connections
 
-### 4.1 Slack (OAuth v2, incoming webhook — Open decision 2)
+### 4.1 Slack (OAuth v2, incoming webhook — decision 2)
 
 - Connect → redirect to `https://slack.com/oauth/v2/authorize` with `client_id`, `scope=incoming-webhook`, `redirect_uri`, `state`. Slack's own consent screen asks the installer for the workspace and **channel**; that is the channel picker. Changing channel = "Reconnect".
 - Callback exchanges the code at `https://slack.com/api/oauth.v2.access`; stores `incoming_webhook.url` (validated to start with `https://hooks.slack.com/`, otherwise the connection is refused) and `access_token` in `credentials`, and `team`, `incoming_webhook.channel/channel_id/configuration_url` in `settings`.
@@ -129,7 +130,7 @@ All tables use UUID primary keys and `foreignUuid`, as the rest of the schema. M
 - Check: `auth.test` with the access token; `invalid_auth`, `token_revoked`, `account_inactive` → `ReconnectRequired`.
 - Disconnect: `auth.revoke` (best effort, failure ignored), then the row is deleted.
 
-### 4.2 Telegram (instance bot, long polling — Open decision 3)
+### 4.2 Telegram (instance bot, long polling — decision 3)
 
 - The instance admin creates a bot with BotFather and sets `TELEGRAM_BOT_TOKEN`. skrum never receives inbound HTTP from Telegram: `php artisan skrum:telegram-poll` calls `getUpdates` (long poll, `timeout=50`, `allowed_updates=["message","channel_post","my_chat_member"]`) and is scheduled every minute with `withoutOverlapping()->runInBackground()`, so commands are handled within seconds.
 - If Telegram answers `409 Conflict` (a webhook is set on the bot, or another instance polls it), the command logs one warning per hour and the integrations page shows "The Telegram bot is used elsewhere. Remove its webhook or use a dedicated bot."
@@ -179,19 +180,20 @@ All tables use UUID primary keys and `foreignUuid`, as the rest of the schema. M
 Allowed only for `Completed` retros. Built once at dispatch by `App\Actions\Integrations\BuildRetroRecap` from the data the Results view shows (spec 2 §6), in the sharer's locale:
 
 1. Title, team, completion date, link to the retro (Results tab).
-2. Participants: count; names only when the retro is not anonymous (display names; guests suffixed "(guest)").
+2. Participants: count; names only when the retro is not anonymous (decision 8; display names, guests suffixed "(guest)"). Anonymous retro: count only.
 3. Cards: number of cards (top-level and grouped).
-4. ROTI: average and respondent count, only when ≥ 3 ratings (spec 2 §6.4); otherwise omitted.
-5. Summary: the stored `retros.summary` when present (no generation is triggered).
-6. Action items: up to 10 (open first, then by priority), each with content, assignee name and due date; "+ n more" beyond. Creators are never included.
-7. Top card per column: for each column, the top-level card with the most votes (ties → lowest position), content truncated to 300 characters, vote total and grouped-card count. Columns without voted cards are skipped. Authors are never included.
+4. ROTI: average and respondent count whenever at least one rating exists (no threshold, spec 2 decision 9); the distribution is not sent.
+5. Summary: the stored `retros.summary` when `summary_status` is `ready`. Since the summary is generated automatically at completion (spec 2 decision 8), a recap requested right after completion may find it `pending`: the share dialog then says "The summary is still being generated and will not be included." and the sharer may wait or send without it. Opted-out retros, retros without a provider and `failed` generations simply have no summary line. Sharing never triggers a generation.
+6. Action items: up to 10 (open first, then by priority), each with content, assignee name and due date; "+ n more" beyond. Action items are always named (spec 3 decision 5), so assignee names are sent as stored, also on anonymous retros ("(guest)" suffix for guest assignees). The creator is not included (not needed; see §10.1).
+7. Suggested actions: up to 5 `pending` suggestions (spec 2 §6.5), content only, "+ n more" beyond; omitted when there are none. They are derived from revealed content and carry no author information.
+8. Top card per column: for each column, the top-level card with the most votes (ties → lowest position), content truncated to 300 characters, vote total and grouped-card count. Columns without voted cards are skipped. Card authors are never included, named or anonymous retro alike.
 
-Surveys, health-check scores, comments, reactions and GIFs are not part of the recap.
+Surveys, health-check scores, comments (card and action item), reactions, GIFs, themes and card sentiment/category are not part of the recap.
 
 ### 5.3 Email results
 
 - "Send to email" on the Results view (`Completed` only). Audience chosen in the dialog: **Participants** (members who have a participant row in the retro; default) or **All team members**. Recipients are always current team members with a verified email; guests (no account) are never emailed, and removed members are excluded at send time.
-- One queued `RetroResultsNotification` (mail, `ShouldQueue`, `ShouldBeEncrypted`) per recipient, rendered in the recipient's locale (`User::preferredLocale()`), containing the recap of §5.2 plus the health score (`x.x/10`) and participation when reported by spec 2's rules. The mail links to the Results view (sign-in required).
+- One queued `RetroResultsNotification` (mail, `ShouldQueue`, `ShouldBeEncrypted`) per recipient, rendered in the recipient's locale (`User::preferredLocale()`), containing the recap of §5.2 plus the health score (`x.x/10`, shown whatever the number of answers, spec 2 decision 1) and participation. The mail links to the Results view (sign-in required).
 - At most one email send per retro per 10 minutes (429 "The results were emailed a few minutes ago."). The delivery row records `recipient_count`.
 
 ### 5.4 Message formatting and escaping
@@ -233,19 +235,19 @@ Surveys, health-check scores, comments, reactions and GIFs are not part of the r
 - Response `{imported, skipped}`; broadcast `game.changed` (clients refetch the snapshot).
 - The source's existing estimate is shown for reference only; it never becomes the skrum estimate.
 
-### 6.4 Imported tasks and refresh (Open decision 5)
+### 6.4 Imported tasks and refresh (decision 5)
 
 - Title and description of an imported task are read-only in skrum (422 "This task is managed in :source." on edit); they are refreshed from the source with "Refresh from :source" (game-level button), which re-fetches every imported task of the game from the connected site in batches of 100 (`id in (…)` / `issues(filter: {id: {in: […]}})`), updates title, description, assignee, source estimate and `external_refreshed_at`, and broadcasts `game.changed`. Issues deleted or no longer visible in the source keep their data and show "Not found in :source".
 - Deleting an imported task in skrum never touches the source.
 
-### 6.5 Estimate write-back (Open decision 4)
+### 6.5 Estimate write-back (decision 4)
 
 - When the facilitator sets or clears the estimate of an imported task (`PUT tasks/{task}/estimate`, poker spec §3), `needs_sync` becomes true and `SyncTaskEstimate` is dispatched after commit, **if** the team's integration for `external_source` is `Active`, has `write` access and the same `external_site`. The job is `ShouldBeUnique` per task, reads the latest estimate at run time (several quick changes produce one write), `tries = 5`, `backoff = [10, 30, 120, 600]`.
 - **Cannot sync** (no job, `syncState: 'unsupported'` with a reason): non-numeric deck (T-shirt, non-numeric custom) — "T-shirt estimates can't be written to :source."; read-only access; integration missing or on another site. `?` and `☕` can never be an estimate (poker spec), so they are never written.
 - **Jira**: `GET /rest/api/3/issue/{id}/editmeta`; the first `storyPointFields` candidate present on the issue's edit screen is written with `PUT /rest/api/3/issue/{id}` `{"fields": {"customfield_x": number|null}}` (`½` → 0.5; a cleared estimate writes `null`). No candidate on the screen → failure "This issue has no story points field on its edit screen."
 - **Linear**: the issue's team settings (`issueEstimationType`, `issueEstimationAllowZero`) are read first. `notUsed` → failure "Estimates are turned off for this Linear team." The value must be a whole number between 0 and 64 (Linear's maximum); `½` or fractions → failure "Linear only accepts whole-number estimates." `0` is sent as `0` when the team allows zero estimates and as `null` (clears the estimate) otherwise; a cleared skrum estimate sends `null`. Values Linear rejects for its scale come back as "Linear rejected this estimate: {message}".
 - Success: `needs_sync = false`, `synced_at = now`, `sync_error = null`. Final failure: `sync_error` set, `needs_sync` stays true. Either way `task.saved` is broadcast to the game (`toOthers()` is not applicable from a job, so every client updates).
-- `POST tasks/{task}/sync` (facilitator) re-dispatches the job for a task with `needs_sync`.
+- `POST tasks/{task}/sync` (facilitator) is the retry/force path: it re-dispatches the job for an imported task that has an estimate and is syncable, whether `needs_sync` is true (retry after failure) or false (force a rewrite of the current estimate). The same service backs the MCP tool `poker.game.task.sync` (§9.1). A task without an estimate or in the `unsupported` state → 422 with the reason.
 
 ### 6.6 Payload
 
@@ -259,7 +261,7 @@ external: null | {source, key, url, assignee|null, sourceEstimate|null, refreshe
 
 Guests receive `{source, key, url, isManaged: true}` only (assignee names from the source are team-internal). Snapshot adds `integrations: {jira: {connected, canWrite} | null, linear: … | null}` for non-guest players, `null` for guests.
 
-## 7. Action item export (Open decision 6)
+## 7. Action item export (decision 6)
 
 - **Who**: an authenticated team member who may edit the item (`ActionItemPermissions::canEdit` from spec 3: author, facilitator, workspace Owner/Admin). Guests never export. Allowed from the board (any phase, the item's retro not locked-and-in-progress, same 423 rule as spec 3's workspace endpoints) and from the global page. Requires an `Active` integration with `write` access on the item's team.
 - **Target**: Jira → project (`GET /rest/api/3/project/search`) and issue type (`GET /rest/api/3/issuetype/project?projectId=`, "Task" preselected when present); Linear → team. The last choice is saved in the integration `settings` and preselected next time.
@@ -275,8 +277,8 @@ Guests receive `{source, key, url, isManaged: true}` only (assignee names from t
 
 | Action | Allowed for |
 |---|---|
-| View the integrations page, connect, reconnect, upgrade, configure, test, disconnect | Workspace Owners/Admins (`TeamPolicy::manageIntegrations` = `canManage($team->workspace)`) (Open decision 1) |
-| Post a retro link, results recap to Slack/Telegram, email the results | The retro's facilitator when they are a team member, and workspace Owners/Admins (Open decision 7) |
+| View the integrations page, connect, reconnect, upgrade, configure, test, disconnect | Workspace Owners/Admins (`TeamPolicy::manageIntegrations` = `canManage($team->workspace)`) (decision 1) |
+| Post a retro link, results recap to Slack/Telegram, email the results | The retro's facilitator when they are a team member, and workspace Owners/Admins (decision 7) |
 | Post a poker link | The game's facilitator (non-guest) and workspace Owners/Admins |
 | Browse, import, refresh (poker) | Players who can add tasks (facilitator, non-guest players) |
 | Retry an estimate sync | The game's facilitator |
@@ -326,6 +328,19 @@ Controllers in `app/Http/Controllers/Integrations/`, actions in `app/Actions/Int
 
 Browse endpoints are throttled at 30 requests/minute per player.
 
+### 9.1 Services shared with the MCP server (spec 5)
+
+The MCP poker tools are thin adapters over the same actions the HTTP controllers call, with the same permission checks (§8) and errors (§13); nothing is reimplemented in the MCP layer.
+
+| MCP tool | Service | Notes |
+|---|---|---|
+| `poker.sources.list` | `ListPokerSources` (team) | Per enabled Jira/Linear provider with a connection for the team, the shape of spec 5 §6.2: `{source, siteName, status, access, canImport, canWriteBack, writeBackUnavailableReason}` (`canImport` = `active`; `canWriteBack` = `active`, `write` access and, for Jira, a story points field found); empty when none. Never returns credentials or settings beyond the site name. |
+| `poker.iterations.list` | `ListPokerIterations` (team, source, container?) | The containers/iterations calls of §6.2 (active and upcoming sprints/cycles). |
+| `poker.game.tasks.import` | `ImportPokerTasks` (game, source, externalIds or iteration/query) | The import of §6.3: same 100-per-call and 200-task limits, duplicates skipped. Whole-iteration import resolves the ids through §6.2 (capped at 100, `truncated` reported). Requires the player to be allowed to add tasks. |
+| `poker.game.task.sync` | `SyncTaskEstimate` dispatch action (§6.5) | Retry/force of the automatic write-back; facilitator only; never sets the estimate. |
+
+`poker.game.tasks.list` reads the task payload of §6.6 (tracker key, `syncState`). Setting an estimate directly stays impossible through MCP (poker spec).
+
 ### Workspace
 
 | Method | Path | Body | Response |
@@ -346,16 +361,17 @@ Browse endpoints are throttled at 30 requests/minute per player.
 | Destination | Sent | Never sent |
 |---|---|---|
 | Slack / Telegram link | retro/game title, team name, sharer's name, URL (guest URL only on explicit opt-in) | any board content |
-| Slack / Telegram recap | §5.2 items | card authors, voters, individual votes/scores/ratings, comments, surveys, health scores, emails, guest tokens (except opt-in link) |
+| Slack / Telegram recap | §5.2 items (incl. named action items and their assignees, pending suggested actions, the stored summary) | card authors, voters, individual votes/scores/ratings, comments (card and action item), surveys, themes and card sentiment, emails, guest tokens (except opt-in link) |
 | Email | §5.3, to team members only | guest contacts; same exclusions as the recap |
 | Jira / Linear import | JQL / search text, ids of selected issues | nothing from skrum |
 | Jira / Linear write-back | the final numeric estimate for that issue | individual votes, round history, player names |
-| Jira / Linear export | item content, due date, priority (Linear), retro title and date, deep link | creator, assignee, comments |
+| Jira / Linear export | item content, due date, priority (Linear), retro title and date, deep link | creator, assignee, comments (withheld as data minimisation: action items are named in skrum, so this is a choice, not a redaction rule) |
 
 ### 10.2 Redaction invariants
 
 - **Writing-phase content never leaves**: recaps and emails require `Completed` (all content revealed); link shares contain no board content; poker write-back sends only the final estimate, which exists only after a reveal.
-- **Anonymous retros**: no author name is ever sent (cards, action item creators); the recap lists participant count only.
+- **Anonymous retros**: no card author name is ever sent (top cards); the recap lists the participant count only. Action items and their assignees are always named in skrum (spec 3 decision 5) and are sent named, also on anonymous retros; the share dialog says so.
+- **Generated content**: the summary, suggested actions and themes were produced from revealed content without author information (spec 2 §6.5); the recap adds no author link to them.
 - **Voter identity**: never sent; top cards carry totals only.
 - **Guests**: never trigger an integration; never emailed; get no source metadata beyond key and URL.
 - Imported descriptions pass through the poker spec's `RenderTaskMarkdown` (escaped HTML, images as links), so a Jira or Linear description cannot run script or make viewers' browsers contact a third party.
@@ -376,7 +392,7 @@ All new strings in `lang/{en,fr,es,de}.json`. Provider names are not translated.
 
 - **Team page** (`teams/show.tsx`): "Integrations" link for Owners/Admins when at least one provider is enabled.
 - **Integrations page** (`resources/js/pages/teams/integrations.tsx`): one card per enabled provider with icon, status badge ("Not connected", "Connected", "Setup required", "Reconnect required" in red with `last_error`), connection details (Slack workspace and `#channel`; Telegram chat title; Jira site + access level + story points field select + "Detect again"; Linear workspace + access), and actions Connect / Reconnect / Upgrade to read and write / Send a test message / Disconnect (confirmation dialog stating what is removed, and for Jira the Atlassian revocation hint). Telegram card shows the code panel (§4.2) with countdown. Jira with several sites shows a site select.
-- **Results view** (spec 2): header "Share" menu for sharers — "Send to email" (audience dialog, recipient count preview), "Share to Slack", "Share to Telegram"; below the header a muted line per channel "Shared to Slack · 2 min ago" / "Slack: failed — reconnect required".
+- **Results view** (spec 2): header "Share" menu for sharers — "Send to email" (audience dialog, recipient count preview), "Share to Slack", "Share to Telegram"; the recap dialog shows what is included (with "The summary is still being generated and will not be included." while `summary_status` is `pending`) and, on an anonymous retro, "Participants are shown as a count. Action items are shown with names."; below the header a muted line per channel "Shared to Slack · 2 min ago" / "Slack: failed — reconnect required".
 - **Board header share dialog** (existing guest-link dialog): "Post link to Slack / Telegram" buttons for sharers, with the guest-link checkbox when guest access is on.
 - **Poker**: share dialog gains the same buttons; tasks pane "Import" button opening a dialog with source tabs (Jira / Linear), mode (Sprint/Cycle with container + iteration selects, or Query), result list with checkboxes (already imported greyed), "Import n tasks"; "Refresh from :source" in the tasks pane menu. Task items show the key chip; task detail shows key link, assignee, "Jira estimate: 5", read-only notice, sync badge (Synced / Pending / Failed + Retry for the facilitator / "Not synced: T-shirt deck").
 - **Action item card** (board and global page): "Export to Jira/Linear" in the item menu → dialog with target selects; exported items show a `PROJ-12 ↗` chip.
@@ -410,10 +426,11 @@ All new strings in `lang/{en,fr,es,de}.json`. Provider names are not translated.
 ## 14. Changes to other specs
 
 - **Core spec**: "Out of scope: Integrations (Jira, Slack, …)" is delivered here; team settings gain an integrations page.
-- **Retro flow extras (spec 2)**: the Results view gains the Share menu and delivery lines (deferred there to spec 6); `results.changed` also fires after deliveries.
-- **Action items v2 (spec 3)**: `PresentActionItem` gains `externalLinks`; the `action_item_external_links` table is the one announced in its §9.
+- **Retro flow extras (spec 2)**: the Results view gains the Share menu and delivery lines (deferred there to spec 6); `results.changed` also fires after deliveries. The recap reads `summary_status`/`retros.summary`, `ai_summary_enabled` and pending `suggested_actions` without changing them; ROTI and health are read without threshold.
+- **Action items v2 (spec 3)**: `PresentActionItem` gains `externalLinks`; the `action_item_external_links` table is the one announced in its §9; action items stay named on anonymous retros, and the recap and export use that.
 - **Planning poker (spec 4)**: the reserved `external_*` columns are written by import (still never client-writable); imported tasks' title/description become read-only; the task payload `external` object is extended (§6.6); "Add and edit tasks" gains the import/refresh paths.
-- **Games (spec 7)**: room invites can reuse `ShareLink` and `DeliverToSlack` / `DeliverToTelegram`; nothing is built for rooms here.
+- **MCP (spec 5)**: `poker.sources.list`, `poker.iterations.list`, `poker.game.tasks.import` and `poker.game.task.sync` call this spec's services (§9.1); `poker.game.tasks.list` exposes the §6.6 fields (`external.key`, `syncState`). Slack, Telegram, email and export have no MCP tool.
+- **Games (spec 7)**: no change; nothing is built for rooms here (a later change can reuse the link share of §5.1 and `DeliverToSlack` / `DeliverToTelegram`).
 
 ## 15. Testing
 
@@ -423,13 +440,14 @@ Pest feature tests in `tests/Feature/Integrations/`, provider APIs faked with `H
 - **Permissions**: Owner/Admin manage; Member 403 on the integrations page and every management endpoint; share endpoints allow facilitator (member) and Owner/Admin, refuse other members and guests; import allowed for non-guest players, 403 for guests; export follows `canEdit`, 403 for guests.
 - **OAuth**: state mismatch, expiry, reuse and provider `error` refused; callback re-checks permission; Slack webhook URL not on `hooks.slack.com` refused; Jira multi-site → `SetupRequired` then `Active`; upgrade keeps the row; token refresh rotates and persists the new refresh token; `invalid_grant` → `ReconnectRequired`; concurrent refresh uses the lock (second caller reads the refreshed token).
 - **Telegram**: code format, expiry, single use, new code invalidates old; `/connect@bot CODE` and `/connect CODE` in group and channel posts connect; invalid code reply; 5-attempt lockout; supergroup migration; bot kicked → `ReconnectRequired`; non-command text not stored; offset advances; 409 handled.
-- **Recap content**: built from a completed retro with fixtures — contains title, counts, ROTI only with ≥ 3 ratings, stored summary, top card per column with totals, action items capped at 10; on an anonymous retro no participant or author name appears anywhere in the Slack JSON, Telegram text or email body; no creator names ever; no Writing content possible (endpoint 403/422 outside `Completed`); Slack escaping turns `<!channel>` and `<http://x|y>` into literal text; Telegram HTML escaping; length limits truncate lists.
+- **Recap content**: built from a completed retro with fixtures — contains title, counts, ROTI average with a single rating (no threshold, no distribution), stored summary when `ready` (omitted when `pending`, `failed`, opted out or no provider; sharing never dispatches generation), up to 5 pending suggested actions, top card per column with totals, action items capped at 10 with assignee names; on an anonymous retro no participant name and no card author appears anywhere in the Slack JSON, Telegram text or email body while action item assignee names do appear; no creator names; no comments, themes or sentiment; no Writing content possible (endpoint 403/422 outside `Completed`); Slack escaping turns `<!channel>` and `<http://x|y>` into literal text; Telegram HTML escaping; length limits truncate lists.
 - **Link share**: no board content; guest URL only with opt-in and only when guest access is enabled; retro `Completed` → 422 for link; ended poker game → 403.
 - **Email**: audiences (participants with accounts vs team), guests and removed members excluded, recipient locale, 10-minute limit.
 - **Delivery jobs**: success marks `sent` and broadcasts; 429 released with retry-after; 5xx retried; Slack 404/403/410 and Telegram 403 → `ReconnectRequired` without retry; final failure recorded; no credential or webhook URL in the serialized job, delivery row or logs.
 - **Import**: Jira sprint and JQL, Linear cycle and search mapped to tasks; ADF conversion cases (marks, lists, code, mention, media, table); descriptions rendered safely (`<script>`, remote image); duplicates skipped; 200 limit atomic; client-sent titles ignored; 100 cap and `truncated`; JQL 400 surfaced as 422.
 - **Refresh**: updates fields, marks missing issues, keeps local estimate; edits of managed tasks → 422.
-- **Write-back**: dispatched only for imported tasks with write access and matching site; unsupported for T-shirt/non-numeric decks; Jira editmeta fallback to the second candidate, no field → failure; `½` → 0.5 for Jira, refused for Linear; Linear `notUsed`, zero rule, > 64 refused, API rejection surfaced; clearing writes `null`; uniqueness coalesces; retry endpoint facilitator-only; payload never contains votes.
+- **MCP services**: `ListPokerSources`, `ListPokerIterations`, `ImportPokerTasks` and the sync dispatch return the same results and refuse the same callers (guests, players who cannot add tasks, non-facilitator for sync) as the HTTP endpoints; `poker.game.task.sync` forces a rewrite when `needs_sync` is false, retries when true, and refuses a task without estimate or `unsupported` (422); sources list carries no credentials.
+- **Write-back**: dispatched only for imported tasks with write access and matching site; unsupported for T-shirt/non-numeric decks; Jira editmeta fallback to the second candidate, no field → failure; `½` → 0.5 for Jira, refused for Linear; Linear `notUsed`, zero rule, > 64 refused, API rejection surfaced; clearing writes `null`; uniqueness coalesces; retry endpoint facilitator-only and also forces a rewrite when `needs_sync` is false; payload never contains votes.
 - **Export**: Jira ADF and Linear Markdown bodies contain content, retro title, date, deep link, due date, Linear priority, and never the creator; double submit → one issue (409 on the second); failure rolls back the link; read-only → 409; target defaults saved.
 - **Health check command**: status transitions for auth errors, unchanged on 5xx.
 - **Secrets**: `credentials` absent from every page prop and JSON response; stored ciphertext differs from plaintext; APP_KEY mismatch → `ReconnectRequired`.
@@ -444,53 +462,22 @@ Type-check and lint stay green; no frontend test runner is added.
 2. Only workspace Owners/Admins can connect, configure, test and disconnect a team's integrations; one connection per provider per team; credentials are encrypted at rest and never serialized, logged or sent to the browser.
 3. Slack connects through OAuth to one channel chosen on Slack's consent screen; Telegram connects a chat through a 15-minute single-use `/connect` code; Jira and Linear connect through OAuth with read or read-and-write access, upgradable without losing references.
 4. Losing access (revoked token, removed bot, archived channel, failed refresh) puts the integration in "Reconnect required", visible on the integrations page, and stops further calls.
-5. The facilitator or an Owner/Admin can post a board or poker link (guest link only on opt-in) and, for completed retros, a results recap with participants, card count, ROTI, summary, action items and top card per column; recaps never contain Writing-phase content, author names on anonymous retros, voter identity or comments.
+5. The facilitator or an Owner/Admin can post a board or poker link (guest link only on opt-in) and, for completed retros, a results recap with participants (names unless the retro is anonymous), card count, ROTI average (no threshold), the summary when ready, action items with assignee names, pending suggested actions and top card per column; recaps never contain Writing-phase content, card author names, participant names on anonymous retros, voter identity or comments.
 6. "Send to email" delivers the results to participants with accounts or all team members, in each recipient's locale, never to guests.
 7. Poker players who can add tasks import Jira issues by sprint or JQL and Linear issues by cycle or search, with title, description, assignee and source estimate; duplicates are skipped and the 200-task limit holds; imported tasks are refreshed from the source.
-8. A saved estimate on an imported task is written back automatically when access allows: Jira through the detected story-points field, Linear within its scale (whole numbers 0–64, zero rule); T-shirt and non-numeric decks never sync; failures are shown with a retry.
+8. A saved estimate on an imported task is written back automatically when access allows: Jira through the detected story-points field, Linear within its scale (whole numbers 0–64, zero rule); T-shirt and non-numeric decks never sync; failures are shown with a retry, which can also force a rewrite.
 9. Action items can be exported once per provider as a Jira or Linear issue by team members who can edit them, with a link back to the item; no creator or comment leaves the instance.
 10. All outbound calls are made by the server; deliveries and write-backs run as queued jobs with the retry rules of §12.
-11. All new strings are translated in en/fr/es/de; suite, phpstan, type-check and lint are green; no new dependency; the walkthrough passes.
+11. The poker MCP tools `poker.sources.list`, `poker.iterations.list`, `poker.game.tasks.import` and `poker.game.task.sync` are served by the same services and permission checks as the interface.
+12. All new strings are translated in en/fr/es/de; suite, phpstan, type-check and lint are green; no new dependency; the walkthrough passes.
 
-## Open decisions
+## Decisions (2026-09-30)
 
-1. **Who manages integrations.**
-   (a) Workspace Owners/Admins — same people who manage teams (`TeamPolicy::update`); integrations post to company-wide tools.
-   (b) Any team member — self-service, but anyone could redirect recaps to a channel outside the company.
-   (c) Workspace Owners only — closest to QRetro's "owner only", but Admins already manage teams and members.
-   **Recommendation: (a).**
-2. **Slack mechanism.**
-   (a) `incoming-webhook` scope: Slack's consent screen picks the channel; one scope; "reconnect to change channel" (QRetro behaviour); private channels work without inviting a bot.
-   (b) Bot token (`chat:write`, `channels:read`, `groups:read`) with an in-app channel picker — change channel without reconnecting, but broader scopes and the bot must be invited to private channels.
-   (c) Both — most flexible, double the code and tests.
-   **Recommendation: (a).**
-3. **Telegram updates.**
-   (a) Long polling from the scheduler — outbound-only, works on instances not reachable from the internet; a bot token cannot be shared with a webhook or another instance.
-   (b) Webhook with `secret_token` verification — instant, but needs a public HTTPS URL, which many self-hosted instances lack.
-   (c) Both, chosen by env — covers everything, two code paths to test.
-   **Recommendation: (a).**
-4. **Estimate write-back trigger.**
-   (a) Automatic when the facilitator saves the estimate, with pending/failed state and retry — nothing to forget, matches QRetro's `needs_sync`.
-   (b) Manual "Sync estimates" per game — explicit control, but estimates are easily left unsynced.
-   (c) Automatic with a per-game on/off switch — flexible, one more setting.
-   **Recommendation: (a).**
-5. **Imported task editing.**
-   (a) Title and description read-only, refreshed from the source on demand — one source of truth, no silent overwrite.
-   (b) Editable locally; refresh overwrites local edits — flexible, surprising data loss.
-   (c) Editable, never refreshed — simplest, drifts from the source.
-   **Recommendation: (a).**
-6. **Action item export model.**
-   (a) One-shot export per provider, link stored, no status sync — no inbound webhooks, works for private instances.
-   (b) Two-way status sync through Jira/Linear webhooks — items close themselves, but needs a public URL, webhook secrets and conflict rules.
-   (c) One-shot export plus a daily poll that completes the skrum item when the issue is done — no public URL, more API traffic and a "done" mapping per workflow.
-   **Recommendation: (a).**
-7. **Who may share and email results.**
-   (a) The retro's facilitator (team member) and workspace Owners/Admins — deliberate action by the meeting owner.
-   (b) Any team member who took part — easier, more noise in channels.
-   (c) Owners/Admins only — safest, but facilitators depend on an admin after each retro.
-   **Recommendation: (a).**
-8. **Participant names in the recap.**
-   (a) Names on non-anonymous retros, count only on anonymous ones — parity where it is safe.
-   (b) Always count only — minimal data in third-party tools, loses the "thanks" list.
-   (c) Always names (QRetro) — participation is not authorship, but people on an anonymous retro may not expect their name in Slack.
-   **Recommendation: (a).**
+1. **Who manages integrations:** workspace Owners/Admins.
+2. **Slack mechanism:** incoming webhook (`incoming-webhook` scope); reconnect to change channel.
+3. **Telegram updates:** long polling from the scheduler.
+4. **Estimate write-back:** automatic when the facilitator saves the estimate, with pending/failed state and retry.
+5. **Imported task editing:** title and description read-only, refreshed from the source on demand.
+6. **Action item export:** one-shot per provider with the link stored, no status sync.
+7. **Who may share and email results:** the retro's facilitator (team member) and workspace Owners/Admins.
+8. **Participant names in the recap:** names unless the retro is anonymous, count only on anonymous retros.
