@@ -1,5 +1,9 @@
 <?php
 
+use App\Enums\WorkspaceRole;
+use App\Models\Participant;
+use App\Models\Retro;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -44,7 +48,28 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function something()
+/**
+ * @return array{0: User, 1: Participant}
+ */
+function retroMember(Retro $retro): array
 {
-    // ..
+    $user = User::factory()->create();
+    $retro->team->workspace->members()->attach($user, ['role' => WorkspaceRole::Member->value]);
+    $retro->team->members()->attach($user);
+
+    $participant = Participant::factory()->create(['retro_id' => $retro->id, 'user_id' => $user->id]);
+
+    return [$user, $participant];
+}
+
+/**
+ * @return array{0: User, 1: Participant}
+ */
+function retroFacilitator(Retro $retro): array
+{
+    [$user, $participant] = retroMember($retro);
+
+    $retro->forceFill(['facilitator_participant_id' => $participant->id])->save();
+
+    return [$user, $participant];
 }

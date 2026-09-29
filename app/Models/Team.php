@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property string $id
@@ -39,5 +40,11 @@ class Team extends Model
     public function hasMember(User $user): bool
     {
         return $this->members()->whereKey($user->id)->exists();
+    }
+
+    /** @return HasMany<Retro, $this> */
+    public function retros(): HasMany
+    {
+        return $this->hasMany(Retro::class);
     }
 }
