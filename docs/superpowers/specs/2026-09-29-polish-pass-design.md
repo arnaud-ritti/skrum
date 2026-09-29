@@ -45,7 +45,7 @@ Vote totals are also ordered: the retro keeps a `votes_version` integer, increme
 - New private channel `private-participant.{participantId}` (participant UUID).
 - `/broadcasting/auth` authorizes it only when the participant resolved from the request (member session or guest cookie, for the participant's retro) has exactly that id; anything else → 403. The existing presence-channel authorization is unchanged.
 - When a card is created or its content is updated, besides the existing redacted presence broadcast, the server broadcasts `own-card.saved` on the author's private channel with the card presented **for the author** (`isMine: true`, full content, author). It uses the same after-commit, report-don't-throw, `toOthers()` delivery as other board events, so the originating tab does not receive it.
-- The client subscribes to its own private channel while the board is active and upserts the received card.
+- The client subscribes to its own private channel while the board is active and upserts the received card. When the private subscription completes it triggers one resync (coalesced with the presence resync), so an own card saved between the snapshot and the subscription is not left hidden.
 - Redaction invariant: no other participant can subscribe to someone else's channel, and the presence payloads are unchanged.
 
 ### A3 — Request timeout message
@@ -54,7 +54,7 @@ Vote totals are also ordered: the retro keeps a `votes_version` integer, increme
 
 ### A4 — Expired session
 
-Board API requests (JSON) with no authenticated user and no guest cookie for that retro are answered **401** (a logged-out or expired member session); 403 remains for revoked or disabled guest cookies and members without access, and every 403 carries a translated message ("You no longer have access to this retrospective."). Page visits keep redirecting to login.
+Board API requests (JSON) with no authenticated user and no guest cookie for that retro are answered **401** (a logged-out or expired member session); 403 remains for revoked or disabled guest cookies and members without access, and every 403 carries a translated message ("You no longer have access to this retrospective."). Page visits without a user and without a valid guest cookie keep redirecting to login when the retro has guest access disabled; when guest access is enabled they show a "session ended" screen offering **Log in** (members) and explaining that guests need the facilitator's guest link, because an expired guest and a logged-out member cannot be told apart once the cookie is gone.
 
 When any board request or refetch receives 401 or 419:
 
@@ -65,7 +65,7 @@ When any board request or refetch receives 401 or 419:
 
 ## 4. Board UX (B)
 
-- **B1** Dragging renders the card in a `DragOverlay` (portal), so it is never clipped by the scrollable board.
+- **B1** Dragging renders the card in a `DragOverlay` (portal), so it is never clipped by the scrollable board; the preview has the dragged card's width.
 - **B2** Vote + and − and card delete are disabled while their own request is in flight.
 - **B3** If a card becomes non-editable while its editor is open (phase change, card no longer the viewer's), the editor closes; if the draft differed from the saved content, a toast says "The phase changed before your edit was saved."
 - **B4** The delete-column confirmation dialog stays open when deletion fails.
@@ -95,11 +95,13 @@ Every new string goes through `t()` with real translations in `lang/{en,fr,es,de
 - **PA1** A mutation response that arrives while a snapshot refetch is in flight is not lost: after the refetch the board shows the mutation's result.
 - **PA1b** The displayed "votes cast" total never goes back to an older value because of delivery order (version-ordered totals).
 - **PA2** A participant with two tabs on the same board sees, in the second tab, the full content of a card created or edited in the first tab during Writing; other participants still see it hidden.
+- **PA2b** An own card saved in another tab between this tab's snapshot and its private subscription is shown with its content after the subscription completes.
 - **PA3** Only the owning participant can subscribe to `private-participant.{id}` (member and guest); any other request is refused with 403.
 - **PA4** A board request that times out shows "The server did not respond in time. Please try again." in the active locale.
 - **PA5a** A board API request from a logged-out member (no session, no guest cookie) is answered 401; a revoked guest cookie still gets 403 with a translated message; no toast is ever blank.
+- **PA5b** Opening a guest-enabled retro without a session or a valid guest cookie shows the "session ended" screen (Log in + guest-link hint), not the login page.
 - **PA5** A 401 or 419 on any board request or refetch shows the persistent session-expired banner with a Reload button and makes everything but the banner non-interactive (header included), without repeated error toasts.
-- **PB1** A dragged card is never clipped by the board's scroll container.
+- **PB1** A dragged card is never clipped by the board's scroll container, and its preview has the same width as the card.
 - **PB2** Vote +/− and card delete cannot send a second request while the first is in flight.
 - **PB3** A card editor closes when its card becomes non-editable; a changed draft triggers the phase-changed toast.
 - **PB4** A failed column deletion leaves its confirmation dialog open.
