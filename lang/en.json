@@ -335,5 +335,14 @@
     "Edit action item": "Edit action item",
     "No action items yet.": "No action items yet.",
     "Top topics": "Top topics",
-    "Retrospective completed on :date": "Retrospective completed on :date"
+    "Retrospective completed on :date": "Retrospective completed on :date",
+    "column :title": "column :title",
+    "a hidden card": "a hidden card",
+    "To pick up a card, press Space or Enter. Use the arrow keys to move it, Space or Enter to drop it, or Escape to cancel.": "To pick up a card, press Space or Enter. Use the arrow keys to move it, Space or Enter to drop it, or Escape to cancel.",
+    "Picked up :card.": "Picked up :card.",
+    ":card is over :target.": ":card is over :target.",
+    ":card is no longer over a drop area.": ":card is no longer over a drop area.",
+    "Dropped :card on :target.": "Dropped :card on :target.",
+    "Dropped :card.": "Dropped :card.",
+    "Cancelled moving :card.": "Cancelled moving :card."
 }

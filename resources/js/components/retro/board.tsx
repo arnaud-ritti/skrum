@@ -22,7 +22,7 @@ import { BoardEnded } from './board-ended';
 import { BoardHeader } from './board-header';
 import { CompletedSummary } from './completed-summary';
 import { ConnectionBanner } from './connection-banner';
-import { parseDndId } from './dnd';
+import { parseDndId, useDragAccessibility } from './dnd';
 import { RetroColumn } from './retro-column';
 import { VoteProgress } from './vote-progress';
 
@@ -44,6 +44,7 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
         }),
     );
 
+    const dragAccessibility = useDragAccessibility(board);
     const highlightedCardId = board.retro.highlightedCardId;
 
     useEffect(() => {
@@ -167,6 +168,7 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
             <div className="flex flex-1 flex-col lg:min-h-0 lg:flex-row">
                 <DndContext
                     sensors={sensors}
+                    accessibility={dragAccessibility}
                     collisionDetection={closestCenter}
                     onDragEnd={(event) => void handleDragEnd(event)}
                 >

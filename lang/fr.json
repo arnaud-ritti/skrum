@@ -597,5 +597,14 @@
     "Edit action item": "Modifier l'action",
     "No action items yet.": "Aucune action pour le moment.",
     "Top topics": "Sujets principaux",
-    "Retrospective completed on :date": "Rétrospective terminée le :date"
+    "Retrospective completed on :date": "Rétrospective terminée le :date",
+    "column :title": "la colonne :title",
+    "a hidden card": "une carte masquée",
+    "To pick up a card, press Space or Enter. Use the arrow keys to move it, Space or Enter to drop it, or Escape to cancel.": "Pour saisir une carte, appuyez sur Espace ou Entrée. Déplacez-la avec les flèches, déposez-la avec Espace ou Entrée, ou annulez avec Échap.",
+    "Picked up :card.": ":card saisie.",
+    ":card is over :target.": ":card est au-dessus de :target.",
+    ":card is no longer over a drop area.": ":card n'est plus au-dessus d'une zone de dépôt.",
+    "Dropped :card on :target.": ":card déposée sur :target.",
+    "Dropped :card.": ":card déposée.",
+    "Cancelled moving :card.": "Déplacement de :card annulé."
 }
