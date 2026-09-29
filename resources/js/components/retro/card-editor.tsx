@@ -28,10 +28,29 @@ export function CardEditor({
         latest.current = { content, savedContent: card.content, onDone };
     });
 
+    const closedIntentionally = useRef(false);
+
+    useEffect(
+        () => () => {
+            if (closedIntentionally.current) {
+                return;
+            }
+
+            const { content, savedContent } = latest.current;
+
+            if (content.trim() !== (savedContent ?? '').trim()) {
+                toast(t('The phase changed before your edit was saved.'));
+            }
+        },
+        [],
+    );
+
     useEffect(() => {
         if (editable) {
             return;
         }
+
+        closedIntentionally.current = true;
 
         const { content, savedContent, onDone } = latest.current;
 
@@ -41,6 +60,11 @@ export function CardEditor({
 
         onDone();
     }, [editable]);
+
+    const cancel = () => {
+        closedIntentionally.current = true;
+        onDone();
+    };
 
     const save = async () => {
         if (isSaving) {
@@ -66,6 +90,7 @@ export function CardEditor({
         }
 
         ctx.apply({ type: 'cards.upsert', cards: [response.card] });
+        closedIntentionally.current = true;
         onDone();
     };
 
@@ -79,7 +104,7 @@ export function CardEditor({
                 onChange={(event) => setContent(event.target.value)}
             />
             <div className="flex justify-end gap-2">
-                <Button size="sm" variant="ghost" onClick={onDone}>
+                <Button size="sm" variant="ghost" onClick={cancel}>
                     {t('Cancel')}
                 </Button>
                 <Button
