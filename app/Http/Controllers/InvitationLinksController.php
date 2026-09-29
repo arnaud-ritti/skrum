@@ -4,18 +4,22 @@ namespace App\Http\Controllers;
 
 use App\Actions\Auth\SignupGate;
 use App\Models\WorkspaceInvitation;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 class InvitationLinksController extends Controller
 {
-    public function show(Request $request, string $token, SignupGate $signupGate): Response|RedirectResponse
+    public function show(Request $request, string $token, SignupGate $signupGate): Response|SymfonyResponse
     {
         $invitation = WorkspaceInvitation::findByToken($token);
 
-        abort_if($invitation === null, 404);
+        if ($invitation === null) {
+            return Inertia::render('invitations/show', ['isInvalid' => true])
+                ->toResponse($request)
+                ->setStatusCode(404);
+        }
 
         $user = $request->user();
 
@@ -31,6 +35,7 @@ class InvitationLinksController extends Controller
 
         return Inertia::render('invitations/show', [
             'token' => $token,
+            'isInvalid' => false,
             'workspaceName' => $invitation->workspace->name,
             'email' => $invitation->email,
             'isExpired' => ! $invitation->isPending(),

@@ -1,6 +1,7 @@
 import { Form, Head } from '@inertiajs/react';
 import TeamMembersController from '@/actions/App/Http/Controllers/TeamMembersController';
 import TeamsController from '@/actions/App/Http/Controllers/TeamsController';
+import ConfirmFormDialog from '@/components/confirm-form-dialog';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
@@ -148,13 +149,19 @@ export default function ShowTeam({
                 </section>
 
                 {canManage && (
-                    <Form {...TeamsController.destroy.form(params)}>
-                        {({ processing }) => (
-                            <Button variant="destructive" disabled={processing}>
+                    <ConfirmFormDialog
+                        form={TeamsController.destroy.form(params)}
+                        title={t('Delete this team?')}
+                        description={t(
+                            'This permanently deletes the team and its retrospectives.',
+                        )}
+                        confirmLabel={t('Delete team')}
+                        trigger={
+                            <Button variant="destructive">
                                 {t('Delete team')}
                             </Button>
-                        )}
-                    </Form>
+                        }
+                    />
                 )}
             </div>
         </>

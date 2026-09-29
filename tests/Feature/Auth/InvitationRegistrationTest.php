@@ -151,3 +151,13 @@ it('verifies the email of an unverified user accepting an invitation', function 
 
     expect($user->fresh()->email_verified_at)->not->toBeNull();
 });
+
+it('renders an invalid invitation page with a 404 for an unknown token', function () {
+    $this->get(route('invitations.show', 'unknown-token'))
+        ->assertNotFound()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('invitations/show')
+            ->where('isInvalid', true)
+            ->missing('workspaceName')
+            ->missing('email'));
+});

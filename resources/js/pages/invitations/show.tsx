@@ -3,28 +3,44 @@ import InvitationAcceptancesController from '@/actions/App/Http/Controllers/Invi
 import Heading from '@/components/heading';
 import { Button } from '@/components/ui/button';
 import { useTrans } from '@/hooks/use-trans';
-import { login, register } from '@/routes';
+import { login, logout as logoutRoute, register } from '@/routes';
 
 type Props = {
-    token: string;
-    workspaceName: string;
-    email: string;
-    isExpired: boolean;
-    isLoggedIn: boolean;
-    emailMatches: boolean;
-    canRegister: boolean;
+    isInvalid: boolean;
+    token?: string;
+    workspaceName?: string;
+    email?: string;
+    isExpired?: boolean;
+    isLoggedIn?: boolean;
+    emailMatches?: boolean;
+    canRegister?: boolean;
 };
 
 export default function ShowInvitation({
-    token,
-    workspaceName,
-    email,
-    isExpired,
-    isLoggedIn,
-    emailMatches,
-    canRegister,
+    isInvalid,
+    token = '',
+    workspaceName = '',
+    email = '',
+    isExpired = false,
+    isLoggedIn = false,
+    emailMatches = false,
+    canRegister = false,
 }: Props) {
     const { t } = useTrans();
+
+    if (isInvalid) {
+        return (
+            <>
+                <Head title={t('Invitation')} />
+                <div className="space-y-6">
+                    <Heading title={t('Invitation')} />
+                    <p className="text-destructive">
+                        {t('This invitation link is no longer valid.')}
+                    </p>
+                </div>
+            </>
+        );
+    }
 
     return (
         <>
@@ -62,6 +78,16 @@ export default function ShowInvitation({
                             { email },
                         )}
                     </p>
+                )}
+
+                {!isExpired && isLoggedIn && !emailMatches && (
+                    <Form {...logoutRoute.form()}>
+                        {({ processing }) => (
+                            <Button variant="outline" disabled={processing}>
+                                {t('Log out')}
+                            </Button>
+                        )}
+                    </Form>
                 )}
 
                 {!isExpired && !isLoggedIn && (

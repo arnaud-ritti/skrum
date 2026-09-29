@@ -3,6 +3,7 @@ import { useState } from 'react';
 import WorkspaceInvitationsController from '@/actions/App/Http/Controllers/WorkspaceInvitationsController';
 import WorkspaceMembersController from '@/actions/App/Http/Controllers/WorkspaceMembersController';
 import WorkspacesController from '@/actions/App/Http/Controllers/WorkspacesController';
+import ConfirmFormDialog from '@/components/confirm-form-dialog';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
@@ -61,107 +62,142 @@ export default function WorkspaceMembers({
                 <Heading title={t('Members')} description={workspace.name} />
 
                 <ul className="divide-y rounded-md border">
-                    {members.map((member) => (
-                        <li
-                            key={member.id}
-                            className="flex items-center justify-between gap-4 p-3"
-                        >
-                            <div>
-                                <div className="font-medium">{member.name}</div>
-                                <div className="text-sm text-muted-foreground">
-                                    {member.email}
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                {member.role === 'owner' && !isOwner ? (
-                                    <Badge>{t(roleLabels.owner)}</Badge>
-                                ) : (
-                                    <div>
-                                        <Select
-                                            value={member.role}
-                                            onValueChange={(role) =>
-                                                router.patch(
-                                                    WorkspaceMembersController.update.url(
-                                                        {
-                                                            workspace:
-                                                                workspace.slug,
-                                                            member: member.id,
-                                                        },
-                                                    ),
-                                                    { role },
-                                                    {
-                                                        preserveScroll: true,
-                                                        onSuccess: () =>
-                                                            setRoleError(null),
-                                                        onError: (errors) =>
-                                                            setRoleError({
-                                                                memberId:
-                                                                    member.id,
-                                                                message:
-                                                                    errors.role,
-                                                            }),
-                                                    },
-                                                )
-                                            }
-                                        >
-                                            <SelectTrigger
-                                                className="w-32"
-                                                aria-label={t('Role')}
-                                            >
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {assignableRoles.map((role) => (
-                                                    <SelectItem
-                                                        key={role}
-                                                        value={role}
-                                                    >
-                                                        {t(roleLabels[role])}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                        <InputError
-                                            message={
-                                                roleError?.memberId ===
-                                                member.id
-                                                    ? roleError.message
-                                                    : undefined
-                                            }
-                                        />
+                    {members.map((member) => {
+                        const isSelf = member.id === auth.user.id;
+
+                        return (
+                            <li
+                                key={member.id}
+                                className="flex items-center justify-between gap-4 p-3"
+                            >
+                                <div>
+                                    <div className="font-medium">
+                                        {member.name}
                                     </div>
-                                )}
-                                {(member.role !== 'owner' || isOwner) && (
-                                    <Form
-                                        {...WorkspaceMembersController.destroy.form(
-                                            {
-                                                workspace: workspace.slug,
-                                                member: member.id,
-                                            },
-                                        )}
-                                        options={{ preserveScroll: true }}
-                                    >
-                                        {({ processing, errors }) => (
-                                            <>
+                                    <div className="text-sm text-muted-foreground">
+                                        {member.email}
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    {member.role === 'owner' && !isOwner ? (
+                                        <Badge>{t(roleLabels.owner)}</Badge>
+                                    ) : (
+                                        <div>
+                                            <Select
+                                                value={member.role}
+                                                onValueChange={(role) =>
+                                                    router.patch(
+                                                        WorkspaceMembersController.update.url(
+                                                            {
+                                                                workspace:
+                                                                    workspace.slug,
+                                                                member: member.id,
+                                                            },
+                                                        ),
+                                                        { role },
+                                                        {
+                                                            preserveScroll: true,
+                                                            onSuccess: () =>
+                                                                setRoleError(
+                                                                    null,
+                                                                ),
+                                                            onError: (errors) =>
+                                                                setRoleError({
+                                                                    memberId:
+                                                                        member.id,
+                                                                    message:
+                                                                        errors.role,
+                                                                }),
+                                                        },
+                                                    )
+                                                }
+                                            >
+                                                <SelectTrigger
+                                                    className="w-32"
+                                                    aria-label={t('Role')}
+                                                >
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {assignableRoles.map(
+                                                        (role) => (
+                                                            <SelectItem
+                                                                key={role}
+                                                                value={role}
+                                                            >
+                                                                {t(
+                                                                    roleLabels[
+                                                                        role
+                                                                    ],
+                                                                )}
+                                                            </SelectItem>
+                                                        ),
+                                                    )}
+                                                </SelectContent>
+                                            </Select>
+                                            <InputError
+                                                message={
+                                                    roleError?.memberId ===
+                                                    member.id
+                                                        ? roleError.message
+                                                        : undefined
+                                                }
+                                            />
+                                        </div>
+                                    )}
+                                    {(member.role !== 'owner' || isOwner) && (
+                                        <ConfirmFormDialog
+                                            form={{
+                                                ...WorkspaceMembersController.destroy.form(
+                                                    {
+                                                        workspace:
+                                                            workspace.slug,
+                                                        member: member.id,
+                                                    },
+                                                ),
+                                                options: {
+                                                    preserveScroll: true,
+                                                },
+                                            }}
+                                            title={
+                                                isSelf
+                                                    ? t('Leave this workspace?')
+                                                    : t(
+                                                          'Remove :name from this workspace?',
+                                                          { name: member.name },
+                                                      )
+                                            }
+                                            description={
+                                                isSelf
+                                                    ? t(
+                                                          'You will lose access to the workspace and be removed from all of its teams.',
+                                                      )
+                                                    : t(
+                                                          'They will lose access to the workspace and be removed from all of its teams.',
+                                                      )
+                                            }
+                                            confirmLabel={
+                                                isSelf
+                                                    ? t('Leave')
+                                                    : t('Remove')
+                                            }
+                                            errorKey="member"
+                                            trigger={
                                                 <Button
                                                     variant="ghost"
                                                     size="sm"
-                                                    disabled={processing}
                                                 >
-                                                    {member.id === auth.user.id
+                                                    {isSelf
                                                         ? t('Leave')
                                                         : t('Remove')}
                                                 </Button>
-                                                <InputError
-                                                    message={errors.member}
-                                                />
-                                            </>
-                                        )}
-                                    </Form>
-                                )}
-                            </div>
-                        </li>
-                    ))}
+                                            }
+                                        />
+                                    )}
+                                </div>
+                            </li>
+                        );
+                    })}
                 </ul>
 
                 <section className="space-y-4">
@@ -276,20 +312,21 @@ export default function WorkspaceMembers({
                                 'This permanently deletes the workspace, its teams and their retrospectives.',
                             )}
                         />
-                        <Form
-                            {...WorkspacesController.destroy.form(
+                        <ConfirmFormDialog
+                            form={WorkspacesController.destroy.form(
                                 workspace.slug,
                             )}
-                        >
-                            {({ processing }) => (
-                                <Button
-                                    variant="destructive"
-                                    disabled={processing}
-                                >
+                            title={t('Delete this workspace?')}
+                            description={t(
+                                'This permanently deletes the workspace, its teams and their retrospectives.',
+                            )}
+                            confirmLabel={t('Delete workspace')}
+                            trigger={
+                                <Button variant="destructive">
                                     {t('Delete workspace')}
                                 </Button>
-                            )}
-                        </Form>
+                            }
+                        />
                     </section>
                 )}
             </div>
