@@ -298,6 +298,11 @@ function CommentForm({
     const [content, setContent] = useState(editedComment?.content ?? '');
     const [sending, setSending] = useState(false);
     const sendInFlight = useRef(false);
+    const submitLabel = editedComment
+        ? t('Save')
+        : 'parentCommentId' in target && target.parentCommentId === null
+          ? t('Comment')
+          : t('Reply');
 
     const submit = async () => {
         const trimmed = content.trim();
@@ -378,7 +383,7 @@ function CommentForm({
                     </Button>
                 )}
                 <Button size="sm" disabled={sending || content.trim() === ''}>
-                    {editedComment ? t('Save') : t('Reply')}
+                    {submitLabel}
                 </Button>
             </div>
         </form>
