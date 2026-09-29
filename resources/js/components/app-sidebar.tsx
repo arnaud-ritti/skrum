@@ -1,5 +1,6 @@
 import { Link, usePage } from '@inertiajs/react';
-import { LayoutGrid } from 'lucide-react';
+import { LayoutGrid, Users } from 'lucide-react';
+import WorkspaceMembersController from '@/actions/App/Http/Controllers/WorkspaceMembersController';
 import WorkspacesController from '@/actions/App/Http/Controllers/WorkspacesController';
 import AppLogo from '@/components/app-logo';
 import { NavMain } from '@/components/nav-main';
@@ -29,6 +30,14 @@ export function AppSidebar() {
             icon: LayoutGrid,
         },
     ];
+
+    if (currentWorkspace && currentWorkspace.role !== 'member') {
+        mainNavItems.push({
+            title: 'Members',
+            href: WorkspaceMembersController.index(currentWorkspace.slug),
+            icon: Users,
+        });
+    }
 
     return (
         <Sidebar collapsible="icon" variant="inset">

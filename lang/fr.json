@@ -431,5 +431,21 @@
     "Rename": "Renommer",
     "Members": "Membres",
     "Add a member": "Ajouter un membre",
-    "Delete team": "Supprimer l'équipe"
+    "Delete team": "Supprimer l'équipe",
+    "Owner": "Propriétaire",
+    "Member": "Membre",
+    "Role": "Rôle",
+    "Leave": "Quitter",
+    "Invite people": "Inviter des personnes",
+    "Send invitation": "Envoyer l'invitation",
+    "Email is not configured on this instance. Share this link with the invited person:": "L'envoi d'e-mails n'est pas configuré sur cette instance. Partagez ce lien avec la personne invitée :",
+    "Expired": "Expirée",
+    "Revoke": "Révoquer",
+    "Delete workspace": "Supprimer l'espace de travail",
+    "This permanently deletes the workspace, its teams and their retrospectives.": "Cela supprime définitivement l'espace de travail, ses équipes et leurs rétrospectives.",
+    "A workspace needs at least one owner.": "Un espace de travail doit avoir au moins un propriétaire.",
+    "This person is already a member of the workspace.": "Cette personne est déjà membre de l'espace de travail.",
+    "You are invited to join :workspace": "Vous êtes invité(e) à rejoindre :workspace",
+    ":inviter invited you to join the :workspace workspace.": ":inviter vous a invité(e) à rejoindre l'espace de travail :workspace.",
+    "This invitation expires on :date.": "Cette invitation expire le :date."
 }

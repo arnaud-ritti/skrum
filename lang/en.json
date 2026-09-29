@@ -167,5 +167,22 @@
     "Members": "Members",
     "Add a member": "Add a member",
     "Add": "Add",
-    "Delete team": "Delete team"
+    "Delete team": "Delete team",
+    "Owner": "Owner",
+    "Admin": "Admin",
+    "Member": "Member",
+    "Role": "Role",
+    "Leave": "Leave",
+    "Invite people": "Invite people",
+    "Send invitation": "Send invitation",
+    "Email is not configured on this instance. Share this link with the invited person:": "Email is not configured on this instance. Share this link with the invited person:",
+    "Expired": "Expired",
+    "Revoke": "Revoke",
+    "Delete workspace": "Delete workspace",
+    "This permanently deletes the workspace, its teams and their retrospectives.": "This permanently deletes the workspace, its teams and their retrospectives.",
+    "A workspace needs at least one owner.": "A workspace needs at least one owner.",
+    "This person is already a member of the workspace.": "This person is already a member of the workspace.",
+    "You are invited to join :workspace": "You are invited to join :workspace",
+    ":inviter invited you to join the :workspace workspace.": ":inviter invited you to join the :workspace workspace.",
+    "This invitation expires on :date.": "This invitation expires on :date."
 }

@@ -7,6 +7,8 @@ use App\Http\Controllers\InvitationLinksController;
 use App\Http\Controllers\LocalesController;
 use App\Http\Controllers\TeamMembersController;
 use App\Http\Controllers\TeamsController;
+use App\Http\Controllers\WorkspaceInvitationsController;
+use App\Http\Controllers\WorkspaceMembersController;
 use App\Http\Controllers\WorkspacesController;
 use App\Http\Middleware\RememberCurrentWorkspace;
 use Illuminate\Support\Facades\Route;
@@ -42,6 +44,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::delete('teams/{team}', [TeamsController::class, 'destroy'])->name('teams.destroy');
             Route::post('teams/{team}/members', [TeamMembersController::class, 'store'])->name('teams.members.store');
             Route::delete('teams/{team}/members/{member}', [TeamMembersController::class, 'destroy'])->name('teams.members.destroy');
+
+            Route::get('members', [WorkspaceMembersController::class, 'index'])->name('workspaces.members.index');
+            Route::patch('members/{member}', [WorkspaceMembersController::class, 'update'])->name('workspaces.members.update');
+            Route::delete('members/{member}', [WorkspaceMembersController::class, 'destroy'])->name('workspaces.members.destroy');
+            Route::post('invitations', [WorkspaceInvitationsController::class, 'store'])->name('workspaces.invitations.store');
+            Route::delete('invitations/{invitation}', [WorkspaceInvitationsController::class, 'destroy'])->name('workspaces.invitations.destroy');
         });
 });
 

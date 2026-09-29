@@ -20,3 +20,14 @@ export type MemberSummary = {
     name: string;
     email: string;
 };
+
+export type WorkspaceMember = MemberSummary & {
+    role: WorkspaceRole;
+};
+
+export type PendingInvitation = {
+    id: string;
+    email: string;
+    role: WorkspaceRole;
+    isExpired: boolean;
+};

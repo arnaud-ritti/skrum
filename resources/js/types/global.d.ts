@@ -1,4 +1,5 @@
 import type { Auth } from '@/types/auth';
+import type { FlashToast } from '@/types/ui';
 import type { CurrentWorkspace, WorkspaceSummary } from '@/types/workspaces';
 
 declare module 'react' {
@@ -19,6 +20,10 @@ declare module '@inertiajs/core' {
             workspaces: WorkspaceSummary[];
             currentWorkspace: CurrentWorkspace | null;
             [key: string]: unknown;
+        };
+        flashDataType: {
+            toast?: FlashToast;
+            invitationUrl?: string;
         };
     }
 }
