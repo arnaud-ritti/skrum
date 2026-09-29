@@ -1,4 +1,5 @@
 import type { Auth } from '@/types/auth';
+import type { CurrentWorkspace, WorkspaceSummary } from '@/types/workspaces';
 
 declare module 'react' {
     interface InputHTMLAttributes<T> {
@@ -15,6 +16,8 @@ declare module '@inertiajs/core' {
             locale: string;
             locales: string[];
             translations: Record<string, string>;
+            workspaces: WorkspaceSummary[];
+            currentWorkspace: CurrentWorkspace | null;
             [key: string]: unknown;
         };
     }

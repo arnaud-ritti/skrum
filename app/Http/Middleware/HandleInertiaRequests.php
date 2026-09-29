@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Workspace;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -45,6 +46,12 @@ class HandleInertiaRequests extends Middleware
             'locale' => app()->getLocale(),
             'locales' => config('skrum.locales'),
             'translations' => fn () => $this->translations(app()->getLocale()),
+            'workspaces' => fn () => $request->user()?->workspaces()
+                ->orderBy('name')
+                ->get()
+                ->map(fn (Workspace $workspace) => $workspace->only(['id', 'name', 'slug']))
+                ->all() ?? [],
+            'currentWorkspace' => fn () => $this->currentWorkspace($request),
         ];
     }
 
@@ -60,5 +67,38 @@ class HandleInertiaRequests extends Middleware
         }
 
         return json_decode((string) file_get_contents($path), true) ?? [];
+    }
+
+    /**
+     * @return array{
+     *     id: string,
+     *     name: string,
+     *     slug: string,
+     *     role: string
+     * }|null
+     */
+    private function currentWorkspace(Request $request): ?array
+    {
+        $user = $request->user();
+        $workspace = $request->route('workspace');
+
+        if ($user === null) {
+            return null;
+        }
+
+        if (! $workspace instanceof Workspace) {
+            $workspace = $user->currentWorkspace;
+        }
+
+        $role = $workspace === null ? null : $user->roleIn($workspace);
+
+        if ($role === null) {
+            return null;
+        }
+
+        return [
+            ...$workspace->only(['id', 'name', 'slug']),
+            'role' => $role->value,
+        ];
     }
 }

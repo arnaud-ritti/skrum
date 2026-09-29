@@ -1,5 +1,6 @@
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import { LayoutGrid } from 'lucide-react';
+import WorkspacesController from '@/actions/App/Http/Controllers/WorkspacesController';
 import AppLogo from '@/components/app-logo';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
@@ -12,18 +13,23 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
+import { WorkspaceSwitcher } from '@/components/workspace-switcher';
 import { dashboard } from '@/routes';
 import type { NavItem } from '@/types';
 
-const mainNavItems: NavItem[] = [
-    {
-        title: 'Dashboard',
-        href: dashboard(),
-        icon: LayoutGrid,
-    },
-];
-
 export function AppSidebar() {
+    const { currentWorkspace } = usePage().props;
+
+    const mainNavItems: NavItem[] = [
+        {
+            title: 'Teams',
+            href: currentWorkspace
+                ? WorkspacesController.show(currentWorkspace.slug)
+                : dashboard(),
+            icon: LayoutGrid,
+        },
+    ];
+
     return (
         <Sidebar collapsible="icon" variant="inset">
             <SidebarHeader>
@@ -34,6 +40,9 @@ export function AppSidebar() {
                                 <AppLogo />
                             </Link>
                         </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
+                        <WorkspaceSwitcher />
                     </SidebarMenuItem>
                 </SidebarMenu>
             </SidebarHeader>

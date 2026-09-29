@@ -1,0 +1,96 @@
+<?php
+
+use App\Enums\WorkspaceRole;
+use App\Models\User;
+use App\Models\Workspace;
+use Inertia\Testing\AssertableInertia as Assert;
+
+it('sends users without a workspace to the create page', function () {
+    $this->actingAs(User::factory()->create())
+        ->get(route('dashboard'))
+        ->assertRedirect(route('workspaces.create'));
+});
+
+it('creates a workspace and opens it', function () {
+    $user = User::factory()->create();
+
+    $response = $this->actingAs($user)->post(route('workspaces.store'), ['name' => 'Acme']);
+
+    $workspace = $user->workspaces()->sole();
+
+    $response->assertRedirect(route('workspaces.show', $workspace));
+    expect($workspace->name)->toBe('Acme');
+});
+
+it('requires a workspace name', function () {
+    $this->actingAs(User::factory()->create())
+        ->post(route('workspaces.store'), ['name' => ''])
+        ->assertSessionHasErrors('name');
+});
+
+it('sends users to their current workspace', function () {
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->withMember($user)->create();
+    $user->forceFill(['current_workspace_id' => $workspace->id])->save();
+
+    $this->actingAs($user)
+        ->get(route('dashboard'))
+        ->assertRedirect(route('workspaces.show', $workspace));
+});
+
+it('ignores a current workspace the user no longer belongs to', function () {
+    $user = User::factory()->create();
+    $formerWorkspace = Workspace::factory()->create();
+    $otherWorkspace = Workspace::factory()->withMember($user)->create();
+    $user->forceFill(['current_workspace_id' => $formerWorkspace->id])->save();
+
+    $this->actingAs($user)
+        ->get(route('dashboard'))
+        ->assertRedirect(route('workspaces.show', $otherWorkspace));
+});
+
+it('remembers the last visited workspace', function () {
+    $user = User::factory()->create();
+    $first = Workspace::factory()->withMember($user)->create();
+    $second = Workspace::factory()->withMember($user)->create();
+    $user->forceFill(['current_workspace_id' => $first->id])->save();
+
+    $this->actingAs($user)->get(route('workspaces.show', $second))->assertOk();
+
+    expect($user->fresh()->current_workspace_id)->toBe($second->id);
+});
+
+it('shares the workspace list and current workspace', function () {
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->withMember($user, WorkspaceRole::Admin)->create();
+
+    $this->actingAs($user)
+        ->get(route('workspaces.show', $workspace))
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('workspaces/show')
+            ->where('currentWorkspace.slug', $workspace->slug)
+            ->where('currentWorkspace.role', 'admin')
+            ->has('workspaces', 1));
+});
+
+it('forbids opening a workspace the user does not belong to', function () {
+    $this->actingAs(User::factory()->create())
+        ->get(route('workspaces.show', Workspace::factory()->create()))
+        ->assertForbidden();
+});
+
+it('lets only owners delete a workspace', function (WorkspaceRole $role, int $expectedStatus) {
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->withMember($user, $role)->create();
+
+    $response = $this->actingAs($user)->delete(route('workspaces.destroy', $workspace));
+
+    $expectedStatus === 302
+        ? $response->assertRedirect(route('dashboard'))
+        : $response->assertStatus($expectedStatus);
+    expect(Workspace::query()->whereKey($workspace->id)->exists())->toBe($expectedStatus !== 302);
+})->with([
+    'owner' => [WorkspaceRole::Owner, 302],
+    'admin' => [WorkspaceRole::Admin, 403],
+    'member' => [WorkspaceRole::Member, 403],
+]);

@@ -26,6 +26,11 @@ class Workspace extends Model
 
     use HasUuids;
 
+    public function getRouteKeyName(): string
+    {
+        return 'slug';
+    }
+
     /** @return BelongsToMany<User, $this, WorkspaceMembership, 'membership'> */
     public function members(): BelongsToMany
     {
