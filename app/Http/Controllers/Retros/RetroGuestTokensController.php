@@ -27,6 +27,11 @@ class RetroGuestTokensController extends Controller
 
             $locked->update(['guest_token' => Str::random(40)]);
 
+            $locked->participants()
+                ->whereNull('user_id')
+                ->whereNotNull('guest_secret_hash')
+                ->update(['guest_secret_hash' => null]);
+
             (new RetroSettingsChanged($locked->id))->sendToOthers();
 
             return $locked->guest_token;

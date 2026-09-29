@@ -107,6 +107,16 @@ it('highlights top level cards while discussing', function () {
     $this->actingAs($user)->putJson(route('retros.highlight.update', $retro), ['card_id' => $card->id])->assertForbidden();
 });
 
+it('clears the highlighted card when leaving the discussing phase', function () {
+    [$retro, $user] = facilitatedRetro(RetroPhase::Discussing);
+    $card = Card::factory()->create(['retro_id' => $retro->id]);
+    $retro->update(['highlighted_card_id' => $card->id]);
+
+    $this->actingAs($user)->putJson(route('retros.phase.update', $retro), ['phase' => 'voting'])->assertOk();
+
+    expect($retro->fresh()->highlighted_card_id)->toBeNull();
+});
+
 it('updates settings and asks clients to refetch', function () {
     [$retro, $user] = facilitatedRetro();
 
@@ -151,6 +161,14 @@ it('regenerates the guest link and locks out existing guests', function () {
     [$retro, $user] = facilitatedRetro();
     $retro->update(['guest_access_enabled' => true]);
     $oldToken = $retro->guest_token;
+    $guest = Participant::factory()->guest()->create(['retro_id' => $retro->id]);
+    $this->withCredentials()->withCookies(retroGuestCookie($guest))->getJson(route('retros.snapshot.show', $retro))->assertOk();
+    config([
+        'broadcasting.default' => 'reverb',
+        'broadcasting.connections.reverb.key' => 'test-key',
+        'broadcasting.connections.reverb.secret' => 'test-secret',
+        'broadcasting.connections.reverb.app_id' => 'test-app',
+    ]);
 
     $response = $this->actingAs($user)->postJson(route('retros.guest-token.store', $retro))->assertOk();
 
@@ -158,6 +176,13 @@ it('regenerates the guest link and locks out existing guests', function () {
         ->and($response->json('guestUrl'))->toBe(route('retros.join.show', $retro->fresh()->guest_token));
     Event::assertDispatched(RetroSettingsChanged::class);
     $this->get(route('retros.join.show', $oldToken))->assertNotFound();
+    auth()->logout();
+    $this->withCredentials()->withCookies(retroGuestCookie($guest))->getJson(route('retros.snapshot.show', $retro))->assertForbidden();
+    $this->withCredentials()->withCookies(retroGuestCookie($guest))->postJson(route('broadcasting.auth'), [
+        'socket_id' => '1234.5678',
+        'channel_name' => "presence-retro.{$retro->id}",
+    ])->assertForbidden();
+    expect($guest->fresh()->guest_secret_hash)->toBeNull();
 });
 
 it('locks guests out when guest access is disabled', function () {

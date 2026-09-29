@@ -39,8 +39,11 @@ class RetroPhasesController extends Controller
 
             $isCompleting = $phase === RetroPhase::Completed;
 
+            $isLeavingDiscussing = $locked->phase === RetroPhase::Discussing && $phase !== RetroPhase::Discussing;
+
             $locked->update([
                 'phase' => $phase,
+                'highlighted_card_id' => $isLeavingDiscussing ? null : $locked->highlighted_card_id,
                 'completed_at' => $isCompleting ? now() : null,
                 'timer_ends_at' => $isCompleting ? null : $locked->timer_ends_at,
             ]);
