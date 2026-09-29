@@ -522,5 +522,6 @@
     ":count online": ":count en línea",
     "Guest": "Invitado",
     "Phases": "Fases",
-    "Something went wrong. Please try again.": "Algo salió mal. Por favor, inténtelo de nuevo."
+    "Something went wrong. Please try again.": "Algo salió mal. Inténtalo de nuevo.",
+    ":count more": ":count más"
 }

@@ -1,9 +1,9 @@
 import { useTrans } from '@/hooks/use-trans';
 
-export function ConnectionBanner({ connected }: { connected: boolean }) {
+export function ConnectionBanner({ reconnecting }: { reconnecting: boolean }) {
     const { t } = useTrans();
 
-    if (connected) {
+    if (!reconnecting) {
         return null;
     }
 

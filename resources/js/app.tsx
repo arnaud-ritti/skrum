@@ -11,22 +11,29 @@ import SettingsLayout from '@/layouts/settings/layout';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
-configureEcho({
-    broadcaster: 'reverb',
-    channelAuthorization: {
-        customHandler: ({ socketId, channelName }, callback) => {
-            http.getClient()
-                .request({
-                    method: 'post',
-                    url: BroadcastAuthorizationsController.store.url(),
-                    data: { socket_id: socketId, channel_name: channelName },
-                    headers: { Accept: 'application/json' },
-                })
-                .then((response) => callback(null, JSON.parse(response.data)))
-                .catch((error: Error) => callback(error, null));
+if (typeof window !== 'undefined') {
+    configureEcho({
+        broadcaster: 'reverb',
+        channelAuthorization: {
+            customHandler: ({ socketId, channelName }, callback) => {
+                http.getClient()
+                    .request({
+                        method: 'post',
+                        url: BroadcastAuthorizationsController.store.url(),
+                        data: {
+                            socket_id: socketId,
+                            channel_name: channelName,
+                        },
+                        headers: { Accept: 'application/json' },
+                    })
+                    .then((response) =>
+                        callback(null, JSON.parse(response.data)),
+                    )
+                    .catch((error: Error) => callback(error, null));
+            },
         },
-    },
-});
+    });
+}
 
 void createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),

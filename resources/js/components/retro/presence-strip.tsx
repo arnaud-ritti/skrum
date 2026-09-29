@@ -14,6 +14,7 @@ export function PresenceStrip({ members }: { members: PresenceMember[] }) {
 
     return (
         <div
+            role="group"
             className="flex items-center -space-x-2"
             aria-label={t(':count online', { count: members.length })}
         >
@@ -33,7 +34,10 @@ export function PresenceStrip({ members }: { members: PresenceMember[] }) {
                 </Tooltip>
             ))}
             {hidden > 0 && (
-                <span className="flex size-8 items-center justify-center rounded-full border-2 border-background bg-muted text-xs">
+                <span
+                    aria-label={t(':count more', { count: hidden })}
+                    className="flex size-8 items-center justify-center rounded-full border-2 border-background bg-muted text-xs"
+                >
                     +{hidden}
                 </span>
             )}

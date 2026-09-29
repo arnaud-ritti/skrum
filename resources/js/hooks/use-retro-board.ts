@@ -1,4 +1,4 @@
-import { useCallback, useReducer, useState } from 'react';
+import { useCallback, useReducer, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import RetroSnapshotsController from '@/actions/App/Http/Controllers/Retros/RetroSnapshotsController';
 import { useTrans } from '@/hooks/use-trans';
@@ -18,23 +18,50 @@ export function useRetroBoard(initial: Snapshot) {
     const { t } = useTrans();
     const [board, dispatch] = useReducer(boardReducer, initial);
     const [status, setStatus] = useState<BoardStatus>('active');
+    const isActive = useRef(true);
+    const latestRefetch = useRef(0);
     const retroId = initial.retro.id;
 
+    const end = useCallback((reason: Exclude<BoardStatus, 'active'>) => {
+        if (!isActive.current) {
+            return;
+        }
+
+        isActive.current = false;
+        setStatus(reason);
+    }, []);
+
     const refetch = useCallback(async () => {
+        if (!isActive.current) {
+            return;
+        }
+
+        const request = ++latestRefetch.current;
+
         try {
             const snapshot = await retroRequest<Snapshot>(
                 RetroSnapshotsController.show(retroId),
             );
+
+            if (request !== latestRefetch.current || !isActive.current) {
+                return;
+            }
+
             dispatch({ type: 'replace', snapshot });
         } catch (error) {
-            if (
-                error instanceof RetroRequestError &&
-                [403, 404].includes(error.status)
-            ) {
-                setStatus('ended');
+            if (!(error instanceof RetroRequestError)) {
+                return;
+            }
+
+            if (error.status === 404) {
+                end('deleted');
+            }
+
+            if (error.status === 403) {
+                end('ended');
             }
         }
-    }, [retroId]);
+    }, [retroId, end]);
 
     const onEvent = useCallback(
         ({ name, payload }: RetroEvent) => {
@@ -103,14 +130,14 @@ export function useRetroBoard(initial: Snapshot) {
                     void refetch();
                     break;
                 case 'retro.deleted':
-                    setStatus('deleted');
+                    end('deleted');
                     break;
             }
         },
-        [refetch],
+        [refetch, end],
     );
 
-    const { online, connected } = useRetroChannel(
+    const { online, connected, reconnecting } = useRetroChannel(
         retroId,
         status === 'active',
         onEvent,
@@ -135,5 +162,14 @@ export function useRetroBoard(initial: Snapshot) {
         [refetch, t],
     );
 
-    return { board, dispatch, refetch, status, online, connected, run };
+    return {
+        board,
+        dispatch,
+        refetch,
+        status,
+        online,
+        connected,
+        reconnecting,
+        run,
+    };
 }

@@ -5,7 +5,7 @@ import { BoardHeader } from './board-header';
 import { ConnectionBanner } from './connection-banner';
 
 export function Board({ snapshot }: { snapshot: Snapshot }) {
-    const { board, status, online, connected } = useRetroBoard(snapshot);
+    const { board, status, online, reconnecting } = useRetroBoard(snapshot);
 
     if (status !== 'active') {
         return <BoardEnded reason={status} teamUrl={board.links.team} />;
@@ -14,7 +14,7 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
     return (
         <div className="flex min-h-dvh flex-col">
             <BoardHeader board={board} online={online} />
-            <ConnectionBanner connected={connected} />
+            <ConnectionBanner reconnecting={reconnecting} />
             <main className="flex flex-1 items-start gap-4 overflow-x-auto p-4">
                 {board.columns.map((column) => (
                     <section

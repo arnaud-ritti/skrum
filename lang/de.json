@@ -522,5 +522,6 @@
     ":count online": ":count online",
     "Guest": "Gast",
     "Phases": "Phasen",
-    "Something went wrong. Please try again.": "Etwas ist schiefgelaufen. Bitte versuch es erneut."
+    "Something went wrong. Please try again.": "Etwas ist schiefgelaufen. Bitte versuch es erneut.",
+    ":count more": ":count weitere"
 }

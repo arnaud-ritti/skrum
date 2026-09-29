@@ -1,5 +1,9 @@
-import { echo, useConnectionStatus } from '@laravel/echo-react';
-import { useEffect, useRef, useState } from 'react';
+import {
+    echo,
+    echoIsConfigured,
+    type ConnectionStatus,
+} from '@laravel/echo-react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import type { PresenceMember } from '@/lib/retro/types';
 
 export const RetroEvents = [
@@ -28,6 +32,38 @@ export type RetroEvent = {
     payload: Record<string, unknown>;
 };
 
+function subscribeToConnection(onChange: () => void): () => void {
+    if (!echoIsConfigured()) {
+        return () => {};
+    }
+
+    return echo().connector.onConnectionChange(onChange);
+}
+
+function connectionStatus(): ConnectionStatus {
+    if (!echoIsConfigured()) {
+        return 'connecting';
+    }
+
+    return echo().connector.connectionStatus();
+}
+
+function serverConnectionStatus(): ConnectionStatus {
+    return 'connecting';
+}
+
+/**
+ * SSR-safe replacement for echo-react's useConnectionStatus, which calls
+ * echo() during render and would throw on the server.
+ */
+export function useSafeConnectionStatus(): ConnectionStatus {
+    return useSyncExternalStore(
+        subscribeToConnection,
+        connectionStatus,
+        serverConnectionStatus,
+    );
+}
+
 export function useRetroChannel(
     retroId: string,
     enabled: boolean,
@@ -35,11 +71,15 @@ export function useRetroChannel(
     onResync: () => void,
 ) {
     const [online, setOnline] = useState<PresenceMember[]>([]);
-    const status = useConnectionStatus();
+    const status = useSafeConnectionStatus();
     const handlers = useRef({ onEvent, onResync });
-    const wasConnected = useRef(false);
+    const [wasConnected, setWasConnected] = useState(false);
 
     handlers.current = { onEvent, onResync };
+
+    if (status === 'connected' && !wasConnected) {
+        setWasConnected(true);
+    }
 
     useEffect(() => {
         if (!enabled) {
@@ -49,7 +89,10 @@ export function useRetroChannel(
         const name = `retro.${retroId}`;
         const channel = echo<'reverb'>()
             .join(name)
-            .here((members: PresenceMember[]) => setOnline(members))
+            .here((members: PresenceMember[]) => {
+                setOnline(members);
+                handlers.current.onResync();
+            })
             .joining((member: PresenceMember) =>
                 setOnline((current) => [
                     ...current.filter((m) => m.id !== member.id),
@@ -74,17 +117,8 @@ export function useRetroChannel(
         };
     }, [retroId, enabled]);
 
-    useEffect(() => {
-        if (status !== 'connected') {
-            return;
-        }
+    const connected = status === 'connected';
+    const reconnecting = status === 'failed' || (wasConnected && !connected);
 
-        if (wasConnected.current) {
-            handlers.current.onResync();
-        }
-
-        wasConnected.current = true;
-    }, [status]);
-
-    return { online, connected: status === 'connected' };
+    return { online, connected, reconnecting };
 }
