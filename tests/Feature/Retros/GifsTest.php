@@ -111,6 +111,24 @@ it('streams known gifs from a local cache and refuses unknown ones', function ()
     $this->get(route('gifs.show', ['gif' => 'zzz', 'size' => 'full']))->assertNotFound();
 });
 
+it('fetches a gif again over an empty cached file', function () {
+    Http::fake([
+        'api.giphy.com/v1/gifs/search*' => Http::response(['data' => [giphyItem('abc123')]]),
+        'media.giphy.com/*' => Http::response("GIF89a\x01\x00\x01\x00", 200, ['Content-Type' => 'image/gif']),
+    ]);
+    $retro = Retro::factory()->create();
+    [$user] = retroMember($retro);
+    $this->actingAs($user)->getJson(route('retros.gifs.index', ['retro' => $retro, 'q' => 'party']))->assertOk();
+    Storage::put('gifs/giphy/abc123-preview', '');
+
+    $this->get(route('gifs.show', ['gif' => 'abc123', 'size' => 'preview']))
+        ->assertOk()
+        ->assertHeader('Content-Type', 'image/gif')
+        ->assertContent("GIF89a\x01\x00\x01\x00");
+
+    expect(Storage::get('gifs/giphy/abc123-preview'))->toBe("GIF89a\x01\x00\x01\x00");
+});
+
 it('attaches a gif to a card and keeps text optional', function () {
     Http::fake(['api.giphy.com/v1/gifs/abc123*' => Http::response(['data' => giphyItem('abc123')])]);
     $retro = Retro::factory()->create();

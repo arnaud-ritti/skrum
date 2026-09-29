@@ -36,6 +36,16 @@ it('fetches emoji data once from the cdn and then serves it from storage', funct
     Storage::assertExists('emoji-data/17.0.0/fr/data.json');
 });
 
+it('fetches again over an empty cached file', function () {
+    Storage::put('emoji-data/17.0.0/en/data.json', '');
+    Http::fake(['cdn.jsdelivr.net/*' => jsonResponse('[{"emoji":"👍"}]')]);
+
+    $this->get(emojiDataUrl('en', 'data.json'))->assertOk()->assertContent('[{"emoji":"👍"}]');
+
+    Http::assertSentCount(1);
+    expect(Storage::get('emoji-data/17.0.0/en/data.json'))->toBe('[{"emoji":"👍"}]');
+});
+
 it('answers head requests with the etag used for revalidation', function () {
     Storage::put('emoji-data/17.0.0/en/messages.json', '{"groups":[]}');
     Http::fake();

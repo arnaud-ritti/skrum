@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class EmojiDataController extends Controller
 {
@@ -36,11 +38,13 @@ class EmojiDataController extends Controller
         $disk = Storage::disk();
         $path = "emoji-data/{$version}/{$locale}/{$file}";
 
-        if (! $disk->exists($path)) {
-            $disk->put($path, $this->download($version, $locale, $file));
-        }
-
         $body = (string) $disk->get($path);
+
+        if ($body === '') {
+            $body = $this->download($version, $locale, $file);
+
+            $this->store($disk, $path, $body);
+        }
 
         return response($body, 200, [
             'Content-Type' => 'application/json',
@@ -48,6 +52,18 @@ class EmojiDataController extends Controller
             'ETag' => '"'.md5($body).'"',
             'X-Content-Type-Options' => 'nosniff',
         ]);
+    }
+
+    /**
+     * Written beside the target and moved into place, so a concurrent
+     * first read never finds a partly written file.
+     */
+    private function store(Filesystem $disk, string $path, string $body): void
+    {
+        $temporaryPath = "{$path}.".Str::random(16).'.tmp';
+
+        $disk->put($temporaryPath, $body);
+        $disk->move($temporaryPath, $path);
     }
 
     /**

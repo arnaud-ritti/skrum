@@ -5,9 +5,11 @@ namespace App\Http\Controllers;
 use App\Support\Gifs\Gif;
 use App\Support\Gifs\GifCatalog;
 use finfo;
+use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class GifsController extends Controller
 {
@@ -28,20 +30,34 @@ class GifsController extends Controller
         $disk = Storage::disk();
         $path = "gifs/{$gifCatalog->providerName()}/{$gif}-{$size}";
 
-        if (! $disk->exists($path)) {
+        $body = (string) $disk->get($path);
+
+        if ($body === '') {
             $body = $gifCatalog->attempt(
                 fn (): string => $this->download($size === 'preview' ? $found->previewUrl : $found->fullUrl, $failureMessage),
                 $failureMessage,
             );
 
-            $disk->put($path, $body);
+            $this->store($disk, $path, $body);
         }
 
-        return response((string) $disk->get($path), 200, [
-            'Content-Type' => $disk->mimeType($path) ?: 'image/gif',
+        return response($body, 200, [
+            'Content-Type' => (new finfo(FILEINFO_MIME_TYPE))->buffer($body) ?: 'image/gif',
             'Cache-Control' => 'public, max-age=31536000, immutable',
             'X-Content-Type-Options' => 'nosniff',
         ]);
+    }
+
+    /**
+     * Written beside the target and moved into place, so a concurrent
+     * first read never finds a partly written file.
+     */
+    private function store(Filesystem $disk, string $path, string $body): void
+    {
+        $temporaryPath = "{$path}.".Str::random(16).'.tmp';
+
+        $disk->put($temporaryPath, $body);
+        $disk->move($temporaryPath, $path);
     }
 
     /**
