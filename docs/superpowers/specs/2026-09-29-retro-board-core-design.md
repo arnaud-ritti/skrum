@@ -99,7 +99,7 @@ The register page is hidden (and the route returns 403) when mode is `invite` an
 
 ### SSO
 
-- Built on Laravel Socialite. Providers: Google, GitHub (Socialite core), Microsoft Entra ID (`socialiteproviders/microsoft-azure`), generic OIDC (a `socialiteproviders` OIDC driver; exact package chosen during planning).
+- Built on Laravel Socialite. Providers: Google, GitHub (Socialite core), Microsoft Entra ID (`socialiteproviders/microsoft-azure`), generic OIDC (`socialiteproviders/openidconnect`).
 - A provider is enabled only when all of its env credentials are present. The login page renders buttons for enabled providers only.
 - OIDC env: `OIDC_BASE_URL`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`, `OIDC_LABEL` (button text).
 - Callback resolution order:
