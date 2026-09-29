@@ -12,7 +12,9 @@ export type BoardContextValue = {
     dispatch: Dispatch<BoardAction>;
     apply: (action: BoardAction) => void;
     run: <T>(mutation: Promise<T>) => Promise<T | undefined>;
+    handleError: (error: unknown) => string | null;
     refetch: () => Promise<void>;
+    sessionExpired: boolean;
 };
 
 const BoardContext = createContext<BoardContextValue | null>(null);

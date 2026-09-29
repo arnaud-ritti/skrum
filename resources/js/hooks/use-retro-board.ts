@@ -228,27 +228,44 @@ export function useRetroBoard(initial: Snapshot) {
         [t],
     );
 
+    /**
+     * Shows the session-expired banner for a 401/419 and returns null;
+     * otherwise returns the translated message to show for the failure.
+     */
+    const handleError = useCallback(
+        (error: unknown): string | null => {
+            if (
+                error instanceof RetroRequestError &&
+                SessionExpiredStatuses.includes(error.status)
+            ) {
+                setSessionExpired(true);
+
+                return null;
+            }
+
+            return errorMessage(error);
+        },
+        [errorMessage],
+    );
+
     const run = useCallback(
         async <T>(mutation: Promise<T>): Promise<T | undefined> => {
             try {
                 return await mutation;
             } catch (error) {
-                if (
-                    error instanceof RetroRequestError &&
-                    SessionExpiredStatuses.includes(error.status)
-                ) {
-                    setSessionExpired(true);
+                const message = handleError(error);
 
+                if (message === null) {
                     return undefined;
                 }
 
-                toast.error(errorMessage(error));
+                toast.error(message);
                 await refetch();
 
                 return undefined;
             }
         },
-        [refetch, errorMessage],
+        [refetch, handleError],
     );
 
     return {
@@ -261,6 +278,7 @@ export function useRetroBoard(initial: Snapshot) {
         connected,
         reconnecting,
         run,
+        handleError,
         sessionExpired,
     };
 }

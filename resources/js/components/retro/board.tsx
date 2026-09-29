@@ -37,6 +37,7 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
         dispatch,
         apply,
         run,
+        handleError,
         refetch,
         status,
         online,
@@ -70,7 +71,15 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
         return <BoardEnded reason={status} teamUrl={board.links.team} />;
     }
 
-    const ctx: BoardContextValue = { board, dispatch, apply, run, refetch };
+    const ctx: BoardContextValue = {
+        board,
+        dispatch,
+        apply,
+        run,
+        handleError,
+        refetch,
+        sessionExpired,
+    };
 
     const activeCard =
         board.cards.find((card) => card.id === activeCardId) ?? null;

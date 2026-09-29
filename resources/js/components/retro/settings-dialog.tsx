@@ -12,7 +12,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useTrans } from '@/hooks/use-trans';
-import { RetroRequestError, retroRequest } from '@/lib/retro/api';
+import { retroRequest } from '@/lib/retro/api';
 import { useBoard } from './board-context';
 
 type Props = {
@@ -76,11 +76,15 @@ function SettingsForm({ onDone }: { onDone: () => void }) {
             await ctx.refetch();
             onDone();
         } catch (caught) {
-            setError(
-                caught instanceof RetroRequestError
-                    ? caught.message
-                    : t('Something went wrong. Please try again.'),
-            );
+            const message = ctx.handleError(caught);
+
+            if (message === null) {
+                onDone();
+
+                return;
+            }
+
+            setError(message);
         } finally {
             setSaving(false);
         }

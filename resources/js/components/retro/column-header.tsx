@@ -236,7 +236,7 @@ export function ColumnHeader({ column, count, index, total, hasCards }: Props) {
             </div>
             {canEdit && (
                 <Dialog
-                    open={confirmingDelete}
+                    open={confirmingDelete && !ctx.sessionExpired}
                     onOpenChange={setConfirmingDelete}
                 >
                     <DialogContent>

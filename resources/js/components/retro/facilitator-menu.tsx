@@ -9,6 +9,7 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useTrans } from '@/hooks/use-trans';
+import { useBoard } from './board-context';
 import { DeleteRetroDialog } from './delete-retro-dialog';
 import { GuestLinkDialog } from './guest-link-dialog';
 import { HandoverDialog } from './handover-dialog';
@@ -18,10 +19,12 @@ type OpenDialog = 'settings' | 'guests' | 'handover' | 'delete' | null;
 
 export function FacilitatorMenu() {
     const { t } = useTrans();
-    const [open, setOpen] = useState<OpenDialog>(null);
+    const { sessionExpired } = useBoard();
+    const [chosen, setChosen] = useState<OpenDialog>(null);
+    const open = sessionExpired ? null : chosen;
     const close = (isOpen: boolean) => {
         if (!isOpen) {
-            setOpen(null);
+            setChosen(null);
         }
     };
 
@@ -38,19 +41,19 @@ export function FacilitatorMenu() {
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                    <DropdownMenuItem onSelect={() => setOpen('settings')}>
+                    <DropdownMenuItem onSelect={() => setChosen('settings')}>
                         {t('Settings…')}
                     </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={() => setOpen('guests')}>
+                    <DropdownMenuItem onSelect={() => setChosen('guests')}>
                         {t('Guest link…')}
                     </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={() => setOpen('handover')}>
+                    <DropdownMenuItem onSelect={() => setChosen('handover')}>
                         {t('Hand over facilitation…')}
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
                         variant="destructive"
-                        onSelect={() => setOpen('delete')}
+                        onSelect={() => setChosen('delete')}
                     >
                         {t('Delete retrospective…')}
                     </DropdownMenuItem>
