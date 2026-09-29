@@ -184,5 +184,6 @@
     "This person is already a member of the workspace.": "This person is already a member of the workspace.",
     "You are invited to join :workspace": "You are invited to join :workspace",
     ":inviter invited you to join the :workspace workspace.": ":inviter invited you to join the :workspace workspace.",
-    "This invitation expires on :date.": "This invitation expires on :date."
+    "This invitation expires on :date.": "This invitation expires on :date.",
+    "Leave workspace": "Leave workspace"
 }

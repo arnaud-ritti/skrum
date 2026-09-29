@@ -59,11 +59,17 @@ class WorkspaceMembersController extends Controller
             abort(403);
         }
 
-        if ($currentRole === WorkspaceRole::Owner && $newRole !== WorkspaceRole::Owner && $this->isLastOwner($workspace)) {
-            throw ValidationException::withMessages(['role' => __('A workspace needs at least one owner.')]);
-        }
+        DB::transaction(function () use ($workspace, $member, $newRole, $currentRole): void {
+            $this->lockWorkspace($workspace);
 
-        $workspace->members()->updateExistingPivot($member->id, ['role' => $newRole->value]);
+            $isDemotingOwner = $currentRole === WorkspaceRole::Owner && $newRole !== WorkspaceRole::Owner;
+
+            if ($isDemotingOwner && $this->isLastOwner($workspace)) {
+                throw ValidationException::withMessages(['role' => __('A workspace needs at least one owner.')]);
+            }
+
+            $workspace->members()->updateExistingPivot($member->id, ['role' => $newRole->value]);
+        });
 
         return back();
     }
@@ -82,11 +88,13 @@ class WorkspaceMembersController extends Controller
             abort(403);
         }
 
-        if ($memberRole === WorkspaceRole::Owner && $this->isLastOwner($workspace)) {
-            throw ValidationException::withMessages(['member' => __('A workspace needs at least one owner.')]);
-        }
+        DB::transaction(function () use ($workspace, $member, $memberRole): void {
+            $this->lockWorkspace($workspace);
 
-        DB::transaction(function () use ($workspace, $member): void {
+            if ($memberRole === WorkspaceRole::Owner && $this->isLastOwner($workspace)) {
+                throw ValidationException::withMessages(['member' => __('A workspace needs at least one owner.')]);
+            }
+
             $member->teams()->detach($workspace->teams()->pluck('id'));
             $workspace->members()->detach($member);
 
@@ -100,6 +108,11 @@ class WorkspaceMembersController extends Controller
         }
 
         return back();
+    }
+
+    private function lockWorkspace(Workspace $workspace): void
+    {
+        Workspace::query()->whereKey($workspace->id)->lockForUpdate()->first();
     }
 
     private function isLastOwner(Workspace $workspace): bool

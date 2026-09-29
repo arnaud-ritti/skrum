@@ -5,6 +5,7 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceInvitation;
 use App\Notifications\WorkspaceInvitationNotification;
+use Illuminate\Contracts\Queue\ShouldBeEncrypted;
 use Illuminate\Support\Facades\Notification;
 
 it('invites someone by email', function () {
@@ -80,4 +81,10 @@ it('lets managers revoke an invitation', function () {
     $this->actingAs($admin)->delete(route('workspaces.invitations.destroy', [$workspace, $invitation]));
 
     expect(WorkspaceInvitation::query()->whereKey($invitation->id)->exists())->toBeFalse();
+});
+
+it('encrypts the queued invitation so the token never sits in plain text in the jobs table', function () {
+    $notification = new WorkspaceInvitationNotification('Acme', 'Ann', 'https://example.com/invitations/token', now()->addDay());
+
+    expect($notification)->toBeInstanceOf(ShouldBeEncrypted::class);
 });

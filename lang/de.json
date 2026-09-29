@@ -447,5 +447,6 @@
     "This person is already a member of the workspace.": "Diese Person ist bereits Mitglied des Arbeitsbereichs.",
     "You are invited to join :workspace": "Du wurdest eingeladen, :workspace beizutreten",
     ":inviter invited you to join the :workspace workspace.": ":inviter hat dich eingeladen, dem Arbeitsbereich :workspace beizutreten.",
-    "This invitation expires on :date.": "Diese Einladung läuft am :date ab."
+    "This invitation expires on :date.": "Diese Einladung läuft am :date ab.",
+    "Leave workspace": "Arbeitsbereich verlassen"
 }

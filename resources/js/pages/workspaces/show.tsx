@@ -1,5 +1,6 @@
-import { Form, Head, Link } from '@inertiajs/react';
+import { Form, Head, Link, usePage } from '@inertiajs/react';
 import TeamsController from '@/actions/App/Http/Controllers/TeamsController';
+import WorkspaceMembersController from '@/actions/App/Http/Controllers/WorkspaceMembersController';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
@@ -16,6 +17,7 @@ type Props = {
 
 export default function ShowWorkspace({ workspace, teams, canManage }: Props) {
     const { t } = useTrans();
+    const { auth } = usePage().props;
 
     return (
         <>
@@ -77,6 +79,26 @@ export default function ShowWorkspace({ workspace, teams, canManage }: Props) {
                         </Link>
                     ))}
                 </div>
+
+                <Form
+                    {...WorkspaceMembersController.destroy.form({
+                        workspace: workspace.slug,
+                        member: auth.user.id,
+                    })}
+                >
+                    {({ processing, errors }) => (
+                        <>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                disabled={processing}
+                            >
+                                {t('Leave workspace')}
+                            </Button>
+                            <InputError message={errors.member} />
+                        </>
+                    )}
+                </Form>
             </div>
         </>
     );

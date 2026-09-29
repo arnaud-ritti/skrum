@@ -4,11 +4,12 @@ namespace App\Notifications;
 
 use Carbon\CarbonInterface;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldBeEncrypted;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class WorkspaceInvitationNotification extends Notification implements ShouldQueue
+class WorkspaceInvitationNotification extends Notification implements ShouldBeEncrypted, ShouldQueue
 {
     use Queueable;
 
