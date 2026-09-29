@@ -23,7 +23,7 @@ it('moves between adjacent phases only', function () {
 });
 
 it('defines template columns', function () {
-    expect(array_column(RetroTemplate::StartStopContinue->columns(), 'title'))->toBe(['Start', 'Stop', 'Continue'])
+    expect(array_column(RetroTemplate::StartStopContinue->columns(), 'title'))->toBe(['Retro column: Start', 'Retro column: Stop', 'Retro column: Continue'])
         ->and(RetroTemplate::FourLs->columns())->toHaveCount(4)
         ->and(RetroTemplate::Custom->columns())->toBe([])
         ->and(RetroTemplate::options())->toHaveCount(5);

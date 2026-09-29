@@ -29,7 +29,7 @@ it('creates a retro with translated template columns and the creator as facilita
     $retro = app(CreateRetro::class)->handle($team, $user, 'Sprint 42', RetroTemplate::StartStopContinue);
 
     expect($retro->phase)->toBe(RetroPhase::Writing)
-        ->and($retro->columns->pluck('title')->all())->toBe([__('Start'), __('Stop'), __('Continue')])
+        ->and($retro->columns->pluck('title')->all())->toBe(['Commencer', 'Arrêter', 'Continuer'])
         ->and($retro->columns->pluck('position')->all())->toBe([0, 1, 2])
         ->and($retro->facilitator->user_id)->toBe($user->id)
         ->and($retro->guest_access_enabled)->toBeFalse()

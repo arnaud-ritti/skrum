@@ -36,7 +36,7 @@ enum RetroTemplate: string
     }
 
     /**
-     * English titles; translate with __() when copying them into a retro.
+     * Translation keys; pass through __() when copying them into a retro.
      *
      * @return array<int, array{
      *     title: string,
@@ -47,25 +47,25 @@ enum RetroTemplate: string
     {
         return match ($this) {
             self::StartStopContinue => [
-                ['title' => 'Start', 'color' => ColumnColor::Green],
-                ['title' => 'Stop', 'color' => ColumnColor::Red],
-                ['title' => 'Continue', 'color' => ColumnColor::Blue],
+                ['title' => 'Retro column: Start', 'color' => ColumnColor::Green],
+                ['title' => 'Retro column: Stop', 'color' => ColumnColor::Red],
+                ['title' => 'Retro column: Continue', 'color' => ColumnColor::Blue],
             ],
             self::MadSadGlad => [
-                ['title' => 'Mad', 'color' => ColumnColor::Red],
-                ['title' => 'Sad', 'color' => ColumnColor::Blue],
-                ['title' => 'Glad', 'color' => ColumnColor::Green],
+                ['title' => 'Retro column: Mad', 'color' => ColumnColor::Red],
+                ['title' => 'Retro column: Sad', 'color' => ColumnColor::Blue],
+                ['title' => 'Retro column: Glad', 'color' => ColumnColor::Green],
             ],
             self::FourLs => [
-                ['title' => 'Liked', 'color' => ColumnColor::Green],
-                ['title' => 'Learned', 'color' => ColumnColor::Blue],
-                ['title' => 'Lacked', 'color' => ColumnColor::Amber],
-                ['title' => 'Longed for', 'color' => ColumnColor::Purple],
+                ['title' => 'Retro column: Liked', 'color' => ColumnColor::Green],
+                ['title' => 'Retro column: Learned', 'color' => ColumnColor::Blue],
+                ['title' => 'Retro column: Lacked', 'color' => ColumnColor::Amber],
+                ['title' => 'Retro column: Longed for', 'color' => ColumnColor::Purple],
             ],
             self::WentWellToImproveActions => [
-                ['title' => 'Went well', 'color' => ColumnColor::Green],
-                ['title' => 'To improve', 'color' => ColumnColor::Amber],
-                ['title' => 'Action ideas', 'color' => ColumnColor::Blue],
+                ['title' => 'Retro column: Went well', 'color' => ColumnColor::Green],
+                ['title' => 'Retro column: To improve', 'color' => ColumnColor::Amber],
+                ['title' => 'Retro column: Action ideas', 'color' => ColumnColor::Blue],
             ],
             self::Custom => [],
         };
