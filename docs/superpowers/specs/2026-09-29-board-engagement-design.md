@@ -166,13 +166,13 @@ Via `RetroBroadcastEvent`: after commit, `toOthers()`, report-don't-throw.
 
 ### Search and proxy
 
-- `GET /retros/{retro}/gifs?q=` — participant-only, allowed only when the viewer can currently edit a card (phase `Writing` or `Grouping`, not locked, `gifs_enabled`). Returns up to 24 results `{id, previewUrl, width, height}`. Empty `q` returns trending. Rate-limited to 20 requests/minute per participant. Results cached 10 minutes per (provider, query, rating).
-- `GET /gifs/{id}/{size}` (`size` = `preview` | `full`) — streams the image from the provider's CDN, with long-lived cache headers and a local cache (default filesystem disk, `gifs/` prefix). Only ids that belong to at least one card or appeared in a cached search result are served. Browsers never contact the provider directly, so viewer IPs are not shared with it.
+- `GET /retros/{retro}/gifs?q=` — participant-only, allowed only when the viewer can currently edit a card (phase `Writing` or `Grouping`, not locked, `gifs_enabled`). Returns up to 24 results `{id, previewUrl, width, height}`. Empty `q` returns trending. Rate-limited to 20 requests/minute per participant (keyed by participant id, not IP). Results cached 10 minutes per (provider, query, rating).
+- `GET /gifs/{id}/{size}` (`size` = `preview` | `full`) — streams the image from the provider's CDN, with long-lived cache headers and a local cache (default filesystem disk, `gifs/` prefix). Only ids that belong to at least one card or appeared in a cached search result are served. Only `image/gif` and `image/webp` responses up to 5 MB are served, with `X-Content-Type-Options: nosniff`. When no provider is configured, card payloads carry `gif: null`. Browsers never contact the provider directly, so viewer IPs are not shared with it.
 - A provider failure returns 502 with a translated message; the picker shows "GIF search is unavailable."
 
 ### Card rules
 
-- Attaching or removing a GIF follows the same rules as editing the card's content (own card, phase, lock), plus `gifs_enabled`.
+- Attaching or removing a GIF follows the same rules as editing the card's content (own card, phase, lock); attaching also requires `gifs_enabled`.
 - Turning `gifs_enabled` off keeps existing GIFs visible but blocks new ones.
 - The `card.*` broadcasts and the snapshot carry the `gif` object with proxied URLs; redaction as for content.
 
