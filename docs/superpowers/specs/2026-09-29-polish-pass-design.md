@@ -38,6 +38,8 @@ Before a first public release, remove the known rough edges left after Plans 4 (
 
 Replayed actions must be absolute, never relative: the vote endpoints' response gains `votesCast` (the retro's current vote total), and the client applies it as an absolute value instead of adding ±1, so a replay after a refetch cannot double-count.
 
+Vote totals are also ordered: the retro keeps a `votes_version` integer, incremented under the existing retro lock on every vote cast or retracted. The snapshot, the vote endpoints' response and the `vote.cast` / `vote.retracted` broadcasts carry it next to `votesCast`, and the client ignores a total whose version is not newer than the one it already shows, so a peer's older total delivered after the viewer's own response cannot overwrite it.
+
 ### A2 — Own cards in the participant's other tabs
 
 - New private channel `private-participant.{participantId}` (participant UUID).
@@ -55,7 +57,7 @@ Replayed actions must be absolute, never relative: the vote endpoints' response 
 When any board request or refetch receives 401 or 419:
 
 - a persistent banner "Your session has expired." with a **Reload** button (`role="alert"`) is shown;
-- the board content becomes non-interactive (`inert`);
+- the whole page except the banner becomes non-interactive (`inert`), including the header's facilitator controls;
 - no toast storm: the banner replaces per-request error toasts for 401/419;
 - Reload performs a full page reload (members land on login and return; guests whose cookie is no longer valid see the existing "access ended" screen).
 
@@ -89,10 +91,11 @@ Every new string goes through `t()` with real translations in `lang/{en,fr,es,de
 
 - **PC1** Board components obtain board state via `useBoard()`; no component takes an optional `ctx` prop; one `sortByVotes` helper is used by column and summary; no behaviour change.
 - **PA1** A mutation response that arrives while a snapshot refetch is in flight is not lost: after the refetch the board shows the mutation's result.
+- **PA1b** The displayed "votes cast" total never goes back to an older value because of delivery order (version-ordered totals).
 - **PA2** A participant with two tabs on the same board sees, in the second tab, the full content of a card created or edited in the first tab during Writing; other participants still see it hidden.
 - **PA3** Only the owning participant can subscribe to `private-participant.{id}` (member and guest); any other request is refused with 403.
 - **PA4** A board request that times out shows "The server did not respond in time. Please try again." in the active locale.
-- **PA5** A 401 or 419 on any board request or refetch shows the persistent session-expired banner with a Reload button and makes the board non-interactive, without repeated error toasts.
+- **PA5** A 401 or 419 on any board request or refetch shows the persistent session-expired banner with a Reload button and makes everything but the banner non-interactive (header included), without repeated error toasts.
 - **PB1** A dragged card is never clipped by the board's scroll container.
 - **PB2** Vote +/− and card delete cannot send a second request while the first is in flight.
 - **PB3** A card editor closes when its card becomes non-editable; a changed draft triggers the phase-changed toast.
