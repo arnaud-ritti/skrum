@@ -11,4 +11,6 @@ return [
     ))),
 
     'avatar_style' => env('SKRUM_AVATAR_STYLE', 'thumbs'),
+
+    'trusted_proxies' => env('TRUSTED_PROXIES'),
 ];

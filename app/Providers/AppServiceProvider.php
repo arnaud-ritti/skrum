@@ -32,7 +32,9 @@ class AppServiceProvider extends ServiceProvider
         Passkeys::usePasskeyModel(Passkey::class);
 
         if ($this->app->environment('local')) {
-            DevCommands::artisan('reverb:start --host=0.0.0.0 --port=8080', 'reverb');
+            $reverbPort = config()->integer('reverb.servers.reverb.port');
+
+            DevCommands::artisan("reverb:start --host=0.0.0.0 --port={$reverbPort}", 'reverb');
         }
     }
 
