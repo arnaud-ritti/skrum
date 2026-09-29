@@ -6,6 +6,7 @@ use App\Enums\RetroPhase;
 use App\Enums\WorkspaceRole;
 use App\Models\ActionItem;
 use App\Models\Card;
+use App\Models\CardComment;
 use App\Models\CardReaction;
 use App\Models\Participant;
 use App\Models\Retro;
@@ -203,4 +204,21 @@ it('lists reactions on visible cards with the viewer own flag', function () {
 
     expect(snapshotCard(snapshotFor($retro, $viewer), $card)['reactions'])
         ->toBe([['emoji' => '👍', 'count' => 1, 'mine' => true, 'names' => [$viewer->displayName()]]]);
+});
+
+it('lists comment threads with replies and counts visible comments', function () {
+    $retro = Retro::factory()->inPhase(RetroPhase::Discussing)->create();
+    [, $viewer] = retroMember($retro);
+    $card = Card::factory()->create(['retro_id' => $retro->id]);
+    $thread = CardComment::factory()->create(['retro_id' => $retro->id, 'card_id' => $card->id, 'participant_id' => $viewer->id, 'created_at' => now()->subMinutes(3)]);
+    CardComment::factory()->create(['retro_id' => $retro->id, 'card_id' => $card->id, 'parent_comment_id' => $thread->id, 'created_at' => now()->subMinutes(2)]);
+    CardComment::factory()->create(['retro_id' => $retro->id, 'card_id' => $card->id, 'content' => null, 'deleted_at' => now(), 'created_at' => now()->subMinute()]);
+
+    $presented = snapshotCard(snapshotFor($retro, $viewer), $card);
+
+    expect($presented['commentCount'])->toBe(2)
+        ->and($presented['comments'][0]['id'])->toBe($thread->id)
+        ->and($presented['comments'][0]['isMine'])->toBeTrue()
+        ->and($presented['comments'][0]['replies'])->toHaveCount(1)
+        ->and($presented['comments'][1])->toMatchArray(['deleted' => true, 'content' => null, 'author' => null]);
 });

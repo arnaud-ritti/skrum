@@ -75,6 +75,12 @@ class Retro extends Model
         return $this->hasMany(Card::class);
     }
 
+    /** @return HasMany<CardComment, $this> */
+    public function comments(): HasMany
+    {
+        return $this->hasMany(CardComment::class);
+    }
+
     /** @return HasMany<Vote, $this> */
     public function votes(): HasMany
     {

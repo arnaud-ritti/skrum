@@ -355,5 +355,7 @@
     "Guests: ask the facilitator for the guest link.": "Guests: ask the facilitator for the guest link.",
     "The board is closed for editing.": "The board is closed for editing.",
     "Reactions are turned off for this board.": "Reactions are turned off for this board.",
+    "You can only change your own comments.": "You can only change your own comments.",
+    "The reply must belong to a comment on the same card.": "The reply must belong to a comment on the same card.",
     "Choose a single emoji.": "Choose a single emoji."
 }

@@ -616,5 +616,7 @@
     "Guests: ask the facilitator for the guest link.": "Invitados: pide el enlace de invitado al facilitador.",
     "The board is closed for editing.": "El tablero está cerrado a los cambios.",
     "Reactions are turned off for this board.": "Las reacciones están desactivadas en este tablero.",
+    "You can only change your own comments.": "Solo puedes cambiar tus propios comentarios.",
+    "The reply must belong to a comment on the same card.": "La respuesta debe corresponder a un comentario de la misma tarjeta.",
     "Choose a single emoji.": "Elige un solo emoji."
 }

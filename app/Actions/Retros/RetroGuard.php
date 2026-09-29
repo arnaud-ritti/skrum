@@ -4,6 +4,7 @@ namespace App\Actions\Retros;
 
 use App\Enums\RetroPhase;
 use App\Models\Card;
+use App\Models\CardComment;
 use App\Models\Participant;
 use App\Models\Retro;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -54,5 +55,14 @@ class RetroGuard
         }
 
         throw new AuthorizationException(__('You can only change your own cards.'));
+    }
+
+    public static function commentAuthor(CardComment $comment, Participant $participant): void
+    {
+        if ($comment->participant_id === $participant->id) {
+            return;
+        }
+
+        throw new AuthorizationException(__('You can only change your own comments.'));
     }
 }

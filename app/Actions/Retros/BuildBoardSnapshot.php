@@ -6,6 +6,7 @@ use App\Enums\RetroPhase;
 use App\Enums\WorkspaceRole;
 use App\Models\ActionItem;
 use App\Models\Card;
+use App\Models\CardComment;
 use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\User;
@@ -19,6 +20,7 @@ class BuildBoardSnapshot
         private PresentColumns $presentColumns,
         private PresentActionItem $presentActionItem,
         private SummarizeReactions $summarizeReactions,
+        private PresentComment $presentComment,
     ) {}
 
     /**
@@ -31,6 +33,7 @@ class BuildBoardSnapshot
             'participants.user',
             'cards.participant.user',
             'cards.reactions.participant.user',
+            'cards.comments.participant.user',
             'actionItems.assignee.user',
         ]);
 
@@ -79,6 +82,8 @@ class BuildBoardSnapshot
                     'votes' => $showsTotals ? (int) ($voteTotals[$card->id] ?? 0) : null,
                     'myVotes' => (int) ($myVotes[$card->id] ?? 0),
                     'reactions' => $isHidden ? [] : $this->summarizeReactions->handle($card->reactions, $retro, $viewer),
+                    'commentCount' => $isHidden ? 0 : $card->comments->reject(fn (CardComment $comment) => $comment->isDeleted())->count(),
+                    'comments' => $isHidden ? [] : $this->presentComment->threads($card->comments, $retro, $viewer),
                 ];
             })->values()->all(),
             'participants' => $retro->participants->map(fn (Participant $participant) => [

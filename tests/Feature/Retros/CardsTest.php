@@ -7,6 +7,8 @@ use App\Events\Retros\CardsMoved;
 use App\Events\Retros\CardUpdated;
 use App\Events\Retros\OwnCardSaved;
 use App\Models\Card;
+use App\Models\CardComment;
+use App\Models\CardReaction;
 use App\Models\Column;
 use App\Models\Retro;
 use Illuminate\Support\Facades\Event;
@@ -253,4 +255,16 @@ it('sends the author their own content and authorship in anonymous retros while 
         && $event->card['content'] === null
         && $event->card['author'] === null
         && $event->card['isMine'] === false);
+});
+
+it('deletes comments and reactions with their card', function () {
+    $retro = Retro::factory()->inPhase(RetroPhase::Grouping)->create();
+    [$user, $participant] = retroMember($retro);
+    $card = Card::factory()->create(['retro_id' => $retro->id, 'participant_id' => $participant->id]);
+    CardComment::factory()->create(['retro_id' => $retro->id, 'card_id' => $card->id]);
+    CardReaction::factory()->create(['retro_id' => $retro->id, 'card_id' => $card->id]);
+
+    $this->actingAs($user)->deleteJson(route('retros.cards.destroy', [$retro, $card]))->assertNoContent();
+
+    expect(CardComment::count())->toBe(0)->and(CardReaction::count())->toBe(0);
 });
