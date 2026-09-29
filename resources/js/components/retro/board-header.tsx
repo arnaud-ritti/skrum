@@ -8,6 +8,7 @@ import { useTrans } from '@/hooks/use-trans';
 import type { PresenceMember } from '@/lib/retro/types';
 import { useBoard } from './board-context';
 import { FacilitatorMenu } from './facilitator-menu';
+import { showsCursors } from './live-cursor-layer';
 import { LockBadge } from './lock-badge';
 import { PhaseStepper } from './phase-stepper';
 import { PresenceStrip } from './presence-strip';
@@ -63,26 +64,25 @@ export function BoardHeader({
                     </>
                 )}
                 <PresenceStrip members={online} />
-                {board.retro.cursorsEnabled &&
-                    board.retro.phase !== 'completed' && (
-                        <Button
-                            size="icon"
-                            variant="ghost"
-                            aria-pressed={hideMyCursor}
-                            aria-label={
-                                hideMyCursor
-                                    ? t('Show my cursor')
-                                    : t('Hide my cursor')
-                            }
-                            onClick={() => onHideMyCursorChange(!hideMyCursor)}
-                        >
-                            {hideMyCursor ? (
-                                <MousePointerBan className="size-4" />
-                            ) : (
-                                <MousePointer2 className="size-4" />
-                            )}
-                        </Button>
-                    )}
+                {showsCursors(board.retro) && (
+                    <Button
+                        size="icon"
+                        variant="ghost"
+                        aria-pressed={hideMyCursor}
+                        aria-label={
+                            hideMyCursor
+                                ? t('Show my cursor')
+                                : t('Hide my cursor')
+                        }
+                        onClick={() => onHideMyCursorChange(!hideMyCursor)}
+                    >
+                        {hideMyCursor ? (
+                            <MousePointerBan className="size-4" />
+                        ) : (
+                            <MousePointer2 className="size-4" />
+                        )}
+                    </Button>
+                )}
                 {board.viewer.isGuest && <LanguageSwitcher />}
             </div>
         </header>

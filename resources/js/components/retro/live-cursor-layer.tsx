@@ -19,6 +19,19 @@ export const HideMyCursorKey = 'skrum.hideMyCursor';
 
 const ThrottleMs = 40;
 
+/**
+ * During Voting a named pointer on a vote button would reveal who votes
+ * where, so no cursor is sent or shown.
+ */
+const CursorlessPhases = ['voting', 'completed'];
+
+export function showsCursors(retro: {
+    cursorsEnabled: boolean;
+    phase: string;
+}): boolean {
+    return retro.cursorsEnabled && !CursorlessPhases.includes(retro.phase);
+}
+
 type Props = {
     container: HTMLElement | null;
     hidden: boolean;
@@ -29,11 +42,7 @@ type CursorSender = { send(message: unknown): void };
 export function LiveCursorLayer({ container, hidden }: Props) {
     const { board, presence } = useBoard();
 
-    if (
-        !presence ||
-        !board.retro.cursorsEnabled ||
-        board.retro.phase === 'completed'
-    ) {
+    if (!presence || !showsCursors(board.retro)) {
         return null;
     }
 
