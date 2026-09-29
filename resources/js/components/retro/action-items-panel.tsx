@@ -91,7 +91,7 @@ function ActionItemRow({ item }: { item: ActionItem }) {
         setBusy(false);
 
         if (response) {
-            ctx.dispatch({
+            ctx.apply({
                 type: 'actionItem.upsert',
                 actionItem: response.actionItem,
             });
@@ -115,7 +115,7 @@ function ActionItemRow({ item }: { item: ActionItem }) {
         setBusy(false);
 
         if (result !== undefined) {
-            ctx.dispatch({ type: 'actionItem.remove', actionItemId: item.id });
+            ctx.apply({ type: 'actionItem.remove', actionItemId: item.id });
         }
     };
 
@@ -234,7 +234,7 @@ export function ActionItemsPanel() {
         setSending(false);
 
         if (response) {
-            ctx.dispatch({
+            ctx.apply({
                 type: 'actionItem.upsert',
                 actionItem: response.actionItem,
             });

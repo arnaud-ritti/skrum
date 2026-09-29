@@ -6,7 +6,12 @@ import { retroRequest } from '@/lib/retro/api';
 import type { BoardCard } from '@/lib/retro/types';
 import { useBoard } from './board-context';
 
-type Tally = { cardId: string; myVotes: number; remainingVotes: number };
+type Tally = {
+    cardId: string;
+    myVotes: number;
+    remainingVotes: number;
+    votesCast: number;
+};
 
 export function VoteControls({ card }: { card: BoardCard }) {
     const ctx = useBoard();
@@ -30,8 +35,13 @@ export function VoteControls({ card }: { card: BoardCard }) {
         );
 
         if (tally) {
-            ctx.dispatch({ type: 'votes.tally', ...tally });
-            ctx.dispatch({ type: 'votes.adjust', delta });
+            ctx.apply({
+                type: 'votes.tally',
+                cardId: tally.cardId,
+                myVotes: tally.myVotes,
+                remainingVotes: tally.remainingVotes,
+            });
+            ctx.apply({ type: 'votes.cast', votesCast: tally.votesCast });
         }
     };
 

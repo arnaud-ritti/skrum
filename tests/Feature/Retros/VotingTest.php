@@ -106,3 +106,20 @@ it('refuses to retract a vote on a grouped card without votes', function () {
 
     $this->actingAs($user)->deleteJson(route('retros.cards.votes.destroy', [$retro, $child]))->assertUnprocessable();
 });
+
+it('returns the retro vote total with every tally', function () {
+    [$retro, $user, , $card] = votingRetro();
+    [$other] = retroMember($retro);
+
+    $this->actingAs($other)->postJson(route('retros.cards.votes.store', [$retro, $card]))->assertCreated();
+
+    $this->actingAs($user)
+        ->postJson(route('retros.cards.votes.store', [$retro, $card]))
+        ->assertCreated()
+        ->assertJsonPath('votesCast', 2);
+
+    $this->actingAs($user)
+        ->deleteJson(route('retros.cards.votes.destroy', [$retro, $card]))
+        ->assertOk()
+        ->assertJsonPath('votesCast', 1);
+});

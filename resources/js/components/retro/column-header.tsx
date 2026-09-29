@@ -59,7 +59,7 @@ export function ColumnHeader({ column, count, index, total, hasCards }: Props) {
         setBusy(false);
 
         if (response) {
-            ctx.dispatch({ type: 'columns.set', columns: response.columns });
+            ctx.apply({ type: 'columns.set', columns: response.columns });
         }
     };
 

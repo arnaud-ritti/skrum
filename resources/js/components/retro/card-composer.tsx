@@ -30,7 +30,7 @@ export function CardComposer({ columnId }: { columnId: string }) {
         setSending(false);
 
         if (response) {
-            ctx.dispatch({ type: 'cards.upsert', cards: [response.card] });
+            ctx.apply({ type: 'cards.upsert', cards: [response.card] });
             setContent('');
         }
     };

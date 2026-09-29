@@ -25,12 +25,22 @@ import { ConnectionBanner } from './connection-banner';
 import { BoardProvider, type BoardContextValue } from './board-context';
 import { parseDndId, useDragAccessibility } from './dnd';
 import { RetroColumn } from './retro-column';
+import { SessionExpiredBanner } from './session-expired-banner';
 import { VoteProgress } from './vote-progress';
 
 export function Board({ snapshot }: { snapshot: Snapshot }) {
     const { t } = useTrans();
-    const { board, dispatch, run, refetch, status, online, reconnecting } =
-        useRetroBoard(snapshot);
+    const {
+        board,
+        dispatch,
+        apply,
+        run,
+        refetch,
+        status,
+        online,
+        reconnecting,
+        sessionExpired,
+    } = useRetroBoard(snapshot);
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
         useSensor(KeyboardSensor, {
@@ -57,7 +67,7 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
         return <BoardEnded reason={status} teamUrl={board.links.team} />;
     }
 
-    const ctx: BoardContextValue = { board, dispatch, run, refetch };
+    const ctx: BoardContextValue = { board, dispatch, apply, run, refetch };
 
     const handleDragEnd = async ({ active, over }: DragEndEvent) => {
         const dragged = parseDndId(active.id);
@@ -89,7 +99,7 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
             );
 
             if (response) {
-                dispatch({ type: 'cards.upsert', cards: response.cards });
+                apply({ type: 'cards.upsert', cards: response.cards });
             }
 
             return;
@@ -140,7 +150,7 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
         );
 
         if (response) {
-            dispatch({ type: 'cards.upsert', cards: response.cards });
+            apply({ type: 'cards.upsert', cards: response.cards });
         }
     };
 
@@ -156,37 +166,45 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
                     }
                 />
                 <ConnectionBanner reconnecting={reconnecting} />
-                {board.retro.phase === 'completed' && (
-                    <CompletedSummary board={board} />
-                )}
-                <div className="flex flex-1 flex-col lg:min-h-0 lg:flex-row">
-                    <DndContext
-                        id="retro-board"
-                        sensors={sensors}
-                        accessibility={dragAccessibility}
-                        collisionDetection={closestCenter}
-                        onDragEnd={(event) => void handleDragEnd(event)}
-                    >
-                        <main className="flex min-w-0 flex-1 items-start gap-4 overflow-x-auto p-4">
-                            {board.columns.length === 0 && (
-                                <p className="text-sm text-muted-foreground">
-                                    {t('No columns yet.')}
-                                </p>
-                            )}
-                            {board.columns.map((column, index) => (
-                                <RetroColumn
-                                    key={column.id}
-                                    column={column}
-                                    index={index}
-                                />
-                            ))}
-                            {board.viewer.isFacilitator &&
-                                board.retro.phase === 'writing' && (
-                                    <AddColumn />
+                {sessionExpired && <SessionExpiredBanner />}
+                <div
+                    className="flex flex-1 flex-col lg:min-h-0"
+                    inert={sessionExpired}
+                >
+                    {board.retro.phase === 'completed' && (
+                        <CompletedSummary board={board} />
+                    )}
+                    <div className="flex flex-1 flex-col lg:min-h-0 lg:flex-row">
+                        <DndContext
+                            id="retro-board"
+                            sensors={sensors}
+                            accessibility={dragAccessibility}
+                            collisionDetection={closestCenter}
+                            onDragEnd={(event) => void handleDragEnd(event)}
+                        >
+                            <main className="flex min-w-0 flex-1 items-start gap-4 overflow-x-auto p-4">
+                                {board.columns.length === 0 && (
+                                    <p className="text-sm text-muted-foreground">
+                                        {t('No columns yet.')}
+                                    </p>
                                 )}
-                        </main>
-                    </DndContext>
-                    {board.retro.phase === 'discussing' && <ActionItemsPanel />}
+                                {board.columns.map((column, index) => (
+                                    <RetroColumn
+                                        key={column.id}
+                                        column={column}
+                                        index={index}
+                                    />
+                                ))}
+                                {board.viewer.isFacilitator &&
+                                    board.retro.phase === 'writing' && (
+                                        <AddColumn />
+                                    )}
+                            </main>
+                        </DndContext>
+                        {board.retro.phase === 'discussing' && (
+                            <ActionItemsPanel />
+                        )}
+                    </div>
                 </div>
             </div>
         </BoardProvider>

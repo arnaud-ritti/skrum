@@ -1,4 +1,4 @@
-import { http, HttpResponseError } from '@inertiajs/core';
+import { http, HttpCancelledError, HttpResponseError } from '@inertiajs/core';
 import { echo, echoIsConfigured } from '@laravel/echo-react';
 
 const RequestTimeoutMs = 15_000;
@@ -64,6 +64,10 @@ export async function retroRequest<T = null>(
                 firstError ?? payload?.message ?? error.message,
                 payload?.errors ?? {},
             );
+        }
+
+        if (error instanceof HttpCancelledError) {
+            throw new RetroRequestError(0, 'timeout');
         }
 
         throw error;

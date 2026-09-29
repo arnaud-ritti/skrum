@@ -345,5 +345,8 @@
     ":card is no longer over a drop area.": ":card is no longer over a drop area.",
     "Dropped :card on :target.": "Dropped :card on :target.",
     "Dropped :card.": "Dropped :card.",
-    "Cancelled moving :card.": "Cancelled moving :card."
+    "Cancelled moving :card.": "Cancelled moving :card.",
+    "The server did not respond in time. Please try again.": "The server did not respond in time. Please try again.",
+    "Your session has expired.": "Your session has expired.",
+    "Reload": "Reload"
 }

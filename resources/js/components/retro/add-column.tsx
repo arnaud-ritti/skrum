@@ -38,7 +38,7 @@ export function AddColumn() {
         setSending(false);
 
         if (response) {
-            ctx.dispatch({ type: 'columns.set', columns: response.columns });
+            ctx.apply({ type: 'columns.set', columns: response.columns });
             setTitle('');
         }
     };

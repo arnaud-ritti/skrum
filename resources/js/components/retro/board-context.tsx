@@ -10,6 +10,7 @@ import type { Snapshot } from '@/lib/retro/types';
 export type BoardContextValue = {
     board: Snapshot;
     dispatch: Dispatch<BoardAction>;
+    apply: (action: BoardAction) => void;
     run: <T>(mutation: Promise<T>) => Promise<T | undefined>;
     refetch: () => Promise<void>;
 };

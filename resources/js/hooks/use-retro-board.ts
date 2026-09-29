@@ -13,6 +13,8 @@ import type {
 } from '@/lib/retro/types';
 import { useRetroChannel, type RetroEvent } from './use-retro-channel';
 
+const SessionExpiredStatuses = [401, 419];
+
 export type BoardStatus = 'active' | 'ended' | 'deleted';
 
 /**
@@ -37,6 +39,7 @@ export function useRetroBoard(initial: Snapshot) {
     const { t } = useTrans();
     const [board, dispatch] = useReducer(boardReducer, initial);
     const [status, setStatus] = useState<BoardStatus>('active');
+    const [sessionExpired, setSessionExpired] = useState(false);
     const isActive = useRef(true);
     const latestRefetch = useRef(0);
     const bufferedActions = useRef<BoardAction[] | null>(null);
@@ -101,6 +104,10 @@ export function useRetroBoard(initial: Snapshot) {
         } catch (error) {
             if (!(error instanceof RetroRequestError)) {
                 return;
+            }
+
+            if (SessionExpiredStatuses.includes(error.status)) {
+                setSessionExpired(true);
             }
 
             if (error.status === 404) {
@@ -217,32 +224,56 @@ export function useRetroBoard(initial: Snapshot) {
         onJoining,
     );
 
+    const errorMessage = useCallback(
+        (error: unknown): string => {
+            if (!(error instanceof RetroRequestError)) {
+                return t('Something went wrong. Please try again.');
+            }
+
+            if (error.status === 0) {
+                return t(
+                    'The server did not respond in time. Please try again.',
+                );
+            }
+
+            return error.message;
+        },
+        [t],
+    );
+
     const run = useCallback(
         async <T>(mutation: Promise<T>): Promise<T | undefined> => {
             try {
                 return await mutation;
             } catch (error) {
-                toast.error(
-                    error instanceof RetroRequestError
-                        ? error.message
-                        : t('Something went wrong. Please try again.'),
-                );
+                if (
+                    error instanceof RetroRequestError &&
+                    SessionExpiredStatuses.includes(error.status)
+                ) {
+                    setSessionExpired(true);
+
+                    return undefined;
+                }
+
+                toast.error(errorMessage(error));
                 await refetch();
 
                 return undefined;
             }
         },
-        [refetch, t],
+        [refetch, errorMessage],
     );
 
     return {
         board,
         dispatch,
+        apply,
         refetch,
         status,
         online,
         connected,
         reconnecting,
         run,
+        sessionExpired,
     };
 }

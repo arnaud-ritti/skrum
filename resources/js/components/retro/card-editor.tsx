@@ -42,7 +42,7 @@ export function CardEditor({
             return;
         }
 
-        ctx.dispatch({ type: 'cards.upsert', cards: [response.card] });
+        ctx.apply({ type: 'cards.upsert', cards: [response.card] });
         onDone();
     };
 

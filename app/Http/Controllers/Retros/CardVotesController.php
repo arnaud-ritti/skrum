@@ -82,7 +82,8 @@ class CardVotesController extends Controller
      * @return array{
      *     cardId: string,
      *     myVotes: int,
-     *     remainingVotes: int
+     *     remainingVotes: int,
+     *     votesCast: int
      * }
      */
     private function tally(Retro $retro, Card $card, Participant $participant): array
@@ -93,6 +94,7 @@ class CardVotesController extends Controller
             'cardId' => $card->id,
             'myVotes' => $card->votes()->where('participant_id', $participant->id)->count(),
             'remainingVotes' => max(0, $retro->votes_per_participant - $used),
+            'votesCast' => $retro->votes()->count(),
         ];
     }
 }

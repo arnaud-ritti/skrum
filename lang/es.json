@@ -606,5 +606,8 @@
     ":card is no longer over a drop area.": ":card ya no está sobre una zona para soltar.",
     "Dropped :card on :target.": ":card soltada en :target.",
     "Dropped :card.": ":card soltada.",
-    "Cancelled moving :card.": "Se canceló el movimiento de :card."
+    "Cancelled moving :card.": "Se canceló el movimiento de :card.",
+    "The server did not respond in time. Please try again.": "El servidor no respondió a tiempo. Inténtalo de nuevo.",
+    "Your session has expired.": "Tu sesión ha caducado.",
+    "Reload": "Recargar"
 }

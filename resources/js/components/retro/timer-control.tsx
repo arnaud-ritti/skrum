@@ -33,7 +33,7 @@ export function TimerControl() {
         setBusy(false);
 
         if (response) {
-            ctx.dispatch({
+            ctx.apply({
                 type: 'timer.set',
                 timerEndsAt: response.timerEndsAt,
             });

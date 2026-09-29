@@ -41,7 +41,7 @@ export function RetroCard({ card, isChild = false, footer }: Props) {
         );
 
         if (result !== undefined) {
-            ctx.dispatch({
+            ctx.apply({
                 type: 'card.remove',
                 cardId: card.id,
                 ungroupedCards: [],
@@ -63,7 +63,7 @@ export function RetroCard({ card, isChild = false, footer }: Props) {
         setHighlighting(false);
 
         if (response) {
-            ctx.dispatch({
+            ctx.apply({
                 type: 'highlight.set',
                 cardId: response.highlightedCardId,
             });
@@ -81,7 +81,7 @@ export function RetroCard({ card, isChild = false, footer }: Props) {
         );
 
         if (response) {
-            ctx.dispatch({ type: 'cards.upsert', cards: response.cards });
+            ctx.apply({ type: 'cards.upsert', cards: response.cards });
         }
     };
 
