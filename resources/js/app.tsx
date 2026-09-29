@@ -10,8 +10,6 @@ import AuthLayout from '@/layouts/auth-layout';
 import SettingsLayout from '@/layouts/settings/layout';
 import { echoConnection } from '@/lib/reverb-config';
 
-const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
-
 const connection = typeof window !== 'undefined' ? echoConnection() : null;
 
 if (connection) {
@@ -41,7 +39,11 @@ if (connection) {
 }
 
 void createInertiaApp({
-    title: (title) => (title ? `${title} - ${appName}` : appName),
+    title: (title, page) => {
+        const appName = String(page.props.name);
+
+        return title ? `${title} - ${appName}` : appName;
+    },
     layout: (name) => {
         switch (true) {
             case name === 'welcome':
