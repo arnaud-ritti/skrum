@@ -156,5 +156,16 @@
     "This invitation was sent to :email.": "This invitation was sent to :email.",
     "This invitation has expired or was already used.": "This invitation has expired or was already used.",
     "Accept invitation": "Accept invitation",
-    "You are logged in with another email address. Log out and sign in as :email to accept.": "You are logged in with another email address. Log out and sign in as :email to accept."
+    "You are logged in with another email address. Log out and sign in as :email to accept.": "You are logged in with another email address. Log out and sign in as :email to accept.",
+    "New team name": "New team name",
+    "Create team": "Create team",
+    "No teams yet. Create the first one.": "No teams yet. Create the first one.",
+    "You are not a member of any team yet.": "You are not a member of any team yet.",
+    "Retrospectives will appear here.": "Retrospectives will appear here.",
+    "Team name": "Team name",
+    "Rename": "Rename",
+    "Members": "Members",
+    "Add a member": "Add a member",
+    "Add": "Add",
+    "Delete team": "Delete team"
 }

@@ -1,13 +1,20 @@
-import { Head } from '@inertiajs/react';
+import { Form, Head, Link } from '@inertiajs/react';
+import TeamsController from '@/actions/App/Http/Controllers/TeamsController';
 import Heading from '@/components/heading';
+import InputError from '@/components/input-error';
+import { Button } from '@/components/ui/button';
+import { Card, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { useTrans } from '@/hooks/use-trans';
-import type { WorkspaceSummary } from '@/types';
+import type { TeamSummary, WorkspaceSummary } from '@/types';
 
 type Props = {
     workspace: WorkspaceSummary;
+    teams: TeamSummary[];
+    canManage: boolean;
 };
 
-export default function ShowWorkspace({ workspace }: Props) {
+export default function ShowWorkspace({ workspace, teams, canManage }: Props) {
     const { t } = useTrans();
 
     return (
@@ -18,6 +25,58 @@ export default function ShowWorkspace({ workspace }: Props) {
                     title={workspace.name}
                     description={t('Teams in this workspace')}
                 />
+
+                {canManage && (
+                    <Form
+                        {...TeamsController.store.form(workspace.slug)}
+                        resetOnSuccess
+                        className="flex max-w-md items-start gap-2"
+                    >
+                        {({ processing, errors }) => (
+                            <>
+                                <div className="flex-1">
+                                    <Input
+                                        name="name"
+                                        required
+                                        maxLength={100}
+                                        placeholder={t('New team name')}
+                                        aria-label={t('New team name')}
+                                    />
+                                    <InputError message={errors.name} />
+                                </div>
+                                <Button disabled={processing}>
+                                    {t('Create team')}
+                                </Button>
+                            </>
+                        )}
+                    </Form>
+                )}
+
+                {teams.length === 0 && (
+                    <p className="text-muted-foreground">
+                        {canManage
+                            ? t('No teams yet. Create the first one.')
+                            : t('You are not a member of any team yet.')}
+                    </p>
+                )}
+
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {teams.map((team) => (
+                        <Link
+                            key={team.id}
+                            href={TeamsController.show({
+                                workspace: workspace.slug,
+                                team: team.id,
+                            })}
+                        >
+                            <Card className="transition hover:border-primary">
+                                <CardHeader>
+                                    <CardTitle>{team.name}</CardTitle>
+                                </CardHeader>
+                            </Card>
+                        </Link>
+                    ))}
+                </div>
             </div>
         </>
     );

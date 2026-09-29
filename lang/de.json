@@ -421,5 +421,15 @@
     "This invitation was sent to :email.": "Diese Einladung wurde an :email gesendet.",
     "This invitation has expired or was already used.": "Diese Einladung ist abgelaufen oder wurde bereits verwendet.",
     "Accept invitation": "Einladung annehmen",
-    "You are logged in with another email address. Log out and sign in as :email to accept.": "Du bist mit einer anderen E-Mail-Adresse angemeldet. Melde dich ab und mit :email an, um anzunehmen."
+    "You are logged in with another email address. Log out and sign in as :email to accept.": "Du bist mit einer anderen E-Mail-Adresse angemeldet. Melde dich ab und mit :email an, um anzunehmen.",
+    "New team name": "Name des neuen Teams",
+    "Create team": "Team erstellen",
+    "No teams yet. Create the first one.": "Noch keine Teams. Erstelle das erste.",
+    "You are not a member of any team yet.": "Du bist noch in keinem Team.",
+    "Retrospectives will appear here.": "Retrospektiven erscheinen hier.",
+    "Team name": "Teamname",
+    "Rename": "Umbenennen",
+    "Members": "Mitglieder",
+    "Add a member": "Mitglied hinzufügen",
+    "Delete team": "Team löschen"
 }

@@ -101,4 +101,10 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
     {
         return $this->roleIn($workspace)?->canManageWorkspace() ?? false;
     }
+
+    /** @return BelongsToMany<Team, $this> */
+    public function teams(): BelongsToMany
+    {
+        return $this->belongsToMany(Team::class)->withTimestamps();
+    }
 }

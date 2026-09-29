@@ -28,10 +28,14 @@ class WorkspacesController extends Controller
         return to_route('workspaces.show', $workspace);
     }
 
-    public function show(Workspace $workspace): Response
+    public function show(Request $request, Workspace $workspace): Response
     {
+        $user = $request->user();
+
         return Inertia::render('workspaces/show', [
             'workspace' => $workspace->only(['id', 'name', 'slug']),
+            'teams' => $workspace->teamsVisibleTo($user)->map->only(['id', 'name'])->values(),
+            'canManage' => $user->canManage($workspace),
         ]);
     }
 

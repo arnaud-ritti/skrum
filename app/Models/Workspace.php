@@ -5,6 +5,8 @@ namespace App\Models;
 use App\Enums\WorkspaceRole;
 use Database\Factories\WorkspaceFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -52,5 +54,23 @@ class Workspace extends Model
     public function invitations(): HasMany
     {
         return $this->hasMany(WorkspaceInvitation::class);
+    }
+
+    /** @return HasMany<Team, $this> */
+    public function teams(): HasMany
+    {
+        return $this->hasMany(Team::class);
+    }
+
+    /** @return Collection<int, Team> */
+    public function teamsVisibleTo(User $user): Collection
+    {
+        $teams = $this->teams()->orderBy('name');
+
+        if (! $user->canManage($this)) {
+            $teams->whereHas('members', fn (Builder $query) => $query->whereKey($user->id));
+        }
+
+        return $teams->get();
     }
 }

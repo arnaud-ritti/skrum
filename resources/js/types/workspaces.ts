@@ -9,3 +9,14 @@ export type WorkspaceSummary = {
 export type CurrentWorkspace = WorkspaceSummary & {
     role: WorkspaceRole;
 };
+
+export type TeamSummary = {
+    id: string;
+    name: string;
+};
+
+export type MemberSummary = {
+    id: string;
+    name: string;
+    email: string;
+};
