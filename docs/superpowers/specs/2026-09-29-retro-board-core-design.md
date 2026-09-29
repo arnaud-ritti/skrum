@@ -224,8 +224,11 @@ Each endpoint: resolve participant → authorize (policy + phase rule) → persi
 - Single Docker image based on **FrankenPHP** (Caddy built in) running **Laravel Octane** in worker mode. No nginx/PHP-FPM.
 - Caddyfile reverse-proxies Reverb's websocket paths (`/app/*`, `/apps/*`) to Reverb on localhost, so only one port is exposed. Automatic HTTPS applies when `SERVER_NAME` is a public domain.
 - **s6-overlay** supervises four long-running services: Octane, Reverb, queue worker, scheduler. Migrations run as an s6 oneshot at start-up (opt-out via env).
-- Image published to GHCR. The repository ships an example `compose.yaml` for production: app + PostgreSQL.
+- Image published to GHCR. The repository ships an example `compose.production.yaml` for production: app + PostgreSQL (`compose.yaml` stays the Sail development file).
 - All configuration is env-driven; `.env.example` documents signup mode, SSO providers, Reverb, mail, avatar style.
+- One image serves any host: the browser's Reverb settings (public app key, optional host/port/scheme) are rendered into the page at runtime, never baked in at build time. With no explicit client host the browser connects to the page's own origin, which Caddy proxies to Reverb.
+- Inertia SSR is off in the production image (`INERTIA_SSR_ENABLED`, default `false`); the image carries no Node runtime.
+- Behind a TLS-terminating reverse proxy, `TRUSTED_PROXIES` (`*` or a comma-separated list) makes the app honour forwarded protocol and client address.
 - Local development keeps Sail, with a Reverb service added.
 - **Octane constraint:** no request-specific state in singletons or static properties. The current participant and current workspace are resolved per request (request attributes / scoped bindings).
 
@@ -303,6 +306,6 @@ Each endpoint: resolve participant → authorize (policy + phase rule) → persi
 - AC36: Validation errors are shown in the active locale.
 
 ### Packaging
-- AC31: `docker compose up` with the example compose file and a filled `.env` yields a working instance (web + websocket on one port) with migrations applied.
+- AC31: `docker compose -f compose.production.yaml up` with the example compose file and a filled `.env` yields a working instance (web + websocket on one port) with migrations applied.
 - AC32: Octane, Reverb, queue worker and scheduler are each supervised by s6 and restart after a crash.
 - AC33: Test suite passes under the default test runner; no test depends on request state leaking between requests.
