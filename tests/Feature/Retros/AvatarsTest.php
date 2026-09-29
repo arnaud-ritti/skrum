@@ -51,7 +51,13 @@ it('gives a member the same avatar in every retro', function () {
     expect($first->avatarSeed())->toBe($second->avatarSeed())
         ->and($first->avatarSeed())->toMatch('/^[a-f0-9]{32}$/')
         ->and($first->avatarSeed())->not->toContain($user->id)
-        ->and($first->avatarUrl())->toBe(route('avatars.show', $first->avatarSeed()));
+        ->and($first->avatarUrl())->toBe($second->avatarUrl());
+});
+
+it('links avatars with a host-relative url', function () {
+    $participant = Participant::factory()->guest()->create();
+
+    expect($participant->avatarUrl())->toBe("/avatars/{$participant->avatarSeed()}.svg");
 });
 
 it('gives guests their own avatar', function () {

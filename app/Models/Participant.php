@@ -86,6 +86,6 @@ class Participant extends Model
 
     public function avatarUrl(): string
     {
-        return route('avatars.show', $this->avatarSeed());
+        return route('avatars.show', $this->avatarSeed(), absolute: false);
     }
 }
