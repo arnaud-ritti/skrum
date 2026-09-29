@@ -92,8 +92,10 @@ A single `SignupGate` class decides whether an email may create an account. It i
 |---|---|
 | any | the `users` table is empty (first user; becomes `is_instance_admin`) |
 | `open` | always |
-| `invite` | a pending, unexpired invitation exists for the email |
-| `domain` | email domain is in the allow-list, OR a pending invitation exists |
+| `invite` | a pending, unexpired invitation for that email is presented via its token (invitation link, carried in the session) |
+| `domain` | email domain is in the allow-list, OR a matching invitation token is presented as above |
+
+Requiring the token (not just a pending invitation for the email) stops someone who knows an invited address from registering it without access to that mailbox. Registering with a valid invitation token marks the email as verified and accepts the invitation.
 
 The register page is hidden (and the route returns 403) when mode is `invite` and no invitation token is present, except for the first-user case.
 
@@ -238,8 +240,8 @@ Each endpoint: resolve participant → authorize (policy + phase rule) → persi
 
 ### Signup and SSO
 - AC1: With an empty `users` table, the first registration succeeds in every signup mode and that user has `is_instance_admin = true`.
-- AC2: In `invite` mode, registration without a valid pending invitation is refused; with one, it succeeds and the user joins the inviting workspace with the invited role.
-- AC3: In `domain` mode, registration succeeds for allow-listed domains and for invited emails, and is refused otherwise.
+- AC2: In `invite` mode, registration without a valid invitation token matching the email is refused; with one, it succeeds and the user joins the inviting workspace with the invited role.
+- AC3: In `domain` mode, registration succeeds for allow-listed domains and with a valid matching invitation token, and is refused otherwise.
 - AC4: An SSO provider button appears only when all its env credentials are set.
 - AC5: SSO login links to an existing account only when the provider reports the email verified; otherwise it follows the signup gate.
 - AC6: SSO-created users are email-verified.
