@@ -21,16 +21,42 @@ function votingRetro(int $votes = 3): array
     return [$retro, $user, $participant, $card];
 }
 
-it('casts votes and broadcasts only the overall count', function () {
+it('casts votes and broadcasts only the overall count when vote counts are hidden', function () {
     [$retro, $user, $participant, $card] = votingRetro();
+    $retro->update(['hide_vote_counts' => true]);
 
     $this->actingAs($user)
         ->postJson(route('retros.cards.votes.store', [$retro, $card]))
         ->assertCreated()
-        ->assertJson(['cardId' => $card->id, 'myVotes' => 1, 'remainingVotes' => 2]);
+        ->assertJson(['cardId' => $card->id, 'myVotes' => 1, 'remainingVotes' => 2, 'total' => null]);
 
     Event::assertDispatched(VoteCast::class, fn (VoteCast $event) => $event->votesCast === 1
         && array_keys($event->broadcastWith()) === ['votesCast', 'votesVersion']);
+});
+
+it('broadcasts the card total while voting when vote counts are visible', function () {
+    [$retro, $user, $participant, $card] = votingRetro();
+    Vote::factory()->create(['retro_id' => $retro->id, 'card_id' => $card->id]);
+
+    $this->actingAs($user)
+        ->postJson(route('retros.cards.votes.store', [$retro, $card]))
+        ->assertCreated()
+        ->assertJsonPath('total', 2);
+
+    Event::assertDispatched(VoteCast::class, fn (VoteCast $event) => $event->broadcastWith() === [
+        'votesCast' => 2,
+        'votesVersion' => 1,
+        'cardId' => $card->id,
+        'total' => 2,
+    ]);
+
+    $this->actingAs($user)
+        ->deleteJson(route('retros.cards.votes.destroy', [$retro, $card]))
+        ->assertOk()
+        ->assertJsonPath('total', 1);
+
+    Event::assertDispatched(VoteRetracted::class, fn (VoteRetracted $event) => $event->broadcastWith()['total'] === 1
+        && ! str_contains(json_encode($event->broadcastWith()), $participant->id));
 });
 
 it('allows several votes on one card up to the limit', function () {

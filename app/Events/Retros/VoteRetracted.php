@@ -4,7 +4,10 @@ namespace App\Events\Retros;
 
 class VoteRetracted extends RetroBroadcastEvent
 {
-    public function __construct(string $retroId, public int $votesCast, public int $votesVersion)
+    /**
+     * @param  array{cardId: string, total: int}|null  $cardTotal
+     */
+    public function __construct(string $retroId, public int $votesCast, public int $votesVersion, public ?array $cardTotal = null)
     {
         parent::__construct($retroId);
     }
@@ -19,6 +22,7 @@ class VoteRetracted extends RetroBroadcastEvent
         return [
             'votesCast' => $this->votesCast,
             'votesVersion' => $this->votesVersion,
+            ...($this->cardTotal ?? []),
         ];
     }
 }

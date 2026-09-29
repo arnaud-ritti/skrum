@@ -32,7 +32,8 @@ class BuildBoardSnapshot
             'actionItems.assignee.user',
         ]);
 
-        $showsTotals = in_array($retro->phase, [RetroPhase::Discussing, RetroPhase::Completed], true);
+        $showsTotals = in_array($retro->phase, [RetroPhase::Discussing, RetroPhase::Completed], true)
+            || ($retro->phase === RetroPhase::Voting && ! $retro->hide_vote_counts);
 
         [$votesVersion, $voteTotals, $myVotes] = $this->readVotes($retro, $viewer);
 

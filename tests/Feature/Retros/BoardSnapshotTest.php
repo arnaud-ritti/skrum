@@ -65,8 +65,8 @@ it('presents cards for other participants when there is no viewer', function () 
         ->toMatchArray(['content' => null, 'author' => null, 'isMine' => false]);
 });
 
-it('hides vote totals until discussing but always shows own votes', function (RetroPhase $phase, ?int $expectedTotal) {
-    $retro = Retro::factory()->inPhase($phase)->create();
+it('shows vote totals while voting unless hidden, and always shows own votes', function (RetroPhase $phase, bool $hidden, ?int $expectedTotal) {
+    $retro = Retro::factory()->inPhase($phase)->create(['hide_vote_counts' => $hidden]);
     [, $viewer] = retroMember($retro);
     $card = Card::factory()->create(['retro_id' => $retro->id]);
     Vote::factory()->count(2)->create(['retro_id' => $retro->id, 'card_id' => $card->id, 'participant_id' => $viewer->id]);
@@ -77,9 +77,10 @@ it('hides vote totals until discussing but always shows own votes', function (Re
     expect(snapshotCard($snapshot, $card))->toMatchArray(['votes' => $expectedTotal, 'myVotes' => 2])
         ->and($snapshot['viewer']['remainingVotes'])->toBe(3);
 })->with([
-    'voting' => [RetroPhase::Voting, null],
-    'discussing' => [RetroPhase::Discussing, 3],
-    'completed' => [RetroPhase::Completed, 3],
+    'voting, hidden' => [RetroPhase::Voting, true, null],
+    'voting, visible' => [RetroPhase::Voting, false, 3],
+    'discussing, hidden' => [RetroPhase::Discussing, true, 3],
+    'completed' => [RetroPhase::Completed, false, 3],
 ]);
 
 it('reports only the overall vote count while voting', function () {

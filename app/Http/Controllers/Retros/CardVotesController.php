@@ -52,10 +52,12 @@ class CardVotesController extends Controller
             $locked->increment('votes_version');
 
             $votesCast = $locked->votes()->count();
+            $total = $locked->hide_vote_counts ? null : $card->votes()->count();
+            $cardTotal = $total === null ? null : ['cardId' => $card->id, 'total' => $total];
 
-            (new VoteCast($locked->id, $votesCast, $locked->votes_version))->sendToOthers();
+            (new VoteCast($locked->id, $votesCast, $locked->votes_version, $cardTotal))->sendToOthers();
 
-            return ['votesCast' => $votesCast, 'votesVersion' => $locked->votes_version];
+            return ['votesCast' => $votesCast, 'votesVersion' => $locked->votes_version, 'total' => $total];
         });
 
         return response()->json($this->tally($retro, $card, $participant, $totals), 201);
@@ -85,10 +87,12 @@ class CardVotesController extends Controller
             $locked->increment('votes_version');
 
             $votesCast = $locked->votes()->count();
+            $total = $locked->hide_vote_counts ? null : $card->votes()->count();
+            $cardTotal = $total === null ? null : ['cardId' => $card->id, 'total' => $total];
 
-            (new VoteRetracted($locked->id, $votesCast, $locked->votes_version))->sendToOthers();
+            (new VoteRetracted($locked->id, $votesCast, $locked->votes_version, $cardTotal))->sendToOthers();
 
-            return ['votesCast' => $votesCast, 'votesVersion' => $locked->votes_version];
+            return ['votesCast' => $votesCast, 'votesVersion' => $locked->votes_version, 'total' => $total];
         });
 
         return response()->json($this->tally($retro, $card, $participant, $totals));
@@ -97,14 +101,16 @@ class CardVotesController extends Controller
     /**
      * @param array{
      *     votesCast: int,
-     *     votesVersion: int
+     *     votesVersion: int,
+     *     total: ?int
      * } $totals
      * @return array{
      *     cardId: string,
      *     myVotes: int,
      *     remainingVotes: int,
      *     votesCast: int,
-     *     votesVersion: int
+     *     votesVersion: int,
+     *     total: ?int
      * }
      */
     private function tally(Retro $retro, Card $card, Participant $participant, array $totals): array
@@ -117,6 +123,7 @@ class CardVotesController extends Controller
             'remainingVotes' => max(0, $retro->votes_per_participant - $used),
             'votesCast' => $totals['votesCast'],
             'votesVersion' => $totals['votesVersion'],
+            'total' => $totals['total'],
         ];
     }
 }
