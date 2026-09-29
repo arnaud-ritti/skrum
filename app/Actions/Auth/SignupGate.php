@@ -51,7 +51,21 @@ class SignupGate
 
     private function hasAllowedDomain(string $email): bool
     {
-        $domain = Str::lower(Str::afterLast($email, '@'));
+        $email = trim($email);
+
+        $lastAtPos = strrpos($email, '@');
+        if ($lastAtPos === false) {
+            return false;
+        }
+
+        $localPart = substr($email, 0, $lastAtPos);
+        $domain = substr($email, $lastAtPos + 1);
+
+        if ($localPart === '' || $domain === '') {
+            return false;
+        }
+
+        $domain = Str::lower($domain);
 
         return in_array($domain, config('skrum.allowed_email_domains'), true);
     }

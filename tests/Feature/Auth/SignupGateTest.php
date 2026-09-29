@@ -64,3 +64,37 @@ it('shows registration in open and domain modes', function (string $mode) {
 
     expect(signupGate()->canShowRegistration())->toBeTrue();
 })->with(['open', 'domain']);
+
+it('handles adversarial email inputs in domain mode', function (string $email, bool $expected) {
+    User::factory()->create();
+    config(['skrum.signup_mode' => 'domain', 'skrum.allowed_email_domains' => ['acme.test']]);
+
+    expect(signupGate()->allows($email))->toBe($expected);
+})->with([
+    'no @ symbol' => ['acme.test', false],
+    'empty local part' => ['@acme.test', false],
+    'empty domain part' => ['user@', false],
+    'multiple @ uses last one' => ['evil@x.test@acme.test', true],
+    'subdomain not allowed' => ['x@sub.acme.test', false],
+    'trailing dot rejected' => ['x@acme.test.', false],
+    'trimmed whitespace accepted' => ['  x@acme.test  ', true],
+]);
+
+it('allows matching invitation in open mode', function () {
+    User::factory()->create();
+    config(['skrum.signup_mode' => 'open']);
+    $invitation = WorkspaceInvitation::factory()->create(['email' => 'Guest@Example.com']);
+
+    expect(signupGate()->allows('guest@example.com', $invitation))->toBeTrue();
+});
+
+it('parses allowed email domains from environment', function () {
+    User::factory()->create();
+
+    putenv('SKRUM_ALLOWED_EMAIL_DOMAINS= ACME.test, ,foo.test');
+    $config = require config_path('skrum.php');
+
+    expect($config['allowed_email_domains'])->toBe(['acme.test', 'foo.test']);
+
+    putenv('SKRUM_ALLOWED_EMAIL_DOMAINS=');
+});
