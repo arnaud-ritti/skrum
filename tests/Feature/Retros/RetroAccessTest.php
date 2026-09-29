@@ -41,15 +41,19 @@ it('forbids members of the workspace outside the team', function () {
     $retro->team->workspace->members()->attach($member, ['role' => WorkspaceRole::Member->value]);
 
     $this->actingAs($member)->get(route('retros.show', $retro))->assertForbidden();
-    $this->actingAs($member)->getJson(route('retros.snapshot.show', $retro))->assertForbidden();
+    $this->actingAs($member)->getJson(route('retros.snapshot.show', $retro))
+        ->assertForbidden()
+        ->assertJsonPath('message', 'You no longer have access to this retrospective.');
 });
 
 it('sends logged out visitors to the login page', function () {
     $this->get(route('retros.show', Retro::factory()->create()))->assertRedirect(route('login'));
 });
 
-it('answers json requests from strangers with 403', function () {
-    $this->getJson(route('retros.snapshot.show', Retro::factory()->create()))->assertForbidden();
+it('answers logged-out json requests with 401', function () {
+    $this->getJson(route('retros.snapshot.show', Retro::factory()->create()))
+        ->assertUnauthorized()
+        ->assertJsonPath('message', 'Your session has expired.');
 });
 
 it('recognises a guest by cookie while guest access is enabled', function () {
@@ -82,7 +86,8 @@ it('rejects forged or foreign guest cookies', function (Closure $cookie) {
     $this->withCredentials()
         ->withCookies($cookie($retro, $guest, $otherRetroGuest))
         ->getJson(route('retros.snapshot.show', $retro))
-        ->assertForbidden();
+        ->assertForbidden()
+        ->assertJsonPath('message', 'You no longer have access to this retrospective.');
 })->with([
     'wrong secret' => fn ($retro, $guest) => retroGuestCookie($guest, 'nope'),
     'garbage' => fn ($retro) => ['retro_guest_'.$retro->id => 'not-a-uuid|x'],

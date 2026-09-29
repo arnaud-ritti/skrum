@@ -610,5 +610,6 @@
     "The server did not respond in time. Please try again.": "Der Server hat nicht rechtzeitig geantwortet. Versuch es bitte noch einmal.",
     "Your session has expired.": "Deine Sitzung ist abgelaufen.",
     "Reload": "Neu laden",
-    "The phase changed before your edit was saved.": "Die Phase hat sich geändert, bevor deine Änderung gespeichert wurde."
+    "The phase changed before your edit was saved.": "Die Phase hat sich geändert, bevor deine Änderung gespeichert wurde.",
+    "You no longer have access to this retrospective.": "Du hast keinen Zugriff mehr auf diese Retrospektive."
 }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Actions\Retros\GuestCookie;
 use App\Actions\Retros\ResolveParticipant;
 use App\Models\Retro;
 use Closure;
@@ -24,7 +25,13 @@ class ResolveRetroParticipant
             return redirect()->guest(route('login'));
         }
 
-        abort_if($participant === null, 403);
+        if ($participant === null) {
+            $hasGuestCookie = $request->cookies->has(GuestCookie::name($retro->id));
+
+            abort_if($request->user() === null && ! $hasGuestCookie, 401, __('Your session has expired.'));
+
+            abort(403, __('You no longer have access to this retrospective.'));
+        }
 
         $request->attributes->set('participant', $participant);
 

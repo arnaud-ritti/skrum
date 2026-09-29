@@ -221,7 +221,9 @@ export function useRetroBoard(initial: Snapshot) {
                 );
             }
 
-            return error.message;
+            return (
+                error.message || t('Something went wrong. Please try again.')
+            );
         },
         [t],
     );
