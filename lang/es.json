@@ -18,7 +18,7 @@
     "Add a passkey to sign in without a password": "Añade una clave de acceso para iniciar sesión sin contraseña",
     "Add passkey": "Añadir clave de acceso",
     "Added :time": "Añadida :time",
-    "Admin": "Administrar",
+    "Admin": "Administrador",
     "Agree": "Aceptar",
     "All rights reserved.": "Todos los derechos reservados.",
     "Already Reported": "Ya Reportado",
@@ -448,5 +448,14 @@
     "You are invited to join :workspace": "Has sido invitado a unirte a :workspace",
     ":inviter invited you to join the :workspace workspace.": ":inviter te ha invitado a unirte al espacio de trabajo :workspace.",
     "This invitation expires on :date.": "Esta invitación caduca el :date.",
-    "Leave workspace": "Salir del espacio de trabajo"
+    "Leave workspace": "Salir del espacio de trabajo",
+    "Transfer ownership of your workspaces before deleting your account.": "Transfiere la propiedad de tus espacios de trabajo antes de eliminar tu cuenta.",
+    "This invitation link is no longer valid.": "Este enlace de invitación ya no es válido.",
+    "Delete this workspace?": "¿Eliminar este espacio de trabajo?",
+    "Delete this team?": "¿Eliminar este equipo?",
+    "This permanently deletes the team and its retrospectives.": "Esto elimina permanentemente el equipo y sus retrospectivas.",
+    "Remove :name from this workspace?": "¿Quitar a :name de este espacio de trabajo?",
+    "Leave this workspace?": "¿Salir de este espacio de trabajo?",
+    "They will lose access to the workspace and be removed from all of its teams.": "Perderá el acceso al espacio de trabajo y será eliminada de todos sus equipos.",
+    "You will lose access to the workspace and be removed from all of its teams.": "Perderás el acceso al espacio de trabajo y se te eliminará de todos sus equipos."
 }

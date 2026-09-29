@@ -185,5 +185,14 @@
     "You are invited to join :workspace": "You are invited to join :workspace",
     ":inviter invited you to join the :workspace workspace.": ":inviter invited you to join the :workspace workspace.",
     "This invitation expires on :date.": "This invitation expires on :date.",
-    "Leave workspace": "Leave workspace"
+    "Leave workspace": "Leave workspace",
+    "Transfer ownership of your workspaces before deleting your account.": "Transfer ownership of your workspaces before deleting your account.",
+    "This invitation link is no longer valid.": "This invitation link is no longer valid.",
+    "Delete this workspace?": "Delete this workspace?",
+    "Delete this team?": "Delete this team?",
+    "This permanently deletes the team and its retrospectives.": "This permanently deletes the team and its retrospectives.",
+    "Remove :name from this workspace?": "Remove :name from this workspace?",
+    "Leave this workspace?": "Leave this workspace?",
+    "They will lose access to the workspace and be removed from all of its teams.": "They will lose access to the workspace and be removed from all of its teams.",
+    "You will lose access to the workspace and be removed from all of its teams.": "You will lose access to the workspace and be removed from all of its teams."
 }

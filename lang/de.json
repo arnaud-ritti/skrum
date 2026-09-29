@@ -448,5 +448,14 @@
     "You are invited to join :workspace": "Du wurdest eingeladen, :workspace beizutreten",
     ":inviter invited you to join the :workspace workspace.": ":inviter hat dich eingeladen, dem Arbeitsbereich :workspace beizutreten.",
     "This invitation expires on :date.": "Diese Einladung läuft am :date ab.",
-    "Leave workspace": "Arbeitsbereich verlassen"
+    "Leave workspace": "Arbeitsbereich verlassen",
+    "Transfer ownership of your workspaces before deleting your account.": "Übertrage die Inhaberschaft deiner Arbeitsbereiche, bevor du dein Konto löschst.",
+    "This invitation link is no longer valid.": "Dieser Einladungslink ist nicht mehr gültig.",
+    "Delete this workspace?": "Diesen Arbeitsbereich löschen?",
+    "Delete this team?": "Dieses Team löschen?",
+    "This permanently deletes the team and its retrospectives.": "Dadurch werden das Team und seine Retrospektiven dauerhaft gelöscht.",
+    "Remove :name from this workspace?": ":name aus diesem Arbeitsbereich entfernen?",
+    "Leave this workspace?": "Diesen Arbeitsbereich verlassen?",
+    "They will lose access to the workspace and be removed from all of its teams.": "Die Person verliert den Zugriff auf den Arbeitsbereich und wird aus allen seinen Teams entfernt.",
+    "You will lose access to the workspace and be removed from all of its teams.": "Du verlierst den Zugriff auf den Arbeitsbereich und wirst aus allen seinen Teams entfernt."
 }
