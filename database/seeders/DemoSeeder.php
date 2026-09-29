@@ -15,6 +15,12 @@ class DemoSeeder extends Seeder
 
     public function run(CreateWorkspace $createWorkspace, CreateRetro $createRetro): void
     {
+        if (! app()->environment('local')) {
+            $this->command->warn('Demo data is only seeded in the local environment, skipping.');
+
+            return;
+        }
+
         if (User::where('email', 'admin@skrum.test')->exists()) {
             $this->command->info('Demo data already exists, skipping.');
 

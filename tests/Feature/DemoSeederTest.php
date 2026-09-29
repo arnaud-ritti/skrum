@@ -8,6 +8,10 @@ use App\Models\User;
 use App\Models\Workspace;
 use Database\Seeders\DemoSeeder;
 
+beforeEach(function () {
+    app()->detectEnvironment(fn () => 'local');
+});
+
 it('creates the demo users, workspace, team and retro', function () {
     $this->seed(DemoSeeder::class);
 
@@ -43,4 +47,14 @@ it('does not duplicate anything when run twice', function () {
         ->and(Team::count())->toBe(1)
         ->and(Retro::count())->toBe(1)
         ->and(Participant::count())->toBe(1);
+});
+
+it('does nothing outside the local environment', function () {
+    app()->detectEnvironment(fn () => 'staging');
+
+    $this->seed(DemoSeeder::class);
+
+    expect(User::count())->toBe(0)
+        ->and(Workspace::count())->toBe(0)
+        ->and(Retro::count())->toBe(0);
 });
