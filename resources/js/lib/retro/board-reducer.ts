@@ -47,10 +47,19 @@ function upsertCards(cards: BoardCard[], payloads: CardPayload[]): BoardCard[] {
 
     for (const payload of payloads) {
         const existing = byId.get(payload.id);
+        // Broadcast payloads are presented without a viewer, so they never
+        // mark a card as mine and redact what only its author may see.
+        const keepsOwnView = existing?.isMine === true && !payload.isMine;
+
         byId.set(payload.id, {
             votes: existing?.votes ?? null,
             myVotes: existing?.myVotes ?? 0,
             ...payload,
+            ...(keepsOwnView && {
+                isMine: true,
+                content: payload.content ?? existing.content,
+                author: payload.author ?? existing.author,
+            }),
         });
     }
 
