@@ -93,3 +93,13 @@ it('returns 404 for columns of another retro', function () {
         ->patchJson(route('retros.columns.update', [$retro, Column::factory()->create()]), ['title' => 'X'])
         ->assertNotFound();
 });
+
+it('lets the facilitator prepare columns before writing', function (RetroPhase $phase) {
+    [$retro, $user, $first, $second] = columnsRetro();
+    $retro->update(['health_check_enabled' => true, 'icebreaker_enabled' => true, 'phase' => $phase]);
+
+    $this->actingAs($user)->postJson(route('retros.columns.store', $retro), ['title' => 'Kudos', 'color' => 'purple'])->assertCreated();
+    $this->actingAs($user)
+        ->putJson(route('retros.columns.order.update', $retro), ['column_ids' => [$second->id, $first->id, Column::query()->where('retro_id', $retro->id)->where('title', 'Kudos')->value('id')]])
+        ->assertOk();
+})->with([RetroPhase::HealthCheck, RetroPhase::Icebreaker]);

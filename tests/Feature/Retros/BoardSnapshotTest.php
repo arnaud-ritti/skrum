@@ -317,3 +317,26 @@ it('points the emoji picker at the self-hosted emoji data in the viewer locale',
         'locale' => 'fr',
     ]);
 });
+
+it('hides others cards again in the pre-writing phases', function (RetroPhase $phase) {
+    $retro = Retro::factory()->withHealthCheck()->withIcebreaker()->inPhase($phase)->create();
+    [, $viewer] = retroMember($retro);
+    $othersCard = Card::factory()->create(['retro_id' => $retro->id, 'content' => 'written before moving back']);
+
+    $snapshot = snapshotFor($retro, $viewer);
+
+    expect(snapshotCard($snapshot, $othersCard))->toMatchArray(['hidden' => true, 'content' => null, 'author' => null, 'gif' => null])
+        ->and(json_encode($snapshot))->not->toContain('written before moving back');
+})->with([RetroPhase::HealthCheck, RetroPhase::Icebreaker]);
+
+it('exposes the enabled phases and toggles', function () {
+    $retro = Retro::factory()->withIcebreaker()->inPhase(RetroPhase::Icebreaker)->create();
+    [, $viewer] = retroMember($retro);
+
+    expect(snapshotFor($retro, $viewer)['retro'])->toMatchArray([
+        'phase' => 'icebreaker',
+        'phases' => ['icebreaker', 'writing', 'grouping', 'voting', 'discussing', 'completed'],
+        'healthCheckEnabled' => false,
+        'icebreakerEnabled' => true,
+    ]);
+});

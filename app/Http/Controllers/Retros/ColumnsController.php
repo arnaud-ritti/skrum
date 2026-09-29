@@ -82,7 +82,7 @@ class ColumnsController extends Controller
     private function authorizeEditing(Retro $retro, Participant $participant): void
     {
         RetroGuard::facilitator($retro, $participant);
-        RetroGuard::phase($retro, RetroPhase::Writing);
+        RetroGuard::phase($retro, RetroPhase::HealthCheck, RetroPhase::Icebreaker, RetroPhase::Writing);
     }
 
     private function ensureEmpty(Column $column): void

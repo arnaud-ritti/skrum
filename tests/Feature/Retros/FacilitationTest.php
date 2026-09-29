@@ -282,3 +282,60 @@ it('never moves into a disabled phase', function () {
         ->assertUnprocessable()
         ->assertJsonValidationErrors(['phase' => 'The retrospective can only move to the previous or next phase.']);
 });
+
+it('turns the pre-writing phases on and off', function () {
+    [$retro, $user] = facilitatedRetro();
+
+    $this->actingAs($user)->patchJson(route('retros.settings.update', $retro), [
+        'health_check_enabled' => true,
+        'icebreaker_enabled' => true,
+    ])->assertNoContent();
+
+    expect($retro->fresh()->only(['health_check_enabled', 'icebreaker_enabled']))->toBe([
+        'health_check_enabled' => true,
+        'icebreaker_enabled' => true,
+    ]);
+    Event::assertDispatched(RetroSettingsChanged::class);
+
+    $this->actingAs($user)->putJson(route('retros.phase.update', $retro), ['phase' => 'icebreaker'])->assertOk();
+
+    $this->actingAs($user)->patchJson(route('retros.settings.update', $retro), ['health_check_enabled' => false])->assertNoContent();
+
+    expect($retro->fresh()->health_check_enabled)->toBeFalse();
+});
+
+it('refuses to turn off the current phase', function (RetroPhase $phase, string $setting, mixed $off) {
+    $retro = Retro::factory()->withHealthCheck()->withIcebreaker()->inPhase($phase)->create();
+    [$user] = retroFacilitator($retro);
+
+    $this->actingAs($user)
+        ->patchJson(route('retros.settings.update', $retro), [$setting => $off])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors([$setting => 'Move to another phase before turning this phase off.']);
+
+    expect($retro->fresh()->{$setting})->toBeTrue();
+})->with([
+    'health check' => [RetroPhase::HealthCheck, 'health_check_enabled', false],
+    'icebreaker' => [RetroPhase::Icebreaker, 'icebreaker_enabled', false],
+    'health check as zero' => [RetroPhase::HealthCheck, 'health_check_enabled', 0],
+    'icebreaker as string zero' => [RetroPhase::Icebreaker, 'icebreaker_enabled', '0'],
+]);
+
+it('refuses phase toggles from others and once completed', function (string $setting) {
+    [$retro, $facilitator] = facilitatedRetro();
+    [$member] = retroMember($retro);
+
+    $this->actingAs($member)->patchJson(route('retros.settings.update', $retro), [$setting => true])->assertForbidden();
+
+    $retro->update(['phase' => RetroPhase::Completed]);
+
+    $this->actingAs($facilitator)->patchJson(route('retros.settings.update', $retro), [$setting => true])->assertForbidden();
+})->with(['health_check_enabled', 'icebreaker_enabled']);
+
+it('accepts the timer and engagement settings in the pre-writing phases', function (RetroPhase $phase) {
+    $retro = Retro::factory()->withHealthCheck()->withIcebreaker()->inPhase($phase)->create();
+    [$user] = retroFacilitator($retro);
+
+    $this->actingAs($user)->putJson(route('retros.timer.update', $retro), ['seconds' => 120])->assertOk();
+    $this->actingAs($user)->patchJson(route('retros.settings.update', $retro), ['cursors_enabled' => false])->assertNoContent();
+})->with([RetroPhase::HealthCheck, RetroPhase::Icebreaker]);

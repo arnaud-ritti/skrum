@@ -15,8 +15,9 @@ use Illuminate\Validation\ValidationException;
 
 class RetroSettingsController extends Controller
 {
-    private const EngagementSettings = [
+    private const OpenPhaseSettings = [
         'reactions_enabled', 'cursors_enabled', 'gifs_enabled', 'hide_vote_counts', 'is_locked', 'presentation_mode',
+        'health_check_enabled', 'icebreaker_enabled',
     ];
 
     public function update(Request $request, Retro $retro): Response
@@ -36,6 +37,8 @@ class RetroSettingsController extends Controller
             'hide_vote_counts' => ['sometimes', 'boolean'],
             'is_locked' => ['sometimes', 'boolean'],
             'presentation_mode' => ['sometimes', 'boolean'],
+            'health_check_enabled' => ['sometimes', 'boolean'],
+            'icebreaker_enabled' => ['sometimes', 'boolean'],
         ]);
 
         DB::transaction(function () use ($retro, $participant, $validated): void {
@@ -43,13 +46,15 @@ class RetroSettingsController extends Controller
 
             RetroGuard::facilitator($locked, $participant);
 
-            if (array_intersect(array_keys($validated), self::EngagementSettings) !== []) {
-                RetroGuard::phase($locked, RetroPhase::Writing, RetroPhase::Grouping, RetroPhase::Voting, RetroPhase::Discussing);
+            if (array_intersect(array_keys($validated), self::OpenPhaseSettings) !== []) {
+                RetroGuard::open($locked);
             }
 
             if (array_key_exists('votes_per_participant', $validated)) {
                 RetroGuard::phase($locked, RetroPhase::Writing, RetroPhase::Grouping);
             }
+
+            $this->ensureCurrentPhaseStaysOn($locked, $validated);
 
             $isDisablingAnonymity = array_key_exists('is_anonymous', $validated)
                 && ! $validated['is_anonymous']
@@ -65,5 +70,28 @@ class RetroSettingsController extends Controller
         });
 
         return response()->noContent();
+    }
+
+    /**
+     * @param  array<string, mixed>  $validated
+     */
+    private function ensureCurrentPhaseStaysOn(Retro $retro, array $validated): void
+    {
+        $toggles = [
+            'health_check_enabled' => RetroPhase::HealthCheck,
+            'icebreaker_enabled' => RetroPhase::Icebreaker,
+        ];
+
+        foreach ($toggles as $setting => $phase) {
+            if (! array_key_exists($setting, $validated) || (bool) $validated[$setting]) {
+                continue;
+            }
+
+            if ($retro->phase !== $phase) {
+                continue;
+            }
+
+            throw ValidationException::withMessages([$setting => __('Move to another phase before turning this phase off.')]);
+        }
     }
 }
