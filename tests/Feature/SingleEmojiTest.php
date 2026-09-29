@@ -23,5 +23,6 @@ it('rejects anything that is not exactly one emoji', function (string $value) {
     'text' => 'ok',
     'two emoji' => '👍👍',
     'emoji and text' => '👍a',
+    'trailing newline' => "👍\n",
     'oversized' => str_repeat("\u{200D}", 70),
 ]);
