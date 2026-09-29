@@ -3,7 +3,7 @@
 ARG PHP_VERSION=8.4
 ARG NODE_VERSION=22
 
-FROM node:${NODE_VERSION}-alpine AS node
+FROM --platform=$BUILDPLATFORM node:${NODE_VERSION}-alpine AS node
 
 FROM dunglas/frankenphp:1-php${PHP_VERSION}-alpine AS base
 
@@ -34,7 +34,11 @@ RUN case "${TARGETARCH}" in \
 
 WORKDIR /app
 
-FROM base AS build
+FROM --platform=$BUILDPLATFORM dunglas/frankenphp:1-php${PHP_VERSION}-alpine AS build
+
+RUN install-php-extensions bcmath intl pcntl pdo_pgsql zip
+
+WORKDIR /app
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 

@@ -4,12 +4,12 @@ Skrum is an open-source, self-hostable realtime retrospective board. It is multi
 
 ## Run with Docker
 
-The image is published to GitHub Container Registry. The repository has no remote yet, so the commands below use the literal placeholder `<owner>`: replace it with the GitHub owner once the image is published.
+The image is published to GitHub Container Registry.
 
 ```bash
-curl -O https://raw.githubusercontent.com/<owner>/skrum/main/compose.production.yaml
-curl -o .env https://raw.githubusercontent.com/<owner>/skrum/main/.env.example
-docker run --rm --entrypoint php ghcr.io/<owner>/skrum:latest artisan key:generate --show
+curl -O https://raw.githubusercontent.com/arnaud-ritti/skrum/main/compose.production.yaml
+curl -o .env https://raw.githubusercontent.com/arnaud-ritti/skrum/main/.env.example
+docker run --rm --entrypoint php ghcr.io/arnaud-ritti/skrum:latest artisan key:generate --show
 ```
 
 The last command prints the value for `APP_KEY`. The copied `.env` ships development defaults, so edit it before starting:
@@ -18,7 +18,7 @@ The last command prints the value for `APP_KEY`. The copied `.env` ships develop
 - set `APP_ENV=production`, `APP_DEBUG=false`, `LOG_CHANNEL=stderr` and `LOG_LEVEL=warning`;
 - replace the default `DB_USERNAME=sail` with your own user name, and `DB_PASSWORD=password` with a strong value (required);
 - set `REVERB_APP_ID`, `REVERB_APP_KEY` and `REVERB_APP_SECRET` to random strings;
-- add `SKRUM_IMAGE=ghcr.io/<owner>/skrum:latest`;
+- optionally set `SKRUM_IMAGE` to pin a version, e.g. `ghcr.io/arnaud-ritti/skrum:1.0`;
 - mail goes to the log (`MAIL_MAILER=log`) until you set the `MAIL_*` variables.
 
 Compose reads `.env` from the project directory twice: to fill the `${...}` values in `compose.production.yaml` (image, ports, database name, user and password) and as the app container's environment. To use a file with another name, pass `--env-file <file>` to every `docker compose` command; it feeds the `${...}` values, so also point the `env_file:` entry of the `app` service at that file.
