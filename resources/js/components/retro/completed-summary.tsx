@@ -69,7 +69,7 @@ export function CompletedSummary({ board }: { board: Snapshot }) {
                                     {item.isDone && (
                                         <Check
                                             className="mt-0.5 size-4 shrink-0"
-                                            aria-label={t('Mark as done')}
+                                            aria-label={t('Done')}
                                         />
                                     )}
                                     <span
