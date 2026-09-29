@@ -70,11 +70,14 @@ it('rate limits gif searches per participant', function () {
     $retro = Retro::factory()->create();
     [$user] = retroMember($retro);
 
+    [$other] = retroMember($retro);
+
     foreach (range(1, 20) as $attempt) {
         $this->actingAs($user)->getJson(route('retros.gifs.index', ['retro' => $retro, 'q' => "q{$attempt}"]))->assertOk();
     }
 
     $this->actingAs($user)->getJson(route('retros.gifs.index', ['retro' => $retro, 'q' => 'one more']))->assertTooManyRequests();
+    $this->actingAs($other)->getJson(route('retros.gifs.index', ['retro' => $retro, 'q' => 'one more']))->assertOk();
 });
 
 it('answers 502 when the provider is down', function () {
@@ -98,6 +101,8 @@ it('streams known gifs from a local cache and refuses unknown ones', function ()
 
     $this->get(route('gifs.show', ['gif' => 'abc123', 'size' => 'preview']))
         ->assertOk()
+        ->assertHeader('Content-Type', 'image/gif')
+        ->assertHeader('X-Content-Type-Options', 'nosniff')
         ->assertHeader('Cache-Control', 'immutable, max-age=31536000, public');
     $this->get(route('gifs.show', ['gif' => 'abc123', 'size' => 'preview']))->assertOk();
 
@@ -176,7 +181,7 @@ it('answers 502 when a gif image cannot be fetched', function () {
 it('streams gifs used by a card from urls the provider returned', function () {
     Http::fake([
         'api.giphy.com/v1/gifs/abc123*' => Http::response(['data' => giphyItem('abc123')]),
-        'media.giphy.com/*' => Http::response("GIF89a\x01\x00\x01\x00"),
+        'media.giphy.com/*' => Http::response("GIF89a\x01\x00\x01\x00", 200, ['Content-Type' => 'image/gif']),
     ]);
     Card::factory()->create(['content' => null, 'gif_id' => 'abc123']);
 
@@ -211,4 +216,35 @@ it('never leaks the provider key when the provider cannot be reached', function 
         ->and($proxy->getContent())->not->toContain('secret-key');
 
     Exceptions::assertNothingReported();
+});
+
+it('refuses upstream images that are not gif or webp or exceed 5 MB', function (Closure $upstream) {
+    Http::fake([
+        'api.giphy.com/v1/gifs/abc123*' => Http::response(['data' => giphyItem('abc123')]),
+        'media.giphy.com/*' => $upstream,
+    ]);
+    Card::factory()->create(['content' => null, 'gif_id' => 'abc123']);
+
+    $this->getJson(route('gifs.show', ['gif' => 'abc123', 'size' => 'full']))
+        ->assertStatus(502)
+        ->assertJsonPath('message', 'This GIF could not be loaded.');
+
+    expect(Storage::allFiles())->toBe([]);
+})->with([
+    'html' => [fn () => Http::response('<html><script>alert(1)</script></html>', 200, ['Content-Type' => 'text/html'])],
+    'html labelled as gif' => [fn () => Http::response('<html><script>alert(1)</script></html>', 200, ['Content-Type' => 'image/gif'])],
+    'declared too large' => [fn () => Http::response("GIF89a\x01\x00\x01\x00", 200, ['Content-Type' => 'image/gif', 'Content-Length' => (string) (5 * 1024 * 1024 + 1)])],
+    'body too large' => [fn () => Http::response('GIF89a'.str_repeat("\x00", 5 * 1024 * 1024), 200, ['Content-Type' => 'image/gif'])],
+]);
+
+it('stores gifs under the requested id', function () {
+    Http::fake([
+        'api.giphy.com/v1/gifs/abc123*' => Http::response(['data' => [...giphyItem('abc123'), 'id' => 'other']]),
+        'media.giphy.com/*' => Http::response("GIF89a\x01\x00\x01\x00", 200, ['Content-Type' => 'image/gif']),
+    ]);
+    Card::factory()->create(['content' => null, 'gif_id' => 'abc123']);
+
+    $this->get(route('gifs.show', ['gif' => 'abc123', 'size' => 'preview']))->assertOk();
+
+    Storage::assertExists('gifs/giphy/abc123-preview');
 });

@@ -6,9 +6,12 @@ use App\Enums\RetroPhase;
 use App\Models\Card;
 use App\Models\Participant;
 use App\Models\Retro;
+use App\Support\Gifs\GifCatalog;
 
 class PresentCard
 {
+    public function __construct(private GifCatalog $gifCatalog) {}
+
     /**
      * @return array{
      *     id: string,
@@ -36,7 +39,7 @@ class PresentCard
             'isMine' => $isMine,
             'hidden' => $isHidden,
             'content' => $isHidden ? null : $card->content,
-            'gif' => $isHidden || $card->gif_id === null ? null : [
+            'gif' => $isHidden || $card->gif_id === null || ! $this->gifCatalog->isAvailable() ? null : [
                 'id' => $card->gif_id,
                 'previewUrl' => route('gifs.show', ['gif' => $card->gif_id, 'size' => 'preview'], false),
                 'url' => route('gifs.show', ['gif' => $card->gif_id, 'size' => 'full'], false),

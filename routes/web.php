@@ -116,7 +116,7 @@ Route::prefix('retros/{retro}')
         Route::post('cards', [CardsController::class, 'store'])->name('retros.cards.store');
         Route::patch('cards/{card}', [CardsController::class, 'update'])->name('retros.cards.update')->whereUuid('card');
         Route::delete('cards/{card}', [CardsController::class, 'destroy'])->name('retros.cards.destroy')->whereUuid('card');
-        Route::get('gifs', [RetroGifsController::class, 'index'])->name('retros.gifs.index')->middleware('throttle:gif-search');
+        Route::get('gifs', [RetroGifsController::class, 'index'])->name('retros.gifs.index');
         Route::put('cards/{card}/position', [CardPositionsController::class, 'update'])->name('retros.cards.position.update')->whereUuid('card');
         Route::put('cards/{card}/group', [CardGroupsController::class, 'update'])->name('retros.cards.group.update')->whereUuid('card');
         Route::delete('cards/{card}/group', [CardGroupsController::class, 'destroy'])->name('retros.cards.group.destroy')->whereUuid('card');

@@ -284,3 +284,25 @@ it('names the gif provider only when gifs can be used', function (?string $provi
     'no key' => ['giphy', null, null],
     'no provider' => [null, 'secret-key', null],
 ]);
+
+it('leaves out gif urls when no gif provider is configured', function () {
+    config(['services.gifs' => ['provider' => null, 'key' => null, 'rating' => 'pg']]);
+    $retro = Retro::factory()->inPhase(RetroPhase::Grouping)->create();
+    [, $viewer] = retroMember($retro);
+    $card = Card::factory()->create(['retro_id' => $retro->id, 'gif_id' => 'abc123']);
+
+    expect(snapshotCard(snapshotFor($retro, $viewer), $card)['gif'])->toBeNull();
+});
+
+it('presents a card gif through the proxy when a provider is configured', function () {
+    config(['services.gifs' => ['provider' => 'giphy', 'key' => 'secret-key', 'rating' => 'pg']]);
+    $retro = Retro::factory()->inPhase(RetroPhase::Grouping)->create();
+    [, $viewer] = retroMember($retro);
+    $card = Card::factory()->create(['retro_id' => $retro->id, 'gif_id' => 'abc123']);
+
+    expect(snapshotCard(snapshotFor($retro, $viewer), $card)['gif'])->toBe([
+        'id' => 'abc123',
+        'previewUrl' => '/gifs/abc123/preview',
+        'url' => '/gifs/abc123/full',
+    ]);
+});
