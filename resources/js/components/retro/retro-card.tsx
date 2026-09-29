@@ -216,11 +216,23 @@ export function RetroCard({ card, isChild = false, footer }: Props) {
     );
 }
 
-export function CardPreview({ card }: { card: BoardCard }) {
+export function CardPreview({
+    card,
+    width,
+}: {
+    card: BoardCard;
+    width: number | undefined;
+}) {
     const { t } = useTrans();
 
     return (
-        <article className="w-64 rounded-md border bg-card p-3 text-sm shadow-lg">
+        <article
+            className={cn(
+                'rounded-md border bg-card p-3 text-sm shadow-lg',
+                width === undefined && 'w-64',
+            )}
+            style={{ width }}
+        >
             {card.content === null ? (
                 <p className="text-muted-foreground italic">
                     {t('Hidden until writing ends')}

@@ -53,6 +53,7 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
     );
 
     const [activeCardId, setActiveCardId] = useState<string | null>(null);
+    const [activeCardWidth, setActiveCardWidth] = useState<number>();
     const dragAccessibility = useDragAccessibility(board);
     const highlightedCardId = board.retro.highlightedCardId;
 
@@ -197,11 +198,15 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
                                 sensors={sensors}
                                 accessibility={dragAccessibility}
                                 collisionDetection={closestCenter}
-                                onDragStart={(event) =>
+                                onDragStart={(event) => {
                                     setActiveCardId(
                                         parseDndId(event.active.id)?.id ?? null,
-                                    )
-                                }
+                                    );
+                                    setActiveCardWidth(
+                                        event.active.rect.current.initial
+                                            ?.width,
+                                    );
+                                }}
                                 onDragCancel={() => setActiveCardId(null)}
                                 onDragEnd={(event) => void handleDragEnd(event)}
                             >
@@ -225,7 +230,10 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
                                 </main>
                                 <DragOverlay>
                                     {activeCard ? (
-                                        <CardPreview card={activeCard} />
+                                        <CardPreview
+                                            card={activeCard}
+                                            width={activeCardWidth}
+                                        />
                                     ) : null}
                                 </DragOverlay>
                             </DndContext>
