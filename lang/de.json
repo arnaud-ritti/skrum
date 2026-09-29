@@ -495,5 +495,10 @@
     "Retrospective title": "Titel der Retrospektive",
     "Template": "Vorlage",
     "Start a retrospective": "Retrospektive starten",
-    "No retrospectives yet.": "Noch keine Retrospektiven."
+    "No retrospectives yet.": "Noch keine Retrospektiven.",
+    "Join a retrospective": "An einer Retrospektive teilnehmen",
+    "This guest link is no longer valid.": "Dieser Gästelink ist nicht mehr gültig.",
+    "Choose the name other participants will see.": "Wähle den Namen, den die anderen Teilnehmenden sehen.",
+    "Display name": "Anzeigename",
+    "Join": "Beitreten"
 }

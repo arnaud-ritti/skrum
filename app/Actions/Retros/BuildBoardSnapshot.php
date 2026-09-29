@@ -51,6 +51,9 @@ class BuildBoardSnapshot
                 'isAnonymous' => $retro->is_anonymous,
                 'votesPerParticipant' => $retro->votes_per_participant,
                 'guestAccessEnabled' => $retro->guest_access_enabled,
+                'guestUrl' => $retro->guest_access_enabled && $retro->isFacilitator($viewer)
+                    ? route('retros.join.show', $retro->guest_token)
+                    : null,
                 'facilitatorParticipantId' => $retro->facilitator_participant_id,
                 'timerEndsAt' => $retro->timer_ends_at?->toIso8601String(),
                 'highlightedCardId' => $retro->highlighted_card_id,

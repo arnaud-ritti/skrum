@@ -234,5 +234,10 @@
     "Retrospective title": "Retrospective title",
     "Template": "Template",
     "Start a retrospective": "Start a retrospective",
-    "No retrospectives yet.": "No retrospectives yet."
+    "No retrospectives yet.": "No retrospectives yet.",
+    "Join a retrospective": "Join a retrospective",
+    "This guest link is no longer valid.": "This guest link is no longer valid.",
+    "Choose the name other participants will see.": "Choose the name other participants will see.",
+    "Display name": "Display name",
+    "Join": "Join"
 }

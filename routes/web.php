@@ -6,6 +6,7 @@ use App\Http\Controllers\CurrentWorkspaceController;
 use App\Http\Controllers\InvitationAcceptancesController;
 use App\Http\Controllers\InvitationLinksController;
 use App\Http\Controllers\LocalesController;
+use App\Http\Controllers\RetroJoinsController;
 use App\Http\Controllers\Retros\RetrosController;
 use App\Http\Controllers\Retros\RetroSnapshotsController;
 use App\Http\Controllers\SsoCallbacksController;
@@ -67,6 +68,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::delete('invitations/{invitation}', [WorkspaceInvitationsController::class, 'destroy'])->name('workspaces.invitations.destroy');
         });
 });
+
+Route::get('join/{guestToken}', [RetroJoinsController::class, 'show'])->name('retros.join.show');
+Route::post('join/{guestToken}', [RetroJoinsController::class, 'store'])->name('retros.join.store')->middleware('throttle:10,1');
 
 Route::prefix('retros/{retro}')
     ->whereUuid('retro')

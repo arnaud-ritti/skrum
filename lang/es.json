@@ -495,5 +495,10 @@
     "Retrospective title": "Título de la retrospectiva",
     "Template": "Plantilla",
     "Start a retrospective": "Iniciar una retrospectiva",
-    "No retrospectives yet.": "Aún no hay retrospectivas."
+    "No retrospectives yet.": "Aún no hay retrospectivas.",
+    "Join a retrospective": "Unirse a una retrospectiva",
+    "This guest link is no longer valid.": "Este enlace de invitado ya no es válido.",
+    "Choose the name other participants will see.": "Elige el nombre que verán los demás participantes.",
+    "Display name": "Nombre visible",
+    "Join": "Unirse"
 }
