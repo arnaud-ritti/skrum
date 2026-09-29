@@ -25,6 +25,12 @@ export const RetroEvents = [
     'retro.deleted',
 ] as const;
 
+/**
+ * The presence and private subscriptions complete moments apart (on load
+ * and on every reconnect); waiting briefly lets one snapshot cover both.
+ */
+const ResyncCoalesceMs = 250;
+
 export type RetroEventName = (typeof RetroEvents)[number];
 
 export type RetroEvent = {
@@ -89,12 +95,25 @@ export function useRetroChannel(
             return;
         }
 
+        let pendingResync: ReturnType<typeof setTimeout> | null = null;
+
+        const scheduleResync = () => {
+            if (pendingResync !== null) {
+                return;
+            }
+
+            pendingResync = setTimeout(() => {
+                pendingResync = null;
+                handlers.current.onResync();
+            }, ResyncCoalesceMs);
+        };
+
         const name = `retro.${retroId}`;
         const channel = echo<'reverb'>()
             .join(name)
             .here((members: PresenceMember[]) => {
                 setOnline(members);
-                handlers.current.onResync();
+                scheduleResync();
             })
             .joining((member: PresenceMember) => {
                 setOnline((current) => [
@@ -108,7 +127,7 @@ export function useRetroChannel(
                     current.filter((m) => m.id !== member.id),
                 ),
             )
-            .error(() => handlers.current.onResync());
+            .error(scheduleResync);
 
         for (const event of RetroEvents) {
             channel.listen(`.${event}`, (payload: Record<string, unknown>) =>
@@ -120,12 +139,17 @@ export function useRetroChannel(
 
         echo<'reverb'>()
             .private(ownChannel)
+            .subscribed(scheduleResync)
             .listen('.own-card.saved', (payload: { card: CardPayload }) =>
                 handlers.current.onOwnCard(payload.card),
             )
-            .error(() => handlers.current.onResync());
+            .error(scheduleResync);
 
         return () => {
+            if (pendingResync !== null) {
+                clearTimeout(pendingResync);
+            }
+
             echo().leave(name);
             echo().leave(ownChannel);
             setOnline([]);
