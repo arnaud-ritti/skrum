@@ -69,13 +69,14 @@ export function useRetroChannel(
     enabled: boolean,
     onEvent: (event: RetroEvent) => void,
     onResync: () => void,
+    onJoining: (member: PresenceMember) => void,
 ) {
     const [online, setOnline] = useState<PresenceMember[]>([]);
     const status = useSafeConnectionStatus();
-    const handlers = useRef({ onEvent, onResync });
+    const handlers = useRef({ onEvent, onResync, onJoining });
     const [wasConnected, setWasConnected] = useState(false);
 
-    handlers.current = { onEvent, onResync };
+    handlers.current = { onEvent, onResync, onJoining };
 
     if (status === 'connected' && !wasConnected) {
         setWasConnected(true);
@@ -93,17 +94,19 @@ export function useRetroChannel(
                 setOnline(members);
                 handlers.current.onResync();
             })
-            .joining((member: PresenceMember) =>
+            .joining((member: PresenceMember) => {
                 setOnline((current) => [
                     ...current.filter((m) => m.id !== member.id),
                     member,
-                ]),
-            )
+                ]);
+                handlers.current.onJoining(member);
+            })
             .leaving((member: PresenceMember) =>
                 setOnline((current) =>
                     current.filter((m) => m.id !== member.id),
                 ),
-            );
+            )
+            .error(() => handlers.current.onResync());
 
         for (const event of RetroEvents) {
             channel.listen(`.${event}`, (payload: Record<string, unknown>) =>

@@ -3,16 +3,35 @@ import { toast } from 'sonner';
 import RetroSnapshotsController from '@/actions/App/Http/Controllers/Retros/RetroSnapshotsController';
 import { useTrans } from '@/hooks/use-trans';
 import { RetroRequestError, retroRequest } from '@/lib/retro/api';
-import { boardReducer } from '@/lib/retro/board-reducer';
+import { boardReducer, type BoardAction } from '@/lib/retro/board-reducer';
 import type {
     ActionItem,
     BoardColumn,
     CardPayload,
+    PresenceMember,
     Snapshot,
 } from '@/lib/retro/types';
 import { useRetroChannel, type RetroEvent } from './use-retro-channel';
 
 export type BoardStatus = 'active' | 'ended' | 'deleted';
+
+/**
+ * Broadcasts are presented without a viewer, so an update to the viewer's own
+ * card made from another tab arrives with its content redacted.
+ */
+function isOwnRedactedCard(board: Snapshot, card: CardPayload): boolean {
+    if (card.content !== null) {
+        return false;
+    }
+
+    if (card.author?.id === board.viewer.participantId) {
+        return true;
+    }
+
+    return board.cards.some(
+        (existing) => existing.id === card.id && existing.isMine,
+    );
+}
 
 export function useRetroBoard(initial: Snapshot) {
     const { t } = useTrans();
@@ -20,7 +39,36 @@ export function useRetroBoard(initial: Snapshot) {
     const [status, setStatus] = useState<BoardStatus>('active');
     const isActive = useRef(true);
     const latestRefetch = useRef(0);
+    const bufferedActions = useRef<BoardAction[] | null>(null);
+    const latestBoard = useRef(board);
     const retroId = initial.retro.id;
+
+    latestBoard.current = board;
+
+    /**
+     * While a refetch is in flight, broadcast actions are held back and
+     * replayed after its snapshot so events committed after the snapshot
+     * was built are not wiped by it.
+     */
+    const apply = useCallback((action: BoardAction) => {
+        if (bufferedActions.current) {
+            bufferedActions.current.push(action);
+
+            return;
+        }
+
+        dispatch(action);
+    }, []);
+
+    const flushBufferedActions = useCallback(() => {
+        const actions = bufferedActions.current ?? [];
+
+        bufferedActions.current = null;
+
+        for (const action of actions) {
+            dispatch(action);
+        }
+    }, []);
 
     const end = useCallback((reason: Exclude<BoardStatus, 'active'>) => {
         if (!isActive.current) {
@@ -37,6 +85,8 @@ export function useRetroBoard(initial: Snapshot) {
         }
 
         const request = ++latestRefetch.current;
+
+        bufferedActions.current ??= [];
 
         try {
             const snapshot = await retroRequest<Snapshot>(
@@ -60,21 +110,30 @@ export function useRetroBoard(initial: Snapshot) {
             if (error.status === 403) {
                 end('ended');
             }
+        } finally {
+            if (request === latestRefetch.current) {
+                flushBufferedActions();
+            }
         }
-    }, [retroId, end]);
+    }, [retroId, end, flushBufferedActions]);
 
     const onEvent = useCallback(
         ({ name, payload }: RetroEvent) => {
             switch (name) {
                 case 'card.created':
-                case 'card.updated':
-                    dispatch({
-                        type: 'cards.upsert',
-                        cards: [payload.card as CardPayload],
-                    });
+                case 'card.updated': {
+                    const card = payload.card as CardPayload;
+
+                    if (isOwnRedactedCard(latestBoard.current, card)) {
+                        void refetch();
+                        break;
+                    }
+
+                    apply({ type: 'cards.upsert', cards: [card] });
                     break;
+                }
                 case 'card.deleted':
-                    dispatch({
+                    apply({
                         type: 'card.remove',
                         cardId: payload.cardId as string,
                         ungroupedCards: payload.ungroupedCards as CardPayload[],
@@ -83,44 +142,44 @@ export function useRetroBoard(initial: Snapshot) {
                 case 'cards.moved':
                 case 'card.grouped':
                 case 'card.ungrouped':
-                    dispatch({
+                    apply({
                         type: 'cards.upsert',
                         cards: payload.cards as CardPayload[],
                     });
                     break;
                 case 'vote.cast':
                 case 'vote.retracted':
-                    dispatch({
+                    apply({
                         type: 'votes.cast',
                         votesCast: payload.votesCast as number,
                     });
                     break;
                 case 'timer.changed':
-                    dispatch({
+                    apply({
                         type: 'timer.set',
                         timerEndsAt: payload.timerEndsAt as string | null,
                     });
                     break;
                 case 'card.highlighted':
-                    dispatch({
+                    apply({
                         type: 'highlight.set',
                         cardId: payload.cardId as string | null,
                     });
                     break;
                 case 'columns.changed':
-                    dispatch({
+                    apply({
                         type: 'columns.set',
                         columns: payload.columns as BoardColumn[],
                     });
                     break;
                 case 'action-item.saved':
-                    dispatch({
+                    apply({
                         type: 'actionItem.upsert',
                         actionItem: payload.actionItem as ActionItem,
                     });
                     break;
                 case 'action-item.deleted':
-                    dispatch({
+                    apply({
                         type: 'actionItem.remove',
                         actionItemId: payload.actionItemId as string,
                     });
@@ -134,7 +193,20 @@ export function useRetroBoard(initial: Snapshot) {
                     break;
             }
         },
-        [refetch, end],
+        [apply, refetch, end],
+    );
+
+    const onJoining = useCallback(
+        (member: PresenceMember) => {
+            const isKnown = latestBoard.current.participants.some(
+                (participant) => participant.id === member.id,
+            );
+
+            if (!isKnown) {
+                void refetch();
+            }
+        },
+        [refetch],
     );
 
     const { online, connected, reconnecting } = useRetroChannel(
@@ -142,6 +214,7 @@ export function useRetroBoard(initial: Snapshot) {
         status === 'active',
         onEvent,
         refetch,
+        onJoining,
     );
 
     const run = useCallback(
