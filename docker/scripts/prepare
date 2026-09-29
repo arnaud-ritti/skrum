@@ -18,8 +18,10 @@ if [ -n "$missing" ]; then
     exit 1
 fi
 
-case "${APP_DEBUG:-}" in
-    true | 1)
+app_debug=$(printf '%s' "${APP_DEBUG:-}" | tr '[:upper:]' '[:lower:]' | tr -d '()')
+
+case "$app_debug" in
+    true | 1 | on | yes)
         if [ "${SKRUM_ALLOW_DEBUG:-}" != "true" ]; then
             echo "skrum: APP_DEBUG is enabled; debug pages expose configuration. Set APP_DEBUG=false (or SKRUM_ALLOW_DEBUG=true to override)." >&2
             exit 1

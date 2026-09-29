@@ -40,7 +40,7 @@ if (connection) {
 
 void createInertiaApp({
     title: (title, page) => {
-        const appName = String(page.props.name);
+        const appName = String(page.props.name ?? 'Skrum');
 
         return title ? `${title} - ${appName}` : appName;
     },
