@@ -641,5 +641,16 @@
     "No emoji found.": "Aucun emoji trouvé.",
     ":emoji, :count reactions": ":emoji, :count réactions",
     "Loading…": "Chargement…",
-    ":emoji, :count reaction": ":emoji, :count réaction"
+    ":emoji, :count reaction": ":emoji, :count réaction",
+    "Comments (:count)": "Commentaires (:count)",
+    "Unread comments": "Commentaires non lus",
+    "Write a comment…": "Écrire un commentaire…",
+    "Write a reply…": "Écrire une réponse…",
+    "Reply": "Répondre",
+    "1 reply": "1 réponse",
+    ":count replies": ":count réponses",
+    "Comment deleted": "Commentaire supprimé",
+    "Edit comment": "Modifier le commentaire",
+    "Delete comment": "Supprimer le commentaire",
+    "Anonymous": "Anonyme"
 }
