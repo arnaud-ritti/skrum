@@ -1,0 +1,49 @@
+<?php
+
+use App\Models\Participant;
+use App\Models\User;
+
+it('renders a cacheable svg avatar', function () {
+    $response = $this->get(route('avatars.show', str_repeat('a', 32)));
+
+    $response->assertOk()
+        ->assertHeader('Content-Type', 'image/svg+xml')
+        ->assertHeader('Cache-Control', 'immutable, max-age=31536000, public');
+
+    expect($response->getContent())->toStartWith('<svg');
+});
+
+it('renders the same avatar for the same seed', function () {
+    $seed = str_repeat('b', 32);
+
+    expect($this->get(route('avatars.show', $seed))->getContent())
+        ->toBe($this->get(route('avatars.show', $seed))->getContent());
+});
+
+it('rejects malformed seeds', function (string $seed) {
+    $this->get("/avatars/{$seed}.svg")->assertNotFound();
+})->with(['short', str_repeat('Z', 32), str_repeat('a', 33)]);
+
+it('falls back to the default style when the configured one does not exist', function () {
+    config(['skrum.avatar_style' => '../../etc/passwd']);
+
+    $this->get(route('avatars.show', str_repeat('c', 32)))->assertOk();
+});
+
+it('gives a member the same avatar in every retro', function () {
+    $user = User::factory()->create();
+    $first = Participant::factory()->create(['user_id' => $user->id]);
+    $second = Participant::factory()->create(['user_id' => $user->id]);
+
+    expect($first->avatarSeed())->toBe($second->avatarSeed())
+        ->and($first->avatarSeed())->toMatch('/^[a-f0-9]{32}$/')
+        ->and($first->avatarSeed())->not->toContain($user->id)
+        ->and($first->avatarUrl())->toBe(route('avatars.show', $first->avatarSeed()));
+});
+
+it('gives guests their own avatar', function () {
+    $first = Participant::factory()->guest()->create();
+    $second = Participant::factory()->guest()->create();
+
+    expect($first->avatarSeed())->not->toBe($second->avatarSeed());
+});

@@ -9,4 +9,6 @@ return [
         fn (string $domain) => strtolower(trim($domain)),
         explode(',', (string) env('SKRUM_ALLOWED_EMAIL_DOMAINS', '')),
     ))),
+
+    'avatar_style' => env('SKRUM_AVATAR_STYLE', 'thumbs'),
 ];

@@ -76,4 +76,16 @@ class Participant extends Model
 
         return $this->guest_name ?? __('Former member');
     }
+
+    public function avatarSeed(): string
+    {
+        $identity = $this->user_id ?? $this->id;
+
+        return substr(hash_hmac('sha256', $identity, (string) config('app.key')), 0, 32);
+    }
+
+    public function avatarUrl(): string
+    {
+        return route('avatars.show', $this->avatarSeed());
+    }
 }

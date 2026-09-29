@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\Auth\SignupGate;
+use App\Http\Controllers\AvatarsController;
 use App\Http\Controllers\CurrentWorkspaceController;
 use App\Http\Controllers\InvitationAcceptancesController;
 use App\Http\Controllers\InvitationLinksController;
@@ -21,6 +22,8 @@ Route::get('/', fn () => Inertia::render('welcome', [
 ]))->name('home');
 
 Route::get('invitations/{token}', [InvitationLinksController::class, 'show'])->name('invitations.show');
+
+Route::get('avatars/{seed}.svg', [AvatarsController::class, 'show'])->where('seed', '[a-f0-9]{32}')->name('avatars.show');
 
 Route::post('invitations/{token}/acceptance', [InvitationAcceptancesController::class, 'store'])
     ->middleware('auth')
