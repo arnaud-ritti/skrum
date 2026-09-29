@@ -36,13 +36,22 @@ it('matches numeric provider ids as strings', function () {
 });
 
 it('links an existing account through a verified email, case-insensitively', function () {
-    $user = User::factory()->unverified()->create(['email' => 'bob@example.test']);
+    $user = User::factory()->create(['email' => 'bob@example.test']);
 
     $resolved = resolveSso(SsoProvider::Google, ['id' => 'g-1', 'email' => 'Bob@Example.test', 'email_verified' => true]);
 
     expect($resolved->is($user))->toBeTrue()
-        ->and($user->socialAccounts()->where('provider', 'google')->value('provider_user_id'))->toBe('g-1')
-        ->and($user->fresh()->email_verified_at)->not->toBeNull();
+        ->and($user->socialAccounts()->where('provider', 'google')->value('provider_user_id'))->toBe('g-1');
+});
+
+it('refuses to link into an account whose email was never verified', function () {
+    $user = User::factory()->unverified()->create(['email' => 'bob@example.test']);
+
+    expect(fn () => resolveSso(SsoProvider::Google, ['id' => 'g-1', 'email' => 'bob@example.test', 'email_verified' => true]))
+        ->toThrow(SsoLoginRefused::class, 'An account already uses this email address. Log in with your password instead.');
+
+    expect(SocialAccount::count())->toBe(0)
+        ->and($user->fresh()->email_verified_at)->toBeNull();
 });
 
 it('refuses to link an existing account through an unverified email', function () {

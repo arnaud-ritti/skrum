@@ -41,7 +41,7 @@ class ResolveSsoUser
         $verifiedEmail = $provider->verifiedEmail($ssoUser);
         $existingUser = User::query()->whereRaw('lower(email) = ?', [Str::lower($email)])->first();
 
-        if ($existingUser !== null && $verifiedEmail === null) {
+        if ($existingUser !== null && ($verifiedEmail === null || $existingUser->email_verified_at === null)) {
             throw SsoLoginRefused::emailAlreadyUsed();
         }
 
@@ -68,10 +68,6 @@ class ResolveSsoUser
             'provider' => $provider->value,
             'provider_user_id' => $providerUserId,
         ]);
-
-        if ($user->email_verified_at === null) {
-            $user->forceFill(['email_verified_at' => now()])->save();
-        }
 
         return $user;
     }
