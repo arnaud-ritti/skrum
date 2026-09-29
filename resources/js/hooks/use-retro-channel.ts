@@ -83,7 +83,7 @@ export function useRetroChannel(
     }
 
     useEffect(() => {
-        if (!enabled) {
+        if (!enabled || !echoIsConfigured()) {
             return;
         }
 
