@@ -6,11 +6,11 @@ import { ArrowDownWideNarrow } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useTrans } from '@/hooks/use-trans';
-import { topLevelCards } from '@/lib/retro/board-reducer';
+import { sortByVotes, topLevelCards } from '@/lib/retro/board-reducer';
 import { columnAccent } from '@/lib/retro/colors';
 import type { BoardColumn } from '@/lib/retro/types';
 import { cn } from '@/lib/utils';
-import type { BoardContextValue } from './board';
+import { useBoard } from './board-context';
 import { CardComposer } from './card-composer';
 import { ColumnHeader } from './column-header';
 import { ColumnDropZone, GroupableCard, SortableCard } from './dnd';
@@ -18,29 +18,24 @@ import { RetroCard } from './retro-card';
 
 export function RetroColumn({
     column,
-    ctx,
     index,
 }: {
     column: BoardColumn;
-    ctx: BoardContextValue;
     index: number;
 }) {
+    const ctx = useBoard();
     const { t } = useTrans();
-    const [sortByVotes, setSortByVotes] = useState(true);
+    const [isSortedByVotes, setIsSortedByVotes] = useState(true);
     const phase = ctx.board.retro.phase;
     const canSortByVotes = phase === 'discussing' || phase === 'completed';
     const orderedCards = topLevelCards(ctx.board.cards, column.id);
     const cards =
-        canSortByVotes && sortByVotes
-            ? [...orderedCards].sort(
-                  (a, b) =>
-                      (b.votes ?? 0) - (a.votes ?? 0) ||
-                      a.position - b.position,
-              )
+        canSortByVotes && isSortedByVotes
+            ? sortByVotes(orderedCards)
             : orderedCards;
 
     const renderCard = (card: (typeof cards)[number]) => {
-        const content = <RetroCard card={card} ctx={ctx} />;
+        const content = <RetroCard card={card} />;
 
         if (phase === 'writing') {
             return (
@@ -79,7 +74,6 @@ export function RetroColumn({
                 <ColumnHeader
                     column={column}
                     count={cards.length}
-                    ctx={ctx}
                     index={index}
                     total={ctx.board.columns.length}
                     hasCards={ctx.board.cards.some(
@@ -89,10 +83,12 @@ export function RetroColumn({
                 {canSortByVotes && (
                     <Button
                         size="sm"
-                        variant={sortByVotes ? 'secondary' : 'ghost'}
+                        variant={isSortedByVotes ? 'secondary' : 'ghost'}
                         className="self-start"
-                        aria-pressed={sortByVotes}
-                        onClick={() => setSortByVotes((current) => !current)}
+                        aria-pressed={isSortedByVotes}
+                        onClick={() =>
+                            setIsSortedByVotes((current) => !current)
+                        }
                     >
                         <ArrowDownWideNarrow className="size-3.5" />
                         {t('Sort by votes')}
@@ -118,7 +114,7 @@ export function RetroColumn({
             </ColumnDropZone>
             {phase === 'writing' && (
                 <div className="mt-3">
-                    <CardComposer columnId={column.id} ctx={ctx} />
+                    <CardComposer columnId={column.id} />
                 </div>
             )}
         </section>

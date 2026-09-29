@@ -5,7 +5,7 @@ import { useTrans } from '@/hooks/use-trans';
 import { retroRequest } from '@/lib/retro/api';
 import { Phases, type RetroPhase } from '@/lib/retro/types';
 import { cn } from '@/lib/utils';
-import type { BoardContextValue } from './board';
+import { useBoard } from './board-context';
 
 export const PhaseLabels: Record<RetroPhase, string> = {
     writing: 'Writing',
@@ -17,22 +17,18 @@ export const PhaseLabels: Record<RetroPhase, string> = {
 
 type Props = {
     phase: RetroPhase;
-    ctx?: BoardContextValue;
     onChanged?: () => void;
 };
 
-export function PhaseStepper({ phase, ctx, onChanged }: Props) {
+export function PhaseStepper({ phase, onChanged }: Props) {
     const { t } = useTrans();
+    const ctx = useBoard();
     const [busy, setBusy] = useState(false);
     const current = Phases.indexOf(phase);
     const previous = Phases[current - 1];
     const next = Phases[current + 1];
 
     const move = async (target: RetroPhase) => {
-        if (!ctx) {
-            return;
-        }
-
         setBusy(true);
 
         const response = await ctx.run(
@@ -49,7 +45,7 @@ export function PhaseStepper({ phase, ctx, onChanged }: Props) {
         }
     };
 
-    const isFacilitator = ctx?.board.viewer.isFacilitator === true;
+    const isFacilitator = ctx.board.viewer.isFacilitator;
 
     return (
         <div className="flex items-center gap-2">

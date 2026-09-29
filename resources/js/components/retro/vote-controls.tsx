@@ -4,17 +4,12 @@ import { Button } from '@/components/ui/button';
 import { useTrans } from '@/hooks/use-trans';
 import { retroRequest } from '@/lib/retro/api';
 import type { BoardCard } from '@/lib/retro/types';
-import type { BoardContextValue } from './board';
+import { useBoard } from './board-context';
 
 type Tally = { cardId: string; myVotes: number; remainingVotes: number };
 
-export function VoteControls({
-    card,
-    ctx,
-}: {
-    card: BoardCard;
-    ctx: BoardContextValue;
-}) {
+export function VoteControls({ card }: { card: BoardCard }) {
+    const ctx = useBoard();
     const { t } = useTrans();
     const route = { retro: ctx.board.retro.id, card: card.id };
 

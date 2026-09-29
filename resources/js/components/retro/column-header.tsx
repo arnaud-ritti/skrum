@@ -28,25 +28,18 @@ import {
 } from '@/lib/retro/colors';
 import type { BoardColumn, ColumnColor } from '@/lib/retro/types';
 import { cn } from '@/lib/utils';
-import type { BoardContextValue } from './board';
+import { useBoard } from './board-context';
 
 type Props = {
     column: BoardColumn;
     count: number;
-    ctx?: BoardContextValue;
-    index?: number;
-    total?: number;
-    hasCards?: boolean;
+    index: number;
+    total: number;
+    hasCards: boolean;
 };
 
-export function ColumnHeader({
-    column,
-    count,
-    ctx,
-    index = 0,
-    total = 1,
-    hasCards = false,
-}: Props) {
+export function ColumnHeader({ column, count, index, total, hasCards }: Props) {
+    const ctx = useBoard();
     const { t } = useTrans();
     const [editing, setEditing] = useState(false);
     const [draft, setDraft] = useState(column.title);
@@ -54,12 +47,10 @@ export function ColumnHeader({
     const [confirmingDelete, setConfirmingDelete] = useState(false);
     const settled = useRef(false);
     const canEdit =
-        ctx !== undefined &&
-        ctx.board.viewer.isFacilitator &&
-        ctx.board.retro.phase === 'writing';
+        ctx.board.viewer.isFacilitator && ctx.board.retro.phase === 'writing';
 
     const apply = async (request: Promise<{ columns: BoardColumn[] }>) => {
-        if (!ctx || busy) {
+        if (busy) {
             return;
         }
 
@@ -76,7 +67,7 @@ export function ColumnHeader({
         apply(
             retroRequest<{ columns: BoardColumn[] }>(
                 ColumnsController.update({
-                    retro: ctx!.board.retro.id,
+                    retro: ctx.board.retro.id,
                     column: column.id,
                 }),
                 data,
@@ -105,10 +96,6 @@ export function ColumnHeader({
     };
 
     const move = async (offset: -1 | 1) => {
-        if (!ctx) {
-            return;
-        }
-
         const ids = ctx.board.columns.map((item) => item.id);
         const from = ids.indexOf(column.id);
         [ids[from], ids[from + offset]] = [ids[from + offset], ids[from]];
@@ -125,7 +112,7 @@ export function ColumnHeader({
         await apply(
             retroRequest<{ columns: BoardColumn[] }>(
                 ColumnsController.destroy({
-                    retro: ctx!.board.retro.id,
+                    retro: ctx.board.retro.id,
                     column: column.id,
                 }),
             ),

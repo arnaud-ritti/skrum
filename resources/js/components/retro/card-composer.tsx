@@ -5,15 +5,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { useTrans } from '@/hooks/use-trans';
 import { retroRequest } from '@/lib/retro/api';
 import type { CardPayload } from '@/lib/retro/types';
-import type { BoardContextValue } from './board';
+import { useBoard } from './board-context';
 
-export function CardComposer({
-    columnId,
-    ctx,
-}: {
-    columnId: string;
-    ctx: BoardContextValue;
-}) {
+export function CardComposer({ columnId }: { columnId: string }) {
+    const ctx = useBoard();
     const { t } = useTrans();
     const [content, setContent] = useState('');
     const [sending, setSending] = useState(false);

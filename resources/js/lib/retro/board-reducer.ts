@@ -25,6 +25,14 @@ export type BoardAction =
     | { type: 'actionItem.upsert'; actionItem: ActionItem }
     | { type: 'actionItem.remove'; actionItemId: string };
 
+export function sortByVotes<
+    T extends { votes: number | null; position: number },
+>(cards: T[]): T[] {
+    return [...cards].sort(
+        (a, b) => (b.votes ?? 0) - (a.votes ?? 0) || a.position - b.position,
+    );
+}
+
 export function topLevelCards(
     cards: BoardCard[],
     columnId: string,

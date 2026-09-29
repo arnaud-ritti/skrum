@@ -2,19 +2,16 @@ import { usePage } from '@inertiajs/react';
 import { Check } from 'lucide-react';
 import { useIsMounted } from '@/hooks/use-is-mounted';
 import { useTrans } from '@/hooks/use-trans';
+import { sortByVotes } from '@/lib/retro/board-reducer';
 import type { Snapshot } from '@/lib/retro/types';
 
 export function CompletedSummary({ board }: { board: Snapshot }) {
     const { t } = useTrans();
     const { locale } = usePage().props;
     const isMounted = useIsMounted();
-    const topCards = board.cards
-        .filter((card) => card.parentCardId === null)
-        .sort(
-            (a, b) =>
-                (b.votes ?? 0) - (a.votes ?? 0) || a.position - b.position,
-        )
-        .slice(0, 5);
+    const topCards = sortByVotes(
+        board.cards.filter((card) => card.parentCardId === null),
+    ).slice(0, 5);
     const completedAt =
         isMounted && board.retro.completedAt
             ? new Date(board.retro.completedAt).toLocaleString(locale, {

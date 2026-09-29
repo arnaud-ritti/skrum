@@ -9,7 +9,7 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useTrans } from '@/hooks/use-trans';
-import type { BoardContextValue } from './board';
+import { useBoard } from './board-context';
 import { DeleteRetroDialog } from './delete-retro-dialog';
 import { GuestLinkDialog } from './guest-link-dialog';
 import { HandoverDialog } from './handover-dialog';
@@ -17,7 +17,8 @@ import { SettingsDialog } from './settings-dialog';
 
 type OpenDialog = 'settings' | 'guests' | 'handover' | 'delete' | null;
 
-export function FacilitatorMenu({ ctx }: { ctx: BoardContextValue }) {
+export function FacilitatorMenu() {
+    const ctx = useBoard();
     const { t } = useTrans();
     const [open, setOpen] = useState<OpenDialog>(null);
     const close = (isOpen: boolean) => {
@@ -57,26 +58,10 @@ export function FacilitatorMenu({ ctx }: { ctx: BoardContextValue }) {
                     </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
-            <SettingsDialog
-                ctx={ctx}
-                open={open === 'settings'}
-                onOpenChange={close}
-            />
-            <GuestLinkDialog
-                ctx={ctx}
-                open={open === 'guests'}
-                onOpenChange={close}
-            />
-            <HandoverDialog
-                ctx={ctx}
-                open={open === 'handover'}
-                onOpenChange={close}
-            />
-            <DeleteRetroDialog
-                ctx={ctx}
-                open={open === 'delete'}
-                onOpenChange={close}
-            />
+            <SettingsDialog open={open === 'settings'} onOpenChange={close} />
+            <GuestLinkDialog open={open === 'guests'} onOpenChange={close} />
+            <HandoverDialog open={open === 'handover'} onOpenChange={close} />
+            <DeleteRetroDialog open={open === 'delete'} onOpenChange={close} />
         </>
     );
 }

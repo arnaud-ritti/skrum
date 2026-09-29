@@ -9,15 +9,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useTrans } from '@/hooks/use-trans';
 import { retroRequest } from '@/lib/retro/api';
-import type { BoardContextValue } from './board';
+import { useBoard } from './board-context';
 
 type Props = {
-    ctx: BoardContextValue;
     open: boolean;
     onOpenChange: (open: boolean) => void;
 };
 
-export function GuestLinkDialog({ ctx, open, onOpenChange }: Props) {
+export function GuestLinkDialog({ open, onOpenChange }: Props) {
+    const ctx = useBoard();
     const { t } = useTrans();
     const { retro } = ctx.board;
     const [busy, setBusy] = useState(false);

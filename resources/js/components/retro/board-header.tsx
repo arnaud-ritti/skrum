@@ -5,7 +5,7 @@ import { LanguageSwitcher } from '@/components/language-switcher';
 import { useServerOffset } from '@/hooks/use-countdown';
 import { useTrans } from '@/hooks/use-trans';
 import type { PresenceMember } from '@/lib/retro/types';
-import type { BoardContextValue } from './board';
+import { useBoard } from './board-context';
 import { FacilitatorMenu } from './facilitator-menu';
 import { PhaseStepper } from './phase-stepper';
 import { PresenceStrip } from './presence-strip';
@@ -13,12 +13,12 @@ import { TimerControl } from './timer-control';
 import { TimerDisplay } from './timer-display';
 
 type Props = {
-    ctx: BoardContextValue;
     online: PresenceMember[];
     actions?: ReactNode;
 };
 
-export function BoardHeader({ ctx, online, actions }: Props) {
+export function BoardHeader({ online, actions }: Props) {
+    const ctx = useBoard();
     const { t } = useTrans();
     const { board } = ctx;
     const offset = useServerOffset(board.serverTime);
@@ -37,7 +37,6 @@ export function BoardHeader({ ctx, online, actions }: Props) {
             <h1 className="text-lg font-semibold">{board.retro.title}</h1>
             <PhaseStepper
                 phase={board.retro.phase}
-                ctx={ctx}
                 onChanged={() => void ctx.refetch()}
             />
             <div className="ml-auto flex items-center gap-3">
@@ -49,10 +48,8 @@ export function BoardHeader({ ctx, online, actions }: Props) {
                 {actions}
                 {board.viewer.isFacilitator && (
                     <>
-                        {board.retro.phase !== 'completed' && (
-                            <TimerControl ctx={ctx} />
-                        )}
-                        <FacilitatorMenu ctx={ctx} />
+                        {board.retro.phase !== 'completed' && <TimerControl />}
+                        <FacilitatorMenu />
                     </>
                 )}
                 <PresenceStrip members={online} />

@@ -5,17 +5,16 @@ import { Textarea } from '@/components/ui/textarea';
 import { useTrans } from '@/hooks/use-trans';
 import { retroRequest } from '@/lib/retro/api';
 import type { BoardCard, CardPayload } from '@/lib/retro/types';
-import type { BoardContextValue } from './board';
+import { useBoard } from './board-context';
 
 export function CardEditor({
     card,
-    ctx,
     onDone,
 }: {
     card: BoardCard;
-    ctx: BoardContextValue;
     onDone: () => void;
 }) {
+    const ctx = useBoard();
     const { t } = useTrans();
     const [content, setContent] = useState(card.content ?? '');
     const [isSaving, setIsSaving] = useState(false);

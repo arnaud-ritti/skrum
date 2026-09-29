@@ -12,15 +12,15 @@ import {
 } from '@/components/ui/dialog';
 import { useTrans } from '@/hooks/use-trans';
 import { retroRequest } from '@/lib/retro/api';
-import type { BoardContextValue } from './board';
+import { useBoard } from './board-context';
 
 type Props = {
-    ctx: BoardContextValue;
     open: boolean;
     onOpenChange: (open: boolean) => void;
 };
 
-export function DeleteRetroDialog({ ctx, open, onOpenChange }: Props) {
+export function DeleteRetroDialog({ open, onOpenChange }: Props) {
+    const ctx = useBoard();
     const { t } = useTrans();
     const [busy, setBusy] = useState(false);
 

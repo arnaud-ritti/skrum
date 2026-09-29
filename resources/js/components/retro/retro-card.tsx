@@ -10,18 +10,18 @@ import { retroRequest } from '@/lib/retro/api';
 import { childrenOf } from '@/lib/retro/board-reducer';
 import type { BoardCard, CardPayload } from '@/lib/retro/types';
 import { cn } from '@/lib/utils';
-import type { BoardContextValue } from './board';
+import { useBoard } from './board-context';
 import { CardEditor } from './card-editor';
 import { VoteControls } from './vote-controls';
 
 type Props = {
     card: BoardCard;
-    ctx: BoardContextValue;
     isChild?: boolean;
     footer?: ReactNode;
 };
 
-export function RetroCard({ card, ctx, isChild = false, footer }: Props) {
+export function RetroCard({ card, isChild = false, footer }: Props) {
+    const ctx = useBoard();
     const { t } = useTrans();
     const [editing, setEditing] = useState(false);
     const [highlighting, setHighlighting] = useState(false);
@@ -95,11 +95,7 @@ export function RetroCard({ card, ctx, isChild = false, footer }: Props) {
             )}
         >
             {editing ? (
-                <CardEditor
-                    card={card}
-                    ctx={ctx}
-                    onDone={() => setEditing(false)}
-                />
+                <CardEditor card={card} onDone={() => setEditing(false)} />
             ) : (
                 <>
                     {card.content === null ? (
@@ -120,7 +116,7 @@ export function RetroCard({ card, ctx, isChild = false, footer }: Props) {
                         <div className="ml-auto flex items-center gap-1">
                             {footer}
                             {!isChild && phase === 'voting' && (
-                                <VoteControls card={card} ctx={ctx} />
+                                <VoteControls card={card} />
                             )}
                             {!isChild &&
                                 (phase === 'discussing' ||
@@ -194,7 +190,7 @@ export function RetroCard({ card, ctx, isChild = false, footer }: Props) {
             {!isChild &&
                 childrenOf(ctx.board.cards, card.id).map((child) => (
                     <div key={child.id} className="mt-2">
-                        <RetroCard card={child} ctx={ctx} isChild />
+                        <RetroCard card={child} isChild />
                     </div>
                 ))}
         </article>

@@ -14,11 +14,9 @@ import {
 import { useTrans } from '@/hooks/use-trans';
 import { retroRequest } from '@/lib/retro/api';
 import type { ActionItem, BoardParticipant } from '@/lib/retro/types';
-import type { BoardContextValue } from './board';
+import { useBoard } from './board-context';
 
 const Unassigned = 'none';
-
-type Props = { ctx: BoardContextValue };
 
 function AssigneeSelect({
     value,
@@ -60,13 +58,8 @@ function AssigneeSelect({
     );
 }
 
-function ActionItemRow({
-    item,
-    ctx,
-}: {
-    item: ActionItem;
-    ctx: BoardContextValue;
-}) {
+function ActionItemRow({ item }: { item: ActionItem }) {
+    const ctx = useBoard();
     const { t } = useTrans();
     const [editing, setEditing] = useState(false);
     const [draft, setDraft] = useState(item.content);
@@ -213,7 +206,8 @@ function ActionItemRow({
     );
 }
 
-export function ActionItemsPanel({ ctx }: Props) {
+export function ActionItemsPanel() {
+    const ctx = useBoard();
     const { t } = useTrans();
     const [content, setContent] = useState('');
     const [assigneeId, setAssigneeId] = useState<string | null>(null);
@@ -287,7 +281,7 @@ export function ActionItemsPanel({ ctx }: Props) {
             ) : (
                 <ul className="space-y-2">
                     {items.map((item) => (
-                        <ActionItemRow key={item.id} item={item} ctx={ctx} />
+                        <ActionItemRow key={item.id} item={item} />
                     ))}
                 </ul>
             )}

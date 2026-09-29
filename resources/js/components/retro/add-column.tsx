@@ -12,9 +12,10 @@ import {
 } from '@/lib/retro/colors';
 import type { BoardColumn, ColumnColor } from '@/lib/retro/types';
 import { cn } from '@/lib/utils';
-import type { BoardContextValue } from './board';
+import { useBoard } from './board-context';
 
-export function AddColumn({ ctx }: { ctx: BoardContextValue }) {
+export function AddColumn() {
+    const ctx = useBoard();
     const { t } = useTrans();
     const [title, setTitle] = useState('');
     const [color, setColor] = useState<ColumnColor>('green');

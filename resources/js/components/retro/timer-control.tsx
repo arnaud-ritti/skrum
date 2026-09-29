@@ -11,11 +11,12 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useTrans } from '@/hooks/use-trans';
 import { retroRequest } from '@/lib/retro/api';
-import type { BoardContextValue } from './board';
+import { useBoard } from './board-context';
 
 const Minutes = [1, 3, 5, 10];
 
-export function TimerControl({ ctx }: { ctx: BoardContextValue }) {
+export function TimerControl() {
+    const ctx = useBoard();
     const { t } = useTrans();
     const [busy, setBusy] = useState(false);
 

@@ -13,36 +13,25 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useTrans } from '@/hooks/use-trans';
 import { RetroRequestError, retroRequest } from '@/lib/retro/api';
-import type { BoardContextValue } from './board';
+import { useBoard } from './board-context';
 
 type Props = {
-    ctx: BoardContextValue;
     open: boolean;
     onOpenChange: (open: boolean) => void;
 };
 
-export function SettingsDialog({ ctx, open, onOpenChange }: Props) {
+export function SettingsDialog({ open, onOpenChange }: Props) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent aria-describedby={undefined}>
-                {open && (
-                    <SettingsForm
-                        ctx={ctx}
-                        onDone={() => onOpenChange(false)}
-                    />
-                )}
+                {open && <SettingsForm onDone={() => onOpenChange(false)} />}
             </DialogContent>
         </Dialog>
     );
 }
 
-function SettingsForm({
-    ctx,
-    onDone,
-}: {
-    ctx: BoardContextValue;
-    onDone: () => void;
-}) {
+function SettingsForm({ onDone }: { onDone: () => void }) {
+    const ctx = useBoard();
     const { t } = useTrans();
     const { retro } = ctx.board;
     const [title, setTitle] = useState(retro.title);

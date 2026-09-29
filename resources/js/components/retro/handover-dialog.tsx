@@ -17,15 +17,15 @@ import {
 } from '@/components/ui/select';
 import { useTrans } from '@/hooks/use-trans';
 import { retroRequest } from '@/lib/retro/api';
-import type { BoardContextValue } from './board';
+import { useBoard } from './board-context';
 
 type Props = {
-    ctx: BoardContextValue;
     open: boolean;
     onOpenChange: (open: boolean) => void;
 };
 
-export function HandoverDialog({ ctx, open, onOpenChange }: Props) {
+export function HandoverDialog({ open, onOpenChange }: Props) {
+    const ctx = useBoard();
     const { t } = useTrans();
     const [userId, setUserId] = useState('');
     const [busy, setBusy] = useState(false);
