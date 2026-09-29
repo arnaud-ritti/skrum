@@ -142,7 +142,7 @@ The register page is hidden (and the route returns 403) when mode is `invite` an
 
 ### Guests
 
-- When `guest_access_enabled`, the link `/join/{guest_token}` lets anyone join. Regenerating `guest_token` revokes old links.
+- When `guest_access_enabled`, the link `/join/{guest_token}` lets anyone join. Regenerating `guest_token` revokes old links **and signs out every guest who joined earlier** (their secrets are cleared; their cards and names stay, and they can rejoin through the new link) — regenerating is the answer to a leaked link.
 - A visitor without session enters a display name → a participant is created with a random secret; the secret is stored hashed, and the plain secret is kept in an encrypted cookie scoped to that retro. A returning guest with the cookie resumes the same participant.
 - A logged-in member of the retro's team following the link joins as themselves.
 - A logged-in user who is not a team member joins as a guest (display name prefilled with their name); this grants no team or workspace access.
@@ -277,7 +277,7 @@ Each endpoint: resolve participant → authorize (policy + phase rule) → persi
 
 ### Guests
 - AC17: With guest access enabled, a visitor can join via `/join/{guest_token}` with a display name, and returning with the same cookie resumes the same participant.
-- AC18: Regenerating the guest token invalidates the old link; disabling guest access blocks joining.
+- AC18: Regenerating the guest token invalidates the old link and signs out existing guests; disabling guest access blocks joining and every guest request.
 - AC19: A logged-in team member following the link joins as their own participant; a logged-in non-member joins as a guest without gaining team access.
 - AC20: Guests cannot access any workspace or team page.
 
