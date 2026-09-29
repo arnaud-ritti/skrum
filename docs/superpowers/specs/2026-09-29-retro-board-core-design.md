@@ -101,13 +101,17 @@ The register page is hidden (and the route returns 403) when mode is `invite` an
 
 ### SSO
 
-- Built on Laravel Socialite. Providers: Google, GitHub (Socialite core), Microsoft Entra ID (`socialiteproviders/microsoft-azure`), generic OIDC (`socialiteproviders/openidconnect`).
-- A provider is enabled only when all of its env credentials are present. The login page renders buttons for enabled providers only.
-- OIDC env: `OIDC_BASE_URL`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`, `OIDC_LABEL` (button text).
+- Built on Laravel Socialite. Providers: Google, GitHub (Socialite core drivers), Microsoft Entra ID and generic OIDC (both through `socialiteproviders/openidconnect`: its built-in `entra` provider, and a generic connection). `socialiteproviders/microsoft-azure` is not used: the `entra` provider validates id_tokens and takes the email from `preferred_username` (UPN) only, never the tenant-controlled `mail`/`email` attribute (nOAuth).
+- A provider is enabled only when all of its env credentials are present. The login and register pages render a "Continue with …" button for each enabled provider only.
+- Env: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`; `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`; `ENTRA_TENANT` (default `common`), `ENTRA_CLIENT_ID`, `ENTRA_CLIENT_SECRET`; `OIDC_BASE_URL`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`, `OIDC_LABEL` (button text). Callback URLs are `{APP_URL}/auth/{google|github|entra|oidc}/callback`.
+- **Verified email per provider:** Google and generic OIDC → `email_verified` claim is true; GitHub → the primary verified email returned by the API (Socialite only returns that one); Entra → only when Microsoft's `xms_edov` optional claim is true (it must be enabled in the app registration). Anything else counts as unverified.
 - Callback resolution order:
-  1. `social_accounts` match → log in.
-  2. Existing user with the same email **and** the provider reports the email as verified → create `social_accounts` link, log in.
-  3. Otherwise → `SignupGate` check → create user (marked email-verified) + link, log in; or show "signup not allowed".
+  1. `social_accounts` match (provider + provider user id) → log in.
+  2. Existing user with the same email (case-insensitive) **and** a verified provider email → create the `social_accounts` link, mark the user's email verified if it wasn't, log in.
+  3. Existing user with the same email but an unverified provider email → refuse ("An account already uses this email address. Log in with your password instead.").
+  4. No existing user → account creation requires a verified provider email, **or** a pending invitation token in the session matching the email (the token proves mailbox access). Then `SignupGate` check → create the user (email verified, random password — they can set one via "Forgot password") + link, accept the invitation if one matches, log in. Otherwise refuse with the matching translated message ("Signups are restricted on this instance." / "… did not confirm your email address.").
+- A user with confirmed two-factor authentication who signs in through SSO still goes through the Fortify two-factor challenge.
+- Provider errors (user cancels, invalid state, IdP unreachable) return to the login page with a translated "Sign-in with :provider failed." message.
 
 ### Workspaces
 
@@ -233,7 +237,7 @@ Each endpoint: resolve participant → authorize (policy + phase rule) → persi
 - **Redaction is the main security invariant**: tests assert that neither the snapshot nor any broadcast payload delivered to another participant contains Writing-phase card content, anonymous authorship or voter identity.
 - `Event::fake()` to assert broadcast events, channels and payloads.
 - `SignupGate` matrix: mode × invitation × domain × first user.
-- SSO callback tests with Socialite fakes (link by verified email, refuse unverified email linking, signup gate applied).
+- SSO callback tests with Socialite fakes (link by verified email, refuse unverified email linking, signup gate applied, Entra `xms_edov`, two-factor challenge).
 - Frontend: TypeScript type-check and existing lint. No browser E2E in v1.
 
 ## 9. Acceptance criteria
@@ -244,7 +248,9 @@ Each endpoint: resolve participant → authorize (policy + phase rule) → persi
 - AC3: In `domain` mode, registration succeeds for allow-listed domains and with a valid matching invitation token, and is refused otherwise.
 - AC4: An SSO provider button appears only when all its env credentials are set.
 - AC5: SSO login links to an existing account only when the provider reports the email verified; otherwise it follows the signup gate.
-- AC6: SSO-created users are email-verified.
+- AC6: SSO-created users are email-verified; creation requires a verified provider email or a matching invitation token.
+- AC37: A user with confirmed two-factor authentication signing in through SSO must pass the two-factor challenge before being logged in.
+- AC38: Entra sign-ins link to an existing account only when the `xms_edov` claim is true.
 
 ### Identifiers
 - AC0: Every application table has a UUID primary key (pivot tables: composite key of UUID foreign keys) and UUID foreign keys. Only framework-internal tables (`migrations`, `jobs`, `failed_jobs`, `job_batches`) keep integer ids, because Laravel's database queue requires them; they are never exposed.
