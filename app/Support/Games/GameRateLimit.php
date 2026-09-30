@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Cache;
  */
 class GameRateLimit
 {
-    public static function hit(string $key, int $burst, int $secondsPerToken): void
+    public static function hit(string $key, int $burst, float $secondsPerToken): void
     {
         Cache::lock("{$key}:lock", 5)->block(2, function () use ($key, $burst, $secondsPerToken): void {
             $now = now()->getPreciseTimestamp(6) / 1_000_000;
@@ -29,7 +29,7 @@ class GameRateLimit
                 throw new ThrottleRequestsException(__('Slow down a little.'), null, ['Retry-After' => $retryAfter]);
             }
 
-            Cache::put($key, ['tokens' => $tokens - 1, 'at' => $now], $burst * $secondsPerToken + 1);
+            Cache::put($key, ['tokens' => $tokens - 1, 'at' => $now], (int) ceil($burst * $secondsPerToken) + 1);
         });
     }
 }

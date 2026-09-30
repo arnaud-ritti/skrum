@@ -205,7 +205,9 @@ it('slows down a drawer sending too many operations', function () {
 
     postDrawingOp($table['room'], $table['round'], drawingStroke(), 'op-21')->assertTooManyRequests();
 
-    $this->travel(2)->seconds();
+    $this->travel(120)->milliseconds();
 
     postDrawingOp($table['room'], $table['round'], drawingStroke(), 'op-21')->assertCreated();
+    postDrawingOp($table['room'], $table['round'], drawingStroke(), 'op-22')->assertCreated();
+    postDrawingOp($table['room'], $table['round'], drawingStroke(), 'op-23')->assertTooManyRequests();
 });

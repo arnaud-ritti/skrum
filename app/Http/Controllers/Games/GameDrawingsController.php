@@ -17,7 +17,7 @@ class GameDrawingsController extends Controller
     {
         $player = GamePlayer::current($request);
 
-        GameRateLimit::hit("game-draw:{$player->id}", GameDrawingOpsController::RateLimitPerSecond, 1);
+        GameRateLimit::hit("game-draw:{$player->id}", GameDrawingOpsController::RateLimitPerSecond, GameDrawingOpsController::SecondsPerDrawingToken);
 
         $clearDrawing->handle($room, $round, $player);
 

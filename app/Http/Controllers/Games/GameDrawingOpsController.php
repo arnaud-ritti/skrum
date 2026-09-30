@@ -17,11 +17,13 @@ class GameDrawingOpsController extends Controller
 {
     public const RateLimitPerSecond = 20;
 
+    public const SecondsPerDrawingToken = 0.05;
+
     public function store(Request $request, GameRoom $room, GameRound $round, AddDrawingOp $addDrawingOp): JsonResponse
     {
         $player = GamePlayer::current($request);
 
-        GameRateLimit::hit("game-draw:{$player->id}", self::RateLimitPerSecond, 1);
+        GameRateLimit::hit("game-draw:{$player->id}", self::RateLimitPerSecond, self::SecondsPerDrawingToken);
 
         $validated = $request->validate([
             'client_op_id' => ['required', 'string', 'regex:/^[A-Za-z0-9_-]{1,64}$/'],
@@ -35,7 +37,7 @@ class GameDrawingOpsController extends Controller
     {
         $player = GamePlayer::current($request);
 
-        GameRateLimit::hit("game-draw:{$player->id}", self::RateLimitPerSecond, 1);
+        GameRateLimit::hit("game-draw:{$player->id}", self::RateLimitPerSecond, self::SecondsPerDrawingToken);
 
         $undoDrawingOp->handle($room, $round, $player);
 
