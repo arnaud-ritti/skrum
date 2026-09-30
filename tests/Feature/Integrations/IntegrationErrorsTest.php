@@ -43,6 +43,11 @@ it('removes secrets from provider errors', function (string $raw, string $expect
     ],
     'bearer header' => ['Authorization: Bearer abc.def.ghi rejected', 'Authorization: Bearer *** rejected'],
     'slack token' => ['token xoxp-1234-abcd was revoked', 'token xox*** was revoked'],
+    'json access token' => ['{"access_token":"abc123","ok":false}', '{"access_token":"***","ok":false}'],
+    'json spaced refresh token' => ['{"refresh_token": "r-1"}', '{"refresh_token": "***"}'],
+    'json client secret' => ['{"client_secret":"s3cr3t","client_id":"id"}', '{"client_secret":"***","client_id":"id"}'],
+    'json authorization header' => ['{"Authorization":"Bearer abc.def"}', '{"Authorization":"Bearer ***"}'],
+    'word that ends with bot' => ['abbot12:xyz stays', 'abbot12:xyz stays'],
     'form secrets' => ['body client_secret=s3cr3t&refresh_token=r1&grant_type=refresh_token', 'body client_secret=***&refresh_token=***&grant_type=refresh_token'],
 ]);
 

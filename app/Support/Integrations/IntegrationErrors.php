@@ -13,10 +13,11 @@ class IntegrationErrors
      */
     private const Patterns = [
         '#https://hooks\.slack\.com/\S+#i' => 'https://hooks.slack.com/***',
-        '#bot\d+:[A-Za-z0-9_-]+#' => 'bot***',
+        '#\bbot\d+:[A-Za-z0-9_-]+#' => 'bot***',
         '#\bxox[a-z]-[A-Za-z0-9-]+#i' => 'xox***',
         '#\bBearer\s+[^\s,;"\']+#i' => 'Bearer ***',
         '#\b(access_token|refresh_token|client_secret|code)=[^&\s"\']+#i' => '$1=***',
+        '#("(?:access_token|refresh_token|client_secret|code)"\s*:\s*")[^"]*#i' => '$1***',
         '#(https?://[^\s?\#"\']+)[?\#][^\s"\']*#i' => '$1',
     ];
 
