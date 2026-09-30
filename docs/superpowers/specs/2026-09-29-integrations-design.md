@@ -60,7 +60,7 @@ Connect a team's retros, poker games and action items to the tools it already us
 
 - Enum `App\Enums\IntegrationProvider` (`Slack = 'slack'`, `Telegram = 'telegram'`, `Jira = 'jira'`, `Linear = 'linear'`) with `isEnabled()` / `enabled()` / `label()`, modelled on `App\Enums\SsoProvider::requiredConfigKeys()`.
 - Spec 8 adds `JiraDataCenter` (`jira_dc`), `GitHub` (`github`), `MicrosoftTeams` (`msteams`), `Mattermost` (`mattermost`) and `Webhook` (`webhook`), with `kind()` and `capabilities()` (spec 8 §2).
-- A disabled provider: its routes return 404, its UI is absent, its jobs are never dispatched, and existing rows for it are kept but ignored (re-enabling the env restores them).
+- A disabled provider: its routes return 404 (routes are always registered, so Wayfinder and route caching see a static list; the middleware `EnsureIntegrationProviderEnabled` answers 404), its UI is absent, its jobs are never dispatched, and existing rows for it are kept but ignored (re-enabling the env restores them).
 - OAuth redirect URIs are fixed: `{APP_URL}/integrations/{slack|jira|linear}/callback`. `.env.example` documents each variable, the redirect URI, the scopes to enable in each provider's developer console (§4), that Slack requires an HTTPS redirect URI, and that a Telegram bot token must be used by one skrum instance only (§4.2).
 - The Telegram bot username is read with `getMe` and cached for 24 h (no extra env variable).
 
@@ -80,7 +80,8 @@ All tables use UUID primary keys and `foreignUuid`, as the rest of the schema. M
 | `team_id` | FK → teams, cascade | Owner team |
 | `provider` | string | `IntegrationProvider` |
 | `status` | string | Enum `IntegrationStatus`: `Active` (`active`), `SetupRequired` (`setup_required`, Jira with several sites, §4.3), `ReconnectRequired` (`reconnect_required`) |
-| `access` | string | `read` or `write` (Jira/Linear); `write` for Slack/Telegram |
+| `access` | string | Enum `IntegrationAccess`: `read` or `write` (Jira/Linear); `write` for Slack/Telegram |
+| `scopes` | json, list of strings | OAuth scopes granted by the provider's token response (Jira/Linear; `[]` otherwise). Tells a read connection from an upgraded one after partial consent and lets §13 refuse assignee mapping on a Jira connection without `read:jira-user` |
 | `credentials` | text, `encrypted:array` cast, `$hidden` | Slack: `webhook_url`, `access_token`. Jira/Linear: `access_token`, `refresh_token`, `expires_at`. Telegram: none (bot token is instance-wide) |
 | `settings` | json | Non-secret metadata, see below |
 | `connected_by_user_id` | FK → users, null on delete | Who connected |
@@ -89,7 +90,7 @@ All tables use UUID primary keys and `foreignUuid`, as the rest of the schema. M
 | timestamps | | |
 
 - Unique (`team_id`, `provider`): one connection per provider per team.
-- `settings` by provider — Slack: `{teamId, teamName, channelId, channelName, configurationUrl}`; Telegram: `{chatId, chatTitle, chatType}`; Jira: `{cloudId, siteUrl, siteName, sites?: [{cloudId, url, name}], storyPointFields: [{id, name}], exportProjectId?, exportIssueTypeId?, priorityMap?: {high?: {id, name}|null, medium?: …, low?: …}}`; Linear: `{organizationId, organizationName, urlKey, exportTeamId?, priorityMap?: {high: 0..4, medium: 0..4, low: 0..4}}` (§7.2; absent key = default mapping).
+- `settings` by provider — Slack: `{teamId, teamName, channelId, channelName, configurationUrl}`; Telegram: `{chatId, chatTitle, chatType}`; Jira: `{cloudId, siteUrl, siteName, sites?: [{cloudId, url, name}], storyPointFields: [{id, name}], numberFields: [{id, name}] (every numeric custom field, for the story points select), storyPointFieldOverride?: id (the admin's choice, kept first in `storyPointFields` by every re-detection), exportProjectId?, exportIssueTypeId?, priorityMap?: {high?: {id, name}|null, medium?: …, low?: …}}`; Linear: `{organizationId, organizationName, urlKey, exportTeamId?, priorityMap?: {high: 0..4, medium: 0..4, low: 0..4}}` (§7.2; absent key = default mapping).
 - Model `TeamIntegration` with `team()`, casts, `isActive()`, `canWrite()`. `Team` gains `integrations()` and `integration(IntegrationProvider): ?TeamIntegration`.
 
 ### `poker_tasks` — new columns (the reserved `external_source`, `external_id`, `external_url` become used)
@@ -122,6 +123,7 @@ All tables use UUID primary keys and `foreignUuid`, as the rest of the schema. M
 | `external_display_name` | nullable string 255 | Provider display name at mapping time, for the UI only |
 | `matched_by` | string | Enum `IntegrationUserMatch`: `Email` (`email`), `Manual` (`manual`); spec 8 adds `Sso` (`sso`, GitHub accounts linked through SSO) |
 | `checked_at` | timestamp | Last time the account was confirmed to exist and be active |
+| `account_inactive` | bool, default `false` | Set on `manual` rows whose account was no longer found or inactive at the last check ("Account inactive" in the People panel, §7.1); cleared when a later check finds the account active or an admin saves the row again |
 | timestamps | | |
 
 - Unique (`team_integration_id`, `user_id`). Absence of a row = not mapped yet (automatic matching may fill it); a `manual` row with `external_account_id = null` = "Never assign", which automatic matching never overwrites.
@@ -132,6 +134,7 @@ All tables use UUID primary keys and `foreignUuid`, as the rest of the schema. M
 ### `integration_deliveries` — new
 
 - `id`, `team_id` (cascade), `channel` (`slack`|`telegram`|`email`; spec 8 adds `msteams`|`mattermost`|`webhook`), `kind` (`retro_link`|`poker_link`|`retro_results`|`game_room_link` (spec 7 §3.1); spec 8 adds `event`), `subject_type` / `subject_id` (morph: `Retro`, `PokerGame`, `GameRoom`; spec 8 adds `ActionItem`, `PokerTask`; cascade handled by a model `deleting` hook on each), `requested_by_user_id` (null on delete), `status` (`queued`|`sent`|`failed`), `recipient_count` (nullable int, email only), `error` (nullable string 500), `sent_at` (nullable), timestamps.
+- `channel`, `kind` and `status` are stored through the backed enums `IntegrationDeliveryChannel`, `IntegrationDeliveryKind` and `IntegrationDeliveryStatus` (values as listed).
 - `Prunable`: rows older than 90 days are pruned by the daily `model:prune` schedule.
 - Spec 8 adds `team_integration_id`, `event`, `attempts`, `response_status`, `last_attempt_at` for generic-webhook event deliveries (spec 8 §3, §4.7).
 
@@ -157,7 +160,7 @@ All tables use UUID primary keys and `foreignUuid`, as the rest of the schema. M
 - If Telegram answers `409 Conflict` (a webhook is set on the bot, or another instance polls it), the command logs one warning per hour and the integrations page shows "The Telegram bot is used elsewhere. Remove its webhook or use a dedicated bot."
 - **Connect flow:** an Owner/Admin clicks "Connect" → `POST …/integrations/telegram/code` returns an 8-character code (alphabet without `0 O 1 I L`), valid 15 min, single use, and the exact command `/connect@{botUsername} {code}` with a copy button and a `https://t.me/{botUsername}` link. The admin adds the bot to a group, supergroup or channel (as admin for channels), or opens a private chat, and sends the command. The page polls every 5 s (Inertia `usePoll`) while the code is pending.
 - **Handled updates** (`App\Support\Integrations\Telegram\HandleTelegramUpdate`):
-  - `/connect[@bot] CODE` in `message` or `channel_post`: a valid code creates or replaces the team's Telegram integration with `{chatId, chatTitle, chatType}` and replies "Connected to the :team team on :app." An invalid or expired code replies "This code is invalid or has expired. Create a new one in skrum." After 5 invalid attempts from a chat within an hour, further `/connect` messages from it are ignored for that hour.
+  - `/connect[@bot] CODE` in `message` or `channel_post`: a valid code creates or replaces the team's Telegram integration with `{chatId, chatTitle, chatType}` and replies "Connected to the :team team on :app." An invalid or expired code replies "This code is invalid or has expired. Create a new one in skrum." After 5 invalid attempts from a chat within an hour, further `/connect` messages from it are ignored for that hour. `/connect CODE` without a bot username is accepted; `/connect@otherbot CODE` addresses another bot in the same group and is ignored.
   - `/start` or `/help`: replies with a one-line explanation.
   - `migrate_to_chat_id` (group upgraded to supergroup): updates `chatId`.
   - `my_chat_member` where the bot's new status is `left` or `kicked`: the matching integration becomes `ReconnectRequired`.
@@ -168,7 +171,7 @@ All tables use UUID primary keys and `foreignUuid`, as the rest of the schema. M
 ### 4.3 Jira Cloud (OAuth 2.0 3LO)
 
 - Connect asks the admin to choose **Read only** (import) or **Read and write** (import, estimate write-back, export). Redirect to `https://auth.atlassian.com/authorize` with `audience=api.atlassian.com`, `prompt=consent`, `response_type=code` and scopes `offline_access read:jira-work read:board-scope:jira-software read:sprint:jira-software`, plus `write:jira-work read:jira-user` for write (`read:jira-user` backs the assignee search and email matching of §7.1, which only write connections need).
-- Callback exchanges the code at `https://auth.atlassian.com/oauth/token`, then calls `/oauth/token/accessible-resources`. One site → `Active` with its `cloudId`, `url`, `name`. Several sites → `SetupRequired` with `sites` listed; the admin picks one (`PATCH` settings) and the status becomes `Active`. No site → the connection is refused ("This Atlassian account has no Jira site.").
+- Callback exchanges the code at `https://auth.atlassian.com/oauth/token`, then calls `/oauth/token/accessible-resources`. One site → `Active` with its `cloudId`, `url`, `name`. Several sites → `SetupRequired` with `sites` listed; the admin picks one (`PATCH` settings) and the status becomes `Active`. No site → the connection is refused ("This Atlassian account has no Jira site."). On a **reconnect** with several sites, when the currently connected `cloudId` is among them the connection stays `Active` on it (no "Setup required" step); otherwise `SetupRequired` keeps the previous site's settings until the admin picks one, so choosing another site then still deletes the account mappings (§3).
 - **Upgrading access** (read → write) runs the OAuth flow again from the same card; the row, its site and all imported references are kept. Downgrading is not offered (disconnect and reconnect read-only).
 - All API calls go to `https://api.atlassian.com/ex/jira/{cloudId}/…`; `siteUrl` is used only to build browse links (`{siteUrl}/browse/{key}`).
 - **Story points field detection** (on connect, and on "Detect again"): `GET /rest/api/3/field`, numeric custom fields only; candidates ordered: `schema.custom = com.pyxis.greenhopper.jira:jsw-story-points` first, then name (case-insensitive) "Story Points", then "Story point estimate". Stored as `storyPointFields`. The admin can choose a different numeric custom field as the first candidate. No candidate → write-back is unavailable for Jira and the card says "No story points field found."
@@ -184,7 +187,7 @@ All tables use UUID primary keys and `foreignUuid`, as the rest of the schema. M
 
 - **OAuth state**: 40 random characters in the session, compared with `hash_equals`, single use, 10 min. The callback re-checks that the current user may still manage the team's integrations. A mismatch, expiry, provider `error` parameter or failed exchange redirects to the integrations page (or the dashboard when the team is gone) with a translated flash "Could not connect :provider. Try again."
 - **Token refresh** (Jira; Linear when the token response includes `refresh_token` and `expires_in`): before each call, if `expires_at` is within 60 s, refresh under `Cache::lock("integration-token:{id}", 30)` and a `lockForUpdate` on the row, re-reading the row inside the lock so concurrent jobs never use a rotated refresh token twice. `invalid_grant` → `ReconnectRequired`.
-- **Status transitions**: any 401 from a provider after one refresh attempt, or the provider-specific errors above → `ReconnectRequired` with `last_error`. A successful reconnect for the same site/workspace/chat keeps the row and returns it to `Active`. Reconnecting Jira to a different `cloudId` (or Linear to a different organization) is allowed; tasks and links from the old site keep their stored references but are no longer synced or refreshed (their `external_site` no longer matches).
+- **Status transitions**: any 401 from a provider after one refresh attempt, or the provider-specific errors above → `ReconnectRequired` with `last_error`. When the error is detected inside a database transaction that then rolls back (e.g. an action item export, §7), the `ReconnectRequired` status and `last_error` are saved again outside that transaction, so a revoked connection is never left `Active`. A successful reconnect for the same site/workspace/chat keeps the row and returns it to `Active`. Reconnecting Jira to a different `cloudId` (or Linear to a different organization) is allowed; tasks and links from the old site keep their stored references but are no longer synced or refreshed (their `external_site` no longer matches).
 - **Daily check**: `php artisan skrum:check-integrations` (scheduled daily) runs the provider check for every `Active` integration of an enabled provider, updating `last_checked_at` or the status. Network errors and 5xx do not change the status. Spec 8 adds Jira Cloud webhook refresh, GitHub installation checks and the daily full read of tracked issues (spec 8 §10).
 - **Clients**: `App\Support\Integrations\{Slack,Telegram,Jira,Linear}\*Client`, built on `Http::` with a 15 s timeout (60 s for Telegram long polling), resolved per call (no static state, Octane-safe). Base URLs are constants; no user-supplied URL is ever requested (Slack webhook URLs are checked against `https://hooks.slack.com/` before storage and before each use).
 
@@ -194,7 +197,8 @@ All tables use UUID primary keys and `foreignUuid`, as the rest of the schema. M
 
 - **Retro** (any phase except `Completed`): message "{sharer} invites you to the retrospective "{title}" ({team})" with a button/link to `/retros/{id}` (team members sign in). When guest access is enabled, the dialog offers "Include the guest link (anyone in the channel can join)", off by default; when checked, the `/join/{guestToken}` URL is used instead.
 - **Poker game** (not ended): same with `/poker/{id}` and optionally `/poker/join/{guestToken}`.
-- **Game room** (standalone rooms only, spec 7 §3.1): message "{sharer} invites you to play {game} in "{room}" ({team})" with one button "Join the game" to `/games/{room}` (team members sign in). The option "Include the guest link (anyone in the channel can join)" exists only when the room's `access` is `link`, off by default, and then uses `/play/{guestToken}`; `includeGuestLink: true` on a `team` room → 422 "Guest access is off for this room." Not connected or not `Active` → 422 "This team is not connected to :provider." Icebreaker rooms have no invite of their own.
+- **Game room** (standalone rooms only, spec 7 §3.1): message "{sharer} invites you to play {game} in "{room}" ({team})" with one button "Join the game" to `/games/{room}` (team members sign in). The option "Include the guest link (anyone in the channel can join)" exists only when the room's `access` is `link`, off by default, and then uses `/play/{guestToken}`; `includeGuestLink: true` on a `team` room → 422 "Guest access is off for this room." Not connected → 409 "Connect :provider in the team settings."; reconnect required → 409 "Reconnect :provider in the team settings." (as the retro and poker shares, §13) Icebreaker rooms have no invite of their own.
+- **Errors of the retro and poker share endpoints** follow §13: provider disabled → 404; no connection → 409 "Connect :provider in the team settings."; connection lost → 409 "Reconnect :provider in the team settings."; a link on a `Completed` retro, a recap or email before `Completed`, or the guest link while guest access is off → 422; an ended poker game → 403.
 - Nothing else about the board, game or room is sent: no card, column, participant, vote, player, word, question, drawing, GIF or score data.
 
 ### 5.2 Results recap (Slack and Telegram)
@@ -216,7 +220,7 @@ Surveys, health-check scores, comments (card and action item), reactions, GIFs, 
 
 - "Send to email" on the Results view (`Completed` only). Audience chosen in the dialog: **Participants** (members who have a participant row in the retro; default) or **All team members**. Recipients are always current team members with a verified email; guests (no account) are never emailed, and removed members are excluded at send time.
 - One queued `RetroResultsNotification` (mail, `ShouldQueue`, `ShouldBeEncrypted`) per recipient, rendered in the recipient's locale (`User::preferredLocale()`), containing the recap of §5.2 plus the health score (`x.x/10`, shown whatever the number of answers, spec 2 decision 1) and participation. The mail links to the Results view (sign-in required).
-- At most one email send per retro per 10 minutes (429 "The results were emailed a few minutes ago."). The delivery row records `recipient_count`.
+- At most one email send per retro per 10 minutes (429 "The results were emailed a few minutes ago."). The delivery row records `recipient_count` and becomes `sent` as soon as one notification per recipient is queued; the mail transport's retries are the queue worker's (§12).
 
 ### 5.4 Message formatting and escaping
 
@@ -227,7 +231,7 @@ Surveys, health-check scores, comments (card and action item), reactions, GIFs, 
 ### 5.5 Delivery
 
 - Endpoints create an `integration_deliveries` row (`queued`) and dispatch `DeliverToSlack` / `DeliverToTelegram` (after commit, `ShouldBeEncrypted`, message pre-built in the payload) or the notifications. They return 202 with the delivery.
-- Jobs: `tries = 4`, `backoff = [10, 60, 300]`; 429 → `release(retry_after)`; 5xx and connection errors → retry; the provider errors mapped in §4 → fail immediately. On success `status = sent`, `sent_at`; on final failure `status = failed`, `error`. Either way `results.changed` (retro), `game.changed` (poker) or `game.room.changed` on `presence-game.{roomId}` (game room, `kind = game_room_link`) is broadcast so the sharer's view refreshes the delivery line.
+- Jobs: `tries = 4`, `backoff = [10, 60, 300]`; 429 → `release(retry_after)`; 5xx and connection errors → retry; the provider errors mapped in §4 → fail immediately. On success `status = sent`, `sent_at`; on final failure `status = failed`, `error` = the translated user message of the provider error in the sharer's locale (e.g. "Reconnect Slack in the team settings."), shown on the delivery line after "Slack: failed —". Either way `results.changed` (retro), `game.changed` (poker) or `game.room.changed` on `presence-game.{roomId}` (game room, `kind = game_room_link`) is broadcast so the sharer's view refreshes the delivery line.
 
 ## 6. Planning poker import and write-back
 
@@ -252,20 +256,21 @@ Surveys, health-check scores, comments (card and action item), reactions, GIFs, 
 
 - `POST …/imports/{source}` with the selected `externalIds` (1–100). The server re-fetches those issues (never trusts client-sent titles), then creates tasks appended in the given order, in one transaction with the game locked:
   - `title` = summary/title trimmed to 200 characters; `description` = Markdown (Linear as is; Jira ADF converted by `App\Support\Integrations\Jira\AdfToMarkdown`: paragraphs, headings, marks, links, lists, code blocks, quotes, rules, mentions and emoji as text, tables as pipe rows, media dropped with "[attachment]"), truncated to 10 000 characters with "…" appended; `external_*` columns filled; `external_estimate` from the first non-null story-point candidate (Jira) or `estimate` (Linear).
-  - Already imported issues (unique `poker_game_id, external_source, external_id`) are skipped and counted.
+  - Already imported issues (unique `poker_game_id, external_source, external_id`) are skipped and counted; ids the source no longer returns (deleted or no longer visible since the preview) are counted in `skipped` too.
   - The 200-task limit applies to the whole batch (422 "This game can hold 200 tasks at most." when exceeded, nothing imported).
 - Response `{imported, skipped}`; broadcast `game.changed` (clients refetch the snapshot).
 - The source's existing estimate is shown for reference only; it never becomes the skrum estimate.
 
 ### 6.4 Imported tasks and refresh (decision 5)
 
-- Title and description of an imported task are read-only in skrum (422 "This task is managed in :source." on edit); they are refreshed from the source with "Refresh from :source" (game-level button), which re-fetches every imported task of the game from the connected site in batches of 100 (`id in (…)` / `issues(filter: {id: {in: […]}})`), updates title, description, assignee, source estimate and `external_refreshed_at`, and broadcasts `game.changed`. Issues deleted or no longer visible in the source keep their data and show "Not found in :source" (spec 8 persists this state in `external_missing_at` and refreshes automatically when status sync is on, spec 8 §5.7).
+- Title and description of an imported task are read-only in skrum (422 "This task is managed in :source." on edit); they are refreshed from the source with "Refresh from :source" (game-level button), which re-fetches every imported task of the game from the connected site in batches of 100 (`id in (…)` / `issues(filter: {id: {in: […]}})`), updates title, description, assignee, source estimate and `external_refreshed_at`, and broadcasts `game.changed`. Issues deleted or no longer visible in the source keep their data; the state is not persisted here: `POST imports/refresh` answers `{refreshed, missing}` and the UI shows the toast ":missing tasks were not found in :source." (spec 8 persists this state in `external_missing_at` and refreshes automatically when status sync is on, spec 8 §5.7).
+- Refresh covers every imported task whose source has an `Active` connection on the same site; tasks from another site or a disconnected source are skipped. When no source could be refreshed because of its connection state, the endpoint answers the 409 of the first such source (§13).
 - Deleting an imported task in skrum never touches the source.
 
 ### 6.5 Estimate write-back (decision 4)
 
-- When the facilitator sets or clears the estimate of an imported task (`PUT tasks/{task}/estimate`, poker spec §3), `needs_sync` becomes true and `SyncTaskEstimate` is dispatched after commit, **if** the team's integration for `external_source` is `Active`, has `write` access and the same `external_site`. The job is `ShouldBeUnique` per task, reads the latest estimate at run time (several quick changes produce one write), `tries = 5`, `backoff = [10, 30, 120, 600]`.
-- **Cannot sync** (no job, `syncState: 'unsupported'` with a reason): non-numeric deck (T-shirt, non-numeric custom) — "T-shirt estimates can't be written to :source." (Jira, Jira DC and Linear numeric fields only; spec 8's GitHub branch writes any deck label into a managed block of the issue body, spec 8 §4.2); read-only access; integration missing or on another site. `?` and `☕` can never be an estimate (poker spec), so they are never written.
+- When the facilitator sets or clears the estimate of an imported task (`PUT tasks/{task}/estimate`, poker spec §3), `needs_sync` becomes true and `SyncTaskEstimate` is dispatched after commit, **if** the team's integration for `external_source` is `Active`, has `write` access and the same `external_site`. The job is `ShouldBeUniqueUntilProcessing` per task (quick changes before it starts coalesce into one write; a change made while a write is running queues one more write instead of being dropped), reads the latest estimate at run time, clears `needs_sync` only when the estimate it wrote is still the current one, `tries = 5`, `backoff = [10, 30, 120, 600]`.
+- **Cannot sync** (no job, `syncState: 'unsupported'` with a reason): non-numeric deck (T-shirt, non-numeric custom) — "T-shirt estimates can't be written to :source." (Jira, Jira DC and Linear numeric fields only; spec 8's GitHub branch writes any deck label into a managed block of the issue body, spec 8 §4.2); read-only access; integration missing or on another site; the team's connection for the source is `ReconnectRequired` ("Reconnect :provider in the team settings.") or `SetupRequired` ("Connect :provider in the team settings."); Jira without a story points field ("No story points field found."). No job is dispatched in these states and the retry endpoint answers 422 with the reason. `?` and `☕` can never be an estimate (poker spec), so they are never written.
 - **Jira**: `GET /rest/api/3/issue/{id}/editmeta`; the first `storyPointFields` candidate present on the issue's edit screen is written with `PUT /rest/api/3/issue/{id}` `{"fields": {"customfield_x": number|null}}` (`½` → 0.5; a cleared estimate writes `null`). No candidate on the screen → failure "This issue has no story points field on its edit screen."
 - **Linear**: the issue's team settings (`issueEstimationType`, `issueEstimationAllowZero`) are read first. `notUsed` → failure "Estimates are turned off for this Linear team." The value must be a whole number between 0 and 64 (Linear's maximum); `½` or fractions → failure "Linear only accepts whole-number estimates." `0` is sent as `0` when the team allows zero estimates and as `null` (clears the estimate) otherwise; a cleared skrum estimate sends `null`. Values Linear rejects for its scale come back as "Linear rejected this estimate: {message}".
 - Success: `needs_sync = false`, `synced_at = now`, `sync_error = null`. Final failure: `sync_error` set, `needs_sync` stays true. Either way `task.saved` is broadcast to the game (`toOthers()` is not applicable from a job, so every client updates).
@@ -281,12 +286,12 @@ external: null | {source, key, url, assignee|null, sourceEstimate|null, refreshe
                   syncError|null, unsupportedReason|null, isManaged: true}
 ```
 
-Guests receive `{source, key, url, isManaged: true}` only (assignee names from the source are team-internal). Snapshot adds `integrations: {jira: {connected, canWrite} | null, linear: … | null}` for non-guest players, `null` for guests.
+Guests receive `{source, key, url, isManaged: true}` only (assignee names from the source are team-internal). Broadcasts (`task.saved`) reach every player, guests included, so their task payload always carries this reduced object; non-guest clients refetch their snapshot on a `task.saved` for an imported task. Snapshot adds `integrations: {jira: {connected, canWrite} | null, linear: … | null}` for non-guest players, `null` for guests.
 
 ## 7. Action item export (decision 6)
 
 - **Who**: an authenticated team member who may edit the item (`ActionItemPermissions::canEdit` from spec 3: author, facilitator, workspace Owner/Admin). Guests never export. Allowed from the board (any phase, the item's retro not locked-and-in-progress, same 423 rule as spec 3's workspace endpoints) and from the global page. Requires an `Active` integration with `write` access on the item's team.
-- **Target**: Jira → project (`GET /rest/api/3/project/search`) and issue type (`GET /rest/api/3/issuetype/project?projectId=`, "Task" preselected when present); Linear → team. The last choice is saved in the integration `settings` and preselected next time.
+- **Target**: Jira → project (`GET /rest/api/3/project/search` with `action=create`: the first 50 projects the user can create issues in, ordered by name, filterable by `?q=`) and issue type (`GET /rest/api/3/issuetype/project?projectId=`, "Task" preselected when present); Linear → team. The last choice is saved in the integration `settings` and preselected next time.
 - **Created issue** (synchronous, 15 s timeout, so the user sees the key immediately):
   - Title: item content, first line, ≤ 255 characters.
   - Description: full content, then "From the retrospective "{title}" on {date}: {link}", or, for an item without a retro (spec 3 §3.1, `source: null`, including recurring successors), "Added outside a retro on {item creation date}: {link}", where link is `/w/{workspace}/action-items?item={id}` (Jira as ADF, Linear as Markdown). Never the creator, comments, or other items. Each recurring occurrence is a separate item, exported separately (its own link row).
@@ -295,7 +300,8 @@ Guests receive `{source, key, url, isManaged: true}` only (assignee names from t
   - Assignee: the member's mapped account per §7.1 (Jira `assignee: {accountId}`, Linear `assigneeId`); unassigned in the fallback cases of §7.3.
 - The link row is inserted first inside a transaction with `lockForUpdate` on the item, so a double click cannot create two issues; a provider failure rolls it back (502 with the provider message). A timeout after the request was sent returns 502 "The issue may have been created. Check :source before trying again."
 - Export is one-way and one-shot: later edits, completion or deletion in skrum or in the source do not propagate (spec 8 adds opt-in open/done status sync per integration; fields stay one-shot).
-- `PresentActionItem` gains `externalLinks: [{source, key, url}]` (empty for guests); the board broadcasts `action-item.saved` after an export, per spec 3.
+- `PresentActionItem` gains `externalLinks`: `[{source, key, url}]` for members, `[]` for guests and `null` when presented without a viewer (board and team broadcasts reach guests too; clients keep their known links when a payload says `null`). After an export the board broadcasts `action-item.saved` per spec 3, and members receive the links through the member-only `action-item.external-links.changed {actionItemId, externalLinks}` on `retro-members.{retroId}` (the item's board and every running retro that carries it); the global page gets them from its existing reload after `team-action-item.saved`.
+- **Time budget**: every provider call of an export has the 15 s timeout of §4.5 (no cumulative budget); the browser waits up to 45 s for the response.
 - Assignee and priority are resolved at export time only; changing them in skrum afterwards does not update the issue (decision 6; spec 8 adds status sync, not field sync).
 
 ### 7.1 Assignee mapping (scope addition)
@@ -309,7 +315,7 @@ Guests receive `{source, key, url, isManaged: true}` only (assignee names from t
 - **Automatic matching by email** (decision A; queued `MatchIntegrationUsers`, `ShouldBeUnique` per integration, provider 429 → release after `Retry-After`): dispatched when a Jira/Linear integration reaches `Active` with `write` access (connect, upgrade, reconnect to a new site) and by the "Match by email" button. For each current team member with a verified email and **no** mapping row:
   - **Jira:** `GET /rest/api/3/user/search?query={email}&maxResults=2`. Accepted only when exactly one result has `accountType = atlassian` and `active = true`; when the result carries `emailAddress` (privacy settings may hide it), it must equal the member's email case-insensitively. Anything else → no row (stays "Not mapped").
   - **Linear:** the organization's users are listed once per run (`users(first: 250, after:) { nodes { id displayName email active } }`, all pages) and compared with members' emails case-insensitively in memory; active users only; exactly one match required.
-  - Existing rows are never overwritten. `email` rows whose account is no longer found or inactive (re-checked in the same run, `checked_at` updated) are deleted so that they can match again; `manual` rows are only re-checked and flagged `accountInactive` in the People panel, never deleted.
+  - Existing rows are never overwritten. `email` rows whose account is no longer found or inactive (re-checked in the same run, `checked_at` updated) are deleted so that they can match again; `manual` rows are only re-checked and flagged `accountInactive` in the People panel (column `account_inactive`, §3), never deleted.
 - **Manual mapping** by Owners/Admins in the integration's People panel (§11): choose an account from a search, "Never assign", or "Reset" (deletes the row; the next matching run or export may fill it).
   - Account search `GET …/integrations/{integration}/accounts?q=` (2–100 characters, `throttle:30,1`): Jira `GET /rest/api/3/user/search?query=q&maxResults=20` filtered to active `atlassian` accounts; Linear users filtered by name, display name or email in memory (first 20). Returns `[{accountId, displayName}]` only: no emails, no avatar URLs (browsers never load provider images, §10.3).
   - Saving re-fetches the account by id (Jira `GET /rest/api/3/user?accountId=`, Linear `user(id:)`); unknown or inactive → 422 "This :provider account was not found or is inactive."
@@ -327,6 +333,7 @@ Guests receive `{source, key, url, isManaged: true}` only (assignee names from t
 - **Jira:** the default matches by name, case-insensitively, among the `priority.allowedValues` of the createmeta above; no match → no priority sent (Jira applies its default), reason `priorityUnavailable`. Owners/Admins can set each level to any priority listed by `GET /rest/api/3/priority/search` (paged, up to 100) or to "Don't set"; stored as `settings.priorityMap.{level} = {id, name}` or `null`. At export, a mapped priority that is not in the project's allowed values, or a create screen without `priority`, → not sent, reason `priorityUnavailable`.
 - **Linear:** each level can be set to Linear's fixed scale (0 No priority, 1 Urgent, 2 High, 3 Medium, 4 Low); always accepted.
 - The mapping applies to every export; there is no per-export override (the dialog shows the value that will be sent).
+- Request values of `priority_map` (PATCH, §9): per level a Jira priority id or a Linear value 0–4, `null` (Jira only: "Don't set"), or the string `"default"`, which removes the level's override and returns to the default mapping.
 
 ### 7.3 Fallbacks and feedback
 
@@ -340,9 +347,9 @@ Guests receive `{source, key, url, isManaged: true}` only (assignee names from t
 | Assignee field not on the Jira create screen | no assignee | `assigneeUnavailable` | "This Jira project doesn't accept an assignee on creation." |
 | Priority not available | provider default | `priorityUnavailable` | "Priority :priority isn't available in this project; :provider's default was used." |
 
-- Warnings never block the export. Response `201 {actionItem, warnings: [{code, message}]}`.
+- Warnings never block the export. Response `201 {actionItem, warnings: [{code, message}]}`; `neverAssign` appears with `message: null`, and clients show only warnings that have a message.
 - The name of an unmapped assignee is not written into the issue (data minimisation, decision B).
-- **Export dialog preview** (from stored data only, no provider call): "Assignee: {displayName} ({provider})", "Assignee: not mapped yet — skrum will try to match {name} by email", "Unassigned (guest)", "Unassigned (never assigned)" or "Unassigned"; and "Priority: {name}" / "Priority: {provider} default". Owners/Admins also see a "Manage people" link to the People panel.
+- **Export dialog preview** (from stored data only, no provider call): "Assignee: {displayName} ({provider})", "Assignee: not mapped yet — skrum will try to match {name} by email", "Unassigned (guest)", "Unassigned (never assigned)" or "Unassigned" (state `none`, which also covers a member who is not mapped and cannot be matched — no verified email, or a Jira connection without `read:jira-user` — and then exports with the `notMapped` warning); and "Priority: {name}" / "Priority: {provider} default". Owners/Admins also see a "Manage people" link to the People panel.
 
 ## 8. Permissions
 
@@ -372,11 +379,11 @@ Controllers in `app/Http/Controllers/Integrations/`, actions in `app/Actions/Int
 | GET | `/w/{workspace}/teams/{team}/integrations` | — | Inertia `teams/integrations` |
 | GET | `…/integrations/{provider}/connect` | `?access=read\|write` | redirect to provider (Slack, Jira, Linear) |
 | POST | `…/integrations/telegram/code` | — | `{code, command, botUsername, expiresAt}` (`throttle:10,1`) |
-| PATCH | `…/integrations/{integration}` | Jira: `{cloudId?, storyPointFieldId?, priorityMap?}`; Linear: `{priorityMap?}` (`priorityMap` = `{high, medium, low}`, each a Jira priority id or `null` / a Linear value 0–4; Jira ids validated against `priority/search`) | 200 integration |
+| PATCH | `…/integrations/{integration}` | Jira: `{cloudId?, storyPointFieldId?, priorityMap?}`; Linear: `{priorityMap?}` (`priorityMap` = `{high, medium, low}`, each a Jira priority id or `null` / a Linear value 0–4, or `"default"` to remove the override, §7.2; Jira ids validated against `priority/search`) | 200 integration |
 | POST | `…/integrations/{integration}/detection` | — | Jira: re-detect story-point fields |
-| POST | `…/integrations/{integration}/test` | — | Slack/Telegram: sends "skrum is connected." to the channel; Jira/Linear: runs the check. 200 or 502 |
+| POST | `…/integrations/{integration}/test` | — | Slack/Telegram: sends "skrum is connected." to the channel; Jira/Linear: runs the check. 200, or the §13 error mapping (409 reconnect, 422, 429, 502) |
 | DELETE | `…/integrations/{integration}` | — | 204 |
-| GET | `…/integrations/{integration}/targets` | — | Jira projects + issue types / Linear teams (export dialog; any team member who can export) |
+| GET | `…/integrations/{integration}/targets` | `?project_id=&q=` (Jira: issue types of that project, default the saved project else the first; project name filter) | Jira projects + issue types / Linear teams (export dialog; any team member who can export) |
 | GET | `…/integrations/{integration}/user-mappings` | — | `{members: [{userId, name, email, mapping: {accountId\|null, displayName, matchedBy, accountInactive} \| null}], matching: bool}` (Jira/Linear, write access) |
 | POST | `…/integrations/{integration}/user-mappings/match` | — | 202; dispatches `MatchIntegrationUsers` (`throttle:3,1`) |
 | PUT | `…/integrations/{integration}/user-mappings/{user}` | `{externalAccountId: string\|null}` (`null` = Never assign) | 200 mapping; `{user}` must be a current team member |
@@ -423,7 +430,7 @@ The MCP poker tools are thin adapters over the same actions the HTTP controllers
 |---|---|---|
 | `poker.sources.list` | `ListPokerSources` (team) | Per enabled Jira/Linear provider with a connection for the team, the shape of spec 5 §6.2: `{source, siteName, status, access, canImport, canWriteBack, writeBackUnavailableReason}` (`canImport` = `active`; `canWriteBack` = `active`, `write` access and, for Jira, a story points field found); empty when none. Never returns credentials or settings beyond the site name. |
 | `poker.iterations.list` | `ListPokerIterations` (team, source, container?) | The containers/iterations calls of §6.2 (active and upcoming sprints/cycles). |
-| `poker.game.tasks.import` | `ImportPokerTasks` (game, source, externalIds or iteration/query) | The import of §6.3: same 100-per-call and 200-task limits, duplicates skipped. Whole-iteration import resolves the ids through §6.2 (capped at 100, `truncated` reported). Requires the player to be allowed to add tasks. |
+| `poker.game.tasks.import` | `ImportPokerTasks` (game, source, externalIds or iteration/query) | The import of §6.3: same 100-per-call and 200-task limits, duplicates skipped. Whole-iteration import resolves the ids through §6.2 (capped at 100, `truncated` reported); for Jira `container_id` is accepted but not needed (a sprint id is unique on a site). Requires the player to be allowed to add tasks. |
 | `poker.game.task.sync` | `SyncTaskEstimate` dispatch action (§6.5) | Retry/force of the automatic write-back; facilitator only; never sets the estimate. |
 
 `poker.game.tasks.list` reads the task payload of §6.6 (tracker key, `syncState`). Setting an estimate directly stays impossible through MCP (poker spec).
@@ -437,8 +444,9 @@ The MCP poker tools are thin adapters over the same actions the HTTP controllers
 
 ### Events and snapshot additions
 
-- No new broadcast event. Deliveries trigger `results.changed` (retro, spec 2), `game.changed` (poker) or `game.room.changed` (game room, spec 7); imports and refresh `game.changed`; write-back `task.saved`; exports `action-item.saved`.
-- Retro snapshot: `integrations: {slack, telegram, email}` (spec 8 adds `msteams`, `mattermost`, `webhook`; booleans, true only when available **and** the viewer may share; all false for others); `results.deliveries`: the latest delivery per channel `{channel, kind, status, error, sentAt, requestedBy}` for viewers who may share, else `[]`.
+- One new broadcast event: `action-item.external-links.changed {actionItemId, externalLinks}`, member-only, on `retro-members.{retroId}` for the item's board and every running retro that carries it (§7). Deliveries trigger `results.changed` (retro, spec 2), `game.changed` (poker) or `game.room.changed` (game room, spec 7); imports and refresh `game.changed`; write-back `task.saved`; exports `action-item.saved`.
+- Retro snapshot: `integrations: {slack, telegram, email}` (spec 8 adds `msteams`, `mattermost`, `webhook`; booleans, true only when available **and** the viewer may share; all false for others); `results.deliveries`: the latest delivery per channel `{channel, kind, status, error, sentAt, requestedBy}` for viewers who may share, else `[]`. `linkDeliveries`: the latest `retro_link` delivery per channel, same shape and audience, in every phase (`results` exists only once `Completed`, so a link posted during Writing or Discussing needs its own line). `results.emailRecipients: {participants, team} | null`: recipient counts for the "Send to email" dialog; `null` for viewers who may not share or when email is unavailable.
+- Board snapshot (non-guests): `exportSources: [{source, label, integrationId}]` — the Jira/Linear integrations of the retro's team that are enabled, `Active` and `write` (`[]` otherwise and for guests). The global action items page receives the prop `exportSources` keyed by team id (§7).
 - Poker snapshot: `integrations` (§6.6), `share: {slack, telegram}` for those who may share, and the latest delivery per channel.
 - Integrations page props: per enabled provider `{provider, label, status, access, settings (non-secret), connectedBy, connectedAt, lastCheckedAt, lastError}`; `credentials` are never serialized.
 
@@ -513,7 +521,8 @@ All new strings in `lang/{en,fr,es,de}.json`. Provider names are not translated.
 - skrum rate limits → 429 with a translated message.
 - Export conflicts (already exported) → 409 "Already exported as :key."
 - Export fallbacks (§7.3) are warnings on a 201, never errors. Mapping endpoints on a read-only integration → 409 "This :provider connection is read-only."; unknown or inactive account → 422 (§7.1); mapping a user who is not a current team member → 422 "This person is not a member of the team."; Jira without `read:jira-user` (connected before this change) → 409 "Reconnect :provider to enable assignee mapping." and the People panel shows the same line.
-- Edits of managed tasks → 422 (§6.4). Import over 200 tasks → 422.
+- Edits of managed tasks → 422 (§6.4). Import over 200 tasks → 422. Refresh with no refreshable source → 409 of the first source (§6.4). Retry of an `unsupported` task → 422 with the reason (§6.5).
+- The integration `test` endpoint and the share endpoints use the mapping of this section (§5.1, §9).
 - OAuth failures → flash on the integrations page (§4.5).
 - Every error message is translated; provider messages are appended verbatim after sanitizing.
 
@@ -580,6 +589,8 @@ Type-check and lint stay green; no frontend test runner is added.
 7. **Who may share and email results:** the retro's facilitator (team member) and workspace Owners/Admins.
 8. **Participant names in the recap:** names unless the retro is anonymous, count only on anonymous retros.
 9. **Scope additions (2026-09-30):** assignee and priority mapping on action item export (§3 `integration_user_mappings`, §7.1–§7.3). Two-way status sync and more providers move to spec 8 `2026-09-30-integrations-extended-design.md`; decision 6 (one-shot export, no status sync) stays true for this spec.
+
+Plan-writing amendments (2026-09-30): applied in §2.1 (routes always registered, 404 middleware), §3 (`scopes`, `IntegrationAccess`, Jira `numberFields` / `storyPointFieldOverride`, `account_inactive`, delivery enums), §4.2 (`/connect@otherbot` ignored), §4.3 (multi-site reconnect), §4.5 (ReconnectRequired re-saved after a rolled-back transaction), §5.1 (share errors), §5.3 (email `sent` when queued), §5.5 (translated failure text), §6.3 (unknown ids skipped), §6.4 (missing reported, refresh scope), §6.5 (`ShouldBeUniqueUntilProcessing`, extra unsupported reasons), §6.6 (guest-safe broadcasts), §7 (`externalLinks` null/member event, time budget, targets), §7.2 (`"default"`), §7.3 (`neverAssign` message, preview `none`), §9 (test errors, targets params, `priorityMap`, `linkDeliveries`, `emailRecipients`, `exportSources`, new member event), §9.1 (Jira `container_id` optional), §13. Source: plans 12a–12d.
 
 ## Decisions (scope additions, 2026-09-30)
 
