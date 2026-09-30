@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\RetroPhase;
+use App\Enums\SummaryStatus;
 use Database\Factories\RetroFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -34,6 +35,10 @@ use Illuminate\Support\Carbon;
  * @property bool $icebreaker_enabled
  * @property bool $ai_summary_enabled
  * @property string|null $workspace_template_id
+ * @property string|null $summary
+ * @property Carbon|null $summary_generated_at
+ * @property SummaryStatus|null $summary_status
+ * @property Carbon|null $summary_requested_at
  * @property string $guest_token
  * @property Carbon|null $timer_ends_at
  * @property string|null $highlighted_card_id
@@ -46,6 +51,7 @@ use Illuminate\Support\Carbon;
     'guest_access_enabled', 'guest_token', 'timer_ends_at', 'highlighted_card_id', 'completed_at',
     'reactions_enabled', 'cursors_enabled', 'gifs_enabled', 'hide_vote_counts', 'is_locked', 'presentation_mode', 'ai_summary_enabled',
     'health_check_enabled', 'icebreaker_enabled', 'workspace_template_id',
+    'summary', 'summary_generated_at', 'summary_status', 'summary_requested_at',
 ])]
 #[Hidden(['guest_token'])]
 class Retro extends Model
@@ -54,6 +60,8 @@ class Retro extends Model
     use HasFactory;
 
     use HasUuids;
+
+    public const SummaryPendingTimeoutMinutes = 10;
 
     public function voteLimit(): int
     {
@@ -134,6 +142,18 @@ class Retro extends Model
         return $this->hasMany(ActionItem::class);
     }
 
+    /** @return HasMany<RetroTheme, $this> */
+    public function themes(): HasMany
+    {
+        return $this->hasMany(RetroTheme::class)->orderBy('position');
+    }
+
+    /** @return HasMany<SuggestedAction, $this> */
+    public function suggestedActions(): HasMany
+    {
+        return $this->hasMany(SuggestedAction::class)->orderBy('position');
+    }
+
     /** @return HasMany<RetroHealthStatement, $this> */
     public function healthStatements(): HasMany
     {
@@ -201,6 +221,23 @@ class Retro extends Model
         return $phases[$index + $offset] ?? null;
     }
 
+    /**
+     * A worker that died leaves the summary pending forever; after the
+     * timeout it counts as failed so the facilitator can retry.
+     */
+    public function effectiveSummaryStatus(): ?SummaryStatus
+    {
+        if ($this->summary_status !== SummaryStatus::Pending) {
+            return $this->summary_status;
+        }
+
+        if ($this->summary_requested_at === null || $this->summary_requested_at->lt(now()->subMinutes(self::SummaryPendingTimeoutMinutes))) {
+            return SummaryStatus::Failed;
+        }
+
+        return SummaryStatus::Pending;
+    }
+
     protected function casts(): array
     {
         return [
@@ -220,6 +257,9 @@ class Retro extends Model
             'votes_version' => 'integer',
             'timer_ends_at' => 'datetime',
             'completed_at' => 'datetime',
+            'summary_status' => SummaryStatus::class,
+            'summary_generated_at' => 'datetime',
+            'summary_requested_at' => 'datetime',
         ];
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\CardSentiment;
 use Database\Factories\CardFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -20,6 +21,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $position
  * @property string|null $parent_card_id
  * @property string|null $group_name
+ * @property CardSentiment|null $sentiment
+ * @property string|null $category
  * @property-read Participant $participant
  */
 #[Fillable(['column_id', 'participant_id', 'content', 'gif_id', 'position', 'parent_card_id', 'group_name'])]
@@ -102,6 +105,7 @@ class Card extends Model
     {
         return [
             'position' => 'integer',
+            'sentiment' => CardSentiment::class,
         ];
     }
 }

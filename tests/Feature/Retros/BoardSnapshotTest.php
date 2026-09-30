@@ -135,6 +135,8 @@ it('lists action items with assignees', function () {
         'content' => 'Fix CI',
         'isDone' => false,
         'assignee' => ['id' => $viewer->id, 'name' => $viewer->displayName()],
+        'themeId' => null,
+        'themeName' => null,
     ]]);
 });
 

@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\RetroPhase;
+use App\Enums\SummaryStatus;
 use App\Models\ActionItem;
 use App\Models\Card;
 use App\Models\Column;
@@ -152,4 +153,18 @@ it('deletes every retro row when the retro is deleted', function () {
         ->and(Vote::where('retro_id', $retro->id)->count())->toBe(0)
         ->and(ActionItem::where('retro_id', $retro->id)->count())->toBe(0)
         ->and(User::find($facilitatorUser->id))->not->toBeNull();
+});
+
+it('reads a summary pending for more than ten minutes as failed', function () {
+    $retro = Retro::factory()->create(['summary_status' => SummaryStatus::Pending, 'summary_requested_at' => now()->subMinutes(9)]);
+
+    expect($retro->effectiveSummaryStatus())->toBe(SummaryStatus::Pending);
+
+    $retro->update(['summary_requested_at' => now()->subMinutes(11)]);
+
+    expect($retro->fresh()->effectiveSummaryStatus())->toBe(SummaryStatus::Failed);
+
+    $retro->update(['summary_status' => null]);
+
+    expect($retro->fresh()->effectiveSummaryStatus())->toBeNull();
 });

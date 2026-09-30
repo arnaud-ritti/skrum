@@ -11,7 +11,9 @@ class PresentActionItem
      *     id: string,
      *     content: string,
      *     isDone: bool,
-     *     assignee: ?array{id: string, name: string}
+     *     assignee: ?array{id: string, name: string},
+     *     themeId: ?string,
+     *     themeName: ?string
      * }
      */
     public function handle(ActionItem $item): array
@@ -23,6 +25,8 @@ class PresentActionItem
             'assignee' => $item->assignee === null
                 ? null
                 : ['id' => $item->assignee->id, 'name' => $item->assignee->displayName()],
+            'themeId' => $item->theme_id,
+            'themeName' => $item->theme_name,
         ];
     }
 }

@@ -16,9 +16,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $assignee_participant_id
  * @property string $created_by_participant_id
  * @property bool $is_done
+ * @property string|null $theme_id
+ * @property string|null $theme_name
  * @property-read Participant|null $assignee
  */
-#[Fillable(['content', 'assignee_participant_id', 'created_by_participant_id', 'is_done'])]
+#[Fillable(['content', 'assignee_participant_id', 'created_by_participant_id', 'is_done', 'theme_id', 'theme_name'])]
 class ActionItem extends Model
 {
     /** @use HasFactory<ActionItemFactory> */
