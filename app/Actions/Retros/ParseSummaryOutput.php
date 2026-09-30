@@ -127,7 +127,9 @@ class ParseSummaryOutput
             }
 
             $index = $item['cardId'] ?? null;
-            $cardId = $this->isIndex($index) ? ($input->cardIds[(int) $index] ?? null) : null;
+            $cardId = $this->isIndex($index) && (int) $index <= BuildSummaryInput::MaxInsightCards
+                ? ($input->cardIds[(int) $index] ?? null)
+                : null;
 
             if ($cardId === null) {
                 continue;

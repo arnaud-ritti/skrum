@@ -242,3 +242,29 @@ it('ignores nested array indexes instead of failing', function () {
     expect($output->themes)->toBe([['name' => 'Theme', 'cardIds' => ['card-a']]])
         ->and($output->cardInsights)->toBe(['card-a' => ['sentiment' => CardSentiment::Negative, 'category' => null]]);
 });
+
+it('asks for card insights on the first sixty cards only', function () {
+    $retro = Retro::factory()->inPhase(RetroPhase::Completed)->create();
+    $column = Column::factory()->create(['retro_id' => $retro->id]);
+    Card::factory()->count(100)->create(['retro_id' => $retro->id, 'column_id' => $column->id, 'content' => 'Short card']);
+
+    $input = app(BuildSummaryInput::class)->handle($retro->fresh());
+
+    expect($input->cardIds)->toHaveCount(100)
+        ->and($input->instructions)->toContain('only for the cards whose "id" is 60 or lower');
+});
+
+it('ignores card insights beyond the first sixty cards', function () {
+    $input = summaryInputFor(array_combine(range(1, 61), array_map(fn (int $i) => "card-{$i}", range(1, 61))));
+    $reply = json_encode([
+        'summary' => 'Fine.',
+        'cardInsights' => [
+            ['cardId' => 60, 'sentiment' => 'positive'],
+            ['cardId' => 61, 'sentiment' => 'negative'],
+        ],
+    ]);
+
+    $output = app(ParseSummaryOutput::class)->handle($reply, $input);
+
+    expect($output->cardInsights)->toBe(['card-60' => ['sentiment' => CardSentiment::Positive, 'category' => null]]);
+});
