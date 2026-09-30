@@ -14,6 +14,7 @@ use App\Models\GameRoom;
 use App\Models\GameRound;
 use App\Models\User;
 use App\Support\Games\GameWordBook;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Event;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -43,6 +44,24 @@ function wordGuessRoundBroadcasts(): Collection
     ])
         ->flatMap(fn (string $class) => Event::dispatched($class))
         ->map(fn (array $arguments): GameBroadcastEvent => $arguments[0]);
+}
+
+/**
+ * @param  array<mixed>  $payload
+ */
+function wordGuessPayloadHasPointsKey(array $payload): bool
+{
+    foreach ($payload as $key => $value) {
+        if ($key === 'points') {
+            return true;
+        }
+
+        if (is_array($value) && wordGuessPayloadHasPointsKey($value)) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 /**
@@ -98,7 +117,8 @@ it('keeps the word out of every non-leader snapshot, page and response', functio
 
         expect(gamePayloadExposesWord($snapshot, GuessedWord))->toBeFalse()
             ->and(gamePayloadJson($snapshot))->not->toContain('drawing_points')
-            ->not->toContain('drawingPoints');
+            ->not->toContain('drawingPoints')
+            ->and(wordGuessPayloadHasPointsKey(Arr::except($snapshot['round'], ['drawing'])))->toBeFalse();
     }
 
     $this->actingAs($table['guesser'])
@@ -132,7 +152,9 @@ it('keeps the word out of every broadcast while the round is active', function (
 
     expect($broadcasts->map(fn (GameBroadcastEvent $event) => $event->broadcastAs())->unique()->values()->all())
         ->toContain('game.round.started', 'game.hint.revealed', 'game.guess.made')
-        ->and($broadcasts->contains(fn (GameBroadcastEvent $event) => gamePayloadExposesWord($event->broadcastWith(), GuessedWord)))->toBeFalse();
+        ->and($broadcasts->contains(fn (GameBroadcastEvent $event) => gamePayloadExposesWord($event->broadcastWith(), GuessedWord)))->toBeFalse()
+        ->and($broadcasts->reject(fn (GameBroadcastEvent $event) => $event instanceof GameDrawingOpAdded)
+            ->contains(fn (GameBroadcastEvent $event) => wordGuessPayloadHasPointsKey($event->broadcastWith())))->toBeFalse();
 })->with('redacted guessing games');
 
 it('keeps active rounds out of history and round detail', function (GameKind $game) {
