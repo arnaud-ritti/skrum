@@ -7,11 +7,16 @@ use App\Enums\RetroPhase;
 use App\Events\RetroCompleted;
 use App\Events\Retros\PhaseChanged;
 use App\Models\Retro;
+use App\Support\Llm\Llm;
 use Illuminate\Validation\ValidationException;
 
 class ChangeRetroPhase
 {
-    public function __construct(private CloseOpenSurveys $closeOpenSurveys) {}
+    public function __construct(
+        private CloseOpenSurveys $closeOpenSurveys,
+        private Llm $llm,
+        private QueueRetroSummary $queueRetroSummary,
+    ) {}
 
     /**
      * Runs inside the caller's transaction, on a retro row locked for update.
@@ -23,6 +28,7 @@ class ChangeRetroPhase
         $this->closeSurveys($locked, $phase);
         $this->broadcast($locked, $phase);
         $this->announceCompletion($locked, $phase);
+        $this->queueSummary($locked, $phase);
     }
 
     private function ensureReachable(Retro $locked, RetroPhase $phase): void
@@ -68,5 +74,22 @@ class ChangeRetroPhase
         }
 
         event(new RetroCompleted($retro));
+    }
+
+    private function queueSummary(Retro $locked, RetroPhase $phase): void
+    {
+        if ($phase !== RetroPhase::Completed) {
+            return;
+        }
+
+        if (! $locked->ai_summary_enabled) {
+            return;
+        }
+
+        if (! $this->llm->isConfigured()) {
+            return;
+        }
+
+        $this->queueRetroSummary->handle($locked);
     }
 }
