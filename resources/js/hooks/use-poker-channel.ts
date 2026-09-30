@@ -1,7 +1,7 @@
 import { echo, echoIsConfigured } from '@laravel/echo-react';
 import { useEffect, useRef, useState } from 'react';
 import type { PresenceMember } from '@/lib/retro/types';
-import type { WhisperChannel } from '@/lib/retro/whisper-transport';
+import type { WhisperChannel } from '@/lib/realtime/whisper-transport';
 import { useSafeConnectionStatus } from './use-retro-channel';
 
 export const PokerEvents = [

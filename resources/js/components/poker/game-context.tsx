@@ -7,7 +7,7 @@ import {
 import type { GameAction } from '@/lib/poker/game-reducer';
 import type { PokerSnapshot } from '@/lib/poker/types';
 import type { PresenceMember } from '@/lib/retro/types';
-import type { WhisperChannel } from '@/lib/retro/whisper-transport';
+import type { WhisperChannel } from '@/lib/realtime/whisper-transport';
 import type { PokerDeckOption } from '@/types';
 
 export type GameContextValue = {

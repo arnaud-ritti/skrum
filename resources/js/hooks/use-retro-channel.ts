@@ -11,7 +11,7 @@ import type {
     PresenceMember,
     SurveyComment,
 } from '@/lib/retro/types';
-import type { WhisperChannel } from '@/lib/retro/whisper-transport';
+import type { WhisperChannel } from '@/lib/realtime/whisper-transport';
 
 export const RetroEvents = [
     'card.created',

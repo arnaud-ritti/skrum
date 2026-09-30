@@ -13,7 +13,7 @@ import { gameReducer, type GameAction } from '@/lib/poker/game-reducer';
 import type { PokerSnapshot, PokerTask } from '@/lib/poker/types';
 import { RetroRequestError, retroRequest } from '@/lib/retro/api';
 import type { PresenceMember } from '@/lib/retro/types';
-import type { WhisperChannel } from '@/lib/retro/whisper-transport';
+import type { WhisperChannel } from '@/lib/realtime/whisper-transport';
 import { usePokerChannel, type PokerEvent } from './use-poker-channel';
 
 const SessionExpiredStatuses = [401, 419];
