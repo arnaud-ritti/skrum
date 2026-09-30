@@ -4,10 +4,12 @@ namespace App\Actions\Integrations;
 
 use App\Enums\IntegrationProvider;
 use App\Enums\IntegrationUserMatch;
+use App\Models\IntegrationUserMapping;
 use App\Models\TeamIntegration;
 use App\Models\User;
 use App\Support\Integrations\ExternalAccount;
 use App\Support\Integrations\IntegrationUserAccounts;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
 /**
@@ -46,19 +48,34 @@ class MatchIntegrationUserAccounts
             $accountId = (string) $mapping->external_account_id;
             $account = $known === null ? $this->accounts->find($integration, $accountId) : $known->get($accountId);
             $usable = $account !== null && $account->active;
+            $unchanged = $this->unchanged($integration, $mapping);
 
             if (! $usable && $mapping->matched_by === IntegrationUserMatch::Email) {
-                $mapping->delete();
+                $unchanged->delete();
 
                 continue;
             }
 
-            $mapping->forceFill([
+            $unchanged->update([
                 'account_inactive' => ! $usable,
                 'external_display_name' => $account === null ? $mapping->external_display_name : $account->displayName,
                 'checked_at' => now(),
-            ])->save();
+            ]);
         }
+    }
+
+    /**
+     * The provider lookups are slow, so an admin may have saved another
+     * choice for this member meanwhile: writes only touch the row as loaded.
+     *
+     * @return HasMany<IntegrationUserMapping, TeamIntegration>
+     */
+    private function unchanged(TeamIntegration $integration, IntegrationUserMapping $mapping): HasMany
+    {
+        return $integration->userMappings()
+            ->whereKey($mapping->getKey())
+            ->where('matched_by', $mapping->matched_by)
+            ->where('external_account_id', $mapping->external_account_id);
     }
 
     /**

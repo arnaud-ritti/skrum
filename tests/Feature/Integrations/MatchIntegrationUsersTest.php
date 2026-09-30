@@ -120,6 +120,48 @@ it('re-checks existing rows', function () {
         ->and($integration->accountFor($healthy)?->external_display_name)->toBe('Alan T.');
 });
 
+it('keeps an admin choice saved while the re-check waits on the provider', function () {
+    $integration = TeamIntegration::factory()->jira()->create();
+    $excluded = matchingMember($integration->team, 'ada@example.com');
+    $chosen = matchingMember($integration->team, 'grace@example.com');
+    $excludedRow = IntegrationUserMapping::factory()->create(['team_integration_id' => $integration->id, 'user_id' => $excluded->id, 'external_account_id' => 'acc-gone']);
+    $chosenRow = IntegrationUserMapping::factory()->create(['team_integration_id' => $integration->id, 'user_id' => $chosen->id, 'external_account_id' => 'acc-grace']);
+    Http::fake([
+        jiraApiUrl('rest/api/3/user?accountId=acc-gone') => function () use ($excludedRow) {
+            $excludedRow->forceFill(['matched_by' => IntegrationUserMatch::Manual, 'external_account_id' => null, 'external_display_name' => null])->save();
+
+            return Http::response(['errorMessages' => ['Not found']], 404);
+        },
+        jiraApiUrl('rest/api/3/user?accountId=acc-grace') => function () use ($chosenRow) {
+            $chosenRow->forceFill(['matched_by' => IntegrationUserMatch::Manual, 'external_account_id' => 'acc-chosen', 'external_display_name' => 'Grace (chosen)'])->save();
+
+            return Http::response(jiraAccount('acc-grace', 'Grace (old)', active: false));
+        },
+        jiraApiUrl('rest/api/3/user/search*') => Http::response([jiraAccount('acc-other', 'Someone')]),
+    ]);
+
+    app(MatchIntegrationUserAccounts::class)->handle($integration);
+
+    expect($integration->accountFor($excluded)?->isNeverAssign())->toBeTrue()
+        ->and($integration->accountFor($chosen)?->external_account_id)->toBe('acc-chosen')
+        ->and($integration->accountFor($chosen)?->external_display_name)->toBe('Grace (chosen)')
+        ->and($integration->accountFor($chosen)?->account_inactive)->toBeFalse();
+});
+
+it('keeps a row saved by an admin while matching searches the provider', function () {
+    $integration = TeamIntegration::factory()->jira()->create();
+    $ada = matchingMember($integration->team, 'ada@example.com');
+    Http::fake([jiraApiUrl('rest/api/3/user/search*') => function () use ($integration, $ada) {
+        IntegrationUserMapping::factory()->neverAssign()->create(['team_integration_id' => $integration->id, 'user_id' => $ada->id]);
+
+        return Http::response([jiraAccount('acc-ada', 'Ada L.')]);
+    }]);
+
+    app(MatchIntegrationUserAccounts::class)->handle($integration);
+
+    expect($integration->accountFor($ada)?->isNeverAssign())->toBeTrue();
+});
+
 it('matches Linear members on this server', function () {
     $integration = TeamIntegration::factory()->linear()->create();
     $ada = matchingMember($integration->team, 'ada@example.com');
