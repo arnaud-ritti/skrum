@@ -3,6 +3,8 @@
 return [
     'locales' => ['en', 'fr', 'es', 'de'],
 
+    'version' => env('SKRUM_VERSION', '1.0.0'),
+
     'signup_mode' => env('SKRUM_SIGNUP_MODE', 'invite'),
 
     'allowed_email_domains' => array_values(array_filter(array_map(

@@ -2,9 +2,11 @@
 
 use App\Actions\Retros\GuestCookie;
 use App\Contracts\PokerPresenceRoster;
+use App\Enums\McpScope;
 use App\Enums\PokerDeck;
 use App\Enums\WorkspaceRole;
 use App\Models\Participant;
+use App\Models\PersonalAccessToken;
 use App\Models\PokerGame;
 use App\Models\PokerPlayer;
 use App\Models\PokerRound;
@@ -16,8 +18,10 @@ use App\Models\SurveyResponse;
 use App\Models\Team;
 use App\Models\User;
 use App\Models\Workspace;
+use Carbon\CarbonInterface;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
 /*
@@ -288,4 +292,48 @@ function fakePokerRoster(?array $playerIds): void
             return $this->playerIds;
         }
     });
+}
+
+/**
+ * @param  array<int, McpScope>  $scopes
+ */
+function issueTestMcpToken(User $user, array $scopes = [McpScope::Read], ?Team $team = null, ?CarbonInterface $expiresAt = null): string
+{
+    $abilities = collect([McpScope::Read, ...$scopes])
+        ->map(fn (McpScope $scope): string => $scope->value)
+        ->unique()
+        ->values()
+        ->all();
+
+    $newToken = $user->createToken('Test client', $abilities, $expiresAt);
+
+    $token = $newToken->accessToken;
+
+    assert($token instanceof PersonalAccessToken);
+
+    $token->forceFill([
+        'team_id' => $team?->id,
+        'token_hint' => substr($newToken->plainTextToken, -4),
+    ])->save();
+
+    return $newToken->plainTextToken;
+}
+
+/**
+ * @param  array<string, mixed>  $payload
+ * @param  array<string, string>  $headers
+ */
+function postMcp(?string $token, array $payload = ['jsonrpc' => '2.0', 'id' => 1, 'method' => 'tools/list'], array $headers = []): TestResponse
+{
+    app('auth')->forgetGuards();
+    app()->forgetScopedInstances();
+
+    if ($token !== null) {
+        $headers['Authorization'] = "Bearer {$token}";
+    }
+
+    return test()->postJson('/mcp', $payload, [
+        'Accept' => 'application/json, text/event-stream',
+        ...$headers,
+    ]);
 }

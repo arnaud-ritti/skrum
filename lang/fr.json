@@ -1137,5 +1137,6 @@
     "Last used": "Dernière utilisation",
     "No access to this team anymore": "Plus d'accès à cette équipe",
     "Expired on :date": "Expiré le :date",
-    "Active": "Actif"
+    "Active": "Actif",
+    "Unauthenticated.": "Non authentifié."
 }
