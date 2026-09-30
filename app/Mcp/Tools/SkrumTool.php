@@ -61,7 +61,7 @@ abstract class SkrumTool extends Tool
         } catch (ModelNotFoundException) {
             return Response::error(__('Not found.'));
         } catch (AuthorizationException $exception) {
-            return Response::error($exception->getMessage() !== '' ? $exception->getMessage() : __('This action is unauthorized.'));
+            return Response::error(__($exception->getMessage()));
         } catch (ValidationException $exception) {
             return Response::error(ValidationMessages::from($exception));
         } catch (HttpException $exception) {

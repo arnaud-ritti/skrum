@@ -16,7 +16,6 @@ use App\Models\PokerPlayer;
 use App\Models\Retro;
 use App\Models\Team;
 use App\Models\User;
-use Closure;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Log\Events\MessageLogged;
@@ -92,6 +91,7 @@ class ToolBaseFailingTool extends ToolBaseReadTool
             'missing' => throw new ModelNotFoundException,
             'not-found-http' => abort(404),
             'forbidden' => throw new AuthorizationException('Only the facilitator can do this.'),
+            'unauthorized' => throw new AuthorizationException,
             'locked' => throw new HttpException(423),
             'invalid' => $request->validate(['title' => ['required', 'string']]),
             default => throw new RuntimeException('secret-argument-value'),
@@ -178,6 +178,16 @@ it('translates tool errors into the user locale', function () {
     ToolBaseTestServer::actingAs($user)
         ->tool(ToolBaseFailingTool::class, ['kind' => 'missing'])
         ->assertHasErrors(['Introuvable.']);
+});
+
+it('translates the default authorization message into the user locale', function () {
+    $user = User::factory()->create(['locale' => 'fr']);
+    bindMcpGrant($user);
+    app()->setLocale('fr');
+
+    ToolBaseTestServer::actingAs($user)
+        ->tool(ToolBaseFailingTool::class, ['kind' => 'unauthorized'])
+        ->assertHasErrors(["Cette action n'est pas autorisée."]);
 });
 
 it('logs unexpected failures without their content', function () {
