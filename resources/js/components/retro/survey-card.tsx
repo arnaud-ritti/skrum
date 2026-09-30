@@ -20,6 +20,7 @@ import type {
 } from '@/lib/retro/types';
 import { cn } from '@/lib/utils';
 import { useBoard } from './board-context';
+import { SurveyDiscussion } from './survey-discussion';
 import { SurveyMenu } from './survey-menu';
 
 type AnswerProps = {
@@ -130,6 +131,7 @@ export function SurveyCard({ survey }: { survey: SurveyPayload }) {
                     </Button>
                 )}
             </div>
+            <SurveyDiscussion survey={survey} />
         </article>
     );
 }

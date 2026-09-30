@@ -790,5 +790,7 @@
     "Delete survey": "Umfrage löschen",
     "Delete this survey?": "Diese Umfrage löschen?",
     "Its answers, reactions and comments are deleted too.": "Ihre Antworten, Reaktionen und Kommentare werden ebenfalls gelöscht.",
-    "Surveys": "Umfragen"
+    "Surveys": "Umfragen",
+    "Answer to join the discussion": "Antworte, um an der Diskussion teilzunehmen",
+    "Your name is shown with your comment.": "Dein Name wird mit deinem Kommentar angezeigt."
 }
