@@ -68,7 +68,11 @@ export function NewTokenDialog({ token, mcpUrl, onClose }: Props) {
                 }
             }}
         >
-            <DialogContent className="sm:max-w-2xl">
+            <DialogContent
+                className="sm:max-w-2xl"
+                onEscapeKeyDown={(event) => event.preventDefault()}
+                onInteractOutside={(event) => event.preventDefault()}
+            >
                 <DialogTitle>{token.name}</DialogTitle>
                 <DialogDescription>
                     {t(
