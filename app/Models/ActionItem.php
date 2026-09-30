@@ -69,7 +69,7 @@ class ActionItem extends Model
      */
     public static function presentationRelations(): array
     {
-        return ['team.members', 'retro', 'author', 'createdByParticipant.user', 'assigneeUser', 'assigneeParticipant.user', 'subtasks'];
+        return ['team.members', 'retro', 'author', 'createdByParticipant.user', 'assigneeUser', 'assigneeParticipant.user', 'subtasks', 'externalLinks'];
     }
 
     public function loadForPresentation(): static

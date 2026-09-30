@@ -60,6 +60,7 @@ it('presents every field of a board item', function () {
         'previousOccurrenceId' => null,
         'subtasks' => [],
         'createdAt' => $item->created_at?->toIso8601String(),
+        'externalLinks' => null,
     ]);
 });
 

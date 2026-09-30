@@ -18,13 +18,14 @@ use Illuminate\Support\Carbon;
  * @property string|null $external_account_id
  * @property string|null $external_display_name
  * @property IntegrationUserMatch $matched_by
+ * @property bool $account_inactive
  * @property Carbon $checked_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read TeamIntegration $integration
  * @property-read User $user
  */
-#[Fillable(['user_id', 'external_account_id', 'external_display_name', 'matched_by', 'checked_at'])]
+#[Fillable(['user_id', 'external_account_id', 'external_display_name', 'matched_by', 'account_inactive', 'checked_at'])]
 class IntegrationUserMapping extends Model
 {
     /** @use HasFactory<IntegrationUserMappingFactory> */
@@ -53,6 +54,7 @@ class IntegrationUserMapping extends Model
     {
         return [
             'matched_by' => IntegrationUserMatch::class,
+            'account_inactive' => 'boolean',
             'checked_at' => 'datetime',
         ];
     }
