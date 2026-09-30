@@ -192,3 +192,94 @@ it('turns an unexpected prompt failure into a translated error without logging i
             && $context['exception'] === RuntimeException::class,
     );
 });
+
+it('drops the last messages of the board order when vote totals are hidden', function () {
+    $retro = Retro::factory()->inPhase(RetroPhase::Voting)->create(['hide_vote_counts' => true]);
+    [$user, $participant] = retroMember($retro);
+
+    foreach (range(1, 300) as $index) {
+        Card::factory()->create([
+            'retro_id' => $retro->id,
+            'participant_id' => $participant->id,
+            'content' => "Card {$index} ".str_repeat('x', 480),
+            'position' => $index,
+        ]);
+    }
+
+    $response = actingAsMcp($user)->prompt(AnalyzeRetro::class, ['board_id' => $retro->id])->assertOk();
+    $text = mcpPromptText($response);
+
+    expect($text)->toContain('messages were left out to fit the size limit')
+        ->not->toContain('lowest-voted')
+        ->and(json_encode(mcpPromptData($response)))->toContain('Card 1 ')->not->toContain('Card 300 ');
+});
+
+it('lists the most voted messages when insights are not available', function () {
+    $team = Team::factory()->create();
+    $user = teamMember($team);
+    $retro = Retro::factory()->for($team)->inPhase(RetroPhase::Completed)->create(['completed_at' => now()]);
+    $quiet = Card::factory()->create(['retro_id' => $retro->id, 'content' => 'Quiet remark']);
+    $popular = Card::factory()->create(['retro_id' => $retro->id, 'content' => 'Popular remark']);
+    Vote::factory()->count(3)->create(['retro_id' => $retro->id, 'card_id' => $popular->id]);
+    Vote::factory()->create(['retro_id' => $retro->id, 'card_id' => $quiet->id]);
+
+    $board = mcpPromptData(actingAsMcp($user)->prompt(TeamHealth::class, ['team_id' => $team->id])->assertOk())['boards'][0];
+
+    expect($board)->not->toHaveKey('themes')
+        ->and($board['topMessages'])->toBe([
+            ['content' => 'Popular remark', 'votes' => 3],
+            ['content' => 'Quiet remark', 'votes' => 1],
+        ]);
+});
+
+it('picks the last six completed boards by completion date', function () {
+    $team = Team::factory()->create();
+    $user = teamMember($team);
+
+    foreach (range(1, 7) as $index) {
+        Retro::factory()->inPhase(RetroPhase::Completed)->create([
+            'team_id' => $team->id,
+            'title' => "Retro {$index}",
+            'created_at' => now()->subWeeks(20 - $index),
+            'completed_at' => now()->subWeeks($index),
+        ]);
+    }
+
+    $data = mcpPromptData(actingAsMcp($user)->prompt(TeamHealth::class, ['team_id' => $team->id])->assertOk());
+
+    expect(collect($data['boards'])->pluck('board.title')->all())->toBe(['Retro 6', 'Retro 5', 'Retro 4', 'Retro 3', 'Retro 2', 'Retro 1']);
+});
+
+it('keeps the team health prompt under the cap by emptying recurring themes', function () {
+    configureLlm();
+    $team = Team::factory()->create();
+    $user = teamMember($team);
+
+    foreach (range(1, 6) as $index) {
+        $retro = Retro::factory()->for($team)->inPhase(RetroPhase::Completed)->create(['completed_at' => now()->subWeeks(7 - $index)]);
+
+        RetroTheme::factory()->count(200)->sequence(fn ($sequence): array => ['name' => "T{$sequence->index} ".str_repeat('y', 70)])->create(['retro_id' => $retro->id]);
+    }
+
+    $response = actingAsMcp($user)->prompt(TeamHealth::class, ['team_id' => $team->id])->assertOk();
+    $data = mcpPromptData($response);
+
+    expect(mb_strlen(json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)))->toBeLessThanOrEqual(SkrumPrompt::MaxContentLength)
+        ->and($data['boards'][0]['themes'])->toBe([])
+        ->and(mcpPromptText($response))->toContain('recurring themes of the oldest boards were left out');
+});
+
+it('drops the oldest boards entirely when emptied themes are not enough', function () {
+    $data = ['boards' => collect(range(1, 6))->map(fn (int $index): array => [
+        'board' => ['title' => "Retro {$index}"],
+        'themes' => ['x'],
+        'health' => ['blob' => str_repeat('z', 25000)],
+    ])->all()];
+
+    [$fitted, $trimmedThemes, $droppedBoards] = (fn (): array => $this->fit($data))->call(app(TeamHealth::class));
+
+    expect(mb_strlen(json_encode($fitted, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)))->toBeLessThanOrEqual(SkrumPrompt::MaxContentLength)
+        ->and($trimmedThemes)->toBeTrue()
+        ->and($droppedBoards)->toBe(4)
+        ->and(collect($fitted['boards'])->pluck('board.title')->all())->toBe(['Retro 5', 'Retro 6']);
+});

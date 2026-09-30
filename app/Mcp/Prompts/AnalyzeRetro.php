@@ -51,16 +51,18 @@ class AnalyzeRetro extends SkrumPrompt
             $data['agreements'] = $this->toolData(ListBoardActionItems::class, ['board_id' => $boardId]);
             $data['health'] = $this->toolData(GetHealth::class, ['board_id' => $boardId]);
             $data['roti'] = $this->toolData(GetRoti::class, ['board_id' => $boardId]);
-            $data['messages'] = ['columns' => $this->messages($boardId)];
+            [$columns, $sortedByVotes] = $this->messages($boardId);
+            $data['messages'] = ['columns' => $columns];
         } catch (ModelNotFoundException) {
             return Response::error(__('Not found.'));
         } catch (PromptToolFailed $failure) {
             return Response::error($failure->getMessage());
         }
 
-        [$data, $dropped] = $this->fit($data);
+        [$data, $dropped] = $this->fit($data, $sortedByVotes);
 
-        $note = $dropped === 0 ? null : "{$dropped} lowest-voted messages were left out to fit the size limit.";
+        $leftOut = $sortedByVotes ? 'lowest-voted messages were' : 'messages were';
+        $note = $dropped === 0 ? null : "{$dropped} {$leftOut} left out to fit the size limit.";
 
         return $this->message(self::Instructions, $data, $note);
     }
@@ -69,14 +71,14 @@ class AnalyzeRetro extends SkrumPrompt
      * All pages of the board's messages, most voted first when the board
      * shows vote totals, otherwise in board order.
      *
-     * @return array<int, array<string, mixed>>
+     * @return array{0: array<int, array<string, mixed>>, 1: bool}
      */
     private function messages(string $boardId): array
     {
         try {
-            return $this->allPages($boardId, 'votes');
+            return [$this->allPages($boardId, 'votes'), true];
         } catch (PromptToolFailed) {
-            return $this->allPages($boardId, 'position');
+            return [$this->allPages($boardId, 'position'), false];
         }
     }
 
@@ -104,12 +106,13 @@ class AnalyzeRetro extends SkrumPrompt
 
     /**
      * Drops the lowest-voted top-level messages (with their grouped cards)
-     * until the data fits the cap.
+     * until the data fits the cap; without vote totals, the last messages of
+     * the board order go first.
      *
      * @param  array<string, mixed>  $data
      * @return array{0: array<string, mixed>, 1: int}
      */
-    private function fit(array $data): array
+    private function fit(array $data, bool $sortedByVotes): array
     {
         $dropped = 0;
 
@@ -131,7 +134,9 @@ class AnalyzeRetro extends SkrumPrompt
                 break;
             }
 
-            usort($candidates, fn (array $a, array $b): int => $a['votes'] <=> $b['votes']);
+            $sortedByVotes
+                ? usort($candidates, fn (array $a, array $b): int => $a['votes'] <=> $b['votes'])
+                : $candidates = array_reverse($candidates);
 
             $excess = self::length($data) - self::MaxContentLength;
 

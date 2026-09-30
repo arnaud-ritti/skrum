@@ -2,15 +2,18 @@
 
 namespace App\Mcp\Prompts;
 
+use App\Enums\RetroPhase;
 use App\Mcp\McpContext;
 use App\Mcp\McpFeature;
+use App\Mcp\Presenters\McpBoard;
 use App\Mcp\Tools\Retro\GetHealth;
 use App\Mcp\Tools\Retro\GetRoti;
 use App\Mcp\Tools\Retro\ListActionItems;
 use App\Mcp\Tools\Retro\ListBoardActionItems;
-use App\Mcp\Tools\Retro\ListBoards;
 use App\Mcp\Tools\Retro\ListInsights;
 use App\Mcp\Tools\Retro\ListMessages;
+use App\Models\Retro;
+use App\Models\Team;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -44,8 +47,7 @@ class TeamHealth extends SkrumPrompt
         try {
             $team = $context->team($teamId);
 
-            $boards = $this->toolData(ListBoards::class, ['team_id' => $teamId, 'finished_only' => true, 'limit' => self::BoardCount])['items'] ?? [];
-            $boards = array_reverse($boards);
+            $boards = $this->lastCompletedBoards($team);
 
             $rows = array_map(fn (array $board): array => $this->board($board), $boards);
             $newest = $rows === [] ? null : $rows[array_key_last($rows)];
@@ -64,11 +66,37 @@ class TeamHealth extends SkrumPrompt
             return Response::error($failure->getMessage());
         }
 
-        [$data, $trimmed] = $this->fit($data);
+        [$data, $trimmedThemes, $droppedBoards] = $this->fit($data);
 
-        $note = $trimmed ? 'The recurring themes of the oldest boards were left out to fit the size limit.' : null;
+        $notes = array_filter([
+            $trimmedThemes ? 'The recurring themes of the oldest boards were left out to fit the size limit.' : null,
+            $droppedBoards > 0 ? "{$droppedBoards} oldest boards were left out to fit the size limit." : null,
+        ]);
+        $note = $notes === [] ? null : implode("\n", $notes);
 
         return $this->message(self::Instructions, $data, $note);
+    }
+
+    /**
+     * Oldest first.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function lastCompletedBoards(Team $team): array
+    {
+        $boards = McpBoard::withCounts(Retro::query())
+            ->where('team_id', $team->id)
+            ->where('phase', RetroPhase::Completed)
+            ->orderByDesc('completed_at')
+            ->orderByDesc('id')
+            ->limit(self::BoardCount)
+            ->get();
+
+        return $boards
+            ->reverse()
+            ->map(fn (Retro $retro): array => app(McpBoard::class)->handle($retro))
+            ->values()
+            ->all();
     }
 
     /**
@@ -80,7 +108,7 @@ class TeamHealth extends SkrumPrompt
         $health = $this->toolData(GetHealth::class, ['board_id' => $board['id']]);
         $roti = $this->toolData(GetRoti::class, ['board_id' => $board['id']]);
         $agreements = $this->toolData(ListBoardActionItems::class, ['board_id' => $board['id']]);
-        $items = $agreements['items'] ?? $agreements;
+        $items = $agreements['items'];
 
         $healthTrend = $health['trend'] ?? [];
         $rotiTrend = $roti['trend'] ?? [];
@@ -153,22 +181,29 @@ class TeamHealth extends SkrumPrompt
 
     /**
      * @param  array<string, mixed>  $data
-     * @return array{0: array<string, mixed>, 1: bool}
+     * @return array{0: array<string, mixed>, 1: bool, 2: int}
      */
     private function fit(array $data): array
     {
-        $trimmed = false;
+        $trimmedThemes = false;
 
         foreach (array_keys($data['boards']) as $index) {
             if (self::length($data) <= self::MaxContentLength) {
                 break;
             }
 
-            $data['boards'][$index]['themes'] = [];
-            $data['boards'][$index]['topMessages'] = [];
-            $trimmed = true;
+            $key = array_key_exists('themes', $data['boards'][$index]) ? 'themes' : 'topMessages';
+            $data['boards'][$index][$key] = [];
+            $trimmedThemes = true;
         }
 
-        return [$data, $trimmed];
+        $droppedBoards = 0;
+
+        while (self::length($data) > self::MaxContentLength && $data['boards'] !== []) {
+            array_shift($data['boards']);
+            $droppedBoards++;
+        }
+
+        return [$data, $trimmedThemes, $droppedBoards];
     }
 }
