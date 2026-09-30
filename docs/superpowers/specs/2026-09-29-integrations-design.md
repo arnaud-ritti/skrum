@@ -143,6 +143,8 @@ All tables use UUID primary keys and `foreignUuid`, as the rest of the schema. M
 - OAuth state: session key `integrations.oauth` = `{state, provider, teamId, access, expiresAt}` (10 min).
 - Telegram connect code: cache `telegram-connect:{sha256(code)}` → `{teamId, userId}` for 15 min, plus `telegram-connect-team:{teamId}` → hash, so issuing a new code invalidates the previous one.
 - Telegram update offset: cache `telegram:update-offset` (forever).
+- Telegram `getMe` username: cached; a `getMe` failure is cached for 60 s (negative cache), during which `/connect@bot` commands cannot be matched to this bot and are ignored.
+- Cache locks (§4.5, §6.5) on the `database` cache store use a dedicated connection (`pgsql_locks`), so a failing lock never aborts an outer Postgres transaction.
 
 ## 4. Connections
 
@@ -166,7 +168,7 @@ All tables use UUID primary keys and `foreignUuid`, as the rest of the schema. M
   - `my_chat_member` where the bot's new status is `left` or `kicked`: the matching integration becomes `ReconnectRequired`.
   - Anything else is ignored; message text other than these commands is neither stored nor logged.
 - Sending: `sendMessage` with `parse_mode=HTML` (§5.4). `403` (bot blocked or removed) or `400 chat not found` → `ReconnectRequired`, no retry; `429` → released after `parameters.retry_after`.
-- Check: `getChat(chatId)`, same error mapping. Disconnect: the bot leaves the chat (`leaveChat`, best effort) and the row is deleted.
+- Check: `getChat(chatId)`, same error mapping. Disconnect: the bot leaves the chat (`leaveChat`, best effort) only when no other team's integration uses the same chat (otherwise those integrations would go `ReconnectRequired`), and the row is deleted.
 
 ### 4.3 Jira Cloud (OAuth 2.0 3LO)
 
@@ -179,7 +181,7 @@ All tables use UUID primary keys and `foreignUuid`, as the rest of the schema. M
 
 ### 4.4 Linear (OAuth 2.0)
 
-- Connect with **Read only** (`scope=read`) or **Read and write** (`scope=read,write`), redirect to `https://linear.app/oauth/authorize` (`actor=user`), exchange at `https://api.linear.app/oauth/token`, then the GraphQL `viewer { organization { id name urlKey } }` fills `settings`. Upgrade works as for Jira.
+- Connect with **Read only** (`scope=read`) or **Read and write** (`scope=read,write`), redirect to `https://linear.app/oauth/authorize` (`actor=user`), exchange at `https://api.linear.app/oauth/token`, then the GraphQL `viewer { organization { id name urlKey } }` fills `settings`. Upgrade works as for Jira. A 401 is refreshed once and retried when a refresh token exists (§4.5). Paginated directory reads (users, §7.1) stop after 40 pages or on a repeated cursor.
 - GraphQL endpoint `https://api.linear.app/graphql`. GraphQL `errors` with `AUTHENTICATION_ERROR` → `ReconnectRequired`.
 - Disconnect: `POST https://api.linear.app/oauth/revoke` (best effort), then delete.
 
@@ -198,7 +200,7 @@ All tables use UUID primary keys and `foreignUuid`, as the rest of the schema. M
 - **Retro** (any phase except `Completed`): message "{sharer} invites you to the retrospective "{title}" ({team})" with a button/link to `/retros/{id}` (team members sign in). When guest access is enabled, the dialog offers "Include the guest link (anyone in the channel can join)", off by default; when checked, the `/join/{guestToken}` URL is used instead.
 - **Poker game** (not ended): same with `/poker/{id}` and optionally `/poker/join/{guestToken}`.
 - **Game room** (standalone rooms only, spec 7 §3.1): message "{sharer} invites you to play {game} in "{room}" ({team})" with one button "Join the game" to `/games/{room}` (team members sign in). The option "Include the guest link (anyone in the channel can join)" exists only when the room's `access` is `link`, off by default, and then uses `/play/{guestToken}`; `includeGuestLink: true` on a `team` room → 422 "Guest access is off for this room." Not connected → 409 "Connect :provider in the team settings."; reconnect required → 409 "Reconnect :provider in the team settings." (as the retro and poker shares, §13) Icebreaker rooms have no invite of their own.
-- **Errors of the retro and poker share endpoints** follow §13: provider disabled → 404; no connection → 409 "Connect :provider in the team settings."; connection lost → 409 "Reconnect :provider in the team settings."; a link on a `Completed` retro, a recap or email before `Completed`, or the guest link while guest access is off → 422; an ended poker game → 403.
+- **Errors of the retro and poker share endpoints** follow §13: provider disabled → 404; no connection → 409 "Connect :provider in the team settings."; connection lost → 409 "Reconnect :provider in the team settings."; a link on a `Completed` retro, a recap or email before `Completed`, or the guest link while guest access is off → 422; an ended poker game → 403. The share endpoints authorize first (guests and non-sharers get 403) before validating input or resolving the integration (404/409/422). The retro, poker and game room share routes use a dedicated throttle key (`shares`), so their counter is not shared with other `throttle:5,1` routes.
 - Nothing else about the board, game or room is sent: no card, column, participant, vote, player, word, question, drawing, GIF or score data.
 
 ### 5.2 Results recap (Slack and Telegram)
@@ -220,7 +222,7 @@ Surveys, health-check scores, comments (card and action item), reactions, GIFs, 
 
 - "Send to email" on the Results view (`Completed` only). Audience chosen in the dialog: **Participants** (members who have a participant row in the retro; default) or **All team members**. Recipients are always current team members with a verified email; guests (no account) are never emailed, and removed members are excluded at send time.
 - One queued `RetroResultsNotification` (mail, `ShouldQueue`, `ShouldBeEncrypted`) per recipient, rendered in the recipient's locale (`User::preferredLocale()`), containing the recap of §5.2 plus the health score (`x.x/10`, shown whatever the number of answers, spec 2 decision 1) and participation. The mail links to the Results view (sign-in required).
-- At most one email send per retro per 10 minutes (429 "The results were emailed a few minutes ago."). The delivery row records `recipient_count` and becomes `sent` as soon as one notification per recipient is queued; the mail transport's retries are the queue worker's (§12).
+- At most one email send per retro per 10 minutes, enforced by an atomic cache claim (429 "The results were emailed a few minutes ago."). `RetroResultsNotification` re-checks at send time that the retro is still `Completed` and skips the mail otherwise. The delivery row records `recipient_count` and becomes `sent` as soon as one notification per recipient is queued; the mail transport's retries are the queue worker's (§12).
 
 ### 5.4 Message formatting and escaping
 
@@ -255,7 +257,7 @@ Surveys, health-check scores, comments (card and action item), reactions, GIFs, 
 ### 6.3 Importing
 
 - `POST …/imports/{source}` with the selected `externalIds` (1–100). The server re-fetches those issues (never trusts client-sent titles), then creates tasks appended in the given order, in one transaction with the game locked:
-  - `title` = summary/title trimmed to 200 characters; `description` = Markdown (Linear as is; Jira ADF converted by `App\Support\Integrations\Jira\AdfToMarkdown`: paragraphs, headings, marks, links, lists, code blocks, quotes, rules, mentions and emoji as text, tables as pipe rows, media dropped with "[attachment]"), truncated to 10 000 characters with "…" appended; `external_*` columns filled; `external_estimate` from the first non-null story-point candidate (Jira) or `estimate` (Linear).
+  - `title` = summary/title trimmed to 200 characters; `description` = Markdown (Linear as is; Jira ADF converted by `App\Support\Integrations\Jira\AdfToMarkdown`: paragraphs, headings, marks, links, lists, code blocks, quotes, rules, mentions and emoji as text, tables as pipe rows, media dropped with "[attachment]"), paragraph breaks are kept (blank lines between paragraphs), truncated to 10 000 characters with "…" appended; `external_*` columns filled; `external_estimate` from the first non-null story-point candidate (Jira) or `estimate` (Linear).
   - Already imported issues (unique `poker_game_id, external_source, external_id`) are skipped and counted; ids the source no longer returns (deleted or no longer visible since the preview) are counted in `skipped` too.
   - The 200-task limit applies to the whole batch (422 "This game can hold 200 tasks at most." when exceeded, nothing imported).
 - Response `{imported, skipped}`; broadcast `game.changed` (clients refetch the snapshot).
@@ -269,10 +271,10 @@ Surveys, health-check scores, comments (card and action item), reactions, GIFs, 
 
 ### 6.5 Estimate write-back (decision 4)
 
-- When the facilitator sets or clears the estimate of an imported task (`PUT tasks/{task}/estimate`, poker spec §3), `needs_sync` becomes true and `SyncTaskEstimate` is dispatched after commit, **if** the team's integration for `external_source` is `Active`, has `write` access and the same `external_site`. The job is `ShouldBeUniqueUntilProcessing` per task (quick changes before it starts coalesce into one write; a change made while a write is running queues one more write instead of being dropped), reads the latest estimate at run time, clears `needs_sync` only when the estimate it wrote is still the current one, `tries = 5`, `backoff = [10, 30, 120, 600]`.
-- **Cannot sync** (no job, `syncState: 'unsupported'` with a reason): non-numeric deck (T-shirt, non-numeric custom) — "T-shirt estimates can't be written to :source." (Jira, Jira DC and Linear numeric fields only; spec 8's GitHub branch writes any deck label into a managed block of the issue body, spec 8 §4.2); read-only access; integration missing or on another site; the team's connection for the source is `ReconnectRequired` ("Reconnect :provider in the team settings.") or `SetupRequired` ("Connect :provider in the team settings."); Jira without a story points field ("No story points field found."). No job is dispatched in these states and the retry endpoint answers 422 with the reason. `?` and `☕` can never be an estimate (poker spec), so they are never written.
+- When the facilitator sets or clears the estimate of an imported task (`PUT tasks/{task}/estimate`, poker spec §3), `needs_sync` becomes true and `SyncTaskEstimate` is dispatched after commit, **if** the team's integration for `external_source` is `Active`, has `write` access and the same `external_site`. The job is `ShouldBeUniqueUntilProcessing` per task (quick changes before it starts coalesce into one write; a change made while a write is running queues one more write instead of being dropped), reads the latest estimate at run time, clears `needs_sync` only when the estimate it wrote is still the current one, `uniqueFor = 300` (a lost or rolled-back dispatch cannot leave a permanent lock), and the `WithoutOverlapping` middleware keyed by task so two runs never write the tracker concurrently. Instead of `tries = 5` it uses `maxExceptions = 5` with `retryUntil` 1 hour, so waits for an overlapping run or provider rate limits do not consume attempts; `backoff = [10, 30, 120, 600]`. A failure reported by an older job never overwrites the state left by a newer run (stale failures are ignored).
+- **Cannot sync** (no job, `syncState: 'unsupported'` with a reason): non-numeric deck (T-shirt, non-numeric custom) — "T-shirt estimates can't be written to :source." (Jira, Jira DC and Linear numeric fields only; spec 8's GitHub branch writes any deck label into a managed block of the issue body, spec 8 §4.2); read-only access; integration missing or on another site; the team's connection for the source is `ReconnectRequired` ("Reconnect :provider in the team settings.") or `SetupRequired` ("Connect :provider in the team settings."); Jira without a story points field ("No story points field found."). No job is dispatched in these states, `needs_sync` stays false (no write can ever succeed; `syncState: 'unsupported'` carries the reason) and the retry endpoint answers 422 with the reason. `?` and `☕` can never be an estimate (poker spec), so they are never written.
 - **Jira**: `GET /rest/api/3/issue/{id}/editmeta`; the first `storyPointFields` candidate present on the issue's edit screen is written with `PUT /rest/api/3/issue/{id}` `{"fields": {"customfield_x": number|null}}` (`½` → 0.5; a cleared estimate writes `null`). No candidate on the screen → failure "This issue has no story points field on its edit screen."
-- **Linear**: the issue's team settings (`issueEstimationType`, `issueEstimationAllowZero`) are read first. `notUsed` → failure "Estimates are turned off for this Linear team." The value must be a whole number between 0 and 64 (Linear's maximum); `½` or fractions → failure "Linear only accepts whole-number estimates." `0` is sent as `0` when the team allows zero estimates and as `null` (clears the estimate) otherwise; a cleared skrum estimate sends `null`. Values Linear rejects for its scale come back as "Linear rejected this estimate: {message}".
+- **Linear**: the issue's team settings (`issueEstimationType`, `issueEstimationAllowZero`) are read first. `notUsed` → failure "Estimates are turned off for this Linear team." The value must be a whole number between 0 and 64 (Linear's maximum); `½` or fractions → failure "Linear only accepts whole-number estimates." `0` is sent as `0` when the team allows zero estimates and as `null` (clears the estimate) otherwise; a cleared skrum estimate sends `null`. Values Linear rejects for its scale come back as "Linear rejected this estimate: {message}" (the message is the provider's, never the GraphQL operation name).
 - Success: `needs_sync = false`, `synced_at = now`, `sync_error = null`. Final failure: `sync_error` set, `needs_sync` stays true. Either way `task.saved` is broadcast to the game (`toOthers()` is not applicable from a job, so every client updates).
 - `POST tasks/{task}/sync` (facilitator) is the retry/force path: it re-dispatches the job for an imported task that has an estimate and is syncable, whether `needs_sync` is true (retry after failure) or false (force a rewrite of the current estimate). The same service backs the MCP tool `poker.game.task.sync` (§9.1). A task without an estimate or in the `unsupported` state → 422 with the reason.
 
@@ -291,14 +293,15 @@ Guests receive `{source, key, url, isManaged: true}` only (assignee names from t
 ## 7. Action item export (decision 6)
 
 - **Who**: an authenticated team member who may edit the item (`ActionItemPermissions::canEdit` from spec 3: author, facilitator, workspace Owner/Admin). Guests never export. Allowed from the board (any phase, the item's retro not locked-and-in-progress, same 423 rule as spec 3's workspace endpoints) and from the global page. Requires an `Active` integration with `write` access on the item's team.
-- **Target**: Jira → project (`GET /rest/api/3/project/search` with `action=create`: the first 50 projects the user can create issues in, ordered by name, filterable by `?q=`) and issue type (`GET /rest/api/3/issuetype/project?projectId=`, "Task" preselected when present); Linear → team. The last choice is saved in the integration `settings` and preselected next time.
+- **Target**: Jira → project (`GET /rest/api/3/project/search` with `action=create`: the first 50 projects the user can create issues in, ordered by name, filterable by `?q=`; the export dialog has a debounced project search that sends `q`, so projects beyond the first 50 are reachable) and issue type (`GET /rest/api/3/issuetype/project?projectId=`, "Task" preselected when present); Linear → team. The last choice is saved in the integration `settings` and preselected next time.
 - **Created issue** (synchronous, 15 s timeout, so the user sees the key immediately):
   - Title: item content, first line, ≤ 255 characters.
   - Description: full content, then "From the retrospective "{title}" on {date}: {link}", or, for an item without a retro (spec 3 §3.1, `source: null`, including recurring successors), "Added outside a retro on {item creation date}: {link}", where link is `/w/{workspace}/action-items?item={id}` (Jira as ADF, Linear as Markdown). Never the creator, comments, or other items. Each recurring occurrence is a separate item, exported separately (its own link row).
   - Due date: `duedate` (Jira) / `dueDate` (Linear) when set.
   - Priority: mapped per §7.2 (Jira `priority: {id}`, Linear `priority`).
   - Assignee: the member's mapped account per §7.1 (Jira `assignee: {accountId}`, Linear `assigneeId`); unassigned in the fallback cases of §7.3.
-- The link row is inserted first inside a transaction with `lockForUpdate` on the item, so a double click cannot create two issues; a provider failure rolls it back (502 with the provider message). A timeout after the request was sent returns 502 "The issue may have been created. Check :source before trying again."
+- The link row is inserted first inside a transaction with `lockForUpdate` on the action item row only (the retro row is not locked, so live board writes are never stalled during the provider calls; the 423 check reads the retro without a lock), so a double click cannot create two issues; a provider failure rolls it back (provider 4xx → 422 with the provider message, 5xx and timeouts → 502, §13). The created issue's id and key from the provider response are validated (non-empty, well-formed); otherwise, or on a timeout after the request was sent, the answer is 502 "The issue may have been created. Check :source before trying again."
+- The chosen target is remembered by merging only its own keys into the integration `settings` (concurrent changes to other settings are never overwritten).
 - Export is one-way and one-shot: later edits, completion or deletion in skrum or in the source do not propagate (spec 8 adds opt-in open/done status sync per integration; fields stay one-shot).
 - `PresentActionItem` gains `externalLinks`: `[{source, key, url}]` for members, `[]` for guests and `null` when presented without a viewer (board and team broadcasts reach guests too; clients keep their known links when a payload says `null`). After an export the board broadcasts `action-item.saved` per spec 3, and members receive the links through the member-only `action-item.external-links.changed {actionItemId, externalLinks}` on `retro-members.{retroId}` (the item's board and every running retro that carries it); the global page gets them from its existing reload after `team-action-item.saved`.
 - **Time budget**: every provider call of an export has the 15 s timeout of §4.5 (no cumulative budget); the browser waits up to 45 s for the response.
@@ -315,7 +318,7 @@ Guests receive `{source, key, url, isManaged: true}` only (assignee names from t
 - **Automatic matching by email** (decision A; queued `MatchIntegrationUsers`, `ShouldBeUnique` per integration, provider 429 → release after `Retry-After`): dispatched when a Jira/Linear integration reaches `Active` with `write` access (connect, upgrade, reconnect to a new site) and by the "Match by email" button. For each current team member with a verified email and **no** mapping row:
   - **Jira:** `GET /rest/api/3/user/search?query={email}&maxResults=2`. Accepted only when exactly one result has `accountType = atlassian` and `active = true`; when the result carries `emailAddress` (privacy settings may hide it), it must equal the member's email case-insensitively. Anything else → no row (stays "Not mapped").
   - **Linear:** the organization's users are listed once per run (`users(first: 250, after:) { nodes { id displayName email active } }`, all pages) and compared with members' emails case-insensitively in memory; active users only; exactly one match required.
-  - Existing rows are never overwritten. `email` rows whose account is no longer found or inactive (re-checked in the same run, `checked_at` updated) are deleted so that they can match again; `manual` rows are only re-checked and flagged `accountInactive` in the People panel (column `account_inactive`, §3), never deleted.
+  - Existing rows are never overwritten, and the run's writes (creations, deletions, `checked_at` and flag updates) apply only to rows unchanged since they were loaded, so an admin's concurrent choice in the People panel is never overwritten by the re-check. `email` rows whose account is no longer found or inactive (re-checked in the same run, `checked_at` updated) are deleted so that they can match again; `manual` rows are only re-checked and flagged `accountInactive` in the People panel (column `account_inactive`, §3), never deleted.
 - **Manual mapping** by Owners/Admins in the integration's People panel (§11): choose an account from a search, "Never assign", or "Reset" (deletes the row; the next matching run or export may fill it).
   - Account search `GET …/integrations/{integration}/accounts?q=` (2–100 characters, `throttle:30,1`): Jira `GET /rest/api/3/user/search?query=q&maxResults=20` filtered to active `atlassian` accounts; Linear users filtered by name, display name or email in memory (first 20). Returns `[{accountId, displayName}]` only: no emails, no avatar URLs (browsers never load provider images, §10.3).
   - Saving re-fetches the account by id (Jira `GET /rest/api/3/user?accountId=`, Linear `user(id:)`); unknown or inactive → 422 "This :provider account was not found or is inactive."
@@ -414,7 +417,7 @@ Controllers in `app/Http/Controllers/Integrations/`, actions in `app/Actions/Int
 | POST | `imports/refresh` | — | `{refreshed, missing}` |
 | POST | `tasks/{task}/sync` | — | 202 |
 
-Browse endpoints are throttled at 30 requests/minute per player.
+Browse endpoints are throttled at 30 requests/minute per player; `imports/{source}` and `imports/refresh` (POST) have their own named throttle keys.
 
 ### Game rooms (under `/games/{room}`, player resolved, spec 7 §7)
 
@@ -424,7 +427,7 @@ Browse endpoints are throttled at 30 requests/minute per player.
 
 ### 9.1 Services shared with the MCP server (spec 5)
 
-The MCP poker tools are thin adapters over the same actions the HTTP controllers call, with the same permission checks (§8) and errors (§13); nothing is reimplemented in the MCP layer.
+The MCP poker tools are thin adapters over the same actions the HTTP controllers call, with the same permission checks (§8) and errors (§13); nothing is reimplemented in the MCP layer. MCP errors show only the translated message (as over HTTP); a stored `last_error` is never appended, since it is meant for managers only.
 
 | MCP tool | Service | Notes |
 |---|---|---|
@@ -503,7 +506,7 @@ All new strings in `lang/{en,fr,es,de}.json`. Provider names are not translated.
 |---|---|---|
 | `DeliverToSlack`, `DeliverToTelegram` | share endpoints | 4 tries, backoff 10/60/300 s, 429 honours retry-after |
 | `RetroResultsNotification` (per recipient) | email endpoint | 3 tries (worker default) |
-| `SyncTaskEstimate` | estimate saved / retry | 5 tries, backoff 10/30/120/600 s, unique per task |
+| `SyncTaskEstimate` | estimate saved / retry | up to 5 failures (`maxExceptions`), `retryUntil` 1 h, backoff 10/30/120/600 s, unique per task (`uniqueFor` 300), `WithoutOverlapping` per task |
 | `MatchIntegrationUsers` | write connection active, "Match by email" | 3 tries, unique per integration, 429 honours retry-after |
 | `skrum:telegram-poll` | every minute, without overlapping | next run |
 | `skrum:check-integrations` | daily | next day |
@@ -517,7 +520,7 @@ All new strings in `lang/{en,fr,es,de}.json`. Provider names are not translated.
 
 - Provider not enabled → 404. Integration missing or not `Active` → 409 "Connect :provider in the team settings." / "Reconnect :provider in the team settings." (shown as toast with a link for admins).
 - Read-only integration on a write action → 409 "This :provider connection is read-only."
-- Provider 4xx on interactive calls → 422 with the provider message (JQL errors) or 502 ":provider did not respond. Try again later." for 5xx and timeouts. 429 from the provider → 429 "Too many requests to :provider, wait a moment."
+- Provider 4xx on interactive calls and on export → 422 with the provider message (JQL errors) or 502 ":provider did not respond. Try again later." for 5xx and timeouts. 429 from the provider → 429 "Too many requests to :provider, wait a moment."
 - skrum rate limits → 429 with a translated message.
 - Export conflicts (already exported) → 409 "Already exported as :key."
 - Export fallbacks (§7.3) are warnings on a 201, never errors. Mapping endpoints on a read-only integration → 409 "This :provider connection is read-only."; unknown or inactive account → 422 (§7.1); mapping a user who is not a current team member → 422 "This person is not a member of the team."; Jira without `read:jira-user` (connected before this change) → 409 "Reconnect :provider to enable assignee mapping." and the People panel shows the same line.
@@ -591,6 +594,8 @@ Type-check and lint stay green; no frontend test runner is added.
 9. **Scope additions (2026-09-30):** assignee and priority mapping on action item export (§3 `integration_user_mappings`, §7.1–§7.3). Two-way status sync and more providers move to spec 8 `2026-09-30-integrations-extended-design.md`; decision 6 (one-shot export, no status sync) stays true for this spec.
 
 Plan-writing amendments (2026-09-30): applied in §2.1 (routes always registered, 404 middleware), §3 (`scopes`, `IntegrationAccess`, Jira `numberFields` / `storyPointFieldOverride`, `account_inactive`, delivery enums), §4.2 (`/connect@otherbot` ignored), §4.3 (multi-site reconnect), §4.5 (ReconnectRequired re-saved after a rolled-back transaction), §5.1 (share errors), §5.3 (email `sent` when queued), §5.5 (translated failure text), §6.3 (unknown ids skipped), §6.4 (missing reported, refresh scope), §6.5 (`ShouldBeUniqueUntilProcessing`, extra unsupported reasons), §6.6 (guest-safe broadcasts), §7 (`externalLinks` null/member event, time budget, targets), §7.2 (`"default"`), §7.3 (`neverAssign` message, preview `none`), §9 (test errors, targets params, `priorityMap`, `linkDeliveries`, `emailRecipients`, `exportSources`, new member event), §9.1 (Jira `container_id` optional), §13. Source: plans 12a–12d.
+
+Implementation amendments (2026-09-30): applied in §3 (transient state: `getMe` cache, `pgsql_locks`), §4.2 (Telegram disconnect), §4.4 (Linear refresh and pagination cap), §5.1 (share authorization and throttle key), §5.3 (atomic cooldown, `Completed` re-check), §6.3 (paragraph breaks), §6.5 (`SyncTaskEstimate` uniqueness, overlap, retries, unsupported tasks), §7 (export lock, error mapping, id validation, remembered targets, project search), §7.1 (guarded matching writes), §9 (import throttles), §9.1 (MCP errors), §12, §13. Source: plans 12a–12d.
 
 ## Decisions (scope additions, 2026-09-30)
 
