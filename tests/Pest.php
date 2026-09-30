@@ -1008,3 +1008,81 @@ function wordGuessTable(GameKind $game = GameKind::DrawAndGuess, string $word = 
         'round' => $round,
     ];
 }
+
+function gameGiphyItem(string $id): array
+{
+    return [
+        'id' => $id,
+        'images' => [
+            'fixed_width' => ['url' => "https://media.giphy.com/{$id}/200w.gif", 'webp' => "https://media.giphy.com/{$id}/200w.webp", 'width' => '200', 'height' => '150'],
+            'original' => ['url' => "https://media.giphy.com/{$id}/giphy.gif", 'webp' => "https://media.giphy.com/{$id}/giphy.webp", 'width' => '480', 'height' => '360'],
+        ],
+    ];
+}
+
+function fakeGameGifs(string ...$ids): void
+{
+    config(['services.gifs' => ['provider' => 'giphy', 'key' => 'game-gif-key', 'rating' => 'pg']]);
+
+    Http::fake(function (HttpRequest $request) use ($ids) {
+        $endpoint = basename((string) parse_url($request->url(), PHP_URL_PATH));
+
+        if (in_array($endpoint, ['search', 'trending'], true)) {
+            return Http::response(['data' => array_map(fn (string $id): array => gameGiphyItem($id), $ids)]);
+        }
+
+        if (in_array($endpoint, $ids, true)) {
+            return Http::response(['data' => gameGiphyItem($endpoint)]);
+        }
+
+        return Http::response(['message' => 'Not found'], 404);
+    });
+}
+
+function gameGifPayload(string $id): array
+{
+    return [
+        'id' => $id,
+        'previewUrl' => route('gifs.show', ['gif' => $id, 'size' => 'preview'], false),
+        'url' => route('gifs.show', ['gif' => $id, 'size' => 'full'], false),
+    ];
+}
+
+/**
+ * @return array{0: GameRoom, 1: User, 2: GamePlayer}
+ */
+function sprintGifRoom(): array
+{
+    $room = GameRoom::factory()->game(GameKind::SprintGif)->linkAccess()->create();
+    [$user, $host] = gameRoomHost($room);
+
+    return [$room, $user, $host];
+}
+
+/**
+ * @param  array<string, mixed>  $attributes
+ */
+function activeGifRound(GameRoom $room, array $attributes = []): GameRound
+{
+    return activeGameRound($room, [
+        'game' => GameKind::SprintGif,
+        'word' => null,
+        'question' => 'How did the sprint feel?',
+        ...$attributes,
+    ]);
+}
+
+/**
+ * @return array{0: GameRoom, 1: User, 2: GamePlayer, 3: User, 4: GamePlayer}
+ */
+function anonymousGifIcebreaker(): array
+{
+    $retro = Retro::factory()->inPhase(RetroPhase::Icebreaker)->anonymous()->create(['gifs_enabled' => true]);
+    [$facilitatorUser, $facilitator] = retroFacilitator($retro);
+    [$memberUser, $participant] = retroMember($retro);
+    $room = GameRoom::factory()->icebreaker($retro)->game(GameKind::SprintGif)->create();
+    $host = GamePlayer::factory()->forParticipant($facilitator)->create(['game_room_id' => $room->id]);
+    $member = GamePlayer::factory()->forParticipant($participant)->create(['game_room_id' => $room->id]);
+
+    return [$room, $facilitatorUser, $host, $memberUser, $member];
+}

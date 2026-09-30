@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 /**
  * @property string $id
@@ -25,6 +26,16 @@ class GameGifAnswer extends Model
     use HasFactory;
 
     use HasUuids;
+
+    /**
+     * Random rather than time-ordered ids: on anonymous retros an answer's id
+     * is shown at the reveal, and it must not tell when the answer was posted,
+     * which the "answered" broadcasts could tie to its author.
+     */
+    public function newUniqueId(): string
+    {
+        return (string) Str::uuid();
+    }
 
     /** @return BelongsTo<GameRound, $this> */
     public function round(): BelongsTo
