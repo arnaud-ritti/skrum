@@ -52,6 +52,7 @@ class BuildBoardSnapshot
 
         $showsTotals = in_array($retro->phase, [RetroPhase::Discussing, RetroPhase::Completed], true)
             || ($retro->phase === RetroPhase::Voting && ! $retro->hide_vote_counts);
+        $showsCardInsights = $this->llm->isConfigured();
 
         [$votesVersion, $voteTotals, $myVotes] = $this->readVotes($retro, $viewer);
 
@@ -95,7 +96,7 @@ class BuildBoardSnapshot
                 'transferCandidates' => $retro->isFacilitator($viewer) ? $this->transferCandidates($retro, $viewer) : [],
             ],
             'columns' => $this->presentColumns->handle($retro),
-            'cards' => $retro->cards->sortBy('position')->map(function (Card $card) use ($retro, $viewer, $showsTotals, $voteTotals, $myVotes) {
+            'cards' => $retro->cards->sortBy('position')->map(function (Card $card) use ($retro, $viewer, $showsTotals, $voteTotals, $myVotes, $showsCardInsights) {
                 $presented = $this->presentCard->handle($card, $retro, $viewer);
                 $isHidden = $presented['hidden'];
 
@@ -106,8 +107,8 @@ class BuildBoardSnapshot
                     'reactions' => $isHidden ? [] : $this->summarizeReactions->handle($card->reactions, $retro, $viewer),
                     'commentCount' => $isHidden ? 0 : $card->comments->reject(fn (CardComment $comment) => $comment->isDeleted())->count(),
                     'comments' => $isHidden ? [] : $this->presentComment->threads($card->comments, $retro, $viewer),
-                    'sentiment' => $isHidden ? null : $card->sentiment?->value,
-                    'category' => $isHidden ? null : $card->category,
+                    'sentiment' => $showsCardInsights && ! $isHidden ? $card->sentiment?->value : null,
+                    'category' => $showsCardInsights && ! $isHidden ? $card->category : null,
                 ];
             })->values()->all(),
             'participants' => $retro->participants->map(fn (Participant $participant) => $this->presentParticipant->handle($participant))->values()->all(),

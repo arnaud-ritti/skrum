@@ -6,10 +6,14 @@ use App\Enums\RetroPhase;
 use App\Models\Retro;
 use App\Models\RetroTheme;
 use App\Models\SuggestedAction;
+use App\Support\Llm\Llm;
 
 class BuildInsights
 {
-    public function __construct(private PresentSuggestedAction $presentSuggestedAction) {}
+    public function __construct(
+        private PresentSuggestedAction $presentSuggestedAction,
+        private Llm $llm,
+    ) {}
 
     /**
      * @return array{
@@ -19,6 +23,10 @@ class BuildInsights
      */
     public function handle(Retro $retro): ?array
     {
+        if (! $this->llm->isConfigured()) {
+            return null;
+        }
+
         if (! in_array($retro->phase, [RetroPhase::Discussing, RetroPhase::Completed], true)) {
             return null;
         }

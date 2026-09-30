@@ -160,6 +160,7 @@ it('refuses suggestions in other phases and from other retros', function () {
 });
 
 it('shows insights from discussing on, the same for every viewer', function () {
+    configureLlm();
     [$retro, $theme, $suggestion] = suggestingRetro(RetroPhase::Voting);
     $card = Card::factory()->create(['retro_id' => $retro->id]);
     $card->forceFill(['sentiment' => CardSentiment::Negative, 'category' => 'Tooling'])->save();
@@ -180,6 +181,18 @@ it('shows insights from discussing on, the same for every viewer', function () {
         ->and(collect($snapshots[0]['cards'])->firstWhere('id', $card->id))->toMatchArray(['sentiment' => 'negative', 'category' => 'Tooling'])
         ->and(collect($snapshots[1]['cards'])->firstWhere('id', $card->id))->toMatchArray(['sentiment' => 'negative', 'category' => 'Tooling'])
         ->and($snapshots[0]['viewer']['canHandleSuggestions'])->toBeTrue();
+});
+
+it('hides stored insights once no provider is configured', function () {
+    [$retro] = suggestingRetro(RetroPhase::Completed);
+    $card = Card::factory()->create(['retro_id' => $retro->id]);
+    $card->forceFill(['sentiment' => CardSentiment::Negative, 'category' => 'Tooling'])->save();
+    [, $member] = retroMember($retro);
+
+    $snapshot = app(BuildBoardSnapshot::class)->handle($retro->fresh(), $member);
+
+    expect($snapshot['insights'])->toBeNull()
+        ->and(collect($snapshot['cards'])->firstWhere('id', $card->id))->toMatchArray(['sentiment' => null, 'category' => null]);
 });
 
 it('never sends card insights of hidden cards or in card broadcasts', function () {
