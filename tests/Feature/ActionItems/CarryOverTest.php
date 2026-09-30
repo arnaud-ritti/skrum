@@ -180,6 +180,8 @@ it('agrees with the broadcast fan-out on which retros carry an item', function (
         ActionItem::factory()->withoutRetro($team, teamMember($team))->create(['created_at' => '2026-09-12 10:00:00', 'completed_at' => '2026-09-30 10:00:00']),
         ActionItem::factory()->withoutRetro($team, teamMember($team))->create(['created_at' => '2026-10-10 10:00:00']),
         ActionItem::factory()->create(['retro_id' => $other->id]),
+        ActionItem::factory()->create(['retro_id' => $r1->id, 'completed_at' => $r2->created_at]),
+        ActionItem::factory()->withoutRetro($team, teamMember($team))->create(['created_at' => $r3->created_at]),
     ]);
 
     $viaBroadcast = fn () => $items->mapWithKeys(fn (ActionItem $item) => [

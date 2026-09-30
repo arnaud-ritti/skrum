@@ -162,6 +162,10 @@ it('changes items in every phase from the workspace', function (RetroPhase $phas
         ->patchJson(route('workspaces.actionItems.update', ['workspace' => $retro->team->workspace, 'actionItem' => $item]), ['priority' => 'high'])
         ->assertOk()
         ->assertJsonPath('actionItem.priority', 'high');
+
+    $phase === RetroPhase::Completed
+        ? Event::assertNotDispatched(ActionItemSaved::class)
+        : Event::assertDispatched(ActionItemSaved::class, fn (ActionItemSaved $event) => $event->retroId === $retro->id);
 })->with([RetroPhase::Writing, RetroPhase::Voting, RetroPhase::Discussing, RetroPhase::Completed]);
 
 it('returns 423 only for locked retros that are still running', function () {

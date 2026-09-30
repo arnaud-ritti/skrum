@@ -91,7 +91,7 @@ class BuildBoardSnapshot
                 'votesPerParticipant' => $retro->voteLimit(),
                 'votesAuto' => $retro->votes_per_participant === null,
                 'guestAccessEnabled' => $retro->guest_access_enabled,
-                'guestUrl' => $retro->guest_access_enabled && $retro->isFacilitator($viewer)
+                'guestUrl' => $retro->guest_access_enabled && $isFacilitator
                     ? route('retros.join.show', $retro->guest_token)
                     : null,
                 'facilitatorParticipantId' => $retro->facilitator_participant_id,
@@ -106,11 +106,11 @@ class BuildBoardSnapshot
                 'isWorkspaceManager' => $isWorkspaceManager,
                 'isReviewFacilitator' => $isFacilitator && $retro->phase !== RetroPhase::Completed,
                 'facilitatedRetroIds' => $this->facilitatedRetroIds($retro, $viewer),
-                'isFacilitator' => $retro->isFacilitator($viewer),
+                'isFacilitator' => $isFacilitator,
                 'isGuest' => $viewer->isGuest(),
                 'canHandleSuggestions' => $this->suggestionGuard->allows($retro, $retro->participants->firstWhere('id', $viewer->id) ?? $viewer),
                 'remainingVotes' => max(0, $retro->voteLimit() - (int) $myVotes->sum()),
-                'transferCandidates' => $retro->isFacilitator($viewer) ? $this->transferCandidates($retro, $viewer) : [],
+                'transferCandidates' => $isFacilitator ? $this->transferCandidates($retro, $viewer) : [],
             ],
             'columns' => $this->presentColumns->handle($retro),
             'cards' => $retro->cards->sortBy('position')->map(function (Card $card) use ($retro, $viewer, $showsTotals, $voteTotals, $myVotes, $showsCardInsights) {

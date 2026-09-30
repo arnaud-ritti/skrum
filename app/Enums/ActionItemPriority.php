@@ -25,13 +25,4 @@ enum ActionItemPriority: string
             self::Low => __('Low'),
         };
     }
-
-    public static function sqlWeight(): string
-    {
-        $cases = collect(self::cases())
-            ->map(fn (self $priority): string => "when '{$priority->value}' then {$priority->sortWeight()}")
-            ->implode(' ');
-
-        return "case priority {$cases} end";
-    }
 }
