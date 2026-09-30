@@ -670,5 +670,19 @@
     "Move up": "Monter",
     "Move down": "Descendre",
     "Remove column": "Retirer la colonne",
-    "Choose a template from the list.": "Choisissez un modèle dans la liste."
+    "Choose a template from the list.": "Choisissez un modèle dans la liste.",
+    "New retrospective": "Nouvelle rétrospective",
+    "Retro :date": "Rétro :date",
+    "Search templates": "Rechercher un modèle",
+    "All": "Tous",
+    "Workspace templates": "Modèles de l'espace de travail",
+    "Common templates": "Modèles courants",
+    "More templates": "Autres modèles",
+    "No templates match your search.": "Aucun modèle ne correspond à votre recherche.",
+    "Empty board": "Tableau vide",
+    "Preview": "Aperçu",
+    "Start with an empty board and add your own columns.": "Commencez avec un tableau vide et ajoutez vos propres colonnes.",
+    "Automatic vote limit": "Nombre de votes automatique",
+    "Automatic: number of cards plus 3, at most 10.": "Automatique : nombre de cartes plus 3, 10 au maximum.",
+    "Start": "Commencer"
 }

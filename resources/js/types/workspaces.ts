@@ -42,11 +42,6 @@ export type RetroSummary = {
     createdAt: string;
 };
 
-export type TemplateOption = {
-    value: string;
-    label: string;
-};
-
 export type TemplateCategory =
     | 'essentials'
     | 'team_mood'

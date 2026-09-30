@@ -670,5 +670,17 @@
     "Move up": "Nach oben",
     "Move down": "Nach unten",
     "Remove column": "Spalte entfernen",
-    "Choose a template from the list.": "Wähle eine Vorlage aus der Liste."
+    "Choose a template from the list.": "Wähle eine Vorlage aus der Liste.",
+    "New retrospective": "Neue Retrospektive",
+    "Retro :date": "Retro :date",
+    "Search templates": "Vorlagen suchen",
+    "All": "Alle",
+    "Workspace templates": "Vorlagen des Arbeitsbereichs",
+    "Common templates": "Häufige Vorlagen",
+    "More templates": "Weitere Vorlagen",
+    "No templates match your search.": "Keine Vorlage passt zu deiner Suche.",
+    "Empty board": "Leeres Board",
+    "Start with an empty board and add your own columns.": "Beginne mit einem leeren Board und füge eigene Spalten hinzu.",
+    "Automatic vote limit": "Automatisches Stimmenlimit",
+    "Automatic: number of cards plus 3, at most 10.": "Automatisch: Anzahl der Karten plus 3, höchstens 10."
 }

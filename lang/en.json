@@ -411,5 +411,19 @@
     "Move up": "Move up",
     "Move down": "Move down",
     "Remove column": "Remove column",
-    "Choose a template from the list.": "Choose a template from the list."
+    "Choose a template from the list.": "Choose a template from the list.",
+    "New retrospective": "New retrospective",
+    "Retro :date": "Retro :date",
+    "Search templates": "Search templates",
+    "All": "All",
+    "Workspace templates": "Workspace templates",
+    "Common templates": "Common templates",
+    "More templates": "More templates",
+    "No templates match your search.": "No templates match your search.",
+    "Empty board": "Empty board",
+    "Preview": "Preview",
+    "Start with an empty board and add your own columns.": "Start with an empty board and add your own columns.",
+    "Automatic vote limit": "Automatic vote limit",
+    "Automatic: number of cards plus 3, at most 10.": "Automatic: number of cards plus 3, at most 10.",
+    "Start": "Start"
 }
