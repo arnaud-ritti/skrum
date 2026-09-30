@@ -1,20 +1,30 @@
 import { Link } from '@inertiajs/react';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, MousePointer2, MousePointerBan } from 'lucide-react';
 import { useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import PokerSettingsController from '@/actions/App/Http/Controllers/Poker/PokerSettingsController';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { PresenceStrip } from '@/components/retro/presence-strip';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useTrans } from '@/hooks/use-trans';
 import { retroRequest } from '@/lib/retro/api';
+import { showsPokerCursors } from './game-cursors';
 import { useGame } from './game-context';
 import { GameMenu } from './game-menu';
 import { TakeControlButton } from './take-control-button';
 
-type Props = { actions?: ReactNode };
+type Props = {
+    actions?: ReactNode;
+    hideMyCursor?: boolean;
+    onHideMyCursorChange?: (hidden: boolean) => void;
+};
 
-export function GameHeader({ actions }: Props) {
+export function GameHeader({
+    actions,
+    hideMyCursor,
+    onHideMyCursorChange,
+}: Props) {
     const { snapshot, online } = useGame();
     const { t } = useTrans();
     const { game, me, links } = snapshot;
@@ -43,6 +53,27 @@ export function GameHeader({ actions }: Props) {
                 <TakeControlButton />
                 {(me.isFacilitator || me.canDelete) && <GameMenu />}
                 <PresenceStrip members={online} />
+                {hideMyCursor !== undefined &&
+                    onHideMyCursorChange &&
+                    showsPokerCursors(snapshot) && (
+                        <Button
+                            size="icon"
+                            variant="ghost"
+                            aria-pressed={hideMyCursor}
+                            aria-label={
+                                hideMyCursor
+                                    ? t('Show my cursor')
+                                    : t('Hide my cursor')
+                            }
+                            onClick={() => onHideMyCursorChange(!hideMyCursor)}
+                        >
+                            {hideMyCursor ? (
+                                <MousePointerBan className="size-4" />
+                            ) : (
+                                <MousePointer2 className="size-4" />
+                            )}
+                        </Button>
+                    )}
                 {me.isGuest && <LanguageSwitcher />}
             </div>
         </header>

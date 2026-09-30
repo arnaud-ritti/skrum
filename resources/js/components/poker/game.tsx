@@ -1,17 +1,21 @@
 import { ListTodo } from 'lucide-react';
 import { useState } from 'react';
 import { ConnectionBanner } from '@/components/retro/connection-banner';
+import { HideMyCursorKey } from '@/components/retro/live-cursor-layer';
 import { SessionExpiredBanner } from '@/components/retro/session-expired-banner';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
+import { useLocalPreference } from '@/hooks/use-local-preference';
 import { usePokerGame } from '@/hooks/use-poker-game';
 import { useTrans } from '@/hooks/use-trans';
 import type { PokerSnapshot } from '@/lib/poker/types';
 import type { PokerDeckOption } from '@/types';
 import { FacilitatorToolbar } from './facilitator-toolbar';
 import { GameProvider, useGame, type GameContextValue } from './game-context';
+import { GameCursors } from './game-cursors';
 import { GameGone } from './game-gone';
 import { GameHeader } from './game-header';
+import { GameReactions } from './game-reactions';
 import { Hand } from './hand';
 import { PlayersGrid } from './players-grid';
 import { ResultPanel } from './result-panel';
@@ -24,7 +28,11 @@ type Props = { snapshot: PokerSnapshot; deckOptions: PokerDeckOption[] };
 export function Game({ snapshot: initial, deckOptions }: Props) {
     const { t } = useTrans();
     const game = usePokerGame(initial);
-    const [, setMainPane] = useState<HTMLElement | null>(null);
+    const [mainPane, setMainPane] = useState<HTMLElement | null>(null);
+    const [hideMyCursor, setHideMyCursor] = useLocalPreference(
+        HideMyCursorKey,
+        false,
+    );
     const [tasksCollapsed, setTasksCollapsed] = useState(false);
     const [tasksOpen, setTasksOpen] = useState(false);
 
@@ -57,6 +65,8 @@ export function Game({ snapshot: initial, deckOptions }: Props) {
                     inert={game.sessionExpired}
                 >
                     <GameHeader
+                        hideMyCursor={hideMyCursor}
+                        onHideMyCursorChange={setHideMyCursor}
                         actions={
                             <>
                                 <Button
@@ -110,10 +120,15 @@ export function Game({ snapshot: initial, deckOptions }: Props) {
                             className="relative flex min-w-0 flex-1 flex-col gap-4 overflow-auto p-4"
                         >
                             <Table />
+                            <GameCursors
+                                container={mainPane}
+                                hidden={hideMyCursor}
+                            />
                         </main>
                     </div>
                 </div>
             </div>
+            <GameReactions />
         </GameProvider>
     );
 }

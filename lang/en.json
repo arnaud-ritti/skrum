@@ -817,5 +817,6 @@
     "A deck with this name already exists.": "A deck with this name already exists.",
     "Choose a saved deck of this team.": "Choose a saved deck of this team.",
     "Choose either a saved deck or custom cards.": "Choose either a saved deck or custom cards.",
-    "Save only custom cards as a deck.": "Save only custom cards as a deck."
+    "Save only custom cards as a deck.": "Save only custom cards as a deck.",
+    "Player": "Player"
 }

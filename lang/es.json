@@ -1069,5 +1069,6 @@
     "A deck with this name already exists.": "Ya existe una baraja con este nombre.",
     "Choose a saved deck of this team.": "Elige una baraja guardada de este equipo.",
     "Choose either a saved deck or custom cards.": "Elige una baraja guardada o cartas personalizadas, no ambas.",
-    "Save only custom cards as a deck.": "Solo puedes guardar cartas personalizadas como baraja."
+    "Save only custom cards as a deck.": "Solo puedes guardar cartas personalizadas como baraja.",
+    "Player": "Jugador"
 }
