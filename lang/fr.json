@@ -866,5 +866,11 @@
     "The board content is sent to :provider to write the summary.": "Le contenu du tableau est envoyé à :provider pour rédiger le résumé.",
     "High": "Haute",
     "Medium": "Moyenne",
-    "Low": "Basse"
+    "Low": "Basse",
+    "Only team members can add action items to this team.": "Seuls les membres de l'équipe peuvent ajouter des actions à cette équipe.",
+    "Only the author, the facilitator or an admin can change this action item.": "Seuls l'auteur, l'animateur ou un administrateur peuvent modifier cette action.",
+    "Only the assignee or a manager can complete this action item.": "Seuls la personne assignée ou un responsable peuvent terminer cette action.",
+    "You cannot comment on this action item.": "Vous ne pouvez pas commenter cette action.",
+    "Only the author of the comment or a manager can delete it.": "Seuls l'auteur du commentaire ou un responsable peuvent le supprimer.",
+    "You can only change your own comments.": "Vous ne pouvez modifier que vos propres commentaires."
 }
