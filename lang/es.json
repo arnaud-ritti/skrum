@@ -1511,5 +1511,6 @@
     "Describe the word with up to five emoji, without letters or digits.": "Describe la palabra con hasta cinco emoji, sin letras ni cifras.",
     "Your word to describe": "Tu palabra para describir",
     ":name is giving clues": ":name está dando pistas",
-    "Drawing of :word": "Dibujo de :word"
+    "Drawing of :word": "Dibujo de :word",
+    "The question can no longer be changed.": "La pregunta ya no se puede cambiar."
 }
