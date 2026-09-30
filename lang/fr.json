@@ -1089,5 +1089,15 @@
     "Custom minutes…": "Minutes personnalisées…",
     "Minutes": "Minutes",
     "Start timer": "Lancer le minuteur",
-    "Join as spectator": "Rejoindre en observateur"
+    "Join as spectator": "Rejoindre en observateur",
+    "Saved decks": "Jeux de cartes enregistrés",
+    "New deck": "Nouveau jeu de cartes",
+    "Deck name": "Nom du jeu de cartes",
+    "Save this deck for the team as…": "Enregistrer ce jeu de cartes pour l'équipe sous…",
+    "Edit deck": "Modifier le jeu de cartes",
+    "Delete deck": "Supprimer le jeu de cartes",
+    "Delete this deck?": "Supprimer ce jeu de cartes ?",
+    "Games that use it keep their cards.": "Les parties qui l'utilisent gardent leurs cartes.",
+    "No saved decks yet.": "Aucun jeu de cartes enregistré pour l'instant.",
+    "Your team's decks": "Les jeux de cartes de votre équipe"
 }

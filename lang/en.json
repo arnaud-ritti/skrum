@@ -837,5 +837,15 @@
     "Custom minutes…": "Custom minutes…",
     "Minutes": "Minutes",
     "Start timer": "Start timer",
-    "Join as spectator": "Join as spectator"
+    "Join as spectator": "Join as spectator",
+    "Saved decks": "Saved decks",
+    "New deck": "New deck",
+    "Deck name": "Deck name",
+    "Save this deck for the team as…": "Save this deck for the team as…",
+    "Edit deck": "Edit deck",
+    "Delete deck": "Delete deck",
+    "Delete this deck?": "Delete this deck?",
+    "Games that use it keep their cards.": "Games that use it keep their cards.",
+    "No saved decks yet.": "No saved decks yet.",
+    "Your team's decks": "Your team's decks"
 }

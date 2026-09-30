@@ -5,13 +5,15 @@ import { Label } from '@/components/ui/label';
 import { useTrans } from '@/hooks/use-trans';
 import { isSpecialCard, SpecialCards } from '@/lib/poker/types';
 import { cn } from '@/lib/utils';
-import type { PokerDeckOption } from '@/types';
+import type { PokerDeckOption, SavedPokerDeck } from '@/types';
 
 export type DeckChoice = {
     deck: string;
     customCards: string;
     includeUnknown: boolean;
     includeCoffee: boolean;
+    savedDeckId: string | null;
+    saveDeckAs: string;
 };
 
 const [UnknownCard, CoffeeCard] = SpecialCards;
@@ -22,6 +24,8 @@ export function emptyDeckChoice(): DeckChoice {
         customCards: '',
         includeUnknown: true,
         includeCoffee: true,
+        savedDeckId: null,
+        saveDeckAs: '',
     };
 }
 
@@ -34,6 +38,7 @@ export function deckChoiceFromGame(game: {
     }
 
     return {
+        ...emptyDeckChoice(),
         deck: 'custom',
         customCards: game.cards
             .filter((card) => !isSpecialCard(card))
@@ -51,16 +56,73 @@ export function splitCustomCards(value: string): string[] {
 }
 
 export function deckPayload(choice: DeckChoice): Record<string, unknown> {
+    if (choice.savedDeckId !== null) {
+        return { deck: 'custom', saved_deck_id: choice.savedDeckId };
+    }
+
     if (choice.deck !== 'custom') {
         return { deck: choice.deck };
     }
 
-    return {
+    const payload: Record<string, unknown> = {
         deck: 'custom',
         custom_cards: splitCustomCards(choice.customCards),
         include_unknown: choice.includeUnknown,
         include_coffee: choice.includeCoffee,
     };
+    const saveDeckAs = choice.saveDeckAs.trim();
+
+    if (saveDeckAs !== '') {
+        payload.save_deck_as = saveDeckAs;
+    }
+
+    return payload;
+}
+
+function CardChips({ cards }: { cards: string[] }) {
+    return (
+        <span className="mt-1 flex flex-wrap gap-1">
+            {cards.map((card) => (
+                <span
+                    key={card}
+                    className="min-w-6 rounded border bg-background px-1 text-center font-mono text-xs"
+                >
+                    {card}
+                </span>
+            ))}
+        </span>
+    );
+}
+
+function DeckRadio({
+    label,
+    cards,
+    checked,
+    disabled,
+    onSelect,
+}: {
+    label: string;
+    cards: string[];
+    checked: boolean;
+    disabled: boolean;
+    onSelect: () => void;
+}) {
+    return (
+        <button
+            type="button"
+            role="radio"
+            aria-checked={checked}
+            disabled={disabled}
+            className={cn(
+                'rounded-md border p-2 text-left hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60',
+                checked && 'border-primary bg-muted',
+            )}
+            onClick={onSelect}
+        >
+            <span className="block text-sm font-medium">{label}</span>
+            {cards.length > 0 && <CardChips cards={cards} />}
+        </button>
+    );
 }
 
 type Props = {
@@ -69,6 +131,8 @@ type Props = {
     onChange: (value: DeckChoice) => void;
     disabled?: boolean;
     errors?: Record<string, string | undefined>;
+    savedDecks?: SavedPokerDeck[];
+    allowSaveAs?: boolean;
 };
 
 function customCardsError(
@@ -91,6 +155,8 @@ export function DeckFields({
     onChange,
     disabled = false,
     errors = {},
+    savedDecks = [],
+    allowSaveAs = false,
 }: Props) {
     const { t } = useTrans();
     const update = (changes: Partial<DeckChoice>) =>
@@ -104,44 +170,65 @@ export function DeckFields({
                 aria-label={t('Deck')}
                 className="grid gap-1"
             >
-                {deckOptions.map((option) => {
-                    const checked = value.deck === option.value;
-
-                    return (
-                        <button
+                {deckOptions
+                    .filter((option) => option.value !== 'custom')
+                    .map((option) => (
+                        <DeckRadio
                             key={option.value}
-                            type="button"
-                            role="radio"
-                            aria-checked={checked}
+                            label={option.label}
+                            cards={option.cards}
+                            checked={
+                                value.savedDeckId === null &&
+                                value.deck === option.value
+                            }
                             disabled={disabled}
-                            className={cn(
-                                'rounded-md border p-2 text-left hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60',
-                                checked && 'border-primary bg-muted',
-                            )}
-                            onClick={() => update({ deck: option.value })}
-                        >
-                            <span className="block text-sm font-medium">
-                                {option.label}
-                            </span>
-                            {option.cards.length > 0 && (
-                                <span className="mt-1 flex flex-wrap gap-1">
-                                    {option.cards.map((card) => (
-                                        <span
-                                            key={card}
-                                            className="min-w-6 rounded border bg-background px-1 text-center font-mono text-xs"
-                                        >
-                                            {card}
-                                        </span>
-                                    ))}
-                                </span>
-                            )}
-                        </button>
-                    );
-                })}
+                            onSelect={() =>
+                                update({
+                                    deck: option.value,
+                                    savedDeckId: null,
+                                })
+                            }
+                        />
+                    ))}
+                {savedDecks.length > 0 && (
+                    <p className="pt-2 text-xs font-semibold text-muted-foreground uppercase">
+                        {t("Your team's decks")}
+                    </p>
+                )}
+                {savedDecks.map((saved) => (
+                    <DeckRadio
+                        key={saved.id}
+                        label={saved.name}
+                        cards={saved.cards}
+                        checked={value.savedDeckId === saved.id}
+                        disabled={disabled}
+                        onSelect={() =>
+                            update({ deck: 'custom', savedDeckId: saved.id })
+                        }
+                    />
+                ))}
+                {deckOptions
+                    .filter((option) => option.value === 'custom')
+                    .map((option) => (
+                        <DeckRadio
+                            key={option.value}
+                            label={option.label}
+                            cards={option.cards}
+                            checked={
+                                value.savedDeckId === null &&
+                                value.deck === 'custom'
+                            }
+                            disabled={disabled}
+                            onSelect={() =>
+                                update({ deck: 'custom', savedDeckId: null })
+                            }
+                        />
+                    ))}
             </div>
             <InputError message={errors.deck} />
+            <InputError message={errors.saved_deck_id} />
 
-            {value.deck === 'custom' && (
+            {value.deck === 'custom' && value.savedDeckId === null && (
                 <div className="space-y-2 rounded-md border p-3">
                     <div className="grid gap-2">
                         <Label htmlFor="deck-custom-cards">
@@ -186,6 +273,23 @@ export function DeckFields({
                             </Label>
                         </div>
                     </div>
+                    {allowSaveAs && (
+                        <div className="grid gap-2">
+                            <Label htmlFor="deck-save-as">
+                                {t('Save this deck for the team as…')}
+                            </Label>
+                            <Input
+                                id="deck-save-as"
+                                value={value.saveDeckAs}
+                                maxLength={40}
+                                placeholder={t('Deck name')}
+                                onChange={(event) =>
+                                    update({ saveDeckAs: event.target.value })
+                                }
+                            />
+                            <InputError message={errors.save_deck_as} />
+                        </div>
+                    )}
                 </div>
             )}
         </fieldset>

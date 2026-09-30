@@ -5,14 +5,20 @@ import Heading from '@/components/heading';
 import { Button } from '@/components/ui/button';
 import { useTrans } from '@/hooks/use-trans';
 import { formatPoints } from '@/lib/poker/format';
-import type { PokerDeckOption, PokerGameSummary } from '@/types';
+import type {
+    PokerDeckOption,
+    PokerGameSummary,
+    SavedPokerDeck,
+} from '@/types';
 import { NewPokerGameDialog } from './new-poker-game-dialog';
+import { SavedDecksDialog } from './saved-decks-dialog';
 
 type Props = {
     workspaceSlug: string;
     teamId: string;
     games: PokerGameSummary[];
     deckOptions: PokerDeckOption[];
+    savedDecks: SavedPokerDeck[];
     canCreate: boolean;
 };
 
@@ -21,6 +27,7 @@ export function PokerGamesSection({
     teamId,
     games,
     deckOptions,
+    savedDecks,
     canCreate,
 }: Props) {
     const { t } = useTrans();
@@ -37,6 +44,7 @@ export function PokerGamesSection({
                         workspaceSlug={workspaceSlug}
                         teamId={teamId}
                         deckOptions={deckOptions}
+                        savedDecks={savedDecks}
                     />
                 )}
                 <Button variant="outline" asChild>
@@ -49,6 +57,11 @@ export function PokerGamesSection({
                         {t('Estimation history')}
                     </Link>
                 </Button>
+                <SavedDecksDialog
+                    workspaceSlug={workspaceSlug}
+                    teamId={teamId}
+                    decks={savedDecks}
+                />
             </div>
 
             {games.length === 0 && (

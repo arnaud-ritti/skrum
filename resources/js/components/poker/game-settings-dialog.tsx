@@ -1,4 +1,5 @@
-import { useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
+import PokerSavedDecksController from '@/actions/App/Http/Controllers/Poker/PokerSavedDecksController';
 import PokerSettingsController from '@/actions/App/Http/Controllers/Poker/PokerSettingsController';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
@@ -13,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useTrans } from '@/hooks/use-trans';
 import { RetroRequestError, retroRequest } from '@/lib/retro/api';
+import type { SavedPokerDeck } from '@/types';
 import {
     deckChoiceFromGame,
     DeckFields,
@@ -97,6 +99,30 @@ function SettingsForm({ onDone }: { onDone: () => void }) {
     const [error, setError] = useState<string | null>(null);
     const [saving, setSaving] = useState(false);
     const deckLocked = game.hasVotes;
+    const [savedDecks, setSavedDecks] = useState<SavedPokerDeck[]>([]);
+    const canLoadSavedDecks = ctx.snapshot.me.isFacilitator && !deckLocked;
+
+    useEffect(() => {
+        if (!canLoadSavedDecks) {
+            return;
+        }
+
+        let cancelled = false;
+
+        retroRequest<SavedPokerDeck[]>(PokerSavedDecksController.index(game.id))
+            .then((decks) => {
+                if (!cancelled) {
+                    setSavedDecks(decks ?? []);
+                }
+            })
+            .catch(() => {
+                // Built-in and custom decks still work without the list.
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [canLoadSavedDecks, game.id]);
 
     const save = async (event: FormEvent) => {
         event.preventDefault();
@@ -192,6 +218,7 @@ function SettingsForm({ onDone }: { onDone: () => void }) {
             <div className="space-y-2">
                 <DeckFields
                     deckOptions={ctx.deckOptions}
+                    savedDecks={savedDecks}
                     value={deck}
                     onChange={setDeck}
                     disabled={deckLocked}

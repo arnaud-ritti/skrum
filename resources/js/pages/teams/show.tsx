@@ -31,6 +31,7 @@ import type {
     TeamHealthStatement,
     TeamSummary,
     WorkspaceSummary,
+    SavedPokerDeck,
 } from '@/types';
 
 type Props = {
@@ -50,6 +51,7 @@ type Props = {
     pokerGames: PokerGameSummary[];
     pokerDeckOptions: PokerDeckOption[];
     canCreatePokerGame: boolean;
+    pokerDecks: SavedPokerDeck[];
 };
 
 export default function ShowTeam({
@@ -69,6 +71,7 @@ export default function ShowTeam({
     pokerGames,
     pokerDeckOptions,
     canCreatePokerGame,
+    pokerDecks,
 }: Props) {
     const { t } = useTrans();
     const params = { workspace: workspace.slug, team: team.id };
@@ -163,6 +166,7 @@ export default function ShowTeam({
                     teamId={team.id}
                     games={pokerGames}
                     deckOptions={pokerDeckOptions}
+                    savedDecks={pokerDecks}
                     canCreate={canCreatePokerGame}
                 />
                 <HealthStatementsSection

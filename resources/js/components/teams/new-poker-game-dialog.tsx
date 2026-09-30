@@ -20,12 +20,13 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useTrans } from '@/hooks/use-trans';
-import type { PokerDeckOption } from '@/types';
+import type { PokerDeckOption, SavedPokerDeck } from '@/types';
 
 type Props = {
     workspaceSlug: string;
     teamId: string;
     deckOptions: PokerDeckOption[];
+    savedDecks: SavedPokerDeck[];
 };
 
 type PokerGameForm = {
@@ -62,6 +63,7 @@ function NewPokerGameForm({
     workspaceSlug,
     teamId,
     deckOptions,
+    savedDecks,
     onDone,
 }: Props & { onDone: () => void }) {
     const { t } = useTrans();
@@ -111,6 +113,8 @@ function NewPokerGameForm({
 
             <DeckFields
                 deckOptions={deckOptions}
+                savedDecks={savedDecks}
+                allowSaveAs
                 value={deck}
                 onChange={setDeck}
                 errors={errors}

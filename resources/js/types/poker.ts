@@ -24,3 +24,10 @@ export type EstimatedTaskRow = {
     rounds: PokerRound[];
     players: { id: string; name: string }[];
 };
+
+export type SavedPokerDeck = {
+    id: string;
+    name: string;
+    cards: string[];
+    canManage?: boolean;
+};

@@ -1089,5 +1089,15 @@
     "Custom minutes…": "Eigene Minutenzahl…",
     "Minutes": "Minuten",
     "Start timer": "Timer starten",
-    "Join as spectator": "Als Zuschauer beitreten"
+    "Join as spectator": "Als Zuschauer beitreten",
+    "Saved decks": "Gespeicherte Kartensätze",
+    "New deck": "Neuer Kartensatz",
+    "Deck name": "Name des Kartensatzes",
+    "Save this deck for the team as…": "Diesen Kartensatz fürs Team speichern als…",
+    "Edit deck": "Kartensatz bearbeiten",
+    "Delete deck": "Kartensatz löschen",
+    "Delete this deck?": "Diesen Kartensatz löschen?",
+    "Games that use it keep their cards.": "Spiele, die ihn nutzen, behalten ihre Karten.",
+    "No saved decks yet.": "Noch keine gespeicherten Kartensätze.",
+    "Your team's decks": "Kartensätze deines Teams"
 }
