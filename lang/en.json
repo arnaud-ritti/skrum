@@ -617,5 +617,9 @@
     "Only the author, the facilitator or an admin can change this action item.": "Only the author, the facilitator or an admin can change this action item.",
     "Only the assignee or a manager can complete this action item.": "Only the assignee or a manager can complete this action item.",
     "You cannot comment on this action item.": "You cannot comment on this action item.",
-    "Only the author of the comment or a manager can delete it.": "Only the author of the comment or a manager can delete it."
+    "Only the author of the comment or a manager can delete it.": "Only the author of the comment or a manager can delete it.",
+    "Guests can only be assigned from their own retrospective.": "Guests can only be assigned from their own retrospective.",
+    "Choose either a team member or a guest as assignee, not both.": "Choose either a team member or a guest as assignee, not both.",
+    "The assignee must be a participant of this retrospective.": "The assignee must be a participant of this retrospective.",
+    "The assignee must be a member of this team.": "The assignee must be a member of this team."
 }

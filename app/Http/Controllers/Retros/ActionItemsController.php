@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers\Retros;
 
+use App\Actions\ActionItems\ActionItemActor;
 use App\Actions\ActionItems\CreateActionItem;
+use App\Actions\ActionItems\ResolveActionItemAssignee;
 use App\Actions\Retros\PresentActionItem;
 use App\Actions\Retros\RetroGuard;
 use App\Enums\RetroPhase;
@@ -21,7 +23,7 @@ use Illuminate\Validation\Rule;
 
 class ActionItemsController extends Controller
 {
-    public function __construct(private PresentActionItem $presentActionItem, private CreateActionItem $createActionItem) {}
+    public function __construct(private PresentActionItem $presentActionItem, private CreateActionItem $createActionItem, private ResolveActionItemAssignee $resolveActionItemAssignee) {}
 
     public function store(Request $request, Retro $retro): JsonResponse
     {
@@ -41,19 +43,13 @@ class ActionItemsController extends Controller
             RetroGuard::phase($locked, RetroPhase::Discussing);
             RetroGuard::unlocked($locked);
 
-            $actionItem = $this->createActionItem->handle(
-                $locked,
-                $participant,
-                $validated['content'],
-                $validated['assignee_participant_id'] ?? null,
-            );
-
-            (new ActionItemSaved($locked->id, $this->presentActionItem->handle($actionItem)))->sendToOthers();
-
-            return $actionItem;
+            return $this->createActionItem->handle($locked->team, $locked, ActionItemActor::forParticipant($participant), [
+                'content' => $validated['content'],
+                ...($this->resolveActionItemAssignee->handle($locked->team, $locked, $validated) ?? []),
+            ]);
         });
 
-        return response()->json(['actionItem' => $this->presentActionItem->handle($actionItem)], 201);
+        return response()->json(['actionItem' => $this->presentActionItem->handle($actionItem, ActionItemActor::forParticipant($participant))], 201);
     }
 
     public function update(Request $request, Retro $retro, ActionItem $actionItem): JsonResponse
@@ -77,7 +73,10 @@ class ActionItemsController extends Controller
 
             $fresh = $locked->actionItems()->whereKey($actionItem->id)->firstOrFail();
 
-            $attributes = Arr::except($validated, ['is_done']);
+            $attributes = [
+                ...Arr::except($validated, ['is_done', 'assignee_participant_id']),
+                ...($this->resolveActionItemAssignee->handle($locked->team, $locked, $validated, $fresh) ?? []),
+            ];
 
             if (array_key_exists('is_done', $validated)) {
                 $attributes['completed_at'] = $validated['is_done'] ? now() : null;

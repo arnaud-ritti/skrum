@@ -871,5 +871,9 @@
     "Only the author, the facilitator or an admin can change this action item.": "Solo el autor, el facilitador o un administrador pueden cambiar esta acción.",
     "Only the assignee or a manager can complete this action item.": "Solo la persona asignada o un responsable puede completar esta acción.",
     "You cannot comment on this action item.": "No puedes comentar esta acción.",
-    "Only the author of the comment or a manager can delete it.": "Solo el autor del comentario o un responsable puede eliminarlo."
+    "Only the author of the comment or a manager can delete it.": "Solo el autor del comentario o un responsable puede eliminarlo.",
+    "Guests can only be assigned from their own retrospective.": "Los invitados solo se pueden asignar desde su propia retrospectiva.",
+    "Choose either a team member or a guest as assignee, not both.": "Elige como persona asignada un miembro del equipo o un invitado, no ambos.",
+    "The assignee must be a participant of this retrospective.": "La persona asignada debe participar en esta retrospectiva.",
+    "The assignee must be a member of this team.": "La persona asignada debe ser miembro de este equipo."
 }

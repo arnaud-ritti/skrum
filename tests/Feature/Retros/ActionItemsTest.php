@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\ActionItems\ActionItemActor;
 use App\Actions\ActionItems\CreateActionItem;
 use App\Actions\Retros\PresentActionItem;
 use App\Enums\RetroPhase;
@@ -22,7 +23,7 @@ it('creates, assigns, completes and deletes action items while discussing', func
     $id = $this->actingAs($user)
         ->postJson(route('retros.action-items.store', $retro), ['content' => 'Speed up CI', 'assignee_participant_id' => $participant->id])
         ->assertCreated()
-        ->assertJsonPath('actionItem.assignee.id', $participant->id)
+        ->assertJsonPath('actionItem.assignee.id', $user->id)
         ->json('actionItem.id');
 
     $this->actingAs($user)
@@ -88,7 +89,7 @@ it('creates action items through the shared action', function () {
     [, $author] = retroMember($retro);
     $theme = RetroTheme::factory()->create(['retro_id' => $retro->id, 'name' => 'Release pain']);
 
-    $item = app(CreateActionItem::class)->handle($retro, $author, 'Automate the release', null, $theme);
+    $item = app(CreateActionItem::class)->handle($retro->team, $retro, ActionItemActor::forParticipant($author), ['content' => 'Automate the release'], $theme);
 
     expect($item->only(['content', 'created_by_participant_id', 'theme_id', 'theme_name']))->toBe([
         'content' => 'Automate the release',
