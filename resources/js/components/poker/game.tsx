@@ -10,6 +10,7 @@ import { usePokerGame } from '@/hooks/use-poker-game';
 import { useTrans } from '@/hooks/use-trans';
 import type { PokerSnapshot } from '@/lib/poker/types';
 import type { PokerDeckOption } from '@/types';
+import { AutoRevealTriggers } from './auto-reveal-triggers';
 import { FacilitatorToolbar } from './facilitator-toolbar';
 import { GameProvider, useGame, type GameContextValue } from './game-context';
 import { GameCursors } from './game-cursors';
@@ -19,6 +20,7 @@ import { GameReactions } from './game-reactions';
 import { Hand } from './hand';
 import { PlayersGrid } from './players-grid';
 import { ResultPanel } from './result-panel';
+import { RoundCountdown } from './round-timer-control';
 import { TaskDetail } from './task-detail';
 import { TaskFormDialog } from './task-form-dialog';
 import { TasksPane } from './tasks-pane';
@@ -27,7 +29,10 @@ type Props = { snapshot: PokerSnapshot; deckOptions: PokerDeckOption[] };
 
 export function Game({ snapshot: initial, deckOptions }: Props) {
     const { t } = useTrans();
-    const game = usePokerGame(initial);
+    const [departures, setDepartures] = useState(0);
+    const game = usePokerGame(initial, {
+        onLeaving: () => setDepartures((count) => count + 1),
+    });
     const [mainPane, setMainPane] = useState<HTMLElement | null>(null);
     const [hideMyCursor, setHideMyCursor] = useLocalPreference(
         HideMyCursorKey,
@@ -58,6 +63,7 @@ export function Game({ snapshot: initial, deckOptions }: Props) {
 
     return (
         <GameProvider value={ctx}>
+            <AutoRevealTriggers departures={departures} />
             <div className="flex min-h-dvh flex-col">
                 {game.sessionExpired && <SessionExpiredBanner />}
                 <div
@@ -166,6 +172,7 @@ function Table() {
         <>
             {current && currentTask ? (
                 <>
+                    <RoundCountdown />
                     <PlayersGrid />
                     <FacilitatorToolbar />
                     {current.round.revealedAt !== null && (

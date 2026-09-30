@@ -36,7 +36,12 @@ export type PokerGameState = {
     serverOffset: number;
 };
 
-export function usePokerGame(initial: PokerSnapshot): PokerGameState {
+type GameOptions = { onLeaving?: (member: PresenceMember) => void };
+
+export function usePokerGame(
+    initial: PokerSnapshot,
+    options: GameOptions = {},
+): PokerGameState {
     const { t } = useTrans();
     const [snapshot, dispatch] = useReducer(gameReducer, initial);
     const [status, setStatus] = useState<GameStatus>('active');
@@ -48,7 +53,10 @@ export function usePokerGame(initial: PokerSnapshot): PokerGameState {
     const gameId = initial.game.id;
     const serverOffset = useServerOffset(snapshot.serverTime);
 
+    const onLeaving = useRef(options.onLeaving);
+
     latestSnapshot.current = snapshot;
+    onLeaving.current = options.onLeaving;
 
     /**
      * While a refetch is in flight, broadcast actions are held back and
@@ -171,6 +179,13 @@ export function usePokerGame(initial: PokerSnapshot): PokerGameState {
                 case 'game.deleted':
                     end('deleted');
                     break;
+                case 'timer.changed':
+                    apply({
+                        type: 'timer.set',
+                        roundId: payload.roundId as string,
+                        timerEndsAt: payload.timerEndsAt as string | null,
+                    });
+                    break;
             }
         },
         [apply, refetch, end],
@@ -192,7 +207,12 @@ export function usePokerGame(initial: PokerSnapshot): PokerGameState {
     const { online, connected, reconnecting, presence } = usePokerChannel(
         gameId,
         status === 'active',
-        { onEvent, onResync: refetch, onJoining },
+        {
+            onEvent,
+            onResync: refetch,
+            onJoining,
+            onLeaving: (member) => onLeaving.current?.(member),
+        },
     );
 
     const errorMessage = useCallback(

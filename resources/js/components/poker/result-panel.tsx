@@ -29,6 +29,16 @@ export function ResultPanel({ round }: { round: PokerRound }) {
                 </h2>
                 {result.consensus && <Badge>{t('Consensus')}</Badge>}
             </div>
+            {round.revealReason === 'everyone_voted' && (
+                <p className="text-sm text-muted-foreground">
+                    {t('Revealed automatically — everyone voted')}
+                </p>
+            )}
+            {round.revealReason === 'timer' && (
+                <p className="text-sm text-muted-foreground">
+                    {t("Revealed automatically — time's up")}
+                </p>
+            )}
 
             {!hasCountable ? (
                 <p className="text-sm text-muted-foreground">

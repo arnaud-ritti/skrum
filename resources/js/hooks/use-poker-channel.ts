@@ -12,6 +12,7 @@ export const PokerEvents = [
     'round.changed',
     'game.changed',
     'game.deleted',
+    'timer.changed',
 ] as const;
 
 /**
@@ -31,6 +32,7 @@ export type PokerChannelHandlers = {
     onEvent: (event: PokerEvent) => void;
     onResync: () => void;
     onJoining: (member: PresenceMember) => void;
+    onLeaving?: (member: PresenceMember) => void;
 };
 
 /** A player open in two tabs is one presence member with the same id. */
@@ -91,11 +93,12 @@ export function usePokerChannel(
                 setOnline((current) => withMember(current, member));
                 handlers.current.onJoining(member);
             })
-            .leaving((member: PresenceMember) =>
+            .leaving((member: PresenceMember) => {
                 setOnline((current) =>
                     current.filter((known) => known.id !== member.id),
-                ),
-            )
+                );
+                handlers.current.onLeaving?.(member);
+            })
             .error(scheduleResync);
 
         setPresence(channel as unknown as WhisperChannel);

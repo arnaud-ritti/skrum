@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useState, type FormEvent, type ReactNode } from 'react';
 import PokerSettingsController from '@/actions/App/Http/Controllers/Poker/PokerSettingsController';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
@@ -47,6 +47,34 @@ function firstErrors(
     );
 }
 
+function SettingSwitch({
+    id,
+    label,
+    checked,
+    onChange,
+    children,
+}: {
+    id: string;
+    label: string;
+    checked: boolean;
+    onChange: (checked: boolean) => void;
+    children?: ReactNode;
+}) {
+    return (
+        <div className="space-y-1">
+            <div className="flex items-center gap-2">
+                <Checkbox
+                    id={id}
+                    checked={checked}
+                    onCheckedChange={(value) => onChange(value === true)}
+                />
+                <Label htmlFor={id}>{label}</Label>
+            </div>
+            {children}
+        </div>
+    );
+}
+
 function SettingsForm({ onDone }: { onDone: () => void }) {
     const ctx = useGame();
     const { t } = useTrans();
@@ -56,6 +84,12 @@ function SettingsForm({ onDone }: { onDone: () => void }) {
     const [deck, setDeck] = useState<DeckChoice>(initialDeck);
     const [guestAccessEnabled, setGuestAccessEnabled] = useState(
         game.guestAccessEnabled,
+    );
+    const [autoReveal, setAutoReveal] = useState(game.autoReveal);
+    const [anonymousVotes, setAnonymousVotes] = useState(game.anonymousVotes);
+    const [cursorsEnabled, setCursorsEnabled] = useState(game.cursorsEnabled);
+    const [reactionsEnabled, setReactionsEnabled] = useState(
+        game.reactionsEnabled,
     );
     const [errors, setErrors] = useState<Record<string, string | undefined>>(
         {},
@@ -85,6 +119,22 @@ function SettingsForm({ onDone }: { onDone: () => void }) {
 
         if (guestAccessEnabled !== game.guestAccessEnabled) {
             changes.guest_access_enabled = guestAccessEnabled;
+        }
+
+        if (autoReveal !== game.autoReveal) {
+            changes.auto_reveal = autoReveal;
+        }
+
+        if (anonymousVotes !== game.anonymousVotes) {
+            changes.anonymous_votes = anonymousVotes;
+        }
+
+        if (cursorsEnabled !== game.cursorsEnabled) {
+            changes.cursors_enabled = cursorsEnabled;
+        }
+
+        if (reactionsEnabled !== game.reactionsEnabled) {
+            changes.reactions_enabled = reactionsEnabled;
         }
 
         if (Object.keys(changes).length === 0) {
@@ -164,6 +214,43 @@ function SettingsForm({ onDone }: { onDone: () => void }) {
                 />
                 <Label htmlFor="poker-guest-access">{t('Allow guests')}</Label>
             </div>
+            <SettingSwitch
+                id="poker-auto-reveal"
+                label={t(
+                    'Reveal automatically when everyone has voted or the timer ends',
+                )}
+                checked={autoReveal}
+                onChange={setAutoReveal}
+            />
+            <SettingSwitch
+                id="poker-anonymous-votes"
+                label={t('Anonymous votes')}
+                checked={anonymousVotes}
+                onChange={setAnonymousVotes}
+            >
+                {game.anonymousVotes && !anonymousVotes && (
+                    <p className="text-xs text-muted-foreground">
+                        {t('Applies from the next round.')}
+                    </p>
+                )}
+                <p className="text-xs text-muted-foreground">
+                    {t(
+                        "With two voters, each can work out the other's vote from their own.",
+                    )}
+                </p>
+            </SettingSwitch>
+            <SettingSwitch
+                id="poker-cursors"
+                label={t('Show live cursors')}
+                checked={cursorsEnabled}
+                onChange={setCursorsEnabled}
+            />
+            <SettingSwitch
+                id="poker-reactions"
+                label={t('Show flying reactions')}
+                checked={reactionsEnabled}
+                onChange={setReactionsEnabled}
+            />
 
             {error && <p className="text-sm text-destructive">{error}</p>}
 

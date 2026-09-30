@@ -20,6 +20,7 @@ import {
 } from '@/lib/poker/types';
 import { retroRequest } from '@/lib/retro/api';
 import { useGame } from './game-context';
+import { RoundTimerControl } from './round-timer-control';
 
 /** Spec Decision 2: nearest card for numeric decks, the single mode otherwise. */
 function suggestedEstimate(
@@ -141,12 +142,15 @@ export function FacilitatorToolbar() {
             className="flex flex-wrap items-center justify-center gap-2"
         >
             {!isRevealed ? (
-                <Button
-                    disabled={busy || round.votesCount === 0}
-                    onClick={() => void reveal()}
-                >
-                    {t('Show votes')}
-                </Button>
+                <>
+                    <Button
+                        disabled={busy || round.votesCount === 0}
+                        onClick={() => void reveal()}
+                    >
+                        {t('Show votes')}
+                    </Button>
+                    <RoundTimerControl />
+                </>
             ) : (
                 <>
                     <Button

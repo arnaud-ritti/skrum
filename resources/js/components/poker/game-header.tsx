@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { ArrowLeft, MousePointer2, MousePointerBan } from 'lucide-react';
+import { ArrowLeft, Eye, MousePointer2, MousePointerBan } from 'lucide-react';
 import { useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import PokerSettingsController from '@/actions/App/Http/Controllers/Poker/PokerSettingsController';
 import { LanguageSwitcher } from '@/components/language-switcher';
@@ -12,6 +12,7 @@ import { retroRequest } from '@/lib/retro/api';
 import { showsPokerCursors } from './game-cursors';
 import { useGame } from './game-context';
 import { GameMenu } from './game-menu';
+import { SpectatorToggle } from './spectator-toggle';
 import { TakeControlButton } from './take-control-button';
 
 type Props = {
@@ -48,11 +49,30 @@ export function GameHeader({
             )}
             <Badge variant="outline">{game.deckLabel}</Badge>
             {isEnded && <Badge variant="secondary">{t('Game ended')}</Badge>}
+            {game.anonymousVotes && (
+                <Badge variant="secondary">{t('Anonymous votes')}</Badge>
+            )}
+            {game.autoReveal && (
+                <Badge variant="secondary">{t('Auto-reveal')}</Badge>
+            )}
             <div className="ml-auto flex flex-wrap items-center gap-3">
+                <SpectatorToggle />
                 {actions}
                 <TakeControlButton />
                 {(me.isFacilitator || me.canDelete) && <GameMenu />}
-                <PresenceStrip members={online} />
+                <PresenceStrip
+                    members={online}
+                    badgeFor={(member) =>
+                        snapshot.players.find(
+                            (player) => player.id === member.id,
+                        )?.isSpectator ? (
+                            <Eye
+                                className="size-3"
+                                aria-label={t('Watching')}
+                            />
+                        ) : null
+                    }
+                />
                 {hideMyCursor !== undefined &&
                     onHideMyCursorChange &&
                     showsPokerCursors(snapshot) && (

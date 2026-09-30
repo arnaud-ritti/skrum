@@ -3,6 +3,7 @@ import PokerJoinsController from '@/actions/App/Http/Controllers/PokerJoinsContr
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useTrans } from '@/hooks/use-trans';
@@ -58,6 +59,16 @@ export default function JoinPokerGame(props: Props) {
                                     defaultValue={props.suggestedName ?? ''}
                                 />
                                 <InputError message={errors.name} />
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Checkbox
+                                    id="spectator"
+                                    name="spectator"
+                                    value="1"
+                                />
+                                <Label htmlFor="spectator">
+                                    {t('Join as spectator')}
+                                </Label>
                             </div>
                             <Button className="w-full" disabled={processing}>
                                 {t('Join')}

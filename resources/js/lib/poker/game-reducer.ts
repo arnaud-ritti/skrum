@@ -20,7 +20,8 @@ export type GameAction =
           votesCount: number;
           version: number;
       }
-    | { type: 'vote.mine'; response: PokerVoteResponse };
+    | { type: 'vote.mine'; response: PokerVoteResponse }
+    | { type: 'timer.set'; roundId: string; timerEndsAt: string | null };
 
 export function sortedTasks(tasks: PokerTask[]): PokerTask[] {
     return [...tasks].sort((first, second) => first.position - second.position);
@@ -197,5 +198,10 @@ export function gameReducer(
                 };
             });
         }
+        case 'timer.set':
+            return withRound(state, action.roundId, (round) => ({
+                ...round,
+                timerEndsAt: action.timerEndsAt,
+            }));
     }
 }

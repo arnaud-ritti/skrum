@@ -5,9 +5,32 @@ import {
     TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { useTrans } from '@/hooks/use-trans';
+import type { PokerRound, PokerRoundVote } from '@/lib/poker/types';
 import { cn } from '@/lib/utils';
+import { AnonymousValuesRow } from './anonymous-values-row';
 import { useGame } from './game-context';
 import { PokerCard } from './poker-card';
+import { PlayerRoleMenu } from './spectator-toggle';
+import { WatchingRow } from './watching-row';
+
+/**
+ * On an anonymous round the seats stay face-down after reveal (the viewer's
+ * own seat too), so no seat links a value to a player.
+ */
+export function cardFace(
+    round: PokerRound | null,
+    vote: PokerRoundVote | undefined,
+): 'empty' | 'down' | 'up' {
+    if (round === null || vote === undefined) {
+        return 'empty';
+    }
+
+    if (round.revealedAt === null || round.anonymous || vote.value === null) {
+        return 'down';
+    }
+
+    return 'up';
+}
 
 /**
  * Seats at the table: online players plus anyone offline who already voted
@@ -30,7 +53,6 @@ export function PlayersGrid() {
             !player.isSpectator &&
             (onlineIds.has(player.id) || votes.has(player.id)),
     );
-    const isRevealed = round.revealedAt !== null;
 
     return (
         <section aria-label={t('Players')}>
@@ -38,11 +60,7 @@ export function PlayersGrid() {
                 {seated.map((player) => {
                     const vote = votes.get(player.id);
                     const isOffline = !onlineIds.has(player.id);
-                    const face = !vote
-                        ? 'empty'
-                        : isRevealed && vote.value !== null
-                          ? 'up'
-                          : 'down';
+                    const face = cardFace(round, vote);
                     const status = vote ? t('Voted') : t('Not voted yet');
 
                     return (
@@ -82,6 +100,7 @@ export function PlayersGrid() {
                                         </TooltipContent>
                                     </Tooltip>
                                 )}
+                                <PlayerRoleMenu player={player} />
                             </div>
                             {isOffline && (
                                 <span className="text-xs text-muted-foreground">
@@ -92,6 +111,10 @@ export function PlayersGrid() {
                     );
                 })}
             </ul>
+            {round.anonymous && round.revealedAt !== null && (
+                <AnonymousValuesRow round={round} />
+            )}
+            <WatchingRow />
         </section>
     );
 }
