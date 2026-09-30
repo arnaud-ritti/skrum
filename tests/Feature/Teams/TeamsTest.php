@@ -176,7 +176,7 @@ it('presents built-in statements translated and custom statements as stored', fu
     $this->actingAs($admin)
         ->get(route('teams.show', [$workspace, $team]))
         ->assertInertia(fn (Assert $page) => $page
-            ->where('healthStatements.0.text', 'Les interactions avec mes collègues ont été productives')
+            ->where('healthStatements.0.text', 'Les échanges avec mes collègues ont été productifs')
             ->where('healthStatements.6', [
                 'id' => $custom->id,
                 'key' => $custom->id,
