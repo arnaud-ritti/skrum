@@ -574,5 +574,7 @@
     "Average: :value": "Average: :value",
     "Retrospective views": "Retrospective views",
     "Too many requests, wait a moment.": "Too many requests, wait a moment.",
-    "Not available.": "Not available."
+    "Not available.": "Not available.",
+    "The text generator is unavailable. Try again later.": "The text generator is unavailable. Try again later.",
+    "Could not generate a survey. Try again or write it yourself.": "Could not generate a survey. Try again or write it yourself."
 }

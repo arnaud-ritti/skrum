@@ -33,6 +33,7 @@ use App\Http\Controllers\Retros\RetroSnapshotsController;
 use App\Http\Controllers\Retros\RetroTimersController;
 use App\Http\Controllers\Retros\SurveyClosuresController;
 use App\Http\Controllers\Retros\SurveyCommentsController;
+use App\Http\Controllers\Retros\SurveyDraftsController;
 use App\Http\Controllers\Retros\SurveyReactionsController;
 use App\Http\Controllers\Retros\SurveyResponsesController;
 use App\Http\Controllers\Retros\SurveysController;
@@ -166,6 +167,7 @@ Route::prefix('retros/{retro}')
         Route::post('action-items', [ActionItemsController::class, 'store'])->name('retros.action-items.store');
         Route::patch('action-items/{actionItem}', [ActionItemsController::class, 'update'])->name('retros.action-items.update')->whereUuid('actionItem');
         Route::delete('action-items/{actionItem}', [ActionItemsController::class, 'destroy'])->name('retros.action-items.destroy')->whereUuid('actionItem');
+        Route::post('survey-drafts', [SurveyDraftsController::class, 'store'])->name('retros.survey-drafts.store');
         Route::post('surveys', [SurveysController::class, 'store'])->name('retros.surveys.store');
         Route::get('surveys/{survey}', [SurveysController::class, 'show'])->name('retros.surveys.show')->whereUuid('survey');
         Route::patch('surveys/{survey}', [SurveysController::class, 'update'])->name('retros.surveys.update')->whereUuid('survey');

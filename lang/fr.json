@@ -828,5 +828,7 @@
     "Average: :value": "Moyenne : :value",
     "Retrospective views": "Vues de la rétrospective",
     "Too many requests, wait a moment.": "Trop de demandes, patientez un instant.",
-    "Not available.": "Non disponible."
+    "Not available.": "Non disponible.",
+    "The text generator is unavailable. Try again later.": "Le générateur de texte est indisponible. Réessayez plus tard.",
+    "Could not generate a survey. Try again or write it yourself.": "Impossible de générer un sondage. Réessayez ou rédigez-le vous-même."
 }
