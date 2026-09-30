@@ -19,6 +19,7 @@ use App\Support\Games\DrawAndGuessRules;
 use App\Support\Games\GameRulesRegistry;
 use App\Support\Games\HangmanRules;
 use App\Support\Games\ReverbGamePresenceRoster;
+use App\Support\Games\SprintGifRules;
 use App\Support\Poker\ReverbPokerPresenceRoster;
 use Carbon\CarbonImmutable;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -49,6 +50,7 @@ class AppServiceProvider extends ServiceProvider
             $app->make(HangmanRules::class),
             $app->make(DrawAndGuessRules::class),
             $app->make(DecodedRules::class),
+            $app->make(SprintGifRules::class),
         ]));
         $this->app->scoped(McpGrantContext::class);
         $this->app->scoped(VisibleTeams::class);
