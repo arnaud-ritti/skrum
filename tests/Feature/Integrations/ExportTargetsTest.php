@@ -68,6 +68,17 @@ it('preselects the last target and lists the issue types of a chosen project', f
         ->assertJsonPath('issueTypes.1.name', 'Task');
 });
 
+it('filters Jira projects while keeping the chosen project', function () {
+    fakeJiraTargets();
+    $integration = TeamIntegration::factory()->jira()->create();
+
+    $this->actingAs(teamMember($integration->team))->getJson(targetsUrl($integration, ['project_id' => '10001', 'q' => 'Proj']))
+        ->assertOk()
+        ->assertJsonPath('defaults', ['projectId' => '10001', 'issueTypeId' => '20']);
+
+    Http::assertSent(fn (HttpClientRequest $request) => str_contains($request->url(), 'project/search') && $request['query'] === 'Proj');
+});
+
 it('lists Linear teams', function () {
     fakeLinearGraphql(['teams(' => ['teams' => ['nodes' => [
         ['id' => '6a1f0c1e-4e8b-4a55-9b53-3c0b5f1f0a01', 'key' => 'ENG', 'name' => 'Engineering'],

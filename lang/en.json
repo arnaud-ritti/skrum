@@ -1138,6 +1138,8 @@
     ":provider account of :name": ":provider account of :name",
     "Search by name or email. Emails are not shown.": "Search by name or email. Emails are not shown.",
     "No account found.": "No account found.",
+    "No project found.": "No project found.",
+    "Search projects": "Search projects",
     "Priorities": "Priorities",
     "Priority of the issues created from action items.": "Priority of the issues created from action items.",
     "Priority for :level": "Priority for :level",

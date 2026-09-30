@@ -1384,6 +1384,8 @@
     ":provider account of :name": "Compte :provider de :name",
     "Search by name or email. Emails are not shown.": "Recherchez par nom ou e-mail. Les e-mails ne sont pas affichés.",
     "No account found.": "Aucun compte trouvé.",
+    "No project found.": "Aucun projet trouvé.",
+    "Search projects": "Rechercher des projets",
     "Priorities": "Priorités",
     "Priority of the issues created from action items.": "Priorité des tickets créés à partir des actions.",
     "Priority for :level": "Priorité pour :level",

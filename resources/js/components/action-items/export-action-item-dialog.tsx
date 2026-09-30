@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import IntegrationTargetsController from '@/actions/App/Http/Controllers/Integrations/IntegrationTargetsController';
 import TeamIntegrationsController from '@/actions/App/Http/Controllers/Integrations/TeamIntegrationsController';
@@ -11,6 +11,7 @@ import {
     DialogFooter,
     DialogTitle,
 } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import {
     Select,
     SelectContent,
@@ -35,6 +36,8 @@ import type { RunMutation } from './action-item-card';
 
 /** Several provider calls run in one export (spec §7): wait longer. */
 const ExportTimeoutMs = 45_000;
+
+const SearchDelayMs = 300;
 
 type Choice = {
     projectId: string | null;
@@ -135,7 +138,13 @@ export function ExportActionItemDialog({
     const [requestedProject, setRequestedProject] = useState<string | null>(
         null,
     );
+    const [projectQuery, setProjectQuery] = useState('');
+    const [searchedProjects, setSearchedProjects] = useState('');
+    const [loadedRequest, setLoadedRequest] = useState<string | null>(null);
     const [targets, setTargets] = useState<ExportTargets | null>(null);
+    const [selectedProject, setSelectedProject] =
+        useState<ExportTargetOption | null>(null);
+    const currentProject = useRef<string | null>(null);
     const [choice, setChoice] = useState<Choice>({
         projectId: null,
         issueTypeId: null,
@@ -146,9 +155,33 @@ export function ExportActionItemDialog({
     const [busy, setBusy] = useState(false);
     const isJira = source.source === 'jira';
     const previewUrl = endpoints.exportPreview(item.id, source.source).url;
+    const targetsRequest = `${requestedProject ?? ''}|${searchedProjects}`;
+    const loadingTargets =
+        loadedRequest !== targetsRequest ||
+        projectQuery.trim() !== searchedProjects;
+
+    useEffect(() => {
+        const timer = setTimeout(
+            () => setSearchedProjects(projectQuery.trim()),
+            SearchDelayMs,
+        );
+
+        return () => clearTimeout(timer);
+    }, [projectQuery]);
 
     useEffect(() => {
         let cancelled = false;
+        const request = `${requestedProject ?? ''}|${searchedProjects}`;
+        const projectId = requestedProject ?? currentProject.current;
+        const query: Record<string, string> = {};
+
+        if (projectId !== null) {
+            query.project_id = projectId;
+        }
+
+        if (searchedProjects !== '') {
+            query.q = searchedProjects;
+        }
 
         retroRequest<ExportTargets>(
             IntegrationTargetsController.index(
@@ -157,9 +190,7 @@ export function ExportActionItemDialog({
                     team: item.teamId,
                     integration: source.integrationId,
                 },
-                requestedProject === null
-                    ? undefined
-                    : { query: { project_id: requestedProject } },
+                { query },
             ),
         )
             .then((loaded) => {
@@ -167,16 +198,33 @@ export function ExportActionItemDialog({
                     return;
                 }
 
+                const loadedProject = loaded.defaults.projectId ?? null;
+
+                currentProject.current = loadedProject;
                 setTargets(loaded);
-                setChoice({
-                    projectId: loaded.defaults.projectId ?? null,
-                    issueTypeId: loaded.defaults.issueTypeId ?? null,
+                setSelectedProject(
+                    (previous) =>
+                        loaded.projects?.find(
+                            (project) => project.id === loadedProject,
+                        ) ?? (previous?.id === loadedProject ? previous : null),
+                );
+                setChoice((previous) => ({
+                    projectId: loadedProject,
+                    issueTypeId:
+                        previous.projectId === loadedProject &&
+                        loaded.issueTypes?.some(
+                            (type) => type.id === previous.issueTypeId,
+                        )
+                            ? previous.issueTypeId
+                            : (loaded.defaults.issueTypeId ?? null),
                     teamId: loaded.defaults.teamId ?? null,
-                });
+                }));
                 setLoadError(null);
+                setLoadedRequest(request);
             })
             .catch((error: unknown) => {
                 if (!cancelled) {
+                    setLoadedRequest(request);
                     setLoadError(
                         integrationErrorMessage(
                             error,
@@ -193,6 +241,7 @@ export function ExportActionItemDialog({
         };
     }, [
         requestedProject,
+        searchedProjects,
         workspace,
         item.teamId,
         source.integrationId,
@@ -220,9 +269,18 @@ export function ExportActionItemDialog({
         };
     }, [previewUrl, item.assignee?.id, item.priority]);
 
-    const ready = isJira
-        ? choice.projectId !== null && choice.issueTypeId !== null
-        : choice.teamId !== null;
+    const ready =
+        loadError === null &&
+        !loadingTargets &&
+        (isJira
+            ? choice.projectId !== null && choice.issueTypeId !== null
+            : choice.teamId !== null);
+    const listedProjects = targets?.projects ?? [];
+    const projectOptions =
+        selectedProject === null ||
+        listedProjects.some((project) => project.id === selectedProject.id)
+            ? listedProjects
+            : [selectedProject, ...listedProjects];
 
     const submit = async () => {
         if (!ready || busy) {
@@ -298,22 +356,43 @@ export function ExportActionItemDialog({
                         <Spinner />
                     </div>
                 )}
-                {loadError === null && targets !== null && (
+                {targets !== null && (
                     <div className="space-y-3">
                         {isJira ? (
                             <>
+                                <div className="flex items-center gap-2">
+                                    <Input
+                                        value={projectQuery}
+                                        maxLength={100}
+                                        placeholder={t('Search projects')}
+                                        aria-label={t('Search projects')}
+                                        disabled={busy}
+                                        onChange={(event) =>
+                                            setProjectQuery(event.target.value)
+                                        }
+                                    />
+                                    {loadingTargets && <Spinner />}
+                                </div>
+                                {!loadingTargets &&
+                                    loadError === null &&
+                                    searchedProjects !== '' &&
+                                    listedProjects.length === 0 && (
+                                        <p className="text-sm text-muted-foreground">
+                                            {t('No project found.')}
+                                        </p>
+                                    )}
                                 <TargetSelect
                                     label={t('Project')}
                                     value={choice.projectId}
-                                    options={targets.projects ?? []}
-                                    disabled={busy}
+                                    options={projectOptions}
+                                    disabled={busy || loadingTargets}
                                     onChange={setRequestedProject}
                                 />
                                 <TargetSelect
                                     label={t('Issue type')}
                                     value={choice.issueTypeId}
                                     options={targets.issueTypes ?? []}
-                                    disabled={busy}
+                                    disabled={busy || loadingTargets}
                                     onChange={(issueTypeId) =>
                                         setChoice({ ...choice, issueTypeId })
                                     }
