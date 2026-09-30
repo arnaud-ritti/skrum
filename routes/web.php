@@ -12,6 +12,8 @@ use App\Http\Controllers\LocalesController;
 use App\Http\Controllers\NotificationsController;
 use App\Http\Controllers\Poker\PokerGamesController;
 use App\Http\Controllers\Poker\PokerSnapshotsController;
+use App\Http\Controllers\Poker\PokerTaskOrdersController;
+use App\Http\Controllers\Poker\PokerTasksController;
 use App\Http\Controllers\PokerJoinsController;
 use App\Http\Controllers\ReadAllNotificationsController;
 use App\Http\Controllers\RetroJoinsController;
@@ -237,6 +239,10 @@ Route::prefix('poker/{game}')
     ->group(function () {
         Route::get('/', [PokerGamesController::class, 'show'])->name('poker.show');
         Route::get('snapshot', [PokerSnapshotsController::class, 'show'])->name('poker.snapshot.show');
+        Route::post('tasks', [PokerTasksController::class, 'store'])->name('poker.tasks.store');
+        Route::patch('tasks/{task}', [PokerTasksController::class, 'update'])->name('poker.tasks.update')->whereUuid('task');
+        Route::delete('tasks/{task}', [PokerTasksController::class, 'destroy'])->name('poker.tasks.destroy')->whereUuid('task');
+        Route::put('task-order', [PokerTaskOrdersController::class, 'update'])->name('poker.task-order.update');
     });
 
 Route::post('broadcasting/auth', [BroadcastAuthorizationsController::class, 'store'])->name('broadcasting.auth');

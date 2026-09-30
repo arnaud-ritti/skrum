@@ -716,5 +716,7 @@
     "Choose the name other players will see.": "Choose the name other players will see.",
     "Give between 2 and 20 cards.": "Give between 2 and 20 cards.",
     "Each card can appear only once.": "Each card can appear only once.",
-    "Add at least one card that can be an estimate.": "Add at least one card that can be an estimate."
+    "Add at least one card that can be an estimate.": "Add at least one card that can be an estimate.",
+    "This game already has 200 tasks.": "This game already has 200 tasks.",
+    "The list of tasks is out of date.": "The list of tasks is out of date."
 }

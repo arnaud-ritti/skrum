@@ -969,5 +969,7 @@
     "Choose the name other players will see.": "Choisissez le nom que les autres joueurs verront.",
     "Give between 2 and 20 cards.": "Indiquez entre 2 et 20 cartes.",
     "Each card can appear only once.": "Chaque carte ne peut apparaître qu'une fois.",
-    "Add at least one card that can be an estimate.": "Ajoutez au moins une carte pouvant servir d'estimation."
+    "Add at least one card that can be an estimate.": "Ajoutez au moins une carte pouvant servir d'estimation.",
+    "This game already has 200 tasks.": "Cette partie compte déjà 200 tâches.",
+    "The list of tasks is out of date.": "La liste des tâches n'est plus à jour."
 }
