@@ -6,6 +6,7 @@ use App\Http\Controllers\BroadcastAuthorizationsController;
 use App\Http\Controllers\CurrentWorkspaceController;
 use App\Http\Controllers\EmojiDataController;
 use App\Http\Controllers\GameJoinsController;
+use App\Http\Controllers\Games\GameAnswersController;
 use App\Http\Controllers\Games\GameDrawingOpsController;
 use App\Http\Controllers\Games\GameDrawingsController;
 use App\Http\Controllers\Games\GameGifsController;
@@ -435,6 +436,8 @@ Route::prefix('games/{room}')
         Route::delete('rounds/{round}/drawing', [GameDrawingsController::class, 'destroy'])->name('games.rounds.drawing.destroy')->whereUuid('round');
         Route::put('rounds/{round}/clue', [GameRoundCluesController::class, 'update'])->name('games.rounds.clue.update')->whereUuid('round');
         Route::put('rounds/{round}/question', [GameQuestionsController::class, 'update'])->name('games.rounds.question.update')->whereUuid('round');
+        Route::put('rounds/{round}/answer', [GameAnswersController::class, 'update'])->name('games.rounds.answer.update')->whereUuid('round');
+        Route::delete('rounds/{round}/answer', [GameAnswersController::class, 'destroy'])->name('games.rounds.answer.destroy')->whereUuid('round');
         Route::get('gifs', [GameGifsController::class, 'index'])->name('games.gifs.index');
     });
 

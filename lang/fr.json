@@ -1512,5 +1512,6 @@
     "Your word to describe": "Votre mot à faire deviner",
     ":name is giving clues": ":name donne les indices",
     "Drawing of :word": "Dessin de :word",
-    "The question can no longer be changed.": "La question ne peut plus être modifiée."
+    "The question can no longer be changed.": "La question ne peut plus être modifiée.",
+    "The GIFs are already revealed.": "Les GIF sont déjà révélés."
 }
