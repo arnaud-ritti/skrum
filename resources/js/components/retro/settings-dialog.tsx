@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useTrans } from '@/hooks/use-trans';
 import { retroRequest } from '@/lib/retro/api';
+import { AiSummarySwitch } from './ai-summary-switch';
 import { useBoard } from './board-context';
 
 type Props = {
@@ -80,6 +81,9 @@ function SettingsForm({ onDone }: { onDone: () => void }) {
     const [presentationMode, setPresentationMode] = useState(
         retro.presentationMode,
     );
+    const [aiSummaryEnabled, setAiSummaryEnabled] = useState(
+        retro.aiSummaryEnabled,
+    );
     const [error, setError] = useState<string | null>(null);
     const [saving, setSaving] = useState(false);
     const anonymityLocked = retro.isAnonymous && ctx.board.cards.length > 0;
@@ -142,6 +146,10 @@ function SettingsForm({ onDone }: { onDone: () => void }) {
 
         if (presentationMode !== retro.presentationMode) {
             changes.presentation_mode = presentationMode;
+        }
+
+        if (aiSummaryEnabled !== retro.aiSummaryEnabled) {
+            changes.ai_summary_enabled = aiSummaryEnabled;
         }
 
         if (Object.keys(changes).length === 0) {
@@ -306,6 +314,16 @@ function SettingsForm({ onDone }: { onDone: () => void }) {
                     onChange={setPresentationMode}
                 />
             </div>
+
+            {ctx.board.features.llm && ctx.board.features.llmProvider && (
+                <AiSummarySwitch
+                    id="retro-ai-summary"
+                    provider={ctx.board.features.llmProvider}
+                    checked={aiSummaryEnabled}
+                    disabled={engagementLocked}
+                    onChange={setAiSummaryEnabled}
+                />
+            )}
 
             <InputError message={error ?? undefined} />
 

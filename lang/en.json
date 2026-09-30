@@ -578,5 +578,10 @@
     "The text generator is unavailable. Try again later.": "The text generator is unavailable. Try again later.",
     "Could not generate a survey. Try again or write it yourself.": "Could not generate a survey. Try again or write it yourself.",
     "This suggestion was already handled.": "This suggestion was already handled.",
-    "Could not suggest names. Try again or name the groups yourself.": "Could not suggest names. Try again or name the groups yourself."
+    "Could not suggest names. Try again or name the groups yourself.": "Could not suggest names. Try again or name the groups yourself.",
+    "Automatic AI summary": "Automatic AI summary",
+    "When the retro is completed, its board content is sent automatically to :provider to write a summary. Participants can also ask it to suggest group names. Turn this off to keep it on this server.": "When the retro is completed, its board content is sent automatically to :provider to write a summary. Participants can also ask it to suggest group names. Turn this off to keep it on this server.",
+    "Positive": "Positive",
+    "Neutral": "Neutral",
+    "Negative": "Negative"
 }

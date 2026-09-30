@@ -21,6 +21,7 @@ import { useTrans } from '@/hooks/use-trans';
 import type {
     CatalogueTemplate,
     CategoryOption,
+    LlmAvailability,
     MemberSummary,
     RetroSummary,
     TeamHealthStatement,
@@ -40,6 +41,7 @@ type Props = {
     canCreateRetro: boolean;
     healthStatements: TeamHealthStatement[];
     canManageHealthStatements: boolean;
+    llm: LlmAvailability;
 };
 
 export default function ShowTeam({
@@ -54,6 +56,7 @@ export default function ShowTeam({
     canCreateRetro,
     healthStatements,
     canManageHealthStatements,
+    llm,
 }: Props) {
     const { t } = useTrans();
     const params = { workspace: workspace.slug, team: team.id };
@@ -101,6 +104,7 @@ export default function ShowTeam({
                             teamId={team.id}
                             categories={templateCategories}
                             catalogue={catalogue}
+                            llm={llm}
                         />
                     )}
 

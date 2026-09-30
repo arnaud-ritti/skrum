@@ -14,6 +14,34 @@ export type ColumnColor =
     | 'purple'
     | 'slate';
 
+export type CardSentiment = 'positive' | 'neutral' | 'negative';
+
+export type SummaryStatus = 'pending' | 'ready' | 'failed';
+
+export type ResultsSummary = {
+    text: string | null;
+    generatedAt: string | null;
+    status: SummaryStatus | null;
+    provider: string;
+};
+
+export type RetroTheme = { id: string; name: string; cardIds: string[] };
+
+export type SuggestedActionStatus = 'pending' | 'promoted' | 'rejected';
+
+export type SuggestedAction = {
+    id: string;
+    content: string;
+    themeId: string | null;
+    status: SuggestedActionStatus;
+    actionItemId: string | null;
+};
+
+export type Insights = {
+    themes: RetroTheme[];
+    suggestedActions: SuggestedAction[];
+};
+
 export type Person = { id: string; name: string };
 
 export type CardGif = { id: string; previewUrl: string; url: string };
@@ -107,6 +135,8 @@ export type BoardCard = CardPayload & {
     reactions: ReactionSummary[];
     commentCount: number;
     comments: CommentThread[];
+    sentiment: CardSentiment | null;
+    category: string | null;
     /**
      * Client-only: the votes version `votes` was last set at. Totals are
      * ordered per card because the votes version is global to the retro.
@@ -134,6 +164,8 @@ export type ActionItem = {
     content: string;
     isDone: boolean;
     assignee: Person | null;
+    themeId: string | null;
+    themeName: string | null;
 };
 
 export type TransferCandidate = { userId: string; name: string };
@@ -181,6 +213,7 @@ export type Snapshot = {
         highlightedCardId: string | null;
         completedAt: string | null;
         guestUrl: string | null;
+        aiSummaryEnabled: boolean;
     };
     viewer: {
         participantId: string;
@@ -188,6 +221,7 @@ export type Snapshot = {
         isGuest: boolean;
         remainingVotes: number;
         transferCandidates: TransferCandidate[];
+        canHandleSuggestions: boolean;
     };
     columns: BoardColumn[];
     cards: BoardCard[];
@@ -196,6 +230,8 @@ export type Snapshot = {
     surveys: SurveyPayload[];
     roti: RotiState;
     results: Results | null;
+    insights: Insights | null;
+    features: { llm: boolean; llmProvider: string | null };
     healthCheck: HealthCheckState | null;
     votesCast: number | null;
     votesVersion: number;
@@ -265,5 +301,5 @@ export type Results = {
     surveys: SurveyPayload[];
     games: null;
     roti: RotiResults;
-    summary: null;
+    summary: ResultsSummary | null;
 };

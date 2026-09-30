@@ -3,6 +3,7 @@ import { ChevronDown, Search } from 'lucide-react';
 import { useEffect, useState, type FormEvent } from 'react';
 import TeamRetrosController from '@/actions/App/Http/Controllers/TeamRetrosController';
 import InputError from '@/components/input-error';
+import { AiSummarySwitch } from '@/components/retro/ai-summary-switch';
 import { TemplateChips } from '@/components/templates/template-chips';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -26,6 +27,7 @@ import { cn } from '@/lib/utils';
 import type {
     CatalogueTemplate,
     CategoryOption,
+    LlmAvailability,
     TemplateCategory,
 } from '@/types';
 
@@ -36,6 +38,7 @@ type Props = {
     teamId: string;
     categories: CategoryOption[];
     catalogue?: CatalogueTemplate[];
+    llm: LlmAvailability;
 };
 
 type RetroForm = {
@@ -45,6 +48,7 @@ type RetroForm = {
     health_check_enabled: boolean;
     icebreaker_enabled: boolean;
     votes_per_participant: number | null;
+    ai_summary_enabled: boolean;
 };
 
 export function NewRetroDialog(props: Props) {
@@ -86,6 +90,7 @@ function NewRetroForm({
     teamId,
     categories,
     catalogue,
+    llm,
     onDone,
 }: Props & { onDone: () => void }) {
     const { t } = useTrans();
@@ -103,6 +108,7 @@ function NewRetroForm({
         health_check_enabled: false,
         icebreaker_enabled: false,
         votes_per_participant: null,
+        ai_summary_enabled: llm.enabled,
     });
 
     useEffect(() => {
@@ -411,6 +417,16 @@ function NewRetroForm({
                             message={form.errors.votes_per_participant}
                         />
                     </div>
+                    {llm.enabled && llm.provider && (
+                        <AiSummarySwitch
+                            id="new-retro-ai-summary"
+                            provider={llm.provider}
+                            checked={form.data.ai_summary_enabled}
+                            onChange={(checked) =>
+                                form.setData('ai_summary_enabled', checked)
+                            }
+                        />
+                    )}
                 </CollapsibleContent>
             </Collapsible>
 

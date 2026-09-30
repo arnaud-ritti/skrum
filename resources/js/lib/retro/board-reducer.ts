@@ -8,10 +8,12 @@ import type {
     HealthProgress,
     ReactionSummary,
     Snapshot,
+    SuggestedAction,
     SurveyPayload,
 } from './types';
 
 export type BoardAction =
+    | { type: 'insights.suggestion'; suggestedAction: SuggestedAction }
     | { type: 'survey.upsert'; survey: SurveyPayload }
     | { type: 'survey.remove'; surveyId: string }
     | {
@@ -102,6 +104,8 @@ function upsertCards(cards: BoardCard[], payloads: CardPayload[]): BoardCard[] {
             reactions: existing?.reactions ?? [],
             commentCount: existing?.commentCount ?? 0,
             comments: existing?.comments ?? [],
+            sentiment: existing?.sentiment ?? null,
+            category: existing?.category ?? null,
             ...payload,
             ...(keepsOwnView && {
                 isMine: true,
@@ -297,6 +301,23 @@ export function placeCard(
 
 export function boardReducer(state: Snapshot, action: BoardAction): Snapshot {
     switch (action.type) {
+        case 'insights.suggestion':
+            if (state.insights === null) {
+                return state;
+            }
+
+            return {
+                ...state,
+                insights: {
+                    ...state.insights,
+                    suggestedActions: state.insights.suggestedActions.map(
+                        (suggestion) =>
+                            suggestion.id === action.suggestedAction.id
+                                ? action.suggestedAction
+                                : suggestion,
+                    ),
+                },
+            };
         case 'replace':
             return seedTotalVersions(action.snapshot);
         case 'roti.set':

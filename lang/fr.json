@@ -832,5 +832,10 @@
     "The text generator is unavailable. Try again later.": "Le générateur de texte est indisponible. Réessayez plus tard.",
     "Could not generate a survey. Try again or write it yourself.": "Impossible de générer un sondage. Réessayez ou rédigez-le vous-même.",
     "This suggestion was already handled.": "Cette suggestion a déjà été traitée.",
-    "Could not suggest names. Try again or name the groups yourself.": "Impossible de suggérer des noms. Réessayez ou nommez les groupes vous-même."
+    "Could not suggest names. Try again or name the groups yourself.": "Impossible de suggérer des noms. Réessayez ou nommez les groupes vous-même.",
+    "Automatic AI summary": "Résumé IA automatique",
+    "When the retro is completed, its board content is sent automatically to :provider to write a summary. Participants can also ask it to suggest group names. Turn this off to keep it on this server.": "Une fois la rétrospective terminée, le contenu du tableau est envoyé automatiquement à :provider pour rédiger un résumé. Les participants peuvent aussi lui demander de suggérer des noms de groupes. Désactivez cette option pour tout garder sur ce serveur.",
+    "Positive": "Positif",
+    "Neutral": "Neutre",
+    "Negative": "Négatif"
 }

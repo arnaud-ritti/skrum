@@ -311,6 +311,7 @@ export function useRetroBoard(initial: Snapshot) {
                         scheduleRefetch();
                     }
                     break;
+                case 'insights.changed':
                 case 'results.changed':
                     scheduleRefetch();
                     break;

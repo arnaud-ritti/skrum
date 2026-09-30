@@ -73,6 +73,11 @@ export type WorkspaceTemplateSummary = {
     columns: TemplateColumn[];
 };
 
+export type LlmAvailability = {
+    enabled: boolean;
+    provider: string | null;
+};
+
 export type TeamHealthStatement = {
     id: string;
     key: string;

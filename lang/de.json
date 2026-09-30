@@ -832,5 +832,10 @@
     "The text generator is unavailable. Try again later.": "Der Textgenerator ist nicht verfügbar. Versuche es später noch einmal.",
     "Could not generate a survey. Try again or write it yourself.": "Die Umfrage konnte nicht erstellt werden. Versuche es erneut oder schreibe sie selbst.",
     "This suggestion was already handled.": "Dieser Vorschlag wurde bereits bearbeitet.",
-    "Could not suggest names. Try again or name the groups yourself.": "Es konnten keine Namen vorgeschlagen werden. Versuche es erneut oder benenne die Gruppen selbst."
+    "Could not suggest names. Try again or name the groups yourself.": "Es konnten keine Namen vorgeschlagen werden. Versuche es erneut oder benenne die Gruppen selbst.",
+    "Automatic AI summary": "Automatische KI-Zusammenfassung",
+    "When the retro is completed, its board content is sent automatically to :provider to write a summary. Participants can also ask it to suggest group names. Turn this off to keep it on this server.": "Wenn die Retrospektive abgeschlossen ist, wird der Inhalt des Boards automatisch an :provider gesendet, um eine Zusammenfassung zu schreiben. Teilnehmende können dort auch Gruppennamen vorschlagen lassen. Schalte dies aus, um alles auf diesem Server zu behalten.",
+    "Positive": "Positiv",
+    "Neutral": "Neutral",
+    "Negative": "Negativ"
 }

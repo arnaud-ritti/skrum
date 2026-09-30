@@ -41,6 +41,7 @@ export const RetroEvents = [
     'card.group-named',
     'roti.changed',
     'results.changed',
+    'insights.changed',
 ] as const;
 
 /**

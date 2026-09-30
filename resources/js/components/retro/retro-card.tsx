@@ -14,6 +14,7 @@ import { useBoard } from './board-context';
 import { CardEditor } from './card-editor';
 import { CardGif } from './card-gif';
 import { CardComments } from './card-comments';
+import { CardInsight } from './card-insight';
 import { CardReactions } from './card-reactions';
 import { GroupName } from './group-name';
 import { VoteControls } from './vote-controls';
@@ -127,6 +128,7 @@ export function RetroCard({ card, isChild = false, footer }: Props) {
                 />
             ) : (
                 <>
+                    <CardInsight card={card} />
                     {card.hidden ? (
                         <p className="flex items-center gap-1.5 text-muted-foreground italic">
                             <EyeOff className="size-4" aria-hidden="true" />
