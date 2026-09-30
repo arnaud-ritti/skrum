@@ -115,6 +115,18 @@ it('turns tracker failures into tool errors', function () {
         ->assertHasErrors(['Jira did not respond. Try again later.']);
 });
 
+it('asks to reconnect without quoting the provider error', function () {
+    [$team, $user] = trackerMcpTeam();
+    Http::fake([
+        'api.atlassian.com/*' => Http::response(['message' => 'Unauthorized'], 401),
+        'auth.atlassian.com/*' => Http::response(['error' => 'invalid_grant', 'error_description' => 'refresh token revoked'], 400),
+    ]);
+
+    actingAsMcp($user)->tool(ListIterations::class, ['team_id' => $team->id, 'source' => 'jira'])
+        ->assertHasErrors(['Reconnect Jira in the team settings.'])
+        ->assertDontSee(['Unauthorized', 'refresh token revoked']);
+});
+
 it('imports a whole sprint or query, skipping existing issues', function () {
     [$team, $user] = trackerMcpTeam();
     $game = PokerGame::factory()->create(['team_id' => $team->id]);
