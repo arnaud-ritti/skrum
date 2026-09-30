@@ -35,6 +35,7 @@ use Carbon\CarbonInterface;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request as HttpRequest;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 use Laravel\Mcp\Server\Testing\PendingTestResponse;
 use Laravel\Mcp\Server\Testing\TestResponse as McpTestResponse;
@@ -928,12 +929,27 @@ function gamePayloadJson(array|string $payload): string
 }
 
 /**
- * The word as a JSON string value, case-insensitively: masks carry single
- * letters, never the word itself.
+ * The word as a JSON string value, or as a whole word anywhere in the
+ * payload, ignoring case and accents: masks carry single letters, never the
+ * word itself.
  *
  * @param  array<array-key, mixed>|string  $payload
  */
 function gamePayloadExposesWord(array|string $payload, string $word): bool
 {
-    return str_contains(mb_strtolower(gamePayloadJson($payload)), '"'.mb_strtolower($word).'"');
+    $json = mb_strtolower(gamePayloadJson($payload));
+
+    if (str_contains($json, '"'.mb_strtolower($word).'"')) {
+        return true;
+    }
+
+    foreach ([[$json, $word], [Str::ascii($json), Str::ascii($word)]] as [$haystack, $needle]) {
+        $pattern = '/(?<![\p{L}\p{N}])'.preg_quote($needle, '/').'(?![\p{L}\p{N}])/iu';
+
+        if (preg_match($pattern, $haystack) === 1) {
+            return true;
+        }
+    }
+
+    return false;
 }

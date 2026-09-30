@@ -29,6 +29,8 @@ class GameGuess extends Model
 
     use HasUuids;
 
+    public const UPDATED_AT = null;
+
     /** @return BelongsTo<GameRound, $this> */
     public function round(): BelongsTo
     {
