@@ -9,6 +9,7 @@ use App\Mcp\Tools\Retro\ListBoards;
 use App\Mcp\Tools\Retro\ListMessages;
 use App\Mcp\Tools\Retro\ListTeamMembers;
 use App\Mcp\Tools\Retro\ListTeams;
+use App\Mcp\Tools\Retro\SearchBoards;
 use Laravel\Mcp\Server;
 use Laravel\Mcp\Server\Attributes\Instructions;
 use Laravel\Mcp\Server\Attributes\Name;
@@ -34,6 +35,7 @@ class SkrumServer extends Server
         ListBoardActionItems::class,
         ListMessages::class,
         GetSummary::class,
+        SearchBoards::class,
     ];
 
     protected array $resources = [];
