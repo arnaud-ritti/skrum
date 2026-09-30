@@ -163,3 +163,53 @@ it('reads the Linear organization with a new token', function () {
 
     expect(app(LinearClient::class)->organization('fresh-token'))->toBe(['id' => 'org-9', 'name' => 'Nine', 'urlKey' => 'nine']);
 });
+
+it('refreshes an expiring Linear token with a form request', function () {
+    Http::fake([
+        'api.linear.app/oauth/token' => Http::response(['access_token' => 'linear-access-2', 'refresh_token' => 'linear-refresh-2', 'expires_in' => 86399, 'scope' => 'read write']),
+        'api.linear.app/graphql' => Http::response(['data' => ['viewer' => ['id' => 'u1']]]),
+    ]);
+    $integration = TeamIntegration::factory()->linear()->create([
+        'credentials' => ['access_token' => 'linear-access', 'refresh_token' => 'linear-refresh', 'expires_at' => now()->addSeconds(30)->getTimestamp()],
+    ]);
+
+    app(LinearClient::class)->query($integration, 'query { viewer { id } }');
+
+    $credentials = $integration->fresh()->readableCredentials();
+
+    expect($credentials['access_token'])->toBe('linear-access-2')
+        ->and($credentials['refresh_token'])->toBe('linear-refresh-2');
+
+    Http::assertSent(fn (Request $request) => $request->url() === LinearClient::TokenUrl
+        && $request['grant_type'] === 'refresh_token'
+        && $request['refresh_token'] === 'linear-refresh'
+        && $request['client_id'] === 'linear-client'
+        && $request['client_secret'] === 'linear-secret'
+        && str_contains($request->header('Content-Type')[0] ?? '', 'application/x-www-form-urlencoded'));
+    Http::assertSent(fn (Request $request) => $request->url() === LinearClient::GraphqlUrl
+        && $request->hasHeader('Authorization', 'Bearer linear-access-2'));
+});
+
+it('refreshes a Linear token once after a 401 and retries the query', function () {
+    Http::fake([
+        'api.linear.app/oauth/token' => Http::response(['access_token' => 'linear-access-2', 'refresh_token' => 'linear-refresh-2', 'expires_in' => 86399, 'scope' => 'read write']),
+        'api.linear.app/graphql' => Http::sequence()
+            ->push(['errors' => [['message' => 'Authentication required', 'extensions' => ['code' => 'AUTHENTICATION_ERROR']]]], 401)
+            ->push(['data' => ['viewer' => ['id' => 'u1']]])
+            ->push(['errors' => [['message' => 'Authentication required', 'extensions' => ['code' => 'AUTHENTICATION_ERROR']]]], 401)
+            ->push(['errors' => [['message' => 'Authentication required', 'extensions' => ['code' => 'AUTHENTICATION_ERROR']]]], 401),
+    ]);
+    $credentials = ['access_token' => 'linear-access', 'refresh_token' => 'linear-refresh', 'expires_at' => now()->addHour()->getTimestamp()];
+    $retried = TeamIntegration::factory()->linear()->create(['credentials' => $credentials]);
+    $revoked = TeamIntegration::factory()->linear()->create(['credentials' => $credentials]);
+    $linear = app(LinearClient::class);
+
+    expect($linear->query($retried, 'query { viewer { id } }'))->toBe(['viewer' => ['id' => 'u1']])
+        ->and($retried->fresh()->status)->toBe(IntegrationStatus::Active)
+        ->and($retried->fresh()->credential('access_token'))->toBe('linear-access-2')
+        ->and(fn () => $linear->query($revoked, 'query { viewer { id } }'))->toThrow(ReconnectRequired::class)
+        ->and($revoked->fresh()->status)->toBe(IntegrationStatus::ReconnectRequired);
+
+    Http::assertSent(fn (Request $request) => $request->url() === LinearClient::GraphqlUrl
+        && $request->hasHeader('Authorization', 'Bearer linear-access-2'));
+});
