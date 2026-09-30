@@ -1171,5 +1171,7 @@
     "This code is invalid or has expired. Create a new one in skrum.": "Dieser Code ist ungültig oder abgelaufen. Erstelle in skrum einen neuen.",
     "This bot posts retrospective and planning poker links from :app. To connect this chat, create a code on your team's integrations page and send /connect with it.": "Dieser Bot teilt Links zu Retrospektiven und Planning Poker aus :app. Um diesen Chat zu verbinden, erstelle auf der Integrationsseite deines Teams einen Code und sende /connect mit ihm.",
     "The bot was removed from the Telegram chat.": "Der Bot wurde aus dem Telegram-Chat entfernt.",
-    "Private chat": "Privater Chat"
+    "Private chat": "Privater Chat",
+    "skrum is connected.": "skrum ist verbunden.",
+    "This Jira site is no longer accessible.": "Diese Jira-Site ist nicht mehr erreichbar."
 }

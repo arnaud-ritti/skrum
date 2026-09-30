@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Integrations;
 
+use App\Actions\Integrations\DisconnectIntegration;
 use App\Actions\Integrations\PresentTeamIntegration;
 use App\Actions\Integrations\UpdateTeamIntegration;
 use App\Enums\IntegrationProvider;
@@ -12,6 +13,7 @@ use App\Models\Workspace;
 use App\Support\Integrations\Telegram\TelegramBot;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response as EmptyResponse;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -57,5 +59,14 @@ class TeamIntegrationsController extends Controller
         $updated = $updateTeamIntegration->handle($integration, $request->user(), $validated);
 
         return response()->json($this->presentTeamIntegration->handle($updated->load('connectedBy')));
+    }
+
+    public function destroy(Workspace $workspace, Team $team, TeamIntegration $integration, DisconnectIntegration $disconnectIntegration): EmptyResponse
+    {
+        Gate::authorize('manageIntegrations', $team);
+
+        $disconnectIntegration->handle($integration);
+
+        return response()->noContent();
     }
 }

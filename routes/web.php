@@ -8,6 +8,7 @@ use App\Http\Controllers\EmojiDataController;
 use App\Http\Controllers\GifsController;
 use App\Http\Controllers\Integrations\IntegrationAuthorizationsController;
 use App\Http\Controllers\Integrations\IntegrationCallbacksController;
+use App\Http\Controllers\Integrations\IntegrationTestsController;
 use App\Http\Controllers\Integrations\JiraFieldDetectionsController;
 use App\Http\Controllers\Integrations\TeamIntegrationsController;
 use App\Http\Controllers\Integrations\TelegramConnectCodesController;
@@ -168,6 +169,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 Route::post('teams/{team}/integrations/{integration}/detection', [JiraFieldDetectionsController::class, 'store'])
                     ->whereUuid('integration')
                     ->name('teams.integrations.detection.store');
+                Route::delete('teams/{team}/integrations/{integration}', [TeamIntegrationsController::class, 'destroy'])
+                    ->whereUuid('integration')
+                    ->name('teams.integrations.destroy');
+                Route::post('teams/{team}/integrations/{integration}/test', [IntegrationTestsController::class, 'store'])
+                    ->whereUuid('integration')
+                    ->middleware('throttle:10,1')
+                    ->name('teams.integrations.test.store');
             });
 
             Route::post('teams/{team}/members', [TeamMembersController::class, 'store'])->name('teams.members.store');
