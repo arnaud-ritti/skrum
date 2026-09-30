@@ -48,11 +48,14 @@ export function PlayersGrid() {
     const { round } = current;
     const onlineIds = new Set(online.map((member) => member.id));
     const votes = new Map(round.votes.map((vote) => [vote.playerId, vote]));
-    const seated = players.filter(
-        (player) =>
-            !player.isSpectator &&
-            (onlineIds.has(player.id) || votes.has(player.id)),
-    );
+    const showsRevealedValues = round.revealedAt !== null && !round.anonymous;
+    const seated = players.filter((player) => {
+        if (player.isSpectator) {
+            return showsRevealedValues && votes.has(player.id);
+        }
+
+        return onlineIds.has(player.id) || votes.has(player.id);
+    });
 
     return (
         <section aria-label={t('Players')}>

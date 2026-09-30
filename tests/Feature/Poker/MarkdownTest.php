@@ -45,3 +45,10 @@ it('marks external links', function () {
         ->and($html)->toContain('rel="nofollow noopener noreferrer"')
         ->and($html)->toContain('target="_blank"');
 });
+
+it('escapes the url used as link text when the alt text is empty', function () {
+    $html = renderTaskMarkdown('![](https://example.com/a.png?x=1&y=2)');
+
+    expect($html)->toContain('>https://example.com/a.png?x=1&amp;y=2</a>')
+        ->and($html)->not->toContain('>https://example.com/a.png?x=1&y=2</a>');
+});

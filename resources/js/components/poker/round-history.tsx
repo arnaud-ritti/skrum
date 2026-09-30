@@ -7,6 +7,7 @@ import { formatAverage } from '@/lib/poker/format';
 import type { PokerRound } from '@/lib/poker/types';
 import { retroRequest } from '@/lib/retro/api';
 import { useGame } from './game-context';
+import { RoundVotes } from './round-votes';
 
 type Loaded =
     | { state: 'loading' }
@@ -86,16 +87,7 @@ export function RoundHistory({ taskId }: { taskId: string }) {
                         </p>
                     ) : (
                         <>
-                            <ul className="mt-1 flex flex-wrap gap-x-4 gap-y-1">
-                                {round.votes.map((vote) => (
-                                    <li key={vote.playerId}>
-                                        {nameOf(vote.playerId)}:{' '}
-                                        <span className="font-mono font-semibold">
-                                            {vote.value ?? '—'}
-                                        </span>
-                                    </li>
-                                ))}
-                            </ul>
+                            <RoundVotes round={round} nameOf={nameOf} />
                             {round.result && (
                                 <p className="mt-1 text-muted-foreground">
                                     {round.result.average !== null

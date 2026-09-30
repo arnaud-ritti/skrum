@@ -1,6 +1,13 @@
 import { Link } from '@inertiajs/react';
-import { ArrowLeft, Eye, MousePointer2, MousePointerBan } from 'lucide-react';
+import {
+    ArrowLeft,
+    Eye,
+    Link2,
+    MousePointer2,
+    MousePointerBan,
+} from 'lucide-react';
 import { useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { toast } from 'sonner';
 import PokerSettingsController from '@/actions/App/Http/Controllers/Poker/PokerSettingsController';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { PresenceStrip } from '@/components/retro/presence-strip';
@@ -31,6 +38,19 @@ export function GameHeader({
     const { game, me, links } = snapshot;
     const isEnded = game.endedAt !== null;
 
+    const copyGuestLink = async (url: string | null) => {
+        if (url === null) {
+            return;
+        }
+
+        try {
+            await navigator.clipboard.writeText(url);
+            toast(t('Link copied'));
+        } catch {
+            toast.error(t('Something went wrong. Please try again.'));
+        }
+    };
+
     return (
         <header className="flex flex-wrap items-center gap-3 border-b px-4 py-3">
             {links.team && (
@@ -60,6 +80,16 @@ export function GameHeader({
                 {actions}
                 <TakeControlButton />
                 {(me.isFacilitator || me.canDelete) && <GameMenu />}
+                {!me.isGuest && !me.isFacilitator && game.guestUrl !== null && (
+                    <Button
+                        size="icon"
+                        variant="ghost"
+                        aria-label={t('Copy guest link')}
+                        onClick={() => void copyGuestLink(game.guestUrl)}
+                    >
+                        <Link2 className="size-4" />
+                    </Button>
+                )}
                 <PresenceStrip
                     members={online}
                     badgeFor={(member) =>

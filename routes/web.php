@@ -266,7 +266,7 @@ Route::prefix('poker/{game}')
         Route::put('rounds/{round}/vote', [PokerVotesController::class, 'update'])->name('poker.rounds.vote.update')->whereUuid('round');
         Route::delete('rounds/{round}/vote', [PokerVotesController::class, 'destroy'])->name('poker.rounds.vote.destroy')->whereUuid('round');
         Route::post('rounds/{round}/reveal', [PokerRevealsController::class, 'store'])->name('poker.rounds.reveal.store')->whereUuid('round');
-        Route::post('rounds/{round}/auto-reveal', [PokerAutoRevealsController::class, 'store'])->name('poker.rounds.auto-reveal.store')->whereUuid('round');
+        Route::post('rounds/{round}/auto-reveal', [PokerAutoRevealsController::class, 'store'])->middleware('throttle:30,1')->name('poker.rounds.auto-reveal.store')->whereUuid('round');
         Route::put('rounds/{round}/timer', [PokerTimersController::class, 'update'])->name('poker.rounds.timer.update')->whereUuid('round');
 
         Route::post('tasks/{task}/rounds', [PokerRoundsController::class, 'store'])->name('poker.tasks.rounds.store')->whereUuid('task');

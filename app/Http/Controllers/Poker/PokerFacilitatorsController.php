@@ -20,6 +20,10 @@ class PokerFacilitatorsController extends Controller
     {
         $player = PokerPlayer::current($request);
 
+        if ($player->isGuest()) {
+            throw new AuthorizationException(__('Only the facilitator can do this.'));
+        }
+
         $validated = $request->validate([
             'user_id' => ['required', 'uuid', 'exists:users,id'],
         ]);

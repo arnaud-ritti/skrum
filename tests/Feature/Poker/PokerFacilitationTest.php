@@ -7,6 +7,7 @@ use App\Models\PokerGame;
 use App\Models\PokerPlayer;
 use App\Models\User;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Str;
 
 beforeEach(function () {
     Event::fake();
@@ -86,6 +87,16 @@ it('refuses guests taking control', function () {
         ->assertForbidden();
 
     expect($game->fresh()->facilitator_player_id)->toBe($facilitatorPlayer->id);
+});
+
+it('refuses a guest before validating the user id', function () {
+    $game = PokerGame::factory()->withGuestAccess()->create();
+    pokerFacilitator($game);
+    $guest = pokerGuest($game);
+
+    $this->withCookies(pokerGuestCookie($guest))->withCredentials()
+        ->putJson(route('poker.facilitator.update', $game), ['user_id' => (string) Str::uuid()])
+        ->assertForbidden();
 });
 
 it('lets a member take control of an ended game to reopen it', function () {

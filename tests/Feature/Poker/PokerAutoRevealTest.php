@@ -9,6 +9,7 @@ use App\Models\PokerRound;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Route;
 
 beforeEach(function () {
     Event::fake();
@@ -301,4 +302,10 @@ it('refuses the auto-reveal switch to other players', function () {
         ->assertForbidden();
 
     expect($table['game']->fresh()->auto_reveal)->toBeFalse();
+});
+
+it('throttles the auto-reveal route', function () {
+    $route = Route::getRoutes()->getByName('poker.rounds.auto-reveal.store');
+
+    expect($route->gatherMiddleware())->toContain('throttle:30,1');
 });

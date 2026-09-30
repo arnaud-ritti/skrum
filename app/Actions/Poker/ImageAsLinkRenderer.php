@@ -10,6 +10,7 @@ use League\CommonMark\Node\Node;
 use League\CommonMark\Renderer\ChildNodeRendererInterface;
 use League\CommonMark\Renderer\NodeRendererInterface;
 use League\CommonMark\Util\HtmlElement;
+use League\CommonMark\Util\Xml;
 
 /**
  * An <img> would make every viewer's browser contact the image host, so
@@ -39,6 +40,6 @@ class ImageAsLinkRenderer implements ExtensionInterface, NodeRendererInterface
             'href' => $url,
             'rel' => 'nofollow noopener noreferrer',
             'target' => '_blank',
-        ], $alt === '' ? $url : $alt);
+        ], $alt === '' ? Xml::escape($url) : $alt);
     }
 }
