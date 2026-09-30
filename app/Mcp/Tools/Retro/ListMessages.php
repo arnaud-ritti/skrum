@@ -59,8 +59,9 @@ class ListMessages extends SkrumTool
 
         $retro = $this->context->retro($validated['board_id']);
         $sortsByVotes = ($validated['sort'] ?? 'position') === 'votes';
+        $showsVoteTotals = $retro->showsVoteTotals();
 
-        if ($sortsByVotes && ! $retro->showsVoteTotals()) {
+        if ($sortsByVotes && ! $showsVoteTotals) {
             abort(422, __('Vote totals are not visible yet.'));
         }
 
@@ -73,7 +74,7 @@ class ListMessages extends SkrumTool
         }
 
         $viewer = $this->context->participant($retro);
-        $voteTotals = $this->presentMessage->voteTotals($retro);
+        $voteTotals = $showsVoteTotals ? $this->presentMessage->countVotes($retro) : null;
 
         $query = Card::query()
             ->where('cards.retro_id', $retro->id)

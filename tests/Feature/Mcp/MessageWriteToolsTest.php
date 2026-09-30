@@ -96,3 +96,37 @@ it('keeps update and delete behind their own scopes', function () {
     expect(mcpToolNames(mcpWriter($user)))->toContain('retro.board.messages.update')->not->toContain('retro.board.messages.delete_own')
         ->and(mcpToolNames(actingAsMcp($user, [McpScope::Read, McpScope::Delete])))->toContain('retro.board.messages.delete_own')->not->toContain('retro.board.messages.update');
 });
+
+it('refuses deleting an own message in a phase that forbids it', function () {
+    $retro = Retro::factory()->inPhase(RetroPhase::Voting)->create();
+    [$user, $participant] = retroMember($retro);
+    $card = Card::factory()->create(['retro_id' => $retro->id, 'participant_id' => $participant->id]);
+
+    actingAsMcp($user, [McpScope::Read, McpScope::Delete])->tool(DeleteOwnMessage::class, ['message_id' => $card->id])
+        ->assertHasErrors(['This action is not available in the current phase.']);
+
+    expect(Card::query()->whereKey($card->id)->exists())->toBeTrue();
+});
+
+it('refuses updating and deleting an own message on a locked board', function () {
+    $retro = Retro::factory()->inPhase(RetroPhase::Writing)->create(['is_locked' => true]);
+    [$user, $participant] = retroMember($retro);
+    $card = Card::factory()->create(['retro_id' => $retro->id, 'participant_id' => $participant->id, 'content' => 'Kept']);
+
+    mcpWriter($user)->tool(UpdateMessage::class, ['message_id' => $card->id, 'content' => 'Changed'])
+        ->assertHasErrors(['The board is closed for editing.']);
+    actingAsMcp($user, [McpScope::Read, McpScope::Delete])->tool(DeleteOwnMessage::class, ['message_id' => $card->id])
+        ->assertHasErrors(['The board is closed for editing.']);
+
+    expect($card->fresh()->content)->toBe('Kept');
+});
+
+it('rejects message content over 1000 characters', function () {
+    $retro = Retro::factory()->create();
+    [$user, $participant] = retroMember($retro);
+    $card = Card::factory()->create(['retro_id' => $retro->id, 'participant_id' => $participant->id, 'content' => 'Short']);
+
+    mcpWriter($user)->tool(UpdateMessage::class, ['message_id' => $card->id, 'content' => str_repeat('a', 1001)])->assertHasErrors();
+
+    expect($card->fresh()->content)->toBe('Short');
+});

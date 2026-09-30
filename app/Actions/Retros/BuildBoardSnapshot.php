@@ -11,7 +11,6 @@ use App\Enums\WorkspaceRole;
 use App\Http\Controllers\EmojiDataController;
 use App\Models\ActionItem;
 use App\Models\Card;
-use App\Models\CardComment;
 use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\User;
@@ -121,10 +120,9 @@ class BuildBoardSnapshot
                     'votes' => $showsTotals ? (int) ($voteTotals[$card->id] ?? 0) : null,
                     'myVotes' => (int) ($myVotes[$card->id] ?? 0),
                     'reactions' => $isHidden ? [] : $this->summarizeReactions->handle($card->reactions, $retro, $viewer),
-                    'commentCount' => $isHidden ? 0 : $card->comments->reject(fn (CardComment $comment) => $comment->isDeleted())->count(),
+                    'commentCount' => $this->presentCard->commentCount($card, $isHidden),
                     'comments' => $isHidden ? [] : $this->presentComment->threads($card->comments, $retro, $viewer),
-                    'sentiment' => $showsCardInsights && ! $isHidden ? $card->sentiment?->value : null,
-                    'category' => $showsCardInsights && ! $isHidden ? $card->category : null,
+                    ...$this->presentCard->insights($card, $isHidden, $showsCardInsights),
                 ];
             })->values()->all(),
             'participants' => $retro->participants->map(fn (Participant $participant) => $this->presentParticipant->handle($participant))->values()->all(),

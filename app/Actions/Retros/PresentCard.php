@@ -3,6 +3,7 @@
 namespace App\Actions\Retros;
 
 use App\Models\Card;
+use App\Models\CardComment;
 use App\Models\Participant;
 use App\Models\Retro;
 use App\Support\Gifs\GifCatalog;
@@ -48,6 +49,28 @@ class PresentCard
                 ? ['id' => $card->participant_id, 'name' => $card->participant->displayName()]
                 : null,
             'groupName' => $isHidden ? null : $card->group_name,
+        ];
+    }
+
+    public function commentCount(Card $card, bool $isHidden): int
+    {
+        if ($isHidden) {
+            return 0;
+        }
+
+        return $card->comments->reject(fn (CardComment $comment) => $comment->isDeleted())->count();
+    }
+
+    /**
+     * @return array{sentiment: ?string, category: ?string}
+     */
+    public function insights(Card $card, bool $isHidden, bool $llmConfigured): array
+    {
+        $isVisible = $llmConfigured && ! $isHidden;
+
+        return [
+            'sentiment' => $isVisible ? $card->sentiment?->value : null,
+            'category' => $isVisible ? $card->category : null,
         ];
     }
 }

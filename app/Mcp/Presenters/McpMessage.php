@@ -5,7 +5,6 @@ namespace App\Mcp\Presenters;
 use App\Actions\Retros\PresentCard;
 use App\Actions\Retros\SummarizeReactions;
 use App\Models\Card;
-use App\Models\CardComment;
 use App\Models\Participant;
 use App\Models\Retro;
 use App\Support\Llm\Llm;
@@ -37,6 +36,14 @@ class McpMessage
             return null;
         }
 
+        return $this->countVotes($retro);
+    }
+
+    /**
+     * @return array<string, int>
+     */
+    public function countVotes(Retro $retro): array
+    {
         return $retro->votes()
             ->selectRaw('card_id, count(*) as total')
             ->groupBy('card_id')
@@ -65,7 +72,6 @@ class McpMessage
     {
         $presented = $this->presentCard->handle($card, $retro, $viewer);
         $isHidden = $presented['hidden'];
-        $showsInsights = $this->llm->isConfigured() && ! $isHidden;
 
         return [
             'id' => $presented['id'],
@@ -74,14 +80,13 @@ class McpMessage
             'author' => $presented['author'],
             'isMine' => $presented['isMine'],
             'votes' => $voteTotals === null ? null : ($voteTotals[$card->id] ?? 0),
-            'sentiment' => $showsInsights ? $card->sentiment?->value : null,
-            'category' => $showsInsights ? $card->category : null,
+            ...$this->presentCard->insights($card, $isHidden, $this->llm->isConfigured()),
             'groupName' => $presented['groupName'],
             'reactions' => $isHidden ? [] : array_map(
                 fn (array $reaction) => ['emoji' => $reaction['emoji'], 'count' => $reaction['count']],
                 $this->summarizeReactions->handle($card->reactions, $retro, $viewer, showsNames: false),
             ),
-            'commentCount' => $isHidden ? 0 : $card->comments->reject(fn (CardComment $comment) => $comment->isDeleted())->count(),
+            'commentCount' => $this->presentCard->commentCount($card, $isHidden),
             'gif' => $presented['gif'] === null ? null : ['url' => url($presented['gif']['url'])],
             'grouped' => $card->children
                 ->sortBy('position')

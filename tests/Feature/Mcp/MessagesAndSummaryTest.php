@@ -170,3 +170,31 @@ it('returns no summary while pending, when opted out, without provider or before
 
     expect(mcpStructured(actingAsMcp($user)->tool(GetSummary::class, ['board_id' => $retro->id]))['summary'])->toBeNull();
 })->with(['pending', 'opted out', 'no provider', 'in progress']);
+
+it('hides other participants cards and their details in every phase that hides them', function (RetroPhase $phase) {
+    configureLlm();
+    [$retro, $user, , $column] = mcpMessagesBoard($phase);
+    $theirs = Card::factory()->create(['retro_id' => $retro->id, 'column_id' => $column->id, 'content' => 'Secret idea']);
+    $theirs->forceFill(['sentiment' => CardSentiment::Negative, 'category' => 'Process'])->save();
+    CardComment::factory()->create(['retro_id' => $retro->id, 'card_id' => $theirs->id]);
+
+    $response = actingAsMcp($user)->tool(ListMessages::class, ['board_id' => $retro->id])->assertOk();
+    $message = mcpStructured($response)['columns'][0]['messages'][0];
+
+    expect($message)->toMatchArray(['hidden' => true, 'content' => null, 'author' => null, 'sentiment' => null, 'category' => null, 'reactions' => [], 'commentCount' => 0]);
+
+    $response->assertDontSee('Secret idea');
+})->with([RetroPhase::HealthCheck, RetroPhase::Icebreaker]);
+
+it('hides the grouped cards of others while writing', function () {
+    [$retro, $user, $participant, $column] = mcpMessagesBoard(RetroPhase::Writing);
+    $lead = Card::factory()->create(['retro_id' => $retro->id, 'column_id' => $column->id, 'participant_id' => $participant->id, 'content' => 'My lead']);
+    Card::factory()->create(['retro_id' => $retro->id, 'column_id' => $column->id, 'parent_card_id' => $lead->id, 'content' => 'Hidden child']);
+
+    $response = actingAsMcp($user)->tool(ListMessages::class, ['board_id' => $retro->id])->assertOk();
+    $child = mcpStructured($response)['columns'][0]['messages'][0]['grouped'][0];
+
+    expect($child)->toMatchArray(['hidden' => true, 'content' => null, 'author' => null, 'commentCount' => 0]);
+
+    $response->assertDontSee('Hidden child');
+});
