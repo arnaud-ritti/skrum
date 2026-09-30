@@ -126,6 +126,31 @@ it('caps the input at thirty thousand characters keeping the most voted cards', 
         ->and(count($input->cardIds))->toBeLessThan(61);
 });
 
+it('keeps long text survey answers within the cap and still sends the cards', function () {
+    [$retro, , , $lead] = completedRetroWithContent();
+
+    foreach (range(0, 2) as $position) {
+        $text = Survey::factory()->create(['retro_id' => $retro->id, 'kind' => SurveyKind::Text, 'is_closed' => true, 'position' => $position]);
+        SurveyTextAnswer::factory()->count(50)->create(['survey_id' => $text->id, 'content' => str_repeat('z', 500)]);
+    }
+
+    $input = app(BuildSummaryInput::class)->handle($retro->fresh());
+
+    expect(mb_strlen($input->payload))->toBeLessThanOrEqual(BuildSummaryInput::MaxCharacters)
+        ->and($input->cardIds[1])->toBe($lead->id)
+        ->and(json_decode($input->payload, true)['cards'])->not->toBeEmpty();
+});
+
+it('keeps many long action items within the cap', function () {
+    [$retro] = completedRetroWithContent();
+    ActionItem::factory()->count(80)->create(['retro_id' => $retro->id, 'content' => str_repeat('a', 500)]);
+
+    $input = app(BuildSummaryInput::class)->handle($retro->fresh());
+
+    expect(mb_strlen($input->payload))->toBeLessThanOrEqual(BuildSummaryInput::MaxCharacters)
+        ->and(json_decode($input->payload, true)['cards'])->not->toBeEmpty();
+});
+
 it('writes in the creator locale', function () {
     $retro = Retro::factory()->inPhase(RetroPhase::Completed)->create();
     [$creator] = retroMember($retro);

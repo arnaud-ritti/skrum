@@ -4,7 +4,6 @@ namespace App\Actions\Retros;
 
 use App\Actions\HealthCheck\SummarizeHealthCheck;
 use App\Enums\SurveyKind;
-use App\Models\ActionItem;
 use App\Models\Card;
 use App\Models\Retro;
 use App\Models\RotiVote;
@@ -26,25 +25,84 @@ class BuildSummaryInput
     {
         $retro->loadMissing(['columns', 'cards', 'actionItems']);
 
-        $base = [
+        $surveys = $this->surveys($retro);
+
+        $data = [
             'retroTitle' => $retro->title,
             'columns' => $retro->columns->pluck('title')->values()->all(),
             'cards' => [],
-            'actionItems' => $retro->actionItems->sortBy('created_at')
-                ->map(fn (ActionItem $item) => ['text' => $item->content, 'done' => $item->is_done])
-                ->values()->all(),
+            'actionItems' => [],
             'health' => $this->health($retro),
-            'surveys' => $this->surveys($retro),
+            'surveys' => array_map(
+                fn (array $survey) => isset($survey['answers']) ? [...$survey, 'answers' => []] : $survey,
+                $surveys,
+            ),
             'roti' => $this->roti($retro),
         ];
 
-        [$cards, $cardIds] = $this->cardsWithinBudget($retro, self::MaxCharacters - mb_strlen($this->encode($base)));
+        [$data['cards'], $cardIds] = $this->cardsWithinBudget($retro, $data);
+        $data['actionItems'] = $this->actionItemsWithinBudget($retro, $data);
+        $data['surveys'] = $this->textAnswersWithinBudget($surveys, $data);
 
         return new SummaryInput(
             $this->instructions($this->outputLocale($retro)),
-            $this->encode([...$base, 'cards' => $cards]),
+            $this->encode($data),
             $cardIds,
         );
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function fits(array $data): bool
+    {
+        return mb_strlen($this->encode($data)) <= self::MaxCharacters;
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<int, array{text: string, done: bool}>
+     */
+    private function actionItemsWithinBudget(Retro $retro, array $data): array
+    {
+        $items = [];
+
+        foreach ($retro->actionItems->sortBy('created_at') as $item) {
+            $candidate = [...$items, ['text' => $item->content, 'done' => $item->is_done]];
+
+            if (! $this->fits([...$data, 'actionItems' => $candidate])) {
+                break;
+            }
+
+            $items = $candidate;
+        }
+
+        return $items;
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $surveys
+     * @param  array<string, mixed>  $data
+     * @return array<int, array<string, mixed>>
+     */
+    private function textAnswersWithinBudget(array $surveys, array $data): array
+    {
+        $result = $data['surveys'];
+
+        foreach ($surveys as $index => $survey) {
+            foreach ($survey['answers'] ?? [] as $answer) {
+                $candidate = $result;
+                $candidate[$index]['answers'][] = $answer;
+
+                if (! $this->fits([...$data, 'surveys' => $candidate])) {
+                    break 2;
+                }
+
+                $result = $candidate;
+            }
+        }
+
+        return $result;
     }
 
     /**
@@ -53,7 +111,7 @@ class BuildSummaryInput
     public function outputLocale(Retro $retro): string
     {
         $creator = $retro->participants()->whereNotNull('user_id')->oldest()->first();
-        $locale = $creator?->user->locale ?? $retro->facilitator?->user->locale;
+        $locale = $creator?->user->locale ?? $retro->facilitator?->user?->locale;
 
         return is_string($locale) && $locale !== '' ? $locale : (string) config('app.locale');
     }
@@ -76,12 +134,13 @@ class BuildSummaryInput
     /**
      * Cards are added most-voted first until the character budget is spent.
      *
+     * @param  array<string, mixed>  $data
      * @return array{
      *     0: array<int, array<string, mixed>>,
      *     1: array<int, string>
      * }
      */
-    private function cardsWithinBudget(Retro $retro, int $budget): array
+    private function cardsWithinBudget(Retro $retro, array $data): array
     {
         $voteTotals = $retro->votes()
             ->selectRaw('card_id, count(*) as total')
@@ -99,7 +158,6 @@ class BuildSummaryInput
 
         $cards = [];
         $cardIds = [];
-        $used = 0;
 
         foreach ($leads as $lead) {
             $nextIndex = count($cardIds) + 1;
@@ -113,13 +171,11 @@ class BuildSummaryInput
                 'votes' => (int) ($voteTotals[$lead->id] ?? 0),
                 'grouped' => $children->map(fn (Card $child, int $offset) => ['id' => $nextIndex + 1 + $offset, 'text' => $child->content])->all(),
             ];
-            $length = mb_strlen($this->encode($entry)) + 1;
 
-            if ($used + $length > $budget) {
+            if (! $this->fits([...$data, 'cards' => [...$cards, $entry]])) {
                 break;
             }
 
-            $used += $length;
             $cards[] = $entry;
             $cardIds[$nextIndex] = $lead->id;
 
@@ -217,6 +273,6 @@ class BuildSummaryInput
      */
     private function encode(array $data): string
     {
-        return (string) json_encode($data, JSON_UNESCAPED_UNICODE | JSON_PRESERVE_ZERO_FRACTION);
+        return (string) json_encode($data, JSON_UNESCAPED_UNICODE | JSON_PRESERVE_ZERO_FRACTION | JSON_INVALID_UTF8_SUBSTITUTE);
     }
 }
