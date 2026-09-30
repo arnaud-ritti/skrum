@@ -745,3 +745,29 @@ function importedPokerTask(PokerGame $game, array $attributes = [], IntegrationP
 
     return $task->fresh() ?? $task;
 }
+
+/**
+ * Fakes every Jira endpoint the poker import and write-back use on the
+ * `cloud-1` site. More specific patterns come first: the first match wins.
+ *
+ * @param  array<int, array<string, mixed>>|null  $issues
+ */
+function fakeJiraTrackerApi(?array $issues = null): void
+{
+    $issues ??= [jiraTrackerIssue('10001', 'PROJ-1'), jiraTrackerIssue('10002', 'PROJ-2')];
+
+    Http::fake([
+        'api.atlassian.com/ex/jira/cloud-1/rest/agile/1.0/board/*/sprint*' => Http::response(['values' => [
+            ['id' => 31, 'name' => 'Sprint 31', 'state' => 'active'],
+        ]]),
+        'api.atlassian.com/ex/jira/cloud-1/rest/agile/1.0/board*' => Http::response([
+            'values' => [['id' => 7, 'name' => 'Sweep scrum board']],
+            'isLast' => true,
+        ]),
+        'api.atlassian.com/ex/jira/cloud-1/rest/api/3/search/jql' => Http::response(['issues' => $issues, 'isLast' => true]),
+        'api.atlassian.com/ex/jira/cloud-1/rest/api/3/issue/*/editmeta' => Http::response(['fields' => [
+            'customfield_10016' => ['name' => 'Story point estimate'],
+        ]]),
+        'api.atlassian.com/ex/jira/cloud-1/rest/api/3/issue/*' => Http::response(null, 204),
+    ]);
+}
