@@ -55,7 +55,7 @@ class RetroJoinsController extends Controller
             'guest_secret_hash' => hash('sha256', $secret),
         ]);
 
-        return to_route('retros.show', $retro)->withCookie(GuestCookie::make($participant, $secret));
+        return to_route('retros.show', $retro)->withCookie(GuestCookie::make(GuestCookie::RetroScope, $retro->id, $participant->id, $secret));
     }
 
     private function findRetro(string $guestToken): ?Retro

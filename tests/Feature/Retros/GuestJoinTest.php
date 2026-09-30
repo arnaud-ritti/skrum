@@ -24,15 +24,15 @@ it('joins as a guest and resumes with the cookie', function () {
 
     $response = $this->post(route('retros.join.store', $retro->guest_token), ['name' => 'Visitor'])
         ->assertRedirect(route('retros.show', $retro))
-        ->assertCookie(GuestCookie::name($retro->id));
+        ->assertCookie(GuestCookie::name(GuestCookie::RetroScope, $retro->id));
 
     $guest = $retro->participants()->where('guest_name', 'Visitor')->sole();
-    $cookieValue = $response->getCookie(GuestCookie::name($retro->id), decrypt: true)->getValue();
+    $cookieValue = $response->getCookie(GuestCookie::name(GuestCookie::RetroScope, $retro->id), decrypt: true)->getValue();
 
     expect(str_starts_with($cookieValue, $guest->id.'|'))->toBeTrue()
         ->and($guest->guest_secret_hash)->not->toContain(explode('|', $cookieValue)[1]);
 
-    $this->withCookies([GuestCookie::name($retro->id) => $cookieValue])
+    $this->withCookies([GuestCookie::name(GuestCookie::RetroScope, $retro->id) => $cookieValue])
         ->get(route('retros.join.show', $retro->guest_token))
         ->assertRedirect(route('retros.show', $retro));
 });

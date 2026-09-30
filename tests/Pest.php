@@ -85,7 +85,7 @@ function retroFacilitator(Retro $retro): array
  */
 function retroGuestCookie(Participant $participant, string $secret = 'secret'): array
 {
-    return [GuestCookie::name($participant->retro_id) => "{$participant->id}|{$secret}"];
+    return [GuestCookie::name(GuestCookie::RetroScope, $participant->retro_id) => "{$participant->id}|{$secret}"];
 }
 
 function answerSurvey(Survey $survey, Participant $participant, int ...$optionIndexes): void

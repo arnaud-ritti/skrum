@@ -28,7 +28,7 @@ class ResolveParticipant
             return null;
         }
 
-        $credentials = GuestCookie::parse($request->cookie(GuestCookie::name($retro->id)));
+        $credentials = GuestCookie::parse($request->cookie(GuestCookie::name(GuestCookie::RetroScope, $retro->id)));
 
         if ($credentials === null) {
             return null;

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Concerns\HasGuestIdentity;
 use Database\Factories\ParticipantFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -28,6 +29,7 @@ class Participant extends Model
     /** @use HasFactory<ParticipantFactory> */
     use HasFactory;
 
+    use HasGuestIdentity;
     use HasUuids;
 
     public static function current(Request $request): self
@@ -61,31 +63,5 @@ class Participant extends Model
     public function votes(): HasMany
     {
         return $this->hasMany(Vote::class);
-    }
-
-    public function isGuest(): bool
-    {
-        return $this->guest_name !== null;
-    }
-
-    public function displayName(): string
-    {
-        if ($this->user !== null) {
-            return $this->user->name;
-        }
-
-        return $this->guest_name ?? __('Former member');
-    }
-
-    public function avatarSeed(): string
-    {
-        $identity = $this->user_id ?? $this->id;
-
-        return substr(hash_hmac('sha256', $identity, (string) config('app.key')), 0, 32);
-    }
-
-    public function avatarUrl(): string
-    {
-        return route('avatars.show', $this->avatarSeed(), absolute: false);
     }
 }
