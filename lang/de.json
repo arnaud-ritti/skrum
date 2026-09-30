@@ -1154,5 +1154,9 @@
     ":provider did not respond. Try again later.": ":provider hat nicht geantwortet. Versuche es später erneut.",
     "The Telegram bot is used elsewhere. Remove its webhook or use a dedicated bot.": "Der Telegram-Bot wird anderswo verwendet. Entferne seinen Webhook oder nutze einen eigenen Bot.",
     "Connect :provider in the team settings.": "Verbinde :provider in den Teameinstellungen.",
-    "This :provider connection is read-only.": "Diese :provider-Verbindung ist schreibgeschützt."
+    "This :provider connection is read-only.": "Diese :provider-Verbindung ist schreibgeschützt.",
+    "Connected": "Verbunden",
+    "Setup required": "Einrichtung erforderlich",
+    "Reconnect required": "Erneute Verbindung erforderlich",
+    "Stored credentials could not be read. Reconnect.": "Die gespeicherten Zugangsdaten konnten nicht gelesen werden. Verbinde erneut."
 }

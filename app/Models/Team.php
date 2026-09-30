@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\IntegrationProvider;
 use Database\Factories\TeamFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -64,6 +65,17 @@ class Team extends Model
     public function pokerDecks(): HasMany
     {
         return $this->hasMany(SavedPokerDeck::class);
+    }
+
+    /** @return HasMany<TeamIntegration, $this> */
+    public function integrations(): HasMany
+    {
+        return $this->hasMany(TeamIntegration::class);
+    }
+
+    public function integration(IntegrationProvider $provider): ?TeamIntegration
+    {
+        return $this->integrations()->where('provider', $provider->value)->first();
     }
 
     /** @return HasMany<TeamHealthStatement, $this> */

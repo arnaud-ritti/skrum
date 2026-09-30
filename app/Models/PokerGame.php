@@ -48,6 +48,13 @@ class PokerGame extends Model
 
     use HasUuids;
 
+    protected static function booted(): void
+    {
+        static::deleting(function (PokerGame $game): void {
+            IntegrationDelivery::query()->whereMorphedTo('subject', $game)->delete();
+        });
+    }
+
     /** @return BelongsTo<Team, $this> */
     public function team(): BelongsTo
     {

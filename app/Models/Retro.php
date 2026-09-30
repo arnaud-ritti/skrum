@@ -64,6 +64,13 @@ class Retro extends Model
 
     use HasUuids;
 
+    protected static function booted(): void
+    {
+        static::deleting(function (Retro $retro): void {
+            IntegrationDelivery::query()->whereMorphedTo('subject', $retro)->delete();
+        });
+    }
+
     public const SummaryPendingTimeoutMinutes = 10;
 
     public function voteLimit(): int
