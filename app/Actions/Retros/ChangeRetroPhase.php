@@ -4,6 +4,7 @@ namespace App\Actions\Retros;
 
 use App\Actions\Surveys\CloseOpenSurveys;
 use App\Enums\RetroPhase;
+use App\Events\RetroCompleted;
 use App\Events\Retros\PhaseChanged;
 use App\Models\Retro;
 use Illuminate\Validation\ValidationException;
@@ -21,6 +22,7 @@ class ChangeRetroPhase
         $this->move($locked, $phase);
         $this->closeSurveys($locked, $phase);
         $this->broadcast($locked, $phase);
+        $this->announceCompletion($locked, $phase);
     }
 
     private function ensureReachable(Retro $locked, RetroPhase $phase): void
@@ -57,5 +59,14 @@ class ChangeRetroPhase
     private function broadcast(Retro $locked, RetroPhase $phase): void
     {
         (new PhaseChanged($locked->id, $phase->value))->sendToOthers();
+    }
+
+    private function announceCompletion(Retro $retro, RetroPhase $phase): void
+    {
+        if ($phase !== RetroPhase::Completed) {
+            return;
+        }
+
+        event(new RetroCompleted($retro));
     }
 }
