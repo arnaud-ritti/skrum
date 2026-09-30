@@ -60,6 +60,8 @@ class ProfileController extends Controller
                 ->filter(fn (Workspace $workspace) => $workspace->members()->count() === 1)
                 ->each->delete();
 
+            $user->tokens()->delete();
+
             $user->delete();
         });
 

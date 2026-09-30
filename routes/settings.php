@@ -1,8 +1,10 @@
 <?php
 
+use App\Http\Controllers\Settings\ApiTokensController;
 use App\Http\Controllers\Settings\NotificationPreferencesController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\SecurityController;
+use App\Http\Middleware\EnsureMcpIsEnabled;
 use Illuminate\Auth\Middleware\RequirePassword;
 use Illuminate\Support\Facades\Route;
 
@@ -26,6 +28,20 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('settings/notifications', [NotificationPreferencesController::class, 'edit'])->name('notificationPreferences.edit');
     Route::patch('settings/notifications', [NotificationPreferencesController::class, 'update'])->name('notificationPreferences.update');
+
+    Route::middleware(EnsureMcpIsEnabled::class)->group(function () {
+        Route::get('settings/api-tokens', [ApiTokensController::class, 'index'])
+            ->middleware(RequirePassword::class)
+            ->name('apiTokens.index');
+
+        Route::post('settings/api-tokens', [ApiTokensController::class, 'store'])
+            ->middleware([RequirePassword::class, 'throttle:10,1'])
+            ->name('apiTokens.store');
+
+        Route::delete('settings/api-tokens/{token}', [ApiTokensController::class, 'destroy'])
+            ->whereUuid('token')
+            ->name('apiTokens.destroy');
+    });
 
     Route::inertia('settings/appearance', 'settings/appearance')->name('appearance.edit');
 });

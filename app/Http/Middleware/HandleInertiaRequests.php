@@ -47,6 +47,9 @@ class HandleInertiaRequests extends Middleware
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             'locale' => app()->getLocale(),
             'locales' => config('skrum.locales'),
+            'features' => [
+                'mcp' => (bool) config('skrum.mcp.enabled'),
+            ],
             'translations' => fn () => $this->translations(app()->getLocale()),
             'workspaces' => fn () => $request->user()?->workspaces()
                 ->orderBy('name')

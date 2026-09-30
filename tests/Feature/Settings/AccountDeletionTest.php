@@ -3,6 +3,7 @@
 use App\Enums\WorkspaceRole;
 use App\Models\User;
 use App\Models\Workspace;
+use Illuminate\Support\Facades\DB;
 
 it('blocks deleting an account that is the last owner of a shared workspace', function () {
     $owner = User::factory()->create();
@@ -49,4 +50,15 @@ it('lets an owner delete their account when another owner remains', function () 
     expect($owner->fresh())->toBeNull()
         ->and($workspace->fresh())->not->toBeNull()
         ->and($workspace->owners()->sole()->is($otherOwner))->toBeTrue();
+});
+
+it('deletes the personal access tokens of a deleted account', function () {
+    $user = User::factory()->create();
+    $user->createToken('assistant');
+
+    $this->actingAs($user)
+        ->delete(route('profile.destroy'), ['password' => 'password'])
+        ->assertSessionHasNoErrors();
+
+    expect(DB::table('personal_access_tokens')->where('tokenable_id', $user->id)->count())->toBe(0);
 });

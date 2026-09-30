@@ -9,29 +9,31 @@ use App\Models\PokerVote;
 /**
  * The only place that turns votes into payloads: before reveal a player
  * sees their own value only, whoever they are (facilitator included).
+ *
+ * @phpstan-type Round array{
+ *     id: string,
+ *     number: int,
+ *     anonymous: bool,
+ *     revealedAt: ?string,
+ *     revealReason: ?string,
+ *     timerEndsAt: ?string,
+ *     version: int,
+ *     votesCount: int,
+ *     votes: array<int, array{playerId: string, value: ?string}>,
+ *     myVote: ?string,
+ *     result: ?array{
+ *         average: ?float,
+ *         distribution: array<int, array{value: string, count: int}>,
+ *         mode: array<int, string>,
+ *         consensus: bool,
+ *         nearestCard: ?string
+ *     }
+ * }
  */
 class PresentPokerRound
 {
     /**
-     * @return array{
-     *     id: string,
-     *     number: int,
-     *     anonymous: bool,
-     *     revealedAt: ?string,
-     *     revealReason: ?string,
-     *     timerEndsAt: ?string,
-     *     version: int,
-     *     votesCount: int,
-     *     votes: array<int, array{playerId: string, value: ?string}>,
-     *     myVote: ?string,
-     *     result: ?array{
-     *         average: ?float,
-     *         distribution: array<int, array{value: string, count: int}>,
-     *         mode: array<int, string>,
-     *         consensus: bool,
-     *         nearestCard: ?string
-     *     }
-     * }
+     * @return Round
      */
     public function handle(PokerRound $round, PokerGame $game, ?string $viewerPlayerId, bool $listUnrevealedVoters = true): array
     {

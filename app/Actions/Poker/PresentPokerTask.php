@@ -5,6 +5,19 @@ namespace App\Actions\Poker;
 use App\Models\PokerTask;
 use Illuminate\Support\Facades\Cache;
 
+/**
+ * @phpstan-type Task array{
+ *     id: string,
+ *     title: string,
+ *     description: ?string,
+ *     descriptionHtml: string,
+ *     position: int,
+ *     estimate: ?string,
+ *     estimatedAt: ?string,
+ *     roundsCount: int,
+ *     external: null
+ * }
+ */
 class PresentPokerTask
 {
     public function __construct(private RenderTaskMarkdown $renderTaskMarkdown) {}
@@ -12,17 +25,7 @@ class PresentPokerTask
     /**
      * External references stay null until the tracker imports of spec 6.
      *
-     * @return array{
-     *     id: string,
-     *     title: string,
-     *     description: ?string,
-     *     descriptionHtml: string,
-     *     position: int,
-     *     estimate: ?string,
-     *     estimatedAt: ?string,
-     *     roundsCount: int,
-     *     external: null
-     * }
+     * @return Task
      */
     public function handle(PokerTask $task): array
     {

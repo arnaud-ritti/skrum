@@ -1,3 +1,4 @@
+import type { NewApiToken } from '@/types/api-tokens';
 import type { Auth } from '@/types/auth';
 import type { FlashToast } from '@/types/ui';
 import type { CurrentWorkspace, WorkspaceSummary } from '@/types/workspaces';
@@ -21,11 +22,13 @@ declare module '@inertiajs/core' {
             currentWorkspace: CurrentWorkspace | null;
             notifications: { unreadCount: number } | null;
             actionItems: { overdueAssignedCount: number } | null;
+            features: { mcp: boolean };
             [key: string]: unknown;
         };
         flashDataType: {
             toast?: FlashToast;
             invitationUrl?: string;
+            newToken?: NewApiToken;
         };
     }
 }

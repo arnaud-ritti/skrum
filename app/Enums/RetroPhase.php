@@ -17,9 +17,17 @@ enum RetroPhase: string
         return $this !== self::Completed;
     }
 
+    /**
+     * @return array<int, self>
+     */
+    public static function hidingOthersCards(): array
+    {
+        return [self::HealthCheck, self::Icebreaker, self::Writing];
+    }
+
     public function hidesOthersCards(): bool
     {
-        return in_array($this, [self::HealthCheck, self::Icebreaker, self::Writing], true);
+        return in_array($this, self::hidingOthersCards(), true);
     }
 
     public function label(): string

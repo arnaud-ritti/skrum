@@ -46,6 +46,8 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $completed_at
  * @property Carbon|null $created_at
  * @property-read Team $team
+ * @property-read float|string|null $roti_votes_avg_score
+ * @property-read int|null $roti_votes_count
  */
 #[Fillable([
     'title', 'template', 'phase', 'facilitator_participant_id', 'is_anonymous', 'votes_per_participant',
@@ -75,6 +77,15 @@ class Retro extends Model
             : $this->cards()->whereNull('parent_card_id')->count();
 
         return min(10, $topLevelCards + 3);
+    }
+
+    public function showsVoteTotals(): bool
+    {
+        if (in_array($this->phase, [RetroPhase::Discussing, RetroPhase::Completed], true)) {
+            return true;
+        }
+
+        return $this->phase === RetroPhase::Voting && ! $this->hide_vote_counts;
     }
 
     /** @return BelongsTo<WorkspaceTemplate, $this> */

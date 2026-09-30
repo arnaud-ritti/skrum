@@ -2,22 +2,34 @@
 
 use App\Actions\Retros\GuestCookie;
 use App\Contracts\PokerPresenceRoster;
+use App\Enums\McpScope;
 use App\Enums\PokerDeck;
+use App\Enums\RetroPhase;
 use App\Enums\WorkspaceRole;
+use App\Mcp\McpGrant;
+use App\Mcp\Servers\SkrumServer;
+use App\Models\ActionItem;
+use App\Models\Card;
 use App\Models\Participant;
+use App\Models\PersonalAccessToken;
 use App\Models\PokerGame;
 use App\Models\PokerPlayer;
 use App\Models\PokerRound;
 use App\Models\PokerTask;
 use App\Models\PokerVote;
 use App\Models\Retro;
+use App\Models\SuggestedAction;
 use App\Models\Survey;
 use App\Models\SurveyResponse;
 use App\Models\Team;
 use App\Models\User;
 use App\Models\Workspace;
+use Carbon\CarbonInterface;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Testing\TestResponse;
+use Laravel\Mcp\Server\Testing\PendingTestResponse;
+use Laravel\Mcp\Server\Testing\TestResponse as McpTestResponse;
 use Tests\TestCase;
 
 /*
@@ -288,4 +300,277 @@ function fakePokerRoster(?array $playerIds): void
             return $this->playerIds;
         }
     });
+}
+
+/**
+ * @param  array<int, McpScope>  $scopes
+ */
+function issueTestMcpToken(User $user, array $scopes = [McpScope::Read], ?Team $team = null, ?CarbonInterface $expiresAt = null): string
+{
+    $abilities = collect([McpScope::Read, ...$scopes])
+        ->map(fn (McpScope $scope): string => $scope->value)
+        ->unique()
+        ->values()
+        ->all();
+
+    $newToken = $user->createToken('Test client', $abilities, $expiresAt);
+
+    $token = $newToken->accessToken;
+
+    assert($token instanceof PersonalAccessToken);
+
+    $token->forceFill([
+        'team_id' => $team?->id,
+        'token_hint' => substr($newToken->plainTextToken, -4),
+    ])->save();
+
+    return $newToken->plainTextToken;
+}
+
+/**
+ * @param  array<string, mixed>  $payload
+ * @param  array<string, string>  $headers
+ */
+function postMcp(?string $token, array $payload = ['jsonrpc' => '2.0', 'id' => 1, 'method' => 'tools/list'], array $headers = []): TestResponse
+{
+    app('auth')->forgetGuards();
+    app()->forgetScopedInstances();
+
+    if ($token !== null) {
+        $headers['Authorization'] = "Bearer {$token}";
+    }
+
+    return test()->postJson('/mcp', $payload, [
+        'Accept' => 'application/json, text/event-stream',
+        ...$headers,
+    ]);
+}
+
+/**
+ * @param  array<int, McpScope>  $scopes
+ */
+function bindMcpGrant(User $user, array $scopes = [McpScope::Read], ?Team $team = null): McpGrant
+{
+    app()->forgetScopedInstances();
+
+    $token = PersonalAccessToken::factory()
+        ->forUser($user)
+        ->withScopes(...$scopes)
+        ->create(['team_id' => $team?->id]);
+
+    $grant = new McpGrant($user, $token->id, $token->scopes(), $team?->id);
+    $grant->bind();
+
+    return $grant;
+}
+
+/**
+ * @param  array<int, McpScope>  $scopes
+ */
+function actingAsMcp(User $user, array $scopes = [McpScope::Read], ?Team $team = null): PendingTestResponse
+{
+    bindMcpGrant($user, $scopes, $team);
+
+    return SkrumServer::actingAs($user, 'sanctum');
+}
+
+/**
+ * @return array<string, mixed>
+ */
+function mcpStructured(McpTestResponse $response): array
+{
+    return (fn (): ?array => $this->structuredContent())->call($response) ?? [];
+}
+
+/**
+ * Tool names from tools/list. TestListResponse's registration assertions build each
+ * class with `new`, which fails for tools with constructor dependencies, so
+ * tests compare names instead.
+ *
+ * @return array<int, string>
+ */
+function mcpToolNames(PendingTestResponse $pending): array
+{
+    $items = (fn (): array => $this->items)->call($pending->tools());
+
+    return collect($items)->pluck('name')->sort()->values()->all();
+}
+
+/**
+ * A read + write grant, the common case of the write tool tests.
+ */
+function mcpWriter(User $user, ?Team $team = null): PendingTestResponse
+{
+    return actingAsMcp($user, [McpScope::Read, McpScope::Write], $team);
+}
+
+function mcpPromptText(McpTestResponse $response): string
+{
+    $payload = (fn (): array => $this->response->toArray())->call($response);
+
+    return (string) ($payload['result']['messages'][0]['content']['text'] ?? '');
+}
+
+/**
+ * @return array<string, mixed>
+ */
+function mcpPromptData(McpTestResponse $response): array
+{
+    $text = mcpPromptText($response);
+
+    preg_match('/```json\n(.*)\n```/s', $text, $matches);
+
+    return json_decode($matches[1] ?? 'null', true) ?? [];
+}
+
+/**
+ * The 25 tools of the QRetro contract that exist before spec 6 adds the
+ * four tracker tools.
+ *
+ * @return array<int, string>
+ */
+function mcpContractToolNames(): array
+{
+    $names = [
+        'retro.teams.list',
+        'retro.team.members.list',
+        'retro.boards.list',
+        'retro.boards.search',
+        'retro.actions.list',
+        'retro.board.messages.list',
+        'retro.board.summary.get',
+        'retro.board.actions.list',
+        'retro.board.insights.list',
+        'retro.board.health.get',
+        'retro.board.roti.get',
+        'poker.games.list',
+        'poker.game.get',
+        'poker.game.tasks.list',
+        'retro.actions.create',
+        'retro.actions.update',
+        'retro.actions.complete',
+        'retro.board.suggested_actions.promote',
+        'retro.board.suggested_actions.reject',
+        'retro.board.messages.update',
+        'poker.games.create',
+        'poker.game.tasks.add',
+        'poker.game.task.select',
+        'poker.game.task.reveal',
+        'retro.board.messages.delete_own',
+    ];
+
+    sort($names);
+
+    return $names;
+}
+
+/**
+ * @return class-string
+ */
+function mcpToolClass(string $name): string
+{
+    $tools = (new ReflectionClass(SkrumServer::class))->getProperty('tools')->getDefaultValue();
+
+    foreach ($tools as $class) {
+        if (app($class)->name() === $name) {
+            return $class;
+        }
+    }
+
+    throw new RuntimeException("No MCP tool is named [{$name}].");
+}
+
+/**
+ * @return array<int, string>
+ */
+function mcpPromptNames(PendingTestResponse $pending): array
+{
+    return collect((fn (): array => $this->items)->call($pending->prompts()))->pluck('name')->sort()->values()->all();
+}
+
+/**
+ * @param  array<string, mixed>  $arguments
+ * @return array<string, mixed>
+ */
+function mcpToolCallPayload(string $tool, array $arguments = []): array
+{
+    return ['jsonrpc' => '2.0', 'id' => 1, 'method' => 'tools/call', 'params' => ['name' => $tool, 'arguments' => (object) $arguments]];
+}
+
+/**
+ * One team with a Discussing board (guest access on, a guest, another
+ * member's card, the user's action item, two pending suggestions), a
+ * Writing board holding two of the user's cards, and a poker game the
+ * user facilitates with a voted current task and a second task.
+ *
+ * @return array<string, mixed>
+ */
+function mcpSweepWorld(): array
+{
+    $workspace = Workspace::factory()->create();
+    $team = Team::factory()->create(['workspace_id' => $workspace->id, 'name' => 'Sweep team']);
+
+    $user = User::factory()->create(['email' => 'sweep-user@example.test', 'name' => 'Sweep User']);
+    $other = User::factory()->create(['email' => 'sweep-other@example.test', 'name' => 'Sweep Other']);
+
+    foreach ([$user, $other] as $member) {
+        $workspace->members()->attach($member, ['role' => WorkspaceRole::Member->value]);
+        $team->members()->attach($member);
+    }
+
+    $discussing = Retro::factory()->withGuestAccess()->inPhase(RetroPhase::Discussing)->create([
+        'team_id' => $team->id,
+        'title' => 'Sweep board',
+    ]);
+    $mine = Participant::factory()->create(['retro_id' => $discussing->id, 'user_id' => $user->id]);
+    $theirs = Participant::factory()->create(['retro_id' => $discussing->id, 'user_id' => $other->id]);
+    Participant::factory()->guest('guest-secret-value')->create(['retro_id' => $discussing->id]);
+    Card::factory()->create(['retro_id' => $discussing->id, 'participant_id' => $theirs->id, 'content' => 'Sweep message']);
+
+    $actionItem = ActionItem::factory()->create([
+        'retro_id' => $discussing->id,
+        'content' => 'Sweep agreement',
+        'created_by_participant_id' => $mine->id,
+        'created_by_user_id' => $user->id,
+        'assignee_user_id' => $other->id,
+    ]);
+
+    $promote = SuggestedAction::factory()->create(['retro_id' => $discussing->id, 'content' => 'Promote me']);
+    $reject = SuggestedAction::factory()->create(['retro_id' => $discussing->id, 'content' => 'Reject me', 'position' => 1]);
+
+    $writing = Retro::factory()->inPhase(RetroPhase::Writing)->create(['team_id' => $team->id]);
+    $writer = Participant::factory()->create(['retro_id' => $writing->id, 'user_id' => $user->id]);
+    $editable = Card::factory()->create(['retro_id' => $writing->id, 'participant_id' => $writer->id]);
+    $deletable = Card::factory()->create(['retro_id' => $writing->id, 'participant_id' => $writer->id, 'position' => 1]);
+
+    $game = PokerGame::factory()->create(['team_id' => $team->id]);
+    $player = PokerPlayer::factory()->create(['poker_game_id' => $game->id, 'user_id' => $user->id]);
+    $game->update(['facilitator_player_id' => $player->id]);
+    $current = PokerTask::factory()->create(['poker_game_id' => $game->id]);
+    $next = PokerTask::factory()->create(['poker_game_id' => $game->id]);
+    pokerVote(openPokerRound($game, $current), $player, '5');
+
+    return [
+        'user' => $user,
+        'team' => $team,
+        'discussing' => $discussing,
+        'writing' => $writing,
+        'actionItem' => $actionItem,
+        'promote' => $promote,
+        'reject' => $reject,
+        'editable' => $editable,
+        'deletable' => $deletable,
+        'game' => $game,
+        'current' => $current,
+        'next' => $next,
+        'secrets' => [
+            'sweep-user@example.test',
+            'sweep-other@example.test',
+            $discussing->guest_token,
+            $writing->guest_token,
+            $game->guest_token,
+            'guest-secret-value',
+            hash('sha256', 'guest-secret-value'),
+        ],
+    ];
 }

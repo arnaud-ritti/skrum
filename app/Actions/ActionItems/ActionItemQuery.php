@@ -22,6 +22,15 @@ class ActionItemQuery
             ->with(ActionItem::presentationRelations())
             ->withCount('comments');
 
+        return self::order($this->filter($query, $user, $filters))->paginate(self::PerPage)->withQueryString();
+    }
+
+    /**
+     * @param  Builder<ActionItem>  $query
+     * @return Builder<ActionItem>
+     */
+    public function filter(Builder $query, User $user, ActionItemFilters $filters): Builder
+    {
         $this->filterByStatus($query, $filters->status);
         $this->filterByAssignee($query, $user, $filters->assignee);
 
@@ -29,7 +38,7 @@ class ActionItemQuery
             $query->where('team_id', $filters->teamId);
         }
 
-        return self::order($query)->paginate(self::PerPage)->withQueryString();
+        return $query;
     }
 
     public function find(User $user, Workspace $workspace, string $itemId): ?ActionItem

@@ -1,0 +1,121 @@
+<?php
+
+use App\Actions\Retros\DeleteCard;
+use App\Actions\Retros\EnsureCardGif;
+use App\Actions\Retros\UpdateCard;
+use App\Enums\RetroPhase;
+use App\Events\Retros\CardDeleted;
+use App\Events\Retros\CardUpdated;
+use App\Events\Retros\OwnCardSaved;
+use App\Models\Card;
+use App\Models\Retro;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
+
+beforeEach(function () {
+    Event::fake();
+});
+
+it('updates an own card and broadcasts it like the board endpoint', function () {
+    $retro = Retro::factory()->create();
+    [, $participant] = retroMember($retro);
+    $card = Card::factory()->create(['retro_id' => $retro->id, 'participant_id' => $participant->id, 'content' => 'Old']);
+
+    $updated = app(UpdateCard::class)->handle($retro, $card, $participant, ['content' => 'New']);
+
+    expect($updated->content)->toBe('New')
+        ->and($updated->relationLoaded('retro'))->toBeTrue()
+        ->and($card->fresh()->content)->toBe('New');
+
+    Event::assertDispatched(CardUpdated::class, fn (CardUpdated $event) => $event->card['id'] === $card->id && $event->card['hidden'] === true);
+    Event::assertDispatched(OwnCardSaved::class, fn (OwnCardSaved $event) => $event->participantId === $participant->id && $event->card['id'] === $card->id && $event->card['content'] === 'New');
+});
+
+it('keeps fields that are not in the changes', function () {
+    $retro = Retro::factory()->create(['gifs_enabled' => true]);
+    [, $participant] = retroMember($retro);
+    $card = Card::factory()->create(['retro_id' => $retro->id, 'participant_id' => $participant->id, 'content' => 'Keep', 'gif_id' => 'abc']);
+
+    app(UpdateCard::class)->handle($retro, $card, $participant, ['content' => 'Changed']);
+
+    expect($card->fresh()->gif_id)->toBe('abc');
+});
+
+it('refuses to update another participant\'s card', function () {
+    $retro = Retro::factory()->create();
+    [, $participant] = retroMember($retro);
+    $card = Card::factory()->create(['retro_id' => $retro->id]);
+
+    app(UpdateCard::class)->handle($retro, $card, $participant, ['content' => 'Mine now']);
+})->throws(AuthorizationException::class, 'You can only change your own cards.');
+
+it('refuses to update a card outside Writing and Grouping', function () {
+    $retro = Retro::factory()->inPhase(RetroPhase::Voting)->create();
+    [, $participant] = retroMember($retro);
+    $card = Card::factory()->create(['retro_id' => $retro->id, 'participant_id' => $participant->id]);
+
+    app(UpdateCard::class)->handle($retro, $card, $participant, ['content' => 'Late']);
+})->throws(AuthorizationException::class, 'This action is not available in the current phase.');
+
+it('refuses to update a card on a locked board', function () {
+    $retro = Retro::factory()->create(['is_locked' => true]);
+    [, $participant] = retroMember($retro);
+    $card = Card::factory()->create(['retro_id' => $retro->id, 'participant_id' => $participant->id]);
+
+    app(UpdateCard::class)->handle($retro, $card, $participant, ['content' => 'Locked']);
+})->throws(HttpException::class, 'The board is closed for editing.');
+
+it('refuses to empty a card without a GIF', function () {
+    $retro = Retro::factory()->create();
+    [, $participant] = retroMember($retro);
+    $card = Card::factory()->create(['retro_id' => $retro->id, 'participant_id' => $participant->id]);
+
+    app(UpdateCard::class)->handle($retro, $card, $participant, ['content' => null]);
+})->throws(ValidationException::class);
+
+it('deletes an own card and ungroups its children', function () {
+    $retro = Retro::factory()->inPhase(RetroPhase::Grouping)->create();
+    [, $participant] = retroMember($retro);
+    $lead = Card::factory()->create(['retro_id' => $retro->id, 'participant_id' => $participant->id]);
+    $child = Card::factory()->create(['retro_id' => $retro->id, 'column_id' => $lead->column_id, 'parent_card_id' => $lead->id]);
+
+    app(DeleteCard::class)->handle($retro, $lead, $participant);
+
+    expect(Card::query()->whereKey($lead->id)->exists())->toBeFalse()
+        ->and($child->fresh()->parent_card_id)->toBeNull();
+
+    Event::assertDispatched(CardDeleted::class, fn (CardDeleted $event) => $event->cardId === $lead->id
+        && collect($event->ungroupedCards)->pluck('id')->all() === [$child->id]);
+});
+
+it('refuses to delete another participant\'s card', function () {
+    $retro = Retro::factory()->create();
+    [, $participant] = retroMember($retro);
+    $card = Card::factory()->create(['retro_id' => $retro->id]);
+
+    app(DeleteCard::class)->handle($retro, $card, $participant);
+})->throws(AuthorizationException::class, 'You can only change your own cards.');
+
+it('refuses an unknown gif on a card with a gif_id error', function () {
+    config(['services.gifs' => ['provider' => 'giphy', 'key' => 'secret-key', 'rating' => 'pg']]);
+    Http::fake(['api.giphy.com/*' => Http::response(['data' => []], 404)]);
+    $retro = Retro::factory()->create(['gifs_enabled' => true]);
+
+    try {
+        app(EnsureCardGif::class)->handle($retro, 'missing');
+        $this->fail('Expected a validation error.');
+    } catch (ValidationException $exception) {
+        expect($exception->errors())->toHaveKey('gif_id')
+            ->and($exception->errors()['gif_id'][0])->toBe('This GIF could not be found.');
+    }
+});
+
+it('refuses a gif when GIFs are unavailable', function () {
+    config(['services.gifs' => ['provider' => null, 'key' => null]]);
+    $retro = Retro::factory()->create(['gifs_enabled' => true]);
+
+    app(EnsureCardGif::class)->handle($retro, 'any');
+})->throws(AuthorizationException::class, 'GIFs are turned off for this board.');

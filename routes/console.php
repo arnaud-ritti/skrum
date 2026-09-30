@@ -13,3 +13,7 @@ Schedule::command('action-items:send-reminders')
     ->timezone((string) config('app.timezone'))
     ->withoutOverlapping()
     ->onOneServer();
+
+Schedule::command('sanctum:prune-expired --hours=720')
+    ->daily()
+    ->onOneServer();
