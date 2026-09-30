@@ -4,12 +4,11 @@ namespace App\Mcp\Tools\Retro;
 
 use App\Actions\Retros\PresentSuggestedAction;
 use App\Actions\Retros\RejectSuggestedAction;
-use App\Actions\Retros\RetroGuard;
 use App\Actions\Retros\SuggestionGuard;
 use App\Enums\McpScope;
-use App\Enums\RetroPhase;
 use App\Mcp\McpContext;
 use App\Mcp\McpFeature;
+use App\Mcp\McpGrant;
 use App\Mcp\Tools\SkrumTool;
 use App\Models\Retro;
 use App\Models\SuggestedAction;
@@ -64,11 +63,9 @@ class RejectSuggestion extends SkrumTool
         $retro = $this->context->retro((string) $validated['board_id']);
         $retro->suggestedActions()->whereKey($validated['suggested_action_id'])->firstOrFail();
 
-        RetroGuard::phase($retro, RetroPhase::Discussing, RetroPhase::Completed);
+        $this->suggestionGuard->authorizeUser($retro, McpGrant::current()->user, $this->context->participant($retro));
 
         $participant = $this->context->participantForWrite($retro);
-
-        $this->suggestionGuard->authorize($retro, $participant);
 
         $suggestion = DB::transaction(function () use ($retro, $validated, $participant): SuggestedAction {
             $locked = Retro::query()->whereKey($retro->id)->lockForUpdate()->firstOrFail();
@@ -79,6 +76,6 @@ class RejectSuggestion extends SkrumTool
             return $fresh;
         });
 
-        return Response::structured(['suggestedAction' => $this->presentSuggestedAction->handle($suggestion->refresh())]);
+        return Response::structured(['suggestedAction' => $this->presentSuggestedAction->handle($suggestion)]);
     }
 }

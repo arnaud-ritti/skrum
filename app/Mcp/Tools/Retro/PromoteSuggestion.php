@@ -4,10 +4,8 @@ namespace App\Mcp\Tools\Retro;
 
 use App\Actions\Retros\PresentSuggestedAction;
 use App\Actions\Retros\PromoteSuggestedAction;
-use App\Actions\Retros\RetroGuard;
 use App\Actions\Retros\SuggestionGuard;
 use App\Enums\McpScope;
-use App\Enums\RetroPhase;
 use App\Mcp\McpContext;
 use App\Mcp\McpFeature;
 use App\Mcp\McpGrant;
@@ -66,11 +64,9 @@ class PromoteSuggestion extends SkrumTool
         $retro = $this->context->retro((string) $validated['board_id']);
         $retro->suggestedActions()->whereKey($validated['suggested_action_id'])->firstOrFail();
 
-        RetroGuard::phase($retro, RetroPhase::Discussing, RetroPhase::Completed);
+        $this->suggestionGuard->authorizeUser($retro, McpGrant::current()->user, $this->context->participant($retro));
 
         $participant = $this->context->participantForWrite($retro);
-
-        $this->suggestionGuard->authorize($retro, $participant);
 
         [$suggestion, $actionItem] = DB::transaction(function () use ($retro, $validated, $participant): array {
             $locked = Retro::query()->whereKey($retro->id)->lockForUpdate()->firstOrFail();
@@ -80,7 +76,7 @@ class PromoteSuggestion extends SkrumTool
         });
 
         return Response::structured([
-            'suggestedAction' => $this->presentSuggestedAction->handle($suggestion->refresh()),
+            'suggestedAction' => $this->presentSuggestedAction->handle($suggestion),
             'actionItem' => $this->presentActionItem->handle($actionItem, McpGrant::current()->user),
         ]);
     }
