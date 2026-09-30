@@ -33,6 +33,8 @@ use App\Support\Games\GameRulesRegistry;
  *     history: array<int, array<string, mixed>>,
  *     links: array{team: ?string, retro: ?string},
  *     emojiData: array{baseUrl: string, locale: string},
+ *     leaderboard: array<int, array{playerId: string, points: int, wins: int, roundsPlayed: int}>,
+ *     scoresResetAt: ?string,
  *     serverTime: string
  * }
  */
@@ -43,6 +45,7 @@ class BuildGameSnapshot
         private PresentGameRound $presentGameRound,
         private PresentGameRoundHistory $presentGameRoundHistory,
         private GameRulesRegistry $gameRulesRegistry,
+        private RoomLeaderboard $roomLeaderboard,
     ) {}
 
     /**
@@ -94,6 +97,8 @@ class BuildGameSnapshot
                 'baseUrl' => '/emoji-data/'.config('services.emoji_data.version'),
                 'locale' => EmojiDataController::emojibaseLocale(app()->getLocale()),
             ],
+            'leaderboard' => $this->roomLeaderboard->handle($room),
+            'scoresResetAt' => $isStandalone ? $room->scores_reset_at?->toIso8601String() : null,
             'serverTime' => now()->utc()->format('Y-m-d\TH:i:s.v\Z'),
         ];
     }

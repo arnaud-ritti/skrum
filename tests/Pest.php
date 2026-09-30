@@ -15,6 +15,7 @@ use App\Mcp\Servers\SkrumServer;
 use App\Models\ActionItem;
 use App\Models\Card;
 use App\Models\GamePlayer;
+use App\Models\GamePoint;
 use App\Models\GameRoom;
 use App\Models\GameRound;
 use App\Models\Participant;
@@ -1085,4 +1086,21 @@ function anonymousGifIcebreaker(): array
     $member = GamePlayer::factory()->forParticipant($participant)->create(['game_room_id' => $room->id]);
 
     return [$room, $facilitatorUser, $host, $memberUser, $member];
+}
+
+/**
+ * @param  array<string, mixed>  $attributes
+ */
+function awardGamePoints(GameRoom $room, GamePlayer $player, int $points, bool $isWin = false, array $attributes = []): GamePoint
+{
+    return GamePoint::factory()->create([
+        'team_id' => $room->team_id,
+        'game_room_id' => $room->id,
+        'player_id' => $player->id,
+        'user_id' => $player->accountUserId(),
+        'game' => $room->game,
+        'points' => $points,
+        'is_win' => $isWin,
+        ...$attributes,
+    ]);
 }
