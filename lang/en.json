@@ -1039,5 +1039,6 @@
     "This task is managed in :source.": "This task is managed in :source.",
     "This task can no longer be synced.": "This task can no longer be synced.",
     "This task comes from another :provider site.": "This task comes from another :provider site.",
-    "T-shirt estimates can't be written to :source.": "T-shirt estimates can't be written to :source."
+    "T-shirt estimates can't be written to :source.": "T-shirt estimates can't be written to :source.",
+    "This game can hold 200 tasks at most.": "This game can hold 200 tasks at most."
 }

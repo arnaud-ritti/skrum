@@ -1287,5 +1287,6 @@
     "This task is managed in :source.": "Esta tarea se gestiona en :source.",
     "This task can no longer be synced.": "Esta tarea ya no se puede sincronizar.",
     "This task comes from another :provider site.": "Esta tarea viene de otro sitio de :provider.",
-    "T-shirt estimates can't be written to :source.": "Las estimaciones en tallas de camiseta no se pueden escribir en :source."
+    "T-shirt estimates can't be written to :source.": "Las estimaciones en tallas de camiseta no se pueden escribir en :source.",
+    "This game can hold 200 tasks at most.": "Esta partida puede tener 200 tareas como máximo."
 }
