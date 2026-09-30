@@ -10,6 +10,7 @@ use App\Models\PersonalAccessToken;
 use App\Models\Team;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Models\WorkspaceMembership;
 use Carbon\CarbonInterface;
 use Closure;
 use Illuminate\Http\RedirectResponse;
@@ -27,6 +28,7 @@ class ApiTokensController extends Controller
     public function index(Request $request): Response
     {
         $user = $request->user();
+        $viewableTeamIds = $this->viewableTeamIds($user);
 
         return Inertia::render('settings/api-tokens', [
             'tokens' => PersonalAccessToken::query()
@@ -34,7 +36,7 @@ class ApiTokensController extends Controller
                 ->with('team.workspace')
                 ->latest()
                 ->get()
-                ->map(fn (PersonalAccessToken $token): array => $this->presentToken($user, $token))
+                ->map(fn (PersonalAccessToken $token): array => $this->presentToken($token, $viewableTeamIds))
                 ->values(),
             'teams' => $this->teamsByWorkspace($user),
             'mcpUrl' => url('/mcp'),
@@ -98,6 +100,7 @@ class ApiTokensController extends Controller
     }
 
     /**
+     * @param  array<int, string>  $viewableTeamIds
      * @return array{
      *     id: string,
      *     name: string,
@@ -111,7 +114,7 @@ class ApiTokensController extends Controller
      *     isExpired: bool
      * }
      */
-    private function presentToken(User $user, PersonalAccessToken $token): array
+    private function presentToken(PersonalAccessToken $token, array $viewableTeamIds): array
     {
         $team = $token->team;
 
@@ -121,7 +124,7 @@ class ApiTokensController extends Controller
             'hint' => $token->token_hint,
             'scopes' => array_map(fn (McpScope $scope): string => $scope->value, $token->scopes()),
             'team' => $team === null ? null : ['id' => $team->id, 'name' => $team->name],
-            'teamAccessible' => $team === null || $user->can('view', $team),
+            'teamAccessible' => $team === null || in_array($team->id, $viewableTeamIds, true),
             'createdAt' => $token->created_at?->toIso8601String(),
             'expiresAt' => $token->expires_at?->toIso8601String(),
             'lastUsedAt' => $token->last_used_at?->toIso8601String(),
@@ -146,6 +149,24 @@ class ApiTokensController extends Controller
             ])
             ->filter(fn (array $group): bool => $group['teams'] !== [])
             ->values()
+            ->all();
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function viewableTeamIds(User $user): array
+    {
+        $managedWorkspaceIds = WorkspaceMembership::query()
+            ->where('user_id', $user->id)
+            ->get()
+            ->filter(fn (WorkspaceMembership $membership): bool => $membership->role->canManageWorkspace())
+            ->pluck('workspace_id');
+
+        return Team::query()
+            ->whereIn('workspace_id', $managedWorkspaceIds)
+            ->orWhereHas('members', fn ($query) => $query->whereKey($user->id))
+            ->pluck('id')
             ->all();
     }
 

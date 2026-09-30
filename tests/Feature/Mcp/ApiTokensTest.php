@@ -73,6 +73,29 @@ it('lists the user tokens without their secrets', function () {
     ])
         ->and($tokens['Old laptop']['isExpired'])->toBeTrue()
         ->and(json_encode($response->viewData('page')['props']))->not->toContain($active->token);
+
+    $props = json_encode($response->viewData('page')['props']);
+
+    foreach (PersonalAccessToken::query()->pluck('token') as $storedHash) {
+        expect($props)->not->toContain($storedHash);
+    }
+
+    foreach ($response->viewData('page')['props']['tokens'] as $entry) {
+        expect($entry)->not->toHaveKeys(['token', 'plainText', 'plainTextToken']);
+    }
+});
+
+it('throttles token creation to ten attempts a minute', function () {
+    $user = apiTokenOwner();
+    $request = fn () => $this->actingAs($user)
+        ->withSession(['auth.password_confirmed_at' => time()])
+        ->post(route('apiTokens.store'), ['name' => '', 'expiration' => '90_days']);
+
+    foreach (range(1, 10) as $attempt) {
+        $request()->assertStatus(302);
+    }
+
+    $request()->assertStatus(429);
 });
 
 it('flags tokens bound to a team the user can no longer see', function () {

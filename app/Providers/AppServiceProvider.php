@@ -49,7 +49,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(SavedPokerDeck::class, PokerDeckPolicy::class);
         Sanctum::usePersonalAccessTokenModel(PersonalAccessToken::class);
         RateLimiter::for('mcp', fn (Request $request): Limit => Limit::perMinute((int) config('skrum.mcp.rate_limit'))
-            ->by('mcp-token:'.(McpGrant::bound() ? McpGrant::current()->tokenId : $request->ip())));
+            ->by('mcp-token:'.McpGrant::current()->tokenId));
 
         if ($this->app->environment('local')) {
             $reverbPort = (int) config('reverb.servers.reverb.port');

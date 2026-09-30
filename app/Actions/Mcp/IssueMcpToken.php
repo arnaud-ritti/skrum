@@ -23,6 +23,7 @@ class IssueMcpToken
         return DB::transaction(function () use ($user, $name, $scopes, $team, $expiresAt): NewAccessToken {
             User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
 
+            $this->ensureNameIsFree($user, $name);
             $this->ensureRoom($user);
 
             $newToken = $user->createToken($name, $this->abilities($scopes), $expiresAt);
@@ -38,6 +39,17 @@ class IssueMcpToken
 
             return $newToken;
         });
+    }
+
+    private function ensureNameIsFree(User $user, string $name): void
+    {
+        if (! $user->tokens()->where('name', $name)->exists()) {
+            return;
+        }
+
+        throw ValidationException::withMessages([
+            'name' => __('You already have a token with this name.'),
+        ]);
     }
 
     private function ensureRoom(User $user): void
