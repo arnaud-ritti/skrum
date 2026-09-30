@@ -196,5 +196,7 @@ it('agrees with the broadcast fan-out on which retros carry an item', function (
             ->all(),
     ]);
 
-    expect($viaQuery()->all())->toBe($viaBroadcast()->all());
+    expect($viaQuery()->all())->toBe($viaBroadcast()->all())
+        ->and($viaQuery()[$items[10]->id])->toBe([$r2->id])
+        ->and($viaQuery()[$items[11]->id])->toBe([$r4->id]);
 });
