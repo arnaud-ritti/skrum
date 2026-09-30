@@ -1412,5 +1412,12 @@
     "Only the room creator or a workspace admin can take hosting.": "Solo quien creó la sala o un administrador del espacio de trabajo pueden ser anfitriones.",
     "A round is already in progress.": "Ya hay una ronda en curso.",
     "This letter was already picked.": "Esta letra ya se eligió.",
-    "Slow down a little.": "Ve un poco más despacio."
+    "Slow down a little.": "Ve un poco más despacio.",
+    "Guessed": "Adivinado",
+    "Solved": "Resuelto",
+    "Lost": "Perdido",
+    "Time's up": "Se acabó el tiempo",
+    "Passed": "Pasado",
+    "Revealed": "Revelado",
+    "Abandoned": "Abandonado"
 }

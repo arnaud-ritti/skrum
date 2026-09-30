@@ -1166,5 +1166,12 @@
     "Only the room creator or a workspace admin can take hosting.": "Only the room creator or a workspace admin can take hosting.",
     "A round is already in progress.": "A round is already in progress.",
     "This letter was already picked.": "This letter was already picked.",
-    "Slow down a little.": "Slow down a little."
+    "Slow down a little.": "Slow down a little.",
+    "Guessed": "Guessed",
+    "Solved": "Solved",
+    "Lost": "Lost",
+    "Time's up": "Time's up",
+    "Passed": "Passed",
+    "Revealed": "Revealed",
+    "Abandoned": "Abandoned"
 }
