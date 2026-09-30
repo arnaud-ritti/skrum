@@ -1,4 +1,6 @@
 import type {
+    DrawingOp,
+    GameGuessEntry,
     GameLetterPicked,
     GameRound,
     GameRoomState,
@@ -12,9 +14,23 @@ export type RoomAction =
     | { type: 'round.ended'; ended: GameRoundEnded }
     | { type: 'round.patched'; roundId: string; patch: Partial<GameRound> }
     | { type: 'letter.picked'; picked: GameLetterPicked }
-    | { type: 'timer.set'; timerEndsAt: string | null };
+    | { type: 'timer.set'; timerEndsAt: string | null }
+    | { type: 'guess.added'; roundId: string; guess: GameGuessEntry }
+    | {
+          type: 'drawing.added';
+          roundId: string;
+          op: DrawingOp;
+          clientOpId: string | null;
+      }
+    | { type: 'drawing.undone'; roundId: string }
+    | { type: 'drawing.cleared'; roundId: string };
 
 const RecentPicks = 5;
+
+/** Mirrors WordGuessRules::GuessesShown on the server. */
+const GuessesShown = 50;
+
+const CommittedOpIds = 20;
 
 export function initialRoomState(snapshot: GameSnapshot): GameRoomState {
     return { snapshot, lastEnded: null };
@@ -118,5 +134,40 @@ export function roomReducer(
                     },
                 },
             };
+        case 'guess.added':
+            return withRound(state, action.roundId, (round) => {
+                const guesses = round.guesses ?? [];
+
+                if (guesses.some((guess) => guess.id === action.guess.id)) {
+                    return round;
+                }
+
+                return {
+                    ...round,
+                    guesses: [...guesses, action.guess].slice(-GuessesShown),
+                };
+            });
+        case 'drawing.added':
+            return withRound(state, action.roundId, (round) => ({
+                ...round,
+                drawing: [...(round.drawing ?? []), action.op],
+                committedOpIds:
+                    action.clientOpId === null
+                        ? round.committedOpIds
+                        : [
+                              ...(round.committedOpIds ?? []),
+                              action.clientOpId,
+                          ].slice(-CommittedOpIds),
+            }));
+        case 'drawing.undone':
+            return withRound(state, action.roundId, (round) => ({
+                ...round,
+                drawing: (round.drawing ?? []).slice(0, -1),
+            }));
+        case 'drawing.cleared':
+            return withRound(state, action.roundId, (round) => ({
+                ...round,
+                drawing: [],
+            }));
     }
 }

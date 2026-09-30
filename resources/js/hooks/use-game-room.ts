@@ -15,7 +15,10 @@ import {
     type RoomAction,
 } from '@/lib/games/room-reducer';
 import type {
+    GameDrawingOpAdded,
+    GameGuessMade,
     GameLetterPicked,
+    GameMask,
     GameRound,
     GameRoomState,
     GameRoundEnded,
@@ -183,6 +186,57 @@ export function useGameRoom(
                     apply({
                         type: 'letter.picked',
                         picked: payload as unknown as GameLetterPicked,
+                    });
+                    break;
+                case 'game.hint.revealed':
+                    apply({
+                        type: 'round.patched',
+                        roundId: payload.roundId as string,
+                        patch: { mask: payload.mask as GameMask },
+                    });
+                    break;
+                case 'game.guess.made': {
+                    const made = payload as unknown as GameGuessMade;
+
+                    apply({
+                        type: 'guess.added',
+                        roundId: made.roundId,
+                        guess: {
+                            id: made.guessId,
+                            playerId: made.playerId,
+                            text: made.text,
+                        },
+                    });
+                    break;
+                }
+                case 'game.drawing.op-added': {
+                    const added = payload as unknown as GameDrawingOpAdded;
+
+                    apply({
+                        type: 'drawing.added',
+                        roundId: added.roundId,
+                        op: added.op,
+                        clientOpId: added.clientOpId,
+                    });
+                    break;
+                }
+                case 'game.drawing.undone':
+                    apply({
+                        type: 'drawing.undone',
+                        roundId: payload.roundId as string,
+                    });
+                    break;
+                case 'game.drawing.cleared':
+                    apply({
+                        type: 'drawing.cleared',
+                        roundId: payload.roundId as string,
+                    });
+                    break;
+                case 'game.clue.changed':
+                    apply({
+                        type: 'round.patched',
+                        roundId: payload.roundId as string,
+                        patch: { clue: payload.clue as string[] },
                     });
                     break;
             }

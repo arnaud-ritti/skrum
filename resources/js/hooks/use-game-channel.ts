@@ -12,6 +12,12 @@ export const GameEvents = [
     'game.round.started',
     'game.round.ended',
     'game.letter.picked',
+    'game.hint.revealed',
+    'game.guess.made',
+    'game.drawing.op-added',
+    'game.drawing.undone',
+    'game.drawing.cleared',
+    'game.clue.changed',
 ] as const;
 
 /**

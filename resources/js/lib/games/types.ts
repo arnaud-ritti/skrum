@@ -43,6 +43,37 @@ export type GameMask = (string | null)[];
 
 export type GameLetterPick = { playerId: string; letter: string; hit: boolean };
 
+export type DrawingColor =
+    | 'black'
+    | 'red'
+    | 'orange'
+    | 'green'
+    | 'blue'
+    | 'purple'
+    | 'white';
+
+export type DrawingSize = 4 | 10 | 24;
+
+/** Integer coordinates on the logical 1000 × 750 canvas. */
+export type DrawingPoint = [number, number];
+
+export type DrawingOp =
+    | {
+          type: 'stroke';
+          color: DrawingColor;
+          size: DrawingSize;
+          points: DrawingPoint[];
+      }
+    | { type: 'fill'; color: DrawingColor; x: number; y: number };
+
+export type GameGuessEntry = {
+    id: string;
+    playerId: string;
+    text: string;
+    /** Only on the viewer's own near misses. */
+    veryClose?: boolean;
+};
+
 export type GameRound = {
     id: string;
     game: GameKind;
@@ -55,6 +86,14 @@ export type GameRound = {
     pickedLetters?: string[];
     /** Client only: the latest picks seen live, oldest first. */
     recentPicks?: GameLetterPick[];
+    /** The secret word: only ever present for the round's leader. */
+    word?: string;
+    maxHints?: number;
+    guesses?: GameGuessEntry[];
+    drawing?: DrawingOp[];
+    clue?: string[];
+    /** Client only: ids of the latest committed strokes, to drop their live previews. */
+    committedOpIds?: string[];
 };
 
 export type GameHistoryRound = {
@@ -75,6 +114,8 @@ export type GameRoundDetail = GameHistoryRound & {
     misses?: number;
     maxMisses?: number;
     pickedLetters?: string[];
+    drawing?: DrawingOp[];
+    clue?: string[];
 };
 
 export type GamePointsAward = {
@@ -110,6 +151,35 @@ export type GameLetterResponse = GameLetterPicked & {
     ended: GameRoundEnded | null;
 };
 
+export type GameGuessMade = {
+    roundId: string;
+    guessId: string;
+    playerId: string;
+    text: string;
+};
+
+export type GameDrawingOpAdded = {
+    roundId: string;
+    op: DrawingOp;
+    clientOpId: string;
+};
+
+export type GameGuessResponse = {
+    result: 'wrong' | 'near' | 'correct';
+    guessId: string;
+    ended: GameRoundEnded | null;
+};
+
+export type GameHintResponse = { roundId: string; mask: GameMask };
+
+export type GameDrawingOpResponse = GameDrawingOpAdded;
+
+export type GameClueResponse = { roundId: string; clue: string[] };
+
+export type GameSecretResponse = { word: string };
+
+export type EmojiDataLocation = { baseUrl: string; locale: string };
+
 export type GameSnapshot = {
     room: GameRoomInfo;
     me: { playerId: string; userId: string | null; isGuest: boolean };
@@ -118,6 +188,7 @@ export type GameSnapshot = {
     round: GameRound | null;
     history: GameHistoryRound[];
     links: { team: string | null; retro: string | null };
+    emojiData: EmojiDataLocation;
     serverTime: string;
 };
 
