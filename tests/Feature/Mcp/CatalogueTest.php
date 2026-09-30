@@ -1,0 +1,30 @@
+<?php
+
+use App\Enums\McpScope;
+use App\Models\Team;
+
+it('lists exactly the retrospective read tools of the contract', function () {
+    configureLlm();
+    $user = teamMember(Team::factory()->create());
+
+    expect(mcpToolNames(actingAsMcp($user, [McpScope::Read, McpScope::Write, McpScope::Delete])))->toBe(collect([
+        'retro.teams.list',
+        'retro.team.members.list',
+        'retro.boards.list',
+        'retro.boards.search',
+        'retro.actions.list',
+        'retro.board.messages.list',
+        'retro.board.summary.get',
+        'retro.board.actions.list',
+        'retro.board.insights.list',
+        'retro.board.health.get',
+        'retro.board.roti.get',
+    ])->sort()->values()->all());
+});
+
+it('lists the read tools for a read-only token, without insights when no provider is set', function () {
+    $user = teamMember(Team::factory()->create());
+
+    expect(mcpToolNames(actingAsMcp($user)))->not->toContain('retro.board.insights.list')
+        ->and(mcpToolNames(actingAsMcp($user)))->toHaveCount(10);
+});
