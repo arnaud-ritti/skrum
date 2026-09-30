@@ -2,6 +2,7 @@
 
 use App\Actions\Retros\GuestCookie;
 use App\Contracts\PokerPresenceRoster;
+use App\Enums\IntegrationAccess;
 use App\Enums\IntegrationProvider;
 use App\Enums\McpScope;
 use App\Enums\PokerDeck;
@@ -25,6 +26,7 @@ use App\Models\SurveyResponse;
 use App\Models\Team;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Support\Integrations\OAuthState;
 use Carbon\CarbonInterface;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -607,4 +609,23 @@ function enableIntegrations(IntegrationProvider ...$providers): void
             IntegrationProvider::Linear => ['services.linear.client_id' => 'linear-client', 'services.linear.client_secret' => 'linear-secret'],
         });
     }
+}
+
+/**
+ * @return array<string, array<string, int|string>>
+ */
+function integrationOAuthSession(
+    Team $team,
+    IntegrationProvider $provider,
+    IntegrationAccess $access = IntegrationAccess::Write,
+    string $state = 'oauth-state-0123456789abcdefghijklmnopqrstu',
+    int $expiresInMinutes = 10,
+): array {
+    return [OAuthState::SessionKey => [
+        'state' => $state,
+        'provider' => $provider->value,
+        'teamId' => $team->id,
+        'access' => $access->value,
+        'expiresAt' => now()->addMinutes($expiresInMinutes)->getTimestamp(),
+    ]];
 }

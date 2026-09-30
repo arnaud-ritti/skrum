@@ -911,5 +911,9 @@
     "Stored credentials could not be read. Reconnect.": "Stored credentials could not be read. Reconnect.",
     "Integrations": "Integrations",
     "Connect :team to the tools it already uses.": "Connect :team to the tools it already uses.",
-    "Not connected": "Not connected"
+    "Not connected": "Not connected",
+    "Could not connect :provider. Try again.": "Could not connect :provider. Try again.",
+    ":provider connected.": ":provider connected.",
+    "Choose a Jira site to finish connecting.": "Choose a Jira site to finish connecting.",
+    "Slack did not return a valid channel webhook. Try again.": "Slack did not return a valid channel webhook. Try again."
 }

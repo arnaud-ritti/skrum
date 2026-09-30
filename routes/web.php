@@ -6,6 +6,8 @@ use App\Http\Controllers\BroadcastAuthorizationsController;
 use App\Http\Controllers\CurrentWorkspaceController;
 use App\Http\Controllers\EmojiDataController;
 use App\Http\Controllers\GifsController;
+use App\Http\Controllers\Integrations\IntegrationAuthorizationsController;
+use App\Http\Controllers\Integrations\IntegrationCallbacksController;
 use App\Http\Controllers\Integrations\TeamIntegrationsController;
 use App\Http\Controllers\InvitationAcceptancesController;
 use App\Http\Controllers\InvitationLinksController;
@@ -127,6 +129,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('notifications/read-all', [ReadAllNotificationsController::class, 'store'])->name('notifications.readAll');
     Route::patch('notifications/{notification}', [NotificationsController::class, 'update'])->name('notifications.update')->whereUuid('notification');
 
+    Route::get('integrations/{provider}/callback', [IntegrationCallbacksController::class, 'show'])
+        ->whereIn('provider', ['slack', 'jira', 'linear'])
+        ->middleware(EnsureIntegrationProviderEnabled::class)
+        ->name('integrations.callback');
+
     Route::prefix('w/{workspace}')
         ->middleware(['can:view,workspace', RememberCurrentWorkspace::class])
         ->scopeBindings()
@@ -147,6 +154,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
             Route::middleware(EnsureIntegrationProviderEnabled::class)->group(function () {
                 Route::get('teams/{team}/integrations', [TeamIntegrationsController::class, 'index'])->name('teams.integrations.index');
+                Route::get('teams/{team}/integrations/{provider}/connect', [IntegrationAuthorizationsController::class, 'create'])
+                    ->whereIn('provider', ['slack', 'jira', 'linear'])
+                    ->name('teams.integrations.connect');
             });
 
             Route::post('teams/{team}/members', [TeamMembersController::class, 'store'])->name('teams.members.store');
