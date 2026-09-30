@@ -10,6 +10,25 @@ use App\Http\Controllers\InvitationAcceptancesController;
 use App\Http\Controllers\InvitationLinksController;
 use App\Http\Controllers\LocalesController;
 use App\Http\Controllers\NotificationsController;
+use App\Http\Controllers\Poker\PokerAutoRevealsController;
+use App\Http\Controllers\Poker\PokerCurrentTasksController;
+use App\Http\Controllers\Poker\PokerFacilitatorsController;
+use App\Http\Controllers\Poker\PokerGamesController;
+use App\Http\Controllers\Poker\PokerGuestTokensController;
+use App\Http\Controllers\Poker\PokerRevealsController;
+use App\Http\Controllers\Poker\PokerRoundsController;
+use App\Http\Controllers\Poker\PokerSavedDecksController;
+use App\Http\Controllers\Poker\PokerSettingsController;
+use App\Http\Controllers\Poker\PokerSnapshotsController;
+use App\Http\Controllers\Poker\PokerSpectatorsController;
+use App\Http\Controllers\Poker\PokerStatusesController;
+use App\Http\Controllers\Poker\PokerTaskEstimatesController;
+use App\Http\Controllers\Poker\PokerTaskOrdersController;
+use App\Http\Controllers\Poker\PokerTasksController;
+use App\Http\Controllers\Poker\PokerTimersController;
+use App\Http\Controllers\Poker\PokerVotesController;
+use App\Http\Controllers\PokerDecksController;
+use App\Http\Controllers\PokerJoinsController;
 use App\Http\Controllers\ReadAllNotificationsController;
 use App\Http\Controllers\RetroJoinsController;
 use App\Http\Controllers\Retros\ActionItemCommentsController;
@@ -47,10 +66,12 @@ use App\Http\Controllers\Retros\SurveyResponsesController;
 use App\Http\Controllers\Retros\SurveysController;
 use App\Http\Controllers\SsoCallbacksController;
 use App\Http\Controllers\SsoRedirectsController;
+use App\Http\Controllers\TeamEstimatesController;
 use App\Http\Controllers\TeamHealthStatementArchivalsController;
 use App\Http\Controllers\TeamHealthStatementOrdersController;
 use App\Http\Controllers\TeamHealthStatementsController;
 use App\Http\Controllers\TeamMembersController;
+use App\Http\Controllers\TeamPokerGamesController;
 use App\Http\Controllers\TeamRetrosController;
 use App\Http\Controllers\TeamsController;
 use App\Http\Controllers\WorkspaceActionItemCommentsController;
@@ -61,6 +82,7 @@ use App\Http\Controllers\WorkspaceMembersController;
 use App\Http\Controllers\WorkspacesController;
 use App\Http\Controllers\WorkspaceTemplatesController;
 use App\Http\Middleware\RememberCurrentWorkspace;
+use App\Http\Middleware\ResolvePokerPlayer;
 use App\Http\Middleware\ResolveRetroParticipant;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -115,6 +137,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::patch('teams/{team}', [TeamsController::class, 'update'])->name('teams.update');
             Route::delete('teams/{team}', [TeamsController::class, 'destroy'])->name('teams.destroy');
             Route::post('teams/{team}/retros', [TeamRetrosController::class, 'store'])->name('teams.retros.store');
+            Route::post('teams/{team}/poker-games', [TeamPokerGamesController::class, 'store'])->name('teams.pokerGames.store');
+            Route::get('teams/{team}/estimates', [TeamEstimatesController::class, 'index'])->name('teams.estimates.index');
+            Route::post('teams/{team}/poker-decks', [PokerDecksController::class, 'store'])->name('teams.pokerDecks.store');
+            Route::patch('teams/{team}/poker-decks/{pokerDeck}', [PokerDecksController::class, 'update'])->name('teams.pokerDecks.update')->whereUuid('pokerDeck');
+            Route::delete('teams/{team}/poker-decks/{pokerDeck}', [PokerDecksController::class, 'destroy'])->name('teams.pokerDecks.destroy')->whereUuid('pokerDeck');
             Route::post('teams/{team}/members', [TeamMembersController::class, 'store'])->name('teams.members.store');
             Route::delete('teams/{team}/members/{member}', [TeamMembersController::class, 'destroy'])->name('teams.members.destroy')->whereUuid('member');
 
@@ -219,6 +246,39 @@ Route::prefix('retros/{retro}')
         Route::post('surveys/{survey}/comments', [SurveyCommentsController::class, 'store'])->name('retros.surveys.comments.store')->whereUuid('survey');
         Route::patch('survey-comments/{surveyComment}', [SurveyCommentsController::class, 'update'])->name('retros.survey-comments.update')->whereUuid('surveyComment');
         Route::delete('survey-comments/{surveyComment}', [SurveyCommentsController::class, 'destroy'])->name('retros.survey-comments.destroy')->whereUuid('surveyComment');
+    });
+
+Route::get('poker/join/{guestToken}', [PokerJoinsController::class, 'show'])->name('poker.join.show');
+Route::post('poker/join/{guestToken}', [PokerJoinsController::class, 'store'])->name('poker.join.store')->middleware('throttle:10,1');
+
+Route::prefix('poker/{game}')
+    ->whereUuid('game')
+    ->middleware(ResolvePokerPlayer::class)
+    ->scopeBindings()
+    ->group(function () {
+        Route::get('/', [PokerGamesController::class, 'show'])->name('poker.show');
+        Route::get('snapshot', [PokerSnapshotsController::class, 'show'])->name('poker.snapshot.show');
+        Route::post('tasks', [PokerTasksController::class, 'store'])->name('poker.tasks.store');
+        Route::patch('tasks/{task}', [PokerTasksController::class, 'update'])->name('poker.tasks.update')->whereUuid('task');
+        Route::delete('tasks/{task}', [PokerTasksController::class, 'destroy'])->name('poker.tasks.destroy')->whereUuid('task');
+        Route::put('task-order', [PokerTaskOrdersController::class, 'update'])->name('poker.task-order.update');
+        Route::put('current-task', [PokerCurrentTasksController::class, 'update'])->name('poker.current-task.update');
+        Route::put('rounds/{round}/vote', [PokerVotesController::class, 'update'])->name('poker.rounds.vote.update')->whereUuid('round');
+        Route::delete('rounds/{round}/vote', [PokerVotesController::class, 'destroy'])->name('poker.rounds.vote.destroy')->whereUuid('round');
+        Route::post('rounds/{round}/reveal', [PokerRevealsController::class, 'store'])->name('poker.rounds.reveal.store')->whereUuid('round');
+        Route::post('rounds/{round}/auto-reveal', [PokerAutoRevealsController::class, 'store'])->middleware('throttle:30,1')->name('poker.rounds.auto-reveal.store')->whereUuid('round');
+        Route::put('rounds/{round}/timer', [PokerTimersController::class, 'update'])->name('poker.rounds.timer.update')->whereUuid('round');
+
+        Route::post('tasks/{task}/rounds', [PokerRoundsController::class, 'store'])->name('poker.tasks.rounds.store')->whereUuid('task');
+        Route::get('tasks/{task}/rounds', [PokerRoundsController::class, 'index'])->name('poker.tasks.rounds.index')->whereUuid('task');
+        Route::put('tasks/{task}/estimate', [PokerTaskEstimatesController::class, 'update'])->name('poker.tasks.estimate.update')->whereUuid('task');
+        Route::patch('settings', [PokerSettingsController::class, 'update'])->name('poker.settings.update');
+        Route::get('saved-decks', [PokerSavedDecksController::class, 'index'])->name('poker.saved-decks.index');
+        Route::put('status', [PokerStatusesController::class, 'update'])->name('poker.status.update');
+        Route::post('guest-token', [PokerGuestTokensController::class, 'store'])->name('poker.guest-token.store');
+        Route::put('facilitator', [PokerFacilitatorsController::class, 'update'])->name('poker.facilitator.update');
+        Route::put('players/{player}/spectator', [PokerSpectatorsController::class, 'update'])->name('poker.players.spectator.update')->whereUuid('player');
+        Route::delete('/', [PokerGamesController::class, 'destroy'])->name('poker.destroy');
     });
 
 Route::post('broadcasting/auth', [BroadcastAuthorizationsController::class, 'store'])->name('broadcasting.auth');

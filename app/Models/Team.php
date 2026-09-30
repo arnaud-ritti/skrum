@@ -54,6 +54,18 @@ class Team extends Model
         return $this->hasMany(Retro::class);
     }
 
+    /** @return HasMany<PokerGame, $this> */
+    public function pokerGames(): HasMany
+    {
+        return $this->hasMany(PokerGame::class);
+    }
+
+    /** @return HasMany<SavedPokerDeck, $this> */
+    public function pokerDecks(): HasMany
+    {
+        return $this->hasMany(SavedPokerDeck::class);
+    }
+
     /** @return HasMany<TeamHealthStatement, $this> */
     public function healthStatements(): HasMany
     {

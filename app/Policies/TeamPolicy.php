@@ -41,4 +41,9 @@ class TeamPolicy
     {
         return $this->view($user, $team);
     }
+
+    public function createPokerGame(User $user, Team $team): bool
+    {
+        return $this->view($user, $team);
+    }
 }

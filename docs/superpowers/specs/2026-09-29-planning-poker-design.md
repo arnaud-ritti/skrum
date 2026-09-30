@@ -83,7 +83,7 @@ Give each team a realtime planning-poker room: the facilitator lists tasks, pick
 Initially the creator. Facilitator-only actions: select the current task, reveal, re-vote, set/clear the estimate, delete or reorder tasks, change settings (title, deck, guest access, auto-reveal, anonymous votes, live cursors, flying reactions), set/clear the voting timer, switch another player to or from spectator, regenerate the guest link, end/reopen the game.
 
 - **Transfer**: the facilitator hands over to any team member (or workspace Owner/Admin, added as a player if needed). Guests never facilitate.
-- **Take over** (Decision 4): any non-guest player who can view the team may make themselves facilitator at any time ("Take control"). Poker sessions span days and a missing facilitator would otherwise freeze the game; the retro rule (transfer only) stays unchanged.
+- **Take over** (Decision 4): any non-guest player who can view the team may make themselves facilitator at any time ("Take control"), also on an ended game (decided 2026-09-30: otherwise an ended game whose facilitator left could never be reopened). Poker sessions span days and a missing facilitator would otherwise freeze the game; the retro rule (transfer only) stays unchanged.
 
 ### Tasks (Decision 3)
 
@@ -113,7 +113,7 @@ Initially the creator. Facilitator-only actions: select the current task, reveal
 - Deck (and custom cards) changeable only while the game has no vote at all (422 "The deck can't change once votes exist."), so history always matches its deck.
 - Guest access on/off and link regeneration as in the parent spec.
 - Auto-reveal (§3b), anonymous votes (§3c), live cursors and flying reactions (§4 "Live cursors and flying reactions") are switches changeable any time the game is not ended; `anonymous_votes` and `auto_reveal` can also be set in the creation form.
-- **End game**: sets `ended_at` and clears `current_task_id`; every mutation except reopen and delete → 403 "This game has ended." A running timer is left as stored but has no effect (no current task). **Reopen**: clears `ended_at`.
+- **End game**: sets `ended_at` and clears `current_task_id`; every mutation except reopen, delete and "Take control" → 403 "This game has ended." A running timer is left as stored but has no effect (no current task). **Reopen**: clears `ended_at`.
 
 ### 3a. Spectators
 
@@ -267,10 +267,10 @@ Snapshot (`GET snapshot` and the Inertia page prop):
 {
   game: {id, title, deck, deckLabel, cards: string[], isNumeric, facilitatorPlayerId,
          guestAccessEnabled, guestUrl|null, endedAt|null, currentTaskId|null,
-         tasksCount, estimatedCount, totalPoints|null,
+         tasksCount, estimatedCount, totalPoints|null, hasVotes,
          autoReveal, anonymousVotes, cursorsEnabled, reactionsEnabled},
-  me: {playerId, isGuest, isFacilitator, isSpectator, canVote, canEditTasks,
-       canTakeControl, canDelete},
+  me: {playerId, userId|null, isGuest, isFacilitator, isSpectator, canVote, canEditTasks,
+       canTakeControl, canDelete, transferCandidates: [{userId, name}]},
   players: [{id, name, avatarUrl, isGuest, isSpectator}],   // everyone who ever joined
   tasks: [{id, title, description, descriptionHtml, position,
            estimate|null, estimatedAt|null, roundsCount,
@@ -284,9 +284,13 @@ Snapshot (`GET snapshot` and the Inertia page prop):
             myVote|null,
             result: null | {average|null, distribution: [{value, count}], mode: string[],
                             consensus, nearestCard|null}}
-  }
+  },
+  links: {team|null},
+  serverTime
 }
 ```
+
+- Added while planning (2026-09-30): `game.hasVotes` (the settings dialog disables the deck choice once votes exist), `me.userId` (null for guests; "Take control" names the viewer in `PUT facilitator`), `me.transferCandidates` (team members and workspace Owners/Admins minus the viewer, facilitator only, empty otherwise — as the retro snapshot), `links.team` (null for guests; back link and "game deleted" state) and `serverTime` (UTC, for countdowns — as the retro snapshot). The Inertia page `poker/show` also receives `deckOptions: [{value, label, cards}]` beside the snapshot. Request bodies use snake_case field names like every existing endpoint (`guest_access_enabled`, `task_ids`, `user_id`…); the camelCase names in §4 map one-to-one.
 
 - `canVote` = not a spectator; the hand also needs an open round of the current task and a game not ended.
 

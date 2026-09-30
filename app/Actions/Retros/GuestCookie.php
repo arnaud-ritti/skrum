@@ -2,23 +2,26 @@
 
 namespace App\Actions\Retros;
 
-use App\Models\Participant;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Cookie;
 
 class GuestCookie
 {
+    public const RetroScope = 'retro';
+
+    public const PokerScope = 'poker';
+
     private const LifetimeMinutes = 60 * 24 * 30;
 
     /** @return non-empty-string */
-    public static function name(string $retroId): string
+    public static function name(string $scope, string $scopeId): string
     {
-        return "retro_guest_{$retroId}";
+        return "{$scope}_guest_{$scopeId}";
     }
 
-    public static function make(Participant $participant, string $secret): Cookie
+    public static function make(string $scope, string $scopeId, string $playerId, string $secret): Cookie
     {
-        return cookie(self::name($participant->retro_id), "{$participant->id}|{$secret}", self::LifetimeMinutes);
+        return cookie(self::name($scope, $scopeId), "{$playerId}|{$secret}", self::LifetimeMinutes);
     }
 
     /**

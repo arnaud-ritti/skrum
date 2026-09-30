@@ -27,7 +27,7 @@ class ResolveRetroParticipant
         }
 
         if ($participant === null) {
-            $hasGuestCookie = $request->cookies->has(GuestCookie::name($retro->id));
+            $hasGuestCookie = $request->cookies->has(GuestCookie::name(GuestCookie::RetroScope, $retro->id));
 
             abort_if($request->user() === null && ! $hasGuestCookie, 401, __('Your session has expired.'));
 

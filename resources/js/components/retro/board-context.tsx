@@ -6,7 +6,7 @@ import {
 } from 'react';
 import type { BoardAction } from '@/lib/retro/board-reducer';
 import type { PresenceMember, Snapshot } from '@/lib/retro/types';
-import type { WhisperChannel } from '@/lib/retro/whisper-transport';
+import type { WhisperChannel } from '@/lib/realtime/whisper-transport';
 
 export type BoardContextValue = {
     board: Snapshot;

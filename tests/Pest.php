@@ -1,8 +1,15 @@
 <?php
 
 use App\Actions\Retros\GuestCookie;
+use App\Contracts\PokerPresenceRoster;
+use App\Enums\PokerDeck;
 use App\Enums\WorkspaceRole;
 use App\Models\Participant;
+use App\Models\PokerGame;
+use App\Models\PokerPlayer;
+use App\Models\PokerRound;
+use App\Models\PokerTask;
+use App\Models\PokerVote;
 use App\Models\Retro;
 use App\Models\Survey;
 use App\Models\SurveyResponse;
@@ -85,7 +92,7 @@ function retroFacilitator(Retro $retro): array
  */
 function retroGuestCookie(Participant $participant, string $secret = 'secret'): array
 {
-    return [GuestCookie::name($participant->retro_id) => "{$participant->id}|{$secret}"];
+    return [GuestCookie::name(GuestCookie::RetroScope, $participant->retro_id) => "{$participant->id}|{$secret}"];
 }
 
 function answerSurvey(Survey $survey, Participant $participant, int ...$optionIndexes): void
@@ -162,4 +169,123 @@ function workspaceAdminParticipant(Retro $retro): array
     $user = workspaceManager($retro->team->workspace);
 
     return [$user, Participant::factory()->create(['retro_id' => $retro->id, 'user_id' => $user->id])];
+}
+
+/**
+ * @return array{0: User, 1: PokerPlayer}
+ */
+function pokerMember(PokerGame $game): array
+{
+    $user = teamMember($game->team);
+
+    return [$user, PokerPlayer::factory()->create(['poker_game_id' => $game->id, 'user_id' => $user->id])];
+}
+
+/**
+ * @return array{0: User, 1: PokerPlayer}
+ */
+function pokerFacilitator(PokerGame $game): array
+{
+    [$user, $player] = pokerMember($game);
+
+    $game->forceFill(['facilitator_player_id' => $player->id])->save();
+
+    return [$user, $player];
+}
+
+function pokerGuest(PokerGame $game, string $secret = 'secret'): PokerPlayer
+{
+    return PokerPlayer::factory()->guest($secret)->create(['poker_game_id' => $game->id]);
+}
+
+/**
+ * @return array<string, string>
+ */
+function pokerGuestCookie(PokerPlayer $player, string $secret = 'secret'): array
+{
+    return [GuestCookie::name(GuestCookie::PokerScope, $player->poker_game_id) => "{$player->id}|{$secret}"];
+}
+
+function openPokerRound(PokerGame $game, ?PokerTask $task = null): PokerRound
+{
+    $task ??= PokerTask::factory()->create(['poker_game_id' => $game->id]);
+
+    $round = PokerRound::factory()->create([
+        'poker_task_id' => $task->id,
+        'anonymous' => (bool) $game->anonymous_votes,
+    ]);
+
+    $game->forceFill(['current_task_id' => $task->id])->save();
+
+    return $round;
+}
+
+function pokerVote(PokerRound $round, PokerPlayer $player, string $value): PokerVote
+{
+    return PokerVote::factory()->create([
+        'poker_round_id' => $round->id,
+        'poker_player_id' => $player->id,
+        'value' => $value,
+    ]);
+}
+
+/**
+ * @return array{
+ *     game: PokerGame,
+ *     facilitator: User,
+ *     facilitatorPlayer: PokerPlayer,
+ *     member: User,
+ *     memberPlayer: PokerPlayer,
+ *     round: PokerRound
+ * }
+ */
+function pokerRevealTable(PokerDeck $deck = PokerDeck::Fibonacci): array
+{
+    $game = PokerGame::factory()->deck($deck)->withGuestAccess()->create();
+    [$facilitator, $facilitatorPlayer] = pokerFacilitator($game);
+    [$member, $memberPlayer] = pokerMember($game);
+
+    return [
+        'game' => $game,
+        'facilitator' => $facilitator,
+        'facilitatorPlayer' => $facilitatorPlayer,
+        'member' => $member,
+        'memberPlayer' => $memberPlayer,
+        'round' => openPokerRound($game),
+    ];
+}
+
+/**
+ * @param  array<array-key, mixed>|string  $payload
+ */
+function pokerPayloadJson(array|string $payload): string
+{
+    return is_string($payload) ? $payload : (string) json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+}
+
+/**
+ * @param  array<array-key, mixed>|string  $payload
+ */
+function pokerPayloadExposes(array|string $payload, PokerPlayer $player, string $value): bool
+{
+    return str_contains(pokerPayloadJson($payload), "\"playerId\":\"{$player->id}\",\"value\":\"{$value}\"");
+}
+
+/**
+ * @param  array<int, string>|null  $playerIds
+ */
+function fakePokerRoster(?array $playerIds): void
+{
+    app()->instance(PokerPresenceRoster::class, new class($playerIds) implements PokerPresenceRoster
+    {
+        /**
+         * @param  array<int, string>|null  $playerIds
+         */
+        public function __construct(private ?array $playerIds) {}
+
+        public function playerIds(PokerGame $game): ?array
+        {
+            return $this->playerIds;
+        }
+    });
 }

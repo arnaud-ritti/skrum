@@ -2,12 +2,17 @@
 
 namespace App\Providers;
 
+use App\Contracts\PokerPresenceRoster;
 use App\Models\Passkey;
+use App\Models\SavedPokerDeck;
+use App\Policies\PokerDeckPolicy;
+use App\Support\Poker\ReverbPokerPresenceRoster;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\DevCommands;
 use Illuminate\Mail\Markdown;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 use Laravel\Passkeys\Passkeys;
@@ -19,7 +24,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(PokerPresenceRoster::class, fn (): PokerPresenceRoster => new ReverbPokerPresenceRoster);
     }
 
     /**
@@ -30,6 +35,7 @@ class AppServiceProvider extends ServiceProvider
         $this->configureDefaults();
         Markdown::withSecuredEncoding();
         Passkeys::usePasskeyModel(Passkey::class);
+        Gate::policy(SavedPokerDeck::class, PokerDeckPolicy::class);
 
         if ($this->app->environment('local')) {
             $reverbPort = (int) config('reverb.servers.reverb.port');
