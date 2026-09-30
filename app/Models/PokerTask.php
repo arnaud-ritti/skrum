@@ -13,8 +13,9 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
 
 /**
- * The external_* columns are written only by the tracker imports of
- * spec 6, never from a request, so they are not fillable.
+ * The external_*, needs_sync, sync_error and synced_at columns are written
+ * only by the tracker imports and write-back of spec 6, never from a request,
+ * so they are not fillable.
  *
  * @property string $id
  * @property string $poker_game_id
@@ -27,6 +28,14 @@ use Illuminate\Support\Carbon;
  * @property string|null $external_source
  * @property string|null $external_id
  * @property string|null $external_url
+ * @property string|null $external_site
+ * @property string|null $external_key
+ * @property string|null $external_assignee
+ * @property string|null $external_estimate
+ * @property Carbon|null $external_refreshed_at
+ * @property bool $needs_sync
+ * @property string|null $sync_error
+ * @property Carbon|null $synced_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read PokerGame $game
@@ -67,6 +76,9 @@ class PokerTask extends Model
             'position' => 'integer',
             'estimate_numeric' => 'float',
             'estimated_at' => 'datetime',
+            'external_refreshed_at' => 'datetime',
+            'needs_sync' => 'boolean',
+            'synced_at' => 'datetime',
         ];
     }
 }

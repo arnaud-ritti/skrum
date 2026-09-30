@@ -5,6 +5,8 @@ const RequestTimeoutMs = 15_000;
 
 type Route = { url: string; method: string };
 
+type RequestOptions = { timeoutMs?: number };
+
 type ErrorPayload = { message?: string; errors?: Record<string, string[]> };
 
 export class RetroRequestError extends Error {
@@ -36,6 +38,7 @@ function socketId(): string | undefined {
 export async function retroRequest<T = null>(
     route: Route,
     data?: Record<string, unknown>,
+    options: RequestOptions = {},
 ): Promise<T> {
     const headers: Record<string, string> = { Accept: 'application/json' };
     const socket = socketId();
@@ -50,7 +53,7 @@ export async function retroRequest<T = null>(
             url: route.url,
             data,
             headers,
-            signal: AbortSignal.timeout(RequestTimeoutMs),
+            signal: AbortSignal.timeout(options.timeoutMs ?? RequestTimeoutMs),
         });
 
         return (response.data === '' ? null : JSON.parse(response.data)) as T;

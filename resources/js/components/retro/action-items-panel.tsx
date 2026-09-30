@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import ActionItemsController from '@/actions/App/Http/Controllers/Retros/ActionItemsController';
 import { ActionItemCard } from '@/components/action-items/action-item-card';
+import type { ExportContext } from '@/components/action-items/export-action-item-button';
 import { ActionItemForm } from '@/components/action-items/action-item-form';
 import { boardAssigneeGroups } from '@/components/action-items/assignee-select';
 import { useTrans } from '@/hooks/use-trans';
@@ -21,6 +22,14 @@ export function ActionItemsPanel() {
     );
     const viewer = boardActionItemViewer(board);
     const groups = boardAssigneeGroups(board, t);
+    const exportContext: ExportContext | undefined =
+        board.links.workspace === null
+            ? undefined
+            : {
+                  workspace: board.links.workspace,
+                  sources: board.exportSources,
+                  canManagePeople: board.viewer.isWorkspaceManager,
+              };
 
     const create = async (
         payload: Record<string, unknown>,
@@ -70,6 +79,7 @@ export function ActionItemsPanel() {
                             run={ctx.run}
                             editable={ctx.isEditable}
                             showAnonymousNotice={board.retro.isAnonymous}
+                            exportContext={exportContext}
                             onSaved={(actionItem) =>
                                 ctx.apply({
                                     type: 'actionItem.upsert',

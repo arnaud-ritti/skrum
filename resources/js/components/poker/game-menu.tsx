@@ -21,19 +21,28 @@ import { retroRequest } from '@/lib/retro/api';
 import { DeleteGameDialog } from './delete-game-dialog';
 import { useGame } from './game-context';
 import { GameGuestLinkDialog } from './game-guest-link-dialog';
+import { GameShareDialog } from './game-share-dialog';
 import { GameSettingsDialog } from './game-settings-dialog';
 import { TransferDialog } from './transfer-dialog';
 
-type OpenDialog = 'settings' | 'guests' | 'transfer' | 'end' | 'delete' | null;
+type OpenDialog =
+    | 'settings'
+    | 'guests'
+    | 'transfer'
+    | 'end'
+    | 'delete'
+    | 'share'
+    | null;
 
 export function GameMenu() {
     const ctx = useGame();
     const { t } = useTrans();
     const [chosen, setChosen] = useState<OpenDialog>(null);
     const [busy, setBusy] = useState(false);
-    const { game, me } = ctx.snapshot;
+    const { game, me, share } = ctx.snapshot;
     const open = ctx.sessionExpired ? null : chosen;
     const isEnded = game.endedAt !== null;
+    const canShare = share.slack || share.telegram;
 
     if (!me.isFacilitator && !me.canDelete) {
         return null;
@@ -73,6 +82,16 @@ export function GameMenu() {
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
+                    {canShare && (
+                        <>
+                            <DropdownMenuItem
+                                onSelect={() => setChosen('share')}
+                            >
+                                {t('Share…')}
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                        </>
+                    )}
                     {me.isFacilitator && (
                         <>
                             {!isEnded && (
@@ -131,6 +150,7 @@ export function GameMenu() {
                 open={open === 'guests'}
                 onOpenChange={close}
             />
+            <GameShareDialog open={open === 'share'} onOpenChange={close} />
             <TransferDialog open={open === 'transfer'} onOpenChange={close} />
             <DeleteGameDialog open={open === 'delete'} onOpenChange={close} />
             <Dialog open={open === 'end'} onOpenChange={close}>

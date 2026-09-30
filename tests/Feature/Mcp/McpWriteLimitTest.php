@@ -18,6 +18,6 @@ it('limits writes and deletions per token while reads keep working', function ()
 
     $server->tool(mcpToolClass('retro.teams.list'))->assertHasNoErrors();
 
-    expect($world['game']->tasks()->count())->toBe(4)
+    expect($world['game']->tasks()->count())->toBe(5)
         ->and(Card::find($world['deletable']->id))->not->toBeNull();
 });

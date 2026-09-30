@@ -137,12 +137,20 @@ export function usePokerGame(
     const onEvent = useCallback(
         ({ name, payload }: PokerEvent) => {
             switch (name) {
-                case 'task.saved':
-                    apply({
-                        type: 'task.upsert',
-                        task: payload.task as PokerTask,
-                    });
+                case 'task.saved': {
+                    const task = payload.task as PokerTask;
+
+                    if (
+                        task.external !== null &&
+                        !latestSnapshot.current.me.isGuest
+                    ) {
+                        void refetch();
+                        break;
+                    }
+
+                    apply({ type: 'task.upsert', task });
                     break;
+                }
                 case 'task.deleted':
                     apply({
                         type: 'task.remove',

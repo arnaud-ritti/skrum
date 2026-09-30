@@ -1,4 +1,5 @@
 import { compareActionItems } from '@/lib/action-items/order';
+import type { ExternalLink } from '@/types/integrations';
 import type {
     ActionItem,
     BoardCard,
@@ -51,6 +52,11 @@ export type BoardAction =
     | { type: 'highlight.set'; cardId: string | null }
     | { type: 'actionItem.upsert'; actionItem: ActionItem }
     | { type: 'actionItem.remove'; actionItemId: string }
+    | {
+          type: 'actionItem.externalLinks';
+          actionItemId: string;
+          externalLinks: ExternalLink[];
+      }
     | {
           type: 'actionItem.comments';
           actionItemId: string;
@@ -328,6 +334,8 @@ export function upsertActionItem(
                   ...incoming,
                   isMine: incoming.isMine || existing.isMine,
                   commentsRevision: existing.commentsRevision,
+                  externalLinks:
+                      incoming.externalLinks ?? existing.externalLinks,
               }
             : item,
     );
@@ -511,6 +519,20 @@ export function boardReducer(state: Snapshot, action: BoardAction): Snapshot {
                     (item) => item.id !== action.actionItemId,
                 ),
             };
+        case 'actionItem.externalLinks': {
+            const withLinks = (items: ActionItem[]): ActionItem[] =>
+                items.map((item) =>
+                    item.id === action.actionItemId
+                        ? { ...item, externalLinks: action.externalLinks }
+                        : item,
+                );
+
+            return {
+                ...state,
+                actionItems: withLinks(state.actionItems),
+                carriedActionItems: withLinks(state.carriedActionItems),
+            };
+        }
         case 'reactions.set':
             return updateCard(state, action.cardId, (card) => ({
                 ...card,

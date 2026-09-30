@@ -33,6 +33,25 @@ return [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
+        'client_id' => env('SLACK_CLIENT_ID'),
+        'client_secret' => env('SLACK_CLIENT_SECRET'),
+        'redirect' => rtrim((string) env('APP_URL', ''), '/').'/integrations/slack/callback',
+    ],
+
+    'telegram' => [
+        'bot_token' => env('TELEGRAM_BOT_TOKEN'),
+    ],
+
+    'jira' => [
+        'client_id' => env('JIRA_CLIENT_ID'),
+        'client_secret' => env('JIRA_CLIENT_SECRET'),
+        'redirect' => rtrim((string) env('APP_URL', ''), '/').'/integrations/jira/callback',
+    ],
+
+    'linear' => [
+        'client_id' => env('LINEAR_CLIENT_ID'),
+        'client_secret' => env('LINEAR_CLIENT_SECRET'),
+        'redirect' => rtrim((string) env('APP_URL', ''), '/').'/integrations/linear/callback',
     ],
 
     'google' => [

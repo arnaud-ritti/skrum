@@ -42,6 +42,7 @@ import {
 } from './results/completed-tabs';
 import { ResultsView } from './results/results-view';
 import { SessionExpiredBanner } from './session-expired-banner';
+import { ShareBoardButton } from './share-board-button';
 import { VoteProgress } from './vote-progress';
 import { SurveysColumn } from './surveys-column';
 import {
@@ -236,6 +237,7 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
                                     )}
                                     <CarriedActionItemsPanel />
                                     <SuggestGroupNamesButton />
+                                    <ShareBoardButton />
                                 </>
                             }
                         />

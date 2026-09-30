@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Presenters;
 
+use App\Actions\Integrations\PokerTaskSync;
 use App\Actions\Poker\BuildPokerSnapshot;
 use App\Actions\Poker\PresentPokerRound;
 use App\Actions\Poker\PresentPokerTask;
@@ -142,8 +143,10 @@ class McpPokerGame
 
         $names = $game->players->mapWithKeys(fn (PokerPlayer $player): array => [$player->id => $player->displayName()]);
 
-        return $game->tasks->map(function (PokerTask $task) use ($game, $viewer, $names): array {
-            $presented = $this->presentPokerTask->handle($task);
+        $sync = PokerTaskSync::for($game);
+
+        return $game->tasks->map(function (PokerTask $task) use ($game, $viewer, $names, $sync): array {
+            $presented = $this->presentPokerTask->handle($task, $sync);
             $round = $task->latestRound;
             $latest = $round === null ? null : $this->presentPokerRound->handle($round, $game, $viewer?->id);
 
@@ -167,7 +170,13 @@ class McpPokerGame
                     ])->all(),
                     'result' => $latest['result'],
                 ],
-                'external' => null,
+                'external' => $presented['external'] === null ? null : [
+                    'source' => $presented['external']['source'],
+                    'key' => $presented['external']['key'],
+                    'url' => $presented['external']['url'],
+                    'syncState' => $presented['external']['syncState'] ?? null,
+                    'syncError' => $presented['external']['syncError'] ?? null,
+                ],
             ];
         })->values()->all();
     }

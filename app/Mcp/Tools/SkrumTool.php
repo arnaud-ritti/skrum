@@ -6,6 +6,7 @@ use App\Enums\McpScope;
 use App\Mcp\McpContext;
 use App\Mcp\McpFeature;
 use App\Mcp\McpGrant;
+use App\Support\Integrations\Exceptions\IntegrationException;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -66,6 +67,8 @@ abstract class SkrumTool extends Tool
             return Response::error(ValidationMessages::from($exception));
         } catch (HttpException $exception) {
             return Response::error($this->httpMessage($exception));
+        } catch (IntegrationException $exception) {
+            return Response::error($exception->userMessage());
         } catch (Throwable $exception) {
             Log::error('MCP tool failed.', [
                 'tool' => $this->name(),

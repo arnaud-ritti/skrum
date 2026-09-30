@@ -8,6 +8,7 @@ use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Database\Factories\ActionItemFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -41,6 +42,7 @@ use Illuminate\Support\Carbon;
  * @property-read User|null $assigneeUser
  * @property-read Participant|null $assigneeParticipant
  * @property-read Participant|null $createdByParticipant
+ * @property-read Collection<int, ActionItemExternalLink> $externalLinks
  */
 #[Fillable([
     'team_id', 'retro_id', 'content', 'priority', 'due_on', 'completed_at',
@@ -67,7 +69,7 @@ class ActionItem extends Model
      */
     public static function presentationRelations(): array
     {
-        return ['team.members', 'retro', 'author', 'createdByParticipant.user', 'assigneeUser', 'assigneeParticipant.user', 'subtasks'];
+        return ['team.members', 'retro', 'author', 'createdByParticipant.user', 'assigneeUser', 'assigneeParticipant.user', 'subtasks', 'externalLinks'];
     }
 
     public function loadForPresentation(): static
@@ -142,6 +144,12 @@ class ActionItem extends Model
     public function comments(): HasMany
     {
         return $this->hasMany(ActionItemComment::class);
+    }
+
+    /** @return HasMany<ActionItemExternalLink, $this> */
+    public function externalLinks(): HasMany
+    {
+        return $this->hasMany(ActionItemExternalLink::class);
     }
 
     public function isCompleted(): bool

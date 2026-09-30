@@ -2480,7 +2480,7 @@ Claude-Session: https://claude.ai/code/session_01SosW8d2Uj7QxsF1tws5ssS"
 - Consumes: Task 1 `QueueShare::handle()`, `PresentIntegrationDelivery::handle()`, `LinkShareContent`, `IntegrationDeliveryChannel::{shareChannels(), provider()}`; Task 2 `BuildRetroRecap::handle()`, `RetroRecapContent`; Task 3 `SharePermissions::ensureRetro()`; `Participant::current(Request)`; routes `retros.show`, `retros.join.show`.
 - Produces:
   - `BuildLinkShare::{retro(Retro, User $sharer, bool $includeGuestLink): LinkShareContent, pokerGame(PokerGame, User $sharer, bool $includeGuestLink): LinkShareContent}` (Plan 13d adds `gameRoom()`).
-  - `POST /retros/{retro}/shares` → `retros.shares.store` (`RetroSharesController::store`), body `{channel: slack|telegram, kind: link|results, include_guest_link?: bool}`, `throttle:5,1`, response 202 = `PresentIntegrationDelivery` payload.
+  - `POST /retros/{retro}/shares` → `retros.shares.store` (`RetroSharesController::store`), body `{channel: slack|telegram, kind: link|results, include_guest_link?: bool}`, `throttle:5,1,shares`, response 202 = `PresentIntegrationDelivery` payload.
 - Tests required: "queues a board link to Slack for the facilitator", "queues links to Telegram", "posts the guest link only on request", "refuses the guest link when guest access is off", "lets workspace admins share", "refuses other members, guests and a facilitator who left the team", "sends no board content in a link", "refuses a link on a completed retro and a recap before completion", "queues the results recap on a completed retro", "answers 404 when the provider is disabled", "refuses a team that is not connected or must reconnect", "limits shares to five a minute", "validates the channel and the kind".
 
 - [ ] **Step 1: Write the failing tests**
@@ -2865,7 +2865,7 @@ class RetroSharesController extends Controller
 In `routes/web.php`, import `App\Http\Controllers\Integrations\RetroSharesController` and add inside the `retros/{retro}` group, after the `summary` routes:
 
 ```php
-        Route::post('shares', [RetroSharesController::class, 'store'])->middleware('throttle:5,1')->name('retros.shares.store');
+        Route::post('shares', [RetroSharesController::class, 'store'])->middleware('throttle:5,1,shares')->name('retros.shares.store');
 ```
 
 The provider check happens in the controller (the channel is in the body). Then run `vendor/bin/sail artisan wayfinder:generate --with-form`.
@@ -2909,7 +2909,7 @@ Claude-Session: https://claude.ai/code/session_01SosW8d2Uj7QxsF1tws5ssS"
 
 **Interfaces:**
 - Consumes: Task 1 `QueueShare`, `PresentIntegrationDelivery`; Task 3 `SharePermissions::ensurePokerGame()`; Task 4 `BuildLinkShare::pokerGame()`; `PokerPlayer::current(Request)`, `PokerGuard::notEnded(PokerGame)`.
-- Produces: `POST /poker/{game}/shares` → `poker.shares.store` (`PokerSharesController::store`), body `{channel: slack|telegram, include_guest_link?: bool}`, `throttle:5,1`, 202 = `PresentIntegrationDelivery` payload.
+- Produces: `POST /poker/{game}/shares` → `poker.shares.store` (`PokerSharesController::store`), body `{channel: slack|telegram, include_guest_link?: bool}`, `throttle:5,1,shares`, 202 = `PresentIntegrationDelivery` payload.
 - Tests required: "queues a game link for the facilitator", "posts the poker guest link only on request", "refuses the poker guest link when guest access is off", "lets workspace admins share a game", "refuses other players and guests", "refuses an ended game", "answers 404 for a disabled provider and 409 without a connection".
 
 - [ ] **Step 1: Write the failing tests**
@@ -3121,7 +3121,7 @@ class PokerSharesController extends Controller
 In `routes/web.php`, import `App\Http\Controllers\Integrations\PokerSharesController` and add inside the `poker/{game}` group, after the `guest-token` route:
 
 ```php
-        Route::post('shares', [PokerSharesController::class, 'store'])->middleware('throttle:5,1')->name('poker.shares.store');
+        Route::post('shares', [PokerSharesController::class, 'store'])->middleware('throttle:5,1,shares')->name('poker.shares.store');
 ```
 
 Then run `vendor/bin/sail artisan wayfinder:generate --with-form`.
@@ -4819,16 +4819,16 @@ Plan 13d (game room invites, spec 7 §3.1) posts a standalone room's link throug
 - The kind already exists: `IntegrationDeliveryKind::GameRoomLink` (`game_room_link`).
 
 **Server**
-- `App\Actions\Integrations\QueueShare::requireIntegration(Team $team, IntegrationProvider $provider): TeamIntegration` — throws `NotConnected` or `ReconnectRequired` (both `IntegrationException`, 409 by default). Spec 7 §3.1 answers 422 "This team is not connected to :provider." for rooms: catch both around this call and throw the 422 before building the message.
+- `App\Actions\Integrations\QueueShare::requireIntegration(Team $team, IntegrationProvider $provider): TeamIntegration` — throws `NotConnected` or `ReconnectRequired` (both `IntegrationException`, rendered as 409). Call it before building the message and let both propagate: rooms answer the same 409 "Connect :provider in the team settings." / "Reconnect :provider in the team settings." as the retro and poker shares (spec 6 §5.1 game room bullet, spec 7 §3.1). Do not catch or remap them.
 - `QueueShare::handle(Model&DeliverySubject $subject, IntegrationDeliveryChannel $channel, IntegrationDeliveryKind $kind, User $requester, ShareContent $content): IntegrationDelivery` — creates the `queued` row (team from `deliveryTeam()`), dispatches `DeliverToSlack` / `DeliverToTelegram` after commit with the message pre-built in the current (sharer's) locale.
 - `App\Support\Integrations\Messages\LinkShareContent(string $text, string $buttonLabel, string $url)` — plain, unescaped text; escaping is done per channel. Add `BuildLinkShare::gameRoom(GameRoom $room, User $sharer, bool $includeGuestLink): LinkShareContent` next to `retro()` and `pokerGame()` with the text `__(':sharer invites you to play :game in ":room" (:team)', …)` and the button `__('Join the game')`.
-- `IntegrationDeliveryChannel::shareChannels()` / `provider()`; validation rule used by both controllers: `Rule::enum(IntegrationDeliveryChannel::class)->only(IntegrationDeliveryChannel::shareChannels())`, then `abort_unless($channel->provider()?->isEnabled() ?? false, 404)`; routes carry `->middleware('throttle:5,1')`.
+- `IntegrationDeliveryChannel::shareChannels()` / `provider()`; validation rule used by both controllers: `Rule::enum(IntegrationDeliveryChannel::class)->only(IntegrationDeliveryChannel::shareChannels())`, then `abort_unless($channel->provider()?->isEnabled() ?? false, 404)`; authorize first (403 for guests and non-managers), then validate; routes carry `->middleware('throttle:5,1,shares')` (own `shares` prefix, so the counter is per user and not shared with other throttled routes).
 - `App\Actions\Integrations\ShareOptions::channels(Team): array{slack: bool, telegram: bool}` (enabled provider and `Active` integration) — combine it with the room-manager rule for the room snapshot's `share` booleans.
 - `App\Actions\Integrations\LatestDeliveries::handle(Model $subject, array<int, IntegrationDeliveryKind> $kinds): array` and `PresentIntegrationDelivery::handle(IntegrationDelivery): array{id, channel, kind, status, error, sentAt, createdAt, requestedBy, recipientCount}` (phpstan type `Delivery`) — the room snapshot's `deliveries` is `LatestDeliveries::handle($room, [IntegrationDeliveryKind::GameRoomLink])` for managers, else `[]`; the share endpoint answers `202` with the presented delivery (`$delivery->load('requestedBy')`).
 
 **Frontend**
 - Types from `@/types`: `ShareChannel`, `ShareAvailability`, `IntegrationDelivery`.
-- `<PostLinkSection availability guestLinkAvailable guestLinkLabel deliveries onPost hint? />` from `@/components/integrations/share/post-link-section` (pass `guestLinkAvailable={room.access === 'link'}`, the label "Include the guest link (anyone who can see the message can join)" and, for `team` rooms, `hint={t('Only members of :team can join.', …)}`); `<DeliveryLines deliveries />` from `@/components/integrations/share/delivery-lines`.
+- `<PostLinkSection availability guestLinkAvailable guestLinkLabel deliveries onPost hint? />` from `@/components/integrations/share/post-link-section` (pass `guestLinkAvailable={room.access === 'link'}`, the label "Include the guest link (anyone in the channel can join)" (spec §5.1; the existing translation key) and, for `team` rooms, `hint={t('Only members of :team can join.', …)}`); `<DeliveryLines deliveries />` from `@/components/integrations/share/delivery-lines`.
 
 **Tests**
 - Pest helpers `enableIntegrations()`, `disableIntegrations()` (Plan 12a); `Queue::fake()` and inspect `DeliverToSlack::$message` / `DeliverToTelegram::$html`; `runDeliveryJob()` is local to `DeliveryJobsTest.php` — copy its three lines into the room test file under a new name if the job must run.

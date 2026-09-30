@@ -9,6 +9,7 @@ use App\Events\ActionItems\TeamActionItemDeleted;
 use App\Events\ActionItems\TeamActionItemSaved;
 use App\Events\Retros\ActionItemCommentsChanged;
 use App\Events\Retros\ActionItemDeleted;
+use App\Events\Retros\ActionItemExternalLinksChanged;
 use App\Events\Retros\ActionItemSaved;
 use App\Events\Retros\CarriedActionItemCommentsChanged;
 use App\Events\Retros\CarriedActionItemRemoved;
@@ -70,6 +71,25 @@ class BroadcastActionItemChange
         }
 
         (new TeamActionItemCommentsChanged($item->team_id, $item->id, $commentCount))->sendToOthers();
+    }
+
+    /**
+     * Issue keys are for members only, so they travel on the private
+     * member channels of the boards that show the item.
+     */
+    public function externalLinksChanged(ActionItem $item): void
+    {
+        $item->load('externalLinks');
+        $links = $this->presentActionItem->presentExternalLinks($item);
+        $retroIds = $this->carryingRetroIds($item);
+
+        if ($this->hasRunningBoard($item)) {
+            array_unshift($retroIds, (string) $item->retro_id);
+        }
+
+        foreach (array_unique($retroIds) as $retroId) {
+            (new ActionItemExternalLinksChanged($retroId, $item->id, $links))->sendToOthers();
+        }
     }
 
     /**

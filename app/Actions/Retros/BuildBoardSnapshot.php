@@ -5,7 +5,12 @@ namespace App\Actions\Retros;
 use App\Actions\ActionItems\ActionItemActor;
 use App\Actions\ActionItems\CarriedActionItems;
 use App\Actions\HealthCheck\PresentHealthCheck;
+use App\Actions\Integrations\LatestDeliveries;
+use App\Actions\Integrations\ListExportSources;
+use App\Actions\Integrations\ShareOptions;
+use App\Actions\Integrations\SharePermissions;
 use App\Actions\Surveys\PresentSurvey;
+use App\Enums\IntegrationDeliveryKind;
 use App\Enums\RetroPhase;
 use App\Enums\WorkspaceRole;
 use App\Http\Controllers\EmojiDataController;
@@ -36,6 +41,10 @@ class BuildBoardSnapshot
         private BuildInsights $buildInsights,
         private SuggestionGuard $suggestionGuard,
         private Llm $llm,
+        private ShareOptions $shareOptions,
+        private SharePermissions $sharePermissions,
+        private LatestDeliveries $latestDeliveries,
+        private ListExportSources $listExportSources,
     ) {}
 
     /**
@@ -66,6 +75,7 @@ class BuildBoardSnapshot
         $carried = $viewer->isGuest()
             ? ['items' => [], 'hasMore' => false]
             : $this->carriedActionItems->handle($retro);
+        $canShare = $this->sharePermissions->retro($retro, $viewerParticipant);
 
         return [
             'retro' => [
@@ -132,12 +142,15 @@ class BuildBoardSnapshot
             ),
             'carriedActionItems' => $this->presentActionItem->many($carried['items'], ActionItemActor::forParticipant($viewerParticipant)),
             'carriedActionItemsHasMore' => $carried['hasMore'],
+            'exportSources' => $viewer->isGuest() ? [] : $this->listExportSources->forTeam($retro->team),
             'teamMembers' => $this->teamMembers($retro),
             'insights' => $this->buildInsights->handle($retro),
             'roti' => $this->roti($retro, $viewer),
             'surveys' => $surveys,
             'results' => $this->buildResults->handle($retro, $viewer, $surveys),
             'healthCheck' => $this->presentHealthCheck->handle($retro, $viewer),
+            'integrations' => $this->shareOptions->retro($retro, $viewerParticipant),
+            'linkDeliveries' => $canShare ? $this->latestDeliveries->handle($retro, [IntegrationDeliveryKind::RetroLink]) : [],
             'votesCast' => $retro->phase === RetroPhase::Voting ? (int) $voteTotals->sum() : null,
             'votesVersion' => $votesVersion,
             'links' => [

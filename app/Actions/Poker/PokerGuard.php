@@ -2,9 +2,11 @@
 
 namespace App\Actions\Poker;
 
+use App\Enums\IntegrationProvider;
 use App\Models\PokerGame;
 use App\Models\PokerPlayer;
 use App\Models\PokerRound;
+use App\Models\PokerTask;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Validation\ValidationException;
 
@@ -72,5 +74,16 @@ class PokerGuard
         }
 
         throw new AuthorizationException(__('Only the facilitator or a workspace admin can delete this game.'));
+    }
+
+    public static function notManaged(PokerTask $task): void
+    {
+        if ($task->external_source === null) {
+            return;
+        }
+
+        $source = IntegrationProvider::tryFrom($task->external_source)?->label() ?? $task->external_source;
+
+        throw ValidationException::withMessages(['title' => __('This task is managed in :source.', ['source' => $source])]);
     }
 }

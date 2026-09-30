@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Contracts\DeliverySubject;
 use App\Enums\PokerDeck;
+use App\Events\Poker\PokerGameChanged;
 use Database\Factories\PokerGameFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -41,12 +43,19 @@ use Illuminate\Support\Carbon;
     'auto_reveal', 'anonymous_votes', 'cursors_enabled', 'reactions_enabled',
 ])]
 #[Hidden(['guest_token'])]
-class PokerGame extends Model
+class PokerGame extends Model implements DeliverySubject
 {
     /** @use HasFactory<PokerGameFactory> */
     use HasFactory;
 
     use HasUuids;
+
+    protected static function booted(): void
+    {
+        static::deleting(function (PokerGame $game): void {
+            IntegrationDelivery::query()->whereMorphedTo('subject', $game)->delete();
+        });
+    }
 
     /** @return BelongsTo<Team, $this> */
     public function team(): BelongsTo
@@ -92,6 +101,16 @@ class PokerGame extends Model
     public function isFacilitator(PokerPlayer $player): bool
     {
         return $this->facilitator_player_id === $player->id;
+    }
+
+    public function deliveryTeam(): Team
+    {
+        return $this->team;
+    }
+
+    public function announceDeliveryChange(): void
+    {
+        (new PokerGameChanged($this->id))->sendToOthers();
     }
 
     public function isNumeric(): bool

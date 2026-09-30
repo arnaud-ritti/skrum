@@ -2,6 +2,7 @@
 
 namespace App\Actions\Poker;
 
+use App\Actions\Integrations\RequestEstimateSync;
 use App\Enums\PokerDeck;
 use App\Events\Poker\PokerTaskEstimated;
 use App\Events\Poker\PokerTaskSaved;
@@ -13,7 +14,10 @@ use Illuminate\Validation\ValidationException;
 
 class SetPokerEstimate
 {
-    public function __construct(private PresentPokerTask $presentPokerTask) {}
+    public function __construct(
+        private PresentPokerTask $presentPokerTask,
+        private RequestEstimateSync $requestEstimateSync,
+    ) {}
 
     public function handle(PokerGame $locked, PokerTask $task, ?string $value): PokerTask
     {
@@ -37,6 +41,10 @@ class SetPokerEstimate
                     'estimated_at' => now(),
                 ]);
             }
+        }
+
+        if ($task->estimate !== $previous) {
+            $this->requestEstimateSync->afterEstimateChange($locked, $task);
         }
 
         $task->loadCount('rounds');

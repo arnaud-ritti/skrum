@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Poker;
 
+use App\Actions\Integrations\PokerTaskSync;
 use App\Actions\Poker\AddPokerTask;
 use App\Actions\Poker\PokerGuard;
 use App\Actions\Poker\PresentPokerTask;
@@ -40,7 +41,7 @@ class PokerTasksController extends Controller
             return $addPokerTask->handle($locked, $validated['title'], $validated['description'] ?? null);
         });
 
-        return response()->json($this->presentPokerTask->handle($task), 201);
+        return response()->json($this->presentPokerTask->handle($task, PokerTaskSync::for($game)), 201);
     }
 
     public function update(Request $request, PokerGame $game, PokerTask $task): JsonResponse
@@ -49,6 +50,7 @@ class PokerTasksController extends Controller
 
         PokerGuard::notEnded($game);
         PokerGuard::canEditTasks($player);
+        PokerGuard::notManaged($task);
 
         $validated = $request->validate([
             'title' => ['sometimes', 'required', 'string', 'max:200'],
@@ -62,6 +64,8 @@ class PokerTasksController extends Controller
 
             $lockedTask = PokerTask::query()->where('poker_game_id', $locked->id)->whereKey($task->id)->firstOrFail();
 
+            PokerGuard::notManaged($lockedTask);
+
             $lockedTask->update($validated);
             $lockedTask->loadCount('rounds');
 
@@ -70,7 +74,7 @@ class PokerTasksController extends Controller
             return $lockedTask;
         });
 
-        return response()->json($this->presentPokerTask->handle($task));
+        return response()->json($this->presentPokerTask->handle($task, PokerTaskSync::for($game)));
     }
 
     public function destroy(Request $request, PokerGame $game, PokerTask $task): Response

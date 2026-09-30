@@ -1,3 +1,6 @@
+import type { IntegrationDelivery, ShareAvailability } from '@/types';
+import type { ExportSource, ExternalLink } from '@/types/integrations';
+
 export type RetroPhase =
     | 'health_check'
     | 'icebreaker'
@@ -207,6 +210,8 @@ export type ActionItem = {
     previousOccurrenceId: string | null;
     subtasks: ActionItemSubtask[];
     createdAt: string | null;
+    /** Members only; null in broadcasts, where clients keep what they know. */
+    externalLinks: ExternalLink[] | null;
     /** Client-only: bumped by comment events so an open thread refetches. */
     commentsRevision?: number;
 };
@@ -295,6 +300,7 @@ export type Snapshot = {
     actionItems: ActionItem[];
     carriedActionItems: ActionItem[];
     carriedActionItemsHasMore: boolean;
+    exportSources: ExportSource[];
     teamMembers: TeamMember[];
     surveys: SurveyPayload[];
     roti: RotiState;
@@ -302,6 +308,8 @@ export type Snapshot = {
     insights: Insights | null;
     features: { llm: boolean; llmProvider: string | null };
     healthCheck: HealthCheckState | null;
+    integrations: ShareAvailability & { email: boolean };
+    linkDeliveries: IntegrationDelivery[];
     votesCast: number | null;
     votesVersion: number;
     links: {
@@ -375,4 +383,6 @@ export type Results = {
     games: null;
     roti: RotiResults;
     summary: ResultsSummary | null;
+    deliveries: IntegrationDelivery[];
+    emailRecipients: { participants: number; team: number } | null;
 };

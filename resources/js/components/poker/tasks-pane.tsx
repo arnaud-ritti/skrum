@@ -17,19 +17,39 @@ import {
     verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, Plus } from 'lucide-react';
+import {
+    Download,
+    GripVertical,
+    MoreHorizontal,
+    Plus,
+    RefreshCw,
+} from 'lucide-react';
 import { useState, type ReactNode } from 'react';
+import { toast } from 'sonner';
+import PokerImportRefreshesController from '@/actions/App/Http/Controllers/Integrations/PokerImportRefreshesController';
 import PokerCurrentTasksController from '@/actions/App/Http/Controllers/Poker/PokerCurrentTasksController';
 import PokerTaskOrdersController from '@/actions/App/Http/Controllers/Poker/PokerTaskOrdersController';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useTrans } from '@/hooks/use-trans';
 import { sortedTasks } from '@/lib/poker/game-reducer';
-import type { PokerTask } from '@/lib/poker/types';
+import {
+    connectedTrackers,
+    TrackerLabels,
+    type PokerTask,
+} from '@/lib/poker/types';
 import { retroRequest } from '@/lib/retro/api';
 import { cn } from '@/lib/utils';
 import { useGame } from './game-context';
+import { ImportTasksDialog } from './import-tasks-dialog';
 import { TaskFormDialog } from './task-form-dialog';
+import { TaskSourceChip } from './task-source-chip';
 
 type Props = { onSelected?: () => void };
 
@@ -37,10 +57,51 @@ export function TasksPane({ onSelected }: Props) {
     const { snapshot, apply, run, refetch } = useGame();
     const { t } = useTrans();
     const [adding, setAdding] = useState(false);
+    const [importing, setImporting] = useState(false);
+    const [refreshing, setRefreshing] = useState(false);
     const { game, me } = snapshot;
     const tasks = sortedTasks(snapshot.tasks);
     const isEnded = game.endedAt !== null;
     const canSort = me.isFacilitator && !isEnded;
+    const trackers = connectedTrackers(snapshot.integrations);
+    const canImport = me.canEditTasks && !isEnded && trackers.length > 0;
+    const refreshableSources = trackers.filter((source) =>
+        snapshot.tasks.some((task) => task.external?.source === source),
+    );
+    const refreshLabel = refreshableSources
+        .map((source) => TrackerLabels[source])
+        .join(' & ');
+
+    const refresh = async () => {
+        setRefreshing(true);
+
+        const result = await run(
+            retroRequest<{ refreshed: number; missing: number }>(
+                PokerImportRefreshesController.store(game.id),
+            ),
+        );
+
+        setRefreshing(false);
+
+        if (!result) {
+            return;
+        }
+
+        toast.success(
+            t(':count tasks refreshed.', { count: result.refreshed }),
+        );
+
+        if (result.missing > 0) {
+            toast.warning(
+                t(':count tasks were not found in :source.', {
+                    count: result.missing,
+                    source: refreshLabel,
+                }),
+            );
+        }
+
+        await refetch();
+    };
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
         useSensor(KeyboardSensor, {
@@ -117,12 +178,48 @@ export function TasksPane({ onSelected }: Props) {
                         ({tasks.length})
                     </span>
                 </h2>
-                {me.canEditTasks && !isEnded && (
-                    <Button size="sm" onClick={() => setAdding(true)}>
-                        <Plus className="size-4" />
-                        {t('Add task')}
-                    </Button>
-                )}
+                <div className="flex items-center gap-1">
+                    {canImport && (
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setImporting(true)}
+                        >
+                            <Download className="size-4" />
+                            {t('Import')}
+                        </Button>
+                    )}
+                    {me.canEditTasks && !isEnded && (
+                        <Button size="sm" onClick={() => setAdding(true)}>
+                            <Plus className="size-4" />
+                            {t('Add task')}
+                        </Button>
+                    )}
+                    {canImport && refreshableSources.length > 0 && (
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    aria-label={t('More task actions')}
+                                >
+                                    <MoreHorizontal className="size-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuItem
+                                    disabled={refreshing}
+                                    onSelect={() => void refresh()}
+                                >
+                                    <RefreshCw className="size-4" />
+                                    {t('Refresh from :source', {
+                                        source: refreshLabel,
+                                    })}
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    )}
+                </div>
             </div>
 
             {tasks.length === 0 ? (
@@ -168,6 +265,11 @@ export function TasksPane({ onSelected }: Props) {
                 open={adding}
                 onOpenChange={setAdding}
             />
+            <ImportTasksDialog
+                open={importing}
+                onOpenChange={setImporting}
+                sources={trackers}
+            />
         </div>
     );
 }
@@ -203,6 +305,7 @@ function TaskRow({
                 <span className="min-w-0 flex-1 font-medium break-words">
                     {task.title}
                 </span>
+                {task.external && <TaskSourceChip external={task.external} />}
                 {task.estimate !== null && (
                     <Badge variant="secondary">{task.estimate}</Badge>
                 )}

@@ -2,6 +2,8 @@
 
 use App\Actions\Retros\GuestCookie;
 use App\Contracts\PokerPresenceRoster;
+use App\Enums\IntegrationAccess;
+use App\Enums\IntegrationProvider;
 use App\Enums\McpScope;
 use App\Enums\PokerDeck;
 use App\Enums\RetroPhase;
@@ -22,10 +24,13 @@ use App\Models\SuggestedAction;
 use App\Models\Survey;
 use App\Models\SurveyResponse;
 use App\Models\Team;
+use App\Models\TeamIntegration;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Support\Integrations\OAuthState;
 use Carbon\CarbonInterface;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\Request as HttpRequest;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Testing\TestResponse;
 use Laravel\Mcp\Server\Testing\PendingTestResponse;
@@ -171,6 +176,14 @@ function workspaceManager(Workspace $workspace, WorkspaceRole $role = WorkspaceR
     $workspace->members()->attach($user, ['role' => $role->value]);
 
     return $user;
+}
+
+function integrationAdmin(Team $team): User
+{
+    $admin = workspaceManager($team->workspace);
+    $team->members()->attach($admin);
+
+    return $admin;
 }
 
 /**
@@ -424,8 +437,8 @@ function mcpPromptData(McpTestResponse $response): array
 }
 
 /**
- * The 25 tools of the QRetro contract that exist before spec 6 adds the
- * four tracker tools.
+ * The 29 tools of the QRetro contract. The four tracker tools are listed
+ * only while a visible team has an active tracker (spec 5 §2.4).
  *
  * @return array<int, string>
  */
@@ -443,6 +456,8 @@ function mcpContractToolNames(): array
         'retro.board.insights.list',
         'retro.board.health.get',
         'retro.board.roti.get',
+        'poker.sources.list',
+        'poker.iterations.list',
         'poker.games.list',
         'poker.game.get',
         'poker.game.tasks.list',
@@ -454,8 +469,10 @@ function mcpContractToolNames(): array
         'retro.board.messages.update',
         'poker.games.create',
         'poker.game.tasks.add',
+        'poker.game.tasks.import',
         'poker.game.task.select',
         'poker.game.task.reveal',
+        'poker.game.task.sync',
         'retro.board.messages.delete_own',
     ];
 
@@ -549,6 +566,8 @@ function mcpSweepWorld(): array
     $current = PokerTask::factory()->create(['poker_game_id' => $game->id]);
     $next = PokerTask::factory()->create(['poker_game_id' => $game->id]);
     pokerVote(openPokerRound($game, $current), $player, '5');
+    TeamIntegration::factory()->jira()->create(['team_id' => $team->id]);
+    $imported = PokerTask::factory()->imported()->estimated('5')->create(['poker_game_id' => $game->id, 'title' => 'Sweep imported story']);
 
     return [
         'user' => $user,
@@ -563,7 +582,10 @@ function mcpSweepWorld(): array
         'game' => $game,
         'current' => $current,
         'next' => $next,
+        'imported' => $imported,
         'secrets' => [
+            'jira-access',
+            'jira-refresh',
             'sweep-user@example.test',
             'sweep-other@example.test',
             $discussing->guest_token,
@@ -573,4 +595,272 @@ function mcpSweepWorld(): array
             hash('sha256', 'guest-secret-value'),
         ],
     ];
+}
+
+function disableIntegrations(): void
+{
+    config([
+        'services.slack.client_id' => null,
+        'services.slack.client_secret' => null,
+        'services.telegram.bot_token' => null,
+        'services.jira.client_id' => null,
+        'services.jira.client_secret' => null,
+        'services.linear.client_id' => null,
+        'services.linear.client_secret' => null,
+    ]);
+}
+
+function enableIntegrations(IntegrationProvider ...$providers): void
+{
+    foreach ($providers as $provider) {
+        config(match ($provider) {
+            IntegrationProvider::Slack => ['services.slack.client_id' => 'slack-client', 'services.slack.client_secret' => 'slack-secret'],
+            IntegrationProvider::Telegram => ['services.telegram.bot_token' => '123456:telegram-token'],
+            IntegrationProvider::Jira => ['services.jira.client_id' => 'jira-client', 'services.jira.client_secret' => 'jira-secret'],
+            IntegrationProvider::Linear => ['services.linear.client_id' => 'linear-client', 'services.linear.client_secret' => 'linear-secret'],
+        });
+    }
+}
+
+/**
+ * @return array<string, array<string, int|string>>
+ */
+function integrationOAuthSession(
+    Team $team,
+    IntegrationProvider $provider,
+    IntegrationAccess $access = IntegrationAccess::Write,
+    string $state = 'oauth-state-0123456789abcdefghijklmnopqrstu',
+    int $expiresInMinutes = 10,
+): array {
+    return [OAuthState::SessionKey => [
+        'state' => $state,
+        'provider' => $provider->value,
+        'teamId' => $team->id,
+        'access' => $access->value,
+        'expiresAt' => now()->addMinutes($expiresInMinutes)->getTimestamp(),
+    ]];
+}
+
+/**
+ * A Jira issue as `/rest/api/3/search/jql` returns it.
+ *
+ * @param  array<string, mixed>  $fields
+ * @return array<string, mixed>
+ */
+function jiraTrackerIssue(string $id, string $key, array $fields = []): array
+{
+    return [
+        'id' => $id,
+        'key' => $key,
+        'fields' => [
+            'summary' => "Story {$key}",
+            'description' => ['type' => 'doc', 'version' => 1, 'content' => [
+                ['type' => 'paragraph', 'content' => [['type' => 'text', 'text' => "About {$key}"]]],
+            ]],
+            'assignee' => ['displayName' => 'Jane Doe'],
+            'status' => ['name' => 'To Do'],
+            'customfield_10016' => 3,
+            ...$fields,
+        ],
+    ];
+}
+
+/**
+ * A Linear issue node with the fields the trackers request.
+ *
+ * @param  array<string, mixed>  $overrides
+ * @return array<string, mixed>
+ */
+function linearTrackerIssue(string $id, string $identifier, array $overrides = []): array
+{
+    return [
+        'id' => $id,
+        'identifier' => $identifier,
+        'title' => "Issue {$identifier}",
+        'description' => "About **{$identifier}**",
+        'url' => "https://linear.app/acme/issue/{$identifier}",
+        'estimate' => 2,
+        'assignee' => ['displayName' => 'Sam Lee'],
+        'state' => ['name' => 'Todo'],
+        ...$overrides,
+    ];
+}
+
+/**
+ * Answers Linear GraphQL calls by the first key found in the query text.
+ *
+ * @param  array<string, array<string, mixed>|Closure(array<string, mixed>): array<string, mixed>>  $responses
+ */
+function fakeLinearGraphql(array $responses): void
+{
+    Http::fake(['api.linear.app/graphql' => function (HttpRequest $request) use ($responses) {
+        $query = (string) $request['query'];
+        $variables = (array) ($request['variables'] ?? []);
+
+        foreach ($responses as $needle => $data) {
+            if (str_contains($query, $needle)) {
+                return Http::response(['data' => $data instanceof Closure ? $data($variables) : $data]);
+            }
+        }
+
+        return Http::response(['errors' => [['message' => "Unexpected query: {$query}"]]], 400);
+    }]);
+}
+
+/**
+ * A game (guest access on) whose team is connected to a tracker, with a
+ * facilitator and a member. Only `$source` is enabled on the instance.
+ *
+ * @return array{
+ *     game: PokerGame,
+ *     integration: TeamIntegration,
+ *     facilitator: User,
+ *     facilitatorPlayer: PokerPlayer,
+ *     member: User,
+ *     memberPlayer: PokerPlayer
+ * }
+ */
+function trackerTable(IntegrationProvider $source = IntegrationProvider::Jira, IntegrationAccess $access = IntegrationAccess::Write, PokerDeck $deck = PokerDeck::Fibonacci): array
+{
+    enableIntegrations($source);
+
+    $game = PokerGame::factory()->deck($deck)->withGuestAccess()->create();
+    $factory = TeamIntegration::factory();
+    $integration = ($source === IntegrationProvider::Jira ? $factory->jira($access) : $factory->linear($access))
+        ->create(['team_id' => $game->team_id]);
+    [$facilitator, $facilitatorPlayer] = pokerFacilitator($game);
+    [$member, $memberPlayer] = pokerMember($game);
+
+    return [
+        'game' => $game,
+        'integration' => $integration,
+        'facilitator' => $facilitator,
+        'facilitatorPlayer' => $facilitatorPlayer,
+        'member' => $member,
+        'memberPlayer' => $memberPlayer,
+    ];
+}
+
+/**
+ * @param  array<string, mixed>  $attributes
+ */
+function importedPokerTask(PokerGame $game, array $attributes = [], IntegrationProvider $source = IntegrationProvider::Jira): PokerTask
+{
+    $task = PokerTask::factory()
+        ->imported($source, $source === IntegrationProvider::Jira ? 'cloud-1' : 'org-1')
+        ->create(['poker_game_id' => $game->id]);
+
+    $task->forceFill($attributes)->save();
+
+    return $task->fresh() ?? $task;
+}
+
+/**
+ * Fakes every Jira endpoint the poker import and write-back use on the
+ * `cloud-1` site. More specific patterns come first: the first match wins.
+ *
+ * @param  array<int, array<string, mixed>>|null  $issues
+ */
+function fakeJiraTrackerApi(?array $issues = null): void
+{
+    $issues ??= [jiraTrackerIssue('10001', 'PROJ-1'), jiraTrackerIssue('10002', 'PROJ-2')];
+
+    Http::fake([
+        'api.atlassian.com/ex/jira/cloud-1/rest/agile/1.0/board/*/sprint*' => Http::response(['values' => [
+            ['id' => 31, 'name' => 'Sprint 31', 'state' => 'active'],
+        ]]),
+        'api.atlassian.com/ex/jira/cloud-1/rest/agile/1.0/board*' => Http::response([
+            'values' => [['id' => 7, 'name' => 'Sweep scrum board']],
+            'isLast' => true,
+        ]),
+        'api.atlassian.com/ex/jira/cloud-1/rest/api/3/search/jql' => Http::response(['issues' => $issues, 'isLast' => true]),
+        'api.atlassian.com/ex/jira/cloud-1/rest/api/3/issue/*/editmeta' => Http::response(['fields' => [
+            'customfield_10016' => ['name' => 'Story point estimate'],
+        ]]),
+        'api.atlassian.com/ex/jira/cloud-1/rest/api/3/issue/*' => Http::response(null, 204),
+    ]);
+}
+
+function jiraApiUrl(string $path): string
+{
+    return 'api.atlassian.com/ex/jira/cloud-1/'.ltrim($path, '/');
+}
+
+/**
+ * @return array<string, mixed>
+ */
+function jiraAccount(string $accountId, string $displayName, ?string $email = null, bool $active = true, string $type = 'atlassian'): array
+{
+    return array_filter([
+        'accountId' => $accountId,
+        'accountType' => $type,
+        'displayName' => $displayName,
+        'emailAddress' => $email,
+        'active' => $active,
+    ], fn (mixed $value): bool => $value !== null);
+}
+
+/**
+ * @return array<string, mixed>
+ */
+function linearAccount(string $id, string $name, string $email, bool $active = true): array
+{
+    return ['id' => $id, 'name' => $name, 'displayName' => strtolower(strtok($name, ' ') ?: $name), 'email' => $email, 'active' => $active];
+}
+
+/**
+ * @param  array<string, mixed>  $responses  keyed by a fragment of the GraphQL document
+ */
+function fakeLinearUserDirectoryGraphql(array $responses): void
+{
+    Http::fake(['api.linear.app/graphql' => function (HttpRequest $request) use ($responses) {
+        foreach ($responses as $fragment => $response) {
+            if (str_contains((string) $request['query'], $fragment)) {
+                return $response instanceof Closure ? $response($request) : Http::response(['data' => $response]);
+            }
+        }
+
+        return Http::response(['errors' => [['message' => 'Unexpected query', 'extensions' => ['code' => 'INVALID_INPUT']]]], 400);
+    }]);
+}
+
+/**
+ * @param  array<string, mixed>  $attributes
+ * @return array{0: Retro, 1: ActionItem, 2: User}
+ */
+function exportBoardItem(array $attributes = []): array
+{
+    $retro = Retro::factory()->inPhase(RetroPhase::Completed)->withGuestAccess()->create(['title' => 'Sprint 12']);
+    [$author, $participant] = retroMember($retro);
+    $item = ActionItem::factory()->create([
+        'retro_id' => $retro->id,
+        'created_by_participant_id' => $participant->id,
+        'content' => 'Speed up CI',
+        ...$attributes,
+    ]);
+
+    return [$retro, $item, $author];
+}
+
+/**
+ * @param  array<int, array{id: string, name: string}>|null  $priorities
+ * @return array<string, mixed>
+ */
+function jiraCreateMeta(bool $assignee = true, bool $priority = true, ?array $priorities = null): array
+{
+    $fields = [['fieldId' => 'summary', 'name' => 'Summary']];
+
+    if ($assignee) {
+        $fields[] = ['fieldId' => 'assignee', 'name' => 'Assignee'];
+    }
+
+    if ($priority) {
+        $fields[] = ['fieldId' => 'priority', 'name' => 'Priority', 'allowedValues' => $priorities ?? [
+            ['id' => '2', 'name' => 'High'],
+            ['id' => '3', 'name' => 'Medium'],
+            ['id' => '4', 'name' => 'Low'],
+        ]];
+    }
+
+    return ['startAt' => 0, 'maxResults' => 200, 'total' => count($fields), 'fields' => $fields];
 }

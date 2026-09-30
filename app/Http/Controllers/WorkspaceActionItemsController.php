@@ -12,6 +12,7 @@ use App\Actions\ActionItems\CreateActionItem;
 use App\Actions\ActionItems\DeleteActionItem;
 use App\Actions\ActionItems\ResolveActionItemAssignee;
 use App\Actions\ActionItems\WorkspaceActionItemGuard;
+use App\Actions\Integrations\ListExportSources;
 use App\Actions\Retros\PresentActionItem;
 use App\Enums\RetroPhase;
 use App\Models\ActionItem;
@@ -39,6 +40,7 @@ class WorkspaceActionItemsController extends Controller
         private DeleteActionItem $deleteActionItem,
         private ResolveActionItemAssignee $resolveActionItemAssignee,
         private ActionItemQuery $actionItemQuery,
+        private ListExportSources $listExportSources,
     ) {}
 
     public function index(Request $request, Workspace $workspace): InertiaResponse
@@ -65,6 +67,7 @@ class WorkspaceActionItemsController extends Controller
                 ->map(fn (User $member) => ['id' => $member->id, 'name' => $member->name])
                 ->values(),
             'realtimeTeamIds' => $filters->teamId === null ? $teams->pluck('id')->values() : [$filters->teamId],
+            'exportSources' => $this->listExportSources->forTeams($teams),
             'viewer' => [
                 'userId' => $user->id,
                 'isWorkspaceManager' => $user->canManage($workspace),

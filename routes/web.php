@@ -6,6 +6,30 @@ use App\Http\Controllers\BroadcastAuthorizationsController;
 use App\Http\Controllers\CurrentWorkspaceController;
 use App\Http\Controllers\EmojiDataController;
 use App\Http\Controllers\GifsController;
+use App\Http\Controllers\Integrations\IntegrationAccountsController;
+use App\Http\Controllers\Integrations\IntegrationAuthorizationsController;
+use App\Http\Controllers\Integrations\IntegrationCallbacksController;
+use App\Http\Controllers\Integrations\IntegrationPrioritiesController;
+use App\Http\Controllers\Integrations\IntegrationTargetsController;
+use App\Http\Controllers\Integrations\IntegrationTestsController;
+use App\Http\Controllers\Integrations\IntegrationUserMappingsController;
+use App\Http\Controllers\Integrations\IntegrationUserMatchesController;
+use App\Http\Controllers\Integrations\JiraFieldDetectionsController;
+use App\Http\Controllers\Integrations\PokerImportContainersController;
+use App\Http\Controllers\Integrations\PokerImportIterationsController;
+use App\Http\Controllers\Integrations\PokerImportPreviewsController;
+use App\Http\Controllers\Integrations\PokerImportRefreshesController;
+use App\Http\Controllers\Integrations\PokerImportsController;
+use App\Http\Controllers\Integrations\PokerSharesController;
+use App\Http\Controllers\Integrations\PokerTaskSyncsController;
+use App\Http\Controllers\Integrations\RetroActionItemExportPreviewsController;
+use App\Http\Controllers\Integrations\RetroActionItemExportsController;
+use App\Http\Controllers\Integrations\RetroResultsEmailsController;
+use App\Http\Controllers\Integrations\RetroSharesController;
+use App\Http\Controllers\Integrations\TeamIntegrationsController;
+use App\Http\Controllers\Integrations\TelegramConnectCodesController;
+use App\Http\Controllers\Integrations\WorkspaceActionItemExportPreviewsController;
+use App\Http\Controllers\Integrations\WorkspaceActionItemExportsController;
 use App\Http\Controllers\InvitationAcceptancesController;
 use App\Http\Controllers\InvitationLinksController;
 use App\Http\Controllers\LocalesController;
@@ -81,6 +105,7 @@ use App\Http\Controllers\WorkspaceInvitationsController;
 use App\Http\Controllers\WorkspaceMembersController;
 use App\Http\Controllers\WorkspacesController;
 use App\Http\Controllers\WorkspaceTemplatesController;
+use App\Http\Middleware\EnsureIntegrationProviderEnabled;
 use App\Http\Middleware\RememberCurrentWorkspace;
 use App\Http\Middleware\ResolvePokerPlayer;
 use App\Http\Middleware\ResolveRetroParticipant;
@@ -125,6 +150,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('notifications/read-all', [ReadAllNotificationsController::class, 'store'])->name('notifications.readAll');
     Route::patch('notifications/{notification}', [NotificationsController::class, 'update'])->name('notifications.update')->whereUuid('notification');
 
+    Route::get('integrations/{provider}/callback', [IntegrationCallbacksController::class, 'show'])
+        ->whereIn('provider', ['slack', 'jira', 'linear'])
+        ->middleware(EnsureIntegrationProviderEnabled::class)
+        ->name('integrations.callback');
+
     Route::prefix('w/{workspace}')
         ->middleware(['can:view,workspace', RememberCurrentWorkspace::class])
         ->scopeBindings()
@@ -142,6 +172,54 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('teams/{team}/poker-decks', [PokerDecksController::class, 'store'])->name('teams.pokerDecks.store');
             Route::patch('teams/{team}/poker-decks/{pokerDeck}', [PokerDecksController::class, 'update'])->name('teams.pokerDecks.update')->whereUuid('pokerDeck');
             Route::delete('teams/{team}/poker-decks/{pokerDeck}', [PokerDecksController::class, 'destroy'])->name('teams.pokerDecks.destroy')->whereUuid('pokerDeck');
+
+            Route::middleware(EnsureIntegrationProviderEnabled::class)->group(function () {
+                Route::get('teams/{team}/integrations', [TeamIntegrationsController::class, 'index'])->name('teams.integrations.index');
+                Route::get('teams/{team}/integrations/{provider}/connect', [IntegrationAuthorizationsController::class, 'create'])
+                    ->whereIn('provider', ['slack', 'jira', 'linear'])
+                    ->name('teams.integrations.connect');
+                Route::post('teams/{team}/integrations/telegram/code', [TelegramConnectCodesController::class, 'store'])
+                    ->middleware([EnsureIntegrationProviderEnabled::class.':telegram', 'throttle:10,1'])
+                    ->name('teams.integrations.telegramCode.store');
+                Route::patch('teams/{team}/integrations/{integration}', [TeamIntegrationsController::class, 'update'])
+                    ->whereUuid('integration')
+                    ->name('teams.integrations.update');
+                Route::post('teams/{team}/integrations/{integration}/detection', [JiraFieldDetectionsController::class, 'store'])
+                    ->whereUuid('integration')
+                    ->name('teams.integrations.detection.store');
+                Route::get('teams/{team}/integrations/{integration}/user-mappings', [IntegrationUserMappingsController::class, 'index'])
+                    ->whereUuid('integration')
+                    ->name('teams.integrations.userMappings.index');
+                Route::post('teams/{team}/integrations/{integration}/user-mappings/match', [IntegrationUserMatchesController::class, 'store'])
+                    ->whereUuid('integration')
+                    ->middleware('throttle:3,1,userMappingMatches')
+                    ->name('teams.integrations.userMappings.match.store');
+                Route::put('teams/{team}/integrations/{integration}/user-mappings/{user}', [IntegrationUserMappingsController::class, 'update'])
+                    ->whereUuid(['integration', 'user'])
+                    ->name('teams.integrations.userMappings.update');
+                Route::delete('teams/{team}/integrations/{integration}/user-mappings/{user}', [IntegrationUserMappingsController::class, 'destroy'])
+                    ->whereUuid(['integration', 'user'])
+                    ->name('teams.integrations.userMappings.destroy');
+                Route::get('teams/{team}/integrations/{integration}/accounts', [IntegrationAccountsController::class, 'index'])
+                    ->whereUuid('integration')
+                    ->middleware('throttle:30,1,integrationAccountSearches')
+                    ->name('teams.integrations.accounts.index');
+                Route::get('teams/{team}/integrations/{integration}/priorities', [IntegrationPrioritiesController::class, 'index'])
+                    ->whereUuid('integration')
+                    ->name('teams.integrations.priorities.index');
+                Route::get('teams/{team}/integrations/{integration}/targets', [IntegrationTargetsController::class, 'index'])
+                    ->whereUuid('integration')
+                    ->middleware('throttle:30,1')
+                    ->name('teams.integrations.targets.index');
+                Route::delete('teams/{team}/integrations/{integration}', [TeamIntegrationsController::class, 'destroy'])
+                    ->whereUuid('integration')
+                    ->name('teams.integrations.destroy');
+                Route::post('teams/{team}/integrations/{integration}/test', [IntegrationTestsController::class, 'store'])
+                    ->whereUuid('integration')
+                    ->middleware('throttle:10,1')
+                    ->name('teams.integrations.test.store');
+            });
+
             Route::post('teams/{team}/members', [TeamMembersController::class, 'store'])->name('teams.members.store');
             Route::delete('teams/{team}/members/{member}', [TeamMembersController::class, 'destroy'])->name('teams.members.destroy')->whereUuid('member');
 
@@ -173,6 +251,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('action-items/{actionItem}/subtasks', [WorkspaceActionItemSubtasksController::class, 'store'])->name('workspaces.actionItemSubtasks.store')->whereUuid('actionItem');
             Route::patch('action-item-subtasks/{actionItemSubtask}', [WorkspaceActionItemSubtasksController::class, 'update'])->name('workspaces.actionItemSubtasks.update')->whereUuid('actionItemSubtask')->withoutScopedBindings();
             Route::delete('action-item-subtasks/{actionItemSubtask}', [WorkspaceActionItemSubtasksController::class, 'destroy'])->name('workspaces.actionItemSubtasks.destroy')->whereUuid('actionItemSubtask')->withoutScopedBindings();
+            Route::get('action-items/{actionItem}/exports/preview', [WorkspaceActionItemExportPreviewsController::class, 'show'])
+                ->middleware(EnsureIntegrationProviderEnabled::class)
+                ->name('workspaces.actionItemExports.preview')
+                ->whereUuid('actionItem');
+            Route::post('action-items/{actionItem}/exports', [WorkspaceActionItemExportsController::class, 'store'])
+                ->middleware(EnsureIntegrationProviderEnabled::class)
+                ->name('workspaces.actionItemExports.store')
+                ->whereUuid('actionItem');
         });
 });
 
@@ -228,8 +314,18 @@ Route::prefix('retros/{retro}')
         Route::post('action-items/{actionItem}/subtasks', [ActionItemSubtasksController::class, 'store'])->name('retros.action-items.subtasks.store')->whereUuid('actionItem');
         Route::patch('action-item-subtasks/{actionItemSubtask}', [ActionItemSubtasksController::class, 'update'])->name('retros.action-items.subtasks.update')->whereUuid('actionItemSubtask');
         Route::delete('action-item-subtasks/{actionItemSubtask}', [ActionItemSubtasksController::class, 'destroy'])->name('retros.action-items.subtasks.destroy')->whereUuid('actionItemSubtask');
+        Route::get('action-items/{actionItem}/exports/preview', [RetroActionItemExportPreviewsController::class, 'show'])
+            ->middleware(EnsureIntegrationProviderEnabled::class)
+            ->name('retros.action-items.exports.preview')
+            ->whereUuid('actionItem');
+        Route::post('action-items/{actionItem}/exports', [RetroActionItemExportsController::class, 'store'])
+            ->middleware(EnsureIntegrationProviderEnabled::class)
+            ->name('retros.action-items.exports.store')
+            ->whereUuid('actionItem');
         Route::post('summary', [RetroSummariesController::class, 'store'])->name('retros.summary.store');
         Route::delete('summary', [RetroSummariesController::class, 'destroy'])->name('retros.summary.destroy');
+        Route::post('shares', [RetroSharesController::class, 'store'])->middleware('throttle:5,1,shares')->name('retros.shares.store');
+        Route::post('results-email', [RetroResultsEmailsController::class, 'store'])->name('retros.results-email.store');
         Route::post('suggested-actions/{suggestedAction}/promotion', [SuggestedActionPromotionsController::class, 'store'])->name('retros.suggested-actions.promotion.store')->whereUuid('suggestedAction');
         Route::delete('suggested-actions/{suggestedAction}', [SuggestedActionsController::class, 'destroy'])->name('retros.suggested-actions.destroy')->whereUuid('suggestedAction');
         Route::post('survey-drafts', [SurveyDraftsController::class, 'store'])->name('retros.survey-drafts.store');
@@ -272,10 +368,17 @@ Route::prefix('poker/{game}')
         Route::post('tasks/{task}/rounds', [PokerRoundsController::class, 'store'])->name('poker.tasks.rounds.store')->whereUuid('task');
         Route::get('tasks/{task}/rounds', [PokerRoundsController::class, 'index'])->name('poker.tasks.rounds.index')->whereUuid('task');
         Route::put('tasks/{task}/estimate', [PokerTaskEstimatesController::class, 'update'])->name('poker.tasks.estimate.update')->whereUuid('task');
+        Route::post('tasks/{task}/sync', [PokerTaskSyncsController::class, 'store'])->name('poker.tasks.sync.store')->whereUuid('task');
         Route::patch('settings', [PokerSettingsController::class, 'update'])->name('poker.settings.update');
         Route::get('saved-decks', [PokerSavedDecksController::class, 'index'])->name('poker.saved-decks.index');
         Route::put('status', [PokerStatusesController::class, 'update'])->name('poker.status.update');
         Route::post('guest-token', [PokerGuestTokensController::class, 'store'])->name('poker.guest-token.store');
+        Route::post('shares', [PokerSharesController::class, 'store'])->middleware('throttle:5,1,shares')->name('poker.shares.store');
+        Route::get('imports/{source}/containers', [PokerImportContainersController::class, 'index'])->name('poker.imports.containers.index')->where('source', 'jira|linear');
+        Route::get('imports/{source}/iterations', [PokerImportIterationsController::class, 'index'])->name('poker.imports.iterations.index')->where('source', 'jira|linear');
+        Route::post('imports/{source}/preview', [PokerImportPreviewsController::class, 'store'])->name('poker.imports.preview.store')->where('source', 'jira|linear');
+        Route::post('imports/refresh', [PokerImportRefreshesController::class, 'store'])->middleware('throttle:10,1,poker-refresh')->name('poker.imports.refresh.store');
+        Route::post('imports/{source}', [PokerImportsController::class, 'store'])->name('poker.imports.store')->where('source', 'jira|linear');
         Route::put('facilitator', [PokerFacilitatorsController::class, 'update'])->name('poker.facilitator.update');
         Route::put('players/{player}/spectator', [PokerSpectatorsController::class, 'update'])->name('poker.players.spectator.update')->whereUuid('player');
         Route::delete('/', [PokerGamesController::class, 'destroy'])->name('poker.destroy');

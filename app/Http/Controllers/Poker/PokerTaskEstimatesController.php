@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Poker;
 
+use App\Actions\Integrations\PokerTaskSync;
 use App\Actions\Poker\PokerGuard;
 use App\Actions\Poker\PresentPokerTask;
 use App\Actions\Poker\SetPokerEstimate;
@@ -37,6 +38,6 @@ class PokerTaskEstimatesController extends Controller
             return $setPokerEstimate->handle($locked, $lockedTask, $validated['value']);
         });
 
-        return response()->json($presentPokerTask->handle($estimated));
+        return response()->json($presentPokerTask->handle($estimated, PokerTaskSync::for($game)));
     }
 }

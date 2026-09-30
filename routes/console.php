@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\IntegrationDelivery;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -15,5 +16,19 @@ Schedule::command('action-items:send-reminders')
     ->onOneServer();
 
 Schedule::command('sanctum:prune-expired --hours=720')
+    ->daily()
+    ->onOneServer();
+
+Schedule::command('skrum:telegram-poll')
+    ->everyMinute()
+    ->withoutOverlapping(5)
+    ->runInBackground()
+    ->onOneServer();
+
+Schedule::command('skrum:check-integrations')
+    ->daily()
+    ->onOneServer();
+
+Schedule::command('model:prune', ['--model' => [IntegrationDelivery::class]])
     ->daily()
     ->onOneServer();

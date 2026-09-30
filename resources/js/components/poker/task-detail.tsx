@@ -18,6 +18,7 @@ import {
 import { useTrans } from '@/hooks/use-trans';
 import type { PokerTask } from '@/lib/poker/types';
 import { retroRequest } from '@/lib/retro/api';
+import { TaskSourceDetails } from './task-source-details';
 import { useGame } from './game-context';
 import { RoundHistory } from './round-history';
 import { TaskFormDialog } from './task-form-dialog';
@@ -72,7 +73,7 @@ export function TaskDetail({ task }: { task: PokerTask }) {
                         {t('Estimate: :value', { value: task.estimate })}
                     </Badge>
                 )}
-                {me.canEditTasks && !isEnded && (
+                {me.canEditTasks && !isEnded && task.external === null && (
                     <Button
                         size="icon"
                         variant="ghost"
@@ -93,6 +94,10 @@ export function TaskDetail({ task }: { task: PokerTask }) {
                     </Button>
                 )}
             </div>
+
+            {task.external && (
+                <TaskSourceDetails task={task} external={task.external} />
+            )}
 
             {task.descriptionHtml !== '' && (
                 <div

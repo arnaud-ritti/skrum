@@ -1,3 +1,5 @@
+import type { IntegrationDelivery, ShareAvailability } from '@/types';
+
 export type PokerRevealReason = 'manual' | 'everyone_voted' | 'timer';
 
 export type PokerResult = {
@@ -24,6 +26,71 @@ export type PokerRound = {
     result: PokerResult | null;
 };
 
+export type PokerTrackerSource = 'jira' | 'linear';
+
+export type PokerSyncState = 'synced' | 'pending' | 'failed' | 'unsupported';
+
+/**
+ * Guests and broadcasts only get source, key, url and isManaged; the other
+ * fields come with the snapshot of a non-guest player.
+ */
+export type PokerTaskExternal = {
+    source: PokerTrackerSource;
+    key: string;
+    url: string;
+    isManaged: true;
+    assignee?: string | null;
+    sourceEstimate?: string | null;
+    refreshedAt?: string | null;
+    syncState?: PokerSyncState | null;
+    syncError?: string | null;
+    unsupportedReason?: string | null;
+};
+
+export type PokerTrackerConnection = { connected: boolean; canWrite: boolean };
+
+export type PokerIntegrations = Record<
+    PokerTrackerSource,
+    PokerTrackerConnection | null
+>;
+
+export type TrackerContainer = { id: string; name: string };
+
+export type TrackerIteration = {
+    id: string;
+    name: string;
+    state: 'active' | 'upcoming';
+    startsOn: string | null;
+    endsOn: string | null;
+};
+
+export type TrackerIssuePreview = {
+    externalId: string;
+    key: string;
+    title: string;
+    assignee: string | null;
+    estimate: string | null;
+    status: string | null;
+    alreadyImported: boolean;
+};
+
+export const TrackerLabels: Record<PokerTrackerSource, string> = {
+    jira: 'Jira',
+    linear: 'Linear',
+};
+
+export function connectedTrackers(
+    integrations: PokerIntegrations | null,
+): PokerTrackerSource[] {
+    if (!integrations) {
+        return [];
+    }
+
+    return (Object.keys(TrackerLabels) as PokerTrackerSource[]).filter(
+        (source) => integrations[source]?.connected === true,
+    );
+}
+
 export type PokerTask = {
     id: string;
     title: string;
@@ -33,7 +100,7 @@ export type PokerTask = {
     estimate: string | null;
     estimatedAt: string | null;
     roundsCount: number;
-    external: null;
+    external: PokerTaskExternal | null;
 };
 
 export type PokerPlayer = {
@@ -88,6 +155,9 @@ export type PokerSnapshot = {
     tasks: PokerTask[];
     current: PokerCurrent | null;
     links: { team: string | null };
+    share: ShareAvailability;
+    deliveries: IntegrationDelivery[];
+    integrations: PokerIntegrations | null;
     serverTime: string;
 };
 

@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\IntegrationProvider;
 use App\Enums\McpScope;
 use App\Enums\RetroPhase;
 use App\Mcp\McpContext;
@@ -15,6 +16,7 @@ use App\Models\PokerGame;
 use App\Models\PokerPlayer;
 use App\Models\Retro;
 use App\Models\Team;
+use App\Models\TeamIntegration;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -139,21 +141,33 @@ it('refuses calls to tools outside the scopes', function () {
     ToolBaseTestServer::actingAs($user)->tool(ToolBaseDeleteTool::class)->assertHasErrors(['Tool [test.delete] not found.']);
 });
 
-it('offers insight tools only with an llm provider and tracker tools never', function () {
+it('offers insight tools only with an llm provider', function () {
     $user = User::factory()->create();
     bindMcpGrant($user);
 
-    expect(mcpToolNames(ToolBaseTestServer::actingAs($user)))
-        ->not->toContain('test.insights')
-        ->not->toContain('test.trackers');
+    expect(mcpToolNames(ToolBaseTestServer::actingAs($user)))->not->toContain('test.insights');
 
     configureLlm();
 
-    expect(mcpToolNames(ToolBaseTestServer::actingAs($user)))
-        ->toContain('test.insights')
-        ->not->toContain('test.trackers');
+    expect(mcpToolNames(ToolBaseTestServer::actingAs($user)))->toContain('test.insights');
+});
 
-    expect(McpFeature::Trackers->isAvailable())->toBeFalse();
+it('offers tracker tools only when a visible team has an active tracker', function () {
+    enableIntegrations(IntegrationProvider::Jira);
+    $team = Team::factory()->create();
+    $user = teamMember($team);
+    TeamIntegration::factory()->jira()->create();
+
+    bindMcpGrant($user);
+
+    expect(McpFeature::Trackers->isAvailable())->toBeFalse()
+        ->and(mcpToolNames(ToolBaseTestServer::actingAs($user)))->not->toContain('test.trackers');
+
+    TeamIntegration::factory()->jira()->create(['team_id' => $team->id]);
+    bindMcpGrant($user);
+
+    expect(McpFeature::Trackers->isAvailable())->toBeTrue()
+        ->and(mcpToolNames(ToolBaseTestServer::actingAs($user)))->toContain('test.trackers');
 });
 
 it('turns domain exceptions into translated tool errors', function (string $kind, string $message) {

@@ -6,6 +6,7 @@ use App\Actions\ActionItems\ActionItemActor;
 use App\Actions\ActionItems\ActionItemPermissions;
 use App\Enums\ActionItemStatus;
 use App\Models\ActionItem;
+use App\Models\ActionItemExternalLink;
 use App\Models\ActionItemSubtask;
 use Carbon\CarbonInterface;
 
@@ -14,7 +15,7 @@ class PresentActionItem
     public function __construct(private ActionItemPermissions $permissions) {}
 
     /**
-     * Creators and assignees are always named, also on anonymous retros.
+     * Creators and assignees are always named, also on anonymous retros. External issue links are for members: guests get none, and payloads presented without a viewer (broadcasts) carry null so clients keep what they know.
      *
      * @return array{
      *     id: string,
@@ -36,6 +37,7 @@ class PresentActionItem
      *     recurrence: ?string,
      *     previousOccurrenceId: ?string,
      *     subtasks: array<int, array{id: string, content: string, isCompleted: bool, position: int}>,
+     *     externalLinks: ?array<int, array{source: string, key: string, url: string}>,
      *     createdAt: ?string
      * }
      */
@@ -70,7 +72,24 @@ class PresentActionItem
                 ->values()
                 ->all(),
             'createdAt' => $item->created_at?->toIso8601String(),
+            'externalLinks' => $this->externalLinksFor($item, $viewer),
         ];
+    }
+
+    /**
+     * @return array<int, array{source: string, key: string, url: string}>
+     */
+    public function presentExternalLinks(ActionItem $item): array
+    {
+        return $item->externalLinks
+            ->sortBy(fn (ActionItemExternalLink $link): string => $link->source->value)
+            ->map(fn (ActionItemExternalLink $link): array => [
+                'source' => $link->source->value,
+                'key' => $link->external_key,
+                'url' => $link->external_url,
+            ])
+            ->values()
+            ->all();
     }
 
     /**
@@ -87,6 +106,22 @@ class PresentActionItem
         }
 
         return $presented;
+    }
+
+    /**
+     * @return ?array<int, array{source: string, key: string, url: string}>
+     */
+    private function externalLinksFor(ActionItem $item, ?ActionItemActor $viewer): ?array
+    {
+        if ($viewer === null) {
+            return null;
+        }
+
+        if ($viewer->user === null) {
+            return [];
+        }
+
+        return $this->presentExternalLinks($item);
     }
 
     /**
