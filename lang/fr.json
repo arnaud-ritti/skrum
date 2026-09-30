@@ -1217,5 +1217,6 @@
     "Add the bot to your group or channel (as an administrator for channels) or open a private chat with it, then send this command:": "Ajoutez le bot à votre groupe ou canal (en tant qu'administrateur pour les canaux) ou ouvrez une discussion privée avec lui, puis envoyez cette commande :",
     "Open @:bot in Telegram": "Ouvrir @:bot dans Telegram",
     "This code has expired. Create a new one.": "Ce code a expiré. Créez-en un nouveau.",
-    "Waiting for the command… (:time left)": "En attente de la commande… (:time restantes)"
+    "Waiting for the command… (:time left)": "En attente de la commande… (:time restantes)",
+    "The message could not be delivered.": "Le message n'a pas pu être envoyé."
 }

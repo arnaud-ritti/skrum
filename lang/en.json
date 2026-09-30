@@ -968,5 +968,6 @@
     "Add the bot to your group or channel (as an administrator for channels) or open a private chat with it, then send this command:": "Add the bot to your group or channel (as an administrator for channels) or open a private chat with it, then send this command:",
     "Open @:bot in Telegram": "Open @:bot in Telegram",
     "This code has expired. Create a new one.": "This code has expired. Create a new one.",
-    "Waiting for the command… (:time left)": "Waiting for the command… (:time left)"
+    "Waiting for the command… (:time left)": "Waiting for the command… (:time left)",
+    "The message could not be delivered.": "The message could not be delivered."
 }

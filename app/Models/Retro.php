@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use App\Contracts\DeliverySubject;
 use App\Enums\RetroPhase;
 use App\Enums\SummaryStatus;
+use App\Events\Retros\ResultsChanged;
 use Database\Factories\RetroFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -57,7 +59,7 @@ use Illuminate\Support\Carbon;
     'summary', 'summary_generated_at', 'summary_status', 'summary_requested_at',
 ])]
 #[Hidden(['guest_token'])]
-class Retro extends Model
+class Retro extends Model implements DeliverySubject
 {
     /** @use HasFactory<RetroFactory> */
     use HasFactory;
@@ -206,6 +208,16 @@ class Retro extends Model
     public function isFacilitator(Participant $participant): bool
     {
         return $this->facilitator_participant_id === $participant->id;
+    }
+
+    public function deliveryTeam(): Team
+    {
+        return $this->team;
+    }
+
+    public function announceDeliveryChange(): void
+    {
+        (new ResultsChanged($this->id))->sendToOthers();
     }
 
     /**
