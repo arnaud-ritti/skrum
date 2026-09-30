@@ -1516,5 +1516,20 @@
     "The GIFs are already revealed.": "Les GIF sont déjà révélés.",
     "Voting has not started.": "Le vote n'a pas commencé.",
     "You cannot vote for your own GIF.": "Vous ne pouvez pas voter pour votre propre GIF.",
-    "This GIF is not part of this round.": "Ce GIF ne fait pas partie de cette manche."
+    "This GIF is not part of this round.": "Ce GIF ne fait pas partie de cette manche.",
+    "Shuffle question": "Changer de question",
+    "Edit question": "Modifier la question",
+    "Pick a GIF that answers the question.": "Choisissez un GIF qui répond à la question.",
+    "Your GIF": "Votre GIF",
+    "Change GIF": "Changer de GIF",
+    ":name answered": ":name a répondu",
+    "No GIFs yet.": "Pas encore de GIF.",
+    "Reveal the GIFs": "Révéler les GIF",
+    "Vote for your favourite GIF.": "Votez pour votre GIF préféré.",
+    ":count of :total voted": ":count sur :total ont voté",
+    "Anonymous GIF": "GIF anonyme",
+    "by :name": "par :name",
+    "Favourite": "Favori",
+    "Your favourite": "Votre favori",
+    "Finish round": "Terminer la manche"
 }

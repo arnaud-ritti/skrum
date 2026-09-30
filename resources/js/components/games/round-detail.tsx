@@ -8,6 +8,7 @@ import type { GameRoundDetail } from '@/lib/games/types';
 import { retroRequest } from '@/lib/retro/api';
 import { ClueRow } from './clue-row';
 import { DrawingCanvas } from './drawing-canvas';
+import { GifRoundResults } from './gif-round-results';
 import { useRoom } from './room-context';
 import { WordMask } from './word-mask';
 
@@ -115,6 +116,13 @@ function GameDetail({ detail }: { detail: GameRoundDetail }) {
                             {detail.word}
                         </p>
                     )}
+                </div>
+            );
+        case 'gif':
+            return (
+                <div className="space-y-3">
+                    <p className="font-medium">{detail.question}</p>
+                    <GifRoundResults answers={detail.answers ?? []} />
                 </div>
             );
         default:

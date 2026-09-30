@@ -4,6 +4,7 @@ import { DrawBoard } from './draw-board';
 import { DecodedBoard } from './decoded-board';
 import { HangmanBoard } from './hangman-board';
 import { PassRoundButton } from './pass-round-button';
+import { SprintGifBoard } from './sprint-gif-board';
 
 export function GameBoard({ round }: { round: GameRound }) {
     return (
@@ -27,6 +28,8 @@ function RoundBody({ round }: { round: GameRound }) {
             return <DrawBoard key={round.id} round={round} />;
         case 'decoded':
             return <DecodedBoard key={round.id} round={round} />;
+        case 'gif':
+            return <SprintGifBoard round={round} />;
         default:
             return (
                 <p className="text-muted-foreground">

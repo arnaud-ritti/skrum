@@ -1270,5 +1270,20 @@
     "The GIFs are already revealed.": "The GIFs are already revealed.",
     "Voting has not started.": "Voting has not started.",
     "You cannot vote for your own GIF.": "You cannot vote for your own GIF.",
-    "This GIF is not part of this round.": "This GIF is not part of this round."
+    "This GIF is not part of this round.": "This GIF is not part of this round.",
+    "Shuffle question": "Shuffle question",
+    "Edit question": "Edit question",
+    "Pick a GIF that answers the question.": "Pick a GIF that answers the question.",
+    "Your GIF": "Your GIF",
+    "Change GIF": "Change GIF",
+    ":name answered": ":name answered",
+    "No GIFs yet.": "No GIFs yet.",
+    "Reveal the GIFs": "Reveal the GIFs",
+    "Vote for your favourite GIF.": "Vote for your favourite GIF.",
+    ":count of :total voted": ":count of :total voted",
+    "Anonymous GIF": "Anonymous GIF",
+    "by :name": "by :name",
+    "Favourite": "Favourite",
+    "Your favourite": "Your favourite",
+    "Finish round": "Finish round"
 }
