@@ -1299,5 +1299,15 @@
     "Set an estimate before syncing it.": "Définissez une estimation avant de la synchroniser.",
     "The estimate could not be written. Try again.": "L’estimation n’a pas pu être écrite. Réessayez.",
     "This team has no connected tracker.": "Cette équipe n’a aucun outil de suivi connecté.",
-    "Linear did not accept this estimate.": "Linear n’a pas accepté cette estimation."
+    "Linear did not accept this estimate.": "Linear n’a pas accepté cette estimation.",
+    "Sync requested.": "Synchronisation demandée.",
+    "Open in :source": "Ouvrir dans :source",
+    "Assignee: :name": "Assigné à : :name",
+    ":source estimate: :value": "Estimation :source : :value",
+    "Sync again": "Resynchroniser",
+    "The title and description are managed in :source. Refresh the tasks to update them.": "Le titre et la description sont gérés dans :source. Actualisez les tâches pour les mettre à jour.",
+    "Synced to :source": "Synchronisé avec :source",
+    "Sync pending": "Synchronisation en attente",
+    "Sync failed": "Échec de la synchronisation",
+    "Not synced: :reason": "Non synchronisé : :reason"
 }

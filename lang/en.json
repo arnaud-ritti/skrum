@@ -1051,5 +1051,15 @@
     "Set an estimate before syncing it.": "Set an estimate before syncing it.",
     "The estimate could not be written. Try again.": "The estimate could not be written. Try again.",
     "This team has no connected tracker.": "This team has no connected tracker.",
-    "Linear did not accept this estimate.": "Linear did not accept this estimate."
+    "Linear did not accept this estimate.": "Linear did not accept this estimate.",
+    "Sync requested.": "Sync requested.",
+    "Open in :source": "Open in :source",
+    "Assignee: :name": "Assignee: :name",
+    ":source estimate: :value": ":source estimate: :value",
+    "Sync again": "Sync again",
+    "The title and description are managed in :source. Refresh the tasks to update them.": "The title and description are managed in :source. Refresh the tasks to update them.",
+    "Synced to :source": "Synced to :source",
+    "Sync pending": "Sync pending",
+    "Sync failed": "Sync failed",
+    "Not synced: :reason": "Not synced: :reason"
 }

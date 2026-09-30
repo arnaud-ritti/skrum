@@ -30,6 +30,7 @@ import { retroRequest } from '@/lib/retro/api';
 import { cn } from '@/lib/utils';
 import { useGame } from './game-context';
 import { TaskFormDialog } from './task-form-dialog';
+import { TaskSourceChip } from './task-source-chip';
 
 type Props = { onSelected?: () => void };
 
@@ -203,6 +204,7 @@ function TaskRow({
                 <span className="min-w-0 flex-1 font-medium break-words">
                     {task.title}
                 </span>
+                {task.external && <TaskSourceChip external={task.external} />}
                 {task.estimate !== null && (
                     <Badge variant="secondary">{task.estimate}</Badge>
                 )}
