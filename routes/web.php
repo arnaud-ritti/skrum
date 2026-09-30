@@ -10,6 +10,7 @@ use App\Http\Controllers\InvitationAcceptancesController;
 use App\Http\Controllers\InvitationLinksController;
 use App\Http\Controllers\LocalesController;
 use App\Http\Controllers\RetroJoinsController;
+use App\Http\Controllers\Retros\ActionItemCommentsController;
 use App\Http\Controllers\Retros\ActionItemsController;
 use App\Http\Controllers\Retros\CardCommentsController;
 use App\Http\Controllers\Retros\CardGroupNamesController;
@@ -172,6 +173,10 @@ Route::prefix('retros/{retro}')
         Route::post('action-items', [ActionItemsController::class, 'store'])->name('retros.action-items.store');
         Route::patch('action-items/{actionItem}', [ActionItemsController::class, 'update'])->name('retros.action-items.update')->whereUuid('actionItem');
         Route::delete('action-items/{actionItem}', [ActionItemsController::class, 'destroy'])->name('retros.action-items.destroy')->whereUuid('actionItem');
+        Route::get('action-items/{actionItem}/comments', [ActionItemCommentsController::class, 'index'])->name('retros.action-items.comments.index')->whereUuid('actionItem');
+        Route::post('action-items/{actionItem}/comments', [ActionItemCommentsController::class, 'store'])->name('retros.action-items.comments.store')->whereUuid('actionItem');
+        Route::patch('action-item-comments/{actionItemComment}', [ActionItemCommentsController::class, 'update'])->name('retros.action-items.comments.update')->whereUuid('actionItemComment');
+        Route::delete('action-item-comments/{actionItemComment}', [ActionItemCommentsController::class, 'destroy'])->name('retros.action-items.comments.destroy')->whereUuid('actionItemComment');
         Route::post('summary', [RetroSummariesController::class, 'store'])->name('retros.summary.store');
         Route::delete('summary', [RetroSummariesController::class, 'destroy'])->name('retros.summary.destroy');
         Route::post('suggested-actions/{suggestedAction}/promotion', [SuggestedActionPromotionsController::class, 'store'])->name('retros.suggested-actions.promotion.store')->whereUuid('suggestedAction');
