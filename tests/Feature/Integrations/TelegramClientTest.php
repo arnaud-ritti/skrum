@@ -100,6 +100,22 @@ it('answers null when the bot cannot be reached', function () {
     expect(app(TelegramBot::class)->username())->toBeNull();
 });
 
+it('waits a minute before asking an unreachable bot again', function () {
+    Http::fake(['api.telegram.org/*/getMe' => Http::sequence()
+        ->push('down', 502)
+        ->push(['ok' => true, 'result' => ['id' => 42, 'is_bot' => true, 'username' => 'skrum_test_bot']])]);
+    $bot = app(TelegramBot::class);
+
+    expect($bot->username())->toBeNull()
+        ->and($bot->username())->toBeNull();
+
+    Http::assertSentCount(1);
+
+    $this->travel(61)->seconds();
+
+    expect($bot->username())->toBe('skrum_test_bot');
+});
+
 it('remembers a polling conflict for the integrations page', function () {
     $bot = app(TelegramBot::class);
 

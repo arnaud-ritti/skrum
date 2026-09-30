@@ -11,6 +11,8 @@ class TelegramBot
 
     private const UsernameTtlSeconds = 86400;
 
+    private const UnreachableTtlSeconds = 60;
+
     private const ConflictTtlMinutes = 10;
 
     public function __construct(private TelegramClient $telegram) {}
@@ -24,13 +26,19 @@ class TelegramBot
             return $cached;
         }
 
-        try {
-            $username = $this->telegram->getMe()['username'] ?? null;
-        } catch (IntegrationException) {
+        if ($cached === false) {
             return null;
         }
 
+        try {
+            $username = $this->telegram->getMe()['username'] ?? null;
+        } catch (IntegrationException) {
+            $username = null;
+        }
+
         if (! is_string($username) || $username === '') {
+            Cache::put($key, false, self::UnreachableTtlSeconds);
+
             return null;
         }
 
