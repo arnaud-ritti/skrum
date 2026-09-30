@@ -2,6 +2,7 @@ import {
     useCallback,
     useEffect,
     useMemo,
+    useRef,
     useState,
     type FormEvent,
 } from 'react';
@@ -98,6 +99,12 @@ function ImportForm({
     const [importing, setImporting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const isJira = source === 'jira';
+    const iterationsRequest = useRef(0);
+
+    const resetPreview = () => {
+        setPreview(null);
+        setSelected(new Set());
+    };
 
     const fail = useCallback(
         (caught: unknown) => {
@@ -153,28 +160,37 @@ function ImportForm({
         setContainer('');
         setIterations(null);
         setIteration('');
-        setPreview(null);
-        setSelected(new Set());
+        iterationsRequest.current += 1;
+        resetPreview();
         setError(null);
     };
 
     const chooseContainer = async (next: string) => {
+        iterationsRequest.current += 1;
+
+        const requestId = iterationsRequest.current;
+
         setContainer(next);
         setIterations(null);
         setIteration('');
+        resetPreview();
         setError(null);
 
         try {
-            setIterations(
-                await retroRequest<TrackerIteration[]>(
-                    PokerImportIterationsController.index(
-                        { game: gameId, source },
-                        { query: { container: next } },
-                    ),
+            const response = await retroRequest<TrackerIteration[]>(
+                PokerImportIterationsController.index(
+                    { game: gameId, source },
+                    { query: { container: next } },
                 ),
             );
+
+            if (requestId === iterationsRequest.current) {
+                setIterations(response);
+            }
         } catch (caught) {
-            fail(caught);
+            if (requestId === iterationsRequest.current) {
+                fail(caught);
+            }
         }
     };
 
@@ -211,6 +227,10 @@ function ImportForm({
         () => preview?.issues.filter((issue) => !issue.alreadyImported) ?? [],
         [preview],
     );
+
+    const selectedCount = importable.filter((issue) =>
+        selected.has(issue.externalId),
+    ).length;
 
     const toggle = (externalId: string, checked: boolean) => {
         setSelected((current) => {
@@ -290,7 +310,7 @@ function ImportForm({
                 onValueChange={(next) => {
                     if (next === 'iteration' || next === 'query') {
                         setMode(next);
-                        setPreview(null);
+                        resetPreview();
                         setError(null);
                     }
                 }}
@@ -363,7 +383,10 @@ function ImportForm({
                             <Label>{isJira ? t('Sprint') : t('Cycle')}</Label>
                             <Select
                                 value={iteration}
-                                onValueChange={setIteration}
+                                onValueChange={(next) => {
+                                    setIteration(next);
+                                    resetPreview();
+                                }}
                                 disabled={iterations === null}
                             >
                                 <SelectTrigger
@@ -419,7 +442,10 @@ function ImportForm({
                                       )
                                     : t('Search Linear issues')
                             }
-                            onChange={(event) => setQuery(event.target.value)}
+                            onChange={(event) => {
+                                setQuery(event.target.value);
+                                resetPreview();
+                            }}
                         />
                     </div>
                 )}
@@ -451,7 +477,7 @@ function ImportForm({
                                 <Checkbox
                                     checked={
                                         importable.length > 0 &&
-                                        selected.size === importable.length
+                                        selectedCount === importable.length
                                     }
                                     disabled={importable.length === 0}
                                     onCheckedChange={(checked) =>
@@ -524,10 +550,10 @@ function ImportForm({
                     {t('Cancel')}
                 </Button>
                 <Button
-                    disabled={selected.size === 0 || importing}
+                    disabled={selectedCount === 0 || importing}
                     onClick={() => void importSelected()}
                 >
-                    {t('Import :count tasks', { count: selected.size })}
+                    {t('Import :count tasks', { count: selectedCount })}
                 </Button>
             </DialogFooter>
         </div>
