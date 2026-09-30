@@ -32,6 +32,7 @@ function mcpSearch(User $user, array $arguments): array
 }
 
 it('finds titles, summaries, action items and messages', function () {
+    configureLlm();
     [$team, $user] = mcpSearchTeam();
     $retro = Retro::factory()->for($team)->inPhase(RetroPhase::Completed)->create([
         'title' => 'Deploy week',
@@ -70,9 +71,42 @@ it('never matches hidden cards', function () {
 });
 
 it('does not match summaries of unfinished or opted-out boards', function () {
+    configureLlm();
     [$team, $user] = mcpSearchTeam();
-    Retro::factory()->for($team)->inPhase(RetroPhase::Discussing)->create(['summary' => 'Draft about latency']);
-    Retro::factory()->for($team)->inPhase(RetroPhase::Completed)->create(['summary' => 'Old latency text', 'ai_summary_enabled' => false]);
+    Retro::factory()->for($team)->inPhase(RetroPhase::Discussing)->create([
+        'summary' => 'Draft about latency',
+        'summary_status' => SummaryStatus::Ready,
+        'ai_summary_enabled' => true,
+    ]);
+    Retro::factory()->for($team)->inPhase(RetroPhase::Completed)->create([
+        'summary' => 'Old latency text',
+        'summary_status' => SummaryStatus::Ready,
+        'ai_summary_enabled' => false,
+    ]);
+
+    expect(mcpSearch($user, ['query' => 'latency']))->toBe([]);
+});
+
+it('does not match a summary that is not ready', function () {
+    configureLlm();
+    [$team, $user] = mcpSearchTeam();
+    Retro::factory()->for($team)->inPhase(RetroPhase::Completed)->create([
+        'summary' => 'Stale latency text',
+        'summary_status' => SummaryStatus::Pending,
+        'summary_requested_at' => now(),
+        'ai_summary_enabled' => true,
+    ]);
+
+    expect(mcpSearch($user, ['query' => 'latency']))->toBe([]);
+});
+
+it('does not match summaries when no provider is configured', function () {
+    [$team, $user] = mcpSearchTeam();
+    Retro::factory()->for($team)->inPhase(RetroPhase::Completed)->create([
+        'summary' => 'Ready latency text',
+        'summary_status' => SummaryStatus::Ready,
+        'ai_summary_enabled' => true,
+    ]);
 
     expect(mcpSearch($user, ['query' => 'latency']))->toBe([]);
 });

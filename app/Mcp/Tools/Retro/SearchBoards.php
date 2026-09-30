@@ -4,6 +4,7 @@ namespace App\Mcp\Tools\Retro;
 
 use App\Enums\McpScope;
 use App\Enums\RetroPhase;
+use App\Enums\SummaryStatus;
 use App\Mcp\McpContext;
 use App\Mcp\McpGrant;
 use App\Mcp\Presenters\McpBoard;
@@ -14,6 +15,7 @@ use App\Models\ActionItem;
 use App\Models\Card;
 use App\Models\Participant;
 use App\Models\Retro;
+use App\Support\Llm\Llm;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -42,6 +44,7 @@ class SearchBoards extends SkrumTool
         private McpContext $context,
         private VisibleTeams $visibleTeams,
         private McpBoard $presentBoard,
+        private Llm $llm,
     ) {}
 
     public function schema(JsonSchema $schema): array
@@ -121,17 +124,23 @@ class SearchBoards extends SkrumTool
     }
 
     /**
-     * Summaries are shown only on finished boards that kept them.
+     * Summaries are shown only on finished boards that kept them, are ready and
+     * have a configured provider (same rule as the summary tool).
      *
      * @param  Builder<Retro>  $retroIds
      * @return Collection<int, array{retroId: string, kind: 'summary', id: null, snippet: string}>
      */
     private function summaries(Builder $retroIds, string $pattern, string $term): Collection
     {
+        if ($this->llm->providerName() === null) {
+            return collect();
+        }
+
         return Retro::query()
             ->whereIn('id', $retroIds)
             ->where('phase', RetroPhase::Completed)
             ->where('ai_summary_enabled', true)
+            ->where('summary_status', SummaryStatus::Ready)
             ->where('summary', 'ilike', $pattern)
             ->get(['id', 'summary'])
             ->map(fn (Retro $retro) => ['retroId' => $retro->id, 'kind' => 'summary', 'id' => null, 'snippet' => LikePattern::snippet((string) $retro->summary, $term)]);
