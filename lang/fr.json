@@ -1145,5 +1145,7 @@
     "A game can hold at most 200 tasks.": "Une partie peut contenir au plus 200 tâches.",
     "This task is not on the table.": "Cette tâche n'est pas sur la table.",
     "These cards are already revealed.": "Ces cartes sont déjà révélées.",
-    "No card could be chosen from the votes.": "Aucune carte n'a pu être choisie à partir des votes."
+    "No card could be chosen from the votes.": "Aucune carte n'a pu être choisie à partir des votes.",
+    "Use retro.actions.complete to complete or reopen an action item.": "Utilisez retro.actions.complete pour terminer ou rouvrir une action.",
+    "This round has not started.": "Ce tour n'a pas encore commencé."
 }

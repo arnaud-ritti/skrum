@@ -75,7 +75,7 @@ class RevealTask extends SkrumTool
             $round = $task->latestRound()->lockForUpdate()->first();
 
             if ($round === null) {
-                throw ValidationException::withMessages(['task_id' => __('This task is not on the table.')]);
+                throw ValidationException::withMessages(['task_id' => __('This round has not started.')]);
             }
 
             if ($round->isRevealed()) {

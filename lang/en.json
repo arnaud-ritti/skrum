@@ -895,5 +895,7 @@
     "A game can hold at most 200 tasks.": "A game can hold at most 200 tasks.",
     "This task is not on the table.": "This task is not on the table.",
     "These cards are already revealed.": "These cards are already revealed.",
-    "No card could be chosen from the votes.": "No card could be chosen from the votes."
+    "No card could be chosen from the votes.": "No card could be chosen from the votes.",
+    "Use retro.actions.complete to complete or reopen an action item.": "Use retro.actions.complete to complete or reopen an action item.",
+    "This round has not started.": "This round has not started."
 }

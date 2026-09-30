@@ -59,7 +59,7 @@ it('refuses locked boards', function () {
     expect(ActionItem::query()->count())->toBe(0);
 });
 
-it('refuses when the board left Discussing or locked under the lock', function (array $change) {
+it('refuses when the board left Discussing or locked under the lock', function (array $change, string $message) {
     $retro = Retro::factory()->inPhase(RetroPhase::Discussing)->create();
     $user = teamMember($retro->team);
     $flipped = false;
@@ -73,12 +73,12 @@ it('refuses when the board left Discussing or locked under the lock', function (
         DB::table('retros')->where('id', $retro->id)->update($change);
     });
 
-    mcpWriter($user)->tool(CreateAction::class, ['board_id' => $retro->id, 'content' => 'Racing'])->assertHasErrors();
+    mcpWriter($user)->tool(CreateAction::class, ['board_id' => $retro->id, 'content' => 'Racing'])->assertHasErrors([$message]);
 
     expect(ActionItem::query()->count())->toBe(0);
 })->with([
-    'moved on' => [['phase' => RetroPhase::Completed->value]],
-    'locked' => [['is_locked' => true]],
+    'moved on' => [['phase' => RetroPhase::Completed->value], 'This action is not available in the current phase.'],
+    'locked' => [['is_locked' => true], 'The board is closed for editing.'],
 ]);
 
 it('assigns guests of the board and refuses guests of another board', function () {
@@ -135,7 +135,7 @@ it('refuses guest assignees outside a retro', function () {
     $guest = Participant::factory()->guest()->create();
 
     mcpWriter(teamMember($team))->tool(CreateAction::class, ['team_id' => $team->id, 'content' => 'Guest', 'assignee_participant_id' => $guest->id])
-        ->assertHasErrors();
+        ->assertHasErrors(['Guests can only be assigned from their own retrospective.']);
 
     expect(ActionItem::query()->count())->toBe(0);
 });
@@ -270,4 +270,35 @@ it('hides action item tools from read-only tokens', function () {
 
     expect(array_intersect(mcpToolNames(actingAsMcp($user)), $actionTools))->toBe([])
         ->and(mcpToolNames(mcpWriter($user)))->toContain(...$actionTools);
+});
+
+it('refuses a status argument on update and points to the complete tool', function () {
+    $team = Team::factory()->create();
+    $user = teamMember($team);
+    $item = ActionItem::factory()->withoutRetro($team, $user)->create();
+
+    mcpWriter($user)->tool(UpdateAction::class, ['action_id' => $item->id, 'status' => 'completed'])
+        ->assertHasErrors(['Use retro.actions.complete to complete or reopen an action item.']);
+
+    expect($item->fresh()->completed_at)->toBeNull();
+});
+
+it('lets the facilitator of a completed retrospective complete an item', function () {
+    $retro = Retro::factory()->inPhase(RetroPhase::Completed)->create();
+    [$facilitator] = retroFacilitator($retro);
+    $item = ActionItem::factory()->create(['retro_id' => $retro->id]);
+
+    mcpWriter($facilitator)->tool(CompleteAction::class, ['action_id' => $item->id])->assertOk();
+
+    expect($item->fresh()->completed_at)->not->toBeNull();
+});
+
+it('refuses completion on a locked running board even for a manager', function () {
+    $retro = Retro::factory()->inPhase(RetroPhase::Discussing)->create(['is_locked' => true]);
+    $item = ActionItem::factory()->create(['retro_id' => $retro->id]);
+
+    mcpWriter(workspaceManager($retro->team->workspace))->tool(CompleteAction::class, ['action_id' => $item->id])
+        ->assertHasErrors(['The board is closed for editing.']);
+
+    expect($item->fresh()->completed_at)->toBeNull();
 });

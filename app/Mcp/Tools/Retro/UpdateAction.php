@@ -16,6 +16,7 @@ use App\Mcp\McpGrant;
 use App\Mcp\Presenters\McpActionItem;
 use App\Mcp\Tools\SkrumTool;
 use App\Models\ActionItem;
+use App\Models\Retro;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -63,7 +64,11 @@ class UpdateAction extends SkrumTool
         $validated = Arr::except($request->validate([
             'action_id' => ['required', 'uuid'],
             ...ActionItemRules::update(allowsGuests: true),
-        ], ActionItemRules::messages()), ['action_id', 'status']);
+            'status' => ['prohibited'],
+        ], [
+            ...ActionItemRules::messages(),
+            'status.prohibited' => __('Use retro.actions.complete to complete or reopen an action item.'),
+        ]), ['action_id']);
 
         $item = $this->context->actionItem((string) $request->get('action_id'));
         $actor = new ActionItemActor(McpGrant::current()->user, $item->retro === null ? null : $this->context->participant($item->retro));
@@ -86,11 +91,12 @@ class UpdateAction extends SkrumTool
      */
     private function ensureGuestAssignable(ActionItem $locked): void
     {
-        $retro = $locked->retro;
-
-        if ($retro === null) {
+        if ($locked->retro_id === null) {
             throw ValidationException::withMessages(['assignee_participant_id' => __('Guests can only be assigned from their own retrospective.')]);
         }
+
+        $retro = Retro::query()->whereKey($locked->retro_id)->lockForUpdate()->firstOrFail();
+        $locked->setRelation('retro', $retro);
 
         RetroGuard::phase($retro, RetroPhase::Discussing);
         RetroGuard::unlocked($retro);

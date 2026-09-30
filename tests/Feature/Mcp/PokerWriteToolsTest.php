@@ -48,6 +48,24 @@ it('creates a game with the creator as player and facilitator', function () {
         ->and($result['me']['isFacilitator'])->toBeTrue();
 });
 
+it('ignores game options the tool does not offer', function () {
+    $team = Team::factory()->create();
+    $user = teamMember($team);
+
+    mcpWriter($user)->tool(CreateGame::class, [
+        'team_id' => $team->id,
+        'title' => 'Defaults',
+        'deck' => 'fibonacci',
+        'anonymous_votes' => true,
+        'auto_reveal' => true,
+    ])->assertOk();
+
+    $game = PokerGame::query()->sole();
+
+    expect($game->anonymous_votes)->toBeFalse()
+        ->and($game->auto_reveal)->toBeFalse();
+});
+
 it('creates a game from a saved deck of the same team only', function () {
     $team = Team::factory()->create();
     $user = teamMember($team);
@@ -144,6 +162,18 @@ it('adds all tasks or none', function () {
     expect(PokerTask::query()->where('poker_game_id', $game->id)->count())->toBe(190);
 
     Event::assertNotDispatched(PokerTaskSaved::class);
+});
+
+it('refuses a batch of more than 50 tasks', function () {
+    $game = PokerGame::factory()->create();
+    [$user] = pokerFacilitator($game);
+
+    mcpWriter($user)->tool(AddTasks::class, [
+        'game_id' => $game->id,
+        'tasks' => collect(range(1, 51))->map(fn (int $n): array => ['title' => "Task {$n}"])->all(),
+    ])->assertHasErrors();
+
+    expect(PokerTask::query()->where('poker_game_id', $game->id)->count())->toBe(0);
 });
 
 it('refuses poker writes on an ended game', function () {
@@ -257,6 +287,16 @@ it('leaves the estimate unchanged when no card is determined', function (PokerDe
     'tied modes' => [PokerDeck::Tshirt, ['S', 'L']],
     'only special cards' => [PokerDeck::Fibonacci, ['?', '☕']],
 ]);
+
+it('answers a reveal on a task without a round that the round has not started', function () {
+    $game = PokerGame::factory()->create();
+    [$user] = pokerFacilitator($game);
+    $task = PokerTask::factory()->create(['poker_game_id' => $game->id]);
+    $game->forceFill(['current_task_id' => $task->id])->save();
+
+    mcpWriter($user)->tool(RevealTask::class, ['game_id' => $game->id, 'task_id' => $task->id])
+        ->assertHasErrors(['This round has not started.']);
+});
 
 it('refuses reveals the table does not allow', function () {
     $game = PokerGame::factory()->create();
