@@ -418,3 +418,68 @@ function mcpPromptData(McpTestResponse $response): array
 
     return json_decode($matches[1] ?? 'null', true) ?? [];
 }
+
+/**
+ * The 25 tools of the QRetro contract that exist before spec 6 adds the
+ * four tracker tools.
+ *
+ * @return array<int, string>
+ */
+function mcpContractToolNames(): array
+{
+    $names = [
+        'retro.teams.list',
+        'retro.team.members.list',
+        'retro.boards.list',
+        'retro.boards.search',
+        'retro.actions.list',
+        'retro.board.messages.list',
+        'retro.board.summary.get',
+        'retro.board.actions.list',
+        'retro.board.insights.list',
+        'retro.board.health.get',
+        'retro.board.roti.get',
+        'poker.games.list',
+        'poker.game.get',
+        'poker.game.tasks.list',
+        'retro.actions.create',
+        'retro.actions.update',
+        'retro.actions.complete',
+        'retro.board.suggested_actions.promote',
+        'retro.board.suggested_actions.reject',
+        'retro.board.messages.update',
+        'poker.games.create',
+        'poker.game.tasks.add',
+        'poker.game.task.select',
+        'poker.game.task.reveal',
+        'retro.board.messages.delete_own',
+    ];
+
+    sort($names);
+
+    return $names;
+}
+
+/**
+ * @return class-string
+ */
+function mcpToolClass(string $name): string
+{
+    $tools = (new ReflectionClass(SkrumServer::class))->getProperty('tools')->getDefaultValue();
+
+    foreach ($tools as $class) {
+        if (app($class)->name() === $name) {
+            return $class;
+        }
+    }
+
+    throw new RuntimeException("No MCP tool is named [{$name}].");
+}
+
+/**
+ * @return array<int, string>
+ */
+function mcpPromptNames(PendingTestResponse $pending): array
+{
+    return collect((fn (): array => $this->items)->call($pending->prompts()))->pluck('name')->sort()->values()->all();
+}
