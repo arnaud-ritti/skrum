@@ -1419,5 +1419,11 @@
     "Time's up": "Temps écoulé",
     "Passed": "Passé",
     "Revealed": "Révélé",
-    "Abandoned": "Abandonné"
+    "Abandoned": "Abandonné",
+    ":count letters left to find": ":count lettres à trouver",
+    "Letters": "Lettres",
+    ":count of :max misses": ":count erreurs sur :max",
+    "Last letters": "Dernières lettres",
+    ":name picked :letter": ":name a choisi :letter",
+    "Someone": "Quelqu'un"
 }

@@ -1173,5 +1173,11 @@
     "Time's up": "Time's up",
     "Passed": "Passed",
     "Revealed": "Revealed",
-    "Abandoned": "Abandoned"
+    "Abandoned": "Abandoned",
+    ":count letters left to find": ":count letters left to find",
+    "Letters": "Letters",
+    ":count of :max misses": ":count of :max misses",
+    "Last letters": "Last letters",
+    ":name picked :letter": ":name picked :letter",
+    "Someone": "Someone"
 }
