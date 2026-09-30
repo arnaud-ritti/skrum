@@ -6,9 +6,12 @@ use App\Http\Controllers\BroadcastAuthorizationsController;
 use App\Http\Controllers\CurrentWorkspaceController;
 use App\Http\Controllers\EmojiDataController;
 use App\Http\Controllers\GifsController;
+use App\Http\Controllers\Integrations\IntegrationAccountsController;
 use App\Http\Controllers\Integrations\IntegrationAuthorizationsController;
 use App\Http\Controllers\Integrations\IntegrationCallbacksController;
 use App\Http\Controllers\Integrations\IntegrationTestsController;
+use App\Http\Controllers\Integrations\IntegrationUserMappingsController;
+use App\Http\Controllers\Integrations\IntegrationUserMatchesController;
 use App\Http\Controllers\Integrations\JiraFieldDetectionsController;
 use App\Http\Controllers\Integrations\PokerImportContainersController;
 use App\Http\Controllers\Integrations\PokerImportIterationsController;
@@ -178,6 +181,23 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 Route::post('teams/{team}/integrations/{integration}/detection', [JiraFieldDetectionsController::class, 'store'])
                     ->whereUuid('integration')
                     ->name('teams.integrations.detection.store');
+                Route::get('teams/{team}/integrations/{integration}/user-mappings', [IntegrationUserMappingsController::class, 'index'])
+                    ->whereUuid('integration')
+                    ->name('teams.integrations.userMappings.index');
+                Route::post('teams/{team}/integrations/{integration}/user-mappings/match', [IntegrationUserMatchesController::class, 'store'])
+                    ->whereUuid('integration')
+                    ->middleware('throttle:3,1,userMappingMatches')
+                    ->name('teams.integrations.userMappings.match.store');
+                Route::put('teams/{team}/integrations/{integration}/user-mappings/{user}', [IntegrationUserMappingsController::class, 'update'])
+                    ->whereUuid(['integration', 'user'])
+                    ->name('teams.integrations.userMappings.update');
+                Route::delete('teams/{team}/integrations/{integration}/user-mappings/{user}', [IntegrationUserMappingsController::class, 'destroy'])
+                    ->whereUuid(['integration', 'user'])
+                    ->name('teams.integrations.userMappings.destroy');
+                Route::get('teams/{team}/integrations/{integration}/accounts', [IntegrationAccountsController::class, 'index'])
+                    ->whereUuid('integration')
+                    ->middleware('throttle:30,1,integrationAccountSearches')
+                    ->name('teams.integrations.accounts.index');
                 Route::delete('teams/{team}/integrations/{integration}', [TeamIntegrationsController::class, 'destroy'])
                     ->whereUuid('integration')
                     ->name('teams.integrations.destroy');

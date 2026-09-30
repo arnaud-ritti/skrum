@@ -1093,5 +1093,7 @@
     ":count tasks were not found in :source.": ":count tasks were not found in :source.",
     "Urgent": "Urgent",
     "No priority": "No priority",
-    "Reconnect :provider to enable assignee mapping.": "Reconnect :provider to enable assignee mapping."
+    "Reconnect :provider to enable assignee mapping.": "Reconnect :provider to enable assignee mapping.",
+    "This :provider account was not found or is inactive.": "This :provider account was not found or is inactive.",
+    "This person is not a member of the team.": "This person is not a member of the team."
 }
