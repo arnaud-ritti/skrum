@@ -8,6 +8,8 @@ use App\Models\GameRoom;
 use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia as Assert;
 
 it('creates the player of a team member on first visit', function () {
@@ -173,4 +175,33 @@ it('answers 404 for unknown rooms', function () {
     $user = User::factory()->create();
 
     $this->actingAs($user)->getJson('/games/'.fake()->uuid().'/snapshot')->assertNotFound();
+});
+
+it('survives a concurrent first visit of the same member', function () {
+    $room = GameRoom::factory()->create();
+    $user = teamMember($room->team);
+    $raced = false;
+
+    DB::listen(function ($query) use (&$raced, $room, $user) {
+        if ($raced || ! str_starts_with($query->sql, 'select') || ! str_contains($query->sql, '"game_players"')) {
+            return;
+        }
+
+        $raced = true;
+
+        DB::table('game_players')->insert([
+            'id' => (string) Str::uuid(),
+            'game_room_id' => $room->id,
+            'user_id' => $user->id,
+            'created_at' => now(),
+        ]);
+    });
+
+    $this->actingAs($user)
+        ->getJson(route('games.snapshot.show', $room))
+        ->assertOk()
+        ->assertJsonPath('me.userId', $user->id);
+
+    expect($raced)->toBeTrue()
+        ->and($room->players()->where('user_id', $user->id)->count())->toBe(1);
 });
