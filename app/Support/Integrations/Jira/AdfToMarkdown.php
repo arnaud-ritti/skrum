@@ -159,7 +159,7 @@ class AdfToMarkdown
             $href = data_get($mark, 'attrs.href');
 
             if (is_string($href) && $this->isSafeLink($href)) {
-                $rendered = "[{$rendered}]({$href})";
+                $rendered = "[{$rendered}]({$this->destination($href)})";
             }
         }
 
@@ -231,6 +231,7 @@ class AdfToMarkdown
 
         $fence = str_contains($code, '```') ? '~~~~' : '```';
         $language = $this->attribute($node, 'language') ?? '';
+        $language = preg_match('/^[A-Za-z0-9_+#.-]+$/', $language) === 1 ? $language : '';
 
         return "{$fence}{$language}\n{$code}\n{$fence}";
     }
@@ -304,7 +305,7 @@ class AdfToMarkdown
             return '';
         }
 
-        return '['.$this->escape($url)."]({$url})";
+        return '['.$this->escape($url).']('.$this->destination($url).')';
     }
 
     /**
@@ -314,11 +315,20 @@ class AdfToMarkdown
     {
         $timestamp = $this->attribute($node, 'timestamp');
 
-        if ($timestamp === null || ! ctype_digit($timestamp)) {
+        if ($timestamp === null || ! ctype_digit($timestamp) || strlen($timestamp) > 14) {
             return '';
         }
 
         return CarbonImmutable::createFromTimestampMs((int) $timestamp, 'UTC')->toDateString();
+    }
+
+    private function destination(string $url): string
+    {
+        return (string) preg_replace_callback(
+            '/[\\x00-\\x20\\x7f()<>"\\[\\]\\\\]/',
+            fn (array $match): string => rawurlencode($match[0]),
+            $url,
+        );
     }
 
     private function escape(string $text): string

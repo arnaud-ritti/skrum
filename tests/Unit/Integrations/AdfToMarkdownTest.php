@@ -138,3 +138,37 @@ it('truncates long descriptions', function () {
         ->and($markdown)->toEndWith('a…')
         ->and(AdfToMarkdown::truncate('short'))->toBe('short');
 });
+
+it('encodes link destinations so they cannot break out', function () {
+    $markdown = (new AdfToMarkdown)->convert(adfDocument([adfParagraph([
+        adfText('wiki', [['type' => 'link', 'attrs' => ['href' => 'https://en.wikipedia.org/wiki/Foo_(bar)']]]),
+        adfText(' '),
+        adfText('evil', [['type' => 'link', 'attrs' => ['href' => 'https://a.com) ![p](https://t/x.png']]]),
+    ])]));
+
+    expect($markdown)->toBe('[wiki](https://en.wikipedia.org/wiki/Foo_%28bar%29) [evil](https://a.com%29%20!%5Bp%5D%28https://t/x.png)');
+});
+
+it('encodes card urls', function () {
+    $markdown = (new AdfToMarkdown)->convert(adfDocument([
+        ['type' => 'blockCard', 'attrs' => ['url' => 'https://a.com/x y)']],
+    ]));
+
+    expect($markdown)->toContain('(https://a.com/x%20y%29)');
+});
+
+it('drops unsafe code block languages', function () {
+    $markdown = (new AdfToMarkdown)->convert(adfDocument([
+        ['type' => 'codeBlock', 'attrs' => ['language' => "php\n```\n# pwned"], 'content' => [adfText('x')]],
+    ]));
+
+    expect($markdown)->toBe("```\nx\n```");
+});
+
+it('ignores out-of-range date timestamps', function () {
+    $markdown = (new AdfToMarkdown)->convert(adfDocument([
+        adfParagraph([adfText('at '), ['type' => 'date', 'attrs' => ['timestamp' => str_repeat('9', 40)]]]),
+    ]));
+
+    expect($markdown)->toBe('at');
+});
