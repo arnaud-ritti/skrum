@@ -73,16 +73,13 @@ class ListMessages extends SkrumTool
         }
 
         $viewer = $this->context->participant($retro);
-        $voteTotals = $retro->showsVoteTotals()
-            ? $retro->votes()->selectRaw('card_id, count(*) as total')->groupBy('card_id')->pluck('total', 'card_id')->map(fn (mixed $total) => (int) $total)->all()
-            : null;
+        $voteTotals = $this->presentMessage->voteTotals($retro);
 
-        $relations = ['participant.user', 'reactions', 'comments'];
         $query = Card::query()
             ->where('cards.retro_id', $retro->id)
             ->whereNull('parent_card_id')
             ->whereIn('column_id', $columns->pluck('id'))
-            ->with([...$relations, 'children' => fn ($query) => $query->with($relations)])
+            ->with(McpMessage::eagerLoads())
             ->select('cards.*')
             ->join('columns', 'columns.id', '=', 'cards.column_id');
 

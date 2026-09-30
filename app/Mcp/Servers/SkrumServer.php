@@ -2,6 +2,9 @@
 
 namespace App\Mcp\Servers;
 
+use App\Mcp\Tools\Poker\GetGame;
+use App\Mcp\Tools\Poker\ListGames;
+use App\Mcp\Tools\Poker\ListTasks;
 use App\Mcp\Tools\Retro\CompleteAction;
 use App\Mcp\Tools\Retro\CreateAction;
 use App\Mcp\Tools\Retro\DeleteOwnMessage;
@@ -56,6 +59,9 @@ class SkrumServer extends Server
         RejectSuggestion::class,
         UpdateMessage::class,
         DeleteOwnMessage::class,
+        ListGames::class,
+        GetGame::class,
+        ListTasks::class,
     ];
 
     protected array $resources = [];

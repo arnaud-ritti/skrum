@@ -19,6 +19,43 @@ class McpMessage
     ) {}
 
     /**
+     * @return array<int|string, mixed>
+     */
+    public static function eagerLoads(): array
+    {
+        $relations = ['participant.user', 'reactions', 'comments'];
+
+        return [...$relations, 'children' => fn ($query) => $query->with($relations)];
+    }
+
+    /**
+     * @return array<string, int>|null
+     */
+    public function voteTotals(Retro $retro): ?array
+    {
+        if (! $retro->showsVoteTotals()) {
+            return null;
+        }
+
+        return $retro->votes()
+            ->selectRaw('card_id, count(*) as total')
+            ->groupBy('card_id')
+            ->pluck('total', 'card_id')
+            ->map(fn (mixed $total) => (int) $total)
+            ->all();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function presentFresh(Card $card, Retro $retro, ?Participant $viewer): array
+    {
+        $card->load(self::eagerLoads());
+
+        return $this->handle($card, $retro, $viewer, $this->voteTotals($retro));
+    }
+
+    /**
      * Reactions are counted, never named: MCP output leaves the board.
      *
      * @param  array<string, int>|null  $voteTotals

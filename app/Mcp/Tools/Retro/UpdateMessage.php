@@ -55,12 +55,6 @@ class UpdateMessage extends SkrumTool
 
         $updated = $this->updateCard->handle($retro, $card, $participant, ['content' => $validated['content']]);
 
-        $relations = ['participant.user', 'reactions', 'comments'];
-        $updated->load([...$relations, 'children' => fn ($query) => $query->with($relations)]);
-        $voteTotals = $retro->showsVoteTotals()
-            ? $retro->votes()->selectRaw('card_id, count(*) as total')->groupBy('card_id')->pluck('total', 'card_id')->map(fn (mixed $total) => (int) $total)->all()
-            : null;
-
-        return Response::structured($this->presentMessage->handle($updated, $retro, $participant, $voteTotals));
+        return Response::structured($this->presentMessage->presentFresh($updated, $retro, $participant));
     }
 }

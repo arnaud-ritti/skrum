@@ -8,6 +8,30 @@ use App\Models\PokerPlayer;
 use App\Models\PokerTask;
 use App\Models\User;
 
+/**
+ * @phpstan-type Snapshot array{
+ *     game: array<string, mixed>,
+ *     me: array<string, mixed>,
+ *     players: array<int, array{id: string, name: string, avatarUrl: ?string, isGuest: bool, isSpectator: bool}>,
+ *     tasks: array<int, array{id: string, title: string}>,
+ *     current: ?array{
+ *         taskId: string,
+ *         round: array{
+ *             number: int,
+ *             anonymous: bool,
+ *             revealedAt: ?string,
+ *             revealReason: ?string,
+ *             timerEndsAt: ?string,
+ *             votesCount: int,
+ *             votes: array<int, array{playerId: string, value: ?string}>,
+ *             myVote: ?string,
+ *             result: ?array<string, mixed>
+ *         }
+ *     },
+ *     links: array<string, mixed>,
+ *     serverTime: string
+ * }
+ */
 class BuildPokerSnapshot
 {
     public function __construct(
@@ -16,7 +40,7 @@ class BuildPokerSnapshot
     ) {}
 
     /**
-     * @return array<string, mixed>
+     * @return Snapshot
      */
     public function handle(PokerGame $game, PokerPlayer $viewer): array
     {
