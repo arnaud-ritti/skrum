@@ -10,6 +10,9 @@ use App\Models\PokerTask;
 use App\Support\Integrations\Exceptions\ProviderUnavailable;
 use Illuminate\Contracts\Queue\ShouldBeUniqueUntilProcessing;
 use Illuminate\Http\Client\Request;
+use Illuminate\Pipeline\Pipeline;
+use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
@@ -50,13 +53,56 @@ function runEstimateSync(PokerTask $task): void
     app()->call([new SyncTaskEstimate($task->id), 'handle']);
 }
 
+function runEstimateSyncThroughMiddleware(SyncTaskEstimate $job): void
+{
+    (new Pipeline(app()))
+        ->send($job)
+        ->through($job->middleware())
+        ->then(fn (SyncTaskEstimate $job) => app()->call([$job, 'handle']));
+}
+
 it('is a unique, retried job', function () {
     $job = new SyncTaskEstimate('task-id');
 
     expect($job)->toBeInstanceOf(ShouldBeUniqueUntilProcessing::class)
         ->and($job->uniqueId())->toBe('task-id')
-        ->and($job->tries)->toBe(5)
+        ->and($job->maxExceptions)->toBe(5)
+        ->and($job->retryUntil())->toBeGreaterThan(now())
         ->and($job->backoff)->toBe([10, 30, 120, 600]);
+});
+
+it('runs one write-back at a time for a task', function () {
+    $job = new SyncTaskEstimate('task-id');
+    [$middleware] = $job->middleware();
+
+    expect($middleware)->toBeInstanceOf(WithoutOverlapping::class)
+        ->and($middleware->key)->toBe('task-id')
+        ->and($middleware->releaseAfter)->toBe(5)
+        ->and($middleware->expiresAfter)->toBe(60);
+});
+
+it('waits for the running write of the same task, then writes the latest estimate', function () {
+    $table = trackerTable();
+    $task = pendingSyncTask($table, '5');
+    fakeJiraTrackerApi();
+    $waiting = (new SyncTaskEstimate($task->id))->withFakeQueueInteractions();
+    [$middleware] = $waiting->middleware();
+    $running = Cache::lock($middleware->getLockKey($waiting), 60);
+    $running->get();
+
+    runEstimateSyncThroughMiddleware($waiting);
+
+    $waiting->assertReleased(5);
+    Http::assertNothingSent();
+
+    PokerTask::query()->whereKey($task->id)->update(['estimate' => '8', 'estimate_numeric' => 8]);
+    $running->release();
+
+    runEstimateSyncThroughMiddleware((new SyncTaskEstimate($task->id))->withFakeQueueInteractions());
+
+    expect($task->fresh()?->needs_sync)->toBeFalse();
+    Http::assertSent(fn (Request $request) => $request->method() === 'PUT'
+        && $request->data() == ['fields' => ['customfield_10016' => 8.0]]);
 });
 
 it('queues a write-back when the facilitator sets the estimate of an imported task', function () {
@@ -271,14 +317,16 @@ it('retries while the source is unavailable and records the final failure', func
         ->and($task->fresh()?->needs_sync)->toBeTrue();
 });
 
-it('records the reason instead of calling a provider that no longer covers the task', function () {
+it('leaves a task the provider no longer covers unsupported instead of calling it', function () {
     $table = trackerTable();
     $task = pendingSyncTask($table, '5');
     $table['integration']->forceFill(['access' => IntegrationAccess::Read])->save();
 
     runEstimateSync($task);
 
-    expect($task->fresh()?->sync_error)->toBe('This Jira connection is read-only.');
+    expect($task->fresh()?->needs_sync)->toBeFalse()
+        ->and($task->fresh()?->sync_error)->toBeNull()
+        ->and($task->fresh()?->synced_at)->toBeNull();
     Http::assertNothingSent();
 });
 

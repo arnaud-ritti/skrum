@@ -12,21 +12,28 @@ use App\Support\Integrations\Exceptions\RateLimited;
 use App\Support\Integrations\IntegrationErrors;
 use App\Support\Integrations\Trackers\EstimateRejected;
 use App\Support\Integrations\Trackers\Trackers;
+use DateTimeInterface;
 use Illuminate\Contracts\Queue\ShouldBeUniqueUntilProcessing;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Throwable;
 
 /**
  * Writes the current skrum estimate of an imported task to its source
  * (spec 6 §6.5). Unique until it starts, so quick changes coalesce, while a
- * change made during a write still queues the next one.
+ * change made during a write still queues the next one. Writes of one task
+ * never overlap, so an older estimate cannot reach the source last.
+ *
+ * Waiting for a running write or for a rate limit releases the job, which
+ * uses up an attempt: the five tries of the spec are counted as exceptions,
+ * within a time bound instead of an attempt count.
  */
 class SyncTaskEstimate implements ShouldBeUniqueUntilProcessing, ShouldQueue
 {
     use Queueable;
 
-    public int $tries = 5;
+    public int $maxExceptions = 5;
 
     public int $uniqueFor = 300;
 
@@ -38,6 +45,17 @@ class SyncTaskEstimate implements ShouldBeUniqueUntilProcessing, ShouldQueue
     public function uniqueId(): string
     {
         return $this->taskId;
+    }
+
+    /** @return array<int, object> */
+    public function middleware(): array
+    {
+        return [(new WithoutOverlapping($this->taskId))->releaseAfter(5)->expireAfter(60)];
+    }
+
+    public function retryUntil(): DateTimeInterface
+    {
+        return now()->addHour();
     }
 
     public function handle(Trackers $trackers): void
@@ -52,8 +70,14 @@ class SyncTaskEstimate implements ShouldBeUniqueUntilProcessing, ShouldQueue
         $reason = $sync->unsupportedReason($task);
         $integration = $sync->integration($task->external_source);
 
-        if ($reason !== null || $integration === null) {
-            $this->recordFailure($task, $reason ?? __('This task can no longer be synced.'));
+        if ($reason !== null) {
+            $this->markUnsupported($task);
+
+            return;
+        }
+
+        if ($integration === null) {
+            $this->recordFailure($task, __('This task can no longer be synced.'));
 
             return;
         }
@@ -110,6 +134,17 @@ class SyncTaskEstimate implements ShouldBeUniqueUntilProcessing, ShouldQueue
         }
 
         $this->broadcast($task->fresh() ?? $task);
+    }
+
+    /**
+     * The task shows why it cannot be synced (syncState `unsupported`), so
+     * it no longer waits for a write that can never succeed.
+     */
+    private function markUnsupported(PokerTask $task): void
+    {
+        $task->forceFill(['needs_sync' => false, 'sync_error' => null])->save();
+
+        $this->broadcast($task);
     }
 
     private function recordFailure(PokerTask $task, string $error): void
