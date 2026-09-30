@@ -399,3 +399,22 @@ function mcpWriter(User $user, ?Team $team = null): PendingTestResponse
 {
     return actingAsMcp($user, [McpScope::Read, McpScope::Write], $team);
 }
+
+function mcpPromptText(McpTestResponse $response): string
+{
+    $payload = (fn (): array => $this->response->toArray())->call($response);
+
+    return (string) ($payload['result']['messages'][0]['content']['text'] ?? '');
+}
+
+/**
+ * @return array<string, mixed>
+ */
+function mcpPromptData(McpTestResponse $response): array
+{
+    $text = mcpPromptText($response);
+
+    preg_match('/```json\n(.*)\n```/s', $text, $matches);
+
+    return json_decode($matches[1] ?? 'null', true) ?? [];
+}

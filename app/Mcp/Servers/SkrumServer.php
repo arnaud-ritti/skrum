@@ -2,6 +2,8 @@
 
 namespace App\Mcp\Servers;
 
+use App\Mcp\Prompts\AnalyzeRetro;
+use App\Mcp\Prompts\TeamHealth;
 use App\Mcp\Tools\Poker\AddTasks;
 use App\Mcp\Tools\Poker\CreateGame;
 use App\Mcp\Tools\Poker\GetGame;
@@ -74,7 +76,10 @@ class SkrumServer extends Server
 
     protected array $resources = [];
 
-    protected array $prompts = [];
+    protected array $prompts = [
+        AnalyzeRetro::class,
+        TeamHealth::class,
+    ];
 
     protected function boot(): void
     {

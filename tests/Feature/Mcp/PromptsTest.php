@@ -1,0 +1,176 @@
+<?php
+
+use App\Enums\McpScope;
+use App\Enums\RetroPhase;
+use App\Mcp\Prompts\AnalyzeRetro;
+use App\Mcp\Prompts\SkrumPrompt;
+use App\Mcp\Prompts\TeamHealth;
+use App\Models\ActionItem;
+use App\Models\Card;
+use App\Models\Participant;
+use App\Models\Retro;
+use App\Models\RetroTheme;
+use App\Models\RotiVote;
+use App\Models\Team;
+use App\Models\Vote;
+use Illuminate\Support\Facades\Http;
+
+it('lists both prompts for a read-only token', function () {
+    $team = Team::factory()->create();
+    $user = teamMember($team);
+
+    $list = actingAsMcp($user)->prompts();
+
+    $names = collect((fn (): array => $this->items)->call($list))->pluck('name')->sort()->values()->all();
+
+    expect($names)->toBe(['analyze-retro', 'team-health']);
+});
+
+it('requires a visible board for analyze-retro', function () {
+    $retro = Retro::factory()->create();
+    [$user] = retroMember($retro);
+    $foreign = Retro::factory()->create();
+
+    actingAsMcp($user)->prompt(AnalyzeRetro::class, [])->assertHasErrors();
+    actingAsMcp($user)->prompt(AnalyzeRetro::class, ['board_id' => 'not-a-uuid'])->assertHasErrors();
+    actingAsMcp($user)->prompt(AnalyzeRetro::class, ['board_id' => $foreign->id])->assertHasErrors(['Not found.']);
+});
+
+it('embeds the board data with instructions', function () {
+    $retro = Retro::factory()->inPhase(RetroPhase::Discussing)->create(['title' => 'Sprint 7 retro']);
+    [$user, $participant] = retroMember($retro);
+    Card::factory()->create(['retro_id' => $retro->id, 'participant_id' => $participant->id, 'content' => 'Deploys are slow']);
+    ActionItem::factory()->create([
+        'retro_id' => $retro->id,
+        'content' => 'Automate the release checklist',
+        'created_by_participant_id' => $participant->id,
+        'created_by_user_id' => $user->id,
+    ]);
+
+    $response = actingAsMcp($user)->prompt(AnalyzeRetro::class, ['board_id' => $retro->id])->assertOk();
+    $text = mcpPromptText($response);
+
+    expect($text)->toContain('key themes')
+        ->toContain('Never guess who wrote an anonymous message')
+        ->toContain('Answer in English')
+        ->and(json_encode(mcpPromptData($response)))
+        ->toContain('Sprint 7 retro')
+        ->toContain('Deploys are slow')
+        ->toContain('Automate the release checklist');
+});
+
+it('keeps hidden and anonymous content redacted', function () {
+    $writing = Retro::factory()->inPhase(RetroPhase::Writing)->create();
+    [$user, $participant] = retroMember($writing);
+    [, $other] = retroMember($writing);
+    Card::factory()->create(['retro_id' => $writing->id, 'participant_id' => $participant->id, 'content' => 'My own visible idea']);
+    Card::factory()->create(['retro_id' => $writing->id, 'participant_id' => $other->id, 'content' => 'Hidden thoughts XYZ']);
+
+    $response = actingAsMcp($user)->prompt(AnalyzeRetro::class, ['board_id' => $writing->id])->assertOk();
+
+    expect(mcpPromptText($response))->toContain('My own visible idea')->not->toContain('Hidden thoughts XYZ');
+
+    $anonymous = Retro::factory()->anonymous()->inPhase(RetroPhase::Discussing)->create(['team_id' => $writing->team_id]);
+    Participant::factory()->create(['retro_id' => $anonymous->id, 'user_id' => $user->id]);
+    $theirs = Participant::factory()->create(['retro_id' => $anonymous->id, 'user_id' => $other->user_id]);
+    Card::factory()->create(['retro_id' => $anonymous->id, 'participant_id' => $theirs->id, 'content' => 'Anonymous idea']);
+
+    $data = mcpPromptData(actingAsMcp($user)->prompt(AnalyzeRetro::class, ['board_id' => $anonymous->id])->assertOk());
+    $messages = collect($data['messages']['columns'] ?? [])->flatMap(fn (array $column): array => $column['messages']);
+    $anonymousCard = $messages->firstWhere('content', 'Anonymous idea');
+
+    expect($anonymousCard)->not->toBeNull()
+        ->and($anonymousCard['author'] ?? null)->toBeNull();
+});
+
+it('omits insights when no provider is configured', function () {
+    $retro = Retro::factory()->inPhase(RetroPhase::Discussing)->create();
+    [$user] = retroMember($retro);
+    RetroTheme::factory()->create(['retro_id' => $retro->id, 'name' => 'Release pain']);
+
+    $withoutProvider = mcpPromptData(actingAsMcp($user)->prompt(AnalyzeRetro::class, ['board_id' => $retro->id])->assertOk());
+
+    expect($withoutProvider)->not->toHaveKey('insights');
+
+    configureLlm();
+
+    $withProvider = mcpPromptData(actingAsMcp($user)->prompt(AnalyzeRetro::class, ['board_id' => $retro->id])->assertOk());
+
+    expect($withProvider)->toHaveKey('insights');
+});
+
+it('caps prompt content', function () {
+    $retro = Retro::factory()->inPhase(RetroPhase::Discussing)->create(['hide_vote_counts' => false]);
+    [$user, $participant] = retroMember($retro);
+
+    $cards = collect(range(1, 300))->map(fn (int $index): Card => Card::factory()->create([
+        'retro_id' => $retro->id,
+        'participant_id' => $participant->id,
+        'content' => "Card {$index} ".str_repeat('x', 480),
+        'position' => $index,
+    ]));
+
+    Vote::factory()->count(5)->create(['retro_id' => $retro->id, 'card_id' => $cards[299]->id]);
+
+    $response = actingAsMcp($user)->prompt(AnalyzeRetro::class, ['board_id' => $retro->id])->assertOk();
+    $data = mcpPromptData($response);
+    $encoded = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+    expect(mb_strlen($encoded))->toBeLessThanOrEqual(SkrumPrompt::MaxContentLength)
+        ->and($encoded)->toContain('Card 300 ')
+        ->and(mcpPromptText($response))->toContain('were left out to fit the size limit');
+});
+
+it('describes the team health over the last completed boards', function () {
+    $team = Team::factory()->create(['name' => 'Platform']);
+    $user = teamMember($team);
+
+    foreach (range(1, 7) as $index) {
+        $retro = Retro::factory()->inPhase(RetroPhase::Completed)->create([
+            'team_id' => $team->id,
+            'title' => "Retro {$index}",
+            'created_at' => now()->subWeeks(8 - $index),
+            'completed_at' => now()->subWeeks(8 - $index)->addDay(),
+        ]);
+        RotiVote::factory()->create(['retro_id' => $retro->id, 'score' => 4]);
+    }
+
+    $data = mcpPromptData(actingAsMcp($user)->prompt(TeamHealth::class, ['team_id' => $team->id])->assertOk());
+
+    expect($data['team']['name'])->toBe('Platform')
+        ->and(collect($data['boards'])->pluck('board.title')->all())->toBe(['Retro 2', 'Retro 3', 'Retro 4', 'Retro 5', 'Retro 6', 'Retro 7']);
+});
+
+it('reports a team without completed boards', function () {
+    $team = Team::factory()->create();
+    $user = teamMember($team);
+
+    $response = actingAsMcp($user)->prompt(TeamHealth::class, ['team_id' => $team->id])->assertOk();
+
+    expect(mcpPromptData($response)['boards'])->toBe([])
+        ->and(mcpPromptText($response))->toContain('health check not run yet');
+});
+
+it('refuses teams outside the grant', function () {
+    $team = Team::factory()->create();
+    $other = Team::factory()->create(['workspace_id' => $team->workspace_id]);
+    $user = teamMember($team);
+    $other->members()->attach($user);
+
+    actingAsMcp($user)->prompt(TeamHealth::class, ['team_id' => Team::factory()->create()->id])->assertHasErrors(['Not found.']);
+    actingAsMcp($user, [McpScope::Read], $team)->prompt(TeamHealth::class, ['team_id' => $other->id])->assertHasErrors(['Not found.']);
+});
+
+it('answers in the user language and never calls an LLM', function () {
+    Http::fake();
+    configureLlm();
+
+    $retro = Retro::factory()->inPhase(RetroPhase::Discussing)->create();
+    [$user] = retroMember($retro);
+    $user->update(['locale' => 'fr']);
+
+    $text = mcpPromptText(actingAsMcp($user)->prompt(AnalyzeRetro::class, ['board_id' => $retro->id])->assertOk());
+
+    expect($text)->toContain('Answer in French');
+    Http::assertNothingSent();
+});
