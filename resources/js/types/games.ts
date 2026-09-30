@@ -12,3 +12,15 @@ export type GameRoomSummary = {
 };
 
 export type { GameOption };
+
+export type GameLeaderboardPeriod = '30d' | 'all';
+
+export type TeamGameLeaderboardRow = {
+    userId: string;
+    name: string;
+    avatarUrl: string;
+    points: number;
+    wins: number;
+    roundsPlayed: number;
+    streak: number;
+};

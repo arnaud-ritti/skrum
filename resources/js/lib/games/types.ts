@@ -1,3 +1,5 @@
+import type { IntegrationDelivery, ShareAvailability } from '@/types';
+
 export type GameKind = 'draw' | 'gif' | 'hangman' | 'decoded';
 
 export type GameRoundOutcome =
@@ -36,6 +38,7 @@ export type GameRoomInfo = {
     guestUrl: string | null;
     isIcebreaker: boolean;
     currentRoundId: string | null;
+    teamName: string | null;
 };
 
 /** One entry per character: separators and revealed letters, null for hidden letters. */
@@ -225,6 +228,13 @@ export type GameSecretResponse = { word: string };
 
 export type EmojiDataLocation = { baseUrl: string; locale: string };
 
+export type GameLeaderboardRow = {
+    playerId: string;
+    points: number;
+    wins: number;
+    roundsPlayed: number;
+};
+
 export type GameSnapshot = {
     room: GameRoomInfo;
     me: { playerId: string; userId: string | null; isGuest: boolean };
@@ -235,6 +245,10 @@ export type GameSnapshot = {
     links: { team: string | null; retro: string | null };
     emojiData: EmojiDataLocation;
     serverTime: string;
+    leaderboard: GameLeaderboardRow[];
+    scoresResetAt: string | null;
+    share: ShareAvailability;
+    deliveries: IntegrationDelivery[];
 };
 
 export type GameRoomState = {

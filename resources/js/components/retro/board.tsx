@@ -68,6 +68,7 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
         markCommentsRead,
         reconnecting,
         sessionExpired,
+        subscribeGameEvents,
     } = useRetroBoard(snapshot);
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -125,6 +126,7 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
         isEditable: !board.retro.isLocked,
         unreadCardIds,
         markCommentsRead,
+        subscribeGameEvents,
     };
 
     const activeCard =

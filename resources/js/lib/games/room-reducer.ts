@@ -8,6 +8,7 @@ import type {
     GameRoundRevealed,
     GameSnapshot,
 } from './types';
+import { withAwardedPoints } from './leaderboard';
 import { pendingAnswers, withPendingAnswer, withVoter } from './gif';
 
 export type RoomAction =
@@ -134,7 +135,15 @@ export function roomReducer(
 
             return {
                 ...state,
-                snapshot: { ...state.snapshot, round: null },
+                snapshot: {
+                    ...state.snapshot,
+                    round: null,
+                    leaderboard: withAwardedPoints(
+                        state.snapshot.leaderboard,
+                        action.ended.points,
+                        state.snapshot.players,
+                    ),
+                },
                 lastEnded: action.ended,
             };
         }
