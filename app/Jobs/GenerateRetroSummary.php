@@ -10,14 +10,14 @@ use App\Enums\RetroPhase;
 use App\Models\Retro;
 use App\Support\Llm\InvalidLlmOutput;
 use App\Support\Llm\Llm;
-use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Illuminate\Contracts\Queue\ShouldBeUniqueUntilProcessing;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
-class GenerateRetroSummary implements ShouldBeUnique, ShouldQueue
+class GenerateRetroSummary implements ShouldBeUniqueUntilProcessing, ShouldQueue
 {
     use Queueable;
 

@@ -2,6 +2,7 @@
 
 namespace App\Actions\Retros;
 
+use App\Enums\RetroPhase;
 use App\Enums\SuggestedActionStatus;
 use App\Enums\SummaryStatus;
 use App\Events\Retros\InsightsChanged;
@@ -42,6 +43,12 @@ class ClearRetroInsights
             $locked = Retro::query()->whereKey($retroId)->lockForUpdate()->first();
 
             if ($locked === null) {
+                return;
+            }
+
+            if ($locked->phase !== RetroPhase::Completed) {
+                $this->abandon($locked);
+
                 return;
             }
 

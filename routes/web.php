@@ -30,6 +30,7 @@ use App\Http\Controllers\Retros\RetroRotiController;
 use App\Http\Controllers\Retros\RetrosController;
 use App\Http\Controllers\Retros\RetroSettingsController;
 use App\Http\Controllers\Retros\RetroSnapshotsController;
+use App\Http\Controllers\Retros\RetroSummariesController;
 use App\Http\Controllers\Retros\RetroTimersController;
 use App\Http\Controllers\Retros\SurveyClosuresController;
 use App\Http\Controllers\Retros\SurveyCommentsController;
@@ -167,6 +168,8 @@ Route::prefix('retros/{retro}')
         Route::post('action-items', [ActionItemsController::class, 'store'])->name('retros.action-items.store');
         Route::patch('action-items/{actionItem}', [ActionItemsController::class, 'update'])->name('retros.action-items.update')->whereUuid('actionItem');
         Route::delete('action-items/{actionItem}', [ActionItemsController::class, 'destroy'])->name('retros.action-items.destroy')->whereUuid('actionItem');
+        Route::post('summary', [RetroSummariesController::class, 'store'])->name('retros.summary.store');
+        Route::delete('summary', [RetroSummariesController::class, 'destroy'])->name('retros.summary.destroy');
         Route::post('survey-drafts', [SurveyDraftsController::class, 'store'])->name('retros.survey-drafts.store');
         Route::post('surveys', [SurveysController::class, 'store'])->name('retros.surveys.store');
         Route::get('surveys/{survey}', [SurveysController::class, 'show'])->name('retros.surveys.show')->whereUuid('survey');

@@ -15,6 +15,7 @@ use App\Models\SuggestedAction;
 use App\Support\Llm\InvalidLlmOutput;
 use App\Support\Llm\LlmUnavailable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Illuminate\Contracts\Queue\ShouldBeUniqueUntilProcessing;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
@@ -92,7 +93,8 @@ it('does not queue the summary when opted out, without provider or on other phas
 it('is unique per retro and retried with backoff', function () {
     $job = new GenerateRetroSummary('retro-id');
 
-    expect($job)->toBeInstanceOf(ShouldBeUnique::class)
+    expect($job)->toBeInstanceOf(ShouldBeUniqueUntilProcessing::class)
+        ->and($job)->toBeInstanceOf(ShouldBeUnique::class)
         ->and($job->uniqueId())->toBe('retro-id')
         ->and($job->tries)->toBe(3)
         ->and($job->backoff())->toBe([10, 60]);
@@ -179,6 +181,8 @@ it('aborts without calling the provider once the provider is removed', function 
     runSummaryJob($retro);
 
     Http::assertNothingSent();
+    expect($retro->fresh()->summary_status)->toBeNull();
+    Event::assertDispatched(ResultsChanged::class);
 });
 
 it('lets the queue retry provider errors and unusable answers', function (string $reply, string $exception) {
@@ -235,4 +239,13 @@ it('marks the summary failed and clears insights after the last attempt', functi
         ->and($first->fresh()->sentiment)->toBeNull();
     Event::assertDispatched(ResultsChanged::class);
     Event::assertDispatched(InsightsChanged::class);
+});
+
+it('does not mark the summary failed when the retro was reopened meanwhile', function () {
+    [$retro] = summarisedRetro(['phase' => RetroPhase::Discussing, 'summary_status' => SummaryStatus::Pending]);
+
+    (new GenerateRetroSummary($retro->id))->failed(new LlmUnavailable);
+
+    expect($retro->fresh()->summary_status)->toBeNull();
+    Event::assertDispatched(ResultsChanged::class);
 });
