@@ -2,12 +2,15 @@ import { Head, Link } from '@inertiajs/react';
 import TeamsController from '@/actions/App/Http/Controllers/TeamsController';
 import { NewRoomDialog } from '@/components/games/new-room-dialog';
 import { RoomCard } from '@/components/games/room-card';
+import { TeamLeaderboard } from '@/components/games/team-leaderboard';
 import Heading from '@/components/heading';
 import { Button } from '@/components/ui/button';
 import { useTrans } from '@/hooks/use-trans';
 import type {
+    GameLeaderboardPeriod,
     GameOption,
     GameRoomSummary,
+    TeamGameLeaderboardRow,
     TeamSummary,
     WorkspaceSummary,
 } from '@/types';
@@ -19,6 +22,8 @@ type Props = {
     gameOptions: GameOption[];
     canCreate: boolean;
     roomLimit: number;
+    period: GameLeaderboardPeriod;
+    leaderboard?: TeamGameLeaderboardRow[];
 };
 
 export default function GamesIndex({
@@ -28,6 +33,8 @@ export default function GamesIndex({
     gameOptions,
     canCreate,
     roomLimit,
+    period,
+    leaderboard,
 }: Props) {
     const { t } = useTrans();
 
@@ -83,6 +90,8 @@ export default function GamesIndex({
                         </div>
                     )}
                 </section>
+
+                <TeamLeaderboard leaderboard={leaderboard} period={period} />
             </div>
         </>
     );

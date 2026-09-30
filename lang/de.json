@@ -1536,5 +1536,20 @@
     "Join the game": "Am Spiel teilnehmen",
     "Guest access is off for this room.": "Der Gastzugang ist für diesen Raum ausgeschaltet.",
     "Only the host, the room creator or a workspace admin can invite people to this room.": "Nur der Host, die Person, die den Raum erstellt hat, oder ein Workspace-Admin kann in diesen Raum einladen.",
-    "Icebreaker game": "Eisbrecher-Spiel"
+    "Icebreaker game": "Eisbrecher-Spiel",
+    "Scores": "Punkte",
+    "No points yet.": "Noch keine Punkte.",
+    "Reset scores": "Punkte zurücksetzen",
+    "Scores in this room start again from zero. The team leaderboard keeps them.": "Die Punkte in diesem Raum beginnen wieder bei null. Die Rangliste des Teams behält sie.",
+    ":count points": ":count Punkte",
+    "Points of this round": "Punkte dieser Runde",
+    "+:points :name": "+:points :name",
+    "Leaderboard": "Rangliste",
+    "Period": "Zeitraum",
+    "Last 30 days": "Letzte 30 Tage",
+    "All time": "Gesamte Zeit",
+    "Could not load the leaderboard.": "Die Rangliste konnte nicht geladen werden.",
+    "No games played yet.": "Noch keine Spiele gespielt.",
+    ":count-week streak": ":count Wochen in Folge",
+    ":wins wins · :rounds rounds": ":wins Siege · :rounds Runden"
 }

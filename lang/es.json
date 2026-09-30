@@ -1536,5 +1536,20 @@
     "Join the game": "Unirse a la partida",
     "Guest access is off for this room.": "El acceso de invitados está desactivado en esta sala.",
     "Only the host, the room creator or a workspace admin can invite people to this room.": "Solo el anfitrión, quien creó la sala o un administrador del espacio de trabajo pueden invitar a esta sala.",
-    "Icebreaker game": "Juego del rompehielos"
+    "Icebreaker game": "Juego del rompehielos",
+    "Scores": "Puntuaciones",
+    "No points yet.": "Todavía no hay puntos.",
+    "Reset scores": "Reiniciar las puntuaciones",
+    "Scores in this room start again from zero. The team leaderboard keeps them.": "Las puntuaciones de esta sala vuelven a cero. La clasificación del equipo las conserva.",
+    ":count points": ":count puntos",
+    "Points of this round": "Puntos de esta ronda",
+    "+:points :name": "+:points :name",
+    "Leaderboard": "Clasificación",
+    "Period": "Periodo",
+    "Last 30 days": "Últimos 30 días",
+    "All time": "Desde siempre",
+    "Could not load the leaderboard.": "No se pudo cargar la clasificación.",
+    "No games played yet.": "Todavía no se ha jugado ninguna partida.",
+    ":count-week streak": ":count semanas seguidas",
+    ":wins wins · :rounds rounds": ":wins victorias · :rounds rondas"
 }

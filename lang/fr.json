@@ -1536,5 +1536,20 @@
     "Join the game": "Rejoindre la partie",
     "Guest access is off for this room.": "L'accès invité est désactivé pour ce salon.",
     "Only the host, the room creator or a workspace admin can invite people to this room.": "Seuls l'hôte, la personne qui a créé le salon ou un administrateur de l'espace de travail peuvent inviter dans ce salon.",
-    "Icebreaker game": "Jeu du brise-glace"
+    "Icebreaker game": "Jeu du brise-glace",
+    "Scores": "Scores",
+    "No points yet.": "Pas encore de points.",
+    "Reset scores": "Remettre les scores à zéro",
+    "Scores in this room start again from zero. The team leaderboard keeps them.": "Les scores de ce salon repartent de zéro. Le classement de l'équipe les conserve.",
+    ":count points": ":count points",
+    "Points of this round": "Points de cette manche",
+    "+:points :name": "+:points :name",
+    "Leaderboard": "Classement",
+    "Period": "Période",
+    "Last 30 days": "30 derniers jours",
+    "All time": "Depuis le début",
+    "Could not load the leaderboard.": "Impossible de charger le classement.",
+    "No games played yet.": "Aucune partie jouée pour l'instant.",
+    ":count-week streak": ":count semaines d'affilée",
+    ":wins wins · :rounds rounds": ":wins victoires · :rounds manches"
 }

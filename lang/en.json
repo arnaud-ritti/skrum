@@ -1290,5 +1290,20 @@
     "Join the game": "Join the game",
     "Guest access is off for this room.": "Guest access is off for this room.",
     "Only the host, the room creator or a workspace admin can invite people to this room.": "Only the host, the room creator or a workspace admin can invite people to this room.",
-    "Icebreaker game": "Icebreaker game"
+    "Icebreaker game": "Icebreaker game",
+    "Scores": "Scores",
+    "No points yet.": "No points yet.",
+    "Reset scores": "Reset scores",
+    "Scores in this room start again from zero. The team leaderboard keeps them.": "Scores in this room start again from zero. The team leaderboard keeps them.",
+    ":count points": ":count points",
+    "Points of this round": "Points of this round",
+    "+:points :name": "+:points :name",
+    "Leaderboard": "Leaderboard",
+    "Period": "Period",
+    "Last 30 days": "Last 30 days",
+    "All time": "All time",
+    "Could not load the leaderboard.": "Could not load the leaderboard.",
+    "No games played yet.": "No games played yet.",
+    ":count-week streak": ":count-week streak",
+    ":wins wins · :rounds rounds": ":wins wins · :rounds rounds"
 }

@@ -7,6 +7,7 @@ import type { GameGifRevealed, GameRoundDetail } from '@/lib/games/types';
 import { retroRequest } from '@/lib/retro/api';
 import { GifRoundResults } from './gif-round-results';
 import { useRoom } from './room-context';
+import { RoundPoints } from './round-points';
 import { StartRoundControls } from './start-round-controls';
 
 export function RoundEndCard() {
@@ -89,6 +90,9 @@ export function RoundEndCard() {
                 <p className="text-muted-foreground">
                     {t(':name found it!', { name: winner.name })}
                 </p>
+            )}
+            {lastEnded && !lastEnded.answers && (
+                <RoundPoints points={lastEnded.points} />
             )}
             <StartRoundControls label={t('Next round')} />
         </div>

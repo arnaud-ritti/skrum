@@ -1,6 +1,6 @@
 import { GameBoard } from './game-board';
-import { PlayersList } from './players-list';
 import { useRoom } from './room-context';
+import { RoomSidebar } from './room-sidebar';
 import { RoundEndCard } from './round-end-card';
 
 export function GamePanel() {
@@ -13,7 +13,7 @@ export function GamePanel() {
                 {round ? <GameBoard round={round} /> : <RoundEndCard />}
             </main>
             <aside className="w-full shrink-0 lg:w-64">
-                <PlayersList
+                <RoomSidebar
                     highlightPlayerId={
                         round ? null : (lastEnded?.winnerPlayerId ?? null)
                     }
