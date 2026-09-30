@@ -10,6 +10,7 @@ use App\Http\Controllers\Integrations\IntegrationAuthorizationsController;
 use App\Http\Controllers\Integrations\IntegrationCallbacksController;
 use App\Http\Controllers\Integrations\IntegrationTestsController;
 use App\Http\Controllers\Integrations\JiraFieldDetectionsController;
+use App\Http\Controllers\Integrations\PokerSharesController;
 use App\Http\Controllers\Integrations\RetroSharesController;
 use App\Http\Controllers\Integrations\TeamIntegrationsController;
 use App\Http\Controllers\Integrations\TelegramConnectCodesController;
@@ -314,6 +315,7 @@ Route::prefix('poker/{game}')
         Route::get('saved-decks', [PokerSavedDecksController::class, 'index'])->name('poker.saved-decks.index');
         Route::put('status', [PokerStatusesController::class, 'update'])->name('poker.status.update');
         Route::post('guest-token', [PokerGuestTokensController::class, 'store'])->name('poker.guest-token.store');
+        Route::post('shares', [PokerSharesController::class, 'store'])->middleware('throttle:5,1')->name('poker.shares.store');
         Route::put('facilitator', [PokerFacilitatorsController::class, 'update'])->name('poker.facilitator.update');
         Route::put('players/{player}/spectator', [PokerSpectatorsController::class, 'update'])->name('poker.players.spectator.update')->whereUuid('player');
         Route::delete('/', [PokerGamesController::class, 'destroy'])->name('poker.destroy');

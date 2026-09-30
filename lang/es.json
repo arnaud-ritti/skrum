@@ -1239,5 +1239,6 @@
     "Open the game": "Abrir la partida",
     "Guest access is off for this retrospective.": "El acceso de invitados está desactivado para esta retrospectiva.",
     "Results can be shared once the retrospective is completed.": "Los resultados se pueden compartir cuando la retrospectiva haya terminado.",
-    "This retrospective is completed. Share its results instead.": "Esta retrospectiva ha terminado. Comparte sus resultados en su lugar."
+    "This retrospective is completed. Share its results instead.": "Esta retrospectiva ha terminado. Comparte sus resultados en su lugar.",
+    "Guest access is off for this game.": "El acceso de invitados está desactivado para esta partida."
 }
