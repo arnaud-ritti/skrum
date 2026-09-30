@@ -1551,5 +1551,10 @@
     "Could not load the leaderboard.": "Die Rangliste konnte nicht geladen werden.",
     "No games played yet.": "Noch keine Spiele gespielt.",
     ":count-week streak": ":count Wochen in Folge",
-    ":wins wins · :rounds rounds": ":wins Siege · :rounds Runden"
+    ":wins wins · :rounds rounds": ":wins Siege · :rounds Runden",
+    "Games we played": "Unsere Spiele",
+    ":count rounds played": ":count gespielte Runden",
+    "Replay": "Wiederholung",
+    "Show all": "Alle anzeigen",
+    "Show less": "Weniger anzeigen"
 }

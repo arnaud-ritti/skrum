@@ -1305,5 +1305,10 @@
     "Could not load the leaderboard.": "Could not load the leaderboard.",
     "No games played yet.": "No games played yet.",
     ":count-week streak": ":count-week streak",
-    ":wins wins · :rounds rounds": ":wins wins · :rounds rounds"
+    ":wins wins · :rounds rounds": ":wins wins · :rounds rounds",
+    "Games we played": "Games we played",
+    ":count rounds played": ":count rounds played",
+    "Replay": "Replay",
+    "Show all": "Show all",
+    "Show less": "Show less"
 }

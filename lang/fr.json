@@ -1551,5 +1551,10 @@
     "Could not load the leaderboard.": "Impossible de charger le classement.",
     "No games played yet.": "Aucune partie jouée pour l'instant.",
     ":count-week streak": ":count semaines d'affilée",
-    ":wins wins · :rounds rounds": ":wins victoires · :rounds manches"
+    ":wins wins · :rounds rounds": ":wins victoires · :rounds manches",
+    "Games we played": "Nos jeux",
+    ":count rounds played": ":count manches jouées",
+    "Replay": "Revoir",
+    "Show all": "Tout afficher",
+    "Show less": "Afficher moins"
 }

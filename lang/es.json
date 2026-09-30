@@ -1551,5 +1551,10 @@
     "Could not load the leaderboard.": "No se pudo cargar la clasificación.",
     "No games played yet.": "Todavía no se ha jugado ninguna partida.",
     ":count-week streak": ":count semanas seguidas",
-    ":wins wins · :rounds rounds": ":wins victorias · :rounds rondas"
+    ":wins wins · :rounds rounds": ":wins victorias · :rounds rondas",
+    "Games we played": "Los juegos que jugamos",
+    ":count rounds played": ":count rondas jugadas",
+    "Replay": "Volver a ver",
+    "Show all": "Mostrar todo",
+    "Show less": "Mostrar menos"
 }

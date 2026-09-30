@@ -4,6 +4,7 @@ import { useIsMounted } from '@/hooks/use-is-mounted';
 import { useTrans } from '@/hooks/use-trans';
 import { useBoard } from '../board-context';
 import { ActionItemsResults } from './action-items-results';
+import { GamesPlayedSection } from './games-played-section';
 import { HealthSection } from './health-section';
 import { SummarySection } from '../insights/summary-section';
 import { ParticipantsSection } from './participants-section';
@@ -66,6 +67,7 @@ export function ResultsView() {
             )}
             <TopTopics />
             <ActionItemsResults />
+            {results.games && <GamesPlayedSection games={results.games} />}
             <RotiSection roti={results.roti} />
         </div>
     );
