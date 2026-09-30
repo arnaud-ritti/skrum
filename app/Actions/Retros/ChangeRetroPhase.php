@@ -16,6 +16,7 @@ class ChangeRetroPhase
         private CloseOpenSurveys $closeOpenSurveys,
         private Llm $llm,
         private QueueRetroSummary $queueRetroSummary,
+        private ClearRetroInsights $clearRetroInsights,
     ) {}
 
     /**
@@ -24,6 +25,7 @@ class ChangeRetroPhase
     public function handle(Retro $locked, RetroPhase $phase): void
     {
         $this->ensureReachable($locked, $phase);
+        $this->abandonSummary($locked, $phase);
         $this->move($locked, $phase);
         $this->closeSurveys($locked, $phase);
         $this->broadcast($locked, $phase);
@@ -38,6 +40,22 @@ class ChangeRetroPhase
         }
 
         throw ValidationException::withMessages(['phase' => __('The retrospective can only move to the previous or next phase.')]);
+    }
+
+    /**
+     * A summary queued before a reopen must not run later, even once completed again.
+     */
+    private function abandonSummary(Retro $locked, RetroPhase $phase): void
+    {
+        if ($locked->phase !== RetroPhase::Completed) {
+            return;
+        }
+
+        if ($phase === RetroPhase::Completed) {
+            return;
+        }
+
+        $this->clearRetroInsights->abandon($locked);
     }
 
     private function move(Retro $locked, RetroPhase $phase): void

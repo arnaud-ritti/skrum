@@ -37,12 +37,19 @@ class ClearRetroInsights
         ]);
     }
 
+    /**
+     * Only a still-pending request fails: a newer result or a deliberate deletion stays.
+     */
     public function fail(string $retroId): void
     {
         DB::transaction(function () use ($retroId): void {
             $locked = Retro::query()->whereKey($retroId)->lockForUpdate()->first();
 
             if ($locked === null) {
+                return;
+            }
+
+            if ($locked->summary_status !== SummaryStatus::Pending) {
                 return;
             }
 

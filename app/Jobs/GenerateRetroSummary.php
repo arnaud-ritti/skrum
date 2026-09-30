@@ -7,6 +7,7 @@ use App\Actions\Retros\ClearRetroInsights;
 use App\Actions\Retros\ParseSummaryOutput;
 use App\Actions\Retros\StoreRetroInsights;
 use App\Enums\RetroPhase;
+use App\Enums\SummaryStatus;
 use App\Models\Retro;
 use App\Support\Llm\InvalidLlmOutput;
 use App\Support\Llm\Llm;
@@ -55,7 +56,7 @@ class GenerateRetroSummary implements ShouldBeUniqueUntilProcessing, ShouldQueue
             return;
         }
 
-        if ($retro->phase !== RetroPhase::Completed || ! $llm->isConfigured()) {
+        if ($this->shouldAbort($retro, $llm)) {
             DB::transaction(fn () => $clearRetroInsights->abandon(
                 Retro::query()->whereKey($retro->id)->lockForUpdate()->firstOrFail(),
             ));
@@ -71,6 +72,23 @@ class GenerateRetroSummary implements ShouldBeUniqueUntilProcessing, ShouldQueue
         }
 
         $storeRetroInsights->handle($retro, $output);
+    }
+
+    /**
+     * Only a still-pending request may reach the provider: a reopen, an opt-out
+     * or a deletion since queueing withdraws it.
+     */
+    private function shouldAbort(Retro $retro, Llm $llm): bool
+    {
+        if ($retro->phase !== RetroPhase::Completed) {
+            return true;
+        }
+
+        if ($retro->summary_status !== SummaryStatus::Pending) {
+            return true;
+        }
+
+        return ! $llm->isConfigured();
     }
 
     /**

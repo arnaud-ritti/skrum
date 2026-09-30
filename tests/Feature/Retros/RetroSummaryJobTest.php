@@ -249,3 +249,61 @@ it('does not mark the summary failed when the retro was reopened meanwhile', fun
     expect($retro->fresh()->summary_status)->toBeNull();
     Event::assertDispatched(ResultsChanged::class);
 });
+
+it('sends nothing when the retro is reopened, opted out and completed again before the job runs', function () {
+    Queue::fake();
+    configureLlm();
+    fakeLlmReply(summaryReply());
+    $retro = Retro::factory()->inPhase(RetroPhase::Discussing)->create(['ai_summary_enabled' => true]);
+    [$user] = retroFacilitator($retro);
+
+    $this->actingAs($user)->putJson(route('retros.phase.update', $retro), ['phase' => 'completed'])->assertOk();
+    $this->actingAs($user)->putJson(route('retros.phase.update', $retro), ['phase' => 'discussing'])->assertOk();
+    $this->actingAs($user)->patchJson(route('retros.settings.update', $retro), ['ai_summary_enabled' => false])->assertNoContent();
+    $this->actingAs($user)->putJson(route('retros.phase.update', $retro), ['phase' => 'completed'])->assertOk();
+
+    Queue::assertPushed(GenerateRetroSummary::class, 1);
+
+    runSummaryJob($retro);
+
+    Http::assertNothingSent();
+    expect($retro->fresh()->summary_status)->toBeNull();
+});
+
+it('sends nothing when the summary is deleted before the job runs', function () {
+    Queue::fake();
+    configureLlm();
+    fakeLlmReply(summaryReply());
+    [$retro] = summarisedRetro();
+    [$user] = retroFacilitator($retro);
+
+    $this->actingAs($user)->deleteJson(route('retros.summary.destroy', $retro))->assertNoContent();
+
+    runSummaryJob($retro);
+
+    Http::assertNothingSent();
+    expect($retro->fresh()->summary_status)->toBeNull();
+});
+
+it('keeps a newer summary when a stale attempt fails late', function () {
+    [$retro] = summarisedRetro(['summary' => 'Newer summary', 'summary_status' => SummaryStatus::Ready, 'summary_generated_at' => now()]);
+    $theme = RetroTheme::factory()->create(['retro_id' => $retro->id]);
+
+    (new GenerateRetroSummary($retro->id))->failed(new LlmUnavailable);
+
+    $retro->refresh();
+
+    expect($retro->summary_status)->toBe(SummaryStatus::Ready)
+        ->and($retro->summary)->toBe('Newer summary')
+        ->and(RetroTheme::find($theme->id))->not->toBeNull();
+    Event::assertNotDispatched(InsightsChanged::class);
+});
+
+it('does not mark a deliberately deleted summary as failed', function () {
+    [$retro] = summarisedRetro(['summary_status' => null, 'summary_requested_at' => null]);
+
+    (new GenerateRetroSummary($retro->id))->failed(new LlmUnavailable);
+
+    expect($retro->fresh()->summary_status)->toBeNull();
+    Event::assertNotDispatched(ResultsChanged::class);
+});
