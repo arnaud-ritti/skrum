@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { useTrans } from '@/hooks/use-trans';
 import { retroRequest } from '@/lib/retro/api';
 import { useBoard } from './board-context';
+import { BoardPostLink } from './board-post-link';
 
 type Props = {
     open: boolean;
@@ -116,6 +117,8 @@ export function GuestLinkDialog({ open, onOpenChange }: Props) {
                         </p>
                     </div>
                 )}
+
+                <BoardPostLink />
             </DialogContent>
         </Dialog>
     );
