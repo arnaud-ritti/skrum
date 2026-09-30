@@ -927,5 +927,16 @@
     "Notification settings": "Benachrichtigungseinstellungen",
     "Action items need your attention": "Aktionspunkte brauchen deine Aufmerksamkeit",
     ":count action item is overdue|:count action items are overdue": ":count Aktionspunkt ist überfällig|:count Aktionspunkte sind überfällig",
-    ":count action item is due soon|:count action items are due soon": ":count Aktionspunkt ist bald fällig|:count Aktionspunkte sind bald fällig"
+    ":count action item is due soon|:count action items are due soon": ":count Aktionspunkt ist bald fällig|:count Aktionspunkte sind bald fällig",
+    "Repeat": "Wiederholung",
+    "Does not repeat": "Wiederholt sich nicht",
+    "Weekly": "Wöchentlich",
+    "Every 2 weeks": "Alle 2 Wochen",
+    "Monthly": "Monatlich",
+    "Follows up the item completed on :date": "Folgt auf den am :date abgeschlossenen Aktionspunkt",
+    "Sub-tasks": "Unteraufgaben",
+    "Add a sub-task": "Unteraufgabe hinzufügen",
+    "Edit sub-task": "Unteraufgabe bearbeiten",
+    "Delete sub-task": "Unteraufgabe löschen",
+    ":done of :total sub-tasks done": ":done von :total Unteraufgaben erledigt"
 }

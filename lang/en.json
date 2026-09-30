@@ -674,5 +674,16 @@
     "Notification settings": "Notification settings",
     "Action items need your attention": "Action items need your attention",
     ":count action item is overdue|:count action items are overdue": ":count action item is overdue|:count action items are overdue",
-    ":count action item is due soon|:count action items are due soon": ":count action item is due soon|:count action items are due soon"
+    ":count action item is due soon|:count action items are due soon": ":count action item is due soon|:count action items are due soon",
+    "Repeat": "Repeat",
+    "Does not repeat": "Does not repeat",
+    "Weekly": "Weekly",
+    "Every 2 weeks": "Every 2 weeks",
+    "Monthly": "Monthly",
+    "Follows up the item completed on :date": "Follows up the item completed on :date",
+    "Sub-tasks": "Sub-tasks",
+    "Add a sub-task": "Add a sub-task",
+    "Edit sub-task": "Edit sub-task",
+    "Delete sub-task": "Delete sub-task",
+    ":done of :total sub-tasks done": ":done of :total sub-tasks done"
 }

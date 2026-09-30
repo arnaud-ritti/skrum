@@ -161,6 +161,15 @@ export type BoardParticipant = {
 
 export type ActionItemPriority = 'high' | 'medium' | 'low';
 
+export type ActionItemRecurrence = 'weekly' | 'every_two_weeks' | 'monthly';
+
+export type ActionItemSubtask = {
+    id: string;
+    content: string;
+    isCompleted: boolean;
+    position: number;
+};
+
 export type ActionItemStatus = 'open' | 'completed';
 
 export type ActionItemPerson = { name: string; avatarUrl: string };
@@ -194,6 +203,9 @@ export type ActionItem = {
     source: ActionItemSource | null;
     themeId: string | null;
     themeName: string | null;
+    recurrence: ActionItemRecurrence | null;
+    previousOccurrenceId: string | null;
+    subtasks: ActionItemSubtask[];
     createdAt: string | null;
     /** Client-only: bumped by comment events so an open thread refetches. */
     commentsRevision?: number;

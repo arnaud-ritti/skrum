@@ -19,6 +19,8 @@ import { ActionItemComments } from './action-item-comments';
 import { AssigneeSelect, type AssigneeGroup } from './assignee-select';
 import { DueDateChip } from './due-date-chip';
 import { PriorityIcon, PrioritySelect } from './priority-select';
+import { RecurrenceBadge, RecurrenceSelect } from './recurrence-select';
+import { SubtaskChecklist } from './subtask-checklist';
 
 export type RunMutation = <T>(mutation: Promise<T>) => Promise<T | undefined>;
 
@@ -63,6 +65,9 @@ export function ActionItemCard({
     const manages = editable && canManageActionItem(item, viewer);
     const completes = editable && canCompleteActionItem(item, viewer);
     const completed = item.status === 'completed';
+    const completedSubtasks = item.subtasks.filter(
+        (subtask) => subtask.isCompleted,
+    ).length;
 
     if (knownDueOn !== item.dueOn) {
         setKnownDueOn(item.dueOn);
@@ -196,6 +201,20 @@ export function ActionItemCard({
                     <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                         <PriorityIcon priority={item.priority} />
                         <DueDateChip item={item} />
+                        <RecurrenceBadge item={item} />
+                        {item.subtasks.length > 0 && (
+                            <span
+                                aria-label={t(
+                                    ':done of :total sub-tasks done',
+                                    {
+                                        done: completedSubtasks,
+                                        total: item.subtasks.length,
+                                    },
+                                )}
+                            >
+                                {completedSubtasks}/{item.subtasks.length}
+                            </span>
+                        )}
                         <span className="flex items-center gap-1">
                             <Avatar className="size-4">
                                 {item.createdBy && (
@@ -243,6 +262,14 @@ export function ActionItemCard({
                     </Button>
                 )}
             </div>
+            <SubtaskChecklist
+                item={item}
+                endpoints={endpoints}
+                run={run}
+                canManage={manages}
+                canCheck={completes}
+                onSaved={onSaved}
+            />
             {children}
             <div className="grid grid-cols-2 gap-2">
                 <PrioritySelect
@@ -267,6 +294,11 @@ export function ActionItemCard({
                     }
                 />
             </div>
+            <RecurrenceSelect
+                value={item.recurrence}
+                disabled={busy || !manages || item.dueOn === null}
+                onChange={(recurrence) => void patch({ recurrence })}
+            />
             <AssigneeSelect
                 value={assigneeValue(item.assignee)}
                 current={item.assignee}

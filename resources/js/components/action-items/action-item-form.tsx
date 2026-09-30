@@ -3,15 +3,20 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useTrans } from '@/hooks/use-trans';
 import { assigneePayload, Unassigned } from '@/lib/action-items/assignees';
-import type { ActionItemPriority } from '@/lib/retro/types';
+import type {
+    ActionItemPriority,
+    ActionItemRecurrence,
+} from '@/lib/retro/types';
 import { AnonymousNotice } from './anonymous-notice';
 import { AssigneeSelect, type AssigneeGroup } from './assignee-select';
 import { PrioritySelect } from './priority-select';
+import { RecurrenceSelect } from './recurrence-select';
 
 export type ActionItemDraft = {
     content: string;
     priority: ActionItemPriority;
     dueOn: string;
+    recurrence: ActionItemRecurrence | null;
     assignee: string;
     /** Fields contributed through `extraFields`, sent as they are. */
     extra: Record<string, unknown>;
@@ -22,6 +27,7 @@ export function emptyActionItemDraft(): ActionItemDraft {
         content: '',
         priority: 'medium',
         dueOn: '',
+        recurrence: null,
         assignee: Unassigned,
         extra: {},
     };
@@ -34,6 +40,7 @@ export function actionItemPayload(
         content: draft.content.trim(),
         priority: draft.priority,
         due_on: draft.dueOn === '' ? null : draft.dueOn,
+        recurrence: draft.recurrence,
         ...assigneePayload(draft.assignee),
         ...draft.extra,
     };
@@ -114,9 +121,21 @@ export function ActionItemForm({
                     max="2100-12-31"
                     disabled={disabled || sending}
                     aria-label={t('Due date')}
-                    onChange={(event) => update({ dueOn: event.target.value })}
+                    onChange={(event) =>
+                        update({
+                            dueOn: event.target.value,
+                            ...(event.target.value === ''
+                                ? { recurrence: null }
+                                : {}),
+                        })
+                    }
                 />
             </div>
+            <RecurrenceSelect
+                value={draft.recurrence}
+                disabled={disabled || sending || draft.dueOn === ''}
+                onChange={(recurrence) => update({ recurrence })}
+            />
             <AssigneeSelect
                 value={draft.assignee}
                 groups={assigneeGroups}

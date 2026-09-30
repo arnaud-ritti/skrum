@@ -927,5 +927,16 @@
     "Notification settings": "Paramètres de notification",
     "Action items need your attention": "Des actions requièrent votre attention",
     ":count action item is overdue|:count action items are overdue": ":count action est en retard|:count actions sont en retard",
-    ":count action item is due soon|:count action items are due soon": ":count action arrive bientôt à échéance|:count actions arrivent bientôt à échéance"
+    ":count action item is due soon|:count action items are due soon": ":count action arrive bientôt à échéance|:count actions arrivent bientôt à échéance",
+    "Repeat": "Répétition",
+    "Does not repeat": "Ne se répète pas",
+    "Weekly": "Chaque semaine",
+    "Every 2 weeks": "Toutes les 2 semaines",
+    "Monthly": "Chaque mois",
+    "Follows up the item completed on :date": "Fait suite à l'action terminée le :date",
+    "Sub-tasks": "Sous-tâches",
+    "Add a sub-task": "Ajouter une sous-tâche",
+    "Edit sub-task": "Modifier la sous-tâche",
+    "Delete sub-task": "Supprimer la sous-tâche",
+    ":done of :total sub-tasks done": ":done sous-tâches terminées sur :total"
 }

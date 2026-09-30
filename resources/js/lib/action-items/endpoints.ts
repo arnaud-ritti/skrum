@@ -1,6 +1,8 @@
 import ActionItemCommentsController from '@/actions/App/Http/Controllers/Retros/ActionItemCommentsController';
+import ActionItemSubtasksController from '@/actions/App/Http/Controllers/Retros/ActionItemSubtasksController';
 import ActionItemsController from '@/actions/App/Http/Controllers/Retros/ActionItemsController';
 import WorkspaceActionItemCommentsController from '@/actions/App/Http/Controllers/WorkspaceActionItemCommentsController';
+import WorkspaceActionItemSubtasksController from '@/actions/App/Http/Controllers/WorkspaceActionItemSubtasksController';
 import WorkspaceActionItemsController from '@/actions/App/Http/Controllers/WorkspaceActionItemsController';
 
 export type EndpointRoute = { url: string; method: string };
@@ -16,6 +18,9 @@ export type ActionItemEndpoints = {
     addComment: (actionItemId: string) => EndpointRoute;
     updateComment: (commentId: string) => EndpointRoute;
     destroyComment: (commentId: string) => EndpointRoute;
+    addSubtask: (actionItemId: string) => EndpointRoute;
+    updateSubtask: (subtaskId: string) => EndpointRoute;
+    destroySubtask: (subtaskId: string) => EndpointRoute;
 };
 
 export function boardActionItemEndpoints(retroId: string): ActionItemEndpoints {
@@ -37,6 +42,18 @@ export function boardActionItemEndpoints(retroId: string): ActionItemEndpoints {
             ActionItemCommentsController.destroy({
                 retro: retroId,
                 actionItemComment,
+            }),
+        addSubtask: (actionItem) =>
+            ActionItemSubtasksController.store({ retro: retroId, actionItem }),
+        updateSubtask: (actionItemSubtask) =>
+            ActionItemSubtasksController.update({
+                retro: retroId,
+                actionItemSubtask,
+            }),
+        destroySubtask: (actionItemSubtask) =>
+            ActionItemSubtasksController.destroy({
+                retro: retroId,
+                actionItemSubtask,
             }),
     };
 }
@@ -68,6 +85,21 @@ export function workspaceActionItemEndpoints(
             WorkspaceActionItemCommentsController.destroy({
                 workspace,
                 actionItemComment,
+            }),
+        addSubtask: (actionItem) =>
+            WorkspaceActionItemSubtasksController.store({
+                workspace,
+                actionItem,
+            }),
+        updateSubtask: (actionItemSubtask) =>
+            WorkspaceActionItemSubtasksController.update({
+                workspace,
+                actionItemSubtask,
+            }),
+        destroySubtask: (actionItemSubtask) =>
+            WorkspaceActionItemSubtasksController.destroy({
+                workspace,
+                actionItemSubtask,
             }),
     };
 }
