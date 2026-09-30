@@ -862,5 +862,6 @@
     "No new names to suggest.": "No hay nombres nuevos que sugerir.",
     "Suggested name": "Nombre sugerido",
     "Use this name": "Usar este nombre",
-    "Edit this name": "Editar este nombre"
+    "Edit this name": "Editar este nombre",
+    "The board content is sent to :provider to write the summary.": "El contenido del tablero se envía a :provider para escribir el resumen."
 }

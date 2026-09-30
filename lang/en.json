@@ -608,5 +608,6 @@
     "No new names to suggest.": "No new names to suggest.",
     "Suggested name": "Suggested name",
     "Use this name": "Use this name",
-    "Edit this name": "Edit this name"
+    "Edit this name": "Edit this name",
+    "The board content is sent to :provider to write the summary.": "The board content is sent to :provider to write the summary."
 }

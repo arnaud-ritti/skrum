@@ -105,9 +105,19 @@ export function SummarySection() {
                 )}
             </div>
 
+            {isFacilitator &&
+                (summary.status === null || summary.status === 'failed') && (
+                    <p className="text-xs text-muted-foreground">
+                        {t(
+                            'The board content is sent to :provider to write the summary.',
+                            { provider: summary.provider },
+                        )}
+                    </p>
+                )}
+
             {summary.status === 'pending' && (
                 <div className="space-y-2" aria-busy="true">
-                    <p className="text-sm text-muted-foreground">
+                    <p role="status" className="text-sm text-muted-foreground">
                         {t('Generating the summary…')}
                     </p>
                     <div className="h-3 w-full rounded bg-muted motion-safe:animate-pulse" />

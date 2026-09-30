@@ -178,16 +178,28 @@ export function SuggestionsList() {
                         ))}
                         {promoted.map((suggestion) => (
                             <li key={suggestion.id} className="text-sm">
-                                <a
-                                    href={`#action-item-${suggestion.actionItemId}`}
-                                    title={t('Added to action items')}
-                                    className="flex items-start gap-1.5 hover:underline"
-                                >
-                                    <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-                                    <span className="min-w-0 break-words">
-                                        {suggestion.content}
+                                {suggestion.actionItemId === null ? (
+                                    <span
+                                        title={t('Added to action items')}
+                                        className="flex items-start gap-1.5"
+                                    >
+                                        <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                                        <span className="min-w-0 break-words">
+                                            {suggestion.content}
+                                        </span>
                                     </span>
-                                </a>
+                                ) : (
+                                    <a
+                                        href={`#action-item-${suggestion.actionItemId}`}
+                                        title={t('Added to action items')}
+                                        className="flex items-start gap-1.5 hover:underline"
+                                    >
+                                        <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                                        <span className="min-w-0 break-words">
+                                            {suggestion.content}
+                                        </span>
+                                    </a>
+                                )}
                             </li>
                         ))}
                     </ul>
