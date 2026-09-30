@@ -3,6 +3,9 @@
 namespace App\Actions\HealthCheck;
 
 use App\Enums\HealthStatement;
+use App\Enums\RetroPhase;
+use App\Events\Retros\RetroSettingsChanged;
+use App\Models\Retro;
 use App\Models\Team;
 use App\Models\TeamHealthStatement;
 use Illuminate\Support\Collection;
@@ -18,7 +21,10 @@ class ManageTeamHealthStatements
 
     public const MaximumTotal = 30;
 
-    public function __construct(private TeamHealthStatements $teamHealthStatements) {}
+    public function __construct(
+        private TeamHealthStatements $teamHealthStatements,
+        private FreezeHealthStatements $freezeHealthStatements,
+    ) {}
 
     public function add(Team $team, string $text, string $label): TeamHealthStatement
     {
@@ -125,8 +131,33 @@ class ManageTeamHealthStatements
 
             $this->materialize($locked);
 
-            return $change($locked);
+            $result = $change($locked);
+
+            $this->refreezeUnansweredRetros($locked);
+
+            return $result;
         });
+    }
+
+    private function refreezeUnansweredRetros(Team $team): void
+    {
+        $retroIds = Retro::query()
+            ->where('team_id', $team->id)
+            ->where('health_check_enabled', true)
+            ->where('phase', '!=', RetroPhase::Completed)
+            ->pluck('id');
+
+        foreach ($retroIds as $retroId) {
+            $retro = Retro::query()->whereKey($retroId)->lockForUpdate()->first();
+
+            if ($retro === null || $retro->healthCheckAnswers()->exists()) {
+                continue;
+            }
+
+            $this->freezeHealthStatements->handle($retro);
+
+            (new RetroSettingsChanged($retro->id))->sendToOthers();
+        }
     }
 
     private function materialize(Team $team): void

@@ -8,6 +8,7 @@ use App\Events\Retros\RetroDeleted;
 use App\Events\Retros\RetroSettingsChanged;
 use App\Events\Retros\TimerChanged;
 use App\Models\Card;
+use App\Models\HealthCheckAnswer;
 use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\User;
@@ -348,3 +349,16 @@ it('switches the vote limit to automatic before voting', function (RetroPhase $p
 
     expect($retro->fresh()->votes_per_participant)->toBeNull();
 })->with([RetroPhase::HealthCheck, RetroPhase::Icebreaker, RetroPhase::Writing, RetroPhase::Grouping]);
+
+it('refuses turning anonymity off once someone answered the health check', function () {
+    $retro = Retro::factory()->withHealthCheck()->create(['is_anonymous' => true]);
+    [$user, $participant] = retroFacilitator($retro);
+    HealthCheckAnswer::factory()->create(['retro_id' => $retro->id, 'participant_id' => $participant->id, 'statement' => 'vision', 'score' => 8]);
+
+    $this->actingAs($user)
+        ->patchJson(route('retros.settings.update', $retro), ['is_anonymous' => false])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('is_anonymous');
+
+    expect($retro->fresh()->is_anonymous)->toBeTrue();
+});

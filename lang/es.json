@@ -492,6 +492,7 @@
     "You have not voted for this card.": "No has votado por esta tarjeta.",
     "The retrospective can only move to the previous or next phase.": "La retrospectiva solo puede pasar a la fase anterior o siguiente.",
     "Anonymity can only be turned off before any card is written.": "El anonimato solo se puede desactivar antes de que se escriba ninguna tarjeta.",
+    "Anonymity can only be turned off before anyone answers.": "El anonimato solo se puede desactivar antes de que alguien responda.",
     "The facilitator must be a member of this team.": "El facilitador debe ser miembro de este equipo.",
     "The selected card must be a top-level card of this retrospective.": "La tarjeta seleccionada debe ser una tarjeta de nivel superior de esta retrospectiva.",
     "This column still has cards.": "Esta columna todavía tiene tarjetas.",

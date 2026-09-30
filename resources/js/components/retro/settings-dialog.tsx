@@ -246,14 +246,16 @@ function SettingsForm({ onDone }: { onDone: () => void }) {
                     id="retro-health-check"
                     label={t('Health check')}
                     checked={healthCheckEnabled}
-                    disabled={engagementLocked}
+                    disabled={
+                        engagementLocked || retro.phase === 'health_check'
+                    }
                     onChange={setHealthCheckEnabled}
                 />
                 <SettingCheckbox
                     id="retro-icebreaker"
                     label={t('Icebreaker')}
                     checked={icebreakerEnabled}
-                    disabled={engagementLocked}
+                    disabled={engagementLocked || retro.phase === 'icebreaker'}
                     onChange={setIcebreakerEnabled}
                 />
             </div>

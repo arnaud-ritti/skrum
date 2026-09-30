@@ -67,6 +67,10 @@ class RetroSettingsController extends Controller
                 throw ValidationException::withMessages(['is_anonymous' => __('Anonymity can only be turned off before any card is written.')]);
             }
 
+            if ($isDisablingAnonymity && $locked->healthCheckAnswers()->exists()) {
+                throw ValidationException::withMessages(['is_anonymous' => __('Anonymity can only be turned off before anyone answers.')]);
+            }
+
             $isEnablingHealthCheck = ($validated['health_check_enabled'] ?? false)
                 && ! $locked->health_check_enabled;
 

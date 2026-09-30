@@ -5,6 +5,7 @@ use App\Actions\HealthCheck\ManageTeamHealthStatements;
 use App\Enums\HealthStatement;
 use App\Enums\RetroPhase;
 use App\Enums\WorkspaceRole;
+use App\Events\Retros\RetroSettingsChanged;
 use App\Models\HealthCheckAnswer;
 use App\Models\Retro;
 use App\Models\Team;
@@ -123,4 +124,54 @@ it('keeps the frozen set once answered, whatever the team changes', function () 
 
     expect(frozenHealthKeys($retro))->toBe(builtinHealthKeys())
         ->and($retro->healthCheckAnswers()->sole()->only(['statement', 'score']))->toBe(['statement' => 'vision', 'score' => 8]);
+});
+
+it('re-freezes unanswered enabled retros when the team edits its statements', function () {
+    $retro = Retro::factory()->withHealthCheck()->create();
+    app(FreezeHealthStatements::class)->handle($retro);
+
+    $manage = app(ManageTeamHealthStatements::class);
+    $custom = $manage->add($retro->team, 'Added later', 'Later');
+
+    expect(frozenHealthKeys($retro))->toBe([...builtinHealthKeys(), $custom->id]);
+
+    $manage->archive($retro->team, 'vision');
+
+    expect(frozenHealthKeys($retro))->not->toContain('vision')->toContain($custom->id);
+});
+
+it('broadcasts a settings change to open boards when a team edit re-freezes a retro', function () {
+    $retro = Retro::factory()->withHealthCheck()->create();
+
+    app(ManageTeamHealthStatements::class)->add($retro->team, 'Added later', 'Later');
+
+    Event::assertDispatched(RetroSettingsChanged::class, fn (RetroSettingsChanged $event) => $event->retroId === $retro->id);
+});
+
+it('keeps the set of a retro that has answers when the team edits its statements', function () {
+    $retro = Retro::factory()->withHealthCheck()->create();
+    [, $participant] = retroFacilitator($retro);
+    app(FreezeHealthStatements::class)->handle($retro);
+    HealthCheckAnswer::factory()->create(['retro_id' => $retro->id, 'participant_id' => $participant->id, 'statement' => 'vision', 'score' => 8]);
+
+    app(ManageTeamHealthStatements::class)->add($retro->team, 'Added later', 'Later');
+
+    expect(frozenHealthKeys($retro))->toBe(builtinHealthKeys());
+});
+
+it('leaves completed retros untouched when the team edits its statements', function () {
+    $retro = Retro::factory()->withHealthCheck()->inPhase(RetroPhase::Completed)->create();
+    app(FreezeHealthStatements::class)->handle($retro);
+
+    app(ManageTeamHealthStatements::class)->add($retro->team, 'Added later', 'Later');
+
+    expect(frozenHealthKeys($retro))->toBe(builtinHealthKeys());
+});
+
+it('leaves retros without the health check untouched when the team edits its statements', function () {
+    $retro = Retro::factory()->create(['health_check_enabled' => false]);
+
+    app(ManageTeamHealthStatements::class)->add($retro->team, 'Added later', 'Later');
+
+    expect(frozenHealthKeys($retro))->toBe([]);
 });
