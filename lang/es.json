@@ -1297,5 +1297,6 @@
     "This issue was not found in :source.": "No se encontró esta incidencia en :source.",
     "This task was not imported from a tracker.": "Esta tarea no se importó desde un gestor de incidencias.",
     "Set an estimate before syncing it.": "Define una estimación antes de sincronizarla.",
-    "The estimate could not be written. Try again.": "No se pudo escribir la estimación. Inténtalo de nuevo."
+    "The estimate could not be written. Try again.": "No se pudo escribir la estimación. Inténtalo de nuevo.",
+    "This team has no connected tracker.": "Este equipo no tiene ningún gestor de incidencias conectado."
 }

@@ -1,7 +1,9 @@
 <?php
 
+use App\Enums\IntegrationProvider;
 use App\Enums\McpScope;
 use App\Models\Team;
+use App\Models\TeamIntegration;
 
 $readTools = [
     'poker.game.get',
@@ -41,12 +43,28 @@ $insightTools = [
 
 it('registers exactly the contract tools and prompts', function () {
     configureLlm();
-    $user = teamMember(Team::factory()->create());
+    enableIntegrations(IntegrationProvider::Jira);
+    $team = Team::factory()->create();
+    TeamIntegration::factory()->jira()->create(['team_id' => $team->id]);
+    $user = teamMember($team);
 
     $server = actingAsMcp($user, McpScope::cases());
 
     expect(mcpToolNames($server))->toBe(mcpContractToolNames())
         ->and(mcpPromptNames($server))->toBe(['analyze-retro', 'team-health']);
+});
+
+it('adds only the read tracker tools to a read-only grant', function () use ($readTools) {
+    enableIntegrations(IntegrationProvider::Jira);
+    $team = Team::factory()->create();
+    TeamIntegration::factory()->jira()->create(['team_id' => $team->id]);
+    $user = teamMember($team);
+    configureLlm();
+
+    $expected = [...$readTools, 'poker.iterations.list', 'poker.sources.list'];
+    sort($expected);
+
+    expect(mcpToolNames(actingAsMcp($user, [McpScope::Read])))->toBe($expected);
 });
 
 it('lists exactly the tools of the granted scopes', function (array $scopes, array $expected) {

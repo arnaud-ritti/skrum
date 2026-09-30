@@ -437,8 +437,8 @@ function mcpPromptData(McpTestResponse $response): array
 }
 
 /**
- * The 25 tools of the QRetro contract that exist before spec 6 adds the
- * four tracker tools.
+ * The 29 tools of the QRetro contract. The four tracker tools are listed
+ * only while a visible team has an active tracker (spec 5 §2.4).
  *
  * @return array<int, string>
  */
@@ -456,6 +456,8 @@ function mcpContractToolNames(): array
         'retro.board.insights.list',
         'retro.board.health.get',
         'retro.board.roti.get',
+        'poker.sources.list',
+        'poker.iterations.list',
         'poker.games.list',
         'poker.game.get',
         'poker.game.tasks.list',
@@ -467,8 +469,10 @@ function mcpContractToolNames(): array
         'retro.board.messages.update',
         'poker.games.create',
         'poker.game.tasks.add',
+        'poker.game.tasks.import',
         'poker.game.task.select',
         'poker.game.task.reveal',
+        'poker.game.task.sync',
         'retro.board.messages.delete_own',
     ];
 
@@ -562,6 +566,8 @@ function mcpSweepWorld(): array
     $current = PokerTask::factory()->create(['poker_game_id' => $game->id]);
     $next = PokerTask::factory()->create(['poker_game_id' => $game->id]);
     pokerVote(openPokerRound($game, $current), $player, '5');
+    TeamIntegration::factory()->jira()->create(['team_id' => $team->id]);
+    $imported = PokerTask::factory()->imported()->estimated('5')->create(['poker_game_id' => $game->id, 'title' => 'Sweep imported story']);
 
     return [
         'user' => $user,
@@ -576,7 +582,10 @@ function mcpSweepWorld(): array
         'game' => $game,
         'current' => $current,
         'next' => $next,
+        'imported' => $imported,
         'secrets' => [
+            'jira-access',
+            'jira-refresh',
             'sweep-user@example.test',
             'sweep-other@example.test',
             $discussing->guest_token,

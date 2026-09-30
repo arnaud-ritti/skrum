@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\IntegrationProvider;
 use App\Enums\PokerDeck;
 use App\Enums\PokerRevealReason;
 use App\Mcp\Tools\Poker\GetGame;
@@ -9,6 +10,7 @@ use App\Models\PokerGame;
 use App\Models\PokerPlayer;
 use App\Models\PokerTask;
 use App\Models\Team;
+use App\Models\TeamIntegration;
 use Illuminate\Support\Arr;
 
 it('lists the team\'s games newest first with counts and links', function () {
@@ -189,4 +191,22 @@ it('returns absolute avatar urls for players', function () {
 
     expect($result['players'])->not->toBeEmpty()
         ->and(collect($result['players'])->every(fn (array $player): bool => str_starts_with($player['avatarUrl'], config('app.url'))))->toBeTrue();
+});
+
+it('exposes the tracker reference and write-back state of imported tasks', function () {
+    enableIntegrations(IntegrationProvider::Jira);
+    $game = PokerGame::factory()->create();
+    [$user] = pokerMember($game);
+    TeamIntegration::factory()->jira()->create(['team_id' => $game->team_id]);
+    $task = importedPokerTask($game, ['needs_sync' => true, 'sync_error' => 'Boom', 'external_assignee' => 'Jane Doe']);
+
+    $result = mcpStructured(actingAsMcp($user)->tool(ListTasks::class, ['game_id' => $game->id])->assertOk());
+
+    expect($result['items'][0]['external'])->toBe([
+        'source' => 'jira',
+        'key' => $task->external_key,
+        'url' => $task->external_url,
+        'syncState' => 'failed',
+        'syncError' => 'Boom',
+    ]);
 });

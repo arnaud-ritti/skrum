@@ -1297,5 +1297,6 @@
     "This issue was not found in :source.": "Ce ticket est introuvable dans :source.",
     "This task was not imported from a tracker.": "Cette tâche n’a pas été importée depuis un outil de suivi.",
     "Set an estimate before syncing it.": "Définissez une estimation avant de la synchroniser.",
-    "The estimate could not be written. Try again.": "L’estimation n’a pas pu être écrite. Réessayez."
+    "The estimate could not be written. Try again.": "L’estimation n’a pas pu être écrite. Réessayez.",
+    "This team has no connected tracker.": "Cette équipe n’a aucun outil de suivi connecté."
 }

@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\IntegrationProvider;
 use App\Enums\McpScope;
 use App\Mcp\Prompts\AnalyzeRetro;
 use App\Mcp\Prompts\TeamHealth;
@@ -34,6 +35,10 @@ function mcpSweepArguments(): array
         'poker.game.tasks.add' => fn (array $w): array => ['game_id' => $w['game']->id, 'tasks' => [['title' => 'Sweep story']]],
         'poker.game.task.select' => fn (array $w): array => ['game_id' => $w['game']->id, 'task_id' => $w['next']->id],
         'poker.game.task.reveal' => fn (array $w): array => ['game_id' => $w['game']->id, 'task_id' => $w['current']->id],
+        'poker.sources.list' => fn (array $w): array => ['team_id' => $w['team']->id],
+        'poker.iterations.list' => fn (array $w): array => ['team_id' => $w['team']->id, 'source' => 'jira'],
+        'poker.game.tasks.import' => fn (array $w): array => ['game_id' => $w['game']->id, 'source' => 'jira', 'query' => 'project = SWEEP'],
+        'poker.game.task.sync' => fn (array $w): array => ['task_id' => $w['imported']->id],
         'retro.board.messages.delete_own' => fn (array $w): array => ['message_id' => $w['deletable']->id],
     ];
 }
@@ -68,6 +73,10 @@ function mcpSweepMarkers(): array
         'poker.game.tasks.add' => fn (array $w): string => 'Sweep story',
         'poker.game.task.select' => fn (array $w): string => $w['next']->title,
         'poker.game.task.reveal' => fn (array $w): string => 'estimateSet',
+        'poker.sources.list' => fn (array $w): string => 'Acme',
+        'poker.iterations.list' => fn (array $w): string => 'Sweep scrum board',
+        'poker.game.tasks.import' => fn (array $w): string => 'truncated',
+        'poker.game.task.sync' => fn (array $w): string => 'pending',
         'retro.board.messages.delete_own' => fn (array $w): string => 'deleted',
     ];
 }
@@ -83,6 +92,8 @@ it('sweeps every contract tool', function () {
 });
 
 it('never returns an email, a guest token, a guest link or a secret', function (string $name) {
+    enableIntegrations(IntegrationProvider::Jira);
+    fakeJiraTrackerApi();
     configureLlm();
     $world = mcpSweepWorld();
 

@@ -1049,5 +1049,6 @@
     "This issue was not found in :source.": "This issue was not found in :source.",
     "This task was not imported from a tracker.": "This task was not imported from a tracker.",
     "Set an estimate before syncing it.": "Set an estimate before syncing it.",
-    "The estimate could not be written. Try again.": "The estimate could not be written. Try again."
+    "The estimate could not be written. Try again.": "The estimate could not be written. Try again.",
+    "This team has no connected tracker.": "This team has no connected tracker."
 }

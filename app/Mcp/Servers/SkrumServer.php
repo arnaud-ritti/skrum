@@ -7,10 +7,14 @@ use App\Mcp\Prompts\TeamHealth;
 use App\Mcp\Tools\Poker\AddTasks;
 use App\Mcp\Tools\Poker\CreateGame;
 use App\Mcp\Tools\Poker\GetGame;
+use App\Mcp\Tools\Poker\ImportTasks;
 use App\Mcp\Tools\Poker\ListGames;
+use App\Mcp\Tools\Poker\ListIterations;
+use App\Mcp\Tools\Poker\ListSources;
 use App\Mcp\Tools\Poker\ListTasks;
 use App\Mcp\Tools\Poker\RevealTask;
 use App\Mcp\Tools\Poker\SelectTask;
+use App\Mcp\Tools\Poker\SyncTask;
 use App\Mcp\Tools\Retro\CompleteAction;
 use App\Mcp\Tools\Retro\CreateAction;
 use App\Mcp\Tools\Retro\DeleteOwnMessage;
@@ -72,6 +76,10 @@ class SkrumServer extends Server
         AddTasks::class,
         SelectTask::class,
         RevealTask::class,
+        ListSources::class,
+        ListIterations::class,
+        ImportTasks::class,
+        SyncTask::class,
     ];
 
     protected array $resources = [];

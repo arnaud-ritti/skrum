@@ -88,34 +88,69 @@ class PokerTaskSync
             return __('This task can no longer be synced.');
         }
 
-        $label = ['provider' => $provider->label()];
         $integration = $this->integrations[$provider->value] ?? null;
 
-        if ($integration === null) {
-            return __('Connect :provider in the team settings.', $label);
+        $connectionReason = self::connectionReason($provider, $integration);
+
+        if ($connectionReason !== null) {
+            return $connectionReason;
         }
 
-        if ($integration->status === IntegrationStatus::ReconnectRequired) {
-            return __('Reconnect :provider in the team settings.', $label);
+        if ($integration?->site() !== $task->external_site) {
+            return __('This task comes from another :provider site.', ['provider' => $provider->label()]);
         }
 
-        if (! $integration->isActive()) {
-            return __('Connect :provider in the team settings.', $label);
-        }
+        $accessReason = self::accessReason($provider, $integration);
 
-        if ($integration->site() !== $task->external_site) {
-            return __('This task comes from another :provider site.', $label);
-        }
-
-        if ($integration->access !== IntegrationAccess::Write) {
-            return __('This :provider connection is read-only.', $label);
+        if ($accessReason !== null) {
+            return $accessReason;
         }
 
         if (! $this->game->isNumeric()) {
             return __("T-shirt estimates can't be written to :source.", ['source' => $provider->label()]);
         }
 
-        if ($provider === IntegrationProvider::Jira && JiraTracker::storyPointFieldIds($integration) === []) {
+        return self::storyPointsReason($provider, $integration);
+    }
+
+    /**
+     * Why estimates of this connection can never be written back,
+     * whatever the task or game.
+     */
+    public static function writeBackUnavailableReason(IntegrationProvider $provider, ?TeamIntegration $integration): ?string
+    {
+        return self::connectionReason($provider, $integration)
+            ?? self::accessReason($provider, $integration)
+            ?? self::storyPointsReason($provider, $integration);
+    }
+
+    private static function connectionReason(IntegrationProvider $provider, ?TeamIntegration $integration): ?string
+    {
+        $label = ['provider' => $provider->label()];
+
+        if ($integration?->status === IntegrationStatus::ReconnectRequired) {
+            return __('Reconnect :provider in the team settings.', $label);
+        }
+
+        if ($integration === null || ! $integration->isActive()) {
+            return __('Connect :provider in the team settings.', $label);
+        }
+
+        return null;
+    }
+
+    private static function accessReason(IntegrationProvider $provider, ?TeamIntegration $integration): ?string
+    {
+        if ($integration?->access !== IntegrationAccess::Write) {
+            return __('This :provider connection is read-only.', ['provider' => $provider->label()]);
+        }
+
+        return null;
+    }
+
+    private static function storyPointsReason(IntegrationProvider $provider, ?TeamIntegration $integration): ?string
+    {
+        if ($integration !== null && $provider === IntegrationProvider::Jira && JiraTracker::storyPointFieldIds($integration) === []) {
             return __('No story points field found.');
         }
 

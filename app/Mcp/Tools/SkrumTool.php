@@ -6,6 +6,7 @@ use App\Enums\McpScope;
 use App\Mcp\McpContext;
 use App\Mcp\McpFeature;
 use App\Mcp\McpGrant;
+use App\Support\Integrations\Exceptions\IntegrationException;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -66,6 +67,8 @@ abstract class SkrumTool extends Tool
             return Response::error(ValidationMessages::from($exception));
         } catch (HttpException $exception) {
             return Response::error($this->httpMessage($exception));
+        } catch (IntegrationException $exception) {
+            return Response::error($this->integrationMessage($exception));
         } catch (Throwable $exception) {
             Log::error('MCP tool failed.', [
                 'tool' => $this->name(),
@@ -130,6 +133,18 @@ abstract class SkrumTool extends Tool
         $maxAttempts = (int) config('skrum.mcp.write_rate_limit');
 
         return RateLimiter::increment($key, 60) <= $maxAttempts;
+    }
+
+    private function integrationMessage(IntegrationException $exception): string
+    {
+        $message = $exception->userMessage();
+        $detail = $exception->detail();
+
+        if ($detail === null || str_contains($message, $detail)) {
+            return $message;
+        }
+
+        return "{$message} ({$detail})";
     }
 
     private function httpMessage(HttpException $exception): string
