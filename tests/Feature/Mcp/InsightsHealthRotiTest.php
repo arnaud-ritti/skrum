@@ -232,7 +232,7 @@ it('reports the alignment of a category from its scores', function () {
     $vision = collect(mcpStructured(actingAsMcp($user)->tool(GetHealth::class, ['board_id' => $retro->id]))['categories'])->firstWhere('key', HealthStatement::Vision->value);
 
     expect($vision['answers'])->toBe(2)
-        ->and($vision['alignment'])->not->toBeNull();
+        ->and($vision['alignment'])->toEqual(10.0);
 });
 
 it('never creates a participant when reading ROTI or health', function (string $tool) {

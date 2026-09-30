@@ -134,9 +134,11 @@ class AnalyzeRetro extends SkrumPrompt
                 break;
             }
 
-            $sortedByVotes
-                ? usort($candidates, fn (array $a, array $b): int => $a['votes'] <=> $b['votes'])
-                : $candidates = array_reverse($candidates);
+            if ($sortedByVotes) {
+                usort($candidates, fn (array $a, array $b): int => $a['votes'] <=> $b['votes']);
+            } else {
+                $candidates = array_reverse($candidates);
+            }
 
             $excess = self::length($data) - self::MaxContentLength;
 

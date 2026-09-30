@@ -111,20 +111,20 @@ it('reports suggestions of another board or team as not found', function () {
     mcpWriter($user)->tool(PromoteSuggestion::class, ['board_id' => $invisible->retro_id, 'suggested_action_id' => $invisible->id])->assertHasErrors(['Not found.']);
 });
 
-it('creates no participant when a suggestion call is refused', function (string $tool, RetroPhase $phase, array $attributes) {
+it('creates no participant when a suggestion call is refused', function (string $tool, RetroPhase $phase, array $attributes, string $message) {
     $retro = Retro::factory()->inPhase($phase)->create($attributes);
     $user = teamMember($retro->team);
     $suggestion = SuggestedAction::factory()->create(['retro_id' => $retro->id]);
 
-    mcpWriter($user)->tool($tool, ['board_id' => $retro->id, 'suggested_action_id' => $suggestion->id])->assertHasErrors();
+    mcpWriter($user)->tool($tool, ['board_id' => $retro->id, 'suggested_action_id' => $suggestion->id])->assertHasErrors([$message]);
 
     expect(Participant::query()->where('retro_id', $retro->id)->exists())->toBeFalse()
         ->and($suggestion->fresh()->status)->toBe(SuggestedActionStatus::Pending);
 })->with([
-    'promote on a locked discussing board' => [PromoteSuggestion::class, RetroPhase::Discussing, ['is_locked' => true]],
-    'reject on a locked discussing board' => [RejectSuggestion::class, RetroPhase::Discussing, ['is_locked' => true]],
-    'promote by a plain member once completed' => [PromoteSuggestion::class, RetroPhase::Completed, []],
-    'reject by a plain member once completed' => [RejectSuggestion::class, RetroPhase::Completed, []],
+    'promote on a locked discussing board' => [PromoteSuggestion::class, RetroPhase::Discussing, ['is_locked' => true], 'The board is closed for editing.'],
+    'reject on a locked discussing board' => [RejectSuggestion::class, RetroPhase::Discussing, ['is_locked' => true], 'The board is closed for editing.'],
+    'promote by a plain member once completed' => [PromoteSuggestion::class, RetroPhase::Completed, [], 'Only the facilitator can do this.'],
+    'reject by a plain member once completed' => [RejectSuggestion::class, RetroPhase::Completed, [], 'Only the facilitator can do this.'],
 ]);
 
 it('lets the facilitator of a completed board promote a suggestion', function () {

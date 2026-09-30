@@ -32,6 +32,8 @@ class TeamHealth extends SkrumPrompt
         Describe the trends, the strongest and weakest health categories, how many agreements get closed, and what keeps repeating. Compare a category only across boards that asked it (match categories by their key) and mention when the statement set changed (sameStatements false). If there is no data, say "health check not run yet".
         TEXT;
 
+    public function __construct(private McpBoard $presentBoard) {}
+
     /**
      * @return array<int, Argument>
      */
@@ -69,7 +71,7 @@ class TeamHealth extends SkrumPrompt
         [$data, $trimmedThemes, $droppedBoards] = $this->fit($data);
 
         $notes = array_filter([
-            $trimmedThemes ? 'The recurring themes of the oldest boards were left out to fit the size limit.' : null,
+            $trimmedThemes ? "Older boards' recurring topics were left out to fit the size limit." : null,
             $droppedBoards > 0 ? "{$droppedBoards} oldest boards were left out to fit the size limit." : null,
         ]);
         $note = $notes === [] ? null : implode("\n", $notes);
@@ -87,6 +89,7 @@ class TeamHealth extends SkrumPrompt
         $boards = McpBoard::withCounts(Retro::query())
             ->where('team_id', $team->id)
             ->where('phase', RetroPhase::Completed)
+            ->whereNotNull('completed_at')
             ->orderByDesc('completed_at')
             ->orderByDesc('id')
             ->limit(self::BoardCount)
@@ -94,7 +97,7 @@ class TeamHealth extends SkrumPrompt
 
         return $boards
             ->reverse()
-            ->map(fn (Retro $retro): array => app(McpBoard::class)->handle($retro))
+            ->map(fn (Retro $retro): array => $this->presentBoard->handle($retro))
             ->values()
             ->all();
     }

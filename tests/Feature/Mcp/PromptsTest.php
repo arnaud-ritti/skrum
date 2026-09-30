@@ -250,6 +250,17 @@ it('picks the last six completed boards by completion date', function () {
     expect(collect($data['boards'])->pluck('board.title')->all())->toBe(['Retro 6', 'Retro 5', 'Retro 4', 'Retro 3', 'Retro 2', 'Retro 1']);
 });
 
+it('never picks a completed board without a completion date as the newest', function () {
+    $team = Team::factory()->create();
+    $user = teamMember($team);
+    Retro::factory()->for($team)->inPhase(RetroPhase::Completed)->create(['title' => 'Dated', 'completed_at' => now()->subWeek()]);
+    Retro::factory()->for($team)->inPhase(RetroPhase::Completed)->create(['title' => 'Undated', 'completed_at' => null]);
+
+    $data = mcpPromptData(actingAsMcp($user)->prompt(TeamHealth::class, ['team_id' => $team->id])->assertOk());
+
+    expect(collect($data['boards'])->pluck('board.title')->all())->toBe(['Dated']);
+});
+
 it('keeps the team health prompt under the cap by emptying recurring themes', function () {
     configureLlm();
     $team = Team::factory()->create();
@@ -266,7 +277,7 @@ it('keeps the team health prompt under the cap by emptying recurring themes', fu
 
     expect(mb_strlen(json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)))->toBeLessThanOrEqual(SkrumPrompt::MaxContentLength)
         ->and($data['boards'][0]['themes'])->toBe([])
-        ->and(mcpPromptText($response))->toContain('recurring themes of the oldest boards were left out');
+        ->and(mcpPromptText($response))->toContain("Older boards' recurring topics were left out to fit the size limit.");
 });
 
 it('drops the oldest boards entirely when emptied themes are not enough', function () {
