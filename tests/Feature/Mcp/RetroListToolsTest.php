@@ -215,3 +215,41 @@ it('returns absolute avatar urls in action items', function () {
     expect($item['assignee']['avatarUrl'])->toStartWith(config('app.url'))
         ->and($item['createdBy']['avatarUrl'])->toStartWith(config('app.url'));
 });
+
+it('reports the owner permission of a workspace owner in the roster', function () {
+    $team = Team::factory()->create();
+    $owner = workspaceManager($team->workspace, WorkspaceRole::Owner);
+    $team->members()->attach($owner);
+
+    $members = collect(mcpStructured(actingAsMcp($owner)->tool(ListTeamMembers::class, ['team_id' => $team->id])->assertOk())['members']);
+
+    expect($members->pluck('permission', 'userId')->all())->toEqual([$owner->id => 'owner']);
+});
+
+it('includes boards created late on the until date and excludes the next midnight', function () {
+    $team = Team::factory()->create();
+    $user = teamMember($team);
+    $lastMinute = Retro::factory()->for($team)->create(['created_at' => '2026-09-10 23:59:00']);
+    Retro::factory()->for($team)->create(['created_at' => '2026-09-11 00:00:00']);
+    $firstMinute = Retro::factory()->for($team)->create(['created_at' => '2026-09-10 00:00:00']);
+    Retro::factory()->for($team)->create(['created_at' => '2026-09-09 23:59:00']);
+
+    $between = mcpStructured(actingAsMcp($user)->tool(ListBoards::class, ['team_id' => $team->id, 'since' => '2026-09-10', 'until' => '2026-09-10'])->assertOk());
+
+    expect(collect($between['items'])->pluck('id')->all())->toBe([$lastMinute->id, $firstMinute->id]);
+});
+
+it('combines the overdue status with the assignee filter', function () {
+    $team = Team::factory()->create();
+    $user = teamMember($team);
+    $mate = teamMember($team);
+    $myOverdue = ActionItem::factory()->withoutRetro($team, $user)->assignedTo($user)->overdue()->create();
+    ActionItem::factory()->withoutRetro($team, $user)->assignedTo($mate)->overdue()->create();
+    ActionItem::factory()->withoutRetro($team, $user)->assignedTo($user)->create();
+    $myDone = ActionItem::factory()->withoutRetro($team, $user)->assignedTo($user)->completed()->create();
+
+    $ids = fn (array $arguments) => collect(mcpStructured(actingAsMcp($user)->tool(ListActionItems::class, $arguments)->assertOk())['items'])->pluck('id')->sort()->values()->all();
+
+    expect($ids(['status' => 'overdue', 'assignee' => 'me']))->toBe([$myOverdue->id])
+        ->and($ids(['status' => 'all', 'assignee' => 'me']))->toContain($myDone->id)->toHaveCount(3);
+});

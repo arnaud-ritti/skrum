@@ -36,6 +36,8 @@ class SearchBoards extends SkrumTool
 
     private const MatchesPerKind = 5;
 
+    private const MaxRowsPerKind = 200;
+
     protected string $name = 'retro.boards.search';
 
     protected string $description = 'Search your teams\' boards by keyword (case-insensitive) across board titles, summaries, action items and messages. Messages that are still hidden on the board are never searched. Returns each matching board with short snippets.';
@@ -119,6 +121,8 @@ class SearchBoards extends SkrumTool
         return Retro::query()
             ->whereIn('id', $retroIds)
             ->where('title', 'ilike', $pattern)
+            ->latest()
+            ->limit(self::MaxRowsPerKind)
             ->get(['id', 'title'])
             ->map(fn (Retro $retro) => ['retroId' => $retro->id, 'kind' => 'title', 'id' => null, 'snippet' => LikePattern::snippet($retro->title, $term)]);
     }
@@ -142,6 +146,8 @@ class SearchBoards extends SkrumTool
             ->where('ai_summary_enabled', true)
             ->where('summary_status', SummaryStatus::Ready)
             ->where('summary', 'ilike', $pattern)
+            ->latest()
+            ->limit(self::MaxRowsPerKind)
             ->get(['id', 'summary'])
             ->map(fn (Retro $retro) => ['retroId' => $retro->id, 'kind' => 'summary', 'id' => null, 'snippet' => LikePattern::snippet((string) $retro->summary, $term)]);
     }
@@ -155,8 +161,11 @@ class SearchBoards extends SkrumTool
         return ActionItem::query()
             ->whereIn('retro_id', $retroIds)
             ->where('content', 'ilike', $pattern)
-            ->orderBy('created_at')
-            ->get(['id', 'retro_id', 'content'])
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->limit(self::MaxRowsPerKind)
+            ->get(['id', 'retro_id', 'content', 'created_at'])
+            ->reverse()
             ->groupBy('retro_id')
             ->flatMap(fn (Collection $items) => $items->take(self::MatchesPerKind))
             ->map(fn (ActionItem $item) => ['retroId' => (string) $item->retro_id, 'kind' => 'action', 'id' => $item->id, 'snippet' => LikePattern::snippet($item->content, $term)]);
@@ -180,8 +189,11 @@ class SearchBoards extends SkrumTool
             ->where(fn (Builder $query) => $query
                 ->whereNotIn('retro_id', $hidingRetroIds)
                 ->orWhereIn('participant_id', $ownParticipantIds))
-            ->orderBy('position')
-            ->get(['id', 'retro_id', 'content'])
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->limit(self::MaxRowsPerKind)
+            ->get(['id', 'retro_id', 'content', 'position'])
+            ->sortBy('position')
             ->groupBy('retro_id')
             ->flatMap(fn (Collection $cards) => $cards->take(self::MatchesPerKind))
             ->map(fn (Card $card) => ['retroId' => $card->retro_id, 'kind' => 'message', 'id' => $card->id, 'snippet' => LikePattern::snippet((string) $card->content, $term)]);

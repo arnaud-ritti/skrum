@@ -52,13 +52,12 @@ class GetHealth extends SkrumTool
     {
         $validated = $request->validate(['board_id' => ['required', 'uuid']]);
         $retro = $this->context->retro($validated['board_id']);
-        $hasAnswers = $retro->healthCheckAnswers()->exists();
 
         if ($retro->phase === RetroPhase::HealthCheck) {
             return Response::structured($this->inProgress($retro));
         }
 
-        if (! $hasAnswers) {
+        if (! $retro->healthCheckAnswers()->exists()) {
             return Response::structured(['status' => 'not_run']);
         }
 

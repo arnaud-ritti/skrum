@@ -5,6 +5,7 @@ use App\Enums\CardSentiment;
 use App\Enums\HealthStatement;
 use App\Enums\McpScope;
 use App\Enums\RetroPhase;
+use App\Enums\SuggestedActionStatus;
 use App\Enums\SummaryStatus;
 use App\Mcp\Tools\Retro\GetHealth;
 use App\Mcp\Tools\Retro\GetRoti;
@@ -35,7 +36,7 @@ it('reports insights as not available before discussing', function () {
     [$user] = retroMember($retro);
 
     expect(mcpStructured(actingAsMcp($user)->tool(ListInsights::class, ['board_id' => $retro->id])->assertOk()))
-        ->toBe(['status' => 'not_available', 'themes' => [], 'suggestedActions' => []]);
+        ->toBe(['status' => 'not_available', 'generatedAt' => null, 'themes' => [], 'suggestedActions' => []]);
 });
 
 it('lists themes with sentiment counts and suggestions with their theme', function () {
@@ -192,3 +193,53 @@ it('hides insights, health and ROTI of invisible boards', function (string $tool
 
     actingAsMcp(teamMember(Team::factory()->create()), [McpScope::Read])->tool($tool, ['board_id' => $retro->id])->assertHasErrors(['Not found.']);
 })->with([ListInsights::class, GetHealth::class, GetRoti::class]);
+
+it('keeps handled suggestions in the insights list', function () {
+    configureLlm();
+    $retro = Retro::factory()->inPhase(RetroPhase::Completed)->create();
+    [$user] = retroMember($retro);
+    $promoted = SuggestedAction::factory()->create(['retro_id' => $retro->id, 'status' => SuggestedActionStatus::Promoted]);
+    $rejected = SuggestedAction::factory()->create(['retro_id' => $retro->id, 'status' => SuggestedActionStatus::Rejected]);
+
+    $suggestions = collect(mcpStructured(actingAsMcp($user)->tool(ListInsights::class, ['board_id' => $retro->id]))['suggestedActions']);
+
+    expect($suggestions->pluck('status', 'id')->all())->toEqual([
+        $promoted->id => 'promoted',
+        $rejected->id => 'rejected',
+    ]);
+});
+
+it('reports a completed category nobody answered without an average or alignment', function () {
+    [$retro, $user, $participant] = mcpHealthBoard(RetroPhase::Completed);
+    $retro->update(['completed_at' => now()]);
+    HealthCheckAnswer::factory()->create(['retro_id' => $retro->id, 'participant_id' => $participant->id, 'statement' => HealthStatement::Vision->value, 'score' => 8]);
+
+    $categories = collect(mcpStructured(actingAsMcp($user)->tool(GetHealth::class, ['board_id' => $retro->id]))['categories']);
+    $unanswered = $categories->firstWhere('key', HealthStatement::Interaction->value);
+
+    expect($unanswered)->toMatchArray(['average' => null, 'answers' => 0, 'alignment' => null]);
+});
+
+it('reports the alignment of a category from its scores', function () {
+    [$retro, $user, $participant] = mcpHealthBoard(RetroPhase::Completed);
+    $retro->update(['completed_at' => now()]);
+    $other = Participant::factory()->create(['retro_id' => $retro->id]);
+
+    foreach ([$participant, $other] as $answerer) {
+        HealthCheckAnswer::factory()->create(['retro_id' => $retro->id, 'participant_id' => $answerer->id, 'statement' => HealthStatement::Vision->value, 'score' => 6]);
+    }
+
+    $vision = collect(mcpStructured(actingAsMcp($user)->tool(GetHealth::class, ['board_id' => $retro->id]))['categories'])->firstWhere('key', HealthStatement::Vision->value);
+
+    expect($vision['answers'])->toBe(2)
+        ->and($vision['alignment'])->not->toBeNull();
+});
+
+it('never creates a participant when reading ROTI or health', function (string $tool) {
+    $retro = Retro::factory()->withHealthCheck()->inPhase(RetroPhase::Completed)->create(['completed_at' => now()]);
+    $user = teamMember($retro->team);
+
+    actingAsMcp($user)->tool($tool, ['board_id' => $retro->id])->assertOk();
+
+    expect(Participant::query()->where('retro_id', $retro->id)->where('user_id', $user->id)->exists())->toBeFalse();
+})->with([GetRoti::class, GetHealth::class]);

@@ -53,10 +53,13 @@ class ListInsights extends SkrumTool
     {
         $validated = $request->validate(['board_id' => ['required', 'uuid']]);
         $retro = $this->context->retro($validated['board_id']);
-        $insights = $this->buildInsights->handle($retro);
 
-        if ($insights === null || ! in_array($retro->phase, [RetroPhase::Discussing, RetroPhase::Completed], true)) {
-            return Response::structured(['status' => 'not_available', 'themes' => [], 'suggestedActions' => []]);
+        $insights = in_array($retro->phase, [RetroPhase::Discussing, RetroPhase::Completed], true)
+            ? $this->buildInsights->handle($retro)
+            : null;
+
+        if ($insights === null) {
+            return Response::structured(['status' => 'not_available', 'generatedAt' => null, 'themes' => [], 'suggestedActions' => []]);
         }
 
         $themeNames = collect($insights['themes'])->pluck('name', 'id');

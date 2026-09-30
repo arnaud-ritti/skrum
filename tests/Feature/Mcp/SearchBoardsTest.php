@@ -171,3 +171,16 @@ it('builds snippets around the match', function () {
         ->and($snippet)->toEndWith('…')
         ->and(LikePattern::snippet('short text', 'text'))->toBe('short text');
 });
+
+it('reads at most the newest 200 matching messages', function () {
+    [$team, $user] = mcpSearchTeam();
+    $older = Retro::factory()->for($team)->inPhase(RetroPhase::Discussing)->create();
+    Card::factory()->create(['retro_id' => $older->id, 'content' => 'needle in the past', 'created_at' => now()->subDay()]);
+    $newer = Retro::factory()->for($team)->inPhase(RetroPhase::Discussing)->create();
+    Card::factory()->count(200)->create(['retro_id' => $newer->id, 'content' => 'needle today', 'created_at' => now()]);
+
+    $results = mcpSearch($user, ['query' => 'needle']);
+
+    expect(collect($results)->pluck('board.id')->all())->toBe([$newer->id])
+        ->and($results[0]['matches'])->toHaveCount(5);
+});
