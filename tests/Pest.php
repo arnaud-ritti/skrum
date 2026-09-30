@@ -4,6 +4,8 @@ use App\Actions\Retros\GuestCookie;
 use App\Enums\WorkspaceRole;
 use App\Models\Participant;
 use App\Models\Retro;
+use App\Models\Survey;
+use App\Models\SurveyResponse;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -81,4 +83,17 @@ function retroFacilitator(Retro $retro): array
 function retroGuestCookie(Participant $participant, string $secret = 'secret'): array
 {
     return [GuestCookie::name($participant->retro_id) => "{$participant->id}|{$secret}"];
+}
+
+function answerSurvey(Survey $survey, Participant $participant, int ...$optionIndexes): void
+{
+    $options = $survey->options()->get()->values();
+
+    foreach ($optionIndexes as $index) {
+        SurveyResponse::factory()->create([
+            'survey_id' => $survey->id,
+            'survey_option_id' => $options[$index]->id,
+            'participant_id' => $participant->id,
+        ]);
+    }
 }
