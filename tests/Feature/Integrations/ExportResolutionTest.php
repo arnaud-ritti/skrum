@@ -37,7 +37,7 @@ it('builds the issue from the item and its retro', function () {
 
     expect($draft->title)->toBe('Speed up CI')
         ->and($draft->dueOn)->toBe('2026-10-20')
-        ->and($draft->markdown())->toBe("Speed up CI\nCache the vendor folder\n\nFrom the retrospective \"Sprint 12\" on October 5, 2026: {$link}")
+        ->and($draft->markdown())->toBe("Speed up CI\n\nCache the vendor folder\n\nFrom the retrospective \"Sprint 12\" on October 5, 2026: {$link}")
         ->and($draft->adf())->toBe(['type' => 'doc', 'version' => 1, 'content' => [
             ['type' => 'paragraph', 'content' => [['type' => 'text', 'text' => 'Speed up CI']]],
             ['type' => 'paragraph', 'content' => [['type' => 'text', 'text' => 'Cache the vendor folder']]],

@@ -234,6 +234,24 @@ it('rolls back when Jira answers without a usable issue key', function () {
     expect(ActionItemExternalLink::query()->count())->toBe(0);
 });
 
+it('rolls back when Linear answers without a usable identifier or url', function (array $issue) {
+    fakeLinearGraphql(['issueCreate' => ['issueCreate' => ['success' => true, 'issue' => ['id' => 'lin-issue-1', ...$issue]]]]);
+    [$retro, $item, $author] = exportBoardItem();
+    TeamIntegration::factory()->linear()->create(['team_id' => $retro->team_id]);
+
+    $this->actingAs($author)
+        ->postJson(route('retros.action-items.exports.store', [$retro, $item]), ['source' => 'linear', 'team_id' => ExportLinearTeamId])
+        ->assertStatus(502)
+        ->assertJsonPath('message', 'The issue may have been created. Check Linear before trying again.');
+
+    expect(ActionItemExternalLink::query()->count())->toBe(0);
+})->with([
+    'missing identifier' => [['url' => 'https://linear.app/acme/issue/ENG-7']],
+    'malformed identifier' => [['identifier' => 'eng 7', 'url' => 'https://linear.app/acme/issue/ENG-7']],
+    'missing url' => [['identifier' => 'ENG-7']],
+    'non-https url' => [['identifier' => 'ENG-7', 'url' => 'javascript:alert(1)']],
+]);
+
 it('leaves the retro row unlocked while the provider answers', function () {
     fakeJiraIssueCreation();
     [$retro, $item, $author] = exportBoardItem();

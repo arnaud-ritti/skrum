@@ -16,6 +16,8 @@ class ExportToLinear
 {
     private const CreateMutation = 'mutation IssueCreate($input: IssueCreateInput!) { issueCreate(input: $input) { success issue { id identifier url } } }';
 
+    private const IdentifierPattern = '/^[A-Z][A-Z0-9_]*-\d+\z/';
+
     public function __construct(private LinearClient $linear, private ResolveExportPriority $resolvePriority) {}
 
     /**
@@ -46,11 +48,14 @@ class ExportToLinear
             $issue = $this->send($integration, $input);
         }
 
-        return new ExportOutcome(
-            new CreatedIssue((string) $issue['id'], (string) ($issue['identifier'] ?? ''), (string) ($issue['url'] ?? '')),
-            $assignee,
-            $priority,
-        );
+        $identifier = $issue['identifier'] ?? null;
+        $url = $issue['url'] ?? null;
+
+        if (! is_string($identifier) || preg_match(self::IdentifierPattern, $identifier) !== 1 || ! $this->isHttpsUrl($url)) {
+            throw new IssueCreationUncertain(IntegrationProvider::Linear, 'invalid_issue_response');
+        }
+
+        return new ExportOutcome(new CreatedIssue((string) $issue['id'], $identifier, $url), $assignee, $priority);
     }
 
     /**
@@ -76,6 +81,16 @@ class ExportToLinear
         }
 
         return $issue;
+    }
+
+    /**
+     * @phpstan-assert-if-true string $url
+     */
+    private function isHttpsUrl(mixed $url): bool
+    {
+        return is_string($url)
+            && filter_var($url, FILTER_VALIDATE_URL) !== false
+            && Str::startsWith($url, 'https://');
     }
 
     private function mentionsAssignee(ProviderRejected $exception): bool

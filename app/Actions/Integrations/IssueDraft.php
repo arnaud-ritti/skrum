@@ -21,7 +21,7 @@ class IssueDraft
 
     public function markdown(): string
     {
-        return implode("\n", $this->lines)."\n\n{$this->origin} {$this->link}";
+        return implode("\n\n", $this->lines)."\n\n{$this->origin} {$this->link}";
     }
 
     /**
