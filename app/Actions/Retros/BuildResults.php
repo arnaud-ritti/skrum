@@ -2,6 +2,7 @@
 
 namespace App\Actions\Retros;
 
+use App\Actions\Games\BuildGamesPlayed;
 use App\Actions\HealthCheck\BuildHealthTrend;
 use App\Actions\HealthCheck\SummarizeHealthCheck;
 use App\Actions\Integrations\LatestDeliveries;
@@ -27,6 +28,7 @@ class BuildResults
         private LatestDeliveries $latestDeliveries,
         private RetroResultsRecipients $retroResultsRecipients,
         private IntegrationAvailability $integrationAvailability,
+        private BuildGamesPlayed $buildGamesPlayed,
     ) {}
 
     /**
@@ -36,7 +38,7 @@ class BuildResults
      *     health: ?array<string, mixed>,
      *     healthTrend: ?array<int, array<string, mixed>>,
      *     surveys: array<int, array<string, mixed>>,
-     *     games: null,
+     *     games: ?array{roomId: string, rounds: array<int, array<string, mixed>>, leaderboard: array<int, array<string, mixed>>, roundsPlayed: int},
      *     roti: array{distribution: array<int, array{score: int, count: int}>, average: ?float, respondents: int},
      *     summary: ?array{text: ?string, generatedAt: ?string, status: ?string, provider: string},
      *     deliveries: array<int, array{id: string, channel: string, kind: string, status: string, error: ?string, sentAt: ?string, createdAt: ?string, requestedBy: ?string, recipientCount: ?int}>,
@@ -59,7 +61,7 @@ class BuildResults
             'health' => $health,
             'healthTrend' => $health === null ? null : $this->buildHealthTrend->forViewer($retro, $viewer),
             'surveys' => $surveys ?? $this->presentSurvey->many($retro, $viewer),
-            'games' => null,
+            'games' => $this->buildGamesPlayed->handle($retro),
             'roti' => $this->summarizeRoti->handle($retro),
             'summary' => $this->presentRetroSummary->handle($retro),
             'deliveries' => $canShare ? $this->latestDeliveries->handle($retro, [IntegrationDeliveryKind::RetroResults]) : [],
