@@ -22,6 +22,7 @@ import { ActionItemsPanel } from './action-items-panel';
 import { SuggestionsPanel } from './suggestions-panel';
 import { AddColumn } from './add-column';
 import { BoardEnded } from './board-ended';
+import { CarriedActionItemsPanel } from './carried-action-items-panel';
 import { BoardHeader } from './board-header';
 import { ColumnEditPhases } from './column-header';
 import { ConnectionBanner } from './connection-banner';
@@ -233,6 +234,7 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
                                     {board.retro.phase === 'voting' && (
                                         <VoteProgress />
                                     )}
+                                    <CarriedActionItemsPanel />
                                     <SuggestGroupNamesButton />
                                 </>
                             }

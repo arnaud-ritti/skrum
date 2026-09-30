@@ -637,5 +637,11 @@
     ":count comments": ":count comments",
     "This also deletes 1 open action item.": "This also deletes 1 open action item.",
     "This also deletes :count open action items.": "This also deletes :count open action items.",
-    "Could not load the comments.": "Could not load the comments."
+    "Could not load the comments.": "Could not load the comments.",
+    "Previous action items (:count)": "Previous action items (:count)",
+    "Previous action items": "Previous action items",
+    "Open follow-ups from earlier retrospectives of this team.": "Open follow-ups from earlier retrospectives of this team.",
+    "Added outside a retro": "Added outside a retro",
+    "View all on the action items page": "View all on the action items page",
+    "Open the action items page": "Open the action items page"
 }

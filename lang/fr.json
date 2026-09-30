@@ -891,5 +891,11 @@
     ":count comments": ":count commentaires",
     "This also deletes 1 open action item.": "Cela supprime aussi 1 action ouverte.",
     "This also deletes :count open action items.": "Cela supprime aussi :count actions ouvertes.",
-    "Could not load the comments.": "Impossible de charger les commentaires."
+    "Could not load the comments.": "Impossible de charger les commentaires.",
+    "Previous action items (:count)": "Actions précédentes (:count)",
+    "Previous action items": "Actions précédentes",
+    "Open follow-ups from earlier retrospectives of this team.": "Les suivis ouverts des rétrospectives précédentes de cette équipe.",
+    "Added outside a retro": "Ajoutée hors d'une rétro",
+    "View all on the action items page": "Tout voir sur la page des actions",
+    "Open the action items page": "Ouvrir la page des actions"
 }
