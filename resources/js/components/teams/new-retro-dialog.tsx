@@ -109,15 +109,19 @@ function NewRetroForm({
         }
     }, [catalogue]);
 
-    const selected =
-        catalogue?.find((item) => item.key === form.data.template) ??
-        catalogue?.find((item) => !item.isWorkspace) ??
-        null;
     const visible = (catalogue ?? []).filter(
         (item) =>
             matchesQuery(item, query) &&
             (category === 'all' || item.category === category),
     );
+    const chosen =
+        catalogue?.find((item) => item.key === form.data.template) ??
+        catalogue?.find((item) => !item.isWorkspace) ??
+        null;
+    const selected =
+        chosen !== null && visible.some((item) => item.key === chosen.key)
+            ? chosen
+            : (visible[0] ?? null);
     const sections = [
         {
             key: 'workspace',
@@ -284,8 +288,10 @@ function NewRetroForm({
 
                 <div className="space-y-3 rounded-md border p-3">
                     <h3 className="text-sm font-semibold">{t('Preview')}</h3>
-                    {selected === null && <Skeleton className="h-32 w-full" />}
-                    {selected !== null && (
+                    {catalogue === undefined && (
+                        <Skeleton className="h-32 w-full" />
+                    )}
+                    {catalogue !== undefined && selected !== null && (
                         <>
                             <p className="font-medium">{selected.name}</p>
                             {selected.columns.length === 0 ? (
