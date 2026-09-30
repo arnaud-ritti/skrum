@@ -73,6 +73,7 @@ export function DrawingCanvas({
     const live = useRef<LiveStroke | null>(null);
     const frame = useRef<number | null>(null);
     const timer = useRef<number | null>(null);
+    const activePointerId = useRef<number | null>(null);
     const previewsRef = useRef(previews);
     const inputRef = useRef(input);
 
@@ -191,6 +192,7 @@ export function DrawingCanvas({
                 return;
             }
 
+            stopTimer();
             live.current = {
                 id: newStrokeId(current.roundId),
                 color,
@@ -200,7 +202,7 @@ export function DrawingCanvas({
             };
             timer.current = window.setInterval(flush, StrokeWhisperThrottleMs);
         },
-        [flush],
+        [flush, stopTimer],
     );
 
     const finish = useCallback(() => {
@@ -233,6 +235,11 @@ export function DrawingCanvas({
             return;
         }
 
+        /** A second finger while a stroke is live (multi-touch) is ignored. */
+        if (activePointerId.current !== null) {
+            return;
+        }
+
         const point = pointFromEvent(event, event.currentTarget);
 
         if (current.tool === 'fill') {
@@ -250,6 +257,7 @@ export function DrawingCanvas({
         }
 
         event.currentTarget.setPointerCapture(event.pointerId);
+        activePointerId.current = event.pointerId;
         begin(
             point,
             current.tool === 'eraser' ? EraserColor : current.color,
@@ -261,7 +269,7 @@ export function DrawingCanvas({
     const onPointerMove = (event: PointerEvent<HTMLCanvasElement>) => {
         const stroke = live.current;
 
-        if (!stroke) {
+        if (!stroke || event.pointerId !== activePointerId.current) {
             return;
         }
 
@@ -282,6 +290,16 @@ export function DrawingCanvas({
         scheduleRedraw();
     };
 
+    /** Lifting or cancelling the drawing pointer commits the stroke drawn so far. */
+    const onPointerEnd = (event: PointerEvent<HTMLCanvasElement>) => {
+        if (event.pointerId !== activePointerId.current) {
+            return;
+        }
+
+        activePointerId.current = null;
+        finish();
+    };
+
     return (
         <canvas
             ref={canvas}
@@ -296,8 +314,8 @@ export function DrawingCanvas({
             )}
             onPointerDown={input ? onPointerDown : undefined}
             onPointerMove={input ? onPointerMove : undefined}
-            onPointerUp={input ? finish : undefined}
-            onPointerCancel={input ? finish : undefined}
+            onPointerUp={input ? onPointerEnd : undefined}
+            onPointerCancel={input ? onPointerEnd : undefined}
         />
     );
 }
