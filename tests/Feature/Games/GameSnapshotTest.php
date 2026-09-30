@@ -166,6 +166,7 @@ it('names the facilitator host of an icebreaker room and links to the retro', fu
     [, $participant] = retroMember($retro);
     $room = GameRoom::factory()->icebreaker($retro)->create();
     $hostPlayer = GamePlayer::factory()->forParticipant($facilitator)->create(['game_room_id' => $room->id]);
+    $this->travel(1)->second();
     $player = GamePlayer::factory()->forParticipant($participant)->create(['game_room_id' => $room->id]);
 
     $snapshot = gameSnapshotFor($room, $player);
@@ -178,6 +179,15 @@ it('names the facilitator host of an icebreaker room and links to the retro', fu
         ->and($snapshot['links'])->toBe(['team' => null, 'retro' => route('retros.show', $retro)]);
 });
 
+it('leaves rounds without an outcome out of the history', function () {
+    $room = GameRoom::factory()->create();
+    [, $host] = gameRoomHost($room);
+    $complete = GameRound::factory()->ended(GameRoundOutcome::Passed)->word('kite')->create(['game_room_id' => $room->id]);
+    GameRound::factory()->ended(GameRoundOutcome::Passed)->word('lamp')->create(['game_room_id' => $room->id, 'outcome' => null]);
+
+    expect(array_column(gameSnapshotFor($room, $host)['history'], 'id'))->toBe([$complete->id]);
+});
+
 it('builds the snapshot with a constant number of queries', function () {
     $count = function (int $players, int $rounds): int {
         $room = GameRoom::factory()->create();
@@ -188,7 +198,7 @@ it('builds the snapshot with a constant number of queries', function () {
         }
 
         foreach (range(1, $rounds) as $index) {
-            $winner = GamePlayer::query()->where('game_room_id', $room->id)->inRandomOrder()->first();
+            $winner = GamePlayer::query()->where('game_room_id', $room->id)->orderBy('id')->first();
             GameRound::factory()->ended()->create(['game_room_id' => $room->id, 'winner_player_id' => $winner?->id, 'leader_player_id' => $host->id]);
         }
 

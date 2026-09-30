@@ -57,6 +57,7 @@ class PresentGameRoundHistory
     {
         return $room->rounds()
             ->whereNotNull('ended_at')
+            ->whereNotNull('outcome')
             ->with(self::Relations)
             ->orderByDesc('ended_at')
             ->orderByDesc('id')
