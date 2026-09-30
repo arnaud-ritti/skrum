@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Retros;
 
+use App\Actions\HealthCheck\FreezeHealthStatements;
 use App\Actions\Retros\RetroGuard;
 use App\Enums\RetroPhase;
 use App\Events\Retros\RetroSettingsChanged;
@@ -19,6 +20,8 @@ class RetroSettingsController extends Controller
         'reactions_enabled', 'cursors_enabled', 'gifs_enabled', 'hide_vote_counts', 'is_locked', 'presentation_mode',
         'health_check_enabled', 'icebreaker_enabled',
     ];
+
+    public function __construct(private FreezeHealthStatements $freezeHealthStatements) {}
 
     public function update(Request $request, Retro $retro): Response
     {
@@ -64,7 +67,14 @@ class RetroSettingsController extends Controller
                 throw ValidationException::withMessages(['is_anonymous' => __('Anonymity can only be turned off before any card is written.')]);
             }
 
+            $isEnablingHealthCheck = ($validated['health_check_enabled'] ?? false)
+                && ! $locked->health_check_enabled;
+
             $locked->update($validated);
+
+            if ($isEnablingHealthCheck) {
+                $this->freezeHealthStatements->handle($locked);
+            }
 
             (new RetroSettingsChanged($locked->id))->sendToOthers();
         });

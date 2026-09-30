@@ -2,6 +2,7 @@
 
 namespace App\Actions\Retros;
 
+use App\Actions\HealthCheck\FreezeHealthStatements;
 use App\Enums\ColumnColor;
 use App\Models\Retro;
 use App\Models\Team;
@@ -15,6 +16,8 @@ use InvalidArgumentException;
 
 class CreateRetro
 {
+    public function __construct(private FreezeHealthStatements $freezeHealthStatements) {}
+
     public function handle(Team $team, User $creator, NewRetro $data): Retro
     {
         return DB::transaction(function () use ($team, $creator, $data): Retro {
@@ -36,6 +39,10 @@ class CreateRetro
 
             foreach ($this->columns($data->template, $workspaceTemplate) as $position => $column) {
                 $retro->columns()->create([...$column, 'position' => $position]);
+            }
+
+            if ($data->healthCheckEnabled) {
+                $this->freezeHealthStatements->handle($retro);
             }
 
             $facilitator = $retro->participants()->create(['user_id' => $creator->id]);
