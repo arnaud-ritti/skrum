@@ -279,7 +279,6 @@ export function OptionResult({
 
 function TextSurvey({ survey, canAnswer, busy, onAnswer }: AnswerProps) {
     const { t } = useTrans();
-    const { board } = useBoard();
     const [text, setText] = useState(survey.myText ?? '');
     const trimmed = text.trim();
 
@@ -320,42 +319,56 @@ function TextSurvey({ survey, canAnswer, busy, onAnswer }: AnswerProps) {
                     </div>
                 </form>
             )}
-            {survey.textAnswers !== null &&
-                (survey.textAnswers.length === 0 ? (
-                    <p className="text-xs text-muted-foreground">
-                        {t('No answers yet.')}
-                    </p>
-                ) : (
-                    <ul className="space-y-1" aria-label={t('Answers')}>
-                        {survey.textAnswers.map((answer) => (
-                            <li
-                                key={answer.id}
-                                className={cn(
-                                    'rounded-sm border px-2 py-1 text-xs break-words whitespace-pre-wrap',
-                                    answer.isMine && 'border-primary',
-                                )}
-                            >
-                                {answer.text}
-                                {answer.authorId && (
-                                    <span className="block text-muted-foreground">
-                                        {
-                                            board.participants.find(
-                                                (person) =>
-                                                    person.id ===
-                                                    answer.authorId,
-                                            )?.name
-                                        }
-                                    </span>
-                                )}
-                                {answer.isMine && (
-                                    <span className="block text-muted-foreground">
-                                        {t('Your answer')}
-                                    </span>
-                                )}
-                            </li>
-                        ))}
-                    </ul>
-                ))}
+            {survey.textAnswers !== null && (
+                <TextAnswerList answers={survey.textAnswers} />
+            )}
         </div>
+    );
+}
+
+export function TextAnswerList({
+    answers,
+}: {
+    answers: NonNullable<SurveyPayload['textAnswers']>;
+}) {
+    const { t } = useTrans();
+    const { board } = useBoard();
+
+    if (answers.length === 0) {
+        return (
+            <p className="text-xs text-muted-foreground">
+                {t('No answers yet.')}
+            </p>
+        );
+    }
+
+    return (
+        <ul className="space-y-1" aria-label={t('Answers')}>
+            {answers.map((answer) => (
+                <li
+                    key={answer.id}
+                    className={cn(
+                        'rounded-sm border px-2 py-1 text-xs break-words whitespace-pre-wrap',
+                        answer.isMine && 'border-primary',
+                    )}
+                >
+                    {answer.text}
+                    {answer.authorId && (
+                        <span className="block text-muted-foreground">
+                            {
+                                board.participants.find(
+                                    (person) => person.id === answer.authorId,
+                                )?.name
+                            }
+                        </span>
+                    )}
+                    {answer.isMine && (
+                        <span className="block text-muted-foreground">
+                            {t('Your answer')}
+                        </span>
+                    )}
+                </li>
+            ))}
+        </ul>
     );
 }

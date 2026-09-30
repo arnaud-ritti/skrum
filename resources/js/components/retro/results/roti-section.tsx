@@ -18,10 +18,9 @@ export function RotiSection({ roti }: { roti: RotiResults }) {
                 ) : (
                     <div className="space-y-2 text-sm">
                         <p>
-                            {t('Average')}:{' '}
-                            <strong className="tabular-nums">
-                                {roti.average.toFixed(1)}/5
-                            </strong>
+                            {t('Average: :value', {
+                                value: `${roti.average.toFixed(1)}/5`,
+                            })}
                         </p>
                         <ul className="space-y-1">
                             {roti.distribution.map(({ score, count }) => (

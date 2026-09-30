@@ -570,6 +570,7 @@
     ":count grouped card": ":count grouped card",
     ":count grouped cards": ":count grouped cards",
     "Return on time invested": "Return on time invested",
-    "Average": "Average",
-    "No ratings yet.": "No ratings yet."
+    "No ratings yet.": "No ratings yet.",
+    "Average: :value": "Average: :value",
+    "Retrospective views": "Retrospective views"
 }

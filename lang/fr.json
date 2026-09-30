@@ -824,6 +824,7 @@
     ":count grouped card": ":count carte groupée",
     ":count grouped cards": ":count cartes groupées",
     "Return on time invested": "Retour sur le temps investi",
-    "Average": "Moyenne",
-    "No ratings yet.": "Aucune note pour le moment."
+    "No ratings yet.": "Aucune note pour le moment.",
+    "Average: :value": "Moyenne : :value",
+    "Retrospective views": "Vues de la rétrospective"
 }

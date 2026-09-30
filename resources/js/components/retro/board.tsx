@@ -32,7 +32,12 @@ import { PhasePanel } from './phase-panel';
 import { PresentationOverlay } from './presentation-overlay';
 import { CardPreview } from './retro-card';
 import { RetroColumn } from './retro-column';
-import { CompletedTabs, type CompletedView } from './results/completed-tabs';
+import {
+    CompletedPanelId,
+    CompletedTabId,
+    CompletedTabs,
+    type CompletedView,
+} from './results/completed-tabs';
 import { ResultsView } from './results/results-view';
 import { SessionExpiredBanner } from './session-expired-banner';
 import { VoteProgress } from './vote-progress';
@@ -231,9 +236,23 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
                         )}
                         {board.retro.phase === 'completed' &&
                         completedView === 'results' ? (
-                            <ResultsView />
+                            <div
+                                role="tabpanel"
+                                id={CompletedPanelId}
+                                aria-labelledby={CompletedTabId('results')}
+                                className="flex flex-1 flex-col"
+                            >
+                                <ResultsView />
+                            </div>
                         ) : (
-                            <div className="flex flex-1 flex-col lg:min-h-0 lg:flex-row">
+                            <div
+                                {...(board.retro.phase === 'completed' && {
+                                    role: 'tabpanel',
+                                    id: CompletedPanelId,
+                                    'aria-labelledby': CompletedTabId('board'),
+                                })}
+                                className="flex flex-1 flex-col lg:min-h-0 lg:flex-row"
+                            >
                                 <DndContext
                                     id="retro-board"
                                     sensors={sensors}

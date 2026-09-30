@@ -109,7 +109,9 @@ function upsertCards(cards: BoardCard[], payloads: CardPayload[]): BoardCard[] {
                 content: payload.content ?? existing.content,
                 gif: payload.gif ?? existing.gif,
                 author: payload.author ?? existing.author,
-                groupName: payload.groupName ?? existing.groupName,
+                groupName: payload.hidden
+                    ? existing.groupName
+                    : payload.groupName,
             }),
         });
     }

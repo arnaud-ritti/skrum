@@ -1,18 +1,10 @@
 import { useTrans } from '@/hooks/use-trans';
 import type { SurveyPayload } from '@/lib/retro/types';
-import { useBoard } from '../board-context';
-import { OptionResult } from '../survey-card';
+import { OptionResult, TextAnswerList } from '../survey-card';
 import { SurveyDiscussion } from '../survey-discussion';
 
 export function SurveyResult({ survey }: { survey: SurveyPayload }) {
-    const { board } = useBoard();
     const { t } = useTrans();
-    const names = new Map(
-        board.participants.map((participant) => [
-            participant.id,
-            participant.name,
-        ]),
-    );
 
     return (
         <article
@@ -33,21 +25,7 @@ export function SurveyResult({ survey }: { survey: SurveyPayload }) {
                 )}
             </header>
             {survey.kind === 'text' ? (
-                <ul className="space-y-1" aria-label={t('Answers')}>
-                    {(survey.textAnswers ?? []).map((answer) => (
-                        <li
-                            key={answer.id}
-                            className="rounded-md bg-muted/50 p-2 break-words whitespace-pre-wrap"
-                        >
-                            {answer.text}
-                            {answer.authorId && (
-                                <span className="block text-xs text-muted-foreground">
-                                    {names.get(answer.authorId)}
-                                </span>
-                            )}
-                        </li>
-                    ))}
-                </ul>
+                <TextAnswerList answers={survey.textAnswers ?? []} />
             ) : (
                 <ul className="space-y-2">
                     {survey.options.map((option) => (

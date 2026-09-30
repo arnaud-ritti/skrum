@@ -824,6 +824,7 @@
     ":count grouped card": ":count tarjeta agrupada",
     ":count grouped cards": ":count tarjetas agrupadas",
     "Return on time invested": "Retorno del tiempo invertido",
-    "Average": "Media",
-    "No ratings yet.": "Aún no hay valoraciones."
+    "No ratings yet.": "Aún no hay valoraciones.",
+    "Average: :value": "Promedio: :value",
+    "Retrospective views": "Vistas de la retrospectiva"
 }
