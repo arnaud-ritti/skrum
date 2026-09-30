@@ -240,6 +240,9 @@ export function useRetroBoard(initial: Snapshot) {
                     break;
                 }
                 case 'survey.deleted':
+                    surveyRefetcher.current?.invalidate(
+                        payload.surveyId as string,
+                    );
                     apply({
                         type: 'survey.remove',
                         surveyId: payload.surveyId as string,
@@ -390,7 +393,11 @@ export function useRetroBoard(initial: Snapshot) {
                     apply({ type: 'survey.upsert', survey });
                 }
             },
-            onGone: (surveyId) => apply({ type: 'survey.remove', surveyId }),
+            onGone: (surveyId) => {
+                if (isActive.current) {
+                    apply({ type: 'survey.remove', surveyId });
+                }
+            },
             onError: (error) => {
                 handleError(error);
             },

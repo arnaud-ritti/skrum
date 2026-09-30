@@ -41,6 +41,7 @@ export function needsSurveyRefetch(
 
 export type SurveyRefetcher = {
     schedule: (surveyId: string) => void;
+    invalidate: (surveyId: string) => void;
     cancel: () => void;
 };
 
@@ -61,10 +62,31 @@ export function createSurveyRefetcher(
 ): SurveyRefetcher {
     const timers = new Map<string, ReturnType<typeof setTimeout>>();
 
+    const latestRequests = new Map<string, number>();
+    let requestCounter = 0;
+
+    const invalidate = (surveyId: string) => {
+        clearTimeout(timers.get(surveyId));
+        timers.delete(surveyId);
+        latestRequests.set(surveyId, ++requestCounter);
+    };
+
     const load = async (surveyId: string) => {
+        const request = ++requestCounter;
+
+        latestRequests.set(surveyId, request);
+
         try {
-            handlers.onSurvey(await fetchSurvey(retroId, surveyId));
+            const survey = await fetchSurvey(retroId, surveyId);
+
+            if (latestRequests.get(surveyId) === request) {
+                handlers.onSurvey(survey);
+            }
         } catch (error) {
+            if (latestRequests.get(surveyId) !== request) {
+                return;
+            }
+
             if (error instanceof RetroRequestError && error.status === 404) {
                 handlers.onGone(surveyId);
 
@@ -89,9 +111,11 @@ export function createSurveyRefetcher(
                 }, SurveyRefetchDelayMs),
             );
         },
+        invalidate,
         cancel() {
             timers.forEach((timer) => clearTimeout(timer));
             timers.clear();
+            latestRequests.clear();
         },
     };
 }
