@@ -9,6 +9,7 @@ import { useTrans } from '@/hooks/use-trans';
 import { GameSwitcher } from './game-switcher';
 import { HistoryDrawer } from './history-drawer';
 import { useRoom } from './room-context';
+import { RoomInviteButton } from './room-invite-button';
 import { RoomMenu } from './room-menu';
 import { RoomTimer } from './room-timer';
 
@@ -63,6 +64,7 @@ export function RoomHeader() {
                         <Link2 className="size-4" />
                     </Button>
                 )}
+                <RoomInviteButton />
                 <RoomMenu />
                 <PresenceStrip members={online} />
                 {me.isGuest && <LanguageSwitcher />}

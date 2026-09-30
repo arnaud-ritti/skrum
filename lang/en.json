@@ -1310,5 +1310,10 @@
     ":count rounds played": ":count rounds played",
     "Replay": "Replay",
     "Show all": "Show all",
-    "Show less": "Show less"
+    "Show less": "Show less",
+    "Invite": "Invite",
+    "Invite to the room": "Invite to the room",
+    "Include the guest link (anyone who can see the message can join)": "Include the guest link (anyone who can see the message can join)",
+    "Posted guest links stop working if you regenerate the link.": "Posted guest links stop working if you regenerate the link.",
+    "Only members of :team can join.": "Only members of :team can join."
 }
