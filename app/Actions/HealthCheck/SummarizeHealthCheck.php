@@ -15,7 +15,7 @@ class SummarizeHealthCheck
 
     /**
      * @return array{
-     *     statements: array<int, array{key: string, label: string, text: string, isBuiltin: bool, average: ?float, count: int}>,
+     *     statements: array<int, array{key: string, label: string, text: string, isBuiltin: bool, average: ?float, count: int, consensus: ?float}>,
      *     score: float,
      *     participation: array{respondents: int, participants: int},
      *     topStrength: ?array{key: string, label: string, average: float},
@@ -67,6 +67,7 @@ class SummarizeHealthCheck
                 'isBuiltin' => $statement['isBuiltin'],
                 'average' => $statement['average'],
                 'count' => $statement['count'],
+                'consensus' => $statement['consensus'],
             ])->values()->all(),
             'score' => $score,
             'participation' => [

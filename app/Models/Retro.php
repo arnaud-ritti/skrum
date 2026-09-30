@@ -46,6 +46,8 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $completed_at
  * @property Carbon|null $created_at
  * @property-read Team $team
+ * @property-read float|string|null $roti_votes_avg_score
+ * @property-read int|null $roti_votes_count
  */
 #[Fillable([
     'title', 'template', 'phase', 'facilitator_participant_id', 'is_anonymous', 'votes_per_participant',

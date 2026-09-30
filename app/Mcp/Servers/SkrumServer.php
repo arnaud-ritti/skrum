@@ -2,10 +2,13 @@
 
 namespace App\Mcp\Servers;
 
+use App\Mcp\Tools\Retro\GetHealth;
+use App\Mcp\Tools\Retro\GetRoti;
 use App\Mcp\Tools\Retro\GetSummary;
 use App\Mcp\Tools\Retro\ListActionItems;
 use App\Mcp\Tools\Retro\ListBoardActionItems;
 use App\Mcp\Tools\Retro\ListBoards;
+use App\Mcp\Tools\Retro\ListInsights;
 use App\Mcp\Tools\Retro\ListMessages;
 use App\Mcp\Tools\Retro\ListTeamMembers;
 use App\Mcp\Tools\Retro\ListTeams;
@@ -36,6 +39,9 @@ class SkrumServer extends Server
         ListMessages::class,
         GetSummary::class,
         SearchBoards::class,
+        ListInsights::class,
+        GetHealth::class,
+        GetRoti::class,
     ];
 
     protected array $resources = [];

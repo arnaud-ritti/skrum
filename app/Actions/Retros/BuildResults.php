@@ -17,6 +17,7 @@ class BuildResults
         private PresentSurvey $presentSurvey,
         private PresentParticipant $presentParticipant,
         private PresentRetroSummary $presentRetroSummary,
+        private SummarizeRoti $summarizeRoti,
     ) {}
 
     /**
@@ -47,35 +48,8 @@ class BuildResults
             'healthTrend' => $health === null ? null : $this->buildHealthTrend->forViewer($retro, $viewer),
             'surveys' => $surveys ?? $this->presentSurvey->many($retro, $viewer),
             'games' => null,
-            'roti' => $this->roti($retro),
+            'roti' => $this->summarizeRoti->handle($retro),
             'summary' => $this->presentRetroSummary->handle($retro),
-        ];
-    }
-
-    /**
-     * @return array{
-     *     distribution: array<int, array{score: int, count: int}>,
-     *     average: ?float,
-     *     respondents: int
-     * }
-     */
-    private function roti(Retro $retro): array
-    {
-        $totals = $retro->rotiVotes()
-            ->selectRaw('score, count(*) as total')
-            ->groupBy('score')
-            ->pluck('total', 'score')
-            ->mapWithKeys(fn (mixed $total, int|string $score) => [(int) $score => (int) $total]);
-
-        $respondents = (int) $totals->sum();
-        $weighted = $totals->map(fn (int $total, int $score) => $score * $total)->sum();
-
-        return [
-            'distribution' => collect(range(1, 5))
-                ->map(fn (int $score) => ['score' => $score, 'count' => $totals->get($score, 0)])
-                ->all(),
-            'average' => $respondents === 0 ? null : round($weighted / $respondents, 1),
-            'respondents' => $respondents,
         ];
     }
 }
