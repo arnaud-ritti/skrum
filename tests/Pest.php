@@ -780,3 +780,46 @@ function fakeJiraTrackerApi(?array $issues = null): void
         'api.atlassian.com/ex/jira/cloud-1/rest/api/3/issue/*' => Http::response(null, 204),
     ]);
 }
+
+function jiraApiUrl(string $path): string
+{
+    return 'api.atlassian.com/ex/jira/cloud-1/'.ltrim($path, '/');
+}
+
+/**
+ * @return array<string, mixed>
+ */
+function jiraAccount(string $accountId, string $displayName, ?string $email = null, bool $active = true, string $type = 'atlassian'): array
+{
+    return array_filter([
+        'accountId' => $accountId,
+        'accountType' => $type,
+        'displayName' => $displayName,
+        'emailAddress' => $email,
+        'active' => $active,
+    ], fn (mixed $value): bool => $value !== null);
+}
+
+/**
+ * @return array<string, mixed>
+ */
+function linearAccount(string $id, string $name, string $email, bool $active = true): array
+{
+    return ['id' => $id, 'name' => $name, 'displayName' => strtolower(strtok($name, ' ') ?: $name), 'email' => $email, 'active' => $active];
+}
+
+/**
+ * @param  array<string, mixed>  $responses  keyed by a fragment of the GraphQL document
+ */
+function fakeLinearUserDirectoryGraphql(array $responses): void
+{
+    Http::fake(['api.linear.app/graphql' => function (HttpRequest $request) use ($responses) {
+        foreach ($responses as $fragment => $response) {
+            if (str_contains((string) $request['query'], $fragment)) {
+                return $response instanceof Closure ? $response($request) : Http::response(['data' => $response]);
+            }
+        }
+
+        return Http::response(['errors' => [['message' => 'Unexpected query', 'extensions' => ['code' => 'INVALID_INPUT']]]], 400);
+    }]);
+}

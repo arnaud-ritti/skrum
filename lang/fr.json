@@ -1337,5 +1337,7 @@
     "More task actions": "Autres actions sur les tâches",
     "Refresh from :source": "Actualiser depuis :source",
     ":count tasks refreshed.": ":count tâches actualisées.",
-    ":count tasks were not found in :source.": ":count tâches sont introuvables dans :source."
+    ":count tasks were not found in :source.": ":count tâches sont introuvables dans :source.",
+    "Urgent": "Urgente",
+    "No priority": "Aucune priorité"
 }
