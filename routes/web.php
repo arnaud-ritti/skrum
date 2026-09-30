@@ -11,10 +11,14 @@ use App\Http\Controllers\InvitationLinksController;
 use App\Http\Controllers\LocalesController;
 use App\Http\Controllers\NotificationsController;
 use App\Http\Controllers\Poker\PokerCurrentTasksController;
+use App\Http\Controllers\Poker\PokerFacilitatorsController;
 use App\Http\Controllers\Poker\PokerGamesController;
+use App\Http\Controllers\Poker\PokerGuestTokensController;
 use App\Http\Controllers\Poker\PokerRevealsController;
 use App\Http\Controllers\Poker\PokerRoundsController;
+use App\Http\Controllers\Poker\PokerSettingsController;
 use App\Http\Controllers\Poker\PokerSnapshotsController;
+use App\Http\Controllers\Poker\PokerStatusesController;
 use App\Http\Controllers\Poker\PokerTaskEstimatesController;
 use App\Http\Controllers\Poker\PokerTaskOrdersController;
 use App\Http\Controllers\Poker\PokerTasksController;
@@ -255,6 +259,11 @@ Route::prefix('poker/{game}')
         Route::post('tasks/{task}/rounds', [PokerRoundsController::class, 'store'])->name('poker.tasks.rounds.store')->whereUuid('task');
         Route::get('tasks/{task}/rounds', [PokerRoundsController::class, 'index'])->name('poker.tasks.rounds.index')->whereUuid('task');
         Route::put('tasks/{task}/estimate', [PokerTaskEstimatesController::class, 'update'])->name('poker.tasks.estimate.update')->whereUuid('task');
+        Route::patch('settings', [PokerSettingsController::class, 'update'])->name('poker.settings.update');
+        Route::put('status', [PokerStatusesController::class, 'update'])->name('poker.status.update');
+        Route::post('guest-token', [PokerGuestTokensController::class, 'store'])->name('poker.guest-token.store');
+        Route::put('facilitator', [PokerFacilitatorsController::class, 'update'])->name('poker.facilitator.update');
+        Route::delete('/', [PokerGamesController::class, 'destroy'])->name('poker.destroy');
     });
 
 Route::post('broadcasting/auth', [BroadcastAuthorizationsController::class, 'store'])->name('broadcasting.auth');

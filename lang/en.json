@@ -723,5 +723,6 @@
     "Nobody has voted yet.": "Nobody has voted yet.",
     "Reveal the votes before setting an estimate.": "Reveal the votes before setting an estimate.",
     "Reveal the votes before starting a new round.": "Reveal the votes before starting a new round.",
-    "Select this task first.": "Select this task first."
+    "Select this task first.": "Select this task first.",
+    "The deck can't change once votes exist.": "The deck can't change once votes exist."
 }
