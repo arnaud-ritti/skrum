@@ -218,3 +218,14 @@ it('keeps the stored kind and voter setting when an edit omits them', function (
         ->assertJsonPath('survey.showVoters', true)
         ->assertJsonPath('survey.question', 'Reworded');
 });
+
+it('does not inherit stored voter names on a full update of an anonymous retro', function () {
+    [$retro, $user] = surveyingRetro(RetroPhase::Writing, ['is_anonymous' => true]);
+    $survey = Survey::factory()->withOptions()->create(['retro_id' => $retro->id, 'show_voters' => true]);
+
+    $this->actingAs($user)->patchJson(route('retros.surveys.update', [$retro, $survey]), ['question' => 'Q', 'options' => ['A', 'B']])
+        ->assertOk()
+        ->assertJsonPath('survey.showVoters', false);
+
+    expect($survey->fresh()->show_voters)->toBeFalse();
+});

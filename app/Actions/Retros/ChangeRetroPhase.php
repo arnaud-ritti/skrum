@@ -2,6 +2,7 @@
 
 namespace App\Actions\Retros;
 
+use App\Actions\Surveys\CloseOpenSurveys;
 use App\Enums\RetroPhase;
 use App\Events\Retros\PhaseChanged;
 use App\Models\Retro;
@@ -9,6 +10,8 @@ use Illuminate\Validation\ValidationException;
 
 class ChangeRetroPhase
 {
+    public function __construct(private CloseOpenSurveys $closeOpenSurveys) {}
+
     /**
      * Runs inside the caller's transaction, on a retro row locked for update.
      */
@@ -16,6 +19,7 @@ class ChangeRetroPhase
     {
         $this->ensureReachable($locked, $phase);
         $this->move($locked, $phase);
+        $this->closeSurveys($locked, $phase);
         $this->broadcast($locked, $phase);
     }
 
@@ -39,6 +43,15 @@ class ChangeRetroPhase
             'completed_at' => $isCompleting ? now() : null,
             'timer_ends_at' => $isCompleting ? null : $locked->timer_ends_at,
         ]);
+    }
+
+    private function closeSurveys(Retro $locked, RetroPhase $phase): void
+    {
+        if ($phase !== RetroPhase::Completed) {
+            return;
+        }
+
+        $this->closeOpenSurveys->handle($locked);
     }
 
     private function broadcast(Retro $locked, RetroPhase $phase): void

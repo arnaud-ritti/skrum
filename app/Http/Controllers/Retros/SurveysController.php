@@ -201,7 +201,8 @@ class SurveysController extends Controller
 
         $this->ensureOptionsMatch($kind, $options);
 
-        $showVoters = (bool) ($validated['show_voters'] ?? ($existing === null ? false : $existing->show_voters));
+        $inheritsVoters = $existing !== null && ! $retro->is_anonymous;
+        $showVoters = (bool) ($validated['show_voters'] ?? ($inheritsVoters ? $existing->show_voters : false));
 
         SurveyGuard::namesAllowed($retro, $showVoters);
 
