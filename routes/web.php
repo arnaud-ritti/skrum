@@ -20,6 +20,7 @@ use App\Http\Controllers\Retros\CardsController;
 use App\Http\Controllers\Retros\CardVotesController;
 use App\Http\Controllers\Retros\ColumnOrdersController;
 use App\Http\Controllers\Retros\ColumnsController;
+use App\Http\Controllers\Retros\GroupNameSuggestionsController;
 use App\Http\Controllers\Retros\HealthCheckAnswersController;
 use App\Http\Controllers\Retros\RetroFacilitatorsController;
 use App\Http\Controllers\Retros\RetroGifsController;
@@ -160,6 +161,7 @@ Route::prefix('retros/{retro}')
         Route::delete('cards/{card}/group', [CardGroupsController::class, 'destroy'])->name('retros.cards.group.destroy')->whereUuid('card');
         Route::put('cards/{card}/group-name', [CardGroupNamesController::class, 'update'])->name('retros.cards.group-name.update')->whereUuid('card');
         Route::delete('cards/{card}/group-name', [CardGroupNamesController::class, 'destroy'])->name('retros.cards.group-name.destroy')->whereUuid('card');
+        Route::post('group-name-suggestions', [GroupNameSuggestionsController::class, 'store'])->name('retros.group-name-suggestions.store');
         Route::post('cards/{card}/votes', [CardVotesController::class, 'store'])->name('retros.cards.votes.store')->whereUuid('card');
         Route::delete('cards/{card}/votes', [CardVotesController::class, 'destroy'])->name('retros.cards.votes.destroy')->whereUuid('card');
         Route::put('cards/{card}/reactions', [CardReactionsController::class, 'update'])->name('retros.cards.reactions.update')->whereUuid('card');

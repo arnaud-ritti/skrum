@@ -831,5 +831,6 @@
     "Not available.": "Non disponible.",
     "The text generator is unavailable. Try again later.": "Le générateur de texte est indisponible. Réessayez plus tard.",
     "Could not generate a survey. Try again or write it yourself.": "Impossible de générer un sondage. Réessayez ou rédigez-le vous-même.",
-    "This suggestion was already handled.": "Cette suggestion a déjà été traitée."
+    "This suggestion was already handled.": "Cette suggestion a déjà été traitée.",
+    "Could not suggest names. Try again or name the groups yourself.": "Impossible de suggérer des noms. Réessayez ou nommez les groupes vous-même."
 }

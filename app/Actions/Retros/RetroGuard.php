@@ -32,6 +32,12 @@ class RetroGuard
         throw new AuthorizationException(__('This action is not available in the current phase.'));
     }
 
+    public static function groupNaming(Retro $retro): void
+    {
+        self::phase($retro, RetroPhase::Grouping, RetroPhase::Voting, RetroPhase::Discussing);
+        self::unlocked($retro);
+    }
+
     public static function unlocked(Retro $retro): void
     {
         if (! $retro->is_locked) {

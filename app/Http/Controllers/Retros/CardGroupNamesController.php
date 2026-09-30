@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Retros;
 
 use App\Actions\Retros\RetroGuard;
-use App\Enums\RetroPhase;
 use App\Events\Retros\CardGroupNamed;
 use App\Http\Controllers\Controller;
 use App\Models\Card;
@@ -61,7 +60,6 @@ class CardGroupNamesController extends Controller
 
     private function guard(Retro $retro): void
     {
-        RetroGuard::phase($retro, RetroPhase::Grouping, RetroPhase::Voting, RetroPhase::Discussing);
-        RetroGuard::unlocked($retro);
+        RetroGuard::groupNaming($retro);
     }
 }
