@@ -1032,5 +1032,7 @@
     "Sent to :channel": "Sent to :channel",
     "Emailed to :count people": "Emailed to :count people",
     "Emailed to 1 person": "Emailed to 1 person",
-    "Emailed to 1 person · :time": "Emailed to 1 person · :time"
+    "Emailed to 1 person · :time": "Emailed to 1 person · :time",
+    "Share…": "Share…",
+    "Share the game": "Share the game"
 }

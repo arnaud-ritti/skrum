@@ -1280,5 +1280,7 @@
     "Sent to :channel": "Enviado a :channel",
     "Emailed to :count people": "Enviado por correo a :count personas",
     "Emailed to 1 person": "Enviado por correo a 1 persona",
-    "Emailed to 1 person · :time": "Enviado por correo a 1 persona · :time"
+    "Emailed to 1 person · :time": "Enviado por correo a 1 persona · :time",
+    "Share…": "Compartir…",
+    "Share the game": "Compartir la partida"
 }
