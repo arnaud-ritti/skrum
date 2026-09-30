@@ -2,6 +2,8 @@
 
 namespace App\Actions\Retros;
 
+use App\Enums\GameKind;
+
 class NewRetro
 {
     public function __construct(
@@ -12,5 +14,6 @@ class NewRetro
         public bool $icebreakerEnabled = false,
         public ?int $votesPerParticipant = null,
         public bool $aiSummaryEnabled = false,
+        public ?GameKind $icebreakerGame = null,
     ) {}
 }
