@@ -9,6 +9,7 @@ use App\Models\GameRoom;
 use App\Models\GameRound;
 use App\Support\Games\GameRules;
 use Carbon\CarbonInterface;
+use RuntimeException;
 
 /**
  * Game-agnostic rules for engine tests: every decision is a public knob.
@@ -25,6 +26,7 @@ class FakeGameRules implements GameRules
         public ?GameRoundOutcome $nextRoundOutcome = null,
         public array $points = [],
         public ?GameRoundOutcome $expiryOutcome = GameRoundOutcome::TimedOut,
+        public bool $expiryThrows = false,
     ) {}
 
     public function kind(): GameKind
@@ -68,6 +70,10 @@ class FakeGameRules implements GameRules
 
     public function expire(GameRoom $room, GameRound $round): ?GameRoundOutcome
     {
+        if ($this->expiryThrows) {
+            throw new RuntimeException('Expiry failed.');
+        }
+
         return $this->expiryOutcome;
     }
 

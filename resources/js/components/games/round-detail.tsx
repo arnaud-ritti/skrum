@@ -29,14 +29,17 @@ export function RoundDetail({ roundId }: { roundId: string }) {
             })
             .catch((failure: unknown) => {
                 if (isCurrent) {
-                    setError(handleError(failure));
+                    setError(
+                        handleError(failure) ??
+                            t('Something went wrong. Please try again.'),
+                    );
                 }
             });
 
         return () => {
             isCurrent = false;
         };
-    }, [roomId, roundId, handleError]);
+    }, [roomId, roundId, handleError, t]);
 
     if (error !== null) {
         return <p className="text-sm text-destructive">{error}</p>;

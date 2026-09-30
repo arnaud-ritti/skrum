@@ -12,6 +12,7 @@ use App\Models\GameRound;
 use App\Models\Retro;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Exceptions;
 use Illuminate\Support\Facades\Queue;
 use Tests\Support\FakeGameRules;
 
@@ -152,6 +153,23 @@ it('expires the round lazily on the next request', function () {
         ->assertJsonPath('history.0.outcome', 'timed_out');
 
     expect($round->fresh()->outcome)->toBe(GameRoundOutcome::TimedOut);
+});
+
+it('reports a failing expiry and still serves the room request', function () {
+    Exceptions::fake();
+    $this->rules->expiryThrows = true;
+    $room = GameRoom::factory()->create(['timer_ends_at' => now()->addMinute()]);
+    [$user] = gameRoomHost($room);
+    $round = activeGameRound($room);
+
+    $this->travel(2)->minutes();
+
+    $this->actingAs($user)
+        ->getJson(route('games.snapshot.show', $room))
+        ->assertOk()
+        ->assertJsonPath('round.id', $round->id);
+
+    Exceptions::assertReported(RuntimeException::class);
 });
 
 it('does not end a round started after the timer ran out', function () {

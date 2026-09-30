@@ -39,7 +39,7 @@ class ResolveGamePlayer
 
         $request->attributes->set('gamePlayer', $player);
 
-        $this->expireGameRound->handle($room);
+        rescue(fn () => $this->expireGameRound->handle($room), report: true);
 
         return $next($request);
     }
