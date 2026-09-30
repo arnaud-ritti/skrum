@@ -5,6 +5,8 @@ use App\Contracts\PokerPresenceRoster;
 use App\Enums\McpScope;
 use App\Enums\PokerDeck;
 use App\Enums\WorkspaceRole;
+use App\Mcp\McpGrant;
+use App\Mcp\Servers\SkrumServer;
 use App\Models\Participant;
 use App\Models\PersonalAccessToken;
 use App\Models\PokerGame;
@@ -22,6 +24,8 @@ use Carbon\CarbonInterface;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Testing\TestResponse;
+use Laravel\Mcp\Server\Testing\PendingTestResponse;
+use Laravel\Mcp\Server\Testing\TestResponse as McpTestResponse;
 use Tests\TestCase;
 
 /*
@@ -336,4 +340,54 @@ function postMcp(?string $token, array $payload = ['jsonrpc' => '2.0', 'id' => 1
         'Accept' => 'application/json, text/event-stream',
         ...$headers,
     ]);
+}
+
+/**
+ * @param  array<int, McpScope>  $scopes
+ */
+function bindMcpGrant(User $user, array $scopes = [McpScope::Read], ?Team $team = null): McpGrant
+{
+    app()->forgetScopedInstances();
+
+    $token = PersonalAccessToken::factory()
+        ->forUser($user)
+        ->withScopes(...$scopes)
+        ->create(['team_id' => $team?->id]);
+
+    $grant = new McpGrant($user, $token->id, $token->scopes(), $team?->id);
+    $grant->bind();
+
+    return $grant;
+}
+
+/**
+ * @param  array<int, McpScope>  $scopes
+ */
+function actingAsMcp(User $user, array $scopes = [McpScope::Read], ?Team $team = null): PendingTestResponse
+{
+    bindMcpGrant($user, $scopes, $team);
+
+    return SkrumServer::actingAs($user, 'sanctum');
+}
+
+/**
+ * @return array<string, mixed>
+ */
+function mcpStructured(McpTestResponse $response): array
+{
+    return (fn (): ?array => $this->structuredContent())->call($response) ?? [];
+}
+
+/**
+ * Tool names from tools/list. TestListResponse's registration assertions build each
+ * class with `new`, which fails for tools with constructor dependencies, so
+ * tests compare names instead.
+ *
+ * @return array<int, string>
+ */
+function mcpToolNames(PendingTestResponse $pending): array
+{
+    $items = (fn (): array => $this->items)->call($pending->tools());
+
+    return collect($items)->pluck('name')->sort()->values()->all();
 }

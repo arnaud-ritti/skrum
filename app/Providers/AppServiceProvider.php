@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Contracts\PokerPresenceRoster;
 use App\Mcp\McpGrant;
 use App\Mcp\McpGrantContext;
+use App\Mcp\VisibleTeams;
 use App\Models\Passkey;
 use App\Models\PersonalAccessToken;
 use App\Models\SavedPokerDeck;
@@ -33,6 +34,7 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->bind(PokerPresenceRoster::class, fn (): PokerPresenceRoster => new ReverbPokerPresenceRoster);
         $this->app->scoped(McpGrantContext::class);
+        $this->app->scoped(VisibleTeams::class);
         $this->app->bind(McpGrant::class, fn (): McpGrant => McpGrant::current());
     }
 

@@ -1138,5 +1138,7 @@
     "No access to this team anymore": "Plus d'accès à cette équipe",
     "Expired on :date": "Expiré le :date",
     "Active": "Actif",
-    "Unauthenticated.": "Non authentifié."
+    "Unauthenticated.": "Non authentifié.",
+    "Not found.": "Introuvable.",
+    "Too many changes, wait a moment.": "Trop de modifications, patientez un instant."
 }

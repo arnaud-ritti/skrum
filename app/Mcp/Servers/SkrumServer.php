@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Servers;
 
+use App\Mcp\Tools\Retro\ListTeams;
 use Laravel\Mcp\Server;
 use Laravel\Mcp\Server\Attributes\Instructions;
 use Laravel\Mcp\Server\Attributes\Name;
@@ -19,7 +20,9 @@ class SkrumServer extends Server
 {
     public int $defaultPaginationLength = 50;
 
-    protected array $tools = [];
+    protected array $tools = [
+        ListTeams::class,
+    ];
 
     protected array $resources = [];
 
