@@ -1,5 +1,6 @@
 import {
     useCallback,
+    useEffect,
     useReducer,
     useRef,
     useState,
@@ -15,6 +16,7 @@ import {
     type RoomAction,
 } from '@/lib/games/room-reducer';
 import type {
+    GameDrawingCount,
     GameDrawingOpAdded,
     GameGuessMade,
     GameLetterPicked,
@@ -154,6 +156,12 @@ export function useGameRoom(
         }
     }, [roomId, end, flushBufferedActions]);
 
+    useEffect(() => {
+        if (state.resyncRequests > 0) {
+            void refetch();
+        }
+    }, [state.resyncRequests, refetch]);
+
     const handleEvent = useCallback(
         ({ name, payload }: GameEvent) => {
             switch (name) {
@@ -217,15 +225,20 @@ export function useGameRoom(
                         roundId: added.roundId,
                         op: added.op,
                         clientOpId: added.clientOpId,
+                        count: added.count,
                     });
                     break;
                 }
-                case 'game.drawing.undone':
+                case 'game.drawing.undone': {
+                    const undone = payload as unknown as GameDrawingCount;
+
                     apply({
                         type: 'drawing.undone',
-                        roundId: payload.roundId as string,
+                        roundId: undone.roundId,
+                        count: undone.count,
                     });
                     break;
+                }
                 case 'game.drawing.cleared':
                     apply({
                         type: 'drawing.cleared',

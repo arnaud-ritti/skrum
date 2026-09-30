@@ -162,7 +162,12 @@ export type GameDrawingOpAdded = {
     roundId: string;
     op: DrawingOp;
     clientOpId: string;
+    /** Operations in the drawing after this one was added. */
+    count: number;
 };
+
+/** Undo and clear: the broadcast and the drawer's response. */
+export type GameDrawingCount = { roundId: string; count: number };
 
 export type GameGuessResponse = {
     result: 'wrong' | 'near' | 'correct';
@@ -196,4 +201,6 @@ export type GameRoomState = {
     snapshot: GameSnapshot;
     /** The last round seen ending, kept for the end card until the next round starts. */
     lastEnded: GameRoundEnded | null;
+    /** Bumped when an event does not fit the local state; the room refetches. */
+    resyncRequests: number;
 };

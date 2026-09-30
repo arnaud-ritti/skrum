@@ -21,8 +21,9 @@ export type RoomAction =
           roundId: string;
           op: DrawingOp;
           clientOpId: string | null;
+          count: number;
       }
-    | { type: 'drawing.undone'; roundId: string }
+    | { type: 'drawing.undone'; roundId: string; count: number }
     | { type: 'drawing.cleared'; roundId: string };
 
 const RecentPicks = 5;
@@ -33,7 +34,7 @@ const GuessesShown = 50;
 const CommittedOpIds = 20;
 
 export function initialRoomState(snapshot: GameSnapshot): GameRoomState {
-    return { snapshot, lastEnded: null };
+    return { snapshot, lastEnded: null, resyncRequests: 0 };
 }
 
 function withRound(
@@ -53,6 +54,26 @@ function withRound(
     };
 }
 
+/**
+ * Drawing events carry the drawing's length after the change (`count`), so
+ * an event replayed over a snapshot that already holds it is ignored and one
+ * that does not fit (a missed event) asks for a fresh snapshot. Null when
+ * the event is about another round than the current one.
+ */
+function drawingLength(state: GameRoomState, roundId: string): number | null {
+    const round = state.snapshot.round;
+
+    if (!round || round.id !== roundId) {
+        return null;
+    }
+
+    return (round.drawing ?? []).length;
+}
+
+function requestResync(state: GameRoomState): GameRoomState {
+    return { ...state, resyncRequests: state.resyncRequests + 1 };
+}
+
 export function roomReducer(
     state: GameRoomState,
     action: RoomAction,
@@ -65,12 +86,14 @@ export function roomReducer(
                 state.lastEnded.roundId === action.snapshot.room.currentRoundId;
 
             return {
+                ...state,
                 snapshot: action.snapshot,
                 lastEnded: keepsEndCard ? state.lastEnded : null,
             };
         }
         case 'round.started':
             return {
+                ...state,
                 snapshot: {
                     ...state.snapshot,
                     round: action.round,
@@ -94,6 +117,7 @@ export function roomReducer(
             }
 
             return {
+                ...state,
                 snapshot: { ...state.snapshot, round: null },
                 lastEnded: action.ended,
             };
@@ -147,10 +171,23 @@ export function roomReducer(
                     guesses: [...guesses, action.guess].slice(-GuessesShown),
                 };
             });
-        case 'drawing.added':
+        case 'drawing.added': {
+            const length = drawingLength(state, action.roundId);
+
+            if (length === null) {
+                return state;
+            }
+
+            if (length !== action.count - 1 && length !== action.count) {
+                return requestResync(state);
+            }
+
             return withRound(state, action.roundId, (round) => ({
                 ...round,
-                drawing: [...(round.drawing ?? []), action.op],
+                drawing:
+                    length === action.count
+                        ? round.drawing
+                        : [...(round.drawing ?? []), action.op],
                 committedOpIds:
                     action.clientOpId === null
                         ? round.committedOpIds
@@ -159,11 +196,23 @@ export function roomReducer(
                               action.clientOpId,
                           ].slice(-CommittedOpIds),
             }));
-        case 'drawing.undone':
+        }
+        case 'drawing.undone': {
+            const length = drawingLength(state, action.roundId);
+
+            if (length === null || length === action.count) {
+                return state;
+            }
+
+            if (length !== action.count + 1) {
+                return requestResync(state);
+            }
+
             return withRound(state, action.roundId, (round) => ({
                 ...round,
                 drawing: (round.drawing ?? []).slice(0, -1),
             }));
+        }
         case 'drawing.cleared':
             return withRound(state, action.roundId, (round) => ({
                 ...round,

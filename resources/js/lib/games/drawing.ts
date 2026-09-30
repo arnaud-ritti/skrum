@@ -9,7 +9,11 @@ export const DrawingWidth = 1000;
 export const DrawingHeight = 750;
 export const RasterWidth = 800;
 export const RasterHeight = 600;
-export const MaxStrokePoints = 1000;
+/**
+ * The drawer splits live strokes here, well below the server's 1 000-point
+ * limit, so each committed stroke's broadcast fits Reverb's 10 KB event body.
+ */
+export const MaxStrokePoints = 400;
 export const EraserColor: DrawingColor = 'white';
 
 export const DrawingColors: DrawingColor[] = [

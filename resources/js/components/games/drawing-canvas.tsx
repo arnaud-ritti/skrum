@@ -161,6 +161,17 @@ export function DrawingCanvas({
         [stopTimer],
     );
 
+    const isDrawing = input !== null;
+    const inputRoundId = input?.roundId;
+
+    /** A stroke in progress when drawing stops or the round changes is dropped. */
+    useEffect(() => {
+        stopTimer();
+        live.current = null;
+        activePointerId.current = null;
+        scheduleRedraw();
+    }, [isDrawing, inputRoundId, stopTimer, scheduleRedraw]);
+
     const flush = useCallback(() => {
         const stroke = live.current;
         const current = inputRef.current;

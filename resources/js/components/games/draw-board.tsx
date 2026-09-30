@@ -10,6 +10,7 @@ import type {
     DrawingColor,
     DrawingOp,
     DrawingSize,
+    GameDrawingCount,
     GameDrawingOpResponse,
     GameRound,
 } from '@/lib/games/types';
@@ -134,13 +135,17 @@ export function DrawBoard({ round }: { round: GameRound }) {
                 );
             }
 
-            /** The broadcast skips the sender, so the drawer applies its own op here. */
+            /**
+             * The broadcast skips the sender, so the drawer applies its own op
+             * here, through `apply` so a refetch in flight cannot wipe it.
+             */
             if (response) {
-                ctx.dispatch({
+                ctx.apply({
                     type: 'drawing.added',
                     roundId: round.id,
                     op: response.op,
                     clientOpId: response.clientOpId,
+                    count: response.count,
                 });
             }
         });
@@ -148,8 +153,8 @@ export function DrawBoard({ round }: { round: GameRound }) {
 
     const undo = () => {
         enqueue(async () => {
-            const done = await ctx.run(
-                retroRequest(
+            const undone = await ctx.run(
+                retroRequest<GameDrawingCount>(
                     GameDrawingOpsController.destroyLast({
                         room: roomId,
                         round: round.id,
@@ -157,16 +162,20 @@ export function DrawBoard({ round }: { round: GameRound }) {
                 ),
             );
 
-            if (done !== undefined) {
-                ctx.dispatch({ type: 'drawing.undone', roundId: round.id });
+            if (undone) {
+                ctx.apply({
+                    type: 'drawing.undone',
+                    roundId: round.id,
+                    count: undone.count,
+                });
             }
         });
     };
 
     const clear = () => {
         enqueue(async () => {
-            const done = await ctx.run(
-                retroRequest(
+            const cleared = await ctx.run(
+                retroRequest<GameDrawingCount>(
                     GameDrawingsController.destroy({
                         room: roomId,
                         round: round.id,
@@ -174,8 +183,8 @@ export function DrawBoard({ round }: { round: GameRound }) {
                 ),
             );
 
-            if (done !== undefined) {
-                ctx.dispatch({ type: 'drawing.cleared', roundId: round.id });
+            if (cleared) {
+                ctx.apply({ type: 'drawing.cleared', roundId: round.id });
             }
         });
     };
