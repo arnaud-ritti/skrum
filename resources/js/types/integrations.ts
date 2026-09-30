@@ -15,6 +15,7 @@ export type IntegrationSettings = {
     teamName?: string;
     channelName?: string;
     configurationUrl?: string;
+    chatId?: string;
     chatTitle?: string;
     chatType?: string;
     cloudId?: string | null;

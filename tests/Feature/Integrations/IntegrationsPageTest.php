@@ -76,6 +76,20 @@ it('shows the Telegram bot and a polling conflict', function () {
             ->where('telegram.conflict', true));
 });
 
+it('exposes the Telegram chat the team is connected to', function () {
+    enableIntegrations(IntegrationProvider::Telegram);
+    Http::fake(['api.telegram.org/*/getMe' => Http::response(['ok' => true, 'result' => ['id' => 42, 'is_bot' => true, 'username' => 'skrum_test_bot']])]);
+    $team = Team::factory()->create();
+    TeamIntegration::factory()->telegram()->create(['team_id' => $team->id]);
+
+    $this->actingAs(integrationAdmin($team))->get(integrationsPageUrl($team))
+        ->assertInertia(fn (Assert $page) => $page->where('providers.0.connection.settings', [
+            'chatId' => '-100123',
+            'chatTitle' => 'Team chat',
+            'chatType' => 'supergroup',
+        ]));
+});
+
 it('renders integrations whose credentials cannot be decrypted', function () {
     enableIntegrations(IntegrationProvider::Slack);
     $team = Team::factory()->create();

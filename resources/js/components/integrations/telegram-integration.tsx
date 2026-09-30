@@ -29,8 +29,27 @@ type Props = {
 
 type PendingCode = {
     code: TelegramConnectCode;
-    lastCheckedAt: string | null;
+    connectionIdentity: string | null;
 };
+
+/**
+ * Saving a connection can change these; a test message only touches
+ * lastCheckedAt, so it must not count as a new connection.
+ */
+function connectionIdentity(
+    connection: IntegrationProviderCard['connection'],
+): string | null {
+    if (connection === null) {
+        return null;
+    }
+
+    return [
+        connection.id,
+        connection.status,
+        connection.settings.chatId ?? '',
+        connection.connectedBy ?? '',
+    ].join('|');
+}
 
 export function TelegramIntegration({ card, scope, telegram }: Props) {
     const { t } = useTrans();
@@ -48,7 +67,7 @@ export function TelegramIntegration({ card, scope, telegram }: Props) {
     const connectedSinceCode =
         pending !== null &&
         connection?.status === 'active' &&
-        connection.lastCheckedAt !== pending.lastCheckedAt;
+        connectionIdentity(connection) !== pending.connectionIdentity;
     const expired = pending !== null && remaining === 0;
 
     useEffect(() => {
@@ -73,7 +92,7 @@ export function TelegramIntegration({ card, scope, telegram }: Props) {
             );
             setPending({
                 code,
-                lastCheckedAt: connection?.lastCheckedAt ?? null,
+                connectionIdentity: connectionIdentity(connection),
             });
             start();
         } catch (error) {
