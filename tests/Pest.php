@@ -29,6 +29,7 @@ use App\Models\Workspace;
 use App\Support\Integrations\OAuthState;
 use Carbon\CarbonInterface;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\Request as HttpRequest;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Testing\TestResponse;
 use Laravel\Mcp\Server\Testing\PendingTestResponse;
@@ -628,4 +629,70 @@ function integrationOAuthSession(
         'access' => $access->value,
         'expiresAt' => now()->addMinutes($expiresInMinutes)->getTimestamp(),
     ]];
+}
+
+/**
+ * A Jira issue as `/rest/api/3/search/jql` returns it.
+ *
+ * @param  array<string, mixed>  $fields
+ * @return array<string, mixed>
+ */
+function jiraTrackerIssue(string $id, string $key, array $fields = []): array
+{
+    return [
+        'id' => $id,
+        'key' => $key,
+        'fields' => [
+            'summary' => "Story {$key}",
+            'description' => ['type' => 'doc', 'version' => 1, 'content' => [
+                ['type' => 'paragraph', 'content' => [['type' => 'text', 'text' => "About {$key}"]]],
+            ]],
+            'assignee' => ['displayName' => 'Jane Doe'],
+            'status' => ['name' => 'To Do'],
+            'customfield_10016' => 3,
+            ...$fields,
+        ],
+    ];
+}
+
+/**
+ * A Linear issue node with the fields the trackers request.
+ *
+ * @param  array<string, mixed>  $overrides
+ * @return array<string, mixed>
+ */
+function linearTrackerIssue(string $id, string $identifier, array $overrides = []): array
+{
+    return [
+        'id' => $id,
+        'identifier' => $identifier,
+        'title' => "Issue {$identifier}",
+        'description' => "About **{$identifier}**",
+        'url' => "https://linear.app/acme/issue/{$identifier}",
+        'estimate' => 2,
+        'assignee' => ['displayName' => 'Sam Lee'],
+        'state' => ['name' => 'Todo'],
+        ...$overrides,
+    ];
+}
+
+/**
+ * Answers Linear GraphQL calls by the first key found in the query text.
+ *
+ * @param  array<string, array<string, mixed>|Closure(array<string, mixed>): array<string, mixed>>  $responses
+ */
+function fakeLinearGraphql(array $responses): void
+{
+    Http::fake(['api.linear.app/graphql' => function (HttpRequest $request) use ($responses) {
+        $query = (string) $request['query'];
+        $variables = (array) ($request['variables'] ?? []);
+
+        foreach ($responses as $needle => $data) {
+            if (str_contains($query, $needle)) {
+                return Http::response(['data' => $data instanceof Closure ? $data($variables) : $data]);
+            }
+        }
+
+        return Http::response(['errors' => [['message' => "Unexpected query: {$query}"]]], 400);
+    }]);
 }

@@ -1282,5 +1282,6 @@
     "Emailed to 1 person": "Envoyé par e-mail à 1 personne",
     "Emailed to 1 person · :time": "Envoyé par e-mail à 1 personne · :time",
     "Share…": "Partager…",
-    "Share the game": "Partager la partie"
+    "Share the game": "Partager la partie",
+    "Cycle :number": "Cycle :number"
 }
