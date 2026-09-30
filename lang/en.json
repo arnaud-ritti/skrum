@@ -622,5 +622,17 @@
     "Choose either a team member or a guest as assignee, not both.": "Choose either a team member or a guest as assignee, not both.",
     "The assignee must be a participant of this retrospective.": "The assignee must be a participant of this retrospective.",
     "The assignee must be a member of this team.": "The assignee must be a member of this team.",
-    "The selected team is invalid.": "The selected team is invalid."
+    "The selected team is invalid.": "The selected team is invalid.",
+    "Priority": "Priority",
+    "Due date": "Due date",
+    "Overdue": "Overdue",
+    "Due :date": "Due :date",
+    ":name (guest)": ":name (guest)",
+    ":name (not in team)": ":name (not in team)",
+    "In this retro": "In this retro",
+    "Team": "Team",
+    "Action items are not anonymous: your name is shown.": "Action items are not anonymous: your name is shown.",
+    "No comments yet.": "No comments yet.",
+    "1 comment": "1 comment",
+    ":count comments": ":count comments"
 }

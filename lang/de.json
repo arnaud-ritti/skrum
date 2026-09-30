@@ -876,5 +876,17 @@
     "Choose either a team member or a guest as assignee, not both.": "Wähle als zugewiesene Person entweder ein Teammitglied oder einen Gast, nicht beides.",
     "The assignee must be a participant of this retrospective.": "Die zugewiesene Person muss an dieser Retrospektive teilnehmen.",
     "The assignee must be a member of this team.": "Die zugewiesene Person muss Mitglied dieses Teams sein.",
-    "The selected team is invalid.": "Das ausgewählte Team ist ungültig."
+    "The selected team is invalid.": "Das ausgewählte Team ist ungültig.",
+    "Priority": "Priorität",
+    "Due date": "Fälligkeitsdatum",
+    "Overdue": "Überfällig",
+    "Due :date": "Fällig am :date",
+    ":name (guest)": ":name (Gast)",
+    ":name (not in team)": ":name (nicht im Team)",
+    "In this retro": "In dieser Retro",
+    "Team": "Team",
+    "Action items are not anonymous: your name is shown.": "Aktionspunkte sind nicht anonym: Dein Name wird angezeigt.",
+    "No comments yet.": "Noch keine Kommentare.",
+    "1 comment": "1 Kommentar",
+    ":count comments": ":count Kommentare"
 }
