@@ -760,5 +760,21 @@
     "Average": "Average",
     "Most played: :cards": "Most played: :cards",
     "No countable votes": "No countable votes",
-    "Consensus": "Consensus"
+    "Consensus": "Consensus",
+    "Show votes": "Show votes",
+    "Re-vote": "Re-vote",
+    "Save estimate": "Save estimate",
+    "Next task": "Next task",
+    "Estimate": "Estimate",
+    "Nearest card: :card": "Nearest card: :card",
+    "Facilitator": "Facilitator",
+    "Offline": "Offline",
+    "Play :card": "Play :card",
+    "You're watching — switch to Play to vote": "You're watching — switch to Play to vote",
+    "Voted": "Voted",
+    "Not voted yet": "Not voted yet",
+    "Your cards": "Your cards",
+    "Facilitator tools": "Facilitator tools",
+    "Result": "Result",
+    "Players": "Players"
 }

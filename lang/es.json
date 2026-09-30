@@ -1013,5 +1013,21 @@
     "Average": "Media",
     "Most played: :cards": "Más jugada: :cards",
     "No countable votes": "Ningún voto contable",
-    "Consensus": "Consenso"
+    "Consensus": "Consenso",
+    "Show votes": "Mostrar votos",
+    "Re-vote": "Volver a votar",
+    "Save estimate": "Guardar estimación",
+    "Next task": "Siguiente tarea",
+    "Estimate": "Estimación",
+    "Nearest card: :card": "Carta más cercana: :card",
+    "Facilitator": "Facilitador",
+    "Offline": "Sin conexión",
+    "Play :card": "Jugar :card",
+    "You're watching — switch to Play to vote": "Estás observando: cambia a Jugar para votar",
+    "Voted": "Ha votado",
+    "Not voted yet": "Aún no ha votado",
+    "Your cards": "Tus cartas",
+    "Facilitator tools": "Herramientas del facilitador",
+    "Result": "Resultado",
+    "Players": "Jugadores"
 }
