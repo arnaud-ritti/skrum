@@ -155,9 +155,12 @@ function drawStroke(
     for (let point = 1; point < points.length; point++) {
         const x = toRaster(points[point][0], RasterWidth);
         const y = toRaster(points[point][1], RasterHeight);
+        const deltaX = x - previousX;
+        const deltaY = y - previousY;
+        // Math.sqrt is exactly rounded in every engine; Math.hypot is not.
         const steps = Math.max(
             1,
-            Math.ceil(Math.hypot(x - previousX, y - previousY) / spacing),
+            Math.ceil(Math.sqrt(deltaX * deltaX + deltaY * deltaY) / spacing),
         );
 
         for (let step = 1; step <= steps; step++) {

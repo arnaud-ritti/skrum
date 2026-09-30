@@ -15,9 +15,14 @@ export type StrokeMessage = {
     points: DrawingPoint[];
 };
 
-/** Stroke ids start with the round's id prefix, so strokes of an older round are dropped. */
+/**
+ * Stroke ids start with the whole round id, so strokes of an older round are
+ * dropped. A UUIDv7 prefix would not do: its leading characters are timestamp
+ * bits shared by rounds started within about a minute. The id stays at most
+ * 36 + 1 + 8 + 10 = 55 characters, under the 64-character limit.
+ */
 export function strokeIdPrefix(roundId: string): string {
-    return roundId.slice(0, 8);
+    return roundId;
 }
 
 export function newStrokeId(roundId: string): string {
