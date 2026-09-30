@@ -73,7 +73,7 @@ function ActionItemRow({ item }: { item: ActionItem }) {
         data: Partial<{
             content: string;
             assignee_participant_id: string | null;
-            is_done: boolean;
+            status: 'open' | 'completed';
         }>,
     ) => {
         if (busy) {
@@ -155,11 +155,13 @@ function ActionItemRow({ item }: { item: ActionItem }) {
             <div className="flex items-start gap-2">
                 <Checkbox
                     className="mt-1"
-                    checked={item.isDone}
+                    checked={item.status === 'completed'}
                     disabled={busy || !ctx.isEditable}
                     aria-label={t('Mark as done')}
                     onCheckedChange={(checked) =>
-                        void patch({ is_done: checked === true })
+                        void patch({
+                            status: checked === true ? 'completed' : 'open',
+                        })
                     }
                 />
                 {editing ? (
@@ -189,7 +191,7 @@ function ActionItemRow({ item }: { item: ActionItem }) {
                         type="button"
                         title={t('Edit action item')}
                         disabled={!ctx.isEditable}
-                        className={`min-w-0 flex-1 text-left text-sm break-words ${item.isDone ? 'text-muted-foreground line-through' : ''}`}
+                        className={`min-w-0 flex-1 text-left text-sm break-words ${item.status === 'completed' ? 'text-muted-foreground line-through' : ''}`}
                         onClick={startEditing}
                     >
                         {item.content}

@@ -242,6 +242,27 @@ export function useRetroBoard(initial: Snapshot) {
                         actionItemId: payload.actionItemId as string,
                     });
                     break;
+                case 'action-item.comments.changed':
+                case 'carried-action-item.comments.changed':
+                    apply({
+                        type: 'actionItem.comments',
+                        actionItemId: payload.actionItemId as string,
+                        commentCount: payload.commentCount as number,
+                        refresh: true,
+                    });
+                    break;
+                case 'carried-action-item.saved':
+                    apply({
+                        type: 'carriedActionItem.upsert',
+                        actionItem: payload.actionItem as ActionItem,
+                    });
+                    break;
+                case 'carried-action-item.removed':
+                    apply({
+                        type: 'carriedActionItem.remove',
+                        actionItemId: payload.actionItemId as string,
+                    });
+                    break;
                 case 'health.answered':
                     apply({
                         type: 'health.progress',
@@ -389,6 +410,7 @@ export function useRetroBoard(initial: Snapshot) {
         retroId,
         initial.viewer.participantId,
         status === 'active',
+        !initial.viewer.isGuest,
         {
             onEvent,
             onResync: refetch,

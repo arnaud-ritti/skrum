@@ -159,13 +159,61 @@ export type BoardParticipant = {
     isGuest: boolean;
 };
 
+export type ActionItemPriority = 'high' | 'medium' | 'low';
+
+export type ActionItemStatus = 'open' | 'completed';
+
+export type ActionItemPerson = { name: string; avatarUrl: string };
+
+export type ActionItemAssignee = ActionItemPerson & {
+    kind: 'member' | 'guest';
+    id: string;
+    isTeamMember: boolean;
+};
+
+export type ActionItemSource = {
+    retroTitle: string;
+    retroCreatedAt: string | null;
+    retroUrl: string;
+};
+
 export type ActionItem = {
     id: string;
+    retroId: string | null;
+    teamId: string;
     content: string;
-    isDone: boolean;
-    assignee: Person | null;
+    priority: ActionItemPriority;
+    dueOn: string | null;
+    isOverdue: boolean;
+    status: ActionItemStatus;
+    completedAt: string | null;
+    assignee: ActionItemAssignee | null;
+    createdBy: ActionItemPerson | null;
+    isMine: boolean;
+    commentCount: number;
+    source: ActionItemSource | null;
     themeId: string | null;
     themeName: string | null;
+    createdAt: string | null;
+    /** Client-only: bumped by comment events so an open thread refetches. */
+    commentsRevision?: number;
+};
+
+export type ActionItemComment = {
+    id: string;
+    actionItemId: string;
+    content: string;
+    author: ActionItemPerson | null;
+    isMine: boolean;
+    createdAt: string | null;
+    updatedAt: string | null;
+};
+
+export type TeamMember = {
+    id: string;
+    name: string;
+    avatarUrl: string;
+    participantId: string | null;
 };
 
 export type TransferCandidate = { userId: string; name: string };
@@ -191,6 +239,7 @@ export type HealthCheckState = { statements: HealthCheckStatement[] };
 export type Snapshot = {
     retro: {
         id: string;
+        teamId: string;
         title: string;
         template: string;
         phase: RetroPhase;
@@ -217,6 +266,11 @@ export type Snapshot = {
     };
     viewer: {
         participantId: string;
+        userId: string | null;
+        canManageActionItems: boolean;
+        isWorkspaceManager: boolean;
+        isReviewFacilitator: boolean;
+        facilitatedRetroIds: string[];
         isFacilitator: boolean;
         isGuest: boolean;
         remainingVotes: number;
@@ -227,6 +281,9 @@ export type Snapshot = {
     cards: BoardCard[];
     participants: BoardParticipant[];
     actionItems: ActionItem[];
+    carriedActionItems: ActionItem[];
+    carriedActionItemsHasMore: boolean;
+    teamMembers: TeamMember[];
     surveys: SurveyPayload[];
     roti: RotiState;
     results: Results | null;
@@ -235,7 +292,11 @@ export type Snapshot = {
     healthCheck: HealthCheckState | null;
     votesCast: number | null;
     votesVersion: number;
-    links: { team: string | null };
+    links: {
+        team: string | null;
+        actionItems: string | null;
+        workspace: string | null;
+    };
     emojiData: { baseUrl: string; locale: string };
     serverTime: string;
 };

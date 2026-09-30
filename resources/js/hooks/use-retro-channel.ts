@@ -29,6 +29,7 @@ export const RetroEvents = [
     'columns.changed',
     'action-item.saved',
     'action-item.deleted',
+    'action-item.comments.changed',
     'retro.deleted',
     'card.reactions.changed',
     'comment.created',
@@ -45,12 +46,24 @@ export const RetroEvents = [
 ] as const;
 
 /**
+ * Carried action items of earlier retros travel on a private channel only
+ * members can join (spec §5).
+ */
+export const MemberEvents = [
+    'carried-action-item.saved',
+    'carried-action-item.removed',
+    'carried-action-item.comments.changed',
+] as const;
+
+/**
  * The presence and private subscriptions complete moments apart (on load
  * and on every reconnect); waiting briefly lets one snapshot cover both.
  */
 const ResyncCoalesceMs = 250;
 
-export type RetroEventName = (typeof RetroEvents)[number];
+export type RetroEventName =
+    | (typeof RetroEvents)[number]
+    | (typeof MemberEvents)[number];
 
 export type RetroEvent = {
     name: RetroEventName;
@@ -103,6 +116,7 @@ export function useRetroChannel(
     retroId: string,
     participantId: string,
     enabled: boolean,
+    membersOnly: boolean,
     channelHandlers: RetroChannelHandlers,
 ) {
     const [online, setOnline] = useState<PresenceMember[]>([]);
@@ -187,6 +201,23 @@ export function useRetroChannel(
             )
             .error(scheduleResync);
 
+        const membersChannel = `retro-members.${retroId}`;
+
+        if (membersOnly) {
+            const members = echo<'reverb'>()
+                .private(membersChannel)
+                .subscribed(scheduleResync)
+                .error(scheduleResync);
+
+            for (const event of MemberEvents) {
+                members.listen(
+                    `.${event}`,
+                    (payload: Record<string, unknown>) =>
+                        handlers.current.onEvent({ name: event, payload }),
+                );
+            }
+        }
+
         return () => {
             if (pendingResync !== null) {
                 clearTimeout(pendingResync);
@@ -194,10 +225,14 @@ export function useRetroChannel(
 
             echo().leave(name);
             echo().leave(ownChannel);
+
+            if (membersOnly) {
+                echo().leave(membersChannel);
+            }
             setOnline([]);
             setPresence(null);
         };
-    }, [retroId, participantId, enabled]);
+    }, [retroId, participantId, enabled, membersOnly]);
 
     const connected = status === 'connected';
     const reconnecting = status === 'failed' || (wasConnected && !connected);
