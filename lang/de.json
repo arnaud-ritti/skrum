@@ -1468,5 +1468,7 @@
     ":players players · :rounds rounds": ":players Spielende · :rounds Runden",
     "Join a game": "Einem Spiel beitreten",
     "You are invited to play :game. Choose the name other players will see.": "Du bist zu :game eingeladen. Wähle den Namen, den die anderen sehen.",
-    "This team already has :count game rooms.": "Dieses Team hat bereits :count Spielräume."
+    "This team already has :count game rooms.": "Dieses Team hat bereits :count Spielräume.",
+    "This drawing operation is not valid.": "Dieser Zeichenschritt ist ungültig.",
+    "Use emoji only, without letters or digits.": "Nutze nur Emoji, ohne Buchstaben oder Ziffern."
 }
