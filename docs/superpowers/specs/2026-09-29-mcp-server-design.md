@@ -271,6 +271,7 @@ All action item mutations broadcast through `BroadcastActionItemChange` exactly 
 ### 6.5 Closed tool set and deliberately impossible actions
 
 - The registered tool names are exactly the 29 names above; a test compares `tools/list` (all scopes, all features) with this list.
+- *Planning note (2026-09-30):* spec 6 is not built yet, so the four tracker tools (`poker.sources.list`, `poker.iterations.list`, `poker.game.tasks.import`, `poker.game.task.sync`) are implemented by spec 6's plan, which also extends this catalogue test to 29. Until then the MCP plans register the other 25 tools, the `Trackers` feature is never available, and the catalogue test asserts those 25 names.
 - Deliberately impossible (contract): **setting a poker estimate directly** — no tool takes an estimate value; the only way an estimate is written through MCP is `poker.game.task.reveal` computing it from revealed votes; — and **voting on the user's behalf** — no tool plays or withdraws a poker card. Beyond the contract list, and for the same reason (a person's own judgement or running the meeting), there is no tool to vote on cards, answer the health check, a survey or ROTI, react, comment, create cards, re-vote, or change phase, timer, settings, facilitation or guest access.
 
 ### 6.6 Shared actions (change to earlier specs and existing code)
