@@ -1455,5 +1455,18 @@
     "This room was deleted.": "Dieser Raum wurde gelöscht.",
     "Your access to this room has ended.": "Dein Zugriff auf diesen Raum ist beendet.",
     "Up to 12 players can be online at once.": "Bis zu 12 Spielende können gleichzeitig online sein.",
-    "Try again": "Erneut versuchen"
+    "Try again": "Erneut versuchen",
+    "Games": "Spiele",
+    "Short games to warm up :team.": "Kurze Spiele zum Aufwärmen von :team.",
+    "Rooms": "Räume",
+    "No game rooms yet.": "Noch keine Spielräume.",
+    "New room": "Neuer Raum",
+    "First game": "Erstes Spiel",
+    "Create room": "Raum erstellen",
+    "Open by link": "Per Link offen",
+    "Team only": "Nur das Team",
+    ":players players · :rounds rounds": ":players Spielende · :rounds Runden",
+    "Join a game": "Einem Spiel beitreten",
+    "You are invited to play :game. Choose the name other players will see.": "Du bist zu :game eingeladen. Wähle den Namen, den die anderen sehen.",
+    "This team already has :count game rooms.": "Dieses Team hat bereits :count Spielräume."
 }

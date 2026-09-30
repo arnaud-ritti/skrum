@@ -1209,5 +1209,18 @@
     "This room was deleted.": "This room was deleted.",
     "Your access to this room has ended.": "Your access to this room has ended.",
     "Up to 12 players can be online at once.": "Up to 12 players can be online at once.",
-    "Try again": "Try again"
+    "Try again": "Try again",
+    "Games": "Games",
+    "Short games to warm up :team.": "Short games to warm up :team.",
+    "Rooms": "Rooms",
+    "No game rooms yet.": "No game rooms yet.",
+    "New room": "New room",
+    "First game": "First game",
+    "Create room": "Create room",
+    "Open by link": "Open by link",
+    "Team only": "Team only",
+    ":players players · :rounds rounds": ":players players · :rounds rounds",
+    "Join a game": "Join a game",
+    "You are invited to play :game. Choose the name other players will see.": "You are invited to play :game. Choose the name other players will see.",
+    "This team already has :count game rooms.": "This team already has :count game rooms."
 }

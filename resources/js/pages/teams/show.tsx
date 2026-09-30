@@ -1,6 +1,7 @@
 import { Form, Head, Link } from '@inertiajs/react';
 import TeamIntegrationsController from '@/actions/App/Http/Controllers/Integrations/TeamIntegrationsController';
 import RetrosController from '@/actions/App/Http/Controllers/Retros/RetrosController';
+import TeamGameRoomsController from '@/actions/App/Http/Controllers/TeamGameRoomsController';
 import TeamMembersController from '@/actions/App/Http/Controllers/TeamMembersController';
 import TeamsController from '@/actions/App/Http/Controllers/TeamsController';
 import WorkspaceActionItemsController from '@/actions/App/Http/Controllers/WorkspaceActionItemsController';
@@ -99,6 +100,11 @@ export default function ShowTeam({
                             {t('Open action items (:count)', {
                                 count: openActionItemCount,
                             })}
+                        </Link>
+                    </Button>
+                    <Button variant="outline" size="sm" asChild>
+                        <Link href={TeamGameRoomsController.index(params)}>
+                            {t('Games')}
                         </Link>
                     </Button>
                     {canManageIntegrations && (

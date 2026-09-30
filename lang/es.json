@@ -1455,5 +1455,18 @@
     "This room was deleted.": "Esta sala se eliminó.",
     "Your access to this room has ended.": "Tu acceso a esta sala ha terminado.",
     "Up to 12 players can be online at once.": "Hasta 12 jugadores pueden estar conectados a la vez.",
-    "Try again": "Reintentar"
+    "Try again": "Reintentar",
+    "Games": "Juegos",
+    "Short games to warm up :team.": "Juegos cortos para animar a :team.",
+    "Rooms": "Salas",
+    "No game rooms yet.": "Aún no hay salas de juego.",
+    "New room": "Nueva sala",
+    "First game": "Primer juego",
+    "Create room": "Crear sala",
+    "Open by link": "Abierta por enlace",
+    "Team only": "Solo el equipo",
+    ":players players · :rounds rounds": ":players jugadores · :rounds rondas",
+    "Join a game": "Unirse a un juego",
+    "You are invited to play :game. Choose the name other players will see.": "Te invitan a jugar a :game. Elige el nombre que verán los demás.",
+    "This team already has :count game rooms.": "Este equipo ya tiene :count salas de juego."
 }
