@@ -5,12 +5,15 @@ import type {
     CardComment,
     CardPayload,
     CommentThread,
+    HealthProgress,
     ReactionSummary,
     Snapshot,
 } from './types';
 
 export type BoardAction =
     | { type: 'replace'; snapshot: Snapshot }
+    | { type: 'health.progress'; statements: HealthProgress[] }
+    | { type: 'health.answer'; key: string; score: number | null }
     | { type: 'cards.upsert'; cards: CardPayload[] }
     | { type: 'card.remove'; cardId: string; ungroupedCards: CardPayload[] }
     | { type: 'card.place'; cardId: string; columnId: string; index: number }
@@ -419,5 +422,51 @@ export function boardReducer(state: Snapshot, action: BoardAction): Snapshot {
                     commentCount: countComments(comments),
                 };
             });
+        case 'health.progress': {
+            if (!state.healthCheck) {
+                return state;
+            }
+
+            const progress = new Map(
+                action.statements.map((statement) => [
+                    statement.key,
+                    statement,
+                ]),
+            );
+
+            return {
+                ...state,
+                healthCheck: {
+                    statements: state.healthCheck.statements.map(
+                        (statement) => {
+                            const update = progress.get(statement.key);
+
+                            return update
+                                ? {
+                                      ...statement,
+                                      count: update.count,
+                                      answeredBy: update.answeredBy,
+                                  }
+                                : statement;
+                        },
+                    ),
+                },
+            };
+        }
+        case 'health.answer':
+            if (!state.healthCheck) {
+                return state;
+            }
+
+            return {
+                ...state,
+                healthCheck: {
+                    statements: state.healthCheck.statements.map((statement) =>
+                        statement.key === action.key
+                            ? { ...statement, myScore: action.score }
+                            : statement,
+                    ),
+                },
+            };
     }
 }

@@ -42,6 +42,7 @@ type RetroForm = {
     title: string;
     template: string;
     is_anonymous: boolean;
+    health_check_enabled: boolean;
     icebreaker_enabled: boolean;
     votes_per_participant: number | null;
 };
@@ -99,6 +100,7 @@ function NewRetroForm({
         }),
         template: '',
         is_anonymous: false,
+        health_check_enabled: false,
         icebreaker_enabled: false,
         votes_per_participant: null,
     });
@@ -333,6 +335,21 @@ function NewRetroForm({
                         />
                         <Label htmlFor="new-retro-anonymous">
                             {t('Anonymous cards')}
+                        </Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Checkbox
+                            id="new-retro-health-check"
+                            checked={form.data.health_check_enabled}
+                            onCheckedChange={(checked) =>
+                                form.setData(
+                                    'health_check_enabled',
+                                    checked === true,
+                                )
+                            }
+                        />
+                        <Label htmlFor="new-retro-health-check">
+                            {t('Health check')}
                         </Label>
                     </div>
                     <div className="flex items-center gap-2">

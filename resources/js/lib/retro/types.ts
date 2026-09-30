@@ -95,6 +95,24 @@ export type ActionItem = {
 
 export type TransferCandidate = { userId: string; name: string };
 
+export type HealthStatementPayload = {
+    key: string;
+    label: string;
+    text: string;
+    isBuiltin: boolean;
+};
+
+export type HealthProgress = {
+    key: string;
+    count: number;
+    answeredBy: string[];
+};
+
+export type HealthCheckStatement = HealthStatementPayload &
+    HealthProgress & { myScore: number | null };
+
+export type HealthCheckState = { statements: HealthCheckStatement[] };
+
 export type Snapshot = {
     retro: {
         id: string;
@@ -132,6 +150,7 @@ export type Snapshot = {
     cards: BoardCard[];
     participants: BoardParticipant[];
     actionItems: ActionItem[];
+    healthCheck: HealthCheckState | null;
     votesCast: number | null;
     votesVersion: number;
     links: { team: string | null };

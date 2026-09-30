@@ -64,6 +64,9 @@ function SettingsForm({ onDone }: { onDone: () => void }) {
     const [isAnonymous, setIsAnonymous] = useState(retro.isAnonymous);
     const [votesAuto, setVotesAuto] = useState(retro.votesAuto);
     const [votes, setVotes] = useState(String(retro.votesPerParticipant));
+    const [healthCheckEnabled, setHealthCheckEnabled] = useState(
+        retro.healthCheckEnabled,
+    );
     const [icebreakerEnabled, setIcebreakerEnabled] = useState(
         retro.icebreakerEnabled,
     );
@@ -107,6 +110,10 @@ function SettingsForm({ onDone }: { onDone: () => void }) {
 
         if (votesChanged) {
             changes.votes_per_participant = votesAuto ? null : Number(votes);
+        }
+
+        if (healthCheckEnabled !== retro.healthCheckEnabled) {
+            changes.health_check_enabled = healthCheckEnabled;
         }
 
         if (icebreakerEnabled !== retro.icebreakerEnabled) {
@@ -235,6 +242,13 @@ function SettingsForm({ onDone }: { onDone: () => void }) {
             </div>
 
             <div className="grid gap-2">
+                <SettingCheckbox
+                    id="retro-health-check"
+                    label={t('Health check')}
+                    checked={healthCheckEnabled}
+                    disabled={engagementLocked}
+                    onChange={setHealthCheckEnabled}
+                />
                 <SettingCheckbox
                     id="retro-icebreaker"
                     label={t('Icebreaker')}

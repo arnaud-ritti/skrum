@@ -487,5 +487,12 @@
     "Built-in": "Built-in",
     "Drag to reorder": "Drag to reorder",
     "Restore": "Restore",
-    "Archive": "Archive"
+    "Archive": "Archive",
+    "Awful": "Awful",
+    "Great": "Great",
+    "Rate each statement from 1 (Awful) to 10 (Great). Only you see your own scores.": "Rate each statement from 1 (Awful) to 10 (Great). Only you see your own scores.",
+    "Clear": "Clear",
+    "Answered": "Answered",
+    ":count answered": ":count answered",
+    "Score :score": "Score :score"
 }

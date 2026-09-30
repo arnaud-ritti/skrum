@@ -14,6 +14,7 @@ import type {
     CardComment,
     CardPayload,
     CommentNotificationPayload,
+    HealthProgress,
     PresenceMember,
     ReactionSummary,
     Snapshot,
@@ -205,6 +206,12 @@ export function useRetroBoard(initial: Snapshot) {
                     apply({
                         type: 'actionItem.remove',
                         actionItemId: payload.actionItemId as string,
+                    });
+                    break;
+                case 'health.answered':
+                    apply({
+                        type: 'health.progress',
+                        statements: payload.statements as HealthProgress[],
                     });
                     break;
                 case 'phase.changed':

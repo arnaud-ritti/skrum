@@ -33,6 +33,7 @@ export const RetroEvents = [
     'comment.created',
     'comment.updated',
     'comment.deleted',
+    'health.answered',
 ] as const;
 
 /**

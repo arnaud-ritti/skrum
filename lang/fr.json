@@ -742,5 +742,12 @@
     "Add statement": "Ajouter une affirmation",
     "Archived (:count)": "Archivées (:count)",
     "Built-in": "Intégrée",
-    "Drag to reorder": "Glisser pour réordonner"
+    "Drag to reorder": "Glisser pour réordonner",
+    "Awful": "Horrible",
+    "Great": "Excellent",
+    "Rate each statement from 1 (Awful) to 10 (Great). Only you see your own scores.": "Notez chaque affirmation de 1 (Horrible) à 10 (Excellent). Vous seul voyez vos notes.",
+    "Clear": "Effacer",
+    "Answered": "Répondu",
+    ":count answered": "Réponses : :count",
+    "Score :score": "Note :score"
 }
