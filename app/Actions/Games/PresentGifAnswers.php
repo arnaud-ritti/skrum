@@ -7,6 +7,7 @@ use App\Models\GameGifAnswer;
 use App\Models\GameRoom;
 use App\Models\GameRound;
 use Illuminate\Support\Collection;
+use LogicException;
 
 /**
  * The one place that turns GIF answers into payloads: before the reveal only
@@ -78,9 +79,17 @@ class PresentGifAnswers
     public function closedFrom(Collection $answers, GameRound $round, GameRoom $room): array
     {
         $countsVotes = $round->outcome === GameRoundOutcome::Revealed;
-        $votes = $answers->mapWithKeys(fn (GameGifAnswer $answer): array => [
-            $answer->id => $countsVotes ? (int) $answer->getAttribute('votes_count') : null,
-        ]);
+        $votes = $answers->mapWithKeys(function (GameGifAnswer $answer) use ($countsVotes): array {
+            if (! $countsVotes) {
+                return [$answer->id => null];
+            }
+
+            if (! array_key_exists('votes_count', $answer->getAttributes())) {
+                throw new LogicException('Load the answers withCount(\'votes\') before presenting a revealed round.');
+            }
+
+            return [$answer->id => (int) $answer->getAttribute('votes_count')];
+        });
 
         return array_map(
             fn (array $answer): array => [...$answer, 'votes' => $votes[$answer['id']]],

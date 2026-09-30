@@ -2,6 +2,7 @@
 
 use App\Actions\Games\PickGifQuestion;
 use App\Actions\Games\PresentGameGif;
+use App\Actions\Games\PresentGifAnswers;
 use App\Enums\GameKind;
 use App\Enums\GameRoundOutcome;
 use App\Events\Games\GameAnswerChanged;
@@ -114,3 +115,23 @@ it('names every GIF event and its payload keys', function (Closure $make, string
     'revealed' => [fn (GameRoom $room) => new GameRoundRevealed($room, ['roundId' => 'r', 'revealedAt' => 'now', 'answers' => []]), 'game.round.revealed', ['roundId', 'revealedAt', 'answers']],
     'vote' => [fn (GameRoom $room) => new GameVoteChanged($room, 'r', 'p', false), 'game.vote.changed', ['roundId', 'playerId', 'voted']],
 ]);
+
+it('refuses to present revealed answers loaded without their vote counts', function () {
+    fakeGameGifs('party');
+    [$room] = sprintGifRoom();
+    $round = gifQuestionRound($room, 'Which GIF sums up the sprint?', 5);
+    GameGifAnswer::factory()->create(['game_round_id' => $round->id, 'gif_id' => 'party']);
+
+    app(PresentGifAnswers::class)->closedFrom($round->gifAnswers()->get(), $round, $room);
+})->throws(LogicException::class);
+
+it('presents answers of a passed round without vote counts', function () {
+    fakeGameGifs('party');
+    [$room] = sprintGifRoom();
+    $round = GameRound::factory()->game(GameKind::SprintGif)->ended(GameRoundOutcome::Passed)->create(['game_room_id' => $room->id, 'word' => null]);
+    GameGifAnswer::factory()->create(['game_round_id' => $round->id, 'gif_id' => 'party']);
+
+    $answers = app(PresentGifAnswers::class)->closedFrom($round->gifAnswers()->get(), $round, $room);
+
+    expect($answers)->toHaveCount(1)->and($answers[0]['votes'])->toBeNull();
+});
