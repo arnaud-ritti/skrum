@@ -12,9 +12,12 @@ use Illuminate\Support\Facades\DB;
 
 class UndoDrawingOp
 {
-    public function handle(GameRoom $room, GameRound $round, GamePlayer $player): void
+    /**
+     * @return array{roundId: string, count: int}
+     */
+    public function handle(GameRoom $room, GameRound $round, GamePlayer $player): array
     {
-        DB::transaction(function () use ($room, $round, $player): void {
+        return DB::transaction(function () use ($room, $round, $player): array {
             [$lockedRoom, $lockedRound] = LockGameRound::handle($room, $round);
 
             GameGuard::mutable($lockedRoom);
@@ -25,7 +28,7 @@ class UndoDrawingOp
             $drawing = $lockedRound->drawing;
 
             if ($drawing === []) {
-                return;
+                return ['roundId' => $lockedRound->id, 'count' => 0];
             }
 
             array_pop($drawing);
@@ -35,7 +38,9 @@ class UndoDrawingOp
                 'drawing_points' => array_sum(array_map(fn (array $op): int => DrawingOp::pointCount($op), $drawing)),
             ])->save();
 
-            (new GameDrawingUndone($lockedRoom, $lockedRound->id))->sendToOthers();
+            (new GameDrawingUndone($lockedRoom, $lockedRound->id, count($drawing)))->sendToOthers();
+
+            return ['roundId' => $lockedRound->id, 'count' => count($drawing)];
         });
     }
 }

@@ -11,9 +11,12 @@ use Illuminate\Support\Facades\DB;
 
 class ClearDrawing
 {
-    public function handle(GameRoom $room, GameRound $round, GamePlayer $player): void
+    /**
+     * @return array{roundId: string, count: int}
+     */
+    public function handle(GameRoom $room, GameRound $round, GamePlayer $player): array
     {
-        DB::transaction(function () use ($room, $round, $player): void {
+        return DB::transaction(function () use ($room, $round, $player): array {
             [$lockedRoom, $lockedRound] = LockGameRound::handle($room, $round);
 
             GameGuard::mutable($lockedRoom);
@@ -24,6 +27,8 @@ class ClearDrawing
             $lockedRound->forceFill(['drawing' => [], 'drawing_points' => 0])->save();
 
             (new GameDrawingCleared($lockedRoom, $lockedRound->id))->sendToOthers();
+
+            return ['roundId' => $lockedRound->id, 'count' => 0];
         });
     }
 }

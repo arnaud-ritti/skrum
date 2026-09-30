@@ -10,6 +10,7 @@ use App\Models\GameRound;
 use App\Support\Games\DrawingOp;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 
 beforeEach(function () {
@@ -41,15 +42,31 @@ it('lets the drawer commit a stroke and broadcasts it', function () {
 
     postDrawingOp($table['room'], $table['round'], $stroke, 'abc-123')
         ->assertCreated()
-        ->assertExactJson(['roundId' => $table['round']->id, 'op' => $stroke, 'clientOpId' => 'abc-123']);
+        ->assertExactJson(['roundId' => $table['round']->id, 'op' => $stroke, 'clientOpId' => 'abc-123', 'count' => 1]);
 
     expect($table['round']->fresh())
-
+        ->drawing->toEqual([$stroke])
         ->drawing_points->toBe(2);
 
     Event::assertDispatched(GameDrawingOpAdded::class, fn (GameDrawingOpAdded $event) => $event->op === $stroke
         && $event->clientOpId === 'abc-123'
-        && $event->roundId === $table['round']->id);
+        && $event->roundId === $table['round']->id
+        && $event->count === 1);
+});
+
+it('keeps the broadcast of a live-split stroke under the default Reverb request size', function () {
+    $room = GameRoom::factory()->create();
+    $longestLiveStroke = ['type' => 'stroke', 'color' => 'orange', 'size' => 24, 'points' => array_fill(0, 400, [1000, 750])];
+    $event = new GameDrawingOpAdded($room, (string) Str::uuid7(), DrawingOp::parse($longestLiveStroke), str_repeat('a', 64), DrawingOp::MaxOps);
+
+    $eventsApiBody = json_encode([
+        'name' => $event->broadcastAs(),
+        'data' => json_encode($event->broadcastWith()),
+        'channels' => [$event->broadcastOn()->name],
+        'socket_id' => '1234567890.1234567890',
+    ]);
+
+    expect(strlen($eventsApiBody))->toBeLessThan(10_000);
 });
 
 it('commits fills and eraser strokes', function () {
@@ -161,13 +178,15 @@ it('undoes the last operation and frees its points', function () {
 
     $this->actingAs($table['leaderUser'])
         ->deleteJson(route('games.rounds.drawing-ops.last.destroy', [$table['room'], $table['round']]))
-        ->assertNoContent();
+        ->assertOk()
+        ->assertExactJson(['roundId' => $table['round']->id, 'count' => 1]);
 
     expect($table['round']->fresh())
         ->drawing->toEqual([$first])
         ->drawing_points->toBe(3);
 
-    Event::assertDispatched(GameDrawingUndone::class, fn (GameDrawingUndone $event) => $event->roundId === $table['round']->id);
+    Event::assertDispatched(GameDrawingUndone::class, fn (GameDrawingUndone $event) => $event->roundId === $table['round']->id
+        && $event->count === 1);
 });
 
 it('ignores an undo on an empty drawing', function () {
@@ -175,7 +194,8 @@ it('ignores an undo on an empty drawing', function () {
 
     $this->actingAs($table['leaderUser'])
         ->deleteJson(route('games.rounds.drawing-ops.last.destroy', [$table['room'], $table['round']]))
-        ->assertNoContent();
+        ->assertOk()
+        ->assertExactJson(['roundId' => $table['round']->id, 'count' => 0]);
 
     Event::assertNotDispatched(GameDrawingUndone::class);
 });
@@ -185,7 +205,8 @@ it('clears the drawing', function () {
 
     $this->actingAs($table['leaderUser'])
         ->deleteJson(route('games.rounds.drawing.destroy', [$table['room'], $table['round']]))
-        ->assertNoContent();
+        ->assertOk()
+        ->assertExactJson(['roundId' => $table['round']->id, 'count' => 0]);
 
     expect($table['round']->fresh())
         ->drawing->toBe([])

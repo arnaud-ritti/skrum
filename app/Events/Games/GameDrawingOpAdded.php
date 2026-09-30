@@ -9,7 +9,7 @@ class GameDrawingOpAdded extends GameBroadcastEvent
     /**
      * @param  array<string, mixed>  $op
      */
-    public function __construct(GameRoom $room, public string $roundId, public array $op, public string $clientOpId)
+    public function __construct(GameRoom $room, public string $roundId, public array $op, public string $clientOpId, public int $count)
     {
         parent::__construct($room);
     }
@@ -21,6 +21,6 @@ class GameDrawingOpAdded extends GameBroadcastEvent
 
     public function broadcastWith(): array
     {
-        return ['roundId' => $this->roundId, 'op' => $this->op, 'clientOpId' => $this->clientOpId];
+        return ['roundId' => $this->roundId, 'op' => $this->op, 'clientOpId' => $this->clientOpId, 'count' => $this->count];
     }
 }

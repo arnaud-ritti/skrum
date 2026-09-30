@@ -6,7 +6,7 @@ use App\Models\GameRoom;
 
 class GameDrawingUndone extends GameBroadcastEvent
 {
-    public function __construct(GameRoom $room, public string $roundId)
+    public function __construct(GameRoom $room, public string $roundId, public int $count)
     {
         parent::__construct($room);
     }
@@ -18,6 +18,6 @@ class GameDrawingUndone extends GameBroadcastEvent
 
     public function broadcastWith(): array
     {
-        return ['roundId' => $this->roundId];
+        return ['roundId' => $this->roundId, 'count' => $this->count];
     }
 }

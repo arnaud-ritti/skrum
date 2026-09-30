@@ -54,8 +54,8 @@ it('names every event and its payload keys', function (Closure $make, string $na
     'letter picked' => [fn (GameRoom $room) => new GameLetterPicked($room, ['roundId' => 'r', 'letter' => 'a']), 'game.letter.picked', ['roundId', 'letter']],
     'hint revealed' => [fn (GameRoom $room) => new GameHintRevealed($room, 'r', [null, 'a']), 'game.hint.revealed', ['roundId', 'mask']],
     'guess made' => [fn (GameRoom $room) => new GameGuessMade($room, ['roundId' => 'r', 'guessId' => 'g', 'playerId' => 'p', 'text' => 'kit']), 'game.guess.made', ['roundId', 'guessId', 'playerId', 'text']],
-    'drawing op added' => [fn (GameRoom $room) => new GameDrawingOpAdded($room, 'r', ['type' => 'fill', 'color' => 'red', 'x' => 1, 'y' => 1], 'op-1'), 'game.drawing.op-added', ['roundId', 'op', 'clientOpId']],
-    'drawing undone' => [fn (GameRoom $room) => new GameDrawingUndone($room, 'r'), 'game.drawing.undone', ['roundId']],
-    'drawing cleared' => [fn (GameRoom $room) => new GameDrawingCleared($room, 'r'), 'game.drawing.cleared', ['roundId']],
+    'drawing op added' => [fn (GameRoom $room) => new GameDrawingOpAdded($room, 'r', ['type' => 'fill', 'color' => 'red', 'x' => 1, 'y' => 1], 'op-1', 1), 'game.drawing.op-added', ['roundId', 'op', 'clientOpId', 'count']],
+    'drawing undone' => [fn (GameRoom $room) => new GameDrawingUndone($room, 'r', 0), 'game.drawing.undone', ['roundId', 'count']],
+    'drawing cleared' => [fn (GameRoom $room) => new GameDrawingCleared($room, 'r'), 'game.drawing.cleared', ['roundId', 'count']],
     'clue changed' => [fn (GameRoom $room) => new GameClueChanged($room, 'r', ['🚀']), 'game.clue.changed', ['roundId', 'clue']],
 ]);

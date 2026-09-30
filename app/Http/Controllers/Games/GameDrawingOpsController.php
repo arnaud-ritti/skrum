@@ -11,7 +11,6 @@ use App\Models\GameRound;
 use App\Support\Games\GameRateLimit;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 
 class GameDrawingOpsController extends Controller
 {
@@ -33,14 +32,12 @@ class GameDrawingOpsController extends Controller
         return response()->json($addDrawingOp->handle($room, $round, $player, $validated['op'], $validated['client_op_id']), 201);
     }
 
-    public function destroyLast(Request $request, GameRoom $room, GameRound $round, UndoDrawingOp $undoDrawingOp): Response
+    public function destroyLast(Request $request, GameRoom $room, GameRound $round, UndoDrawingOp $undoDrawingOp): JsonResponse
     {
         $player = GamePlayer::current($request);
 
         GameRateLimit::hit("game-draw:{$player->id}", self::RateLimitPerSecond, self::SecondsPerDrawingToken);
 
-        $undoDrawingOp->handle($room, $round, $player);
-
-        return response()->noContent();
+        return response()->json($undoDrawingOp->handle($room, $round, $player));
     }
 }

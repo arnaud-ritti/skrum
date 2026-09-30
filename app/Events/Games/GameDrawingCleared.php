@@ -18,6 +18,6 @@ class GameDrawingCleared extends GameBroadcastEvent
 
     public function broadcastWith(): array
     {
-        return ['roundId' => $this->roundId];
+        return ['roundId' => $this->roundId, 'count' => 0];
     }
 }

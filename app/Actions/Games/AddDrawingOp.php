@@ -17,7 +17,7 @@ class AddDrawingOp
      * The committed copy of a stroke others already saw live: late joiners,
      * reconnects and history render from these operations only.
      *
-     * @return array{roundId: string, op: array<string, mixed>, clientOpId: string}
+     * @return array{roundId: string, op: array<string, mixed>, clientOpId: string, count: int}
      */
     public function handle(GameRoom $room, GameRound $round, GamePlayer $player, mixed $op, string $clientOpId): array
     {
@@ -36,14 +36,16 @@ class AddDrawingOp
                 throw ValidationException::withMessages(['op' => __('The drawing is full. Clear it to keep drawing.')]);
             }
 
+            $drawing = [...$lockedRound->drawing, $parsed];
+
             $lockedRound->forceFill([
-                'drawing' => [...$lockedRound->drawing, $parsed],
+                'drawing' => $drawing,
                 'drawing_points' => $points,
             ])->save();
 
-            (new GameDrawingOpAdded($lockedRoom, $lockedRound->id, $parsed, $clientOpId))->sendToOthers();
+            (new GameDrawingOpAdded($lockedRoom, $lockedRound->id, $parsed, $clientOpId, count($drawing)))->sendToOthers();
 
-            return ['roundId' => $lockedRound->id, 'op' => $parsed, 'clientOpId' => $clientOpId];
+            return ['roundId' => $lockedRound->id, 'op' => $parsed, 'clientOpId' => $clientOpId, 'count' => count($drawing)];
         });
     }
 }
