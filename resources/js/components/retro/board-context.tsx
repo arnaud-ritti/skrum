@@ -16,6 +16,7 @@ export type BoardContextValue = {
     handleError: (error: unknown) => string | null;
     hasActiveCard: (cardId: string) => boolean;
     refetch: () => Promise<void>;
+    invalidateSurvey: (surveyId: string) => void;
     sessionExpired: boolean;
     online: PresenceMember[];
     presence: WhisperChannel | null;

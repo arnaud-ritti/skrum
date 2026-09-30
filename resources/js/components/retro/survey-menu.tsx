@@ -46,6 +46,7 @@ export function SurveyMenu({ survey }: { survey: SurveyPayload }) {
         const response = await ctx.run(request).finally(() => setBusy(false));
 
         if (response) {
+            ctx.invalidateSurvey(response.survey.id);
             ctx.apply({ type: 'survey.upsert', survey: response.survey });
         }
     };

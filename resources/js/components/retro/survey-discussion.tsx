@@ -72,6 +72,7 @@ export function SurveyDiscussion({ survey }: { survey: SurveyPayload }) {
         );
 
         if (response) {
+            ctx.invalidateSurvey(response.survey.id);
             ctx.apply({ type: 'survey.upsert', survey: response.survey });
         }
     };

@@ -304,6 +304,11 @@ export function useRetroBoard(initial: Snapshot) {
         [apply],
     );
 
+    const invalidateSurvey = useCallback(
+        (surveyId: string) => surveyRefetcher.current?.invalidate(surveyId),
+        [],
+    );
+
     const onOwnSurveyComment = useCallback(
         (comment: SurveyComment) =>
             surveyRefetcher.current?.schedule(comment.surveyId),
@@ -447,6 +452,7 @@ export function useRetroBoard(initial: Snapshot) {
         dispatch,
         apply,
         refetch,
+        invalidateSurvey,
         status,
         online,
         connected,

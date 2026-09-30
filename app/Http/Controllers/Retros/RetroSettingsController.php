@@ -9,6 +9,9 @@ use App\Events\Retros\RetroSettingsChanged;
 use App\Http\Controllers\Controller;
 use App\Models\Participant;
 use App\Models\Retro;
+use App\Models\SurveyReaction;
+use App\Models\SurveyResponse;
+use App\Models\SurveyTextAnswer;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
@@ -71,6 +74,10 @@ class RetroSettingsController extends Controller
                 throw ValidationException::withMessages(['is_anonymous' => __('Anonymity can only be turned off before anyone answers.')]);
             }
 
+            if ($isDisablingAnonymity && $this->hasSurveyActivity($locked)) {
+                throw ValidationException::withMessages(['is_anonymous' => __('Anonymity can only be turned off before anyone answers.')]);
+            }
+
             $isEnablingHealthCheck = ($validated['health_check_enabled'] ?? false)
                 && ! $locked->health_check_enabled;
 
@@ -84,6 +91,14 @@ class RetroSettingsController extends Controller
         });
 
         return response()->noContent();
+    }
+
+    private function hasSurveyActivity(Retro $retro): bool
+    {
+        return $retro->surveyComments()->exists()
+            || SurveyReaction::query()->where('retro_id', $retro->id)->exists()
+            || SurveyResponse::query()->whereIn('survey_id', $retro->surveys()->select('id'))->exists()
+            || SurveyTextAnswer::query()->whereIn('survey_id', $retro->surveys()->select('id'))->exists();
     }
 
     /**

@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Str;
 
 /**
  * @property string $id
@@ -22,6 +23,11 @@ class SurveyTextAnswer extends Model
     use HasFactory;
 
     use HasUuids;
+
+    public function newUniqueId(): string
+    {
+        return (string) Str::uuid();
+    }
 
     /** @return BelongsTo<Survey, $this> */
     public function survey(): BelongsTo

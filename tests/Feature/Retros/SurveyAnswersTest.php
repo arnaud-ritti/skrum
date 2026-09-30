@@ -5,6 +5,8 @@ use App\Events\Retros\SurveyChanged;
 use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\Survey;
+use App\Models\SurveyComment;
+use App\Models\SurveyReaction;
 use App\Models\SurveyResponse;
 use App\Models\SurveyTextAnswer;
 use Illuminate\Support\Facades\Event;
@@ -220,4 +222,31 @@ it('closes every open survey at completion and keeps them closed after a reopen'
     $this->actingAs($user)->putJson(route('retros.surveys.response.update', [$retro, $open]), ['optionId' => $open->options->first()->id])
         ->assertUnprocessable()
         ->assertJsonValidationErrors(['survey' => 'This survey is closed.']);
+});
+
+it('refuses turning anonymity off once a survey has any activity', function (Closure $recordActivity) {
+    $retro = Retro::factory()->inPhase(RetroPhase::Voting)->create(['is_anonymous' => true]);
+    [$user, $participant] = retroFacilitator($retro);
+    $survey = Survey::factory()->withOptions()->create(['retro_id' => $retro->id]);
+    $recordActivity($retro, $survey, $participant);
+
+    $this->actingAs($user)
+        ->patchJson(route('retros.settings.update', $retro), ['is_anonymous' => false])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['is_anonymous']);
+
+    expect($retro->fresh()->is_anonymous)->toBeTrue();
+})->with([
+    'a response' => [fn ($retro, $survey, $participant) => SurveyResponse::factory()->create(['survey_id' => $survey->id, 'survey_option_id' => $survey->options->first()->id, 'participant_id' => $participant->id])],
+    'a text answer' => [fn ($retro, $survey, $participant) => SurveyTextAnswer::factory()->create(['survey_id' => $survey->id, 'participant_id' => $participant->id])],
+    'a comment' => [fn ($retro, $survey, $participant) => SurveyComment::factory()->create(['retro_id' => $retro->id, 'survey_id' => $survey->id, 'participant_id' => $participant->id])],
+    'a reaction' => [fn ($retro, $survey, $participant) => SurveyReaction::factory()->create(['retro_id' => $retro->id, 'survey_id' => $survey->id, 'participant_id' => $participant->id])],
+]);
+
+it('gives survey text answers random version 4 ids', function () {
+    $survey = Survey::factory()->create();
+
+    $ids = SurveyTextAnswer::factory()->count(2)->create(['survey_id' => $survey->id])->pluck('id');
+
+    expect($ids)->each(fn ($id) => $id->toMatch('/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/'));
 });

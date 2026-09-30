@@ -136,6 +136,7 @@ function SurveyForm({
                 },
             );
 
+            ctx.invalidateSurvey(response.survey.id);
             ctx.apply({ type: 'survey.upsert', survey: response.survey });
             onDone();
         } catch (caught) {
