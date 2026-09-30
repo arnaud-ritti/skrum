@@ -11,6 +11,7 @@ use App\Models\Team;
 use App\Models\TeamHealthStatement;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Support\Llm\Llm;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -37,7 +38,7 @@ class TeamsController extends Controller
         return to_route('teams.show', [$workspace, $team]);
     }
 
-    public function show(Request $request, Workspace $workspace, Team $team, BuildTemplateCatalogue $buildTemplateCatalogue): Response
+    public function show(Request $request, Workspace $workspace, Team $team, Llm $llm, BuildTemplateCatalogue $buildTemplateCatalogue): Response
     {
         Gate::authorize('view', $team);
 
@@ -62,6 +63,10 @@ class TeamsController extends Controller
             ]),
             'templateCategories' => TemplateCategory::options(),
             'catalogue' => Inertia::optional(fn () => $buildTemplateCatalogue->handle($workspace)),
+            'llm' => [
+                'enabled' => $llm->isConfigured(),
+                'provider' => $llm->providerName(),
+            ],
             'canCreateRetro' => $request->user()->can('createRetro', $team),
             'healthStatements' => $this->teamHealthStatements->all($team)->map(fn (TeamHealthStatement $statement) => [
                 'id' => $statement->id ?? $statement->key(),

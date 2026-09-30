@@ -17,13 +17,13 @@ class Llm
             return null;
         }
 
-        if ($this->provider() === 'anthropic') {
-            return 'Anthropic';
-        }
-
         $host = parse_url((string) $this->baseUrl(), PHP_URL_HOST);
 
-        return is_string($host) && $host !== '' ? $host : 'OpenAI';
+        if (is_string($host) && $host !== '') {
+            return $host;
+        }
+
+        return $this->provider() === 'anthropic' ? 'Anthropic' : 'OpenAI';
     }
 
     public function client(): LlmClient

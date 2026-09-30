@@ -827,5 +827,6 @@
     "No ratings yet.": "Aún no hay valoraciones.",
     "Average: :value": "Promedio: :value",
     "Retrospective views": "Vistas de la retrospectiva",
-    "Too many requests, wait a moment.": "Demasiadas solicitudes, espera un momento."
+    "Too many requests, wait a moment.": "Demasiadas solicitudes, espera un momento.",
+    "Not available.": "No disponible."
 }

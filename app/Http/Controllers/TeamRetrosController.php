@@ -26,6 +26,7 @@ class TeamRetrosController extends Controller
             'health_check_enabled' => ['sometimes', 'boolean'],
             'icebreaker_enabled' => ['sometimes', 'boolean'],
             'votes_per_participant' => ['nullable', 'integer', 'min:1', 'max:20'],
+            'ai_summary_enabled' => ['sometimes', 'boolean'],
         ]);
 
         $retro = $createRetro->handle($team, $request->user(), new NewRetro(
@@ -35,6 +36,7 @@ class TeamRetrosController extends Controller
             healthCheckEnabled: (bool) ($validated['health_check_enabled'] ?? false),
             icebreakerEnabled: (bool) ($validated['icebreaker_enabled'] ?? false),
             votesPerParticipant: isset($validated['votes_per_participant']) ? (int) $validated['votes_per_participant'] : null,
+            aiSummaryEnabled: $request->boolean('ai_summary_enabled', true),
         ));
 
         return to_route('retros.show', $retro);

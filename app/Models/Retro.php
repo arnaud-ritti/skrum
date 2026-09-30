@@ -32,6 +32,7 @@ use Illuminate\Support\Carbon;
  * @property bool $presentation_mode
  * @property bool $health_check_enabled
  * @property bool $icebreaker_enabled
+ * @property bool $ai_summary_enabled
  * @property string|null $workspace_template_id
  * @property string $guest_token
  * @property Carbon|null $timer_ends_at
@@ -43,7 +44,7 @@ use Illuminate\Support\Carbon;
 #[Fillable([
     'title', 'template', 'phase', 'facilitator_participant_id', 'is_anonymous', 'votes_per_participant',
     'guest_access_enabled', 'guest_token', 'timer_ends_at', 'highlighted_card_id', 'completed_at',
-    'reactions_enabled', 'cursors_enabled', 'gifs_enabled', 'hide_vote_counts', 'is_locked', 'presentation_mode',
+    'reactions_enabled', 'cursors_enabled', 'gifs_enabled', 'hide_vote_counts', 'is_locked', 'presentation_mode', 'ai_summary_enabled',
     'health_check_enabled', 'icebreaker_enabled', 'workspace_template_id',
 ])]
 #[Hidden(['guest_token'])]
@@ -212,6 +213,7 @@ class Retro extends Model
             'hide_vote_counts' => 'boolean',
             'is_locked' => 'boolean',
             'presentation_mode' => 'boolean',
+            'ai_summary_enabled' => 'boolean',
             'health_check_enabled' => 'boolean',
             'icebreaker_enabled' => 'boolean',
             'votes_per_participant' => 'integer',

@@ -11,5 +11,6 @@ class NewRetro
         public bool $healthCheckEnabled = false,
         public bool $icebreakerEnabled = false,
         public ?int $votesPerParticipant = null,
+        public bool $aiSummaryEnabled = false,
     ) {}
 }

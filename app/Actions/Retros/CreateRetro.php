@@ -9,6 +9,7 @@ use App\Models\Team;
 use App\Models\User;
 use App\Models\WorkspaceTemplate;
 use App\Models\WorkspaceTemplateColumn;
+use App\Support\Llm\Llm;
 use App\Support\RetroTemplates\TemplateCatalogue;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -16,7 +17,10 @@ use InvalidArgumentException;
 
 class CreateRetro
 {
-    public function __construct(private FreezeHealthStatements $freezeHealthStatements) {}
+    public function __construct(
+        private FreezeHealthStatements $freezeHealthStatements,
+        private Llm $llm,
+    ) {}
 
     public function handle(Team $team, User $creator, NewRetro $data): Retro
     {
@@ -31,6 +35,7 @@ class CreateRetro
                 'health_check_enabled' => $data->healthCheckEnabled,
                 'icebreaker_enabled' => $data->icebreakerEnabled,
                 'votes_per_participant' => $data->votesPerParticipant,
+                'ai_summary_enabled' => $data->aiSummaryEnabled && $this->llm->isConfigured(),
                 'guest_token' => Str::random(40),
             ]);
 

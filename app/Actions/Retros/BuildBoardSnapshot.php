@@ -72,6 +72,7 @@ class BuildBoardSnapshot
                 'hideVoteCounts' => $retro->hide_vote_counts,
                 'isLocked' => $retro->is_locked,
                 'presentationMode' => $retro->presentation_mode,
+                'aiSummaryEnabled' => $retro->ai_summary_enabled,
                 'votesPerParticipant' => $retro->voteLimit(),
                 'votesAuto' => $retro->votes_per_participant === null,
                 'guestAccessEnabled' => $retro->guest_access_enabled,

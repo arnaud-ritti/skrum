@@ -573,5 +573,6 @@
     "No ratings yet.": "No ratings yet.",
     "Average: :value": "Average: :value",
     "Retrospective views": "Retrospective views",
-    "Too many requests, wait a moment.": "Too many requests, wait a moment."
+    "Too many requests, wait a moment.": "Too many requests, wait a moment.",
+    "Not available.": "Not available."
 }

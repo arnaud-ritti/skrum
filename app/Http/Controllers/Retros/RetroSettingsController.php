@@ -12,6 +12,7 @@ use App\Models\Retro;
 use App\Models\SurveyReaction;
 use App\Models\SurveyResponse;
 use App\Models\SurveyTextAnswer;
+use App\Support\Llm\Llm;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
@@ -21,10 +22,13 @@ class RetroSettingsController extends Controller
 {
     private const OpenPhaseSettings = [
         'reactions_enabled', 'cursors_enabled', 'gifs_enabled', 'hide_vote_counts', 'is_locked', 'presentation_mode',
-        'health_check_enabled', 'icebreaker_enabled',
+        'health_check_enabled', 'icebreaker_enabled', 'ai_summary_enabled',
     ];
 
-    public function __construct(private FreezeHealthStatements $freezeHealthStatements) {}
+    public function __construct(
+        private FreezeHealthStatements $freezeHealthStatements,
+        private Llm $llm,
+    ) {}
 
     public function update(Request $request, Retro $retro): Response
     {
@@ -45,7 +49,12 @@ class RetroSettingsController extends Controller
             'presentation_mode' => ['sometimes', 'boolean'],
             'health_check_enabled' => ['sometimes', 'boolean'],
             'icebreaker_enabled' => ['sometimes', 'boolean'],
+            'ai_summary_enabled' => ['sometimes', 'boolean'],
         ]);
+
+        if (array_key_exists('ai_summary_enabled', $validated) && ! $this->llm->isConfigured()) {
+            throw ValidationException::withMessages(['ai_summary_enabled' => __('Not available.')]);
+        }
 
         DB::transaction(function () use ($retro, $participant, $validated): void {
             $locked = Retro::query()->whereKey($retro->id)->lockForUpdate()->firstOrFail();

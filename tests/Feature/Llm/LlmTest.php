@@ -31,6 +31,9 @@ it('names the provider for privacy notices', function () {
     configureLlm('openai', 'https://llm.internal.example/v1');
     expect(app(Llm::class)->providerName())->toBe('llm.internal.example');
 
+    configureLlm('anthropic', 'https://llm.gateway.example');
+    expect(app(Llm::class)->providerName())->toBe('llm.gateway.example');
+
     config(['services.llm.key' => null]);
     expect(app(Llm::class)->providerName())->toBeNull();
 });
