@@ -74,8 +74,28 @@ it('hides the insight tools without an LLM provider', function () use ($readTool
     expect($listed)->toBe($expected);
 });
 
-it('refuses calls to tools outside the grant', function (string $name) {
+it('refuses calls to tools outside the grant', function (array $scopes, string $name) {
     $user = teamMember(Team::factory()->create());
 
-    actingAsMcp($user, [McpScope::Read])->tool(mcpToolClass($name), [])->assertHasErrors(["Tool [{$name}] not found."]);
-})->with([...$writeTools, 'retro.board.messages.delete_own']);
+    actingAsMcp($user, $scopes)->tool(mcpToolClass($name), [])->assertHasErrors(["Tool [{$name}] not found."]);
+})->with(function () use ($writeTools) {
+    $cases = [];
+
+    foreach ([...$writeTools, 'retro.board.messages.delete_own'] as $name) {
+        $cases["read only: {$name}"] = [[McpScope::Read], $name];
+    }
+
+    foreach ($writeTools as $name) {
+        $cases["read and delete: {$name}"] = [[McpScope::Read, McpScope::Delete], $name];
+    }
+
+    $cases['read and write: retro.board.messages.delete_own'] = [[McpScope::Read, McpScope::Write], 'retro.board.messages.delete_own'];
+
+    return $cases;
+});
+
+it('refuses calls to the insight tools without an LLM provider', function (string $name) {
+    $user = teamMember(Team::factory()->create());
+
+    actingAsMcp($user, McpScope::cases())->tool(mcpToolClass($name), [])->assertHasErrors(["Tool [{$name}] not found."]);
+})->with($insightTools);
