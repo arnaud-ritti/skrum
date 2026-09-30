@@ -1,13 +1,12 @@
 <?php
 
-use App\Enums\McpScope;
 use App\Models\Team;
 
 it('lists exactly the retrospective read tools of the contract', function () {
     configureLlm();
     $user = teamMember(Team::factory()->create());
 
-    expect(mcpToolNames(actingAsMcp($user, [McpScope::Read, McpScope::Write, McpScope::Delete])))->toBe(collect([
+    expect(mcpToolNames(actingAsMcp($user)))->toBe(collect([
         'retro.teams.list',
         'retro.team.members.list',
         'retro.boards.list',

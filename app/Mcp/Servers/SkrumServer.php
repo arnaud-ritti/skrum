@@ -2,6 +2,8 @@
 
 namespace App\Mcp\Servers;
 
+use App\Mcp\Tools\Retro\CompleteAction;
+use App\Mcp\Tools\Retro\CreateAction;
 use App\Mcp\Tools\Retro\GetHealth;
 use App\Mcp\Tools\Retro\GetRoti;
 use App\Mcp\Tools\Retro\GetSummary;
@@ -13,6 +15,7 @@ use App\Mcp\Tools\Retro\ListMessages;
 use App\Mcp\Tools\Retro\ListTeamMembers;
 use App\Mcp\Tools\Retro\ListTeams;
 use App\Mcp\Tools\Retro\SearchBoards;
+use App\Mcp\Tools\Retro\UpdateAction;
 use Laravel\Mcp\Server;
 use Laravel\Mcp\Server\Attributes\Instructions;
 use Laravel\Mcp\Server\Attributes\Name;
@@ -42,6 +45,9 @@ class SkrumServer extends Server
         ListInsights::class,
         GetHealth::class,
         GetRoti::class,
+        CreateAction::class,
+        UpdateAction::class,
+        CompleteAction::class,
     ];
 
     protected array $resources = [];

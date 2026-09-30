@@ -391,3 +391,11 @@ function mcpToolNames(PendingTestResponse $pending): array
 
     return collect($items)->pluck('name')->sort()->values()->all();
 }
+
+/**
+ * A read + write grant, the common case of the write tool tests.
+ */
+function mcpWriter(User $user, ?Team $team = null): PendingTestResponse
+{
+    return actingAsMcp($user, [McpScope::Read, McpScope::Write], $team);
+}
