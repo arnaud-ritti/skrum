@@ -58,7 +58,6 @@ class SendActionItemReminders
 
                 $reminders += $unsent->count();
                 $users++;
-
             } catch (Throwable $e) {
                 report($e);
             }
