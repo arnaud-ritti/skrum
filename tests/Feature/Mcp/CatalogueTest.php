@@ -2,7 +2,7 @@
 
 use App\Models\Team;
 
-it('lists exactly the retrospective read tools of the contract', function () {
+it('lists exactly the read tools of the contract', function () {
     configureLlm();
     $user = teamMember(Team::factory()->create());
 
@@ -18,6 +18,9 @@ it('lists exactly the retrospective read tools of the contract', function () {
         'retro.board.insights.list',
         'retro.board.health.get',
         'retro.board.roti.get',
+        'poker.games.list',
+        'poker.game.get',
+        'poker.game.tasks.list',
     ])->sort()->values()->all());
 });
 
@@ -25,5 +28,5 @@ it('lists the read tools for a read-only token, without insights when no provide
     $user = teamMember(Team::factory()->create());
 
     expect(mcpToolNames(actingAsMcp($user)))->not->toContain('retro.board.insights.list')
-        ->and(mcpToolNames(actingAsMcp($user)))->toHaveCount(10);
+        ->and(mcpToolNames(actingAsMcp($user)))->toHaveCount(13);
 });
