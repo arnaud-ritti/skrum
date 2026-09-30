@@ -129,7 +129,7 @@ abstract class SkrumTool extends Tool
         $key = 'mcp-write:'.McpGrant::current()->tokenId;
         $maxAttempts = (int) config('skrum.mcp.write_rate_limit');
 
-        return RateLimiter::attempt($key, $maxAttempts, fn (): bool => true, 60);
+        return RateLimiter::increment($key, 60) <= $maxAttempts;
     }
 
     private function httpMessage(HttpException $exception): string
