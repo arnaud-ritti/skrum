@@ -977,5 +977,6 @@
     "Reveal the votes before setting an estimate.": "Decke die Stimmen auf, bevor du eine Schätzung festlegst.",
     "Reveal the votes before starting a new round.": "Decke die Stimmen auf, bevor du eine neue Runde startest.",
     "Select this task first.": "Wähle zuerst diese Aufgabe aus.",
-    "The deck can't change once votes exist.": "Das Deck kann nicht mehr geändert werden, sobald Stimmen vorliegen."
+    "The deck can't change once votes exist.": "Das Deck kann nicht mehr geändert werden, sobald Stimmen vorliegen.",
+    "Estimation history": "Schätzungsverlauf"
 }

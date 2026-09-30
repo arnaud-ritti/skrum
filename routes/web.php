@@ -61,6 +61,7 @@ use App\Http\Controllers\Retros\SurveyResponsesController;
 use App\Http\Controllers\Retros\SurveysController;
 use App\Http\Controllers\SsoCallbacksController;
 use App\Http\Controllers\SsoRedirectsController;
+use App\Http\Controllers\TeamEstimatesController;
 use App\Http\Controllers\TeamHealthStatementArchivalsController;
 use App\Http\Controllers\TeamHealthStatementOrdersController;
 use App\Http\Controllers\TeamHealthStatementsController;
@@ -132,6 +133,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::delete('teams/{team}', [TeamsController::class, 'destroy'])->name('teams.destroy');
             Route::post('teams/{team}/retros', [TeamRetrosController::class, 'store'])->name('teams.retros.store');
             Route::post('teams/{team}/poker-games', [TeamPokerGamesController::class, 'store'])->name('teams.pokerGames.store');
+            Route::get('teams/{team}/estimates', [TeamEstimatesController::class, 'index'])->name('teams.estimates.index');
             Route::post('teams/{team}/members', [TeamMembersController::class, 'store'])->name('teams.members.store');
             Route::delete('teams/{team}/members/{member}', [TeamMembersController::class, 'destroy'])->name('teams.members.destroy')->whereUuid('member');
 

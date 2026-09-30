@@ -1,0 +1,128 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Actions\Poker\PresentPokerRound;
+use App\Models\PokerGame;
+use App\Models\PokerPlayer;
+use App\Models\PokerRound;
+use App\Models\PokerTask;
+use App\Models\PokerVote;
+use App\Models\Team;
+use App\Models\User;
+use App\Models\Workspace;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
+use Inertia\Inertia;
+use Inertia\Response;
+
+class TeamEstimatesController extends Controller
+{
+    private const PerPage = 50;
+
+    public function __construct(private PresentPokerRound $presentPokerRound) {}
+
+    public function index(Request $request, Workspace $workspace, Team $team): Response
+    {
+        Gate::authorize('view', $team);
+
+        $user = $request->user();
+        $games = $team->pokerGames()->latest()->get(['id', 'team_id', 'title', 'created_at']);
+        $gameId = $this->gameFilter($request, $games);
+        $search = $this->searchFilter($request);
+
+        $tasks = PokerTask::query()
+            ->whereIn('poker_game_id', $games->modelKeys())
+            ->whereNotNull('estimated_at')
+            ->when($gameId !== null, fn ($query) => $query->where('poker_game_id', $gameId))
+            ->when($search !== '', fn ($query) => $query->where('title', 'ilike', '%'.$this->escapeLike($search).'%'))
+            ->with([
+                'game.players.user',
+                'rounds' => fn ($query) => $query->whereNotNull('revealed_at')->reorder()->orderByDesc('number')->with('votes'),
+            ])
+            ->withCount('rounds')
+            ->orderByDesc('estimated_at')
+            ->orderBy('id')
+            ->paginate(self::PerPage)
+            ->withQueryString();
+
+        return Inertia::render('poker/estimates', [
+            'workspace' => $workspace->only(['id', 'name', 'slug']),
+            'team' => $team->only(['id', 'name']),
+            'games' => $games->map(fn (PokerGame $game) => ['id' => $game->id, 'title' => $game->title])->values(),
+            'filters' => ['game' => $gameId, 'q' => $search],
+            'tasks' => collect($tasks->items())->map(fn (PokerTask $task) => $this->presentRow($task, $user))->values(),
+            'pagination' => [
+                'currentPage' => $tasks->currentPage(),
+                'lastPage' => $tasks->lastPage(),
+                'total' => $tasks->total(),
+            ],
+        ]);
+    }
+
+    /**
+     * @return array{
+     *     id: string,
+     *     title: string,
+     *     gameId: string,
+     *     gameTitle: string,
+     *     estimate: ?string,
+     *     roundsCount: int,
+     *     estimatedAt: ?string,
+     *     rounds: array<int, array<string, mixed>>,
+     *     players: array<int, array{id: string, name: string}>
+     * }
+     */
+    private function presentRow(PokerTask $task, User $user): array
+    {
+        $game = $task->game;
+        $viewerPlayerId = $game->players->firstWhere('user_id', $user->id)?->id;
+        $voterIds = $task->rounds->flatMap(fn (PokerRound $round) => $round->votes->map(fn (PokerVote $vote) => $vote->poker_player_id))->unique();
+
+        return [
+            'id' => $task->id,
+            'title' => $task->title,
+            'gameId' => $game->id,
+            'gameTitle' => $game->title,
+            'estimate' => $task->estimate,
+            'roundsCount' => (int) $task->rounds_count,
+            'estimatedAt' => $task->estimated_at?->toIso8601String(),
+            'rounds' => $task->rounds
+                ->map(fn (PokerRound $round) => $this->presentPokerRound->handle($round, $game, $viewerPlayerId))
+                ->values()
+                ->all(),
+            'players' => $game->players
+                ->filter(fn (PokerPlayer $player) => $voterIds->contains($player->id))
+                ->map(fn (PokerPlayer $player) => ['id' => $player->id, 'name' => $player->displayName()])
+                ->values()
+                ->all(),
+        ];
+    }
+
+    /**
+     * @param  Collection<int, PokerGame>  $games
+     */
+    private function gameFilter(Request $request, Collection $games): ?string
+    {
+        $gameId = $request->query('game');
+
+        if (! is_string($gameId)) {
+            return null;
+        }
+
+        return $games->contains('id', $gameId) ? $gameId : null;
+    }
+
+    private function searchFilter(Request $request): string
+    {
+        $search = $request->query('q');
+
+        return is_string($search) ? trim($search) : '';
+    }
+
+    private function escapeLike(string $value): string
+    {
+        return str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $value);
+    }
+}
