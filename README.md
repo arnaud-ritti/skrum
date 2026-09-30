@@ -78,6 +78,9 @@ All configuration is read from the environment. `.env.example` documents every v
 | `SKRUM_SIGNUP_MODE`                                                | Who may create an account (default `invite`).                                                                                            |
 | `SKRUM_ALLOWED_EMAIL_DOMAINS`                                      | Optional list of email domains allowed to sign up.                                                                                       |
 | `SKRUM_AVATAR_STYLE`                                               | DiceBear avatar style (default `thumbs`).                                                                                                |
+| `SKRUM_MCP_ENABLED`                                                | Serve the MCP server at `/mcp` and show the "API tokens" settings page (default `true`).                                                 |
+| `SKRUM_MCP_RATE_LIMIT`                                             | MCP requests per minute per API token (default `120`).                                                                                   |
+| `SKRUM_MCP_WRITE_RATE_LIMIT`                                       | MCP write and delete tool calls per minute per API token (default `30`).                                                                 |
 | `GOOGLE_*`, `GITHUB_*`, `ENTRA_*`, `OIDC_*`                        | Single sign-on providers; a provider is enabled when all its values are set. See `.env.example`.                                         |
 | `MAIL_*`                                                           | Outgoing mail settings (Laravel mailer configuration).                                                                                   |
 | `REVERB_APP_ID`, `REVERB_APP_KEY`, `REVERB_APP_SECRET`             | Reverb credentials. The container refuses to start without them.                                                                         |
@@ -91,6 +94,38 @@ All configuration is read from the environment. `.env.example` documents every v
 ## Processes
 
 The image runs FrankenPHP with Laravel Octane. s6-overlay supervises four services: Octane, Reverb, the queue worker and the scheduler. Each is restarted after a crash. Migrations run once at start-up. The compose file sets `stop_grace_period: 20s` because s6 waits up to 10 seconds for services on shutdown, and Docker's default of 10 seconds would kill the container first.
+
+## Connect an AI assistant
+
+Skrum serves a [Model Context Protocol](https://modelcontextprotocol.io) server at `{APP_URL}/mcp`, so an AI assistant can read your team's retrospectives, action items and planning poker games, and make the changes you allow.
+
+1. In skrum, open **Settings → API tokens** and create a token. Reading is always included; tick **Create and update** to let the assistant add or change action items, messages and poker games, and **Delete my messages** to let it delete messages you wrote. You can limit a token to one team and choose when it expires (90 days by default).
+2. Copy the token when it is shown: skrum stores only its hash and cannot show it again.
+3. Add the server to a client that can send an `Authorization` header. With Claude Code:
+
+    ```bash
+    claude mcp add --transport http skrum https://skrum.example.com/mcp --header "Authorization: Bearer <token>"
+    ```
+
+    Other clients (Cursor, VS Code, scripts) take the same URL and header, for example:
+
+    ```json
+    {
+        "mcpServers": {
+            "skrum": {
+                "type": "http",
+                "url": "https://skrum.example.com/mcp",
+                "headers": { "Authorization": "Bearer <token>" }
+            }
+        }
+    }
+    ```
+
+What the assistant can do matches what you can do in skrum, for the teams you can see (and only the bound team when the token has one). Everything the board hides stays hidden: other people's cards while they are still being written, the authors of anonymous messages, who voted for what, individual health check and ROTI answers, and poker cards before they are revealed (and, in anonymous rounds, who played which card). No tool returns email addresses, guest links or credentials. No tool votes or sets a poker estimate for you.
+
+Sign-in through OAuth is not supported yet, so web connectors that require it (claude.ai, ChatGPT) cannot connect. Revoking a token on the settings page takes effect on the next request; changing your password does not revoke tokens. Data you read through the server is sent to the AI application you use.
+
+Set `SKRUM_MCP_ENABLED=false` to turn the server and the settings page off; existing tokens are kept but refused.
 
 ## Local development
 
