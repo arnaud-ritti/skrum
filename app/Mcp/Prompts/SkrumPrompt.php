@@ -3,11 +3,15 @@
 namespace App\Mcp\Prompts;
 
 use App\Enums\McpScope;
+use App\Mcp\McpContext;
 use App\Mcp\McpGrant;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Prompt;
+use Throwable;
 
 abstract class SkrumPrompt extends Prompt
 {
@@ -18,6 +22,28 @@ abstract class SkrumPrompt extends Prompt
     public function shouldRegister(): bool
     {
         return McpGrant::current()->has(McpScope::Read);
+    }
+
+    abstract public function run(Request $request, McpContext $context): Response;
+
+    final public function handle(Request $request): Response
+    {
+        try {
+            return $this->run($request, app(McpContext::class));
+        } catch (Throwable $exception) {
+            if ($exception instanceof ValidationException) {
+                throw $exception;
+            }
+
+            Log::error('MCP prompt failed.', [
+                'prompt' => $this->name(),
+                'exception' => $exception::class,
+                'file' => $exception->getFile(),
+                'line' => $exception->getLine(),
+            ]);
+
+            return Response::error(__('Something went wrong.'));
+        }
     }
 
     /**

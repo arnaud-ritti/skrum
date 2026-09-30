@@ -35,7 +35,7 @@ class AnalyzeRetro extends SkrumPrompt
         return [new Argument('board_id', 'The id of the retrospective board.', required: true)];
     }
 
-    public function handle(Request $request, McpContext $context): Response
+    public function run(Request $request, McpContext $context): Response
     {
         $boardId = $request->validate(['board_id' => ['required', 'uuid']])['board_id'];
 

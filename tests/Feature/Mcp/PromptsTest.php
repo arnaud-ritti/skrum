@@ -2,6 +2,7 @@
 
 use App\Enums\McpScope;
 use App\Enums\RetroPhase;
+use App\Mcp\McpContext;
 use App\Mcp\Prompts\AnalyzeRetro;
 use App\Mcp\Prompts\SkrumPrompt;
 use App\Mcp\Prompts\TeamHealth;
@@ -14,6 +15,7 @@ use App\Models\RotiVote;
 use App\Models\Team;
 use App\Models\Vote;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 it('lists both prompts for a read-only token', function () {
     $team = Team::factory()->create();
@@ -173,4 +175,20 @@ it('answers in the user language and never calls an LLM', function () {
 
     expect($text)->toContain('Answer in French');
     Http::assertNothingSent();
+});
+
+it('turns an unexpected prompt failure into a translated error without logging its message', function () {
+    Log::spy();
+    $retro = Retro::factory()->create();
+    [$user] = retroMember($retro);
+    Card::factory()->create(['retro_id' => $retro->id, 'content' => 'secret-card-text']);
+
+    $this->mock(McpContext::class)->shouldReceive('retro')->andThrow(new RuntimeException('secret-card-text'));
+
+    actingAsMcp($user)->prompt(AnalyzeRetro::class, ['board_id' => $retro->id])->assertHasErrors(['Something went wrong.']);
+
+    Log::shouldHaveReceived('error')->once()->withArgs(
+        fn (string $message, array $context): bool => ! str_contains(json_encode([$message, $context]), 'secret-card-text')
+            && $context['exception'] === RuntimeException::class,
+    );
 });

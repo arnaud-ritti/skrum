@@ -37,7 +37,7 @@ class TeamHealth extends SkrumPrompt
         return [new Argument('team_id', 'The id of the team.', required: true)];
     }
 
-    public function handle(Request $request, McpContext $context): Response
+    public function run(Request $request, McpContext $context): Response
     {
         $teamId = $request->validate(['team_id' => ['required', 'uuid']])['team_id'];
 
