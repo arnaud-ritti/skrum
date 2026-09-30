@@ -32,6 +32,8 @@ use App\Http\Controllers\Retros\RetroSettingsController;
 use App\Http\Controllers\Retros\RetroSnapshotsController;
 use App\Http\Controllers\Retros\RetroSummariesController;
 use App\Http\Controllers\Retros\RetroTimersController;
+use App\Http\Controllers\Retros\SuggestedActionPromotionsController;
+use App\Http\Controllers\Retros\SuggestedActionsController;
 use App\Http\Controllers\Retros\SurveyClosuresController;
 use App\Http\Controllers\Retros\SurveyCommentsController;
 use App\Http\Controllers\Retros\SurveyDraftsController;
@@ -170,6 +172,8 @@ Route::prefix('retros/{retro}')
         Route::delete('action-items/{actionItem}', [ActionItemsController::class, 'destroy'])->name('retros.action-items.destroy')->whereUuid('actionItem');
         Route::post('summary', [RetroSummariesController::class, 'store'])->name('retros.summary.store');
         Route::delete('summary', [RetroSummariesController::class, 'destroy'])->name('retros.summary.destroy');
+        Route::post('suggested-actions/{suggestedAction}/promotion', [SuggestedActionPromotionsController::class, 'store'])->name('retros.suggested-actions.promotion.store')->whereUuid('suggestedAction');
+        Route::delete('suggested-actions/{suggestedAction}', [SuggestedActionsController::class, 'destroy'])->name('retros.suggested-actions.destroy')->whereUuid('suggestedAction');
         Route::post('survey-drafts', [SurveyDraftsController::class, 'store'])->name('retros.survey-drafts.store');
         Route::post('surveys', [SurveysController::class, 'store'])->name('retros.surveys.store');
         Route::get('surveys/{survey}', [SurveysController::class, 'show'])->name('retros.surveys.show')->whereUuid('survey');

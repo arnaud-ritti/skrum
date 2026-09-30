@@ -31,6 +31,8 @@ class BuildBoardSnapshot
         private PresentSurvey $presentSurvey,
         private PresentParticipant $presentParticipant,
         private BuildResults $buildResults,
+        private BuildInsights $buildInsights,
+        private SuggestionGuard $suggestionGuard,
         private Llm $llm,
     ) {}
 
@@ -88,6 +90,7 @@ class BuildBoardSnapshot
                 'participantId' => $viewer->id,
                 'isFacilitator' => $retro->isFacilitator($viewer),
                 'isGuest' => $viewer->isGuest(),
+                'canHandleSuggestions' => $this->suggestionGuard->allows($retro, $retro->participants->firstWhere('id', $viewer->id) ?? $viewer),
                 'remainingVotes' => max(0, $retro->voteLimit() - (int) $myVotes->sum()),
                 'transferCandidates' => $retro->isFacilitator($viewer) ? $this->transferCandidates($retro, $viewer) : [],
             ],
@@ -103,12 +106,15 @@ class BuildBoardSnapshot
                     'reactions' => $isHidden ? [] : $this->summarizeReactions->handle($card->reactions, $retro, $viewer),
                     'commentCount' => $isHidden ? 0 : $card->comments->reject(fn (CardComment $comment) => $comment->isDeleted())->count(),
                     'comments' => $isHidden ? [] : $this->presentComment->threads($card->comments, $retro, $viewer),
+                    'sentiment' => $isHidden ? null : $card->sentiment?->value,
+                    'category' => $isHidden ? null : $card->category,
                 ];
             })->values()->all(),
             'participants' => $retro->participants->map(fn (Participant $participant) => $this->presentParticipant->handle($participant))->values()->all(),
             'actionItems' => $retro->actionItems->sortBy('created_at')
                 ->map(fn (ActionItem $item) => $this->presentActionItem->handle($item))
                 ->values()->all(),
+            'insights' => $this->buildInsights->handle($retro),
             'roti' => $this->roti($retro, $viewer),
             'surveys' => $surveys,
             'results' => $this->buildResults->handle($retro, $viewer, $surveys),

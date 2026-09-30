@@ -19,7 +19,7 @@ class StoreRetroInsights
         DB::transaction(function () use ($retro, $output): void {
             $locked = Retro::query()->whereKey($retro->id)->lockForUpdate()->firstOrFail();
 
-            if ($locked->phase !== RetroPhase::Completed) {
+            if ($locked->phase !== RetroPhase::Completed || $locked->summary_status !== SummaryStatus::Pending) {
                 $this->clearRetroInsights->abandon($locked);
 
                 return;

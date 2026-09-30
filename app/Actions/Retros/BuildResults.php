@@ -16,6 +16,7 @@ class BuildResults
         private BuildHealthTrend $buildHealthTrend,
         private PresentSurvey $presentSurvey,
         private PresentParticipant $presentParticipant,
+        private PresentRetroSummary $presentRetroSummary,
     ) {}
 
     /**
@@ -27,7 +28,7 @@ class BuildResults
      *     surveys: array<int, array<string, mixed>>,
      *     games: null,
      *     roti: array{distribution: array<int, array{score: int, count: int}>, average: ?float, respondents: int},
-     *     summary: null
+     *     summary: ?array{text: ?string, generatedAt: ?string, status: string, provider: ?string}
      * }|null
      */
     public function handle(Retro $retro, Participant $viewer, ?array $surveys = null): ?array
@@ -47,7 +48,7 @@ class BuildResults
             'surveys' => $surveys ?? $this->presentSurvey->many($retro, $viewer),
             'games' => null,
             'roti' => $this->roti($retro),
-            'summary' => null,
+            'summary' => $this->presentRetroSummary->handle($retro),
         ];
     }
 
