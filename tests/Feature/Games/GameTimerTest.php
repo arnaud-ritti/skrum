@@ -192,3 +192,34 @@ it('uses the retro board timer in icebreaker rooms', function () {
 
     expect($round->fresh()->outcome)->toBe(GameRoundOutcome::TimedOut);
 });
+
+it('runs again when the job fires before the timer and ends the round on the later run', function () {
+    Queue::fake();
+    $room = GameRoom::factory()->create(['timer_ends_at' => now()->addMinute()]);
+    gameRoomHost($room);
+    $round = activeGameRound($room);
+
+    $this->travel(60)->seconds();
+    $this->travelTo(CarbonImmutable::parse('2026-10-06 10:00:59.500'));
+    runGameExpiryJob($round, '2026-10-06T10:01:00+00:00');
+
+    expect($round->fresh()->isActive())->toBeTrue();
+    Queue::assertPushed(CloseExpiredGameRound::class, fn (CloseExpiredGameRound $job) => $job->earlyRuns === 1);
+
+    $this->travelTo(CarbonImmutable::parse('2026-10-06 10:01:00.500'));
+    runGameExpiryJob($round, '2026-10-06T10:01:00+00:00');
+
+    expect($round->fresh()->outcome)->toBe(GameRoundOutcome::TimedOut);
+});
+
+it('matches a timer stored with sub-second precision', function () {
+    $room = GameRoom::factory()->create(['timer_ends_at' => CarbonImmutable::parse('2026-10-06 10:01:00.400')]);
+    [, $host] = gameRoomHost($room);
+    $round = activeGameRound($room);
+    $this->rules->points = [$host->id => ['points' => 0, 'isWin' => false]];
+
+    $this->travelTo(CarbonImmutable::parse('2026-10-06 10:02:00'));
+    runGameExpiryJob($round, '2026-10-06T10:01:00+00:00');
+
+    expect($round->fresh()->outcome)->toBe(GameRoundOutcome::TimedOut);
+});
