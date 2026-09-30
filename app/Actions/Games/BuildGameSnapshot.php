@@ -3,6 +3,7 @@
 namespace App\Actions\Games;
 
 use App\Enums\GameRoomAccess;
+use App\Http\Controllers\EmojiDataController;
 use App\Models\GamePlayer;
 use App\Models\GameRoom;
 use App\Support\Games\GameRulesRegistry;
@@ -31,6 +32,7 @@ use App\Support\Games\GameRulesRegistry;
  *     round: ?array<string, mixed>,
  *     history: array<int, array<string, mixed>>,
  *     links: array{team: ?string, retro: ?string},
+ *     emojiData: array{baseUrl: string, locale: string},
  *     serverTime: string
  * }
  */
@@ -87,6 +89,10 @@ class BuildGameSnapshot
             'links' => [
                 'team' => $isStandalone && ! $isGuest ? route('teams.show', [$room->team->workspace, $room->team]) : null,
                 'retro' => $isStandalone ? null : route('retros.show', $room->retro_id),
+            ],
+            'emojiData' => [
+                'baseUrl' => '/emoji-data/'.config('services.emoji_data.version'),
+                'locale' => EmojiDataController::emojibaseLocale(app()->getLocale()),
             ],
             'serverTime' => now()->utc()->format('Y-m-d\TH:i:s.v\Z'),
         ];

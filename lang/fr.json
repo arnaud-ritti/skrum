@@ -1475,5 +1475,6 @@
     "Only the player leading this round can do this.": "Seul le joueur qui mène cette manche peut faire cela.",
     "You are leading this round, so you cannot guess.": "Vous menez cette manche, vous ne pouvez donc pas deviner.",
     "No more letters can be revealed for this word.": "Plus aucune lettre ne peut être révélée pour ce mot.",
-    "The drawing is full. Clear it to keep drawing.": "Le dessin est plein. Effacez-le pour continuer à dessiner."
+    "The drawing is full. Clear it to keep drawing.": "Le dessin est plein. Effacez-le pour continuer à dessiner.",
+    "A clue holds five emoji at most.": "Un indice contient cinq emoji au maximum."
 }

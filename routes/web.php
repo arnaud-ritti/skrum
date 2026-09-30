@@ -13,6 +13,7 @@ use App\Http\Controllers\Games\GameGuestTokensController;
 use App\Http\Controllers\Games\GameHostsController;
 use App\Http\Controllers\Games\GameLettersController;
 use App\Http\Controllers\Games\GameRoomsController;
+use App\Http\Controllers\Games\GameRoundCluesController;
 use App\Http\Controllers\Games\GameRoundHintsController;
 use App\Http\Controllers\Games\GameRoundPassesController;
 use App\Http\Controllers\Games\GameRoundsController;
@@ -430,6 +431,7 @@ Route::prefix('games/{room}')
         Route::post('rounds/{round}/drawing-ops', [GameDrawingOpsController::class, 'store'])->name('games.rounds.drawing-ops.store')->whereUuid('round');
         Route::delete('rounds/{round}/drawing-ops/last', [GameDrawingOpsController::class, 'destroyLast'])->name('games.rounds.drawing-ops.last.destroy')->whereUuid('round');
         Route::delete('rounds/{round}/drawing', [GameDrawingsController::class, 'destroy'])->name('games.rounds.drawing.destroy')->whereUuid('round');
+        Route::put('rounds/{round}/clue', [GameRoundCluesController::class, 'update'])->name('games.rounds.clue.update')->whereUuid('round');
     });
 
 Route::post('broadcasting/auth', [BroadcastAuthorizationsController::class, 'store'])->name('broadcasting.auth');
