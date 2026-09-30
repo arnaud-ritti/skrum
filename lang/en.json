@@ -995,5 +995,13 @@
     "Health check: :score/10 (:respondents of :participants participants answered)": "Health check: :score/10 (:respondents of :participants participants answered)",
     "View the results": "View the results",
     "The results were emailed a few minutes ago.": "The results were emailed a few minutes ago.",
-    "Nobody can receive these results by email.": "Nobody can receive these results by email."
+    "Nobody can receive these results by email.": "Nobody can receive these results by email.",
+    "Sending to :channel…": "Sending to :channel…",
+    ":channel: failed — :error": ":channel: failed — :error",
+    "Sent to :channel · :time": "Sent to :channel · :time",
+    "Emailed to :count people · :time": "Emailed to :count people · :time",
+    "Post a link": "Post a link",
+    "Post link to Slack": "Post link to Slack",
+    "Post link to Telegram": "Post link to Telegram",
+    "The message is on its way.": "The message is on its way."
 }

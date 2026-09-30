@@ -1244,5 +1244,13 @@
     "Health check: :score/10 (:respondents of :participants participants answered)": "Gesundheitscheck: :score/10 (:respondents von :participants Teilnehmenden haben geantwortet)",
     "View the results": "Ergebnisse ansehen",
     "The results were emailed a few minutes ago.": "Die Ergebnisse wurden vor ein paar Minuten per E-Mail verschickt.",
-    "Nobody can receive these results by email.": "Niemand kann diese Ergebnisse per E-Mail erhalten."
+    "Nobody can receive these results by email.": "Niemand kann diese Ergebnisse per E-Mail erhalten.",
+    "Sending to :channel…": "Wird an :channel gesendet…",
+    ":channel: failed — :error": ":channel: fehlgeschlagen — :error",
+    "Sent to :channel · :time": "An :channel gesendet · :time",
+    "Emailed to :count people · :time": "Per E-Mail an :count Personen gesendet · :time",
+    "Post a link": "Link posten",
+    "Post link to Slack": "Link in Slack posten",
+    "Post link to Telegram": "Link in Telegram posten",
+    "The message is on its way.": "Die Nachricht ist unterwegs."
 }

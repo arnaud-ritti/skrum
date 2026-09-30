@@ -1,3 +1,5 @@
+import type { IntegrationDelivery, ShareAvailability } from '@/types';
+
 export type PokerRevealReason = 'manual' | 'everyone_voted' | 'timer';
 
 export type PokerResult = {
@@ -88,6 +90,8 @@ export type PokerSnapshot = {
     tasks: PokerTask[];
     current: PokerCurrent | null;
     links: { team: string | null };
+    share: ShareAvailability;
+    deliveries: IntegrationDelivery[];
     serverTime: string;
 };
 

@@ -59,3 +59,31 @@ export type TelegramConnectCode = {
     botUsername: string;
     expiresAt: string;
 };
+
+export type ShareChannel = 'slack' | 'telegram';
+
+export type DeliveryChannel = ShareChannel | 'email';
+
+export type DeliveryKind =
+    | 'retro_link'
+    | 'poker_link'
+    | 'retro_results'
+    | 'game_room_link';
+
+export type DeliveryStatus = 'queued' | 'sent' | 'failed';
+
+export type IntegrationDelivery = {
+    id: string;
+    channel: DeliveryChannel;
+    kind: DeliveryKind;
+    status: DeliveryStatus;
+    error: string | null;
+    sentAt: string | null;
+    createdAt: string | null;
+    requestedBy: string | null;
+    recipientCount: number | null;
+};
+
+export type ShareAvailability = Record<ShareChannel, boolean>;
+
+export type RetroResultsAudience = 'participants' | 'team';

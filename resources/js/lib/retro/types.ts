@@ -1,3 +1,5 @@
+import type { IntegrationDelivery, ShareAvailability } from '@/types';
+
 export type RetroPhase =
     | 'health_check'
     | 'icebreaker'
@@ -302,6 +304,8 @@ export type Snapshot = {
     insights: Insights | null;
     features: { llm: boolean; llmProvider: string | null };
     healthCheck: HealthCheckState | null;
+    integrations: ShareAvailability & { email: boolean };
+    linkDeliveries: IntegrationDelivery[];
     votesCast: number | null;
     votesVersion: number;
     links: {
@@ -375,4 +379,6 @@ export type Results = {
     games: null;
     roti: RotiResults;
     summary: ResultsSummary | null;
+    deliveries: IntegrationDelivery[];
+    emailRecipients: { participants: number; team: number } | null;
 };
