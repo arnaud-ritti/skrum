@@ -18,6 +18,10 @@ export const GameEvents = [
     'game.drawing.undone',
     'game.drawing.cleared',
     'game.clue.changed',
+    'game.question.changed',
+    'game.answer.changed',
+    'game.round.revealed',
+    'game.vote.changed',
 ] as const;
 
 /**

@@ -74,6 +74,31 @@ export type GameGuessEntry = {
     veryClose?: boolean;
 };
 
+/** Proxied through skrum: never a provider URL. */
+export type GameGif = { id: string; previewUrl: string; url: string };
+
+/** Before the reveal: only who answered. */
+export type GameGifPending = { playerId: string; answered: true };
+
+/** After the reveal; playerId is null on anonymous retros, votes only once the round closed. */
+export type GameGifRevealed = {
+    id: string;
+    gif: GameGif;
+    playerId: string | null;
+    votes?: number | null;
+};
+
+export type GameGifSlot = GameGifPending | GameGifRevealed;
+
+export type GameMyGifAnswer = { id: string; gif: GameGif };
+
+export type GameGifSearchResult = {
+    id: string;
+    previewUrl: string;
+    width: number;
+    height: number;
+};
+
 export type GameRound = {
     id: string;
     game: GameKind;
@@ -94,6 +119,12 @@ export type GameRound = {
     clue?: string[];
     /** Client only: ids of the latest committed strokes, to drop their live previews. */
     committedOpIds?: string[];
+    question?: string | null;
+    gifProvider?: 'giphy' | 'tenor' | null;
+    answers?: GameGifSlot[];
+    myAnswer?: GameMyGifAnswer | null;
+    voters?: string[];
+    myVote?: string | null;
 };
 
 export type GameHistoryRound = {
@@ -116,6 +147,7 @@ export type GameRoundDetail = GameHistoryRound & {
     pickedLetters?: string[];
     drawing?: DrawingOp[];
     clue?: string[];
+    answers?: GameGifRevealed[];
 };
 
 export type GamePointsAward = {
@@ -131,6 +163,14 @@ export type GameRoundEnded = {
     winnerPlayerId: string | null;
     leaderPlayerId: string | null;
     points: GamePointsAward[];
+    question?: string | null;
+    answers?: GameGifRevealed[];
+};
+
+export type GameRoundRevealed = {
+    roundId: string;
+    revealedAt: string;
+    answers: GameGifRevealed[];
 };
 
 export type GameLetterPicked = {

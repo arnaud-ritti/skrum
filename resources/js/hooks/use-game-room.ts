@@ -24,6 +24,7 @@ import type {
     GameRound,
     GameRoomState,
     GameRoundEnded,
+    GameRoundRevealed,
     GameSnapshot,
 } from '@/lib/games/types';
 import type { WhisperChannel } from '@/lib/realtime/whisper-transport';
@@ -250,6 +251,35 @@ export function useGameRoom(
                         type: 'round.patched',
                         roundId: payload.roundId as string,
                         patch: { clue: payload.clue as string[] },
+                    });
+                    break;
+                case 'game.question.changed':
+                    apply({
+                        type: 'question.changed',
+                        roundId: payload.roundId as string,
+                        question: payload.question as string,
+                    });
+                    break;
+                case 'game.answer.changed':
+                    apply({
+                        type: 'answer.changed',
+                        roundId: payload.roundId as string,
+                        playerId: payload.playerId as string,
+                        answered: payload.answered as boolean,
+                    });
+                    break;
+                case 'game.round.revealed':
+                    apply({
+                        type: 'round.revealed',
+                        revealed: payload as unknown as GameRoundRevealed,
+                    });
+                    break;
+                case 'game.vote.changed':
+                    apply({
+                        type: 'vote.changed',
+                        roundId: payload.roundId as string,
+                        playerId: payload.playerId as string,
+                        voted: payload.voted as boolean,
                     });
                     break;
             }

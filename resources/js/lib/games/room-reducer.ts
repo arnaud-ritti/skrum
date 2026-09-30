@@ -5,8 +5,10 @@ import type {
     GameRound,
     GameRoomState,
     GameRoundEnded,
+    GameRoundRevealed,
     GameSnapshot,
 } from './types';
+import { pendingAnswers, withPendingAnswer, withVoter } from './gif';
 
 export type RoomAction =
     | { type: 'replace'; snapshot: GameSnapshot }
@@ -24,7 +26,21 @@ export type RoomAction =
           count: number;
       }
     | { type: 'drawing.undone'; roundId: string; count: number }
-    | { type: 'drawing.cleared'; roundId: string };
+    | { type: 'drawing.cleared'; roundId: string }
+    | { type: 'question.changed'; roundId: string; question: string }
+    | {
+          type: 'answer.changed';
+          roundId: string;
+          playerId: string;
+          answered: boolean;
+      }
+    | { type: 'round.revealed'; revealed: GameRoundRevealed }
+    | {
+          type: 'vote.changed';
+          roundId: string;
+          playerId: string;
+          voted: boolean;
+      };
 
 const RecentPicks = 5;
 
@@ -217,6 +233,41 @@ export function roomReducer(
             return withRound(state, action.roundId, (round) => ({
                 ...round,
                 drawing: [],
+            }));
+        case 'question.changed':
+            return withRound(state, action.roundId, (round) => ({
+                ...round,
+                question: action.question,
+            }));
+        case 'answer.changed':
+            return withRound(state, action.roundId, (round) =>
+                round.revealedAt !== null
+                    ? round
+                    : {
+                          ...round,
+                          answers: withPendingAnswer(
+                              pendingAnswers(round),
+                              action.playerId,
+                              action.answered,
+                          ),
+                      },
+            );
+        case 'round.revealed':
+            return withRound(state, action.revealed.roundId, (round) => ({
+                ...round,
+                revealedAt: action.revealed.revealedAt,
+                answers: action.revealed.answers,
+                voters: [],
+                myVote: null,
+            }));
+        case 'vote.changed':
+            return withRound(state, action.roundId, (round) => ({
+                ...round,
+                voters: withVoter(
+                    round.voters ?? [],
+                    action.playerId,
+                    action.voted,
+                ),
             }));
     }
 }
