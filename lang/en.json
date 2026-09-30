@@ -598,5 +598,15 @@
     "Reject": "Reject",
     "Dismissed (:count)": "Dismissed (:count)",
     "Added to action items": "Added to action items",
-    "Theme: :name": "Theme: :name"
+    "Theme: :name": "Theme: :name",
+    "Generate from a prompt": "Generate from a prompt",
+    "Describe the survey you need": "Describe the survey you need",
+    "Generate": "Generate",
+    "Your prompt and the retro title are sent to :provider.": "Your prompt and the retro title are sent to :provider.",
+    "Suggest group names": "Suggest group names",
+    "Card contents of these groups are sent to :provider.": "Card contents of these groups are sent to :provider.",
+    "No new names to suggest.": "No new names to suggest.",
+    "Suggested name": "Suggested name",
+    "Use this name": "Use this name",
+    "Edit this name": "Edit this name"
 }

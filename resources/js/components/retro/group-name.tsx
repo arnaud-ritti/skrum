@@ -8,6 +8,7 @@ import { retroRequest } from '@/lib/retro/api';
 import type { BoardCard, RetroPhase } from '@/lib/retro/types';
 import { useBoard } from './board-context';
 import { dragIsolation } from './dnd';
+import { GroupNameSuggestion } from './group-name-suggestions';
 
 const NamingPhases: RetroPhase[] = ['grouping', 'voting', 'discussing'];
 
@@ -129,6 +130,7 @@ export function GroupName({ card }: { card: BoardCard }) {
                 )}
                 <Pencil className="ml-auto size-3.5 text-muted-foreground" />
             </Button>
+            <GroupNameSuggestion card={card} onEdit={startEditing} />
         </div>
     );
 }

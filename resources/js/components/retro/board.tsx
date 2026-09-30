@@ -43,6 +43,10 @@ import { ResultsView } from './results/results-view';
 import { SessionExpiredBanner } from './session-expired-banner';
 import { VoteProgress } from './vote-progress';
 import { SurveysColumn } from './surveys-column';
+import {
+    GroupNameSuggestionsProvider,
+    SuggestGroupNamesButton,
+} from './group-name-suggestions';
 
 export function Board({ snapshot }: { snapshot: Snapshot }) {
     const { t } = useTrans();
@@ -213,115 +217,128 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
 
     return (
         <BoardProvider value={ctx}>
-            <div className="flex min-h-dvh flex-col">
-                {sessionExpired && <SessionExpiredBanner />}
-                <div className="flex flex-1 flex-col" inert={sessionExpired}>
-                    <BoardHeader
-                        online={online}
-                        hideMyCursor={hideMyCursor}
-                        onHideMyCursorChange={setHideMyCursor}
-                        actions={
-                            board.retro.phase === 'voting' ? (
-                                <VoteProgress />
-                            ) : undefined
-                        }
-                    />
-                    <ConnectionBanner reconnecting={reconnecting} />
-                    <div className="flex flex-1 flex-col lg:min-h-0">
-                        <PhasePanel />
-                        {board.retro.phase === 'completed' && (
-                            <CompletedTabs
-                                value={completedView}
-                                onChange={setCompletedView}
-                            />
-                        )}
-                        {board.retro.phase === 'completed' &&
-                        completedView === 'results' ? (
-                            <div
-                                role="tabpanel"
-                                id={CompletedPanelId}
-                                aria-labelledby={CompletedTabId('results')}
-                                className="flex flex-1 flex-col"
-                            >
-                                <ResultsView />
-                            </div>
-                        ) : (
-                            <div
-                                {...(board.retro.phase === 'completed' && {
-                                    role: 'tabpanel',
-                                    id: CompletedPanelId,
-                                    'aria-labelledby': CompletedTabId('board'),
-                                })}
-                                className="flex flex-1 flex-col lg:min-h-0 lg:flex-row"
-                            >
-                                <DndContext
-                                    id="retro-board"
-                                    sensors={sensors}
-                                    accessibility={dragAccessibility}
-                                    collisionDetection={closestCenter}
-                                    onDragStart={(event) => {
-                                        setActiveCardId(
-                                            parseDndId(event.active.id)?.id ??
-                                                null,
-                                        );
-                                        setActiveCardWidth(
-                                            event.active.rect.current.initial
-                                                ?.width,
-                                        );
-                                    }}
-                                    onDragCancel={() => setActiveCardId(null)}
-                                    onDragEnd={(event) =>
-                                        void handleDragEnd(event)
-                                    }
+            <GroupNameSuggestionsProvider>
+                <div className="flex min-h-dvh flex-col">
+                    {sessionExpired && <SessionExpiredBanner />}
+                    <div
+                        className="flex flex-1 flex-col"
+                        inert={sessionExpired}
+                    >
+                        <BoardHeader
+                            online={online}
+                            hideMyCursor={hideMyCursor}
+                            onHideMyCursorChange={setHideMyCursor}
+                            actions={
+                                <>
+                                    {board.retro.phase === 'voting' && (
+                                        <VoteProgress />
+                                    )}
+                                    <SuggestGroupNamesButton />
+                                </>
+                            }
+                        />
+                        <ConnectionBanner reconnecting={reconnecting} />
+                        <div className="flex flex-1 flex-col lg:min-h-0">
+                            <PhasePanel />
+                            {board.retro.phase === 'completed' && (
+                                <CompletedTabs
+                                    value={completedView}
+                                    onChange={setCompletedView}
+                                />
+                            )}
+                            {board.retro.phase === 'completed' &&
+                            completedView === 'results' ? (
+                                <div
+                                    role="tabpanel"
+                                    id={CompletedPanelId}
+                                    aria-labelledby={CompletedTabId('results')}
+                                    className="flex flex-1 flex-col"
                                 >
-                                    <main
-                                        ref={setBoardElement}
-                                        className="relative flex min-w-0 flex-1 items-start gap-4 overflow-x-auto p-4"
+                                    <ResultsView />
+                                </div>
+                            ) : (
+                                <div
+                                    {...(board.retro.phase === 'completed' && {
+                                        role: 'tabpanel',
+                                        id: CompletedPanelId,
+                                        'aria-labelledby':
+                                            CompletedTabId('board'),
+                                    })}
+                                    className="flex flex-1 flex-col lg:min-h-0 lg:flex-row"
+                                >
+                                    <DndContext
+                                        id="retro-board"
+                                        sensors={sensors}
+                                        accessibility={dragAccessibility}
+                                        collisionDetection={closestCenter}
+                                        onDragStart={(event) => {
+                                            setActiveCardId(
+                                                parseDndId(event.active.id)
+                                                    ?.id ?? null,
+                                            );
+                                            setActiveCardWidth(
+                                                event.active.rect.current
+                                                    .initial?.width,
+                                            );
+                                        }}
+                                        onDragCancel={() =>
+                                            setActiveCardId(null)
+                                        }
+                                        onDragEnd={(event) =>
+                                            void handleDragEnd(event)
+                                        }
                                     >
-                                        <SurveysColumn />
-                                        {board.columns.length === 0 && (
-                                            <p className="text-sm text-muted-foreground">
-                                                {t('No columns yet.')}
-                                            </p>
-                                        )}
-                                        {board.columns.map((column, index) => (
-                                            <RetroColumn
-                                                key={column.id}
-                                                column={column}
-                                                index={index}
+                                        <main
+                                            ref={setBoardElement}
+                                            className="relative flex min-w-0 flex-1 items-start gap-4 overflow-x-auto p-4"
+                                        >
+                                            <SurveysColumn />
+                                            {board.columns.length === 0 && (
+                                                <p className="text-sm text-muted-foreground">
+                                                    {t('No columns yet.')}
+                                                </p>
+                                            )}
+                                            {board.columns.map(
+                                                (column, index) => (
+                                                    <RetroColumn
+                                                        key={column.id}
+                                                        column={column}
+                                                        index={index}
+                                                    />
+                                                ),
+                                            )}
+                                            {board.viewer.isFacilitator &&
+                                                ColumnEditPhases.includes(
+                                                    board.retro.phase,
+                                                ) && <AddColumn />}
+                                            <LiveCursorLayer
+                                                container={boardElement}
+                                                hidden={hideMyCursor}
                                             />
-                                        ))}
-                                        {board.viewer.isFacilitator &&
-                                            ColumnEditPhases.includes(
-                                                board.retro.phase,
-                                            ) && <AddColumn />}
-                                        <LiveCursorLayer
-                                            container={boardElement}
-                                            hidden={hideMyCursor}
-                                        />
-                                    </main>
-                                    <DragOverlay>
-                                        {activeCard ? (
-                                            <CardPreview
-                                                card={activeCard}
-                                                width={activeCardWidth}
-                                            />
-                                        ) : null}
-                                    </DragOverlay>
-                                </DndContext>
-                                {board.retro.phase === 'discussing' && (
-                                    <>
-                                        <SuggestionsPanel />
-                                        <ActionItemsPanel />
-                                    </>
-                                )}
-                            </div>
-                        )}
+                                        </main>
+                                        <DragOverlay>
+                                            {activeCard ? (
+                                                <CardPreview
+                                                    card={activeCard}
+                                                    width={activeCardWidth}
+                                                />
+                                            ) : null}
+                                        </DragOverlay>
+                                    </DndContext>
+                                    {board.retro.phase === 'discussing' && (
+                                        <>
+                                            <SuggestionsPanel />
+                                            <ActionItemsPanel />
+                                        </>
+                                    )}
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
-            </div>
-            <FlyingReactions />
-            <PresentationOverlay />
+                <FlyingReactions />
+                <PresentationOverlay />
+            </GroupNameSuggestionsProvider>
         </BoardProvider>
     );
 }

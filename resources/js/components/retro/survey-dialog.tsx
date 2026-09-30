@@ -24,6 +24,7 @@ import { useTrans } from '@/hooks/use-trans';
 import { retroRequest } from '@/lib/retro/api';
 import type { SurveyKind, SurveyPayload } from '@/lib/retro/types';
 import { useBoard } from './board-context';
+import { SurveyDraftField } from './survey-draft-field';
 
 const MinOptions = 2;
 const MaxOptions = 10;
@@ -159,6 +160,23 @@ function SurveyForm({
             <DialogTitle>
                 {survey ? t('Edit survey') : t('New survey')}
             </DialogTitle>
+
+            {!survey && (
+                <SurveyDraftField
+                    kind={draft.kind}
+                    onDraft={(generated) =>
+                        setDraft((current) => ({
+                            ...current,
+                            question: generated.question,
+                            description: generated.description ?? '',
+                            options:
+                                current.kind === 'text'
+                                    ? current.options
+                                    : generated.options,
+                        }))
+                    }
+                />
+            )}
 
             <div className="grid gap-2">
                 <Label htmlFor="survey-kind">{t('Answer type')}</Label>

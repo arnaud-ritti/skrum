@@ -852,5 +852,15 @@
     "Reject": "Écarter",
     "Dismissed (:count)": "Écartées (:count)",
     "Added to action items": "Ajoutée aux actions à mener",
-    "Theme: :name": "Thème : :name"
+    "Theme: :name": "Thème : :name",
+    "Generate from a prompt": "Générer à partir d’une consigne",
+    "Describe the survey you need": "Décrivez le sondage souhaité",
+    "Generate": "Générer",
+    "Your prompt and the retro title are sent to :provider.": "Votre consigne et le titre de la rétrospective sont envoyés à :provider.",
+    "Suggest group names": "Suggérer des noms de groupes",
+    "Card contents of these groups are sent to :provider.": "Le contenu des cartes de ces groupes est envoyé à :provider.",
+    "No new names to suggest.": "Aucun nouveau nom à suggérer.",
+    "Suggested name": "Nom suggéré",
+    "Use this name": "Utiliser ce nom",
+    "Edit this name": "Modifier ce nom"
 }
