@@ -6,6 +6,8 @@ use App\Http\Controllers\BroadcastAuthorizationsController;
 use App\Http\Controllers\CurrentWorkspaceController;
 use App\Http\Controllers\EmojiDataController;
 use App\Http\Controllers\GameJoinsController;
+use App\Http\Controllers\Games\GameGuestTokensController;
+use App\Http\Controllers\Games\GameHostsController;
 use App\Http\Controllers\Games\GameRoomsController;
 use App\Http\Controllers\Games\GameSnapshotsController;
 use App\Http\Controllers\GifsController;
@@ -94,6 +96,7 @@ use App\Http\Controllers\Retros\SurveysController;
 use App\Http\Controllers\SsoCallbacksController;
 use App\Http\Controllers\SsoRedirectsController;
 use App\Http\Controllers\TeamEstimatesController;
+use App\Http\Controllers\TeamGameRoomsController;
 use App\Http\Controllers\TeamHealthStatementArchivalsController;
 use App\Http\Controllers\TeamHealthStatementOrdersController;
 use App\Http\Controllers\TeamHealthStatementsController;
@@ -176,6 +179,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('teams/{team}/poker-decks', [PokerDecksController::class, 'store'])->name('teams.pokerDecks.store');
             Route::patch('teams/{team}/poker-decks/{pokerDeck}', [PokerDecksController::class, 'update'])->name('teams.pokerDecks.update')->whereUuid('pokerDeck');
             Route::delete('teams/{team}/poker-decks/{pokerDeck}', [PokerDecksController::class, 'destroy'])->name('teams.pokerDecks.destroy')->whereUuid('pokerDeck');
+            Route::get('teams/{team}/games', [TeamGameRoomsController::class, 'index'])->name('teams.games.index');
+            Route::post('teams/{team}/games', [TeamGameRoomsController::class, 'store'])->name('teams.games.store');
 
             Route::middleware(EnsureIntegrationProviderEnabled::class)->group(function () {
                 Route::get('teams/{team}/integrations', [TeamIntegrationsController::class, 'index'])->name('teams.integrations.index');
@@ -398,6 +403,10 @@ Route::prefix('games/{room}')
     ->group(function () {
         Route::get('/', [GameRoomsController::class, 'show'])->name('games.show');
         Route::get('snapshot', [GameSnapshotsController::class, 'show'])->name('games.snapshot.show');
+        Route::patch('/', [GameRoomsController::class, 'update'])->name('games.update');
+        Route::delete('/', [GameRoomsController::class, 'destroy'])->name('games.destroy');
+        Route::post('guest-token', [GameGuestTokensController::class, 'store'])->name('games.guest-token.store');
+        Route::put('host', [GameHostsController::class, 'update'])->name('games.host.update');
     });
 
 Route::post('broadcasting/auth', [BroadcastAuthorizationsController::class, 'store'])->name('broadcasting.auth');

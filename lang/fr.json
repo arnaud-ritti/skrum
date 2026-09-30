@@ -1405,5 +1405,9 @@
     "This round is over.": "Cette manche est terminée.",
     "This action does not apply to this game.": "Cette action ne s'applique pas à ce jeu.",
     "Only the leader or the host can do this.": "Seuls le meneur ou l'hôte peuvent faire cela.",
-    "This room is full.": "Ce salon est complet."
+    "This room is full.": "Ce salon est complet.",
+    "This team already has 10 game rooms.": "Cette équipe a déjà 10 salons de jeu.",
+    "This game is not available.": "Ce jeu n'est pas disponible.",
+    "Only a team member can host.": "Seul un membre de l'équipe peut être hôte.",
+    "Only the room creator or a workspace admin can take hosting.": "Seuls le créateur du salon ou un administrateur de l'espace de travail peuvent devenir hôte."
 }
