@@ -1351,5 +1351,7 @@
     ":name has no :provider account mapped, so the issue is unassigned.": ":name no tiene ninguna cuenta de :provider asociada, así que la incidencia queda sin asignar.",
     ":provider refused :name as assignee for this project, so the issue is unassigned.": ":provider rechazó a :name como responsable de este proyecto, así que la incidencia queda sin asignar.",
     "This Jira project doesn't accept an assignee on creation.": "Este proyecto de Jira no acepta un responsable al crear la incidencia.",
-    "Priority :priority isn't available in this project; :provider's default was used.": "La prioridad :priority no está disponible en este proyecto; se usó la predeterminada de :provider."
+    "Priority :priority isn't available in this project; :provider's default was used.": "La prioridad :priority no está disponible en este proyecto; se usó la predeterminada de :provider.",
+    "Already exported as :key.": "Ya exportada como :key.",
+    "The issue may have been created. Check :source before trying again.": "Puede que la incidencia se haya creado. Revisa :source antes de volver a intentarlo."
 }

@@ -23,11 +23,13 @@ use App\Http\Controllers\Integrations\PokerImportsController;
 use App\Http\Controllers\Integrations\PokerSharesController;
 use App\Http\Controllers\Integrations\PokerTaskSyncsController;
 use App\Http\Controllers\Integrations\RetroActionItemExportPreviewsController;
+use App\Http\Controllers\Integrations\RetroActionItemExportsController;
 use App\Http\Controllers\Integrations\RetroResultsEmailsController;
 use App\Http\Controllers\Integrations\RetroSharesController;
 use App\Http\Controllers\Integrations\TeamIntegrationsController;
 use App\Http\Controllers\Integrations\TelegramConnectCodesController;
 use App\Http\Controllers\Integrations\WorkspaceActionItemExportPreviewsController;
+use App\Http\Controllers\Integrations\WorkspaceActionItemExportsController;
 use App\Http\Controllers\InvitationAcceptancesController;
 use App\Http\Controllers\InvitationLinksController;
 use App\Http\Controllers\LocalesController;
@@ -253,6 +255,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 ->middleware(EnsureIntegrationProviderEnabled::class)
                 ->name('workspaces.actionItemExports.preview')
                 ->whereUuid('actionItem');
+            Route::post('action-items/{actionItem}/exports', [WorkspaceActionItemExportsController::class, 'store'])
+                ->middleware(EnsureIntegrationProviderEnabled::class)
+                ->name('workspaces.actionItemExports.store')
+                ->whereUuid('actionItem');
         });
 });
 
@@ -311,6 +317,10 @@ Route::prefix('retros/{retro}')
         Route::get('action-items/{actionItem}/exports/preview', [RetroActionItemExportPreviewsController::class, 'show'])
             ->middleware(EnsureIntegrationProviderEnabled::class)
             ->name('retros.action-items.exports.preview')
+            ->whereUuid('actionItem');
+        Route::post('action-items/{actionItem}/exports', [RetroActionItemExportsController::class, 'store'])
+            ->middleware(EnsureIntegrationProviderEnabled::class)
+            ->name('retros.action-items.exports.store')
             ->whereUuid('actionItem');
         Route::post('summary', [RetroSummariesController::class, 'store'])->name('retros.summary.store');
         Route::delete('summary', [RetroSummariesController::class, 'destroy'])->name('retros.summary.destroy');

@@ -1104,5 +1104,7 @@
     ":name has no :provider account mapped, so the issue is unassigned.": ":name has no :provider account mapped, so the issue is unassigned.",
     ":provider refused :name as assignee for this project, so the issue is unassigned.": ":provider refused :name as assignee for this project, so the issue is unassigned.",
     "This Jira project doesn't accept an assignee on creation.": "This Jira project doesn't accept an assignee on creation.",
-    "Priority :priority isn't available in this project; :provider's default was used.": "Priority :priority isn't available in this project; :provider's default was used."
+    "Priority :priority isn't available in this project; :provider's default was used.": "Priority :priority isn't available in this project; :provider's default was used.",
+    "Already exported as :key.": "Already exported as :key.",
+    "The issue may have been created. Check :source before trying again.": "The issue may have been created. Check :source before trying again."
 }
