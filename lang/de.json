@@ -897,5 +897,19 @@
     "Open follow-ups from earlier retrospectives of this team.": "Offene Folgeaufgaben aus früheren Retrospektiven dieses Teams.",
     "Added outside a retro": "Außerhalb einer Retro hinzugefügt",
     "View all on the action items page": "Alle auf der Seite der Aktionspunkte ansehen",
-    "Open the action items page": "Seite der Aktionspunkte öffnen"
+    "Open the action items page": "Seite der Aktionspunkte öffnen",
+    "Status": "Status",
+    "Anyone": "Alle Personen",
+    "Me": "Ich",
+    "All teams": "Alle Teams",
+    "New action item": "Neuer Aktionspunkt",
+    "Add a follow-up to one of your teams.": "Füge einem deiner Teams eine Folgeaufgabe hinzu.",
+    "Follow-ups of every team you can see": "Folgeaufgaben aller Teams, die du sehen kannst",
+    "Linked action item": "Verknüpfter Aktionspunkt",
+    "No open action items.": "Keine offenen Aktionspunkte.",
+    "Nothing matches these filters.": "Nichts passt zu diesen Filtern.",
+    "Pagination": "Seitennavigation",
+    "Page :page of :total": "Seite :page von :total",
+    "Open action items (:count)": "Offene Aktionspunkte (:count)",
+    "View the team's action items": "Aktionspunkte des Teams ansehen"
 }

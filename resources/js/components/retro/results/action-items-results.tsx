@@ -1,3 +1,4 @@
+import { Link } from '@inertiajs/react';
 import { Check } from 'lucide-react';
 import { assigneeLabel } from '@/components/action-items/assignee-select';
 import { DueDateChip } from '@/components/action-items/due-date-chip';
@@ -9,6 +10,7 @@ import { ResultsSection } from './results-section';
 
 export function ActionItemsResults() {
     const { board } = useBoard();
+    const { actionItems: actionItemsUrl } = board.links;
     const { t } = useTrans();
 
     return (
@@ -60,6 +62,14 @@ export function ActionItemsResults() {
                         );
                     })}
                 </ul>
+            )}
+            {actionItemsUrl && (
+                <Link
+                    href={actionItemsUrl}
+                    className="mt-3 inline-block text-sm underline-offset-4 hover:underline"
+                >
+                    {t("View the team's action items")}
+                </Link>
             )}
         </ResultsSection>
     );

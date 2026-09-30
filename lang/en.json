@@ -643,5 +643,20 @@
     "Open follow-ups from earlier retrospectives of this team.": "Open follow-ups from earlier retrospectives of this team.",
     "Added outside a retro": "Added outside a retro",
     "View all on the action items page": "View all on the action items page",
-    "Open the action items page": "Open the action items page"
+    "Open the action items page": "Open the action items page",
+    "Status": "Status",
+    "Anyone": "Anyone",
+    "Me": "Me",
+    "All teams": "All teams",
+    "New action item": "New action item",
+    "Add a follow-up to one of your teams.": "Add a follow-up to one of your teams.",
+    "Create": "Create",
+    "Follow-ups of every team you can see": "Follow-ups of every team you can see",
+    "Linked action item": "Linked action item",
+    "No open action items.": "No open action items.",
+    "Nothing matches these filters.": "Nothing matches these filters.",
+    "Pagination": "Pagination",
+    "Page :page of :total": "Page :page of :total",
+    "Open action items (:count)": "Open action items (:count)",
+    "View the team's action items": "View the team's action items"
 }

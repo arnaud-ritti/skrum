@@ -2,6 +2,7 @@ import { Form, Head, Link } from '@inertiajs/react';
 import RetrosController from '@/actions/App/Http/Controllers/Retros/RetrosController';
 import TeamMembersController from '@/actions/App/Http/Controllers/TeamMembersController';
 import TeamsController from '@/actions/App/Http/Controllers/TeamsController';
+import WorkspaceActionItemsController from '@/actions/App/Http/Controllers/WorkspaceActionItemsController';
 import ConfirmFormDialog from '@/components/confirm-form-dialog';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
@@ -35,6 +36,7 @@ type Props = {
     members: MemberSummary[];
     availableMembers: MemberSummary[];
     canManage: boolean;
+    openActionItemCount: number;
     retros: RetroSummary[];
     templateCategories: CategoryOption[];
     catalogue?: CatalogueTemplate[];
@@ -50,6 +52,7 @@ export default function ShowTeam({
     members,
     availableMembers,
     canManage,
+    openActionItemCount,
     retros,
     templateCategories,
     catalogue,
@@ -69,6 +72,19 @@ export default function ShowTeam({
                     title={team.name}
                     description={t('Retrospectives of this team')}
                 />
+
+                <Button variant="outline" size="sm" asChild>
+                    <Link
+                        href={WorkspaceActionItemsController.index(
+                            workspace.slug,
+                            { query: { team: team.id } },
+                        )}
+                    >
+                        {t('Open action items (:count)', {
+                            count: openActionItemCount,
+                        })}
+                    </Link>
+                </Button>
 
                 {canManage && (
                     <Form
