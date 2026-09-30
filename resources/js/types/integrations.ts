@@ -26,6 +26,7 @@ export type IntegrationSettings = {
     numberFields?: JiraField[];
     organizationName?: string;
     urlKey?: string;
+    priorityMap?: IntegrationPriorityMap;
 };
 
 export type TeamIntegration = {
@@ -87,3 +88,69 @@ export type IntegrationDelivery = {
 export type ShareAvailability = Record<ShareChannel, boolean>;
 
 export type RetroResultsAudience = 'participants' | 'team';
+
+export type TrackerProviderKey = 'jira' | 'linear';
+
+export type PriorityLevel = 'high' | 'medium' | 'low';
+
+export type JiraPriorityChoice = { id: string; name: string };
+
+export type IntegrationPriorityMap = Partial<
+    Record<PriorityLevel, JiraPriorityChoice | number | null>
+>;
+
+export type ProviderPriority = { id: string | number; name: string };
+
+export type ExternalAccount = { accountId: string; displayName: string };
+
+export type UserMapping = {
+    accountId: string | null;
+    displayName: string | null;
+    matchedBy: 'email' | 'manual';
+    accountInactive: boolean;
+};
+
+export type UserMappingRow = {
+    userId: string;
+    name: string;
+    email: string;
+    avatarUrl: string;
+    mapping: UserMapping | null;
+};
+
+export type UserMappings = { members: UserMappingRow[]; matching: boolean };
+
+export type ExternalLink = {
+    source: TrackerProviderKey;
+    key: string;
+    url: string;
+};
+
+export type ExportSource = {
+    source: TrackerProviderKey;
+    label: string;
+    integrationId: string;
+};
+
+export type ExportWarning = { code: string; message: string | null };
+
+export type ExportTargetOption = { id: string; key?: string; name: string };
+
+export type ExportTargets = {
+    projects?: ExportTargetOption[];
+    issueTypes?: ExportTargetOption[];
+    teams?: ExportTargetOption[];
+    defaults: {
+        projectId?: string | null;
+        issueTypeId?: string | null;
+        teamId?: string | null;
+    };
+};
+
+export type ExportPreview = {
+    assignee: {
+        state: 'mapped' | 'willMatch' | 'guest' | 'never' | 'none';
+        displayName: string | null;
+    };
+    priority: { name: string | null };
+};

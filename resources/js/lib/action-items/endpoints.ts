@@ -1,9 +1,14 @@
+import RetroActionItemExportPreviewsController from '@/actions/App/Http/Controllers/Integrations/RetroActionItemExportPreviewsController';
+import RetroActionItemExportsController from '@/actions/App/Http/Controllers/Integrations/RetroActionItemExportsController';
+import WorkspaceActionItemExportPreviewsController from '@/actions/App/Http/Controllers/Integrations/WorkspaceActionItemExportPreviewsController';
+import WorkspaceActionItemExportsController from '@/actions/App/Http/Controllers/Integrations/WorkspaceActionItemExportsController';
 import ActionItemCommentsController from '@/actions/App/Http/Controllers/Retros/ActionItemCommentsController';
 import ActionItemSubtasksController from '@/actions/App/Http/Controllers/Retros/ActionItemSubtasksController';
 import ActionItemsController from '@/actions/App/Http/Controllers/Retros/ActionItemsController';
 import WorkspaceActionItemCommentsController from '@/actions/App/Http/Controllers/WorkspaceActionItemCommentsController';
 import WorkspaceActionItemSubtasksController from '@/actions/App/Http/Controllers/WorkspaceActionItemSubtasksController';
 import WorkspaceActionItemsController from '@/actions/App/Http/Controllers/WorkspaceActionItemsController';
+import type { TrackerProviderKey } from '@/types/integrations';
 
 export type EndpointRoute = { url: string; method: string };
 
@@ -21,6 +26,11 @@ export type ActionItemEndpoints = {
     addSubtask: (actionItemId: string) => EndpointRoute;
     updateSubtask: (subtaskId: string) => EndpointRoute;
     destroySubtask: (subtaskId: string) => EndpointRoute;
+    exportItem: (actionItemId: string) => EndpointRoute;
+    exportPreview: (
+        actionItemId: string,
+        source: TrackerProviderKey,
+    ) => EndpointRoute;
 };
 
 export function boardActionItemEndpoints(retroId: string): ActionItemEndpoints {
@@ -55,6 +65,16 @@ export function boardActionItemEndpoints(retroId: string): ActionItemEndpoints {
                 retro: retroId,
                 actionItemSubtask,
             }),
+        exportItem: (actionItem) =>
+            RetroActionItemExportsController.store({
+                retro: retroId,
+                actionItem,
+            }),
+        exportPreview: (actionItem, source) =>
+            RetroActionItemExportPreviewsController.show(
+                { retro: retroId, actionItem },
+                { query: { source } },
+            ),
     };
 }
 
@@ -101,5 +121,15 @@ export function workspaceActionItemEndpoints(
                 workspace,
                 actionItemSubtask,
             }),
+        exportItem: (actionItem) =>
+            WorkspaceActionItemExportsController.store({
+                workspace,
+                actionItem,
+            }),
+        exportPreview: (actionItem, source) =>
+            WorkspaceActionItemExportPreviewsController.show(
+                { workspace, actionItem },
+                { query: { source } },
+            ),
     };
 }

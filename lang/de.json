@@ -1353,5 +1353,19 @@
     "This Jira project doesn't accept an assignee on creation.": "Dieses Jira-Projekt akzeptiert beim Erstellen keine verantwortliche Person.",
     "Priority :priority isn't available in this project; :provider's default was used.": "Die Priorität :priority ist in diesem Projekt nicht verfügbar; der Standard von :provider wurde verwendet.",
     "Already exported as :key.": "Bereits als :key exportiert.",
-    "The issue may have been created. Check :source before trying again.": "Das Issue wurde möglicherweise erstellt. Prüfe :source, bevor du es erneut versuchst."
+    "The issue may have been created. Check :source before trying again.": "Das Issue wurde möglicherweise erstellt. Prüfe :source, bevor du es erneut versuchst.",
+    "Export to :provider": "Nach :provider exportieren",
+    "Creates an issue with this action item and a link back to skrum. Later changes are not synced.": "Erstellt ein Issue mit dieser Aktion und einem Link zurück zu skrum. Spätere Änderungen werden nicht synchronisiert.",
+    "Could not reach :provider.": ":provider ist nicht erreichbar.",
+    "Project": "Projekt",
+    "Issue type": "Issue-Typ",
+    "Linear team": "Linear-Team",
+    "Assignee: :name (:provider)": "Verantwortlich: :name (:provider)",
+    "Assignee: not mapped yet — skrum will try to match :name by email": "Verantwortlich: noch nicht zugeordnet — skrum versucht, :name per E-Mail zu finden",
+    "Unassigned (guest)": "Nicht zugewiesen (Gast)",
+    "Unassigned (never assigned)": "Nicht zugewiesen (nie zuweisen)",
+    "Priority: :name": "Priorität: :name",
+    "Priority: :provider default": "Priorität: Standard von :provider",
+    "Manage people": "Personen verwalten",
+    "Exported as :key.": "Als :key exportiert."
 }

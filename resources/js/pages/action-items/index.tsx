@@ -36,7 +36,7 @@ import type { ActionItemViewer } from '@/lib/action-items/permissions';
 import { RetroRequestError, retroRequest } from '@/lib/retro/api';
 import { countActionItemComments } from '@/lib/retro/board-reducer';
 import type { ActionItem } from '@/lib/retro/types';
-import type { WorkspaceSummary } from '@/types';
+import type { ExportSource, WorkspaceSummary } from '@/types';
 
 type StatusFilter = 'open' | 'overdue' | 'completed' | 'all';
 
@@ -69,6 +69,7 @@ type Props = {
     creatableTeams: TeamOption[];
     assignees: Array<{ id: string; name: string }>;
     realtimeTeamIds: string[];
+    exportSources: Record<string, ExportSource[]>;
     viewer: {
         userId: string;
         isWorkspaceManager: boolean;
@@ -154,6 +155,7 @@ function replaceActionItem(
                   ...incoming,
                   isMine: incoming.isMine || item.isMine,
                   commentsRevision: item.commentsRevision,
+                  externalLinks: incoming.externalLinks ?? item.externalLinks,
               }
             : item,
     );
@@ -309,6 +311,7 @@ export default function ActionItemsIndex({
     creatableTeams,
     assignees,
     realtimeTeamIds,
+    exportSources,
     viewer,
 }: Props) {
     const { t } = useTrans();
@@ -499,6 +502,11 @@ export default function ActionItemsIndex({
             run={run}
             editable
             defaultExpanded={item.id === filters.item}
+            exportContext={{
+                workspace: workspace.slug,
+                sources: exportSources[item.teamId] ?? [],
+                canManagePeople: viewer.isWorkspaceManager,
+            }}
             meta={
                 <RowMeta
                     item={item}

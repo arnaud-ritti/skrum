@@ -1353,5 +1353,19 @@
     "This Jira project doesn't accept an assignee on creation.": "Este proyecto de Jira no acepta un responsable al crear la incidencia.",
     "Priority :priority isn't available in this project; :provider's default was used.": "La prioridad :priority no está disponible en este proyecto; se usó la predeterminada de :provider.",
     "Already exported as :key.": "Ya exportada como :key.",
-    "The issue may have been created. Check :source before trying again.": "Puede que la incidencia se haya creado. Revisa :source antes de volver a intentarlo."
+    "The issue may have been created. Check :source before trying again.": "Puede que la incidencia se haya creado. Revisa :source antes de volver a intentarlo.",
+    "Export to :provider": "Exportar a :provider",
+    "Creates an issue with this action item and a link back to skrum. Later changes are not synced.": "Crea una incidencia con esta acción y un enlace a skrum. Los cambios posteriores no se sincronizan.",
+    "Could not reach :provider.": "No se pudo contactar con :provider.",
+    "Project": "Proyecto",
+    "Issue type": "Tipo de incidencia",
+    "Linear team": "Equipo de Linear",
+    "Assignee: :name (:provider)": "Responsable: :name (:provider)",
+    "Assignee: not mapped yet — skrum will try to match :name by email": "Responsable: aún sin asociar — skrum intentará encontrar a :name por correo electrónico",
+    "Unassigned (guest)": "Sin asignar (invitado)",
+    "Unassigned (never assigned)": "Sin asignar (nunca se asigna)",
+    "Priority: :name": "Prioridad: :name",
+    "Priority: :provider default": "Prioridad: la predeterminada de :provider",
+    "Manage people": "Gestionar personas",
+    "Exported as :key.": "Exportada como :key."
 }

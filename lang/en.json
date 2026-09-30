@@ -1106,5 +1106,20 @@
     "This Jira project doesn't accept an assignee on creation.": "This Jira project doesn't accept an assignee on creation.",
     "Priority :priority isn't available in this project; :provider's default was used.": "Priority :priority isn't available in this project; :provider's default was used.",
     "Already exported as :key.": "Already exported as :key.",
-    "The issue may have been created. Check :source before trying again.": "The issue may have been created. Check :source before trying again."
+    "The issue may have been created. Check :source before trying again.": "The issue may have been created. Check :source before trying again.",
+    "Export": "Export",
+    "Export to :provider": "Export to :provider",
+    "Creates an issue with this action item and a link back to skrum. Later changes are not synced.": "Creates an issue with this action item and a link back to skrum. Later changes are not synced.",
+    "Could not reach :provider.": "Could not reach :provider.",
+    "Project": "Project",
+    "Issue type": "Issue type",
+    "Linear team": "Linear team",
+    "Assignee: :name (:provider)": "Assignee: :name (:provider)",
+    "Assignee: not mapped yet — skrum will try to match :name by email": "Assignee: not mapped yet — skrum will try to match :name by email",
+    "Unassigned (guest)": "Unassigned (guest)",
+    "Unassigned (never assigned)": "Unassigned (never assigned)",
+    "Priority: :name": "Priority: :name",
+    "Priority: :provider default": "Priority: :provider default",
+    "Manage people": "Manage people",
+    "Exported as :key.": "Exported as :key."
 }

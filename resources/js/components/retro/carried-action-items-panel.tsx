@@ -3,6 +3,7 @@ import { History } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActionItemCard } from '@/components/action-items/action-item-card';
 import { teamAssigneeGroups } from '@/components/action-items/assignee-select';
+import type { ExportContext } from '@/components/action-items/export-action-item-button';
 import { Button } from '@/components/ui/button';
 import {
     Sheet,
@@ -106,6 +107,14 @@ export function CarriedActionItemsPanel() {
 
     const viewer = boardActionItemViewer(board);
     const groups = teamAssigneeGroups(board.teamMembers, t);
+    const exportContext: ExportContext | undefined =
+        workspace === null
+            ? undefined
+            : {
+                  workspace,
+                  sources: board.exportSources,
+                  canManagePeople: board.viewer.isWorkspaceManager,
+              };
 
     return (
         <>
@@ -152,6 +161,7 @@ export function CarriedActionItemsPanel() {
                                             showAnonymousNotice={
                                                 board.retro.isAnonymous
                                             }
+                                            exportContext={exportContext}
                                             onSaved={(actionItem) =>
                                                 ctx.apply({
                                                     type: 'carriedActionItem.upsert',

@@ -18,6 +18,11 @@ import type { ActionItem } from '@/lib/retro/types';
 import { ActionItemComments } from './action-item-comments';
 import { AssigneeSelect, type AssigneeGroup } from './assignee-select';
 import { DueDateChip } from './due-date-chip';
+import {
+    ExportActionItemButton,
+    type ExportContext,
+} from './export-action-item-button';
+import { ExternalLinkChips } from './external-link-chips';
 import { PriorityIcon, PrioritySelect } from './priority-select';
 import { RecurrenceBadge, RecurrenceSelect } from './recurrence-select';
 import { SubtaskChecklist } from './subtask-checklist';
@@ -38,6 +43,7 @@ type Props = {
     meta?: ReactNode;
     defaultExpanded?: boolean;
     children?: ReactNode;
+    exportContext?: ExportContext;
 };
 
 export function ActionItemCard({
@@ -54,6 +60,7 @@ export function ActionItemCard({
     meta,
     defaultExpanded = false,
     children,
+    exportContext,
 }: Props) {
     const { t } = useTrans();
     const [busy, setBusy] = useState(false);
@@ -232,9 +239,19 @@ export function ActionItemCard({
                                 {t('Theme: :name', { name: item.themeName })}
                             </Badge>
                         )}
+                        <ExternalLinkChips links={item.externalLinks} />
                         {meta}
                     </div>
                 </div>
+                {manages && exportContext && viewer.userId !== null && (
+                    <ExportActionItemButton
+                        item={item}
+                        context={exportContext}
+                        endpoints={endpoints}
+                        run={run}
+                        onExported={onSaved}
+                    />
+                )}
                 {manages && !editing && (
                     <Button
                         size="icon"

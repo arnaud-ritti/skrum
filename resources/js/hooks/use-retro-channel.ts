@@ -53,6 +53,7 @@ export const MemberEvents = [
     'carried-action-item.saved',
     'carried-action-item.removed',
     'carried-action-item.comments.changed',
+    'action-item.external-links.changed',
 ] as const;
 
 /**

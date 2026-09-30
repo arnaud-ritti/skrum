@@ -25,6 +25,7 @@ import type {
     Snapshot,
     SurveyComment,
 } from '@/lib/retro/types';
+import type { ExternalLink } from '@/types/integrations';
 import { useCommentNotifications } from './use-comment-notifications';
 import { useRetroChannel, type RetroEvent } from './use-retro-channel';
 
@@ -261,6 +262,13 @@ export function useRetroBoard(initial: Snapshot) {
                     apply({
                         type: 'carriedActionItem.remove',
                         actionItemId: payload.actionItemId as string,
+                    });
+                    break;
+                case 'action-item.external-links.changed':
+                    apply({
+                        type: 'actionItem.externalLinks',
+                        actionItemId: payload.actionItemId as string,
+                        externalLinks: payload.externalLinks as ExternalLink[],
                     });
                     break;
                 case 'health.answered':
