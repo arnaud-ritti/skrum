@@ -875,5 +875,6 @@
     "Guests can only be assigned from their own retrospective.": "Les invités ne peuvent être assignés que depuis leur propre rétrospective.",
     "Choose either a team member or a guest as assignee, not both.": "Choisissez comme personne assignée soit un membre de l'équipe, soit un invité, pas les deux.",
     "The assignee must be a participant of this retrospective.": "La personne assignée doit participer à cette rétrospective.",
-    "The assignee must be a member of this team.": "La personne assignée doit être membre de cette équipe."
+    "The assignee must be a member of this team.": "La personne assignée doit être membre de cette équipe.",
+    "The selected team is invalid.": "L'équipe sélectionnée n'est pas valide."
 }
