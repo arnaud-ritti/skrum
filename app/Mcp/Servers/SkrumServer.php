@@ -4,6 +4,7 @@ namespace App\Mcp\Servers;
 
 use App\Mcp\Tools\Retro\CompleteAction;
 use App\Mcp\Tools\Retro\CreateAction;
+use App\Mcp\Tools\Retro\DeleteOwnMessage;
 use App\Mcp\Tools\Retro\GetHealth;
 use App\Mcp\Tools\Retro\GetRoti;
 use App\Mcp\Tools\Retro\GetSummary;
@@ -14,8 +15,11 @@ use App\Mcp\Tools\Retro\ListInsights;
 use App\Mcp\Tools\Retro\ListMessages;
 use App\Mcp\Tools\Retro\ListTeamMembers;
 use App\Mcp\Tools\Retro\ListTeams;
+use App\Mcp\Tools\Retro\PromoteSuggestion;
+use App\Mcp\Tools\Retro\RejectSuggestion;
 use App\Mcp\Tools\Retro\SearchBoards;
 use App\Mcp\Tools\Retro\UpdateAction;
+use App\Mcp\Tools\Retro\UpdateMessage;
 use Laravel\Mcp\Server;
 use Laravel\Mcp\Server\Attributes\Instructions;
 use Laravel\Mcp\Server\Attributes\Name;
@@ -48,6 +52,10 @@ class SkrumServer extends Server
         CreateAction::class,
         UpdateAction::class,
         CompleteAction::class,
+        PromoteSuggestion::class,
+        RejectSuggestion::class,
+        UpdateMessage::class,
+        DeleteOwnMessage::class,
     ];
 
     protected array $resources = [];
