@@ -109,11 +109,11 @@ class SuggestGroupNames
         $suggestions = [];
 
         foreach ($items as $item) {
-            if (! is_array($item) || ! is_int($item['index'] ?? null) || ! is_string($item['name'] ?? null)) {
+            if (! is_array($item) || ! $this->isIndex($item['index'] ?? null) || ! is_string($item['name'] ?? null)) {
                 continue;
             }
 
-            $cardId = $leadIds[$item['index']] ?? null;
+            $cardId = $leadIds[(int) $item['index']] ?? null;
             $name = trim((string) preg_replace('/\s+/u', ' ', strip_tags($item['name'])));
 
             if ($cardId === null || $name === '' || mb_strlen($name) > 60 || isset($suggestions[$cardId])) {
@@ -124,5 +124,10 @@ class SuggestGroupNames
         }
 
         return array_values($suggestions);
+    }
+
+    private function isIndex(mixed $value): bool
+    {
+        return is_int($value) || (is_string($value) && ctype_digit($value));
     }
 }

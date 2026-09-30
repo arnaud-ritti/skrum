@@ -72,6 +72,8 @@ it('drops invalid names and fails when none is usable', function (array|string $
     }
 })->with([
     'unknown index kept out' => [[['index' => 7, 'name' => 'Ghost'], ['index' => 1, 'name' => 'Ok']], 200],
+    'digit string index' => [[['index' => '1', 'name' => 'Ok']], 200],
+    'nested index' => [[['index' => [1], 'name' => 'Ok']], 502],
     'too long' => [[['index' => 1, 'name' => str_repeat('a', 61)]], 502],
     'empty' => [[['index' => 1, 'name' => '   ']], 502],
     'not json' => ['no idea', 502],
