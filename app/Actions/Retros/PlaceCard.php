@@ -15,6 +15,7 @@ class PlaceCard
     {
         $sourceColumnId = $card->column_id;
         $changed = collect();
+        $formerLead = $card->isTopLevel() ? null : $card->parent()->first();
 
         if (! $card->isTopLevel()) {
             $card->parent_card_id = null;
@@ -49,7 +50,13 @@ class PlaceCard
             $changed = $changed->merge($this->resequence($sourceColumnId));
         }
 
-        return $changed->unique('id')->values();
+        $changed = $changed->unique('id')->values();
+
+        if ($formerLead !== null && $formerLead->clearGroupNameWhenEmpty()) {
+            $changed = $changed->reject(fn (Card $moved) => $moved->is($formerLead))->push($formerLead->fresh())->values();
+        }
+
+        return $changed;
     }
 
     /**

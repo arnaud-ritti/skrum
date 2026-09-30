@@ -7,6 +7,7 @@ use App\Actions\Retros\RetroGuard;
 use App\Enums\RetroPhase;
 use App\Events\Retros\CardCreated;
 use App\Events\Retros\CardDeleted;
+use App\Events\Retros\CardGroupNamed;
 use App\Events\Retros\CardUpdated;
 use App\Events\Retros\OwnCardSaved;
 use App\Http\Controllers\Controller;
@@ -145,6 +146,8 @@ class CardsController extends Controller
 
             RetroGuard::author($card, $participant);
 
+            $formerLeadId = $card->parent_card_id;
+            $formerLeadId = $card->parent_card_id;
             $children = $card->children()->orderBy('position')->get();
 
             $card->delete();
@@ -163,6 +166,12 @@ class CardsController extends Controller
             })->all();
 
             (new CardDeleted($locked->id, $card->id, $ungroupedCards))->sendToOthers();
+
+            $formerLead = $formerLeadId === null ? null : $locked->cards()->whereKey($formerLeadId)->first();
+
+            if ($formerLead !== null && $formerLead->clearGroupNameWhenEmpty()) {
+                (new CardGroupNamed($locked->id, $formerLead->id, null))->sendToOthers();
+            }
         });
 
         return response()->noContent();
