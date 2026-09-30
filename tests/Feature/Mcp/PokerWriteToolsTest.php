@@ -17,6 +17,7 @@ use App\Models\Team;
 use Illuminate\JsonSchema\JsonSchemaTypeFactory;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Gate;
 
 beforeEach(function () {
     Event::fake([PokerTaskSaved::class, PokerRoundChanged::class, PokerTaskEstimated::class]);
@@ -66,6 +67,27 @@ it('creates a game from a saved deck of the same team only', function () {
         ->assertHasErrors(['Choose either a saved deck or custom cards.']);
 
     expect(PokerGame::query()->count())->toBe(1);
+});
+
+it('refuses to create a game when the team policy denies it', function () {
+    $team = Team::factory()->create();
+    $user = teamMember($team);
+
+    Gate::before(fn ($user, string $ability): ?bool => $ability === 'createPokerGame' ? false : null);
+
+    mcpWriter($user)->tool(CreateGame::class, ['team_id' => $team->id, 'title' => 'Denied', 'deck' => 'fibonacci'])
+        ->assertHasErrors(['This action is unauthorized.']);
+
+    expect(PokerGame::query()->count())->toBe(0);
+});
+
+it('treats an empty saved deck id as absent like the web form', function () {
+    $team = Team::factory()->create();
+    $user = teamMember($team);
+
+    mcpWriter($user)->tool(CreateGame::class, ['team_id' => $team->id, 'title' => 'Fib', 'deck' => 'fibonacci', 'saved_deck_id' => ''])->assertOk();
+
+    expect(PokerGame::query()->sole()->deck)->toBe(PokerDeck::Fibonacci);
 });
 
 it('validates games like the web form', function () {

@@ -14,6 +14,7 @@ use App\Mcp\Presenters\McpPokerGame;
 use App\Mcp\Tools\SkrumTool;
 use App\Models\PokerPlayer;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -57,9 +58,11 @@ class CreateGame extends SkrumTool
     {
         $team = $this->context->team((string) $request->validate(['team_id' => ['required', 'uuid']])['team_id']);
 
+        Gate::forUser(McpGrant::current()->user)->authorize('createPokerGame', $team);
+
         SavedPokerDeckRules::ensureExclusive($request->all());
 
-        $usesSavedDeck = $request->get('saved_deck_id') !== null;
+        $usesSavedDeck = filled($request->get('saved_deck_id'));
 
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:120'],
