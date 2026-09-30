@@ -56,3 +56,17 @@ it('broadcasts poker writes to everyone', function () {
     Event::assertDispatchedTimes(PokerTaskSaved::class, 3);
     Event::assertDispatched(PokerRoundChanged::class, fn (PokerRoundChanged $event): bool => $event->socket === null);
 });
+
+it('does not exclude a socket when the request carries an X-Socket-ID header', function () {
+    $world = mcpSweepWorld();
+    $token = issueTestMcpToken($world['user'], [McpScope::Write]);
+
+    postMcp(
+        $token,
+        mcpToolCallPayload('retro.actions.create', ['board_id' => $world['discussing']->id, 'content' => 'Socket header']),
+        ['X-Socket-ID' => '1234.5678'],
+    )->assertOk();
+
+    Event::assertDispatched(ActionItemSaved::class, fn (ActionItemSaved $event): bool => $event->socket === null
+        && $event->actionItem['content'] === 'Socket header');
+});

@@ -45,6 +45,8 @@ class AuthenticateMcpRequest
 
         Auth::shouldUse('sanctum');
 
+        $request->headers->remove('X-Socket-ID');
+
         (new McpGrant($user, $token->id, $token->scopes(), $token->team_id))->bind();
 
         return $next($request);

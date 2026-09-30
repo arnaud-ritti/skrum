@@ -1,99 +1,8 @@
 <?php
 
 use App\Enums\McpScope;
-use App\Enums\RetroPhase;
-use App\Enums\WorkspaceRole;
 use App\Mcp\Prompts\AnalyzeRetro;
 use App\Mcp\Prompts\TeamHealth;
-use App\Models\ActionItem;
-use App\Models\Card;
-use App\Models\Participant;
-use App\Models\PokerGame;
-use App\Models\PokerPlayer;
-use App\Models\PokerTask;
-use App\Models\Retro;
-use App\Models\SuggestedAction;
-use App\Models\Team;
-use App\Models\User;
-use App\Models\Workspace;
-
-/**
- * One team with a Discussing board (guest access on, a guest, another
- * member's card, the user's action item, two pending suggestions), a
- * Writing board holding two of the user's cards, and a poker game the
- * user facilitates with a voted current task and a second task.
- *
- * @return array<string, mixed>
- */
-function mcpSweepWorld(): array
-{
-    $workspace = Workspace::factory()->create();
-    $team = Team::factory()->create(['workspace_id' => $workspace->id, 'name' => 'Sweep team']);
-
-    $user = User::factory()->create(['email' => 'sweep-user@example.test', 'name' => 'Sweep User']);
-    $other = User::factory()->create(['email' => 'sweep-other@example.test', 'name' => 'Sweep Other']);
-
-    foreach ([$user, $other] as $member) {
-        $workspace->members()->attach($member, ['role' => WorkspaceRole::Member->value]);
-        $team->members()->attach($member);
-    }
-
-    $discussing = Retro::factory()->withGuestAccess()->inPhase(RetroPhase::Discussing)->create([
-        'team_id' => $team->id,
-        'title' => 'Sweep board',
-    ]);
-    $mine = Participant::factory()->create(['retro_id' => $discussing->id, 'user_id' => $user->id]);
-    $theirs = Participant::factory()->create(['retro_id' => $discussing->id, 'user_id' => $other->id]);
-    Participant::factory()->guest('guest-secret-value')->create(['retro_id' => $discussing->id]);
-    Card::factory()->create(['retro_id' => $discussing->id, 'participant_id' => $theirs->id, 'content' => 'Sweep message']);
-
-    $actionItem = ActionItem::factory()->create([
-        'retro_id' => $discussing->id,
-        'content' => 'Sweep agreement',
-        'created_by_participant_id' => $mine->id,
-        'created_by_user_id' => $user->id,
-        'assignee_user_id' => $other->id,
-    ]);
-
-    $promote = SuggestedAction::factory()->create(['retro_id' => $discussing->id, 'content' => 'Promote me']);
-    $reject = SuggestedAction::factory()->create(['retro_id' => $discussing->id, 'content' => 'Reject me', 'position' => 1]);
-
-    $writing = Retro::factory()->inPhase(RetroPhase::Writing)->create(['team_id' => $team->id]);
-    $writer = Participant::factory()->create(['retro_id' => $writing->id, 'user_id' => $user->id]);
-    $editable = Card::factory()->create(['retro_id' => $writing->id, 'participant_id' => $writer->id]);
-    $deletable = Card::factory()->create(['retro_id' => $writing->id, 'participant_id' => $writer->id, 'position' => 1]);
-
-    $game = PokerGame::factory()->create(['team_id' => $team->id]);
-    $player = PokerPlayer::factory()->create(['poker_game_id' => $game->id, 'user_id' => $user->id]);
-    $game->update(['facilitator_player_id' => $player->id]);
-    $current = PokerTask::factory()->create(['poker_game_id' => $game->id]);
-    $next = PokerTask::factory()->create(['poker_game_id' => $game->id]);
-    pokerVote(openPokerRound($game, $current), $player, '5');
-
-    return [
-        'user' => $user,
-        'team' => $team,
-        'discussing' => $discussing,
-        'writing' => $writing,
-        'actionItem' => $actionItem,
-        'promote' => $promote,
-        'reject' => $reject,
-        'editable' => $editable,
-        'deletable' => $deletable,
-        'game' => $game,
-        'current' => $current,
-        'next' => $next,
-        'secrets' => [
-            'sweep-user@example.test',
-            'sweep-other@example.test',
-            $discussing->guest_token,
-            $writing->guest_token,
-            $game->guest_token,
-            'guest-secret-value',
-            'guest_secret_hash',
-        ],
-    ];
-}
 
 /**
  * @return array<string, Closure(array<string, mixed>): array<string, mixed>>
@@ -129,11 +38,48 @@ function mcpSweepArguments(): array
     ];
 }
 
+/**
+ * @return array<string, Closure(array<string, mixed>): string>
+ */
+function mcpSweepMarkers(): array
+{
+    return [
+        'retro.teams.list' => fn (array $w): string => 'Sweep team',
+        'retro.team.members.list' => fn (array $w): string => 'Sweep Other',
+        'retro.boards.list' => fn (array $w): string => 'Sweep board',
+        'retro.boards.search' => fn (array $w): string => 'Sweep board',
+        'retro.actions.list' => fn (array $w): string => 'Sweep agreement',
+        'retro.board.messages.list' => fn (array $w): string => 'Sweep message',
+        'retro.board.summary.get' => fn (array $w): string => 'Sweep board',
+        'retro.board.actions.list' => fn (array $w): string => 'Sweep agreement',
+        'retro.board.insights.list' => fn (array $w): string => 'Promote me',
+        'retro.board.health.get' => fn (array $w): string => 'not_run',
+        'retro.board.roti.get' => fn (array $w): string => 'collecting',
+        'poker.games.list' => fn (array $w): string => $w['game']->title,
+        'poker.game.get' => fn (array $w): string => $w['game']->title,
+        'poker.game.tasks.list' => fn (array $w): string => $w['current']->title,
+        'retro.actions.create' => fn (array $w): string => 'New sweep item',
+        'retro.actions.update' => fn (array $w): string => 'Edited sweep item',
+        'retro.actions.complete' => fn (array $w): string => 'Sweep agreement',
+        'retro.board.suggested_actions.promote' => fn (array $w): string => 'Promote me',
+        'retro.board.suggested_actions.reject' => fn (array $w): string => 'Reject me',
+        'retro.board.messages.update' => fn (array $w): string => 'Edited sweep card',
+        'poker.games.create' => fn (array $w): string => 'Sweep game',
+        'poker.game.tasks.add' => fn (array $w): string => 'Sweep story',
+        'poker.game.task.select' => fn (array $w): string => $w['next']->title,
+        'poker.game.task.reveal' => fn (array $w): string => 'estimateSet',
+        'retro.board.messages.delete_own' => fn (array $w): string => 'deleted',
+    ];
+}
+
 it('sweeps every contract tool', function () {
     $swept = array_keys(mcpSweepArguments());
     sort($swept);
+    $marked = array_keys(mcpSweepMarkers());
+    sort($marked);
 
-    expect($swept)->toBe(mcpContractToolNames());
+    expect($swept)->toBe(mcpContractToolNames())
+        ->and($marked)->toBe(mcpContractToolNames());
 });
 
 it('never returns an email, a guest token, a guest link or a secret', function (string $name) {
@@ -143,6 +89,7 @@ it('never returns an email, a guest token, a guest link or a secret', function (
     actingAsMcp($world['user'], McpScope::cases())
         ->tool(mcpToolClass($name), mcpSweepArguments()[$name]($world))
         ->assertHasNoErrors()
+        ->assertSee(mcpSweepMarkers()[$name]($world))
         ->assertDontSee($world['secrets']);
 })->with(array_keys(mcpSweepArguments()));
 
@@ -156,4 +103,17 @@ it('never puts secrets in prompts', function () {
 
     expect($analysis)->not->toContain(...$world['secrets'])
         ->and($health)->not->toContain(...$world['secrets']);
+});
+
+it('shows the poker guest link in poker.game.get and in no other poker tool', function () {
+    $world = mcpSweepWorld();
+    $world['game']->update(['guest_access_enabled' => true]);
+    $server = actingAsMcp($world['user'], McpScope::cases());
+    $guestPath = "/{$world['game']->guest_token}";
+
+    $server->tool(mcpToolClass('poker.game.get'), ['game_id' => $world['game']->id])->assertSee($guestPath);
+
+    foreach (['poker.games.list', 'poker.game.tasks.list', 'poker.game.tasks.add', 'poker.game.task.select', 'poker.game.task.reveal'] as $name) {
+        $server->tool(mcpToolClass($name), mcpSweepArguments()[$name]($world))->assertDontSee($world['game']->guest_token);
+    }
 });
