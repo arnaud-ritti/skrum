@@ -1164,5 +1164,7 @@
     "This game is not available.": "This game is not available.",
     "Only a team member can host.": "Only a team member can host.",
     "Only the room creator or a workspace admin can take hosting.": "Only the room creator or a workspace admin can take hosting.",
-    "A round is already in progress.": "A round is already in progress."
+    "A round is already in progress.": "A round is already in progress.",
+    "This letter was already picked.": "This letter was already picked.",
+    "Slow down a little.": "Slow down a little."
 }

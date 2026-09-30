@@ -1410,5 +1410,7 @@
     "This game is not available.": "Dieses Spiel ist nicht verfügbar.",
     "Only a team member can host.": "Nur ein Teammitglied kann Host sein.",
     "Only the room creator or a workspace admin can take hosting.": "Nur die Person, die den Raum erstellt hat, oder ein Workspace-Admin kann Host werden.",
-    "A round is already in progress.": "Es läuft bereits eine Runde."
+    "A round is already in progress.": "Es läuft bereits eine Runde.",
+    "This letter was already picked.": "Dieser Buchstabe wurde schon gewählt.",
+    "Slow down a little.": "Mach mal etwas langsamer."
 }

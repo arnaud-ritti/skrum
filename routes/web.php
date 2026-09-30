@@ -8,6 +8,7 @@ use App\Http\Controllers\EmojiDataController;
 use App\Http\Controllers\GameJoinsController;
 use App\Http\Controllers\Games\GameGuestTokensController;
 use App\Http\Controllers\Games\GameHostsController;
+use App\Http\Controllers\Games\GameLettersController;
 use App\Http\Controllers\Games\GameRoomsController;
 use App\Http\Controllers\Games\GameRoundPassesController;
 use App\Http\Controllers\Games\GameRoundsController;
@@ -417,6 +418,7 @@ Route::prefix('games/{room}')
         Route::get('rounds/{round}', [GameRoundsController::class, 'show'])->name('games.rounds.show')->whereUuid('round');
         Route::put('timer', [GameTimersController::class, 'update'])->name('games.timer.update');
         Route::post('rounds/{round}/pass', [GameRoundPassesController::class, 'store'])->name('games.rounds.pass.store')->whereUuid('round');
+        Route::post('rounds/{round}/letters', [GameLettersController::class, 'store'])->name('games.rounds.letters.store')->whereUuid('round');
     });
 
 Route::post('broadcasting/auth', [BroadcastAuthorizationsController::class, 'store'])->name('broadcasting.auth');

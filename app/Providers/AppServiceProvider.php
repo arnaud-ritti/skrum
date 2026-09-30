@@ -15,10 +15,12 @@ use App\Models\PersonalAccessToken;
 use App\Models\SavedPokerDeck;
 use App\Policies\PokerDeckPolicy;
 use App\Support\Games\GameRulesRegistry;
+use App\Support\Games\HangmanRules;
 use App\Support\Games\ReverbGamePresenceRoster;
 use App\Support\Poker\ReverbPokerPresenceRoster;
 use Carbon\CarbonImmutable;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Foundation\DevCommands;
 use Illuminate\Http\Request;
 use Illuminate\Mail\Markdown;
@@ -41,7 +43,9 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->bind(PokerPresenceRoster::class, fn (): PokerPresenceRoster => new ReverbPokerPresenceRoster);
         $this->app->bind(GamePresenceRoster::class, fn (): GamePresenceRoster => new ReverbGamePresenceRoster);
-        $this->app->bind(GameRulesRegistry::class, fn (): GameRulesRegistry => new GameRulesRegistry([]));
+        $this->app->bind(GameRulesRegistry::class, fn (Application $app): GameRulesRegistry => new GameRulesRegistry([
+            $app->make(HangmanRules::class),
+        ]));
         $this->app->scoped(McpGrantContext::class);
         $this->app->scoped(VisibleTeams::class);
         $this->app->scoped(McpTrackers::class);
