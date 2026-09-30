@@ -11,6 +11,8 @@ use App\Support\Integrations\Exceptions\ReconnectRequired;
 use App\Support\Integrations\Jira\JiraClient;
 use App\Support\Integrations\Linear\LinearClient;
 use Illuminate\Http\Client\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 
 beforeEach(function () {
@@ -212,4 +214,25 @@ it('refreshes a Linear token once after a 401 and retries the query', function (
 
     Http::assertSent(fn (Request $request) => $request->url() === LinearClient::GraphqlUrl
         && $request->hasHeader('Authorization', 'Bearer linear-access-2'));
+});
+
+it('keeps a transaction usable when a database cache lock is contended', function () {
+    $store = Cache::store('database');
+    $otherWorker = $store->lock('integration-token:contended', 10);
+    $otherWorker->get();
+
+    try {
+        $acquired = DB::transaction(function () use ($store): bool {
+            $acquired = $store->lock('integration-token:contended', 10)->get();
+
+            TeamIntegration::factory()->linear()->create();
+
+            return $acquired;
+        });
+    } finally {
+        $otherWorker->release();
+    }
+
+    expect($acquired)->toBeFalse()
+        ->and(TeamIntegration::query()->count())->toBe(1);
 });
