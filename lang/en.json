@@ -1035,5 +1035,9 @@
     "Emailed to 1 person · :time": "Emailed to 1 person · :time",
     "Share…": "Share…",
     "Share the game": "Share the game",
-    "Cycle :number": "Cycle :number"
+    "Cycle :number": "Cycle :number",
+    "This task is managed in :source.": "This task is managed in :source.",
+    "This task can no longer be synced.": "This task can no longer be synced.",
+    "This task comes from another :provider site.": "This task comes from another :provider site.",
+    "T-shirt estimates can't be written to :source.": "T-shirt estimates can't be written to :source."
 }

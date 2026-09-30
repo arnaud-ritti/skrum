@@ -1283,5 +1283,9 @@
     "Emailed to 1 person · :time": "Per E-Mail an 1 Person gesendet · :time",
     "Share…": "Teilen…",
     "Share the game": "Spiel teilen",
-    "Cycle :number": "Zyklus :number"
+    "Cycle :number": "Zyklus :number",
+    "This task is managed in :source.": "Diese Aufgabe wird in :source verwaltet.",
+    "This task can no longer be synced.": "Diese Aufgabe kann nicht mehr synchronisiert werden.",
+    "This task comes from another :provider site.": "Diese Aufgabe stammt von einer anderen :provider-Site.",
+    "T-shirt estimates can't be written to :source.": "T-Shirt-Schätzungen können nicht in :source geschrieben werden."
 }

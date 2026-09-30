@@ -3,6 +3,7 @@
 namespace App\Actions\Poker;
 
 use App\Actions\Integrations\LatestDeliveries;
+use App\Actions\Integrations\PokerTaskSync;
 use App\Actions\Integrations\PresentIntegrationDelivery;
 use App\Actions\Integrations\ShareOptions;
 use App\Actions\Integrations\SharePermissions;
@@ -56,6 +57,7 @@ use App\Models\User;
  *     tasks: array<int, Task>,
  *     current: ?array{taskId: string, round: Round},
  *     links: array{team: ?string},
+ *     integrations: ?array<string, array{connected: bool, canWrite: bool}|null>,
  *     share: array{slack: bool, telegram: bool},
  *     deliveries: array<int, Delivery>,
  *     serverTime: string
@@ -89,6 +91,7 @@ class BuildPokerSnapshot
         $isNumeric = $game->isNumeric();
         $currentRound = $game->latestRoundOfCurrentTask();
         $team = $game->team;
+        $sync = $isGuest ? null : PokerTaskSync::for($game);
 
         return [
             'game' => [
@@ -133,7 +136,7 @@ class BuildPokerSnapshot
                 'isGuest' => $player->isGuest(),
                 'isSpectator' => $player->is_spectator,
             ])->values()->all(),
-            'tasks' => $game->tasks->map(fn (PokerTask $task): array => $this->presentPokerTask->handle($task))->values()->all(),
+            'tasks' => $game->tasks->map(fn (PokerTask $task): array => $this->presentPokerTask->handle($task, $sync))->values()->all(),
             'current' => $currentRound === null ? null : [
                 'taskId' => $currentRound->poker_task_id,
                 'round' => $this->presentPokerRound->handle($currentRound, $game, $viewer->id),
@@ -141,6 +144,7 @@ class BuildPokerSnapshot
             'links' => [
                 'team' => $isGuest ? null : route('teams.show', [$team->workspace, $team]),
             ],
+            'integrations' => $sync?->summary(),
             'share' => $this->shareOptions->pokerGame($game, $viewer),
             'deliveries' => $this->sharePermissions->pokerGame($game, $viewer)
                 ? $this->latestDeliveries->handle($game, [IntegrationDeliveryKind::PokerLink])

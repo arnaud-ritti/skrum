@@ -24,6 +24,7 @@ use App\Models\SuggestedAction;
 use App\Models\Survey;
 use App\Models\SurveyResponse;
 use App\Models\Team;
+use App\Models\TeamIntegration;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Support\Integrations\OAuthState;
@@ -695,4 +696,52 @@ function fakeLinearGraphql(array $responses): void
 
         return Http::response(['errors' => [['message' => "Unexpected query: {$query}"]]], 400);
     }]);
+}
+
+/**
+ * A game (guest access on) whose team is connected to a tracker, with a
+ * facilitator and a member. Only `$source` is enabled on the instance.
+ *
+ * @return array{
+ *     game: PokerGame,
+ *     integration: TeamIntegration,
+ *     facilitator: User,
+ *     facilitatorPlayer: PokerPlayer,
+ *     member: User,
+ *     memberPlayer: PokerPlayer
+ * }
+ */
+function trackerTable(IntegrationProvider $source = IntegrationProvider::Jira, IntegrationAccess $access = IntegrationAccess::Write, PokerDeck $deck = PokerDeck::Fibonacci): array
+{
+    enableIntegrations($source);
+
+    $game = PokerGame::factory()->deck($deck)->withGuestAccess()->create();
+    $factory = TeamIntegration::factory();
+    $integration = ($source === IntegrationProvider::Jira ? $factory->jira($access) : $factory->linear($access))
+        ->create(['team_id' => $game->team_id]);
+    [$facilitator, $facilitatorPlayer] = pokerFacilitator($game);
+    [$member, $memberPlayer] = pokerMember($game);
+
+    return [
+        'game' => $game,
+        'integration' => $integration,
+        'facilitator' => $facilitator,
+        'facilitatorPlayer' => $facilitatorPlayer,
+        'member' => $member,
+        'memberPlayer' => $memberPlayer,
+    ];
+}
+
+/**
+ * @param  array<string, mixed>  $attributes
+ */
+function importedPokerTask(PokerGame $game, array $attributes = [], IntegrationProvider $source = IntegrationProvider::Jira): PokerTask
+{
+    $task = PokerTask::factory()
+        ->imported($source, $source === IntegrationProvider::Jira ? 'cloud-1' : 'org-1')
+        ->create(['poker_game_id' => $game->id]);
+
+    $task->forceFill($attributes)->save();
+
+    return $task->fresh() ?? $task;
 }
