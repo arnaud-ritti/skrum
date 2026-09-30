@@ -119,6 +119,19 @@ it('revokes access when disconnecting', function (Closure $makeIntegration, Clos
     'jira' => [fn (Team $team) => TeamIntegration::factory()->jira()->create(['team_id' => $team->id]), fn () => [], null],
 ]);
 
+it('keeps the bot in a Telegram chat that another team still uses', function () {
+    Http::fake(['api.telegram.org/*' => Http::response(['ok' => true, 'result' => true])]);
+    $team = Team::factory()->create();
+    $integration = TeamIntegration::factory()->telegram()->create(['team_id' => $team->id]);
+    $otherTeamIntegration = TeamIntegration::factory()->telegram()->create();
+
+    disconnectIntegration(integrationAdmin($team), $integration)->assertNoContent();
+
+    Http::assertNotSent(fn (Request $request) => str_contains($request->url(), '/leaveChat'));
+    expect(TeamIntegration::query()->whereKey($integration->id)->exists())->toBeFalse()
+        ->and($otherTeamIntegration->fresh()->status)->toBe(IntegrationStatus::Active);
+});
+
 it('checks every active connection daily', function () {
     Http::fake([
         'slack.com/api/auth.test' => fn (Request $request) => $request->hasHeader('Authorization', 'Bearer xoxp-revoked')

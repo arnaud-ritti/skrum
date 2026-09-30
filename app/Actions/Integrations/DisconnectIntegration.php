@@ -24,7 +24,7 @@ class DisconnectIntegration
     {
         $revoke = match ($integration->provider) {
             IntegrationProvider::Slack => fn () => $this->slack->revoke($integration),
-            IntegrationProvider::Telegram => fn () => $this->telegram->leaveChat($integration),
+            IntegrationProvider::Telegram => fn () => $this->leaveChatUnlessShared($integration),
             IntegrationProvider::Linear => fn () => $this->linear->revoke($integration),
             IntegrationProvider::Jira => fn () => null,
         };
@@ -32,5 +32,23 @@ class DisconnectIntegration
         $revoke();
 
         $integration->delete();
+    }
+
+    /**
+     * Several teams may share one chat; leaving it would cut them all off.
+     */
+    private function leaveChatUnlessShared(TeamIntegration $integration): void
+    {
+        $chatIsShared = TeamIntegration::query()
+            ->where('provider', IntegrationProvider::Telegram->value)
+            ->where('settings->chatId', (string) $integration->setting('chatId'))
+            ->whereKeyNot($integration->id)
+            ->exists();
+
+        if ($chatIsShared) {
+            return;
+        }
+
+        $this->telegram->leaveChat($integration);
     }
 }
