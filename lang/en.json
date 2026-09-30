@@ -452,5 +452,14 @@
     "Manager support": "Manager support",
     "Vision": "Vision",
     "Processes": "Processes",
-    "Motivation": "Motivation"
+    "Motivation": "Motivation",
+    "A team needs between 3 and 10 health check statements.": "A team needs between 3 and 10 health check statements.",
+    "A team can have at most 30 health check statements, archived ones included.": "A team can have at most 30 health check statements, archived ones included.",
+    "Built-in statements cannot be reworded.": "Built-in statements cannot be reworded.",
+    "Send every active health check statement exactly once.": "Send every active health check statement exactly once.",
+    "Statement added.": "Statement added.",
+    "Statement updated.": "Statement updated.",
+    "Statements reordered.": "Statements reordered.",
+    "Statement archived.": "Statement archived.",
+    "Statement restored.": "Statement restored."
 }

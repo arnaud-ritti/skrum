@@ -26,7 +26,7 @@
     "An invitation has already been sent to this email address.": "Une invitation a déjà été envoyée à cette adresse e-mail.",
     "Appearance": "Apparence",
     "Appearance settings": "Paramètres d'apparence",
-    "Archive": "Archive",
+    "Archive": "Archiver",
     "Are you sure you want to delete your account?": "Voulez-vous vraiment supprimer votre compte ?",
     "Are you sure you want to remove the \":name\" passkey? You will no longer be able to use it to sign in.": "Voulez-vous vraiment supprimer la clé d'accès « :name » ? Vous ne pourrez plus l'utiliser pour vous connecter.",
     "Assign": "Attribuer",
@@ -709,5 +709,14 @@
     "Manager support": "Soutien du manager",
     "Vision": "Vision",
     "Processes": "Processus",
-    "Motivation": "Motivation"
+    "Motivation": "Motivation",
+    "A team needs between 3 and 10 health check statements.": "Une équipe a besoin de 3 à 10 affirmations de bilan de santé.",
+    "A team can have at most 30 health check statements, archived ones included.": "Une équipe peut avoir au plus 30 affirmations de bilan de santé, archivées comprises.",
+    "Built-in statements cannot be reworded.": "Les affirmations intégrées ne peuvent pas être reformulées.",
+    "Send every active health check statement exactly once.": "Envoyez chaque affirmation de bilan de santé active exactement une fois.",
+    "Statement added.": "Affirmation ajoutée.",
+    "Statement updated.": "Affirmation mise à jour.",
+    "Statements reordered.": "Affirmations réordonnées.",
+    "Statement archived.": "Affirmation archivée.",
+    "Statement restored.": "Affirmation restaurée."
 }

@@ -30,6 +30,9 @@ use App\Http\Controllers\Retros\RetroSnapshotsController;
 use App\Http\Controllers\Retros\RetroTimersController;
 use App\Http\Controllers\SsoCallbacksController;
 use App\Http\Controllers\SsoRedirectsController;
+use App\Http\Controllers\TeamHealthStatementArchivalsController;
+use App\Http\Controllers\TeamHealthStatementOrdersController;
+use App\Http\Controllers\TeamHealthStatementsController;
 use App\Http\Controllers\TeamMembersController;
 use App\Http\Controllers\TeamRetrosController;
 use App\Http\Controllers\TeamsController;
@@ -70,6 +73,8 @@ Route::middleware('guest')->group(function () {
 
 Route::put('locale', [LocalesController::class, 'update'])->name('locale.update');
 
+Route::pattern('statement', '[A-Za-z0-9_-]{1,64}');
+
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', [CurrentWorkspaceController::class, 'show'])->name('dashboard');
     Route::get('workspaces/create', [WorkspacesController::class, 'create'])->name('workspaces.create');
@@ -89,6 +94,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('teams/{team}/retros', [TeamRetrosController::class, 'store'])->name('teams.retros.store');
             Route::post('teams/{team}/members', [TeamMembersController::class, 'store'])->name('teams.members.store');
             Route::delete('teams/{team}/members/{member}', [TeamMembersController::class, 'destroy'])->name('teams.members.destroy')->whereUuid('member');
+
+            Route::post('teams/{team}/health-statements', [TeamHealthStatementsController::class, 'store'])->name('teams.healthStatements.store');
+            Route::patch('teams/{team}/health-statements/{statement}', [TeamHealthStatementsController::class, 'update'])->name('teams.healthStatements.update');
+            Route::put('teams/{team}/health-statement-order', [TeamHealthStatementOrdersController::class, 'update'])->name('teams.healthStatements.order.update');
+            Route::put('teams/{team}/health-statements/{statement}/archival', [TeamHealthStatementArchivalsController::class, 'update'])->name('teams.healthStatements.archival.update');
+            Route::delete('teams/{team}/health-statements/{statement}/archival', [TeamHealthStatementArchivalsController::class, 'destroy'])->name('teams.healthStatements.archival.destroy');
 
             Route::get('members', [WorkspaceMembersController::class, 'index'])->name('workspaces.members.index');
             Route::patch('members/{member}', [WorkspaceMembersController::class, 'update'])->name('workspaces.members.update')->whereUuid('member');
