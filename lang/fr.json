@@ -1147,5 +1147,12 @@
     "These cards are already revealed.": "Ces cartes sont déjà révélées.",
     "No card could be chosen from the votes.": "Aucune carte n'a pu être choisie à partir des votes.",
     "Use retro.actions.complete to complete or reopen an action item.": "Utilisez retro.actions.complete pour terminer ou rouvrir une action.",
-    "This round has not started.": "Ce tour n'a pas encore commencé."
+    "This round has not started.": "Ce tour n'a pas encore commencé.",
+    "Reconnect :provider in the team settings.": "Reconnectez :provider dans les paramètres de l'équipe.",
+    "Too many requests to :provider, wait a moment.": "Trop de requêtes vers :provider, patientez un instant.",
+    ":provider refused the request.": ":provider a refusé la demande.",
+    ":provider did not respond. Try again later.": ":provider n'a pas répondu. Réessayez plus tard.",
+    "The Telegram bot is used elsewhere. Remove its webhook or use a dedicated bot.": "Le bot Telegram est utilisé ailleurs. Supprimez son webhook ou utilisez un bot dédié.",
+    "Connect :provider in the team settings.": "Connectez :provider dans les paramètres de l'équipe.",
+    "This :provider connection is read-only.": "Cette connexion :provider est en lecture seule."
 }
