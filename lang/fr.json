@@ -1140,5 +1140,6 @@
     "Active": "Actif",
     "Unauthenticated.": "Non authentifié.",
     "Not found.": "Introuvable.",
-    "Too many changes, wait a moment.": "Trop de modifications, patientez un instant."
+    "Too many changes, wait a moment.": "Trop de modifications, patientez un instant.",
+    "Choose \"me\", \"unassigned\" or a member of the team.": "Choisissez « me », « unassigned » ou un membre de l'équipe."
 }

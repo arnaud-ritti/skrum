@@ -1140,5 +1140,6 @@
     "Active": "Activo",
     "Unauthenticated.": "No autenticado.",
     "Not found.": "No encontrado.",
-    "Too many changes, wait a moment.": "Demasiados cambios, espera un momento."
+    "Too many changes, wait a moment.": "Demasiados cambios, espera un momento.",
+    "Choose \"me\", \"unassigned\" or a member of the team.": "Elige «me», «unassigned» o un miembro del equipo."
 }

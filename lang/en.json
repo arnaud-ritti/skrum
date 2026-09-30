@@ -890,5 +890,6 @@
     "Unauthenticated.": "Unauthenticated.",
     "Not found.": "Not found.",
     "Too many changes, wait a moment.": "Too many changes, wait a moment.",
-    "This action is unauthorized.": "This action is unauthorized."
+    "This action is unauthorized.": "This action is unauthorized.",
+    "Choose \"me\", \"unassigned\" or a member of the team.": "Choose \"me\", \"unassigned\" or a member of the team."
 }
