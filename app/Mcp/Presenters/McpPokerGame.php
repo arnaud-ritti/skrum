@@ -80,7 +80,7 @@ class McpPokerGame
             'facilitator' => $facilitator === null ? null : ['name' => $facilitator['name']],
             'players' => collect($snapshot['players'])->map(fn (array $player): array => [
                 'name' => $player['name'],
-                'avatarUrl' => $player['avatarUrl'],
+                'avatarUrl' => $player['avatarUrl'] === null ? null : url($player['avatarUrl']),
                 'isGuest' => $player['isGuest'],
                 'isSpectator' => $player['isSpectator'],
             ])->values()->all(),

@@ -176,3 +176,13 @@ it('lists tasks in order with the current task and Markdown source', function ()
         ->and($result['items'][0])->toMatchArray(['id' => $first->id, 'description' => '**Bold**', 'isCurrent' => false, 'latestRound' => null, 'roundsCount' => 0, 'external' => null])
         ->and($result['items'][1])->toMatchArray(['isCurrent' => true, 'estimate' => '8', 'roundsCount' => 1]);
 });
+
+it('returns absolute avatar urls for players', function () {
+    $game = PokerGame::factory()->create();
+    [$user] = pokerFacilitator($game);
+
+    $result = mcpStructured(actingAsMcp($user)->tool(GetGame::class, ['game_id' => $game->id])->assertOk());
+
+    expect($result['players'])->not->toBeEmpty()
+        ->and(collect($result['players'])->every(fn (array $player): bool => str_starts_with($player['avatarUrl'], config('app.url'))))->toBeTrue();
+});

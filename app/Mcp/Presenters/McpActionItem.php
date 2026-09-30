@@ -30,8 +30,23 @@ class McpActionItem
         return [
             'id' => $presented['id'],
             'boardId' => $presented['retroId'],
-            ...Arr::except($presented, ['id', 'retroId']),
+            ...Arr::except($presented, ['id', 'retroId', 'assignee', 'createdBy']),
+            'assignee' => $this->absoluteAvatar($presented['assignee']),
+            'createdBy' => $this->absoluteAvatar($presented['createdBy']),
             'url' => route('workspaces.actionItems.index', ['workspace' => $item->team->workspace, 'item' => $item->id]),
         ];
+    }
+
+    /**
+     * @param  ?array<string, mixed>  $person
+     * @return ?array<string, mixed>
+     */
+    private function absoluteAvatar(?array $person): ?array
+    {
+        if ($person === null) {
+            return null;
+        }
+
+        return [...$person, 'avatarUrl' => url($person['avatarUrl'])];
     }
 }
