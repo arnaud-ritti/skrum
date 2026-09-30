@@ -29,6 +29,7 @@ import { ConnectionBanner } from './connection-banner';
 import { BoardProvider, type BoardContextValue } from './board-context';
 import { parseDndId, useDragAccessibility } from './dnd';
 import { FlyingReactions } from './flying-reactions';
+import { IcebreakerStage } from './icebreaker-stage';
 import { HideMyCursorKey, LiveCursorLayer } from './live-cursor-layer';
 import { PhasePanel } from './phase-panel';
 import { PresentationOverlay } from './presentation-overlay';
@@ -262,6 +263,8 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
                                 >
                                     <ResultsView />
                                 </div>
+                            ) : board.retro.phase === 'icebreaker' ? (
+                                <IcebreakerStage hideMyCursor={hideMyCursor} />
                             ) : (
                                 <div
                                     {...(board.retro.phase === 'completed' && {

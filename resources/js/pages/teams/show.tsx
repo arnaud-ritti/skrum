@@ -25,6 +25,7 @@ import { useTrans } from '@/hooks/use-trans';
 import type {
     CatalogueTemplate,
     CategoryOption,
+    GameOption,
     LlmAvailability,
     MemberSummary,
     PokerDeckOption,
@@ -50,6 +51,7 @@ type Props = {
     healthStatements: TeamHealthStatement[];
     canManageHealthStatements: boolean;
     llm: LlmAvailability;
+    icebreakerGames: GameOption[];
     pokerGames: PokerGameSummary[];
     pokerDeckOptions: PokerDeckOption[];
     canCreatePokerGame: boolean;
@@ -71,6 +73,7 @@ export default function ShowTeam({
     healthStatements,
     canManageHealthStatements,
     llm,
+    icebreakerGames,
     pokerGames,
     pokerDeckOptions,
     canCreatePokerGame,
@@ -153,6 +156,7 @@ export default function ShowTeam({
                             categories={templateCategories}
                             catalogue={catalogue}
                             llm={llm}
+                            icebreakerGames={icebreakerGames}
                         />
                     )}
 

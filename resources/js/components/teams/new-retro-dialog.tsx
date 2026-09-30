@@ -4,6 +4,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import TeamRetrosController from '@/actions/App/Http/Controllers/TeamRetrosController';
 import InputError from '@/components/input-error';
 import { AiSummarySwitch } from '@/components/retro/ai-summary-switch';
+import { IcebreakerGameSelect } from '@/components/retro/icebreaker-game-select';
 import { TemplateChips } from '@/components/templates/template-chips';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -23,6 +24,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTrans } from '@/hooks/use-trans';
+import type { GameKind, GameOption } from '@/lib/games/types';
 import { cn } from '@/lib/utils';
 import type {
     CatalogueTemplate,
@@ -39,6 +41,7 @@ type Props = {
     categories: CategoryOption[];
     catalogue?: CatalogueTemplate[];
     llm: LlmAvailability;
+    icebreakerGames: GameOption[];
 };
 
 type RetroForm = {
@@ -47,6 +50,7 @@ type RetroForm = {
     is_anonymous: boolean;
     health_check_enabled: boolean;
     icebreaker_enabled: boolean;
+    icebreaker_game: GameKind;
     votes_per_participant: number | null;
     ai_summary_enabled: boolean;
 };
@@ -91,6 +95,7 @@ function NewRetroForm({
     categories,
     catalogue,
     llm,
+    icebreakerGames,
     onDone,
 }: Props & { onDone: () => void }) {
     const { t } = useTrans();
@@ -107,6 +112,7 @@ function NewRetroForm({
         is_anonymous: false,
         health_check_enabled: false,
         icebreaker_enabled: false,
+        icebreaker_game: 'draw',
         votes_per_participant: null,
         ai_summary_enabled: llm.enabled,
     });
@@ -373,6 +379,17 @@ function NewRetroForm({
                             {t('Icebreaker')}
                         </Label>
                     </div>
+                    {form.data.icebreaker_enabled && (
+                        <IcebreakerGameSelect
+                            id="new-retro-icebreaker-game"
+                            value={form.data.icebreaker_game}
+                            options={icebreakerGames}
+                            onChange={(game) =>
+                                form.setData('icebreaker_game', game)
+                            }
+                        />
+                    )}
+                    <InputError message={form.errors.icebreaker_game} />
                     <div className="grid gap-2">
                         <div className="flex items-center gap-2">
                             <Checkbox
