@@ -1029,5 +1029,18 @@
     "Your cards": "Deine Karten",
     "Facilitator tools": "Moderationswerkzeuge",
     "Result": "Ergebnis",
-    "Players": "Spielende"
+    "Players": "Spielende",
+    "End game": "Spiel beenden",
+    "Reopen game": "Spiel wieder öffnen",
+    "End this game?": "Dieses Spiel beenden?",
+    "It becomes read-only until reopened.": "Es ist schreibgeschützt, bis es wieder geöffnet wird.",
+    "Delete game…": "Spiel löschen…",
+    "Delete this game?": "Dieses Spiel löschen?",
+    "Its tasks, rounds and votes are deleted for everyone.": "Seine Aufgaben, Runden und Stimmen werden für alle gelöscht.",
+    "Game settings": "Spieleinstellungen",
+    "Deck": "Kartensatz",
+    "Custom cards": "Eigene Karten",
+    "Separate cards with commas.": "Trenne die Karten mit Kommas.",
+    "Add :card": ":card hinzufügen",
+    "No one else can facilitate this game yet.": "Noch niemand sonst kann dieses Spiel moderieren."
 }

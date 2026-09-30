@@ -1029,5 +1029,18 @@
     "Your cards": "Vos cartes",
     "Facilitator tools": "Outils de l'animateur",
     "Result": "Résultat",
-    "Players": "Joueurs"
+    "Players": "Joueurs",
+    "End game": "Terminer la partie",
+    "Reopen game": "Rouvrir la partie",
+    "End this game?": "Terminer cette partie ?",
+    "It becomes read-only until reopened.": "Elle passe en lecture seule jusqu'à sa réouverture.",
+    "Delete game…": "Supprimer la partie…",
+    "Delete this game?": "Supprimer cette partie ?",
+    "Its tasks, rounds and votes are deleted for everyone.": "Ses tâches, tours et votes sont supprimés pour tout le monde.",
+    "Game settings": "Paramètres de la partie",
+    "Deck": "Jeu de cartes",
+    "Custom cards": "Cartes personnalisées",
+    "Separate cards with commas.": "Séparez les cartes par des virgules.",
+    "Add :card": "Ajouter :card",
+    "No one else can facilitate this game yet.": "Personne d'autre ne peut encore animer cette partie."
 }

@@ -776,5 +776,18 @@
     "Your cards": "Your cards",
     "Facilitator tools": "Facilitator tools",
     "Result": "Result",
-    "Players": "Players"
+    "Players": "Players",
+    "End game": "End game",
+    "Reopen game": "Reopen game",
+    "End this game?": "End this game?",
+    "It becomes read-only until reopened.": "It becomes read-only until reopened.",
+    "Delete game…": "Delete game…",
+    "Delete this game?": "Delete this game?",
+    "Its tasks, rounds and votes are deleted for everyone.": "Its tasks, rounds and votes are deleted for everyone.",
+    "Game settings": "Game settings",
+    "Deck": "Deck",
+    "Custom cards": "Custom cards",
+    "Separate cards with commas.": "Separate cards with commas.",
+    "Add :card": "Add :card",
+    "No one else can facilitate this game yet.": "No one else can facilitate this game yet."
 }

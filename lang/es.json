@@ -1029,5 +1029,18 @@
     "Your cards": "Tus cartas",
     "Facilitator tools": "Herramientas del facilitador",
     "Result": "Resultado",
-    "Players": "Jugadores"
+    "Players": "Jugadores",
+    "End game": "Terminar la partida",
+    "Reopen game": "Reabrir la partida",
+    "End this game?": "¿Terminar esta partida?",
+    "It becomes read-only until reopened.": "Queda en solo lectura hasta que se reabra.",
+    "Delete game…": "Eliminar la partida…",
+    "Delete this game?": "¿Eliminar esta partida?",
+    "Its tasks, rounds and votes are deleted for everyone.": "Sus tareas, rondas y votos se eliminan para todos.",
+    "Game settings": "Ajustes de la partida",
+    "Deck": "Baraja",
+    "Custom cards": "Cartas personalizadas",
+    "Separate cards with commas.": "Separa las cartas con comas.",
+    "Add :card": "Añadir :card",
+    "No one else can facilitate this game yet.": "Nadie más puede facilitar esta partida todavía."
 }
