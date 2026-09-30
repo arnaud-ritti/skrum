@@ -73,32 +73,28 @@ class UpdateAction extends SkrumTool
         $item = $this->context->actionItem((string) $request->get('action_id'));
         $actor = new ActionItemActor(McpGrant::current()->user, $item->retro === null ? null : $this->context->participant($item->retro));
 
-        $updated = DB::transaction(function () use ($item, $actor, $validated): ActionItem {
+        $assignsGuest = ($validated['assignee_participant_id'] ?? null) !== null;
+
+        if ($assignsGuest && $item->retro_id === null) {
+            throw ValidationException::withMessages(['assignee_participant_id' => __('Guests can only be assigned from their own retrospective.')]);
+        }
+
+        $updated = DB::transaction(function () use ($item, $actor, $validated, $assignsGuest): ActionItem {
+            // Retro first, then item: the web paths lock in this order, the reverse would deadlock.
+            $retro = $assignsGuest ? Retro::query()->whereKey($item->retro_id)->lockForUpdate()->firstOrFail() : null;
+
             $locked = WorkspaceActionItemGuard::lockWritable($item->id);
 
-            if (($validated['assignee_participant_id'] ?? null) !== null) {
-                $this->ensureGuestAssignable($locked);
+            if ($retro !== null) {
+                $locked->setRelation('retro', $retro);
+
+                RetroGuard::phase($retro, RetroPhase::Discussing);
+                RetroGuard::unlocked($retro);
             }
 
             return $this->applyActionItemChanges->handle($locked, $actor, $validated);
         });
 
         return Response::structured($this->presentActionItem->handle($updated, McpGrant::current()->user));
-    }
-
-    /**
-     * The UI offers guest assignees only on the board during Discussing.
-     */
-    private function ensureGuestAssignable(ActionItem $locked): void
-    {
-        if ($locked->retro_id === null) {
-            throw ValidationException::withMessages(['assignee_participant_id' => __('Guests can only be assigned from their own retrospective.')]);
-        }
-
-        $retro = Retro::query()->whereKey($locked->retro_id)->lockForUpdate()->firstOrFail();
-        $locked->setRelation('retro', $retro);
-
-        RetroGuard::phase($retro, RetroPhase::Discussing);
-        RetroGuard::unlocked($retro);
     }
 }

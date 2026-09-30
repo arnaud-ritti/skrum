@@ -149,6 +149,17 @@ it('keeps an existing spectator role', function () {
     expect($spectator->fresh()->is_spectator)->toBeTrue();
 });
 
+it('lets a spectator member add tasks since only guests are refused', function () {
+    $game = PokerGame::factory()->create();
+    $user = teamMember($game->team);
+    PokerPlayer::factory()->spectator()->create(['poker_game_id' => $game->id, 'user_id' => $user->id]);
+
+    $result = mcpStructured(mcpWriter($user)->tool(AddTasks::class, ['game_id' => $game->id, 'tasks' => [['title' => 'Spectated']]])->assertOk());
+
+    expect($result['added'])->toBe(1)
+        ->and(PokerTask::query()->where('poker_game_id', $game->id)->count())->toBe(1);
+});
+
 it('adds all tasks or none', function () {
     $game = PokerGame::factory()->create();
     [$user] = pokerFacilitator($game);
@@ -171,7 +182,7 @@ it('refuses a batch of more than 50 tasks', function () {
     mcpWriter($user)->tool(AddTasks::class, [
         'game_id' => $game->id,
         'tasks' => collect(range(1, 51))->map(fn (int $n): array => ['title' => "Task {$n}"])->all(),
-    ])->assertHasErrors();
+    ])->assertHasErrors(['The tasks field must not have more than 50 items.']);
 
     expect(PokerTask::query()->where('poker_game_id', $game->id)->count())->toBe(0);
 });
