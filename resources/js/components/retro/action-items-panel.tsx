@@ -1,6 +1,7 @@
 import { Trash2 } from 'lucide-react';
 import { useRef, useState } from 'react';
 import ActionItemsController from '@/actions/App/Http/Controllers/Retros/ActionItemsController';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
@@ -147,7 +148,10 @@ function ActionItemRow({ item }: { item: ActionItem }) {
     };
 
     return (
-        <li className="space-y-2 rounded-md border p-2">
+        <li
+            id={`action-item-${item.id}`}
+            className="space-y-2 rounded-md border p-2"
+        >
             <div className="flex items-start gap-2">
                 <Checkbox
                     className="mt-1"
@@ -202,6 +206,11 @@ function ActionItemRow({ item }: { item: ActionItem }) {
                     <Trash2 className="size-4" />
                 </Button>
             </div>
+            {item.themeName && (
+                <Badge variant="outline" className="font-normal">
+                    {t('Theme: :name', { name: item.themeName })}
+                </Badge>
+            )}
             <AssigneeSelect
                 value={item.assignee?.id ?? null}
                 participants={ctx.board.participants}

@@ -837,5 +837,20 @@
     "When the retro is completed, its board content is sent automatically to :provider to write a summary. Participants can also ask it to suggest group names. Turn this off to keep it on this server.": "Cuando se completa la retrospectiva, el contenido del tablero se envía automáticamente a :provider para escribir un resumen. Los participantes también pueden pedirle que sugiera nombres de grupos. Desactívalo para mantenerlo en este servidor.",
     "Positive": "Positivo",
     "Neutral": "Neutral",
-    "Negative": "Negativo"
+    "Negative": "Negativo",
+    "Summary": "Resumen",
+    "Generating the summary…": "Generando el resumen…",
+    "The summary could not be generated": "No se pudo generar el resumen",
+    "Retry": "Reintentar",
+    "Regenerate": "Regenerar",
+    "Generate summary": "Generar resumen",
+    "Generated with :provider": "Generado con :provider",
+    "Themes": "Temas",
+    "Suggested actions": "Acciones sugeridas",
+    "Suggestions": "Sugerencias",
+    "Promote": "Convertir en acción",
+    "Reject": "Descartar",
+    "Dismissed (:count)": "Descartadas (:count)",
+    "Added to action items": "Añadida a las acciones a realizar",
+    "Theme: :name": "Tema: :name"
 }

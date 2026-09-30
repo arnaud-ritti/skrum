@@ -19,6 +19,7 @@ import { retroRequest } from '@/lib/retro/api';
 import { topLevelCards } from '@/lib/retro/board-reducer';
 import type { CardPayload, Snapshot } from '@/lib/retro/types';
 import { ActionItemsPanel } from './action-items-panel';
+import { SuggestionsPanel } from './suggestions-panel';
 import { AddColumn } from './add-column';
 import { BoardEnded } from './board-ended';
 import { BoardHeader } from './board-header';
@@ -309,7 +310,10 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
                                     </DragOverlay>
                                 </DndContext>
                                 {board.retro.phase === 'discussing' && (
-                                    <ActionItemsPanel />
+                                    <>
+                                        <SuggestionsPanel />
+                                        <ActionItemsPanel />
+                                    </>
                                 )}
                             </div>
                         )}

@@ -1,4 +1,5 @@
 import { Check } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { useTrans } from '@/hooks/use-trans';
 import { useBoard } from '../board-context';
 import { ResultsSection } from './results-section';
@@ -18,6 +19,7 @@ export function ActionItemsResults() {
                     {board.actionItems.map((item) => (
                         <li
                             key={item.id}
+                            id={`action-item-${item.id}`}
                             className="flex items-start gap-2 rounded-md border p-2 text-sm"
                         >
                             {item.isDone && (
@@ -31,6 +33,16 @@ export function ActionItemsResults() {
                             >
                                 {item.content}
                             </span>
+                            {item.themeName && (
+                                <Badge
+                                    variant="outline"
+                                    className="shrink-0 font-normal"
+                                >
+                                    {t('Theme: :name', {
+                                        name: item.themeName,
+                                    })}
+                                </Badge>
+                            )}
                             {item.assignee && (
                                 <span className="shrink-0 text-muted-foreground">
                                     {item.assignee.name}

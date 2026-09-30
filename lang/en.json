@@ -583,5 +583,20 @@
     "When the retro is completed, its board content is sent automatically to :provider to write a summary. Participants can also ask it to suggest group names. Turn this off to keep it on this server.": "When the retro is completed, its board content is sent automatically to :provider to write a summary. Participants can also ask it to suggest group names. Turn this off to keep it on this server.",
     "Positive": "Positive",
     "Neutral": "Neutral",
-    "Negative": "Negative"
+    "Negative": "Negative",
+    "Summary": "Summary",
+    "Generating the summary…": "Generating the summary…",
+    "The summary could not be generated": "The summary could not be generated",
+    "Retry": "Retry",
+    "Regenerate": "Regenerate",
+    "Generate summary": "Generate summary",
+    "Generated with :provider": "Generated with :provider",
+    "Themes": "Themes",
+    "Suggested actions": "Suggested actions",
+    "Suggestions": "Suggestions",
+    "Promote": "Promote",
+    "Reject": "Reject",
+    "Dismissed (:count)": "Dismissed (:count)",
+    "Added to action items": "Added to action items",
+    "Theme: :name": "Theme: :name"
 }

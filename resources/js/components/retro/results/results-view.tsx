@@ -4,6 +4,7 @@ import { useTrans } from '@/hooks/use-trans';
 import { useBoard } from '../board-context';
 import { ActionItemsResults } from './action-items-results';
 import { HealthSection } from './health-section';
+import { SummarySection } from '../insights/summary-section';
 import { ParticipantsSection } from './participants-section';
 import { ResultsSection } from './results-section';
 import { RotiSection } from './roti-section';
@@ -39,6 +40,7 @@ export function ResultsView() {
                 </p>
             )}
             <ParticipantsSection participants={results.participants} />
+            <SummarySection />
             {results.health && (
                 <HealthSection
                     health={results.health}
