@@ -697,5 +697,7 @@
     "Reminders are sent at :time for action items assigned to you.": "Reminders are sent at :time for action items assigned to you.",
     "Reminders are turned off on this instance.": "Reminders are turned off on this instance.",
     "Email me about due and overdue action items": "Email me about due and overdue action items",
-    "Show due and overdue action items in the notification bell": "Show due and overdue action items in the notification bell"
+    "Show due and overdue action items in the notification bell": "Show due and overdue action items in the notification bell",
+    ":count unread notifications": ":count unread notifications",
+    "Could not load the notifications.": "Could not load the notifications."
 }

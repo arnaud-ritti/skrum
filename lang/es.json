@@ -950,5 +950,7 @@
     "Reminders are sent at :time for action items assigned to you.": "Los recordatorios se envían a las :time para las acciones asignadas a ti.",
     "Reminders are turned off on this instance.": "Los recordatorios están desactivados en esta instancia.",
     "Email me about due and overdue action items": "Enviarme un correo sobre las acciones que vencen o están vencidas",
-    "Show due and overdue action items in the notification bell": "Mostrar las acciones que vencen o están vencidas en la campana de notificaciones"
+    "Show due and overdue action items in the notification bell": "Mostrar las acciones que vencen o están vencidas en la campana de notificaciones",
+    ":count unread notifications": ":count notificaciones sin leer",
+    "Could not load the notifications.": "No se pudieron cargar las notificaciones."
 }

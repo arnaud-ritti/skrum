@@ -1,6 +1,6 @@
 import { router, usePage } from '@inertiajs/react';
 import { Bell } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import NotificationsController from '@/actions/App/Http/Controllers/NotificationsController';
 import ReadAllNotificationsController from '@/actions/App/Http/Controllers/ReadAllNotificationsController';
@@ -56,6 +56,9 @@ export function NotificationBell() {
     const [knownShared, setKnownShared] = useState(shared);
     const [items, setItems] = useState<BellNotification[] | null>(null);
     const [loadedAt, setLoadedAt] = useState(0);
+    const [failed, setFailed] = useState(false);
+    const [markingAll, setMarkingAll] = useState(false);
+    const latestLoad = useRef(0);
 
     if (knownShared !== shared) {
         setKnownShared(shared);
@@ -73,17 +76,27 @@ export function NotificationBell() {
     }
 
     const load = async () => {
+        const requestId = ++latestLoad.current;
+
+        setFailed(false);
+
         try {
             const response = await retroRequest<{
                 notifications: BellNotification[];
                 unreadCount: number;
             }>(NotificationsController.index());
 
+            if (requestId !== latestLoad.current) {
+                return;
+            }
+
             setItems(response.notifications);
             setUnread(response.unreadCount);
             setLoadedAt(Date.now());
         } catch {
-            toast.error(t('Something went wrong. Please try again.'));
+            if (requestId === latestLoad.current) {
+                setFailed(true);
+            }
         }
     };
 
@@ -105,6 +118,12 @@ export function NotificationBell() {
     };
 
     const readAll = async () => {
+        if (markingAll) {
+            return;
+        }
+
+        setMarkingAll(true);
+
         try {
             await retroRequest(ReadAllNotificationsController.store());
             setUnread(0);
@@ -117,6 +136,8 @@ export function NotificationBell() {
             );
         } catch {
             toast.error(t('Something went wrong. Please try again.'));
+        } finally {
+            setMarkingAll(false);
         }
     };
 
@@ -133,11 +154,20 @@ export function NotificationBell() {
                     variant="ghost"
                     size="icon"
                     className="relative"
-                    aria-label={t('Notifications')}
+                    aria-label={
+                        unread > 0
+                            ? t(':count unread notifications', {
+                                  count: unread,
+                              })
+                            : t('Notifications')
+                    }
                 >
                     <Bell className="size-5" />
                     {unread > 0 && (
-                        <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-semibold text-white">
+                        <span
+                            aria-hidden="true"
+                            className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-semibold text-white"
+                        >
                             {unread > 9 ? '9+' : unread}
                         </span>
                     )}
@@ -146,18 +176,31 @@ export function NotificationBell() {
             <DropdownMenuContent align="end" className="w-80">
                 <DropdownMenuLabel className="flex items-center justify-between gap-2">
                     {t('Notifications')}
-                    <Button
-                        variant="link"
-                        size="sm"
-                        className="h-auto p-0"
-                        disabled={unread === 0}
-                        onClick={() => void readAll()}
-                    >
-                        {t('Mark all as read')}
-                    </Button>
                 </DropdownMenuLabel>
+                <DropdownMenuItem
+                    disabled={unread === 0 || markingAll}
+                    onSelect={(event) => {
+                        event.preventDefault();
+                        void readAll();
+                    }}
+                >
+                    {t('Mark all as read')}
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                {items === null && (
+                {items === null && failed && (
+                    <div className="flex items-center justify-between gap-2 px-2 py-1.5 text-sm text-muted-foreground">
+                        <span>{t('Could not load the notifications.')}</span>
+                        <DropdownMenuItem
+                            onSelect={(event) => {
+                                event.preventDefault();
+                                void load();
+                            }}
+                        >
+                            {t('Retry')}
+                        </DropdownMenuItem>
+                    </div>
+                )}
+                {items === null && !failed && (
                     <p className="px-2 py-1.5 text-sm text-muted-foreground">
                         {t('Loading…')}
                     </p>
