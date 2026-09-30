@@ -1,0 +1,53 @@
+<?php
+
+namespace App\Notifications;
+
+use App\Actions\HealthCheck\SummarizeHealthCheck;
+use App\Actions\Integrations\BuildRetroRecap;
+use App\Actions\Integrations\RetroResultsRecipients;
+use App\Models\Retro;
+use App\Models\User;
+use App\Support\Integrations\Messages\RetroRecapMail;
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldBeEncrypted;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Notifications\Messages\MailMessage;
+use Illuminate\Notifications\Notification;
+
+/**
+ * Carries the retro id only: the recap is written when the mail is sent,
+ * in the recipient's locale, and nobody who left the team receives it.
+ */
+class RetroResultsNotification extends Notification implements ShouldBeEncrypted, ShouldQueue
+{
+    use Queueable;
+
+    public function __construct(public string $retroId) {}
+
+    /** @return array<int, string> */
+    public function via(object $notifiable): array
+    {
+        return ['mail'];
+    }
+
+    public function shouldSend(object $notifiable, string $channel): bool
+    {
+        $retro = Retro::query()->with('team')->find($this->retroId);
+
+        if ($retro === null || ! $notifiable instanceof User) {
+            return false;
+        }
+
+        return app(RetroResultsRecipients::class)->isRecipient($retro, $notifiable);
+    }
+
+    public function toMail(object $notifiable): MailMessage
+    {
+        $retro = Retro::query()->with('team')->findOrFail($this->retroId);
+
+        return app(RetroRecapMail::class)->build(
+            app(BuildRetroRecap::class)->handle($retro),
+            app(SummarizeHealthCheck::class)->handle($retro),
+        );
+    }
+}

@@ -1240,5 +1240,9 @@
     "Guest access is off for this retrospective.": "El acceso de invitados está desactivado para esta retrospectiva.",
     "Results can be shared once the retrospective is completed.": "Los resultados se pueden compartir cuando la retrospectiva haya terminado.",
     "This retrospective is completed. Share its results instead.": "Esta retrospectiva ha terminado. Comparte sus resultados en su lugar.",
-    "Guest access is off for this game.": "El acceso de invitados está desactivado para esta partida."
+    "Guest access is off for this game.": "El acceso de invitados está desactivado para esta partida.",
+    "Health check: :score/10 (:respondents of :participants participants answered)": "Chequeo de salud: :score/10 (respondieron :respondents de :participants participantes)",
+    "View the results": "Ver los resultados",
+    "The results were emailed a few minutes ago.": "Los resultados se enviaron por correo hace unos minutos.",
+    "Nobody can receive these results by email.": "Nadie puede recibir estos resultados por correo."
 }

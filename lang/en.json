@@ -991,5 +991,9 @@
     "Guest access is off for this retrospective.": "Guest access is off for this retrospective.",
     "Results can be shared once the retrospective is completed.": "Results can be shared once the retrospective is completed.",
     "This retrospective is completed. Share its results instead.": "This retrospective is completed. Share its results instead.",
-    "Guest access is off for this game.": "Guest access is off for this game."
+    "Guest access is off for this game.": "Guest access is off for this game.",
+    "Health check: :score/10 (:respondents of :participants participants answered)": "Health check: :score/10 (:respondents of :participants participants answered)",
+    "View the results": "View the results",
+    "The results were emailed a few minutes ago.": "The results were emailed a few minutes ago.",
+    "Nobody can receive these results by email.": "Nobody can receive these results by email."
 }

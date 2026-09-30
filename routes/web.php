@@ -11,6 +11,7 @@ use App\Http\Controllers\Integrations\IntegrationCallbacksController;
 use App\Http\Controllers\Integrations\IntegrationTestsController;
 use App\Http\Controllers\Integrations\JiraFieldDetectionsController;
 use App\Http\Controllers\Integrations\PokerSharesController;
+use App\Http\Controllers\Integrations\RetroResultsEmailsController;
 use App\Http\Controllers\Integrations\RetroSharesController;
 use App\Http\Controllers\Integrations\TeamIntegrationsController;
 use App\Http\Controllers\Integrations\TelegramConnectCodesController;
@@ -269,6 +270,7 @@ Route::prefix('retros/{retro}')
         Route::post('summary', [RetroSummariesController::class, 'store'])->name('retros.summary.store');
         Route::delete('summary', [RetroSummariesController::class, 'destroy'])->name('retros.summary.destroy');
         Route::post('shares', [RetroSharesController::class, 'store'])->middleware('throttle:5,1')->name('retros.shares.store');
+        Route::post('results-email', [RetroResultsEmailsController::class, 'store'])->name('retros.results-email.store');
         Route::post('suggested-actions/{suggestedAction}/promotion', [SuggestedActionPromotionsController::class, 'store'])->name('retros.suggested-actions.promotion.store')->whereUuid('suggestedAction');
         Route::delete('suggested-actions/{suggestedAction}', [SuggestedActionsController::class, 'destroy'])->name('retros.suggested-actions.destroy')->whereUuid('suggestedAction');
         Route::post('survey-drafts', [SurveyDraftsController::class, 'store'])->name('retros.survey-drafts.store');
