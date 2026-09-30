@@ -1,8 +1,15 @@
-import { Head } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
+import TeamsController from '@/actions/App/Http/Controllers/TeamsController';
 import Heading from '@/components/heading';
+import { JiraIntegration } from '@/components/integrations/jira-integration';
+import { LinearIntegration } from '@/components/integrations/linear-integration';
+import { SlackIntegration } from '@/components/integrations/slack-integration';
+import { TelegramIntegration } from '@/components/integrations/telegram-integration';
+import { Button } from '@/components/ui/button';
 import { useTrans } from '@/hooks/use-trans';
 import type {
     IntegrationProviderCard,
+    IntegrationScope,
     TeamSummary,
     TelegramBotInfo,
     WorkspaceSummary,
@@ -15,8 +22,17 @@ type Props = {
     telegram: TelegramBotInfo | null;
 };
 
-export default function TeamIntegrations({ team, providers }: Props) {
+export default function TeamIntegrations({
+    workspace,
+    team,
+    providers,
+    telegram,
+}: Props) {
     const { t } = useTrans();
+    const scope: IntegrationScope = {
+        workspace: workspace.slug,
+        team: team.id,
+    };
 
     return (
         <>
@@ -31,20 +47,50 @@ export default function TeamIntegrations({ team, providers }: Props) {
                         },
                     )}
                 />
-                <ul className="space-y-2">
-                    {providers.map((card) => (
-                        <li
-                            key={card.provider}
-                            className="flex justify-between rounded-md border p-3 text-sm"
-                        >
-                            <span>{card.label}</span>
-                            <span>
-                                {card.connection?.statusLabel ??
-                                    t('Not connected')}
-                            </span>
-                        </li>
-                    ))}
-                </ul>
+                <Button variant="outline" size="sm" asChild>
+                    <Link href={TeamsController.show(scope)}>
+                        {t('Back to the team')}
+                    </Link>
+                </Button>
+                {providers.map((card) => {
+                    switch (card.provider) {
+                        case 'slack':
+                            return (
+                                <SlackIntegration
+                                    key={card.provider}
+                                    card={card}
+                                    scope={scope}
+                                />
+                            );
+                        case 'telegram':
+                            return (
+                                <TelegramIntegration
+                                    key={card.provider}
+                                    card={card}
+                                    scope={scope}
+                                    telegram={telegram}
+                                />
+                            );
+                        case 'jira':
+                            return (
+                                <JiraIntegration
+                                    key={card.provider}
+                                    card={card}
+                                    scope={scope}
+                                />
+                            );
+                        case 'linear':
+                            return (
+                                <LinearIntegration
+                                    key={card.provider}
+                                    card={card}
+                                    scope={scope}
+                                />
+                            );
+                        default:
+                            return null;
+                    }
+                })}
             </div>
         </>
     );
