@@ -1513,5 +1513,8 @@
     ":name is giving clues": ":name está dando pistas",
     "Drawing of :word": "Dibujo de :word",
     "The question can no longer be changed.": "La pregunta ya no se puede cambiar.",
-    "The GIFs are already revealed.": "Los GIF ya se revelaron."
+    "The GIFs are already revealed.": "Los GIF ya se revelaron.",
+    "Voting has not started.": "La votación no ha empezado.",
+    "You cannot vote for your own GIF.": "No puedes votar por tu propio GIF.",
+    "This GIF is not part of this round.": "Este GIF no forma parte de esta ronda."
 }

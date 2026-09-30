@@ -1267,5 +1267,8 @@
     ":name is giving clues": ":name is giving clues",
     "Drawing of :word": "Drawing of :word",
     "The question can no longer be changed.": "The question can no longer be changed.",
-    "The GIFs are already revealed.": "The GIFs are already revealed."
+    "The GIFs are already revealed.": "The GIFs are already revealed.",
+    "Voting has not started.": "Voting has not started.",
+    "You cannot vote for your own GIF.": "You cannot vote for your own GIF.",
+    "This GIF is not part of this round.": "This GIF is not part of this round."
 }
