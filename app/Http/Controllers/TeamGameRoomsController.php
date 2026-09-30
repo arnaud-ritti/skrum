@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Actions\Games\CreateGameRoom;
 use App\Actions\Games\PresentGameRoomSummary;
+use App\Actions\Games\TeamGameLeaderboard;
 use App\Enums\GameKind;
 use App\Enums\GameRoomAccess;
 use App\Models\GameRoom;
@@ -19,10 +20,11 @@ use Inertia\Response;
 
 class TeamGameRoomsController extends Controller
 {
-    public function index(Request $request, Workspace $workspace, Team $team, PresentGameRoomSummary $presentGameRoomSummary, GameRulesRegistry $gameRulesRegistry): Response
+    public function index(Request $request, Workspace $workspace, Team $team, PresentGameRoomSummary $presentGameRoomSummary, GameRulesRegistry $gameRulesRegistry, TeamGameLeaderboard $teamGameLeaderboard): Response
     {
         Gate::authorize('view', $team);
 
+        $period = TeamGameLeaderboard::period($request->query('period'));
         $rooms = PresentGameRoomSummary::query($team)->get();
 
         return Inertia::render('games/index', [
@@ -32,6 +34,8 @@ class TeamGameRoomsController extends Controller
             'gameOptions' => $gameRulesRegistry->options(new GameRoom(['team_id' => $team->id])),
             'canCreate' => $request->user()->can('createGameRoom', $team) && $rooms->count() < GameRoom::MaxRoomsPerTeam,
             'roomLimit' => GameRoom::MaxRoomsPerTeam,
+            'period' => $period,
+            'leaderboard' => Inertia::defer(fn (): array => $teamGameLeaderboard->handle($team, $period), 'leaderboard', true),
         ]);
     }
 
