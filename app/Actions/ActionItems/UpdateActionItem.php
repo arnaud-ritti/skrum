@@ -17,13 +17,13 @@ class UpdateActionItem
      */
     public function handle(ActionItem $locked, ActionItemActor $actor, array $changes): ActionItem
     {
-        $this->permissions->authorizeEdit($locked, $actor);
-
         $locked->fill($changes);
 
         if (! $locked->isDirty()) {
             return $locked->loadForPresentation();
         }
+
+        $this->permissions->authorizeEdit($locked, $actor);
 
         $assigneeChanged = $locked->isDirty(['assignee_user_id', 'assignee_participant_id']);
 

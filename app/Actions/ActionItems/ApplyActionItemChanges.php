@@ -15,6 +15,7 @@ class ApplyActionItemChanges
         private ResolveActionItemAssignee $resolveActionItemAssignee,
         private UpdateActionItem $updateActionItem,
         private SetActionItemStatus $setActionItemStatus,
+        private ActionItemPermissions $permissions,
     ) {}
 
     /**
@@ -22,6 +23,10 @@ class ApplyActionItemChanges
      */
     public function handle(ActionItem $locked, ActionItemActor $actor, array $validated): ActionItem
     {
+        if ($this->touchesFields($locked, $validated)) {
+            $this->permissions->authorizeEdit($locked, $actor);
+        }
+
         $changes = [
             ...ActionItemRules::attributes($validated),
             ...($this->resolveActionItemAssignee->handle($locked->team, $locked->retro, $validated, $locked) ?? []),
@@ -36,5 +41,24 @@ class ApplyActionItemChanges
         }
 
         return $locked->loadForPresentation();
+    }
+
+    /**
+     * @param  array<string, mixed>  $validated
+     */
+    private function touchesFields(ActionItem $item, array $validated): bool
+    {
+        $probe = clone $item;
+        $probe->fill(ActionItemRules::attributes($validated));
+
+        if ($probe->isDirty()) {
+            return true;
+        }
+
+        if (array_key_exists('assignee_user_id', $validated) && ($validated['assignee_user_id'] ?? null) !== $item->assignee_user_id) {
+            return true;
+        }
+
+        return array_key_exists('assignee_participant_id', $validated) && ($validated['assignee_participant_id'] ?? null) !== $item->assignee_participant_id;
     }
 }

@@ -23,6 +23,7 @@ use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\RetroTheme;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Validation\ValidationException;
 
@@ -245,4 +246,55 @@ it('keeps completed_at when completing an already completed item', function () {
     app(SetActionItemStatus::class)->handle($item, $author, ActionItemStatus::Completed);
 
     expect($item->fresh()->completed_at->equalTo($completedAt))->toBeTrue();
+});
+
+function itemAssignedToNonManager(): array
+{
+    [$retro, $item] = authoredActionItem();
+    [$user, $participant] = retroMember($retro);
+    $item->update(['assignee_user_id' => $user->id, 'assignee_participant_id' => null]);
+
+    return [$retro, $item->fresh(), ActionItemActor::forParticipant($participant)];
+}
+
+it('lets a non-editing assignee complete an item when the sent fields are unchanged', function () {
+    [, $item, $assignee] = itemAssignedToNonManager();
+
+    $updated = app(ApplyActionItemChanges::class)->handle($item, $assignee, [
+        'content' => $item->content,
+        'priority' => $item->priority->value,
+        'assignee_user_id' => $item->assignee_user_id,
+        'status' => 'completed',
+    ]);
+
+    expect($updated->isCompleted())->toBeTrue();
+});
+
+it('refuses a non-editing assignee who changes the content', function () {
+    [, $item, $assignee] = itemAssignedToNonManager();
+
+    expect(fn () => app(ApplyActionItemChanges::class)->handle($item, $assignee, ['content' => 'Something else', 'status' => 'completed']))
+        ->toThrow(AuthorizationException::class);
+});
+
+it('answers a non-editor changing the assignee to an invalid one with a refusal, not a validation error', function () {
+    [, $item, $assignee] = itemAssignedToNonManager();
+
+    expect(fn () => app(ApplyActionItemChanges::class)->handle($item, $assignee, ['assignee_user_id' => '00000000-0000-4000-8000-000000000000']))
+        ->toThrow(AuthorizationException::class);
+});
+
+it('dispatches no domain events when the surrounding transaction rolls back', function () {
+    [, $item, $author] = authoredActionItem();
+
+    try {
+        DB::transaction(function () use ($item, $author) {
+            app(SetActionItemStatus::class)->handle($item, $author, ActionItemStatus::Completed);
+
+            throw new RuntimeException('rollback');
+        });
+    } catch (RuntimeException) {
+    }
+
+    Event::assertNotDispatched(ActionItemCompleted::class);
 });
