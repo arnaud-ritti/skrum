@@ -10,7 +10,7 @@ import { useBoard } from './board-context';
 import { dragIsolation } from './dnd';
 import { GroupNameSuggestion } from './group-name-suggestions';
 
-const NamingPhases: RetroPhase[] = ['grouping', 'voting', 'discussing'];
+export const NamingPhases: RetroPhase[] = ['grouping', 'voting', 'discussing'];
 
 type GroupNameResponse = { cardId: string; groupName: string | null };
 

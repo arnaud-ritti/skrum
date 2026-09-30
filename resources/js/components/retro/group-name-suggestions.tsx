@@ -14,6 +14,7 @@ import { useTrans } from '@/hooks/use-trans';
 import { retroRequest } from '@/lib/retro/api';
 import type { BoardCard } from '@/lib/retro/types';
 import { useBoard } from './board-context';
+import { NamingPhases } from './group-name';
 
 type GroupNameSuggestionsValue = {
     suggestions: Record<string, string>;
@@ -21,8 +22,6 @@ type GroupNameSuggestionsValue = {
     request: () => Promise<void>;
     dismiss: (cardId: string) => void;
 };
-
-const NamingPhases = ['grouping', 'voting', 'discussing'];
 
 const GroupNameSuggestionsContext =
     createContext<GroupNameSuggestionsValue | null>(null);
@@ -116,7 +115,7 @@ export function SuggestGroupNamesButton() {
     }
 
     return (
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
             <Button
                 size="sm"
                 variant="outline"
@@ -126,7 +125,7 @@ export function SuggestGroupNamesButton() {
                 <Sparkles className="size-4" />
                 {t('Suggest group names')}
             </Button>
-            <span className="hidden max-w-56 text-xs text-muted-foreground xl:inline">
+            <span className="max-w-56 text-xs text-muted-foreground">
                 {t('Card contents of these groups are sent to :provider.', {
                     provider: features.llmProvider ?? '',
                 })}
@@ -163,9 +162,9 @@ export function GroupNameSuggestion({ card, onEdit }: SuggestionProps) {
             ),
         );
         setBusy(false);
-        value.dismiss(card.id);
 
         if (response) {
+            value.dismiss(card.id);
             ctx.apply({
                 type: 'card.groupName',
                 cardId: response.cardId,
