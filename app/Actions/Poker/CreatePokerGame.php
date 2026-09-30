@@ -16,7 +16,7 @@ class CreatePokerGame
             if ($new->saveDeckAs !== null) {
                 $lockedTeam = Team::query()->whereKey($team->id)->lockForUpdate()->firstOrFail();
 
-                SavedPokerDeckRules::ensureRoom($lockedTeam);
+                SavedPokerDeckRules::ensureRoom($lockedTeam, 'save_deck_as');
 
                 $lockedTeam->pokerDecks()->create([
                     'name' => $new->saveDeckAs,

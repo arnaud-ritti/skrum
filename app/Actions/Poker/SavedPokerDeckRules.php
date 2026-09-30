@@ -42,13 +42,13 @@ class SavedPokerDeckRules
     /**
      * Call with the team row locked, inside the transaction that creates the deck.
      */
-    public static function ensureRoom(Team $lockedTeam): void
+    public static function ensureRoom(Team $lockedTeam, string $attribute = 'name'): void
     {
         if ($lockedTeam->pokerDecks()->count() < self::MaxDecks) {
             return;
         }
 
-        throw ValidationException::withMessages(['name' => __('This team already has 30 saved decks.')]);
+        throw ValidationException::withMessages([$attribute => __('This team already has 30 saved decks.')]);
     }
 
     public static function findForTeam(Team $team, string $id, string $attribute = 'saved_deck_id'): SavedPokerDeck

@@ -141,14 +141,15 @@ it('creates nothing when the deck cannot be saved', function (string $case) {
 
     $name = $case === 'duplicate' ? 'TEAM SCALE' : 'Fresh name';
 
-    $this->actingAs($user)
+    $response = $this->actingAs($user)
         ->post(route('teams.pokerGames.store', [$team->workspace, $team]), [
             'title' => 'Sprint 7',
             'deck' => 'custom',
             'custom_cards' => ['1', '3', '5'],
             'save_deck_as' => $name,
-        ])
-        ->assertSessionHasErrors();
+        ]);
+
+    $response->assertSessionHasErrors(['save_deck_as' => $case === 'limit' ? 'This team already has 30 saved decks.' : 'A deck with this name already exists.']);
 
     expect($team->pokerGames()->count())->toBe(0)
         ->and($team->pokerDecks()->count())->toBe($case === 'limit' ? 30 : 1);
