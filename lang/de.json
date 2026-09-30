@@ -1142,5 +1142,9 @@
     "Not found.": "Nicht gefunden.",
     "Too many changes, wait a moment.": "Zu viele Änderungen, warte einen Moment.",
     "Choose \"me\", \"unassigned\" or a member of the team.": "Wähle „me“, „unassigned“ oder ein Teammitglied.",
-    "Vote totals are not visible yet.": "Die Stimmensummen sind noch nicht sichtbar."
+    "Vote totals are not visible yet.": "Die Stimmensummen sind noch nicht sichtbar.",
+    "A game can hold at most 200 tasks.": "Ein Spiel kann höchstens 200 Aufgaben enthalten.",
+    "This task is not on the table.": "Diese Aufgabe liegt nicht auf dem Tisch.",
+    "These cards are already revealed.": "Diese Karten sind bereits aufgedeckt.",
+    "No card could be chosen from the votes.": "Aus den Stimmen ließ sich keine Karte auswählen."
 }

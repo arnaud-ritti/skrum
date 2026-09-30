@@ -892,5 +892,9 @@
     "Too many changes, wait a moment.": "Too many changes, wait a moment.",
     "This action is unauthorized.": "This action is unauthorized.",
     "Choose \"me\", \"unassigned\" or a member of the team.": "Choose \"me\", \"unassigned\" or a member of the team.",
-    "Vote totals are not visible yet.": "Vote totals are not visible yet."
+    "Vote totals are not visible yet.": "Vote totals are not visible yet.",
+    "A game can hold at most 200 tasks.": "A game can hold at most 200 tasks.",
+    "This task is not on the table.": "This task is not on the table.",
+    "These cards are already revealed.": "These cards are already revealed.",
+    "No card could be chosen from the votes.": "No card could be chosen from the votes."
 }
