@@ -161,6 +161,17 @@ it('asks to reconnect when no source can be refreshed', function () {
     Http::assertNothingSent();
 });
 
+it('limits how often a player refreshes imported tasks', function () {
+    $table = trackerTable();
+    $url = route('poker.imports.refresh.store', $table['game']);
+
+    foreach (range(1, 10) as $attempt) {
+        $this->actingAs($table['member'])->postJson($url)->assertOk();
+    }
+
+    $this->actingAs($table['member'])->postJson($url)->assertTooManyRequests();
+});
+
 it('refreshes nothing in a game without imported tasks', function () {
     $table = trackerTable();
 
