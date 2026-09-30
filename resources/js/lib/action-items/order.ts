@@ -8,7 +8,7 @@ const PriorityRank: Record<ActionItemPriority, number> = {
 
 /**
  * Mirrors the server ordering: completed last, overdue first, then due
- * date, priority and newest first.
+ * date, priority, most recently completed and newest first.
  */
 export function compareActionItems(a: ActionItem, b: ActionItem): number {
     const aCompleted = a.status === 'completed';
@@ -38,6 +38,10 @@ export function compareActionItems(a: ActionItem, b: ActionItem): number {
         if (a.priority !== b.priority) {
             return PriorityRank[a.priority] - PriorityRank[b.priority];
         }
+    }
+
+    if (a.completedAt !== b.completedAt) {
+        return (b.completedAt ?? '') < (a.completedAt ?? '') ? -1 : 1;
     }
 
     if (a.createdAt !== b.createdAt) {
