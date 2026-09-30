@@ -793,5 +793,8 @@
     "Surveys": "Encuestas",
     "Answer to join the discussion": "Responde para unirte a la conversación",
     "Your name is shown with your comment.": "Tu nombre se muestra con tu comentario.",
-    "Only groups can be named.": "Solo se pueden nombrar los grupos."
+    "Only groups can be named.": "Solo se pueden nombrar los grupos.",
+    "Name this group": "Nombrar este grupo",
+    "Group name": "Nombre del grupo",
+    "Rename group": "Renombrar grupo"
 }
