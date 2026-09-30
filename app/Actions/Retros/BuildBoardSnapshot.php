@@ -6,6 +6,7 @@ use App\Actions\ActionItems\ActionItemActor;
 use App\Actions\ActionItems\CarriedActionItems;
 use App\Actions\HealthCheck\PresentHealthCheck;
 use App\Actions\Integrations\LatestDeliveries;
+use App\Actions\Integrations\ListExportSources;
 use App\Actions\Integrations\ShareOptions;
 use App\Actions\Integrations\SharePermissions;
 use App\Actions\Surveys\PresentSurvey;
@@ -43,6 +44,7 @@ class BuildBoardSnapshot
         private ShareOptions $shareOptions,
         private SharePermissions $sharePermissions,
         private LatestDeliveries $latestDeliveries,
+        private ListExportSources $listExportSources,
     ) {}
 
     /**
@@ -140,6 +142,7 @@ class BuildBoardSnapshot
             ),
             'carriedActionItems' => $this->presentActionItem->many($carried['items'], ActionItemActor::forParticipant($viewerParticipant)),
             'carriedActionItemsHasMore' => $carried['hasMore'],
+            'exportSources' => $viewer->isGuest() ? [] : $this->listExportSources->forTeam($retro->team),
             'teamMembers' => $this->teamMembers($retro),
             'insights' => $this->buildInsights->handle($retro),
             'roti' => $this->roti($retro, $viewer),

@@ -10,6 +10,7 @@ use App\Http\Controllers\Integrations\IntegrationAccountsController;
 use App\Http\Controllers\Integrations\IntegrationAuthorizationsController;
 use App\Http\Controllers\Integrations\IntegrationCallbacksController;
 use App\Http\Controllers\Integrations\IntegrationPrioritiesController;
+use App\Http\Controllers\Integrations\IntegrationTargetsController;
 use App\Http\Controllers\Integrations\IntegrationTestsController;
 use App\Http\Controllers\Integrations\IntegrationUserMappingsController;
 use App\Http\Controllers\Integrations\IntegrationUserMatchesController;
@@ -202,6 +203,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 Route::get('teams/{team}/integrations/{integration}/priorities', [IntegrationPrioritiesController::class, 'index'])
                     ->whereUuid('integration')
                     ->name('teams.integrations.priorities.index');
+                Route::get('teams/{team}/integrations/{integration}/targets', [IntegrationTargetsController::class, 'index'])
+                    ->whereUuid('integration')
+                    ->middleware('throttle:30,1')
+                    ->name('teams.integrations.targets.index');
                 Route::delete('teams/{team}/integrations/{integration}', [TeamIntegrationsController::class, 'destroy'])
                     ->whereUuid('integration')
                     ->name('teams.integrations.destroy');
