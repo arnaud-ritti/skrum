@@ -750,5 +750,12 @@
     "Clear": "Effacer",
     "Answered": "Répondu",
     ":count answered": "Réponses : :count",
-    "Score :score": "Note :score"
+    "Score :score": "Note :score",
+    "A retrospective can have at most 10 surveys.": "Une rétrospective peut avoir au plus 10 sondages.",
+    "Choice surveys need between 2 and 10 options.": "Les sondages à choix ont besoin de 2 à 10 options.",
+    "Free-text surveys have no options.": "Les sondages à réponse libre n'ont pas d'options.",
+    "This survey already has answers.": "Ce sondage a déjà des réponses.",
+    "Names are never shown on anonymous retros.": "Les noms ne sont jamais affichés dans les rétros anonymes.",
+    "This survey is closed.": "Ce sondage est clos.",
+    "Answer the survey to join the discussion.": "Répondez au sondage pour rejoindre la discussion."
 }

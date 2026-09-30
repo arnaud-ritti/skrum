@@ -29,6 +29,7 @@ use App\Http\Controllers\Retros\RetrosController;
 use App\Http\Controllers\Retros\RetroSettingsController;
 use App\Http\Controllers\Retros\RetroSnapshotsController;
 use App\Http\Controllers\Retros\RetroTimersController;
+use App\Http\Controllers\Retros\SurveysController;
 use App\Http\Controllers\SsoCallbacksController;
 use App\Http\Controllers\SsoRedirectsController;
 use App\Http\Controllers\TeamHealthStatementArchivalsController;
@@ -155,6 +156,10 @@ Route::prefix('retros/{retro}')
         Route::post('action-items', [ActionItemsController::class, 'store'])->name('retros.action-items.store');
         Route::patch('action-items/{actionItem}', [ActionItemsController::class, 'update'])->name('retros.action-items.update')->whereUuid('actionItem');
         Route::delete('action-items/{actionItem}', [ActionItemsController::class, 'destroy'])->name('retros.action-items.destroy')->whereUuid('actionItem');
+        Route::post('surveys', [SurveysController::class, 'store'])->name('retros.surveys.store');
+        Route::get('surveys/{survey}', [SurveysController::class, 'show'])->name('retros.surveys.show')->whereUuid('survey');
+        Route::patch('surveys/{survey}', [SurveysController::class, 'update'])->name('retros.surveys.update')->whereUuid('survey');
+        Route::delete('surveys/{survey}', [SurveysController::class, 'destroy'])->name('retros.surveys.destroy')->whereUuid('survey');
     });
 
 Route::post('broadcasting/auth', [BroadcastAuthorizationsController::class, 'store'])->name('broadcasting.auth');
