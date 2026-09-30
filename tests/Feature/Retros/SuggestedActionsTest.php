@@ -8,7 +8,6 @@ use App\Enums\CardSentiment;
 use App\Enums\RetroPhase;
 use App\Enums\SuggestedActionStatus;
 use App\Enums\SummaryStatus;
-use App\Enums\WorkspaceRole;
 use App\Events\Retros\ActionItemSaved;
 use App\Events\Retros\InsightsChanged;
 use App\Models\ActionItem;
@@ -17,7 +16,6 @@ use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\RetroTheme;
 use App\Models\SuggestedAction;
-use App\Models\User;
 use Illuminate\Support\Facades\Event;
 
 beforeEach(function () {
@@ -31,14 +29,6 @@ function suggestingRetro(RetroPhase $phase = RetroPhase::Discussing, array $attr
     $suggestion = SuggestedAction::factory()->create(['retro_id' => $retro->id, 'theme_id' => $theme->id, 'content' => 'Automate releases']);
 
     return [$retro, $theme, $suggestion];
-}
-
-function workspaceAdminParticipant(Retro $retro): array
-{
-    $user = User::factory()->create();
-    $retro->team->workspace->members()->attach($user, ['role' => WorkspaceRole::Admin->value]);
-
-    return [$user, Participant::factory()->create(['retro_id' => $retro->id, 'user_id' => $user->id])];
 }
 
 it('promotes a suggestion into an action item with its wording and theme', function () {

@@ -863,5 +863,8 @@
     "Suggested name": "Nom suggéré",
     "Use this name": "Utiliser ce nom",
     "Edit this name": "Modifier ce nom",
-    "The board content is sent to :provider to write the summary.": "Le contenu du tableau est envoyé à :provider pour rédiger le résumé."
+    "The board content is sent to :provider to write the summary.": "Le contenu du tableau est envoyé à :provider pour rédiger le résumé.",
+    "High": "Haute",
+    "Medium": "Moyenne",
+    "Low": "Basse"
 }

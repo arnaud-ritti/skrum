@@ -42,6 +42,12 @@ class Team extends Model
         return $this->members()->whereKey($user->id)->exists();
     }
 
+    /** @return HasMany<ActionItem, $this> */
+    public function actionItems(): HasMany
+    {
+        return $this->hasMany(ActionItem::class);
+    }
+
     /** @return HasMany<Retro, $this> */
     public function retros(): HasMany
     {

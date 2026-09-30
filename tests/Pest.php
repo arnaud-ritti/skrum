@@ -6,7 +6,9 @@ use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\Survey;
 use App\Models\SurveyResponse;
+use App\Models\Team;
 use App\Models\User;
+use App\Models\Workspace;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
@@ -133,4 +135,31 @@ function llmRequestBodies(): string
     return Http::recorded()
         ->map(fn (array $pair) => $pair[0]->body())
         ->implode("\n");
+}
+
+function teamMember(Team $team): User
+{
+    $user = User::factory()->create();
+    $team->workspace->members()->attach($user, ['role' => WorkspaceRole::Member->value]);
+    $team->members()->attach($user);
+
+    return $user;
+}
+
+function workspaceManager(Workspace $workspace, WorkspaceRole $role = WorkspaceRole::Admin): User
+{
+    $user = User::factory()->create();
+    $workspace->members()->attach($user, ['role' => $role->value]);
+
+    return $user;
+}
+
+/**
+ * @return array{0: User, 1: Participant}
+ */
+function workspaceAdminParticipant(Retro $retro): array
+{
+    $user = workspaceManager($retro->team->workspace);
+
+    return [$user, Participant::factory()->create(['retro_id' => $retro->id, 'user_id' => $user->id])];
 }

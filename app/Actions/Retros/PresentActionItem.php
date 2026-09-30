@@ -21,10 +21,10 @@ class PresentActionItem
         return [
             'id' => $item->id,
             'content' => $item->content,
-            'isDone' => $item->is_done,
-            'assignee' => $item->assignee === null
+            'isDone' => $item->completed_at !== null,
+            'assignee' => $item->assigneeParticipant === null
                 ? null
-                : ['id' => $item->assignee->id, 'name' => $item->assignee->displayName()],
+                : ['id' => $item->assigneeParticipant->id, 'name' => $item->assigneeParticipant->displayName()],
             'themeId' => $item->theme_id,
             'themeName' => $item->theme_name,
         ];

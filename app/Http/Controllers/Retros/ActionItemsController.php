@@ -15,6 +15,7 @@ use App\Models\Retro;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
@@ -76,8 +77,14 @@ class ActionItemsController extends Controller
 
             $fresh = $locked->actionItems()->whereKey($actionItem->id)->firstOrFail();
 
-            $fresh->update($validated);
-            $fresh->load('assignee.user');
+            $attributes = Arr::except($validated, ['is_done']);
+
+            if (array_key_exists('is_done', $validated)) {
+                $attributes['completed_at'] = $validated['is_done'] ? now() : null;
+            }
+
+            $fresh->update($attributes);
+            $fresh->load('assigneeParticipant.user');
 
             (new ActionItemSaved($locked->id, $this->presentActionItem->handle($fresh)))->sendToOthers();
 

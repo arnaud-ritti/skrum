@@ -47,7 +47,7 @@ class BuildBoardSnapshot
             'cards.participant.user',
             'cards.reactions.participant.user',
             'cards.comments.participant.user',
-            'actionItems.assignee.user',
+            'actionItems.assigneeParticipant.user',
         ]);
 
         $showsTotals = in_array($retro->phase, [RetroPhase::Discussing, RetroPhase::Completed], true)
