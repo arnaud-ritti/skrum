@@ -103,6 +103,18 @@ class Retro extends Model
         return $this->hasMany(CardComment::class);
     }
 
+    /** @return HasMany<Survey, $this> */
+    public function surveys(): HasMany
+    {
+        return $this->hasMany(Survey::class)->orderBy('position');
+    }
+
+    /** @return HasMany<SurveyComment, $this> */
+    public function surveyComments(): HasMany
+    {
+        return $this->hasMany(SurveyComment::class);
+    }
+
     /** @return HasMany<Vote, $this> */
     public function votes(): HasMany
     {
