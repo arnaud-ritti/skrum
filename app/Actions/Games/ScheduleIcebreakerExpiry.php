@@ -9,6 +9,8 @@ use App\Models\Retro;
 /**
  * The board timer is the icebreaker's game timer (spec §5): a new end time
  * schedules the expiry job of the active round, as the room timer does.
+ * The room is locked after the retro, so a round start committing meanwhile
+ * is seen and gets its job.
  */
 class ScheduleIcebreakerExpiry
 {
@@ -20,7 +22,7 @@ class ScheduleIcebreakerExpiry
             return;
         }
 
-        $room = GameRoom::query()->where('retro_id', $lockedRetro->id)->first();
+        $room = GameRoom::query()->where('retro_id', $lockedRetro->id)->lockForUpdate()->first();
 
         if ($room === null) {
             return;

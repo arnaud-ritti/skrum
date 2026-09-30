@@ -15,6 +15,8 @@ use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\User;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Events\QueryExecuted;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
 
@@ -187,6 +189,23 @@ it('schedules the round expiry when the facilitator sets the board timer', funct
     expect($endsAt->micro)->toBe(0);
     Queue::assertPushed(CloseExpiredGameRound::class, fn (CloseExpiredGameRound $job) => $job->roundId === $round->id
         && CarbonImmutable::parse($job->timerEndsAt)->equalTo($endsAt));
+});
+
+it('locks the retro then the icebreaker room when the board timer changes', function () {
+    Queue::fake();
+    [$retro, $facilitator, $room] = hangmanIcebreaker();
+    activeGameRound($room);
+    $lockedTables = [];
+
+    DB::listen(function (QueryExecuted $query) use (&$lockedTables) {
+        if (preg_match('/from "(\w+)".* for update/i', $query->sql, $matches) === 1) {
+            $lockedTables[] = $matches[1];
+        }
+    });
+
+    $this->actingAs($facilitator)->putJson(route('retros.timer.update', $retro), ['seconds' => 60])->assertOk();
+
+    expect($lockedTables)->toBe(['retros', 'game_rooms']);
 });
 
 it('schedules nothing outside the icebreaker', function () {
