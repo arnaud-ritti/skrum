@@ -2,6 +2,11 @@
 
 namespace App\Actions\Poker;
 
+use App\Actions\Integrations\LatestDeliveries;
+use App\Actions\Integrations\PresentIntegrationDelivery;
+use App\Actions\Integrations\ShareOptions;
+use App\Actions\Integrations\SharePermissions;
+use App\Enums\IntegrationDeliveryKind;
 use App\Enums\WorkspaceRole;
 use App\Models\PokerGame;
 use App\Models\PokerPlayer;
@@ -9,6 +14,7 @@ use App\Models\PokerTask;
 use App\Models\User;
 
 /**
+ * @phpstan-import-type Delivery from PresentIntegrationDelivery
  * @phpstan-import-type Round from PresentPokerRound
  * @phpstan-import-type Task from PresentPokerTask
  *
@@ -50,6 +56,8 @@ use App\Models\User;
  *     tasks: array<int, Task>,
  *     current: ?array{taskId: string, round: Round},
  *     links: array{team: ?string},
+ *     share: array{slack: bool, telegram: bool},
+ *     deliveries: array<int, Delivery>,
  *     serverTime: string
  * }
  */
@@ -58,6 +66,9 @@ class BuildPokerSnapshot
     public function __construct(
         private PresentPokerRound $presentPokerRound,
         private PresentPokerTask $presentPokerTask,
+        private ShareOptions $shareOptions,
+        private SharePermissions $sharePermissions,
+        private LatestDeliveries $latestDeliveries,
     ) {}
 
     /**
@@ -130,6 +141,10 @@ class BuildPokerSnapshot
             'links' => [
                 'team' => $isGuest ? null : route('teams.show', [$team->workspace, $team]),
             ],
+            'share' => $this->shareOptions->pokerGame($game, $viewer),
+            'deliveries' => $this->sharePermissions->pokerGame($game, $viewer)
+                ? $this->latestDeliveries->handle($game, [IntegrationDeliveryKind::PokerLink])
+                : [],
             'serverTime' => now()->utc()->format('Y-m-d\TH:i:s.v\Z'),
         ];
     }

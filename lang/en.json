@@ -981,5 +981,7 @@
     "grouped cards: :count": "grouped cards: :count",
     "+ :count more": "+ :count more",
     "A card without text": "A card without text",
-    "Open the results": "Open the results"
+    "Open the results": "Open the results",
+    "Only the facilitator or a workspace admin can share this retrospective.": "Only the facilitator or a workspace admin can share this retrospective.",
+    "Only the facilitator or a workspace admin can share this game.": "Only the facilitator or a workspace admin can share this game."
 }

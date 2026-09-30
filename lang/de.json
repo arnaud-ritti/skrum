@@ -1230,5 +1230,7 @@
     "grouped cards: :count": "gruppierte Karten: :count",
     "+ :count more": "+ :count weitere",
     "A card without text": "Eine Karte ohne Text",
-    "Open the results": "Ergebnisse öffnen"
+    "Open the results": "Ergebnisse öffnen",
+    "Only the facilitator or a workspace admin can share this retrospective.": "Nur der Moderator oder ein Workspace-Admin kann diese Retrospektive teilen.",
+    "Only the facilitator or a workspace admin can share this game.": "Nur der Moderator oder ein Workspace-Admin kann dieses Spiel teilen."
 }
