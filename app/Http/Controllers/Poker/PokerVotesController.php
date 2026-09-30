@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Poker;
 
+use App\Actions\Poker\AutoRevealPokerRound;
 use App\Actions\Poker\PlayPokerCard;
 use App\Actions\Poker\PokerGuard;
 use App\Http\Controllers\Controller;
@@ -13,7 +14,7 @@ use Illuminate\Http\Request;
 
 class PokerVotesController extends Controller
 {
-    public function update(Request $request, PokerGame $game, PokerRound $round, PlayPokerCard $playPokerCard): JsonResponse
+    public function update(Request $request, PokerGame $game, PokerRound $round, PlayPokerCard $playPokerCard, AutoRevealPokerRound $autoRevealPokerRound): JsonResponse
     {
         $player = PokerPlayer::current($request);
 
@@ -24,7 +25,10 @@ class PokerVotesController extends Controller
             'value' => ['required', 'string', 'max:8'],
         ]);
 
-        return response()->json($playPokerCard->handle($game, $round, $player, $validated['value']));
+        $result = $playPokerCard->handle($game, $round, $player, $validated['value']);
+        $result['revealed'] = $autoRevealPokerRound->handle($round);
+
+        return response()->json($result);
     }
 
     public function destroy(Request $request, PokerGame $game, PokerRound $round, PlayPokerCard $playPokerCard): JsonResponse

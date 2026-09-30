@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Poker;
 
+use App\Actions\Poker\AutoRevealPokerRound;
 use App\Actions\Poker\PokerDeckRules;
 use App\Actions\Poker\PokerGuard;
 use App\Events\Poker\PokerGameChanged;
@@ -18,7 +19,7 @@ use Illuminate\Validation\ValidationException;
 
 class PokerSettingsController extends Controller
 {
-    public function update(Request $request, PokerGame $game): Response
+    public function update(Request $request, PokerGame $game, AutoRevealPokerRound $autoRevealPokerRound): Response
     {
         $player = PokerPlayer::current($request);
 
@@ -32,9 +33,11 @@ class PokerSettingsController extends Controller
             'anonymous_votes' => ['sometimes', 'boolean'],
             'cursors_enabled' => ['sometimes', 'boolean'],
             'reactions_enabled' => ['sometimes', 'boolean'],
+            'auto_reveal' => ['sometimes', 'boolean'],
         ]);
 
         $turnsAnonymityOn = array_key_exists('anonymous_votes', $validated) && (bool) $validated['anonymous_votes'];
+        $turnsAutoRevealOn = array_key_exists('auto_reveal', $validated) && (bool) $validated['auto_reveal'];
 
         DB::transaction(function () use ($game, $player, $validated, $turnsAnonymityOn): void {
             $locked = PokerGame::query()->whereKey($game->id)->lockForUpdate()->firstOrFail();
@@ -55,6 +58,14 @@ class PokerSettingsController extends Controller
             (new PokerGameChanged($locked->id))->sendToOthers();
         });
 
+        if ($turnsAutoRevealOn) {
+            $openRound = $game->fresh()?->latestRoundOfCurrentTask();
+
+            if ($openRound !== null) {
+                $autoRevealPokerRound->handle($openRound);
+            }
+        }
+
         return response()->noContent();
     }
 
@@ -64,7 +75,7 @@ class PokerSettingsController extends Controller
      */
     private function attributes(array $validated, PokerGame $locked): array
     {
-        $attributes = Arr::only($validated, ['title', 'guest_access_enabled', 'anonymous_votes', 'cursors_enabled', 'reactions_enabled']);
+        $attributes = Arr::only($validated, ['title', 'guest_access_enabled', 'anonymous_votes', 'cursors_enabled', 'reactions_enabled', 'auto_reveal']);
 
         if (array_key_exists('deck', $validated)) {
             [$deck, $cards] = PokerDeckRules::resolve($validated);

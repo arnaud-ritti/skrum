@@ -10,6 +10,7 @@ use App\Http\Controllers\InvitationAcceptancesController;
 use App\Http\Controllers\InvitationLinksController;
 use App\Http\Controllers\LocalesController;
 use App\Http\Controllers\NotificationsController;
+use App\Http\Controllers\Poker\PokerAutoRevealsController;
 use App\Http\Controllers\Poker\PokerCurrentTasksController;
 use App\Http\Controllers\Poker\PokerFacilitatorsController;
 use App\Http\Controllers\Poker\PokerGamesController;
@@ -259,6 +260,8 @@ Route::prefix('poker/{game}')
         Route::put('rounds/{round}/vote', [PokerVotesController::class, 'update'])->name('poker.rounds.vote.update')->whereUuid('round');
         Route::delete('rounds/{round}/vote', [PokerVotesController::class, 'destroy'])->name('poker.rounds.vote.destroy')->whereUuid('round');
         Route::post('rounds/{round}/reveal', [PokerRevealsController::class, 'store'])->name('poker.rounds.reveal.store')->whereUuid('round');
+        Route::post('rounds/{round}/auto-reveal', [PokerAutoRevealsController::class, 'store'])->name('poker.rounds.auto-reveal.store')->whereUuid('round');
+
         Route::post('tasks/{task}/rounds', [PokerRoundsController::class, 'store'])->name('poker.tasks.rounds.store')->whereUuid('task');
         Route::get('tasks/{task}/rounds', [PokerRoundsController::class, 'index'])->name('poker.tasks.rounds.index')->whereUuid('task');
         Route::put('tasks/{task}/estimate', [PokerTaskEstimatesController::class, 'update'])->name('poker.tasks.estimate.update')->whereUuid('task');

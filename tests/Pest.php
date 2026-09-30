@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\Retros\GuestCookie;
+use App\Contracts\PokerPresenceRoster;
 use App\Enums\PokerDeck;
 use App\Enums\WorkspaceRole;
 use App\Models\Participant;
@@ -268,4 +269,23 @@ function pokerPayloadJson(array|string $payload): string
 function pokerPayloadExposes(array|string $payload, PokerPlayer $player, string $value): bool
 {
     return str_contains(pokerPayloadJson($payload), "\"playerId\":\"{$player->id}\",\"value\":\"{$value}\"");
+}
+
+/**
+ * @param  array<int, string>|null  $playerIds
+ */
+function fakePokerRoster(?array $playerIds): void
+{
+    app()->instance(PokerPresenceRoster::class, new class($playerIds) implements PokerPresenceRoster
+    {
+        /**
+         * @param  array<int, string>|null  $playerIds
+         */
+        public function __construct(private ?array $playerIds) {}
+
+        public function playerIds(PokerGame $game): ?array
+        {
+            return $this->playerIds;
+        }
+    });
 }

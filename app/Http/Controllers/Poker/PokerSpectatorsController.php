@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Poker;
 
+use App\Actions\Poker\AutoRevealPokerRound;
 use App\Actions\Poker\PokerGuard;
 use App\Actions\Poker\SetPokerSpectator;
 use App\Http\Controllers\Controller;
@@ -13,7 +14,7 @@ use Illuminate\Support\Facades\DB;
 
 class PokerSpectatorsController extends Controller
 {
-    public function update(Request $request, PokerGame $game, PokerPlayer $player, SetPokerSpectator $setPokerSpectator): Response
+    public function update(Request $request, PokerGame $game, PokerPlayer $player, SetPokerSpectator $setPokerSpectator, AutoRevealPokerRound $autoRevealPokerRound): Response
     {
         $requester = PokerPlayer::current($request);
 
@@ -33,7 +34,20 @@ class PokerSpectatorsController extends Controller
             $setPokerSpectator->handle($locked, $player, (bool) $validated['spectator']);
         });
 
+        if ((bool) $validated['spectator']) {
+            $this->revealIfEveryoneVoted($game, $autoRevealPokerRound);
+        }
+
         return response()->noContent();
+    }
+
+    private function revealIfEveryoneVoted(PokerGame $game, AutoRevealPokerRound $autoRevealPokerRound): void
+    {
+        $openRound = $game->fresh()?->latestRoundOfCurrentTask();
+
+        if ($openRound !== null) {
+            $autoRevealPokerRound->handle($openRound);
+        }
     }
 
     private function authorizeSwitch(PokerGame $game, PokerPlayer $requester, PokerPlayer $target): void

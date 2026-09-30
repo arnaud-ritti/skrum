@@ -2,7 +2,9 @@
 
 namespace App\Providers;
 
+use App\Contracts\PokerPresenceRoster;
 use App\Models\Passkey;
+use App\Support\Poker\ReverbPokerPresenceRoster;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\DevCommands;
 use Illuminate\Mail\Markdown;
@@ -19,7 +21,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(PokerPresenceRoster::class, fn (): PokerPresenceRoster => new ReverbPokerPresenceRoster);
     }
 
     /**
