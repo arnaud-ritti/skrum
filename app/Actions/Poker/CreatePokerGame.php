@@ -1,0 +1,33 @@
+<?php
+
+namespace App\Actions\Poker;
+
+use App\Models\PokerGame;
+use App\Models\Team;
+use App\Models\User;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+
+class CreatePokerGame
+{
+    public function handle(Team $team, User $creator, NewPokerGame $new): PokerGame
+    {
+        return DB::transaction(function () use ($team, $creator, $new): PokerGame {
+            $game = $team->pokerGames()->create([
+                'title' => $new->title,
+                'deck' => $new->deck,
+                'cards' => $new->cards,
+                'deck_name' => $new->deckName,
+                'anonymous_votes' => $new->anonymousVotes,
+                'auto_reveal' => $new->autoReveal,
+                'guest_token' => Str::random(40),
+            ]);
+
+            $player = $game->players()->create(['user_id' => $creator->id]);
+
+            $game->update(['facilitator_player_id' => $player->id]);
+
+            return $game;
+        });
+    }
+}

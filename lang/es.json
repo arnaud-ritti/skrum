@@ -966,5 +966,8 @@
     "You no longer have access to this game.": "Ya no tienes acceso a esta partida.",
     "Voting is closed for this round.": "La votación de esta ronda está cerrada.",
     "Join a planning poker game": "Unirse a una partida de planning poker",
-    "Choose the name other players will see.": "Elige el nombre que verán los demás jugadores."
+    "Choose the name other players will see.": "Elige el nombre que verán los demás jugadores.",
+    "Give between 2 and 20 cards.": "Indica entre 2 y 20 cartas.",
+    "Each card can appear only once.": "Cada carta solo puede aparecer una vez.",
+    "Add at least one card that can be an estimate.": "Añade al menos una carta que pueda ser una estimación."
 }

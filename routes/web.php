@@ -54,6 +54,7 @@ use App\Http\Controllers\TeamHealthStatementArchivalsController;
 use App\Http\Controllers\TeamHealthStatementOrdersController;
 use App\Http\Controllers\TeamHealthStatementsController;
 use App\Http\Controllers\TeamMembersController;
+use App\Http\Controllers\TeamPokerGamesController;
 use App\Http\Controllers\TeamRetrosController;
 use App\Http\Controllers\TeamsController;
 use App\Http\Controllers\WorkspaceActionItemCommentsController;
@@ -119,6 +120,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::patch('teams/{team}', [TeamsController::class, 'update'])->name('teams.update');
             Route::delete('teams/{team}', [TeamsController::class, 'destroy'])->name('teams.destroy');
             Route::post('teams/{team}/retros', [TeamRetrosController::class, 'store'])->name('teams.retros.store');
+            Route::post('teams/{team}/poker-games', [TeamPokerGamesController::class, 'store'])->name('teams.pokerGames.store');
             Route::post('teams/{team}/members', [TeamMembersController::class, 'store'])->name('teams.members.store');
             Route::delete('teams/{team}/members/{member}', [TeamMembersController::class, 'destroy'])->name('teams.members.destroy')->whereUuid('member');
 

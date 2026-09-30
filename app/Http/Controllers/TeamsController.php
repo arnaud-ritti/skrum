@@ -4,8 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Actions\HealthCheck\PresentHealthStatement;
 use App\Actions\HealthCheck\TeamHealthStatements;
+use App\Actions\Poker\PresentPokerGameSummary;
 use App\Actions\Retros\BuildTemplateCatalogue;
+use App\Enums\PokerDeck;
 use App\Enums\TemplateCategory;
+use App\Models\PokerGame;
 use App\Models\Retro;
 use App\Models\Team;
 use App\Models\TeamHealthStatement;
@@ -23,6 +26,7 @@ class TeamsController extends Controller
     public function __construct(
         private TeamHealthStatements $teamHealthStatements,
         private PresentHealthStatement $presentHealthStatement,
+        private PresentPokerGameSummary $presentPokerGameSummary,
     ) {}
 
     public function store(Request $request, Workspace $workspace): RedirectResponse
@@ -75,6 +79,12 @@ class TeamsController extends Controller
                 'isArchived' => $statement->isArchived(),
             ])->values(),
             'canManageHealthStatements' => $request->user()->can('update', $team),
+            'pokerGames' => PresentPokerGameSummary::withCounts($team->pokerGames())
+                ->latest('updated_at')
+                ->get()
+                ->map(fn (PokerGame $game) => $this->presentPokerGameSummary->handle($game)),
+            'pokerDeckOptions' => PokerDeck::options(),
+            'canCreatePokerGame' => $request->user()->can('createPokerGame', $team),
         ]);
     }
 
