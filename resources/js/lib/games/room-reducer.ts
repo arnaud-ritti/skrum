@@ -54,12 +54,29 @@ export function initialRoomState(snapshot: GameSnapshot): GameRoomState {
     return { snapshot, lastEnded: null, resyncRequests: 0 };
 }
 
+/**
+ * A round this client has never seen (a missed `game.round.started`, or a
+ * snapshot older than the event) asks for a fresh snapshot; late events of
+ * the current or just-ended round are simply dropped.
+ */
+function isKnownRound(state: GameRoomState, roundId: string): boolean {
+    return (
+        state.snapshot.round?.id === roundId ||
+        state.snapshot.room.currentRoundId === roundId ||
+        state.lastEnded?.roundId === roundId
+    );
+}
+
 function withRound(
     state: GameRoomState,
     roundId: string,
     update: (round: GameRound) => GameRound,
 ): GameRoomState {
     const round = state.snapshot.round;
+
+    if (!isKnownRound(state, roundId)) {
+        return requestResync(state);
+    }
 
     if (!round || round.id !== roundId) {
         return state;
@@ -200,7 +217,9 @@ export function roomReducer(
             const length = drawingLength(state, action.roundId);
 
             if (length === null) {
-                return state;
+                return isKnownRound(state, action.roundId)
+                    ? state
+                    : requestResync(state);
             }
 
             if (length !== action.count - 1 && length !== action.count) {
@@ -225,7 +244,13 @@ export function roomReducer(
         case 'drawing.undone': {
             const length = drawingLength(state, action.roundId);
 
-            if (length === null || length === action.count) {
+            if (length === null) {
+                return isKnownRound(state, action.roundId)
+                    ? state
+                    : requestResync(state);
+            }
+
+            if (length === action.count) {
                 return state;
             }
 

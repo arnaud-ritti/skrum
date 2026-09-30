@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { GamePanel } from '@/components/games/game-panel';
 import { GameSwitcher } from '@/components/games/game-switcher';
 import { HistoryDrawer } from '@/components/games/history-drawer';
@@ -77,6 +77,40 @@ function useUnknownPlayerRefetch(
 }
 
 /**
+ * The board's copy of the game only seeds the room on mount (the component
+ * is keyed by room id). A later board snapshot may predate game events the
+ * room already applied, so it asks for the room's own buffered refetch,
+ * which is sequenced with those events, instead of replacing the state.
+ */
+function useBoardSnapshotRefetch(
+    snapshot: GameSnapshot,
+    refetch: () => Promise<void>,
+): void {
+    const seeded = useRef(snapshot);
+
+    useEffect(() => {
+        if (snapshot === seeded.current) {
+            return;
+        }
+
+        seeded.current = snapshot;
+        void refetch();
+    }, [snapshot, refetch]);
+}
+
+/** The board timer is the icebreaker's game timer (spec §5). */
+function withBoardTimer(
+    snapshot: GameSnapshot,
+    timerEndsAt: string | null,
+): GameSnapshot {
+    if (snapshot.room.timerEndsAt === timerEndsAt) {
+        return snapshot;
+    }
+
+    return { ...snapshot, room: { ...snapshot.room, timerEndsAt } };
+}
+
+/**
  * The retro's presence channel carries the game: its members are
  * participants, which are the icebreaker players' presence ids, so live
  * strokes and cursors share one channel (spec §6).
@@ -86,7 +120,7 @@ export function IcebreakerGame({ snapshot }: { snapshot: GameSnapshot }) {
     const { t } = useTrans();
     const room = useGameRoom(snapshot, { subscribe: false });
     const { subscribeGameEvents } = board;
-    const { handleEvent, apply, refetch } = room;
+    const { handleEvent, refetch } = room;
     const timerEndsAt = board.board.retro.timerEndsAt;
 
     useUnknownPlayerRefetch(room.state.snapshot, board.online, refetch);
@@ -96,16 +130,15 @@ export function IcebreakerGame({ snapshot }: { snapshot: GameSnapshot }) {
         [subscribeGameEvents, handleEvent],
     );
 
-    useEffect(() => {
-        apply({ type: 'replace', snapshot });
-    }, [snapshot, apply]);
+    useBoardSnapshotRefetch(snapshot, refetch);
 
-    useEffect(() => {
-        apply({ type: 'timer.set', timerEndsAt });
-    }, [timerEndsAt, apply]);
+    const gameSnapshot = useMemo(
+        () => withBoardTimer(room.state.snapshot, timerEndsAt),
+        [room.state.snapshot, timerEndsAt],
+    );
 
     const ctx: RoomContextValue = {
-        snapshot: room.state.snapshot,
+        snapshot: gameSnapshot,
         lastEnded: room.state.lastEnded,
         dispatch: room.dispatch,
         apply: room.apply,
@@ -117,7 +150,7 @@ export function IcebreakerGame({ snapshot }: { snapshot: GameSnapshot }) {
         serverOffset: room.serverOffset,
         sessionExpired: board.sessionExpired || room.sessionExpired,
     };
-    const { room: info, games } = room.state.snapshot;
+    const { room: info, games } = gameSnapshot;
     const gameLabel =
         games.find((option) => option.value === info.game)?.label ?? info.game;
 
