@@ -67,6 +67,12 @@ class Team extends Model
         return $this->hasMany(SavedPokerDeck::class);
     }
 
+    /** @return HasMany<GameRoom, $this> */
+    public function gameRooms(): HasMany
+    {
+        return $this->hasMany(GameRoom::class);
+    }
+
     /** @return HasMany<TeamIntegration, $this> */
     public function integrations(): HasMany
     {

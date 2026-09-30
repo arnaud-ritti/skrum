@@ -12,6 +12,9 @@ use App\Mcp\McpGrant;
 use App\Mcp\Servers\SkrumServer;
 use App\Models\ActionItem;
 use App\Models\Card;
+use App\Models\GamePlayer;
+use App\Models\GameRoom;
+use App\Models\GameRound;
 use App\Models\Participant;
 use App\Models\PersonalAccessToken;
 use App\Models\PokerGame;
@@ -863,4 +866,74 @@ function jiraCreateMeta(bool $assignee = true, bool $priority = true, ?array $pr
     }
 
     return ['startAt' => 0, 'maxResults' => 200, 'total' => count($fields), 'fields' => $fields];
+}
+
+/**
+ * @return array{0: User, 1: GamePlayer}
+ */
+function gameRoomMember(GameRoom $room): array
+{
+    $user = teamMember($room->team);
+
+    return [$user, GamePlayer::factory()->create(['game_room_id' => $room->id, 'user_id' => $user->id])];
+}
+
+/**
+ * @return array{0: User, 1: GamePlayer}
+ */
+function gameRoomHost(GameRoom $room): array
+{
+    [$user, $player] = gameRoomMember($room);
+
+    $room->forceFill(['host_player_id' => $player->id])->save();
+
+    return [$user, $player];
+}
+
+function gameRoomGuest(GameRoom $room, string $secret = 'secret'): GamePlayer
+{
+    return GamePlayer::factory()->guest($secret)->create(['game_room_id' => $room->id]);
+}
+
+/**
+ * @return array<string, string>
+ */
+function gameGuestCookie(GamePlayer $player, string $secret = 'secret'): array
+{
+    return [GuestCookie::name(GuestCookie::GameScope, $player->game_room_id) => "{$player->id}|{$secret}"];
+}
+
+/**
+ * @param  array<string, mixed>  $attributes
+ */
+function activeGameRound(GameRoom $room, array $attributes = []): GameRound
+{
+    $round = GameRound::factory()->create([
+        'game_room_id' => $room->id,
+        'game' => $room->game,
+        ...$attributes,
+    ]);
+
+    $room->forceFill(['current_round_id' => $round->id])->save();
+
+    return $round;
+}
+
+/**
+ * @param  array<array-key, mixed>|string  $payload
+ */
+function gamePayloadJson(array|string $payload): string
+{
+    return is_string($payload) ? $payload : (string) json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+}
+
+/**
+ * The word as a JSON string value, case-insensitively: masks carry single
+ * letters, never the word itself.
+ *
+ * @param  array<array-key, mixed>|string  $payload
+ */
+function gamePayloadExposesWord(array|string $payload, string $word): bool
+{
+    return str_contains(mb_strtolower(gamePayloadJson($payload)), '"'.mb_strtolower($word).'"');
 }

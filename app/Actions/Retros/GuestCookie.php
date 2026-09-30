@@ -11,6 +11,8 @@ class GuestCookie
 
     public const PokerScope = 'poker';
 
+    public const GameScope = 'game';
+
     private const LifetimeMinutes = 60 * 24 * 30;
 
     /** @return non-empty-string */

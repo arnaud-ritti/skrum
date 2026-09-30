@@ -1391,5 +1391,9 @@
     "Priority for :level": "Priorität für :level",
     "Default (:name)": "Standard (:name)",
     "Don't set": "Nicht setzen",
-    "Priority mapping saved.": "Prioritätszuordnung gespeichert."
+    "Priority mapping saved.": "Prioritätszuordnung gespeichert.",
+    "Draw & Guess": "Zeichnen & Raten",
+    "Sprint in one GIF": "Der Sprint in einem GIF",
+    "Hangman": "Galgenmännchen",
+    "Decoded": "Entschlüsselt"
 }

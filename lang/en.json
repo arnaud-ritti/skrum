@@ -1145,5 +1145,9 @@
     "Priority for :level": "Priority for :level",
     "Default (:name)": "Default (:name)",
     "Don't set": "Don't set",
-    "Priority mapping saved.": "Priority mapping saved."
+    "Priority mapping saved.": "Priority mapping saved.",
+    "Draw & Guess": "Draw & Guess",
+    "Sprint in one GIF": "Sprint in one GIF",
+    "Hangman": "Hangman",
+    "Decoded": "Decoded"
 }
