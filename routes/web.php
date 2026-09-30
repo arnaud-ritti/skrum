@@ -25,6 +25,7 @@ use App\Http\Controllers\Retros\RetroGifsController;
 use App\Http\Controllers\Retros\RetroGuestTokensController;
 use App\Http\Controllers\Retros\RetroHighlightsController;
 use App\Http\Controllers\Retros\RetroPhasesController;
+use App\Http\Controllers\Retros\RetroRotiController;
 use App\Http\Controllers\Retros\RetrosController;
 use App\Http\Controllers\Retros\RetroSettingsController;
 use App\Http\Controllers\Retros\RetroSnapshotsController;
@@ -137,6 +138,8 @@ Route::prefix('retros/{retro}')
         Route::post('guest-token', [RetroGuestTokensController::class, 'store'])->name('retros.guest-token.store');
         Route::put('facilitator', [RetroFacilitatorsController::class, 'update'])->name('retros.facilitator.update');
         Route::get('snapshot', [RetroSnapshotsController::class, 'show'])->name('retros.snapshot.show');
+        Route::put('roti', [RetroRotiController::class, 'update'])->name('retros.roti.update');
+        Route::delete('roti', [RetroRotiController::class, 'destroy'])->name('retros.roti.destroy');
         Route::put('health-check/{statement}', [HealthCheckAnswersController::class, 'update'])->name('retros.health-check.update')->where('statement', '[A-Za-z0-9_-]{1,64}');
         Route::delete('health-check/{statement}', [HealthCheckAnswersController::class, 'destroy'])->name('retros.health-check.destroy')->where('statement', '[A-Za-z0-9_-]{1,64}');
         Route::post('columns', [ColumnsController::class, 'store'])->name('retros.columns.store');

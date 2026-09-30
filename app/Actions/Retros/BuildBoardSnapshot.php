@@ -107,6 +107,7 @@ class BuildBoardSnapshot
             'actionItems' => $retro->actionItems->sortBy('created_at')
                 ->map(fn (ActionItem $item) => $this->presentActionItem->handle($item))
                 ->values()->all(),
+            'roti' => $this->roti($retro, $viewer),
             'surveys' => $this->presentSurvey->many($retro, $viewer),
             'healthCheck' => $this->presentHealthCheck->handle($retro, $viewer),
             'votesCast' => $retro->phase === RetroPhase::Voting ? (int) $voteTotals->sum() : null,
@@ -171,5 +172,21 @@ class BuildBoardSnapshot
             ->get(['id', 'name'])
             ->map(fn (User $user) => ['userId' => $user->id, 'name' => $user->name])
             ->all();
+    }
+
+    /**
+     * @return array{
+     *     myScore: ?int,
+     *     respondents: int
+     * }
+     */
+    private function roti(Retro $retro, Participant $viewer): array
+    {
+        $myScore = $retro->rotiVotes()->where('participant_id', $viewer->id)->value('score');
+
+        return [
+            'myScore' => $myScore === null ? null : (int) $myScore,
+            'respondents' => $retro->rotiVotes()->count(),
+        ];
     }
 }

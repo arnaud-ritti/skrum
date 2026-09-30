@@ -121,6 +121,12 @@ class Retro extends Model
         return $this->hasMany(Vote::class);
     }
 
+    /** @return HasMany<RotiVote, $this> */
+    public function rotiVotes(): HasMany
+    {
+        return $this->hasMany(RotiVote::class);
+    }
+
     /** @return HasMany<ActionItem, $this> */
     public function actionItems(): HasMany
     {
