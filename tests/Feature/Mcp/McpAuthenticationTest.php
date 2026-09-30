@@ -86,10 +86,11 @@ it('refuses a token without the read scope', function () {
 
 it('never authenticates with a session cookie', function () {
     $user = User::factory()->create();
+    $headers = ['Accept' => 'application/json, text/event-stream'];
+    $payload = ['jsonrpc' => '2.0', 'id' => 1, 'method' => 'tools/list'];
 
-    $this->actingAs($user);
-
-    postMcp(null)->assertUnauthorized();
+    $this->actingAs($user)->postJson('/mcp', $payload, $headers)->assertUnauthorized();
+    $this->actingAs($user)->postJson('/mcp', $payload, [...$headers, 'Authorization' => 'Bearer bogus'])->assertUnauthorized();
 });
 
 it('refuses users whose email is not verified', function () {

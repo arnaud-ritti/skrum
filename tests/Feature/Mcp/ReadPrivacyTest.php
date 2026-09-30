@@ -30,7 +30,7 @@ use App\Models\Vote;
 use Illuminate\Log\Events\MessageLogged;
 use Illuminate\Support\Facades\Event;
 
-it('never returns emails, guest secrets or guest links', function (string $tool, Closure $arguments, Closure $expected) {
+it('never returns emails, guest secrets or guest links', function (string $tool, Closure $arguments, Closure $expected, bool $showsGuestName = false) {
     configureLlm();
     $retro = Retro::factory()->withGuestAccess()->withHealthCheck()->inPhase(RetroPhase::Completed)->create([
         'title' => 'Privacy board',
@@ -54,13 +54,21 @@ it('never returns emails, guest secrets or guest links', function (string $tool,
 
     $json = json_encode(mcpStructured(actingAsMcp($user)->tool($tool, $arguments($retro))->assertOk()));
 
-    expect($json)->toContain($expected($retro, $user))
+    expect($json)->toContain(...(array) $expected($retro, $user))
         ->and($json)->not->toContain($user->email)
         ->and($json)->not->toContain($retro->guest_token)
         ->and($json)->not->toContain($guest->guest_secret_hash)
         ->and($json)->not->toContain('"secret"')
         ->and($json)->not->toContain('/join/')
         ->and($json)->not->toMatch('/[\w.+-]+@[\w-]+\.[\w.]+/');
+
+    if ($showsGuestName) {
+        expect($json)->toContain('Zorgon Guestname');
+
+        return;
+    }
+
+    expect($json)->not->toContain('Zorgon Guestname');
 })->with([
     'teams' => [ListTeams::class, fn (Retro $retro) => [], fn (Retro $retro) => $retro->team->name],
     'members' => [ListTeamMembers::class, fn (Retro $retro) => ['team_id' => $retro->team_id], fn (Retro $retro, User $user) => $user->name],
@@ -68,11 +76,11 @@ it('never returns emails, guest secrets or guest links', function (string $tool,
     'search' => [SearchBoards::class, fn (Retro $retro) => ['query' => 'privacy'], fn () => 'Privacy board'],
     'actions' => [ListActionItems::class, fn (Retro $retro) => ['status' => 'all'], fn () => 'Privacy action'],
     'board actions' => [ListBoardActionItems::class, fn (Retro $retro) => ['board_id' => $retro->id], fn () => 'Privacy action'],
-    'messages' => [ListMessages::class, fn (Retro $retro) => ['board_id' => $retro->id], fn () => 'Privacy card'],
-    'summary' => [GetSummary::class, fn (Retro $retro) => ['board_id' => $retro->id], fn () => 'Privacy summary'],
+    'messages' => [ListMessages::class, fn (Retro $retro) => ['board_id' => $retro->id], fn () => 'Privacy card', true],
+    'summary' => [GetSummary::class, fn (Retro $retro) => ['board_id' => $retro->id], fn () => 'Privacy summary', true],
     'insights' => [ListInsights::class, fn (Retro $retro) => ['board_id' => $retro->id], fn () => 'Privacy theme'],
-    'health' => [GetHealth::class, fn (Retro $retro) => ['board_id' => $retro->id], fn () => '"status":"completed"'],
-    'roti' => [GetRoti::class, fn (Retro $retro) => ['board_id' => $retro->id], fn () => '"average":4'],
+    'health' => [GetHealth::class, fn (Retro $retro) => ['board_id' => $retro->id], fn () => ['"status":"completed"', '"key":"vision","label":"Vision","average":8', '"score":8'], false],
+    'roti' => [GetRoti::class, fn (Retro $retro) => ['board_id' => $retro->id], fn () => ['"average":4', '"myScore":4', '"respondents":1'], false],
 ]);
 
 it('never returns the viewer as a voter of a card', function () {
@@ -83,7 +91,8 @@ it('never returns the viewer as a voter of a card', function () {
 
     $json = json_encode(mcpStructured(actingAsMcp($user)->tool(ListMessages::class, ['board_id' => $retro->id])));
 
-    expect($json)->not->toContain('myVotes')
+    expect($json)->toContain($card->content)
+        ->and($json)->not->toContain('myVotes')
         ->and($json)->not->toContain('voters');
 });
 
@@ -96,16 +105,20 @@ it('keeps the bearer token out of logged exception context', function () {
 
         $logged[] = "{$event->message}\n{$context}";
     });
-    app()->bind(McpContext::class, fn () => throw new RuntimeException('resolver crash'));
     $user = teamMember(Team::factory()->create());
     $token = issueTestMcpToken($user);
+    app()->bind(McpContext::class, fn () => throw new RuntimeException('resolver crash'));
 
-    postMcp($token, [
-        'jsonrpc' => '2.0',
-        'id' => 1,
-        'method' => 'tools/call',
-        'params' => ['name' => 'retro.teams.list', 'arguments' => []],
-    ]);
+    try {
+        postMcp($token, [
+            'jsonrpc' => '2.0',
+            'id' => 1,
+            'method' => 'tools/call',
+            'params' => ['name' => 'retro.teams.list', 'arguments' => []],
+        ]);
+    } finally {
+        app()->offsetUnset(McpContext::class);
+    }
 
     $plainSecret = explode('|', $token, 2)[1];
 

@@ -63,13 +63,15 @@ it('lists exactly the tools of the granted scopes', function (array $scopes, arr
     'every scope' => [McpScope::cases(), [...$readTools, ...$writeTools, 'retro.board.messages.delete_own']],
 ]);
 
-it('hides the insight tools without an LLM provider', function () use ($insightTools) {
+it('hides the insight tools without an LLM provider', function () use ($readTools, $writeTools, $insightTools) {
     $user = teamMember(Team::factory()->create());
 
     $listed = mcpToolNames(actingAsMcp($user, McpScope::cases()));
 
-    expect($listed)->toHaveCount(22)
-        ->and(array_intersect($listed, $insightTools))->toBe([]);
+    $expected = array_values(array_diff([...$readTools, ...$writeTools, 'retro.board.messages.delete_own'], $insightTools));
+    sort($expected);
+
+    expect($listed)->toBe($expected);
 });
 
 it('refuses calls to tools outside the grant', function (string $name) {
