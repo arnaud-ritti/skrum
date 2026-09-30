@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\Retros\GuestCookie;
+use App\Contracts\GamePresenceRoster;
 use App\Contracts\PokerPresenceRoster;
 use App\Enums\IntegrationAccess;
 use App\Enums\IntegrationProvider;
@@ -959,4 +960,23 @@ function gamePayloadExposesWord(array|string $payload, string $word): bool
 function bindGameRules(GameRules ...$rules): void
 {
     app()->instance(GameRulesRegistry::class, new GameRulesRegistry(array_values($rules)));
+}
+
+/**
+ * @param  array<int, string>|null  $presenceIds
+ */
+function fakeGameRoster(?array $presenceIds): void
+{
+    app()->instance(GamePresenceRoster::class, new class($presenceIds) implements GamePresenceRoster
+    {
+        /**
+         * @param  array<int, string>|null  $presenceIds
+         */
+        public function __construct(private ?array $presenceIds) {}
+
+        public function presenceIds(GameRoom $room): ?array
+        {
+            return $this->presenceIds;
+        }
+    });
 }
