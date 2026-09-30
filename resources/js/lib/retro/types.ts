@@ -51,11 +51,53 @@ export type CardComment = {
 export type CommentThread = CardComment & { replies: CardComment[] };
 
 export type CommentNotificationPayload = {
-    cardId: string;
+    cardId?: string;
+    surveyId?: string;
     commentId: string;
     threadId: string;
     excerpt: string;
     authorName?: string;
+};
+
+export type SurveyKind = 'single' | 'multiple' | 'text';
+
+export type SurveyOption = {
+    id: string;
+    label: string;
+    position: number;
+    count: number | null;
+    voters: string[] | null;
+};
+
+export type SurveyTextAnswer = {
+    id: string;
+    text: string;
+    authorId: string | null;
+    isMine: boolean;
+};
+
+export type SurveyComment = Omit<CardComment, 'cardId'> & { surveyId: string };
+
+export type SurveyCommentThread = SurveyComment & { replies: SurveyComment[] };
+
+export type SurveyPayload = {
+    id: string;
+    kind: SurveyKind;
+    question: string;
+    description: string | null;
+    position: number;
+    isClosed: boolean;
+    version: number;
+    showVoters: boolean;
+    responseCount: number;
+    myOptionIds: string[];
+    myText: string | null;
+    resultsVisible: boolean;
+    options: SurveyOption[];
+    textAnswers: SurveyTextAnswer[] | null;
+    reactions: ReactionSummary[];
+    commentCount: number;
+    comments: SurveyCommentThread[];
 };
 
 export type BoardCard = CardPayload & {
@@ -150,6 +192,7 @@ export type Snapshot = {
     cards: BoardCard[];
     participants: BoardParticipant[];
     actionItems: ActionItem[];
+    surveys: SurveyPayload[];
     healthCheck: HealthCheckState | null;
     votesCast: number | null;
     votesVersion: number;

@@ -9,6 +9,7 @@ import type {
     CardPayload,
     CommentNotificationPayload,
     PresenceMember,
+    SurveyComment,
 } from '@/lib/retro/types';
 import type { WhisperChannel } from '@/lib/retro/whisper-transport';
 
@@ -34,6 +35,9 @@ export const RetroEvents = [
     'comment.updated',
     'comment.deleted',
     'health.answered',
+    'survey.changed',
+    'survey.deleted',
+    'survey.discussion.changed',
 ] as const;
 
 /**
@@ -55,6 +59,7 @@ export type RetroChannelHandlers = {
     onJoining: (member: PresenceMember) => void;
     onOwnCard: (card: CardPayload) => void;
     onOwnComment: (comment: CardComment) => void;
+    onOwnSurveyComment: (comment: SurveyComment) => void;
     onCommentNotification: (notification: CommentNotificationPayload) => void;
 };
 
@@ -165,6 +170,11 @@ export function useRetroChannel(
             )
             .listen('.own-comment.saved', (payload: { comment: CardComment }) =>
                 handlers.current.onOwnComment(payload.comment),
+            )
+            .listen(
+                '.own-survey-comment.saved',
+                (payload: { comment: SurveyComment }) =>
+                    handlers.current.onOwnSurveyComment(payload.comment),
             )
             .listen(
                 '.comment.notification',

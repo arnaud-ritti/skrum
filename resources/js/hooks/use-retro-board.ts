@@ -1,4 +1,4 @@
-import { useCallback, useReducer, useRef, useState } from 'react';
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import RetroSnapshotsController from '@/actions/App/Http/Controllers/Retros/RetroSnapshotsController';
 import { useTrans } from '@/hooks/use-trans';
@@ -8,6 +8,11 @@ import {
     seedTotalVersions,
     type BoardAction,
 } from '@/lib/retro/board-reducer';
+import {
+    createSurveyRefetcher,
+    needsSurveyRefetch,
+    type SurveyRefetcher,
+} from '@/lib/retro/survey-api';
 import type {
     ActionItem,
     BoardColumn,
@@ -18,6 +23,7 @@ import type {
     PresenceMember,
     ReactionSummary,
     Snapshot,
+    SurveyComment,
 } from '@/lib/retro/types';
 import { useCommentNotifications } from './use-comment-notifications';
 import { useRetroChannel, type RetroEvent } from './use-retro-channel';
@@ -39,6 +45,7 @@ export function useRetroBoard(initial: Snapshot) {
     const latestRefetch = useRef(0);
     const bufferedActions = useRef<BoardAction[] | null>(null);
     const latestBoard = useRef(board);
+    const surveyRefetcher = useRef<SurveyRefetcher | null>(null);
     const retroId = initial.retro.id;
 
     latestBoard.current = board;
@@ -214,6 +221,49 @@ export function useRetroBoard(initial: Snapshot) {
                         statements: payload.statements as HealthProgress[],
                     });
                     break;
+                case 'survey.changed': {
+                    const surveyId = payload.surveyId as string;
+                    const local = latestBoard.current.surveys.find(
+                        (survey) => survey.id === surveyId,
+                    );
+
+                    apply({
+                        type: 'survey.counts',
+                        surveyId,
+                        responseCount: payload.responseCount as number,
+                    });
+
+                    if (needsSurveyRefetch(local, payload.version as number)) {
+                        surveyRefetcher.current?.schedule(surveyId);
+                    }
+
+                    break;
+                }
+                case 'survey.deleted':
+                    apply({
+                        type: 'survey.remove',
+                        surveyId: payload.surveyId as string,
+                    });
+                    break;
+                case 'survey.discussion.changed': {
+                    const surveyId = payload.surveyId as string;
+
+                    apply({
+                        type: 'survey.counts',
+                        surveyId,
+                        commentCount: payload.commentCount as number,
+                    });
+
+                    if (
+                        latestBoard.current.surveys.find(
+                            (survey) => survey.id === surveyId,
+                        )?.resultsVisible
+                    ) {
+                        surveyRefetcher.current?.schedule(surveyId);
+                    }
+
+                    break;
+                }
                 case 'phase.changed':
                 case 'settings.changed':
                     void refetch();
@@ -251,19 +301,30 @@ export function useRetroBoard(initial: Snapshot) {
         [apply],
     );
 
+    const onOwnSurveyComment = useCallback(
+        (comment: SurveyComment) =>
+            surveyRefetcher.current?.schedule(comment.surveyId),
+        [],
+    );
+
     const onCommentNotification = useCallback(
         (notification: CommentNotificationPayload) => {
-            notifications.notify(notification.cardId);
-            toast(
-                notification.threadId === notification.commentId
-                    ? t('New comment on your card')
-                    : t('New reply in a thread you follow'),
-                {
-                    description: notification.authorName
-                        ? `${notification.authorName}: ${notification.excerpt}`
-                        : notification.excerpt,
-                },
-            );
+            if (notification.cardId) {
+                notifications.notify(notification.cardId);
+            }
+
+            const isReply = notification.threadId !== notification.commentId;
+            const title = isReply
+                ? t('New reply in a thread you follow')
+                : notification.surveyId
+                  ? t('New comment on your survey')
+                  : t('New comment on your card');
+
+            toast(title, {
+                description: notification.authorName
+                    ? `${notification.authorName}: ${notification.excerpt}`
+                    : notification.excerpt,
+            });
         },
         [notifications.notify, t],
     );
@@ -278,6 +339,7 @@ export function useRetroBoard(initial: Snapshot) {
             onJoining,
             onOwnCard,
             onOwnComment,
+            onOwnSurveyComment,
             onCommentNotification,
         },
     );
@@ -320,6 +382,27 @@ export function useRetroBoard(initial: Snapshot) {
         },
         [errorMessage],
     );
+
+    useEffect(() => {
+        const refetcher = createSurveyRefetcher(retroId, {
+            onSurvey: (survey) => {
+                if (isActive.current) {
+                    apply({ type: 'survey.upsert', survey });
+                }
+            },
+            onGone: (surveyId) => apply({ type: 'survey.remove', surveyId }),
+            onError: (error) => {
+                handleError(error);
+            },
+        });
+
+        surveyRefetcher.current = refetcher;
+
+        return () => {
+            refetcher.cancel();
+            surveyRefetcher.current = null;
+        };
+    }, [retroId, apply, handleError]);
 
     const run = useCallback(
         async <T>(mutation: Promise<T>): Promise<T | undefined> => {

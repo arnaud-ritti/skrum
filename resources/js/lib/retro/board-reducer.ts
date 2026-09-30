@@ -8,9 +8,18 @@ import type {
     HealthProgress,
     ReactionSummary,
     Snapshot,
+    SurveyPayload,
 } from './types';
 
 export type BoardAction =
+    | { type: 'survey.upsert'; survey: SurveyPayload }
+    | { type: 'survey.remove'; surveyId: string }
+    | {
+          type: 'survey.counts';
+          surveyId: string;
+          responseCount?: number;
+          commentCount?: number;
+      }
     | { type: 'replace'; snapshot: Snapshot }
     | { type: 'health.progress'; statements: HealthProgress[] }
     | { type: 'health.answer'; key: string; score: number | null }
@@ -467,6 +476,38 @@ export function boardReducer(state: Snapshot, action: BoardAction): Snapshot {
                             : statement,
                     ),
                 },
+            };
+        case 'survey.upsert':
+            return {
+                ...state,
+                surveys: [
+                    ...state.surveys.filter(
+                        (survey) => survey.id !== action.survey.id,
+                    ),
+                    action.survey,
+                ].sort((a, b) => a.position - b.position),
+            };
+        case 'survey.remove':
+            return {
+                ...state,
+                surveys: state.surveys.filter(
+                    (survey) => survey.id !== action.surveyId,
+                ),
+            };
+        case 'survey.counts':
+            return {
+                ...state,
+                surveys: state.surveys.map((survey) =>
+                    survey.id === action.surveyId
+                        ? {
+                              ...survey,
+                              responseCount:
+                                  action.responseCount ?? survey.responseCount,
+                              commentCount:
+                                  action.commentCount ?? survey.commentCount,
+                          }
+                        : survey,
+                ),
             };
     }
 }
