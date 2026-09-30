@@ -5,6 +5,30 @@ use App\Http\Controllers\AvatarsController;
 use App\Http\Controllers\BroadcastAuthorizationsController;
 use App\Http\Controllers\CurrentWorkspaceController;
 use App\Http\Controllers\EmojiDataController;
+use App\Http\Controllers\GameJoinsController;
+use App\Http\Controllers\Games\GameAnswersController;
+use App\Http\Controllers\Games\GameClosuresController;
+use App\Http\Controllers\Games\GameDrawingOpsController;
+use App\Http\Controllers\Games\GameDrawingsController;
+use App\Http\Controllers\Games\GameGifsController;
+use App\Http\Controllers\Games\GameGuessesController;
+use App\Http\Controllers\Games\GameGuestTokensController;
+use App\Http\Controllers\Games\GameHostsController;
+use App\Http\Controllers\Games\GameLettersController;
+use App\Http\Controllers\Games\GameQuestionsController;
+use App\Http\Controllers\Games\GameRevealsController;
+use App\Http\Controllers\Games\GameRoomsController;
+use App\Http\Controllers\Games\GameRoundCluesController;
+use App\Http\Controllers\Games\GameRoundHintsController;
+use App\Http\Controllers\Games\GameRoundPassesController;
+use App\Http\Controllers\Games\GameRoundsController;
+use App\Http\Controllers\Games\GameRoundSecretsController;
+use App\Http\Controllers\Games\GameScoresController;
+use App\Http\Controllers\Games\GameSharesController;
+use App\Http\Controllers\Games\GameSnapshotsController;
+use App\Http\Controllers\Games\GameSwitchesController;
+use App\Http\Controllers\Games\GameTimersController;
+use App\Http\Controllers\Games\GameVotesController;
 use App\Http\Controllers\GifsController;
 use App\Http\Controllers\Integrations\IntegrationAccountsController;
 use App\Http\Controllers\Integrations\IntegrationAuthorizationsController;
@@ -91,6 +115,7 @@ use App\Http\Controllers\Retros\SurveysController;
 use App\Http\Controllers\SsoCallbacksController;
 use App\Http\Controllers\SsoRedirectsController;
 use App\Http\Controllers\TeamEstimatesController;
+use App\Http\Controllers\TeamGameRoomsController;
 use App\Http\Controllers\TeamHealthStatementArchivalsController;
 use App\Http\Controllers\TeamHealthStatementOrdersController;
 use App\Http\Controllers\TeamHealthStatementsController;
@@ -107,6 +132,7 @@ use App\Http\Controllers\WorkspacesController;
 use App\Http\Controllers\WorkspaceTemplatesController;
 use App\Http\Middleware\EnsureIntegrationProviderEnabled;
 use App\Http\Middleware\RememberCurrentWorkspace;
+use App\Http\Middleware\ResolveGamePlayer;
 use App\Http\Middleware\ResolvePokerPlayer;
 use App\Http\Middleware\ResolveRetroParticipant;
 use Illuminate\Support\Facades\Route;
@@ -172,6 +198,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('teams/{team}/poker-decks', [PokerDecksController::class, 'store'])->name('teams.pokerDecks.store');
             Route::patch('teams/{team}/poker-decks/{pokerDeck}', [PokerDecksController::class, 'update'])->name('teams.pokerDecks.update')->whereUuid('pokerDeck');
             Route::delete('teams/{team}/poker-decks/{pokerDeck}', [PokerDecksController::class, 'destroy'])->name('teams.pokerDecks.destroy')->whereUuid('pokerDeck');
+            Route::get('teams/{team}/games', [TeamGameRoomsController::class, 'index'])->name('teams.games.index');
+            Route::post('teams/{team}/games', [TeamGameRoomsController::class, 'store'])->name('teams.games.store');
 
             Route::middleware(EnsureIntegrationProviderEnabled::class)->group(function () {
                 Route::get('teams/{team}/integrations', [TeamIntegrationsController::class, 'index'])->name('teams.integrations.index');
@@ -382,6 +410,46 @@ Route::prefix('poker/{game}')
         Route::put('facilitator', [PokerFacilitatorsController::class, 'update'])->name('poker.facilitator.update');
         Route::put('players/{player}/spectator', [PokerSpectatorsController::class, 'update'])->name('poker.players.spectator.update')->whereUuid('player');
         Route::delete('/', [PokerGamesController::class, 'destroy'])->name('poker.destroy');
+    });
+
+Route::get('play/{guestToken}', [GameJoinsController::class, 'show'])->name('games.join.show');
+Route::post('play/{guestToken}', [GameJoinsController::class, 'store'])->name('games.join.store')->middleware('throttle:10,1,game-join');
+
+Route::prefix('games/{room}')
+    ->whereUuid('room')
+    ->middleware(ResolveGamePlayer::class)
+    ->scopeBindings()
+    ->group(function () {
+        Route::get('/', [GameRoomsController::class, 'show'])->name('games.show');
+        Route::get('snapshot', [GameSnapshotsController::class, 'show'])->name('games.snapshot.show');
+        Route::patch('/', [GameRoomsController::class, 'update'])->name('games.update');
+        Route::delete('/', [GameRoomsController::class, 'destroy'])->name('games.destroy');
+        Route::post('guest-token', [GameGuestTokensController::class, 'store'])->name('games.guest-token.store');
+        Route::put('host', [GameHostsController::class, 'update'])->name('games.host.update');
+        Route::put('game', [GameSwitchesController::class, 'update'])->name('games.game.update');
+        Route::post('rounds', [GameRoundsController::class, 'store'])->name('games.rounds.store');
+        Route::get('rounds', [GameRoundsController::class, 'index'])->name('games.rounds.index');
+        Route::get('rounds/{round}', [GameRoundsController::class, 'show'])->name('games.rounds.show')->whereUuid('round');
+        Route::put('timer', [GameTimersController::class, 'update'])->name('games.timer.update');
+        Route::delete('scores', [GameScoresController::class, 'destroy'])->name('games.scores.destroy');
+        Route::post('shares', [GameSharesController::class, 'store'])->middleware('throttle:5,1,shares')->name('games.shares.store');
+        Route::post('rounds/{round}/pass', [GameRoundPassesController::class, 'store'])->name('games.rounds.pass.store')->whereUuid('round');
+        Route::post('rounds/{round}/letters', [GameLettersController::class, 'store'])->name('games.rounds.letters.store')->whereUuid('round');
+        Route::get('rounds/{round}/secret', [GameRoundSecretsController::class, 'show'])->name('games.rounds.secret.show')->whereUuid('round');
+        Route::post('rounds/{round}/hints', [GameRoundHintsController::class, 'store'])->name('games.rounds.hints.store')->whereUuid('round');
+        Route::post('rounds/{round}/guesses', [GameGuessesController::class, 'store'])->name('games.rounds.guesses.store')->whereUuid('round');
+        Route::post('rounds/{round}/drawing-ops', [GameDrawingOpsController::class, 'store'])->name('games.rounds.drawing-ops.store')->whereUuid('round');
+        Route::delete('rounds/{round}/drawing-ops/last', [GameDrawingOpsController::class, 'destroyLast'])->name('games.rounds.drawing-ops.last.destroy')->whereUuid('round');
+        Route::delete('rounds/{round}/drawing', [GameDrawingsController::class, 'destroy'])->name('games.rounds.drawing.destroy')->whereUuid('round');
+        Route::put('rounds/{round}/clue', [GameRoundCluesController::class, 'update'])->name('games.rounds.clue.update')->whereUuid('round');
+        Route::put('rounds/{round}/question', [GameQuestionsController::class, 'update'])->name('games.rounds.question.update')->whereUuid('round');
+        Route::put('rounds/{round}/answer', [GameAnswersController::class, 'update'])->name('games.rounds.answer.update')->whereUuid('round');
+        Route::delete('rounds/{round}/answer', [GameAnswersController::class, 'destroy'])->name('games.rounds.answer.destroy')->whereUuid('round');
+        Route::post('rounds/{round}/reveal', [GameRevealsController::class, 'store'])->name('games.rounds.reveal.store')->whereUuid('round');
+        Route::put('rounds/{round}/vote', [GameVotesController::class, 'update'])->name('games.rounds.vote.update')->whereUuid('round');
+        Route::delete('rounds/{round}/vote', [GameVotesController::class, 'destroy'])->name('games.rounds.vote.destroy')->whereUuid('round');
+        Route::post('rounds/{round}/close', [GameClosuresController::class, 'store'])->name('games.rounds.close.store')->whereUuid('round');
+        Route::get('gifs', [GameGifsController::class, 'index'])->name('games.gifs.index');
     });
 
 Route::post('broadcasting/auth', [BroadcastAuthorizationsController::class, 'store'])->name('broadcasting.auth');

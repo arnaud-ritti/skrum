@@ -47,6 +47,11 @@ class TeamPolicy
         return $this->view($user, $team);
     }
 
+    public function createGameRoom(User $user, Team $team): bool
+    {
+        return $this->view($user, $team);
+    }
+
     public function manageIntegrations(User $user, Team $team): bool
     {
         return $user->canManage($team->workspace);

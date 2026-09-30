@@ -1,7 +1,9 @@
 <?php
 
 use App\Actions\Retros\GuestCookie;
+use App\Contracts\GamePresenceRoster;
 use App\Contracts\PokerPresenceRoster;
+use App\Enums\GameKind;
 use App\Enums\IntegrationAccess;
 use App\Enums\IntegrationProvider;
 use App\Enums\McpScope;
@@ -12,6 +14,10 @@ use App\Mcp\McpGrant;
 use App\Mcp\Servers\SkrumServer;
 use App\Models\ActionItem;
 use App\Models\Card;
+use App\Models\GamePlayer;
+use App\Models\GamePoint;
+use App\Models\GameRoom;
+use App\Models\GameRound;
 use App\Models\Participant;
 use App\Models\PersonalAccessToken;
 use App\Models\PokerGame;
@@ -27,11 +33,14 @@ use App\Models\Team;
 use App\Models\TeamIntegration;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Support\Games\GameRules;
+use App\Support\Games\GameRulesRegistry;
 use App\Support\Integrations\OAuthState;
 use Carbon\CarbonInterface;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request as HttpRequest;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 use Laravel\Mcp\Server\Testing\PendingTestResponse;
 use Laravel\Mcp\Server\Testing\TestResponse as McpTestResponse;
@@ -863,4 +872,235 @@ function jiraCreateMeta(bool $assignee = true, bool $priority = true, ?array $pr
     }
 
     return ['startAt' => 0, 'maxResults' => 200, 'total' => count($fields), 'fields' => $fields];
+}
+
+/**
+ * @return array{0: User, 1: GamePlayer}
+ */
+function gameRoomMember(GameRoom $room): array
+{
+    $user = teamMember($room->team);
+
+    return [$user, GamePlayer::factory()->create(['game_room_id' => $room->id, 'user_id' => $user->id])];
+}
+
+/**
+ * @return array{0: User, 1: GamePlayer}
+ */
+function gameRoomHost(GameRoom $room): array
+{
+    [$user, $player] = gameRoomMember($room);
+
+    $room->forceFill(['host_player_id' => $player->id])->save();
+
+    return [$user, $player];
+}
+
+function gameRoomGuest(GameRoom $room, string $secret = 'secret'): GamePlayer
+{
+    return GamePlayer::factory()->guest($secret)->create(['game_room_id' => $room->id]);
+}
+
+/**
+ * @return array<string, string>
+ */
+function gameGuestCookie(GamePlayer $player, string $secret = 'secret'): array
+{
+    return [GuestCookie::name(GuestCookie::GameScope, $player->game_room_id) => "{$player->id}|{$secret}"];
+}
+
+/**
+ * @param  array<string, mixed>  $attributes
+ */
+function activeGameRound(GameRoom $room, array $attributes = []): GameRound
+{
+    $round = GameRound::factory()->create([
+        'game_room_id' => $room->id,
+        'game' => $room->game,
+        ...$attributes,
+    ]);
+
+    $room->forceFill(['current_round_id' => $round->id])->save();
+
+    return $round;
+}
+
+/**
+ * @param  array<array-key, mixed>|string  $payload
+ */
+function gamePayloadJson(array|string $payload): string
+{
+    return is_string($payload) ? $payload : (string) json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+}
+
+/**
+ * The word as a JSON string value, or as a whole word anywhere in the
+ * payload, ignoring case and accents: masks carry single letters, never the
+ * word itself.
+ *
+ * @param  array<array-key, mixed>|string  $payload
+ */
+function gamePayloadExposesWord(array|string $payload, string $word): bool
+{
+    $json = mb_strtolower(gamePayloadJson($payload));
+
+    if (str_contains($json, '"'.mb_strtolower($word).'"')) {
+        return true;
+    }
+
+    foreach ([[$json, $word], [Str::ascii($json), Str::ascii($word)]] as [$haystack, $needle]) {
+        $pattern = '/(?<![\p{L}\p{N}])'.preg_quote($needle, '/').'(?![\p{L}\p{N}])/iu';
+
+        if (preg_match($pattern, $haystack) === 1) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+function bindGameRules(GameRules ...$rules): void
+{
+    app()->instance(GameRulesRegistry::class, new GameRulesRegistry(array_values($rules)));
+}
+
+/**
+ * @param  array<int, string>|null  $presenceIds
+ */
+function fakeGameRoster(?array $presenceIds): void
+{
+    app()->instance(GamePresenceRoster::class, new class($presenceIds) implements GamePresenceRoster
+    {
+        /**
+         * @param  array<int, string>|null  $presenceIds
+         */
+        public function __construct(private ?array $presenceIds) {}
+
+        public function presenceIds(GameRoom $room): ?array
+        {
+            return $this->presenceIds;
+        }
+    });
+}
+
+/**
+ * An active Draw & Guess or Decoded round in a link room: the host, the
+ * leader and a guesser joined in that order.
+ *
+ * @param  array<string, mixed>  $roundAttributes
+ * @return array{room: GameRoom, hostUser: User, host: GamePlayer, leaderUser: User, leader: GamePlayer, guesserUser: User, guesser: GamePlayer, round: GameRound}
+ */
+function wordGuessTable(GameKind $game = GameKind::DrawAndGuess, string $word = 'rocket', array $roundAttributes = []): array
+{
+    $room = GameRoom::factory()->game($game)->linkAccess()->create();
+    [$hostUser, $host] = gameRoomHost($room);
+    [$leaderUser, $leader] = gameRoomMember($room);
+    [$guesserUser, $guesser] = gameRoomMember($room);
+    $round = activeGameRound($room, ['word' => $word, 'leader_player_id' => $leader->id, ...$roundAttributes]);
+
+    return [
+        'room' => $room->fresh(),
+        'hostUser' => $hostUser,
+        'host' => $host,
+        'leaderUser' => $leaderUser,
+        'leader' => $leader,
+        'guesserUser' => $guesserUser,
+        'guesser' => $guesser,
+        'round' => $round,
+    ];
+}
+
+function gameGiphyItem(string $id): array
+{
+    return [
+        'id' => $id,
+        'images' => [
+            'fixed_width' => ['url' => "https://media.giphy.com/{$id}/200w.gif", 'webp' => "https://media.giphy.com/{$id}/200w.webp", 'width' => '200', 'height' => '150'],
+            'original' => ['url' => "https://media.giphy.com/{$id}/giphy.gif", 'webp' => "https://media.giphy.com/{$id}/giphy.webp", 'width' => '480', 'height' => '360'],
+        ],
+    ];
+}
+
+function fakeGameGifs(string ...$ids): void
+{
+    config(['services.gifs' => ['provider' => 'giphy', 'key' => 'game-gif-key', 'rating' => 'pg']]);
+
+    Http::fake(function (HttpRequest $request) use ($ids) {
+        $endpoint = basename((string) parse_url($request->url(), PHP_URL_PATH));
+
+        if (in_array($endpoint, ['search', 'trending'], true)) {
+            return Http::response(['data' => array_map(fn (string $id): array => gameGiphyItem($id), $ids)]);
+        }
+
+        if (in_array($endpoint, $ids, true)) {
+            return Http::response(['data' => gameGiphyItem($endpoint)]);
+        }
+
+        return Http::response(['message' => 'Not found'], 404);
+    });
+}
+
+function gameGifPayload(string $id): array
+{
+    return [
+        'id' => $id,
+        'previewUrl' => route('gifs.show', ['gif' => $id, 'size' => 'preview'], false),
+        'url' => route('gifs.show', ['gif' => $id, 'size' => 'full'], false),
+    ];
+}
+
+/**
+ * @return array{0: GameRoom, 1: User, 2: GamePlayer}
+ */
+function sprintGifRoom(): array
+{
+    $room = GameRoom::factory()->game(GameKind::SprintGif)->linkAccess()->create();
+    [$user, $host] = gameRoomHost($room);
+
+    return [$room, $user, $host];
+}
+
+/**
+ * @param  array<string, mixed>  $attributes
+ */
+function activeGifRound(GameRoom $room, array $attributes = []): GameRound
+{
+    return activeGameRound($room, [
+        'game' => GameKind::SprintGif,
+        'word' => null,
+        'question' => 'How did the sprint feel?',
+        ...$attributes,
+    ]);
+}
+
+/**
+ * @return array{0: GameRoom, 1: User, 2: GamePlayer, 3: User, 4: GamePlayer}
+ */
+function anonymousGifIcebreaker(): array
+{
+    $retro = Retro::factory()->inPhase(RetroPhase::Icebreaker)->anonymous()->create(['gifs_enabled' => true]);
+    [$facilitatorUser, $facilitator] = retroFacilitator($retro);
+    [$memberUser, $participant] = retroMember($retro);
+    $room = GameRoom::factory()->icebreaker($retro)->game(GameKind::SprintGif)->create();
+    $host = GamePlayer::factory()->forParticipant($facilitator)->create(['game_room_id' => $room->id]);
+    $member = GamePlayer::factory()->forParticipant($participant)->create(['game_room_id' => $room->id]);
+
+    return [$room, $facilitatorUser, $host, $memberUser, $member];
+}
+
+/**
+ * @param  array<string, mixed>  $attributes
+ */
+function awardGamePoints(GameRoom $room, GamePlayer $player, int $points, bool $isWin = false, array $attributes = []): GamePoint
+{
+    return GamePoint::factory()->create([
+        'team_id' => $room->team_id,
+        'game_room_id' => $room->id,
+        'player_id' => $player->id,
+        'user_id' => $player->accountUserId(),
+        'game' => $room->game,
+        'points' => $points,
+        'is_win' => $isWin,
+        ...$attributes,
+    ]);
 }

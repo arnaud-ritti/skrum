@@ -2,6 +2,8 @@
 
 namespace App\Actions\Retros;
 
+use App\Actions\Games\AbandonIcebreakerRound;
+use App\Actions\Games\EnsureIcebreakerRoom;
 use App\Actions\Surveys\CloseOpenSurveys;
 use App\Enums\RetroPhase;
 use App\Events\RetroCompleted;
@@ -17,6 +19,8 @@ class ChangeRetroPhase
         private Llm $llm,
         private QueueRetroSummary $queueRetroSummary,
         private ClearRetroInsights $clearRetroInsights,
+        private AbandonIcebreakerRound $abandonIcebreakerRound,
+        private EnsureIcebreakerRoom $ensureIcebreakerRoom,
     ) {}
 
     /**
@@ -26,7 +30,9 @@ class ChangeRetroPhase
     {
         $this->ensureReachable($locked, $phase);
         $this->abandonSummary($locked, $phase);
+        $this->leaveIcebreaker($locked, $phase);
         $this->move($locked, $phase);
+        $this->enterIcebreaker($locked, $phase);
         $this->closeSurveys($locked, $phase);
         $this->broadcast($locked, $phase);
         $this->announceCompletion($locked, $phase);
@@ -56,6 +62,31 @@ class ChangeRetroPhase
         }
 
         $this->clearRetroInsights->abandon($locked);
+    }
+
+    /**
+     * Read before the move: the phase being left is still on the row.
+     */
+    private function leaveIcebreaker(Retro $locked, RetroPhase $phase): void
+    {
+        if ($locked->phase !== RetroPhase::Icebreaker) {
+            return;
+        }
+
+        if ($phase === RetroPhase::Icebreaker) {
+            return;
+        }
+
+        $this->abandonIcebreakerRound->handle($locked);
+    }
+
+    private function enterIcebreaker(Retro $locked, RetroPhase $phase): void
+    {
+        if ($phase !== RetroPhase::Icebreaker) {
+            return;
+        }
+
+        $this->ensureIcebreakerRoom->handle($locked);
     }
 
     private function move(Retro $locked, RetroPhase $phase): void

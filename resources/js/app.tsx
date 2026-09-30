@@ -52,9 +52,11 @@ void createInertiaApp({
             case name === 'retros/join':
             case name === 'retros/session-ended':
             case name === 'poker/join':
+            case name === 'games/join':
                 return AuthLayout;
             case name === 'retros/show':
             case name === 'poker/show':
+            case name === 'games/show':
                 return null;
             case name.startsWith('auth/'):
                 return AuthLayout;

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Contracts\DeliverySubject;
+use App\Enums\GameKind;
 use App\Enums\RetroPhase;
 use App\Enums\SummaryStatus;
 use App\Events\Retros\ResultsChanged;
@@ -36,6 +37,7 @@ use Illuminate\Support\Carbon;
  * @property bool $presentation_mode
  * @property bool $health_check_enabled
  * @property bool $icebreaker_enabled
+ * @property GameKind $icebreaker_game
  * @property bool $ai_summary_enabled
  * @property string|null $workspace_template_id
  * @property string|null $summary
@@ -56,7 +58,7 @@ use Illuminate\Support\Carbon;
     'guest_access_enabled', 'guest_token', 'timer_ends_at', 'highlighted_card_id', 'completed_at',
     'reactions_enabled', 'cursors_enabled', 'gifs_enabled', 'hide_vote_counts', 'is_locked', 'presentation_mode', 'ai_summary_enabled',
     'health_check_enabled', 'icebreaker_enabled', 'workspace_template_id',
-    'summary', 'summary_generated_at', 'summary_status', 'summary_requested_at',
+    'summary', 'summary_generated_at', 'summary_status', 'summary_requested_at', 'icebreaker_game',
 ])]
 #[Hidden(['guest_token'])]
 class Retro extends Model implements DeliverySubject
@@ -296,6 +298,7 @@ class Retro extends Model implements DeliverySubject
             'ai_summary_enabled' => 'boolean',
             'health_check_enabled' => 'boolean',
             'icebreaker_enabled' => 'boolean',
+            'icebreaker_game' => GameKind::class,
             'votes_per_participant' => 'integer',
             'votes_version' => 'integer',
             'timer_ends_at' => 'datetime',

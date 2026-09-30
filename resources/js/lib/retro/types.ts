@@ -1,3 +1,10 @@
+import type {
+    GameGif,
+    GameKind,
+    GameOption,
+    GameRoundOutcome,
+    GameSnapshot,
+} from '@/lib/games/types';
 import type { IntegrationDelivery, ShareAvailability } from '@/types';
 import type { ExportSource, ExternalLink } from '@/types/integrations';
 
@@ -263,6 +270,7 @@ export type Snapshot = {
         phases: RetroPhase[];
         healthCheckEnabled: boolean;
         icebreakerEnabled: boolean;
+        icebreakerGame: GameKind;
         votesAuto: boolean;
         isAnonymous: boolean;
         reactionsEnabled: boolean;
@@ -308,6 +316,8 @@ export type Snapshot = {
     insights: Insights | null;
     features: { llm: boolean; llmProvider: string | null };
     healthCheck: HealthCheckState | null;
+    icebreaker: GameSnapshot | null;
+    icebreakerGames: GameOption[];
     integrations: ShareAvailability & { email: boolean };
     linkDeliveries: IntegrationDelivery[];
     votesCast: number | null;
@@ -375,12 +385,47 @@ export type RotiResults = {
 
 export type RotiState = { myScore: number | null; respondents: number };
 
+export type GamesPlayedPerson = {
+    playerId: string;
+    name: string;
+    avatarUrl: string;
+    isGuest: boolean;
+};
+
+export type GamesPlayedRound = {
+    id: string;
+    game: GameKind;
+    outcome: GameRoundOutcome;
+    word: string | null;
+    question: string | null;
+    clue: string[] | null;
+    leader: GamesPlayedPerson | null;
+    winner: GamesPlayedPerson | null;
+    answers:
+        | { gif: GameGif; playerId: string | null; votes: number | null }[]
+        | null;
+    endedAt: string;
+};
+
+export type GamesPlayedLeaderRow = GamesPlayedPerson & {
+    points: number;
+    wins: number;
+    roundsPlayed: number;
+};
+
+export type GamesPlayed = {
+    roomId: string;
+    rounds: GamesPlayedRound[];
+    leaderboard: GamesPlayedLeaderRow[];
+    roundsPlayed: number;
+};
+
 export type Results = {
     participants: BoardParticipant[];
     health: HealthResults | null;
     healthTrend: HealthTrendPoint[] | null;
     surveys: SurveyPayload[];
-    games: null;
+    games: GamesPlayed | null;
     roti: RotiResults;
     summary: ResultsSummary | null;
     deliveries: IntegrationDelivery[];

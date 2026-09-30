@@ -1,6 +1,7 @@
 import { Form, Head, Link } from '@inertiajs/react';
 import TeamIntegrationsController from '@/actions/App/Http/Controllers/Integrations/TeamIntegrationsController';
 import RetrosController from '@/actions/App/Http/Controllers/Retros/RetrosController';
+import TeamGameRoomsController from '@/actions/App/Http/Controllers/TeamGameRoomsController';
 import TeamMembersController from '@/actions/App/Http/Controllers/TeamMembersController';
 import TeamsController from '@/actions/App/Http/Controllers/TeamsController';
 import WorkspaceActionItemsController from '@/actions/App/Http/Controllers/WorkspaceActionItemsController';
@@ -24,6 +25,7 @@ import { useTrans } from '@/hooks/use-trans';
 import type {
     CatalogueTemplate,
     CategoryOption,
+    GameOption,
     LlmAvailability,
     MemberSummary,
     PokerDeckOption,
@@ -49,6 +51,7 @@ type Props = {
     healthStatements: TeamHealthStatement[];
     canManageHealthStatements: boolean;
     llm: LlmAvailability;
+    icebreakerGames: GameOption[];
     pokerGames: PokerGameSummary[];
     pokerDeckOptions: PokerDeckOption[];
     canCreatePokerGame: boolean;
@@ -70,6 +73,7 @@ export default function ShowTeam({
     healthStatements,
     canManageHealthStatements,
     llm,
+    icebreakerGames,
     pokerGames,
     pokerDeckOptions,
     canCreatePokerGame,
@@ -99,6 +103,11 @@ export default function ShowTeam({
                             {t('Open action items (:count)', {
                                 count: openActionItemCount,
                             })}
+                        </Link>
+                    </Button>
+                    <Button variant="outline" size="sm" asChild>
+                        <Link href={TeamGameRoomsController.index(params)}>
+                            {t('Games')}
                         </Link>
                     </Button>
                     {canManageIntegrations && (
@@ -147,6 +156,7 @@ export default function ShowTeam({
                             categories={templateCategories}
                             catalogue={catalogue}
                             llm={llm}
+                            icebreakerGames={icebreakerGames}
                         />
                     )}
 

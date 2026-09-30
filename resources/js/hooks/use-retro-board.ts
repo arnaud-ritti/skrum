@@ -26,6 +26,7 @@ import type {
     SurveyComment,
 } from '@/lib/retro/types';
 import type { ExternalLink } from '@/types/integrations';
+import { GameEvents, type GameEvent } from './use-game-channel';
 import { useCommentNotifications } from './use-comment-notifications';
 import { useRetroChannel, type RetroEvent } from './use-retro-channel';
 
@@ -48,6 +49,7 @@ export function useRetroBoard(initial: Snapshot) {
     const bufferedActions = useRef<BoardAction[] | null>(null);
     const latestBoard = useRef(board);
     const surveyRefetcher = useRef<SurveyRefetcher | null>(null);
+    const gameListeners = useRef(new Set<(event: GameEvent) => void>());
     const retroId = initial.retro.id;
 
     latestBoard.current = board;
@@ -414,6 +416,24 @@ export function useRetroBoard(initial: Snapshot) {
         [notifications.notify, t],
     );
 
+    /** The icebreaker panel subscribes while it is mounted. */
+    const subscribeGameEvents = useCallback(
+        (listener: (event: GameEvent) => void) => {
+            gameListeners.current.add(listener);
+
+            return () => {
+                gameListeners.current.delete(listener);
+            };
+        },
+        [],
+    );
+
+    const onGameEvent = useCallback((event: GameEvent) => {
+        for (const listener of gameListeners.current) {
+            listener(event);
+        }
+    }, []);
+
     const { online, connected, reconnecting, presence } = useRetroChannel(
         retroId,
         initial.viewer.participantId,
@@ -427,6 +447,8 @@ export function useRetroBoard(initial: Snapshot) {
             onOwnComment,
             onOwnSurveyComment,
             onCommentNotification,
+            gameEvents: GameEvents,
+            onGameEvent,
         },
     );
 
@@ -542,5 +564,6 @@ export function useRetroBoard(initial: Snapshot) {
         handleError,
         hasActiveCard,
         sessionExpired,
+        subscribeGameEvents,
     };
 }

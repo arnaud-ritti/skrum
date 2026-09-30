@@ -15,6 +15,7 @@ import { useTrans } from '@/hooks/use-trans';
 import { retroRequest } from '@/lib/retro/api';
 import { AiSummarySwitch } from './ai-summary-switch';
 import { useBoard } from './board-context';
+import { IcebreakerGameSelect } from './icebreaker-game-select';
 
 type Props = {
     open: boolean;
@@ -71,6 +72,7 @@ function SettingsForm({ onDone }: { onDone: () => void }) {
     const [icebreakerEnabled, setIcebreakerEnabled] = useState(
         retro.icebreakerEnabled,
     );
+    const [icebreakerGame, setIcebreakerGame] = useState(retro.icebreakerGame);
     const [reactionsEnabled, setReactionsEnabled] = useState(
         retro.reactionsEnabled,
     );
@@ -122,6 +124,10 @@ function SettingsForm({ onDone }: { onDone: () => void }) {
 
         if (icebreakerEnabled !== retro.icebreakerEnabled) {
             changes.icebreaker_enabled = icebreakerEnabled;
+        }
+
+        if (icebreakerGame !== retro.icebreakerGame) {
+            changes.icebreaker_game = icebreakerGame;
         }
 
         if (reactionsEnabled !== retro.reactionsEnabled) {
@@ -266,6 +272,15 @@ function SettingsForm({ onDone }: { onDone: () => void }) {
                     disabled={engagementLocked || retro.phase === 'icebreaker'}
                     onChange={setIcebreakerEnabled}
                 />
+                {icebreakerEnabled && (
+                    <IcebreakerGameSelect
+                        id="retro-icebreaker-game"
+                        value={icebreakerGame}
+                        options={ctx.board.icebreakerGames}
+                        disabled={engagementLocked}
+                        onChange={setIcebreakerGame}
+                    />
+                )}
             </div>
 
             <div className="grid gap-2">

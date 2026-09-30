@@ -29,6 +29,7 @@ import { ConnectionBanner } from './connection-banner';
 import { BoardProvider, type BoardContextValue } from './board-context';
 import { parseDndId, useDragAccessibility } from './dnd';
 import { FlyingReactions } from './flying-reactions';
+import { IcebreakerStage } from './icebreaker-stage';
 import { HideMyCursorKey, LiveCursorLayer } from './live-cursor-layer';
 import { PhasePanel } from './phase-panel';
 import { PresentationOverlay } from './presentation-overlay';
@@ -68,6 +69,7 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
         markCommentsRead,
         reconnecting,
         sessionExpired,
+        subscribeGameEvents,
     } = useRetroBoard(snapshot);
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -125,6 +127,7 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
         isEditable: !board.retro.isLocked,
         unreadCardIds,
         markCommentsRead,
+        subscribeGameEvents,
     };
 
     const activeCard =
@@ -260,6 +263,8 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
                                 >
                                     <ResultsView />
                                 </div>
+                            ) : board.retro.phase === 'icebreaker' ? (
+                                <IcebreakerStage hideMyCursor={hideMyCursor} />
                             ) : (
                                 <div
                                     {...(board.retro.phase === 'completed' && {

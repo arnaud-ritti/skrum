@@ -3,6 +3,7 @@
 namespace App\Support\Gifs;
 
 use App\Models\Card;
+use App\Models\GameGifAnswer;
 use Closure;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
@@ -95,8 +96,8 @@ class GifCatalog
     }
 
     /**
-     * Only GIFs someone searched for recently or that a card uses may be
-     * streamed, so the proxy cannot be used to fetch arbitrary provider content.
+     * Only GIFs someone searched for recently, or that a card or a game
+     * answer uses, may be streamed, so the proxy cannot be used to fetch arbitrary provider content.
      */
     public function servable(string $id): ?Gif
     {
@@ -106,7 +107,10 @@ class GifCatalog
             return $cached;
         }
 
-        if (! Card::query()->where('gif_id', $id)->exists()) {
+        $isUsed = Card::query()->where('gif_id', $id)->exists()
+            || GameGifAnswer::query()->where('gif_id', $id)->exists();
+
+        if (! $isUsed) {
             return null;
         }
 

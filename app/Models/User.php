@@ -47,6 +47,7 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
 
     /** @use HasFactory<UserFactory> */
     use HasFactory;
+
     use HasUuids;
     use Notifiable;
     use PasskeyAuthenticatable;

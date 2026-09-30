@@ -11,6 +11,7 @@ import type {
     PresenceMember,
     SurveyComment,
 } from '@/lib/retro/types';
+import type { GameEvent, GameEventName } from './use-game-channel';
 import type { WhisperChannel } from '@/lib/realtime/whisper-transport';
 
 export const RetroEvents = [
@@ -79,6 +80,9 @@ export type RetroChannelHandlers = {
     onOwnComment: (comment: CardComment) => void;
     onOwnSurveyComment: (comment: SurveyComment) => void;
     onCommentNotification: (notification: CommentNotificationPayload) => void;
+    /** The icebreaker's game events travel on the retro channel (spec §6). */
+    gameEvents: readonly GameEventName[];
+    onGameEvent: (event: GameEvent) => void;
 };
 
 function subscribeToConnection(onChange: () => void): () => void {
@@ -176,6 +180,12 @@ export function useRetroChannel(
         for (const event of RetroEvents) {
             channel.listen(`.${event}`, (payload: Record<string, unknown>) =>
                 handlers.current.onEvent({ name: event, payload }),
+            );
+        }
+
+        for (const event of handlers.current.gameEvents) {
+            channel.listen(`.${event}`, (payload: Record<string, unknown>) =>
+                handlers.current.onGameEvent({ name: event, payload }),
             );
         }
 

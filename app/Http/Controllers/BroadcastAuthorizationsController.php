@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Games\FindGamePlayer;
 use App\Actions\Poker\ResolvePlayer;
 use App\Actions\Retros\ResolveParticipant;
+use App\Contracts\GamePresenceRoster;
+use App\Models\GameRoom;
 use App\Models\Participant;
 use App\Models\PokerGame;
 use App\Models\Retro;
@@ -17,13 +20,22 @@ use Pusher\Pusher;
 
 class BroadcastAuthorizationsController extends Controller
 {
-    public function store(Request $request, ResolveParticipant $resolveParticipant, ResolvePlayer $resolvePlayer): JsonResponse
-    {
+    public function store(
+        Request $request,
+        ResolveParticipant $resolveParticipant,
+        ResolvePlayer $resolvePlayer,
+        FindGamePlayer $findGamePlayer,
+        GamePresenceRoster $gamePresenceRoster,
+    ): JsonResponse {
         /** @var array{socket_id: string, channel_name: string} $validated */
         $validated = $request->validate([
             'socket_id' => ['required', 'string', 'regex:/^\d+\.\d+$/'],
             'channel_name' => ['required', 'string'],
         ]);
+
+        if (str_starts_with($validated['channel_name'], 'presence-game.')) {
+            return $this->authorizeGameChannel($request, $validated, $findGamePlayer, $gamePresenceRoster);
+        }
 
         if (str_starts_with($validated['channel_name'], 'presence-poker.')) {
             return $this->authorizePokerChannel($request, $validated, $resolvePlayer);
@@ -98,6 +110,52 @@ class BroadcastAuthorizationsController extends Controller
         $player = $resolvePlayer->handle($request, $game);
 
         abort_if($player === null, 403);
+
+        $signature = $this->pusher()->authorizePresenceChannel(
+            $validated['channel_name'],
+            $validated['socket_id'],
+            $player->id,
+            [
+                'id' => $player->id,
+                'name' => $player->displayName(),
+                'avatarUrl' => $player->avatarUrl(),
+                'isGuest' => $player->isGuest(),
+            ],
+        );
+
+        return response()->json(json_decode($signature, true));
+    }
+
+    /**
+     * Standalone rooms only (icebreakers play on the retro channel), capped
+     * at twelve distinct online players; a player already online may always
+     * reconnect, and an unreadable roster lets everyone in.
+     *
+     * @param  array{socket_id: string, channel_name: string}  $validated
+     */
+    private function authorizeGameChannel(Request $request, array $validated, FindGamePlayer $findGamePlayer, GamePresenceRoster $gamePresenceRoster): JsonResponse
+    {
+        $roomId = Str::after($validated['channel_name'], 'presence-game.');
+
+        abort_unless(Str::isUuid($roomId), 403);
+
+        $room = GameRoom::query()->find($roomId);
+
+        abort_if($room === null, 403);
+        abort_unless($room->id === $roomId, 403);
+        abort_if($room->isIcebreaker(), 403);
+
+        $player = $findGamePlayer->handle($request, $room);
+
+        abort_if($player === null, 403);
+
+        $online = $gamePresenceRoster->presenceIds($room);
+
+        abort_if(
+            $online !== null && ! in_array($player->id, $online, true) && count($online) >= GameRoom::MaxOnlinePlayers,
+            403,
+            __('This room is full.'),
+        );
 
         $signature = $this->pusher()->authorizePresenceChannel(
             $validated['channel_name'],

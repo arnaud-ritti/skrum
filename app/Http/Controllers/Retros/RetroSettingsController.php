@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers\Retros;
 
+use App\Actions\Games\IcebreakerGameOptions;
 use App\Actions\HealthCheck\FreezeHealthStatements;
 use App\Actions\Retros\RetroGuard;
+use App\Enums\GameKind;
 use App\Enums\RetroPhase;
 use App\Events\Retros\RetroSettingsChanged;
 use App\Http\Controllers\Controller;
@@ -16,18 +18,20 @@ use App\Support\Llm\Llm;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class RetroSettingsController extends Controller
 {
     private const OpenPhaseSettings = [
         'reactions_enabled', 'cursors_enabled', 'gifs_enabled', 'hide_vote_counts', 'is_locked', 'presentation_mode',
-        'health_check_enabled', 'icebreaker_enabled', 'ai_summary_enabled',
+        'health_check_enabled', 'icebreaker_enabled', 'ai_summary_enabled', 'icebreaker_game',
     ];
 
     public function __construct(
         private FreezeHealthStatements $freezeHealthStatements,
         private Llm $llm,
+        private IcebreakerGameOptions $icebreakerGameOptions,
     ) {}
 
     public function update(Request $request, Retro $retro): Response
@@ -49,6 +53,7 @@ class RetroSettingsController extends Controller
             'presentation_mode' => ['sometimes', 'boolean'],
             'health_check_enabled' => ['sometimes', 'boolean'],
             'icebreaker_enabled' => ['sometimes', 'boolean'],
+            'icebreaker_game' => ['sometimes', Rule::enum(GameKind::class), $this->icebreakerGameOptions->rule()],
             'ai_summary_enabled' => ['sometimes', 'boolean'],
         ]);
 

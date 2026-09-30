@@ -4,6 +4,10 @@ namespace App\Actions\Retros;
 
 use App\Actions\ActionItems\ActionItemActor;
 use App\Actions\ActionItems\CarriedActionItems;
+use App\Actions\Games\BuildGameSnapshot;
+use App\Actions\Games\EnsureIcebreakerRoom;
+use App\Actions\Games\ExpireGameRound;
+use App\Actions\Games\IcebreakerGameOptions;
 use App\Actions\HealthCheck\PresentHealthCheck;
 use App\Actions\Integrations\LatestDeliveries;
 use App\Actions\Integrations\ListExportSources;
@@ -16,6 +20,7 @@ use App\Enums\WorkspaceRole;
 use App\Http\Controllers\EmojiDataController;
 use App\Models\ActionItem;
 use App\Models\Card;
+use App\Models\GamePlayer;
 use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\User;
@@ -45,6 +50,10 @@ class BuildBoardSnapshot
         private SharePermissions $sharePermissions,
         private LatestDeliveries $latestDeliveries,
         private ListExportSources $listExportSources,
+        private EnsureIcebreakerRoom $ensureIcebreakerRoom,
+        private ExpireGameRound $expireGameRound,
+        private BuildGameSnapshot $buildGameSnapshot,
+        private IcebreakerGameOptions $icebreakerGameOptions,
     ) {}
 
     /**
@@ -87,6 +96,7 @@ class BuildBoardSnapshot
                 'phases' => array_map(fn (RetroPhase $phase) => $phase->value, $retro->phases()),
                 'healthCheckEnabled' => $retro->health_check_enabled,
                 'icebreakerEnabled' => $retro->icebreaker_enabled,
+                'icebreakerGame' => $retro->icebreaker_game->value,
                 'isAnonymous' => $retro->is_anonymous,
                 'reactionsEnabled' => $retro->reactions_enabled,
                 'cursorsEnabled' => $retro->cursors_enabled,
@@ -149,6 +159,8 @@ class BuildBoardSnapshot
             'surveys' => $surveys,
             'results' => $this->buildResults->handle($retro, $viewer, $surveys),
             'healthCheck' => $this->presentHealthCheck->handle($retro, $viewer),
+            'icebreaker' => $this->icebreaker($retro, $viewer),
+            'icebreakerGames' => $this->icebreakerGameOptions->options(),
             'integrations' => $this->shareOptions->retro($retro, $viewerParticipant),
             'linkDeliveries' => $canShare ? $this->latestDeliveries->handle($retro, [IntegrationDeliveryKind::RetroLink]) : [],
             'votesCast' => $retro->phase === RetroPhase::Voting ? (int) $voteTotals->sum() : null,
@@ -283,5 +295,30 @@ class BuildBoardSnapshot
             'myScore' => $myScore === null ? null : (int) $myScore,
             'respondents' => $retro->rotiVotes()->count(),
         ];
+    }
+
+    /**
+     * The game panel of the Icebreaker phase, as this participant sees it.
+     * The room is created on first need and its expired round closed first,
+     * so a late queue never shows a stale round (spec §5).
+     *
+     * @return array<string, mixed>|null
+     */
+    private function icebreaker(Retro $retro, Participant $viewer): ?array
+    {
+        if ($retro->phase !== RetroPhase::Icebreaker) {
+            return null;
+        }
+
+        $room = $this->ensureIcebreakerRoom->handle($retro);
+
+        $this->expireGameRound->handle($room);
+
+        $player = GamePlayer::query()->firstOrCreate([
+            'game_room_id' => $room->id,
+            'participant_id' => $viewer->id,
+        ]);
+
+        return $this->buildGameSnapshot->handle($room, $player);
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Games\IcebreakerGameOptions;
 use App\Actions\HealthCheck\PresentHealthStatement;
 use App\Actions\HealthCheck\TeamHealthStatements;
 use App\Actions\Poker\PresentPokerGameSummary;
@@ -44,7 +45,7 @@ class TeamsController extends Controller
         return to_route('teams.show', [$workspace, $team]);
     }
 
-    public function show(Request $request, Workspace $workspace, Team $team, Llm $llm, BuildTemplateCatalogue $buildTemplateCatalogue): Response
+    public function show(Request $request, Workspace $workspace, Team $team, Llm $llm, BuildTemplateCatalogue $buildTemplateCatalogue, IcebreakerGameOptions $icebreakerGameOptions): Response
     {
         Gate::authorize('view', $team);
 
@@ -75,6 +76,7 @@ class TeamsController extends Controller
                 'provider' => $llm->providerName(),
             ],
             'canCreateRetro' => $request->user()->can('createRetro', $team),
+            'icebreakerGames' => $icebreakerGameOptions->options(),
             'healthStatements' => $this->teamHealthStatements->all($team)->map(fn (TeamHealthStatement $statement) => [
                 'id' => $statement->id ?? $statement->key(),
                 ...$this->presentHealthStatement->handle($statement),

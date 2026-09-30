@@ -4,6 +4,7 @@ import {
     type Dispatch,
     type ReactNode,
 } from 'react';
+import type { GameEvent } from '@/hooks/use-game-channel';
 import type { BoardAction } from '@/lib/retro/board-reducer';
 import type { PresenceMember, Snapshot } from '@/lib/retro/types';
 import type { WhisperChannel } from '@/lib/realtime/whisper-transport';
@@ -23,6 +24,7 @@ export type BoardContextValue = {
     isEditable: boolean;
     unreadCardIds: Set<string>;
     markCommentsRead: (cardId: string) => void;
+    subscribeGameEvents: (listener: (event: GameEvent) => void) => () => void;
 };
 
 const BoardContext = createContext<BoardContextValue | null>(null);
@@ -45,4 +47,9 @@ export function useBoard(): BoardContextValue {
     }
 
     return value;
+}
+
+/** For components shared with game rooms, which have no board. */
+export function useOptionalBoard(): BoardContextValue | null {
+    return useContext(BoardContext);
 }

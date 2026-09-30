@@ -4,6 +4,7 @@ namespace App\Actions\Retros;
 
 use App\Actions\HealthCheck\FreezeHealthStatements;
 use App\Enums\ColumnColor;
+use App\Enums\GameKind;
 use App\Models\Retro;
 use App\Models\Team;
 use App\Models\User;
@@ -34,6 +35,7 @@ class CreateRetro
                 'is_anonymous' => $data->isAnonymous,
                 'health_check_enabled' => $data->healthCheckEnabled,
                 'icebreaker_enabled' => $data->icebreakerEnabled,
+                'icebreaker_game' => $data->icebreakerGame ?? GameKind::DrawAndGuess,
                 'votes_per_participant' => $data->votesPerParticipant,
                 'ai_summary_enabled' => $data->aiSummaryEnabled && $this->llm->isConfigured(),
                 'guest_token' => Str::random(40),

@@ -2,6 +2,7 @@
 
 namespace App\Actions\Integrations;
 
+use App\Models\GameRoom;
 use App\Models\PokerGame;
 use App\Models\Retro;
 use App\Models\User;
@@ -37,6 +38,24 @@ class BuildLinkShare
             ]),
             __('Open the game'),
             $includeGuestLink ? route('poker.join.show', $game->guest_token) : route('poker.show', $game),
+        );
+    }
+
+    /**
+     * A room invite names the room, its game and team, never the players or
+     * the game state (spec 7 §3.1).
+     */
+    public function gameRoom(GameRoom $room, User $sharer, bool $includeGuestLink): LinkShareContent
+    {
+        return new LinkShareContent(
+            __(':sharer invites you to play :game in ":room" (:team)', [
+                'sharer' => $sharer->name,
+                'game' => $room->game->label(),
+                'room' => (string) $room->name,
+                'team' => $room->team->name,
+            ]),
+            __('Join the game'),
+            $includeGuestLink ? route('games.join.show', $room->guest_token) : route('games.show', $room),
         );
     }
 }
