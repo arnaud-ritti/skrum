@@ -1,6 +1,6 @@
 import { Link } from '@inertiajs/react';
 import { ArrowLeft } from 'lucide-react';
-import { useState, type KeyboardEvent, type ReactNode } from 'react';
+import { useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import PokerSettingsController from '@/actions/App/Http/Controllers/Poker/PokerSettingsController';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { PresenceStrip } from '@/components/retro/presence-strip';
@@ -53,8 +53,16 @@ function TitleEditor() {
     const { snapshot, run, refetch } = useGame();
     const { t } = useTrans();
     const [value, setValue] = useState(snapshot.game.title);
+    const isCancelled = useRef(false);
 
     const save = async () => {
+        if (isCancelled.current) {
+            isCancelled.current = false;
+            setValue(snapshot.game.title);
+
+            return;
+        }
+
         const title = value.trim();
 
         if (title === '' || title === snapshot.game.title) {
@@ -80,7 +88,7 @@ function TitleEditor() {
         }
 
         if (event.key === 'Escape') {
-            setValue(snapshot.game.title);
+            isCancelled.current = true;
             event.currentTarget.blur();
         }
     };
