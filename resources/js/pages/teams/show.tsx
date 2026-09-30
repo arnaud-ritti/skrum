@@ -1,4 +1,5 @@
 import { Form, Head, Link } from '@inertiajs/react';
+import TeamIntegrationsController from '@/actions/App/Http/Controllers/Integrations/TeamIntegrationsController';
 import RetrosController from '@/actions/App/Http/Controllers/Retros/RetrosController';
 import TeamMembersController from '@/actions/App/Http/Controllers/TeamMembersController';
 import TeamsController from '@/actions/App/Http/Controllers/TeamsController';
@@ -51,6 +52,7 @@ type Props = {
     pokerGames: PokerGameSummary[];
     pokerDeckOptions: PokerDeckOption[];
     canCreatePokerGame: boolean;
+    canManageIntegrations: boolean;
     pokerDecks: SavedPokerDeck[];
 };
 
@@ -71,6 +73,7 @@ export default function ShowTeam({
     pokerGames,
     pokerDeckOptions,
     canCreatePokerGame,
+    canManageIntegrations,
     pokerDecks,
 }: Props) {
     const { t } = useTrans();
@@ -85,18 +88,29 @@ export default function ShowTeam({
                     description={t('Retrospectives of this team')}
                 />
 
-                <Button variant="outline" size="sm" asChild>
-                    <Link
-                        href={WorkspaceActionItemsController.index(
-                            workspace.slug,
-                            { query: { team: team.id } },
-                        )}
-                    >
-                        {t('Open action items (:count)', {
-                            count: openActionItemCount,
-                        })}
-                    </Link>
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                    <Button variant="outline" size="sm" asChild>
+                        <Link
+                            href={WorkspaceActionItemsController.index(
+                                workspace.slug,
+                                { query: { team: team.id } },
+                            )}
+                        >
+                            {t('Open action items (:count)', {
+                                count: openActionItemCount,
+                            })}
+                        </Link>
+                    </Button>
+                    {canManageIntegrations && (
+                        <Button variant="outline" size="sm" asChild>
+                            <Link
+                                href={TeamIntegrationsController.index(params)}
+                            >
+                                {t('Integrations')}
+                            </Link>
+                        </Button>
+                    )}
+                </div>
 
                 {canManage && (
                     <Form

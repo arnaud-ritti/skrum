@@ -174,6 +174,14 @@ function workspaceManager(Workspace $workspace, WorkspaceRole $role = WorkspaceR
     return $user;
 }
 
+function integrationAdmin(Team $team): User
+{
+    $admin = workspaceManager($team->workspace);
+    $team->members()->attach($admin);
+
+    return $admin;
+}
+
 /**
  * @return array{0: User, 1: Participant}
  */

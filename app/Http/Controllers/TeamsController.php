@@ -6,6 +6,7 @@ use App\Actions\HealthCheck\PresentHealthStatement;
 use App\Actions\HealthCheck\TeamHealthStatements;
 use App\Actions\Poker\PresentPokerGameSummary;
 use App\Actions\Retros\BuildTemplateCatalogue;
+use App\Enums\IntegrationProvider;
 use App\Enums\PokerDeck;
 use App\Enums\TemplateCategory;
 use App\Models\PokerGame;
@@ -87,6 +88,7 @@ class TeamsController extends Controller
             'pokerDecks' => $this->pokerDecks($request->user(), $workspace, $team),
             'pokerDeckOptions' => PokerDeck::options(),
             'canCreatePokerGame' => $request->user()->can('createPokerGame', $team),
+            'canManageIntegrations' => IntegrationProvider::anyEnabled() && $request->user()->can('manageIntegrations', $team),
         ]);
     }
 

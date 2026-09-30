@@ -1158,5 +1158,8 @@
     "Connected": "Verbunden",
     "Setup required": "Einrichtung erforderlich",
     "Reconnect required": "Erneute Verbindung erforderlich",
-    "Stored credentials could not be read. Reconnect.": "Die gespeicherten Zugangsdaten konnten nicht gelesen werden. Verbinde erneut."
+    "Stored credentials could not be read. Reconnect.": "Die gespeicherten Zugangsdaten konnten nicht gelesen werden. Verbinde erneut.",
+    "Integrations": "Integrationen",
+    "Connect :team to the tools it already uses.": "Verbinde :team mit den Werkzeugen, die es schon nutzt.",
+    "Not connected": "Nicht verbunden"
 }

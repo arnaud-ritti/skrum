@@ -908,5 +908,8 @@
     "Connected": "Connected",
     "Setup required": "Setup required",
     "Reconnect required": "Reconnect required",
-    "Stored credentials could not be read. Reconnect.": "Stored credentials could not be read. Reconnect."
+    "Stored credentials could not be read. Reconnect.": "Stored credentials could not be read. Reconnect.",
+    "Integrations": "Integrations",
+    "Connect :team to the tools it already uses.": "Connect :team to the tools it already uses.",
+    "Not connected": "Not connected"
 }

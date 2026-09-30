@@ -1158,5 +1158,8 @@
     "Connected": "Connecté",
     "Setup required": "Configuration requise",
     "Reconnect required": "Reconnexion requise",
-    "Stored credentials could not be read. Reconnect.": "Les identifiants enregistrés sont illisibles. Reconnectez-vous."
+    "Stored credentials could not be read. Reconnect.": "Les identifiants enregistrés sont illisibles. Reconnectez-vous.",
+    "Integrations": "Intégrations",
+    "Connect :team to the tools it already uses.": "Connectez :team aux outils qu'elle utilise déjà.",
+    "Not connected": "Non connecté"
 }

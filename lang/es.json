@@ -1158,5 +1158,8 @@
     "Connected": "Conectado",
     "Setup required": "Configuración necesaria",
     "Reconnect required": "Reconexión necesaria",
-    "Stored credentials could not be read. Reconnect.": "No se pudieron leer las credenciales guardadas. Vuelve a conectar."
+    "Stored credentials could not be read. Reconnect.": "No se pudieron leer las credenciales guardadas. Vuelve a conectar.",
+    "Integrations": "Integraciones",
+    "Connect :team to the tools it already uses.": "Conecta :team con las herramientas que ya usa.",
+    "Not connected": "No conectado"
 }
