@@ -135,6 +135,31 @@ it('skips members who left before sending', function () {
     expect($notification->shouldSend($facilitator, 'mail'))->toBeFalse();
 });
 
+it('skips the email when the retro was reopened before sending', function () {
+    [$retro, $facilitator] = emailableRetro();
+    $notification = new RetroResultsNotification($retro->id);
+
+    $retro->forceFill(['phase' => RetroPhase::Discussing])->save();
+
+    expect($notification->shouldSend($facilitator, 'mail'))->toBeFalse();
+});
+
+it('keeps the cooldown free when sending fails', function () {
+    [$retro, $facilitator] = emailableRetro();
+    Notification::shouldReceive('send')->once()->andThrow(new RuntimeException('Queue is down'));
+
+    $this->actingAs($facilitator)
+        ->postJson(route('retros.results-email.store', $retro), ['audience' => 'participants'])
+        ->assertServerError();
+    expect(IntegrationDelivery::query()->count())->toBe(0);
+
+    Notification::fake();
+
+    $this->actingAs($facilitator)
+        ->postJson(route('retros.results-email.store', $retro), ['audience' => 'participants'])
+        ->assertAccepted();
+});
+
 it('allows one email every ten minutes', function () {
     [$retro, $facilitator] = emailableRetro();
     [$admin] = workspaceAdminParticipant($retro);

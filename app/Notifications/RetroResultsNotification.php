@@ -5,6 +5,7 @@ namespace App\Notifications;
 use App\Actions\HealthCheck\SummarizeHealthCheck;
 use App\Actions\Integrations\BuildRetroRecap;
 use App\Actions\Integrations\RetroResultsRecipients;
+use App\Enums\RetroPhase;
 use App\Models\Retro;
 use App\Models\User;
 use App\Support\Integrations\Messages\RetroRecapMail;
@@ -16,7 +17,8 @@ use Illuminate\Notifications\Notification;
 
 /**
  * Carries the retro id only: the recap is written when the mail is sent,
- * in the recipient's locale, and nobody who left the team receives it.
+ * in the recipient's locale, and nobody who left the team receives it,
+ * nor anyone once the retro has been reopened.
  */
 class RetroResultsNotification extends Notification implements ShouldBeEncrypted, ShouldQueue
 {
@@ -35,6 +37,10 @@ class RetroResultsNotification extends Notification implements ShouldBeEncrypted
         $retro = Retro::query()->with('team')->find($this->retroId);
 
         if ($retro === null || ! $notifiable instanceof User) {
+            return false;
+        }
+
+        if ($retro->phase !== RetroPhase::Completed) {
             return false;
         }
 

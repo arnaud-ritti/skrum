@@ -18,10 +18,11 @@ use App\Notifications\RetroResultsNotification;
 use App\Support\Integrations\IntegrationAvailability;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Notification;
-use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use Throwable;
 
 class RetroResultsEmailsController extends Controller
 {
@@ -50,17 +51,23 @@ class RetroResultsEmailsController extends Controller
             throw ValidationException::withMessages(['audience' => __('Results can be shared once the retrospective is completed.')]);
         }
 
-        $cooldownKey = "retro-results-email:{$retro->id}";
-
-        abort_if(RateLimiter::tooManyAttempts($cooldownKey, 1), 429, __('The results were emailed a few minutes ago.'));
-
         $recipients = $this->retroResultsRecipients->query($retro, RetroResultsAudience::from($validated['audience']))->get();
 
         if ($recipients->isEmpty()) {
             throw ValidationException::withMessages(['audience' => __('Nobody can receive these results by email.')]);
         }
 
-        RateLimiter::hit($cooldownKey, self::CooldownSeconds);
+        $cooldownKey = "retro-results-email:{$retro->id}";
+
+        abort_unless(Cache::add($cooldownKey, true, self::CooldownSeconds), 429, __('The results were emailed a few minutes ago.'));
+
+        try {
+            Notification::send($recipients, new RetroResultsNotification($retro->id));
+        } catch (Throwable $exception) {
+            Cache::forget($cooldownKey);
+
+            throw $exception;
+        }
 
         $delivery = IntegrationDelivery::query()->create([
             'team_id' => $retro->team_id,
@@ -71,8 +78,6 @@ class RetroResultsEmailsController extends Controller
             'requested_by_user_id' => $sharer->id,
             'status' => IntegrationDeliveryStatus::Queued,
         ]);
-
-        Notification::send($recipients, new RetroResultsNotification($retro->id));
 
         $delivery->markSent($recipients->count());
         $retro->announceDeliveryChange();
