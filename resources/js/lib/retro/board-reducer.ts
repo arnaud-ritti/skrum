@@ -21,6 +21,8 @@ export type BoardAction =
           commentCount?: number;
       }
     | { type: 'replace'; snapshot: Snapshot }
+    | { type: 'roti.set'; respondents: number; myScore?: number | null }
+    | { type: 'card.groupName'; cardId: string; groupName: string | null }
     | { type: 'health.progress'; statements: HealthProgress[] }
     | { type: 'health.answer'; key: string; score: number | null }
     | { type: 'cards.upsert'; cards: CardPayload[] }
@@ -107,6 +109,7 @@ function upsertCards(cards: BoardCard[], payloads: CardPayload[]): BoardCard[] {
                 content: payload.content ?? existing.content,
                 gif: payload.gif ?? existing.gif,
                 author: payload.author ?? existing.author,
+                groupName: payload.groupName ?? existing.groupName,
             }),
         });
     }
@@ -294,6 +297,22 @@ export function boardReducer(state: Snapshot, action: BoardAction): Snapshot {
     switch (action.type) {
         case 'replace':
             return seedTotalVersions(action.snapshot);
+        case 'roti.set':
+            return {
+                ...state,
+                roti: {
+                    myScore:
+                        action.myScore === undefined
+                            ? state.roti.myScore
+                            : action.myScore,
+                    respondents: action.respondents,
+                },
+            };
+        case 'card.groupName':
+            return updateCard(state, action.cardId, (card) => ({
+                ...card,
+                groupName: action.groupName,
+            }));
         case 'cards.upsert':
             return { ...state, cards: upsertCards(state.cards, action.cards) };
         case 'card.remove':

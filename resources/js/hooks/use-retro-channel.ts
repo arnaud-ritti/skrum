@@ -38,6 +38,9 @@ export const RetroEvents = [
     'survey.changed',
     'survey.deleted',
     'survey.discussion.changed',
+    'card.group-named',
+    'roti.changed',
+    'results.changed',
 ] as const;
 
 /**

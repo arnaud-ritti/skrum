@@ -29,6 +29,7 @@ import { useCommentNotifications } from './use-comment-notifications';
 import { useRetroChannel, type RetroEvent } from './use-retro-channel';
 
 const SessionExpiredStatuses = [401, 419];
+const DebouncedRefetchMs = 1_000;
 
 export type BoardStatus = 'active' | 'ended' | 'deleted';
 
@@ -125,6 +126,32 @@ export function useRetroBoard(initial: Snapshot) {
             }
         }
     }, [retroId, end, flushBufferedActions]);
+
+    const pendingRefetch = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    /**
+     * Several viewers rating or a summary finishing produce bursts of
+     * events; one snapshot a second later covers them all.
+     */
+    const scheduleRefetch = useCallback(() => {
+        if (pendingRefetch.current !== null) {
+            return;
+        }
+
+        pendingRefetch.current = setTimeout(() => {
+            pendingRefetch.current = null;
+            void refetch();
+        }, DebouncedRefetchMs);
+    }, [refetch]);
+
+    useEffect(
+        () => () => {
+            if (pendingRefetch.current !== null) {
+                clearTimeout(pendingRefetch.current);
+            }
+        },
+        [],
+    );
 
     const onEvent = useCallback(
         ({ name, payload }: RetroEvent) => {
@@ -267,6 +294,26 @@ export function useRetroBoard(initial: Snapshot) {
 
                     break;
                 }
+                case 'card.group-named':
+                    apply({
+                        type: 'card.groupName',
+                        cardId: payload.cardId as string,
+                        groupName: payload.groupName as string | null,
+                    });
+                    break;
+                case 'roti.changed':
+                    apply({
+                        type: 'roti.set',
+                        respondents: payload.respondents as number,
+                    });
+
+                    if (latestBoard.current.retro.phase === 'completed') {
+                        scheduleRefetch();
+                    }
+                    break;
+                case 'results.changed':
+                    scheduleRefetch();
+                    break;
                 case 'phase.changed':
                 case 'settings.changed':
                     void refetch();
@@ -276,7 +323,7 @@ export function useRetroBoard(initial: Snapshot) {
                     break;
             }
         },
-        [apply, refetch, end],
+        [apply, refetch, end, scheduleRefetch],
     );
 
     const onJoining = useCallback(

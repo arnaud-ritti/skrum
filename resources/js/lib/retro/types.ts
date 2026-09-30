@@ -28,6 +28,7 @@ export type CardPayload = {
     content: string | null;
     gif: CardGif | null;
     author: Person | null;
+    groupName: string | null;
 };
 
 export type ReactionSummary = {
@@ -193,6 +194,8 @@ export type Snapshot = {
     participants: BoardParticipant[];
     actionItems: ActionItem[];
     surveys: SurveyPayload[];
+    roti: RotiState;
+    results: Results | null;
     healthCheck: HealthCheckState | null;
     votesCast: number | null;
     votesVersion: number;
@@ -206,4 +209,61 @@ export type PresenceMember = {
     name: string;
     avatarUrl: string;
     isGuest: boolean;
+};
+
+export type HealthStatementResult = {
+    key: string;
+    label: string;
+    text: string;
+    isBuiltin: boolean;
+    average: number | null;
+    count: number;
+};
+
+export type HealthHighlight = { key: string; label: string; average: number };
+
+export type HealthResults = {
+    statements: HealthStatementResult[];
+    score: number;
+    participation: { respondents: number; participants: number };
+    topStrength: HealthHighlight | null;
+    growthArea: HealthHighlight | null;
+    alignment: {
+        value: number;
+        level: 'high' | 'moderate' | 'divided';
+        label: string;
+    };
+    assessment: {
+        band: 'excellent' | 'good' | 'needs_attention' | 'critical';
+        title: string;
+        sentence: string;
+    };
+};
+
+export type HealthTrendPoint = {
+    retroId: string;
+    title: string;
+    completedAt: string;
+    score: number;
+    url: string;
+    delta: number | null;
+    sameStatements: boolean;
+};
+
+export type RotiResults = {
+    distribution: Array<{ score: number; count: number }>;
+    average: number | null;
+    respondents: number;
+};
+
+export type RotiState = { myScore: number | null; respondents: number };
+
+export type Results = {
+    participants: BoardParticipant[];
+    health: HealthResults | null;
+    healthTrend: HealthTrendPoint[] | null;
+    surveys: SurveyPayload[];
+    games: null;
+    roti: RotiResults;
+    summary: null;
 };
