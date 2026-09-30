@@ -272,7 +272,7 @@ Route::prefix('retros/{retro}')
         Route::delete('action-item-subtasks/{actionItemSubtask}', [ActionItemSubtasksController::class, 'destroy'])->name('retros.action-items.subtasks.destroy')->whereUuid('actionItemSubtask');
         Route::post('summary', [RetroSummariesController::class, 'store'])->name('retros.summary.store');
         Route::delete('summary', [RetroSummariesController::class, 'destroy'])->name('retros.summary.destroy');
-        Route::post('shares', [RetroSharesController::class, 'store'])->middleware('throttle:5,1')->name('retros.shares.store');
+        Route::post('shares', [RetroSharesController::class, 'store'])->middleware('throttle:5,1,shares')->name('retros.shares.store');
         Route::post('results-email', [RetroResultsEmailsController::class, 'store'])->name('retros.results-email.store');
         Route::post('suggested-actions/{suggestedAction}/promotion', [SuggestedActionPromotionsController::class, 'store'])->name('retros.suggested-actions.promotion.store')->whereUuid('suggestedAction');
         Route::delete('suggested-actions/{suggestedAction}', [SuggestedActionsController::class, 'destroy'])->name('retros.suggested-actions.destroy')->whereUuid('suggestedAction');
@@ -320,7 +320,7 @@ Route::prefix('poker/{game}')
         Route::get('saved-decks', [PokerSavedDecksController::class, 'index'])->name('poker.saved-decks.index');
         Route::put('status', [PokerStatusesController::class, 'update'])->name('poker.status.update');
         Route::post('guest-token', [PokerGuestTokensController::class, 'store'])->name('poker.guest-token.store');
-        Route::post('shares', [PokerSharesController::class, 'store'])->middleware('throttle:5,1')->name('poker.shares.store');
+        Route::post('shares', [PokerSharesController::class, 'store'])->middleware('throttle:5,1,shares')->name('poker.shares.store');
         Route::get('imports/{source}/containers', [PokerImportContainersController::class, 'index'])->name('poker.imports.containers.index')->where('source', 'jira|linear');
         Route::get('imports/{source}/iterations', [PokerImportIterationsController::class, 'index'])->name('poker.imports.iterations.index')->where('source', 'jira|linear');
         Route::post('imports/{source}/preview', [PokerImportPreviewsController::class, 'store'])->name('poker.imports.preview.store')->where('source', 'jira|linear');

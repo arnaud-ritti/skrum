@@ -35,7 +35,7 @@ class RetroSharesController extends Controller
 
     public function store(Request $request, Retro $retro): JsonResponse
     {
-        $participant = Participant::current($request);
+        $sharer = $this->sharePermissions->ensureRetro($retro, Participant::current($request));
 
         $validated = $request->validate([
             'channel' => ['required', Rule::enum(IntegrationDeliveryChannel::class)->only(IntegrationDeliveryChannel::shareChannels())],
@@ -47,7 +47,6 @@ class RetroSharesController extends Controller
 
         abort_unless($channel->provider()?->isEnabled() ?? false, 404);
 
-        $sharer = $this->sharePermissions->ensureRetro($retro, $participant);
         $isResults = $validated['kind'] === self::ResultsKind;
         $includeGuestLink = ! $isResults && $request->boolean('include_guest_link');
 

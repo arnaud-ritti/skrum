@@ -28,7 +28,7 @@ class PokerSharesController extends Controller
 
     public function store(Request $request, PokerGame $game): JsonResponse
     {
-        $player = PokerPlayer::current($request);
+        $sharer = $this->sharePermissions->ensurePokerGame($game, PokerPlayer::current($request));
 
         $validated = $request->validate([
             'channel' => ['required', Rule::enum(IntegrationDeliveryChannel::class)->only(IntegrationDeliveryChannel::shareChannels())],
@@ -39,7 +39,6 @@ class PokerSharesController extends Controller
 
         abort_unless($channel->provider()?->isEnabled() ?? false, 404);
 
-        $sharer = $this->sharePermissions->ensurePokerGame($game, $player);
         PokerGuard::notEnded($game);
 
         $includeGuestLink = $request->boolean('include_guest_link');

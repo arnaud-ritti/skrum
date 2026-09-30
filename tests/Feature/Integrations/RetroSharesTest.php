@@ -209,6 +209,33 @@ it('limits shares to five a minute', function () {
         ->assertTooManyRequests();
 });
 
+it('counts shares apart from other throttled requests', function () {
+    [$retro, $facilitator] = shareableRetro();
+
+    foreach (range(1, 5) as $attempt) {
+        $this->actingAs($facilitator)->get(route('gifs.show', ['gif' => 'abc123', 'size' => 'preview']));
+    }
+
+    $this->actingAs($facilitator)
+        ->postJson(route('retros.shares.store', $retro), ['channel' => 'slack', 'kind' => 'link'])
+        ->assertAccepted();
+});
+
+it('refuses guests before validating or checking the provider', function (array $body, bool $providersEnabled) {
+    [$retro] = shareableRetro(attributes: ['guest_access_enabled' => true]);
+
+    if (! $providersEnabled) {
+        disableIntegrations();
+    }
+
+    $this->withCookies(retroGuestCookie(Participant::factory()->guest()->create(['retro_id' => $retro->id])))->withCredentials()
+        ->postJson(route('retros.shares.store', $retro), $body)
+        ->assertForbidden();
+})->with([
+    'invalid payload' => [['channel' => 'teams', 'kind' => 'everything'], true],
+    'disabled provider' => [['channel' => 'slack', 'kind' => 'link'], false],
+]);
+
 it('validates the channel and the kind', function (array $body, string $field) {
     [$retro, $facilitator] = shareableRetro();
 

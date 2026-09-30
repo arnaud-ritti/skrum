@@ -122,3 +122,36 @@ it('answers 404 for a disabled provider and 409 without a connection', function 
         ->assertConflict()
         ->assertJson(['message' => 'Connect Telegram in the team settings.']);
 });
+
+it('counts game shares apart from other throttled requests', function () {
+    [$game, $facilitator] = shareablePokerGame();
+
+    foreach (range(1, 5) as $attempt) {
+        $this->actingAs($facilitator)->get(route('gifs.show', ['gif' => 'abc123', 'size' => 'preview']));
+    }
+
+    foreach (range(1, 5) as $attempt) {
+        $this->actingAs($facilitator)
+            ->postJson(route('poker.shares.store', $game), ['channel' => 'slack'])
+            ->assertAccepted();
+    }
+
+    $this->actingAs($facilitator)
+        ->postJson(route('poker.shares.store', $game), ['channel' => 'slack'])
+        ->assertTooManyRequests();
+});
+
+it('refuses game guests before validating or checking the provider', function (array $body, bool $providersEnabled) {
+    [$game] = shareablePokerGame(['guest_access_enabled' => true]);
+
+    if (! $providersEnabled) {
+        config(['services.slack.client_id' => null]);
+    }
+
+    $this->withCookies(pokerGuestCookie(pokerGuest($game)))->withCredentials()
+        ->postJson(route('poker.shares.store', $game), $body)
+        ->assertForbidden();
+})->with([
+    'invalid payload' => [['channel' => 'teams'], true],
+    'disabled provider' => [['channel' => 'slack'], false],
+]);
