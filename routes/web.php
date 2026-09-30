@@ -6,6 +6,8 @@ use App\Http\Controllers\BroadcastAuthorizationsController;
 use App\Http\Controllers\CurrentWorkspaceController;
 use App\Http\Controllers\EmojiDataController;
 use App\Http\Controllers\GameJoinsController;
+use App\Http\Controllers\Games\GameDrawingOpsController;
+use App\Http\Controllers\Games\GameDrawingsController;
 use App\Http\Controllers\Games\GameGuessesController;
 use App\Http\Controllers\Games\GameGuestTokensController;
 use App\Http\Controllers\Games\GameHostsController;
@@ -425,6 +427,9 @@ Route::prefix('games/{room}')
         Route::get('rounds/{round}/secret', [GameRoundSecretsController::class, 'show'])->name('games.rounds.secret.show')->whereUuid('round');
         Route::post('rounds/{round}/hints', [GameRoundHintsController::class, 'store'])->name('games.rounds.hints.store')->whereUuid('round');
         Route::post('rounds/{round}/guesses', [GameGuessesController::class, 'store'])->name('games.rounds.guesses.store')->whereUuid('round');
+        Route::post('rounds/{round}/drawing-ops', [GameDrawingOpsController::class, 'store'])->name('games.rounds.drawing-ops.store')->whereUuid('round');
+        Route::delete('rounds/{round}/drawing-ops/last', [GameDrawingOpsController::class, 'destroyLast'])->name('games.rounds.drawing-ops.last.destroy')->whereUuid('round');
+        Route::delete('rounds/{round}/drawing', [GameDrawingsController::class, 'destroy'])->name('games.rounds.drawing.destroy')->whereUuid('round');
     });
 
 Route::post('broadcasting/auth', [BroadcastAuthorizationsController::class, 'store'])->name('broadcasting.auth');

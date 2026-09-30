@@ -1474,5 +1474,6 @@
     "Choose who leads this round.": "Wähle, wer diese Runde leitet.",
     "Only the player leading this round can do this.": "Das kann nur, wer diese Runde leitet.",
     "You are leading this round, so you cannot guess.": "Du leitest diese Runde, also kannst du nicht raten.",
-    "No more letters can be revealed for this word.": "Für dieses Wort können keine weiteren Buchstaben aufgedeckt werden."
+    "No more letters can be revealed for this word.": "Für dieses Wort können keine weiteren Buchstaben aufgedeckt werden.",
+    "The drawing is full. Clear it to keep drawing.": "Die Zeichnung ist voll. Lösche sie, um weiterzuzeichnen."
 }
