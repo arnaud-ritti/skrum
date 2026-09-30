@@ -2,6 +2,7 @@
 
 use App\Actions\Retros\GuestCookie;
 use App\Contracts\PokerPresenceRoster;
+use App\Enums\IntegrationProvider;
 use App\Enums\McpScope;
 use App\Enums\PokerDeck;
 use App\Enums\RetroPhase;
@@ -573,4 +574,29 @@ function mcpSweepWorld(): array
             hash('sha256', 'guest-secret-value'),
         ],
     ];
+}
+
+function disableIntegrations(): void
+{
+    config([
+        'services.slack.client_id' => null,
+        'services.slack.client_secret' => null,
+        'services.telegram.bot_token' => null,
+        'services.jira.client_id' => null,
+        'services.jira.client_secret' => null,
+        'services.linear.client_id' => null,
+        'services.linear.client_secret' => null,
+    ]);
+}
+
+function enableIntegrations(IntegrationProvider ...$providers): void
+{
+    foreach ($providers as $provider) {
+        config(match ($provider) {
+            IntegrationProvider::Slack => ['services.slack.client_id' => 'slack-client', 'services.slack.client_secret' => 'slack-secret'],
+            IntegrationProvider::Telegram => ['services.telegram.bot_token' => '123456:telegram-token'],
+            IntegrationProvider::Jira => ['services.jira.client_id' => 'jira-client', 'services.jira.client_secret' => 'jira-secret'],
+            IntegrationProvider::Linear => ['services.linear.client_id' => 'linear-client', 'services.linear.client_secret' => 'linear-secret'],
+        });
+    }
 }
