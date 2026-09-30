@@ -1,6 +1,10 @@
+import { useEffect, useState } from 'react';
+import GameRoundsController from '@/actions/App/Http/Controllers/Games/GameRoundsController';
 import { Badge } from '@/components/ui/badge';
 import { useTrans } from '@/hooks/use-trans';
 import { outcomeLabel } from '@/lib/games/outcomes';
+import type { GameGifRevealed, GameRoundDetail } from '@/lib/games/types';
+import { retroRequest } from '@/lib/retro/api';
 import { GifRoundResults } from './gif-round-results';
 import { useRoom } from './room-context';
 import { StartRoundControls } from './start-round-controls';
@@ -19,6 +23,43 @@ export function RoundEndCard() {
     const winner =
         snapshot.players.find((player) => player.id === winnerId) ?? null;
     const question = lastEnded?.question ?? lastRound?.question ?? null;
+    const roomId = snapshot.room.id;
+    const gifRoundId =
+        lastRound?.game === 'gif' && !lastEnded?.answers ? lastRound.id : null;
+    const [fetched, setFetched] = useState<{
+        roundId: string;
+        answers: GameGifRevealed[];
+    } | null>(null);
+
+    useEffect(() => {
+        if (gifRoundId === null) {
+            return;
+        }
+
+        let isCurrent = true;
+
+        retroRequest<GameRoundDetail>(
+            GameRoundsController.show({ room: roomId, round: gifRoundId }),
+        )
+            .then((detail) => {
+                if (isCurrent && detail.answers) {
+                    setFetched({
+                        roundId: gifRoundId,
+                        answers: detail.answers,
+                    });
+                }
+            })
+            .catch(() => undefined);
+
+        return () => {
+            isCurrent = false;
+        };
+    }, [roomId, gifRoundId]);
+
+    const fetchedAnswers =
+        fetched !== null && fetched.roundId === gifRoundId
+            ? fetched.answers
+            : null;
 
     if (outcome === null) {
         return (
@@ -36,11 +77,13 @@ export function RoundEndCard() {
                 <p className="text-2xl font-semibold tracking-wide">{word}</p>
             )}
             {question && <p className="text-lg font-medium">{question}</p>}
-            {lastEnded?.answers && (
+            {lastEnded?.answers ? (
                 <GifRoundResults
                     answers={lastEnded.answers}
                     points={lastEnded.points}
                 />
+            ) : (
+                fetchedAnswers && <GifRoundResults answers={fetchedAnswers} />
             )}
             {winner && (
                 <p className="text-muted-foreground">
