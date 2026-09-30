@@ -1409,5 +1409,6 @@
     "This team already has 10 game rooms.": "Cette équipe a déjà 10 salons de jeu.",
     "This game is not available.": "Ce jeu n'est pas disponible.",
     "Only a team member can host.": "Seul un membre de l'équipe peut être hôte.",
-    "Only the room creator or a workspace admin can take hosting.": "Seuls le créateur du salon ou un administrateur de l'espace de travail peuvent devenir hôte."
+    "Only the room creator or a workspace admin can take hosting.": "Seuls le créateur du salon ou un administrateur de l'espace de travail peuvent devenir hôte.",
+    "A round is already in progress.": "Une manche est déjà en cours."
 }

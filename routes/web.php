@@ -9,7 +9,10 @@ use App\Http\Controllers\GameJoinsController;
 use App\Http\Controllers\Games\GameGuestTokensController;
 use App\Http\Controllers\Games\GameHostsController;
 use App\Http\Controllers\Games\GameRoomsController;
+use App\Http\Controllers\Games\GameRoundPassesController;
+use App\Http\Controllers\Games\GameRoundsController;
 use App\Http\Controllers\Games\GameSnapshotsController;
+use App\Http\Controllers\Games\GameSwitchesController;
 use App\Http\Controllers\GifsController;
 use App\Http\Controllers\Integrations\IntegrationAccountsController;
 use App\Http\Controllers\Integrations\IntegrationAuthorizationsController;
@@ -407,6 +410,11 @@ Route::prefix('games/{room}')
         Route::delete('/', [GameRoomsController::class, 'destroy'])->name('games.destroy');
         Route::post('guest-token', [GameGuestTokensController::class, 'store'])->name('games.guest-token.store');
         Route::put('host', [GameHostsController::class, 'update'])->name('games.host.update');
+        Route::put('game', [GameSwitchesController::class, 'update'])->name('games.game.update');
+        Route::post('rounds', [GameRoundsController::class, 'store'])->name('games.rounds.store');
+        Route::get('rounds', [GameRoundsController::class, 'index'])->name('games.rounds.index');
+        Route::get('rounds/{round}', [GameRoundsController::class, 'show'])->name('games.rounds.show')->whereUuid('round');
+        Route::post('rounds/{round}/pass', [GameRoundPassesController::class, 'store'])->name('games.rounds.pass.store')->whereUuid('round');
     });
 
 Route::post('broadcasting/auth', [BroadcastAuthorizationsController::class, 'store'])->name('broadcasting.auth');
