@@ -804,5 +804,10 @@
     "Good use of time": "Temps bien utilisé",
     "Excellent use of time": "Temps très bien utilisé",
     ":count rating": ":count note",
-    ":count ratings": ":count notes"
+    ":count ratings": ":count notes",
+    "Team health radar": "Radar de santé de l'équipe",
+    "No answers": "Aucune réponse",
+    "Trend across retros": "Tendance sur les rétros",
+    "The statements changed since the previous retro": "Les affirmations ont changé depuis la rétro précédente",
+    ":delta since the previous retro": ":delta depuis la rétro précédente"
 }

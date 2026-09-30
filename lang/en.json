@@ -550,5 +550,10 @@
     "Good use of time": "Good use of time",
     "Excellent use of time": "Excellent use of time",
     ":count rating": ":count rating",
-    ":count ratings": ":count ratings"
+    ":count ratings": ":count ratings",
+    "Team health radar": "Team health radar",
+    "No answers": "No answers",
+    "Trend across retros": "Trend across retros",
+    "The statements changed since the previous retro": "The statements changed since the previous retro",
+    ":delta since the previous retro": ":delta since the previous retro"
 }
