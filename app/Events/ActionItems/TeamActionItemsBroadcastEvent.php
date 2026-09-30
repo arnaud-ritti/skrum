@@ -1,26 +1,26 @@
 <?php
 
-namespace App\Events\Retros;
+namespace App\Events\ActionItems;
 
 use App\Events\Concerns\SendsToOthers;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Broadcasting\PresenceChannel;
+use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
 use Illuminate\Foundation\Events\Dispatchable;
 
-abstract class RetroBroadcastEvent implements ShouldBroadcastNow, ShouldDispatchAfterCommit
+abstract class TeamActionItemsBroadcastEvent implements ShouldBroadcastNow, ShouldDispatchAfterCommit
 {
     use Dispatchable;
     use InteractsWithSockets;
     use SendsToOthers;
 
-    public function __construct(public string $retroId) {}
+    public function __construct(public string $teamId) {}
 
     public function broadcastOn(): Channel
     {
-        return new PresenceChannel("retro.{$this->retroId}");
+        return new PrivateChannel("team-action-items.{$this->teamId}");
     }
 
     abstract public function broadcastAs(): string;

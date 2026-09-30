@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Actions\Retros\ResolveParticipant;
 use App\Models\Participant;
 use App\Models\Retro;
+use App\Models\Team;
 use Illuminate\Broadcasting\Broadcasters\PusherBroadcaster;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -28,6 +29,14 @@ class BroadcastAuthorizationsController extends Controller
 
         if (str_starts_with($validated['channel_name'], 'private-participant.')) {
             return $this->authorizeParticipantChannel($request, $validated, $resolveParticipant);
+        }
+
+        if (str_starts_with($validated['channel_name'], 'private-retro-members.')) {
+            return $this->authorizeRetroMembersChannel($request, $validated, $resolveParticipant);
+        }
+
+        if (str_starts_with($validated['channel_name'], 'private-team-action-items.')) {
+            return $this->authorizeTeamActionItemsChannel($request, $validated);
         }
 
         abort(403);
@@ -83,6 +92,56 @@ class BroadcastAuthorizationsController extends Controller
         $participant = $resolveParticipant->handle($request, $owner->retro);
 
         abort_unless($participant?->id === $owner->id, 403);
+
+        $signature = $this->pusher()->authorizeChannel($validated['channel_name'], $validated['socket_id']);
+
+        return response()->json(json_decode($signature, true));
+    }
+
+    /**
+     * @param  array{socket_id: string, channel_name: string}  $validated
+     */
+    private function authorizeRetroMembersChannel(Request $request, array $validated, ResolveParticipant $resolveParticipant): JsonResponse
+    {
+        $retroId = Str::after($validated['channel_name'], 'private-retro-members.');
+
+        abort_unless(Str::isUuid($retroId), 403);
+
+        $retro = Retro::query()->find($retroId);
+
+        abort_if($retro === null, 403);
+        abort_unless($retro->id === $retroId, 403);
+
+        $participant = $resolveParticipant->handle($request, $retro);
+
+        abort_if($participant === null || $participant->isGuest(), 403);
+
+        $signature = $this->pusher()->authorizeChannel($validated['channel_name'], $validated['socket_id']);
+
+        return response()->json(json_decode($signature, true));
+    }
+
+    /**
+     * Only an authenticated user who can view the team; a guest cookie
+     * never grants it.
+     *
+     * @param  array{socket_id: string, channel_name: string}  $validated
+     */
+    private function authorizeTeamActionItemsChannel(Request $request, array $validated): JsonResponse
+    {
+        $teamId = Str::after($validated['channel_name'], 'private-team-action-items.');
+
+        abort_unless(Str::isUuid($teamId), 403);
+
+        $user = $request->user();
+
+        abort_if($user === null, 403);
+
+        $team = Team::query()->find($teamId);
+
+        abort_if($team === null, 403);
+        abort_unless($team->id === $teamId, 403);
+        abort_unless($user->can('view', $team), 403);
 
         $signature = $this->pusher()->authorizeChannel($validated['channel_name'], $validated['socket_id']);
 

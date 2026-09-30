@@ -2,6 +2,7 @@
 
 use App\Models\Participant;
 use App\Models\Retro;
+use App\Models\Team;
 use App\Models\User;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
@@ -200,3 +201,53 @@ it('refuses participant channels to anyone but their owner', function (Closure $
             ->postJson(route('broadcasting.auth'), authorizeParticipantChannel(strtoupper($participant->id)));
     },
 ]);
+
+function privateChannelRequest(string $channel): array
+{
+    return ['socket_id' => '1234.5678', 'channel_name' => $channel];
+}
+
+it('lets members join the carried action items channel', function () {
+    $retro = Retro::factory()->create();
+    [$user] = retroMember($retro);
+
+    $response = $this->actingAs($user)
+        ->postJson(route('broadcasting.auth'), privateChannelRequest("private-retro-members.{$retro->id}"))
+        ->assertOk();
+
+    expect($response->json('auth'))->toStartWith('test-key:');
+});
+
+it('keeps guests and outsiders out of the carried action items channel', function (bool $asGuest) {
+    $retro = Retro::factory()->withGuestAccess()->create();
+    $guest = Participant::factory()->guest()->create(['retro_id' => $retro->id]);
+    $request = $asGuest
+        ? $this->withCookies(retroGuestCookie($guest))->withCredentials()
+        : $this->actingAs(User::factory()->create());
+
+    $request->postJson(route('broadcasting.auth'), privateChannelRequest("private-retro-members.{$retro->id}"))
+        ->assertForbidden();
+})->with(['guest' => true, 'outsider' => false]);
+
+it('lets team members and workspace admins join the team action items channel', function (bool $asAdmin) {
+    $team = Team::factory()->create();
+    $user = $asAdmin ? workspaceManager($team->workspace) : teamMember($team);
+
+    $this->actingAs($user)
+        ->postJson(route('broadcasting.auth'), privateChannelRequest("private-team-action-items.{$team->id}"))
+        ->assertOk();
+})->with(['member' => false, 'admin' => true]);
+
+it('keeps other teams, guests and visitors out of the team action items channel', function (string $who) {
+    $retro = Retro::factory()->withGuestAccess()->create();
+    $team = $retro->team;
+    $guest = Participant::factory()->guest()->create(['retro_id' => $retro->id]);
+    $request = match ($who) {
+        'other team' => $this->actingAs(teamMember(Team::factory()->create(['workspace_id' => $team->workspace_id]))),
+        'guest' => $this->withCookies(retroGuestCookie($guest))->withCredentials(),
+        'visitor' => $this,
+    };
+
+    $request->postJson(route('broadcasting.auth'), privateChannelRequest("private-team-action-items.{$team->id}"))
+        ->assertForbidden();
+})->with(['other team', 'guest', 'visitor']);
