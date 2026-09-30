@@ -84,7 +84,7 @@ class ActionItemsController extends Controller
             }
 
             $fresh->update($attributes);
-            $fresh->load('assigneeParticipant.user');
+            $fresh->loadForPresentation();
 
             (new ActionItemSaved($locked->id, $this->presentActionItem->handle($fresh)))->sendToOthers();
 

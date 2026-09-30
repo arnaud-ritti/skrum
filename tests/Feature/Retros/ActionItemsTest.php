@@ -28,7 +28,7 @@ it('creates, assigns, completes and deletes action items while discussing', func
     $this->actingAs($user)
         ->patchJson(route('retros.action-items.update', [$retro, $id]), ['is_done' => true, 'assignee_participant_id' => null])
         ->assertOk()
-        ->assertJsonPath('actionItem.isDone', true)
+        ->assertJsonPath('actionItem.status', 'completed')
         ->assertJsonPath('actionItem.assignee', null);
 
     $this->actingAs($user)->deleteJson(route('retros.action-items.destroy', [$retro, $id]))->assertNoContent();

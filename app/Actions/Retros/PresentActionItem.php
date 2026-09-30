@@ -2,31 +2,145 @@
 
 namespace App\Actions\Retros;
 
+use App\Actions\ActionItems\ActionItemActor;
+use App\Actions\ActionItems\ActionItemPermissions;
+use App\Enums\ActionItemStatus;
 use App\Models\ActionItem;
+use Carbon\CarbonInterface;
 
 class PresentActionItem
 {
+    public function __construct(private ActionItemPermissions $permissions) {}
+
     /**
+     * Creators and assignees are always named, also on anonymous retros.
+     *
      * @return array{
      *     id: string,
+     *     retroId: ?string,
+     *     teamId: string,
      *     content: string,
-     *     isDone: bool,
-     *     assignee: ?array{id: string, name: string},
+     *     priority: string,
+     *     dueOn: ?string,
+     *     isOverdue: bool,
+     *     status: string,
+     *     completedAt: ?string,
+     *     assignee: ?array{kind: string, id: string, name: string, avatarUrl: string, isTeamMember: bool},
+     *     createdBy: ?array{name: string, avatarUrl: string},
+     *     isMine: bool,
+     *     commentCount: int,
+     *     source: ?array{retroTitle: string, retroCreatedAt: ?string, retroUrl: string},
      *     themeId: ?string,
-     *     themeName: ?string
+     *     themeName: ?string,
+     *     createdAt: ?string
      * }
      */
-    public function handle(ActionItem $item): array
+    public function handle(ActionItem $item, ?ActionItemActor $viewer = null, ?CarbonInterface $today = null): array
     {
         return [
             'id' => $item->id,
+            'retroId' => $item->retro_id,
+            'teamId' => $item->team_id,
             'content' => $item->content,
-            'isDone' => $item->completed_at !== null,
-            'assignee' => $item->assigneeParticipant === null
-                ? null
-                : ['id' => $item->assigneeParticipant->id, 'name' => $item->assigneeParticipant->displayName()],
+            'priority' => $item->priority->value,
+            'dueOn' => $item->due_on?->toDateString(),
+            'isOverdue' => $item->isOverdue($today ?? ActionItem::today()),
+            'status' => $item->isCompleted() ? ActionItemStatus::Completed->value : ActionItemStatus::Open->value,
+            'completedAt' => $item->completed_at?->toIso8601String(),
+            'assignee' => $this->assignee($item),
+            'createdBy' => $this->createdBy($item),
+            'isMine' => $viewer !== null && $this->permissions->isAuthor($item, $viewer),
+            'commentCount' => (int) ($item->comments_count ?? $item->comments()->count()),
+            'source' => $this->source($item),
             'themeId' => $item->theme_id,
             'themeName' => $item->theme_name,
+            'createdAt' => $item->created_at?->toIso8601String(),
+        ];
+    }
+
+    /**
+     * @param  iterable<ActionItem>  $items
+     * @return array<int, array<string, mixed>>
+     */
+    public function many(iterable $items, ?ActionItemActor $viewer = null): array
+    {
+        $today = ActionItem::today();
+        $presented = [];
+
+        foreach ($items as $item) {
+            $presented[] = $this->handle($item, $viewer, $today);
+        }
+
+        return $presented;
+    }
+
+    /**
+     * @return ?array{kind: string, id: string, name: string, avatarUrl: string, isTeamMember: bool}
+     */
+    private function assignee(ActionItem $item): ?array
+    {
+        $user = $item->assigneeUser;
+
+        if ($user !== null) {
+            return [
+                'kind' => 'member',
+                'id' => $user->id,
+                'name' => $user->name,
+                'avatarUrl' => $user->avatarUrl(),
+                'isTeamMember' => $item->team->members->contains('id', $user->id),
+            ];
+        }
+
+        $participant = $item->assigneeParticipant;
+
+        if ($participant === null) {
+            return null;
+        }
+
+        return [
+            'kind' => 'guest',
+            'id' => $participant->id,
+            'name' => $participant->displayName(),
+            'avatarUrl' => $participant->avatarUrl(),
+            'isTeamMember' => false,
+        ];
+    }
+
+    /**
+     * @return ?array{name: string, avatarUrl: string}
+     */
+    private function createdBy(ActionItem $item): ?array
+    {
+        $participant = $item->createdByParticipant;
+
+        if ($participant !== null) {
+            return ['name' => $participant->displayName(), 'avatarUrl' => $participant->avatarUrl()];
+        }
+
+        $author = $item->author;
+
+        if ($author === null) {
+            return null;
+        }
+
+        return ['name' => $author->name, 'avatarUrl' => $author->avatarUrl()];
+    }
+
+    /**
+     * @return ?array{retroTitle: string, retroCreatedAt: ?string, retroUrl: string}
+     */
+    private function source(ActionItem $item): ?array
+    {
+        $retro = $item->retro;
+
+        if ($retro === null) {
+            return null;
+        }
+
+        return [
+            'retroTitle' => $retro->title,
+            'retroCreatedAt' => $retro->created_at?->toIso8601String(),
+            'retroUrl' => route('retros.show', $retro),
         ];
     }
 }

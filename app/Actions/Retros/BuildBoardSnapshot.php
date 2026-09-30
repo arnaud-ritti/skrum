@@ -2,6 +2,7 @@
 
 namespace App\Actions\Retros;
 
+use App\Actions\ActionItems\ActionItemActor;
 use App\Actions\HealthCheck\PresentHealthCheck;
 use App\Actions\Surveys\PresentSurvey;
 use App\Enums\RetroPhase;
@@ -47,7 +48,7 @@ class BuildBoardSnapshot
             'cards.participant.user',
             'cards.reactions.participant.user',
             'cards.comments.participant.user',
-            'actionItems.assigneeParticipant.user',
+            'actionItems' => fn ($query) => $query->with(ActionItem::presentationRelations())->withCount('comments'),
         ]);
 
         $showsTotals = in_array($retro->phase, [RetroPhase::Discussing, RetroPhase::Completed], true)
@@ -112,9 +113,10 @@ class BuildBoardSnapshot
                 ];
             })->values()->all(),
             'participants' => $retro->participants->map(fn (Participant $participant) => $this->presentParticipant->handle($participant))->values()->all(),
-            'actionItems' => $retro->actionItems->sortBy('created_at')
-                ->map(fn (ActionItem $item) => $this->presentActionItem->handle($item))
-                ->values()->all(),
+            'actionItems' => $this->presentActionItem->many(
+                $retro->actionItems->sortBy('created_at'),
+                ActionItemActor::forParticipant($retro->participants->firstWhere('id', $viewer->id) ?? $viewer),
+            ),
             'insights' => $this->buildInsights->handle($retro),
             'roti' => $this->roti($retro, $viewer),
             'surveys' => $surveys,

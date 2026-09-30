@@ -28,7 +28,7 @@ class CreateActionItem
             'theme_name' => $theme?->name,
         ]);
 
-        $actionItem->load('assigneeParticipant.user');
+        $actionItem->loadForPresentation();
 
         return $actionItem;
     }
