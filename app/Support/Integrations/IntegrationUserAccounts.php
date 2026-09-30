@@ -21,6 +21,8 @@ class IntegrationUserAccounts
 
     private const LinearPageSize = 250;
 
+    private const LinearMaxPages = 40;
+
     private const JiraAccountType = 'atlassian';
 
     private const LinearUserFields = 'id name displayName email active';
@@ -79,7 +81,7 @@ class IntegrationUserAccounts
             $wanted = Str::lower($email);
             $candidates = array_values(array_filter(
                 $directory,
-                fn (ExternalAccount $account): bool => $account->active && $account->email !== null && Str::lower($account->email) === $wanted,
+                fn (ExternalAccount $account): bool => $account->active && $account->email() !== null && Str::lower($account->email()) === $wanted,
             ));
 
             if (count($candidates) === 1) {
@@ -131,7 +133,7 @@ class IntegrationUserAccounts
                 continue;
             }
 
-            $haystack = Str::lower(implode(' ', [$account->displayName, (string) ($node['displayName'] ?? ''), (string) $account->email]));
+            $haystack = Str::lower(implode(' ', [$account->displayName, (string) ($node['displayName'] ?? ''), (string) $account->email()]));
 
             if (! str_contains($haystack, $needle)) {
                 continue;
@@ -154,6 +156,7 @@ class IntegrationUserAccounts
     {
         $nodes = [];
         $after = null;
+        $pages = 0;
 
         do {
             $page = data_get($this->linear->query(
@@ -168,8 +171,10 @@ class IntegrationUserAccounts
                 }
             }
 
+            $previous = $after;
             $after = data_get($page, 'pageInfo.endCursor');
-        } while (data_get($page, 'pageInfo.hasNextPage') === true && is_string($after));
+            $pages++;
+        } while (data_get($page, 'pageInfo.hasNextPage') === true && is_string($after) && $after !== $previous && $pages < self::LinearMaxPages);
 
         return $nodes;
     }
@@ -185,7 +190,7 @@ class IntegrationUserAccounts
 
         $candidate = $candidates[0];
 
-        if ($candidate->email !== null && Str::lower($candidate->email) !== Str::lower($email)) {
+        if ($candidate->email() !== null && Str::lower($candidate->email()) !== Str::lower($email)) {
             return null;
         }
 

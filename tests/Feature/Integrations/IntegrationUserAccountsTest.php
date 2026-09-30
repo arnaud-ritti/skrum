@@ -123,3 +123,38 @@ it('describes the Linear priority scale', function () {
         ['id' => 4, 'name' => 'Low'],
     ])->and(LinearPriority::Defaults)->toBe(['high' => 2, 'medium' => 3, 'low' => 4]);
 });
+
+it('stops reading the Linear directory when the cursor repeats', function () {
+    fakeLinearUserDirectoryGraphql(['users(' => ['users' => [
+        'nodes' => [linearAccount('lin-1', 'Ada Lovelace', 'ada@example.com')],
+        'pageInfo' => ['hasNextPage' => true, 'endCursor' => 'same-cursor'],
+    ]]]);
+
+    $users = app(IntegrationUserAccounts::class)->linearUsers(TeamIntegration::factory()->linear()->create());
+
+    expect($users)->toHaveCount(2);
+    Http::assertSentCount(2);
+});
+
+it('caps the Linear directory at forty pages', function () {
+    $page = 0;
+    fakeLinearUserDirectoryGraphql(['users(' => function () use (&$page) {
+        $page++;
+
+        return Http::response(['data' => ['users' => [
+            'nodes' => [linearAccount("lin-{$page}", 'Ada', "ada{$page}@example.com")],
+            'pageInfo' => ['hasNextPage' => true, 'endCursor' => "cursor-{$page}"],
+        ]]]);
+    }]);
+
+    app(IntegrationUserAccounts::class)->linearUsers(TeamIntegration::factory()->linear()->create());
+
+    Http::assertSentCount(40);
+});
+
+it('never serializes the account email', function () {
+    $account = new ExternalAccount('acc-1', 'Ada', true, 'ada@example.com');
+
+    expect(json_encode($account))->toBe('{"accountId":"acc-1","displayName":"Ada"}')
+        ->and(json_encode([$account]))->not->toContain('ada@example.com');
+});
