@@ -4,6 +4,7 @@ namespace App\Actions\ActionItems;
 
 use App\Events\ActionItems\ActionItemAssigned;
 use App\Models\ActionItem;
+use Illuminate\Validation\ValidationException;
 
 class UpdateActionItem
 {
@@ -21,6 +22,12 @@ class UpdateActionItem
 
         if (! $locked->isDirty()) {
             return $locked->loadForPresentation();
+        }
+
+        if ($locked->recurrence !== null && $locked->due_on === null) {
+            throw ValidationException::withMessages([
+                array_key_exists('due_on', $changes) ? 'due_on' : 'recurrence' => __('A recurring action item needs a due date.'),
+            ]);
         }
 
         $this->permissions->authorizeEdit($locked, $actor);

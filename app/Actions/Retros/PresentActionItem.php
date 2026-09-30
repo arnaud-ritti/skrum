@@ -33,6 +33,8 @@ class PresentActionItem
      *     source: ?array{retroTitle: string, retroCreatedAt: ?string, retroUrl: string},
      *     themeId: ?string,
      *     themeName: ?string,
+     *     recurrence: ?string,
+     *     previousOccurrenceId: ?string,
      *     subtasks: array<int, array{id: string, content: string, isCompleted: bool, position: int}>,
      *     createdAt: ?string
      * }
@@ -56,6 +58,8 @@ class PresentActionItem
             'source' => $this->source($item),
             'themeId' => $item->theme_id,
             'themeName' => $item->theme_name,
+            'recurrence' => $item->recurrence?->value,
+            'previousOccurrenceId' => $item->previous_occurrence_id,
             'subtasks' => $item->subtasks
                 ->map(fn (ActionItemSubtask $subtask) => [
                     'id' => $subtask->id,

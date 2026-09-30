@@ -12,6 +12,7 @@ class SetActionItemStatus
 {
     public function __construct(
         private ActionItemPermissions $permissions,
+        private CreateNextOccurrence $createNextOccurrence,
         private BroadcastActionItemChange $broadcastActionItemChange,
     ) {}
 
@@ -31,6 +32,10 @@ class SetActionItemStatus
         }
 
         $locked->update(['completed_at' => $completing ? now() : null]);
+
+        if ($completing) {
+            $this->createNextOccurrence->handle($locked);
+        }
 
         $origin = $actor instanceof ExternalSyncActor ? ActionItemEventOrigin::External : ActionItemEventOrigin::Skrum;
 

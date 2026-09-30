@@ -3,6 +3,7 @@
 namespace App\Actions\ActionItems;
 
 use App\Enums\ActionItemPriority;
+use App\Enums\ActionItemRecurrence;
 use App\Enums\ActionItemStatus;
 use Illuminate\Validation\Rule;
 
@@ -50,7 +51,7 @@ class ActionItemRules
      */
     public static function attributes(array $validated): array
     {
-        return array_intersect_key($validated, array_flip(['content', 'priority', 'due_on']));
+        return array_intersect_key($validated, array_flip(['content', 'priority', 'due_on', 'recurrence']));
     }
 
     /**
@@ -61,6 +62,7 @@ class ActionItemRules
         return [
             'priority' => ['sometimes', 'required', Rule::enum(ActionItemPriority::class)],
             'due_on' => ['sometimes', 'nullable', 'date_format:Y-m-d', 'after_or_equal:2000-01-01', 'before_or_equal:2100-12-31'],
+            'recurrence' => ['sometimes', 'nullable', Rule::enum(ActionItemRecurrence::class)],
             'assignee_user_id' => ['sometimes', 'nullable', 'uuid'],
             'assignee_participant_id' => $allowsGuests ? ['sometimes', 'nullable', 'uuid'] : ['prohibited'],
         ];

@@ -56,6 +56,8 @@ it('presents every field of a board item', function () {
         ],
         'themeId' => null,
         'themeName' => null,
+        'recurrence' => null,
+        'previousOccurrenceId' => null,
         'subtasks' => [],
         'createdAt' => $item->created_at?->toIso8601String(),
     ]);

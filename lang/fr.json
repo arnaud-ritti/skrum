@@ -912,5 +912,9 @@
     "Page :page of :total": "Page :page sur :total",
     "Open action items (:count)": "Actions ouvertes (:count)",
     "View the team's action items": "Voir les actions de l'équipe",
-    "An action item can have at most 20 sub-tasks.": "Une action peut avoir au plus 20 sous-tâches."
+    "An action item can have at most 20 sub-tasks.": "Une action peut avoir au plus 20 sous-tâches.",
+    "A recurring action item needs a due date.": "Une action récurrente a besoin d'une échéance.",
+    "Repeats weekly": "Se répète chaque semaine",
+    "Repeats every 2 weeks": "Se répète toutes les 2 semaines",
+    "Repeats monthly": "Se répète chaque mois"
 }

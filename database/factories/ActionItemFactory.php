@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Enums\ActionItemPriority;
+use App\Enums\ActionItemRecurrence;
 use App\Models\ActionItem;
 use App\Models\ActionItemSubtask;
 use App\Models\Participant;
@@ -65,6 +66,14 @@ class ActionItemFactory extends Factory
     public function priority(ActionItemPriority $priority): static
     {
         return $this->state(fn () => ['priority' => $priority]);
+    }
+
+    public function recurring(ActionItemRecurrence $recurrence): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'recurrence' => $recurrence,
+            'due_on' => $attributes['due_on'] ?? ActionItem::today()->addWeek()->toDateString(),
+        ]);
     }
 
     public function withoutRetro(Team $team, User $author): static

@@ -659,5 +659,9 @@
     "Page :page of :total": "Page :page of :total",
     "Open action items (:count)": "Open action items (:count)",
     "View the team's action items": "View the team's action items",
-    "An action item can have at most 20 sub-tasks.": "An action item can have at most 20 sub-tasks."
+    "An action item can have at most 20 sub-tasks.": "An action item can have at most 20 sub-tasks.",
+    "A recurring action item needs a due date.": "A recurring action item needs a due date.",
+    "Repeats weekly": "Repeats weekly",
+    "Repeats every 2 weeks": "Repeats every 2 weeks",
+    "Repeats monthly": "Repeats monthly"
 }

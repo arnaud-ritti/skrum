@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\ActionItemPriority;
+use App\Enums\ActionItemRecurrence;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Database\Factories\ActionItemFactory;
@@ -12,6 +13,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
 
 /**
@@ -28,7 +30,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $created_by_user_id
  * @property string|null $theme_id
  * @property string|null $theme_name
- * @property string|null $recurrence
+ * @property ActionItemRecurrence|null $recurrence
  * @property string|null $previous_occurrence_id
  * @property int|null $comments_count
  * @property Carbon|null $created_at
@@ -124,6 +126,18 @@ class ActionItem extends Model
         return $this->hasMany(ActionItemSubtask::class)->orderBy('position');
     }
 
+    /** @return BelongsTo<ActionItem, $this> */
+    public function previousOccurrence(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'previous_occurrence_id');
+    }
+
+    /** @return HasOne<ActionItem, $this> */
+    public function nextOccurrence(): HasOne
+    {
+        return $this->hasOne(self::class, 'previous_occurrence_id');
+    }
+
     /** @return HasMany<ActionItemComment, $this> */
     public function comments(): HasMany
     {
@@ -157,6 +171,7 @@ class ActionItem extends Model
     {
         return [
             'priority' => ActionItemPriority::class,
+            'recurrence' => ActionItemRecurrence::class,
             'due_on' => 'date',
             'completed_at' => 'datetime',
         ];
