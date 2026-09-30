@@ -10,6 +10,9 @@ use App\Http\Controllers\InvitationAcceptancesController;
 use App\Http\Controllers\InvitationLinksController;
 use App\Http\Controllers\LocalesController;
 use App\Http\Controllers\NotificationsController;
+use App\Http\Controllers\Poker\PokerGamesController;
+use App\Http\Controllers\Poker\PokerSnapshotsController;
+use App\Http\Controllers\PokerJoinsController;
 use App\Http\Controllers\ReadAllNotificationsController;
 use App\Http\Controllers\RetroJoinsController;
 use App\Http\Controllers\Retros\ActionItemCommentsController;
@@ -61,6 +64,7 @@ use App\Http\Controllers\WorkspaceMembersController;
 use App\Http\Controllers\WorkspacesController;
 use App\Http\Controllers\WorkspaceTemplatesController;
 use App\Http\Middleware\RememberCurrentWorkspace;
+use App\Http\Middleware\ResolvePokerPlayer;
 use App\Http\Middleware\ResolveRetroParticipant;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -219,6 +223,18 @@ Route::prefix('retros/{retro}')
         Route::post('surveys/{survey}/comments', [SurveyCommentsController::class, 'store'])->name('retros.surveys.comments.store')->whereUuid('survey');
         Route::patch('survey-comments/{surveyComment}', [SurveyCommentsController::class, 'update'])->name('retros.survey-comments.update')->whereUuid('surveyComment');
         Route::delete('survey-comments/{surveyComment}', [SurveyCommentsController::class, 'destroy'])->name('retros.survey-comments.destroy')->whereUuid('surveyComment');
+    });
+
+Route::get('poker/join/{guestToken}', [PokerJoinsController::class, 'show'])->name('poker.join.show');
+Route::post('poker/join/{guestToken}', [PokerJoinsController::class, 'store'])->name('poker.join.store')->middleware('throttle:10,1');
+
+Route::prefix('poker/{game}')
+    ->whereUuid('game')
+    ->middleware(ResolvePokerPlayer::class)
+    ->scopeBindings()
+    ->group(function () {
+        Route::get('/', [PokerGamesController::class, 'show'])->name('poker.show');
+        Route::get('snapshot', [PokerSnapshotsController::class, 'show'])->name('poker.snapshot.show');
     });
 
 Route::post('broadcasting/auth', [BroadcastAuthorizationsController::class, 'store'])->name('broadcasting.auth');

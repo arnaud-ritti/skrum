@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Poker\ResolvePlayer;
 use App\Actions\Retros\ResolveParticipant;
 use App\Models\Participant;
+use App\Models\PokerGame;
 use App\Models\Retro;
 use App\Models\Team;
 use Illuminate\Broadcasting\Broadcasters\PusherBroadcaster;
@@ -15,13 +17,17 @@ use Pusher\Pusher;
 
 class BroadcastAuthorizationsController extends Controller
 {
-    public function store(Request $request, ResolveParticipant $resolveParticipant): JsonResponse
+    public function store(Request $request, ResolveParticipant $resolveParticipant, ResolvePlayer $resolvePlayer): JsonResponse
     {
         /** @var array{socket_id: string, channel_name: string} $validated */
         $validated = $request->validate([
             'socket_id' => ['required', 'string', 'regex:/^\d+\.\d+$/'],
             'channel_name' => ['required', 'string'],
         ]);
+
+        if (str_starts_with($validated['channel_name'], 'presence-poker.')) {
+            return $this->authorizePokerChannel($request, $validated, $resolvePlayer);
+        }
 
         if (str_starts_with($validated['channel_name'], 'presence-retro.')) {
             return $this->authorizeRetroChannel($request, $validated, $resolveParticipant);
@@ -69,6 +75,39 @@ class BroadcastAuthorizationsController extends Controller
                 'name' => $participant->displayName(),
                 'avatarUrl' => $participant->avatarUrl(),
                 'isGuest' => $participant->isGuest(),
+            ],
+        );
+
+        return response()->json(json_decode($signature, true));
+    }
+
+    /**
+     * @param  array{socket_id: string, channel_name: string}  $validated
+     */
+    private function authorizePokerChannel(Request $request, array $validated, ResolvePlayer $resolvePlayer): JsonResponse
+    {
+        $gameId = Str::after($validated['channel_name'], 'presence-poker.');
+
+        abort_unless(Str::isUuid($gameId), 403);
+
+        $game = PokerGame::query()->find($gameId);
+
+        abort_if($game === null, 403);
+        abort_unless($game->id === $gameId, 403);
+
+        $player = $resolvePlayer->handle($request, $game);
+
+        abort_if($player === null, 403);
+
+        $signature = $this->pusher()->authorizePresenceChannel(
+            $validated['channel_name'],
+            $validated['socket_id'],
+            $player->id,
+            [
+                'id' => $player->id,
+                'name' => $player->displayName(),
+                'avatarUrl' => $player->avatarUrl(),
+                'isGuest' => $player->isGuest(),
             ],
         );
 

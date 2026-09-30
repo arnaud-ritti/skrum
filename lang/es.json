@@ -958,5 +958,13 @@
     "Modified Fibonacci": "Fibonacci modificada",
     "T-shirt sizes": "Tallas de camiseta",
     "Powers of 2": "Potencias de 2",
-    "Custom": "Personalizada"
+    "Custom": "Personalizada",
+    "This game has ended.": "Esta partida ha terminado.",
+    "Guests can't add or edit tasks.": "Los invitados no pueden añadir ni editar tareas.",
+    "Spectators can't vote.": "Los espectadores no pueden votar.",
+    "Only the facilitator or a workspace admin can delete this game.": "Solo el facilitador o un administrador del espacio de trabajo puede eliminar esta partida.",
+    "You no longer have access to this game.": "Ya no tienes acceso a esta partida.",
+    "Voting is closed for this round.": "La votación de esta ronda está cerrada.",
+    "Join a planning poker game": "Unirse a una partida de planning poker",
+    "Choose the name other players will see.": "Elige el nombre que verán los demás jugadores."
 }
