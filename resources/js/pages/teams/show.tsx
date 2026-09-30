@@ -8,6 +8,7 @@ import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import { HealthStatementsSection } from '@/components/teams/health-statements-section';
 import { NewRetroDialog } from '@/components/teams/new-retro-dialog';
+import { PokerGamesSection } from '@/components/teams/poker-games-section';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,6 +25,8 @@ import type {
     CategoryOption,
     LlmAvailability,
     MemberSummary,
+    PokerDeckOption,
+    PokerGameSummary,
     RetroSummary,
     TeamHealthStatement,
     TeamSummary,
@@ -44,6 +47,9 @@ type Props = {
     healthStatements: TeamHealthStatement[];
     canManageHealthStatements: boolean;
     llm: LlmAvailability;
+    pokerGames: PokerGameSummary[];
+    pokerDeckOptions: PokerDeckOption[];
+    canCreatePokerGame: boolean;
 };
 
 export default function ShowTeam({
@@ -60,6 +66,9 @@ export default function ShowTeam({
     healthStatements,
     canManageHealthStatements,
     llm,
+    pokerGames,
+    pokerDeckOptions,
+    canCreatePokerGame,
 }: Props) {
     const { t } = useTrans();
     const params = { workspace: workspace.slug, team: team.id };
@@ -149,6 +158,13 @@ export default function ShowTeam({
                     </ul>
                 </section>
 
+                <PokerGamesSection
+                    workspaceSlug={workspace.slug}
+                    teamId={team.id}
+                    games={pokerGames}
+                    deckOptions={pokerDeckOptions}
+                    canCreate={canCreatePokerGame}
+                />
                 <HealthStatementsSection
                     statements={healthStatements}
                     canManage={canManageHealthStatements}
