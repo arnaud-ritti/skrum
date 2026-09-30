@@ -30,6 +30,8 @@ use App\Models\Team;
 use App\Models\TeamIntegration;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Support\Games\GameRules;
+use App\Support\Games\GameRulesRegistry;
 use App\Support\Integrations\OAuthState;
 use Carbon\CarbonInterface;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -952,4 +954,9 @@ function gamePayloadExposesWord(array|string $payload, string $word): bool
     }
 
     return false;
+}
+
+function bindGameRules(GameRules ...$rules): void
+{
+    app()->instance(GameRulesRegistry::class, new GameRulesRegistry(array_values($rules)));
 }

@@ -13,6 +13,7 @@ use App\Models\Passkey;
 use App\Models\PersonalAccessToken;
 use App\Models\SavedPokerDeck;
 use App\Policies\PokerDeckPolicy;
+use App\Support\Games\GameRulesRegistry;
 use App\Support\Poker\ReverbPokerPresenceRoster;
 use Carbon\CarbonImmutable;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -37,6 +38,7 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(PokerPresenceRoster::class, fn (): PokerPresenceRoster => new ReverbPokerPresenceRoster);
+        $this->app->bind(GameRulesRegistry::class, fn (): GameRulesRegistry => new GameRulesRegistry([]));
         $this->app->scoped(McpGrantContext::class);
         $this->app->scoped(VisibleTeams::class);
         $this->app->scoped(McpTrackers::class);
