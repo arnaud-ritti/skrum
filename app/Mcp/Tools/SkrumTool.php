@@ -90,7 +90,7 @@ abstract class SkrumTool extends Tool
     {
         return [
             'limit' => ['nullable', 'integer', 'min:1', "max:{$maxLimit}"],
-            'page' => ['nullable', 'integer', 'min:1'],
+            'page' => ['nullable', 'integer', 'min:1', 'max:10000'],
         ];
     }
 
@@ -129,13 +129,7 @@ abstract class SkrumTool extends Tool
         $key = 'mcp-write:'.McpGrant::current()->tokenId;
         $maxAttempts = (int) config('skrum.mcp.write_rate_limit');
 
-        if (RateLimiter::tooManyAttempts($key, $maxAttempts)) {
-            return false;
-        }
-
-        RateLimiter::hit($key, 60);
-
-        return true;
+        return RateLimiter::attempt($key, $maxAttempts, fn (): bool => true, 60);
     }
 
     private function httpMessage(HttpException $exception): string
@@ -143,6 +137,7 @@ abstract class SkrumTool extends Tool
         return match (true) {
             $exception->getStatusCode() === 404 => __('Not found.'),
             $exception->getStatusCode() === 423 => __('The board is closed for editing.'),
+            $exception->getStatusCode() === 403 && $exception->getMessage() === '' => __('This action is unauthorized.'),
             $exception->getMessage() !== '' => $exception->getMessage(),
             default => __('Something went wrong.'),
         };

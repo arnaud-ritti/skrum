@@ -93,6 +93,8 @@ class ToolBaseFailingTool extends ToolBaseReadTool
             'forbidden' => throw new AuthorizationException('Only the facilitator can do this.'),
             'unauthorized' => throw new AuthorizationException,
             'locked' => throw new HttpException(423),
+            'abort-forbidden' => abort(403),
+            'page' => $request->validate($this->paginationRules()),
             'invalid' => $request->validate(['title' => ['required', 'string']]),
             default => throw new RuntimeException('secret-argument-value'),
         };
@@ -166,9 +168,19 @@ it('turns domain exceptions into translated tool errors', function (string $kind
     'http 404' => ['not-found-http', 'Not found.'],
     'forbidden' => ['forbidden', 'Only the facilitator can do this.'],
     'locked' => ['locked', 'The board is closed for editing.'],
+    'bare 403' => ['abort-forbidden', 'This action is unauthorized.'],
     'invalid' => ['invalid', 'The title field is required.'],
     'crash' => ['crash', 'Something went wrong.'],
 ]);
+
+it('rejects absurd page numbers as a validation error', function () {
+    $user = User::factory()->create();
+    bindMcpGrant($user);
+
+    ToolBaseTestServer::actingAs($user)
+        ->tool(ToolBaseFailingTool::class, ['kind' => 'page', 'page' => PHP_INT_MAX])
+        ->assertHasErrors(['The page field must not be greater than 10000.']);
+});
 
 it('translates tool errors into the user locale', function () {
     $user = User::factory()->create(['locale' => 'fr']);
@@ -327,10 +339,11 @@ it('presents boards with their counts and link', function () {
         'title' => 'Sprint 12',
         'completed_at' => now(),
     ]);
-    Participant::factory()->count(2)->create(['retro_id' => $retro->id]);
-    Card::factory()->count(3)->create(['retro_id' => $retro->id]);
-    ActionItem::factory()->create(['retro_id' => $retro->id]);
-    ActionItem::factory()->completed()->create(['retro_id' => $retro->id]);
+    $participants = Participant::factory()->count(2)->create(['retro_id' => $retro->id]);
+    $author = ['retro_id' => $retro->id, 'participant_id' => $participants->first()->id];
+    Card::factory()->count(3)->create($author);
+    ActionItem::factory()->create(['retro_id' => $retro->id, 'created_by_participant_id' => $participants->first()->id]);
+    ActionItem::factory()->completed()->create(['retro_id' => $retro->id, 'created_by_participant_id' => $participants->first()->id]);
 
     $board = app(McpBoard::class)->handle(McpBoard::withCounts(Retro::query())->findOrFail($retro->id));
 
@@ -345,7 +358,7 @@ it('presents boards with their counts and link', function () {
         'openActionItemCount' => 1,
         'url' => route('retros.show', $retro),
     ])
-        ->and($board['participantCount'])->toBeGreaterThanOrEqual(2)
+        ->and($board['participantCount'])->toBe(2)
         ->and($board['messageCount'])->toBe(3)
         ->and($board['completedAt'])->not->toBeNull();
 });
