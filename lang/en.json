@@ -461,5 +461,16 @@
     "Statement updated.": "Statement updated.",
     "Statements reordered.": "Statements reordered.",
     "Statement archived.": "Statement archived.",
-    "Statement restored.": "Statement restored."
+    "Statement restored.": "Statement restored.",
+    "Excellent": "Excellent",
+    "Good": "Good",
+    "Needs attention": "Needs attention",
+    "Critical": "Critical",
+    "The team is thriving. Keep doing what works.": "The team is thriving. Keep doing what works.",
+    "Most health scores are above average. Keep the momentum going.": "Most health scores are above average. Keep the momentum going.",
+    "Several areas need attention. Pick one to improve next.": "Several areas need attention. Pick one to improve next.",
+    "The team is struggling. Talk about what would help most.": "The team is struggling. Talk about what would help most.",
+    "High team consensus": "High team consensus",
+    "Moderate consensus": "Moderate consensus",
+    "Divided opinions": "Divided opinions"
 }

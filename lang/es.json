@@ -718,5 +718,16 @@
     "Statement updated.": "Afirmación actualizada.",
     "Statements reordered.": "Afirmaciones reordenadas.",
     "Statement archived.": "Afirmación archivada.",
-    "Statement restored.": "Afirmación restaurada."
+    "Statement restored.": "Afirmación restaurada.",
+    "Excellent": "Excelente",
+    "Good": "Bien",
+    "Needs attention": "Requiere atención",
+    "Critical": "Crítico",
+    "The team is thriving. Keep doing what works.": "El equipo está en plena forma. Sigue con lo que funciona.",
+    "Most health scores are above average. Keep the momentum going.": "La mayoría de las puntuaciones están por encima de la media. Mantén el impulso.",
+    "Several areas need attention. Pick one to improve next.": "Varias áreas requieren atención. Elige una para mejorar a continuación.",
+    "The team is struggling. Talk about what would help most.": "El equipo lo está pasando mal. Habla de lo que más ayudaría.",
+    "High team consensus": "Alto consenso en el equipo",
+    "Moderate consensus": "Consenso moderado",
+    "Divided opinions": "Opiniones divididas"
 }
