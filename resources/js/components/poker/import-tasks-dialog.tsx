@@ -100,8 +100,11 @@ function ImportForm({
     const [error, setError] = useState<string | null>(null);
     const isJira = source === 'jira';
     const iterationsRequest = useRef(0);
+    const previewRequest = useRef(0);
 
     const resetPreview = () => {
+        previewRequest.current += 1;
+        setLoading(false);
         setPreview(null);
         setSelected(new Set());
     };
@@ -196,6 +199,10 @@ function ImportForm({
 
     const showIssues = async (event: FormEvent) => {
         event.preventDefault();
+        previewRequest.current += 1;
+
+        const requestId = previewRequest.current;
+
         setLoading(true);
         setError(null);
 
@@ -207,6 +214,10 @@ function ImportForm({
                     : { mode, query },
             );
 
+            if (requestId !== previewRequest.current) {
+                return;
+            }
+
             setPreview(response);
             setSelected(
                 new Set(
@@ -216,10 +227,14 @@ function ImportForm({
                 ),
             );
         } catch (caught) {
-            setPreview(null);
-            fail(caught);
+            if (requestId === previewRequest.current) {
+                setPreview(null);
+                fail(caught);
+            }
         } finally {
-            setLoading(false);
+            if (requestId === previewRequest.current) {
+                setLoading(false);
+            }
         }
     };
 

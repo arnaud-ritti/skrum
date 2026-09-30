@@ -23,7 +23,9 @@ export function TaskSourceDetails({ task, external }: Props) {
     const canSync =
         snapshot.me.isFacilitator &&
         task.estimate !== null &&
-        (external.syncState === 'failed' || external.syncState === 'synced');
+        (external.syncState === 'failed' ||
+            external.syncState === 'pending' ||
+            external.syncState === 'synced');
 
     const sync = async () => {
         setBusy(true);
@@ -82,9 +84,9 @@ export function TaskSourceDetails({ task, external }: Props) {
                         onClick={() => void sync()}
                     >
                         <RefreshCw className="size-3.5" />
-                        {external.syncState === 'failed'
-                            ? t('Retry')
-                            : t('Sync again')}
+                        {external.syncState === 'synced'
+                            ? t('Sync again')
+                            : t('Retry')}
                     </Button>
                 )}
             </div>
