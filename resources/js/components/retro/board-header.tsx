@@ -14,6 +14,7 @@ import { PhaseStepper } from './phase-stepper';
 import { PresenceStrip } from './presence-strip';
 import { TimerControl } from './timer-control';
 import { TimerDisplay } from './timer-display';
+import { AddSurveyButton } from './surveys-column';
 
 type Props = {
     online: PresenceMember[];
@@ -57,6 +58,7 @@ export function BoardHeader({
                     offset={offset}
                 />
                 {actions}
+                <AddSurveyButton />
                 {board.viewer.isFacilitator && (
                     <>
                         {board.retro.phase !== 'completed' && <TimerControl />}
