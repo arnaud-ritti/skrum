@@ -224,3 +224,12 @@ it('stores no insights when the summary was removed during the run', function ()
         ->and($retro->themes()->count())->toBe(0)
         ->and($retro->suggestedActions()->count())->toBe(0);
 });
+
+it('hides suggestion handling while a discussing retro is locked', function () {
+    [$retro, , $suggestion] = suggestingRetro(RetroPhase::Discussing, ['is_locked' => true]);
+    [$user, $participant] = retroMember($retro);
+
+    expect(app(BuildBoardSnapshot::class)->handle($retro->fresh(), $participant)['viewer']['canHandleSuggestions'])->toBeFalse();
+
+    $this->actingAs($user)->deleteJson(route('retros.suggested-actions.destroy', [$retro, $suggestion]))->assertStatus(423);
+});

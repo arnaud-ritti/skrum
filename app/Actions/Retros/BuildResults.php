@@ -28,7 +28,7 @@ class BuildResults
      *     surveys: array<int, array<string, mixed>>,
      *     games: null,
      *     roti: array{distribution: array<int, array{score: int, count: int}>, average: ?float, respondents: int},
-     *     summary: ?array{text: ?string, generatedAt: ?string, status: string, provider: ?string}
+     *     summary: ?array{text: ?string, generatedAt: ?string, status: ?string, provider: string}
      * }|null
      */
     public function handle(Retro $retro, Participant $viewer, ?array $surveys = null): ?array

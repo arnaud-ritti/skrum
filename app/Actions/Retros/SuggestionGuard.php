@@ -18,7 +18,7 @@ class SuggestionGuard
     public function allows(Retro $retro, Participant $participant): bool
     {
         if ($retro->phase === RetroPhase::Discussing) {
-            return true;
+            return ! $retro->is_locked;
         }
 
         if ($retro->phase !== RetroPhase::Completed) {
@@ -36,12 +36,12 @@ class SuggestionGuard
     {
         RetroGuard::phase($retro, RetroPhase::Discussing, RetroPhase::Completed);
 
-        if (! $this->allows($retro, $participant)) {
-            throw new AuthorizationException(__('Only the facilitator can do this.'));
-        }
-
         if ($retro->phase === RetroPhase::Discussing) {
             RetroGuard::unlocked($retro);
+        }
+
+        if (! $this->allows($retro, $participant)) {
+            throw new AuthorizationException(__('Only the facilitator can do this.'));
         }
     }
 
