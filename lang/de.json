@@ -890,5 +890,6 @@
     "1 comment": "1 Kommentar",
     ":count comments": ":count Kommentare",
     "This also deletes 1 open action item.": "Dadurch wird auch 1 offener Aktionspunkt gelöscht.",
-    "This also deletes :count open action items.": "Dadurch werden auch :count offene Aktionspunkte gelöscht."
+    "This also deletes :count open action items.": "Dadurch werden auch :count offene Aktionspunkte gelöscht.",
+    "Could not load the comments.": "Die Kommentare konnten nicht geladen werden."
 }

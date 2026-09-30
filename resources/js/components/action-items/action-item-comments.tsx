@@ -16,6 +16,7 @@ import { AnonymousNotice } from './anonymous-notice';
 import type { RunMutation } from './action-item-card';
 
 type Props = {
+    id?: string;
     item: ActionItem;
     endpoints: ActionItemEndpoints;
     viewer: ActionItemViewer;
@@ -26,6 +27,7 @@ type Props = {
 };
 
 export function ActionItemComments({
+    id,
     item,
     endpoints,
     viewer,
@@ -43,6 +45,8 @@ export function ActionItemComments({
         content: string;
     } | null>(null);
     const [busy, setBusy] = useState(false);
+    const [failed, setFailed] = useState(false);
+    const [attempt, setAttempt] = useState(0);
     const latest = useRef({ endpoints, run });
     const revision = item.commentsRevision ?? 0;
 
@@ -58,41 +62,54 @@ export function ActionItemComments({
                 ),
             )
             .then((response) => {
-                if (!cancelled && response) {
-                    setComments(response.comments);
+                if (cancelled) {
+                    return;
                 }
+
+                if (!response) {
+                    setFailed(true);
+
+                    return;
+                }
+
+                setFailed(false);
+                setComments(response.comments);
             });
 
         return () => {
             cancelled = true;
         };
-    }, [item.id, revision]);
+    }, [item.id, revision, attempt]);
 
     const add = async () => {
         const content = draft.trim();
 
-        if (content === '' || busy) {
+        if (content === '' || busy || comments === null) {
             return;
         }
 
         setBusy(true);
-        const response = await run(
-            retroRequest<{ comment: ActionItemComment }>(
-                endpoints.addComment(item.id),
-                { content },
-            ),
-        );
-        setBusy(false);
 
-        if (!response) {
-            return;
+        try {
+            const response = await run(
+                retroRequest<{ comment: ActionItemComment }>(
+                    endpoints.addComment(item.id),
+                    { content },
+                ),
+            );
+
+            if (!response) {
+                return;
+            }
+
+            const next = [...comments, response.comment];
+
+            setComments(next);
+            setDraft('');
+            onCountChange(next.length);
+        } finally {
+            setBusy(false);
         }
-
-        const next = [...(comments ?? []), response.comment];
-
-        setComments(next);
-        setDraft('');
-        onCountChange(next.length);
     };
 
     const save = async () => {
@@ -103,24 +120,30 @@ export function ActionItemComments({
         }
 
         setBusy(true);
-        const response = await run(
-            retroRequest<{ comment: ActionItemComment }>(
-                endpoints.updateComment(editing.id),
-                { content },
-            ),
-        );
-        setBusy(false);
 
-        if (!response) {
-            return;
+        try {
+            const response = await run(
+                retroRequest<{ comment: ActionItemComment }>(
+                    endpoints.updateComment(editing.id),
+                    { content },
+                ),
+            );
+
+            if (!response) {
+                return;
+            }
+
+            setComments((current) =>
+                (current ?? []).map((comment) =>
+                    comment.id === response.comment.id
+                        ? response.comment
+                        : comment,
+                ),
+            );
+            setEditing(null);
+        } finally {
+            setBusy(false);
         }
-
-        setComments((current) =>
-            (current ?? []).map((comment) =>
-                comment.id === response.comment.id ? response.comment : comment,
-            ),
-        );
-        setEditing(null);
     };
 
     const remove = async (comment: ActionItemComment) => {
@@ -129,27 +152,48 @@ export function ActionItemComments({
         }
 
         setBusy(true);
-        const result = await run(
-            retroRequest(endpoints.destroyComment(comment.id)),
-        );
-        setBusy(false);
 
-        if (result === undefined) {
-            return;
+        try {
+            const result = await run(
+                retroRequest(endpoints.destroyComment(comment.id)),
+            );
+
+            if (result === undefined) {
+                return;
+            }
+
+            const next = (comments ?? []).filter(
+                (existing) => existing.id !== comment.id,
+            );
+
+            setComments(next);
+            onCountChange(next.length);
+        } finally {
+            setBusy(false);
         }
-
-        const next = (comments ?? []).filter(
-            (existing) => existing.id !== comment.id,
-        );
-
-        setComments(next);
-        onCountChange(next.length);
     };
 
     return (
-        <div className="space-y-2 border-l pl-3">
-            {comments === null && (
+        <div id={id} className="space-y-2 border-l pl-3">
+            {comments === null && !failed && (
                 <p className="text-xs text-muted-foreground">{t('Loading…')}</p>
+            )}
+            {comments === null && failed && (
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <span>{t('Could not load the comments.')}</span>
+                    <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        className="h-6 px-2"
+                        onClick={() => {
+                            setFailed(false);
+                            setAttempt(attempt + 1);
+                        }}
+                    >
+                        {t('Retry')}
+                    </Button>
+                </div>
             )}
             {comments?.length === 0 && (
                 <p className="text-xs text-muted-foreground">
@@ -268,7 +312,9 @@ export function ActionItemComments({
                     <Button
                         type="submit"
                         size="sm"
-                        disabled={busy || draft.trim() === ''}
+                        disabled={
+                            busy || comments === null || draft.trim() === ''
+                        }
                     >
                         {t('Comment')}
                     </Button>

@@ -71,11 +71,15 @@ export function ActionItemForm({
         }
 
         setSending(true);
-        const created = await onSubmit(actionItemPayload(draft));
-        setSending(false);
 
-        if (created) {
-            setDraft(emptyActionItemDraft());
+        try {
+            const created = await onSubmit(actionItemPayload(draft));
+
+            if (created) {
+                setDraft(emptyActionItemDraft());
+            }
+        } finally {
+            setSending(false);
         }
     };
 

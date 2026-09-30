@@ -69,22 +69,30 @@ export function ActionItemCard({
         setDueDraft(item.dueOn ?? '');
     }
 
-    const patch = async (data: Record<string, unknown>) => {
+    const patch = async (data: Record<string, unknown>): Promise<boolean> => {
         if (busy) {
-            return;
+            return false;
         }
 
         setBusy(true);
-        const response = await run(
-            retroRequest<{ actionItem: ActionItem }>(
-                endpoints.update(item.id),
-                data,
-            ),
-        );
-        setBusy(false);
 
-        if (response) {
+        try {
+            const response = await run(
+                retroRequest<{ actionItem: ActionItem }>(
+                    endpoints.update(item.id),
+                    data,
+                ),
+            );
+
+            if (!response) {
+                return false;
+            }
+
             onSaved(response.actionItem);
+
+            return true;
+        } finally {
+            setBusy(false);
         }
     };
 
@@ -94,11 +102,15 @@ export function ActionItemCard({
         }
 
         setBusy(true);
-        const result = await run(retroRequest(endpoints.destroy(item.id)));
-        setBusy(false);
 
-        if (result !== undefined) {
-            onRemoved(item.id);
+        try {
+            const result = await run(retroRequest(endpoints.destroy(item.id)));
+
+            if (result !== undefined) {
+                onRemoved(item.id);
+            }
+        } finally {
+            setBusy(false);
         }
     };
 
@@ -114,12 +126,18 @@ export function ActionItemCard({
         void patch({ content: trimmed });
     };
 
-    const saveDueDate = () => {
-        if (dueDraft === (item.dueOn ?? '')) {
+    const saveDueDate = async (partialInput: boolean) => {
+        if (partialInput || dueDraft === (item.dueOn ?? '')) {
             return;
         }
 
-        void patch({ due_on: dueDraft === '' ? null : dueDraft });
+        const saved = await patch({
+            due_on: dueDraft === '' ? null : dueDraft,
+        });
+
+        if (!saved) {
+            setDueDraft(item.dueOn ?? '');
+        }
     };
 
     return (
@@ -241,7 +259,12 @@ export function ActionItemCard({
                     disabled={busy || !manages}
                     aria-label={t('Due date')}
                     onChange={(event) => setDueDraft(event.target.value)}
-                    onBlur={saveDueDate}
+                    onBlur={(event) =>
+                        void saveDueDate(
+                            event.currentTarget.value === '' &&
+                                event.currentTarget.validity.badInput,
+                        )
+                    }
                 />
             </div>
             <AssigneeSelect
@@ -257,6 +280,7 @@ export function ActionItemCard({
                 size="sm"
                 className="h-7 gap-1 px-2"
                 aria-expanded={commentsOpen}
+                aria-controls={`action-item-${item.id}-comments`}
                 onClick={() => setCommentsOpen(!commentsOpen)}
             >
                 <MessageSquare className="size-4" />
@@ -266,6 +290,7 @@ export function ActionItemCard({
             </Button>
             {commentsOpen && (
                 <ActionItemComments
+                    id={`action-item-${item.id}-comments`}
                     item={item}
                     endpoints={endpoints}
                     viewer={viewer}

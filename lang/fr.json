@@ -890,5 +890,6 @@
     "1 comment": "1 commentaire",
     ":count comments": ":count commentaires",
     "This also deletes 1 open action item.": "Cela supprime aussi 1 action ouverte.",
-    "This also deletes :count open action items.": "Cela supprime aussi :count actions ouvertes."
+    "This also deletes :count open action items.": "Cela supprime aussi :count actions ouvertes.",
+    "Could not load the comments.": "Impossible de charger les commentaires."
 }
