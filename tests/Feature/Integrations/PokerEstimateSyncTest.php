@@ -366,3 +366,41 @@ it('never lets an external id escape the issue path', function () {
     expect($task->fresh()?->sync_error)->toBe('This issue was not found in Jira.');
     Http::assertNothingSent();
 });
+
+it('lets a new write be queued once the unique lock window has passed', function () {
+    Queue::fake();
+
+    SyncTaskEstimate::dispatch('locked-task-id');
+    SyncTaskEstimate::dispatch('locked-task-id');
+
+    Queue::assertPushed(SyncTaskEstimate::class, 1);
+
+    $this->travel(6)->minutes();
+
+    SyncTaskEstimate::dispatch('locked-task-id');
+
+    Queue::assertPushed(SyncTaskEstimate::class, 2);
+});
+
+it('ignores the final failure of an older job once the task is synced', function () {
+    $table = trackerTable();
+    $task = importedPokerTask($table['game'], ['estimate' => '5', 'needs_sync' => false, 'synced_at' => now()]);
+
+    (new SyncTaskEstimate($task->id))->failed(new ProviderUnavailable(IntegrationProvider::Jira));
+
+    expect($task->fresh()?->needs_sync)->toBeFalse()
+        ->and($task->fresh()?->sync_error)->toBeNull();
+});
+
+it('records a generic reason when Linear reports the update as unsuccessful', function () {
+    $table = trackerTable(IntegrationProvider::Linear);
+    $task = pendingSyncTask($table, '3', IntegrationProvider::Linear);
+    fakeLinearGraphql([
+        'issueEstimationType' => ['issue' => ['team' => ['issueEstimationType' => 'fibonacci', 'issueEstimationAllowZero' => false]]],
+        'issueUpdate(' => ['issueUpdate' => ['success' => false]],
+    ]);
+
+    runEstimateSync($task);
+
+    expect($task->fresh()?->sync_error)->toBe('Linear did not accept this estimate.');
+});

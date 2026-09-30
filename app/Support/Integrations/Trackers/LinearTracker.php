@@ -141,7 +141,7 @@ class LinearTracker implements IssueTracker
         }
 
         if (data_get($result, 'issueUpdate.success') !== true) {
-            throw new EstimateRejected(__('Linear rejected this estimate: :message', ['message' => 'issueUpdate']));
+            throw new EstimateRejected(__('Linear did not accept this estimate.'));
         }
     }
 

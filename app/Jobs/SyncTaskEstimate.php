@@ -28,6 +28,8 @@ class SyncTaskEstimate implements ShouldBeUniqueUntilProcessing, ShouldQueue
 
     public int $tries = 5;
 
+    public int $uniqueFor = 300;
+
     /** @var array<int, int> */
     public array $backoff = [10, 30, 120, 600];
 
@@ -83,7 +85,7 @@ class SyncTaskEstimate implements ShouldBeUniqueUntilProcessing, ShouldQueue
     {
         $task = PokerTask::query()->find($this->taskId);
 
-        if ($task === null) {
+        if ($task === null || ! $task->needs_sync) {
             return;
         }
 
