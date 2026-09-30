@@ -1339,5 +1339,6 @@
     ":count tasks refreshed.": ":count Aufgaben aktualisiert.",
     ":count tasks were not found in :source.": ":count Aufgaben wurden in :source nicht gefunden.",
     "Urgent": "Dringend",
-    "No priority": "Keine Priorität"
+    "No priority": "Keine Priorität",
+    "Reconnect :provider to enable assignee mapping.": "Verbinde :provider erneut, um die Zuordnung der Verantwortlichen zu aktivieren."
 }

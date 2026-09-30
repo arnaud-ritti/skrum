@@ -4,6 +4,7 @@ use App\Enums\IntegrationAccess;
 use App\Enums\IntegrationProvider;
 use App\Enums\IntegrationStatus;
 use App\Events\Integrations\IntegrationActivated;
+use App\Jobs\MatchIntegrationUsers;
 use App\Models\IntegrationUserMapping;
 use App\Models\Team;
 use App\Models\TeamIntegration;
@@ -11,10 +12,12 @@ use App\Models\User;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Testing\TestResponse;
 
 beforeEach(function () {
     Http::preventStrayRequests();
+    Queue::fake();
     enableIntegrations(IntegrationProvider::Linear);
 });
 
@@ -118,4 +121,5 @@ it('keeps settings and mappings when reconnecting to the same organization', fun
     expect($fresh->status)->toBe(IntegrationStatus::Active)
         ->and($fresh->setting('exportTeamId'))->toBe('team-1')
         ->and($fresh->userMappings()->count())->toBe(1);
+    Queue::assertPushed(MatchIntegrationUsers::class);
 });

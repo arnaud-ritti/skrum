@@ -4,6 +4,7 @@ use App\Enums\IntegrationAccess;
 use App\Enums\IntegrationProvider;
 use App\Enums\IntegrationStatus;
 use App\Events\Integrations\IntegrationActivated;
+use App\Jobs\MatchIntegrationUsers;
 use App\Models\IntegrationUserMapping;
 use App\Models\PokerGame;
 use App\Models\PokerTask;
@@ -13,10 +14,12 @@ use App\Models\User;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Testing\TestResponse;
 
 beforeEach(function () {
     Http::preventStrayRequests();
+    Queue::fake();
     enableIntegrations(IntegrationProvider::Jira);
 });
 
@@ -172,6 +175,7 @@ it('keeps the current site when it is among several sites', function () {
 
     expect($integration->status)->toBe(IntegrationStatus::Active)
         ->and($integration->site())->toBe('cloud-1');
+    Queue::assertPushed(MatchIntegrationUsers::class);
 });
 
 it('refuses an Atlassian account without a Jira site', function () {

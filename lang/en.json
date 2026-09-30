@@ -1092,5 +1092,6 @@
     ":count tasks refreshed.": ":count tasks refreshed.",
     ":count tasks were not found in :source.": ":count tasks were not found in :source.",
     "Urgent": "Urgent",
-    "No priority": "No priority"
+    "No priority": "No priority",
+    "Reconnect :provider to enable assignee mapping.": "Reconnect :provider to enable assignee mapping."
 }
