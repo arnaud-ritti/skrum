@@ -1531,5 +1531,9 @@
     "by :name": "par :name",
     "Favourite": "Favori",
     "Your favourite": "Votre favori",
-    "Finish round": "Terminer la manche"
+    "Finish round": "Terminer la manche",
+    ":sharer invites you to play :game in \":room\" (:team)": ":sharer vous invite à jouer à :game dans « :room » (:team)",
+    "Join the game": "Rejoindre la partie",
+    "Guest access is off for this room.": "L'accès invité est désactivé pour ce salon.",
+    "Only the host, the room creator or a workspace admin can invite people to this room.": "Seuls l'hôte, la personne qui a créé le salon ou un administrateur de l'espace de travail peuvent inviter dans ce salon."
 }

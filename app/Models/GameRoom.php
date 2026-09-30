@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use App\Contracts\DeliverySubject;
 use App\Enums\GameKind;
 use App\Enums\GameRoomAccess;
+use App\Events\Games\GameRoomChanged;
 use Carbon\CarbonInterface;
 use Database\Factories\GameRoomFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -40,7 +42,7 @@ use Illuminate\Support\Carbon;
     'access', 'guest_token', 'timer_ends_at', 'current_round_id', 'scores_reset_at',
 ])]
 #[Hidden(['guest_token'])]
-class GameRoom extends Model
+class GameRoom extends Model implements DeliverySubject
 {
     /** @use HasFactory<GameRoomFactory> */
     use HasFactory;
@@ -166,6 +168,26 @@ class GameRoom extends Model
     public function guestUrl(): string
     {
         return route('games.join.show', $this->guest_token);
+    }
+
+    public function deliveryTeam(): Team
+    {
+        return $this->team;
+    }
+
+    /**
+     * A job has no socket id, so the sharer's own view refreshes too.
+     */
+    public function announceDeliveryChange(): void
+    {
+        (new GameRoomChanged($this))->sendToOthers();
+    }
+
+    protected static function booted(): void
+    {
+        static::deleting(function (GameRoom $room): void {
+            IntegrationDelivery::query()->whereMorphedTo('subject', $room)->delete();
+        });
     }
 
     protected function casts(): array

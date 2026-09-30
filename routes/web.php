@@ -24,6 +24,7 @@ use App\Http\Controllers\Games\GameRoundPassesController;
 use App\Http\Controllers\Games\GameRoundsController;
 use App\Http\Controllers\Games\GameRoundSecretsController;
 use App\Http\Controllers\Games\GameScoresController;
+use App\Http\Controllers\Games\GameSharesController;
 use App\Http\Controllers\Games\GameSnapshotsController;
 use App\Http\Controllers\Games\GameSwitchesController;
 use App\Http\Controllers\Games\GameTimersController;
@@ -431,6 +432,7 @@ Route::prefix('games/{room}')
         Route::get('rounds/{round}', [GameRoundsController::class, 'show'])->name('games.rounds.show')->whereUuid('round');
         Route::put('timer', [GameTimersController::class, 'update'])->name('games.timer.update');
         Route::delete('scores', [GameScoresController::class, 'destroy'])->name('games.scores.destroy');
+        Route::post('shares', [GameSharesController::class, 'store'])->middleware('throttle:5,1,shares')->name('games.shares.store');
         Route::post('rounds/{round}/pass', [GameRoundPassesController::class, 'store'])->name('games.rounds.pass.store')->whereUuid('round');
         Route::post('rounds/{round}/letters', [GameLettersController::class, 'store'])->name('games.rounds.letters.store')->whereUuid('round');
         Route::get('rounds/{round}/secret', [GameRoundSecretsController::class, 'show'])->name('games.rounds.secret.show')->whereUuid('round');

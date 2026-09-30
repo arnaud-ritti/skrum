@@ -24,7 +24,8 @@ use App\Support\Games\GameRulesRegistry;
  *         hostPlayerId: ?string,
  *         guestUrl: ?string,
  *         isIcebreaker: bool,
- *         currentRoundId: ?string
+ *         currentRoundId: ?string,
+ *         teamName: ?string
  *     },
  *     me: array{playerId: string, userId: ?string, isGuest: bool},
  *     players: array<int, array{id: string, presenceId: string, name: string, avatarUrl: string, isGuest: bool}>,
@@ -35,6 +36,8 @@ use App\Support\Games\GameRulesRegistry;
  *     emojiData: array{baseUrl: string, locale: string},
  *     leaderboard: array<int, array{playerId: string, points: int, wins: int, roundsPlayed: int}>,
  *     scoresResetAt: ?string,
+ *     share: array{slack: bool, telegram: bool},
+ *     deliveries: array<int, array<string, mixed>>,
  *     serverTime: string
  * }
  */
@@ -46,6 +49,7 @@ class BuildGameSnapshot
         private PresentGameRoundHistory $presentGameRoundHistory,
         private GameRulesRegistry $gameRulesRegistry,
         private RoomLeaderboard $roomLeaderboard,
+        private GameRoomShares $gameRoomShares,
     ) {}
 
     /**
@@ -79,6 +83,7 @@ class BuildGameSnapshot
                 'guestUrl' => $isStandalone && $isManager && $room->access === GameRoomAccess::Link ? $room->guestUrl() : null,
                 'isIcebreaker' => ! $isStandalone,
                 'currentRoundId' => $room->current_round_id,
+                'teamName' => $isGuest ? null : $room->team->name,
             ],
             'me' => [
                 'playerId' => $viewer->id,
@@ -99,6 +104,8 @@ class BuildGameSnapshot
             ],
             'leaderboard' => $this->roomLeaderboard->handle($room),
             'scoresResetAt' => $isStandalone ? $room->scores_reset_at?->toIso8601String() : null,
+            'share' => $this->gameRoomShares->availability($room, $viewer),
+            'deliveries' => $this->gameRoomShares->deliveries($room, $viewer),
             'serverTime' => now()->utc()->format('Y-m-d\TH:i:s.v\Z'),
         ];
     }

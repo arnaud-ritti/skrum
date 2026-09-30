@@ -45,6 +45,7 @@ it('builds the room for its host', function () {
         'guestUrl' => route('games.join.show', $room->guest_token),
         'isIcebreaker' => false,
         'currentRoundId' => null,
+        'teamName' => $room->team->name,
     ])
         ->and($snapshot['me'])->toBe(['playerId' => $host->id, 'userId' => $user->id, 'isGuest' => false])
         ->and($snapshot['players'])->toBe([[
