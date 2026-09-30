@@ -147,7 +147,6 @@ class CardsController extends Controller
             RetroGuard::author($card, $participant);
 
             $formerLeadId = $card->parent_card_id;
-            $formerLeadId = $card->parent_card_id;
             $children = $card->children()->orderBy('position')->get();
 
             $card->delete();

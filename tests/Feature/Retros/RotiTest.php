@@ -94,3 +94,25 @@ it('shows only the own score and the respondent count in the snapshot', function
     expect($voterSnapshot['roti'])->toBe(['myScore' => 4, 'respondents' => 2])
         ->and($nonVoterSnapshot['roti'])->toBe(['myScore' => null, 'respondents' => 2]);
 });
+
+it('only carries the roti distribution in the completed snapshot', function () {
+    $retro = Retro::factory()->inPhase(RetroPhase::Discussing)->create();
+    [, $viewer] = retroMember($retro);
+    RotiVote::factory()->create(['retro_id' => $retro->id, 'score' => 4]);
+
+    expect(app(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer)['results'])->toBeNull();
+
+    $retro->update(['phase' => RetroPhase::Completed]);
+
+    expect(app(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer)['results']['roti'])->toBe([
+        'distribution' => [
+            ['score' => 1, 'count' => 0],
+            ['score' => 2, 'count' => 0],
+            ['score' => 3, 'count' => 0],
+            ['score' => 4, 'count' => 1],
+            ['score' => 5, 'count' => 0],
+        ],
+        'average' => 4.0,
+        'respondents' => 1,
+    ]);
+});

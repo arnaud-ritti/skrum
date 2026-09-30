@@ -28,6 +28,8 @@ class BuildBoardSnapshot
         private GifCatalog $gifCatalog,
         private PresentHealthCheck $presentHealthCheck,
         private PresentSurvey $presentSurvey,
+        private PresentParticipant $presentParticipant,
+        private BuildResults $buildResults,
     ) {}
 
     /**
@@ -48,6 +50,8 @@ class BuildBoardSnapshot
             || ($retro->phase === RetroPhase::Voting && ! $retro->hide_vote_counts);
 
         [$votesVersion, $voteTotals, $myVotes] = $this->readVotes($retro, $viewer);
+
+        $surveys = $this->presentSurvey->many($retro, $viewer);
 
         return [
             'retro' => [
@@ -98,17 +102,13 @@ class BuildBoardSnapshot
                     'comments' => $isHidden ? [] : $this->presentComment->threads($card->comments, $retro, $viewer),
                 ];
             })->values()->all(),
-            'participants' => $retro->participants->map(fn (Participant $participant) => [
-                'id' => $participant->id,
-                'name' => $participant->displayName(),
-                'avatarUrl' => $participant->avatarUrl(),
-                'isGuest' => $participant->isGuest(),
-            ])->values()->all(),
+            'participants' => $retro->participants->map(fn (Participant $participant) => $this->presentParticipant->handle($participant))->values()->all(),
             'actionItems' => $retro->actionItems->sortBy('created_at')
                 ->map(fn (ActionItem $item) => $this->presentActionItem->handle($item))
                 ->values()->all(),
             'roti' => $this->roti($retro, $viewer),
-            'surveys' => $this->presentSurvey->many($retro, $viewer),
+            'surveys' => $surveys,
+            'results' => $this->buildResults->handle($retro, $viewer, $surveys),
             'healthCheck' => $this->presentHealthCheck->handle($retro, $viewer),
             'votesCast' => $retro->phase === RetroPhase::Voting ? (int) $voteTotals->sum() : null,
             'votesVersion' => $votesVersion,
