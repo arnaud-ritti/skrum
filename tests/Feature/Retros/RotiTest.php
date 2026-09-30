@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\Retros\BuildBoardSnapshot;
 use App\Enums\RetroPhase;
 use App\Events\Retros\RotiChanged;
 use App\Models\Participant;
@@ -79,4 +80,17 @@ it('accepts ratings from guests', function () {
         ->assertOk();
 
     expect(RotiVote::sole()->participant_id)->toBe($guest->id);
+});
+
+it('shows only the own score and the respondent count in the snapshot', function () {
+    [$retro, , $voter] = rotiRetro();
+    RotiVote::factory()->create(['retro_id' => $retro->id, 'participant_id' => $voter->id, 'score' => 4]);
+    RotiVote::factory()->create(['retro_id' => $retro->id, 'score' => 1]);
+    $nonVoter = Participant::factory()->create(['retro_id' => $retro->id]);
+
+    $voterSnapshot = app(BuildBoardSnapshot::class)->handle($retro->fresh(), $voter);
+    $nonVoterSnapshot = app(BuildBoardSnapshot::class)->handle($retro->fresh(), $nonVoter);
+
+    expect($voterSnapshot['roti'])->toBe(['myScore' => 4, 'respondents' => 2])
+        ->and($nonVoterSnapshot['roti'])->toBe(['myScore' => null, 'respondents' => 2]);
 });
