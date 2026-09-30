@@ -1,7 +1,6 @@
 <?php
 
 use App\Enums\RetroPhase;
-use App\Enums\RetroTemplate;
 use App\Models\ActionItem;
 use App\Models\Card;
 use App\Models\Column;
@@ -52,13 +51,6 @@ it('knows which phases are open and which hide the cards of others', function ()
     expect(array_map(fn (RetroPhase $phase) => $phase->value, $hiding))->toBe(['health_check', 'icebreaker', 'writing'])
         ->and($open)->not->toContain(RetroPhase::Completed)
         ->and($open)->toHaveCount(6);
-});
-
-it('defines template columns', function () {
-    expect(array_column(RetroTemplate::StartStopContinue->columns(), 'title'))->toBe(['Retro column: Start', 'Retro column: Stop', 'Retro column: Continue'])
-        ->and(RetroTemplate::FourLs->columns())->toHaveCount(4)
-        ->and(RetroTemplate::Custom->columns())->toBe([])
-        ->and(RetroTemplate::options())->toHaveCount(5);
 });
 
 it('names members, guests and former members', function () {

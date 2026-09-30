@@ -3,8 +3,8 @@
 namespace Database\Seeders;
 
 use App\Actions\Retros\CreateRetro;
+use App\Actions\Retros\NewRetro;
 use App\Actions\Workspaces\CreateWorkspace;
-use App\Enums\RetroTemplate;
 use App\Enums\WorkspaceRole;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -41,7 +41,7 @@ class DemoSeeder extends Seeder
         $team = $workspace->teams()->create(['name' => 'Demo Team']);
         $team->members()->attach([$fran->id, $max->id]);
 
-        $retro = $createRetro->handle($team, $fran, 'Demo Retrospective', RetroTemplate::StartStopContinue);
+        $retro = $createRetro->handle($team, $fran, new NewRetro('Demo Retrospective', 'start_stop_continue'));
         $retro->update(['guest_access_enabled' => true]);
 
         $this->command->info('Demo data created.');

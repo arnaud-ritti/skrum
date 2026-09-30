@@ -2,7 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\RetroTemplate;
+use App\Actions\Retros\BuildTemplateCatalogue;
+use App\Enums\TemplateCategory;
 use App\Models\Retro;
 use App\Models\Team;
 use App\Models\User;
@@ -28,7 +29,7 @@ class TeamsController extends Controller
         return to_route('teams.show', [$workspace, $team]);
     }
 
-    public function show(Request $request, Workspace $workspace, Team $team): Response
+    public function show(Request $request, Workspace $workspace, Team $team, BuildTemplateCatalogue $buildTemplateCatalogue): Response
     {
         Gate::authorize('view', $team);
 
@@ -51,7 +52,8 @@ class TeamsController extends Controller
                 'phaseLabel' => $retro->phase->label(),
                 'createdAt' => $retro->created_at?->toIso8601String(),
             ]),
-            'templates' => RetroTemplate::options(),
+            'templateCategories' => TemplateCategory::options(),
+            'catalogue' => Inertia::optional(fn () => $buildTemplateCatalogue->handle($workspace)),
             'canCreateRetro' => $request->user()->can('createRetro', $team),
         ]);
     }

@@ -3,7 +3,6 @@
 namespace Database\Factories;
 
 use App\Enums\RetroPhase;
-use App\Enums\RetroTemplate;
 use App\Models\Retro;
 use App\Models\Team;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -19,7 +18,7 @@ class RetroFactory extends Factory
         return [
             'team_id' => Team::factory(),
             'title' => fake()->sentence(3),
-            'template' => RetroTemplate::StartStopContinue,
+            'template' => 'start_stop_continue',
             'phase' => RetroPhase::Writing,
             'votes_per_participant' => 5,
             'guest_token' => Str::random(40),

@@ -49,7 +49,7 @@ class BuildBoardSnapshot
             'retro' => [
                 'id' => $retro->id,
                 'title' => $retro->title,
-                'template' => $retro->template->value,
+                'template' => $retro->template,
                 'phase' => $retro->phase->value,
                 'phases' => array_map(fn (RetroPhase $phase) => $phase->value, $retro->phases()),
                 'healthCheckEnabled' => $retro->health_check_enabled,

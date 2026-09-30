@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use App\Enums\RetroPhase;
-use App\Enums\RetroTemplate;
 use Database\Factories\RetroFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -18,7 +17,7 @@ use Illuminate\Support\Carbon;
  * @property string $id
  * @property string $team_id
  * @property string $title
- * @property RetroTemplate $template
+ * @property string $template
  * @property RetroPhase $phase
  * @property string|null $facilitator_participant_id
  * @property bool $is_anonymous
@@ -174,7 +173,6 @@ class Retro extends Model
     protected function casts(): array
     {
         return [
-            'template' => RetroTemplate::class,
             'phase' => RetroPhase::class,
             'is_anonymous' => 'boolean',
             'guest_access_enabled' => 'boolean',
