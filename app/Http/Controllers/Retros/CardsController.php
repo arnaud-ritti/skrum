@@ -84,6 +84,7 @@ class CardsController extends Controller
     {
         $participant = Participant::current($request);
 
+        // UpdateCard repeats these guards, but they must run before validation so a refused request answers 403 rather than 422.
         RetroGuard::phase($retro, RetroPhase::Writing, RetroPhase::Grouping);
         RetroGuard::unlocked($retro);
         RetroGuard::author($card, $participant);
