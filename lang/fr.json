@@ -1232,5 +1232,12 @@
     "A card without text": "Une carte sans texte",
     "Open the results": "Ouvrir les résultats",
     "Only the facilitator or a workspace admin can share this retrospective.": "Seuls l'animateur ou un administrateur de l'espace de travail peuvent partager cette rétrospective.",
-    "Only the facilitator or a workspace admin can share this game.": "Seuls l'animateur ou un administrateur de l'espace de travail peuvent partager cette partie."
+    "Only the facilitator or a workspace admin can share this game.": "Seuls l'animateur ou un administrateur de l'espace de travail peuvent partager cette partie.",
+    ":sharer invites you to the retrospective \":title\" (:team)": ":sharer vous invite à la rétrospective « :title » (:team)",
+    "Open the retrospective": "Ouvrir la rétrospective",
+    ":sharer invites you to the planning poker game \":title\" (:team)": ":sharer vous invite à la partie de planning poker « :title » (:team)",
+    "Open the game": "Ouvrir la partie",
+    "Guest access is off for this retrospective.": "L'accès invité est désactivé pour cette rétrospective.",
+    "Results can be shared once the retrospective is completed.": "Les résultats peuvent être partagés une fois la rétrospective terminée.",
+    "This retrospective is completed. Share its results instead.": "Cette rétrospective est terminée. Partagez plutôt ses résultats."
 }

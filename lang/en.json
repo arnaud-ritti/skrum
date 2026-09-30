@@ -983,5 +983,12 @@
     "A card without text": "A card without text",
     "Open the results": "Open the results",
     "Only the facilitator or a workspace admin can share this retrospective.": "Only the facilitator or a workspace admin can share this retrospective.",
-    "Only the facilitator or a workspace admin can share this game.": "Only the facilitator or a workspace admin can share this game."
+    "Only the facilitator or a workspace admin can share this game.": "Only the facilitator or a workspace admin can share this game.",
+    ":sharer invites you to the retrospective \":title\" (:team)": ":sharer invites you to the retrospective \":title\" (:team)",
+    "Open the retrospective": "Open the retrospective",
+    ":sharer invites you to the planning poker game \":title\" (:team)": ":sharer invites you to the planning poker game \":title\" (:team)",
+    "Open the game": "Open the game",
+    "Guest access is off for this retrospective.": "Guest access is off for this retrospective.",
+    "Results can be shared once the retrospective is completed.": "Results can be shared once the retrospective is completed.",
+    "This retrospective is completed. Share its results instead.": "This retrospective is completed. Share its results instead."
 }
