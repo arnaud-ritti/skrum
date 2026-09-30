@@ -46,3 +46,8 @@ export function useBoard(): BoardContextValue {
 
     return value;
 }
+
+/** For components shared with game rooms, which have no board. */
+export function useOptionalBoard(): BoardContextValue | null {
+    return useContext(BoardContext);
+}

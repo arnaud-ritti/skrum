@@ -1,6 +1,7 @@
 import { useTrans } from '@/hooks/use-trans';
 import type { GameRound } from '@/lib/games/types';
 import { DrawBoard } from './draw-board';
+import { DecodedBoard } from './decoded-board';
 import { HangmanBoard } from './hangman-board';
 import { PassRoundButton } from './pass-round-button';
 
@@ -24,6 +25,8 @@ function RoundBody({ round }: { round: GameRound }) {
             return <HangmanBoard round={round} />;
         case 'draw':
             return <DrawBoard key={round.id} round={round} />;
+        case 'decoded':
+            return <DecodedBoard key={round.id} round={round} />;
         default:
             return (
                 <p className="text-muted-foreground">

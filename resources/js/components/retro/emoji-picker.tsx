@@ -16,14 +16,17 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useTrans } from '@/hooks/use-trans';
+import type { EmojiDataLocation } from '@/lib/games/types';
 import { QuickEmoji } from '@/lib/retro/emoji';
-import { useBoard } from './board-context';
+import { useOptionalBoard } from './board-context';
 import { dragIsolation } from './dnd';
 
 type Props = {
     onPick: (emoji: string) => void;
     label: string;
     children: ReactNode;
+    /** Where the full emoji list lives; defaults to the retro board's. */
+    emojiData?: EmojiDataLocation;
 };
 
 function CategoryHeader({
@@ -56,9 +59,10 @@ const ListComponents: Partial<EmojiPickerListComponents> = {
     Emoji,
 };
 
-export function EmojiPicker({ onPick, label, children }: Props) {
+export function EmojiPicker({ onPick, label, children, emojiData }: Props) {
     const { t } = useTrans();
-    const { board } = useBoard();
+    const board = useOptionalBoard();
+    const data = emojiData ?? board?.board.emojiData ?? null;
     const [browsing, setBrowsing] = useState(false);
     const [unavailable, setUnavailable] = useState(false);
 
@@ -104,59 +108,68 @@ export function EmojiPicker({ onPick, label, children }: Props) {
                             {emoji}
                         </DropdownMenuItem>
                     ))}
-                    <DropdownMenuSeparator className="w-full" />
-                    <DropdownMenuItem
-                        className="w-full"
-                        onSelect={() => setBrowsing(true)}
-                    >
-                        {t('More emoji…')}
-                    </DropdownMenuItem>
+                    {data !== null && (
+                        <>
+                            <DropdownMenuSeparator className="w-full" />
+                            <DropdownMenuItem
+                                className="w-full"
+                                onSelect={() => setBrowsing(true)}
+                            >
+                                {t('More emoji…')}
+                            </DropdownMenuItem>
+                        </>
+                    )}
                 </DropdownMenuContent>
             </DropdownMenu>
-            <Dialog open={browsing} onOpenChange={setBrowsing}>
-                <DialogContent
-                    {...dragIsolation}
-                    aria-describedby={undefined}
-                    className="max-w-sm"
-                >
-                    <DialogTitle>{label}</DialogTitle>
-                    {unavailable && (
-                        <p role="alert" className="text-sm text-destructive">
-                            {t('Emoji list unavailable')}
-                        </p>
-                    )}
-                    <Frimousse.Root
-                        className="flex h-80 flex-col"
-                        locale={board.emojiData.locale}
-                        emojibaseUrl={board.emojiData.baseUrl}
-                        resolveEmojiData={resolveEmojiData}
-                        onEmojiSelect={({ emoji }) => {
-                            setBrowsing(false);
-                            onPick(emoji);
-                        }}
+            {data !== null && (
+                <Dialog open={browsing} onOpenChange={setBrowsing}>
+                    <DialogContent
+                        {...dragIsolation}
+                        aria-describedby={undefined}
+                        className="max-w-sm"
                     >
-                        <Frimousse.Search
-                            className="mb-2 rounded-md border bg-background px-2 py-1 text-sm"
-                            placeholder={t('Search emoji…')}
-                            aria-label={t('Search emoji…')}
-                        />
-                        <Frimousse.Viewport className="relative flex-1">
-                            {!unavailable && (
-                                <Frimousse.Loading className="p-2 text-sm text-muted-foreground">
-                                    {t('Loading…')}
-                                </Frimousse.Loading>
-                            )}
-                            <Frimousse.Empty className="p-2 text-sm text-muted-foreground">
-                                {t('No emoji found.')}
-                            </Frimousse.Empty>
-                            <Frimousse.List
-                                className="select-none"
-                                components={ListComponents}
+                        <DialogTitle>{label}</DialogTitle>
+                        {unavailable && (
+                            <p
+                                role="alert"
+                                className="text-sm text-destructive"
+                            >
+                                {t('Emoji list unavailable')}
+                            </p>
+                        )}
+                        <Frimousse.Root
+                            className="flex h-80 flex-col"
+                            locale={data.locale}
+                            emojibaseUrl={data.baseUrl}
+                            resolveEmojiData={resolveEmojiData}
+                            onEmojiSelect={({ emoji }) => {
+                                setBrowsing(false);
+                                onPick(emoji);
+                            }}
+                        >
+                            <Frimousse.Search
+                                className="mb-2 rounded-md border bg-background px-2 py-1 text-sm"
+                                placeholder={t('Search emoji…')}
+                                aria-label={t('Search emoji…')}
                             />
-                        </Frimousse.Viewport>
-                    </Frimousse.Root>
-                </DialogContent>
-            </Dialog>
+                            <Frimousse.Viewport className="relative flex-1">
+                                {!unavailable && (
+                                    <Frimousse.Loading className="p-2 text-sm text-muted-foreground">
+                                        {t('Loading…')}
+                                    </Frimousse.Loading>
+                                )}
+                                <Frimousse.Empty className="p-2 text-sm text-muted-foreground">
+                                    {t('No emoji found.')}
+                                </Frimousse.Empty>
+                                <Frimousse.List
+                                    className="select-none"
+                                    components={ListComponents}
+                                />
+                            </Frimousse.Viewport>
+                        </Frimousse.Root>
+                    </DialogContent>
+                </Dialog>
+            )}
         </>
     );
 }

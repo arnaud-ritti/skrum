@@ -6,6 +6,8 @@ import { useTrans } from '@/hooks/use-trans';
 import { outcomeLabel } from '@/lib/games/outcomes';
 import type { GameRoundDetail } from '@/lib/games/types';
 import { retroRequest } from '@/lib/retro/api';
+import { ClueRow } from './clue-row';
+import { DrawingCanvas } from './drawing-canvas';
 import { useRoom } from './room-context';
 import { WordMask } from './word-mask';
 
@@ -86,6 +88,33 @@ function GameDetail({ detail }: { detail: GameRoundDetail }) {
                                 .toUpperCase(),
                         })}
                     </p>
+                </div>
+            );
+        case 'draw':
+            return (
+                <div className="space-y-2">
+                    <DrawingCanvas
+                        ops={detail.drawing ?? []}
+                        label={t('Drawing of :word', {
+                            word: detail.word ?? '',
+                        })}
+                    />
+                    {detail.word && (
+                        <p className="text-center text-xl font-semibold">
+                            {detail.word}
+                        </p>
+                    )}
+                </div>
+            );
+        case 'decoded':
+            return (
+                <div className="space-y-2">
+                    <ClueRow clue={detail.clue ?? []} />
+                    {detail.word && (
+                        <p className="text-center text-xl font-semibold">
+                            {detail.word}
+                        </p>
+                    )}
                 </div>
             );
         default:

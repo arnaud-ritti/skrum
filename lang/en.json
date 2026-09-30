@@ -1257,5 +1257,13 @@
     "The drawing": "The drawing",
     "Who draws?": "Who draws?",
     "Who gives the clues?": "Who gives the clues?",
-    "Waiting for another player": "Waiting for another player"
+    "Waiting for another player": "Waiting for another player",
+    "No clue yet": "No clue yet",
+    "Clue: :emoji": "Clue: :emoji",
+    "Remove :emoji": "Remove :emoji",
+    "Add an emoji": "Add an emoji",
+    "Describe the word with up to five emoji, without letters or digits.": "Describe the word with up to five emoji, without letters or digits.",
+    "Your word to describe": "Your word to describe",
+    ":name is giving clues": ":name is giving clues",
+    "Drawing of :word": "Drawing of :word"
 }

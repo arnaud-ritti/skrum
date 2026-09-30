@@ -1503,5 +1503,13 @@
     "The drawing": "Die Zeichnung",
     "Who draws?": "Wer zeichnet?",
     "Who gives the clues?": "Wer gibt die Hinweise?",
-    "Waiting for another player": "Warten auf eine weitere Person"
+    "Waiting for another player": "Warten auf eine weitere Person",
+    "No clue yet": "Noch kein Hinweis",
+    "Clue: :emoji": "Hinweis: :emoji",
+    "Remove :emoji": ":emoji entfernen",
+    "Add an emoji": "Ein Emoji hinzufügen",
+    "Describe the word with up to five emoji, without letters or digits.": "Beschreibe das Wort mit bis zu fünf Emoji, ohne Buchstaben oder Ziffern.",
+    "Your word to describe": "Dein Wort zum Beschreiben",
+    ":name is giving clues": ":name gibt Hinweise",
+    "Drawing of :word": "Zeichnung von :word"
 }
