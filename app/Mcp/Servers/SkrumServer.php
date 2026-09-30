@@ -2,9 +2,11 @@
 
 namespace App\Mcp\Servers;
 
+use App\Mcp\Tools\Retro\GetSummary;
 use App\Mcp\Tools\Retro\ListActionItems;
 use App\Mcp\Tools\Retro\ListBoardActionItems;
 use App\Mcp\Tools\Retro\ListBoards;
+use App\Mcp\Tools\Retro\ListMessages;
 use App\Mcp\Tools\Retro\ListTeamMembers;
 use App\Mcp\Tools\Retro\ListTeams;
 use Laravel\Mcp\Server;
@@ -30,6 +32,8 @@ class SkrumServer extends Server
         ListBoards::class,
         ListActionItems::class,
         ListBoardActionItems::class,
+        ListMessages::class,
+        GetSummary::class,
     ];
 
     protected array $resources = [];

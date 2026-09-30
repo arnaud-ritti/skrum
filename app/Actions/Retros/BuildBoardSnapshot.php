@@ -54,8 +54,7 @@ class BuildBoardSnapshot
             'actionItems' => fn ($query) => $query->with(ActionItem::presentationRelations())->withCount('comments'),
         ]);
 
-        $showsTotals = in_array($retro->phase, [RetroPhase::Discussing, RetroPhase::Completed], true)
-            || ($retro->phase === RetroPhase::Voting && ! $retro->hide_vote_counts);
+        $showsTotals = $retro->showsVoteTotals();
         $showsCardInsights = $this->llm->isConfigured();
 
         [$votesVersion, $voteTotals, $myVotes] = $this->readVotes($retro, $viewer);

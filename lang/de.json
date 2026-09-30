@@ -1141,5 +1141,6 @@
     "Unauthenticated.": "Nicht authentifiziert.",
     "Not found.": "Nicht gefunden.",
     "Too many changes, wait a moment.": "Zu viele Änderungen, warte einen Moment.",
-    "Choose \"me\", \"unassigned\" or a member of the team.": "Wähle „me“, „unassigned“ oder ein Teammitglied."
+    "Choose \"me\", \"unassigned\" or a member of the team.": "Wähle „me“, „unassigned“ oder ein Teammitglied.",
+    "Vote totals are not visible yet.": "Die Stimmensummen sind noch nicht sichtbar."
 }

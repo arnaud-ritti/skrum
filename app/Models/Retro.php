@@ -77,6 +77,15 @@ class Retro extends Model
         return min(10, $topLevelCards + 3);
     }
 
+    public function showsVoteTotals(): bool
+    {
+        if (in_array($this->phase, [RetroPhase::Discussing, RetroPhase::Completed], true)) {
+            return true;
+        }
+
+        return $this->phase === RetroPhase::Voting && ! $this->hide_vote_counts;
+    }
+
     /** @return BelongsTo<WorkspaceTemplate, $this> */
     public function workspaceTemplate(): BelongsTo
     {
