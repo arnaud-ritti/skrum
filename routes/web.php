@@ -18,6 +18,7 @@ use App\Http\Controllers\Poker\PokerRevealsController;
 use App\Http\Controllers\Poker\PokerRoundsController;
 use App\Http\Controllers\Poker\PokerSettingsController;
 use App\Http\Controllers\Poker\PokerSnapshotsController;
+use App\Http\Controllers\Poker\PokerSpectatorsController;
 use App\Http\Controllers\Poker\PokerStatusesController;
 use App\Http\Controllers\Poker\PokerTaskEstimatesController;
 use App\Http\Controllers\Poker\PokerTaskOrdersController;
@@ -265,6 +266,7 @@ Route::prefix('poker/{game}')
         Route::put('status', [PokerStatusesController::class, 'update'])->name('poker.status.update');
         Route::post('guest-token', [PokerGuestTokensController::class, 'store'])->name('poker.guest-token.store');
         Route::put('facilitator', [PokerFacilitatorsController::class, 'update'])->name('poker.facilitator.update');
+        Route::put('players/{player}/spectator', [PokerSpectatorsController::class, 'update'])->name('poker.players.spectator.update')->whereUuid('player');
         Route::delete('/', [PokerGamesController::class, 'destroy'])->name('poker.destroy');
     });
 

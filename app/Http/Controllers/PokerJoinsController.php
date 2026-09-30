@@ -46,6 +46,7 @@ class PokerJoinsController extends Controller
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:50'],
+            'spectator' => ['sometimes', 'boolean'],
         ]);
 
         $secret = Str::random(40);
@@ -53,6 +54,7 @@ class PokerJoinsController extends Controller
         $player = $game->players()->create([
             'guest_name' => $validated['name'],
             'guest_secret_hash' => hash('sha256', $secret),
+            'is_spectator' => (bool) ($validated['spectator'] ?? false),
         ]);
 
         return to_route('poker.show', $game)
