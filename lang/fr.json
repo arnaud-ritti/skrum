@@ -916,5 +916,6 @@
     "A recurring action item needs a due date.": "Une action récurrente a besoin d'une échéance.",
     "Repeats weekly": "Se répète chaque semaine",
     "Repeats every 2 weeks": "Se répète toutes les 2 semaines",
-    "Repeats monthly": "Se répète chaque mois"
+    "Repeats monthly": "Se répète chaque mois",
+    "Notification settings saved.": "Paramètres de notification enregistrés."
 }

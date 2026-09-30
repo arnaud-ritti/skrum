@@ -32,11 +32,13 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property string|null $remember_token
  * @property string|null $locale
  * @property bool $is_instance_admin
+ * @property bool $action_item_reminders_by_email
+ * @property bool $action_item_reminders_in_app
  * @property string|null $current_workspace_id
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['name', 'email', 'password', 'locale'])]
+#[Fillable(['name', 'email', 'password', 'locale', 'action_item_reminders_by_email', 'action_item_reminders_in_app'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements HasLocalePreference, MustVerifyEmail, PasskeyUser
 {
@@ -47,6 +49,11 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
     use Notifiable;
     use PasskeyAuthenticatable;
     use TwoFactorAuthenticatable;
+
+    protected $attributes = [
+        'action_item_reminders_by_email' => true,
+        'action_item_reminders_in_app' => true,
+    ];
 
     /**
      * Get the attributes that should be cast.
@@ -60,6 +67,8 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
             'password' => 'hashed',
             'two_factor_confirmed_at' => 'datetime',
             'is_instance_admin' => 'boolean',
+            'action_item_reminders_by_email' => 'boolean',
+            'action_item_reminders_in_app' => 'boolean',
         ];
     }
 

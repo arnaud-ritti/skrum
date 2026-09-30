@@ -916,5 +916,6 @@
     "A recurring action item needs a due date.": "Ein wiederkehrender Aktionspunkt braucht ein Fälligkeitsdatum.",
     "Repeats weekly": "Wiederholt sich wöchentlich",
     "Repeats every 2 weeks": "Wiederholt sich alle 2 Wochen",
-    "Repeats monthly": "Wiederholt sich monatlich"
+    "Repeats monthly": "Wiederholt sich monatlich",
+    "Notification settings saved.": "Benachrichtigungseinstellungen gespeichert."
 }
