@@ -871,6 +871,5 @@
     "Only the author, the facilitator or an admin can change this action item.": "Solo el autor, el facilitador o un administrador pueden cambiar esta acción.",
     "Only the assignee or a manager can complete this action item.": "Solo la persona asignada o un responsable puede completar esta acción.",
     "You cannot comment on this action item.": "No puedes comentar esta acción.",
-    "Only the author of the comment or a manager can delete it.": "Solo el autor del comentario o un responsable puede eliminarlo.",
-    "You can only change your own comments.": "Solo puedes cambiar tus propios comentarios."
+    "Only the author of the comment or a manager can delete it.": "Solo el autor del comentario o un responsable puede eliminarlo."
 }

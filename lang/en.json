@@ -617,6 +617,5 @@
     "Only the author, the facilitator or an admin can change this action item.": "Only the author, the facilitator or an admin can change this action item.",
     "Only the assignee or a manager can complete this action item.": "Only the assignee or a manager can complete this action item.",
     "You cannot comment on this action item.": "You cannot comment on this action item.",
-    "Only the author of the comment or a manager can delete it.": "Only the author of the comment or a manager can delete it.",
-    "You can only change your own comments.": "You can only change your own comments."
+    "Only the author of the comment or a manager can delete it.": "Only the author of the comment or a manager can delete it."
 }
