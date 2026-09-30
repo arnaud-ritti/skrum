@@ -38,4 +38,13 @@ class WorkspaceActionItemGuard
 
         RetroGuard::unlocked($retro);
     }
+
+    public static function lockWritable(string $id): ActionItem
+    {
+        $locked = ActionItem::query()->whereKey($id)->lockForUpdate()->firstOrFail();
+
+        self::writable($locked);
+
+        return $locked;
+    }
 }

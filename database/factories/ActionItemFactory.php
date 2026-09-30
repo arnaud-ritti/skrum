@@ -4,11 +4,13 @@ namespace Database\Factories;
 
 use App\Enums\ActionItemPriority;
 use App\Models\ActionItem;
+use App\Models\ActionItemSubtask;
 use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\Team;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Factories\Sequence;
 
 /**
  * @extends Factory<ActionItem>
@@ -73,5 +75,13 @@ class ActionItemFactory extends Factory
             'created_by_participant_id' => null,
             'created_by_user_id' => $author->id,
         ]);
+    }
+
+    public function withSubtasks(int $count): static
+    {
+        return $this->has(
+            ActionItemSubtask::factory()->count($count)->state(new Sequence(fn (Sequence $sequence) => ['position' => $sequence->index])),
+            'subtasks',
+        );
     }
 }

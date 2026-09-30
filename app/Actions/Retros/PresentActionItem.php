@@ -6,6 +6,7 @@ use App\Actions\ActionItems\ActionItemActor;
 use App\Actions\ActionItems\ActionItemPermissions;
 use App\Enums\ActionItemStatus;
 use App\Models\ActionItem;
+use App\Models\ActionItemSubtask;
 use Carbon\CarbonInterface;
 
 class PresentActionItem
@@ -32,6 +33,7 @@ class PresentActionItem
      *     source: ?array{retroTitle: string, retroCreatedAt: ?string, retroUrl: string},
      *     themeId: ?string,
      *     themeName: ?string,
+     *     subtasks: array<int, array{id: string, content: string, isCompleted: bool, position: int}>,
      *     createdAt: ?string
      * }
      */
@@ -54,6 +56,15 @@ class PresentActionItem
             'source' => $this->source($item),
             'themeId' => $item->theme_id,
             'themeName' => $item->theme_name,
+            'subtasks' => $item->subtasks
+                ->map(fn (ActionItemSubtask $subtask) => [
+                    'id' => $subtask->id,
+                    'content' => $subtask->content,
+                    'isCompleted' => $subtask->isCompleted(),
+                    'position' => $subtask->position,
+                ])
+                ->values()
+                ->all(),
             'createdAt' => $item->created_at?->toIso8601String(),
         ];
     }

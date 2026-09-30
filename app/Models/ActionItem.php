@@ -65,7 +65,7 @@ class ActionItem extends Model
      */
     public static function presentationRelations(): array
     {
-        return ['team.members', 'retro', 'author', 'createdByParticipant.user', 'assigneeUser', 'assigneeParticipant.user'];
+        return ['team.members', 'retro', 'author', 'createdByParticipant.user', 'assigneeUser', 'assigneeParticipant.user', 'subtasks'];
     }
 
     public function loadForPresentation(): static
@@ -116,6 +116,12 @@ class ActionItem extends Model
     public function theme(): BelongsTo
     {
         return $this->belongsTo(RetroTheme::class, 'theme_id');
+    }
+
+    /** @return HasMany<ActionItemSubtask, $this> */
+    public function subtasks(): HasMany
+    {
+        return $this->hasMany(ActionItemSubtask::class)->orderBy('position');
     }
 
     /** @return HasMany<ActionItemComment, $this> */

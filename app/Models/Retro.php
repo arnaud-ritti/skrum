@@ -149,6 +149,12 @@ class Retro extends Model
         return $this->hasManyThrough(ActionItemComment::class, ActionItem::class);
     }
 
+    /** @return HasManyThrough<ActionItemSubtask, ActionItem, $this> */
+    public function actionItemSubtasks(): HasManyThrough
+    {
+        return $this->hasManyThrough(ActionItemSubtask::class, ActionItem::class);
+    }
+
     /** @return HasMany<RetroTheme, $this> */
     public function themes(): HasMany
     {

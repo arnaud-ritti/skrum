@@ -911,5 +911,6 @@
     "Pagination": "Seitennavigation",
     "Page :page of :total": "Seite :page von :total",
     "Open action items (:count)": "Offene Aktionspunkte (:count)",
-    "View the team's action items": "Aktionspunkte des Teams ansehen"
+    "View the team's action items": "Aktionspunkte des Teams ansehen",
+    "An action item can have at most 20 sub-tasks.": "Ein Aktionspunkt kann höchstens 20 Unteraufgaben haben."
 }

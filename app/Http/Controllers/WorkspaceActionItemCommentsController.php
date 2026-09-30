@@ -50,7 +50,7 @@ class WorkspaceActionItemCommentsController extends Controller
         $validated = $request->validate(['content' => ['required', 'string', 'max:500']]);
 
         $comment = DB::transaction(fn (): ActionItemComment => $this->addActionItemComment->handle(
-            $this->lockItem($actionItem->id),
+            WorkspaceActionItemGuard::lockWritable($actionItem->id),
             $actor,
             $validated['content'],
         ));
@@ -68,7 +68,7 @@ class WorkspaceActionItemCommentsController extends Controller
         $validated = $request->validate(['content' => ['required', 'string', 'max:500']]);
 
         $comment = DB::transaction(function () use ($actionItemComment, $actor, $validated): ActionItemComment {
-            $this->lockItem($actionItemComment->action_item_id);
+            WorkspaceActionItemGuard::lockWritable($actionItemComment->action_item_id);
 
             return $this->updateActionItemComment->handle($actionItemComment->fresh() ?? abort(404), $actor, $validated['content']);
         });
@@ -83,20 +83,11 @@ class WorkspaceActionItemCommentsController extends Controller
         WorkspaceActionItemGuard::visible($user, $workspace, $actionItemComment->actionItem);
 
         DB::transaction(function () use ($actionItemComment, $user): void {
-            $this->lockItem($actionItemComment->action_item_id);
+            WorkspaceActionItemGuard::lockWritable($actionItemComment->action_item_id);
 
             $this->deleteActionItemComment->handle($actionItemComment->fresh() ?? abort(404), ActionItemActor::forUser($user));
         });
 
         return response()->noContent();
-    }
-
-    private function lockItem(string $actionItemId): ActionItem
-    {
-        $locked = ActionItem::query()->whereKey($actionItemId)->lockForUpdate()->firstOrFail();
-
-        WorkspaceActionItemGuard::writable($locked);
-
-        return $locked;
     }
 }

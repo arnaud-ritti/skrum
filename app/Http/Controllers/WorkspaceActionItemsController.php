@@ -113,7 +113,7 @@ class WorkspaceActionItemsController extends Controller
 
         $validated = $request->validate(ActionItemRules::update(allowsGuests: false), ActionItemRules::messages());
 
-        $updated = DB::transaction(fn (): ActionItem => $this->applyActionItemChanges->handle($this->lock($actionItem), $actor, $validated));
+        $updated = DB::transaction(fn (): ActionItem => $this->applyActionItemChanges->handle(WorkspaceActionItemGuard::lockWritable($actionItem->id), $actor, $validated));
 
         return response()->json(['actionItem' => $this->presentActionItem->handle($updated, $actor)]);
     }
@@ -125,7 +125,7 @@ class WorkspaceActionItemsController extends Controller
         WorkspaceActionItemGuard::visible($user, $workspace, $actionItem);
 
         DB::transaction(function () use ($actionItem, $user): void {
-            $this->deleteActionItem->handle($this->lock($actionItem), ActionItemActor::forUser($user));
+            $this->deleteActionItem->handle(WorkspaceActionItemGuard::lockWritable($actionItem->id), ActionItemActor::forUser($user));
         });
 
         return response()->noContent();
@@ -183,14 +183,5 @@ class WorkspaceActionItemsController extends Controller
                 ->values()
                 ->all(),
         ])->values()->all();
-    }
-
-    private function lock(ActionItem $actionItem): ActionItem
-    {
-        $locked = ActionItem::query()->whereKey($actionItem->id)->lockForUpdate()->firstOrFail();
-
-        WorkspaceActionItemGuard::writable($locked);
-
-        return $locked;
     }
 }

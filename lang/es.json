@@ -911,5 +911,6 @@
     "Pagination": "Paginación",
     "Page :page of :total": "Página :page de :total",
     "Open action items (:count)": "Acciones abiertas (:count)",
-    "View the team's action items": "Ver las acciones del equipo"
+    "View the team's action items": "Ver las acciones del equipo",
+    "An action item can have at most 20 sub-tasks.": "Una acción puede tener como máximo 20 subtareas."
 }
