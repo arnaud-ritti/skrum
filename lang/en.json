@@ -664,5 +664,15 @@
     "Repeats weekly": "Repeats weekly",
     "Repeats every 2 weeks": "Repeats every 2 weeks",
     "Repeats monthly": "Repeats monthly",
-    "Notification settings saved.": "Notification settings saved."
+    "Notification settings saved.": "Notification settings saved.",
+    "Due soon": "Due soon",
+    "Due today": "Due today",
+    "Due tomorrow": "Due tomorrow",
+    "And :count more.": "And :count more.",
+    "View my open action items": "View my open action items",
+    "You can turn off these reminders in your notification settings.": "You can turn off these reminders in your notification settings.",
+    "Notification settings": "Notification settings",
+    "Action items need your attention": "Action items need your attention",
+    ":count action item is overdue|:count action items are overdue": ":count action item is overdue|:count action items are overdue",
+    ":count action item is due soon|:count action items are due soon": ":count action item is due soon|:count action items are due soon"
 }

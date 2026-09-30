@@ -917,5 +917,15 @@
     "Repeats weekly": "Se répète chaque semaine",
     "Repeats every 2 weeks": "Se répète toutes les 2 semaines",
     "Repeats monthly": "Se répète chaque mois",
-    "Notification settings saved.": "Paramètres de notification enregistrés."
+    "Notification settings saved.": "Paramètres de notification enregistrés.",
+    "Due soon": "Bientôt dues",
+    "Due today": "Pour aujourd'hui",
+    "Due tomorrow": "Pour demain",
+    "And :count more.": "Et :count de plus.",
+    "View my open action items": "Voir mes actions ouvertes",
+    "You can turn off these reminders in your notification settings.": "Vous pouvez désactiver ces rappels dans vos paramètres de notification.",
+    "Notification settings": "Paramètres de notification",
+    "Action items need your attention": "Des actions requièrent votre attention",
+    ":count action item is overdue|:count action items are overdue": ":count action est en retard|:count actions sont en retard",
+    ":count action item is due soon|:count action items are due soon": ":count action arrive bientôt à échéance|:count actions arrivent bientôt à échéance"
 }

@@ -917,5 +917,15 @@
     "Repeats weekly": "Se repite cada semana",
     "Repeats every 2 weeks": "Se repite cada 2 semanas",
     "Repeats monthly": "Se repite cada mes",
-    "Notification settings saved.": "Ajustes de notificaciones guardados."
+    "Notification settings saved.": "Ajustes de notificaciones guardados.",
+    "Due soon": "Vencen pronto",
+    "Due today": "Vence hoy",
+    "Due tomorrow": "Vence mañana",
+    "And :count more.": "Y :count más.",
+    "View my open action items": "Ver mis acciones abiertas",
+    "You can turn off these reminders in your notification settings.": "Puedes desactivar estos recordatorios en tus ajustes de notificaciones.",
+    "Notification settings": "Ajustes de notificaciones",
+    "Action items need your attention": "Hay acciones que requieren tu atención",
+    ":count action item is overdue|:count action items are overdue": ":count acción está vencida|:count acciones están vencidas",
+    ":count action item is due soon|:count action items are due soon": ":count acción vence pronto|:count acciones vencen pronto"
 }

@@ -917,5 +917,15 @@
     "Repeats weekly": "Wiederholt sich wöchentlich",
     "Repeats every 2 weeks": "Wiederholt sich alle 2 Wochen",
     "Repeats monthly": "Wiederholt sich monatlich",
-    "Notification settings saved.": "Benachrichtigungseinstellungen gespeichert."
+    "Notification settings saved.": "Benachrichtigungseinstellungen gespeichert.",
+    "Due soon": "Bald fällig",
+    "Due today": "Heute fällig",
+    "Due tomorrow": "Morgen fällig",
+    "And :count more.": "Und :count weitere.",
+    "View my open action items": "Meine offenen Aktionspunkte ansehen",
+    "You can turn off these reminders in your notification settings.": "Du kannst diese Erinnerungen in deinen Benachrichtigungseinstellungen ausschalten.",
+    "Notification settings": "Benachrichtigungseinstellungen",
+    "Action items need your attention": "Aktionspunkte brauchen deine Aufmerksamkeit",
+    ":count action item is overdue|:count action items are overdue": ":count Aktionspunkt ist überfällig|:count Aktionspunkte sind überfällig",
+    ":count action item is due soon|:count action items are due soon": ":count Aktionspunkt ist bald fällig|:count Aktionspunkte sind bald fällig"
 }
