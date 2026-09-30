@@ -225,7 +225,7 @@ it('ignores a timer job made stale by a change, a clear, a re-vote or a task swi
             ->assertNoContent(),
     };
 
-    $this->travelTo(CarbonImmutable::parse('2026-10-05 10:00:31'));
+    $this->travelTo(CarbonImmutable::parse($change === 'change' ? '2026-10-05 10:02:01' : '2026-10-05 10:00:31'));
     runTimerJob($round, $endsAt);
 
     if ($change === 're-vote') {
