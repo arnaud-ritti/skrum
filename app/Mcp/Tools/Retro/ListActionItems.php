@@ -102,7 +102,13 @@ class ListActionItems extends SkrumTool
     private function teamIds(McpGrant $grant, ?string $teamId, ?string $workspaceId): array
     {
         if ($teamId !== null) {
-            return [$this->context->team($teamId)->id];
+            $team = $this->context->team($teamId);
+
+            if ($workspaceId !== null && $team->workspace_id !== $workspaceId) {
+                throw new ModelNotFoundException;
+            }
+
+            return [$team->id];
         }
 
         $visible = $this->visibleTeams->ids($grant);

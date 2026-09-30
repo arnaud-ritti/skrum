@@ -185,3 +185,33 @@ it('lists a board action items in creation order and names creators on anonymous
 
     actingAsMcp(teamMember(Team::factory()->create()))->tool(ListBoardActionItems::class, ['board_id' => $retro->id])->assertHasErrors(['Not found.']);
 });
+
+it('intersects the team and workspace filters of action items', function () {
+    $team = Team::factory()->create();
+    $user = teamMember($team);
+    $item = ActionItem::factory()->withoutRetro($team, $user)->create();
+    $otherWorkspace = Workspace::factory()->create();
+
+    $matching = mcpStructured(actingAsMcp($user)->tool(ListActionItems::class, [
+        'team_id' => $team->id,
+        'workspace_id' => $team->workspace_id,
+    ])->assertOk());
+
+    expect(collect($matching['items'])->pluck('id')->all())->toBe([$item->id]);
+
+    actingAsMcp($user)->tool(ListActionItems::class, [
+        'team_id' => $team->id,
+        'workspace_id' => $otherWorkspace->id,
+    ])->assertHasErrors(['Not found.']);
+});
+
+it('returns absolute avatar urls in action items', function () {
+    $team = Team::factory()->create();
+    $user = teamMember($team);
+    ActionItem::factory()->withoutRetro($team, $user)->assignedTo($user)->create();
+
+    $item = mcpStructured(actingAsMcp($user)->tool(ListActionItems::class)->assertOk())['items'][0];
+
+    expect($item['assignee']['avatarUrl'])->toStartWith(config('app.url'))
+        ->and($item['createdBy']['avatarUrl'])->toStartWith(config('app.url'));
+});
