@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Actions\Games\ExpireGameRound;
 use App\Actions\Games\FindGamePlayer;
 use App\Actions\Retros\GuestCookie;
 use App\Enums\GameRoomAccess;
@@ -13,7 +14,10 @@ use Symfony\Component\HttpFoundation\Response;
 
 class ResolveGamePlayer
 {
-    public function __construct(private FindGamePlayer $findGamePlayer) {}
+    public function __construct(
+        private FindGamePlayer $findGamePlayer,
+        private ExpireGameRound $expireGameRound,
+    ) {}
 
     public function handle(Request $request, Closure $next): Response
     {
@@ -34,6 +38,8 @@ class ResolveGamePlayer
         }
 
         $request->attributes->set('gamePlayer', $player);
+
+        $this->expireGameRound->handle($room);
 
         return $next($request);
     }

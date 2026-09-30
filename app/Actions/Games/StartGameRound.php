@@ -17,6 +17,7 @@ class StartGameRound
         private GameRulesRegistry $gameRulesRegistry,
         private EndGameRound $endGameRound,
         private PresentGameRound $presentGameRound,
+        private ScheduleRoundExpiry $scheduleRoundExpiry,
     ) {}
 
     /**
@@ -51,6 +52,8 @@ class StartGameRound
             $locked->forceFill(['current_round_id' => $round->id])->save();
 
             $this->pruneEndedRounds($locked);
+
+            $this->scheduleRoundExpiry->handle($locked, $round);
 
             (new GameRoundStarted($locked, $this->presentGameRound->handle($round, $locked, null)))->sendToOthers();
 

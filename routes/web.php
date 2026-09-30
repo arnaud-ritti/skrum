@@ -13,6 +13,7 @@ use App\Http\Controllers\Games\GameRoundPassesController;
 use App\Http\Controllers\Games\GameRoundsController;
 use App\Http\Controllers\Games\GameSnapshotsController;
 use App\Http\Controllers\Games\GameSwitchesController;
+use App\Http\Controllers\Games\GameTimersController;
 use App\Http\Controllers\GifsController;
 use App\Http\Controllers\Integrations\IntegrationAccountsController;
 use App\Http\Controllers\Integrations\IntegrationAuthorizationsController;
@@ -414,6 +415,7 @@ Route::prefix('games/{room}')
         Route::post('rounds', [GameRoundsController::class, 'store'])->name('games.rounds.store');
         Route::get('rounds', [GameRoundsController::class, 'index'])->name('games.rounds.index');
         Route::get('rounds/{round}', [GameRoundsController::class, 'show'])->name('games.rounds.show')->whereUuid('round');
+        Route::put('timer', [GameTimersController::class, 'update'])->name('games.timer.update');
         Route::post('rounds/{round}/pass', [GameRoundPassesController::class, 'store'])->name('games.rounds.pass.store')->whereUuid('round');
     });
 
