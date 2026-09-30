@@ -1,3 +1,4 @@
+import { compareActionItems } from '@/lib/action-items/order';
 import type {
     ActionItem,
     BoardCard,
@@ -494,7 +495,7 @@ export function boardReducer(state: Snapshot, action: BoardAction): Snapshot {
                 carriedActionItems: upsertActionItem(
                     state.carriedActionItems,
                     action.actionItem,
-                ),
+                ).sort(compareActionItems),
             };
         case 'carriedActionItem.remove':
             return {

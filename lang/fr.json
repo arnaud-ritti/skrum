@@ -888,5 +888,7 @@
     "Action items are not anonymous: your name is shown.": "Les actions ne sont pas anonymes : votre nom est affiché.",
     "No comments yet.": "Aucun commentaire pour le moment.",
     "1 comment": "1 commentaire",
-    ":count comments": ":count commentaires"
+    ":count comments": ":count commentaires",
+    "This also deletes 1 open action item.": "Cela supprime aussi 1 action ouverte.",
+    "This also deletes :count open action items.": "Cela supprime aussi :count actions ouvertes."
 }

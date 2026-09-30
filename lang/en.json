@@ -634,5 +634,7 @@
     "Action items are not anonymous: your name is shown.": "Action items are not anonymous: your name is shown.",
     "No comments yet.": "No comments yet.",
     "1 comment": "1 comment",
-    ":count comments": ":count comments"
+    ":count comments": ":count comments",
+    "This also deletes 1 open action item.": "This also deletes 1 open action item.",
+    "This also deletes :count open action items.": "This also deletes :count open action items."
 }
