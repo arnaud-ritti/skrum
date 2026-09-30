@@ -16,6 +16,7 @@ use App\Http\Controllers\Integrations\PokerImportPreviewsController;
 use App\Http\Controllers\Integrations\PokerImportRefreshesController;
 use App\Http\Controllers\Integrations\PokerImportsController;
 use App\Http\Controllers\Integrations\PokerSharesController;
+use App\Http\Controllers\Integrations\PokerTaskSyncsController;
 use App\Http\Controllers\Integrations\RetroResultsEmailsController;
 use App\Http\Controllers\Integrations\RetroSharesController;
 use App\Http\Controllers\Integrations\TeamIntegrationsController;
@@ -318,6 +319,7 @@ Route::prefix('poker/{game}')
         Route::post('tasks/{task}/rounds', [PokerRoundsController::class, 'store'])->name('poker.tasks.rounds.store')->whereUuid('task');
         Route::get('tasks/{task}/rounds', [PokerRoundsController::class, 'index'])->name('poker.tasks.rounds.index')->whereUuid('task');
         Route::put('tasks/{task}/estimate', [PokerTaskEstimatesController::class, 'update'])->name('poker.tasks.estimate.update')->whereUuid('task');
+        Route::post('tasks/{task}/sync', [PokerTaskSyncsController::class, 'store'])->name('poker.tasks.sync.store')->whereUuid('task');
         Route::patch('settings', [PokerSettingsController::class, 'update'])->name('poker.settings.update');
         Route::get('saved-decks', [PokerSavedDecksController::class, 'index'])->name('poker.saved-decks.index');
         Route::put('status', [PokerStatusesController::class, 'update'])->name('poker.status.update');

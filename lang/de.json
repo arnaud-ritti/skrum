@@ -1288,5 +1288,14 @@
     "This task can no longer be synced.": "Diese Aufgabe kann nicht mehr synchronisiert werden.",
     "This task comes from another :provider site.": "Diese Aufgabe stammt von einer anderen :provider-Site.",
     "T-shirt estimates can't be written to :source.": "T-Shirt-Schätzungen können nicht in :source geschrieben werden.",
-    "This game can hold 200 tasks at most.": "Dieses Spiel kann höchstens 200 Aufgaben enthalten."
+    "This game can hold 200 tasks at most.": "Dieses Spiel kann höchstens 200 Aufgaben enthalten.",
+    "This issue has no story points field on its edit screen.": "Dieses Ticket hat kein Story-Points-Feld in seiner Bearbeitungsmaske.",
+    "Estimates are turned off for this Linear team.": "Schätzungen sind für dieses Linear-Team deaktiviert.",
+    "Linear only accepts whole-number estimates.": "Linear akzeptiert nur ganzzahlige Schätzungen.",
+    "Linear accepts estimates from 0 to 64.": "Linear akzeptiert Schätzungen von 0 bis 64.",
+    "Linear rejected this estimate: :message": "Linear hat diese Schätzung abgelehnt: :message",
+    "This issue was not found in :source.": "Dieses Ticket wurde in :source nicht gefunden.",
+    "This task was not imported from a tracker.": "Diese Aufgabe wurde nicht aus einem Tracker importiert.",
+    "Set an estimate before syncing it.": "Lege eine Schätzung fest, bevor du sie synchronisierst.",
+    "The estimate could not be written. Try again.": "Die Schätzung konnte nicht geschrieben werden. Versuch es erneut."
 }

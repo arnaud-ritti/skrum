@@ -1040,5 +1040,14 @@
     "This task can no longer be synced.": "This task can no longer be synced.",
     "This task comes from another :provider site.": "This task comes from another :provider site.",
     "T-shirt estimates can't be written to :source.": "T-shirt estimates can't be written to :source.",
-    "This game can hold 200 tasks at most.": "This game can hold 200 tasks at most."
+    "This game can hold 200 tasks at most.": "This game can hold 200 tasks at most.",
+    "This issue has no story points field on its edit screen.": "This issue has no story points field on its edit screen.",
+    "Estimates are turned off for this Linear team.": "Estimates are turned off for this Linear team.",
+    "Linear only accepts whole-number estimates.": "Linear only accepts whole-number estimates.",
+    "Linear accepts estimates from 0 to 64.": "Linear accepts estimates from 0 to 64.",
+    "Linear rejected this estimate: :message": "Linear rejected this estimate: :message",
+    "This issue was not found in :source.": "This issue was not found in :source.",
+    "This task was not imported from a tracker.": "This task was not imported from a tracker.",
+    "Set an estimate before syncing it.": "Set an estimate before syncing it.",
+    "The estimate could not be written. Try again.": "The estimate could not be written. Try again."
 }

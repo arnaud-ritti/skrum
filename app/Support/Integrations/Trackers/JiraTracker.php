@@ -2,10 +2,10 @@
 
 namespace App\Support\Integrations\Trackers;
 
+use App\Enums\PokerDeck;
 use App\Models\TeamIntegration;
 use App\Support\Integrations\Jira\AdfToMarkdown;
 use App\Support\Integrations\Jira\JiraClient;
-use LogicException;
 
 class JiraTracker implements IssueTracker
 {
@@ -100,7 +100,26 @@ class JiraTracker implements IssueTracker
 
     public function writeEstimate(TeamIntegration $integration, string $externalId, ?string $estimate): void
     {
-        throw new LogicException('Implemented by Plan 12c Task 6.');
+        $value = $estimate === null ? null : PokerDeck::numericValue($estimate);
+
+        if ($estimate !== null && $value === null) {
+            throw new EstimateRejected(__("T-shirt estimates can't be written to :source.", ['source' => 'Jira']));
+        }
+
+        if (preg_match('/^[A-Za-z0-9_-]+$/', $externalId) !== 1) {
+            throw new EstimateRejected(__('This issue was not found in :source.', ['source' => 'Jira']));
+        }
+
+        $issuePath = 'rest/api/3/issue/'.rawurlencode($externalId);
+        $editable = (array) ($this->client->get($integration, "{$issuePath}/editmeta")['fields'] ?? []);
+        $fieldId = collect(self::storyPointFieldIds($integration))
+            ->first(fn (string $id): bool => array_key_exists($id, $editable));
+
+        if ($fieldId === null) {
+            throw new EstimateRejected(__('This issue has no story points field on its edit screen.'));
+        }
+
+        $this->client->put($integration, $issuePath, ['fields' => [$fieldId => $value]]);
     }
 
     /**
