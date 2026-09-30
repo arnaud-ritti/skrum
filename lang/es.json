@@ -757,5 +757,6 @@
     "This survey already has answers.": "Esta encuesta ya tiene respuestas.",
     "Names are never shown on anonymous retros.": "Los nombres nunca se muestran en las retros anónimas.",
     "This survey is closed.": "Esta encuesta está cerrada.",
-    "Answer the survey to join the discussion.": "Responde a la encuesta para unirte a la conversación."
+    "Answer the survey to join the discussion.": "Responde a la encuesta para unirte a la conversación.",
+    "The reply must belong to a comment on the same survey.": "La respuesta debe pertenecer a un comentario de la misma encuesta."
 }

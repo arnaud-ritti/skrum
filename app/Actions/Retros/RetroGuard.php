@@ -7,6 +7,7 @@ use App\Models\Card;
 use App\Models\CardComment;
 use App\Models\Participant;
 use App\Models\Retro;
+use App\Models\SurveyComment;
 use App\Support\Gifs\GifCatalog;
 use Illuminate\Auth\Access\AuthorizationException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -76,7 +77,7 @@ class RetroGuard
         throw new AuthorizationException(__('You can only change your own cards.'));
     }
 
-    public static function commentAuthor(CardComment $comment, Participant $participant): void
+    public static function commentAuthor(CardComment|SurveyComment $comment, Participant $participant): void
     {
         if ($comment->participant_id === $participant->id) {
             return;
