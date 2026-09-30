@@ -6,12 +6,15 @@ use App\Http\Controllers\BroadcastAuthorizationsController;
 use App\Http\Controllers\CurrentWorkspaceController;
 use App\Http\Controllers\EmojiDataController;
 use App\Http\Controllers\GameJoinsController;
+use App\Http\Controllers\Games\GameGuessesController;
 use App\Http\Controllers\Games\GameGuestTokensController;
 use App\Http\Controllers\Games\GameHostsController;
 use App\Http\Controllers\Games\GameLettersController;
 use App\Http\Controllers\Games\GameRoomsController;
+use App\Http\Controllers\Games\GameRoundHintsController;
 use App\Http\Controllers\Games\GameRoundPassesController;
 use App\Http\Controllers\Games\GameRoundsController;
+use App\Http\Controllers\Games\GameRoundSecretsController;
 use App\Http\Controllers\Games\GameSnapshotsController;
 use App\Http\Controllers\Games\GameSwitchesController;
 use App\Http\Controllers\Games\GameTimersController;
@@ -419,6 +422,9 @@ Route::prefix('games/{room}')
         Route::put('timer', [GameTimersController::class, 'update'])->name('games.timer.update');
         Route::post('rounds/{round}/pass', [GameRoundPassesController::class, 'store'])->name('games.rounds.pass.store')->whereUuid('round');
         Route::post('rounds/{round}/letters', [GameLettersController::class, 'store'])->name('games.rounds.letters.store')->whereUuid('round');
+        Route::get('rounds/{round}/secret', [GameRoundSecretsController::class, 'show'])->name('games.rounds.secret.show')->whereUuid('round');
+        Route::post('rounds/{round}/hints', [GameRoundHintsController::class, 'store'])->name('games.rounds.hints.store')->whereUuid('round');
+        Route::post('rounds/{round}/guesses', [GameGuessesController::class, 'store'])->name('games.rounds.guesses.store')->whereUuid('round');
     });
 
 Route::post('broadcasting/auth', [BroadcastAuthorizationsController::class, 'store'])->name('broadcasting.auth');

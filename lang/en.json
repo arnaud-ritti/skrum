@@ -1227,5 +1227,6 @@
     "Use emoji only, without letters or digits.": "Use emoji only, without letters or digits.",
     "Choose who leads this round.": "Choose who leads this round.",
     "Only the player leading this round can do this.": "Only the player leading this round can do this.",
-    "You are leading this round, so you cannot guess.": "You are leading this round, so you cannot guess."
+    "You are leading this round, so you cannot guess.": "You are leading this round, so you cannot guess.",
+    "No more letters can be revealed for this word.": "No more letters can be revealed for this word."
 }

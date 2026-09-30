@@ -1473,5 +1473,6 @@
     "Use emoji only, without letters or digits.": "Usa solo emoji, sin letras ni cifras.",
     "Choose who leads this round.": "Elige quién dirige esta ronda.",
     "Only the player leading this round can do this.": "Solo quien dirige esta ronda puede hacerlo.",
-    "You are leading this round, so you cannot guess.": "Diriges esta ronda, así que no puedes adivinar."
+    "You are leading this round, so you cannot guess.": "Diriges esta ronda, así que no puedes adivinar.",
+    "No more letters can be revealed for this word.": "No se pueden revelar más letras de esta palabra."
 }
