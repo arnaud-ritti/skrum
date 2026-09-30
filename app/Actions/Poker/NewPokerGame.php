@@ -16,5 +16,6 @@ readonly class NewPokerGame
         public ?string $deckName = null,
         public bool $anonymousVotes = false,
         public bool $autoReveal = false,
+        public ?string $saveDeckAs = null,
     ) {}
 }

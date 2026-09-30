@@ -811,5 +811,11 @@
     "Date": "Date",
     "No estimated tasks yet.": "No estimated tasks yet.",
     "Show rounds": "Show rounds",
-    "Hide rounds": "Hide rounds"
+    "Hide rounds": "Hide rounds",
+    "Only the deck's creator or a workspace admin can change it.": "Only the deck's creator or a workspace admin can change it.",
+    "This team already has 30 saved decks.": "This team already has 30 saved decks.",
+    "A deck with this name already exists.": "A deck with this name already exists.",
+    "Choose a saved deck of this team.": "Choose a saved deck of this team.",
+    "Choose either a saved deck or custom cards.": "Choose either a saved deck or custom cards.",
+    "Save only custom cards as a deck.": "Save only custom cards as a deck."
 }

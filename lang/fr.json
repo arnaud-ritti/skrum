@@ -1063,5 +1063,11 @@
     "Date": "Date",
     "No estimated tasks yet.": "Aucune tâche estimée pour l'instant.",
     "Show rounds": "Afficher les tours",
-    "Hide rounds": "Masquer les tours"
+    "Hide rounds": "Masquer les tours",
+    "Only the deck's creator or a workspace admin can change it.": "Seuls la personne qui a créé ce jeu de cartes ou un administrateur de l'espace de travail peuvent le modifier.",
+    "This team already has 30 saved decks.": "Cette équipe a déjà 30 jeux de cartes enregistrés.",
+    "A deck with this name already exists.": "Un jeu de cartes porte déjà ce nom.",
+    "Choose a saved deck of this team.": "Choisissez un jeu de cartes enregistré de cette équipe.",
+    "Choose either a saved deck or custom cards.": "Choisissez soit un jeu de cartes enregistré, soit des cartes personnalisées.",
+    "Save only custom cards as a deck.": "Seules des cartes personnalisées peuvent être enregistrées comme jeu de cartes."
 }

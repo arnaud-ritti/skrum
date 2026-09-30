@@ -17,6 +17,7 @@ use App\Http\Controllers\Poker\PokerGamesController;
 use App\Http\Controllers\Poker\PokerGuestTokensController;
 use App\Http\Controllers\Poker\PokerRevealsController;
 use App\Http\Controllers\Poker\PokerRoundsController;
+use App\Http\Controllers\Poker\PokerSavedDecksController;
 use App\Http\Controllers\Poker\PokerSettingsController;
 use App\Http\Controllers\Poker\PokerSnapshotsController;
 use App\Http\Controllers\Poker\PokerSpectatorsController;
@@ -26,6 +27,7 @@ use App\Http\Controllers\Poker\PokerTaskOrdersController;
 use App\Http\Controllers\Poker\PokerTasksController;
 use App\Http\Controllers\Poker\PokerTimersController;
 use App\Http\Controllers\Poker\PokerVotesController;
+use App\Http\Controllers\PokerDecksController;
 use App\Http\Controllers\PokerJoinsController;
 use App\Http\Controllers\ReadAllNotificationsController;
 use App\Http\Controllers\RetroJoinsController;
@@ -137,6 +139,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('teams/{team}/retros', [TeamRetrosController::class, 'store'])->name('teams.retros.store');
             Route::post('teams/{team}/poker-games', [TeamPokerGamesController::class, 'store'])->name('teams.pokerGames.store');
             Route::get('teams/{team}/estimates', [TeamEstimatesController::class, 'index'])->name('teams.estimates.index');
+            Route::post('teams/{team}/poker-decks', [PokerDecksController::class, 'store'])->name('teams.pokerDecks.store');
+            Route::patch('teams/{team}/poker-decks/{pokerDeck}', [PokerDecksController::class, 'update'])->name('teams.pokerDecks.update')->whereUuid('pokerDeck');
+            Route::delete('teams/{team}/poker-decks/{pokerDeck}', [PokerDecksController::class, 'destroy'])->name('teams.pokerDecks.destroy')->whereUuid('pokerDeck');
             Route::post('teams/{team}/members', [TeamMembersController::class, 'store'])->name('teams.members.store');
             Route::delete('teams/{team}/members/{member}', [TeamMembersController::class, 'destroy'])->name('teams.members.destroy')->whereUuid('member');
 
@@ -268,6 +273,7 @@ Route::prefix('poker/{game}')
         Route::get('tasks/{task}/rounds', [PokerRoundsController::class, 'index'])->name('poker.tasks.rounds.index')->whereUuid('task');
         Route::put('tasks/{task}/estimate', [PokerTaskEstimatesController::class, 'update'])->name('poker.tasks.estimate.update')->whereUuid('task');
         Route::patch('settings', [PokerSettingsController::class, 'update'])->name('poker.settings.update');
+        Route::get('saved-decks', [PokerSavedDecksController::class, 'index'])->name('poker.saved-decks.index');
         Route::put('status', [PokerStatusesController::class, 'update'])->name('poker.status.update');
         Route::post('guest-token', [PokerGuestTokensController::class, 'store'])->name('poker.guest-token.store');
         Route::put('facilitator', [PokerFacilitatorsController::class, 'update'])->name('poker.facilitator.update');

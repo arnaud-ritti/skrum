@@ -10,6 +10,7 @@ use App\Enums\PokerDeck;
 use App\Enums\TemplateCategory;
 use App\Models\PokerGame;
 use App\Models\Retro;
+use App\Models\SavedPokerDeck;
 use App\Models\Team;
 use App\Models\TeamHealthStatement;
 use App\Models\User;
@@ -83,9 +84,28 @@ class TeamsController extends Controller
                 ->latest('updated_at')
                 ->get()
                 ->map(fn (PokerGame $game) => $this->presentPokerGameSummary->handle($game)),
+            'pokerDecks' => $this->pokerDecks($request->user(), $workspace, $team),
             'pokerDeckOptions' => PokerDeck::options(),
             'canCreatePokerGame' => $request->user()->can('createPokerGame', $team),
         ]);
+    }
+
+    /**
+     * @return array<int, array{id: string, name: string, cards: array<int, string>, canManage: bool}>
+     */
+    private function pokerDecks(User $user, Workspace $workspace, Team $team): array
+    {
+        $isManager = $user->canManage($workspace);
+
+        return $team->pokerDecks()->orderBy('name')->get()
+            ->map(fn (SavedPokerDeck $deck): array => [
+                'id' => $deck->id,
+                'name' => $deck->name,
+                'cards' => $deck->cards,
+                'canManage' => $isManager || $deck->created_by_user_id === $user->id,
+            ])
+            ->values()
+            ->all();
     }
 
     public function update(Request $request, Workspace $workspace, Team $team): RedirectResponse

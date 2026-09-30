@@ -1063,5 +1063,11 @@
     "Date": "Fecha",
     "No estimated tasks yet.": "Todavía no hay tareas estimadas.",
     "Show rounds": "Mostrar rondas",
-    "Hide rounds": "Ocultar rondas"
+    "Hide rounds": "Ocultar rondas",
+    "Only the deck's creator or a workspace admin can change it.": "Solo quien creó la baraja o un administrador del espacio de trabajo puede cambiarla.",
+    "This team already has 30 saved decks.": "Este equipo ya tiene 30 barajas guardadas.",
+    "A deck with this name already exists.": "Ya existe una baraja con este nombre.",
+    "Choose a saved deck of this team.": "Elige una baraja guardada de este equipo.",
+    "Choose either a saved deck or custom cards.": "Elige una baraja guardada o cartas personalizadas, no ambas.",
+    "Save only custom cards as a deck.": "Solo puedes guardar cartas personalizadas como baraja."
 }
