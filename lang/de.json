@@ -953,5 +953,10 @@
     "Show due and overdue action items in the notification bell": "Fällige und überfällige Aktionspunkte in der Benachrichtigungsglocke anzeigen",
     ":count unread notifications": ":count ungelesene Benachrichtigungen",
     "Could not load the notifications.": "Die Benachrichtigungen konnten nicht geladen werden.",
-    ":count unread notification": ":count ungelesene Benachrichtigung"
+    ":count unread notification": ":count ungelesene Benachrichtigung",
+    "Fibonacci": "Fibonacci",
+    "Modified Fibonacci": "Modifizierte Fibonacci",
+    "T-shirt sizes": "T-Shirt-Größen",
+    "Powers of 2": "Zweierpotenzen",
+    "Custom": "Eigenes"
 }

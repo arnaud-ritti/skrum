@@ -953,5 +953,10 @@
     "Show due and overdue action items in the notification bell": "Afficher les actions à échéance ou en retard dans la cloche de notifications",
     ":count unread notifications": ":count notifications non lues",
     "Could not load the notifications.": "Impossible de charger les notifications.",
-    ":count unread notification": ":count notification non lue"
+    ":count unread notification": ":count notification non lue",
+    "Fibonacci": "Fibonacci",
+    "Modified Fibonacci": "Fibonacci modifiée",
+    "T-shirt sizes": "Tailles de t-shirt",
+    "Powers of 2": "Puissances de 2",
+    "Custom": "Personnalisé"
 }

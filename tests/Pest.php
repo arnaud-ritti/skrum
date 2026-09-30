@@ -3,6 +3,11 @@
 use App\Actions\Retros\GuestCookie;
 use App\Enums\WorkspaceRole;
 use App\Models\Participant;
+use App\Models\PokerGame;
+use App\Models\PokerPlayer;
+use App\Models\PokerRound;
+use App\Models\PokerTask;
+use App\Models\PokerVote;
 use App\Models\Retro;
 use App\Models\Survey;
 use App\Models\SurveyResponse;
@@ -162,4 +167,62 @@ function workspaceAdminParticipant(Retro $retro): array
     $user = workspaceManager($retro->team->workspace);
 
     return [$user, Participant::factory()->create(['retro_id' => $retro->id, 'user_id' => $user->id])];
+}
+
+/**
+ * @return array{0: User, 1: PokerPlayer}
+ */
+function pokerMember(PokerGame $game): array
+{
+    $user = teamMember($game->team);
+
+    return [$user, PokerPlayer::factory()->create(['poker_game_id' => $game->id, 'user_id' => $user->id])];
+}
+
+/**
+ * @return array{0: User, 1: PokerPlayer}
+ */
+function pokerFacilitator(PokerGame $game): array
+{
+    [$user, $player] = pokerMember($game);
+
+    $game->forceFill(['facilitator_player_id' => $player->id])->save();
+
+    return [$user, $player];
+}
+
+function pokerGuest(PokerGame $game, string $secret = 'secret'): PokerPlayer
+{
+    return PokerPlayer::factory()->guest($secret)->create(['poker_game_id' => $game->id]);
+}
+
+/**
+ * @return array<string, string>
+ */
+function pokerGuestCookie(PokerPlayer $player, string $secret = 'secret'): array
+{
+    return [GuestCookie::name(GuestCookie::PokerScope, $player->poker_game_id) => "{$player->id}|{$secret}"];
+}
+
+function openPokerRound(PokerGame $game, ?PokerTask $task = null): PokerRound
+{
+    $task ??= PokerTask::factory()->create(['poker_game_id' => $game->id]);
+
+    $round = PokerRound::factory()->create([
+        'poker_task_id' => $task->id,
+        'anonymous' => (bool) $game->anonymous_votes,
+    ]);
+
+    $game->forceFill(['current_task_id' => $task->id])->save();
+
+    return $round;
+}
+
+function pokerVote(PokerRound $round, PokerPlayer $player, string $value): PokerVote
+{
+    return PokerVote::factory()->create([
+        'poker_round_id' => $round->id,
+        'poker_player_id' => $player->id,
+        'value' => $value,
+    ]);
 }

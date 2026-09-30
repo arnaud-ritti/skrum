@@ -953,5 +953,10 @@
     "Show due and overdue action items in the notification bell": "Mostrar las acciones que vencen o están vencidas en la campana de notificaciones",
     ":count unread notifications": ":count notificaciones sin leer",
     "Could not load the notifications.": "No se pudieron cargar las notificaciones.",
-    ":count unread notification": ":count notificación sin leer"
+    ":count unread notification": ":count notificación sin leer",
+    "Fibonacci": "Fibonacci",
+    "Modified Fibonacci": "Fibonacci modificada",
+    "T-shirt sizes": "Tallas de camiseta",
+    "Powers of 2": "Potencias de 2",
+    "Custom": "Personalizada"
 }
