@@ -12,6 +12,7 @@ use App\Http\Controllers\LocalesController;
 use App\Http\Controllers\RetroJoinsController;
 use App\Http\Controllers\Retros\ActionItemsController;
 use App\Http\Controllers\Retros\CardCommentsController;
+use App\Http\Controllers\Retros\CardGroupNamesController;
 use App\Http\Controllers\Retros\CardGroupsController;
 use App\Http\Controllers\Retros\CardPositionsController;
 use App\Http\Controllers\Retros\CardReactionsController;
@@ -153,6 +154,8 @@ Route::prefix('retros/{retro}')
         Route::put('cards/{card}/position', [CardPositionsController::class, 'update'])->name('retros.cards.position.update')->whereUuid('card');
         Route::put('cards/{card}/group', [CardGroupsController::class, 'update'])->name('retros.cards.group.update')->whereUuid('card');
         Route::delete('cards/{card}/group', [CardGroupsController::class, 'destroy'])->name('retros.cards.group.destroy')->whereUuid('card');
+        Route::put('cards/{card}/group-name', [CardGroupNamesController::class, 'update'])->name('retros.cards.group-name.update')->whereUuid('card');
+        Route::delete('cards/{card}/group-name', [CardGroupNamesController::class, 'destroy'])->name('retros.cards.group-name.destroy')->whereUuid('card');
         Route::post('cards/{card}/votes', [CardVotesController::class, 'store'])->name('retros.cards.votes.store')->whereUuid('card');
         Route::delete('cards/{card}/votes', [CardVotesController::class, 'destroy'])->name('retros.cards.votes.destroy')->whereUuid('card');
         Route::put('cards/{card}/reactions', [CardReactionsController::class, 'update'])->name('retros.cards.reactions.update')->whereUuid('card');

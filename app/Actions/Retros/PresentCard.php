@@ -21,7 +21,8 @@ class PresentCard
      *     hidden: bool,
      *     content: ?string,
      *     gif: ?array{id: string, previewUrl: string, url: string},
-     *     author: ?array{id: string, name: string}
+     *     author: ?array{id: string, name: string},
+     *     groupName: ?string
      * }
      */
     public function handle(Card $card, Retro $retro, ?Participant $viewer): array
@@ -46,6 +47,7 @@ class PresentCard
             'author' => $showsAuthor
                 ? ['id' => $card->participant_id, 'name' => $card->participant->displayName()]
                 : null,
+            'groupName' => $isHidden ? null : $card->group_name,
         ];
     }
 }
