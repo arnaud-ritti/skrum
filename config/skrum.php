@@ -17,5 +17,11 @@ return [
         'time' => env('SKRUM_ACTION_ITEM_REMINDER_TIME', '08:00'),
     ],
 
+    'mcp' => [
+        'enabled' => (bool) env('SKRUM_MCP_ENABLED', true),
+        'rate_limit' => (int) env('SKRUM_MCP_RATE_LIMIT', 120),
+        'write_rate_limit' => (int) env('SKRUM_MCP_WRITE_RATE_LIMIT', 30),
+    ],
+
     'trusted_proxies' => env('TRUSTED_PROXIES'),
 ];

@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Contracts\PokerPresenceRoster;
 use App\Models\Passkey;
+use App\Models\PersonalAccessToken;
 use App\Models\SavedPokerDeck;
 use App\Policies\PokerDeckPolicy;
 use App\Support\Poker\ReverbPokerPresenceRoster;
@@ -16,6 +17,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 use Laravel\Passkeys\Passkeys;
+use Laravel\Sanctum\Sanctum;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -36,6 +38,7 @@ class AppServiceProvider extends ServiceProvider
         Markdown::withSecuredEncoding();
         Passkeys::usePasskeyModel(Passkey::class);
         Gate::policy(SavedPokerDeck::class, PokerDeckPolicy::class);
+        Sanctum::usePersonalAccessTokenModel(PersonalAccessToken::class);
 
         if ($this->app->environment('local')) {
             $reverbPort = (int) config('reverb.servers.reverb.port');
