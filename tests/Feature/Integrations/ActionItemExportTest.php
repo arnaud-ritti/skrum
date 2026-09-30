@@ -17,7 +17,9 @@ use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\Team;
 use App\Models\TeamIntegration;
+use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Http\Client\Request as HttpClientRequest;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
 
@@ -218,6 +220,54 @@ it('keeps a refreshed token when the export fails', function () {
     expect($integration->fresh()->credential('access_token'))->toBe('jira-access-2')
         ->and($integration->fresh()->credential('refresh_token'))->toBe('jira-refresh-2');
     Http::assertSent(fn (HttpClientRequest $request) => str_ends_with($request->url(), '/rest/api/3/issue') && $request->hasHeader('Authorization', 'Bearer jira-access-2'));
+});
+
+it('rolls back when Jira answers without a usable issue key', function () {
+    fakeJiraIssueCreation(create: Http::response(['id' => '10042', 'key' => ''], 201));
+    [$retro, $item, $author] = exportBoardItem();
+    TeamIntegration::factory()->jira()->create(['team_id' => $retro->team_id]);
+
+    $this->actingAs($author)->postJson(...jiraExportRequest($retro, $item))
+        ->assertStatus(502)
+        ->assertJsonPath('message', 'The issue may have been created. Check Jira before trying again.');
+
+    expect(ActionItemExternalLink::query()->count())->toBe(0);
+});
+
+it('leaves the retro row unlocked while the provider answers', function () {
+    fakeJiraIssueCreation();
+    [$retro, $item, $author] = exportBoardItem();
+    TeamIntegration::factory()->jira()->create(['team_id' => $retro->team_id]);
+    $lockedTables = [];
+
+    DB::listen(function (QueryExecuted $query) use (&$lockedTables) {
+        if (preg_match('/from "(\w+)".* for update/i', $query->sql, $matches) === 1) {
+            $lockedTables[] = $matches[1];
+        }
+    });
+
+    $this->actingAs($author)->postJson(...jiraExportRequest($retro, $item))->assertCreated();
+
+    expect($lockedTables)->toContain('action_items')->not->toContain('retros');
+});
+
+it('keeps settings saved by an admin during the export', function () {
+    [$retro, $item, $author] = exportBoardItem();
+    $integration = TeamIntegration::factory()->jira()->create(['team_id' => $retro->team_id]);
+    Http::fake([
+        jiraApiUrl('rest/api/3/issue/createmeta/*') => Http::response(jiraCreateMeta()),
+        jiraApiUrl('rest/api/3/issue') => function () use ($integration) {
+            $concurrent = TeamIntegration::query()->findOrFail($integration->id);
+            $concurrent->forceFill(['settings' => [...$concurrent->settings, 'priorityMap' => ['high' => null]]])->save();
+
+            return Http::response(['id' => '10042', 'key' => 'PROJ-42'], 201);
+        },
+    ]);
+
+    $this->actingAs($author)->postJson(...jiraExportRequest($retro, $item))->assertCreated();
+
+    expect($integration->fresh()->setting('priorityMap'))->toBe(['high' => null])
+        ->and($integration->fresh()->setting('exportProjectId'))->toBe('10000');
 });
 
 it('refuses guests and members who cannot edit the item', function () {

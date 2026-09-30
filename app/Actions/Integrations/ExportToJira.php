@@ -14,6 +14,8 @@ use App\Support\Integrations\Jira\JiraCreateMeta;
 
 class ExportToJira
 {
+    private const IssueKeyPattern = '/^[A-Z][A-Z0-9_]*-\d+\z/';
+
     public function __construct(
         private JiraClient $jira,
         private JiraCreateMeta $createMeta,
@@ -54,10 +56,16 @@ class ExportToJira
             $created = $this->send($integration, $payload);
         }
 
-        $key = (string) ($created['key'] ?? '');
+        $id = $created['id'] ?? null;
+        $key = $created['key'] ?? null;
+
+        if (! is_string($id) || $id === '' || ! is_string($key) || preg_match(self::IssueKeyPattern, $key) !== 1) {
+            throw new IssueCreationUncertain(IntegrationProvider::Jira, 'invalid_issue_response');
+        }
+
         $siteUrl = rtrim((string) $integration->setting('siteUrl'), '/');
 
-        return new ExportOutcome(new CreatedIssue((string) ($created['id'] ?? ''), $key, "{$siteUrl}/browse/{$key}"), $assignee, $priority);
+        return new ExportOutcome(new CreatedIssue($id, $key, "{$siteUrl}/browse/{$key}"), $assignee, $priority);
     }
 
     /**

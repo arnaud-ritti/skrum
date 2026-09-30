@@ -6,7 +6,6 @@ use App\Actions\ActionItems\BroadcastActionItemChange;
 use App\Actions\ActionItems\WorkspaceActionItemGuard;
 use App\Enums\IntegrationProvider;
 use App\Models\ActionItem;
-use App\Models\Retro;
 use App\Models\TeamIntegration;
 use App\Models\User;
 use App\Support\Integrations\Exceptions\ReconnectRequired;
@@ -18,6 +17,7 @@ use InvalidArgumentException;
  * Spec §7: one synchronous, one-shot export per item and provider. The
  * link row is written first under the item lock, so a double submit waits
  * and then finds it; any provider failure rolls the whole export back.
+ * The retro row is not locked, so a slow provider never stalls the board.
  */
 class ExportActionItem
 {
@@ -65,10 +65,6 @@ class ExportActionItem
      */
     private function export(ActionItem $item, User $user, TeamIntegration $integration, array $target): array
     {
-        if ($item->retro_id !== null) {
-            Retro::query()->whereKey($item->retro_id)->lockForUpdate()->first();
-        }
-
         $locked = WorkspaceActionItemGuard::lockWritable($item->id);
 
         $this->ensureNotExported($locked, $integration);
@@ -137,7 +133,9 @@ class ExportActionItem
             ? ['exportProjectId' => $target['project_id'], 'exportIssueTypeId' => $target['issue_type_id']]
             : ['exportTeamId' => $target['team_id']];
 
-        $integration->forceFill(['settings' => [...$integration->settings, ...$saved]])->save();
+        $current = TeamIntegration::query()->whereKey($integration->id)->lockForUpdate()->firstOrFail();
+
+        $current->forceFill(['settings' => [...$current->settings, ...$saved]])->save();
     }
 
     /**
