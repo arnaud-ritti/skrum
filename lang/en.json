@@ -542,5 +542,13 @@
     "Only groups can be named.": "Only groups can be named.",
     "Name this group": "Name this group",
     "Group name": "Group name",
-    "Rename group": "Rename group"
+    "Rename group": "Rename group",
+    "How was this retro?": "How was this retro?",
+    "Time wasted": "Time wasted",
+    "Not really worth it": "Not really worth it",
+    "Break-even": "Break-even",
+    "Good use of time": "Good use of time",
+    "Excellent use of time": "Excellent use of time",
+    ":count rating": ":count rating",
+    ":count ratings": ":count ratings"
 }

@@ -15,6 +15,7 @@ import { useTrans } from '@/hooks/use-trans';
 import { retroRequest } from '@/lib/retro/api';
 import type { ActionItem, BoardParticipant } from '@/lib/retro/types';
 import { useBoard } from './board-context';
+import { RotiControl } from './roti-control';
 
 const Unassigned = 'none';
 
@@ -296,6 +297,9 @@ export function ActionItemsPanel() {
                     ))}
                 </ul>
             )}
+            <div className="border-t pt-3">
+                <RotiControl />
+            </div>
         </aside>
     );
 }

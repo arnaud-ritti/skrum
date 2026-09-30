@@ -796,5 +796,13 @@
     "Only groups can be named.": "Seuls les groupes peuvent être nommés.",
     "Name this group": "Nommer ce groupe",
     "Group name": "Nom du groupe",
-    "Rename group": "Renommer le groupe"
+    "Rename group": "Renommer le groupe",
+    "How was this retro?": "Comment était cette rétro ?",
+    "Time wasted": "Temps perdu",
+    "Not really worth it": "Pas vraiment utile",
+    "Break-even": "Ni gagné ni perdu",
+    "Good use of time": "Temps bien utilisé",
+    "Excellent use of time": "Temps très bien utilisé",
+    ":count rating": ":count note",
+    ":count ratings": ":count notes"
 }
