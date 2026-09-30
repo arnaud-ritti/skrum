@@ -19,6 +19,12 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { useTrans } from '@/hooks/use-trans';
 import { retroRequest } from '@/lib/retro/api';
 import {
@@ -26,9 +32,15 @@ import {
     columnColorLabel,
     columnSwatch,
 } from '@/lib/retro/colors';
-import type { BoardColumn, ColumnColor } from '@/lib/retro/types';
+import type { BoardColumn, ColumnColor, RetroPhase } from '@/lib/retro/types';
 import { cn } from '@/lib/utils';
 import { useBoard } from './board-context';
+
+export const ColumnEditPhases: RetroPhase[] = [
+    'health_check',
+    'icebreaker',
+    'writing',
+];
 
 type Props = {
     column: BoardColumn;
@@ -45,9 +57,14 @@ export function ColumnHeader({ column, count, index, total, hasCards }: Props) {
     const [draft, setDraft] = useState(column.title);
     const [busy, setBusy] = useState(false);
     const [confirmingDelete, setConfirmingDelete] = useState(false);
+    const [editingDescription, setEditingDescription] = useState(false);
+    const [descriptionDraft, setDescriptionDraft] = useState(
+        column.description ?? '',
+    );
     const settled = useRef(false);
     const canEdit =
-        ctx.board.viewer.isFacilitator && ctx.board.retro.phase === 'writing';
+        ctx.board.viewer.isFacilitator &&
+        ColumnEditPhases.includes(ctx.board.retro.phase);
 
     const applyColumns = async (
         request: Promise<{ columns: BoardColumn[] }>,
@@ -67,7 +84,11 @@ export function ColumnHeader({ column, count, index, total, hasCards }: Props) {
         return response;
     };
 
-    const update = (data: { title?: string; color?: ColumnColor }) =>
+    const update = (data: {
+        title?: string;
+        color?: ColumnColor;
+        description?: string | null;
+    }) =>
         applyColumns(
             retroRequest<{ columns: BoardColumn[] }>(
                 ColumnsController.update({
@@ -96,6 +117,22 @@ export function ColumnHeader({ column, count, index, total, hasCards }: Props) {
 
         if (save && trimmed !== '' && trimmed !== column.title) {
             void update({ title: trimmed });
+        }
+    };
+
+    const startDescriptionEdit = () => {
+        setDescriptionDraft(column.description ?? '');
+        setEditingDescription(true);
+    };
+
+    const saveDescription = async () => {
+        const trimmed = descriptionDraft.trim();
+        const response = await update({
+            description: trimmed === '' ? null : trimmed,
+        });
+
+        if (response) {
+            setEditingDescription(false);
         }
     };
 
@@ -128,29 +165,46 @@ export function ColumnHeader({ column, count, index, total, hasCards }: Props) {
     };
 
     return (
-        <header className="mb-3 flex items-center justify-between gap-2">
-            {editing ? (
-                <Input
-                    autoFocus
-                    value={draft}
-                    maxLength={60}
-                    aria-label={t('Column title')}
-                    className="h-8"
-                    onChange={(event) => setDraft(event.target.value)}
-                    onBlur={() => finishRename(true)}
-                    onKeyDown={(event) => {
-                        if (event.key === 'Enter') {
-                            finishRename(true);
-                        }
+        <header className="mb-3 flex items-start justify-between gap-2">
+            <div className="min-w-0 flex-1">
+                {editing ? (
+                    <Input
+                        autoFocus
+                        value={draft}
+                        maxLength={100}
+                        aria-label={t('Column title')}
+                        className="h-8"
+                        onChange={(event) => setDraft(event.target.value)}
+                        onBlur={() => finishRename(true)}
+                        onKeyDown={(event) => {
+                            if (event.key === 'Enter') {
+                                finishRename(true);
+                            }
 
-                        if (event.key === 'Escape') {
-                            finishRename(false);
-                        }
-                    }}
-                />
-            ) : (
-                <h2 className="min-w-0 truncate font-medium">{column.title}</h2>
-            )}
+                            if (event.key === 'Escape') {
+                                finishRename(false);
+                            }
+                        }}
+                    />
+                ) : (
+                    <h2 className="truncate font-medium">{column.title}</h2>
+                )}
+                {column.description && (
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <p
+                                tabIndex={0}
+                                className="line-clamp-2 text-xs text-muted-foreground"
+                            >
+                                {column.description}
+                            </p>
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-64">
+                            {column.description}
+                        </TooltipContent>
+                    </Tooltip>
+                )}
+            </div>
             <div className="flex items-center gap-1">
                 <span className="text-xs text-muted-foreground">{count}</span>
                 {canEdit && (
@@ -174,6 +228,12 @@ export function ColumnHeader({ column, count, index, total, hasCards }: Props) {
                                 onSelect={startRename}
                             >
                                 {t('Rename')}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                                disabled={busy}
+                                onSelect={startDescriptionEdit}
+                            >
+                                {t('Edit description')}
                             </DropdownMenuItem>
                             <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
                                 {t('Color')}
@@ -226,7 +286,7 @@ export function ColumnHeader({ column, count, index, total, hasCards }: Props) {
                             {hasCards && (
                                 <p className="max-w-48 px-2 py-1 text-xs text-muted-foreground">
                                     {t(
-                                        'Only empty columns can be edited or deleted.',
+                                        'Only empty columns can be renamed, recoloured or deleted.',
                                     )}
                                 </p>
                             )}
@@ -260,6 +320,45 @@ export function ColumnHeader({ column, count, index, total, hasCards }: Props) {
                                 onClick={() => void destroy()}
                             >
                                 {t('Delete')}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+            )}
+            {canEdit && (
+                <Dialog
+                    open={editingDescription && !ctx.sessionExpired}
+                    onOpenChange={setEditingDescription}
+                >
+                    <DialogContent>
+                        <DialogTitle>{t('Column description')}</DialogTitle>
+                        <DialogDescription>
+                            {t(
+                                'Shown under the column title to guide what people write.',
+                            )}
+                        </DialogDescription>
+                        <Textarea
+                            value={descriptionDraft}
+                            maxLength={200}
+                            rows={3}
+                            aria-label={t('Column description')}
+                            onChange={(event) =>
+                                setDescriptionDraft(event.target.value)
+                            }
+                        />
+                        <DialogFooter className="gap-2">
+                            <Button
+                                type="button"
+                                variant="secondary"
+                                onClick={() => setEditingDescription(false)}
+                            >
+                                {t('Cancel')}
+                            </Button>
+                            <Button
+                                disabled={busy}
+                                onClick={() => void saveDescription()}
+                            >
+                                {t('Save')}
                             </Button>
                         </DialogFooter>
                     </DialogContent>

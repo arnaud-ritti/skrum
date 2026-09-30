@@ -22,12 +22,14 @@ import { ActionItemsPanel } from './action-items-panel';
 import { AddColumn } from './add-column';
 import { BoardEnded } from './board-ended';
 import { BoardHeader } from './board-header';
+import { ColumnEditPhases } from './column-header';
 import { CompletedSummary } from './completed-summary';
 import { ConnectionBanner } from './connection-banner';
 import { BoardProvider, type BoardContextValue } from './board-context';
 import { parseDndId, useDragAccessibility } from './dnd';
 import { FlyingReactions } from './flying-reactions';
 import { HideMyCursorKey, LiveCursorLayer } from './live-cursor-layer';
+import { PhasePanel } from './phase-panel';
 import { PresentationOverlay } from './presentation-overlay';
 import { CardPreview } from './retro-card';
 import { RetroColumn } from './retro-column';
@@ -208,6 +210,7 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
                     />
                     <ConnectionBanner reconnecting={reconnecting} />
                     <div className="flex flex-1 flex-col lg:min-h-0">
+                        <PhasePanel />
                         {board.retro.phase === 'completed' && (
                             <CompletedSummary />
                         )}
@@ -246,9 +249,9 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
                                         />
                                     ))}
                                     {board.viewer.isFacilitator &&
-                                        board.retro.phase === 'writing' && (
-                                            <AddColumn />
-                                        )}
+                                        ColumnEditPhases.includes(
+                                            board.retro.phase,
+                                        ) && <AddColumn />}
                                     <LiveCursorLayer
                                         container={boardElement}
                                         hidden={hideMyCursor}

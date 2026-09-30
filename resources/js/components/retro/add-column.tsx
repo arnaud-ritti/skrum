@@ -54,7 +54,7 @@ export function AddColumn() {
         >
             <Input
                 value={title}
-                maxLength={60}
+                maxLength={100}
                 required
                 placeholder={t('Column title')}
                 aria-label={t('Column title')}

@@ -1,4 +1,6 @@
 export type RetroPhase =
+    | 'health_check'
+    | 'icebreaker'
     | 'writing'
     | 'grouping'
     | 'voting'
@@ -72,6 +74,7 @@ export type BoardCard = CardPayload & {
 export type BoardColumn = {
     id: string;
     title: string;
+    description: string | null;
     color: ColumnColor;
     position: number;
 };
@@ -98,6 +101,10 @@ export type Snapshot = {
         title: string;
         template: string;
         phase: RetroPhase;
+        phases: RetroPhase[];
+        healthCheckEnabled: boolean;
+        icebreakerEnabled: boolean;
+        votesAuto: boolean;
         isAnonymous: boolean;
         reactionsEnabled: boolean;
         cursorsEnabled: boolean;
@@ -138,11 +145,3 @@ export type PresenceMember = {
     avatarUrl: string;
     isGuest: boolean;
 };
-
-export const Phases: RetroPhase[] = [
-    'writing',
-    'grouping',
-    'voting',
-    'discussing',
-    'completed',
-];
