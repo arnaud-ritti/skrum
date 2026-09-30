@@ -1103,5 +1103,14 @@
     "Copy guest link": "Gastlink kopieren",
     "Read": "Lesen",
     "Create and update": "Erstellen und bearbeiten",
-    "Delete my messages": "Meine Nachrichten löschen"
+    "Delete my messages": "Meine Nachrichten löschen",
+    "You can have at most 25 active tokens.": "Du kannst höchstens 25 aktive Tokens haben.",
+    "You already have a token with this name.": "Du hast bereits ein Token mit diesem Namen.",
+    "Choose a team you can see.": "Wähle ein Team, auf das du Zugriff hast.",
+    "Token revoked.": "Token widerrufen.",
+    "30 days": "30 Tage",
+    "90 days": "90 Tage",
+    "1 year": "1 Jahr",
+    "Never": "Nie",
+    "API tokens": "API-Tokens"
 }

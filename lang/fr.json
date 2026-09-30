@@ -1103,5 +1103,14 @@
     "Copy guest link": "Copier le lien invité",
     "Read": "Lecture",
     "Create and update": "Créer et modifier",
-    "Delete my messages": "Supprimer mes messages"
+    "Delete my messages": "Supprimer mes messages",
+    "You can have at most 25 active tokens.": "Vous pouvez avoir au plus 25 jetons actifs.",
+    "You already have a token with this name.": "Vous avez déjà un jeton portant ce nom.",
+    "Choose a team you can see.": "Choisissez une équipe à laquelle vous avez accès.",
+    "Token revoked.": "Jeton révoqué.",
+    "30 days": "30 jours",
+    "90 days": "90 jours",
+    "1 year": "1 an",
+    "Never": "Jamais",
+    "API tokens": "Jetons d'API"
 }

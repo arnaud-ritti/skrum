@@ -851,5 +851,14 @@
     "Copy guest link": "Copy guest link",
     "Read": "Read",
     "Create and update": "Create and update",
-    "Delete my messages": "Delete my messages"
+    "Delete my messages": "Delete my messages",
+    "You can have at most 25 active tokens.": "You can have at most 25 active tokens.",
+    "You already have a token with this name.": "You already have a token with this name.",
+    "Choose a team you can see.": "Choose a team you can see.",
+    "Token revoked.": "Token revoked.",
+    "30 days": "30 days",
+    "90 days": "90 days",
+    "1 year": "1 year",
+    "Never": "Never",
+    "API tokens": "API tokens"
 }
