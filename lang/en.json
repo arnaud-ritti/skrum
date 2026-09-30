@@ -440,5 +440,17 @@
     "Edit description": "Edit description",
     "Column description": "Column description",
     "Shown under the column title to guide what people write.": "Shown under the column title to guide what people write.",
-    "Only empty columns can be renamed, recoloured or deleted.": "Only empty columns can be renamed, recoloured or deleted."
+    "Only empty columns can be renamed, recoloured or deleted.": "Only empty columns can be renamed, recoloured or deleted.",
+    "Interaction with colleagues was productive": "Interaction with colleagues was productive",
+    "Tasks assigned to me were clear": "Tasks assigned to me were clear",
+    "My manager was understanding and supportive": "My manager was understanding and supportive",
+    "The vision and goals are clear to me": "The vision and goals are clear to me",
+    "Our processes let me work without blockers": "Our processes let me work without blockers",
+    "I felt motivated in my work": "I felt motivated in my work",
+    "Interaction": "Interaction",
+    "Clear tasks": "Clear tasks",
+    "Manager support": "Manager support",
+    "Vision": "Vision",
+    "Processes": "Processes",
+    "Motivation": "Motivation"
 }

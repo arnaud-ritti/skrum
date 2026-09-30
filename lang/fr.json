@@ -697,5 +697,17 @@
     "Edit description": "Modifier la description",
     "Column description": "Description de la colonne",
     "Shown under the column title to guide what people write.": "Affichée sous le titre de la colonne pour guider ce que chacun écrit.",
-    "Only empty columns can be renamed, recoloured or deleted.": "Seules les colonnes vides peuvent être renommées, recolorées ou supprimées."
+    "Only empty columns can be renamed, recoloured or deleted.": "Seules les colonnes vides peuvent être renommées, recolorées ou supprimées.",
+    "Interaction with colleagues was productive": "Les interactions avec mes collègues ont été productives",
+    "Tasks assigned to me were clear": "Les tâches qui m’ont été confiées étaient claires",
+    "My manager was understanding and supportive": "Mon manager a été compréhensif et bienveillant",
+    "The vision and goals are clear to me": "La vision et les objectifs sont clairs pour moi",
+    "Our processes let me work without blockers": "Nos processus me permettent de travailler sans blocage",
+    "I felt motivated in my work": "Je me suis senti motivé dans mon travail",
+    "Interaction": "Interaction",
+    "Clear tasks": "Tâches claires",
+    "Manager support": "Soutien du manager",
+    "Vision": "Vision",
+    "Processes": "Processus",
+    "Motivation": "Motivation"
 }

@@ -697,5 +697,17 @@
     "Edit description": "Beschreibung bearbeiten",
     "Column description": "Spaltenbeschreibung",
     "Shown under the column title to guide what people write.": "Wird unter dem Spaltentitel angezeigt und hilft beim Schreiben.",
-    "Only empty columns can be renamed, recoloured or deleted.": "Nur leere Spalten können umbenannt, umgefärbt oder gelöscht werden."
+    "Only empty columns can be renamed, recoloured or deleted.": "Nur leere Spalten können umbenannt, umgefärbt oder gelöscht werden.",
+    "Interaction with colleagues was productive": "Die Zusammenarbeit mit Kolleg:innen war produktiv",
+    "Tasks assigned to me were clear": "Die mir übertragenen Aufgaben waren klar",
+    "My manager was understanding and supportive": "Meine Führungskraft war verständnisvoll und unterstützend",
+    "The vision and goals are clear to me": "Vision und Ziele sind mir klar",
+    "Our processes let me work without blockers": "Unsere Prozesse erlauben mir, ohne Blockaden zu arbeiten",
+    "I felt motivated in my work": "Ich war in meiner Arbeit motiviert",
+    "Interaction": "Interaktion",
+    "Clear tasks": "Klare Aufgaben",
+    "Manager support": "Unterstützung der Führung",
+    "Vision": "Vision",
+    "Processes": "Prozesse",
+    "Motivation": "Motivation"
 }

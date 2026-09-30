@@ -47,4 +47,10 @@ class Team extends Model
     {
         return $this->hasMany(Retro::class);
     }
+
+    /** @return HasMany<TeamHealthStatement, $this> */
+    public function healthStatements(): HasMany
+    {
+        return $this->hasMany(TeamHealthStatement::class)->orderBy('position')->orderBy('created_at');
+    }
 }

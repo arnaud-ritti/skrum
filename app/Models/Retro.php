@@ -115,6 +115,18 @@ class Retro extends Model
         return $this->hasMany(ActionItem::class);
     }
 
+    /** @return HasMany<RetroHealthStatement, $this> */
+    public function healthStatements(): HasMany
+    {
+        return $this->hasMany(RetroHealthStatement::class)->orderBy('position');
+    }
+
+    /** @return HasMany<HealthCheckAnswer, $this> */
+    public function healthCheckAnswers(): HasMany
+    {
+        return $this->hasMany(HealthCheckAnswer::class);
+    }
+
     /** @return BelongsTo<Participant, $this> */
     public function facilitator(): BelongsTo
     {
