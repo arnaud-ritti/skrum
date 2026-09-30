@@ -45,12 +45,16 @@ export function PostLinkSection({
     const post = async (channel: ShareChannel) => {
         setBusy(channel);
 
-        const posted = await onPost(
-            channel,
-            guestLinkAvailable && includeGuestLink,
-        );
+        let posted = false;
 
-        setBusy(null);
+        try {
+            posted = await onPost(
+                channel,
+                guestLinkAvailable && includeGuestLink,
+            );
+        } finally {
+            setBusy(null);
+        }
 
         if (posted) {
             toast(t('The message is on its way.'));

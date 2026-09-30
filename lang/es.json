@@ -1276,5 +1276,9 @@
     "Participants with an account (:count)": "Participantes con cuenta (:count)",
     "All team members (:count)": "Todos los miembros del equipo (:count)",
     "Guests have no account and are never emailed.": "Los invitados no tienen cuenta y nunca reciben correos.",
-    "The results are on their way.": "Los resultados están en camino."
+    "The results are on their way.": "Los resultados están en camino.",
+    "Sent to :channel": "Enviado a :channel",
+    "Emailed to :count people": "Enviado por correo a :count personas",
+    "Emailed to 1 person": "Enviado por correo a 1 persona",
+    "Emailed to 1 person · :time": "Enviado por correo a 1 persona · :time"
 }

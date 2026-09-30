@@ -1028,5 +1028,9 @@
     "All team members (:count)": "All team members (:count)",
     "Guests have no account and are never emailed.": "Guests have no account and are never emailed.",
     "The results are on their way.": "The results are on their way.",
-    "Send": "Send"
+    "Send": "Send",
+    "Sent to :channel": "Sent to :channel",
+    "Emailed to :count people": "Emailed to :count people",
+    "Emailed to 1 person": "Emailed to 1 person",
+    "Emailed to 1 person · :time": "Emailed to 1 person · :time"
 }

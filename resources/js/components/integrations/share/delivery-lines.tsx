@@ -39,10 +39,21 @@ export function DeliveryLines({ deliveries }: Props) {
             isMounted && at ? formatRelativeTime(at, locale, Date.now()) : '';
 
         if (delivery.channel === 'email') {
-            return t('Emailed to :count people · :time', {
-                count: delivery.recipientCount ?? 0,
-                time,
-            });
+            const count = delivery.recipientCount ?? 0;
+
+            if (!time) {
+                return count === 1
+                    ? t('Emailed to 1 person')
+                    : t('Emailed to :count people', { count });
+            }
+
+            return count === 1
+                ? t('Emailed to 1 person · :time', { time })
+                : t('Emailed to :count people · :time', { count, time });
+        }
+
+        if (!time) {
+            return t('Sent to :channel', { channel });
         }
 
         return t('Sent to :channel · :time', { channel, time });
