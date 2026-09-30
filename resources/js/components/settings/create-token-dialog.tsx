@@ -58,6 +58,11 @@ export function CreateTokenDialog({
         expiration: defaultExpiration,
     });
 
+    const scopeError = Object.entries(form.errors as Record<string, string>)
+        .filter(([key]) => key === 'scopes' || key.startsWith('scopes.'))
+        .map(([, message]) => message)
+        .join(' ');
+
     const toggleScope = (scope: string, checked: boolean) =>
         form.setData(
             'scopes',
@@ -156,7 +161,7 @@ export function CreateTokenDialog({
                                 </p>
                             </div>
                         </div>
-                        <InputError message={form.errors.scopes} />
+                        <InputError message={scopeError} />
                     </fieldset>
 
                     <div className="grid gap-2">

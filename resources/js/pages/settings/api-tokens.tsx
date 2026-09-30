@@ -210,14 +210,7 @@ export default function ApiTokens({
                                             {formatDate(token.createdAt)}
                                         </td>
                                         <td className="p-2">
-                                            {token.isExpired &&
-                                            token.expiresAt !== null
-                                                ? t('Expired on :date', {
-                                                      date: formatDate(
-                                                          token.expiresAt,
-                                                      ),
-                                                  })
-                                                : formatDate(token.expiresAt)}
+                                            {formatDate(token.expiresAt)}
                                         </td>
                                         <td className="p-2">
                                             {formatDate(token.lastUsedAt)}
