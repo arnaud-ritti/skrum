@@ -13,6 +13,7 @@ class SetActionItemStatus
     public function __construct(
         private ActionItemPermissions $permissions,
         private CreateNextOccurrence $createNextOccurrence,
+        private MarkActionItemRemindersRead $markActionItemRemindersRead,
         private BroadcastActionItemChange $broadcastActionItemChange,
     ) {}
 
@@ -35,6 +36,7 @@ class SetActionItemStatus
 
         if ($completing) {
             $this->createNextOccurrence->handle($locked);
+            $this->markActionItemRemindersRead->handle($locked);
         }
 
         $origin = $actor instanceof ExternalSyncActor ? ActionItemEventOrigin::External : ActionItemEventOrigin::Skrum;

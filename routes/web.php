@@ -9,6 +9,8 @@ use App\Http\Controllers\GifsController;
 use App\Http\Controllers\InvitationAcceptancesController;
 use App\Http\Controllers\InvitationLinksController;
 use App\Http\Controllers\LocalesController;
+use App\Http\Controllers\NotificationsController;
+use App\Http\Controllers\ReadAllNotificationsController;
 use App\Http\Controllers\RetroJoinsController;
 use App\Http\Controllers\Retros\ActionItemCommentsController;
 use App\Http\Controllers\Retros\ActionItemsController;
@@ -97,6 +99,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', [CurrentWorkspaceController::class, 'show'])->name('dashboard');
     Route::get('workspaces/create', [WorkspacesController::class, 'create'])->name('workspaces.create');
     Route::post('workspaces', [WorkspacesController::class, 'store'])->name('workspaces.store');
+    Route::get('notifications', [NotificationsController::class, 'index'])->name('notifications.index');
+    Route::post('notifications/read-all', [ReadAllNotificationsController::class, 'store'])->name('notifications.readAll');
+    Route::patch('notifications/{notification}', [NotificationsController::class, 'update'])->name('notifications.update')->whereUuid('notification');
 
     Route::prefix('w/{workspace}')
         ->middleware(['can:view,workspace', RememberCurrentWorkspace::class])
