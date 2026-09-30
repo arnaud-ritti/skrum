@@ -2,6 +2,8 @@
 
 namespace App\Actions\Retros;
 
+use App\Actions\ActionItems\ActionItemActor;
+use App\Actions\ActionItems\CarriedActionItems;
 use App\Actions\HealthCheck\PresentHealthCheck;
 use App\Actions\Surveys\PresentSurvey;
 use App\Enums\RetroPhase;
@@ -24,6 +26,7 @@ class BuildBoardSnapshot
         private PresentCard $presentCard,
         private PresentColumns $presentColumns,
         private PresentActionItem $presentActionItem,
+        private CarriedActionItems $carriedActionItems,
         private SummarizeReactions $summarizeReactions,
         private PresentComment $presentComment,
         private GifCatalog $gifCatalog,
@@ -43,11 +46,12 @@ class BuildBoardSnapshot
     {
         $retro->loadMissing([
             'team.workspace',
+            'team.members',
             'participants.user',
             'cards.participant.user',
             'cards.reactions.participant.user',
             'cards.comments.participant.user',
-            'actionItems.assignee.user',
+            'actionItems' => fn ($query) => $query->with(ActionItem::presentationRelations())->withCount('comments'),
         ]);
 
         $showsTotals = in_array($retro->phase, [RetroPhase::Discussing, RetroPhase::Completed], true)
@@ -58,9 +62,17 @@ class BuildBoardSnapshot
 
         $surveys = $this->presentSurvey->many($retro, $viewer);
 
+        $viewerParticipant = $retro->participants->firstWhere('id', $viewer->id) ?? $viewer;
+        $isFacilitator = $retro->isFacilitator($viewer);
+        $isWorkspaceManager = ! $viewer->isGuest() && ($viewerParticipant->user?->canManage($retro->team->workspace) ?? false);
+        $carried = $viewer->isGuest()
+            ? ['items' => [], 'hasMore' => false]
+            : $this->carriedActionItems->handle($retro);
+
         return [
             'retro' => [
                 'id' => $retro->id,
+                'teamId' => $retro->team_id,
                 'title' => $retro->title,
                 'template' => $retro->template,
                 'phase' => $retro->phase->value,
@@ -79,7 +91,7 @@ class BuildBoardSnapshot
                 'votesPerParticipant' => $retro->voteLimit(),
                 'votesAuto' => $retro->votes_per_participant === null,
                 'guestAccessEnabled' => $retro->guest_access_enabled,
-                'guestUrl' => $retro->guest_access_enabled && $retro->isFacilitator($viewer)
+                'guestUrl' => $retro->guest_access_enabled && $isFacilitator
                     ? route('retros.join.show', $retro->guest_token)
                     : null,
                 'facilitatorParticipantId' => $retro->facilitator_participant_id,
@@ -89,11 +101,16 @@ class BuildBoardSnapshot
             ],
             'viewer' => [
                 'participantId' => $viewer->id,
-                'isFacilitator' => $retro->isFacilitator($viewer),
+                'userId' => $viewer->user_id,
+                'canManageActionItems' => $isFacilitator || $isWorkspaceManager,
+                'isWorkspaceManager' => $isWorkspaceManager,
+                'isReviewFacilitator' => $isFacilitator && $retro->phase !== RetroPhase::Completed,
+                'facilitatedRetroIds' => $this->facilitatedRetroIds($retro, $viewer),
+                'isFacilitator' => $isFacilitator,
                 'isGuest' => $viewer->isGuest(),
                 'canHandleSuggestions' => $this->suggestionGuard->allows($retro, $retro->participants->firstWhere('id', $viewer->id) ?? $viewer),
                 'remainingVotes' => max(0, $retro->voteLimit() - (int) $myVotes->sum()),
-                'transferCandidates' => $retro->isFacilitator($viewer) ? $this->transferCandidates($retro, $viewer) : [],
+                'transferCandidates' => $isFacilitator ? $this->transferCandidates($retro, $viewer) : [],
             ],
             'columns' => $this->presentColumns->handle($retro),
             'cards' => $retro->cards->sortBy('position')->map(function (Card $card) use ($retro, $viewer, $showsTotals, $voteTotals, $myVotes, $showsCardInsights) {
@@ -112,9 +129,13 @@ class BuildBoardSnapshot
                 ];
             })->values()->all(),
             'participants' => $retro->participants->map(fn (Participant $participant) => $this->presentParticipant->handle($participant))->values()->all(),
-            'actionItems' => $retro->actionItems->sortBy('created_at')
-                ->map(fn (ActionItem $item) => $this->presentActionItem->handle($item))
-                ->values()->all(),
+            'actionItems' => $this->presentActionItem->many(
+                $retro->actionItems->sortBy('created_at'),
+                ActionItemActor::forParticipant($viewerParticipant),
+            ),
+            'carriedActionItems' => $this->presentActionItem->many($carried['items'], ActionItemActor::forParticipant($viewerParticipant)),
+            'carriedActionItemsHasMore' => $carried['hasMore'],
+            'teamMembers' => $this->teamMembers($retro),
             'insights' => $this->buildInsights->handle($retro),
             'roti' => $this->roti($retro, $viewer),
             'surveys' => $surveys,
@@ -124,6 +145,10 @@ class BuildBoardSnapshot
             'votesVersion' => $votesVersion,
             'links' => [
                 'team' => $viewer->isGuest() ? null : route('teams.show', [$retro->team->workspace, $retro->team]),
+                'actionItems' => $viewer->isGuest()
+                    ? null
+                    : route('workspaces.actionItems.index', ['workspace' => $retro->team->workspace, 'team' => $retro->team_id]),
+                'workspace' => $viewer->isGuest() ? null : $retro->team->workspace->slug,
             ],
             'emojiData' => [
                 'baseUrl' => '/emoji-data/'.config('services.emoji_data.version'),
@@ -135,6 +160,52 @@ class BuildBoardSnapshot
             ],
             'serverTime' => now()->utc()->format('Y-m-d\TH:i:s.v\Z'),
         ];
+    }
+
+    /**
+     * Guests may assign team members on their board, so they get the list
+     * too, without emails.
+     *
+     * @return array<int, array{
+     *     id: string,
+     *     name: string,
+     *     avatarUrl: string,
+     *     participantId: ?string
+     * }>
+     */
+    private function teamMembers(Retro $retro): array
+    {
+        $participantIds = $retro->participants->whereNotNull('user_id')->pluck('id', 'user_id');
+
+        return $retro->team->members
+            ->sortBy('name')
+            ->map(fn (User $member) => [
+                'id' => $member->id,
+                'name' => $member->name,
+                'avatarUrl' => $member->avatarUrl(),
+                'participantId' => $participantIds[$member->id] ?? null,
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function facilitatedRetroIds(Retro $retro, Participant $viewer): array
+    {
+        if ($viewer->user_id === null) {
+            return $retro->isFacilitator($viewer) ? [$retro->id] : [];
+        }
+
+        /** @var array<int, string> $retroIds */
+        $retroIds = Retro::query()
+            ->where('team_id', $retro->team_id)
+            ->whereHas('facilitator', fn ($query) => $query->where('user_id', $viewer->user_id))
+            ->pluck('id')
+            ->all();
+
+        return $retroIds;
     }
 
     /**

@@ -2,10 +2,9 @@
 
 namespace App\Actions\Retros;
 
+use App\Actions\ActionItems\ActionItemActor;
 use App\Actions\ActionItems\CreateActionItem;
-use App\Enums\RetroPhase;
 use App\Enums\SuggestedActionStatus;
-use App\Events\Retros\ActionItemSaved;
 use App\Events\Retros\InsightsChanged;
 use App\Models\ActionItem;
 use App\Models\Participant;
@@ -17,7 +16,6 @@ class PromoteSuggestedAction
     public function __construct(
         private SuggestionGuard $suggestionGuard,
         private CreateActionItem $createActionItem,
-        private PresentActionItem $presentActionItem,
     ) {}
 
     /**
@@ -29,7 +27,13 @@ class PromoteSuggestedAction
         $this->suggestionGuard->authorize($locked, $actor);
         $this->suggestionGuard->pending($suggestion);
 
-        $actionItem = $this->createActionItem->handle($locked, $actor, $suggestion->content, null, $suggestion->theme);
+        $actionItem = $this->createActionItem->handle(
+            $locked->team,
+            $locked,
+            ActionItemActor::forParticipant($actor),
+            ['content' => $suggestion->content],
+            $suggestion->theme,
+        );
 
         $suggestion->update([
             'status' => SuggestedActionStatus::Promoted,
@@ -37,10 +41,6 @@ class PromoteSuggestedAction
             'handled_by_participant_id' => $actor->id,
             'handled_at' => now(),
         ]);
-
-        if ($locked->phase !== RetroPhase::Completed) {
-            (new ActionItemSaved($locked->id, $this->presentActionItem->handle($actionItem)))->sendToOthers();
-        }
 
         (new InsightsChanged($locked->id))->sendToOthers();
 

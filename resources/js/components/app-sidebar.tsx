@@ -1,5 +1,6 @@
 import { Link, usePage } from '@inertiajs/react';
-import { LayoutGrid, LayoutTemplate, Users } from 'lucide-react';
+import { LayoutGrid, LayoutTemplate, ListChecks, Users } from 'lucide-react';
+import WorkspaceActionItemsController from '@/actions/App/Http/Controllers/WorkspaceActionItemsController';
 import WorkspaceMembersController from '@/actions/App/Http/Controllers/WorkspaceMembersController';
 import WorkspacesController from '@/actions/App/Http/Controllers/WorkspacesController';
 import WorkspaceTemplatesController from '@/actions/App/Http/Controllers/WorkspaceTemplatesController';
@@ -20,7 +21,7 @@ import { dashboard } from '@/routes';
 import type { NavItem } from '@/types';
 
 export function AppSidebar() {
-    const { currentWorkspace } = usePage().props;
+    const { currentWorkspace, actionItems } = usePage().props;
 
     const mainNavItems: NavItem[] = [
         {
@@ -31,6 +32,15 @@ export function AppSidebar() {
             icon: LayoutGrid,
         },
     ];
+
+    if (currentWorkspace) {
+        mainNavItems.push({
+            title: 'Action items',
+            href: WorkspaceActionItemsController.index(currentWorkspace.slug),
+            icon: ListChecks,
+            badge: actionItems?.overdueAssignedCount,
+        });
+    }
 
     if (currentWorkspace) {
         mainNavItems.push({

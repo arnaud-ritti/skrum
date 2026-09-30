@@ -23,6 +23,9 @@ export function DeleteRetroDialog({ open, onOpenChange }: Props) {
     const ctx = useBoard();
     const { t } = useTrans();
     const [busy, setBusy] = useState(false);
+    const openItems = ctx.board.actionItems.filter(
+        (item) => item.status === 'open',
+    ).length;
 
     const destroy = async () => {
         setBusy(true);
@@ -47,6 +50,15 @@ export function DeleteRetroDialog({ open, onOpenChange }: Props) {
                         'Delete this retrospective? Everyone loses access to it.',
                     )}
                 </DialogDescription>
+                {openItems > 0 && (
+                    <p className="text-sm font-medium text-destructive">
+                        {openItems === 1
+                            ? t('This also deletes 1 open action item.')
+                            : t('This also deletes :count open action items.', {
+                                  count: openItems,
+                              })}
+                    </p>
+                )}
                 <DialogFooter className="gap-2">
                     <Button
                         type="button"

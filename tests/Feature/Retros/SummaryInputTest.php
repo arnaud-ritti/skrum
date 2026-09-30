@@ -33,7 +33,7 @@ function completedRetroWithContent(array $attributes = []): array
     Vote::factory()->count(3)->create(['retro_id' => $retro->id, 'card_id' => $lead->id, 'participant_id' => $bob->id]);
     CardReaction::factory()->create(['retro_id' => $retro->id, 'card_id' => $lead->id, 'participant_id' => $bob->id, 'emoji' => '🔥']);
     CardComment::factory()->create(['retro_id' => $retro->id, 'card_id' => $lead->id, 'participant_id' => $bob->id, 'content' => 'secret comment']);
-    ActionItem::factory()->create(['retro_id' => $retro->id, 'content' => 'Cache the build', 'assignee_participant_id' => $bob->id, 'is_done' => true]);
+    ActionItem::factory()->completed()->create(['retro_id' => $retro->id, 'content' => 'Cache the build', 'assignee_participant_id' => $bob->id]);
 
     return [$retro, $alice, $bob, $lead, $child];
 }

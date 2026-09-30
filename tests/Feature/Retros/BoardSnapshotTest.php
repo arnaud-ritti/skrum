@@ -127,17 +127,25 @@ it('keeps cards of deleted users readable', function () {
 
 it('lists action items with assignees', function () {
     $retro = Retro::factory()->inPhase(RetroPhase::Discussing)->create();
-    [, $viewer] = retroMember($retro);
-    $item = ActionItem::factory()->create(['retro_id' => $retro->id, 'assignee_participant_id' => $viewer->id, 'content' => 'Fix CI']);
-
-    expect(snapshotFor($retro, $viewer)['actionItems'])->toBe([[
-        'id' => $item->id,
+    [$user, $viewer] = retroMember($retro);
+    $item = ActionItem::factory()->assignedTo($user)->create([
+        'retro_id' => $retro->id,
+        'created_by_participant_id' => $viewer->id,
         'content' => 'Fix CI',
-        'isDone' => false,
-        'assignee' => ['id' => $viewer->id, 'name' => $viewer->displayName()],
-        'themeId' => null,
-        'themeName' => null,
-    ]]);
+    ]);
+
+    $actionItems = snapshotFor($retro, $viewer)['actionItems'];
+
+    expect($actionItems)->toHaveCount(1)
+        ->and($actionItems[0])->toMatchArray([
+            'id' => $item->id,
+            'content' => 'Fix CI',
+            'status' => 'open',
+            'assignee' => ['kind' => 'member', 'id' => $user->id, 'name' => $user->name, 'avatarUrl' => $user->avatarUrl(), 'isTeamMember' => true],
+            'isMine' => true,
+            'themeId' => null,
+            'themeName' => null,
+        ]);
 });
 
 it('reports the server time for clock offsets', function () {

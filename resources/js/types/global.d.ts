@@ -19,6 +19,8 @@ declare module '@inertiajs/core' {
             translations: Record<string, string>;
             workspaces: WorkspaceSummary[];
             currentWorkspace: CurrentWorkspace | null;
+            notifications: { unreadCount: number } | null;
+            actionItems: { overdueAssignedCount: number } | null;
             [key: string]: unknown;
         };
         flashDataType: {

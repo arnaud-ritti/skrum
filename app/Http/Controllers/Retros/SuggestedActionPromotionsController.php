@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Retros;
 
+use App\Actions\ActionItems\ActionItemActor;
 use App\Actions\Retros\PresentActionItem;
 use App\Actions\Retros\PresentSuggestedAction;
 use App\Actions\Retros\PromoteSuggestedAction;
@@ -38,7 +39,7 @@ class SuggestedActionPromotionsController extends Controller
 
         return response()->json([
             'suggestedAction' => $this->presentSuggestedAction->handle($suggestion),
-            'actionItem' => $this->presentActionItem->handle($actionItem),
+            'actionItem' => $this->presentActionItem->handle($actionItem, ActionItemActor::forParticipant($participant)),
         ]);
     }
 }

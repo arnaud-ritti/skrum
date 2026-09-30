@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Support\Carbon;
 
 /**
@@ -66,6 +67,12 @@ class Workspace extends Model
     public function teams(): HasMany
     {
         return $this->hasMany(Team::class);
+    }
+
+    /** @return HasManyThrough<ActionItem, Team, $this> */
+    public function actionItems(): HasManyThrough
+    {
+        return $this->hasManyThrough(ActionItem::class, Team::class);
     }
 
     /** @return Collection<int, Team> */

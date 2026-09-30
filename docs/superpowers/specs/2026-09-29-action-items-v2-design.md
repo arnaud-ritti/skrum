@@ -80,7 +80,7 @@ Turn action items from a per-retro checklist into the team's follow-up list, on 
 
 ### `notifications` — new table (Laravel database notifications)
 
-- Framework schema with UUID `id` and `uuidMorphs('notifiable')`. Only `ActionItemReminderNotification` writes to it; its `data` is `{kind: 'due_soon'|'overdue', actionItemId, workspaceId, dueOn}` — **no item content**: text is loaded live, with the permission check, when the list is read (§3.4).
+- Framework schema with UUID `id`, `uuidMorphs('notifiable')` and a `json` (not `text`) `data` column, so reminders can be matched by `data->actionItemId` (mark read, §3.4). Only `ActionItemReminderNotification` writes to it; its `data` is `{kind: 'due_soon'|'overdue', actionItemId, workspaceId, dueOn}` — **no item content**: text is loaded live, with the permission check, when the list is read (§3.4).
 
 ### `users` — new columns (migration `add_notification_preferences_to_users_table`, up only)
 
@@ -90,7 +90,7 @@ Turn action items from a per-retro checklist into the team's follow-up list, on 
 ### `action_item_comments` — new table
 
 - `id` (UUID), `action_item_id` (cascade on delete), `author_participant_id` (nullable FK → `participants`, null on delete), `author_user_id` (nullable FK → `users`, null on delete), `content` (text, 1–500 characters), timestamps.
-- Exactly one author reference is set at creation: `author_participant_id` when written from the item's board (member or guest), `author_user_id` when written from the global page or the carry-over panel (a member, who may not be a participant of the item's retro). Check constraint: not both null at insert (they may both become null later through deletions; the comment then shows "Former member").
+- Exactly one author reference is set at creation: `author_participant_id` when written from the item's board (member or guest), `author_user_id` when written from the global page or the carry-over panel (a member, who may not be a participant of the item's retro). No database check constraint (both columns are null-on-delete, which a `CHECK` would reject): `AddActionItemComment` always sets exactly one; both may become null later through deletions (the comment then shows "Former member").
 - Flat list (no replies), oldest first.
 
 ## 3. Rules
@@ -131,7 +131,7 @@ Guests have no access to workspace endpoints (they are not authenticated users o
 ### 3.1 Items added outside a retro
 
 - Created on the global page with `POST /w/{workspace}/action-items` and a required `team_id`: `retro_id = null`, `created_by_user_id` = the user, `created_by_participant_id = null`, `theme_id`/`theme_name = null`.
-- **Who can create:** members of that team (`team_user`). A workspace Owner/Admin who is not a team member can view and edit these items but not create them (403) — they join the team first. `team_id` of another workspace or unknown → 422 (validation, no existence leak).
+- **Who can create:** members of that team (`team_user`). A workspace Owner/Admin who is not a team member can view and edit these items but not create them (403) — they join the team first. `team_id` of another workspace, unknown, or of a team the user cannot view → 422 (validation, no existence leak); a visible team the user is not a member of → 403.
 - **Fields:** same as board items (content, priority, due date, recurrence), assignee = a current member of the team (`assignee_user_id`) or none; `assignee_participant_id` → 422 (no guests: there is no retro whose guests could be assigned).
 - **Managers** (§4): the author and workspace Owners/Admins (no facilitator exists). Complete/reopen additionally: the assignee and the review facilitator of any in-progress retro of the team (the item is carried there).
 - **Anonymity:** not applicable — always named (author and comment authors), like every action item.
@@ -142,10 +142,10 @@ Guests have no access to workspace endpoints (they are not authenticated users o
 ### 3.2 Recurrence (completion-based)
 
 - `recurrence` ∈ `weekly` (+7 days), `every_two_weeks` (+14 days), `monthly` (+1 calendar month, clamped to the month's last day), or `null`. Requires a `due_on` (422 "A recurring action item needs a due date." otherwise; clearing `due_on` on a recurring item → same 422). Set/changed by managers on either surface.
-- **Regeneration:** when `SetActionItemStatus` completes a recurring item that has no successor yet (`nextOccurrence` is null), it creates, in the same transaction, the next occurrence: same `team_id`, `content`, `priority`, `recurrence`, author fields, `theme_id`/`theme_name`, assignee **if it is a member still in the team** (guest or former member → unassigned); `retro_id = null` (it is a team follow-up, shown as "Added outside a retro" with "Recurring"); `previous_occurrence_id` = the completed item; sub-tasks copied unchecked, in order; comments not copied. New `due_on` = the old `due_on` advanced by the interval, repeatedly, until it is ≥ today (an overdue weekly item completed three weeks late does not spawn an already-overdue copy).
+- **Regeneration:** when `SetActionItemStatus` completes a recurring item that has no successor yet (`nextOccurrence` is null), it creates, in the same transaction, the next occurrence: same `team_id`, `content`, `priority`, `recurrence`, author fields, `theme_id`/`theme_name`, author fields (`created_by_participant_id`, `created_by_user_id`) copied unchanged, assignee **if it is a member still in the team** (guest or former member → unassigned); `retro_id = null` (it is a team follow-up, shown as "Added outside a retro" with "Recurring"); `previous_occurrence_id` = the completed item; sub-tasks copied unchecked, in order; comments not copied. New `due_on` = the old `due_on` advanced by the interval, repeatedly, until it is ≥ today (an overdue weekly item completed three weeks late does not spawn an already-overdue copy).
 - Reopening the completed occurrence does not delete its successor; completing it again creates no second one (unique `previous_occurrence_id` plus the `nextOccurrence` check under a row lock on the completed item).
 - **Stopping:** set `recurrence` to `null` on the open occurrence (the "Repeat" select → "Does not repeat"); past occurrences are unchanged. Deleting an occurrence does not delete others (`previous_occurrence_id` null on delete).
-- Payload: `recurrence`, `previousOccurrenceId`; the UI shows a repeat icon with "Repeats weekly/every 2 weeks/monthly" and, on a generated occurrence, "Follows up the item completed on :date".
+- Payload: `recurrence`, `previousOccurrenceId`; the UI shows a repeat icon with "Repeats weekly/every 2 weeks/monthly" and, on a generated occurrence, "Follows up the item completed on :date" (`:date` = the successor's `createdAt`, i.e. the completion moment of the previous occurrence).
 - The successor is broadcast as a created item (§5) and is a carried item for the team's later retros by §3.
 
 ### 3.3 Sub-tasks
@@ -164,7 +164,7 @@ Guests have no access to workspace endpoints (they are not authenticated users o
   - `due_soon` — `due_on` is today or tomorrow ("due today" / "due tomorrow" wording).
   - `overdue` — `due_on` is between today − 7 days and yesterday (one reminder; the 7-day window avoids mailing items that were dated retroactively long ago, and catches up if the scheduler missed runs).
   - Skipped when a row already exists in `action_item_reminders` for (item, assignee, kind, `due_on`). The row is inserted (`insertOrIgnore`) before dispatch, so re-running the command the same day sends nothing twice.
-- **Delivery:** per user and run, one queued **digest email** `ActionItemReminderDigestNotification` (`mail` channel, `ShouldQueue`, `ShouldBeEncrypted`) listing "Overdue" then "Due soon" items (content, team, source retro or "Added outside a retro", due date formatted `isoFormat('LL')`), at most 20 with "and :count more", each linking to `/w/{workspace}/action-items?item={id}`, plus "View my open action items" (`?assignee=me&status=open`) and the footer "You can turn off these reminders in your notification settings." linking to `/settings/notifications`. Plus one **in-app** `ActionItemReminderNotification` (`database` channel) per item. Each channel is sent only if the user's matching preference is on; nothing is logged for a user who opted out of both.
+- **Delivery:** per user and run, one queued **digest email** `ActionItemReminderDigestNotification` (`mail` channel, `ShouldQueue`, `ShouldBeEncrypted`) listing "Overdue" then "Due soon" items (content, team, source retro or "Added outside a retro", due date formatted `isoFormat('LL')`), at most 20 with "and :count more", each linking to `/w/{workspace}/action-items?item={id}`, plus "View my open action items" (`?assignee=me&status=open`, in the workspace of the digest's first item) and the footer "You can turn off these reminders in your notification settings." linking to `/settings/notifications`. Plus one **in-app** `ActionItemReminderNotification` (`database` channel) per item. Each channel is sent only if the user's matching preference is on; nothing is logged for a user who opted out of both.
 - **Translations:** subjects ("Action items need your attention", "1 action item is overdue"-style `trans_choice` keys), lines and buttons in `lang/{en,fr,es,de}.json`, rendered in the recipient's locale (`HasLocalePreference`, parent spec i18n).
 - **In-app:** a bell in the app header with the unread count (shared Inertia prop `notifications.unreadCount`, computed per request with one indexed count query, only for authenticated users) and a dropdown of the latest 30 notifications. The list endpoint loads the referenced items with `ActionItemQuery` permissions: a notification whose item was deleted or is no longer viewable is deleted and not returned. Opening one marks it read and visits the deep link. Completing an item marks its unread reminder notifications read.
 - The sidebar "Action items" entry shows a red badge with the number of open items assigned to the viewer that are overdue in the current workspace (shared prop `actionItems.overdueAssignedCount`, one indexed count query).
@@ -239,7 +239,7 @@ Sub-task responses return the whole presented item, so clients replace it in one
 
 | Method | Path | Body | Response |
 |---|---|---|---|
-| GET | `/notifications` | — | `{notifications: [{id, kind, readAt, createdAt, actionItem: {id, content, teamName, dueOn, isOverdue, url}}], unreadCount}` (latest 30, own only) |
+| GET | `/notifications` | — | `{notifications: [{id, kind, wording, readAt, createdAt, actionItem: {id, content, teamName, dueOn, isOverdue, url}}], unreadCount}` (latest 30, own only; `wording` ∈ `overdue\|due_today\|due_tomorrow`, due soon judged against the day it was sent, instance time zone) |
 | PATCH | `/notifications/{notification}` | `{read: true}` | 200 `{unreadCount}`; another user's id → 404 |
 | POST | `/notifications/read-all` | — | 200 `{unreadCount: 0}` |
 | GET | `/settings/notifications` | — | Inertia page `settings/notifications` with both preferences |
@@ -261,7 +261,7 @@ Sub-task responses return the whole presented item, so clients replace it in one
   createdBy: {name, avatarUrl} | null,     // always present, even on anonymous retros (Decision 5); null only if the author is unknown
   isMine: bool,                            // viewer is the author
   commentCount,
-  source: {retroTitle, retroCreatedAt, retroUrl|null} | null,  // retroUrl null for viewers who cannot open the retro; null = added outside a retro
+  source: {retroTitle, retroCreatedAt, retroUrl} | null,  // retroUrl never null: every reader can open the retro; null = added outside a retro
   themeId: uuid|null, themeName: string|null,          // themeName read from action_items.theme_name, kept after theme deletion
   recurrence: 'weekly'|'every_two_weeks'|'monthly'|null, previousOccurrenceId: uuid|null,
   subtasks: [{id, content, isCompleted, position}],    // ordered by position
@@ -274,7 +274,7 @@ Sub-task responses return the whole presented item, so clients replace it in one
 
 - `assignee.id` is the user id (`member`) or participant id (`guest`).
 - Broadcast payloads always carry `isMine: false`; clients keep their known `isMine` for existing items (same pattern as `mine` on reactions).
-- The client derives permissions from `isMine`, `viewer.canManageActionItems` (facilitator or workspace Owner/Admin; new snapshot/page field), `viewer.isReviewFacilitator` (carried items), and whether the assignee is the viewer (`viewer.userId` / `viewer.participantId`). The server stays the authority.
+- The client derives permissions from `isMine`, `viewer.canManageActionItems` (facilitator or workspace Owner/Admin; snapshot field), `viewer.isWorkspaceManager`, `viewer.facilitatedRetroIds` (facilitator of the item's own retro manages it), `viewer.isReviewFacilitator` (board) / `viewer.reviewTeamIds` (global page), and whether the assignee is the viewer (`viewer.userId` / `viewer.participantId`). The server stays the authority.
 
 ### Comment payload
 
@@ -316,9 +316,11 @@ A no-op status change (idempotent, §3) dispatches nothing.
 
 - `actionItems`: new shape; ordered by `created_at` (unchanged order on the board).
 - `carriedActionItems`: presented carried items (§3, including items without a retro) for non-guest viewers; `[]` for guests. Loaded with a constant number of queries (sub-tasks eager-loaded).
-- `viewer.userId` (null for guests), `viewer.canManageActionItems`, `viewer.isReviewFacilitator`.
-- `teamMembers`: `[{id, name, avatarUrl}]` of the retro's team, for the assignee select. Guests receive it too (they can assign on the board), without emails.
-- `links.actionItems`: global page URL filtered to the team (`null` for guests).
+- `carriedActionItemsHasMore`: `true` when more than 200 items are carried (panel shows "View all on the action items page").
+- `retro.teamId`.
+- `viewer.userId` (null for guests), `viewer.canManageActionItems`, `viewer.isWorkspaceManager`, `viewer.isReviewFacilitator` (facilitator of this retro while not `Completed`), `viewer.facilitatedRetroIds` (retros of this team the viewer facilitates).
+- `teamMembers`: `[{id, name, avatarUrl, participantId}]` of the retro's team (`participantId` = the member's participant in this retro or `null`), for the assignee select. Guests receive it too (they can assign on the board), without emails.
+- `links.actionItems`: global page URL filtered to the team; `links.workspace`: workspace slug for the workspace endpoints of the carry-over panel (both `null` for guests).
 
 ## 6. Global page ordering and filters
 
@@ -327,7 +329,7 @@ A no-op status change (idempotent, §3) dispatches nothing.
 - `status=overdue` = open and overdue. `assignee=me` matches `assignee_user_id = user`. `assignee=unassigned` matches both assignee columns null.
 - Default query: `status=open`, all teams, any assignee. The page remembers the last filters in `localStorage` (`skrum.actionItemFilters.{workspaceId}`) and applies them when opened without a query string (e.g. from the sidebar).
 - Query in one class `App\Actions\ActionItems\ActionItemQuery` (`forUser(User, Workspace, ActionItemFilters)`), eager-loading team, retro (nullable), author, assignee and sub-tasks — constant query count per page. Items without a retro are included, filtered by `team_id` like the others.
-- Page props also carry `creatableTeams` (`[{id, name, members: [{id, name, avatarUrl}]}]`, teams of the workspace the viewer is a member of) for the "New action item" form, and `realtimeTeamIds` (visible teams matching the team filter) for channel subscriptions.
+- Page props: `workspace`, `filters {status, assignee, team, item}`, `items {data, currentPage, lastPage, total, prevPageUrl, nextPageUrl}`, `focusedItem` (the `item` deep-link target when visible, else `null`), `teams` (visible teams, same shape as `creatableTeams`, for per-row assignee selects), `creatableTeams` (`[{id, name, members: [{id, name, avatarUrl}]}]`, teams of the workspace the viewer is a member of) for the "New action item" form, `assignees` (`[{id, name}]`, members of visible teams, for the filter), `realtimeTeamIds` (visible teams matching the team filter) for channel subscriptions, and `viewer {userId, isWorkspaceManager, facilitatedRetroIds, reviewTeamIds}`.
 
 ## 7. Redaction and privacy
 
@@ -335,7 +337,7 @@ A no-op status change (idempotent, §3) dispatches nothing.
 - Because of that, the action-item create form and comment box show a notice on anonymous retros so nobody is surprised (§8).
 - Guests: see only their own retro's items and comments; never carried items (neither in the snapshot nor on any channel they can join); never team member emails.
 - Global page and carry-over only show items of teams the user can view; a Member removed from a team loses access to its items immediately.
-- `source.retroUrl` is set only if the viewer may open the retro (team view permission).
+- `source.retroUrl` is always set: whoever can read an item can open its retro (participants of it, or viewers of its team).
 - Deleting a retro deletes its action items and their comments (cascade, unchanged; Decision 6). The delete-retro dialog shows "This also deletes N open action items." when N > 0.
 - No change to vote or card redaction.
 - **Items without a retro** follow the same visibility as the others (team viewers); they never reach guests because guests only read their own retro's items.
@@ -349,7 +351,7 @@ All new strings in `lang/{en,fr,es,de}.json`, including "Action items are not an
 
 ### Board action item panel (`action-items-panel.tsx`, `Discussing`)
 
-- Create form: content, priority select (icons: arrow-up red High, circle amber Medium, arrow-down slate Low), due date input, assignee select grouped "In this retro" (participants; guests suffixed "(guest)") and "Team" (members not in the retro).
+- Create form: content, priority select (icons: arrow-up red High, circle amber Medium, arrow-down slate Low), due date input, assignee select grouped "In this retro" (team members who joined this retro, and guests suffixed "(guest)") and "Team" (members not in the retro). Workspace Owners/Admins outside the team are not listed (422 if sent, §3).
 - Item card, as in `screens/retro-actions.png`: creator avatar + name (always shown), content, complete toggle, priority select, assignee select, due date chip ("Due 3 Oct", red "Overdue" badge when `isOverdue`), edit (pencil opens inline edit) and delete buttons, comment button with count opening an inline flat thread (list + textarea, edit/delete own; delete for managers).
 - On anonymous retros (`is_anonymous`), the create form and the comment box show the notice "Action items are not anonymous: your name is shown." (translated, above the input; not shown on named retros).
 - Controls the viewer may not use are hidden (edit/delete) or disabled (complete), per §4.
@@ -361,7 +363,7 @@ All new strings in `lang/{en,fr,es,de}.json`, including "Action items are not an
 
 - Header button "Previous action items (n)" (n = open carried items), shown to non-guest participants in every phase except `Completed`, when the list is not empty.
 - Opens a side sheet listing carried items grouped by source retro (title + date, newest retro first; items inside ordered as §6), with the same item card (complete, edit fields, comments) through the workspace endpoints.
-- Opens automatically once per viewer and retro, on first load while the phase is `Writing` (`localStorage` `skrum.carriedSeen.{retroId}`), so the review happens at the start.
+- Opens automatically once per viewer and retro, only when the board is first loaded while the phase is `Writing` (not on a later switch into `Writing`) (`localStorage` `skrum.carriedSeen.{retroId}`), so the review happens at the start.
 - Footer link "Open the action items page".
 - Items without a retro (§3.1, including recurring successors) appear in a group "Added outside a retro", after the retro groups.
 
@@ -375,7 +377,7 @@ All new strings in `lang/{en,fr,es,de}.json`, including "Action items are not an
 - Filter bar: status (Open / Overdue / Completed / All), assignee (Anyone / Me / Unassigned / member list of visible teams), team (All teams / each visible team). Filters are query-string driven (Inertia visits with `preserveState`).
 - "New action item" button (shown when `creatableTeams` is not empty): dialog with team select (defaults to the team filter), content, priority, due date, repeat, assignee (members of the chosen team). Creates via `POST /w/{workspace}/action-items`.
 - Rows: complete toggle, content, priority, due date + overdue badge, repeat icon, sub-task progress, assignee avatar/name ("(guest)", "(not in team)"), team name, source retro link and date or "Added outside a retro", creator, comment count. Clicking a row expands its sub-tasks, comments and an edit form (per permissions).
-- `?item={id}` scrolls to and expands that item (deep link used later by MCP and integrations).
+- `?item={id}` scrolls to and expands that item (deep link used later by MCP and integrations); when the current filters or page hide it, it is pinned above the list as "Linked action item" (`focusedItem`).
 - **Live updates:** subscribes to `private-team-action-items.{teamId}` for each id in `realtimeTeamIds` (re-subscribes when the team filter changes). On `team-action-item.saved` for an item on the page it replaces the row in place; on `.comments.changed` it updates the count (and refetches an open thread). Any saved/deleted event also schedules a debounced (1 s) Inertia partial reload of the list, so filters, ordering, pagination and new items stay correct; expanded rows and unsaved edit forms are preserved. It still reloads on window focus and after own mutations.
 - Empty states: "No open action items." / "Nothing matches these filters."
 - Team page (`teams/show.tsx`) gains "Open action items (n)" linking to the global page filtered by that team.
@@ -383,8 +385,8 @@ All new strings in `lang/{en,fr,es,de}.json`, including "Action items are not an
 
 ### Notification bell and settings
 
-- Bell icon in the app header (authenticated layouts) with an unread count badge (hidden at 0, "9+" above 9). Opening it fetches `/notifications`: rows "Overdue: :content" / "Due today: :content" / "Due tomorrow: :content" with team name and relative time, unread in bold; "Mark all as read"; empty state "No notifications.". Clicking a row marks it read and visits its deep link.
-- `resources/js/pages/settings/notifications.tsx`: the two switches of §3.4 with a short explanation ("Reminders are sent at :time for action items assigned to you."), saved with a Wayfinder form.
+- Bell icon in the header of the sidebar layout (the default authenticated layout; the unused header layout gets none) with an unread count badge (hidden at 0, "9+" above 9). Opening it fetches `/notifications`: rows "Overdue: :content" / "Due today: :content" / "Due tomorrow: :content" (from `wording`) with team name and relative time, unread in bold; "Mark all as read"; empty state "No notifications.". Clicking a row marks it read and visits its deep link.
+- `resources/js/pages/settings/notifications.tsx`: the two switches of §3.4 (rendered as checkboxes: no switch component, no new dependency) with a short explanation ("Reminders are sent at :time for action items assigned to you."), saved with a Wayfinder form.
 
 ## 9. Future hooks (not built here)
 
@@ -488,3 +490,20 @@ All recommended options below were chosen by the user on 2026-09-30.
 4. **Recurrence model.** (a) Completion-based: completing creates the next occurrence with the next due date ≥ today — simple, never piles up duplicates. (b) Fixed schedule: the scheduler creates an occurrence each period even if the previous one is open — true calendar cadence, but open copies accumulate. **Chosen: (a).**
 5. **Where a recurring successor lives.** (a) Detached from any retro (`retro_id = null`, "Added outside a retro", "Recurring") — never pollutes a completed retro's Results view, carried naturally; loses the direct source-retro link (kept via `previousOccurrenceId`). (b) Same `retro_id` as the original — keeps the source link, but a completed retro's Results view would keep growing and guest assignees could stay. **Chosen: (a).**
 6. **Reminder opt-out granularity.** (a) Two switches (email, in-app). (b) One switch for both — simplest settings page, but no "bell only" option. **Chosen: (a).**
+
+## Decisions (plan, 2026-10-01)
+
+Settled while writing Plans 9a/9b; applied in the body.
+
+1. `action_item_comments` has no check constraint (null-on-delete authors); `AddActionItemComment` sets exactly one author (§2).
+2. `notifications.data` is `json` so reminders can be matched by item (§2, §3.4).
+3. `source.retroUrl` is never `null` (§5, §7).
+4. A hidden `?item=` target is pinned as "Linked action item" via the page prop `focusedItem` (§6, §8).
+5. Create outside a retro: invisible team → 422, visible team but not a member → 403 (§3.1).
+6. Recurring successors copy the author fields; "Follows up the item completed on :date" uses the successor's `createdAt` (§3.2).
+7. The digest's "View my open action items" targets the first item's workspace (§3.4).
+8. The carry-over panel auto-opens only on the first board load in `Writing` (§8).
+9. Notification settings use checkboxes (§8).
+10. The bell lives only in the sidebar-layout header (§8).
+11. Board assignee select: "In this retro" = joined team members + guests; Owners/Admins outside the team excluded (§8, §3).
+12. Extra payload fields for the client: snapshot `carriedActionItemsHasMore`, `retro.teamId`, `viewer.isWorkspaceManager`, `viewer.facilitatedRetroIds`, `teamMembers[].participantId`, `links.workspace`; global page props `teams`, `assignees`, `viewer`, `focusedItem`; notification `wording` (§5, §6).

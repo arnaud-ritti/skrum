@@ -9,8 +9,12 @@ use App\Http\Controllers\GifsController;
 use App\Http\Controllers\InvitationAcceptancesController;
 use App\Http\Controllers\InvitationLinksController;
 use App\Http\Controllers\LocalesController;
+use App\Http\Controllers\NotificationsController;
+use App\Http\Controllers\ReadAllNotificationsController;
 use App\Http\Controllers\RetroJoinsController;
+use App\Http\Controllers\Retros\ActionItemCommentsController;
 use App\Http\Controllers\Retros\ActionItemsController;
+use App\Http\Controllers\Retros\ActionItemSubtasksController;
 use App\Http\Controllers\Retros\CardCommentsController;
 use App\Http\Controllers\Retros\CardGroupNamesController;
 use App\Http\Controllers\Retros\CardGroupsController;
@@ -49,6 +53,9 @@ use App\Http\Controllers\TeamHealthStatementsController;
 use App\Http\Controllers\TeamMembersController;
 use App\Http\Controllers\TeamRetrosController;
 use App\Http\Controllers\TeamsController;
+use App\Http\Controllers\WorkspaceActionItemCommentsController;
+use App\Http\Controllers\WorkspaceActionItemsController;
+use App\Http\Controllers\WorkspaceActionItemSubtasksController;
 use App\Http\Controllers\WorkspaceInvitationsController;
 use App\Http\Controllers\WorkspaceMembersController;
 use App\Http\Controllers\WorkspacesController;
@@ -92,6 +99,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', [CurrentWorkspaceController::class, 'show'])->name('dashboard');
     Route::get('workspaces/create', [WorkspacesController::class, 'create'])->name('workspaces.create');
     Route::post('workspaces', [WorkspacesController::class, 'store'])->name('workspaces.store');
+    Route::get('notifications', [NotificationsController::class, 'index'])->name('notifications.index');
+    Route::post('notifications/read-all', [ReadAllNotificationsController::class, 'store'])->name('notifications.readAll');
+    Route::patch('notifications/{notification}', [NotificationsController::class, 'update'])->name('notifications.update')->whereUuid('notification');
 
     Route::prefix('w/{workspace}')
         ->middleware(['can:view,workspace', RememberCurrentWorkspace::class])
@@ -124,6 +134,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('templates', [WorkspaceTemplatesController::class, 'store'])->name('workspaces.templates.store');
             Route::patch('templates/{template}', [WorkspaceTemplatesController::class, 'update'])->name('workspaces.templates.update')->whereUuid('template');
             Route::delete('templates/{template}', [WorkspaceTemplatesController::class, 'destroy'])->name('workspaces.templates.destroy')->whereUuid('template');
+
+            Route::get('action-items', [WorkspaceActionItemsController::class, 'index'])->name('workspaces.actionItems.index');
+            Route::post('action-items', [WorkspaceActionItemsController::class, 'store'])->name('workspaces.actionItems.store');
+            Route::patch('action-items/{actionItem}', [WorkspaceActionItemsController::class, 'update'])->name('workspaces.actionItems.update')->whereUuid('actionItem');
+            Route::delete('action-items/{actionItem}', [WorkspaceActionItemsController::class, 'destroy'])->name('workspaces.actionItems.destroy')->whereUuid('actionItem');
+            Route::get('action-items/{actionItem}/comments', [WorkspaceActionItemCommentsController::class, 'index'])->name('workspaces.actionItemComments.index')->whereUuid('actionItem');
+            Route::post('action-items/{actionItem}/comments', [WorkspaceActionItemCommentsController::class, 'store'])->name('workspaces.actionItemComments.store')->whereUuid('actionItem');
+            Route::patch('action-item-comments/{actionItemComment}', [WorkspaceActionItemCommentsController::class, 'update'])->name('workspaces.actionItemComments.update')->whereUuid('actionItemComment')->withoutScopedBindings();
+            Route::delete('action-item-comments/{actionItemComment}', [WorkspaceActionItemCommentsController::class, 'destroy'])->name('workspaces.actionItemComments.destroy')->whereUuid('actionItemComment')->withoutScopedBindings();
+            Route::post('action-items/{actionItem}/subtasks', [WorkspaceActionItemSubtasksController::class, 'store'])->name('workspaces.actionItemSubtasks.store')->whereUuid('actionItem');
+            Route::patch('action-item-subtasks/{actionItemSubtask}', [WorkspaceActionItemSubtasksController::class, 'update'])->name('workspaces.actionItemSubtasks.update')->whereUuid('actionItemSubtask')->withoutScopedBindings();
+            Route::delete('action-item-subtasks/{actionItemSubtask}', [WorkspaceActionItemSubtasksController::class, 'destroy'])->name('workspaces.actionItemSubtasks.destroy')->whereUuid('actionItemSubtask')->withoutScopedBindings();
         });
 });
 
@@ -172,6 +194,13 @@ Route::prefix('retros/{retro}')
         Route::post('action-items', [ActionItemsController::class, 'store'])->name('retros.action-items.store');
         Route::patch('action-items/{actionItem}', [ActionItemsController::class, 'update'])->name('retros.action-items.update')->whereUuid('actionItem');
         Route::delete('action-items/{actionItem}', [ActionItemsController::class, 'destroy'])->name('retros.action-items.destroy')->whereUuid('actionItem');
+        Route::get('action-items/{actionItem}/comments', [ActionItemCommentsController::class, 'index'])->name('retros.action-items.comments.index')->whereUuid('actionItem');
+        Route::post('action-items/{actionItem}/comments', [ActionItemCommentsController::class, 'store'])->name('retros.action-items.comments.store')->whereUuid('actionItem');
+        Route::patch('action-item-comments/{actionItemComment}', [ActionItemCommentsController::class, 'update'])->name('retros.action-items.comments.update')->whereUuid('actionItemComment');
+        Route::delete('action-item-comments/{actionItemComment}', [ActionItemCommentsController::class, 'destroy'])->name('retros.action-items.comments.destroy')->whereUuid('actionItemComment');
+        Route::post('action-items/{actionItem}/subtasks', [ActionItemSubtasksController::class, 'store'])->name('retros.action-items.subtasks.store')->whereUuid('actionItem');
+        Route::patch('action-item-subtasks/{actionItemSubtask}', [ActionItemSubtasksController::class, 'update'])->name('retros.action-items.subtasks.update')->whereUuid('actionItemSubtask');
+        Route::delete('action-item-subtasks/{actionItemSubtask}', [ActionItemSubtasksController::class, 'destroy'])->name('retros.action-items.subtasks.destroy')->whereUuid('actionItemSubtask');
         Route::post('summary', [RetroSummariesController::class, 'store'])->name('retros.summary.store');
         Route::delete('summary', [RetroSummariesController::class, 'destroy'])->name('retros.summary.destroy');
         Route::post('suggested-actions/{suggestedAction}/promotion', [SuggestedActionPromotionsController::class, 'store'])->name('retros.suggested-actions.promotion.store')->whereUuid('suggestedAction');

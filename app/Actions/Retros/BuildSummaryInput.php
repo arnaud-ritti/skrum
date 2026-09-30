@@ -74,7 +74,7 @@ class BuildSummaryInput
         $items = [];
 
         foreach ($retro->actionItems->sortBy('created_at') as $item) {
-            $candidate = [...$items, ['text' => $item->content, 'done' => $item->is_done]];
+            $candidate = [...$items, ['text' => $item->content, 'done' => $item->completed_at !== null]];
 
             if (! $this->fits([...$data, 'actionItems' => $candidate])) {
                 break;

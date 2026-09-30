@@ -1,3 +1,4 @@
+import { compareActionItems } from '@/lib/action-items/order';
 import type {
     ActionItem,
     BoardCard,
@@ -50,6 +51,14 @@ export type BoardAction =
     | { type: 'highlight.set'; cardId: string | null }
     | { type: 'actionItem.upsert'; actionItem: ActionItem }
     | { type: 'actionItem.remove'; actionItemId: string }
+    | {
+          type: 'actionItem.comments';
+          actionItemId: string;
+          commentCount: number;
+          refresh: boolean;
+      }
+    | { type: 'carriedActionItem.upsert'; actionItem: ActionItem }
+    | { type: 'carriedActionItem.remove'; actionItemId: string }
     | {
           type: 'reactions.set';
           cardId: string;
@@ -299,6 +308,50 @@ export function placeCard(
     return cards.map((card) => updates.get(card.id) ?? card);
 }
 
+/**
+ * Broadcast payloads are presented without a viewer, so they never mark
+ * an item as mine; the known copy keeps it and its comment revision.
+ */
+export function upsertActionItem(
+    items: ActionItem[],
+    incoming: ActionItem,
+): ActionItem[] {
+    const existing = items.find((item) => item.id === incoming.id);
+
+    if (!existing) {
+        return [...items, incoming];
+    }
+
+    return items.map((item) =>
+        item.id === incoming.id
+            ? {
+                  ...incoming,
+                  isMine: incoming.isMine || existing.isMine,
+                  commentsRevision: existing.commentsRevision,
+              }
+            : item,
+    );
+}
+
+export function countActionItemComments(
+    items: ActionItem[],
+    actionItemId: string,
+    commentCount: number,
+    refresh: boolean,
+): ActionItem[] {
+    return items.map((item) =>
+        item.id === actionItemId
+            ? {
+                  ...item,
+                  commentCount,
+                  commentsRevision: refresh
+                      ? (item.commentsRevision ?? 0) + 1
+                      : item.commentsRevision,
+              }
+            : item,
+    );
+}
+
 export function boardReducer(state: Snapshot, action: BoardAction): Snapshot {
     switch (action.type) {
         case 'insights.suggestion':
@@ -412,22 +465,45 @@ export function boardReducer(state: Snapshot, action: BoardAction): Snapshot {
                 ...state,
                 retro: { ...state.retro, highlightedCardId: action.cardId },
             };
-        case 'actionItem.upsert': {
-            const exists = state.actionItems.some(
-                (item) => item.id === action.actionItem.id,
-            );
-
+        case 'actionItem.upsert':
             return {
                 ...state,
-                actionItems: exists
-                    ? state.actionItems.map((item) =>
-                          item.id === action.actionItem.id
-                              ? action.actionItem
-                              : item,
-                      )
-                    : [...state.actionItems, action.actionItem],
+                actionItems: upsertActionItem(
+                    state.actionItems,
+                    action.actionItem,
+                ),
             };
-        }
+        case 'actionItem.comments':
+            return {
+                ...state,
+                actionItems: countActionItemComments(
+                    state.actionItems,
+                    action.actionItemId,
+                    action.commentCount,
+                    action.refresh,
+                ),
+                carriedActionItems: countActionItemComments(
+                    state.carriedActionItems,
+                    action.actionItemId,
+                    action.commentCount,
+                    action.refresh,
+                ),
+            };
+        case 'carriedActionItem.upsert':
+            return {
+                ...state,
+                carriedActionItems: upsertActionItem(
+                    state.carriedActionItems,
+                    action.actionItem,
+                ).sort(compareActionItems),
+            };
+        case 'carriedActionItem.remove':
+            return {
+                ...state,
+                carriedActionItems: state.carriedActionItems.filter(
+                    (item) => item.id !== action.actionItemId,
+                ),
+            };
         case 'actionItem.remove':
             return {
                 ...state,

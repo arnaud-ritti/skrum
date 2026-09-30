@@ -37,7 +37,7 @@ it('refuses board changes while the board is closed for editing', function (Retr
     'vote' => [RetroPhase::Voting, fn ($http, $retro, $card) => $http->postJson(route('retros.cards.votes.store', [$retro, $card]))],
     'retract a vote' => [RetroPhase::Voting, fn ($http, $retro, $card) => $http->deleteJson(route('retros.cards.votes.destroy', [$retro, $card]))],
     'add an action item' => [RetroPhase::Discussing, fn ($http, $retro) => $http->postJson(route('retros.action-items.store', $retro), ['content' => 'Do it'])],
-    'edit an action item' => [RetroPhase::Discussing, fn ($http, $retro, $card, $other, $column, $item) => $http->patchJson(route('retros.action-items.update', [$retro, $item]), ['is_done' => true])],
+    'edit an action item' => [RetroPhase::Discussing, fn ($http, $retro, $card, $other, $column, $item) => $http->patchJson(route('retros.action-items.update', [$retro, $item]), ['status' => 'completed'])],
     'delete an action item' => [RetroPhase::Discussing, fn ($http, $retro, $card, $other, $column, $item) => $http->deleteJson(route('retros.action-items.destroy', [$retro, $item]))],
     'react to a card' => [RetroPhase::Voting, fn ($http, $retro, $card) => $http->putJson(route('retros.cards.reactions.update', [$retro, $card]), ['emoji' => '👍'])],
     'remove a reaction' => [RetroPhase::Voting, fn ($http, $retro, $card) => $http->deleteJson(route('retros.cards.reactions.destroy', [$retro, $card]), ['emoji' => '👍'])],

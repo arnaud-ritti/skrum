@@ -3,6 +3,7 @@ import {
     SidebarGroup,
     SidebarGroupLabel,
     SidebarMenu,
+    SidebarMenuBadge,
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
@@ -30,6 +31,16 @@ export function NavMain({ items }: { items: NavItem[] }) {
                                 <span>{t(item.title)}</span>
                             </Link>
                         </SidebarMenuButton>
+                        {item.badge !== undefined && item.badge > 0 && (
+                            <SidebarMenuBadge
+                                className="bg-red-600 text-white peer-hover/menu-button:text-white"
+                                aria-label={t(':count overdue', {
+                                    count: item.badge,
+                                })}
+                            >
+                                {item.badge > 99 ? '99+' : item.badge}
+                            </SidebarMenuBadge>
+                        )}
                     </SidebarMenuItem>
                 ))}
             </SidebarMenu>

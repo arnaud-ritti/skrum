@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Support\Carbon;
 
 /**
@@ -140,6 +141,18 @@ class Retro extends Model
     public function actionItems(): HasMany
     {
         return $this->hasMany(ActionItem::class);
+    }
+
+    /** @return HasManyThrough<ActionItemComment, ActionItem, $this> */
+    public function actionItemComments(): HasManyThrough
+    {
+        return $this->hasManyThrough(ActionItemComment::class, ActionItem::class);
+    }
+
+    /** @return HasManyThrough<ActionItemSubtask, ActionItem, $this> */
+    public function actionItemSubtasks(): HasManyThrough
+    {
+        return $this->hasManyThrough(ActionItemSubtask::class, ActionItem::class);
     }
 
     /** @return HasMany<RetroTheme, $this> */

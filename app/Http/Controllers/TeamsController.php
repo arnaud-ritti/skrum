@@ -54,6 +54,7 @@ class TeamsController extends Controller
                     ->map(fn (User $member) => $member->only(['id', 'name', 'email']))
                 : [],
             'canManage' => $canManage,
+            'openActionItemCount' => $team->actionItems()->whereNull('completed_at')->count(),
             'retros' => $team->retros()->latest()->get()->map(fn (Retro $retro) => [
                 'id' => $retro->id,
                 'title' => $retro->title,

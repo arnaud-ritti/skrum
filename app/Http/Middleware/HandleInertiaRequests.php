@@ -2,6 +2,8 @@
 
 namespace App\Http\Middleware;
 
+use App\Actions\ActionItems\ActionItemQuery;
+use App\Models\ActionItem;
 use App\Models\Workspace;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -52,6 +54,10 @@ class HandleInertiaRequests extends Middleware
                 ->map(fn (Workspace $workspace) => $workspace->only(['id', 'name', 'slug']))
                 ->all() ?? [],
             'currentWorkspace' => fn () => $this->currentWorkspace($request),
+            'notifications' => fn () => $request->user() === null
+                ? null
+                : ['unreadCount' => $request->user()->unreadNotifications()->count()],
+            'actionItems' => fn () => $this->actionItemCounts($request),
         ];
     }
 
@@ -99,6 +105,36 @@ class HandleInertiaRequests extends Middleware
         return [
             ...$workspace->only(['id', 'name', 'slug']),
             'role' => $role->value,
+        ];
+    }
+
+    /**
+     * @return array{overdueAssignedCount: int}|null
+     */
+    private function actionItemCounts(Request $request): ?array
+    {
+        $user = $request->user();
+
+        if ($user === null) {
+            return null;
+        }
+
+        $workspace = $request->route('workspace');
+
+        if (! $workspace instanceof Workspace) {
+            $workspace = $user->currentWorkspace;
+        }
+
+        if ($workspace === null || ! $user->belongsToWorkspace($workspace)) {
+            return ['overdueAssignedCount' => 0];
+        }
+
+        return [
+            'overdueAssignedCount' => app(ActionItemQuery::class)->visibleTo($user, $workspace)
+                ->where('assignee_user_id', $user->id)
+                ->whereNull('completed_at')
+                ->where('due_on', '<', ActionItem::today()->toDateString())
+                ->count(),
         ];
     }
 }
