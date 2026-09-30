@@ -9,6 +9,7 @@ use App\Http\Controllers\GifsController;
 use App\Http\Controllers\Integrations\IntegrationAccountsController;
 use App\Http\Controllers\Integrations\IntegrationAuthorizationsController;
 use App\Http\Controllers\Integrations\IntegrationCallbacksController;
+use App\Http\Controllers\Integrations\IntegrationPrioritiesController;
 use App\Http\Controllers\Integrations\IntegrationTestsController;
 use App\Http\Controllers\Integrations\IntegrationUserMappingsController;
 use App\Http\Controllers\Integrations\IntegrationUserMatchesController;
@@ -198,6 +199,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     ->whereUuid('integration')
                     ->middleware('throttle:30,1,integrationAccountSearches')
                     ->name('teams.integrations.accounts.index');
+                Route::get('teams/{team}/integrations/{integration}/priorities', [IntegrationPrioritiesController::class, 'index'])
+                    ->whereUuid('integration')
+                    ->name('teams.integrations.priorities.index');
                 Route::delete('teams/{team}/integrations/{integration}', [TeamIntegrationsController::class, 'destroy'])
                     ->whereUuid('integration')
                     ->name('teams.integrations.destroy');

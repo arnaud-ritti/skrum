@@ -15,8 +15,8 @@ class PresentTeamIntegration
     public const SettingKeys = [
         'slack' => ['teamName', 'channelName', 'configurationUrl'],
         'telegram' => ['chatId', 'chatTitle', 'chatType'],
-        'jira' => ['cloudId', 'siteName', 'siteUrl', 'sites', 'storyPointFields', 'numberFields'],
-        'linear' => ['organizationName', 'urlKey'],
+        'jira' => ['cloudId', 'siteName', 'siteUrl', 'sites', 'storyPointFields', 'numberFields', 'priorityMap'],
+        'linear' => ['organizationName', 'urlKey', 'priorityMap'],
     ];
 
     /**

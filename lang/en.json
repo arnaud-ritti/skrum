@@ -1095,5 +1095,6 @@
     "No priority": "No priority",
     "Reconnect :provider to enable assignee mapping.": "Reconnect :provider to enable assignee mapping.",
     "This :provider account was not found or is inactive.": "This :provider account was not found or is inactive.",
-    "This person is not a member of the team.": "This person is not a member of the team."
+    "This person is not a member of the team.": "This person is not a member of the team.",
+    "Choose one of the priorities of this Jira site.": "Choose one of the priorities of this Jira site."
 }

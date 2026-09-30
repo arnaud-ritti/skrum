@@ -7,13 +7,21 @@ use App\Enums\IntegrationStatus;
 use App\Models\TeamIntegration;
 use App\Models\User;
 use App\Support\Integrations\Exceptions\ReconnectRequired;
+use App\Support\Integrations\Linear\LinearPriority;
+use Closure;
 use Illuminate\Validation\Rule;
 
 class UpdateTeamIntegration
 {
+    public const DefaultPriority = 'default';
+
+    /** @var array<int, array{id: string|int, name: string}>|null */
+    private ?array $jiraPriorities = null;
+
     public function __construct(
         private SaveTeamIntegration $saveTeamIntegration,
         private DetectJiraStoryPointFields $detectStoryPointFields,
+        private ListProviderPriorities $listPriorities,
     ) {}
 
     /**
@@ -25,6 +33,12 @@ class UpdateTeamIntegration
             IntegrationProvider::Jira => [
                 'cloud_id' => ['sometimes', 'required', 'string', Rule::in($this->ids($integration->setting('sites', []), 'cloudId'))],
                 'story_point_field_id' => ['sometimes', 'required', 'string', Rule::in($this->ids($integration->setting('numberFields', []), 'id'))],
+                'priority_map' => ['sometimes', 'array:high,medium,low'],
+                'priority_map.*' => ['nullable', 'string', 'max:50', $this->jiraPriorityRule($integration)],
+            ],
+            IntegrationProvider::Linear => [
+                'priority_map' => ['sometimes', 'array:high,medium,low'],
+                'priority_map.*' => ['required', Rule::in([...array_map('strval', LinearPriority::Scale), self::DefaultPriority])],
             ],
             default => [],
         };
@@ -48,7 +62,78 @@ class UpdateTeamIntegration
             $integration = $this->detectStoryPointFields->applyOverride($integration);
         }
 
+        if (is_array($validated['priority_map'] ?? null)) {
+            $integration->ensureWritable();
+
+            $integration = $this->savePriorityMap($integration, $validated['priority_map']);
+        }
+
         return $integration->refresh();
+    }
+
+    /**
+     * @param  array<string, mixed>  $changes
+     */
+    private function savePriorityMap(TeamIntegration $integration, array $changes): TeamIntegration
+    {
+        $map = (array) $integration->setting('priorityMap', []);
+
+        foreach ($changes as $level => $value) {
+            if ($value === self::DefaultPriority) {
+                unset($map[$level]);
+
+                continue;
+            }
+
+            $map[$level] = $integration->provider === IntegrationProvider::Jira
+                ? $this->jiraPriority($integration, $value)
+                : (int) $value;
+        }
+
+        $integration->forceFill(['settings' => [...$integration->settings, 'priorityMap' => $map]])->save();
+
+        return $integration;
+    }
+
+    /**
+     * @return array{id: string, name: string}|null
+     */
+    private function jiraPriority(TeamIntegration $integration, mixed $id): ?array
+    {
+        if (! is_string($id)) {
+            return null;
+        }
+
+        foreach ($this->jiraPriorities($integration) as $priority) {
+            if ($priority['id'] === $id) {
+                return ['id' => $id, 'name' => $priority['name']];
+            }
+        }
+
+        return null;
+    }
+
+    private function jiraPriorityRule(TeamIntegration $integration): Closure
+    {
+        return function (string $attribute, mixed $value, Closure $fail) use ($integration): void {
+            if ($value === null || $value === self::DefaultPriority) {
+                return;
+            }
+
+            $ids = array_map(fn (array $priority): string => (string) $priority['id'], $this->jiraPriorities($integration));
+
+            if (! in_array($value, $ids, true)) {
+                $fail(__('Choose one of the priorities of this Jira site.'));
+            }
+        };
+    }
+
+    /**
+     * @return array<int, array{id: string|int, name: string}>
+     */
+    private function jiraPriorities(TeamIntegration $integration): array
+    {
+        return $this->jiraPriorities ??= $this->listPriorities->handle($integration);
     }
 
     private function chooseJiraSite(TeamIntegration $integration, User $user, string $cloudId): TeamIntegration

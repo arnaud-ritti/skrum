@@ -1342,5 +1342,6 @@
     "No priority": "Keine Priorität",
     "Reconnect :provider to enable assignee mapping.": "Verbinde :provider erneut, um die Zuordnung der Verantwortlichen zu aktivieren.",
     "This :provider account was not found or is inactive.": "Dieses :provider-Konto wurde nicht gefunden oder ist inaktiv.",
-    "This person is not a member of the team.": "Diese Person ist kein Mitglied des Teams."
+    "This person is not a member of the team.": "Diese Person ist kein Mitglied des Teams.",
+    "Choose one of the priorities of this Jira site.": "Wähle eine der Prioritäten dieser Jira-Site."
 }
