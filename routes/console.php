@@ -17,3 +17,9 @@ Schedule::command('action-items:send-reminders')
 Schedule::command('sanctum:prune-expired --hours=720')
     ->daily()
     ->onOneServer();
+
+Schedule::command('skrum:telegram-poll')
+    ->everyMinute()
+    ->withoutOverlapping(5)
+    ->runInBackground()
+    ->onOneServer();

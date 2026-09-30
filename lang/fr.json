@@ -1166,5 +1166,10 @@
     ":provider connected.": ":provider est connecté.",
     "Choose a Jira site to finish connecting.": "Choisissez un site Jira pour terminer la connexion.",
     "Slack did not return a valid channel webhook. Try again.": "Slack n'a pas renvoyé de webhook de canal valide. Réessayez.",
-    "This Atlassian account has no Jira site.": "Ce compte Atlassian n'a aucun site Jira."
+    "This Atlassian account has no Jira site.": "Ce compte Atlassian n'a aucun site Jira.",
+    "Connected to the :team team on :app.": "Connecté à l'équipe :team sur :app.",
+    "This code is invalid or has expired. Create a new one in skrum.": "Ce code est invalide ou a expiré. Créez-en un nouveau dans skrum.",
+    "This bot posts retrospective and planning poker links from :app. To connect this chat, create a code on your team's integrations page and send /connect with it.": "Ce bot publie les liens de rétrospectives et de planning poker de :app. Pour connecter cette discussion, créez un code sur la page des intégrations de votre équipe et envoyez /connect suivi du code.",
+    "The bot was removed from the Telegram chat.": "Le bot a été retiré de la discussion Telegram.",
+    "Private chat": "Discussion privée"
 }
