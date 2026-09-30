@@ -5,6 +5,9 @@ use App\Http\Controllers\AvatarsController;
 use App\Http\Controllers\BroadcastAuthorizationsController;
 use App\Http\Controllers\CurrentWorkspaceController;
 use App\Http\Controllers\EmojiDataController;
+use App\Http\Controllers\GameJoinsController;
+use App\Http\Controllers\Games\GameRoomsController;
+use App\Http\Controllers\Games\GameSnapshotsController;
 use App\Http\Controllers\GifsController;
 use App\Http\Controllers\Integrations\IntegrationAccountsController;
 use App\Http\Controllers\Integrations\IntegrationAuthorizationsController;
@@ -107,6 +110,7 @@ use App\Http\Controllers\WorkspacesController;
 use App\Http\Controllers\WorkspaceTemplatesController;
 use App\Http\Middleware\EnsureIntegrationProviderEnabled;
 use App\Http\Middleware\RememberCurrentWorkspace;
+use App\Http\Middleware\ResolveGamePlayer;
 use App\Http\Middleware\ResolvePokerPlayer;
 use App\Http\Middleware\ResolveRetroParticipant;
 use Illuminate\Support\Facades\Route;
@@ -382,6 +386,18 @@ Route::prefix('poker/{game}')
         Route::put('facilitator', [PokerFacilitatorsController::class, 'update'])->name('poker.facilitator.update');
         Route::put('players/{player}/spectator', [PokerSpectatorsController::class, 'update'])->name('poker.players.spectator.update')->whereUuid('player');
         Route::delete('/', [PokerGamesController::class, 'destroy'])->name('poker.destroy');
+    });
+
+Route::get('play/{guestToken}', [GameJoinsController::class, 'show'])->name('games.join.show');
+Route::post('play/{guestToken}', [GameJoinsController::class, 'store'])->name('games.join.store')->middleware('throttle:10,1,game-join');
+
+Route::prefix('games/{room}')
+    ->whereUuid('room')
+    ->middleware(ResolveGamePlayer::class)
+    ->scopeBindings()
+    ->group(function () {
+        Route::get('/', [GameRoomsController::class, 'show'])->name('games.show');
+        Route::get('snapshot', [GameSnapshotsController::class, 'show'])->name('games.snapshot.show');
     });
 
 Route::post('broadcasting/auth', [BroadcastAuthorizationsController::class, 'store'])->name('broadcasting.auth');

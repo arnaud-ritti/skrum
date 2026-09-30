@@ -1149,5 +1149,14 @@
     "Draw & Guess": "Draw & Guess",
     "Sprint in one GIF": "Sprint in one GIF",
     "Hangman": "Hangman",
-    "Decoded": "Decoded"
+    "Decoded": "Decoded",
+    "You no longer have access to this room.": "You no longer have access to this room.",
+    "The game can only be played during the icebreaker.": "The game can only be played during the icebreaker.",
+    "Only the host can do this.": "Only the host can do this.",
+    "Only the host, the room creator or a workspace admin can do this.": "Only the host, the room creator or a workspace admin can do this.",
+    "Only the room creator or a workspace admin can delete this room.": "Only the room creator or a workspace admin can delete this room.",
+    "Guests cannot do this.": "Guests cannot do this.",
+    "This round is over.": "This round is over.",
+    "This action does not apply to this game.": "This action does not apply to this game.",
+    "Only the leader or the host can do this.": "Only the leader or the host can do this."
 }

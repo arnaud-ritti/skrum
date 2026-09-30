@@ -1395,5 +1395,14 @@
     "Draw & Guess": "Zeichnen & Raten",
     "Sprint in one GIF": "Der Sprint in einem GIF",
     "Hangman": "Galgenmännchen",
-    "Decoded": "Entschlüsselt"
+    "Decoded": "Entschlüsselt",
+    "You no longer have access to this room.": "Du hast keinen Zugriff mehr auf diesen Raum.",
+    "The game can only be played during the icebreaker.": "Das Spiel ist nur während des Eisbrechers verfügbar.",
+    "Only the host can do this.": "Nur der Host kann das tun.",
+    "Only the host, the room creator or a workspace admin can do this.": "Nur der Host, die Person, die den Raum erstellt hat, oder ein Workspace-Admin kann das tun.",
+    "Only the room creator or a workspace admin can delete this room.": "Nur die Person, die den Raum erstellt hat, oder ein Workspace-Admin kann ihn löschen.",
+    "Guests cannot do this.": "Gäste können das nicht tun.",
+    "This round is over.": "Diese Runde ist vorbei.",
+    "This action does not apply to this game.": "Diese Aktion gilt nicht für dieses Spiel.",
+    "Only the leader or the host can do this.": "Nur die Rundenleitung oder der Host kann das tun."
 }

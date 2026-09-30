@@ -58,7 +58,7 @@ it('builds the room for its host', function () {
         ->and($snapshot['history'])->toBe([])
         ->and($snapshot['links'])->toBe(['team' => route('teams.show', [$room->team->workspace, $room->team]), 'retro' => null])
         ->and($snapshot['serverTime'])->toBe('2026-10-06T10:00:00.000Z');
-})->skip(fn () => ! Route::has('games.join.show'), 'Unskipped by Task 5, which registers the join route.');
+});
 
 it('hides management data from members and team data from guests', function () {
     $room = GameRoom::factory()->linkAccess()->create();

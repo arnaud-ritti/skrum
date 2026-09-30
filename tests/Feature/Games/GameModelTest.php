@@ -19,7 +19,8 @@ it('creates a standalone room with casts and defaults', function () {
         ->and($room->access)->toBe(GameRoomAccess::Team)
         ->and($room->isIcebreaker())->toBeFalse()
         ->and($room->broadcastChannel())->toBe("game.{$room->id}")
-        ->and($room->toArray())->not->toHaveKey('guest_token');
+        ->and($room->toArray())->not->toHaveKey('guest_token')
+        ->and($room->guestUrl())->toBe(route('games.join.show', $room->guest_token));
 });
 
 it('stores rounds with empty jsonb defaults and hides the word', function () {

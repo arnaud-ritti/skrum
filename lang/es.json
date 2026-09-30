@@ -1395,5 +1395,14 @@
     "Draw & Guess": "Dibuja y adivina",
     "Sprint in one GIF": "El sprint en un GIF",
     "Hangman": "Ahorcado",
-    "Decoded": "Descifrado"
+    "Decoded": "Descifrado",
+    "You no longer have access to this room.": "Ya no tienes acceso a esta sala.",
+    "The game can only be played during the icebreaker.": "El juego solo está disponible durante el rompehielos.",
+    "Only the host can do this.": "Solo el anfitrión puede hacer esto.",
+    "Only the host, the room creator or a workspace admin can do this.": "Solo el anfitrión, quien creó la sala o un administrador del espacio de trabajo pueden hacer esto.",
+    "Only the room creator or a workspace admin can delete this room.": "Solo quien creó la sala o un administrador del espacio de trabajo pueden eliminarla.",
+    "Guests cannot do this.": "Los invitados no pueden hacer esto.",
+    "This round is over.": "Esta ronda ha terminado.",
+    "This action does not apply to this game.": "Esta acción no se aplica a este juego.",
+    "Only the leader or the host can do this.": "Solo quien dirige la ronda o el anfitrión pueden hacer esto."
 }
