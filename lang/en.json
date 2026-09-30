@@ -969,5 +969,17 @@
     "Open @:bot in Telegram": "Open @:bot in Telegram",
     "This code has expired. Create a new one.": "This code has expired. Create a new one.",
     "Waiting for the command… (:time left)": "Waiting for the command… (:time left)",
-    "The message could not be delivered.": "The message could not be delivered."
+    "The message could not be delivered.": "The message could not be delivered.",
+    "Results of the retrospective \":title\"": "Results of the retrospective \":title\"",
+    ":team · completed on :date": ":team · completed on :date",
+    "Participants: :count": "Participants: :count",
+    "Participants (:count): :names": "Participants (:count): :names",
+    "Cards: :count": "Cards: :count",
+    "ROTI: :average/5 (:count answers)": "ROTI: :average/5 (:count answers)",
+    "Top card per column": "Top card per column",
+    "votes: :count": "votes: :count",
+    "grouped cards: :count": "grouped cards: :count",
+    "+ :count more": "+ :count more",
+    "A card without text": "A card without text",
+    "Open the results": "Open the results"
 }

@@ -1218,5 +1218,17 @@
     "Open @:bot in Telegram": "Ouvrir @:bot dans Telegram",
     "This code has expired. Create a new one.": "Ce code a expiré. Créez-en un nouveau.",
     "Waiting for the command… (:time left)": "En attente de la commande… (:time restantes)",
-    "The message could not be delivered.": "Le message n'a pas pu être envoyé."
+    "The message could not be delivered.": "Le message n'a pas pu être envoyé.",
+    "Results of the retrospective \":title\"": "Résultats de la rétrospective « :title »",
+    ":team · completed on :date": ":team · terminée le :date",
+    "Participants: :count": "Participants : :count",
+    "Participants (:count): :names": "Participants (:count) : :names",
+    "Cards: :count": "Cartes : :count",
+    "ROTI: :average/5 (:count answers)": "ROTI : :average/5 (:count réponses)",
+    "Top card per column": "Carte la plus votée par colonne",
+    "votes: :count": "votes : :count",
+    "grouped cards: :count": "cartes regroupées : :count",
+    "+ :count more": "+ :count de plus",
+    "A card without text": "Une carte sans texte",
+    "Open the results": "Ouvrir les résultats"
 }
