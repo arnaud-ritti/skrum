@@ -5,6 +5,7 @@ import TeamsController from '@/actions/App/Http/Controllers/TeamsController';
 import ConfirmFormDialog from '@/components/confirm-form-dialog';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
+import { HealthStatementsSection } from '@/components/teams/health-statements-section';
 import { NewRetroDialog } from '@/components/teams/new-retro-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -22,6 +23,7 @@ import type {
     CategoryOption,
     MemberSummary,
     RetroSummary,
+    TeamHealthStatement,
     TeamSummary,
     WorkspaceSummary,
 } from '@/types';
@@ -36,6 +38,8 @@ type Props = {
     templateCategories: CategoryOption[];
     catalogue?: CatalogueTemplate[];
     canCreateRetro: boolean;
+    healthStatements: TeamHealthStatement[];
+    canManageHealthStatements: boolean;
 };
 
 export default function ShowTeam({
@@ -48,6 +52,8 @@ export default function ShowTeam({
     templateCategories,
     catalogue,
     canCreateRetro,
+    healthStatements,
+    canManageHealthStatements,
 }: Props) {
     const { t } = useTrans();
     const params = { workspace: workspace.slug, team: team.id };
@@ -122,6 +128,12 @@ export default function ShowTeam({
                         ))}
                     </ul>
                 </section>
+
+                <HealthStatementsSection
+                    statements={healthStatements}
+                    canManage={canManageHealthStatements}
+                    params={params}
+                />
 
                 <section className="space-y-3">
                     <Heading variant="small" title={t('Members')} />

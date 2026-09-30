@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\HealthCheck\PresentHealthStatement;
+use App\Actions\HealthCheck\TeamHealthStatements;
 use App\Actions\Retros\BuildTemplateCatalogue;
 use App\Enums\TemplateCategory;
 use App\Models\Retro;
 use App\Models\Team;
+use App\Models\TeamHealthStatement;
 use App\Models\User;
 use App\Models\Workspace;
 use Illuminate\Http\RedirectResponse;
@@ -16,6 +19,11 @@ use Inertia\Response;
 
 class TeamsController extends Controller
 {
+    public function __construct(
+        private TeamHealthStatements $teamHealthStatements,
+        private PresentHealthStatement $presentHealthStatement,
+    ) {}
+
     public function store(Request $request, Workspace $workspace): RedirectResponse
     {
         Gate::authorize('create', [Team::class, $workspace]);
@@ -55,6 +63,12 @@ class TeamsController extends Controller
             'templateCategories' => TemplateCategory::options(),
             'catalogue' => Inertia::optional(fn () => $buildTemplateCatalogue->handle($workspace)),
             'canCreateRetro' => $request->user()->can('createRetro', $team),
+            'healthStatements' => $this->teamHealthStatements->all($team)->map(fn (TeamHealthStatement $statement) => [
+                'id' => $statement->id ?? $statement->key(),
+                ...$this->presentHealthStatement->handle($statement),
+                'isArchived' => $statement->isArchived(),
+            ])->values(),
+            'canManageHealthStatements' => $request->user()->can('update', $team),
         ]);
     }
 

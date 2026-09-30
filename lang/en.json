@@ -472,5 +472,20 @@
     "The team is struggling. Talk about what would help most.": "The team is struggling. Talk about what would help most.",
     "High team consensus": "High team consensus",
     "Moderate consensus": "Moderate consensus",
-    "Divided opinions": "Divided opinions"
+    "Divided opinions": "Divided opinions",
+    "Health check statements": "Health check statements",
+    "Changes apply to retros that have not collected answers yet.": "Changes apply to retros that have not collected answers yet.",
+    "Picked up :statement.": "Picked up :statement.",
+    "Moved :statement to position :position.": "Moved :statement to position :position.",
+    "Dropped :statement.": "Dropped :statement.",
+    "Reordering cancelled.": "Reordering cancelled.",
+    "To pick up a statement, press Space or Enter. Use the arrow keys to move it, Space or Enter to drop it, or Escape to cancel.": "To pick up a statement, press Space or Enter. Use the arrow keys to move it, Space or Enter to drop it, or Escape to cancel.",
+    "Statement": "Statement",
+    "Axis label": "Axis label",
+    "Add statement": "Add statement",
+    "Archived (:count)": "Archived (:count)",
+    "Built-in": "Built-in",
+    "Drag to reorder": "Drag to reorder",
+    "Restore": "Restore",
+    "Archive": "Archive"
 }

@@ -72,3 +72,12 @@ export type WorkspaceTemplateSummary = {
     category: TemplateCategory;
     columns: TemplateColumn[];
 };
+
+export type TeamHealthStatement = {
+    id: string;
+    key: string;
+    label: string;
+    text: string;
+    isBuiltin: boolean;
+    isArchived: boolean;
+};

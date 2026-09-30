@@ -729,5 +729,18 @@
     "The team is struggling. Talk about what would help most.": "L’équipe est en difficulté. Parlez de ce qui aiderait le plus.",
     "High team consensus": "Fort consensus dans l’équipe",
     "Moderate consensus": "Consensus modéré",
-    "Divided opinions": "Avis partagés"
+    "Divided opinions": "Avis partagés",
+    "Health check statements": "Affirmations du bilan de santé",
+    "Changes apply to retros that have not collected answers yet.": "Les modifications s’appliquent aux rétros qui n'ont pas encore collecté de réponses.",
+    "Picked up :statement.": "« :statement » saisi.",
+    "Moved :statement to position :position.": "« :statement » déplacé à la position :position.",
+    "Dropped :statement.": "« :statement » déposé.",
+    "Reordering cancelled.": "Réorganisation annulée.",
+    "To pick up a statement, press Space or Enter. Use the arrow keys to move it, Space or Enter to drop it, or Escape to cancel.": "Pour saisir une affirmation, appuyez sur Espace ou Entrée. Utilisez les flèches pour la déplacer, Espace ou Entrée pour la déposer, ou Échap pour annuler.",
+    "Statement": "Affirmation",
+    "Axis label": "Libellé de l’axe",
+    "Add statement": "Ajouter l’affirmation",
+    "Archived (:count)": "Archivées (:count)",
+    "Built-in": "Intégrée",
+    "Drag to reorder": "Glisser pour réordonner"
 }
