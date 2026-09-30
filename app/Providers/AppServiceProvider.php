@@ -14,6 +14,8 @@ use App\Models\Passkey;
 use App\Models\PersonalAccessToken;
 use App\Models\SavedPokerDeck;
 use App\Policies\PokerDeckPolicy;
+use App\Support\Games\DecodedRules;
+use App\Support\Games\DrawAndGuessRules;
 use App\Support\Games\GameRulesRegistry;
 use App\Support\Games\HangmanRules;
 use App\Support\Games\ReverbGamePresenceRoster;
@@ -45,6 +47,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(GamePresenceRoster::class, fn (): GamePresenceRoster => new ReverbGamePresenceRoster);
         $this->app->bind(GameRulesRegistry::class, fn (Application $app): GameRulesRegistry => new GameRulesRegistry([
             $app->make(HangmanRules::class),
+            $app->make(DrawAndGuessRules::class),
+            $app->make(DecodedRules::class),
         ]));
         $this->app->scoped(McpGrantContext::class);
         $this->app->scoped(VisibleTeams::class);

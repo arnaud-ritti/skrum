@@ -1470,5 +1470,8 @@
     "You are invited to play :game. Choose the name other players will see.": "Du bist zu :game eingeladen. Wähle den Namen, den die anderen sehen.",
     "This team already has :count game rooms.": "Dieses Team hat bereits :count Spielräume.",
     "This drawing operation is not valid.": "Dieser Zeichenschritt ist ungültig.",
-    "Use emoji only, without letters or digits.": "Nutze nur Emoji, ohne Buchstaben oder Ziffern."
+    "Use emoji only, without letters or digits.": "Nutze nur Emoji, ohne Buchstaben oder Ziffern.",
+    "Choose who leads this round.": "Wähle, wer diese Runde leitet.",
+    "Only the player leading this round can do this.": "Das kann nur, wer diese Runde leitet.",
+    "You are leading this round, so you cannot guess.": "Du leitest diese Runde, also kannst du nicht raten."
 }

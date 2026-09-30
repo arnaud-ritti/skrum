@@ -2,6 +2,12 @@
 
 use App\Enums\RetroPhase;
 use App\Events\Games\GameBroadcastEvent;
+use App\Events\Games\GameClueChanged;
+use App\Events\Games\GameDrawingCleared;
+use App\Events\Games\GameDrawingOpAdded;
+use App\Events\Games\GameDrawingUndone;
+use App\Events\Games\GameGuessMade;
+use App\Events\Games\GameHintRevealed;
 use App\Events\Games\GameLetterPicked;
 use App\Events\Games\GameRoomChanged;
 use App\Events\Games\GameRoomDeleted;
@@ -46,4 +52,10 @@ it('names every event and its payload keys', function (Closure $make, string $na
     'round started' => [fn (GameRoom $room) => new GameRoundStarted($room, ['id' => 'r']), 'game.round.started', ['round']],
     'round ended' => [fn (GameRoom $room) => new GameRoundEnded($room, ['roundId' => 'r', 'points' => []]), 'game.round.ended', ['roundId', 'points']],
     'letter picked' => [fn (GameRoom $room) => new GameLetterPicked($room, ['roundId' => 'r', 'letter' => 'a']), 'game.letter.picked', ['roundId', 'letter']],
+    'hint revealed' => [fn (GameRoom $room) => new GameHintRevealed($room, 'r', [null, 'a']), 'game.hint.revealed', ['roundId', 'mask']],
+    'guess made' => [fn (GameRoom $room) => new GameGuessMade($room, ['roundId' => 'r', 'guessId' => 'g', 'playerId' => 'p', 'text' => 'kit']), 'game.guess.made', ['roundId', 'guessId', 'playerId', 'text']],
+    'drawing op added' => [fn (GameRoom $room) => new GameDrawingOpAdded($room, 'r', ['type' => 'fill', 'color' => 'red', 'x' => 1, 'y' => 1], 'op-1'), 'game.drawing.op-added', ['roundId', 'op', 'clientOpId']],
+    'drawing undone' => [fn (GameRoom $room) => new GameDrawingUndone($room, 'r'), 'game.drawing.undone', ['roundId']],
+    'drawing cleared' => [fn (GameRoom $room) => new GameDrawingCleared($room, 'r'), 'game.drawing.cleared', ['roundId']],
+    'clue changed' => [fn (GameRoom $room) => new GameClueChanged($room, 'r', ['🚀']), 'game.clue.changed', ['roundId', 'clue']],
 ]);

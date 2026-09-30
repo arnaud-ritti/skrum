@@ -1224,5 +1224,8 @@
     "You are invited to play :game. Choose the name other players will see.": "You are invited to play :game. Choose the name other players will see.",
     "This team already has :count game rooms.": "This team already has :count game rooms.",
     "This drawing operation is not valid.": "This drawing operation is not valid.",
-    "Use emoji only, without letters or digits.": "Use emoji only, without letters or digits."
+    "Use emoji only, without letters or digits.": "Use emoji only, without letters or digits.",
+    "Choose who leads this round.": "Choose who leads this round.",
+    "Only the player leading this round can do this.": "Only the player leading this round can do this.",
+    "You are leading this round, so you cannot guess.": "You are leading this round, so you cannot guess."
 }

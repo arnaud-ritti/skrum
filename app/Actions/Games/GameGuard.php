@@ -109,4 +109,22 @@ class GameGuard
 
         throw new AuthorizationException(__('Only the leader or the host can do this.'));
     }
+
+    public static function leader(GameRound $round, GamePlayer $player): void
+    {
+        if ($round->leader_player_id !== null && $round->leader_player_id === $player->id) {
+            return;
+        }
+
+        throw new AuthorizationException(__('Only the player leading this round can do this.'));
+    }
+
+    public static function notLeader(GameRound $round, GamePlayer $player): void
+    {
+        if ($round->leader_player_id !== $player->id) {
+            return;
+        }
+
+        throw new AuthorizationException(__('You are leading this round, so you cannot guess.'));
+    }
 }

@@ -3,6 +3,7 @@
 use App\Actions\Retros\GuestCookie;
 use App\Contracts\GamePresenceRoster;
 use App\Contracts\PokerPresenceRoster;
+use App\Enums\GameKind;
 use App\Enums\IntegrationAccess;
 use App\Enums\IntegrationProvider;
 use App\Enums\McpScope;
@@ -979,4 +980,31 @@ function fakeGameRoster(?array $presenceIds): void
             return $this->presenceIds;
         }
     });
+}
+
+/**
+ * An active Draw & Guess or Decoded round in a link room: the host, the
+ * leader and a guesser joined in that order.
+ *
+ * @param  array<string, mixed>  $roundAttributes
+ * @return array{room: GameRoom, hostUser: User, host: GamePlayer, leaderUser: User, leader: GamePlayer, guesserUser: User, guesser: GamePlayer, round: GameRound}
+ */
+function wordGuessTable(GameKind $game = GameKind::DrawAndGuess, string $word = 'rocket', array $roundAttributes = []): array
+{
+    $room = GameRoom::factory()->game($game)->linkAccess()->create();
+    [$hostUser, $host] = gameRoomHost($room);
+    [$leaderUser, $leader] = gameRoomMember($room);
+    [$guesserUser, $guesser] = gameRoomMember($room);
+    $round = activeGameRound($room, ['word' => $word, 'leader_player_id' => $leader->id, ...$roundAttributes]);
+
+    return [
+        'room' => $room->fresh(),
+        'hostUser' => $hostUser,
+        'host' => $host,
+        'leaderUser' => $leaderUser,
+        'leader' => $leader,
+        'guesserUser' => $guesserUser,
+        'guesser' => $guesser,
+        'round' => $round,
+    ];
 }

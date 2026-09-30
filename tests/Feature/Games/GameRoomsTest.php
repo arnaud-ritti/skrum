@@ -129,7 +129,7 @@ it('validates new rooms', function (array $input, string $field) {
     'missing name' => [['name' => ''], 'name'],
     'long name' => [['name' => str_repeat('a', 61)], 'name'],
     'unknown game' => [['game' => 'chess'], 'game'],
-    'unavailable game' => [['game' => 'draw'], 'game'],
+    'unavailable game' => [['game' => 'gif'], 'game'],
     'unknown access' => [['access' => 'public'], 'access'],
 ]);
 
