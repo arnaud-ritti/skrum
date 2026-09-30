@@ -79,7 +79,7 @@ type Props = {
 
 const Any = 'any';
 const ReloadDelayMs = 1_000;
-const ReloadProps = ['items', 'focusedItem'];
+const ReloadProps = ['items', 'focusedItem', 'actionItems', 'notifications'];
 
 /** Translation keys, passed to t() through a variable. */
 const StatusLabels: Record<StatusFilter, string> = {

@@ -148,6 +148,8 @@ class ActionItemReminderDigestNotification extends Notification implements Shoul
      */
     private function escape(string $text): string
     {
-        return addcslashes($text, '\\`*_{}[]()#+-.!|<>');
+        $singleLine = preg_replace('/\s+/u', ' ', $text) ?? $text;
+
+        return addcslashes($singleLine, '\\`*_{}[]()#+-.!|');
     }
 }

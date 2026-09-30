@@ -106,6 +106,13 @@ it('escapes item text so it cannot inject links', function () {
     $html = (string) reminderDigest([[$item, ActionItemReminderKind::DueSoon]])->toMail($user)->render();
 
     expect($html)->not->toContain('href="https://evil.test"');
+
+    $angle = ActionItem::factory()->withoutRetro($team, $user)->create(['content' => "Fix <b> & it.\nnext [line](https://evil.test)", 'due_on' => '2026-10-11']);
+    $html = (string) reminderDigest([[$angle, ActionItemReminderKind::DueSoon]])->toMail($user)->render();
+
+    expect($html)->not->toContain('&amp;lt;')
+        ->and($html)->toContain('Fix &lt;b&gt; &amp; it. next')
+        ->and($html)->not->toContain('href="https://evil.test"');
 });
 
 it('writes the digest in the recipient language', function () {

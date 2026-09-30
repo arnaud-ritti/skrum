@@ -10,7 +10,10 @@ use App\Models\User;
 use App\Notifications\ActionItemReminderDigestNotification;
 use App\Notifications\ActionItemReminderNotification;
 use Carbon\CarbonImmutable;
+use Illuminate\Contracts\Events\Dispatcher;
+use Illuminate\Contracts\Translation\Translator;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Testing\Fakes\NotificationFake;
 
 beforeEach(function () {
     Notification::fake();
@@ -150,4 +153,32 @@ it('sends one digest per user with all their items', function () {
             && $notification->reminders[0] === ['actionItemId' => $first->id, 'kind' => 'overdue'],
     );
     Notification::assertSentToTimes($assignee, ActionItemReminderNotification::class, 3);
+});
+
+it('keeps reminding other users when one delivery fails', function () {
+    [, $first] = assignedReminderItem();
+    [, $second] = assignedReminderItem();
+    $failing = new class(app(Dispatcher::class), app(Illuminate\Contracts\Bus\Dispatcher::class), app(Translator::class)->getLocale()) extends NotificationFake
+    {
+        public bool $failed = false;
+
+        public function send($notifiables, $notification): void
+        {
+            if (! $this->failed) {
+                $this->failed = true;
+
+                throw new RuntimeException('mail down');
+            }
+
+            parent::send($notifiables, $notification);
+        }
+    };
+    Notification::swap($failing);
+
+    sendDueReminders();
+
+    $delivered = collect([$first, $second])
+        ->filter(fn (User $user) => $failing->sent($user, ActionItemReminderDigestNotification::class)->isNotEmpty());
+
+    expect($delivered)->toHaveCount(1);
 });

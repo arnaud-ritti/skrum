@@ -952,5 +952,6 @@
     "Email me about due and overdue action items": "Mir E-Mails zu fälligen und überfälligen Aktionspunkten senden",
     "Show due and overdue action items in the notification bell": "Fällige und überfällige Aktionspunkte in der Benachrichtigungsglocke anzeigen",
     ":count unread notifications": ":count ungelesene Benachrichtigungen",
-    "Could not load the notifications.": "Die Benachrichtigungen konnten nicht geladen werden."
+    "Could not load the notifications.": "Die Benachrichtigungen konnten nicht geladen werden.",
+    ":count unread notification": ":count ungelesene Benachrichtigung"
 }

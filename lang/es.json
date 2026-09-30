@@ -952,5 +952,6 @@
     "Email me about due and overdue action items": "Enviarme un correo sobre las acciones que vencen o están vencidas",
     "Show due and overdue action items in the notification bell": "Mostrar las acciones que vencen o están vencidas en la campana de notificaciones",
     ":count unread notifications": ":count notificaciones sin leer",
-    "Could not load the notifications.": "No se pudieron cargar las notificaciones."
+    "Could not load the notifications.": "No se pudieron cargar las notificaciones.",
+    ":count unread notification": ":count notificación sin leer"
 }

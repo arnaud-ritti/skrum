@@ -952,5 +952,6 @@
     "Email me about due and overdue action items": "M'envoyer un e-mail pour les actions à échéance ou en retard",
     "Show due and overdue action items in the notification bell": "Afficher les actions à échéance ou en retard dans la cloche de notifications",
     ":count unread notifications": ":count notifications non lues",
-    "Could not load the notifications.": "Impossible de charger les notifications."
+    "Could not load the notifications.": "Impossible de charger les notifications.",
+    ":count unread notification": ":count notification non lue"
 }

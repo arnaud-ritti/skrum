@@ -24,13 +24,13 @@ class UpdateActionItem
             return $locked->loadForPresentation();
         }
 
+        $this->permissions->authorizeEdit($locked, $actor);
+
         if ($locked->recurrence !== null && $locked->due_on === null) {
             throw ValidationException::withMessages([
                 array_key_exists('due_on', $changes) ? 'due_on' : 'recurrence' => __('A recurring action item needs a due date.'),
             ]);
         }
-
-        $this->permissions->authorizeEdit($locked, $actor);
 
         $assigneeChanged = $locked->isDirty(['assignee_user_id', 'assignee_participant_id']);
 

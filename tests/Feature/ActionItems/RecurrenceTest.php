@@ -87,6 +87,17 @@ it('keeps the recurrence to managers', function () {
     $this->actingAs($author)->patchJson($route, ['recurrence' => 'monthly'])->assertOk()->assertJsonPath('actionItem.recurrence', 'monthly');
 });
 
+it('checks permission before validating the recurrence', function () {
+    $team = Team::factory()->create();
+    $manager = workspaceManager($team->workspace);
+    $assignee = teamMember($team);
+    $item = ActionItem::factory()->withoutRetro($team, $manager)->create(['due_on' => null, 'assignee_user_id' => $assignee->id]);
+    $route = route('workspaces.actionItems.update', ['workspace' => $team->workspace, 'actionItem' => $item]);
+
+    $this->actingAs($assignee)->patchJson($route, ['recurrence' => 'weekly'])->assertForbidden();
+    $this->actingAs($manager)->patchJson($route, ['recurrence' => 'weekly'])->assertUnprocessable()->assertJsonValidationErrors('recurrence');
+});
+
 it('creates exactly one next occurrence', function () {
     [$team, $author, $item] = recurringTeamItem(ActionItemRecurrence::Weekly, [
         'content' => 'Water the plants',

@@ -155,11 +155,15 @@ export function NotificationBell() {
                     size="icon"
                     className="relative"
                     aria-label={
-                        unread > 0
-                            ? t(':count unread notifications', {
+                        unread === 1
+                            ? t(':count unread notification', {
                                   count: unread,
                               })
-                            : t('Notifications')
+                            : unread > 1
+                              ? t(':count unread notifications', {
+                                    count: unread,
+                                })
+                              : t('Notifications')
                     }
                 >
                     <Bell className="size-5" />

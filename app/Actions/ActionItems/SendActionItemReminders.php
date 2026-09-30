@@ -12,6 +12,7 @@ use Closure;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Throwable;
 
 class SendActionItemReminders
 {
@@ -31,31 +32,36 @@ class SendActionItemReminders
         $users = 0;
 
         foreach ($this->dueItems($today)->groupBy('assignee_user_id') as $items) {
-            /** @var Collection<int, ActionItem> $items */
-            $user = $items->first()?->assigneeUser;
+            try {
+                /** @var Collection<int, ActionItem> $items */
+                $user = $items->first()?->assigneeUser;
 
-            if ($user === null) {
-                continue;
+                if ($user === null) {
+                    continue;
+                }
+
+                if (! $user->action_item_reminders_by_email && ! $user->action_item_reminders_in_app) {
+                    continue;
+                }
+
+                $unsent = $items->filter(fn (ActionItem $item) => $this->log($item, $user, $today))->values();
+
+                if ($unsent->isEmpty()) {
+                    continue;
+                }
+
+                if ($progress !== null) {
+                    $progress($user, $unsent->count());
+                }
+
+                $this->deliver($user, $unsent, $today);
+
+                $reminders += $unsent->count();
+                $users++;
+
+            } catch (Throwable $e) {
+                report($e);
             }
-
-            if (! $user->action_item_reminders_by_email && ! $user->action_item_reminders_in_app) {
-                continue;
-            }
-
-            $unsent = $items->filter(fn (ActionItem $item) => $this->log($item, $user, $today))->values();
-
-            if ($unsent->isEmpty()) {
-                continue;
-            }
-
-            if ($progress !== null) {
-                $progress($user, $unsent->count());
-            }
-
-            $this->deliver($user, $unsent, $today);
-
-            $reminders += $unsent->count();
-            $users++;
         }
 
         return ['reminders' => $reminders, 'users' => $users];
