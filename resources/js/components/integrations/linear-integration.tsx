@@ -5,6 +5,8 @@ import { DisconnectIntegrationDialog } from './disconnect-integration-dialog';
 import { ConnectLink, TestConnectionButton } from './integration-actions';
 import { IntegrationCard } from './integration-card';
 import { IntegrationDetails } from './integration-details';
+import { PeoplePanel } from './people-panel';
+import { PrioritiesPanel } from './priorities-panel';
 
 type Props = {
     card: IntegrationProviderCard;
@@ -104,6 +106,20 @@ export function LinearIntegration({ card, scope }: Props) {
                     },
                 ]}
             />
+            {connection.status === 'active' &&
+                connection.access === 'write' && (
+                    <>
+                        <PeoplePanel
+                            scope={scope}
+                            connection={connection}
+                            providerLabel={card.label}
+                        />
+                        <PrioritiesPanel
+                            scope={scope}
+                            connection={connection}
+                        />
+                    </>
+                )}
         </IntegrationCard>
     );
 }
