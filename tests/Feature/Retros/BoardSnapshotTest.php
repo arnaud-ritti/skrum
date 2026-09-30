@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\HealthCheck\FreezeHealthStatements;
 use App\Actions\Retros\BuildBoardSnapshot;
 use App\Actions\Retros\PresentCard;
 use App\Enums\RetroPhase;
@@ -8,6 +9,7 @@ use App\Models\ActionItem;
 use App\Models\Card;
 use App\Models\CardComment;
 use App\Models\CardReaction;
+use App\Models\HealthCheckAnswer;
 use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\User;
@@ -244,10 +246,16 @@ it('hides gifs, reactions and comments of others when the facilitator steps back
 });
 
 it('loads reactions and comments with a constant number of queries', function () {
-    $retro = Retro::factory()->inPhase(RetroPhase::Discussing)->create();
+    $retro = Retro::factory()->withHealthCheck()->inPhase(RetroPhase::Discussing)->create();
+    app(FreezeHealthStatements::class)->handle($retro);
     [, $viewer] = retroMember($retro);
 
     $seed = function (int $cards) use ($retro): void {
+        Participant::factory()->count($cards)->create(['retro_id' => $retro->id])->each(function (Participant $participant) use ($retro): void {
+            HealthCheckAnswer::factory()->create(['retro_id' => $retro->id, 'participant_id' => $participant->id, 'statement' => 'vision']);
+            HealthCheckAnswer::factory()->create(['retro_id' => $retro->id, 'participant_id' => $participant->id, 'statement' => 'motivation']);
+        });
+
         Card::factory()->count($cards)->create(['retro_id' => $retro->id])->each(function (Card $card) use ($retro): void {
             CardReaction::factory()->count(2)->create(['retro_id' => $retro->id, 'card_id' => $card->id]);
             $thread = CardComment::factory()->create(['retro_id' => $retro->id, 'card_id' => $card->id]);

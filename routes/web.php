@@ -19,6 +19,7 @@ use App\Http\Controllers\Retros\CardsController;
 use App\Http\Controllers\Retros\CardVotesController;
 use App\Http\Controllers\Retros\ColumnOrdersController;
 use App\Http\Controllers\Retros\ColumnsController;
+use App\Http\Controllers\Retros\HealthCheckAnswersController;
 use App\Http\Controllers\Retros\RetroFacilitatorsController;
 use App\Http\Controllers\Retros\RetroGifsController;
 use App\Http\Controllers\Retros\RetroGuestTokensController;
@@ -131,6 +132,8 @@ Route::prefix('retros/{retro}')
         Route::post('guest-token', [RetroGuestTokensController::class, 'store'])->name('retros.guest-token.store');
         Route::put('facilitator', [RetroFacilitatorsController::class, 'update'])->name('retros.facilitator.update');
         Route::get('snapshot', [RetroSnapshotsController::class, 'show'])->name('retros.snapshot.show');
+        Route::put('health-check/{statement}', [HealthCheckAnswersController::class, 'update'])->name('retros.health-check.update')->where('statement', '[A-Za-z0-9_-]{1,64}');
+        Route::delete('health-check/{statement}', [HealthCheckAnswersController::class, 'destroy'])->name('retros.health-check.destroy')->where('statement', '[A-Za-z0-9_-]{1,64}');
         Route::post('columns', [ColumnsController::class, 'store'])->name('retros.columns.store');
         Route::patch('columns/{column}', [ColumnsController::class, 'update'])->name('retros.columns.update')->whereUuid('column');
         Route::delete('columns/{column}', [ColumnsController::class, 'destroy'])->name('retros.columns.destroy')->whereUuid('column');

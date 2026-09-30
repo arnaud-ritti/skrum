@@ -2,6 +2,7 @@
 
 namespace App\Actions\Retros;
 
+use App\Actions\HealthCheck\PresentHealthCheck;
 use App\Enums\RetroPhase;
 use App\Enums\WorkspaceRole;
 use App\Http\Controllers\EmojiDataController;
@@ -24,6 +25,7 @@ class BuildBoardSnapshot
         private SummarizeReactions $summarizeReactions,
         private PresentComment $presentComment,
         private GifCatalog $gifCatalog,
+        private PresentHealthCheck $presentHealthCheck,
     ) {}
 
     /**
@@ -103,6 +105,7 @@ class BuildBoardSnapshot
             'actionItems' => $retro->actionItems->sortBy('created_at')
                 ->map(fn (ActionItem $item) => $this->presentActionItem->handle($item))
                 ->values()->all(),
+            'healthCheck' => $this->presentHealthCheck->handle($retro, $viewer),
             'votesCast' => $retro->phase === RetroPhase::Voting ? (int) $voteTotals->sum() : null,
             'votesVersion' => $votesVersion,
             'links' => [
