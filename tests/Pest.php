@@ -8,6 +8,7 @@ use App\Models\Survey;
 use App\Models\SurveyResponse;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 /*
@@ -96,4 +97,40 @@ function answerSurvey(Survey $survey, Participant $participant, int ...$optionIn
             'participant_id' => $participant->id,
         ]);
     }
+}
+
+function configureLlm(string $provider = 'anthropic', ?string $baseUrl = null): void
+{
+    config(['services.llm' => [
+        'provider' => $provider,
+        'key' => 'llm-secret-key',
+        'model' => 'test-model',
+        'base_url' => $baseUrl,
+    ]]);
+}
+
+/**
+ * @param  array<array-key, mixed>|string  $reply
+ */
+function fakeLlmReply(array|string $reply): void
+{
+    $text = is_string($reply) ? $reply : (string) json_encode($reply);
+
+    Http::fake([
+        'api.anthropic.com/*' => Http::response(['content' => [['type' => 'text', 'text' => $text]]]),
+    ]);
+}
+
+function fakeLlmFailure(): void
+{
+    Http::fake([
+        'api.anthropic.com/*' => Http::response(['error' => ['message' => 'invalid x-api-key llm-secret-key']], 500),
+    ]);
+}
+
+function llmRequestBodies(): string
+{
+    return Http::recorded()
+        ->map(fn (array $pair) => $pair[0]->body())
+        ->implode("\n");
 }

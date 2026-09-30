@@ -14,6 +14,7 @@ use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\User;
 use App\Support\Gifs\GifCatalog;
+use App\Support\Llm\Llm;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -30,6 +31,7 @@ class BuildBoardSnapshot
         private PresentSurvey $presentSurvey,
         private PresentParticipant $presentParticipant,
         private BuildResults $buildResults,
+        private Llm $llm,
     ) {}
 
     /**
@@ -118,6 +120,10 @@ class BuildBoardSnapshot
             'emojiData' => [
                 'baseUrl' => '/emoji-data/'.config('services.emoji_data.version'),
                 'locale' => EmojiDataController::emojibaseLocale(app()->getLocale()),
+            ],
+            'features' => [
+                'llm' => $this->llm->isConfigured(),
+                'llmProvider' => $this->llm->providerName(),
             ],
             'serverTime' => now()->utc()->format('Y-m-d\TH:i:s.v\Z'),
         ];

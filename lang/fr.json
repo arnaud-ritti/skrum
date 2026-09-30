@@ -826,5 +826,6 @@
     "Return on time invested": "Retour sur le temps investi",
     "No ratings yet.": "Aucune note pour le moment.",
     "Average: :value": "Moyenne : :value",
-    "Retrospective views": "Vues de la rétrospective"
+    "Retrospective views": "Vues de la rétrospective",
+    "Too many requests, wait a moment.": "Trop de demandes, patientez un instant."
 }
