@@ -62,6 +62,12 @@ export function HealthRadar({
     );
     const answered = scored.filter((point): point is Point => point !== null);
     const isComplete = answered.length === total;
+    const summary = statements
+        .map(
+            (statement) =>
+                `${statement.label}: ${statement.average === null ? t('No answers') : `${formatScore(statement.average)}/10`}`,
+        )
+        .join('; ');
     const segments = scored.flatMap((point, index) => {
         const next = scored[(index + 1) % total];
 
@@ -75,6 +81,8 @@ export function HealthRadar({
             aria-label={t('Team health radar')}
             className="w-full max-w-80 overflow-visible"
         >
+            <title>{t('Team health radar')}</title>
+            <desc>{summary}</desc>
             {Rings.map((ring) => (
                 <polygon
                     key={ring}
@@ -119,15 +127,19 @@ export function HealthRadar({
                     />
                 ))
             )}
-            {answered.map(({ x, y }) => (
-                <circle
-                    key={`${x}-${y}`}
-                    cx={x}
-                    cy={y}
-                    r={3.5}
-                    className="fill-primary"
-                />
-            ))}
+            {statements.map((statement, index) => {
+                const point = scored[index];
+
+                return point ? (
+                    <circle
+                        key={statement.key}
+                        cx={point.x}
+                        cy={point.y}
+                        r={3.5}
+                        className="fill-primary"
+                    />
+                ) : null;
+            })}
             {statements.map((statement, index) => {
                 const label = pointAt(index, total, LabelRadius);
 

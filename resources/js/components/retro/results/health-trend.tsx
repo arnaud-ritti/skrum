@@ -21,6 +21,13 @@ export function HealthTrend({ points }: { points: HealthTrendPoint[] }) {
                   (index * (Width - 2 * Padding)) / (points.length - 1),
         y: Padding + ((10 - point.score) / 10) * (Height - 2 * Padding),
     }));
+    const tooltip = (point: HealthTrendPoint): string => {
+        const base = `${point.title}: ${formatScore(point.score)}/10`;
+
+        return point.sameStatements
+            ? base
+            : `${base} — ${t('The statements changed since the previous retro')}`;
+    };
     const latest = points[points.length - 1];
 
     return (
@@ -52,12 +59,7 @@ export function HealthTrend({ points }: { points: HealthTrendPoint[] }) {
                                     : 'fill-background stroke-primary'
                             }
                         >
-                            <title>
-                                {`${point.title}: ${formatScore(point.score)}/10`}
-                                {point.sameStatements
-                                    ? ''
-                                    : ` — ${t('The statements changed since the previous retro')}`}
-                            </title>
+                            <title>{tooltip(point)}</title>
                         </circle>
                     </a>
                 ))}
