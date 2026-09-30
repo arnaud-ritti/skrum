@@ -22,10 +22,12 @@ use App\Http\Controllers\Integrations\PokerImportRefreshesController;
 use App\Http\Controllers\Integrations\PokerImportsController;
 use App\Http\Controllers\Integrations\PokerSharesController;
 use App\Http\Controllers\Integrations\PokerTaskSyncsController;
+use App\Http\Controllers\Integrations\RetroActionItemExportPreviewsController;
 use App\Http\Controllers\Integrations\RetroResultsEmailsController;
 use App\Http\Controllers\Integrations\RetroSharesController;
 use App\Http\Controllers\Integrations\TeamIntegrationsController;
 use App\Http\Controllers\Integrations\TelegramConnectCodesController;
+use App\Http\Controllers\Integrations\WorkspaceActionItemExportPreviewsController;
 use App\Http\Controllers\InvitationAcceptancesController;
 use App\Http\Controllers\InvitationLinksController;
 use App\Http\Controllers\LocalesController;
@@ -247,6 +249,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('action-items/{actionItem}/subtasks', [WorkspaceActionItemSubtasksController::class, 'store'])->name('workspaces.actionItemSubtasks.store')->whereUuid('actionItem');
             Route::patch('action-item-subtasks/{actionItemSubtask}', [WorkspaceActionItemSubtasksController::class, 'update'])->name('workspaces.actionItemSubtasks.update')->whereUuid('actionItemSubtask')->withoutScopedBindings();
             Route::delete('action-item-subtasks/{actionItemSubtask}', [WorkspaceActionItemSubtasksController::class, 'destroy'])->name('workspaces.actionItemSubtasks.destroy')->whereUuid('actionItemSubtask')->withoutScopedBindings();
+            Route::get('action-items/{actionItem}/exports/preview', [WorkspaceActionItemExportPreviewsController::class, 'show'])
+                ->middleware(EnsureIntegrationProviderEnabled::class)
+                ->name('workspaces.actionItemExports.preview')
+                ->whereUuid('actionItem');
         });
 });
 
@@ -302,6 +308,10 @@ Route::prefix('retros/{retro}')
         Route::post('action-items/{actionItem}/subtasks', [ActionItemSubtasksController::class, 'store'])->name('retros.action-items.subtasks.store')->whereUuid('actionItem');
         Route::patch('action-item-subtasks/{actionItemSubtask}', [ActionItemSubtasksController::class, 'update'])->name('retros.action-items.subtasks.update')->whereUuid('actionItemSubtask');
         Route::delete('action-item-subtasks/{actionItemSubtask}', [ActionItemSubtasksController::class, 'destroy'])->name('retros.action-items.subtasks.destroy')->whereUuid('actionItemSubtask');
+        Route::get('action-items/{actionItem}/exports/preview', [RetroActionItemExportPreviewsController::class, 'show'])
+            ->middleware(EnsureIntegrationProviderEnabled::class)
+            ->name('retros.action-items.exports.preview')
+            ->whereUuid('actionItem');
         Route::post('summary', [RetroSummariesController::class, 'store'])->name('retros.summary.store');
         Route::delete('summary', [RetroSummariesController::class, 'destroy'])->name('retros.summary.destroy');
         Route::post('shares', [RetroSharesController::class, 'store'])->middleware('throttle:5,1,shares')->name('retros.shares.store');

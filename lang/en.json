@@ -1096,5 +1096,13 @@
     "Reconnect :provider to enable assignee mapping.": "Reconnect :provider to enable assignee mapping.",
     "This :provider account was not found or is inactive.": "This :provider account was not found or is inactive.",
     "This person is not a member of the team.": "This person is not a member of the team.",
-    "Choose one of the priorities of this Jira site.": "Choose one of the priorities of this Jira site."
+    "Choose one of the priorities of this Jira site.": "Choose one of the priorities of this Jira site.",
+    "From the retrospective \":title\" on :date:": "From the retrospective \":title\" on :date:",
+    "Added outside a retro on :date:": "Added outside a retro on :date:",
+    "Guests cannot export action items.": "Guests cannot export action items.",
+    "Guests have no :provider account, so the issue is unassigned.": "Guests have no :provider account, so the issue is unassigned.",
+    ":name has no :provider account mapped, so the issue is unassigned.": ":name has no :provider account mapped, so the issue is unassigned.",
+    ":provider refused :name as assignee for this project, so the issue is unassigned.": ":provider refused :name as assignee for this project, so the issue is unassigned.",
+    "This Jira project doesn't accept an assignee on creation.": "This Jira project doesn't accept an assignee on creation.",
+    "Priority :priority isn't available in this project; :provider's default was used.": "Priority :priority isn't available in this project; :provider's default was used."
 }

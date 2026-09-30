@@ -823,3 +823,44 @@ function fakeLinearUserDirectoryGraphql(array $responses): void
         return Http::response(['errors' => [['message' => 'Unexpected query', 'extensions' => ['code' => 'INVALID_INPUT']]]], 400);
     }]);
 }
+
+/**
+ * @param  array<string, mixed>  $attributes
+ * @return array{0: Retro, 1: ActionItem, 2: User}
+ */
+function exportBoardItem(array $attributes = []): array
+{
+    $retro = Retro::factory()->inPhase(RetroPhase::Completed)->withGuestAccess()->create(['title' => 'Sprint 12']);
+    [$author, $participant] = retroMember($retro);
+    $item = ActionItem::factory()->create([
+        'retro_id' => $retro->id,
+        'created_by_participant_id' => $participant->id,
+        'content' => 'Speed up CI',
+        ...$attributes,
+    ]);
+
+    return [$retro, $item, $author];
+}
+
+/**
+ * @param  array<int, array{id: string, name: string}>|null  $priorities
+ * @return array<string, mixed>
+ */
+function jiraCreateMeta(bool $assignee = true, bool $priority = true, ?array $priorities = null): array
+{
+    $fields = [['fieldId' => 'summary', 'name' => 'Summary']];
+
+    if ($assignee) {
+        $fields[] = ['fieldId' => 'assignee', 'name' => 'Assignee'];
+    }
+
+    if ($priority) {
+        $fields[] = ['fieldId' => 'priority', 'name' => 'Priority', 'allowedValues' => $priorities ?? [
+            ['id' => '2', 'name' => 'High'],
+            ['id' => '3', 'name' => 'Medium'],
+            ['id' => '4', 'name' => 'Low'],
+        ]];
+    }
+
+    return ['startAt' => 0, 'maxResults' => 200, 'total' => count($fields), 'fields' => $fields];
+}

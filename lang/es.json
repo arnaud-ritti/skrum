@@ -1343,5 +1343,13 @@
     "Reconnect :provider to enable assignee mapping.": "Vuelve a conectar :provider para activar la asignación de responsables.",
     "This :provider account was not found or is inactive.": "Esta cuenta de :provider no existe o está inactiva.",
     "This person is not a member of the team.": "Esta persona no es miembro del equipo.",
-    "Choose one of the priorities of this Jira site.": "Elige una de las prioridades de este sitio de Jira."
+    "Choose one of the priorities of this Jira site.": "Elige una de las prioridades de este sitio de Jira.",
+    "From the retrospective \":title\" on :date:": "De la retrospectiva «:title» del :date:",
+    "Added outside a retro on :date:": "Añadida fuera de una retrospectiva el :date:",
+    "Guests cannot export action items.": "Los invitados no pueden exportar acciones.",
+    "Guests have no :provider account, so the issue is unassigned.": "Los invitados no tienen cuenta de :provider, así que la incidencia queda sin asignar.",
+    ":name has no :provider account mapped, so the issue is unassigned.": ":name no tiene ninguna cuenta de :provider asociada, así que la incidencia queda sin asignar.",
+    ":provider refused :name as assignee for this project, so the issue is unassigned.": ":provider rechazó a :name como responsable de este proyecto, así que la incidencia queda sin asignar.",
+    "This Jira project doesn't accept an assignee on creation.": "Este proyecto de Jira no acepta un responsable al crear la incidencia.",
+    "Priority :priority isn't available in this project; :provider's default was used.": "La prioridad :priority no está disponible en este proyecto; se usó la predeterminada de :provider."
 }
