@@ -55,11 +55,29 @@ class PresentPokerRound
             'votes' => $listsVoters
                 ? $votes->map(fn (PokerVote $vote): array => [
                     'playerId' => $vote->poker_player_id,
-                    'value' => $isRevealed || $vote->poker_player_id === $viewerPlayerId ? $vote->value : null,
+                    'value' => $this->visibleValue($round, $vote, $viewerPlayerId),
                 ])->all()
                 : [],
             'myVote' => $myVote?->value,
             'result' => $isRevealed ? PokerResult::for($round, $game) : null,
         ];
+    }
+
+    /**
+     * Before reveal only the viewer's own value is shown; in an anonymous
+     * round that stays true forever, so values reach others only through
+     * the result's distribution.
+     */
+    private function visibleValue(PokerRound $round, PokerVote $vote, ?string $viewerPlayerId): ?string
+    {
+        if ($viewerPlayerId !== null && $vote->poker_player_id === $viewerPlayerId) {
+            return $vote->value;
+        }
+
+        if ($round->anonymous) {
+            return null;
+        }
+
+        return $round->isRevealed() ? $vote->value : null;
     }
 }

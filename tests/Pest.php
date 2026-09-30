@@ -253,3 +253,19 @@ function pokerRevealTable(PokerDeck $deck = PokerDeck::Fibonacci): array
         'round' => openPokerRound($game),
     ];
 }
+
+/**
+ * @param  array<array-key, mixed>|string  $payload
+ */
+function pokerPayloadJson(array|string $payload): string
+{
+    return is_string($payload) ? $payload : (string) json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+}
+
+/**
+ * @param  array<array-key, mixed>|string  $payload
+ */
+function pokerPayloadExposes(array|string $payload, PokerPlayer $player, string $value): bool
+{
+    return str_contains(pokerPayloadJson($payload), "\"playerId\":\"{$player->id}\",\"value\":\"{$value}\"");
+}
