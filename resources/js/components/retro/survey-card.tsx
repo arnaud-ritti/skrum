@@ -226,7 +226,7 @@ function ChoiceSurvey({ survey, canAnswer, busy, onAnswer }: AnswerProps) {
     );
 }
 
-function OptionResult({
+export function OptionResult({
     option,
     responseCount,
 }: {

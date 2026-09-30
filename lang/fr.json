@@ -809,5 +809,21 @@
     "No answers": "Aucune réponse",
     "Trend across retros": "Tendance sur les rétros",
     "The statements changed since the previous retro": "Les affirmations ont changé depuis la rétro précédente",
-    ":delta since the previous retro": ":delta depuis la rétro précédente"
+    ":delta since the previous retro": ":delta depuis la rétro précédente",
+    "Results": "Résultats",
+    "Board": "Tableau",
+    "Thanks for participating": "Merci pour votre participation",
+    "Team health": "Santé de l'équipe",
+    "Score": "Score",
+    "Participation": "Participation",
+    ":respondents / :participants participants": ":respondents / :participants participants",
+    "Top strength": "Point fort",
+    "Growth area": "Axe de progrès",
+    "Alignment": "Alignement",
+    ":count response": ":count réponse",
+    ":count grouped card": ":count carte groupée",
+    ":count grouped cards": ":count cartes groupées",
+    "Return on time invested": "Retour sur le temps investi",
+    "Average": "Moyenne",
+    "No ratings yet.": "Aucune note pour le moment."
 }

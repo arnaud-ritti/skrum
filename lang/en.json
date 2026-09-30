@@ -555,5 +555,21 @@
     "No answers": "No answers",
     "Trend across retros": "Trend across retros",
     "The statements changed since the previous retro": "The statements changed since the previous retro",
-    ":delta since the previous retro": ":delta since the previous retro"
+    ":delta since the previous retro": ":delta since the previous retro",
+    "Results": "Results",
+    "Board": "Board",
+    "Thanks for participating": "Thanks for participating",
+    "Team health": "Team health",
+    "Score": "Score",
+    "Participation": "Participation",
+    ":respondents / :participants participants": ":respondents / :participants participants",
+    "Top strength": "Top strength",
+    "Growth area": "Growth area",
+    "Alignment": "Alignment",
+    ":count response": ":count response",
+    ":count grouped card": ":count grouped card",
+    ":count grouped cards": ":count grouped cards",
+    "Return on time invested": "Return on time invested",
+    "Average": "Average",
+    "No ratings yet.": "No ratings yet."
 }
