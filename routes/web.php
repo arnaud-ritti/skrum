@@ -10,10 +10,12 @@ use App\Http\Controllers\InvitationAcceptancesController;
 use App\Http\Controllers\InvitationLinksController;
 use App\Http\Controllers\LocalesController;
 use App\Http\Controllers\NotificationsController;
+use App\Http\Controllers\Poker\PokerCurrentTasksController;
 use App\Http\Controllers\Poker\PokerGamesController;
 use App\Http\Controllers\Poker\PokerSnapshotsController;
 use App\Http\Controllers\Poker\PokerTaskOrdersController;
 use App\Http\Controllers\Poker\PokerTasksController;
+use App\Http\Controllers\Poker\PokerVotesController;
 use App\Http\Controllers\PokerJoinsController;
 use App\Http\Controllers\ReadAllNotificationsController;
 use App\Http\Controllers\RetroJoinsController;
@@ -243,6 +245,9 @@ Route::prefix('poker/{game}')
         Route::patch('tasks/{task}', [PokerTasksController::class, 'update'])->name('poker.tasks.update')->whereUuid('task');
         Route::delete('tasks/{task}', [PokerTasksController::class, 'destroy'])->name('poker.tasks.destroy')->whereUuid('task');
         Route::put('task-order', [PokerTaskOrdersController::class, 'update'])->name('poker.task-order.update');
+        Route::put('current-task', [PokerCurrentTasksController::class, 'update'])->name('poker.current-task.update');
+        Route::put('rounds/{round}/vote', [PokerVotesController::class, 'update'])->name('poker.rounds.vote.update')->whereUuid('round');
+        Route::delete('rounds/{round}/vote', [PokerVotesController::class, 'destroy'])->name('poker.rounds.vote.destroy')->whereUuid('round');
     });
 
 Route::post('broadcasting/auth', [BroadcastAuthorizationsController::class, 'store'])->name('broadcasting.auth');
