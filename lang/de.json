@@ -972,5 +972,9 @@
     "Add at least one card that can be an estimate.": "Füge mindestens eine Karte hinzu, die eine Schätzung sein kann.",
     "This game already has 200 tasks.": "Dieses Spiel hat bereits 200 Aufgaben.",
     "The list of tasks is out of date.": "Die Aufgabenliste ist nicht mehr aktuell.",
-    "Choose a card from the deck.": "Wähle eine Karte aus dem Deck."
+    "Choose a card from the deck.": "Wähle eine Karte aus dem Deck.",
+    "Nobody has voted yet.": "Noch hat niemand abgestimmt.",
+    "Reveal the votes before setting an estimate.": "Decke die Stimmen auf, bevor du eine Schätzung festlegst.",
+    "Reveal the votes before starting a new round.": "Decke die Stimmen auf, bevor du eine neue Runde startest.",
+    "Select this task first.": "Wähle zuerst diese Aufgabe aus."
 }

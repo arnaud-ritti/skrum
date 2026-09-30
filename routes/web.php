@@ -12,7 +12,10 @@ use App\Http\Controllers\LocalesController;
 use App\Http\Controllers\NotificationsController;
 use App\Http\Controllers\Poker\PokerCurrentTasksController;
 use App\Http\Controllers\Poker\PokerGamesController;
+use App\Http\Controllers\Poker\PokerRevealsController;
+use App\Http\Controllers\Poker\PokerRoundsController;
 use App\Http\Controllers\Poker\PokerSnapshotsController;
+use App\Http\Controllers\Poker\PokerTaskEstimatesController;
 use App\Http\Controllers\Poker\PokerTaskOrdersController;
 use App\Http\Controllers\Poker\PokerTasksController;
 use App\Http\Controllers\Poker\PokerVotesController;
@@ -248,6 +251,10 @@ Route::prefix('poker/{game}')
         Route::put('current-task', [PokerCurrentTasksController::class, 'update'])->name('poker.current-task.update');
         Route::put('rounds/{round}/vote', [PokerVotesController::class, 'update'])->name('poker.rounds.vote.update')->whereUuid('round');
         Route::delete('rounds/{round}/vote', [PokerVotesController::class, 'destroy'])->name('poker.rounds.vote.destroy')->whereUuid('round');
+        Route::post('rounds/{round}/reveal', [PokerRevealsController::class, 'store'])->name('poker.rounds.reveal.store')->whereUuid('round');
+        Route::post('tasks/{task}/rounds', [PokerRoundsController::class, 'store'])->name('poker.tasks.rounds.store')->whereUuid('task');
+        Route::get('tasks/{task}/rounds', [PokerRoundsController::class, 'index'])->name('poker.tasks.rounds.index')->whereUuid('task');
+        Route::put('tasks/{task}/estimate', [PokerTaskEstimatesController::class, 'update'])->name('poker.tasks.estimate.update')->whereUuid('task');
     });
 
 Route::post('broadcasting/auth', [BroadcastAuthorizationsController::class, 'store'])->name('broadcasting.auth');

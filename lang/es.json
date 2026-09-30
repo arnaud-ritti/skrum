@@ -972,5 +972,9 @@
     "Add at least one card that can be an estimate.": "Añade al menos una carta que pueda ser una estimación.",
     "This game already has 200 tasks.": "Esta partida ya tiene 200 tareas.",
     "The list of tasks is out of date.": "La lista de tareas está desactualizada.",
-    "Choose a card from the deck.": "Elige una carta de la baraja."
+    "Choose a card from the deck.": "Elige una carta de la baraja.",
+    "Nobody has voted yet.": "Nadie ha votado todavía.",
+    "Reveal the votes before setting an estimate.": "Revela los votos antes de fijar una estimación.",
+    "Reveal the votes before starting a new round.": "Revela los votos antes de empezar una nueva ronda.",
+    "Select this task first.": "Selecciona primero esta tarea."
 }

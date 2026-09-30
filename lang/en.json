@@ -719,5 +719,9 @@
     "Add at least one card that can be an estimate.": "Add at least one card that can be an estimate.",
     "This game already has 200 tasks.": "This game already has 200 tasks.",
     "The list of tasks is out of date.": "The list of tasks is out of date.",
-    "Choose a card from the deck.": "Choose a card from the deck."
+    "Choose a card from the deck.": "Choose a card from the deck.",
+    "Nobody has voted yet.": "Nobody has voted yet.",
+    "Reveal the votes before setting an estimate.": "Reveal the votes before setting an estimate.",
+    "Reveal the votes before starting a new round.": "Reveal the votes before starting a new round.",
+    "Select this task first.": "Select this task first."
 }

@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\Retros\GuestCookie;
+use App\Enums\PokerDeck;
 use App\Enums\WorkspaceRole;
 use App\Models\Participant;
 use App\Models\PokerGame;
@@ -225,4 +226,30 @@ function pokerVote(PokerRound $round, PokerPlayer $player, string $value): Poker
         'poker_player_id' => $player->id,
         'value' => $value,
     ]);
+}
+
+/**
+ * @return array{
+ *     game: PokerGame,
+ *     facilitator: User,
+ *     facilitatorPlayer: PokerPlayer,
+ *     member: User,
+ *     memberPlayer: PokerPlayer,
+ *     round: PokerRound
+ * }
+ */
+function pokerRevealTable(PokerDeck $deck = PokerDeck::Fibonacci): array
+{
+    $game = PokerGame::factory()->deck($deck)->withGuestAccess()->create();
+    [$facilitator, $facilitatorPlayer] = pokerFacilitator($game);
+    [$member, $memberPlayer] = pokerMember($game);
+
+    return [
+        'game' => $game,
+        'facilitator' => $facilitator,
+        'facilitatorPlayer' => $facilitatorPlayer,
+        'member' => $member,
+        'memberPlayer' => $memberPlayer,
+        'round' => openPokerRound($game),
+    ];
 }
