@@ -21,7 +21,7 @@ import { dashboard } from '@/routes';
 import type { NavItem } from '@/types';
 
 export function AppSidebar() {
-    const { currentWorkspace } = usePage().props;
+    const { currentWorkspace, actionItems } = usePage().props;
 
     const mainNavItems: NavItem[] = [
         {
@@ -38,6 +38,7 @@ export function AppSidebar() {
             title: 'Action items',
             href: WorkspaceActionItemsController.index(currentWorkspace.slug),
             icon: ListChecks,
+            badge: actionItems?.overdueAssignedCount,
         });
     }
 

@@ -938,5 +938,17 @@
     "Add a sub-task": "Ajouter une sous-tâche",
     "Edit sub-task": "Modifier la sous-tâche",
     "Delete sub-task": "Supprimer la sous-tâche",
-    ":done of :total sub-tasks done": ":done sous-tâches terminées sur :total"
+    ":done of :total sub-tasks done": ":done sous-tâches terminées sur :total",
+    "Notifications": "Notifications",
+    "Mark all as read": "Tout marquer comme lu",
+    "No notifications.": "Aucune notification.",
+    "Overdue: :content": "En retard : :content",
+    "Due today: :content": "Pour aujourd'hui : :content",
+    "Due tomorrow: :content": "Pour demain : :content",
+    ":count overdue": ":count en retard",
+    "Action item reminders": "Rappels des actions",
+    "Reminders are sent at :time for action items assigned to you.": "Les rappels sont envoyés à :time pour les actions qui vous sont assignées.",
+    "Reminders are turned off on this instance.": "Les rappels sont désactivés sur cette instance.",
+    "Email me about due and overdue action items": "M'envoyer un e-mail pour les actions à échéance ou en retard",
+    "Show due and overdue action items in the notification bell": "Afficher les actions à échéance ou en retard dans la cloche de notifications"
 }

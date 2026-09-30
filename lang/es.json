@@ -938,5 +938,17 @@
     "Add a sub-task": "Añadir una subtarea",
     "Edit sub-task": "Editar la subtarea",
     "Delete sub-task": "Eliminar la subtarea",
-    ":done of :total sub-tasks done": ":done de :total subtareas hechas"
+    ":done of :total sub-tasks done": ":done de :total subtareas hechas",
+    "Notifications": "Notificaciones",
+    "Mark all as read": "Marcar todo como leído",
+    "No notifications.": "No hay notificaciones.",
+    "Overdue: :content": "Vencida: :content",
+    "Due today: :content": "Vence hoy: :content",
+    "Due tomorrow: :content": "Vence mañana: :content",
+    ":count overdue": ":count vencidas",
+    "Action item reminders": "Recordatorios de acciones",
+    "Reminders are sent at :time for action items assigned to you.": "Los recordatorios se envían a las :time para las acciones asignadas a ti.",
+    "Reminders are turned off on this instance.": "Los recordatorios están desactivados en esta instancia.",
+    "Email me about due and overdue action items": "Enviarme un correo sobre las acciones que vencen o están vencidas",
+    "Show due and overdue action items in the notification bell": "Mostrar las acciones que vencen o están vencidas en la campana de notificaciones"
 }

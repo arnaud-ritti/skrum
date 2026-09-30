@@ -685,5 +685,17 @@
     "Add a sub-task": "Add a sub-task",
     "Edit sub-task": "Edit sub-task",
     "Delete sub-task": "Delete sub-task",
-    ":done of :total sub-tasks done": ":done of :total sub-tasks done"
+    ":done of :total sub-tasks done": ":done of :total sub-tasks done",
+    "Notifications": "Notifications",
+    "Mark all as read": "Mark all as read",
+    "No notifications.": "No notifications.",
+    "Overdue: :content": "Overdue: :content",
+    "Due today: :content": "Due today: :content",
+    "Due tomorrow: :content": "Due tomorrow: :content",
+    ":count overdue": ":count overdue",
+    "Action item reminders": "Action item reminders",
+    "Reminders are sent at :time for action items assigned to you.": "Reminders are sent at :time for action items assigned to you.",
+    "Reminders are turned off on this instance.": "Reminders are turned off on this instance.",
+    "Email me about due and overdue action items": "Email me about due and overdue action items",
+    "Show due and overdue action items in the notification bell": "Show due and overdue action items in the notification bell"
 }

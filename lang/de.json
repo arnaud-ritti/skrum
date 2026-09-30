@@ -938,5 +938,17 @@
     "Add a sub-task": "Unteraufgabe hinzufügen",
     "Edit sub-task": "Unteraufgabe bearbeiten",
     "Delete sub-task": "Unteraufgabe löschen",
-    ":done of :total sub-tasks done": ":done von :total Unteraufgaben erledigt"
+    ":done of :total sub-tasks done": ":done von :total Unteraufgaben erledigt",
+    "Notifications": "Benachrichtigungen",
+    "Mark all as read": "Alle als gelesen markieren",
+    "No notifications.": "Keine Benachrichtigungen.",
+    "Overdue: :content": "Überfällig: :content",
+    "Due today: :content": "Heute fällig: :content",
+    "Due tomorrow: :content": "Morgen fällig: :content",
+    ":count overdue": ":count überfällig",
+    "Action item reminders": "Erinnerungen an Aktionspunkte",
+    "Reminders are sent at :time for action items assigned to you.": "Erinnerungen werden um :time für Aktionspunkte verschickt, die dir zugewiesen sind.",
+    "Reminders are turned off on this instance.": "Erinnerungen sind auf dieser Instanz ausgeschaltet.",
+    "Email me about due and overdue action items": "Mir E-Mails zu fälligen und überfälligen Aktionspunkten senden",
+    "Show due and overdue action items in the notification bell": "Fällige und überfällige Aktionspunkte in der Benachrichtigungsglocke anzeigen"
 }
