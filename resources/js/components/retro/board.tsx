@@ -19,20 +19,34 @@ import { retroRequest } from '@/lib/retro/api';
 import { topLevelCards } from '@/lib/retro/board-reducer';
 import type { CardPayload, Snapshot } from '@/lib/retro/types';
 import { ActionItemsPanel } from './action-items-panel';
+import { SuggestionsPanel } from './suggestions-panel';
 import { AddColumn } from './add-column';
 import { BoardEnded } from './board-ended';
 import { BoardHeader } from './board-header';
-import { CompletedSummary } from './completed-summary';
+import { ColumnEditPhases } from './column-header';
 import { ConnectionBanner } from './connection-banner';
 import { BoardProvider, type BoardContextValue } from './board-context';
 import { parseDndId, useDragAccessibility } from './dnd';
 import { FlyingReactions } from './flying-reactions';
 import { HideMyCursorKey, LiveCursorLayer } from './live-cursor-layer';
+import { PhasePanel } from './phase-panel';
 import { PresentationOverlay } from './presentation-overlay';
 import { CardPreview } from './retro-card';
 import { RetroColumn } from './retro-column';
+import {
+    CompletedPanelId,
+    CompletedTabId,
+    CompletedTabs,
+    type CompletedView,
+} from './results/completed-tabs';
+import { ResultsView } from './results/results-view';
 import { SessionExpiredBanner } from './session-expired-banner';
 import { VoteProgress } from './vote-progress';
+import { SurveysColumn } from './surveys-column';
+import {
+    GroupNameSuggestionsProvider,
+    SuggestGroupNamesButton,
+} from './group-name-suggestions';
 
 export function Board({ snapshot }: { snapshot: Snapshot }) {
     const { t } = useTrans();
@@ -44,6 +58,7 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
         handleError,
         hasActiveCard,
         refetch,
+        invalidateSurvey,
         status,
         online,
         presence,
@@ -61,6 +76,9 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
 
     const [activeCardId, setActiveCardId] = useState<string | null>(null);
     const [activeCardWidth, setActiveCardWidth] = useState<number>();
+    const [completedView, setCompletedView] =
+        useState<CompletedView>('results');
+    const [trackedPhase, setTrackedPhase] = useState(board.retro.phase);
     const [boardElement, setBoardElement] = useState<HTMLElement | null>(null);
     const [hideMyCursor, setHideMyCursor] = useLocalPreference(
         HideMyCursorKey,
@@ -81,6 +99,11 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
         });
     }, [highlightedCardId]);
 
+    if (trackedPhase !== board.retro.phase) {
+        setTrackedPhase(board.retro.phase);
+        setCompletedView('results');
+    }
+
     if (status !== 'active') {
         return <BoardEnded reason={status} teamUrl={board.links.team} />;
     }
@@ -93,6 +116,7 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
         handleError,
         hasActiveCard,
         refetch,
+        invalidateSurvey,
         sessionExpired,
         online,
         presence,
@@ -193,85 +217,128 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
 
     return (
         <BoardProvider value={ctx}>
-            <div className="flex min-h-dvh flex-col">
-                {sessionExpired && <SessionExpiredBanner />}
-                <div className="flex flex-1 flex-col" inert={sessionExpired}>
-                    <BoardHeader
-                        online={online}
-                        hideMyCursor={hideMyCursor}
-                        onHideMyCursorChange={setHideMyCursor}
-                        actions={
-                            board.retro.phase === 'voting' ? (
-                                <VoteProgress />
-                            ) : undefined
-                        }
-                    />
-                    <ConnectionBanner reconnecting={reconnecting} />
-                    <div className="flex flex-1 flex-col lg:min-h-0">
-                        {board.retro.phase === 'completed' && (
-                            <CompletedSummary />
-                        )}
-                        <div className="flex flex-1 flex-col lg:min-h-0 lg:flex-row">
-                            <DndContext
-                                id="retro-board"
-                                sensors={sensors}
-                                accessibility={dragAccessibility}
-                                collisionDetection={closestCenter}
-                                onDragStart={(event) => {
-                                    setActiveCardId(
-                                        parseDndId(event.active.id)?.id ?? null,
-                                    );
-                                    setActiveCardWidth(
-                                        event.active.rect.current.initial
-                                            ?.width,
-                                    );
-                                }}
-                                onDragCancel={() => setActiveCardId(null)}
-                                onDragEnd={(event) => void handleDragEnd(event)}
-                            >
-                                <main
-                                    ref={setBoardElement}
-                                    className="relative flex min-w-0 flex-1 items-start gap-4 overflow-x-auto p-4"
-                                >
-                                    {board.columns.length === 0 && (
-                                        <p className="text-sm text-muted-foreground">
-                                            {t('No columns yet.')}
-                                        </p>
+            <GroupNameSuggestionsProvider>
+                <div className="flex min-h-dvh flex-col">
+                    {sessionExpired && <SessionExpiredBanner />}
+                    <div
+                        className="flex flex-1 flex-col"
+                        inert={sessionExpired}
+                    >
+                        <BoardHeader
+                            online={online}
+                            hideMyCursor={hideMyCursor}
+                            onHideMyCursorChange={setHideMyCursor}
+                            actions={
+                                <>
+                                    {board.retro.phase === 'voting' && (
+                                        <VoteProgress />
                                     )}
-                                    {board.columns.map((column, index) => (
-                                        <RetroColumn
-                                            key={column.id}
-                                            column={column}
-                                            index={index}
-                                        />
-                                    ))}
-                                    {board.viewer.isFacilitator &&
-                                        board.retro.phase === 'writing' && (
-                                            <AddColumn />
-                                        )}
-                                    <LiveCursorLayer
-                                        container={boardElement}
-                                        hidden={hideMyCursor}
-                                    />
-                                </main>
-                                <DragOverlay>
-                                    {activeCard ? (
-                                        <CardPreview
-                                            card={activeCard}
-                                            width={activeCardWidth}
-                                        />
-                                    ) : null}
-                                </DragOverlay>
-                            </DndContext>
-                            {board.retro.phase === 'discussing' && (
-                                <ActionItemsPanel />
+                                    <SuggestGroupNamesButton />
+                                </>
+                            }
+                        />
+                        <ConnectionBanner reconnecting={reconnecting} />
+                        <div className="flex flex-1 flex-col lg:min-h-0">
+                            <PhasePanel />
+                            {board.retro.phase === 'completed' && (
+                                <CompletedTabs
+                                    value={completedView}
+                                    onChange={setCompletedView}
+                                />
+                            )}
+                            {board.retro.phase === 'completed' &&
+                            completedView === 'results' ? (
+                                <div
+                                    role="tabpanel"
+                                    id={CompletedPanelId}
+                                    aria-labelledby={CompletedTabId('results')}
+                                    className="flex flex-1 flex-col"
+                                >
+                                    <ResultsView />
+                                </div>
+                            ) : (
+                                <div
+                                    {...(board.retro.phase === 'completed' && {
+                                        role: 'tabpanel',
+                                        id: CompletedPanelId,
+                                        'aria-labelledby':
+                                            CompletedTabId('board'),
+                                    })}
+                                    className="flex flex-1 flex-col lg:min-h-0 lg:flex-row"
+                                >
+                                    <DndContext
+                                        id="retro-board"
+                                        sensors={sensors}
+                                        accessibility={dragAccessibility}
+                                        collisionDetection={closestCenter}
+                                        onDragStart={(event) => {
+                                            setActiveCardId(
+                                                parseDndId(event.active.id)
+                                                    ?.id ?? null,
+                                            );
+                                            setActiveCardWidth(
+                                                event.active.rect.current
+                                                    .initial?.width,
+                                            );
+                                        }}
+                                        onDragCancel={() =>
+                                            setActiveCardId(null)
+                                        }
+                                        onDragEnd={(event) =>
+                                            void handleDragEnd(event)
+                                        }
+                                    >
+                                        <main
+                                            ref={setBoardElement}
+                                            className="relative flex min-w-0 flex-1 items-start gap-4 overflow-x-auto p-4"
+                                        >
+                                            <SurveysColumn />
+                                            {board.columns.length === 0 && (
+                                                <p className="text-sm text-muted-foreground">
+                                                    {t('No columns yet.')}
+                                                </p>
+                                            )}
+                                            {board.columns.map(
+                                                (column, index) => (
+                                                    <RetroColumn
+                                                        key={column.id}
+                                                        column={column}
+                                                        index={index}
+                                                    />
+                                                ),
+                                            )}
+                                            {board.viewer.isFacilitator &&
+                                                ColumnEditPhases.includes(
+                                                    board.retro.phase,
+                                                ) && <AddColumn />}
+                                            <LiveCursorLayer
+                                                container={boardElement}
+                                                hidden={hideMyCursor}
+                                            />
+                                        </main>
+                                        <DragOverlay>
+                                            {activeCard ? (
+                                                <CardPreview
+                                                    card={activeCard}
+                                                    width={activeCardWidth}
+                                                />
+                                            ) : null}
+                                        </DragOverlay>
+                                    </DndContext>
+                                    {board.retro.phase === 'discussing' && (
+                                        <>
+                                            <SuggestionsPanel />
+                                            <ActionItemsPanel />
+                                        </>
+                                    )}
+                                </div>
                             )}
                         </div>
                     </div>
                 </div>
-            </div>
-            <FlyingReactions />
-            <PresentationOverlay />
+                <FlyingReactions />
+                <PresentationOverlay />
+            </GroupNameSuggestionsProvider>
         </BoardProvider>
     );
 }

@@ -31,5 +31,7 @@
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
+        <env name="SKRUM_LLM_PROVIDER" value=""/>
+        <env name="SKRUM_LLM_API_KEY" value=""/>
     </php>
 </phpunit>

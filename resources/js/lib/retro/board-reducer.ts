@@ -5,12 +5,28 @@ import type {
     CardComment,
     CardPayload,
     CommentThread,
+    HealthProgress,
     ReactionSummary,
     Snapshot,
+    SuggestedAction,
+    SurveyPayload,
 } from './types';
 
 export type BoardAction =
+    | { type: 'insights.suggestion'; suggestedAction: SuggestedAction }
+    | { type: 'survey.upsert'; survey: SurveyPayload }
+    | { type: 'survey.remove'; surveyId: string }
+    | {
+          type: 'survey.counts';
+          surveyId: string;
+          responseCount?: number;
+          commentCount?: number;
+      }
     | { type: 'replace'; snapshot: Snapshot }
+    | { type: 'roti.set'; respondents: number; myScore?: number | null }
+    | { type: 'card.groupName'; cardId: string; groupName: string | null }
+    | { type: 'health.progress'; statements: HealthProgress[] }
+    | { type: 'health.answer'; key: string; score: number | null }
     | { type: 'cards.upsert'; cards: CardPayload[] }
     | { type: 'card.remove'; cardId: string; ungroupedCards: CardPayload[] }
     | { type: 'card.place'; cardId: string; columnId: string; index: number }
@@ -88,6 +104,8 @@ function upsertCards(cards: BoardCard[], payloads: CardPayload[]): BoardCard[] {
             reactions: existing?.reactions ?? [],
             commentCount: existing?.commentCount ?? 0,
             comments: existing?.comments ?? [],
+            sentiment: existing?.sentiment ?? null,
+            category: existing?.category ?? null,
             ...payload,
             ...(keepsOwnView && {
                 isMine: true,
@@ -95,6 +113,9 @@ function upsertCards(cards: BoardCard[], payloads: CardPayload[]): BoardCard[] {
                 content: payload.content ?? existing.content,
                 gif: payload.gif ?? existing.gif,
                 author: payload.author ?? existing.author,
+                groupName: payload.hidden
+                    ? existing.groupName
+                    : payload.groupName,
             }),
         });
     }
@@ -280,8 +301,41 @@ export function placeCard(
 
 export function boardReducer(state: Snapshot, action: BoardAction): Snapshot {
     switch (action.type) {
+        case 'insights.suggestion':
+            if (state.insights === null) {
+                return state;
+            }
+
+            return {
+                ...state,
+                insights: {
+                    ...state.insights,
+                    suggestedActions: state.insights.suggestedActions.map(
+                        (suggestion) =>
+                            suggestion.id === action.suggestedAction.id
+                                ? action.suggestedAction
+                                : suggestion,
+                    ),
+                },
+            };
         case 'replace':
             return seedTotalVersions(action.snapshot);
+        case 'roti.set':
+            return {
+                ...state,
+                roti: {
+                    myScore:
+                        action.myScore === undefined
+                            ? state.roti.myScore
+                            : action.myScore,
+                    respondents: action.respondents,
+                },
+            };
+        case 'card.groupName':
+            return updateCard(state, action.cardId, (card) => ({
+                ...card,
+                groupName: action.groupName,
+            }));
         case 'cards.upsert':
             return { ...state, cards: upsertCards(state.cards, action.cards) };
         case 'card.remove':
@@ -419,5 +473,83 @@ export function boardReducer(state: Snapshot, action: BoardAction): Snapshot {
                     commentCount: countComments(comments),
                 };
             });
+        case 'health.progress': {
+            if (!state.healthCheck) {
+                return state;
+            }
+
+            const progress = new Map(
+                action.statements.map((statement) => [
+                    statement.key,
+                    statement,
+                ]),
+            );
+
+            return {
+                ...state,
+                healthCheck: {
+                    statements: state.healthCheck.statements.map(
+                        (statement) => {
+                            const update = progress.get(statement.key);
+
+                            return update
+                                ? {
+                                      ...statement,
+                                      count: update.count,
+                                      answeredBy: update.answeredBy,
+                                  }
+                                : statement;
+                        },
+                    ),
+                },
+            };
+        }
+        case 'health.answer':
+            if (!state.healthCheck) {
+                return state;
+            }
+
+            return {
+                ...state,
+                healthCheck: {
+                    statements: state.healthCheck.statements.map((statement) =>
+                        statement.key === action.key
+                            ? { ...statement, myScore: action.score }
+                            : statement,
+                    ),
+                },
+            };
+        case 'survey.upsert':
+            return {
+                ...state,
+                surveys: [
+                    ...state.surveys.filter(
+                        (survey) => survey.id !== action.survey.id,
+                    ),
+                    action.survey,
+                ].sort((a, b) => a.position - b.position),
+            };
+        case 'survey.remove':
+            return {
+                ...state,
+                surveys: state.surveys.filter(
+                    (survey) => survey.id !== action.surveyId,
+                ),
+            };
+        case 'survey.counts':
+            return {
+                ...state,
+                surveys: state.surveys.map((survey) =>
+                    survey.id === action.surveyId
+                        ? {
+                              ...survey,
+                              responseCount:
+                                  action.responseCount ?? survey.responseCount,
+                              commentCount:
+                                  action.commentCount ?? survey.commentCount,
+                          }
+                        : survey,
+                ),
+            };
     }
 }

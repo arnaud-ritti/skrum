@@ -1,4 +1,4 @@
-import { useCallback, useReducer, useRef, useState } from 'react';
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import RetroSnapshotsController from '@/actions/App/Http/Controllers/Retros/RetroSnapshotsController';
 import { useTrans } from '@/hooks/use-trans';
@@ -8,20 +8,28 @@ import {
     seedTotalVersions,
     type BoardAction,
 } from '@/lib/retro/board-reducer';
+import {
+    createSurveyRefetcher,
+    needsSurveyRefetch,
+    type SurveyRefetcher,
+} from '@/lib/retro/survey-api';
 import type {
     ActionItem,
     BoardColumn,
     CardComment,
     CardPayload,
     CommentNotificationPayload,
+    HealthProgress,
     PresenceMember,
     ReactionSummary,
     Snapshot,
+    SurveyComment,
 } from '@/lib/retro/types';
 import { useCommentNotifications } from './use-comment-notifications';
 import { useRetroChannel, type RetroEvent } from './use-retro-channel';
 
 const SessionExpiredStatuses = [401, 419];
+const DebouncedRefetchMs = 1_000;
 
 export type BoardStatus = 'active' | 'ended' | 'deleted';
 
@@ -38,6 +46,7 @@ export function useRetroBoard(initial: Snapshot) {
     const latestRefetch = useRef(0);
     const bufferedActions = useRef<BoardAction[] | null>(null);
     const latestBoard = useRef(board);
+    const surveyRefetcher = useRef<SurveyRefetcher | null>(null);
     const retroId = initial.retro.id;
 
     latestBoard.current = board;
@@ -117,6 +126,32 @@ export function useRetroBoard(initial: Snapshot) {
             }
         }
     }, [retroId, end, flushBufferedActions]);
+
+    const pendingRefetch = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    /**
+     * Several viewers rating or a summary finishing produce bursts of
+     * events; one snapshot a second later covers them all.
+     */
+    const scheduleRefetch = useCallback(() => {
+        if (pendingRefetch.current !== null) {
+            return;
+        }
+
+        pendingRefetch.current = setTimeout(() => {
+            pendingRefetch.current = null;
+            void refetch();
+        }, DebouncedRefetchMs);
+    }, [refetch]);
+
+    useEffect(
+        () => () => {
+            if (pendingRefetch.current !== null) {
+                clearTimeout(pendingRefetch.current);
+            }
+        },
+        [],
+    );
 
     const onEvent = useCallback(
         ({ name, payload }: RetroEvent) => {
@@ -207,6 +242,79 @@ export function useRetroBoard(initial: Snapshot) {
                         actionItemId: payload.actionItemId as string,
                     });
                     break;
+                case 'health.answered':
+                    apply({
+                        type: 'health.progress',
+                        statements: payload.statements as HealthProgress[],
+                    });
+                    break;
+                case 'survey.changed': {
+                    const surveyId = payload.surveyId as string;
+                    const local = latestBoard.current.surveys.find(
+                        (survey) => survey.id === surveyId,
+                    );
+
+                    apply({
+                        type: 'survey.counts',
+                        surveyId,
+                        responseCount: payload.responseCount as number,
+                    });
+
+                    if (needsSurveyRefetch(local, payload.version as number)) {
+                        surveyRefetcher.current?.schedule(surveyId);
+                    }
+
+                    break;
+                }
+                case 'survey.deleted':
+                    surveyRefetcher.current?.invalidate(
+                        payload.surveyId as string,
+                    );
+                    apply({
+                        type: 'survey.remove',
+                        surveyId: payload.surveyId as string,
+                    });
+                    break;
+                case 'survey.discussion.changed': {
+                    const surveyId = payload.surveyId as string;
+
+                    apply({
+                        type: 'survey.counts',
+                        surveyId,
+                        commentCount: payload.commentCount as number,
+                    });
+
+                    if (
+                        latestBoard.current.surveys.find(
+                            (survey) => survey.id === surveyId,
+                        )?.resultsVisible
+                    ) {
+                        surveyRefetcher.current?.schedule(surveyId);
+                    }
+
+                    break;
+                }
+                case 'card.group-named':
+                    apply({
+                        type: 'card.groupName',
+                        cardId: payload.cardId as string,
+                        groupName: payload.groupName as string | null,
+                    });
+                    break;
+                case 'roti.changed':
+                    apply({
+                        type: 'roti.set',
+                        respondents: payload.respondents as number,
+                    });
+
+                    if (latestBoard.current.retro.phase === 'completed') {
+                        scheduleRefetch();
+                    }
+                    break;
+                case 'insights.changed':
+                case 'results.changed':
+                    scheduleRefetch();
+                    break;
                 case 'phase.changed':
                 case 'settings.changed':
                     void refetch();
@@ -216,7 +324,7 @@ export function useRetroBoard(initial: Snapshot) {
                     break;
             }
         },
-        [apply, refetch, end],
+        [apply, refetch, end, scheduleRefetch],
     );
 
     const onJoining = useCallback(
@@ -244,19 +352,35 @@ export function useRetroBoard(initial: Snapshot) {
         [apply],
     );
 
+    const invalidateSurvey = useCallback(
+        (surveyId: string) => surveyRefetcher.current?.invalidate(surveyId),
+        [],
+    );
+
+    const onOwnSurveyComment = useCallback(
+        (comment: SurveyComment) =>
+            surveyRefetcher.current?.schedule(comment.surveyId),
+        [],
+    );
+
     const onCommentNotification = useCallback(
         (notification: CommentNotificationPayload) => {
-            notifications.notify(notification.cardId);
-            toast(
-                notification.threadId === notification.commentId
-                    ? t('New comment on your card')
-                    : t('New reply in a thread you follow'),
-                {
-                    description: notification.authorName
-                        ? `${notification.authorName}: ${notification.excerpt}`
-                        : notification.excerpt,
-                },
-            );
+            if (notification.cardId) {
+                notifications.notify(notification.cardId);
+            }
+
+            const isReply = notification.threadId !== notification.commentId;
+            const title = isReply
+                ? t('New reply in a thread you follow')
+                : notification.surveyId
+                  ? t('New comment on your survey')
+                  : t('New comment on your card');
+
+            toast(title, {
+                description: notification.authorName
+                    ? `${notification.authorName}: ${notification.excerpt}`
+                    : notification.excerpt,
+            });
         },
         [notifications.notify, t],
     );
@@ -271,6 +395,7 @@ export function useRetroBoard(initial: Snapshot) {
             onJoining,
             onOwnCard,
             onOwnComment,
+            onOwnSurveyComment,
             onCommentNotification,
         },
     );
@@ -314,6 +439,31 @@ export function useRetroBoard(initial: Snapshot) {
         [errorMessage],
     );
 
+    useEffect(() => {
+        const refetcher = createSurveyRefetcher(retroId, {
+            onSurvey: (survey) => {
+                if (isActive.current) {
+                    apply({ type: 'survey.upsert', survey });
+                }
+            },
+            onGone: (surveyId) => {
+                if (isActive.current) {
+                    apply({ type: 'survey.remove', surveyId });
+                }
+            },
+            onError: (error) => {
+                handleError(error);
+            },
+        });
+
+        surveyRefetcher.current = refetcher;
+
+        return () => {
+            refetcher.cancel();
+            surveyRefetcher.current = null;
+        };
+    }, [retroId, apply, handleError]);
+
     const run = useCallback(
         async <T>(mutation: Promise<T>): Promise<T | undefined> => {
             try {
@@ -350,6 +500,7 @@ export function useRetroBoard(initial: Snapshot) {
         dispatch,
         apply,
         refetch,
+        invalidateSurvey,
         status,
         online,
         connected,

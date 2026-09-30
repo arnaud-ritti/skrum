@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\HealthCheck\ManageTeamHealthStatements;
 use App\Enums\WorkspaceRole;
 use App\Models\Team;
 use App\Models\User;
@@ -129,4 +130,59 @@ it('forbids members from managing team membership', function () {
     $this->actingAs($member)
         ->post(route('teams.members.store', [$workspace, $team]), ['user_id' => $member->id])
         ->assertForbidden();
+});
+
+it('shows the team health check statements to every team member', function () {
+    $member = User::factory()->create();
+    $workspace = workspaceWith($member, WorkspaceRole::Member);
+    $team = Team::factory()->for($workspace)->withMember($member)->create();
+
+    $this->actingAs($member)
+        ->get(route('teams.show', [$workspace, $team]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('healthStatements', 6)
+            ->where('healthStatements.0', [
+                'id' => 'interaction',
+                'key' => 'interaction',
+                'label' => 'Interaction',
+                'text' => 'Interaction with colleagues was productive',
+                'isBuiltin' => true,
+                'isArchived' => false,
+            ])
+            ->where('canManageHealthStatements', false));
+});
+
+it('lists archived statements with their row ids for managers', function () {
+    $admin = User::factory()->create();
+    $workspace = workspaceWith($admin, WorkspaceRole::Admin);
+    $team = Team::factory()->for($workspace)->create();
+    app(ManageTeamHealthStatements::class)->archive($team, 'vision');
+    $vision = $team->healthStatements()->where('builtin', 'vision')->sole();
+
+    $this->actingAs($admin)
+        ->get(route('teams.show', [$workspace, $team]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('healthStatements.3.id', $vision->id)
+            ->where('healthStatements.3.isArchived', true)
+            ->where('canManageHealthStatements', true));
+});
+
+it('presents built-in statements translated and custom statements as stored', function () {
+    $admin = User::factory()->create(['locale' => 'fr']);
+    $workspace = workspaceWith($admin, WorkspaceRole::Admin);
+    $team = Team::factory()->for($workspace)->create();
+    $custom = app(ManageTeamHealthStatements::class)->add($team, 'We ship calmly', 'Calm');
+
+    $this->actingAs($admin)
+        ->get(route('teams.show', [$workspace, $team]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('healthStatements.0.text', 'Les échanges avec mes collègues ont été productifs')
+            ->where('healthStatements.6', [
+                'id' => $custom->id,
+                'key' => $custom->id,
+                'label' => 'Calm',
+                'text' => 'We ship calmly',
+                'isBuiltin' => false,
+                'isArchived' => false,
+            ]));
 });

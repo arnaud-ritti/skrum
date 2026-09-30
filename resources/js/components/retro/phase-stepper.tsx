@@ -3,11 +3,13 @@ import RetroPhasesController from '@/actions/App/Http/Controllers/Retros/RetroPh
 import { Button } from '@/components/ui/button';
 import { useTrans } from '@/hooks/use-trans';
 import { retroRequest } from '@/lib/retro/api';
-import { Phases, type RetroPhase } from '@/lib/retro/types';
+import type { RetroPhase } from '@/lib/retro/types';
 import { cn } from '@/lib/utils';
 import { useBoard } from './board-context';
 
 export const PhaseLabels: Record<RetroPhase, string> = {
+    health_check: 'Health check',
+    icebreaker: 'Icebreaker',
     writing: 'Writing',
     grouping: 'Grouping',
     voting: 'Voting',
@@ -24,9 +26,10 @@ export function PhaseStepper({ phase, onChanged }: Props) {
     const { t } = useTrans();
     const ctx = useBoard();
     const [busy, setBusy] = useState(false);
-    const current = Phases.indexOf(phase);
-    const previous = Phases[current - 1];
-    const next = Phases[current + 1];
+    const phases = ctx.board.retro.phases;
+    const current = phases.indexOf(phase);
+    const previous = phases[current - 1];
+    const next = phases[current + 1];
 
     const move = async (target: RetroPhase) => {
         setBusy(true);
@@ -63,7 +66,7 @@ export function PhaseStepper({ phase, onChanged }: Props) {
                 className="flex items-center gap-1 text-xs"
                 aria-label={t('Phases')}
             >
-                {Phases.map((step, index) => (
+                {phases.map((step, index) => (
                     <li
                         key={step}
                         aria-current={step === phase ? 'step' : undefined}

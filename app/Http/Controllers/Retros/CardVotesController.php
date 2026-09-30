@@ -40,7 +40,7 @@ class CardVotesController extends Controller
 
             $used = $locked->votes()->where('participant_id', $participant->id)->count();
 
-            if ($used >= $locked->votes_per_participant) {
+            if ($used >= $locked->voteLimit()) {
                 throw ValidationException::withMessages(['votes' => __('You have no votes left.')]);
             }
 
@@ -120,7 +120,7 @@ class CardVotesController extends Controller
         return [
             'cardId' => $card->id,
             'myVotes' => $card->votes()->where('participant_id', $participant->id)->count(),
-            'remainingVotes' => max(0, $retro->votes_per_participant - $used),
+            'remainingVotes' => max(0, $retro->voteLimit() - $used),
             'votesCast' => $totals['votesCast'],
             'votesVersion' => $totals['votesVersion'],
             'total' => $totals['total'],

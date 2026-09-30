@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\CardSentiment;
 use Database\Factories\CardFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -19,9 +20,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string|null $gif_id
  * @property int $position
  * @property string|null $parent_card_id
+ * @property string|null $group_name
+ * @property CardSentiment|null $sentiment
+ * @property string|null $category
  * @property-read Participant $participant
  */
-#[Fillable(['column_id', 'participant_id', 'content', 'gif_id', 'position', 'parent_card_id'])]
+#[Fillable(['column_id', 'participant_id', 'content', 'gif_id', 'position', 'parent_card_id', 'group_name'])]
 class Card extends Model
 {
     /** @use HasFactory<CardFactory> */
@@ -77,6 +81,21 @@ class Card extends Model
         return $this->hasMany(CardComment::class)->oldest();
     }
 
+    public function clearGroupNameWhenEmpty(): bool
+    {
+        if ($this->group_name === null) {
+            return false;
+        }
+
+        if ($this->children()->exists()) {
+            return false;
+        }
+
+        $this->update(['group_name' => null]);
+
+        return true;
+    }
+
     public function isTopLevel(): bool
     {
         return $this->parent_card_id === null;
@@ -86,6 +105,7 @@ class Card extends Model
     {
         return [
             'position' => 'integer',
+            'sentiment' => CardSentiment::class,
         ];
     }
 }

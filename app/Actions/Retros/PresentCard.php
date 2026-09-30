@@ -2,7 +2,6 @@
 
 namespace App\Actions\Retros;
 
-use App\Enums\RetroPhase;
 use App\Models\Card;
 use App\Models\Participant;
 use App\Models\Retro;
@@ -22,13 +21,14 @@ class PresentCard
      *     hidden: bool,
      *     content: ?string,
      *     gif: ?array{id: string, previewUrl: string, url: string},
-     *     author: ?array{id: string, name: string}
+     *     author: ?array{id: string, name: string},
+     *     groupName: ?string
      * }
      */
     public function handle(Card $card, Retro $retro, ?Participant $viewer): array
     {
         $isMine = $viewer !== null && $card->participant_id === $viewer->id;
-        $isHidden = ! $isMine && $retro->phase === RetroPhase::Writing;
+        $isHidden = ! $isMine && $retro->phase->hidesOthersCards();
         $showsAuthor = ! $isHidden && ($isMine || ! $retro->is_anonymous);
 
         return [
@@ -47,6 +47,7 @@ class PresentCard
             'author' => $showsAuthor
                 ? ['id' => $card->participant_id, 'name' => $card->participant->displayName()]
                 : null,
+            'groupName' => $isHidden ? null : $card->group_name,
         ];
     }
 }

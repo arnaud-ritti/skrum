@@ -1,11 +1,14 @@
 <?php
 
+use App\Actions\ActionItems\CreateActionItem;
+use App\Actions\Retros\PresentActionItem;
 use App\Enums\RetroPhase;
 use App\Events\Retros\ActionItemDeleted;
 use App\Events\Retros\ActionItemSaved;
 use App\Models\ActionItem;
 use App\Models\Participant;
 use App\Models\Retro;
+use App\Models\RetroTheme;
 use Illuminate\Support\Facades\Event;
 
 beforeEach(function () {
@@ -78,4 +81,44 @@ it('returns 404 for action items of another retro', function () {
     $this->actingAs($user)
         ->patchJson(route('retros.action-items.update', [$retro, ActionItem::factory()->create()]), ['is_done' => true])
         ->assertNotFound();
+});
+
+it('creates action items through the shared action', function () {
+    $retro = Retro::factory()->inPhase(RetroPhase::Discussing)->create();
+    [, $author] = retroMember($retro);
+    $theme = RetroTheme::factory()->create(['retro_id' => $retro->id, 'name' => 'Release pain']);
+
+    $item = app(CreateActionItem::class)->handle($retro, $author, 'Automate the release', null, $theme);
+
+    expect($item->only(['content', 'created_by_participant_id', 'theme_id', 'theme_name']))->toBe([
+        'content' => 'Automate the release',
+        'created_by_participant_id' => $author->id,
+        'theme_id' => $theme->id,
+        'theme_name' => 'Release pain',
+    ]);
+});
+
+it('keeps the theme name of an action item after its theme is removed', function () {
+    $retro = Retro::factory()->inPhase(RetroPhase::Discussing)->create();
+    $theme = RetroTheme::factory()->create(['retro_id' => $retro->id, 'name' => 'Release pain']);
+    $item = ActionItem::factory()->create(['retro_id' => $retro->id, 'theme_id' => $theme->id, 'theme_name' => 'Release pain']);
+
+    expect(app(PresentActionItem::class)->handle($item->fresh()))->toMatchArray(['themeId' => $theme->id, 'themeName' => 'Release pain']);
+
+    $theme->delete();
+
+    expect(app(PresentActionItem::class)->handle($item->fresh()))->toMatchArray(['themeId' => null, 'themeName' => 'Release pain']);
+});
+
+it('never lets clients write the theme of an action item', function () {
+    $retro = Retro::factory()->inPhase(RetroPhase::Discussing)->create();
+    [$user] = retroMember($retro);
+    $theme = RetroTheme::factory()->create(['retro_id' => $retro->id]);
+
+    $id = $this->actingAs($user)
+        ->postJson(route('retros.action-items.store', $retro), ['content' => 'X', 'theme_id' => $theme->id, 'theme_name' => 'Forged'])
+        ->assertCreated()
+        ->json('actionItem.id');
+
+    expect(ActionItem::find($id)->only(['theme_id', 'theme_name']))->toBe(['theme_id' => null, 'theme_name' => null]);
 });

@@ -2,6 +2,8 @@
 
 namespace App\Actions\Retros;
 
+use App\Actions\HealthCheck\PresentHealthCheck;
+use App\Actions\Surveys\PresentSurvey;
 use App\Enums\RetroPhase;
 use App\Enums\WorkspaceRole;
 use App\Http\Controllers\EmojiDataController;
@@ -12,6 +14,7 @@ use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\User;
 use App\Support\Gifs\GifCatalog;
+use App\Support\Llm\Llm;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -24,6 +27,13 @@ class BuildBoardSnapshot
         private SummarizeReactions $summarizeReactions,
         private PresentComment $presentComment,
         private GifCatalog $gifCatalog,
+        private PresentHealthCheck $presentHealthCheck,
+        private PresentSurvey $presentSurvey,
+        private PresentParticipant $presentParticipant,
+        private BuildResults $buildResults,
+        private BuildInsights $buildInsights,
+        private SuggestionGuard $suggestionGuard,
+        private Llm $llm,
     ) {}
 
     /**
@@ -42,15 +52,21 @@ class BuildBoardSnapshot
 
         $showsTotals = in_array($retro->phase, [RetroPhase::Discussing, RetroPhase::Completed], true)
             || ($retro->phase === RetroPhase::Voting && ! $retro->hide_vote_counts);
+        $showsCardInsights = $this->llm->isConfigured();
 
         [$votesVersion, $voteTotals, $myVotes] = $this->readVotes($retro, $viewer);
+
+        $surveys = $this->presentSurvey->many($retro, $viewer);
 
         return [
             'retro' => [
                 'id' => $retro->id,
                 'title' => $retro->title,
-                'template' => $retro->template->value,
+                'template' => $retro->template,
                 'phase' => $retro->phase->value,
+                'phases' => array_map(fn (RetroPhase $phase) => $phase->value, $retro->phases()),
+                'healthCheckEnabled' => $retro->health_check_enabled,
+                'icebreakerEnabled' => $retro->icebreaker_enabled,
                 'isAnonymous' => $retro->is_anonymous,
                 'reactionsEnabled' => $retro->reactions_enabled,
                 'cursorsEnabled' => $retro->cursors_enabled,
@@ -59,7 +75,9 @@ class BuildBoardSnapshot
                 'hideVoteCounts' => $retro->hide_vote_counts,
                 'isLocked' => $retro->is_locked,
                 'presentationMode' => $retro->presentation_mode,
-                'votesPerParticipant' => $retro->votes_per_participant,
+                'aiSummaryEnabled' => $retro->ai_summary_enabled,
+                'votesPerParticipant' => $retro->voteLimit(),
+                'votesAuto' => $retro->votes_per_participant === null,
                 'guestAccessEnabled' => $retro->guest_access_enabled,
                 'guestUrl' => $retro->guest_access_enabled && $retro->isFacilitator($viewer)
                     ? route('retros.join.show', $retro->guest_token)
@@ -73,11 +91,12 @@ class BuildBoardSnapshot
                 'participantId' => $viewer->id,
                 'isFacilitator' => $retro->isFacilitator($viewer),
                 'isGuest' => $viewer->isGuest(),
-                'remainingVotes' => max(0, $retro->votes_per_participant - (int) $myVotes->sum()),
+                'canHandleSuggestions' => $this->suggestionGuard->allows($retro, $retro->participants->firstWhere('id', $viewer->id) ?? $viewer),
+                'remainingVotes' => max(0, $retro->voteLimit() - (int) $myVotes->sum()),
                 'transferCandidates' => $retro->isFacilitator($viewer) ? $this->transferCandidates($retro, $viewer) : [],
             ],
             'columns' => $this->presentColumns->handle($retro),
-            'cards' => $retro->cards->sortBy('position')->map(function (Card $card) use ($retro, $viewer, $showsTotals, $voteTotals, $myVotes) {
+            'cards' => $retro->cards->sortBy('position')->map(function (Card $card) use ($retro, $viewer, $showsTotals, $voteTotals, $myVotes, $showsCardInsights) {
                 $presented = $this->presentCard->handle($card, $retro, $viewer);
                 $isHidden = $presented['hidden'];
 
@@ -88,17 +107,19 @@ class BuildBoardSnapshot
                     'reactions' => $isHidden ? [] : $this->summarizeReactions->handle($card->reactions, $retro, $viewer),
                     'commentCount' => $isHidden ? 0 : $card->comments->reject(fn (CardComment $comment) => $comment->isDeleted())->count(),
                     'comments' => $isHidden ? [] : $this->presentComment->threads($card->comments, $retro, $viewer),
+                    'sentiment' => $showsCardInsights && ! $isHidden ? $card->sentiment?->value : null,
+                    'category' => $showsCardInsights && ! $isHidden ? $card->category : null,
                 ];
             })->values()->all(),
-            'participants' => $retro->participants->map(fn (Participant $participant) => [
-                'id' => $participant->id,
-                'name' => $participant->displayName(),
-                'avatarUrl' => $participant->avatarUrl(),
-                'isGuest' => $participant->isGuest(),
-            ])->values()->all(),
+            'participants' => $retro->participants->map(fn (Participant $participant) => $this->presentParticipant->handle($participant))->values()->all(),
             'actionItems' => $retro->actionItems->sortBy('created_at')
                 ->map(fn (ActionItem $item) => $this->presentActionItem->handle($item))
                 ->values()->all(),
+            'insights' => $this->buildInsights->handle($retro),
+            'roti' => $this->roti($retro, $viewer),
+            'surveys' => $surveys,
+            'results' => $this->buildResults->handle($retro, $viewer, $surveys),
+            'healthCheck' => $this->presentHealthCheck->handle($retro, $viewer),
             'votesCast' => $retro->phase === RetroPhase::Voting ? (int) $voteTotals->sum() : null,
             'votesVersion' => $votesVersion,
             'links' => [
@@ -107,6 +128,10 @@ class BuildBoardSnapshot
             'emojiData' => [
                 'baseUrl' => '/emoji-data/'.config('services.emoji_data.version'),
                 'locale' => EmojiDataController::emojibaseLocale(app()->getLocale()),
+            ],
+            'features' => [
+                'llm' => $this->llm->isConfigured(),
+                'llmProvider' => $this->llm->providerName(),
             ],
             'serverTime' => now()->utc()->format('Y-m-d\TH:i:s.v\Z'),
         ];
@@ -161,5 +186,21 @@ class BuildBoardSnapshot
             ->get(['id', 'name'])
             ->map(fn (User $user) => ['userId' => $user->id, 'name' => $user->name])
             ->all();
+    }
+
+    /**
+     * @return array{
+     *     myScore: ?int,
+     *     respondents: int
+     * }
+     */
+    private function roti(Retro $retro, Participant $viewer): array
+    {
+        $myScore = $retro->rotiVotes()->where('participant_id', $viewer->id)->value('score');
+
+        return [
+            'myScore' => $myScore === null ? null : (int) $myScore,
+            'respondents' => $retro->rotiVotes()->count(),
+        ];
     }
 }

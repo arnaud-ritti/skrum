@@ -2,11 +2,16 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\RetroTemplate;
+use App\Actions\HealthCheck\PresentHealthStatement;
+use App\Actions\HealthCheck\TeamHealthStatements;
+use App\Actions\Retros\BuildTemplateCatalogue;
+use App\Enums\TemplateCategory;
 use App\Models\Retro;
 use App\Models\Team;
+use App\Models\TeamHealthStatement;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Support\Llm\Llm;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -15,6 +20,11 @@ use Inertia\Response;
 
 class TeamsController extends Controller
 {
+    public function __construct(
+        private TeamHealthStatements $teamHealthStatements,
+        private PresentHealthStatement $presentHealthStatement,
+    ) {}
+
     public function store(Request $request, Workspace $workspace): RedirectResponse
     {
         Gate::authorize('create', [Team::class, $workspace]);
@@ -28,7 +38,7 @@ class TeamsController extends Controller
         return to_route('teams.show', [$workspace, $team]);
     }
 
-    public function show(Request $request, Workspace $workspace, Team $team): Response
+    public function show(Request $request, Workspace $workspace, Team $team, Llm $llm, BuildTemplateCatalogue $buildTemplateCatalogue): Response
     {
         Gate::authorize('view', $team);
 
@@ -51,8 +61,19 @@ class TeamsController extends Controller
                 'phaseLabel' => $retro->phase->label(),
                 'createdAt' => $retro->created_at?->toIso8601String(),
             ]),
-            'templates' => RetroTemplate::options(),
+            'templateCategories' => TemplateCategory::options(),
+            'catalogue' => Inertia::optional(fn () => $buildTemplateCatalogue->handle($workspace)),
+            'llm' => [
+                'enabled' => $llm->isConfigured(),
+                'provider' => $llm->providerName(),
+            ],
             'canCreateRetro' => $request->user()->can('createRetro', $team),
+            'healthStatements' => $this->teamHealthStatements->all($team)->map(fn (TeamHealthStatement $statement) => [
+                'id' => $statement->id ?? $statement->key(),
+                ...$this->presentHealthStatement->handle($statement),
+                'isArchived' => $statement->isArchived(),
+            ])->values(),
+            'canManageHealthStatements' => $request->user()->can('update', $team),
         ]);
     }
 

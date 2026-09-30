@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\File;
 
 function usedTranslationKeys(): array
@@ -120,4 +121,12 @@ it('keeps every english key in every other locale', function (string $locale) {
     $localeKeys = array_keys(json_decode(File::get(lang_path("{$locale}.json")), true));
 
     expect(array_values(array_diff($englishKeys, $localeKeys)))->toBe([]);
+})->with(['fr', 'es', 'de']);
+
+it('keeps every template line in every other locale', function (string $locale) {
+    $english = array_keys(Arr::dot(require lang_path('en/templates.php')));
+    $translated = array_keys(Arr::dot(require lang_path("{$locale}/templates.php")));
+
+    expect(array_values(array_diff($english, $translated)))->toBe([])
+        ->and(array_values(array_diff($translated, $english)))->toBe([]);
 })->with(['fr', 'es', 'de']);

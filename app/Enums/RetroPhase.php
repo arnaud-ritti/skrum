@@ -4,36 +4,29 @@ namespace App\Enums;
 
 enum RetroPhase: string
 {
+    case HealthCheck = 'health_check';
+    case Icebreaker = 'icebreaker';
     case Writing = 'writing';
     case Grouping = 'grouping';
     case Voting = 'voting';
     case Discussing = 'discussing';
     case Completed = 'completed';
 
-    public function next(): ?self
+    public function isOpen(): bool
     {
-        $cases = self::cases();
-        $index = array_search($this, $cases, true);
-
-        return $cases[$index + 1] ?? null;
+        return $this !== self::Completed;
     }
 
-    public function previous(): ?self
+    public function hidesOthersCards(): bool
     {
-        $cases = self::cases();
-        $index = array_search($this, $cases, true);
-
-        return $cases[$index - 1] ?? null;
-    }
-
-    public function isAdjacentTo(self $other): bool
-    {
-        return $this->next() === $other || $this->previous() === $other;
+        return in_array($this, [self::HealthCheck, self::Icebreaker, self::Writing], true);
     }
 
     public function label(): string
     {
         return match ($this) {
+            self::HealthCheck => __('Health check'),
+            self::Icebreaker => __('Icebreaker'),
             self::Writing => __('Writing'),
             self::Grouping => __('Grouping'),
             self::Voting => __('Voting'),

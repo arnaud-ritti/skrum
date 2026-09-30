@@ -11,6 +11,7 @@ class PresentColumns
      * @return array<int, array{
      *     id: string,
      *     title: string,
+     *     description: ?string,
      *     color: string,
      *     position: int
      * }>
@@ -20,6 +21,7 @@ class PresentColumns
         return $retro->columns()->get()->map(fn (Column $column) => [
             'id' => $column->id,
             'title' => $column->title,
+            'description' => $column->description,
             'color' => $column->color->value,
             'position' => $column->position,
         ])->values()->all();

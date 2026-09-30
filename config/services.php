@@ -47,6 +47,13 @@ return [
         'rating' => env('SKRUM_GIF_RATING', 'pg'),
     ],
 
+    'llm' => [
+        'provider' => env('SKRUM_LLM_PROVIDER'),
+        'key' => env('SKRUM_LLM_API_KEY'),
+        'model' => env('SKRUM_LLM_MODEL'),
+        'base_url' => env('SKRUM_LLM_BASE_URL'),
+    ],
+
     'emoji_data' => [
         'version' => '17.0.0',
     ],

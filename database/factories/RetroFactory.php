@@ -3,7 +3,6 @@
 namespace Database\Factories;
 
 use App\Enums\RetroPhase;
-use App\Enums\RetroTemplate;
 use App\Models\Retro;
 use App\Models\Team;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -19,8 +18,9 @@ class RetroFactory extends Factory
         return [
             'team_id' => Team::factory(),
             'title' => fake()->sentence(3),
-            'template' => RetroTemplate::StartStopContinue,
+            'template' => 'start_stop_continue',
             'phase' => RetroPhase::Writing,
+            'votes_per_participant' => 5,
             'guest_token' => Str::random(40),
         ];
     }
@@ -38,5 +38,15 @@ class RetroFactory extends Factory
     public function withGuestAccess(): static
     {
         return $this->state(fn () => ['guest_access_enabled' => true]);
+    }
+
+    public function withHealthCheck(): static
+    {
+        return $this->state(fn () => ['health_check_enabled' => true]);
+    }
+
+    public function withIcebreaker(): static
+    {
+        return $this->state(fn () => ['icebreaker_enabled' => true]);
     }
 }

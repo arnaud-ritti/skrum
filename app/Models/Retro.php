@@ -3,7 +3,7 @@
 namespace App\Models;
 
 use App\Enums\RetroPhase;
-use App\Enums\RetroTemplate;
+use App\Enums\SummaryStatus;
 use Database\Factories\RetroFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -18,11 +18,11 @@ use Illuminate\Support\Carbon;
  * @property string $id
  * @property string $team_id
  * @property string $title
- * @property RetroTemplate $template
+ * @property string $template
  * @property RetroPhase $phase
  * @property string|null $facilitator_participant_id
  * @property bool $is_anonymous
- * @property int $votes_per_participant
+ * @property int|null $votes_per_participant
  * @property int $votes_version
  * @property bool $guest_access_enabled
  * @property bool $reactions_enabled
@@ -31,6 +31,14 @@ use Illuminate\Support\Carbon;
  * @property bool $hide_vote_counts
  * @property bool $is_locked
  * @property bool $presentation_mode
+ * @property bool $health_check_enabled
+ * @property bool $icebreaker_enabled
+ * @property bool $ai_summary_enabled
+ * @property string|null $workspace_template_id
+ * @property string|null $summary
+ * @property Carbon|null $summary_generated_at
+ * @property SummaryStatus|null $summary_status
+ * @property Carbon|null $summary_requested_at
  * @property string $guest_token
  * @property Carbon|null $timer_ends_at
  * @property string|null $highlighted_card_id
@@ -41,7 +49,9 @@ use Illuminate\Support\Carbon;
 #[Fillable([
     'title', 'template', 'phase', 'facilitator_participant_id', 'is_anonymous', 'votes_per_participant',
     'guest_access_enabled', 'guest_token', 'timer_ends_at', 'highlighted_card_id', 'completed_at',
-    'reactions_enabled', 'cursors_enabled', 'gifs_enabled', 'hide_vote_counts', 'is_locked', 'presentation_mode',
+    'reactions_enabled', 'cursors_enabled', 'gifs_enabled', 'hide_vote_counts', 'is_locked', 'presentation_mode', 'ai_summary_enabled',
+    'health_check_enabled', 'icebreaker_enabled', 'workspace_template_id',
+    'summary', 'summary_generated_at', 'summary_status', 'summary_requested_at',
 ])]
 #[Hidden(['guest_token'])]
 class Retro extends Model
@@ -50,6 +60,27 @@ class Retro extends Model
     use HasFactory;
 
     use HasUuids;
+
+    public const SummaryPendingTimeoutMinutes = 10;
+
+    public function voteLimit(): int
+    {
+        if ($this->votes_per_participant !== null) {
+            return $this->votes_per_participant;
+        }
+
+        $topLevelCards = $this->relationLoaded('cards')
+            ? $this->cards->whereNull('parent_card_id')->count()
+            : $this->cards()->whereNull('parent_card_id')->count();
+
+        return min(10, $topLevelCards + 3);
+    }
+
+    /** @return BelongsTo<WorkspaceTemplate, $this> */
+    public function workspaceTemplate(): BelongsTo
+    {
+        return $this->belongsTo(WorkspaceTemplate::class);
+    }
 
     /** @return BelongsTo<Team, $this> */
     public function team(): BelongsTo
@@ -81,16 +112,58 @@ class Retro extends Model
         return $this->hasMany(CardComment::class);
     }
 
+    /** @return HasMany<Survey, $this> */
+    public function surveys(): HasMany
+    {
+        return $this->hasMany(Survey::class)->orderBy('position');
+    }
+
+    /** @return HasMany<SurveyComment, $this> */
+    public function surveyComments(): HasMany
+    {
+        return $this->hasMany(SurveyComment::class);
+    }
+
     /** @return HasMany<Vote, $this> */
     public function votes(): HasMany
     {
         return $this->hasMany(Vote::class);
     }
 
+    /** @return HasMany<RotiVote, $this> */
+    public function rotiVotes(): HasMany
+    {
+        return $this->hasMany(RotiVote::class);
+    }
+
     /** @return HasMany<ActionItem, $this> */
     public function actionItems(): HasMany
     {
         return $this->hasMany(ActionItem::class);
+    }
+
+    /** @return HasMany<RetroTheme, $this> */
+    public function themes(): HasMany
+    {
+        return $this->hasMany(RetroTheme::class)->orderBy('position');
+    }
+
+    /** @return HasMany<SuggestedAction, $this> */
+    public function suggestedActions(): HasMany
+    {
+        return $this->hasMany(SuggestedAction::class)->orderBy('position');
+    }
+
+    /** @return HasMany<RetroHealthStatement, $this> */
+    public function healthStatements(): HasMany
+    {
+        return $this->hasMany(RetroHealthStatement::class)->orderBy('position');
+    }
+
+    /** @return HasMany<HealthCheckAnswer, $this> */
+    public function healthCheckAnswers(): HasMany
+    {
+        return $this->hasMany(HealthCheckAnswer::class);
     }
 
     /** @return BelongsTo<Participant, $this> */
@@ -104,10 +177,70 @@ class Retro extends Model
         return $this->facilitator_participant_id === $participant->id;
     }
 
+    /**
+     * @return array<int, RetroPhase>
+     */
+    public function phases(): array
+    {
+        return array_values(array_filter(RetroPhase::cases(), fn (RetroPhase $phase): bool => match ($phase) {
+            RetroPhase::HealthCheck => (bool) $this->health_check_enabled,
+            RetroPhase::Icebreaker => (bool) $this->icebreaker_enabled,
+            default => true,
+        }));
+    }
+
+    public function firstPhase(): RetroPhase
+    {
+        return $this->phases()[0];
+    }
+
+    public function nextPhase(): ?RetroPhase
+    {
+        return $this->neighbourPhase(1);
+    }
+
+    public function previousPhase(): ?RetroPhase
+    {
+        return $this->neighbourPhase(-1);
+    }
+
+    public function canMoveTo(RetroPhase $phase): bool
+    {
+        return $phase === $this->nextPhase() || $phase === $this->previousPhase();
+    }
+
+    private function neighbourPhase(int $offset): ?RetroPhase
+    {
+        $phases = $this->phases();
+        $index = array_search($this->phase, $phases, true);
+
+        if ($index === false) {
+            return null;
+        }
+
+        return $phases[$index + $offset] ?? null;
+    }
+
+    /**
+     * A worker that died leaves the summary pending forever; after the
+     * timeout it counts as failed so the facilitator can retry.
+     */
+    public function effectiveSummaryStatus(): ?SummaryStatus
+    {
+        if ($this->summary_status !== SummaryStatus::Pending) {
+            return $this->summary_status;
+        }
+
+        if ($this->summary_requested_at === null || $this->summary_requested_at->lt(now()->subMinutes(self::SummaryPendingTimeoutMinutes))) {
+            return SummaryStatus::Failed;
+        }
+
+        return SummaryStatus::Pending;
+    }
+
     protected function casts(): array
     {
         return [
-            'template' => RetroTemplate::class,
             'phase' => RetroPhase::class,
             'is_anonymous' => 'boolean',
             'guest_access_enabled' => 'boolean',
@@ -117,10 +250,16 @@ class Retro extends Model
             'hide_vote_counts' => 'boolean',
             'is_locked' => 'boolean',
             'presentation_mode' => 'boolean',
+            'ai_summary_enabled' => 'boolean',
+            'health_check_enabled' => 'boolean',
+            'icebreaker_enabled' => 'boolean',
             'votes_per_participant' => 'integer',
             'votes_version' => 'integer',
             'timer_ends_at' => 'datetime',
             'completed_at' => 'datetime',
+            'summary_status' => SummaryStatus::class,
+            'summary_generated_at' => 'datetime',
+            'summary_requested_at' => 'datetime',
         ];
     }
 }

@@ -28,7 +28,8 @@ class ColumnsController extends Controller
         $this->authorizeEditing($retro, $participant);
 
         $validated = $request->validate([
-            'title' => ['required', 'string', 'max:60'],
+            'title' => ['required', 'string', 'max:100'],
+            'description' => ['nullable', 'string', 'max:200'],
             'color' => ['required', Rule::enum(ColumnColor::class)],
         ]);
 
@@ -47,14 +48,17 @@ class ColumnsController extends Controller
         $this->authorizeEditing($retro, $participant);
 
         $validated = $request->validate([
-            'title' => ['sometimes', 'required', 'string', 'max:60'],
+            'title' => ['sometimes', 'required', 'string', 'max:100'],
+            'description' => ['sometimes', 'nullable', 'string', 'max:200'],
             'color' => ['sometimes', Rule::enum(ColumnColor::class)],
         ]);
 
         return $this->respond($retro, $participant, function (Retro $locked) use ($column, $validated): void {
             $lockedColumn = $locked->columns()->whereKey($column->id)->firstOrFail();
 
-            $this->ensureEmpty($lockedColumn);
+            if (array_diff(array_keys($validated), ['description']) !== []) {
+                $this->ensureEmpty($lockedColumn);
+            }
 
             $lockedColumn->update($validated);
         });
@@ -82,7 +86,7 @@ class ColumnsController extends Controller
     private function authorizeEditing(Retro $retro, Participant $participant): void
     {
         RetroGuard::facilitator($retro, $participant);
-        RetroGuard::phase($retro, RetroPhase::Writing);
+        RetroGuard::phase($retro, RetroPhase::HealthCheck, RetroPhase::Icebreaker, RetroPhase::Writing);
     }
 
     private function ensureEmpty(Column $column): void

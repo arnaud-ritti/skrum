@@ -7,7 +7,7 @@ use Illuminate\Broadcasting\PrivateChannel;
 class CommentNotification extends RetroBroadcastEvent
 {
     /**
-     * @param  array{cardId: string, commentId: string, threadId: string, excerpt: string, authorName?: string}  $notification
+     * @param  array{cardId?: string, surveyId?: string, commentId: string, threadId: string, excerpt: string, authorName?: string}  $notification
      */
     public function __construct(string $retroId, public string $participantId, public array $notification)
     {

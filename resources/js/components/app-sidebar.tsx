@@ -1,7 +1,8 @@
 import { Link, usePage } from '@inertiajs/react';
-import { LayoutGrid, Users } from 'lucide-react';
+import { LayoutGrid, LayoutTemplate, Users } from 'lucide-react';
 import WorkspaceMembersController from '@/actions/App/Http/Controllers/WorkspaceMembersController';
 import WorkspacesController from '@/actions/App/Http/Controllers/WorkspacesController';
+import WorkspaceTemplatesController from '@/actions/App/Http/Controllers/WorkspaceTemplatesController';
 import AppLogo from '@/components/app-logo';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
@@ -30,6 +31,14 @@ export function AppSidebar() {
             icon: LayoutGrid,
         },
     ];
+
+    if (currentWorkspace) {
+        mainNavItems.push({
+            title: 'Templates',
+            href: WorkspaceTemplatesController.index(currentWorkspace.slug),
+            icon: LayoutTemplate,
+        });
+    }
 
     if (currentWorkspace && currentWorkspace.role !== 'member') {
         mainNavItems.push({

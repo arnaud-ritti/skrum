@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\HealthCheck\FreezeHealthStatements;
 use App\Actions\Retros\BuildBoardSnapshot;
 use App\Actions\Retros\PresentCard;
 use App\Enums\RetroPhase;
@@ -8,6 +9,7 @@ use App\Models\ActionItem;
 use App\Models\Card;
 use App\Models\CardComment;
 use App\Models\CardReaction;
+use App\Models\HealthCheckAnswer;
 use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\User;
@@ -133,6 +135,8 @@ it('lists action items with assignees', function () {
         'content' => 'Fix CI',
         'isDone' => false,
         'assignee' => ['id' => $viewer->id, 'name' => $viewer->displayName()],
+        'themeId' => null,
+        'themeName' => null,
     ]]);
 });
 
@@ -244,10 +248,16 @@ it('hides gifs, reactions and comments of others when the facilitator steps back
 });
 
 it('loads reactions and comments with a constant number of queries', function () {
-    $retro = Retro::factory()->inPhase(RetroPhase::Discussing)->create();
+    $retro = Retro::factory()->withHealthCheck()->inPhase(RetroPhase::Discussing)->create();
+    app(FreezeHealthStatements::class)->handle($retro);
     [, $viewer] = retroMember($retro);
 
     $seed = function (int $cards) use ($retro): void {
+        Participant::factory()->count($cards)->create(['retro_id' => $retro->id])->each(function (Participant $participant) use ($retro): void {
+            HealthCheckAnswer::factory()->create(['retro_id' => $retro->id, 'participant_id' => $participant->id, 'statement' => 'vision']);
+            HealthCheckAnswer::factory()->create(['retro_id' => $retro->id, 'participant_id' => $participant->id, 'statement' => 'motivation']);
+        });
+
         Card::factory()->count($cards)->create(['retro_id' => $retro->id])->each(function (Card $card) use ($retro): void {
             CardReaction::factory()->count(2)->create(['retro_id' => $retro->id, 'card_id' => $card->id]);
             $thread = CardComment::factory()->create(['retro_id' => $retro->id, 'card_id' => $card->id]);
@@ -316,4 +326,38 @@ it('points the emoji picker at the self-hosted emoji data in the viewer locale',
         'baseUrl' => '/emoji-data/'.config('services.emoji_data.version'),
         'locale' => 'fr',
     ]);
+});
+
+it('hides others cards again in the pre-writing phases', function (RetroPhase $phase) {
+    $retro = Retro::factory()->withHealthCheck()->withIcebreaker()->inPhase($phase)->create();
+    [, $viewer] = retroMember($retro);
+    $othersCard = Card::factory()->create(['retro_id' => $retro->id, 'content' => 'written before moving back']);
+
+    $snapshot = snapshotFor($retro, $viewer);
+
+    expect(snapshotCard($snapshot, $othersCard))->toMatchArray(['hidden' => true, 'content' => null, 'author' => null, 'gif' => null])
+        ->and(json_encode($snapshot))->not->toContain('written before moving back');
+})->with([RetroPhase::HealthCheck, RetroPhase::Icebreaker]);
+
+it('exposes the enabled phases and toggles', function () {
+    $retro = Retro::factory()->withIcebreaker()->inPhase(RetroPhase::Icebreaker)->create();
+    [, $viewer] = retroMember($retro);
+
+    expect(snapshotFor($retro, $viewer)['retro'])->toMatchArray([
+        'phase' => 'icebreaker',
+        'phases' => ['icebreaker', 'writing', 'grouping', 'voting', 'discussing', 'completed'],
+        'healthCheckEnabled' => false,
+        'icebreakerEnabled' => true,
+    ]);
+});
+
+it('sends the effective vote limit and whether it is automatic', function () {
+    $retro = Retro::factory()->inPhase(RetroPhase::Voting)->create(['votes_per_participant' => null]);
+    [, $viewer] = retroMember($retro);
+    Card::factory()->count(2)->create(['retro_id' => $retro->id]);
+
+    $snapshot = snapshotFor($retro, $viewer);
+
+    expect($snapshot['retro'])->toMatchArray(['votesPerParticipant' => 5, 'votesAuto' => true])
+        ->and($snapshot['viewer']['remainingVotes'])->toBe(5);
 });

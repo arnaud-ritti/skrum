@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Retros;
 
+use App\Actions\ActionItems\CreateActionItem;
 use App\Actions\Retros\PresentActionItem;
 use App\Actions\Retros\RetroGuard;
 use App\Enums\RetroPhase;
@@ -19,7 +20,7 @@ use Illuminate\Validation\Rule;
 
 class ActionItemsController extends Controller
 {
-    public function __construct(private PresentActionItem $presentActionItem) {}
+    public function __construct(private PresentActionItem $presentActionItem, private CreateActionItem $createActionItem) {}
 
     public function store(Request $request, Retro $retro): JsonResponse
     {
@@ -39,12 +40,12 @@ class ActionItemsController extends Controller
             RetroGuard::phase($locked, RetroPhase::Discussing);
             RetroGuard::unlocked($locked);
 
-            $actionItem = $locked->actionItems()->create([
-                ...$validated,
-                'created_by_participant_id' => $participant->id,
-            ]);
-
-            $actionItem->load('assignee.user');
+            $actionItem = $this->createActionItem->handle(
+                $locked,
+                $participant,
+                $validated['content'],
+                $validated['assignee_participant_id'] ?? null,
+            );
 
             (new ActionItemSaved($locked->id, $this->presentActionItem->handle($actionItem)))->sendToOthers();
 

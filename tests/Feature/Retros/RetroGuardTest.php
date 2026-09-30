@@ -56,3 +56,14 @@ it('refuses reactions when they are turned off', function () {
     expect(fn () => RetroGuard::reactionsEnabled($retro))
         ->toThrow(AuthorizationException::class, 'Reactions are turned off for this board.');
 });
+
+it('allows actions in every phase but completed', function () {
+    $retro = Retro::factory()->make(['phase' => RetroPhase::HealthCheck]);
+
+    RetroGuard::open($retro);
+
+    $retro->phase = RetroPhase::Completed;
+
+    expect(fn () => RetroGuard::open($retro))
+        ->toThrow(AuthorizationException::class, 'This action is not available in the current phase.');
+});

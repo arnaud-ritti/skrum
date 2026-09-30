@@ -106,6 +106,11 @@ export function PresentationOverlay() {
                 <DialogTitle className="sr-only">
                     {t('Presentation mode')}
                 </DialogTitle>
+                {card.groupName && (
+                    <p className="text-sm font-semibold tracking-wide text-muted-foreground uppercase">
+                        {card.groupName}
+                    </p>
+                )}
                 <PresentedContent
                     card={card}
                     className="text-2xl break-words whitespace-pre-wrap"

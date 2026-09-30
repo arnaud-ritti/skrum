@@ -14,7 +14,9 @@ import { useBoard } from './board-context';
 import { CardEditor } from './card-editor';
 import { CardGif } from './card-gif';
 import { CardComments } from './card-comments';
+import { CardInsight } from './card-insight';
 import { CardReactions } from './card-reactions';
+import { GroupName } from './group-name';
 import { VoteControls } from './vote-controls';
 
 type Props = {
@@ -104,6 +106,8 @@ export function RetroCard({ card, isChild = false, footer }: Props) {
         }
     };
 
+    const groupedCards = isChild ? [] : childrenOf(ctx.board.cards, card.id);
+
     return (
         <article
             id={`card-${card.id}`}
@@ -113,6 +117,9 @@ export function RetroCard({ card, isChild = false, footer }: Props) {
                 isHighlighted && 'ring-2 ring-primary',
             )}
         >
+            {groupedCards.length > 0 && !card.hidden && (
+                <GroupName card={card} />
+            )}
             {editing ? (
                 <CardEditor
                     card={card}
@@ -121,6 +128,7 @@ export function RetroCard({ card, isChild = false, footer }: Props) {
                 />
             ) : (
                 <>
+                    <CardInsight card={card} />
                     {card.hidden ? (
                         <p className="flex items-center gap-1.5 text-muted-foreground italic">
                             <EyeOff className="size-4" aria-hidden="true" />
@@ -221,12 +229,11 @@ export function RetroCard({ card, isChild = false, footer }: Props) {
                     </div>
                 </>
             )}
-            {!isChild &&
-                childrenOf(ctx.board.cards, card.id).map((child) => (
-                    <div key={child.id} className="mt-2">
-                        <RetroCard card={child} isChild />
-                    </div>
-                ))}
+            {groupedCards.map((child) => (
+                <div key={child.id} className="mt-2">
+                    <RetroCard card={child} isChild />
+                </div>
+            ))}
         </article>
     );
 }

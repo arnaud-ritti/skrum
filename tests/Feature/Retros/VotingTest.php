@@ -1,9 +1,11 @@
 <?php
 
+use App\Actions\Retros\BuildBoardSnapshot;
 use App\Enums\RetroPhase;
 use App\Events\Retros\VoteCast;
 use App\Events\Retros\VoteRetracted;
 use App\Models\Card;
+use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\Vote;
 use Illuminate\Support\Facades\Event;
@@ -19,6 +21,11 @@ function votingRetro(int $votes = 3): array
     $card = Card::factory()->create(['retro_id' => $retro->id]);
 
     return [$retro, $user, $participant, $card];
+}
+
+function votingSnapshot(Retro $retro, Participant $viewer): array
+{
+    return app(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer);
 }
 
 it('casts votes and broadcasts only the overall count when vote counts are hidden', function () {
@@ -181,4 +188,56 @@ it('answers a retraction with the same total and version it broadcasts', functio
 
     Event::assertDispatched(VoteRetracted::class, fn (VoteRetracted $event) => $event->votesCast === $response->json('votesCast')
         && $event->votesVersion === $response->json('votesVersion'));
+});
+
+it('derives the automatic limit from the top-level cards', function (int $cards, int $expected) {
+    $retro = Retro::factory()->inPhase(RetroPhase::Voting)->create(['votes_per_participant' => null]);
+    Card::factory()->count($cards)->create(['retro_id' => $retro->id]);
+
+    expect($retro->fresh()->voteLimit())->toBe($expected);
+})->with([
+    'no cards' => [0, 3],
+    'four cards' => [4, 7],
+    'seven cards' => [7, 10],
+    'twenty cards' => [20, 10],
+]);
+
+it('counts a group once in the automatic limit', function () {
+    $retro = Retro::factory()->inPhase(RetroPhase::Voting)->create(['votes_per_participant' => null]);
+    $lead = Card::factory()->create(['retro_id' => $retro->id]);
+    Card::factory()->count(3)->create(['retro_id' => $retro->id, 'parent_card_id' => $lead->id]);
+
+    expect($retro->fresh()->voteLimit())->toBe(4);
+});
+
+it('keeps a fixed limit unchanged', function () {
+    $retro = Retro::factory()->create(['votes_per_participant' => 7]);
+    Card::factory()->count(20)->create(['retro_id' => $retro->id]);
+
+    expect($retro->fresh()->voteLimit())->toBe(7);
+});
+
+it('refuses votes beyond the automatic limit', function () {
+    $retro = Retro::factory()->inPhase(RetroPhase::Voting)->create(['votes_per_participant' => null]);
+    [$user, $participant] = retroMember($retro);
+    $card = Card::factory()->create(['retro_id' => $retro->id]);
+    Vote::factory()->count(3)->create(['retro_id' => $retro->id, 'card_id' => $card->id, 'participant_id' => $participant->id]);
+
+    $this->actingAs($user)->postJson(route('retros.cards.votes.store', [$retro, $card]))->assertCreated()->assertJsonPath('remainingVotes', 0);
+    $this->actingAs($user)->postJson(route('retros.cards.votes.store', [$retro, $card]))->assertUnprocessable();
+});
+
+it('keeps votes already cast when the automatic limit drops', function () {
+    $retro = Retro::factory()->inPhase(RetroPhase::Voting)->create(['votes_per_participant' => null]);
+    [$user, $participant] = retroMember($retro);
+    $cards = Card::factory()->count(4)->create(['retro_id' => $retro->id]);
+    Vote::factory()->count(6)->create(['retro_id' => $retro->id, 'card_id' => $cards[0]->id, 'participant_id' => $participant->id]);
+    $cards[1]->update(['parent_card_id' => $cards[0]->id]);
+    $cards[2]->update(['parent_card_id' => $cards[0]->id]);
+
+    expect($retro->fresh()->voteLimit())->toBe(5)
+        ->and(Vote::query()->where('participant_id', $participant->id)->count())->toBe(6)
+        ->and(votingSnapshot($retro, $participant)['viewer']['remainingVotes'])->toBe(0);
+
+    $this->actingAs($user)->postJson(route('retros.cards.votes.store', [$retro, $cards[0]]))->assertUnprocessable();
 });

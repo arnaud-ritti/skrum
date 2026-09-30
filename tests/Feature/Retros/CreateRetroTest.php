@@ -1,12 +1,15 @@
 <?php
 
 use App\Actions\Retros\CreateRetro;
+use App\Actions\Retros\NewRetro;
 use App\Enums\RetroPhase;
-use App\Enums\RetroTemplate;
 use App\Enums\WorkspaceRole;
+use App\Models\Retro;
 use App\Models\Team;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Models\WorkspaceTemplate;
+use App\Support\RetroTemplates\TemplateCatalogue;
 use Inertia\Testing\AssertableInertia as Assert;
 
 function teamWithMember(WorkspaceRole $role = WorkspaceRole::Member, bool $inTeam = true): array
@@ -26,12 +29,19 @@ it('creates a retro with translated template columns and the creator as facilita
     [$user, , $team] = teamWithMember();
     app()->setLocale('fr');
 
-    $retro = app(CreateRetro::class)->handle($team, $user, 'Sprint 42', RetroTemplate::StartStopContinue);
+    $retro = app(CreateRetro::class)->handle($team, $user, new NewRetro('Sprint 42', 'start_stop_continue'));
 
     expect($retro->phase)->toBe(RetroPhase::Writing)
+        ->and($retro->template)->toBe('start_stop_continue')
         ->and($retro->columns->pluck('title')->all())->toBe(['Commencer', 'Arrêter', 'Continuer'])
+        ->and($retro->columns->pluck('description')->all())->toBe([
+            'De nouvelles pratiques à essayer au prochain cycle',
+            'Des habitudes qui gênent et doivent cesser maintenant',
+            'Ce qui fonctionne déjà et doit survivre au prochain changement',
+        ])
         ->and($retro->columns->pluck('position')->all())->toBe([0, 1, 2])
         ->and($retro->facilitator->user_id)->toBe($user->id)
+        ->and($retro->votes_per_participant)->toBeNull()
         ->and($retro->guest_access_enabled)->toBeFalse()
         ->and(strlen($retro->guest_token))->toBe(40);
 });
@@ -39,19 +49,84 @@ it('creates a retro with translated template columns and the creator as facilita
 it('creates a custom retro without columns', function () {
     [$user, , $team] = teamWithMember();
 
-    expect(app(CreateRetro::class)->handle($team, $user, 'Free form', RetroTemplate::Custom)->columns)->toHaveCount(0);
+    expect(app(CreateRetro::class)->handle($team, $user, new NewRetro('Free form', 'custom'))->columns)->toHaveCount(0);
 });
 
-it('lets team members create retros from the team page', function () {
+it('creates a retro from every catalogue template', function () {
+    [$user, , $team] = teamWithMember();
+    app()->setLocale('de');
+
+    foreach (TemplateCatalogue::all() as $definition) {
+        $retro = app(CreateRetro::class)->handle($team, $user, new NewRetro($definition->key, $definition->key));
+
+        expect($retro->columns->map->only(['title', 'description'])->all())
+            ->toBe(array_map(fn (array $column) => ['title' => $column['title'], 'description' => $column['description']], $definition->translatedColumns()));
+    }
+});
+
+it('starts in the first enabled phase with the chosen options', function () {
+    [$user, , $team] = teamWithMember();
+
+    $retro = app(CreateRetro::class)->handle($team, $user, new NewRetro(
+        title: 'Sprint 43',
+        template: 'mad_sad_glad',
+        isAnonymous: true,
+        icebreakerEnabled: true,
+        votesPerParticipant: 4,
+    ));
+
+    expect($retro->phase)->toBe(RetroPhase::Icebreaker)
+        ->and($retro->is_anonymous)->toBeTrue()
+        ->and($retro->icebreaker_enabled)->toBeTrue()
+        ->and($retro->health_check_enabled)->toBeFalse()
+        ->and($retro->votes_per_participant)->toBe(4);
+
+    $healthCheck = app(CreateRetro::class)->handle($team, $user, new NewRetro('Sprint 44', 'mad_sad_glad', healthCheckEnabled: true, icebreakerEnabled: true));
+
+    expect($healthCheck->phase)->toBe(RetroPhase::HealthCheck);
+});
+
+it('copies the columns of a workspace template and remembers it', function () {
+    [$user, $workspace, $team] = teamWithMember();
+    $template = WorkspaceTemplate::factory()->for($workspace)->create();
+    $template->columns()->create(['title' => 'Energy', 'description' => 'How charged you feel', 'color' => 'green', 'position' => 0]);
+    $template->columns()->create(['title' => 'Blockers', 'description' => null, 'color' => 'red', 'position' => 1]);
+
+    $retro = app(CreateRetro::class)->handle($team, $user, new NewRetro('Pulse', $template->catalogueKey()));
+
+    expect($retro->template)->toBe(TemplateCatalogue::Workspace)
+        ->and($retro->workspace_template_id)->toBe($template->id)
+        ->and($retro->columns->map(fn ($column) => [$column->title, $column->description, $column->color->value])->all())->toBe([
+            ['Energy', 'How charged you feel', 'green'],
+            ['Blockers', null, 'red'],
+        ]);
+
+    $template->columns()->delete();
+    $template->update(['name' => 'Renamed']);
+
+    expect($retro->fresh()->columns)->toHaveCount(2);
+});
+
+it('lets team members create retros with options from the team page', function () {
     [$user, $workspace, $team] = teamWithMember();
 
     $response = $this->actingAs($user)->post(route('teams.retros.store', [$workspace, $team]), [
         'title' => 'Sprint 42',
-        'template' => 'mad_sad_glad',
+        'template' => 'sailboat',
+        'is_anonymous' => true,
+        'icebreaker_enabled' => true,
+        'votes_per_participant' => null,
     ]);
 
     $retro = $team->retros()->sole();
     $response->assertRedirect(route('retros.show', $retro));
+
+    expect($retro->only(['template', 'is_anonymous', 'icebreaker_enabled', 'votes_per_participant']))->toBe([
+        'template' => 'sailboat',
+        'is_anonymous' => true,
+        'icebreaker_enabled' => true,
+        'votes_per_participant' => null,
+    ])->and($retro->phase)->toBe(RetroPhase::Icebreaker);
 });
 
 it('lets workspace managers create retros in any team', function () {
@@ -70,7 +145,7 @@ it('forbids members outside the team', function () {
         ->assertForbidden();
 });
 
-it('validates the title and template', function (array $payload, string $field) {
+it('validates the title, template and vote limit', function (array $payload, string $field) {
     [$user, $workspace, $team] = teamWithMember();
 
     $this->actingAs($user)
@@ -80,13 +155,31 @@ it('validates the title and template', function (array $payload, string $field) 
     [['title' => '', 'template' => 'four_ls'], 'title'],
     [['title' => str_repeat('a', 121), 'template' => 'four_ls'], 'title'],
     [['title' => 'X', 'template' => 'nope'], 'template'],
+    [['title' => 'X', 'template' => 'four_ls', 'votes_per_participant' => 21], 'votes_per_participant'],
+    [['title' => 'X', 'template' => 'four_ls', 'votes_per_participant' => 0], 'votes_per_participant'],
 ]);
 
-it('lists the team retros newest first', function () {
+it('refuses templates outside the catalogue and the workspace', function (Closure $template) {
     [$user, $workspace, $team] = teamWithMember();
-    $older = app(CreateRetro::class)->handle($team, $user, 'Older', RetroTemplate::FourLs);
+
+    $this->actingAs($user)
+        ->post(route('teams.retros.store', [$workspace, $team]), ['title' => 'X', 'template' => $template()])
+        ->assertSessionHasErrors(['template' => 'Choose a template from the list.']);
+
+    expect(Retro::count())->toBe(0);
+})->with([
+    'the workspace marker' => [fn () => 'workspace'],
+    'a malformed id' => [fn () => 'workspace:not-a-uuid'],
+    'an unknown id' => [fn () => 'workspace:'.fake()->uuid()],
+    'another workspace' => [fn () => WorkspaceTemplate::factory()->withColumns()->create()->catalogueKey()],
+]);
+
+it('lists the team retros newest first and loads the catalogue on demand', function () {
+    [$user, $workspace, $team] = teamWithMember();
+    $older = app(CreateRetro::class)->handle($team, $user, new NewRetro('Older', 'four_ls'));
     $this->travel(1)->minutes();
-    $newer = app(CreateRetro::class)->handle($team, $user, 'Newer', RetroTemplate::FourLs);
+    $newer = app(CreateRetro::class)->handle($team, $user, new NewRetro('Newer', 'four_ls'));
+    $template = WorkspaceTemplate::factory()->withColumns()->for($workspace)->create();
 
     $this->actingAs($user)
         ->get(route('teams.show', [$workspace, $team]))
@@ -95,5 +188,12 @@ it('lists the team retros newest first', function () {
             ->where('retros.1.id', $older->id)
             ->where('retros.0.phase', 'writing')
             ->where('canCreateRetro', true)
-            ->has('templates', 5));
+            ->has('templateCategories', 5)
+            ->missing('templates')
+            ->missing('catalogue')
+            ->reloadOnly('catalogue', fn (Assert $reload) => $reload
+                ->has('catalogue', 54)
+                ->where('catalogue.0.key', $template->catalogueKey())
+                ->where('catalogue.1.name', 'Went well, To improve, Action ideas')
+                ->where('catalogue.1.columns.0.description', 'What worked and is worth repeating on purpose next sprint')));
 });

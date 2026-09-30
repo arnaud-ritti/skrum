@@ -22,6 +22,8 @@ class GroupCard
             throw ValidationException::withMessages(['parent_card_id' => __('Cards can only be grouped under a card that is not grouped itself.')]);
         }
 
+        $formerLead = $card->isTopLevel() ? null : $card->parent()->first();
+        $movedName = $card->group_name;
         $movedCards = $card->children()->get()->push($card);
 
         Vote::query()->whereIn('card_id', $movedCards->pluck('id'))->update(['card_id' => $lead->id]);
@@ -30,7 +32,16 @@ class GroupCard
             $moved->update([
                 'parent_card_id' => $lead->id,
                 'column_id' => $lead->column_id,
+                'group_name' => null,
             ]);
+        }
+
+        if ($lead->group_name === null && $movedName !== null) {
+            $lead->update(['group_name' => $movedName]);
+        }
+
+        if ($formerLead !== null && ! $formerLead->is($lead) && $formerLead->clearGroupNameWhenEmpty()) {
+            $movedCards->push($formerLead);
         }
 
         return $movedCards->push($lead);
@@ -45,6 +56,8 @@ class GroupCard
             throw ValidationException::withMessages(['card' => __('This card is not grouped.')]);
         }
 
+        $formerLead = $card->parent()->firstOrFail();
+
         $lastPosition = Card::query()
             ->where('column_id', $card->column_id)
             ->whereNull('parent_card_id')
@@ -55,6 +68,8 @@ class GroupCard
             'position' => $lastPosition === null ? 0 : $lastPosition + 1,
         ]);
 
-        return collect([$card]);
+        $formerLead->clearGroupNameWhenEmpty();
+
+        return collect([$card, $formerLead]);
     }
 }

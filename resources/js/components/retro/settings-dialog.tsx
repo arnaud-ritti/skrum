@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useTrans } from '@/hooks/use-trans';
 import { retroRequest } from '@/lib/retro/api';
+import { AiSummarySwitch } from './ai-summary-switch';
 import { useBoard } from './board-context';
 
 type Props = {
@@ -62,7 +63,14 @@ function SettingsForm({ onDone }: { onDone: () => void }) {
     const { retro } = ctx.board;
     const [title, setTitle] = useState(retro.title);
     const [isAnonymous, setIsAnonymous] = useState(retro.isAnonymous);
+    const [votesAuto, setVotesAuto] = useState(retro.votesAuto);
     const [votes, setVotes] = useState(String(retro.votesPerParticipant));
+    const [healthCheckEnabled, setHealthCheckEnabled] = useState(
+        retro.healthCheckEnabled,
+    );
+    const [icebreakerEnabled, setIcebreakerEnabled] = useState(
+        retro.icebreakerEnabled,
+    );
     const [reactionsEnabled, setReactionsEnabled] = useState(
         retro.reactionsEnabled,
     );
@@ -73,10 +81,18 @@ function SettingsForm({ onDone }: { onDone: () => void }) {
     const [presentationMode, setPresentationMode] = useState(
         retro.presentationMode,
     );
+    const [aiSummaryEnabled, setAiSummaryEnabled] = useState(
+        retro.aiSummaryEnabled,
+    );
     const [error, setError] = useState<string | null>(null);
     const [saving, setSaving] = useState(false);
     const anonymityLocked = retro.isAnonymous && ctx.board.cards.length > 0;
-    const votesLocked = !['writing', 'grouping'].includes(retro.phase);
+    const votesLocked = ![
+        'health_check',
+        'icebreaker',
+        'writing',
+        'grouping',
+    ].includes(retro.phase);
     const engagementLocked = retro.phase === 'completed';
 
     const save = async (event: FormEvent) => {
@@ -92,8 +108,20 @@ function SettingsForm({ onDone }: { onDone: () => void }) {
             changes.is_anonymous = isAnonymous;
         }
 
-        if (Number(votes) !== retro.votesPerParticipant) {
-            changes.votes_per_participant = Number(votes);
+        const votesChanged =
+            votesAuto !== retro.votesAuto ||
+            (!votesAuto && Number(votes) !== retro.votesPerParticipant);
+
+        if (votesChanged) {
+            changes.votes_per_participant = votesAuto ? null : Number(votes);
+        }
+
+        if (healthCheckEnabled !== retro.healthCheckEnabled) {
+            changes.health_check_enabled = healthCheckEnabled;
+        }
+
+        if (icebreakerEnabled !== retro.icebreakerEnabled) {
+            changes.icebreaker_enabled = icebreakerEnabled;
         }
 
         if (reactionsEnabled !== retro.reactionsEnabled) {
@@ -118,6 +146,10 @@ function SettingsForm({ onDone }: { onDone: () => void }) {
 
         if (presentationMode !== retro.presentationMode) {
             changes.presentation_mode = presentationMode;
+        }
+
+        if (aiSummaryEnabled !== retro.aiSummaryEnabled) {
+            changes.ai_summary_enabled = aiSummaryEnabled;
         }
 
         if (Object.keys(changes).length === 0) {
@@ -193,14 +225,46 @@ function SettingsForm({ onDone }: { onDone: () => void }) {
                 <Label htmlFor="retro-votes">
                     {t('Votes per participant')}
                 </Label>
-                <Input
-                    id="retro-votes"
-                    type="number"
-                    min={1}
-                    max={20}
-                    value={votes}
+                <SettingCheckbox
+                    id="retro-votes-auto"
+                    label={t('Automatic vote limit')}
+                    checked={votesAuto}
                     disabled={votesLocked}
-                    onChange={(event) => setVotes(event.target.value)}
+                    onChange={setVotesAuto}
+                />
+                {votesAuto ? (
+                    <p className="text-xs text-muted-foreground">
+                        {t('Automatic: number of cards plus 3, at most 10.')}
+                    </p>
+                ) : (
+                    <Input
+                        id="retro-votes"
+                        type="number"
+                        min={1}
+                        max={20}
+                        value={votes}
+                        disabled={votesLocked}
+                        onChange={(event) => setVotes(event.target.value)}
+                    />
+                )}
+            </div>
+
+            <div className="grid gap-2">
+                <SettingCheckbox
+                    id="retro-health-check"
+                    label={t('Health check')}
+                    checked={healthCheckEnabled}
+                    disabled={
+                        engagementLocked || retro.phase === 'health_check'
+                    }
+                    onChange={setHealthCheckEnabled}
+                />
+                <SettingCheckbox
+                    id="retro-icebreaker"
+                    label={t('Icebreaker')}
+                    checked={icebreakerEnabled}
+                    disabled={engagementLocked || retro.phase === 'icebreaker'}
+                    onChange={setIcebreakerEnabled}
                 />
             </div>
 
@@ -250,6 +314,16 @@ function SettingsForm({ onDone }: { onDone: () => void }) {
                     onChange={setPresentationMode}
                 />
             </div>
+
+            {ctx.board.features.llm && ctx.board.features.llmProvider && (
+                <AiSummarySwitch
+                    id="retro-ai-summary"
+                    provider={ctx.board.features.llmProvider}
+                    checked={aiSummaryEnabled}
+                    disabled={engagementLocked}
+                    onChange={setAiSummaryEnabled}
+                />
+            )}
 
             <InputError message={error ?? undefined} />
 

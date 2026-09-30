@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Retros;
 
 use App\Actions\Retros\RetroGuard;
-use App\Enums\RetroPhase;
 use App\Events\Retros\TimerChanged;
 use App\Http\Controllers\Controller;
 use App\Models\Participant;
@@ -19,7 +18,7 @@ class RetroTimersController extends Controller
         $participant = Participant::current($request);
 
         RetroGuard::facilitator($retro, $participant);
-        RetroGuard::phase($retro, RetroPhase::Writing, RetroPhase::Grouping, RetroPhase::Voting, RetroPhase::Discussing);
+        RetroGuard::open($retro);
 
         $validated = $request->validate([
             'seconds' => ['present', 'nullable', 'integer', 'min:10', 'max:7200'],
@@ -31,7 +30,7 @@ class RetroTimersController extends Controller
             $locked = Retro::query()->whereKey($retro->id)->lockForUpdate()->firstOrFail();
 
             RetroGuard::facilitator($locked, $participant);
-            RetroGuard::phase($locked, RetroPhase::Writing, RetroPhase::Grouping, RetroPhase::Voting, RetroPhase::Discussing);
+            RetroGuard::open($locked);
 
             $locked->update(['timer_ends_at' => $endsAt]);
 

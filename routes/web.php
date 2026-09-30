@@ -12,6 +12,7 @@ use App\Http\Controllers\LocalesController;
 use App\Http\Controllers\RetroJoinsController;
 use App\Http\Controllers\Retros\ActionItemsController;
 use App\Http\Controllers\Retros\CardCommentsController;
+use App\Http\Controllers\Retros\CardGroupNamesController;
 use App\Http\Controllers\Retros\CardGroupsController;
 use App\Http\Controllers\Retros\CardPositionsController;
 use App\Http\Controllers\Retros\CardReactionsController;
@@ -19,23 +20,39 @@ use App\Http\Controllers\Retros\CardsController;
 use App\Http\Controllers\Retros\CardVotesController;
 use App\Http\Controllers\Retros\ColumnOrdersController;
 use App\Http\Controllers\Retros\ColumnsController;
+use App\Http\Controllers\Retros\GroupNameSuggestionsController;
+use App\Http\Controllers\Retros\HealthCheckAnswersController;
 use App\Http\Controllers\Retros\RetroFacilitatorsController;
 use App\Http\Controllers\Retros\RetroGifsController;
 use App\Http\Controllers\Retros\RetroGuestTokensController;
 use App\Http\Controllers\Retros\RetroHighlightsController;
 use App\Http\Controllers\Retros\RetroPhasesController;
+use App\Http\Controllers\Retros\RetroRotiController;
 use App\Http\Controllers\Retros\RetrosController;
 use App\Http\Controllers\Retros\RetroSettingsController;
 use App\Http\Controllers\Retros\RetroSnapshotsController;
+use App\Http\Controllers\Retros\RetroSummariesController;
 use App\Http\Controllers\Retros\RetroTimersController;
+use App\Http\Controllers\Retros\SuggestedActionPromotionsController;
+use App\Http\Controllers\Retros\SuggestedActionsController;
+use App\Http\Controllers\Retros\SurveyClosuresController;
+use App\Http\Controllers\Retros\SurveyCommentsController;
+use App\Http\Controllers\Retros\SurveyDraftsController;
+use App\Http\Controllers\Retros\SurveyReactionsController;
+use App\Http\Controllers\Retros\SurveyResponsesController;
+use App\Http\Controllers\Retros\SurveysController;
 use App\Http\Controllers\SsoCallbacksController;
 use App\Http\Controllers\SsoRedirectsController;
+use App\Http\Controllers\TeamHealthStatementArchivalsController;
+use App\Http\Controllers\TeamHealthStatementOrdersController;
+use App\Http\Controllers\TeamHealthStatementsController;
 use App\Http\Controllers\TeamMembersController;
 use App\Http\Controllers\TeamRetrosController;
 use App\Http\Controllers\TeamsController;
 use App\Http\Controllers\WorkspaceInvitationsController;
 use App\Http\Controllers\WorkspaceMembersController;
 use App\Http\Controllers\WorkspacesController;
+use App\Http\Controllers\WorkspaceTemplatesController;
 use App\Http\Middleware\RememberCurrentWorkspace;
 use App\Http\Middleware\ResolveRetroParticipant;
 use Illuminate\Support\Facades\Route;
@@ -69,6 +86,8 @@ Route::middleware('guest')->group(function () {
 
 Route::put('locale', [LocalesController::class, 'update'])->name('locale.update');
 
+Route::pattern('statement', '[A-Za-z0-9_-]{1,64}');
+
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', [CurrentWorkspaceController::class, 'show'])->name('dashboard');
     Route::get('workspaces/create', [WorkspacesController::class, 'create'])->name('workspaces.create');
@@ -89,11 +108,22 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('teams/{team}/members', [TeamMembersController::class, 'store'])->name('teams.members.store');
             Route::delete('teams/{team}/members/{member}', [TeamMembersController::class, 'destroy'])->name('teams.members.destroy')->whereUuid('member');
 
+            Route::post('teams/{team}/health-statements', [TeamHealthStatementsController::class, 'store'])->name('teams.healthStatements.store');
+            Route::patch('teams/{team}/health-statements/{statement}', [TeamHealthStatementsController::class, 'update'])->name('teams.healthStatements.update');
+            Route::put('teams/{team}/health-statement-order', [TeamHealthStatementOrdersController::class, 'update'])->name('teams.healthStatements.order.update');
+            Route::put('teams/{team}/health-statements/{statement}/archival', [TeamHealthStatementArchivalsController::class, 'update'])->name('teams.healthStatements.archival.update');
+            Route::delete('teams/{team}/health-statements/{statement}/archival', [TeamHealthStatementArchivalsController::class, 'destroy'])->name('teams.healthStatements.archival.destroy');
+
             Route::get('members', [WorkspaceMembersController::class, 'index'])->name('workspaces.members.index');
             Route::patch('members/{member}', [WorkspaceMembersController::class, 'update'])->name('workspaces.members.update')->whereUuid('member');
             Route::delete('members/{member}', [WorkspaceMembersController::class, 'destroy'])->name('workspaces.members.destroy')->whereUuid('member');
             Route::post('invitations', [WorkspaceInvitationsController::class, 'store'])->name('workspaces.invitations.store')->middleware('throttle:20,1');
             Route::delete('invitations/{invitation}', [WorkspaceInvitationsController::class, 'destroy'])->name('workspaces.invitations.destroy');
+
+            Route::get('templates', [WorkspaceTemplatesController::class, 'index'])->name('workspaces.templates.index');
+            Route::post('templates', [WorkspaceTemplatesController::class, 'store'])->name('workspaces.templates.store');
+            Route::patch('templates/{template}', [WorkspaceTemplatesController::class, 'update'])->name('workspaces.templates.update')->whereUuid('template');
+            Route::delete('templates/{template}', [WorkspaceTemplatesController::class, 'destroy'])->name('workspaces.templates.destroy')->whereUuid('template');
         });
 });
 
@@ -114,6 +144,10 @@ Route::prefix('retros/{retro}')
         Route::post('guest-token', [RetroGuestTokensController::class, 'store'])->name('retros.guest-token.store');
         Route::put('facilitator', [RetroFacilitatorsController::class, 'update'])->name('retros.facilitator.update');
         Route::get('snapshot', [RetroSnapshotsController::class, 'show'])->name('retros.snapshot.show');
+        Route::put('roti', [RetroRotiController::class, 'update'])->name('retros.roti.update');
+        Route::delete('roti', [RetroRotiController::class, 'destroy'])->name('retros.roti.destroy');
+        Route::put('health-check/{statement}', [HealthCheckAnswersController::class, 'update'])->name('retros.health-check.update')->where('statement', '[A-Za-z0-9_-]{1,64}');
+        Route::delete('health-check/{statement}', [HealthCheckAnswersController::class, 'destroy'])->name('retros.health-check.destroy')->where('statement', '[A-Za-z0-9_-]{1,64}');
         Route::post('columns', [ColumnsController::class, 'store'])->name('retros.columns.store');
         Route::patch('columns/{column}', [ColumnsController::class, 'update'])->name('retros.columns.update')->whereUuid('column');
         Route::delete('columns/{column}', [ColumnsController::class, 'destroy'])->name('retros.columns.destroy')->whereUuid('column');
@@ -125,6 +159,9 @@ Route::prefix('retros/{retro}')
         Route::put('cards/{card}/position', [CardPositionsController::class, 'update'])->name('retros.cards.position.update')->whereUuid('card');
         Route::put('cards/{card}/group', [CardGroupsController::class, 'update'])->name('retros.cards.group.update')->whereUuid('card');
         Route::delete('cards/{card}/group', [CardGroupsController::class, 'destroy'])->name('retros.cards.group.destroy')->whereUuid('card');
+        Route::put('cards/{card}/group-name', [CardGroupNamesController::class, 'update'])->name('retros.cards.group-name.update')->whereUuid('card');
+        Route::delete('cards/{card}/group-name', [CardGroupNamesController::class, 'destroy'])->name('retros.cards.group-name.destroy')->whereUuid('card');
+        Route::post('group-name-suggestions', [GroupNameSuggestionsController::class, 'store'])->name('retros.group-name-suggestions.store');
         Route::post('cards/{card}/votes', [CardVotesController::class, 'store'])->name('retros.cards.votes.store')->whereUuid('card');
         Route::delete('cards/{card}/votes', [CardVotesController::class, 'destroy'])->name('retros.cards.votes.destroy')->whereUuid('card');
         Route::put('cards/{card}/reactions', [CardReactionsController::class, 'update'])->name('retros.cards.reactions.update')->whereUuid('card');
@@ -135,6 +172,24 @@ Route::prefix('retros/{retro}')
         Route::post('action-items', [ActionItemsController::class, 'store'])->name('retros.action-items.store');
         Route::patch('action-items/{actionItem}', [ActionItemsController::class, 'update'])->name('retros.action-items.update')->whereUuid('actionItem');
         Route::delete('action-items/{actionItem}', [ActionItemsController::class, 'destroy'])->name('retros.action-items.destroy')->whereUuid('actionItem');
+        Route::post('summary', [RetroSummariesController::class, 'store'])->name('retros.summary.store');
+        Route::delete('summary', [RetroSummariesController::class, 'destroy'])->name('retros.summary.destroy');
+        Route::post('suggested-actions/{suggestedAction}/promotion', [SuggestedActionPromotionsController::class, 'store'])->name('retros.suggested-actions.promotion.store')->whereUuid('suggestedAction');
+        Route::delete('suggested-actions/{suggestedAction}', [SuggestedActionsController::class, 'destroy'])->name('retros.suggested-actions.destroy')->whereUuid('suggestedAction');
+        Route::post('survey-drafts', [SurveyDraftsController::class, 'store'])->name('retros.survey-drafts.store');
+        Route::post('surveys', [SurveysController::class, 'store'])->name('retros.surveys.store');
+        Route::get('surveys/{survey}', [SurveysController::class, 'show'])->name('retros.surveys.show')->whereUuid('survey');
+        Route::patch('surveys/{survey}', [SurveysController::class, 'update'])->name('retros.surveys.update')->whereUuid('survey');
+        Route::delete('surveys/{survey}', [SurveysController::class, 'destroy'])->name('retros.surveys.destroy')->whereUuid('survey');
+        Route::put('surveys/{survey}/closure', [SurveyClosuresController::class, 'update'])->name('retros.surveys.closure.update')->whereUuid('survey');
+        Route::delete('surveys/{survey}/closure', [SurveyClosuresController::class, 'destroy'])->name('retros.surveys.closure.destroy')->whereUuid('survey');
+        Route::put('surveys/{survey}/response', [SurveyResponsesController::class, 'update'])->name('retros.surveys.response.update')->whereUuid('survey');
+        Route::delete('surveys/{survey}/response', [SurveyResponsesController::class, 'destroy'])->name('retros.surveys.response.destroy')->whereUuid('survey');
+        Route::put('surveys/{survey}/reactions', [SurveyReactionsController::class, 'update'])->name('retros.surveys.reactions.update')->whereUuid('survey');
+        Route::delete('surveys/{survey}/reactions', [SurveyReactionsController::class, 'destroy'])->name('retros.surveys.reactions.destroy')->whereUuid('survey');
+        Route::post('surveys/{survey}/comments', [SurveyCommentsController::class, 'store'])->name('retros.surveys.comments.store')->whereUuid('survey');
+        Route::patch('survey-comments/{surveyComment}', [SurveyCommentsController::class, 'update'])->name('retros.survey-comments.update')->whereUuid('surveyComment');
+        Route::delete('survey-comments/{surveyComment}', [SurveyCommentsController::class, 'destroy'])->name('retros.survey-comments.destroy')->whereUuid('surveyComment');
     });
 
 Route::post('broadcasting/auth', [BroadcastAuthorizationsController::class, 'store'])->name('broadcasting.auth');

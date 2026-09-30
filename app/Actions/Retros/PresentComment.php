@@ -5,6 +5,7 @@ namespace App\Actions\Retros;
 use App\Models\CardComment;
 use App\Models\Participant;
 use App\Models\Retro;
+use App\Models\SurveyComment;
 use Illuminate\Support\Collection;
 
 class PresentComment
@@ -12,7 +13,8 @@ class PresentComment
     /**
      * @return array{
      *     id: string,
-     *     cardId: string,
+     *     cardId?: string,
+     *     surveyId?: string,
      *     parentCommentId: ?string,
      *     isMine: bool,
      *     deleted: bool,
@@ -21,14 +23,17 @@ class PresentComment
      *     createdAt: string
      * }
      */
-    public function handle(CardComment $comment, Retro $retro, ?Participant $viewer): array
+    public function handle(CardComment|SurveyComment $comment, Retro $retro, ?Participant $viewer): array
     {
         $isMine = $viewer !== null && $comment->participant_id === $viewer->id;
         $showsAuthor = ! $comment->isDeleted() && ($isMine || ! $retro->is_anonymous);
+        $subject = $comment instanceof SurveyComment
+            ? ['surveyId' => $comment->survey_id]
+            : ['cardId' => $comment->card_id];
 
         return [
             'id' => $comment->id,
-            'cardId' => $comment->card_id,
+            ...$subject,
             'parentCommentId' => $comment->parent_comment_id,
             'isMine' => $isMine,
             'deleted' => $comment->isDeleted(),
@@ -41,27 +46,10 @@ class PresentComment
     }
 
     /**
-     * @param  Collection<int, CardComment>  $comments  every comment of one card, oldest first
-     * @return array<int, array{
-     *     id: string,
-     *     cardId: string,
-     *     parentCommentId: ?string,
-     *     isMine: bool,
-     *     deleted: bool,
-     *     content: ?string,
-     *     author: ?array{id: string, name: string},
-     *     createdAt: string,
-     *     replies: array<int, array{
-     *         id: string,
-     *         cardId: string,
-     *         parentCommentId: ?string,
-     *         isMine: bool,
-     *         deleted: bool,
-     *         content: ?string,
-     *         author: ?array{id: string, name: string},
-     *         createdAt: string
-     *     }>
-     * }>
+     * @template TComment of CardComment|SurveyComment
+     *
+     * @param  Collection<int, TComment>  $comments  every comment of one card or survey, oldest first
+     * @return array<int, array<string, mixed>>
      */
     public function threads(Collection $comments, Retro $retro, ?Participant $viewer): array
     {
@@ -69,10 +57,10 @@ class PresentComment
 
         return $comments
             ->whereNull('parent_comment_id')
-            ->map(fn (CardComment $comment) => [
+            ->map(fn (CardComment|SurveyComment $comment) => [
                 ...$this->handle($comment, $retro, $viewer),
                 'replies' => $repliesByParent->get($comment->id, collect())
-                    ->map(fn (CardComment $reply) => $this->handle($reply, $retro, $viewer))
+                    ->map(fn (CardComment|SurveyComment $reply) => $this->handle($reply, $retro, $viewer))
                     ->values()
                     ->all(),
             ])
