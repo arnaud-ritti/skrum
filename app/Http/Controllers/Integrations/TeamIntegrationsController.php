@@ -3,12 +3,15 @@
 namespace App\Http\Controllers\Integrations;
 
 use App\Actions\Integrations\PresentTeamIntegration;
+use App\Actions\Integrations\UpdateTeamIntegration;
 use App\Enums\IntegrationProvider;
 use App\Http\Controllers\Controller;
 use App\Models\Team;
 use App\Models\TeamIntegration;
 use App\Models\Workspace;
 use App\Support\Integrations\Telegram\TelegramBot;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -43,5 +46,16 @@ class TeamIntegrationsController extends Controller
                 'conflict' => $telegramBot->hasConflict(),
             ] : null,
         ]);
+    }
+
+    public function update(Request $request, Workspace $workspace, Team $team, TeamIntegration $integration, UpdateTeamIntegration $updateTeamIntegration): JsonResponse
+    {
+        Gate::authorize('manageIntegrations', $team);
+
+        $validated = $request->validate($updateTeamIntegration->rules($integration));
+
+        $updated = $updateTeamIntegration->handle($integration, $request->user(), $validated);
+
+        return response()->json($this->presentTeamIntegration->handle($updated->load('connectedBy')));
     }
 }

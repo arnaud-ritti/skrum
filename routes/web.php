@@ -8,6 +8,7 @@ use App\Http\Controllers\EmojiDataController;
 use App\Http\Controllers\GifsController;
 use App\Http\Controllers\Integrations\IntegrationAuthorizationsController;
 use App\Http\Controllers\Integrations\IntegrationCallbacksController;
+use App\Http\Controllers\Integrations\JiraFieldDetectionsController;
 use App\Http\Controllers\Integrations\TeamIntegrationsController;
 use App\Http\Controllers\InvitationAcceptancesController;
 use App\Http\Controllers\InvitationLinksController;
@@ -157,6 +158,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 Route::get('teams/{team}/integrations/{provider}/connect', [IntegrationAuthorizationsController::class, 'create'])
                     ->whereIn('provider', ['slack', 'jira', 'linear'])
                     ->name('teams.integrations.connect');
+                Route::patch('teams/{team}/integrations/{integration}', [TeamIntegrationsController::class, 'update'])
+                    ->whereUuid('integration')
+                    ->name('teams.integrations.update');
+                Route::post('teams/{team}/integrations/{integration}/detection', [JiraFieldDetectionsController::class, 'store'])
+                    ->whereUuid('integration')
+                    ->name('teams.integrations.detection.store');
             });
 
             Route::post('teams/{team}/members', [TeamMembersController::class, 'store'])->name('teams.members.store');

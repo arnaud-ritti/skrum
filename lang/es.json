@@ -1165,5 +1165,6 @@
     "Could not connect :provider. Try again.": "No se pudo conectar :provider. Inténtalo de nuevo.",
     ":provider connected.": ":provider conectado.",
     "Choose a Jira site to finish connecting.": "Elige un sitio de Jira para terminar la conexión.",
-    "Slack did not return a valid channel webhook. Try again.": "Slack no devolvió un webhook de canal válido. Inténtalo de nuevo."
+    "Slack did not return a valid channel webhook. Try again.": "Slack no devolvió un webhook de canal válido. Inténtalo de nuevo.",
+    "This Atlassian account has no Jira site.": "Esta cuenta de Atlassian no tiene ningún sitio de Jira."
 }
