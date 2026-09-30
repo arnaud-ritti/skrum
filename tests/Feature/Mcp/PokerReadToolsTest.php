@@ -9,6 +9,7 @@ use App\Models\PokerGame;
 use App\Models\PokerPlayer;
 use App\Models\PokerTask;
 use App\Models\Team;
+use Illuminate\Support\Arr;
 
 it('lists the team\'s games newest first with counts and links', function () {
     $team = Team::factory()->create();
@@ -110,8 +111,11 @@ it('hides other players\' values before reveal, for the facilitator too', functi
 
     expect($game['currentTask']['round']['myVote'])->toBe('5')
         ->and($game['currentTask']['round']['result'])->toBeNull()
-        ->and(collect($game['currentTask']['round']['voters'])->every(fn (array $voter): bool => $voter['hasVoted']))->toBeTrue()
-        ->and(json_encode([$game['currentTask'], $game['players']]))->not->toContain('"13"')
+        ->and($game['currentTask']['round']['voters'])->toEqualCanonicalizing([
+            ['name' => $facilitatorUser->name, 'hasVoted' => true],
+            ['name' => $member->displayName(), 'hasVoted' => true],
+        ])
+        ->and(json_encode(Arr::except($game, 'game.cards')))->not->toContain('"13"')
         ->and(collect($tasks['items'][0]['latestRound']['votes'])->pluck('value')->filter()->values()->all())->toBe(['5'])
         ->and(json_encode($tasks))->not->toContain('"13"');
 });

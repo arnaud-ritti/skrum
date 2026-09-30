@@ -11,10 +11,10 @@ use App\Models\PokerPlayer;
 use App\Models\PokerTask;
 
 /**
- * @phpstan-import-type Snapshot from BuildPokerSnapshot
- *
  * Poker payloads for MCP, always derived from the game's own presenters so
  * spec 4's redaction (unrevealed and anonymous values) holds unchanged.
+ *
+ * @phpstan-import-type Snapshot from BuildPokerSnapshot
  */
 class McpPokerGame
 {

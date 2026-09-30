@@ -9,26 +9,47 @@ use App\Models\PokerTask;
 use App\Models\User;
 
 /**
+ * @phpstan-import-type Round from PresentPokerRound
+ * @phpstan-import-type Task from PresentPokerTask
+ *
  * @phpstan-type Snapshot array{
- *     game: array<string, mixed>,
- *     me: array<string, mixed>,
- *     players: array<int, array{id: string, name: string, avatarUrl: ?string, isGuest: bool, isSpectator: bool}>,
- *     tasks: array<int, array{id: string, title: string}>,
- *     current: ?array{
- *         taskId: string,
- *         round: array{
- *             number: int,
- *             anonymous: bool,
- *             revealedAt: ?string,
- *             revealReason: ?string,
- *             timerEndsAt: ?string,
- *             votesCount: int,
- *             votes: array<int, array{playerId: string, value: ?string}>,
- *             myVote: ?string,
- *             result: ?array<string, mixed>
- *         }
+ *     game: array{
+ *         id: string,
+ *         title: string,
+ *         deck: string,
+ *         deckLabel: string,
+ *         cards: array<int, string>,
+ *         isNumeric: bool,
+ *         facilitatorPlayerId: ?string,
+ *         guestAccessEnabled: bool,
+ *         guestUrl: ?string,
+ *         endedAt: ?string,
+ *         currentTaskId: ?string,
+ *         tasksCount: int,
+ *         estimatedCount: int,
+ *         totalPoints: ?float,
+ *         hasVotes: bool,
+ *         autoReveal: bool,
+ *         anonymousVotes: bool,
+ *         cursorsEnabled: bool,
+ *         reactionsEnabled: bool
  *     },
- *     links: array<string, mixed>,
+ *     me: array{
+ *         playerId: string,
+ *         userId: ?string,
+ *         isGuest: bool,
+ *         isFacilitator: bool,
+ *         isSpectator: bool,
+ *         canVote: bool,
+ *         canEditTasks: bool,
+ *         canTakeControl: bool,
+ *         canDelete: bool,
+ *         transferCandidates: array<int, array{userId: string, name: string}>
+ *     },
+ *     players: array<int, array{id: string, name: string, avatarUrl: ?string, isGuest: bool, isSpectator: bool}>,
+ *     tasks: array<int, Task>,
+ *     current: ?array{taskId: string, round: Round},
+ *     links: array{team: ?string},
  *     serverTime: string
  * }
  */
