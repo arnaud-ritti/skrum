@@ -1,0 +1,376 @@
+<?php
+
+use App\Enums\IntegrationProvider;
+use App\Enums\PokerDeck;
+use App\Models\PokerGame;
+use App\Models\PokerPlayer;
+use App\Models\PokerTask;
+use App\Models\TeamIntegration;
+use App\Models\User;
+use Illuminate\Http\Client\Request;
+use Illuminate\Support\Facades\Http;
+
+/**
+ * @param  array<int, IntegrationProvider>  $sources
+ * @return array{
+ *     0: PokerGame,
+ *     1: User,
+ *     2: PokerPlayer,
+ *     3: User,
+ *     4: PokerPlayer
+ * }
+ */
+function p12cTable(array $sources, PokerDeck $deck = PokerDeck::Fibonacci): array
+{
+    disableIntegrations();
+    enableIntegrations(...$sources);
+
+    $game = PokerGame::factory()
+        ->deck($deck)
+        ->withGuestAccess()
+        ->create(['title' => 'Sprint 31 estimates']);
+
+    foreach ($sources as $source) {
+        $factory = TeamIntegration::factory();
+        $connected = $source === IntegrationProvider::Linear ? $factory->linear() : $factory->jira();
+
+        $connected->create(['team_id' => $game->team_id]);
+    }
+
+    [$ada, $adaPlayer] = pokerFacilitator($game);
+    [$bob, $bobPlayer] = pokerMember($game);
+
+    $ada->forceFill(['name' => 'Ada Facilitator', 'locale' => 'en'])->save();
+    $bob->forceFill(['name' => 'Bob Member', 'locale' => 'en'])->save();
+
+    return [$game, $ada, $adaPlayer, $bob, $bobPlayer];
+}
+
+/**
+ * @param  array<int, array<string, mixed>>  $issues
+ */
+function p12cFakeJira(array $issues): void
+{
+    Http::fake([
+        jiraApiUrl('rest/agile/1.0/board/*/sprint*') => Http::response(['values' => [
+            ['id' => 31, 'name' => 'Sprint 31', 'state' => 'active'],
+        ]]),
+        jiraApiUrl('rest/agile/1.0/board*') => Http::response([
+            'values' => [['id' => 7, 'name' => 'Web team board']],
+            'isLast' => true,
+        ]),
+        jiraApiUrl('rest/api/3/search/jql') => Http::response(['issues' => $issues, 'isLast' => true]),
+        jiraApiUrl('rest/api/3/issue/*/editmeta') => Http::response(['fields' => [
+            'customfield_10016' => ['name' => 'Story point estimate'],
+        ]]),
+        jiraApiUrl('rest/api/3/issue/*') => Http::response(null, 204),
+        'api.atlassian.com/*' => Http::response(['errorMessages' => ['Unexpected request in a browser test.']], 404),
+    ]);
+}
+
+/**
+ * @param  array<int, array<string, mixed>>  $issues
+ */
+function p12cFakeLinear(array $issues): void
+{
+    fakeLinearGraphql([
+        'teams(first' => ['teams' => ['nodes' => [['id' => 'team-1', 'name' => 'Engineering']]]],
+        'cycles(first' => ['team' => ['cycles' => ['nodes' => [[
+            'id' => 'cycle-1',
+            'name' => 'Cycle 12',
+            'number' => 12,
+            'startsAt' => '2026-10-05T00:00:00.000Z',
+            'endsAt' => '2026-10-19T00:00:00.000Z',
+            'isActive' => true,
+        ]]]]],
+        'cycle(id' => ['cycle' => ['issues' => ['nodes' => $issues, 'pageInfo' => ['hasNextPage' => false]]]],
+        'searchIssues' => ['searchIssues' => ['nodes' => array_slice($issues, 0, 1), 'pageInfo' => ['hasNextPage' => false]]],
+        'issues(first' => fn (array $variables): array => ['issues' => ['nodes' => array_values(array_filter(
+            $issues,
+            fn (array $issue): bool => in_array($issue['id'], (array) ($variables['ids'] ?? []), true),
+        ))]],
+        'issueEstimationType' => ['issue' => ['team' => ['issueEstimationType' => 'fibonacci', 'issueEstimationAllowZero' => false]]],
+        'issueUpdate(' => ['issueUpdate' => ['success' => true]],
+    ]);
+}
+
+/**
+ * @param  array<string, mixed>  $attributes
+ */
+function p12cJiraTask(PokerGame $game, string $id, string $key, string $title, array $attributes = []): PokerTask
+{
+    return importedPokerTask($game, [
+        'title' => $title,
+        'external_id' => $id,
+        'external_key' => $key,
+        'external_url' => "https://acme.atlassian.net/browse/{$key}",
+        ...$attributes,
+    ]);
+}
+
+/**
+ * @param  array<string, mixed>  $attributes
+ */
+function p12cLinearTask(PokerGame $game, string $id, string $key, string $title, array $attributes = []): PokerTask
+{
+    return importedPokerTask($game, [
+        'title' => $title,
+        'external_id' => $id,
+        'external_key' => $key,
+        'external_url' => "https://linear.app/acme/issue/{$key}",
+        ...$attributes,
+    ], IntegrationProvider::Linear);
+}
+
+function p12cTaskTitlesScript(): string
+{
+    return 'Array.from(document.querySelectorAll(\'[data-test="poker-task-row"]\')).map(function (row) { return row.querySelector("span span").textContent; }).join(" / ")';
+}
+
+function p12cShowJiraSprintIssues(mixed $page): mixed
+{
+    $page->assertSee('Import')
+        ->click('Import')
+        ->assertSee('Import tasks')
+        ->assertVisible('[aria-label="Choose a board"]')
+        ->click('[aria-label="Choose a board"]')
+        ->click('[role="option"]:has-text("Web team board")')
+        ->assertEnabled('[aria-label="Choose a sprint"]')
+        ->click('[aria-label="Choose a sprint"]')
+        ->click('[role="option"]:has-text("Sprint 31")')
+        ->assertButtonEnabled('Show issues')
+        ->click('Show issues');
+
+    return $page;
+}
+
+it('[P12c-01] offers the import from Jira and from Linear in a game of a connected team', function () {
+    [$game, $ada] = p12cTable([IntegrationProvider::Jira, IntegrationProvider::Linear]);
+    p12cFakeJira([]);
+    p12cFakeLinear([]);
+
+    $page = $this->awaitRealtime($this->signIn($ada, "/poker/{$game->id}"));
+
+    $page->assertSee('Fibonacci')
+        ->assertSee('Import')
+        ->click('Import')
+        ->assertSee('Import tasks')
+        ->assertVisible('[aria-label="Source"] button:has-text("Jira")')
+        ->assertVisible('[aria-label="Source"] button:has-text("Linear")')
+        ->assertVisible('[aria-label="Import from Jira"]')
+        ->assertVisible('[aria-label="Choose a board"]')
+        ->click('[aria-label="Source"] button:has-text("Linear")')
+        ->assertVisible('[aria-label="Import from Linear"]')
+        ->assertVisible('[aria-label="Choose a team"]')
+        ->click('Cancel')
+        ->assertNotPresent('[role="dialog"]');
+
+    expect(PokerTask::query()->where('poker_game_id', $game->id)->count())->toBe(0);
+});
+
+it('[P12c-02a] imports an active Jira sprint in sprint order with the issue keys', function () {
+    [$game, $ada, , $bob] = p12cTable([IntegrationProvider::Jira]);
+    p12cFakeJira([
+        jiraTrackerIssue('10001', 'PROJ-1', ['summary' => 'Checkout page']),
+        jiraTrackerIssue('10002', 'PROJ-2', ['summary' => 'Payment retries']),
+    ]);
+
+    $facilitator = $this->awaitRealtime($this->signIn($ada, "/poker/{$game->id}"));
+    $member = $this->awaitRealtime($this->signIn($bob, "/poker/{$game->id}"));
+
+    p12cShowJiraSprintIssues($facilitator)
+        ->assertNotPresent('[aria-label="Source"]')
+        ->assertAttribute('[role="dialog"] [role="checkbox"][aria-label="PROJ-1"]', 'aria-checked', 'true')
+        ->assertAttribute('[role="dialog"] [role="checkbox"][aria-label="PROJ-2"]', 'aria-checked', 'true')
+        ->assertSeeIn('[role="dialog"] li:has-text("PROJ-1")', 'Checkout page')
+        ->assertSeeIn('[role="dialog"] li:has-text("PROJ-1")', 'Jane Doe')
+        ->click('Import 2 tasks')
+        ->assertSee('2 imported, 0 skipped.')
+        ->assertNotPresent('[role="dialog"]')
+        ->assertCount('@poker-task-row', 2)
+        ->assertScript(p12cTaskTitlesScript(), 'Checkout page / Payment retries')
+        ->assertPresent('[data-test="poker-task-row"]:has-text("Checkout page") [data-slot="badge"]:text-is("PROJ-1")')
+        ->assertPresent('[data-test="poker-task-row"]:has-text("Payment retries") [data-slot="badge"]:text-is("PROJ-2")');
+
+    $member->assertCount('@poker-task-row', 2)
+        ->assertScript(p12cTaskTitlesScript(), 'Checkout page / Payment retries')
+        ->assertPresent('[data-test="poker-task-row"]:has-text("Checkout page") [data-slot="badge"]:text-is("PROJ-1")');
+
+    $facilitator->click('Checkout page')
+        ->assertPresent('section[aria-labelledby^="poker-task-"] a[href="https://acme.atlassian.net/browse/PROJ-1"]')
+        ->assertSee('Assignee: Jane Doe')
+        ->assertSee('Jira estimate: 3');
+
+    Http::assertSent(fn (Request $request): bool => str_ends_with($request->url(), '/rest/api/3/search/jql')
+        && $request['jql'] === 'sprint = 31 ORDER BY Rank ASC');
+
+    expect(PokerTask::query()->where('poker_game_id', $game->id)->orderBy('position')->pluck('external_key')->all())
+        ->toBe(['PROJ-1', 'PROJ-2'])
+        ->and(PokerTask::query()->where('poker_game_id', $game->id)->pluck('external_source')->unique()->all())
+        ->toBe(['jira']);
+});
+
+it('[P12c-02b] shows the issues of a sprint imported before as already imported', function () {
+    [$game, $ada] = p12cTable([IntegrationProvider::Jira]);
+    p12cFakeJira([
+        jiraTrackerIssue('10001', 'PROJ-1', ['summary' => 'Checkout page']),
+        jiraTrackerIssue('10002', 'PROJ-2', ['summary' => 'Payment retries']),
+    ]);
+    p12cJiraTask($game, '10001', 'PROJ-1', 'Checkout page');
+    p12cJiraTask($game, '10002', 'PROJ-2', 'Payment retries');
+
+    $page = $this->awaitRealtime($this->signIn($ada, "/poker/{$game->id}"));
+
+    p12cShowJiraSprintIssues($page)
+        ->assertCount('[role="dialog"] li:has-text("Already imported")', 2)
+        ->assertDisabled('[role="dialog"] [role="checkbox"][aria-label="PROJ-1"]')
+        ->assertDisabled('[role="dialog"] [role="checkbox"][aria-label="PROJ-2"]')
+        ->assertButtonDisabled('Import 0 tasks')
+        ->click('Cancel')
+        ->assertNotPresent('[role="dialog"]')
+        ->assertCount('@poker-task-row', 2);
+
+    expect(PokerTask::query()->where('poker_game_id', $game->id)->count())->toBe(2);
+});
+
+it('[P12c-03a] imports a Linear cycle after switching the source', function () {
+    [$game, $ada] = p12cTable([IntegrationProvider::Jira, IntegrationProvider::Linear]);
+    p12cFakeJira([]);
+    p12cFakeLinear([
+        linearTrackerIssue('lin-1', 'ENG-1', ['title' => 'Login form']),
+        linearTrackerIssue('lin-2', 'ENG-2', ['title' => 'Signup form']),
+    ]);
+
+    $page = $this->awaitRealtime($this->signIn($ada, "/poker/{$game->id}"));
+
+    $page->assertSee('Import')
+        ->click('Import')
+        ->assertVisible('[aria-label="Source"] button:has-text("Linear")')
+        ->click('[aria-label="Source"] button:has-text("Linear")')
+        ->assertVisible('[aria-label="Choose a team"]')
+        ->click('[aria-label="Choose a team"]')
+        ->click('[role="option"]:has-text("Engineering")')
+        ->assertEnabled('[aria-label="Choose a cycle"]')
+        ->click('[aria-label="Choose a cycle"]')
+        ->click('[role="option"]:has-text("Cycle 12")')
+        ->assertButtonEnabled('Show issues')
+        ->click('Show issues')
+        ->assertAttribute('[role="dialog"] [role="checkbox"][aria-label="ENG-1"]', 'aria-checked', 'true')
+        ->assertSeeIn('[role="dialog"] li:has-text("ENG-2")', 'Signup form')
+        ->click('Import 2 tasks')
+        ->assertSee('2 imported, 0 skipped.')
+        ->assertNotPresent('[role="dialog"]')
+        ->assertCount('@poker-task-row', 2)
+        ->assertScript(p12cTaskTitlesScript(), 'Login form / Signup form')
+        ->assertPresent('[data-test="poker-task-row"]:has-text("Login form") [data-slot="badge"]:text-is("ENG-1")')
+        ->assertPresent('[data-test="poker-task-row"]:has-text("Signup form") [data-slot="badge"]:text-is("ENG-2")');
+
+    Http::assertSent(fn (Request $request): bool => str_contains((string) $request['query'], 'cycle(id')
+        && data_get($request->data(), 'variables.id') === 'cycle-1');
+
+    expect(PokerTask::query()->where('poker_game_id', $game->id)->orderBy('position')->pluck('external_key')->all())
+        ->toBe(['ENG-1', 'ENG-2'])
+        ->and(PokerTask::query()->where('poker_game_id', $game->id)->pluck('external_source')->unique()->all())
+        ->toBe(['linear']);
+});
+
+it('[P12c-03b] imports the result of a Linear search', function () {
+    [$game, $ada] = p12cTable([IntegrationProvider::Linear]);
+    p12cFakeLinear([
+        linearTrackerIssue('lin-1', 'ENG-1', ['title' => 'Login form']),
+        linearTrackerIssue('lin-2', 'ENG-2', ['title' => 'Signup form']),
+    ]);
+
+    $page = $this->awaitRealtime($this->signIn($ada, "/poker/{$game->id}"));
+
+    $page->assertSee('Import')
+        ->click('Import')
+        ->assertSee('Import tasks')
+        ->assertNotPresent('[aria-label="Source"]')
+        ->click('[role="dialog"] button:has-text("Query")')
+        ->assertVisible('#import-query')
+        ->fill('#import-query', 'login')
+        ->assertButtonEnabled('Show issues')
+        ->click('Show issues')
+        ->assertCount('[role="dialog"] [role="checkbox"][aria-label^="ENG-"]', 1)
+        ->assertSeeIn('[role="dialog"] li:has-text("ENG-1")', 'Login form')
+        ->click('Import 1 tasks')
+        ->assertSee('1 imported, 0 skipped.')
+        ->assertNotPresent('[role="dialog"]')
+        ->assertCount('@poker-task-row', 1)
+        ->assertPresent('[data-test="poker-task-row"]:has-text("Login form") [data-slot="badge"]:text-is("ENG-1")');
+
+    Http::assertSent(fn (Request $request): bool => str_contains((string) $request['query'], 'searchIssues')
+        && data_get($request->data(), 'variables.term') === 'login');
+
+    expect(PokerTask::query()->where('poker_game_id', $game->id)->pluck('external_key')->all())->toBe(['ENG-1']);
+});
+
+it('[P12c-03c] shows the source link, the assignee and the source estimate of an imported task, which cannot be edited', function () {
+    [$game, $ada] = p12cTable([IntegrationProvider::Linear]);
+    p12cLinearTask($game, 'lin-1', 'ENG-1', 'Login form', [
+        'description' => 'About **ENG-1**',
+        'external_assignee' => 'Sam Lee',
+        'external_estimate' => '2',
+    ]);
+    PokerTask::factory()->create(['poker_game_id' => $game->id, 'title' => 'Manual task']);
+    $link = 'section[aria-labelledby^="poker-task-"] a[href="https://linear.app/acme/issue/ENG-1"]';
+
+    $page = $this->awaitRealtime($this->signIn($ada, "/poker/{$game->id}"));
+
+    $page->assertCount('@poker-task-row', 2)
+        ->click('Login form')
+        ->assertPresent($link)
+        ->assertSeeIn($link, 'ENG-1')
+        ->assertAttribute($link, 'target', '_blank')
+        ->assertSee('Assignee: Sam Lee')
+        ->assertSee('Linear estimate: 2')
+        ->assertSee('The title and description are managed in Linear. Refresh the tasks to update them.')
+        ->assertNotPresent('[aria-label="Edit task"]')
+        ->assertVisible('[aria-label="Delete task"]');
+
+    $page->click('Manual task')
+        ->assertVisible('[aria-label="Edit task"]')
+        ->assertNotPresent($link)
+        ->assertDontSee('managed in Linear');
+});
+
+it('[P12c-08] shows a guest the key chips only, without import, assignee or sync state', function () {
+    [$game, , , $bob] = p12cTable([IntegrationProvider::Jira]);
+    $task = p12cJiraTask($game, '10001', 'PROJ-1', 'Checkout page', [
+        'external_assignee' => 'Jane Doe',
+        'external_estimate' => '3',
+        'estimate' => '5',
+        'estimate_numeric' => 5,
+        'estimated_at' => now(),
+        'synced_at' => now(),
+    ]);
+    openPokerRound($game, $task);
+    $link = 'section[aria-labelledby^="poker-task-"] a[href="https://acme.atlassian.net/browse/PROJ-1"]';
+
+    $member = $this->awaitRealtime($this->signIn($bob, "/poker/{$game->id}"));
+    $guest = $this->awaitRealtime($this->joinAsGuest("/poker/join/{$game->guest_token}", 'Visitor'));
+
+    $member->assertPresent('[data-test="poker-task-row"]:has-text("Checkout page") [data-slot="badge"]:text-is("PROJ-1")')
+        ->assertPresent($link)
+        ->assertSee('Assignee: Jane Doe')
+        ->assertSee('Jira estimate: 3')
+        ->assertSee('Synced to Jira')
+        ->assertVisible('button:has-text("Import")');
+
+    $guest->assertPresent('[data-test="poker-task-row"]:has-text("Checkout page") [data-slot="badge"]:text-is("PROJ-1")')
+        ->assertPresent($link)
+        ->assertNotPresent('button:has-text("Import")')
+        ->assertNotPresent('[aria-label="More task actions"]')
+        ->assertDontSee('Jane Doe')
+        ->assertDontSee('Jira estimate')
+        ->assertDontSee('Synced to Jira')
+        ->assertDontSee('Sync pending');
+
+    expect(data_get($this->snapshotOf($guest, "/poker/{$game->id}/snapshot"), 'tasks.0.external'))->toBe([
+        'source' => 'jira',
+        'key' => 'PROJ-1',
+        'url' => 'https://acme.atlassian.net/browse/PROJ-1',
+        'isManaged' => true,
+    ]);
+});
