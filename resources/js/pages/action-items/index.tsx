@@ -29,10 +29,12 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { useSafeConnectionStatus } from '@/hooks/use-retro-channel';
 import { useTrans } from '@/hooks/use-trans';
 import { workspaceActionItemEndpoints } from '@/lib/action-items/endpoints';
 import { formatShortDate } from '@/lib/action-items/format';
 import type { ActionItemViewer } from '@/lib/action-items/permissions';
+import { realtimeState } from '@/lib/realtime/realtime-state';
 import { RetroRequestError, retroRequest } from '@/lib/retro/api';
 import { countActionItemComments } from '@/lib/retro/board-reducer';
 import type { ActionItem } from '@/lib/retro/types';
@@ -325,6 +327,8 @@ export default function ActionItemsIndex({
     const [focused, setFocused] = useState(focusedItem);
     const [knownFocused, setKnownFocused] = useState(focusedItem);
     const [creating, setCreating] = useState(false);
+    const [subscribedChannels, setSubscribedChannels] = useState<string[]>([]);
+    const connectionStatus = useSafeConnectionStatus();
     const pendingReload = useRef<ReturnType<typeof setTimeout> | null>(null);
     const endpoints = useMemo(
         () => workspaceActionItemEndpoints(workspace.slug),
@@ -412,6 +416,11 @@ export default function ActionItemsIndex({
         for (const name of names) {
             echo<'reverb'>()
                 .private(name)
+                .subscribed(() =>
+                    setSubscribedChannels((current) =>
+                        current.includes(name) ? current : [...current, name],
+                    ),
+                )
                 .listen(
                     '.team-action-item.saved',
                     (payload: { actionItem: ActionItem }) => {
@@ -437,6 +446,8 @@ export default function ActionItemsIndex({
             for (const name of names) {
                 echo().leave(name);
             }
+
+            setSubscribedChannels([]);
         };
     }, [channelKey]);
 
@@ -546,7 +557,15 @@ export default function ActionItemsIndex({
     return (
         <>
             <Head title={t('Action items')} />
-            <div className="max-w-4xl space-y-6 p-4">
+            <div
+                className="max-w-4xl space-y-6 p-4"
+                data-realtime={realtimeState(
+                    connectionStatus === 'connected',
+                    subscribedChannels.length === realtimeTeamIds.length
+                        ? subscribedChannels
+                        : [],
+                )}
+            >
                 <div className="flex flex-wrap items-start justify-between gap-4">
                     <Heading
                         title={t('Action items')}
