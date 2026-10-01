@@ -3,6 +3,7 @@
 namespace App\Support\Integrations\GitHub;
 
 use App\Enums\IntegrationProvider;
+use App\Support\Integrations\Base64Url;
 use App\Support\Integrations\Exceptions\ProviderRejected;
 
 /**
@@ -35,12 +36,7 @@ class GitHubAppJwt
             throw new ProviderRejected(IntegrationProvider::GitHub, 'github_app_key_unusable');
         }
 
-        return implode('.', [...$segments, self::base64Url($signature)]);
-    }
-
-    public static function base64Url(string $value): string
-    {
-        return rtrim(strtr(base64_encode($value), '+/', '-_'), '=');
+        return implode('.', [...$segments, Base64Url::encode($signature)]);
     }
 
     private function privateKey(): string
@@ -62,6 +58,6 @@ class GitHubAppJwt
      */
     private static function encode(array $data): string
     {
-        return self::base64Url((string) json_encode($data));
+        return Base64Url::encode((string) json_encode($data));
     }
 }

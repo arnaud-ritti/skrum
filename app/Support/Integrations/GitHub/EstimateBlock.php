@@ -3,7 +3,6 @@
 namespace App\Support\Integrations\GitHub;
 
 use InvalidArgumentException;
-use RuntimeException;
 
 /**
  * The one block of a GitHub issue body skrum owns (spec 8 §4.2):
@@ -29,19 +28,24 @@ class EstimateBlock
 
     private const NeverWritten = ['?', '☕'];
 
-    private const BlockPattern = '~^[ \t]*<!-- skrum:estimate -->[ \t]*\r?\n(?:(?!^[ \t]*<!-- /?skrum:estimate -->)[^\n]*\n)*?^[ \t]*<!-- /skrum:estimate -->[ \t]*(?=\r?\n|\z)~m';
-
-    private const ValuePattern = '~\A[^\n]*\n[ \t]*\*\*Estimate:\*\*([^\n]*?)[ \t]*\r?(?:\n|\z)~';
+    private const Blank = " \t";
 
     public static function value(?string $body): ?string
     {
         $blocks = self::blocks((string) $body);
+        $lines = $blocks === [] ? [] : explode("\n", $blocks[0][0], 3);
 
-        if ($blocks === [] || preg_match(self::ValuePattern, $blocks[0][0], $match) !== 1) {
+        if (count($lines) < 3) {
             return null;
         }
 
-        $value = GitHubMarkdown::unescape(trim($match[1]));
+        $valueLine = ltrim($lines[1], self::Blank);
+
+        if (! str_starts_with($valueLine, self::Label)) {
+            return null;
+        }
+
+        $value = GitHubMarkdown::unescape(trim(substr($valueLine, strlen(self::Label))));
 
         return $value === '' ? null : $value;
     }
@@ -111,15 +115,78 @@ class EstimateBlock
     }
 
     /**
+     * Every block as [text, offset], found line by line so no body size can
+     * exhaust a regex engine. A block runs from its opening marker line to
+     * the next closing marker line; a marker line or marker-like line in
+     * between abandons the opening, so an unclosed marker never swallows
+     * user text or a later block.
+     *
      * @return array<int, array{0: string, 1: int}>
      */
     private static function blocks(string $body): array
     {
-        if (preg_match_all(self::BlockPattern, $body, $matches, PREG_OFFSET_CAPTURE) === false) {
-            throw new RuntimeException('Could not scan the issue body for the estimate block: '.preg_last_error_msg());
+        $lines = explode("\n", $body);
+        $offsets = [];
+        $offset = 0;
+
+        foreach ($lines as $index => $line) {
+            $offsets[$index] = $offset;
+            $offset += strlen($line) + 1;
         }
 
-        return $matches[0];
+        $last = count($lines) - 1;
+        $blocks = [];
+        $index = 0;
+
+        while ($index < $last) {
+            if (! self::isMarkerLine($lines[$index], self::Open, true)) {
+                $index++;
+
+                continue;
+            }
+
+            $open = $index;
+            $index++;
+
+            while ($index <= $last && ! self::startsWithMarker($lines[$index])) {
+                $index++;
+            }
+
+            if ($index > $last) {
+                break;
+            }
+
+            if (! self::isMarkerLine($lines[$index], self::Close, $index < $last)) {
+                continue;
+            }
+
+            $end = $offsets[$index] + strlen(self::withoutCarriageReturn($lines[$index], $index < $last));
+            $blocks[] = [substr($body, $offsets[$open], $end - $offsets[$open]), $offsets[$open]];
+            $index++;
+        }
+
+        return $blocks;
+    }
+
+    /**
+     * The marker alone on its line, blanks around it allowed; a carriage
+     * return is part of the line break only when a line feed follows.
+     */
+    private static function isMarkerLine(string $line, string $marker, bool $hasLineFeed): bool
+    {
+        return trim(self::withoutCarriageReturn($line, $hasLineFeed), self::Blank) === $marker;
+    }
+
+    private static function startsWithMarker(string $line): bool
+    {
+        $line = ltrim($line, self::Blank);
+
+        return str_starts_with($line, self::Open) || str_starts_with($line, self::Close);
+    }
+
+    private static function withoutCarriageReturn(string $line, bool $hasLineFeed): string
+    {
+        return $hasLineFeed && str_ends_with($line, "\r") ? substr($line, 0, -1) : $line;
     }
 
     /**

@@ -7,6 +7,7 @@ use App\Models\Team;
 use App\Models\TeamIntegration;
 use App\Models\User;
 use App\Support\Integrations\Exceptions\RateLimited;
+use App\Support\Integrations\Exceptions\ReconnectRequired;
 use App\Support\Integrations\GitHub\GitHubAppJwt;
 use App\Support\Integrations\GitHub\GitHubClient;
 use Illuminate\Http\Client\Request;
@@ -16,6 +17,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Testing\TestResponse;
+use Inertia\Testing\AssertableInertia as Assert;
 
 beforeEach(function () {
     Http::preventStrayRequests();
@@ -195,4 +197,90 @@ it('turns GitHub rate limits into a wait', function () {
     } catch (RateLimited $exception) {
         expect($exception->retryAfter)->toBe(120);
     }
+});
+
+it('keeps the connection when minting the installation token is rate limited', function (array $headers, int $status) {
+    Http::fake(['api.github.com/app/installations/4242/access_tokens' => Http::response(['message' => 'You have exceeded a secondary rate limit'], $status, $headers)]);
+    $integration = TeamIntegration::factory()->gitHub()->create();
+
+    expect(fn () => app(GitHubClient::class)->repositories($integration))->toThrow(RateLimited::class)
+        ->and($integration->fresh()?->status)->toBe(IntegrationStatus::Active);
+})->with([
+    'retry after' => [['Retry-After' => '60'], 403],
+    'no remaining calls' => [['x-ratelimit-remaining' => '0'], 403],
+    'too many requests' => [[], 429],
+]);
+
+it('asks to reconnect when minting the installation token is forbidden', function () {
+    Http::fake(['api.github.com/app/installations/4242/access_tokens' => Http::response(['message' => 'This installation has been suspended'], 403)]);
+    $integration = TeamIntegration::factory()->gitHub()->create();
+
+    expect(fn () => app(GitHubClient::class)->repositories($integration))->toThrow(ReconnectRequired::class)
+        ->and($integration->fresh()?->status)->toBe(IntegrationStatus::ReconnectRequired)
+        ->and($integration->fresh()?->last_error)->toBe('The GitHub App is suspended on acme.');
+});
+
+it('forgets the cached repositories when the installation is connected again or disconnected', function () {
+    fakeGitHubUserInstallations([
+        ['id' => 4242, 'account' => ['login' => 'acme', 'type' => 'Organization'], 'permissions' => ['issues' => 'write']],
+    ]);
+    $team = Team::factory()->create();
+    $admin = integrationAdmin($team);
+    Cache::put('github-repositories:4242', [['id' => '9001', 'name' => 'acme/api']], now()->addMinutes(5));
+
+    gitHubCallback($admin, $team);
+
+    expect(Cache::has('github-repositories:4242'))->toBeFalse();
+
+    Cache::put('github-repositories:4242', [['id' => '9001', 'name' => 'acme/api']], now()->addMinutes(5));
+    $integration = TeamIntegration::query()->sole();
+
+    $this->actingAs($admin)
+        ->deleteJson(route('teams.integrations.destroy', [$team->workspace, $team, $integration]))
+        ->assertNoContent();
+
+    expect(Cache::has('github-repositories:4242'))->toBeFalse();
+});
+
+it('refuses a callback without an installation', function () {
+    $team = Team::factory()->create();
+
+    gitHubCallback(integrationAdmin($team), $team, ['installation_id' => ''])
+        ->assertInertiaFlash('toast', ['type' => 'error', 'message' => "This GitHub installation isn't available to your account."]);
+
+    expect(TeamIntegration::query()->count())->toBe(0);
+    Http::assertNothingSent();
+});
+
+it('finds the installation on a later page of the person\'s installations', function () {
+    Http::fake([
+        'github.com/login/oauth/access_token' => Http::response(['access_token' => 'ghu_user_token', 'token_type' => 'bearer']),
+        'api.github.com/user/installations*' => Http::sequence()
+            ->push(['total_count' => 2, 'installations' => [['id' => 1, 'account' => ['login' => 'other', 'type' => 'User'], 'permissions' => ['issues' => 'read']]]], 200, ['Link' => '<https://api.github.com/user/installations?per_page=100&page=2>; rel="next"'])
+            ->push(['total_count' => 2, 'installations' => [['id' => 4242, 'account' => ['login' => 'acme', 'type' => 'Organization'], 'permissions' => ['issues' => 'write']]]]),
+    ]);
+    $team = Team::factory()->create();
+
+    gitHubCallback(integrationAdmin($team), $team)
+        ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'GitHub connected.']);
+
+    expect(TeamIntegration::query()->sole()->setting('accountLogin'))->toBe('acme');
+    Http::assertSent(fn (Request $request) => str_starts_with($request->url(), 'https://api.github.com/user/installations') && $request['page'] === 2);
+});
+
+it('shows the export repository on the integrations page when the installation\'s repositories are known', function () {
+    $team = Team::factory()->create();
+    $integration = TeamIntegration::factory()->gitHub()->create(['team_id' => $team->id]);
+    $integration->forceFill(['settings' => [...$integration->settings, 'exportRepositoryId' => '9001']])->save();
+    $page = fn () => $this->actingAs(integrationAdmin($team))->get(route('teams.integrations.index', [$team->workspace, $team]));
+
+    $page()->assertInertia(fn (Assert $page) => $page->where('providers.0.connection.settings.exportRepositoryName', null));
+
+    Cache::put('github-repositories:4242', [['id' => '9002', 'name' => 'acme/web'], ['id' => '9001', 'name' => 'acme/api']], now()->addMinutes(5));
+
+    $page()->assertInertia(fn (Assert $page) => $page
+        ->where('providers.0.provider', 'github')
+        ->where('providers.0.connection.settings.exportRepositoryId', '9001')
+        ->where('providers.0.connection.settings.exportRepositoryName', 'acme/api'));
+    Http::assertNothingSent();
 });

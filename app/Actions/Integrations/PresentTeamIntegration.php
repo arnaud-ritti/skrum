@@ -4,11 +4,14 @@ namespace App\Actions\Integrations;
 
 use App\Enums\IntegrationProvider;
 use App\Models\TeamIntegration;
+use App\Support\Integrations\GitHub\GitHubClient;
 use App\Support\Integrations\JiraDataCenter\JiraDataCenterClient;
 use Illuminate\Support\Arr;
 
 class PresentTeamIntegration
 {
+    public function __construct(private GitHubClient $gitHub) {}
+
     /**
      * Non-secret settings the integrations page may show, per provider.
      *
@@ -85,6 +88,22 @@ class PresentTeamIntegration
             $settings['tokenSavedAt'] = $integration->setting('tokenSavedAt');
         }
 
+        if ($integration->provider === IntegrationProvider::GitHub) {
+            $settings['exportRepositoryName'] = $this->exportRepositoryName($integration);
+        }
+
         return $settings;
+    }
+
+    private function exportRepositoryName(TeamIntegration $integration): ?string
+    {
+        $installationId = $integration->setting('installationId');
+        $repositoryId = $integration->setting('exportRepositoryId');
+
+        if (! is_string($installationId) || ! is_string($repositoryId)) {
+            return null;
+        }
+
+        return $this->gitHub->knownRepositoryName($installationId, $repositoryId);
     }
 }

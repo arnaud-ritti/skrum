@@ -331,3 +331,47 @@ it('leaves out the issues of a repository the installation no longer sees', func
 
     Http::assertNotSent(fn (Request $request) => $request->url() === 'https://api.github.com/graphql');
 });
+
+it('reads and writes back an issue whose body holds an unclosed marker and thousands of short lines', function () {
+    $table = trackerTable(IntegrationProvider::GitHub);
+    $body = "<!-- skrum:estimate -->\n".str_repeat("x\n", 32000);
+    fakeGitHubTrackerApi([
+        'api.github.com/graphql' => gitHubGraphqlIssues([7 => gitHubIssue(7, ['body' => $body])]),
+        'api.github.com/repositories/9001/issues/7' => Http::response(gitHubIssue(7, ['body' => $body])),
+        'api.github.com/repos/acme/api/issues/7' => fn (Request $request) => Http::response(gitHubIssue(7, ['body' => $request['body']])),
+    ]);
+
+    $issue = app(GitHubTracker::class)->issues($table['integration'], ['9001/7'])['9001/7'];
+
+    expect($issue->estimate)->toBeNull()
+        ->and(runGitHubSync(gitHubSyncTask($table, '5'))->synced_at)->not->toBeNull()
+        ->and(gitHubPatches()[0]['body'])->toBe(rtrim($body)."\n\n".renderedEstimateBlock('5'));
+});
+
+it('lists repositories for the picker from the cached listing', function () {
+    $table = trackerTable(IntegrationProvider::GitHub);
+    fakeGitHubTrackerApi();
+
+    foreach (['api', 'web'] as $query) {
+        $this->actingAs($table['member'])
+            ->getJson(route('poker.imports.containers.index', [$table['game'], 'github', 'q' => $query]))
+            ->assertOk()
+            ->assertJsonCount(1, 'containers');
+    }
+
+    expect(Http::recorded(fn (Request $request) => str_starts_with($request->url(), 'https://api.github.com/installation/repositories')))->toHaveCount(1);
+});
+
+it('accepts a write-back GitHub echoes with normalised line endings', function () {
+    $table = trackerTable(IntegrationProvider::GitHub);
+    fakeGitHubTrackerApi([
+        'api.github.com/repositories/9001/issues/7' => Http::response(gitHubIssue(7, ['body' => "Steps\r\n\r\n- one\r\n- two"])),
+        'api.github.com/repos/acme/api/issues/7' => fn (Request $request) => Http::response(gitHubIssue(7, ['body' => str_replace("\r\n", "\n", $request['body'])])),
+    ]);
+
+    $task = runGitHubSync(gitHubSyncTask($table, '5'));
+
+    expect($task->synced_at)->not->toBeNull()
+        ->and($task->sync_error)->toBeNull()
+        ->and(gitHubPatches())->toHaveCount(1);
+});

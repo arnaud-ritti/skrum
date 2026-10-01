@@ -59,6 +59,7 @@ class ConnectGitHub implements OAuthConnector
         ]);
 
         $this->client->forgetInstallationToken($installationId);
+        $this->client->forgetRepositories($installationId);
 
         return $integration;
     }

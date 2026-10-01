@@ -4,6 +4,7 @@ namespace App\Actions\Integrations;
 
 use App\Enums\IntegrationProvider;
 use App\Models\TeamIntegration;
+use App\Support\Integrations\GitHub\GitHubClient;
 use App\Support\Integrations\Linear\LinearClient;
 use App\Support\Integrations\Slack\SlackClient;
 use App\Support\Integrations\Telegram\TelegramClient;
@@ -18,6 +19,7 @@ class DisconnectIntegration
         private SlackClient $slack,
         private TelegramClient $telegram,
         private LinearClient $linear,
+        private GitHubClient $gitHub,
     ) {}
 
     public function handle(TeamIntegration $integration): void
@@ -26,7 +28,8 @@ class DisconnectIntegration
             IntegrationProvider::Slack => fn () => $this->slack->revoke($integration),
             IntegrationProvider::Telegram => fn () => $this->leaveChatUnlessShared($integration),
             IntegrationProvider::Linear => fn () => $this->linear->revoke($integration),
-            IntegrationProvider::Jira, IntegrationProvider::JiraDataCenter, IntegrationProvider::GitHub, IntegrationProvider::MicrosoftTeams, IntegrationProvider::Mattermost, IntegrationProvider::Webhook => fn () => null,
+            IntegrationProvider::GitHub => fn () => $this->gitHub->forgetRepositories((string) $integration->setting('installationId')),
+            IntegrationProvider::Jira, IntegrationProvider::JiraDataCenter, IntegrationProvider::MicrosoftTeams, IntegrationProvider::Mattermost, IntegrationProvider::Webhook => fn () => null,
         };
 
         $revoke();

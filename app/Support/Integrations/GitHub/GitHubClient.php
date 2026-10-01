@@ -16,6 +16,7 @@ use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
+use SensitiveParameter;
 
 /**
  * GitHub Issues through the GitHub App (spec 8 §4.2). Installation tokens
@@ -64,7 +65,7 @@ class GitHubClient
     /**
      * The person's user token, to be used for the installation check only.
      */
-    public function exchangeCode(string $code): string
+    public function exchangeCode(#[SensitiveParameter] string $code): string
     {
         $response = ProviderHttp::send(self::Provider, fn () => ProviderHttp::request()->withoutRedirecting()->post(self::OAuthTokenUrl, [
             'client_id' => (string) config('services.github_app.client_id'),
@@ -85,7 +86,7 @@ class GitHubClient
     /**
      * @return array<int, array{id: string, accountLogin: string, accountType: 'Organization'|'User', canWriteIssues: bool}>
      */
-    public function userInstallations(string $userToken): array
+    public function userInstallations(#[SensitiveParameter] string $userToken): array
     {
         $installations = [];
 
@@ -244,10 +245,27 @@ class GitHubClient
     {
         /** @var array<int, array{id: string, name: string}> */
         return Cache::remember(
-            'github-repositories:'.$this->installationId($integration),
+            self::repositoriesKey($this->installationId($integration)),
             now()->addMinutes(self::RepositoriesCacheMinutes),
             fn (): array => $this->repositories($integration),
         );
+    }
+
+    /**
+     * The repository's `owner/repo` from the cached listing only, so pages
+     * never wait on GitHub; null until the listing is cached.
+     */
+    public function knownRepositoryName(string $installationId, string $repositoryId): ?string
+    {
+        $repositories = Cache::get(self::repositoriesKey($installationId));
+
+        if (! is_array($repositories)) {
+            return null;
+        }
+
+        $name = collect($repositories)->firstWhere('id', $repositoryId)['name'] ?? null;
+
+        return is_string($name) ? $name : null;
     }
 
     public static function unavailableRepositoryMessage(): string
@@ -258,6 +276,11 @@ class GitHubClient
     public function forgetInstallationToken(string $installationId): void
     {
         Cache::forget(self::tokenKey($installationId));
+    }
+
+    public function forgetRepositories(string $installationId): void
+    {
+        Cache::forget(self::repositoriesKey($installationId));
     }
 
     public static function safeFullName(mixed $fullName): ?string
@@ -340,7 +363,7 @@ class GitHubClient
             throw new ReconnectRequired(self::Provider, $this->uninstalledMessage($integration));
         }
 
-        if ($response->status() === 403) {
+        if ($response->status() === 403 && ! self::isRateLimited($response)) {
             throw new ReconnectRequired(self::Provider, $this->suspendedMessage($integration));
         }
 
@@ -392,10 +415,15 @@ class GitHubClient
         return "github-installation-token:{$installationId}";
     }
 
+    private static function repositoriesKey(string $installationId): string
+    {
+        return "github-repositories:{$installationId}";
+    }
+
     /**
      * @param  array<string, mixed>  $data
      */
-    private function call(string $method, string $path, array $data, string $token): Response
+    private function call(string $method, string $path, array $data, #[SensitiveParameter] string $token): Response
     {
         $options = $method === 'GET' ? ['query' => $data] : ['json' => $data];
 
@@ -409,12 +437,18 @@ class GitHubClient
             ->withHeaders(['Accept' => 'application/vnd.github+json', 'X-GitHub-Api-Version' => self::ApiVersion]);
     }
 
+    /**
+     * GitHub answers primary and secondary rate limits with 403 as well.
+     */
+    private static function isRateLimited(Response $response): bool
+    {
+        return $response->status() === 429
+            || ($response->status() === 403 && ($response->header('x-ratelimit-remaining') === '0' || $response->header('Retry-After') !== ''));
+    }
+
     private function fail(Response $response): never
     {
-        $limited = $response->status() === 429
-            || ($response->status() === 403 && ($response->header('x-ratelimit-remaining') === '0' || $response->header('Retry-After') !== ''));
-
-        if ($limited) {
+        if (self::isRateLimited($response)) {
             throw new RateLimited(self::Provider, $this->retryAfter($response), ProviderHttp::message($response));
         }
 

@@ -60,7 +60,7 @@ class GitHubTracker implements IssueTracker
     {
         $needle = Str::lower(trim((string) $query));
         $repositories = array_values(array_filter(
-            $this->client->repositories($integration),
+            $this->client->cachedRepositories($integration),
             fn (array $repository): bool => $needle === '' || str_contains(Str::lower($repository['name']), $needle),
         ));
         $offset = (max($page, 1) - 1) * self::ContainerPageSize;
@@ -351,13 +351,22 @@ class GitHubTracker implements IssueTracker
         return $issues;
     }
 
+    /**
+     * Line endings are compared normalised: GitHub may store the body it
+     * was sent with CRLF turned into LF.
+     */
     private static function landed(mixed $body, string $written, ?string $estimate): bool
     {
         $body = is_string($body) ? $body : '';
 
         return EstimateBlock::count($body) === ($estimate === null ? 0 : 1)
             && EstimateBlock::value($body) === $estimate
-            && EstimateBlock::strip($body) === EstimateBlock::strip($written);
+            && self::withLineFeeds(EstimateBlock::strip($body)) === self::withLineFeeds(EstimateBlock::strip($written));
+    }
+
+    private static function withLineFeeds(string $text): string
+    {
+        return str_replace("\r\n", "\n", $text);
     }
 
     /**

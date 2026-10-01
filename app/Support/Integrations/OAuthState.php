@@ -5,10 +5,10 @@ namespace App\Support\Integrations;
 use App\Enums\IntegrationAccess;
 use App\Enums\IntegrationProvider;
 use App\Models\Team;
-use App\Support\Integrations\GitHub\GitHubAppJwt;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use LogicException;
+use SensitiveParameter;
 
 class OAuthState
 {
@@ -86,8 +86,8 @@ class OAuthState
         return self::challenge($verifier);
     }
 
-    public static function challenge(string $verifier): string
+    public static function challenge(#[SensitiveParameter] string $verifier): string
     {
-        return GitHubAppJwt::base64Url(hash('sha256', $verifier, true));
+        return Base64Url::encode(hash('sha256', $verifier, true));
     }
 }
