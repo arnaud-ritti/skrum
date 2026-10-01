@@ -544,3 +544,14 @@
     li[data-testid='unlockAllElements'] {
     display: none !important;
 }
+
+/*
+ * ===== Plan 18b+18c additions to @theme (integrators only) =====
+ * Kept outside the design-system block above, which stays a verbatim copy of
+ * docs/design-system/app.css.
+ */
+@theme {
+    /* Skeleton: components/Skeleton/README.md asks for 1.6s (Tailwind: 2s). */
+    --animate-pulse: pulse 1.6s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+/* ===== End of plan 18b+18c additions ===== */
