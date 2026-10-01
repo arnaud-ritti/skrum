@@ -37,14 +37,14 @@ class ConnectJira implements OAuthConnector
         return [...$kept, 'cloudId' => $site['cloudId'], 'siteUrl' => $site['url'], 'siteName' => $site['name']];
     }
 
-    public function authorizationUrl(string $state, IntegrationAccess $access): string
+    public function authorizationUrl(string $state, IntegrationAccess $access, string $codeChallenge): string
     {
         return $this->jira->authorizationUrl($state, $access);
     }
 
-    public function connect(Team $team, User $user, IntegrationAccess $access, string $code): TeamIntegration
+    public function connect(Team $team, User $user, IntegrationAccess $access, OAuthCallback $callback): TeamIntegration
     {
-        $tokens = $this->jira->exchangeCode($code);
+        $tokens = $this->jira->exchangeCode($callback->code);
         $sites = $this->jira->accessibleResources($tokens['access_token']);
 
         if ($sites === []) {

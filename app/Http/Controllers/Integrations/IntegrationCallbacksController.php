@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Integrations;
 
+use App\Actions\Integrations\OAuthCallback;
 use App\Actions\Integrations\OAuthConnectors;
 use App\Enums\IntegrationProvider;
 use App\Enums\IntegrationStatus;
@@ -39,8 +40,14 @@ class IntegrationCallbacksController extends Controller
             return $this->failed($provider, $team);
         }
 
+        $installationId = $request->query('installation_id');
+
         try {
-            $integration = $this->connectors->for($provider)->connect($team, $request->user(), $state['access'], $code);
+            $integration = $this->connectors->for($provider)->connect($team, $request->user(), $state['access'], new OAuthCallback(
+                $code,
+                $state['codeVerifier'],
+                is_string($installationId) ? $installationId : null,
+            ));
         } catch (ConnectionRefused $exception) {
             return $this->failed($provider, $team, $exception->getMessage());
         } catch (IntegrationException) {

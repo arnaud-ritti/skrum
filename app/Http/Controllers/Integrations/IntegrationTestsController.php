@@ -46,10 +46,10 @@ class IntegrationTestsController extends Controller
         $test = match ($integration->provider) {
             IntegrationProvider::Slack => fn () => $slack->postMessage($integration, ['text' => $message]),
             IntegrationProvider::Telegram => fn () => $telegram->sendMessageTo($integration, e($message)),
-            IntegrationProvider::Jira, IntegrationProvider::Linear => fn () => $checkIntegration->handle($integration),
+            IntegrationProvider::Jira, IntegrationProvider::Linear, IntegrationProvider::JiraDataCenter => fn () => $checkIntegration->handle($integration),
             IntegrationProvider::MicrosoftTeams => fn () => $teams->postMessage($integration, MicrosoftTeamsText::message([MicrosoftTeamsText::block($message)])),
             IntegrationProvider::Mattermost => fn () => $mattermost->postMessage($integration, MattermostText::escape($message)),
-            IntegrationProvider::JiraDataCenter, IntegrationProvider::GitHub => throw new NotConnected($integration->provider),
+            IntegrationProvider::GitHub => throw new NotConnected($integration->provider),
             IntegrationProvider::Webhook => fn () => $webhooks->send($integration, WebhookMessage::test()),
         };
 

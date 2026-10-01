@@ -12,7 +12,7 @@ use App\Support\Integrations\ProviderHttp;
 use App\Support\Integrations\RefreshesTokens;
 use Illuminate\Http\Client\Response;
 
-class JiraClient implements RefreshesTokens
+class JiraClient implements JiraApi, RefreshesTokens
 {
     public const AuthorizeUrl = 'https://auth.atlassian.com/authorize';
 
@@ -123,6 +123,16 @@ class JiraClient implements RefreshesTokens
     public function put(TeamIntegration $integration, string $path, array $body = []): array
     {
         return $this->request($integration, 'PUT', $path, $body);
+    }
+
+    public function apiPath(string $resource): string
+    {
+        return 'rest/api/3/'.ltrim($resource, '/');
+    }
+
+    public function browseUrl(TeamIntegration $integration, string $key): string
+    {
+        return rtrim((string) $integration->setting('siteUrl', ''), '/')."/browse/{$key}";
     }
 
     /**

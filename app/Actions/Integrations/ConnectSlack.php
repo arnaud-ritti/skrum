@@ -15,14 +15,14 @@ class ConnectSlack implements OAuthConnector
 {
     public function __construct(private SlackClient $slack, private SaveTeamIntegration $saveTeamIntegration) {}
 
-    public function authorizationUrl(string $state, IntegrationAccess $access): string
+    public function authorizationUrl(string $state, IntegrationAccess $access, string $codeChallenge): string
     {
         return $this->slack->authorizationUrl($state);
     }
 
-    public function connect(Team $team, User $user, IntegrationAccess $access, string $code): TeamIntegration
+    public function connect(Team $team, User $user, IntegrationAccess $access, OAuthCallback $callback): TeamIntegration
     {
-        $payload = $this->slack->exchangeCode($code);
+        $payload = $this->slack->exchangeCode($callback->code);
         $webhook = data_get($payload, 'incoming_webhook.url');
 
         if (! is_string($webhook) || ! SlackClient::isWebhookUrl($webhook)) {

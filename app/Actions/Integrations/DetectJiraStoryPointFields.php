@@ -4,7 +4,7 @@ namespace App\Actions\Integrations;
 
 use App\Models\TeamIntegration;
 use App\Support\Integrations\Exceptions\IntegrationException;
-use App\Support\Integrations\Jira\JiraClient;
+use App\Support\Integrations\Jira\JiraApis;
 use Illuminate\Support\Str;
 
 class DetectJiraStoryPointFields
@@ -16,14 +16,16 @@ class DetectJiraStoryPointFields
      */
     private const NameRanks = ['story points' => 1, 'story point estimate' => 2];
 
-    public function __construct(private JiraClient $jira) {}
+    public function __construct(private JiraApis $jiraApis) {}
 
     public function handle(TeamIntegration $integration): TeamIntegration
     {
         $numberFields = [];
         $ranked = [];
 
-        foreach ($this->jira->get($integration, 'rest/api/3/field') as $field) {
+        $api = $this->jiraApis->for($integration);
+
+        foreach ($api->get($integration, $api->apiPath('field')) as $field) {
             if (! is_array($field) || ($field['custom'] ?? false) !== true || data_get($field, 'schema.type') !== 'number') {
                 continue;
             }

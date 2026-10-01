@@ -8,6 +8,7 @@ use App\Support\Integrations\Exceptions\NotConnected;
 use App\Support\Integrations\Exceptions\ReconnectRequired;
 use App\Support\Integrations\IntegrationTokens;
 use App\Support\Integrations\Jira\JiraClient;
+use App\Support\Integrations\JiraDataCenter\JiraDataCenterClient;
 use App\Support\Integrations\Linear\LinearClient;
 use App\Support\Integrations\Mattermost\MattermostClient;
 use App\Support\Integrations\MicrosoftTeams\MicrosoftTeamsClient;
@@ -21,6 +22,7 @@ class CheckIntegration
         private SlackClient $slack,
         private TelegramClient $telegram,
         private JiraClient $jira,
+        private JiraDataCenterClient $jiraDataCenter,
         private LinearClient $linear,
         private MicrosoftTeamsClient $teams,
         private MattermostClient $mattermost,
@@ -37,7 +39,8 @@ class CheckIntegration
             IntegrationProvider::Linear => fn () => $this->linear->query($integration, 'query { viewer { id } }'),
             IntegrationProvider::MicrosoftTeams => fn () => $this->teams->ensureUsableUrl($integration),
             IntegrationProvider::Mattermost => fn () => $this->mattermost->ensureUsableUrl($integration),
-            IntegrationProvider::JiraDataCenter, IntegrationProvider::GitHub => throw new NotConnected($integration->provider),
+            IntegrationProvider::JiraDataCenter => fn () => $this->jiraDataCenter->get($integration, 'rest/api/2/myself'),
+            IntegrationProvider::GitHub => throw new NotConnected($integration->provider),
             IntegrationProvider::Webhook => fn () => $this->webhooks->ensureUsableUrl($integration),
         };
 

@@ -8,6 +8,7 @@ use App\Enums\IntegrationProvider;
 use App\Http\Controllers\Controller;
 use App\Models\Team;
 use App\Models\Workspace;
+use App\Support\Integrations\JiraDataCenter\JiraDataCenterClient;
 use App\Support\Integrations\OAuthState;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -22,6 +23,11 @@ class IntegrationAuthorizationsController extends Controller
     {
         Gate::authorize('manageIntegrations', $team);
 
+        abort_if(
+            $provider === IntegrationProvider::JiraDataCenter && ! in_array(JiraDataCenterClient::AuthMethodOAuth, $provider->authMethods(), true),
+            404,
+        );
+
         $validated = $request->validate([
             'access' => ['sometimes', Rule::enum(IntegrationAccess::class)],
         ]);
@@ -32,6 +38,6 @@ class IntegrationAuthorizationsController extends Controller
 
         $state = $this->oauthState->issue($request, $provider, $team, $access);
 
-        return redirect()->away($this->connectors->for($provider)->authorizationUrl($state, $access));
+        return redirect()->away($this->connectors->for($provider)->authorizationUrl($state, $access, $this->oauthState->codeChallenge($request)));
     }
 }

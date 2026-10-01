@@ -40,7 +40,7 @@ class ExportActionItem
 
         WorkspaceActionItemGuard::writable($item);
 
-        $this->tokens->accessToken($integration);
+        $this->tokens->prepare($integration);
 
         try {
             /** @var array{0: ActionItem, 1: ExportOutcome} $result */

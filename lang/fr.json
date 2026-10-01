@@ -1642,5 +1642,9 @@
     "Could not load the deliveries.": "Impossible de charger les envois.",
     "Board link": "Lien du tableau",
     "Game link": "Lien du jeu",
-    "Room invite": "Invitation à la salle"
+    "Room invite": "Invitation à la salle",
+    "skrum is now configured for another Jira server. Reconnect.": "skrum est désormais configuré pour un autre serveur Jira. Reconnectez-vous.",
+    "Personal access tokens are turned off on this skrum instance. Connect with OAuth.": "Les jetons d'accès personnels sont désactivés sur cette instance de skrum. Connectez-vous avec OAuth.",
+    "The Jira personal access token was revoked or has expired. Paste a new one.": "Le jeton d'accès personnel Jira a été révoqué ou a expiré. Collez-en un nouveau.",
+    "Jira didn't accept this token.": "Jira n'a pas accepté ce jeton."
 }

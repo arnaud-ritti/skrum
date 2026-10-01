@@ -15,14 +15,14 @@ class ConnectLinear implements OAuthConnector
 {
     public function __construct(private LinearClient $linear, private SaveTeamIntegration $saveTeamIntegration) {}
 
-    public function authorizationUrl(string $state, IntegrationAccess $access): string
+    public function authorizationUrl(string $state, IntegrationAccess $access, string $codeChallenge): string
     {
         return $this->linear->authorizationUrl($state, $access);
     }
 
-    public function connect(Team $team, User $user, IntegrationAccess $access, string $code): TeamIntegration
+    public function connect(Team $team, User $user, IntegrationAccess $access, OAuthCallback $callback): TeamIntegration
     {
-        $tokens = $this->linear->exchangeCode($code);
+        $tokens = $this->linear->exchangeCode($callback->code);
         $organization = $this->linear->organization($tokens['access_token']);
 
         $current = $team->integration(IntegrationProvider::Linear)->settings ?? [];

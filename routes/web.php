@@ -179,6 +179,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('notifications/read-all', [ReadAllNotificationsController::class, 'store'])->name('notifications.readAll');
     Route::patch('notifications/{notification}', [NotificationsController::class, 'update'])->name('notifications.update')->whereUuid('notification');
 
+    Route::get('integrations/jira-dc/callback', [IntegrationCallbacksController::class, 'show'])
+        ->defaults('provider', 'jira_dc')
+        ->middleware(EnsureIntegrationProviderEnabled::class)
+        ->name('integrations.jiraDataCenter.callback');
+
     Route::get('integrations/{provider}/callback', [IntegrationCallbacksController::class, 'show'])
         ->whereIn('provider', ['slack', 'jira', 'linear'])
         ->middleware(EnsureIntegrationProviderEnabled::class)
@@ -207,7 +212,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::middleware(EnsureIntegrationProviderEnabled::class)->group(function () {
                 Route::get('teams/{team}/integrations', [TeamIntegrationsController::class, 'index'])->name('teams.integrations.index');
                 Route::get('teams/{team}/integrations/{provider}/connect', [IntegrationAuthorizationsController::class, 'create'])
-                    ->whereIn('provider', ['slack', 'jira', 'linear'])
+                    ->whereIn('provider', ['slack', 'jira', 'linear', 'jira_dc'])
                     ->name('teams.integrations.connect');
                 Route::post('teams/{team}/integrations/telegram/code', [TelegramConnectCodesController::class, 'store'])
                     ->middleware([EnsureIntegrationProviderEnabled::class.':telegram', 'throttle:10,1'])

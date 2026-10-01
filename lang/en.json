@@ -1396,5 +1396,9 @@
     "Could not load the deliveries.": "Could not load the deliveries.",
     "Board link": "Board link",
     "Game link": "Game link",
-    "Room invite": "Room invite"
+    "Room invite": "Room invite",
+    "skrum is now configured for another Jira server. Reconnect.": "skrum is now configured for another Jira server. Reconnect.",
+    "Personal access tokens are turned off on this skrum instance. Connect with OAuth.": "Personal access tokens are turned off on this skrum instance. Connect with OAuth.",
+    "The Jira personal access token was revoked or has expired. Paste a new one.": "The Jira personal access token was revoked or has expired. Paste a new one.",
+    "Jira didn't accept this token.": "Jira didn't accept this token."
 }

@@ -735,6 +735,7 @@ function integrationOAuthSession(
         'teamId' => $team->id,
         'access' => $access->value,
         'expiresAt' => now()->addMinutes($expiresInMinutes)->getTimestamp(),
+        'codeVerifier' => str_repeat('v', 64),
     ]];
 }
 

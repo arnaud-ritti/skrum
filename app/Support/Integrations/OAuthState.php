@@ -16,6 +16,8 @@ class OAuthState
 
     private const Length = 40;
 
+    private const VerifierLength = 64;
+
     public function issue(Request $request, IntegrationProvider $provider, Team $team, IntegrationAccess $access): string
     {
         $state = Str::random(self::Length);
@@ -26,13 +28,14 @@ class OAuthState
             'teamId' => $team->id,
             'access' => $access->value,
             'expiresAt' => now()->addMinutes(self::TtlMinutes)->getTimestamp(),
+            'codeVerifier' => Str::random(self::VerifierLength),
         ]);
 
         return $state;
     }
 
     /**
-     * @return array{teamId: string, access: IntegrationAccess}|null
+     * @return array{teamId: string, access: IntegrationAccess, codeVerifier: ?string}|null
      */
     public function consume(Request $request, IntegrationProvider $provider, mixed $state): ?array
     {
@@ -60,6 +63,25 @@ class OAuthState
             return null;
         }
 
-        return ['teamId' => $stored['teamId'], 'access' => $access];
+        return [
+            'teamId' => $stored['teamId'],
+            'access' => $access,
+            'codeVerifier' => is_string($stored['codeVerifier'] ?? null) ? $stored['codeVerifier'] : null,
+        ];
+    }
+
+    /**
+     * The PKCE S256 challenge of the verifier issued with the current state.
+     */
+    public function codeChallenge(Request $request): string
+    {
+        $verifier = data_get($request->session()->get(self::SessionKey), 'codeVerifier');
+
+        return self::challenge(is_string($verifier) ? $verifier : '');
+    }
+
+    public static function challenge(string $verifier): string
+    {
+        return rtrim(strtr(base64_encode(hash('sha256', $verifier, true)), '+/', '-_'), '=');
     }
 }
