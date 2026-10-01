@@ -24,6 +24,8 @@ class WhiteboardSettingsController extends Controller
             'guest_access_enabled' => ['sometimes', 'boolean'],
             'cursors_enabled' => ['sometimes', 'boolean'],
             'reactions_enabled' => ['sometimes', 'boolean'],
+            'locked' => ['sometimes', 'boolean'],
+            'follow_enabled' => ['sometimes', 'boolean'],
         ]);
 
         DB::transaction(function () use ($board, $member, $validated): void {

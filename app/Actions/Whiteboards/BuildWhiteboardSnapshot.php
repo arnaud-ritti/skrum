@@ -16,7 +16,10 @@ use App\Models\WhiteboardMember;
  *         guestAccessEnabled: bool,
  *         guestUrl: ?string,
  *         cursorsEnabled: bool,
- *         reactionsEnabled: bool
+ *         reactionsEnabled: bool,
+ *         locked: bool,
+ *         followEnabled: bool,
+ *         timerEndsAt: ?string
  *     },
  *     me: array{
  *         id: string,
@@ -37,6 +40,8 @@ use App\Models\WhiteboardMember;
  */
 class BuildWhiteboardSnapshot
 {
+    public const TimerLingerMinutes = 5;
+
     public function __construct(
         private PresentWhiteboardElement $presentWhiteboardElement,
         private OrderWhiteboardElements $orderWhiteboardElements,
@@ -64,6 +69,9 @@ class BuildWhiteboardSnapshot
                 'guestUrl' => $isGuest ? null : route('whiteboards.join.show', $board->guest_token),
                 'cursorsEnabled' => $board->cursors_enabled,
                 'reactionsEnabled' => $board->reactions_enabled,
+                'locked' => $board->locked,
+                'followEnabled' => $board->follow_enabled,
+                'timerEndsAt' => $this->timerEndsAt($board),
             ],
             'me' => [
                 'id' => $viewer->id,
@@ -92,7 +100,22 @@ class BuildWhiteboardSnapshot
             'links' => [
                 'team' => $isGuest ? null : route('teams.show', [$board->team->workspace, $board->team], absolute: false),
             ],
-            'serverTime' => now()->toIso8601String(),
+            'serverTime' => now()->utc()->format('Y-m-d\TH:i:s.v\Z'),
         ];
+    }
+
+    /**
+     * A board outlives its sessions: a countdown nobody stopped must not
+     * read "Time's up!" for ever (spec §11.1).
+     */
+    private function timerEndsAt(Whiteboard $board): ?string
+    {
+        $endsAt = $board->timer_ends_at;
+
+        if ($endsAt === null || $endsAt->lt(now()->subMinutes(self::TimerLingerMinutes))) {
+            return null;
+        }
+
+        return $endsAt->toIso8601String();
     }
 }

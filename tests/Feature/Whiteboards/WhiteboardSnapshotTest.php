@@ -17,6 +17,9 @@ it('describes the board, the viewer, the members and the live elements', functio
         ->assertJsonPath('board.guestUrl', route('whiteboards.join.show', $board->guest_token))
         ->assertJsonPath('board.cursorsEnabled', true)
         ->assertJsonPath('board.reactionsEnabled', true)
+        ->assertJsonPath('board.locked', false)
+        ->assertJsonPath('board.followEnabled', false)
+        ->assertJsonPath('board.timerEndsAt', null)
         ->assertJsonPath('me.id', $member->id)
         ->assertJsonPath('me.userId', $user->id)
         ->assertJsonPath('me.isFacilitator', true)
@@ -75,4 +78,13 @@ it('hides the guest link, the team link and the token from guests', function () 
         ->assertJsonPath('me.canTakeControl', false);
 
     expect($response->getContent())->not->toContain($board->guest_token);
+});
+
+it('gives the server time to the millisecond', function () {
+    $board = Whiteboard::factory()->create();
+    [$user] = whiteboardMember($board);
+
+    $serverTime = $this->actingAs($user)->getJson(route('whiteboards.snapshot.show', $board))->json('serverTime');
+
+    expect($serverTime)->toMatch('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/');
 });

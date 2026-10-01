@@ -38,7 +38,10 @@ use App\Models\TeamIntegration;
 use App\Models\User;
 use App\Models\Vote;
 use App\Models\Whiteboard;
+use App\Models\WhiteboardElement;
 use App\Models\WhiteboardMember;
+use App\Models\WhiteboardVote;
+use App\Models\WhiteboardVoteSession;
 use App\Models\Workspace;
 use App\Support\Games\GameRules;
 use App\Support\Games\GameRulesRegistry;
@@ -1496,6 +1499,69 @@ function whiteboardGuest(Whiteboard $board, string $secret = 'secret'): Whiteboa
 function whiteboardGuestCookie(WhiteboardMember $member, string $secret = 'secret'): array
 {
     return [GuestCookie::name(GuestCookie::WhiteboardScope, $member->whiteboard_id) => "{$member->id}|{$secret}"];
+}
+
+/**
+ * A stored sticky note and the text bound to it (`{$id}-text`).
+ *
+ * @param  array<string, mixed>  $overrides  merged into the note
+ * @return array{0: WhiteboardElement, 1: WhiteboardElement}
+ */
+function whiteboardSticky(Whiteboard $board, string $id, string $text = 'Idea', array $overrides = []): array
+{
+    $note = sceneElement([
+        'id' => $id,
+        'backgroundColor' => '#fff3bf',
+        'customData' => ['skrum' => ['kind' => 'sticky']],
+        'boundElements' => [['id' => "{$id}-text", 'type' => 'text']],
+        ...$overrides,
+    ]);
+
+    $words = sceneElement([
+        'id' => "{$id}-text",
+        'type' => 'text',
+        'text' => $text,
+        'originalText' => $text,
+        'containerId' => $id,
+        'frameId' => $note['frameId'],
+    ]);
+
+    $store = fn (array $element): WhiteboardElement => WhiteboardElement::factory()->create([
+        'whiteboard_id' => $board->id,
+        'element_id' => $element['id'],
+        'type' => $element['type'],
+        'data' => $element,
+        'version' => $element['version'],
+        'version_nonce' => $element['versionNonce'],
+        'is_sticky' => isset($element['customData']),
+        'seq' => 1,
+    ]);
+
+    return [$store($note), $store($words)];
+}
+
+/**
+ * An open vote on the live sticky notes the board holds right now.
+ *
+ * @param  array<string, mixed>  $attributes
+ */
+function openWhiteboardVote(Whiteboard $board, array $attributes = []): WhiteboardVoteSession
+{
+    return WhiteboardVoteSession::factory()->create([
+        'whiteboard_id' => $board->id,
+        'element_ids' => $board->elements()->where('is_sticky', true)->where('is_deleted', false)->orderBy('element_id')->pluck('element_id')->all(),
+        ...$attributes,
+    ]);
+}
+
+function castWhiteboardVote(WhiteboardVoteSession $session, WhiteboardMember $member, string $elementId, int $count = 1): WhiteboardVote
+{
+    return WhiteboardVote::factory()->create([
+        'whiteboard_vote_session_id' => $session->id,
+        'whiteboard_member_id' => $member->id,
+        'element_id' => $elementId,
+        'count' => $count,
+    ]);
 }
 
 /**

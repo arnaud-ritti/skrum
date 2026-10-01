@@ -114,3 +114,40 @@ it('regenerates the guest link and signs every guest out', function () {
         ->getJson(route('whiteboards.snapshot.show', $board))
         ->assertForbidden();
 });
+
+it('lets the facilitator lock the board and bring everyone to their view', function () {
+    Event::fake([WhiteboardChanged::class]);
+
+    $board = Whiteboard::factory()->create();
+    [$user] = whiteboardFacilitator($board);
+
+    $this->actingAs($user)
+        ->patchJson(route('whiteboards.settings.update', $board), ['locked' => true, 'follow_enabled' => true])
+        ->assertNoContent();
+
+    expect($board->fresh()->locked)->toBeTrue()
+        ->and($board->fresh()->follow_enabled)->toBeTrue();
+
+    $this->actingAs($user)
+        ->getJson(route('whiteboards.snapshot.show', $board))
+        ->assertJsonPath('board.locked', true)
+        ->assertJsonPath('board.followEnabled', true);
+
+    Event::assertDispatched(WhiteboardChanged::class);
+});
+
+it('refuses the lock and follow switches from anyone else, and values that are not booleans', function (string $key) {
+    $board = Whiteboard::factory()->create();
+    [$facilitator] = whiteboardFacilitator($board);
+    [$user] = whiteboardMember($board);
+
+    $this->actingAs($user)
+        ->patchJson(route('whiteboards.settings.update', $board), [$key => true])
+        ->assertForbidden();
+
+    $this->actingAs($facilitator)
+        ->patchJson(route('whiteboards.settings.update', $board), [$key => 'sometimes'])
+        ->assertJsonValidationErrors($key);
+
+    expect($board->fresh()->getAttribute($key))->toBeFalse();
+})->with(['locked', 'follow_enabled']);
