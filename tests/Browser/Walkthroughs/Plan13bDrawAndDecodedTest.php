@@ -280,6 +280,10 @@ it('[P13b-04a] shows a line to the other player while it is drawn and keeps it a
     $viewer->assertScript(p13bPixelScript('The drawing', 400, 300), '23 23 23 255')
         ->assertScript(p13bPixelScript('The drawing', 400, 100), '255 255 255 255');
 
+    $this->awaitRealtime($viewer->navigate("/games/{$room->id}"))
+        ->assertScript(p13bPixelScript('The drawing', 400, 300), '23 23 23 255')
+        ->assertScript(p13bPixelScript('The drawing', 400, 100), '255 255 255 255');
+
     $drawing = $round->fresh()->drawing;
 
     expect($drawing)->toHaveCount(1)
@@ -306,6 +310,14 @@ it('[P13b-04b] commits a long stroke in two parts that join without a gap', func
     p13bPointer($drawer, 'pointerup', [$path[450]]);
 
     $drawer->assertScript(p13bDrawingLengthScript($room), 2);
+
+    foreach ([240, 399, 432] as $x) {
+        $viewer->assertScript(p13bPixelScript('The drawing', $x, 240), '23 23 23 255');
+    }
+
+    $viewer->assertScript(p13bPixelScript('The drawing', 600, 240), '255 255 255 255');
+
+    $this->awaitRealtime($viewer->navigate("/games/{$room->id}"));
 
     foreach ([240, 399, 432] as $x) {
         $viewer->assertScript(p13bPixelScript('The drawing', $x, 240), '23 23 23 255');
