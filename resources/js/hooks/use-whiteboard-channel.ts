@@ -7,7 +7,6 @@ import { useSafeConnectionStatus } from './use-retro-channel';
 export const WhiteboardEvents = [
     'elements.changed',
     'timer.changed',
-    'vote.changed',
     'board.changed',
     'board.deleted',
 ] as const;

@@ -1,16 +1,7 @@
-import {
-    AlarmClock,
-    Eye,
-    EyeOff,
-    Lock,
-    LockOpen,
-    Presentation,
-    Vote,
-} from 'lucide-react';
+import { AlarmClock, Lock, LockOpen, Presentation } from 'lucide-react';
 import { useState } from 'react';
 import WhiteboardSettingsController from '@/actions/App/Http/Controllers/Whiteboards/WhiteboardSettingsController';
 import WhiteboardTimersController from '@/actions/App/Http/Controllers/Whiteboards/WhiteboardTimersController';
-import WhiteboardVoteClosuresController from '@/actions/App/Http/Controllers/Whiteboards/WhiteboardVoteClosuresController';
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
@@ -23,20 +14,15 @@ import { useTrans } from '@/hooks/use-trans';
 import type { WhiteboardState } from '@/hooks/use-whiteboard';
 import { useWhiteboardRequest } from '@/hooks/use-whiteboard-request';
 import { retroRequest } from '@/lib/retro/api';
-import type { ExcalidrawImperativeAPI } from '@/lib/whiteboard/excalidraw';
-import { VoteDialog } from './vote-dialog';
 
 const Minutes = [1, 3, 5, 10];
 
-type Props = { state: WhiteboardState; api: ExcalidrawImperativeAPI | null };
-
-/** Timer, board lock, follow-me, private writing and vote: the facilitator's tools. */
-export function FacilitatorBar({ state, api }: Props) {
+/** Timer, board lock and follow-me: the facilitator's tools. */
+export function FacilitatorBar({ state }: { state: WhiteboardState }) {
     const { t } = useTrans();
     const request = useWhiteboardRequest();
     const [busy, setBusy] = useState(false);
-    const [startingVote, setStartingVote] = useState(false);
-    const { board, voting } = state.snapshot;
+    const { board } = state.snapshot;
 
     const setTimer = async (seconds: number | null) => {
         setBusy(true);
@@ -60,21 +46,6 @@ export function FacilitatorBar({ state, api }: Props) {
             retroRequest(
                 WhiteboardSettingsController.update(board.id),
                 settings,
-            ),
-        );
-
-        if (done !== undefined) {
-            await state.refetch();
-        }
-    };
-
-    const closeVote = async (sessionId: string) => {
-        const done = await request(
-            retroRequest(
-                WhiteboardVoteClosuresController.store({
-                    board: board.id,
-                    voteSession: sessionId,
-                }),
             ),
         );
 
@@ -144,63 +115,6 @@ export function FacilitatorBar({ state, api }: Props) {
             >
                 <Presentation className="size-4" />
             </Button>
-            <Button
-                size="sm"
-                variant={board.privateWriting ? 'default' : 'outline'}
-                aria-pressed={board.privateWriting}
-                aria-label={t(
-                    board.privateWriting
-                        ? 'Reveal the notes'
-                        : 'Private writing',
-                )}
-                title={t(
-                    board.privateWriting
-                        ? 'Reveal the notes'
-                        : 'Private writing',
-                )}
-                onClick={() =>
-                    void updateSettings({
-                        private_writing: !board.privateWriting,
-                    })
-                }
-            >
-                {board.privateWriting ? (
-                    <>
-                        <Eye className="size-4" />
-                        {t('Reveal the notes')}
-                    </>
-                ) : (
-                    <EyeOff className="size-4" />
-                )}
-            </Button>
-            {voting?.open ? (
-                <Button size="sm" onClick={() => void closeVote(voting.id)}>
-                    {t('Close the vote')}
-                </Button>
-            ) : (
-                <Button
-                    size="sm"
-                    variant="outline"
-                    aria-label={t('Start a vote')}
-                    title={t(
-                        board.privateWriting
-                            ? 'Reveal the notes first.'
-                            : 'Start a vote',
-                    )}
-                    disabled={api === null || board.privateWriting}
-                    onClick={() => setStartingVote(true)}
-                >
-                    <Vote className="size-4" />
-                </Button>
-            )}
-            {api && (
-                <VoteDialog
-                    state={state}
-                    api={api}
-                    open={startingVote}
-                    onOpenChange={setStartingVote}
-                />
-            )}
         </div>
     );
 }

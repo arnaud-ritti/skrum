@@ -33,19 +33,15 @@ type Props = {
     state: WhiteboardState;
     hideMyCursor: boolean;
     onHideMyCursorChange: (hidden: boolean) => void;
-    onShowResults: () => void;
 };
 
 export function BoardMenu({
     state,
     hideMyCursor,
     onHideMyCursorChange,
-    onShowResults,
 }: Props) {
     const { t } = useTrans();
-    const { board, me, links, voting, votingHistory } = state.snapshot;
-    const hasResults =
-        votingHistory.length > 0 || (voting !== null && !voting.open);
+    const { board, me, links } = state.snapshot;
     const [renaming, setRenaming] = useState(false);
     const [confirmingDelete, setConfirmingDelete] = useState(false);
     const [savingTemplate, setSavingTemplate] = useState(false);
@@ -162,23 +158,14 @@ export function BoardMenu({
                     )}
                     {!me.isGuest && (
                         <>
-                            <DropdownMenuItem
-                                disabled={board.privateWriting}
-                                onSelect={duplicate}
-                            >
+                            <DropdownMenuItem onSelect={duplicate}>
                                 {t('Duplicate this board')}
                             </DropdownMenuItem>
                             <DropdownMenuItem
-                                disabled={board.privateWriting}
                                 onSelect={() => setSavingTemplate(true)}
                             >
                                 {t('Save as template')}
                             </DropdownMenuItem>
-                            {hasResults && (
-                                <DropdownMenuItem onSelect={onShowResults}>
-                                    {t('Vote results')}
-                                </DropdownMenuItem>
-                            )}
                         </>
                     )}
                     {me.isFacilitator && (
