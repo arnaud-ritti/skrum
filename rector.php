@@ -1,5 +1,6 @@
 <?php
 
+use Pest\Rector\Rules\SimplifyToLiteralBooleanRector;
 use Pest\Rector\Rules\UseToHaveLengthRector;
 use Pest\Rector\Set\PestSetList;
 use Rector\CodeQuality\Rector\Identical\FlipTypeControlToUseExclusiveTypeRector;
@@ -51,6 +52,9 @@ return RectorConfig::configure()
         UseToHaveLengthRector::class,
         AddArrowFunctionReturnTypeRector::class => [
             __DIR__.'/tests',
+        ],
+        SimplifyToLiteralBooleanRector::class => [
+            __DIR__.'/tests/Arch/BrowserTestRulesTest.php',
         ],
         ThrowIfRector::class => [
             __DIR__.'/app/Support/Integrations/GitHub/GitHubAppJwt.php',

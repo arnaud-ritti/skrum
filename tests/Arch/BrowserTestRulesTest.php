@@ -34,5 +34,5 @@ function forbiddenBrowserTestCalls(string $directory): array
 }
 
 it('keeps browser tests free of actingAs, injected cookies and a blanket event fake', function () {
-    expect(forbiddenBrowserTestCalls(__DIR__.'/../Browser'))->toBeEmpty();
+    expect(forbiddenBrowserTestCalls(__DIR__.'/../Browser'))->toBe([]);
 });
