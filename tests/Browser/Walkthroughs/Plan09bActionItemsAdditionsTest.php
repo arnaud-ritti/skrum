@@ -1,13 +1,21 @@
 <?php
 
+use App\Enums\ActionItemReminderKind;
 use App\Enums\RetroPhase;
 use App\Models\ActionItem;
+use App\Models\ActionItemReminder;
 use App\Models\ActionItemSubtask;
 use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\Team;
 use App\Models\User;
+use App\Notifications\ActionItemReminderDigestNotification;
+use App\Notifications\ActionItemReminderNotification;
 use Carbon\CarbonImmutable;
+use Illuminate\Notifications\Events\NotificationSent;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Notification;
 
 function p09bMember(Team $team, string $name): User
 {
@@ -454,4 +462,209 @@ it('[P09b-05] creates exactly one next occurrence when a weekly item is complete
     expect($next->fresh()->recurrence)->toBeNull()
         ->and($next->fresh()->completed_at)->not->toBeNull()
         ->and(ActionItem::query()->count())->toBe(2);
+});
+
+it('[P09b-06a] sends one digest in the assignee language and one bell entry per item, once per item, kind and due date', function () {
+    Notification::fake();
+    config(['skrum.action_item_reminders.enabled' => true]);
+    [$team, $alice, $bob] = p09bTeam();
+    $bob->update(['locale' => 'fr']);
+    $today = ActionItem::today();
+    $dueToday = p09bFollowUp($team, $alice, 'Book the room', [
+        'assignee_user_id' => $bob->id,
+        'due_on' => $today->toDateString(),
+    ]);
+    $overdue = p09bFollowUp($team, $alice, 'Rotate the keys', [
+        'assignee_user_id' => $bob->id,
+        'due_on' => $today->subDays(3)->toDateString(),
+    ]);
+
+    $this->artisan('action-items:send-reminders')
+        ->expectsOutput("Reminding user `{$bob->id}` about 2 items…")
+        ->expectsOutput('Sent 2 reminders to 1 users.')
+        ->assertSuccessful();
+
+    Notification::assertSentTo(
+        $bob,
+        ActionItemReminderDigestNotification::class,
+        function (ActionItemReminderDigestNotification $notification, array $channels, object $notifiable, ?string $locale) use ($overdue, $dueToday): bool {
+            $html = (string) $notification->toMail($notifiable)->render();
+
+            return $channels === ['mail']
+                && $locale === 'fr'
+                && $notification->reminders === [
+                    ['actionItemId' => $overdue->id, 'kind' => ActionItemReminderKind::Overdue->value],
+                    ['actionItemId' => $dueToday->id, 'kind' => ActionItemReminderKind::DueSoon->value],
+                ]
+                && strpos($html, 'Rotate the keys') < strpos($html, 'Book the room');
+        },
+    );
+    Notification::assertSentToTimes($bob, ActionItemReminderDigestNotification::class, 1);
+    Notification::assertSentToTimes($bob, ActionItemReminderNotification::class, 2);
+    Notification::assertNothingSentTo($alice);
+
+    $this->artisan('action-items:send-reminders')
+        ->expectsOutput('Sent 0 reminders to 0 users.')
+        ->assertSuccessful();
+
+    Notification::assertSentToTimes($bob, ActionItemReminderDigestNotification::class, 1);
+    Notification::assertSentToTimes($bob, ActionItemReminderNotification::class, 2);
+
+    $this->travel(2)->days();
+
+    $this->artisan('action-items:send-reminders')
+        ->expectsOutput("Reminding user `{$bob->id}` about 1 items…")
+        ->expectsOutput('Sent 1 reminders to 1 users.')
+        ->assertSuccessful();
+
+    Notification::assertSentToTimes($bob, ActionItemReminderDigestNotification::class, 2);
+    Notification::assertSentToTimes($bob, ActionItemReminderNotification::class, 3);
+
+    expect(ActionItemReminder::query()->where('action_item_id', $dueToday->id)->count())->toBe(2)
+        ->and(ActionItemReminder::query()->where('action_item_id', $overdue->id)->count())->toBe(1);
+});
+
+it('[P09b-06b] shows the reminders in the bell and the overdue count in the sidebar, and opens the item from a bell entry', function () {
+    Mail::fake();
+    config(['skrum.action_item_reminders.enabled' => true]);
+    [$team, $alice, $bob] = p09bTeam();
+    $today = ActionItem::today();
+    p09bFollowUp($team, $alice, 'Book the room', [
+        'assignee_user_id' => $bob->id,
+        'due_on' => $today->toDateString(),
+    ]);
+    $overdue = p09bFollowUp($team, $alice, 'Rotate the keys', [
+        'assignee_user_id' => $bob->id,
+        'due_on' => $today->subDays(3)->toDateString(),
+    ]);
+    $path = p09bPagePath($team);
+    $badge = '[data-sidebar="menu-badge"]';
+
+    $page = $this->signIn($bob, $path);
+
+    $page->assertSee('Rotate the keys')
+        ->assertPresent('[aria-label="Notifications"]')
+        ->assertSeeIn($badge, '1')
+        ->assertAttribute($badge, 'aria-label', '1 overdue');
+
+    $this->artisan('action-items:send-reminders')
+        ->expectsOutput('Sent 2 reminders to 1 users.')
+        ->assertSuccessful();
+
+    $page->navigate($path)
+        ->assertSeeIn('[aria-label="2 unread notifications"]', '2')
+        ->assertSeeIn($badge, '1')
+        ->click('[aria-label="2 unread notifications"]')
+        ->assertSeeIn('[role="menu"]', 'Overdue: Rotate the keys')
+        ->assertSeeIn('[role="menu"]', 'Due today: Book the room')
+        ->click('[role="menuitem"]:has-text("Overdue: Rotate the keys")')
+        ->assertQueryStringHas('item', $overdue->id)
+        ->assertPathIs($path)
+        ->assertPresent("#action-item-{$overdue->id} button[aria-expanded=\"true\"]")
+        ->assertPresent('[aria-label="1 unread notification"]');
+
+    expect($bob->notifications()->count())->toBe(2)
+        ->and($bob->unreadNotifications()->count())->toBe(1);
+
+    $this->artisan('action-items:send-reminders')
+        ->expectsOutput('Sent 0 reminders to 0 users.')
+        ->assertSuccessful();
+
+    $page->navigate($path)
+        ->assertSee('Rotate the keys')
+        ->assertPresent('[aria-label="1 unread notification"]');
+
+    expect($bob->notifications()->count())->toBe(2);
+});
+
+it('[P09b-07] stops the e-mail digest after opting out in the notification settings and keeps the bell entry', function () {
+    config([
+        'skrum.action_item_reminders.enabled' => true,
+        'skrum.action_item_reminders.time' => '08:00',
+    ]);
+    [$team, , $bob] = p09bTeam();
+    $today = ActionItem::today();
+    $tomorrow = $today->addDay();
+    $tomorrowLabel = p09bDueLabel($tomorrow);
+    $item = p09bFollowUp($team, $bob, 'Book the room', [
+        'assignee_user_id' => $bob->id,
+        'due_on' => $today->toDateString(),
+    ]);
+    ActionItemReminder::query()->create([
+        'action_item_id' => $item->id,
+        'user_id' => $bob->id,
+        'kind' => ActionItemReminderKind::DueSoon,
+        'due_on' => $today->toDateString(),
+        'sent_at' => now(),
+    ]);
+    $path = p09bPagePath($team);
+    $byEmail = '#action-item-reminders-by-email';
+    $dueDate = "#action-item-{$item->id} [aria-label=\"Due date\"]";
+
+    $page = $this->signIn($bob, '/settings/notifications');
+
+    $page->assertSee('Reminders are sent at 08:00 for action items assigned to you.')
+        ->assertAttribute($byEmail, 'aria-checked', 'true')
+        ->assertAttribute('#action-item-reminders-in-app', 'aria-checked', 'true')
+        ->click($byEmail)
+        ->assertAttribute($byEmail, 'aria-checked', 'false')
+        ->press('Save')
+        ->assertSee('Notification settings saved.');
+
+    expect($bob->fresh()->action_item_reminders_by_email)->toBeFalse()
+        ->and($bob->fresh()->action_item_reminders_in_app)->toBeTrue();
+
+    $page->navigate($path)
+        ->assertPresent('[aria-label="Notifications"]')
+        ->fill($dueDate, $tomorrow->toDateString())
+        ->click('Follow-ups of every team you can see')
+        ->assertScript(p09bCardShows($item, "Due {$tomorrowLabel}"), true);
+
+    expect($item->fresh()->due_on?->toDateString())->toBe($tomorrow->toDateString());
+
+    Event::fake([NotificationSent::class]);
+
+    $this->artisan('action-items:send-reminders')
+        ->expectsOutput('Sent 1 reminders to 1 users.')
+        ->assertSuccessful();
+
+    Event::assertDispatched(fn (NotificationSent $event): bool => $event->channel === 'database' && $event->notifiable->is($bob));
+    Event::assertNotDispatched(
+        NotificationSent::class,
+        fn (NotificationSent $event): bool => $event->channel === 'mail',
+    );
+
+    $page->navigate($path)
+        ->click('[aria-label="1 unread notification"]')
+        ->assertSeeIn('[role="menu"]', 'Due tomorrow: Book the room');
+
+    expect($bob->notifications()->count())->toBe(1);
+});
+
+it('[P09b-08] marks the bell entry of a reminded item as read when the item is completed', function () {
+    Mail::fake();
+    config(['skrum.action_item_reminders.enabled' => true]);
+    [$team, , $bob] = p09bTeam();
+    $item = p09bFollowUp($team, $bob, 'Book the room', [
+        'assignee_user_id' => $bob->id,
+        'due_on' => ActionItem::today()->toDateString(),
+    ]);
+
+    $this->artisan('action-items:send-reminders')
+        ->expectsOutput('Sent 1 reminders to 1 users.')
+        ->assertSuccessful();
+
+    $page = $this->signIn($bob, p09bPagePath($team));
+
+    $page->assertPresent('[aria-label="1 unread notification"]')
+        ->click("#action-item-{$item->id} [aria-label=\"Mark as done\"]")
+        ->assertPresent('[aria-label="Notifications"]')
+        ->assertNotPresent('[aria-label="1 unread notification"]')
+        ->click('[aria-label="Notifications"]')
+        ->assertSeeIn('[role="menu"]', 'Due today: Book the room')
+        ->assertNotPresent('[role="menuitem"] span.font-semibold');
+
+    expect($bob->unreadNotifications()->count())->toBe(0)
+        ->and($bob->notifications()->count())->toBe(1)
+        ->and($item->fresh()->completed_at)->not->toBeNull();
 });
