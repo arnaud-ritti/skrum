@@ -222,7 +222,7 @@ Each item is approved by this spec once the spec is approved. Nothing else on th
 | B13 | E-mail code as a second factor: a user enables it in Security; at the challenge a 6-digit code valid 10 minutes is sent, stored hashed, with a 60-second resend cooldown and a limit of five attempts. TOTP, recovery codes and passkeys are unchanged. | 6 |
 | B14 | E-mails as Mailables per `components/Emails/README.md`, light and dark, using `BrandPalette::toHex()`: magic link, invitation, action reminder, retro recap, 2FA code. The three existing notifications keep their triggers and recipients. | 6 |
 | B15 | Custom Inertia error pages for 403, 404, 500, 503. | 5.11 |
-| B16 | Shared props for the team-centred sidebar: `currentTeam` (`id`, `name`, `membersCount`, or null) and `teams` (`id`, `name` of the teams of the current workspace visible to the user). The current team is the `team` route parameter when present; otherwise the last team visited, remembered in the session; otherwise the first visible team by name. | 1 |
+| B16 | Shared props for the team-centred sidebar: `currentTeam` (`id`, `name`, `membersCount`, or null) and `teams` (`id`, `name` of the teams of the current workspace visible to the user). The current team is the `team` route parameter when present; otherwise the last team visited, remembered in the session; otherwise the first visible team by name. Page props named `teams` on `settings/api-tokens` and `action-items/index` have another shape and are renamed when plan 18e rewrites those screens. | 1 |
 
 B12 and B13 are authentication changes. Their plan includes a security review step before merge.
 
