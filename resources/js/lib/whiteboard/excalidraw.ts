@@ -44,3 +44,17 @@ export type RequiredProps = Pick<
     | 'langCode'
     | 'theme'
 >;
+
+/**
+ * Markup of the shapes toolbar in Excalidraw 0.18.1, which has no prop or
+ * component for adding a tool: where the eraser sits, what wraps a tool, and
+ * the classes its own buttons carry (size, hover, focus and theme come with
+ * them). Check these when the library is upgraded.
+ */
+export const ToolbarDom = {
+    eraser: '.App-toolbar [data-testid="toolbar-eraser"]',
+    tool: '.ToolIcon',
+    buttonClass:
+        'ToolIcon ToolIcon_type_button ToolIcon_size_medium ToolIcon_type_button--show',
+    iconClass: 'ToolIcon__icon',
+} as const;

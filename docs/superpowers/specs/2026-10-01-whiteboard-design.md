@@ -82,7 +82,7 @@ Acceptance criteria for every requirement are in §16.
 ### 6.1 Elements
 
 - The canvas is Excalidraw. Its element set (rectangle, diamond, ellipse, arrow, line, freedraw, text, image, frame) is the board's element set.
-- **Sticky note:** a rectangle with a bound text element, marked `customData.skrum = {kind: 'sticky'}`. A skrum toolbar button creates one in the chosen colour (six colours). Votes (§11.4) and private writing (§11.5) apply to sticky notes only.
+- **Sticky note:** a rectangle with a bound text element, marked `customData.skrum = {kind: 'sticky'}`. A skrum button in the canvas shapes toolbar, between the image tool and the eraser, creates one in the chosen colour (six colours, each named for assistive technology); when that toolbar is not on screen the button sits in skrum's top bar instead, so the tool is always reachable. Votes (§11.4) and private writing (§11.5) apply to sticky notes only.
 - The server is the source of truth. One row per element (§7); the author is the member who first wrote the element and is never read from the client payload.
 - Flowcharts use Excalidraw's shapes, bound arrows and its built-in flowchart shortcuts; nothing custom.
 

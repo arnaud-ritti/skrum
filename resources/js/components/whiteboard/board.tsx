@@ -1,5 +1,6 @@
 import { usePage } from '@inertiajs/react';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { createPortal } from 'react-dom';
 import { toast } from 'sonner';
 import { ConnectionBanner } from '@/components/retro/connection-banner';
 import { SessionExpiredBanner } from '@/components/retro/session-expired-banner';
@@ -7,6 +8,7 @@ import { useLocalPreference } from '@/hooks/use-local-preference';
 import { useTrans } from '@/hooks/use-trans';
 import { useWhiteboard } from '@/hooks/use-whiteboard';
 import { useWhiteboardCursors } from '@/hooks/use-whiteboard-cursors';
+import { useWhiteboardToolbarSlot } from '@/hooks/use-whiteboard-toolbar-slot';
 import {
     Excalidraw,
     MainMenu,
@@ -58,6 +60,8 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
         false,
     );
     const sync = useRef<SceneSync | null>(null);
+    const canvas = useRef<HTMLDivElement | null>(null);
+    const toolbarSlot = useWhiteboardToolbarSlot(canvas, api !== null);
     const initial = useRef(snapshot);
     const [initialElements] = useState(() =>
         restoreScene(initial.current.elements),
@@ -151,7 +155,7 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
                 inert={state.sessionExpired}
             >
                 <TopBar state={state}>
-                    {api && <StickyTool api={api} />}
+                    {api && !toolbarSlot && <StickyTool api={api} />}
                     <BoardMenu
                         state={state}
                         hideMyCursor={hideMyCursor}
@@ -161,7 +165,13 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
                 <ConnectionBanner
                     reconnecting={state.reconnecting || offline}
                 />
-                <div className="min-h-0 flex-1">
+                {api &&
+                    toolbarSlot &&
+                    createPortal(
+                        <StickyTool api={api} inToolbar />,
+                        toolbarSlot,
+                    )}
+                <div ref={canvas} className="min-h-0 flex-1">
                     <Excalidraw
                         excalidrawAPI={setApi}
                         initialData={{ elements: initialElements as never }}

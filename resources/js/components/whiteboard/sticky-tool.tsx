@@ -9,6 +9,7 @@ import {
 import { useTrans } from '@/hooks/use-trans';
 import {
     CaptureUpdateAction,
+    ToolbarDom,
     restoreElements,
     type ExcalidrawImperativeAPI,
 } from '@/lib/whiteboard/excalidraw';
@@ -64,9 +65,23 @@ function stickyAt(x: number, y: number, color: string) {
     };
 }
 
-export function StickyTool({ api }: { api: ExcalidrawImperativeAPI }) {
+type Props = {
+    api: ExcalidrawImperativeAPI;
+    /** In the canvas shapes toolbar the trigger looks like the library's tools. */
+    inToolbar?: boolean;
+};
+
+export function StickyTool({ api, inToolbar = false }: Props) {
     const { t } = useTrans();
     const [open, setOpen] = useState(false);
+    const colorNames = [
+        t('Yellow'),
+        t('Orange'),
+        t('Red'),
+        t('Purple'),
+        t('Blue'),
+        t('Green'),
+    ];
 
     const add = (color: string) => {
         const { scrollX, scrollY, zoom, width, height } = api.getAppState();
@@ -86,19 +101,39 @@ export function StickyTool({ api }: { api: ExcalidrawImperativeAPI }) {
     return (
         <DropdownMenu open={open} onOpenChange={setOpen}>
             <DropdownMenuTrigger asChild>
-                <Button size="sm" variant="outline">
-                    <StickyNote className="size-4" />
-                    {t('Sticky note')}
-                </Button>
+                {inToolbar ? (
+                    <button
+                        type="button"
+                        className={ToolbarDom.buttonClass}
+                        title={t('Sticky note')}
+                        aria-label={t('Sticky note')}
+                    >
+                        <div
+                            className={ToolbarDom.iconClass}
+                            aria-hidden="true"
+                        >
+                            <StickyNote />
+                        </div>
+                    </button>
+                ) : (
+                    <Button size="sm" variant="outline">
+                        <StickyNote className="size-4" />
+                        {t('Sticky note')}
+                    </Button>
+                )}
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="flex gap-1 p-2">
-                {StickyColors.map((color) => (
+            <DropdownMenuContent
+                align={inToolbar ? 'center' : 'end'}
+                className="flex gap-1 p-2"
+            >
+                {StickyColors.map((color, position) => (
                     <button
                         key={color}
                         type="button"
                         className="size-7 rounded border"
                         style={{ backgroundColor: color }}
-                        aria-label={t('Add a sticky note')}
+                        title={colorNames[position]}
+                        aria-label={`${t('Add a sticky note')}: ${colorNames[position]}`}
                         onClick={() => add(color)}
                     />
                 ))}
