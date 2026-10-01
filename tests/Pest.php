@@ -35,6 +35,7 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Support\Games\GameRules;
 use App\Support\Games\GameRulesRegistry;
+use App\Support\Integrations\HostResolver;
 use App\Support\Integrations\OAuthState;
 use Carbon\CarbonInterface;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -659,6 +660,27 @@ function enableIntegrations(IntegrationProvider ...$providers): void
             IntegrationProvider::Webhook => ['services.outgoing_webhooks.enabled' => true],
         });
     }
+}
+
+/**
+ * Fakes DNS for outgoing webhooks: every host resolves to the given addresses.
+ *
+ * @param  array<int, string>  $addresses
+ */
+function outgoingWebhookResolves(array $addresses = ['93.184.216.34']): void
+{
+    app()->instance(HostResolver::class, new class($addresses) extends HostResolver
+    {
+        /**
+         * @param  array<int, string>  $fixed
+         */
+        public function __construct(private array $fixed) {}
+
+        public function addresses(string $host): array
+        {
+            return $this->fixed;
+        }
+    });
 }
 
 /**

@@ -20,6 +20,10 @@ class TeamIntegrationFactory extends Factory
 
     public const MattermostUrl = 'https://chat.example.com/hooks/abcdefghijklmnopqrstuvwxyz';
 
+    public const WebhookUrl = 'https://hooks.example.com/skrum/incoming';
+
+    public const WebhookSecret = '0f1e2d3c4b5a69788796a5b4c3d2e1f00f1e2d3c4b5a69788796a5b4c3d2e1f0';
+
     public function microsoftTeams(): static
     {
         return $this->state(fn () => [
@@ -40,6 +44,26 @@ class TeamIntegrationFactory extends Factory
             'access' => IntegrationAccess::Write,
             'credentials' => ['url' => self::MattermostUrl],
             'settings' => ['host' => 'chat.example.com', 'channelLabel' => 'town-square'],
+            'scopes' => [],
+        ]);
+    }
+
+    /**
+     * @param  array<int, string>  $events
+     */
+    public function webhook(array $events = []): static
+    {
+        return $this->state(fn () => [
+            'provider' => IntegrationProvider::Webhook,
+            'status' => IntegrationStatus::Active,
+            'access' => IntegrationAccess::Write,
+            'credentials' => ['url' => self::WebhookUrl, 'webhookSecret' => self::WebhookSecret],
+            'settings' => [
+                'host' => 'hooks.example.com',
+                'channelLabel' => null,
+                'secretCreatedAt' => '2026-10-01T09:00:00Z',
+                'events' => $events,
+            ],
             'scopes' => [],
         ]);
     }

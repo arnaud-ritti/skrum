@@ -40,16 +40,14 @@ it('accepts only an http(s) Mattermost server URL', function (string $url, bool 
     'two path segments' => ['https://example.com/a/b', false],
 ]);
 
-it('keeps Jira Data Center, GitHub and webhooks hidden until their plans ship', function () {
+it('keeps Jira Data Center and GitHub hidden until their plans ship', function () {
     disableIntegrations();
-    enableIntegrations(IntegrationProvider::JiraDataCenter, IntegrationProvider::GitHub, IntegrationProvider::Webhook);
+    enableIntegrations(IntegrationProvider::JiraDataCenter, IntegrationProvider::GitHub);
 
     expect(IntegrationProvider::JiraDataCenter->isConfigured())->toBeTrue()
         ->and(IntegrationProvider::GitHub->isConfigured())->toBeTrue()
-        ->and(IntegrationProvider::Webhook->isConfigured())->toBeTrue()
         ->and(IntegrationProvider::JiraDataCenter->isEnabled())->toBeFalse()
         ->and(IntegrationProvider::GitHub->isEnabled())->toBeFalse()
-        ->and(IntegrationProvider::Webhook->isEnabled())->toBeFalse()
         ->and(IntegrationProvider::anyEnabled())->toBeFalse();
 });
 

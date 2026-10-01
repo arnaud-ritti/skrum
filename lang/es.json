@@ -1588,5 +1588,7 @@
     "Share the results to Mattermost": "Compartir los resultados en Mattermost",
     "Send the results to the webhook": "Enviar los resultados al webhook",
     "Connection saved.": "Conexión guardada.",
-    "Post board links, game invites and results to a Mattermost channel through an incoming webhook.": "Publica enlaces de tableros, invitaciones a juegos y resultados en un canal de Mattermost mediante un webhook entrante."
+    "Post board links, game invites and results to a Mattermost channel through an incoming webhook.": "Publica enlaces de tableros, invitaciones a juegos y resultados en un canal de Mattermost mediante un webhook entrante.",
+    "This URL points to a private or invalid address.": "Esta URL apunta a una dirección privada o no válida.",
+    "This webhook URL points to a private or invalid address.": "La URL de este webhook apunta a una dirección privada o no válida."
 }

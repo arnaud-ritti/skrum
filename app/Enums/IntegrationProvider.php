@@ -18,7 +18,7 @@ enum IntegrationProvider: string
      * Configured providers whose connection flow ships in a later plan stay
      * disabled, so an early env value cannot expose a half-built card.
      */
-    private const Unreleased = [self::JiraDataCenter, self::GitHub, self::Webhook];
+    private const Unreleased = [self::JiraDataCenter, self::GitHub];
 
     private const ServerPathPattern = '#^(/[A-Za-z0-9._~-]+)?/?$#';
 
