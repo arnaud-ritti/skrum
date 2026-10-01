@@ -9,7 +9,15 @@ function forbiddenBrowserTestCalls(string $directory): array
         return [];
     }
 
-    $forbiddenCalls = ['actingAs(', 'withCookie(', 'withCookies(', 'Event::fake()'];
+    $forbiddenCalls = [
+        'actingAs()' => '/\bactingAs\s*\(/i',
+        'be()' => '/(?:->|::)\s*be\s*\(/i',
+        'login()' => '/(?:->|::)\s*login\s*\(/i',
+        'loginUsingId()' => '/\bloginUsingId\s*\(/i',
+        'withCookie()' => '/\bwithCookies?\s*\(/i',
+        'withUnencryptedCookie()' => '/\bwithUnencryptedCookies?\s*\(/i',
+        'Event::fake() without arguments' => '/\bEvent\s*::\s*fake\s*\(\s*\)/i',
+    ];
     $offences = [];
     $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($directory, FilesystemIterator::SKIP_DOTS));
 
@@ -18,12 +26,14 @@ function forbiddenBrowserTestCalls(string $directory): array
             continue;
         }
 
-        foreach (file($file->getPathname()) ?: [] as $index => $line) {
-            foreach ($forbiddenCalls as $forbiddenCall) {
-                if (str_contains($line, $forbiddenCall)) {
-                    $lineNumber = $index + 1;
-                    $offences[] = "{$file->getPathname()}:{$lineNumber} calls {$forbiddenCall}";
-                }
+        $source = (string) file_get_contents($file->getPathname());
+
+        foreach ($forbiddenCalls as $name => $pattern) {
+            preg_match_all($pattern, $source, $matches, PREG_OFFSET_CAPTURE);
+
+            foreach ($matches[0] as [, $offset]) {
+                $lineNumber = substr_count($source, "\n", 0, $offset) + 1;
+                $offences[] = "{$file->getPathname()}:{$lineNumber} calls {$name}";
             }
         }
     }
@@ -35,4 +45,46 @@ function forbiddenBrowserTestCalls(string $directory): array
 
 it('keeps browser tests free of actingAs, injected cookies and a blanket event fake', function () {
     expect(forbiddenBrowserTestCalls(__DIR__.'/../Browser'))->toBe([]);
+});
+
+dataset('forbiddenBrowserTestForms', [
+    'actingAs' => ['$this->actingAs($user);', 'actingAs()'],
+    'actingAs followed by a space' => ['$this->actingAs ($user);', 'actingAs()'],
+    'actingAs split over two lines' => ["\$this->actingAs\n    (\$user);", 'actingAs()'],
+    'be' => ['$this->be($user);', 'be()'],
+    'Auth::login' => ['Auth::login($user);', 'login()'],
+    'auth()->login' => ['auth()->login($user);', 'login()'],
+    'loginUsingId' => ['Auth::loginUsingId(1);', 'loginUsingId()'],
+    'withCookie' => ['$this->withCookie("guest", "1|secret");', 'withCookie()'],
+    'withCookies' => ['$this->withCookies(["guest" => "1|secret"]);', 'withCookie()'],
+    'withUnencryptedCookie' => ['$this->withUnencryptedCookie("guest", "1|secret");', 'withUnencryptedCookie()'],
+    'withUnencryptedCookies' => ['$this->withUnencryptedCookies(["guest" => "1|secret"]);', 'withUnencryptedCookie()'],
+    'Event::fake' => ['Event::fake();', 'Event::fake() without arguments'],
+    'Event::fake split over two lines' => ["Event::fake(\n);", 'Event::fake() without arguments'],
+]);
+
+it('reports a forbidden call in a browser test', function (string $code, string $call) {
+    $directory = sys_get_temp_dir().'/skrum-browser-rules-'.bin2hex(random_bytes(4));
+    mkdir($directory);
+    file_put_contents("{$directory}/CheatTest.php", "<?php\n\n{$code}\n");
+
+    try {
+        expect(forbiddenBrowserTestCalls($directory))->toBe(["{$directory}/CheatTest.php:3 calls {$call}"]);
+    } finally {
+        unlink("{$directory}/CheatTest.php");
+        rmdir($directory);
+    }
+})->with('forbiddenBrowserTestForms');
+
+it('allows a fake of named events and the calls that only look like a forbidden one', function () {
+    $directory = sys_get_temp_dir().'/skrum-browser-rules-'.bin2hex(random_bytes(4));
+    mkdir($directory);
+    file_put_contents("{$directory}/HonestTest.php", "<?php\n\nEvent::fake([CardCreated::class]);\nexpect(\$count)->toBe(1);\n\$page = \$this->signIn(\$user);\n\$url = route('login');\n");
+
+    try {
+        expect(forbiddenBrowserTestCalls($directory))->toBe([]);
+    } finally {
+        unlink("{$directory}/HonestTest.php");
+        rmdir($directory);
+    }
 });

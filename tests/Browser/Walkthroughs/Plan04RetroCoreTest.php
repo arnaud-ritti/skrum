@@ -231,7 +231,7 @@ it('[P04-05a] shows the vote totals and sorts the cards by votes during Discussi
     $slow = plan04Card($retro, $columns[0], $aliceParticipant, 'Slow CI', 1);
     Vote::factory()->create(['retro_id' => $retro->id, 'card_id' => $flaky->id, 'participant_id' => $aliceParticipant->id]);
     Vote::factory()->count(3)->create(['retro_id' => $retro->id, 'card_id' => $slow->id, 'participant_id' => $bobParticipant->id]);
-    $sort = plan04Column($columns[0]).' button:has-text("Sort by votes")';
+    $sort = plan04Column($columns[0]).' [data-test="retro-sort-by-votes"]';
 
     $page = $this->signIn($bob, "/retros/{$retro->id}");
 
@@ -281,13 +281,13 @@ it('[P04-05c] lets a guest and a member add, complete and delete action items du
 
     $carolPage->fill($input, 'Automate the release notes')
         ->keys($input, 'Enter')
-        ->assertSeeIn('aside:not([aria-label])', 'Automate the release notes');
-    $bobPage->assertSeeIn('aside:not([aria-label])', 'Automate the release notes');
+        ->assertSeeIn('[data-test="retro-action-items-panel"]', 'Automate the release notes');
+    $bobPage->assertSeeIn('[data-test="retro-action-items-panel"]', 'Automate the release notes');
 
     $bobPage->fill($input, 'Rotate the on-call')
         ->keys($input, 'Enter')
-        ->assertSeeIn('aside:not([aria-label])', 'Rotate the on-call');
-    $carolPage->assertSeeIn('aside:not([aria-label])', 'Rotate the on-call');
+        ->assertSeeIn('[data-test="retro-action-items-panel"]', 'Rotate the on-call');
+    $carolPage->assertSeeIn('[data-test="retro-action-items-panel"]', 'Rotate the on-call');
 
     $guestItem = ActionItem::query()->where('content', 'Automate the release notes')->firstOrFail();
 
@@ -298,7 +298,7 @@ it('[P04-05c] lets a guest and a member add, complete and delete action items du
 
     $carolPage->click("#action-item-{$guestItem->id} [aria-label=\"Delete action item\"]");
     $bobPage->assertNotPresent("#action-item-{$guestItem->id}")
-        ->assertSeeIn('aside:not([aria-label])', 'Rotate the on-call');
+        ->assertSeeIn('[data-test="retro-action-items-panel"]', 'Rotate the on-call');
 
     expect($retro->actionItems()->pluck('content')->all())->toBe(['Rotate the on-call']);
 });
@@ -520,7 +520,7 @@ it('[P04-13] shows a translated toast and resyncs the board when the server refu
         ->assertSee($toast)
         ->assertSeeIn('[aria-current="step"]', $discussing)
         ->assertNotPresent($addVote)
-        ->assertPresent('aside:not([aria-label])');
+        ->assertPresent('[data-test="retro-action-items-panel"]');
 
     expect($retro->votes()->count())->toBe(0);
 })->with([
@@ -615,7 +615,7 @@ it('[P04-15a] reflows the board between 375px and 1440px', function () {
     [$retro, $columns, , $bob, $aliceParticipant] = plan04Board(RetroPhase::Discussing);
     plan04Card($retro, $columns[0], $aliceParticipant, 'Slow CI');
     $board = 'main:has([data-test^="retro-column-"])';
-    $panel = 'aside:not([aria-label])';
+    $panel = '[data-test="retro-action-items-panel"]';
     $columnsScroll = "(() => { const board = document.querySelector('{$board}'); return board.scrollWidth > board.clientWidth; })()";
     $stepperWrapsBelowTitle = "document.querySelector('header ol[aria-label=\"Phases\"]').getBoundingClientRect().top >= document.querySelector('header h1').getBoundingClientRect().bottom";
     $panelIsBelowBoard = "document.querySelector('{$panel}').getBoundingClientRect().top >= document.querySelector('{$board}').getBoundingClientRect().bottom";

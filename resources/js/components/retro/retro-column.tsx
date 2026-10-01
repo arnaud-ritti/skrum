@@ -90,6 +90,7 @@ export function RetroColumn({
                         size="sm"
                         variant={isSortedByVotes ? 'secondary' : 'ghost'}
                         className="self-start"
+                        data-test="retro-sort-by-votes"
                         aria-pressed={isSortedByVotes}
                         onClick={() =>
                             setIsSortedByVotes((current) => !current)
