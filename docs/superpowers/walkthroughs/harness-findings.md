@@ -304,3 +304,51 @@ Proven by running the tests of plan 16e and of its final fix wave.
 
 - The browser suite held 383 tests (7030 assertions) and took about 625 seconds at the verification of plan 16e; the final fix wave added three tests (386), and the whole suite was not run again. `composer test` runs 3661 tests in about 148 seconds.
 - Global helper prefixes taken by plan 16e: `p11b*`, `p12a*` to `p12d*`, `p14a*` to `p14d*`, `p15*`; constants `P14dWebhookToken` and `P14dWebhookSecret`.
+
+## Findings from plan 16f (whiteboard walkthroughs of plans 17a to 17d)
+
+Proven by running the tests of plan 16f. The helpers are in `Tests\Browser\Support\InteractsWithWhiteboards`.
+
+### Canvas and scene
+
+- Scripted `PointerEvent`s drive the Excalidraw 0.18.1 canvas (`dragOnWhiteboard()`, `drawOnWhiteboard()`): events on `canvas.excalidraw__canvas.interactive`, a no-op `setPointerCapture`, one animation frame per event, 8 steps. A rectangle dragged from [500,300] to [700,450] is stored at x 500, y 300, 200 x 150 within 2 px. Rectangle, arrow and freedraw each reach the other page as one element. A tool is selected by clicking its toolbar label.
+- On a board created from a template a canvas pixel equals a scene coordinate. Dragging an unselected filled rectangle with the selection tool moves it by the pointer's travel within 2 px; a drag on a locked frame's border moves nothing and writes nothing.
+- The board root carries `data-realtime` and `data-scene="<count>:<versions>:<nonces>"`. Excalidraw's `onChange` fires after a remote `updateScene`, so `awaitWhiteboardElements()` and `awaitWhiteboardScene()` work for remote changes.
+- A sticky note added with the sticky tool is stored as one row of type `rectangle`, version 2, index `a0` on an empty board; no text element exists until text is typed. `addWhiteboardElement()` afterwards gets `a1`, `a2`.
+- `WhiteboardElement` has no `index` column: the fractional index is in `data['index']`; `version` and `version_nonce` are columns.
+- Elements arranged with the factory recipe, and elements copied from a template, are loaded without any write: the stamp equals the server's, `seq` is unchanged and every row stays at version 1. Reloading a board with tool-made sticky notes writes nothing either (800 ms is enough to prove it).
+- `drawOnWhiteboard($page, 'text', [x, y], [x, y])` opens `textarea.excalidraw-wysiwyg`; `fill()` on it types text stored as one text element while the editor stays open.
+- Closing the text editor rewrites (and re-sends) the text element only for the first text shown in a run of the browser; the cause (font loading) is inferred, not observed. Run a new whiteboard test after one that shows text on a canvas, not only alone.
+- `keys('.whiteboard-canvas .excalidraw-container', 'Delete')` reaches the canvas: it deletes a selected note with its bound text and does nothing to a locked frame.
+- `rightClick()` on the interactive canvas opens `.whiteboard-canvas .context-menu`; entries are `li[data-testid="viewMode|toggleElementLock|unlockAllElements|deleteSelectedElements"] > button`. Entries the product hides by CSS stay in the DOM: assert `getComputedStyle(…).display`, not absence.
+- Selectors that hold: `[data-testid="main-menu-trigger"]`, `[data-testid="dropdown-menu"]`, `[data-testid="help-menu-item"]`, `.HelpDialog`, `.reset-zoom-button`, `.zoom-in-button`, `.zoom-out-button` (clickable in view mode too), `[data-sonner-toast]`, `.lr-overlay` (flying reactions).
+- An Excalidraw dialog closes on Escape only when the key is sent to a control inside it.
+- In Chromium the image export dialog has no file-name input.
+
+### Server and requests
+
+- `PUT /whiteboards/{board}/elements` answers 200 for an invalid element and lists it under `rejected` (`{id, reason: 'invalid', element: null}`): assert refusals on `body.rejected`. A signed-in non-member gets 403 "You no longer have access to this board."
+- `joinAsGuest()` works unchanged on `/whiteboards/join/{guest_token}`.
+- `Storage::fake()` with no argument fakes the disk used by the files controller, `SaveWhiteboardTemplate`, the file copy of `CreateWhiteboard` and the deletions. An image element written through the endpoint with status `saved` is restored by the receiving canvas, which downloads the file itself.
+- `resolve(WriteWhiteboardElements::class)->maxLiveElements = 1` in the test body applies to browser requests.
+- Inertia's XHR is blocked from the page by replacing `XMLHttpRequest.prototype.open/send` and dispatching `new ProgressEvent('error')`: the board shows "Reconnecting…", keeps the edit and replays it once the stub is off; `fetch()` helpers are unaffected. Blocking only `/snapshot` drives the recovery loop.
+- Resource Timing gives `responseStatus` for XHR entries (`entry.responseStatus === 409`), and counts answered requests including 422 answers: usable as a sync point for a refused submit.
+- With Reverb stopped the whiteboard exchanges edits through its five-second poll (the test takes about 18 s).
+- A raw `fetch()` of `PUT /whiteboards/{id}/timer` without `X-Socket-ID` reaches every page, the sender included.
+- Downloads: replace `window.showSaveFilePicker` after page load to record the library's PNG and SVG exports; the product's data export goes through `URL.createObjectURL` and `<a download>.click()`, both recordable.
+
+### Timing and facilitation
+
+- A displayed countdown (`[role="timer"]`) can read one second above the true remaining time: give upper bounds one second of slack. A real ten-second countdown ends inside the default assertion timeout.
+- Follow-me is asserted through the zoom label: with equal windows the follower's `.reset-zoom-button` shows the facilitator's label. `resize()` on a follower does not pause it. A follower does not pause itself across repeated viewport whispers.
+- Locking a board in the database behind an open guest page (after `awaitResync()`) leaves the guest's tools in place until the next refused write.
+- With two `signIn()` contexts of one user, deleting the board in one turns the other's board page into "This board was deleted." without a reload.
+
+### Assertions and tooling
+
+- Text assertions (`assertDontSeeIn()`) also match text of descendants hidden with `display:none`: for "not shown" claims on CSS-hidden content use `assertScript()` on `innerText`.
+- Dark theme: set `localStorage.appearance = 'dark'` and the cookie `appearance=dark;path=/` with `script()`, then `navigate()`. `User::query()->whereKey($id)->update(['locale' => 'fr'])` changes the language of an open context at its next `navigate()`.
+- Rector rewrites `$this->assertSame($a, $b, 'msg')` to `expect($b)->toBe($a)` and drops the message, `->toHaveCount(count($x))` to `->toHaveSameSize($x)`, `->toHaveCount(0)` to `->toBeEmpty()`, and a `<<<'JS'` nowdoc whose body holds `JSON.` (use another label such as `SCRIPT`).
+- Port 8097 is shared by every checkout on the machine: a browser suite running from another worktree supplies the Reverb server and the reconnect tests then fail. Check `pgrep -fl "pest tests/Browser"` before a run.
+- The browser suite held 455 tests (8497 assertions) and took about 815 seconds at the verification of plan 16f.
+- Global helper prefixes taken by plan 16f: `p17a*`, `p17b*`, `p17c*`, `p17d*`; constants `P17aPng`, `P17bPng`, `P17bFileId`, `P17c*`.
