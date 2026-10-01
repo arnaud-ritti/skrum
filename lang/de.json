@@ -1869,5 +1869,17 @@
     "Notes are hidden until the facilitator reveals them. Other elements stay visible.": "Haftnotizen bleiben verborgen, bis der Moderator sie aufdeckt. Andere Elemente bleiben sichtbar.",
     "The size of a note hints at the length of its text.": "Die Größe einer Haftnotiz lässt die Länge ihres Textes erahnen.",
     "Hidden note": "Verborgene Haftnotiz",
-    "Only its author can change a hidden note.": "Nur der Autor kann eine verborgene Haftnotiz ändern."
+    "Only its author can change a hidden note.": "Nur der Autor kann eine verborgene Haftnotiz ändern.",
+    "Version history": "Versionsverlauf",
+    "Version name": "Name der Version",
+    "Save this version": "Diese Version speichern",
+    "Version saved.": "Version gespeichert.",
+    "No version yet.": "Noch keine Version.",
+    "Automatic version": "Automatische Version",
+    "Version actions": "Aktionen für die Version",
+    "Copy to a new board": "In ein neues Board kopieren",
+    "Restore this version?": "Diese Version wiederherstellen?",
+    "The board goes back to this version for everyone. The current state is saved first.": "Das Board kehrt für alle zu dieser Version zurück. Der aktuelle Stand wird vorher gespeichert.",
+    "Version restored.": "Version wiederhergestellt.",
+    "Delete this version?": "Diese Version löschen?"
 }

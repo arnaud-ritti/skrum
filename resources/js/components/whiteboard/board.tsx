@@ -1,5 +1,5 @@
 import { usePage } from '@inertiajs/react';
-import { EyeOff, Lock } from 'lucide-react';
+import { EyeOff, History, Lock } from 'lucide-react';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { toast } from 'sonner';
@@ -16,6 +16,11 @@ import { useWhiteboardFollow } from '@/hooks/use-whiteboard-follow';
 import { useWhiteboardRequest } from '@/hooks/use-whiteboard-request';
 import { useWhiteboardToolbarSlot } from '@/hooks/use-whiteboard-toolbar-slot';
 import { retroRequest } from '@/lib/retro/api';
+import {
+    CanvasLocales,
+    isDark,
+    subscribeToTheme,
+} from '@/lib/whiteboard/appearance';
 import {
     Excalidraw,
     MainMenu,
@@ -34,6 +39,7 @@ import { BoardGone } from './board-gone';
 import { BoardMenu } from './board-menu';
 import { BoardReactions } from './board-reactions';
 import { FacilitatorBar } from './facilitator-bar';
+import { HistoryPanel } from './history-panel';
 import { MaskedNotes } from './masked-notes';
 import { ResultsPanel } from './results-panel';
 import { StatusBar } from './status-bar';
@@ -43,26 +49,6 @@ import { VoteOverlay } from './vote-overlay';
 
 const HideMyCursorKey = 'skrum.hideMyCursor';
 const PollMs = 5000;
-
-const ExcalidrawLocales: Record<string, string> = {
-    en: 'en',
-    fr: 'fr-FR',
-    de: 'de-DE',
-    es: 'es-ES',
-};
-
-function subscribeToTheme(onChange: () => void) {
-    const observer = new MutationObserver(onChange);
-
-    observer.observe(document.documentElement, {
-        attributes: true,
-        attributeFilter: ['class'],
-    });
-
-    return () => observer.disconnect();
-}
-
-const isDark = () => document.documentElement.classList.contains('dark');
 
 export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
     const { t } = useTrans();
@@ -89,6 +75,7 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
         HideMyCursorKey,
         false,
     );
+    const [historyOpen, setHistoryOpen] = useState(false);
     const sync = useRef<SceneSync | null>(null);
     const canvas = useRef<HTMLDivElement | null>(null);
     const toolbarSlot = useWhiteboardToolbarSlot(canvas, api !== null);
@@ -220,6 +207,12 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
 
     const privateWriting = board.privateWriting;
 
+    // Closed for good, not until the reveal: the list would otherwise come
+    // back by itself in front of whoever opened it before the round.
+    if (privateWriting && historyOpen) {
+        setHistoryOpen(false);
+    }
+
     // The reveal reaches the other tabs as an `elements.changed` without
     // elements; the tab that asked for it, and a tab that missed the event,
     // learn it from the snapshot and fetch the notes here.
@@ -278,6 +271,22 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
                     )}
                     {api && !toolbarSlot && !viewOnly && (
                         <StickyTool api={api} />
+                    )}
+                    {!me.isGuest && (
+                        <Button
+                            size="icon"
+                            variant="outline"
+                            aria-label={t('Version history')}
+                            title={t(
+                                privateWriting
+                                    ? 'Reveal the notes first.'
+                                    : 'Version history',
+                            )}
+                            disabled={privateWriting}
+                            onClick={() => setHistoryOpen(true)}
+                        >
+                            <History className="size-4" />
+                        </Button>
                     )}
                     <BoardMenu
                         state={state}
@@ -377,9 +386,7 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
                                 )
                             }
                             onPointerUpdate={cursors.onPointerUpdate}
-                            langCode={
-                                ExcalidrawLocales[locale as string] ?? 'en'
-                            }
+                            langCode={CanvasLocales[locale as string] ?? 'en'}
                             theme={dark ? 'dark' : 'light'}
                             aiEnabled={false}
                             UIOptions={{
@@ -421,6 +428,17 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
                     )}
                 </div>
                 <BoardReactions state={state} />
+                {!me.isGuest && (
+                    <HistoryPanel
+                        state={state}
+                        open={historyOpen && !privateWriting}
+                        onOpenChange={setHistoryOpen}
+                        onRestored={() => {
+                            void sync.current?.resync();
+                            void state.refetch();
+                        }}
+                    />
+                )}
             </div>
         </div>
     );

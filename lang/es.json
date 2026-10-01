@@ -1869,5 +1869,17 @@
     "Notes are hidden until the facilitator reveals them. Other elements stay visible.": "Las notas quedan ocultas hasta que el facilitador las revele. Los demás elementos siguen visibles.",
     "The size of a note hints at the length of its text.": "El tamaño de una nota deja intuir la longitud de su texto.",
     "Hidden note": "Nota oculta",
-    "Only its author can change a hidden note.": "Solo su autor puede modificar una nota oculta."
+    "Only its author can change a hidden note.": "Solo su autor puede modificar una nota oculta.",
+    "Version history": "Historial de versiones",
+    "Version name": "Nombre de la versión",
+    "Save this version": "Guardar esta versión",
+    "Version saved.": "Versión guardada.",
+    "No version yet.": "Aún no hay versiones.",
+    "Automatic version": "Versión automática",
+    "Version actions": "Acciones de la versión",
+    "Copy to a new board": "Copiar a una pizarra nueva",
+    "Restore this version?": "¿Restaurar esta versión?",
+    "The board goes back to this version for everyone. The current state is saved first.": "La pizarra vuelve a esta versión para todos. Antes se guarda el estado actual.",
+    "Version restored.": "Versión restaurada.",
+    "Delete this version?": "¿Eliminar esta versión?"
 }

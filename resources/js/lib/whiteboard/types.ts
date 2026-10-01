@@ -96,3 +96,16 @@ export type ElementsChangedPayload = {
     fromSeq: number;
     elements?: SceneElement[];
 };
+
+export type WhiteboardVersionSummary = {
+    id: string;
+    name: string | null;
+    createdAt: string;
+    createdByName: string | null;
+    automatic: boolean;
+};
+
+export type WhiteboardVersionScene = {
+    elements: SceneElement[];
+    files: { id: string; url: string; mimeType: string }[];
+};

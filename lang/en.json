@@ -1625,5 +1625,17 @@
     "Notes are hidden until the facilitator reveals them. Other elements stay visible.": "Notes are hidden until the facilitator reveals them. Other elements stay visible.",
     "The size of a note hints at the length of its text.": "The size of a note hints at the length of its text.",
     "Hidden note": "Hidden note",
-    "Only its author can change a hidden note.": "Only its author can change a hidden note."
+    "Only its author can change a hidden note.": "Only its author can change a hidden note.",
+    "Version history": "Version history",
+    "Version name": "Version name",
+    "Save this version": "Save this version",
+    "Version saved.": "Version saved.",
+    "No version yet.": "No version yet.",
+    "Automatic version": "Automatic version",
+    "Version actions": "Version actions",
+    "Copy to a new board": "Copy to a new board",
+    "Restore this version?": "Restore this version?",
+    "The board goes back to this version for everyone. The current state is saved first.": "The board goes back to this version for everyone. The current state is saved first.",
+    "Version restored.": "Version restored.",
+    "Delete this version?": "Delete this version?"
 }

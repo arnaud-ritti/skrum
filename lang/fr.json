@@ -1869,5 +1869,17 @@
     "Notes are hidden until the facilitator reveals them. Other elements stay visible.": "Les post-it sont masqués jusqu'à ce que l'animateur les révèle. Les autres éléments restent visibles.",
     "The size of a note hints at the length of its text.": "La taille d'un post-it laisse deviner la longueur de son texte.",
     "Hidden note": "Post-it masqué",
-    "Only its author can change a hidden note.": "Seul son auteur peut modifier un post-it masqué."
+    "Only its author can change a hidden note.": "Seul son auteur peut modifier un post-it masqué.",
+    "Version history": "Historique des versions",
+    "Version name": "Nom de la version",
+    "Save this version": "Enregistrer cette version",
+    "Version saved.": "Version enregistrée.",
+    "No version yet.": "Aucune version pour l'instant.",
+    "Automatic version": "Version automatique",
+    "Version actions": "Actions sur la version",
+    "Copy to a new board": "Copier dans un nouveau tableau",
+    "Restore this version?": "Restaurer cette version ?",
+    "The board goes back to this version for everyone. The current state is saved first.": "Le tableau revient à cette version pour tout le monde. L'état actuel est d'abord enregistré.",
+    "Version restored.": "Version restaurée.",
+    "Delete this version?": "Supprimer cette version ?"
 }

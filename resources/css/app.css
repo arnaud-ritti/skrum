@@ -212,3 +212,14 @@
     li[data-testid='unlockAllElements'] {
     display: none !important;
 }
+
+/*
+ * The preview of a version (spec §9) is a second, read-only canvas inside a
+ * dialog. Its menu button and its help button open panels of Excalidraw
+ * 0.18.1 that the dialog would cover or that link to the library's sites,
+ * and neither has a prop: both are hidden.
+ */
+.whiteboard-preview .main-menu-trigger,
+.whiteboard-preview .help-icon {
+    display: none !important;
+}
