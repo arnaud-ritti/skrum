@@ -179,6 +179,63 @@ it('keeps a note deleted while hidden out of a version when its id is used again
         ->and($version->fresh()->private_element_ids)->toBe(['note', 'note-text']);
 });
 
+it('keeps a note deleted while hidden out of an older version when its author brings it back hidden', function () {
+    $this->travelTo('2026-10-12 10:00:00');
+
+    $table = privateWritingBoard();
+    $board = $table['board'];
+    [$note, $text] = stickyWithText('note', $table['secret']);
+
+    $this->travel(5)->minutes();
+
+    $storedBeforeTheDeletion = WhiteboardVersion::factory()->named()->create([
+        'whiteboard_id' => $board->id,
+        'scene' => ['elements' => [$note, $text], 'fileIds' => []],
+        'private_element_ids' => ['note', 'note-text'],
+    ]);
+
+    $this->travel(5)->minutes();
+
+    putWhiteboardElements($this->actingAs($table['author']), $board, [
+        [...$text, 'version' => 2, 'isDeleted' => true],
+        [...$note, 'version' => 2, 'isDeleted' => true],
+    ])->assertJsonPath('rejected', []);
+
+    $this->travel(1)->minutes();
+
+    setPrivateWriting($this->actingAs($table['facilitator']), $board, false)->assertNoContent();
+
+    expect($storedBeforeTheDeletion->fresh()->private_element_ids)->toBe(['note', 'note-text'])
+        ->and($board->elements()->where('element_id', 'note')->sole()->updated_at->toDateTimeString())->toBe('2026-10-12 10:10:00');
+
+    $this->travel(1)->minutes();
+
+    setPrivateWriting($this->actingAs($table['facilitator']), $board, true)->assertNoContent();
+
+    putWhiteboardElements($this->actingAs($table['author']), $board, [
+        [...$note, 'version' => 3],
+        [...$text, 'version' => 3],
+    ])->assertJsonPath('rejected', []);
+
+    expect($board->elements()->where('is_private', true)->where('is_deleted', false)->count())->toBe(2);
+
+    $this->travel(1)->minutes();
+
+    $storedAfterTheReturn = WhiteboardVersion::factory()->create([
+        'whiteboard_id' => $board->id,
+        'scene' => ['elements' => [$note, $text], 'fileIds' => []],
+        'private_element_ids' => ['note', 'note-text'],
+    ]);
+
+    $this->travel(1)->minutes();
+
+    setPrivateWriting($this->actingAs($table['facilitator']), $board, false)->assertNoContent();
+
+    expect($board->elements()->where('is_private', true)->count())->toBe(0)
+        ->and($storedBeforeTheDeletion->fresh()->private_element_ids)->toBe(['note', 'note-text'])
+        ->and($storedAfterTheReturn->fresh()->private_element_ids)->toBe([]);
+});
+
 it('changes nothing when the switch already has that value', function () {
     $board = Whiteboard::factory()->create(['seq' => 5]);
     [$facilitator] = whiteboardFacilitator($board);

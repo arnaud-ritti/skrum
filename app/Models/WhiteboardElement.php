@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\CarbonImmutable;
 use Database\Factories\WhiteboardElementFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -22,6 +23,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property bool $is_private
  * @property bool $is_deleted
  * @property int $seq
+ * @property CarbonImmutable|null $withheld_at
  */
 #[Fillable(['whiteboard_id', 'element_id', 'type', 'data', 'version', 'version_nonce', 'author_member_id', 'is_sticky', 'is_private', 'is_deleted', 'seq'])]
 class WhiteboardElement extends Model
@@ -47,6 +49,7 @@ class WhiteboardElement extends Model
             'is_private' => 'boolean',
             'is_deleted' => 'boolean',
             'seq' => 'integer',
+            'withheld_at' => 'immutable_datetime',
         ];
     }
 }

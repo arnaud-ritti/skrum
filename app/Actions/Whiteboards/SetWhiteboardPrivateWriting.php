@@ -5,6 +5,7 @@ namespace App\Actions\Whiteboards;
 use App\Events\Whiteboards\WhiteboardElementsChanged;
 use App\Models\Whiteboard;
 use App\Models\WhiteboardVersion;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Validation\ValidationException;
 
 class SetWhiteboardPrivateWriting
@@ -36,12 +37,20 @@ class SetWhiteboardPrivateWriting
     /**
      * Live notes become ordinary elements under a new seq, so that every
      * client fetches them; nothing of them is broadcast. A note deleted
-     * while it was hidden keeps its flag and is never shown.
+     * while it was hidden keeps its flag and is never shown: the row
+     * remembers the reveal that held it back, for the versions older than
+     * it, without a new `updated_at`, which is what the purge counts from.
      */
     private function reveal(Whiteboard $locked): void
     {
         $fromSeq = $locked->seq;
         $seq = $fromSeq + 1;
+
+        $locked->elements()
+            ->where('is_private', true)
+            ->where('is_deleted', true)
+            ->toBase()
+            ->update(['withheld_at' => now()]);
 
         $hidden = $locked->elements()->where('is_private', true)->where('is_deleted', false);
         $revealedIds = $hidden->clone()->pluck('element_id');
@@ -68,7 +77,9 @@ class SetWhiteboardPrivateWriting
      * stays on its list was deleted before the reveal and is never shown.
      * The list holds ids, and an id is free again once its tombstone is
      * purged: only a row that is not younger than the version is the
-     * element the version stored.
+     * element the version stored. A row that a reveal held back as a
+     * tombstone stays out of every version stored before that reveal, even
+     * when its author brought it back hidden since.
      *
      * @param  list<string>  $revealedIds
      */
@@ -87,6 +98,9 @@ class SetWhiteboardPrivateWriting
                 $shown = $locked->elements()
                     ->whereIn('element_id', $listed)
                     ->where('created_at', '<=', $version->created_at)
+                    ->where(fn (Builder $rows) => $rows
+                        ->whereNull('withheld_at')
+                        ->orWhere('withheld_at', '<', $version->created_at))
                     ->pluck('element_id')
                     ->all();
 
