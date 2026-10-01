@@ -1863,5 +1863,11 @@
     "No votes were cast.": "Es wurden keine Stimmen abgegeben.",
     "Reveal the notes first.": "Decken Sie zuerst die Haftnotizen auf.",
     "This board already has 100 saved versions.": "Dieses Board hat bereits 100 gespeicherte Versionen.",
-    "Before restore · :date": "Vor der Wiederherstellung · :date"
+    "Before restore · :date": "Vor der Wiederherstellung · :date",
+    "Private writing": "Privates Schreiben",
+    "Reveal the notes": "Haftnotizen aufdecken",
+    "Notes are hidden until the facilitator reveals them. Other elements stay visible.": "Haftnotizen bleiben verborgen, bis der Moderator sie aufdeckt. Andere Elemente bleiben sichtbar.",
+    "The size of a note hints at the length of its text.": "Die Größe einer Haftnotiz lässt die Länge ihres Textes erahnen.",
+    "Hidden note": "Verborgene Haftnotiz",
+    "Only its author can change a hidden note.": "Nur der Autor kann eine verborgene Haftnotiz ändern."
 }

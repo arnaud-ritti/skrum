@@ -1,5 +1,5 @@
 import { usePage } from '@inertiajs/react';
-import { Lock } from 'lucide-react';
+import { EyeOff, Lock } from 'lucide-react';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { toast } from 'sonner';
@@ -34,6 +34,7 @@ import { BoardGone } from './board-gone';
 import { BoardMenu } from './board-menu';
 import { BoardReactions } from './board-reactions';
 import { FacilitatorBar } from './facilitator-bar';
+import { MaskedNotes } from './masked-notes';
 import { ResultsPanel } from './results-panel';
 import { StatusBar } from './status-bar';
 import { StickyTool } from './sticky-tool';
@@ -125,6 +126,7 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
         file: '',
         full: '',
         voting: '',
+        private: '',
     });
     const lockedMessage = useRef('');
 
@@ -137,6 +139,7 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
         file: t('This image could not be added.'),
         full: t('This board is full.'),
         voting: t('Notes cannot be edited while a vote is open.'),
+        private: t('Only its author can change a hidden note.'),
     };
 
     useEffect(() => {
@@ -149,8 +152,26 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
             api,
             initial: initial.current,
             onFatal: fail,
-            onRejected: (reason) =>
-                toast.error(rejectionMessages.current[reason], { id: reason }),
+            onRejected: (reason, elementId) => {
+                const editing = api.getAppState().editingTextElement;
+
+                // Typing into someone's hidden note: the editor would keep
+                // writing a text the server refuses at every key. A refusal
+                // about any other element leaves the editor alone: the
+                // member may be typing their own note.
+                if (
+                    reason === 'private' &&
+                    editing &&
+                    elementId !== null &&
+                    (editing.id === elementId ||
+                        ('containerId' in editing &&
+                            editing.containerId === elementId))
+                ) {
+                    queueMicrotask(closeTextEditor);
+                }
+
+                toast.error(rejectionMessages.current[reason], { id: reason });
+            },
             onOffline: setOffline,
             onLocked: () => {
                 toast.error(lockedMessage.current, { id: 'locked' });
@@ -196,6 +217,15 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
 
         return () => clearInterval(poll);
     }, [state.connected, state.status]);
+
+    const privateWriting = board.privateWriting;
+
+    // The reveal reaches the other tabs as an `elements.changed` without
+    // elements; the tab that asked for it, and a tab that missed the event,
+    // learn it from the snapshot and fetch the notes here.
+    useEffect(() => {
+        void sync.current?.resync();
+    }, [privateWriting]);
 
     const vote = async (elementId: string, count: number) => {
         if (!voting) {
@@ -264,6 +294,19 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
                         <span className="flex items-center gap-1.5">
                             <Lock className="size-4" aria-hidden="true" />
                             {t('This board is locked.')}
+                        </span>
+                    )}
+                    {privateWriting && (
+                        <span className="flex flex-wrap items-center gap-x-2">
+                            <EyeOff className="size-4" aria-hidden="true" />
+                            {t(
+                                'Notes are hidden until the facilitator reveals them. Other elements stay visible.',
+                            )}
+                            <span className="text-xs text-muted-foreground">
+                                {t(
+                                    'The size of a note hints at the length of its text.',
+                                )}
+                            </span>
                         </span>
                     )}
                     {board.followEnabled && me.isFacilitator && (
@@ -358,6 +401,7 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
                                 <MainMenu.DefaultItems.ChangeCanvasBackground />
                             </MainMenu>
                         </Excalidraw>
+                        {api && privateWriting && <MaskedNotes api={api} />}
                         {api && voting && (
                             <VoteOverlay
                                 api={api}

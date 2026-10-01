@@ -1619,5 +1619,11 @@
     "No votes were cast.": "No votes were cast.",
     "Reveal the notes first.": "Reveal the notes first.",
     "This board already has 100 saved versions.": "This board already has 100 saved versions.",
-    "Before restore · :date": "Before restore · :date"
+    "Before restore · :date": "Before restore · :date",
+    "Private writing": "Private writing",
+    "Reveal the notes": "Reveal the notes",
+    "Notes are hidden until the facilitator reveals them. Other elements stay visible.": "Notes are hidden until the facilitator reveals them. Other elements stay visible.",
+    "The size of a note hints at the length of its text.": "The size of a note hints at the length of its text.",
+    "Hidden note": "Hidden note",
+    "Only its author can change a hidden note.": "Only its author can change a hidden note."
 }

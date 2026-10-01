@@ -17,8 +17,10 @@ type CanvasElement = {
     y: number;
     width: number;
     height: number;
+    angle?: number;
     isDeleted: boolean;
     customData?: Record<string, unknown>;
+    boundElements?: readonly { id: string; type: string }[] | null;
 };
 
 /** Scroll and zoom of the canvas, for anything drawn above it. */
@@ -142,4 +144,74 @@ export function useElementsOnBoard(
     }, [api, ids]);
 
     return new Set(onBoard);
+}
+
+export type MaskedNoteBox = NoteBox & { angle: number };
+
+const isMasked = (element: CanvasElement) =>
+    (element.customData?.skrum as { masked?: unknown } | undefined)?.masked ===
+    true;
+
+/**
+ * The notes whose text this viewer was not given (spec §11.5), in scene
+ * coordinates. A masked note someone copied and typed into has a live text
+ * of its own and is left out.
+ */
+export function useMaskedNoteBoxes(
+    api: ExcalidrawImperativeAPI | null,
+): MaskedNoteBox[] {
+    const [boxes, setBoxes] = useState<MaskedNoteBox[]>([]);
+
+    useEffect(() => {
+        if (!api) {
+            setBoxes([]);
+
+            return;
+        }
+
+        let signature = '';
+
+        const read = (elements: readonly CanvasElement[]) => {
+            const live = new Set(
+                elements
+                    .filter((element) => !element.isDeleted)
+                    .map((element) => element.id),
+            );
+            const next = elements
+                .filter(
+                    (element) =>
+                        !element.isDeleted &&
+                        isMasked(element) &&
+                        !(element.boundElements ?? []).some(
+                            (bound) =>
+                                bound.type === 'text' && live.has(bound.id),
+                        ),
+                )
+                .map(({ id, x, y, width, height, angle }) => ({
+                    id,
+                    x,
+                    y,
+                    width,
+                    height,
+                    angle: angle ?? 0,
+                }));
+            const nextSignature = next
+                .map((box) => Object.values(box).join(':'))
+                .join('|');
+
+            // onChange also fires on every selection and pointer state.
+            if (nextSignature === signature) {
+                return;
+            }
+
+            signature = nextSignature;
+            setBoxes(next);
+        };
+
+        read(api.getSceneElements());
+
+        return api.onChange((elements) => read(elements));
+    }, [api]);
+
+    return boxes;
 }

@@ -30,7 +30,8 @@ export type SceneSyncDeps = {
     api: ExcalidrawImperativeAPI;
     initial: Pick<WhiteboardSnapshot, 'elements' | 'seq'>;
     onFatal: (error: RetroRequestError) => void;
-    onRejected: (reason: RejectReason) => void;
+    /** `elementId` is null when the server could not read an id. */
+    onRejected: (reason: RejectReason, elementId: string | null) => void;
     onOffline: (offline: boolean) => void;
     /** The board is locked for this member: unsent edits were dropped. */
     onLocked: () => void;
@@ -396,7 +397,7 @@ export function createSceneSync(deps: SceneSyncDeps): SceneSync {
                 }
 
                 dropLocally(element.id);
-                deps.onRejected('file');
+                deps.onRejected('file', element.id);
             }
         }
 
@@ -412,7 +413,7 @@ export function createSceneSync(deps: SceneSyncDeps): SceneSync {
             }
 
             if (rejection.reason !== 'stale') {
-                deps.onRejected(rejection.reason);
+                deps.onRejected(rejection.reason, rejection.id);
             }
         }
     };

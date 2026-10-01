@@ -1863,5 +1863,11 @@
     "No votes were cast.": "No se emitió ningún voto.",
     "Reveal the notes first.": "Revela primero las notas.",
     "This board already has 100 saved versions.": "Esta pizarra ya tiene 100 versiones guardadas.",
-    "Before restore · :date": "Antes de restaurar · :date"
+    "Before restore · :date": "Antes de restaurar · :date",
+    "Private writing": "Escritura privada",
+    "Reveal the notes": "Revelar las notas",
+    "Notes are hidden until the facilitator reveals them. Other elements stay visible.": "Las notas quedan ocultas hasta que el facilitador las revele. Los demás elementos siguen visibles.",
+    "The size of a note hints at the length of its text.": "El tamaño de una nota deja intuir la longitud de su texto.",
+    "Hidden note": "Nota oculta",
+    "Only its author can change a hidden note.": "Solo su autor puede modificar una nota oculta."
 }

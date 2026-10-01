@@ -1,4 +1,12 @@
-import { AlarmClock, Lock, LockOpen, Presentation, Vote } from 'lucide-react';
+import {
+    AlarmClock,
+    Eye,
+    EyeOff,
+    Lock,
+    LockOpen,
+    Presentation,
+    Vote,
+} from 'lucide-react';
 import { useState } from 'react';
 import WhiteboardSettingsController from '@/actions/App/Http/Controllers/Whiteboards/WhiteboardSettingsController';
 import WhiteboardTimersController from '@/actions/App/Http/Controllers/Whiteboards/WhiteboardTimersController';
@@ -22,7 +30,7 @@ const Minutes = [1, 3, 5, 10];
 
 type Props = { state: WhiteboardState; api: ExcalidrawImperativeAPI | null };
 
-/** Timer, board lock, follow-me and vote: the facilitator's tools. */
+/** Timer, board lock, follow-me, private writing and vote: the facilitator's tools. */
 export function FacilitatorBar({ state, api }: Props) {
     const { t } = useTrans();
     const request = useWhiteboardRequest();
@@ -136,6 +144,35 @@ export function FacilitatorBar({ state, api }: Props) {
             >
                 <Presentation className="size-4" />
             </Button>
+            <Button
+                size="sm"
+                variant={board.privateWriting ? 'default' : 'outline'}
+                aria-pressed={board.privateWriting}
+                aria-label={t(
+                    board.privateWriting
+                        ? 'Reveal the notes'
+                        : 'Private writing',
+                )}
+                title={t(
+                    board.privateWriting
+                        ? 'Reveal the notes'
+                        : 'Private writing',
+                )}
+                onClick={() =>
+                    void updateSettings({
+                        private_writing: !board.privateWriting,
+                    })
+                }
+            >
+                {board.privateWriting ? (
+                    <>
+                        <Eye className="size-4" />
+                        {t('Reveal the notes')}
+                    </>
+                ) : (
+                    <EyeOff className="size-4" />
+                )}
+            </Button>
             {voting?.open ? (
                 <Button size="sm" onClick={() => void closeVote(voting.id)}>
                     {t('Close the vote')}
@@ -145,8 +182,12 @@ export function FacilitatorBar({ state, api }: Props) {
                     size="sm"
                     variant="outline"
                     aria-label={t('Start a vote')}
-                    title={t('Start a vote')}
-                    disabled={api === null}
+                    title={t(
+                        board.privateWriting
+                            ? 'Reveal the notes first.'
+                            : 'Start a vote',
+                    )}
+                    disabled={api === null || board.privateWriting}
                     onClick={() => setStartingVote(true)}
                 >
                     <Vote className="size-4" />

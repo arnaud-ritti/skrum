@@ -162,10 +162,14 @@ export function BoardMenu({
                     )}
                     {!me.isGuest && (
                         <>
-                            <DropdownMenuItem onSelect={duplicate}>
+                            <DropdownMenuItem
+                                disabled={board.privateWriting}
+                                onSelect={duplicate}
+                            >
                                 {t('Duplicate this board')}
                             </DropdownMenuItem>
                             <DropdownMenuItem
+                                disabled={board.privateWriting}
                                 onSelect={() => setSavingTemplate(true)}
                             >
                                 {t('Save as template')}

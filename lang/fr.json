@@ -1863,5 +1863,11 @@
     "No votes were cast.": "Aucun vote n'a été exprimé.",
     "Reveal the notes first.": "Révélez d'abord les post-it.",
     "This board already has 100 saved versions.": "Ce tableau a déjà 100 versions enregistrées.",
-    "Before restore · :date": "Avant restauration · :date"
+    "Before restore · :date": "Avant restauration · :date",
+    "Private writing": "Écriture privée",
+    "Reveal the notes": "Révéler les post-it",
+    "Notes are hidden until the facilitator reveals them. Other elements stay visible.": "Les post-it sont masqués jusqu'à ce que l'animateur les révèle. Les autres éléments restent visibles.",
+    "The size of a note hints at the length of its text.": "La taille d'un post-it laisse deviner la longueur de son texte.",
+    "Hidden note": "Post-it masqué",
+    "Only its author can change a hidden note.": "Seul son auteur peut modifier un post-it masqué."
 }

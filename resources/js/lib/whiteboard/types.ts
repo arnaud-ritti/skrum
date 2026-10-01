@@ -47,6 +47,7 @@ export type WhiteboardSnapshot = {
         reactionsEnabled: boolean;
         locked: boolean;
         followEnabled: boolean;
+        privateWriting: boolean;
         timerEndsAt: string | null;
     };
     me: {
@@ -75,7 +76,8 @@ export type RejectReason =
     | 'locked'
     | 'file'
     | 'full'
-    | 'voting';
+    | 'voting'
+    | 'private';
 
 export type WriteResponse = {
     seq: number;
