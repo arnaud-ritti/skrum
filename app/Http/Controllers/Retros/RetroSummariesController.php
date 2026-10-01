@@ -21,7 +21,7 @@ use Illuminate\Support\Facades\DB;
 
 class RetroSummariesController extends Controller
 {
-    private const RequestsPerMinute = 5;
+    private const int RequestsPerMinute = 5;
 
     public function __construct(
         private Llm $llm,

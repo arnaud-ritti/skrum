@@ -8,7 +8,7 @@ use App\Models\TeamIntegration;
 
 class IntegrationAvailability
 {
-    private const NonDeliveringMailers = ['log', 'array'];
+    private const array NonDeliveringMailers = ['log', 'array'];
 
     public function emailEnabled(): bool
     {

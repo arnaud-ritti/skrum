@@ -14,11 +14,11 @@ class OAuthState
 {
     public const SessionKey = 'integrations.oauth';
 
-    private const TtlMinutes = 10;
+    private const int TtlMinutes = 10;
 
-    private const Length = 40;
+    private const int Length = 40;
 
-    private const VerifierLength = 64;
+    private const int VerifierLength = 64;
 
     public function issue(Request $request, IntegrationProvider $provider, Team $team, IntegrationAccess $access): string
     {
@@ -79,9 +79,7 @@ class OAuthState
     {
         $verifier = data_get($request->session()->get(self::SessionKey), 'codeVerifier');
 
-        if (! is_string($verifier) || $verifier === '') {
-            throw new LogicException('No PKCE verifier was issued with the OAuth state.');
-        }
+        throw_if(! is_string($verifier) || $verifier === '', LogicException::class, 'No PKCE verifier was issued with the OAuth state.');
 
         return self::challenge($verifier);
     }

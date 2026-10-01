@@ -9,7 +9,7 @@ use Illuminate\Support\Collection;
 class SummarizeHealthCheck
 {
     /** The largest population standard deviation on a 1–10 scale. */
-    private const MaximumSpread = 4.5;
+    private const float MaximumSpread = 4.5;
 
     public function __construct(private PresentHealthStatement $presentHealthStatement) {}
 
@@ -37,7 +37,7 @@ class SummarizeHealthCheck
             ->get()
             ->keyBy('statement');
 
-        $statements = $retro->healthStatements()->get()->map(function (RetroHealthStatement $statement) use ($totals) {
+        $statements = $retro->healthStatements()->get()->map(function (RetroHealthStatement $statement) use ($totals): array {
             $row = $totals->get($statement->key);
             $count = (int) ($row->answers ?? 0);
             $mean = $count === 0 ? null : (float) $row->total / $count;
@@ -60,7 +60,7 @@ class SummarizeHealthCheck
         [$topStrength, $growthArea] = $this->extremes($reported);
 
         return [
-            'statements' => $statements->map(fn (array $statement) => [
+            'statements' => $statements->map(fn (array $statement): array => [
                 'key' => $statement['key'],
                 'label' => $statement['label'],
                 'text' => $statement['text'],
@@ -119,8 +119,8 @@ class SummarizeHealthCheck
             return [null, null];
         }
 
-        $highest = $reported->first(fn (array $statement) => $statement['average'] === $averages->max());
-        $lowest = $reported->first(fn (array $statement) => $statement['average'] === $averages->min());
+        $highest = $reported->first(fn (array $statement): bool => $statement['average'] === $averages->max());
+        $lowest = $reported->first(fn (array $statement): bool => $statement['average'] === $averages->min());
 
         return [$this->extreme($highest), $this->extreme($lowest)];
     }

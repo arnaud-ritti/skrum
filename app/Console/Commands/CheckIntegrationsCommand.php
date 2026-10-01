@@ -5,21 +5,21 @@ namespace App\Console\Commands;
 use App\Actions\Integrations\CheckIntegration;
 use App\Enums\IntegrationProvider;
 use App\Enums\IntegrationStatus;
+use App\Exceptions\Integrations\IntegrationException;
+use App\Exceptions\Integrations\ReconnectRequired;
 use App\Jobs\Integrations\ReadTrackedIssues;
 use App\Jobs\Integrations\RegisterTrackerWebhooks;
 use App\Models\TeamIntegration;
-use App\Support\Integrations\Exceptions\IntegrationException;
-use App\Support\Integrations\Exceptions\ReconnectRequired;
 use App\Support\Integrations\StatusSync;
 use App\Support\Integrations\TrackerWebhooks;
+use Illuminate\Console\Attributes\Description;
+use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
 
+#[Description('Check that every active team integration still has access')]
+#[Signature('skrum:check-integrations')]
 class CheckIntegrationsCommand extends Command
 {
-    protected $signature = 'skrum:check-integrations';
-
-    protected $description = 'Check that every active team integration still has access';
-
     public function handle(CheckIntegration $checkIntegration, TrackerWebhooks $trackerWebhooks): int
     {
         $providers = array_map(fn (IntegrationProvider $provider): string => $provider->value, IntegrationProvider::enabled());
@@ -37,11 +37,11 @@ class CheckIntegrationsCommand extends Command
                     $checkIntegration->handle($integration);
 
                     if (StatusSync::isOn($integration)) {
-                        ReadTrackedIssues::dispatch($integration->id, true);
+                        dispatch(new ReadTrackedIssues($integration->id, true));
                     }
 
                     if (StatusSync::isOn($integration) && $trackerWebhooks->expiresSoon($integration)) {
-                        RegisterTrackerWebhooks::dispatch($integration->id);
+                        dispatch(new RegisterTrackerWebhooks($integration->id));
                     }
 
                     $counts['ok']++;

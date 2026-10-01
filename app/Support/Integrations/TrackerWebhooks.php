@@ -5,12 +5,12 @@ namespace App\Support\Integrations;
 use App\Actions\Integrations\TrackedIssues;
 use App\Enums\IntegrationProvider;
 use App\Enums\IntegrationWebhookStatus;
+use App\Exceptions\Integrations\IntegrationException;
+use App\Exceptions\Integrations\ProviderRejected;
+use App\Exceptions\Integrations\ReconnectRequired;
 use App\Jobs\Integrations\RegisterTrackerWebhooks;
 use App\Jobs\Integrations\RemoveTrackerWebhooks;
 use App\Models\TeamIntegration;
-use App\Support\Integrations\Exceptions\IntegrationException;
-use App\Support\Integrations\Exceptions\ProviderRejected;
-use App\Support\Integrations\Exceptions\ReconnectRequired;
 use App\Support\Integrations\Jira\JiraApis;
 use App\Support\Integrations\Trackers\IssueStatus;
 use Illuminate\Support\Facades\DB;
@@ -32,11 +32,11 @@ class TrackerWebhooks
     /** A rejected registration is retried after a day, or once the tracked projects change. */
     public const RetryRejectedAfterHours = 24;
 
-    private const LifetimeDays = 30;
+    private const int LifetimeDays = 30;
 
-    private const SecretLength = 40;
+    private const int SecretLength = 40;
 
-    private const WebhookIdPattern = '/^\d{1,20}\z/';
+    private const string WebhookIdPattern = '/^\d{1,20}\z/';
 
     public function __construct(
         private JiraApis $jiraApis,
@@ -205,7 +205,7 @@ class TrackerWebhooks
         }
 
         $api = $this->jiraApis->for($integration);
-        $response = $api->put($integration, $api->apiPath('webhook/refresh'), ['webhookIds' => array_map('intval', $ids)]);
+        $response = $api->put($integration, $api->apiPath('webhook/refresh'), ['webhookIds' => array_map(intval(...), $ids)]);
 
         $integration->forceFill([
             'webhook_expires_at' => IssueStatus::time($response['expirationDate'] ?? null) ?? now()->addDays(self::LifetimeDays),
@@ -229,8 +229,8 @@ class TrackerWebhooks
 
         $api = $this->jiraApis->for($integration);
         $requests = $integration->provider === IntegrationProvider::Jira
-            ? [fn () => $api->delete($integration, $api->apiPath('webhook'), ['webhookIds' => array_map('intval', $ids)])]
-            : array_map(fn (string $id) => fn () => $api->delete($integration, "rest/webhooks/1.0/webhook/{$id}"), $ids);
+            ? [fn (): array => $api->delete($integration, $api->apiPath('webhook'), ['webhookIds' => array_map(intval(...), $ids)])]
+            : array_map(fn (string $id): \Closure => fn (): array => $api->delete($integration, "rest/webhooks/1.0/webhook/{$id}"), $ids);
         $failure = null;
 
         foreach ($requests as $request) {
@@ -247,9 +247,7 @@ class TrackerWebhooks
             }
         }
 
-        if ($failure !== null) {
-            throw $failure;
-        }
+        throw_if($failure !== null, $failure);
     }
 
     /**
@@ -274,7 +272,7 @@ class TrackerWebhooks
             return;
         }
 
-        RegisterTrackerWebhooks::dispatch($integration->id);
+        dispatch(new RegisterTrackerWebhooks($integration->id));
     }
 
     /**
@@ -318,7 +316,7 @@ class TrackerWebhooks
         try {
             $this->remove($integration, $ids);
         } catch (IntegrationException) {
-            RemoveTrackerWebhooks::dispatch($integration->id, $ids);
+            dispatch(new RemoveTrackerWebhooks($integration->id, $ids));
         }
     }
 
@@ -375,9 +373,7 @@ class TrackerWebhooks
         $self = $response['self'] ?? null;
         $id = is_string($self) ? basename($self) : '';
 
-        if (preg_match(self::WebhookIdPattern, $id) !== 1) {
-            throw new ProviderRejected(IntegrationProvider::JiraDataCenter, 'webhook_not_registered');
-        }
+        throw_if(preg_match(self::WebhookIdPattern, $id) !== 1, ProviderRejected::class, IntegrationProvider::JiraDataCenter, 'webhook_not_registered');
 
         return [$id];
     }

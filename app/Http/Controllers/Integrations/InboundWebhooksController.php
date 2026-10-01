@@ -8,14 +8,14 @@ use App\Enums\IntegrationInboundMode;
 use App\Enums\IntegrationProvider;
 use App\Enums\IntegrationStatus;
 use App\Enums\IntegrationWebhookStatus;
+use App\Exceptions\Integrations\InboundSignatureInvalid;
+use App\Exceptions\Integrations\IntegrationException;
 use App\Http\Controllers\Controller;
 use App\Jobs\Integrations\ApplyInboundIssueChanges;
 use App\Models\IntegrationInboundEvent;
 use App\Models\TeamIntegration;
-use App\Support\Integrations\Exceptions\IntegrationException;
 use App\Support\Integrations\GitHub\GitHubClient;
 use App\Support\Integrations\Inbound\InboundEvent;
-use App\Support\Integrations\Inbound\InboundSignatureInvalid;
 use App\Support\Integrations\Inbound\ReadInboundEvent;
 use App\Support\Integrations\StatusSync;
 use Illuminate\Http\JsonResponse;
@@ -31,7 +31,7 @@ use Throwable;
  */
 class InboundWebhooksController extends Controller
 {
-    private const MaxBodyBytes = 1_048_576;
+    private const int MaxBodyBytes = 1_048_576;
 
     public function __construct(
         private ReadInboundEvent $readInboundEvent,
@@ -41,9 +41,7 @@ class InboundWebhooksController extends Controller
 
     public function store(Request $request, string $source, ?string $integration = null, ?string $token = null): JsonResponse
     {
-        if ((int) $request->header('Content-Length', '0') > self::MaxBodyBytes || strlen($request->getContent()) > self::MaxBodyBytes) {
-            abort(413);
-        }
+        abort_if((int) $request->header('Content-Length', '0') > self::MaxBodyBytes || strlen($request->getContent()) > self::MaxBodyBytes, 413);
 
         $provider = ReadInboundEvent::provider($source);
 
@@ -93,7 +91,7 @@ class InboundWebhooksController extends Controller
 
         try {
             foreach ($batches as $integrationId => $externalIds) {
-                ApplyInboundIssueChanges::dispatch((string) $integrationId, $externalIds, $row->id);
+                dispatch(new ApplyInboundIssueChanges((string) $integrationId, $externalIds, $row->id));
             }
         } catch (Throwable $exception) {
             $row->delete();

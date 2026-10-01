@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Http;
 
 class TenorProvider implements GifProvider
 {
-    private const ContentFilters = ['g' => 'high', 'pg' => 'medium', 'pg-13' => 'low', 'r' => 'off'];
+    private const array ContentFilters = ['g' => 'high', 'pg' => 'medium', 'pg-13' => 'low', 'r' => 'off'];
 
     public function __construct(private string $key) {}
 
@@ -38,7 +38,7 @@ class TenorProvider implements GifProvider
             ->json('results', []);
 
         return collect(is_array($items) ? $items : [])
-            ->map(fn (mixed $item) => is_array($item) ? $this->toGif($item) : null)
+            ->map(fn (mixed $item): ?Gif => is_array($item) ? $this->toGif($item) : null)
             ->filter()
             ->values()
             ->all();

@@ -5,10 +5,10 @@ namespace App\Actions\Integrations;
 use App\Enums\IntegrationAccess;
 use App\Enums\IntegrationProvider;
 use App\Enums\IntegrationStatus;
+use App\Exceptions\Integrations\ConnectionRefused;
 use App\Models\Team;
 use App\Models\TeamIntegration;
 use App\Models\User;
-use App\Support\Integrations\Exceptions\ConnectionRefused;
 use App\Support\Integrations\GitHub\GitHubClient;
 
 /**
@@ -18,7 +18,7 @@ use App\Support\Integrations\GitHub\GitHubClient;
  */
 class ConnectGitHub implements OAuthConnector
 {
-    private const InstallationIdPattern = '/^\d{1,20}\z/';
+    private const string InstallationIdPattern = '/^\d{1,20}\z/';
 
     public function __construct(private GitHubClient $client, private SaveTeamIntegration $saveTeamIntegration) {}
 

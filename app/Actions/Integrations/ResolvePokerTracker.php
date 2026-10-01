@@ -4,9 +4,9 @@ namespace App\Actions\Integrations;
 
 use App\Enums\IntegrationProvider;
 use App\Enums\IntegrationStatus;
+use App\Exceptions\Integrations\NotConnected;
 use App\Models\Team;
 use App\Models\TeamIntegration;
-use App\Support\Integrations\Exceptions\NotConnected;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class ResolvePokerTracker
@@ -15,15 +15,11 @@ class ResolvePokerTracker
     {
         $provider = IntegrationProvider::tryFrom($source);
 
-        if ($provider === null || ! $provider->isTracker() || ! $provider->isEnabled()) {
-            throw new NotFoundHttpException;
-        }
+        throw_if($provider === null || ! $provider->isTracker() || ! $provider->isEnabled(), NotFoundHttpException::class);
 
         $integration = $team->integration($provider);
 
-        if ($integration === null) {
-            throw new NotConnected($provider);
-        }
+        throw_if($integration === null, NotConnected::class, $provider);
 
         $integration->ensureActive();
 

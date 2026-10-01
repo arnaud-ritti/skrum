@@ -30,9 +30,7 @@ class DraftSurvey
 
         $draft = $this->validated(LlmJson::decode($reply), $kind);
 
-        if ($draft === null) {
-            abort(502, __('Could not generate a survey. Try again or write it yourself.'));
-        }
+        abort_if($draft === null, 502, __('Could not generate a survey. Try again or write it yourself.'));
 
         return $draft;
     }

@@ -71,7 +71,7 @@ class ListBoards extends SkrumTool
             $query,
             $page,
             $limit,
-            fn (Retro $retro) => $this->presentBoard->handle($retro),
+            fn (Retro $retro): array => $this->presentBoard->handle($retro),
         ));
     }
 }

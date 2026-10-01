@@ -2,6 +2,7 @@
 
 namespace App\Support\Llm;
 
+use App\Exceptions\Llm\LlmUnavailable;
 use Closure;
 
 class LlmCall

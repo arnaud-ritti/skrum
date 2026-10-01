@@ -3,7 +3,7 @@
 use App\Actions\Whiteboards\PresentWhiteboardPreview;
 
 it('outlines a scene from its top-left corner, without any text', function () {
-    $preview = app(PresentWhiteboardPreview::class)->handle([
+    $preview = resolve(PresentWhiteboardPreview::class)->handle([
         sceneElement(['id' => 'zone', 'type' => 'frame', 'x' => -100, 'y' => 50, 'width' => 400, 'height' => 300, 'name' => 'Secret zone']),
         sceneElement(['id' => 'note', 'x' => -60.4, 'y' => 90.6, 'width' => 200, 'height' => 200, 'backgroundColor' => '#fff3bf', 'strokeColor' => 'transparent']),
         sceneElement(['id' => 'words', 'type' => 'text', 'text' => 'Secret words', 'containerId' => 'note']),
@@ -25,14 +25,14 @@ it('outlines a scene from its top-left corner, without any text', function () {
 });
 
 it('gives an empty scene an empty preview', function () {
-    expect(app(PresentWhiteboardPreview::class)->handle([]))->toBe(['width' => 0, 'height' => 0, 'shapes' => []]);
+    expect(resolve(PresentWhiteboardPreview::class)->handle([]))->toBe(['width' => 0, 'height' => 0, 'shapes' => []]);
 });
 
 it('stops at three hundred shapes and two dozen points a line', function () {
     $elements = array_map(fn (int $position) => sceneElement(['x' => $position]), range(1, 320));
     $stroke = sceneElement(['type' => 'freedraw', 'x' => 0, 'y' => 0, 'points' => array_map(fn (int $x) => [$x, 0], range(0, 999))]);
 
-    $preview = app(PresentWhiteboardPreview::class);
+    $preview = resolve(PresentWhiteboardPreview::class);
 
     expect($preview->handle($elements)['shapes'])->toHaveCount(PresentWhiteboardPreview::MaxShapes)
         ->and(count($preview->handle([$stroke])['shapes'][0]['points']))->toBeLessThanOrEqual(25)
@@ -40,7 +40,7 @@ it('stops at three hundred shapes and two dozen points a line', function () {
 });
 
 it('ignores a colour that is not a plain hex value', function () {
-    $preview = app(PresentWhiteboardPreview::class)->handle([
+    $preview = resolve(PresentWhiteboardPreview::class)->handle([
         sceneElement(['backgroundColor' => 'url(#x)', 'strokeColor' => 'red;']),
     ]);
 

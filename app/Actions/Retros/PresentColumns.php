@@ -18,7 +18,7 @@ class PresentColumns
      */
     public function handle(Retro $retro): array
     {
-        return $retro->columns()->get()->map(fn (Column $column) => [
+        return $retro->columns()->get()->map(fn (Column $column): array => [
             'id' => $column->id,
             'title' => $column->title,
             'description' => $column->description,

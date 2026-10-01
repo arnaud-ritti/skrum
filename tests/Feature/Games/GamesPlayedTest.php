@@ -36,7 +36,7 @@ function playedIcebreaker(bool $anonymous = false): array
     $facilitator->forceFill(['name' => 'Fran'])->save();
     [$member, $memberParticipant] = retroMember($retro);
     $member->forceFill(['name' => 'Mo'])->save();
-    $room = app(EnsureIcebreakerRoom::class)->handle($retro->fresh());
+    $room = resolve(EnsureIcebreakerRoom::class)->handle($retro->fresh());
     $host = $room->players()->sole();
     $memberPlayer = GamePlayer::factory()->forParticipant($memberParticipant)->create(['game_room_id' => $room->id]);
 
@@ -62,13 +62,13 @@ function completeIcebreakerRetro(Retro $retro): void
 it('is null without an icebreaker room or with abandoned rounds only', function () {
     $retro = Retro::factory()->inPhase(RetroPhase::Completed)->create();
 
-    expect(app(BuildGamesPlayed::class)->handle($retro))->toBeNull();
+    expect(resolve(BuildGamesPlayed::class)->handle($retro))->toBeNull();
 
     [$retro, , $room] = playedIcebreaker();
     endedIcebreakerRound($room, GameKind::Hangman, GameRoundOutcome::Abandoned, 1);
     activeGameRound($room);
 
-    expect(app(BuildGamesPlayed::class)->handle($retro->fresh()))->toBeNull();
+    expect(resolve(BuildGamesPlayed::class)->handle($retro->fresh()))->toBeNull();
 });
 
 it('lists the ended rounds oldest first with leader, winner and word, never a guess', function () {
@@ -116,8 +116,8 @@ it('presents the shared fields exactly as the room history does', function () {
         'winner_player_id' => $memberPlayer->id,
     ]);
 
-    $history = app(PresentGameRoundHistory::class)->handle($round->fresh()->load(PresentGameRoundHistory::Relations));
-    $played = app(BuildGamesPlayed::class)->handle($retro->fresh())['rounds'][0];
+    $history = resolve(PresentGameRoundHistory::class)->handle($round->fresh()->load(PresentGameRoundHistory::Relations));
+    $played = resolve(BuildGamesPlayed::class)->handle($retro->fresh())['rounds'][0];
 
     foreach (['id', 'game', 'outcome', 'word', 'question', 'endedAt'] as $key) {
         expect($played[$key])->toBe($history[$key]);
@@ -131,7 +131,7 @@ it('keeps the clue of Decoded rounds', function () {
     [$retro, , $room, $host] = playedIcebreaker();
     endedIcebreakerRound($room, GameKind::Decoded, GameRoundOutcome::TimedOut, 1, ['word' => 'coffee', 'leader_player_id' => $host->id, 'clue' => ['☕', '🔥']]);
 
-    expect(app(BuildGamesPlayed::class)->handle($retro->fresh())['rounds'][0]['clue'])->toBe(['☕', '🔥']);
+    expect(resolve(BuildGamesPlayed::class)->handle($retro->fresh())['rounds'][0]['clue'])->toBe(['☕', '🔥']);
 });
 
 it('lists GIF answers with their authors and final votes', function () {
@@ -141,7 +141,7 @@ it('lists GIF answers with their authors and final votes', function () {
     GameGifAnswer::factory()->create(['game_round_id' => $round->id, 'player_id' => $host->id, 'gif_id' => 'hostGif']);
     GameGifVote::factory()->create(['game_round_id' => $round->id, 'voter_player_id' => $host->id, 'answer_id' => $memberAnswer->id]);
 
-    $answers = collect(app(BuildGamesPlayed::class)->handle($retro->fresh())['rounds'][0]['answers'])->keyBy('gif.id');
+    $answers = collect(resolve(BuildGamesPlayed::class)->handle($retro->fresh())['rounds'][0]['answers'])->keyBy('gif.id');
 
     expect($answers['memberGif'])->toBe([
         'gif' => gameGifPayload('memberGif'),
@@ -158,7 +158,7 @@ it('hides GIF authors on anonymous retros', function () {
     GameGifAnswer::factory()->create(['game_round_id' => $round->id, 'player_id' => $memberPlayer->id]);
     GameGifAnswer::factory()->create(['game_round_id' => $round->id, 'player_id' => $host->id]);
 
-    $answers = app(BuildGamesPlayed::class)->handle($retro->fresh())['rounds'][0]['answers'];
+    $answers = resolve(BuildGamesPlayed::class)->handle($retro->fresh())['rounds'][0]['answers'];
 
     expect(collect($answers)->pluck('playerId')->unique()->all())->toBe([null]);
 });
@@ -169,13 +169,13 @@ it('ranks the icebreaker players as the room leaderboard does', function () {
     awardGamePoints($room, $memberPlayer, 9, true);
     awardGamePoints($room, $host, 2);
 
-    $leaderboard = app(BuildGamesPlayed::class)->handle($retro->fresh())['leaderboard'];
+    $leaderboard = resolve(BuildGamesPlayed::class)->handle($retro->fresh())['leaderboard'];
 
     expect($leaderboard)->toBe([
         ['playerId' => $memberPlayer->id, 'name' => 'Mo', 'avatarUrl' => $memberPlayer->avatarUrl(), 'isGuest' => false, 'points' => 9, 'wins' => 1, 'roundsPlayed' => 1],
         ['playerId' => $host->id, 'name' => 'Fran', 'avatarUrl' => $host->avatarUrl(), 'isGuest' => false, 'points' => 2, 'wins' => 0, 'roundsPlayed' => 1],
     ])
-        ->and(collect($leaderboard)->pluck('playerId')->all())->toBe(collect(app(RoomLeaderboard::class)->handle($room->fresh()))->pluck('playerId')->all());
+        ->and(collect($leaderboard)->pluck('playerId')->all())->toBe(collect(resolve(RoomLeaderboard::class)->handle($room->fresh()))->pluck('playerId')->all());
 });
 
 it('shows the games to guests and after the icebreaker was turned off', function () {
@@ -213,7 +213,7 @@ it('builds the games with a constant number of queries', function () {
 
         DB::flushQueryLog();
         DB::enableQueryLog();
-        app(BuildGamesPlayed::class)->handle($retro);
+        resolve(BuildGamesPlayed::class)->handle($retro);
         DB::disableQueryLog();
 
         return count(DB::getQueryLog());

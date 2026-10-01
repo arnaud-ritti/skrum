@@ -11,11 +11,11 @@ use Illuminate\Support\Facades\Cache;
 
 class GifCatalog
 {
-    private const SearchTtlSeconds = 600;
+    private const int SearchTtlSeconds = 600;
 
-    private const ItemTtlSeconds = 86400;
+    private const int ItemTtlSeconds = 86400;
 
-    private const ResultLimit = 24;
+    private const int ResultLimit = 24;
 
     public function provider(): ?GifProvider
     {
@@ -59,11 +59,11 @@ class GifCatalog
 
         $query = trim($query);
         $rating = (string) config('services.gifs.rating', 'pg');
-        $cacheKey = "gifs:search:{$this->providerName()}:{$rating}:".md5(mb_strtolower($query));
+        $cacheKey = "gifs:search:{$this->providerName()}:{$rating}:".hash('xxh128', mb_strtolower($query));
 
         /** @var array<int, array{id: string, previewUrl: string, fullUrl: string, width: int, height: int}> $items */
         $items = Cache::remember($cacheKey, self::SearchTtlSeconds, fn (): array => array_map(
-            fn (Gif $gif) => $gif->toArray(),
+            fn (Gif $gif): array => $gif->toArray(),
             $query === ''
                 ? $provider->trending($rating, self::ResultLimit)
                 : $provider->search($query, $rating, self::ResultLimit),

@@ -22,7 +22,7 @@ class BuildTemplateCatalogue
     public function handle(Workspace $workspace): array
     {
         $workspaceTemplates = $workspace->templates()->with('columns')->orderBy('name')->get()
-            ->map(fn (WorkspaceTemplate $template) => [
+            ->map(fn (WorkspaceTemplate $template): array => [
                 'key' => $template->catalogueKey(),
                 'name' => $template->name,
                 'category' => $template->category->value,
@@ -33,13 +33,13 @@ class BuildTemplateCatalogue
             ->values()
             ->all();
 
-        $builtIns = array_map(fn (TemplateDefinition $definition) => [
+        $builtIns = array_map(fn (TemplateDefinition $definition): array => [
             'key' => $definition->key,
             'name' => $definition->name(),
             'category' => $definition->category?->value,
             'isCommon' => $definition->isCommon,
             'isWorkspace' => false,
-            'columns' => array_map(fn (array $column) => [
+            'columns' => array_map(fn (array $column): array => [
                 'title' => $column['title'],
                 'description' => $column['description'],
                 'color' => $column['color']->value,

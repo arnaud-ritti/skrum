@@ -58,7 +58,7 @@ class PresentCard
             return 0;
         }
 
-        return $card->comments->reject(fn (CardComment $comment) => $comment->isDeleted())->count();
+        return $card->comments->reject(fn (CardComment $comment): bool => $comment->isDeleted())->count();
     }
 
     /**

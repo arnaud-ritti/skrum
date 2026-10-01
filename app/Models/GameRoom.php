@@ -82,7 +82,7 @@ class GameRoom extends Model implements DeliverySubject
     /** @return HasMany<GamePlayer, $this> */
     public function players(): HasMany
     {
-        return $this->hasMany(GamePlayer::class)->orderBy('created_at')->orderBy('id');
+        return $this->hasMany(GamePlayer::class)->oldest()->orderBy('id');
     }
 
     /** @return HasMany<GameRound, $this> */

@@ -17,20 +17,20 @@ class SanitizeWhiteboardElement
      */
     public const MaxVersion = 2147483647;
 
-    private const StickyType = 'rectangle';
+    private const string StickyType = 'rectangle';
 
-    private const BaseKeys = [
+    private const array BaseKeys = [
         'id', 'type', 'x', 'y', 'width', 'height', 'angle', 'strokeColor', 'backgroundColor',
         'fillStyle', 'strokeWidth', 'strokeStyle', 'roughness', 'opacity', 'groupIds', 'frameId',
         'index', 'roundness', 'seed', 'version', 'versionNonce', 'isDeleted', 'boundElements',
         'updated', 'link', 'locked', 'customData',
     ];
 
-    private const LinearKeys = [
+    private const array LinearKeys = [
         'points', 'lastCommittedPoint', 'startBinding', 'endBinding', 'startArrowhead', 'endArrowhead',
     ];
 
-    private const TypeKeys = [
+    private const array TypeKeys = [
         'rectangle' => [],
         'diamond' => [],
         'ellipse' => [],
@@ -45,29 +45,29 @@ class SanitizeWhiteboardElement
         'frame' => ['name'],
     ];
 
-    private const TextKeys = ['text', 'originalText'];
+    private const array TextKeys = ['text', 'originalText'];
 
-    private const PointTypes = ['arrow', 'line', 'freedraw'];
+    private const array PointTypes = ['arrow', 'line', 'freedraw'];
 
-    private const StringKeys = [
+    private const array StringKeys = [
         'strokeColor', 'backgroundColor', 'fillStyle', 'strokeStyle', 'textAlign', 'verticalAlign', 'status',
     ];
 
-    private const NumberKeys = [
+    private const array NumberKeys = [
         'angle', 'strokeWidth', 'roughness', 'opacity', 'seed', 'updated', 'fontSize', 'fontFamily', 'lineHeight',
     ];
 
-    private const BooleanKeys = ['elbowed', 'simulatePressure', 'autoResize'];
+    private const array BooleanKeys = ['elbowed', 'simulatePressure', 'autoResize'];
 
-    private const NullableBooleanKeys = ['startIsSpecial', 'endIsSpecial'];
+    private const array NullableBooleanKeys = ['startIsSpecial', 'endIsSpecial'];
 
-    private const NullableStringKeys = ['startArrowhead', 'endArrowhead', 'name'];
+    private const array NullableStringKeys = ['startArrowhead', 'endArrowhead', 'name'];
 
-    private const NullableIdKeys = ['frameId', 'containerId'];
+    private const array NullableIdKeys = ['frameId', 'containerId'];
 
-    private const BindingKeys = ['startBinding', 'endBinding'];
+    private const array BindingKeys = ['startBinding', 'endBinding'];
 
-    private const CropKeys = ['x', 'y', 'width', 'height', 'naturalWidth', 'naturalHeight'];
+    private const array CropKeys = ['x', 'y', 'width', 'height', 'naturalWidth', 'naturalHeight'];
 
     /**
      * @return array<string, mixed>|null

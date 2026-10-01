@@ -12,11 +12,11 @@ use Illuminate\Support\Str;
  */
 class RemapWhiteboardScene
 {
-    private const IdLength = 20;
+    private const int IdLength = 20;
 
-    private const MaxNonce = 2147483647;
+    private const int MaxNonce = 2147483647;
 
-    private const BindingKeys = ['startBinding', 'endBinding'];
+    private const array BindingKeys = ['startBinding', 'endBinding'];
 
     public function __construct(private GenerateFractionalIndexes $generateFractionalIndexes) {}
 
@@ -34,7 +34,7 @@ class RemapWhiteboardScene
 
         $groups = [];
         $indexes = $this->generateFractionalIndexes->handle(count($elements));
-        $updated = (int) now()->getTimestampMs();
+        $updated = now()->getTimestampMs();
         $copies = [];
 
         foreach ($elements as $position => $element) {

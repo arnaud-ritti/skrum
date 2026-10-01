@@ -39,7 +39,7 @@ function assignedReminderItem(array $attributes = []): array
  */
 function sendDueReminders(): array
 {
-    return app(SendActionItemReminders::class)->handle();
+    return resolve(SendActionItemReminders::class)->handle();
 }
 
 it('reminds of items due today or tomorrow and of items overdue within a week', function (string $dueOn, string $kind) {
@@ -139,7 +139,7 @@ it('sends one digest per user with all their items', function () {
     [, $other] = assignedReminderItem();
     $progress = [];
 
-    $totals = app(SendActionItemReminders::class)->handle(function (User $user, int $count) use (&$progress): void {
+    $totals = resolve(SendActionItemReminders::class)->handle(function (User $user, int $count) use (&$progress): void {
         $progress[$user->id] = $count;
     });
 
@@ -158,7 +158,7 @@ it('sends one digest per user with all their items', function () {
 it('keeps reminding other users when one delivery fails', function () {
     [, $first] = assignedReminderItem();
     [, $second] = assignedReminderItem();
-    $failing = new class(app(Dispatcher::class), app(Illuminate\Contracts\Bus\Dispatcher::class), app(Translator::class)->getLocale()) extends NotificationFake
+    $failing = new class(resolve(Dispatcher::class), resolve(Illuminate\Contracts\Bus\Dispatcher::class), resolve(Translator::class)->getLocale()) extends NotificationFake
     {
         public bool $failed = false;
 

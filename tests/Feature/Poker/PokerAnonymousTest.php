@@ -118,7 +118,7 @@ it('never links a value to another player in an anonymous round, for everyone', 
         ->assertOk();
 
     foreach (['F', 'M', 'G'] as $viewer) {
-        $snapshot = app(BuildPokerSnapshot::class)->handle($game->fresh(), $table['players'][$viewer]->fresh());
+        $snapshot = resolve(BuildPokerSnapshot::class)->handle($game->fresh(), $table['players'][$viewer]->fresh());
         $current = $snapshot['current']['round'];
 
         expectNoOtherValueLinked($table, $viewer, $snapshot);
@@ -154,7 +154,7 @@ it('hides even the voters\' values from the facilitator before reveal', function
     ['game' => $game, 'round' => $round, 'players' => $players] = $table;
     pokerVote($round, $players['M'], '13');
 
-    $snapshot = app(BuildPokerSnapshot::class)->handle($game->fresh(), $players['F']->fresh());
+    $snapshot = resolve(BuildPokerSnapshot::class)->handle($game->fresh(), $players['F']->fresh());
 
     expect(pokerRoundValuesByPlayer($snapshot['current']['round']))->toBe([$players['M']->id => null])
         ->and($snapshot['current']['round']['result'])->toBeNull();

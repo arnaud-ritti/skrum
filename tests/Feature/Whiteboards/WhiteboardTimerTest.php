@@ -121,13 +121,13 @@ it('broadcasts the end time and starts nothing else', function () {
 
     $this->actingAs($user)->putJson(route('whiteboards.timer.update', $board), ['seconds' => 30])->assertOk();
 
-    Event::assertDispatched(WhiteboardTimerChanged::class, fn (WhiteboardTimerChanged $event) => $event->boardId === $board->id
+    Event::assertDispatched(fn (WhiteboardTimerChanged $event) => $event->boardId === $board->id
         && $event->broadcastAs() === 'timer.changed'
         && $event->broadcastWith() === ['timerEndsAt' => '2026-10-11T10:00:30+00:00']);
 
     $this->actingAs($user)->putJson(route('whiteboards.timer.update', $board), ['seconds' => null])->assertOk();
 
-    Event::assertDispatched(WhiteboardTimerChanged::class, fn (WhiteboardTimerChanged $event) => $event->broadcastWith() === ['timerEndsAt' => null]);
+    Event::assertDispatched(fn (WhiteboardTimerChanged $event) => $event->broadcastWith() === ['timerEndsAt' => null]);
 
     Queue::assertNothingPushed();
 });

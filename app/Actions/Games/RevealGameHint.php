@@ -9,6 +9,7 @@ use App\Models\GameRoom;
 use App\Models\GameRound;
 use App\Support\Games\GameWord;
 use App\Support\Games\WordGuessRules;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -38,7 +39,7 @@ class RevealGameHint
                 throw ValidationException::withMessages(['hint' => __('No more letters can be revealed for this word.')]);
             }
 
-            $revealed[] = $hidden[array_rand($hidden)];
+            $revealed[] = Arr::random($hidden);
             sort($revealed);
 
             $lockedRound->forceFill(['revealed_positions' => $revealed])->save();

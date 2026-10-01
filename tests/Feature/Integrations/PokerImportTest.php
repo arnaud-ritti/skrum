@@ -42,7 +42,7 @@ it('imports the selected Jira issues in the given order from the source', functi
         ->and(mb_strlen($tasks[2]->title))->toBe(200);
 
     Http::assertSent(fn (Request $request) => $request['jql'] === 'id in (10001,10002)');
-    Event::assertDispatched(PokerGameChanged::class, fn (PokerGameChanged $event) => $event->gameId === $table['game']->id);
+    Event::assertDispatched(fn (PokerGameChanged $event) => $event->gameId === $table['game']->id);
 });
 
 it('skips issues already imported and issues the source no longer returns', function () {
@@ -103,7 +103,7 @@ it('refuses guests, ended games and malformed selections', function () {
     $this->withCookies(pokerGuestCookie($guest))->withCredentials()->postJson($url, ['external_ids' => ['10001']])->assertForbidden();
 
     $this->actingAs($table['member'])->postJson($url, ['external_ids' => []])->assertJsonValidationErrors('external_ids');
-    $this->actingAs($table['member'])->postJson($url, ['external_ids' => array_map('strval', range(1, 101))])->assertJsonValidationErrors('external_ids');
+    $this->actingAs($table['member'])->postJson($url, ['external_ids' => array_map(strval(...), range(1, 101))])->assertJsonValidationErrors('external_ids');
     $this->actingAs($table['member'])->postJson($url, ['external_ids' => ['1', '1']])->assertJsonValidationErrors('external_ids.0');
 
     $table['game']->forceFill(['ended_at' => now()])->save();

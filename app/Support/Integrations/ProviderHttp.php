@@ -3,10 +3,10 @@
 namespace App\Support\Integrations;
 
 use App\Enums\IntegrationProvider;
-use App\Support\Integrations\Exceptions\ProviderRejected;
-use App\Support\Integrations\Exceptions\ProviderUnavailable;
-use App\Support\Integrations\Exceptions\RateLimited;
-use App\Support\Integrations\Exceptions\ReconnectRequired;
+use App\Exceptions\Integrations\ProviderRejected;
+use App\Exceptions\Integrations\ProviderUnavailable;
+use App\Exceptions\Integrations\RateLimited;
+use App\Exceptions\Integrations\ReconnectRequired;
 use Closure;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
@@ -17,12 +17,12 @@ class ProviderHttp
 {
     public const DefaultTimeoutSeconds = 15;
 
-    private const ConnectTimeoutSeconds = 5;
+    private const int ConnectTimeoutSeconds = 5;
 
     /**
      * @var array<int, string>
      */
-    private const MessagePaths = ['errorMessages.0', 'message', 'error_description', 'error', 'description', 'errors.0.message'];
+    private const array MessagePaths = ['errorMessages.0', 'message', 'error_description', 'error', 'description', 'errors.0.message'];
 
     public static function request(int $timeout = self::DefaultTimeoutSeconds): PendingRequest
     {
@@ -51,13 +51,9 @@ class ProviderHttp
             throw new RateLimited($provider, self::retryAfter($response), $detail);
         }
 
-        if ($response->serverError()) {
-            throw new ProviderUnavailable($provider, $detail);
-        }
+        throw_if($response->serverError(), ProviderUnavailable::class, $provider, $detail);
 
-        if ($response->status() === 401) {
-            throw new ReconnectRequired($provider, $detail);
-        }
+        throw_if($response->status() === 401, ReconnectRequired::class, $provider, $detail);
 
         $errors = $response->json('errors');
 

@@ -6,7 +6,7 @@ use App\Models\WorkspaceInvitation;
 
 function signupGate(): SignupGate
 {
-    return app(SignupGate::class);
+    return resolve(SignupGate::class);
 }
 
 it('always allows the very first user', function (string $mode) {

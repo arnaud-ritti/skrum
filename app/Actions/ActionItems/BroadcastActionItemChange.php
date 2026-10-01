@@ -107,8 +107,7 @@ class BroadcastActionItemChange
             ->where('team_id', $item->team_id)
             ->where('phase', '!=', RetroPhase::Completed->value)
             ->where('created_at', '>', $anchor)
-            ->when($item->completed_at !== null, fn ($query) => $query->where('created_at', '<=', $item->completed_at))
-            ->orderBy('created_at')
+            ->when($item->completed_at !== null, fn ($query) => $query->where('created_at', '<=', $item->completed_at))->oldest()
             ->pluck('id')
             ->all();
 

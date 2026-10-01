@@ -15,7 +15,7 @@ class GifsController extends Controller
 {
     private const MaxBytes = 5 * 1024 * 1024;
 
-    private const AllowedTypes = ['image/gif', 'image/webp'];
+    private const array AllowedTypes = ['image/gif', 'image/webp'];
 
     public function show(string $gif, string $size, GifCatalog $gifCatalog): Response
     {

@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\ExternalStatusCategory;
 use Database\Factories\PokerTaskFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Touches;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -47,15 +48,13 @@ use Illuminate\Support\Carbon;
  * @property-read PokerRound|null $latestRound
  */
 #[Fillable(['title', 'description', 'position', 'estimate', 'estimate_numeric', 'estimated_at'])]
+#[Touches(['game'])]
 class PokerTask extends Model
 {
     /** @use HasFactory<PokerTaskFactory> */
     use HasFactory;
 
     use HasUuids;
-
-    /** @var list<string> */
-    protected $touches = ['game'];
 
     /** @return BelongsTo<PokerGame, $this> */
     public function game(): BelongsTo

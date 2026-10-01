@@ -6,15 +6,15 @@ use App\Actions\ActionItems\BroadcastActionItemChange;
 use App\Actions\Integrations\LinkStatusSync;
 use App\Enums\ExternalIssueState;
 use App\Enums\IntegrationStatus;
+use App\Exceptions\Integrations\IntegrationException;
+use App\Exceptions\Integrations\ProviderUnavailable;
+use App\Exceptions\Integrations\RateLimited;
+use App\Exceptions\Integrations\ReadOnlyConnection;
+use App\Exceptions\Integrations\ReconnectRequired;
+use App\Exceptions\Integrations\StatusPushRejected;
 use App\Models\ActionItem;
 use App\Models\ActionItemExternalLink;
 use App\Models\TeamIntegration;
-use App\Support\Integrations\Exceptions\IntegrationException;
-use App\Support\Integrations\Exceptions\ProviderUnavailable;
-use App\Support\Integrations\Exceptions\RateLimited;
-use App\Support\Integrations\Exceptions\ReadOnlyConnection;
-use App\Support\Integrations\Exceptions\ReconnectRequired;
-use App\Support\Integrations\Exceptions\StatusPushRejected;
 use App\Support\Integrations\IntegrationErrors;
 use App\Support\Integrations\Trackers\DoneMapping;
 use App\Support\Integrations\Trackers\TrackerIssue;
@@ -117,7 +117,7 @@ class PushActionItemState implements ShouldBeUniqueUntilProcessing, ShouldQueue
         } catch (ProviderUnavailable $exception) {
             throw $exception;
         } catch (IntegrationException $exception) {
-            $this->recordFailure(self::failureMessage($exception));
+            $this->recordFailure($this->failureMessage($exception));
             $this->announce($broadcast, $item);
 
             return;
@@ -140,13 +140,13 @@ class PushActionItemState implements ShouldBeUniqueUntilProcessing, ShouldQueue
         }
 
         $this->recordFailure($exception instanceof IntegrationException
-            ? self::failureMessage($exception)
+            ? $this->failureMessage($exception)
             : __('The status could not be written. Try again.'));
 
         $item = ActionItemExternalLink::query()->find($this->linkId)?->actionItem;
 
         if ($item !== null) {
-            $this->announce(app(BroadcastActionItemChange::class), $item);
+            $this->announce(resolve(BroadcastActionItemChange::class), $item);
         }
     }
 
@@ -189,7 +189,7 @@ class PushActionItemState implements ShouldBeUniqueUntilProcessing, ShouldQueue
         });
     }
 
-    private static function failureMessage(IntegrationException $exception): string
+    private function failureMessage(IntegrationException $exception): string
     {
         if ($exception instanceof StatusPushRejected || $exception instanceof ReconnectRequired || $exception instanceof ReadOnlyConnection) {
             return $exception->userMessage();

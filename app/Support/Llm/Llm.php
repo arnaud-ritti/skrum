@@ -2,6 +2,8 @@
 
 namespace App\Support\Llm;
 
+use App\Exceptions\Llm\LlmUnavailable;
+
 class Llm
 {
     public const TimeoutSeconds = 60;
@@ -32,9 +34,7 @@ class Llm
         $key = $this->key();
         $model = $this->model();
 
-        if ($provider === null || $key === null || $model === null) {
-            throw new LlmUnavailable;
-        }
+        throw_if($provider === null || $key === null || $model === null, LlmUnavailable::class);
 
         return $provider === 'anthropic'
             ? new AnthropicClient($key, $model, $this->baseUrl())

@@ -22,9 +22,9 @@ class PresentWhiteboardPreview
 {
     public const MaxShapes = 300;
 
-    private const MaxPoints = 24;
+    private const int MaxPoints = 24;
 
-    private const Kinds = [
+    private const array Kinds = [
         'rectangle' => 'rect',
         'image' => 'rect',
         'frame' => 'rect',
@@ -36,7 +36,7 @@ class PresentWhiteboardPreview
         'text' => 'text',
     ];
 
-    private const ColorPattern = '/^#[0-9a-fA-F]{3,8}$/';
+    private const string ColorPattern = '/^#[0-9a-fA-F]{3,8}$/';
 
     /**
      * @param  array<int, array<string, mixed>>  $elements  in canvas order

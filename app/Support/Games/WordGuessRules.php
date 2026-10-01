@@ -20,13 +20,13 @@ abstract class WordGuessRules implements GameRules
 {
     public const GuessesShown = 50;
 
-    private const LeaderPoints = 5;
+    private const int LeaderPoints = 5;
 
-    private const GuessPointsStart = 10;
+    private const int GuessPointsStart = 10;
 
-    private const GuessPointsPerHint = 2;
+    private const int GuessPointsPerHint = 2;
 
-    private const GuessPointsFloor = 4;
+    private const int GuessPointsFloor = 4;
 
     public function __construct(private DrawGameWord $drawGameWord) {}
 
@@ -143,8 +143,7 @@ abstract class WordGuessRules implements GameRules
     private function guesses(GameRound $round, ?GamePlayer $viewer): array
     {
         return $round->guesses()
-            ->where('is_correct', false)
-            ->orderByDesc('created_at')
+            ->where('is_correct', false)->latest()
             ->orderByDesc('id')
             ->limit(self::GuessesShown)
             ->get()

@@ -38,7 +38,7 @@ export function PostLinkSection({
     const [busy, setBusy] = useState<ShareChannel | null>(null);
     const channels = ShareChannels.filter((channel) => availability[channel]);
 
-    if (channels.length === 0) {
+    if (channels.length === 0 && deliveries.length === 0) {
         return null;
     }
 
@@ -65,7 +65,7 @@ export function PostLinkSection({
         <section className="space-y-3 border-t pt-4">
             <h3 className="text-sm font-medium">{t('Post a link')}</h3>
             {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
-            {guestLinkAvailable && (
+            {guestLinkAvailable && channels.length > 0 && (
                 <div className="flex items-center gap-2">
                     <Checkbox
                         id={checkboxId}
@@ -77,20 +77,22 @@ export function PostLinkSection({
                     <Label htmlFor={checkboxId}>{guestLinkLabel}</Label>
                 </div>
             )}
-            <div className="flex flex-wrap gap-2">
-                {channels.map((channel) => (
-                    <Button
-                        key={channel}
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        disabled={busy !== null}
-                        onClick={() => void post(channel)}
-                    >
-                        {postLinkLabel(channel, t)}
-                    </Button>
-                ))}
-            </div>
+            {channels.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                    {channels.map((channel) => (
+                        <Button
+                            key={channel}
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            disabled={busy !== null}
+                            onClick={() => void post(channel)}
+                        >
+                            {postLinkLabel(channel, t)}
+                        </Button>
+                    ))}
+                </div>
+            )}
             <DeliveryLines deliveries={deliveries} />
         </section>
     );

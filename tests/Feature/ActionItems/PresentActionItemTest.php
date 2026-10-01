@@ -13,7 +13,7 @@ use Carbon\CarbonImmutable;
 
 function presentedActionItem(ActionItem $item, ?ActionItemActor $viewer = null): array
 {
-    return app(PresentActionItem::class)->handle($item->fresh()->loadForPresentation(), $viewer);
+    return resolve(PresentActionItem::class)->handle($item->fresh()->loadForPresentation(), $viewer);
 }
 
 it('presents every field of a board item', function () {

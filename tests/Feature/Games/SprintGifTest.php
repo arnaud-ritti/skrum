@@ -146,7 +146,7 @@ it('gives authors 2 points per favourite vote at close and 0 to the others who t
     gifVote($round, $host, $popular);
     gifVote($round, $voter, $popular);
 
-    $payload = app(EndGameRound::class)->handle($room, $round, GameRoundOutcome::Revealed);
+    $payload = resolve(EndGameRound::class)->handle($room, $round, GameRoundOutcome::Revealed);
 
     expect($payload['points'])->toEqualCanonicalizing([
         ['playerId' => $author->id, 'points' => 4, 'isWin' => false],
@@ -174,7 +174,7 @@ it('awards no GIF points in the icebreaker of an anonymous retro but still count
     $answer = gifAnswer($round, $member, 'party');
     gifVote($round, $host, $answer);
 
-    $payload = app(EndGameRound::class)->handle($room, $round, GameRoundOutcome::Revealed);
+    $payload = resolve(EndGameRound::class)->handle($room, $round, GameRoundOutcome::Revealed);
 
     expect($payload['points'])->toEqualCanonicalizing([
         ['playerId' => $member->id, 'points' => 0, 'isWin' => false],
@@ -192,7 +192,7 @@ it('scores nothing and discards the votes of a round abandoned during voting', f
     $answer = gifAnswer($round, $member, 'party');
     gifVote($round, $host, $answer);
 
-    $payload = app(EndGameRound::class)->handle($room, $round, GameRoundOutcome::Abandoned);
+    $payload = resolve(EndGameRound::class)->handle($room, $round, GameRoundOutcome::Abandoned);
 
     expect($payload['points'])->toBe([])
         ->and($payload['answers'][0]['votes'])->toBeNull()
@@ -237,7 +237,7 @@ it('shows the closed answers in the round detail', function () {
     $round = activeGifRound($room, ['revealed_at' => now()]);
     $answer = gifAnswer($round, $member, 'party');
     gifVote($round, $host, $answer);
-    app(EndGameRound::class)->handle($room, $round, GameRoundOutcome::Revealed);
+    resolve(EndGameRound::class)->handle($room, $round, GameRoundOutcome::Revealed);
 
     $this->actingAs($user)->getJson(route('games.rounds.show', [$room, $round]))
         ->assertOk()
@@ -258,7 +258,7 @@ it('reveals instead of closing when the timer runs out before the reveal', funct
         ->assertJsonPath('round.id', $round->id)
         ->assertJsonPath('round.revealedAt', '2026-10-06T10:01:05+00:00');
 
-    Event::assertDispatched(GameRoundRevealed::class, fn (GameRoundRevealed $event) => $event->payload['roundId'] === $round->id);
+    Event::assertDispatched(fn (GameRoundRevealed $event) => $event->payload['roundId'] === $round->id);
     Event::assertNotDispatched(GameRoundEnded::class);
 });
 
@@ -268,8 +268,8 @@ it('ignores the old timer once the answers are revealed', function () {
     $round = activeGifRound($room);
 
     $this->travel(65)->seconds();
-    app(ExpireGameRound::class)->handle($room->fresh());
-    (new CloseExpiredGameRound($round->id, '2026-10-06T10:01:00+00:00'))->handle(app(ExpireGameRound::class));
+    resolve(ExpireGameRound::class)->handle($room->fresh());
+    (new CloseExpiredGameRound($round->id, '2026-10-06T10:01:00+00:00'))->handle(resolve(ExpireGameRound::class));
 
     expect($round->fresh()->isActive())->toBeTrue()
         ->and($round->fresh()->revealed_at?->toIso8601String())->toBe('2026-10-06T10:01:05+00:00');
@@ -293,7 +293,7 @@ it('closes the voting round when the timer runs out during voting', function () 
         ->assertJsonPath('history.0.outcome', 'revealed');
 
     expect(GamePoint::query()->where('player_id', $member->id)->sole()->points)->toBe(2);
-    Event::assertDispatched(GameRoundEnded::class, fn (GameRoundEnded $event) => $event->payload['answers'][0]['votes'] === 1);
+    Event::assertDispatched(fn (GameRoundEnded $event) => $event->payload['answers'][0]['votes'] === 1);
 });
 
 it('presents a GIF round with a constant number of queries', function () {
@@ -313,7 +313,7 @@ it('presents a GIF round with a constant number of queries', function () {
 
         DB::flushQueryLog();
         DB::enableQueryLog();
-        app(BuildGameSnapshot::class)->handle($fresh, $viewer);
+        resolve(BuildGameSnapshot::class)->handle($fresh, $viewer);
         DB::disableQueryLog();
 
         return count(DB::getQueryLog());

@@ -50,7 +50,7 @@ it('summarises reactions by count and broadcasts no participant ids', function (
         ->assertJsonPath('reactions.1.emoji', '🤔')
         ->assertJsonPath('reactions.1.names', [$user->name]);
 
-    Event::assertDispatched(CardReactionsChanged::class, fn (CardReactionsChanged $event) => $event->broadcastAs() === 'card.reactions.changed'
+    Event::assertDispatched(fn (CardReactionsChanged $event) => $event->broadcastAs() === 'card.reactions.changed'
         && $event->broadcastWith()['cardId'] === $card->id
         && ! str_contains(json_encode($event->broadcastWith()), $participant->id)
         && ! array_key_exists('mine', $event->broadcastWith()['reactions'][0]));

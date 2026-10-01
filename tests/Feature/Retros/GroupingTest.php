@@ -102,7 +102,7 @@ it('does not leak authors of anonymous retros in grouping broadcasts', function 
 
     $this->actingAs($user)->putJson(route('retros.cards.group.update', [$retro, $card]), ['parent_card_id' => $lead->id]);
 
-    Event::assertDispatched(CardGrouped::class, fn (CardGrouped $event) => collect($event->cards)->every(fn (array $card) => $card['author'] === null));
+    Event::assertDispatched(fn (CardGrouped $event) => collect($event->cards)->every(fn (array $card) => $card['author'] === null));
 });
 
 it('refuses a lead that was grouped by an earlier request', function () {

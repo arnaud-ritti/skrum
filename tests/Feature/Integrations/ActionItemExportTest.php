@@ -110,7 +110,7 @@ it('exports to Linear with a Markdown body', function () {
         ->assertCreated()
         ->assertJsonPath('actionItem.externalLinks.0.key', 'ENG-7');
 
-    Http::assertSent(function (HttpClientRequest $request) {
+    Http::assertSent(function (HttpClientRequest $request): bool {
         $input = ((array) $request['variables'])['input'] ?? [];
 
         return str_contains((string) $request['query'], 'issueCreate')
@@ -430,8 +430,8 @@ it('broadcasts the export to members of running boards', function () {
 
     $this->actingAs($author)->postJson(...jiraExportRequest($retro, $item))->assertCreated();
 
-    Event::assertDispatched(ActionItemSaved::class, fn (ActionItemSaved $event) => $event->actionItem['externalLinks'] === null);
+    Event::assertDispatched(fn (ActionItemSaved $event) => $event->actionItem['externalLinks'] === null);
     Event::assertDispatched(TeamActionItemSaved::class);
-    Event::assertDispatched(ActionItemExternalLinksChanged::class, fn (ActionItemExternalLinksChanged $event) => $event->retroId === $retro->id
+    Event::assertDispatched(fn (ActionItemExternalLinksChanged $event) => $event->retroId === $retro->id
         && $event->externalLinks[0]['key'] === 'PROJ-42');
 });

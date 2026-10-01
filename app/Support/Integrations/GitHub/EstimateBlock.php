@@ -24,11 +24,11 @@ class EstimateBlock
 
     public const MaxBodyLength = 65536;
 
-    private const Label = '**Estimate:**';
+    private const string Label = '**Estimate:**';
 
-    private const NeverWritten = ['?', '☕'];
+    private const array NeverWritten = ['?', '☕'];
 
-    private const Blank = " \t";
+    private const string Blank = " \t";
 
     public static function value(?string $body): ?string
     {
@@ -98,13 +98,9 @@ class EstimateBlock
 
     public static function render(string $estimate): string
     {
-        if (preg_match('/[\r\n]/', $estimate) === 1) {
-            throw new InvalidArgumentException('An estimate label must be a single line.');
-        }
+        throw_if(preg_match('/[\r\n]/', $estimate) === 1, InvalidArgumentException::class, 'An estimate label must be a single line.');
 
-        if (trim($estimate) === '' || in_array(trim($estimate), self::NeverWritten, true)) {
-            throw new InvalidArgumentException('Only deck cards that are estimates can be written.');
-        }
+        throw_if(trim($estimate) === '' || in_array(trim($estimate), self::NeverWritten, true), InvalidArgumentException::class, 'Only deck cards that are estimates can be written.');
 
         return self::Open."\n".self::Label.' '.self::escape($estimate)."\n".self::Close;
     }

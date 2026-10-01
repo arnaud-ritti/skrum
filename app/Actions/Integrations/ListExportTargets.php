@@ -11,11 +11,11 @@ use Illuminate\Support\Str;
 
 class ListExportTargets
 {
-    private const ProjectLimit = 50;
+    private const int ProjectLimit = 50;
 
-    private const TeamLimit = 100;
+    private const int TeamLimit = 100;
 
-    private const PreferredIssueType = 'task';
+    private const string PreferredIssueType = 'task';
 
     public function __construct(private JiraApis $jiraApis, private LinearClient $linear, private GitHubClient $gitHub) {}
 

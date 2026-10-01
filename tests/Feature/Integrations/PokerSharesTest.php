@@ -48,7 +48,7 @@ it('queues a game link for the facilitator', function () {
         ->postJson(route('poker.shares.store', $game), ['channel' => 'telegram'])
         ->assertAccepted();
 
-    Queue::assertPushed(DeliverToSlack::class, function (DeliverToSlack $job) use ($game) {
+    Queue::assertPushed(DeliverToSlack::class, function (DeliverToSlack $job) use ($game): bool {
         $json = json_encode($job->message, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 
         return str_contains($json, 'Fran Facilitator invites you to the planning poker game \"Sprint 12 sizing\" (Platform)')

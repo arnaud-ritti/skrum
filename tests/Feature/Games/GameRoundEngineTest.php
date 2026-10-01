@@ -43,7 +43,7 @@ it('starts a round for the host', function () {
         ->and($room->fresh()->current_round_id)->toBe($round->id)
         ->and(gamePayloadExposesWord($response->json(), 'engine'))->toBeFalse();
 
-    Event::assertDispatched(GameRoundStarted::class, fn (GameRoundStarted $event) => $event->round['id'] === $round->id
+    Event::assertDispatched(fn (GameRoundStarted $event) => $event->round['id'] === $round->id
         && $event->round['viewerPlayerId'] === null);
 });
 
@@ -140,7 +140,7 @@ it('ends a round once, awarding the points of its rules', function () {
         $guest->id => ['points' => 0, 'isWin' => false],
     ];
 
-    $payload = app(EndGameRound::class)->handle($room, $round, GameRoundOutcome::Solved, $member);
+    $payload = resolve(EndGameRound::class)->handle($room, $round, GameRoundOutcome::Solved, $member);
 
     expect($payload)->toBe([
         'roundId' => $round->id,
@@ -162,7 +162,7 @@ it('ends a round once, awarding the points of its rules', function () {
         ->and($memberPoint->game)->toBe(GameKind::Hangman)
         ->and($memberPoint->is_win)->toBeTrue()
         ->and(GamePoint::query()->where('player_id', $guest->id)->sole()->user_id)->toBeNull()
-        ->and(app(EndGameRound::class)->handle($room, $round->fresh(), GameRoundOutcome::Passed))->toBeNull()
+        ->and(resolve(EndGameRound::class)->handle($room, $round->fresh(), GameRoundOutcome::Passed))->toBeNull()
         ->and(GamePoint::query()->count())->toBe(2)
         ->and($round->fresh()->outcome)->toBe(GameRoundOutcome::Solved);
 
@@ -175,7 +175,7 @@ it('awards nothing for abandoned rounds', function () {
     $round = activeGameRound($room);
     $this->rules->points = [$member->id => ['points' => 3, 'isWin' => false]];
 
-    $payload = app(EndGameRound::class)->handle($room, $round, GameRoundOutcome::Abandoned);
+    $payload = resolve(EndGameRound::class)->handle($room, $round, GameRoundOutcome::Abandoned);
 
     expect($payload['points'])->toBe([])
         ->and(GamePoint::query()->count())->toBe(0);
@@ -193,7 +193,7 @@ it('copies the participant user of icebreaker players and ignores players of oth
         $stranger->id => ['points' => 9, 'isWin' => true],
     ];
 
-    $awarded = app(AwardRoundPoints::class)->handle($room, $round);
+    $awarded = resolve(AwardRoundPoints::class)->handle($room, $round);
 
     expect($awarded)->toBe([['playerId' => $player->id, 'points' => 2, 'isWin' => false]])
         ->and(GamePoint::query()->sole()->user_id)->toBe($user->id);
@@ -244,7 +244,7 @@ it('switches the game and abandons the active round without points', function ()
         ->and($round->fresh()->outcome)->toBe(GameRoundOutcome::Abandoned)
         ->and(GamePoint::query()->count())->toBe(0);
 
-    Event::assertDispatched(GameRoundEnded::class, fn (GameRoundEnded $event) => $event->payload['word'] === 'sprint');
+    Event::assertDispatched(fn (GameRoundEnded $event) => $event->payload['word'] === 'sprint');
     Event::assertDispatched(GameRoomChanged::class);
 });
 

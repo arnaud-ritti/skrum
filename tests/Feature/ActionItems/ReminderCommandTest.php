@@ -55,7 +55,7 @@ it('does nothing when reminders are turned off', function () {
 });
 
 it('runs every day at the configured time in the instance time zone', function () {
-    $event = collect(app(Schedule::class)->events())
+    $event = collect(resolve(Schedule::class)->events())
         ->first(fn (ScheduledEvent $event) => str_contains((string) $event->command, 'action-items:send-reminders'));
 
     expect($event)->not->toBeNull()

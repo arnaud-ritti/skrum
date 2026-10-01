@@ -32,7 +32,7 @@ it('builds the issue from the item and its retro', function () {
     $this->travelTo(CarbonImmutable::parse('2026-10-05 09:00:00'));
     [$retro, $item, $author] = exportBoardItem(['content' => "Speed up CI\nCache the vendor folder", 'due_on' => '2026-10-20']);
 
-    $draft = app(BuildIssueDraft::class)->handle($item->fresh());
+    $draft = resolve(BuildIssueDraft::class)->handle($item->fresh());
     $link = route('workspaces.actionItems.index', ['workspace' => $retro->team->workspace, 'item' => $item->id]);
 
     expect($draft->title)->toBe('Speed up CI')
@@ -54,7 +54,7 @@ it('describes items added outside a retro and caps the title', function () {
     $team = Team::factory()->create();
     $item = ActionItem::factory()->withoutRetro($team, teamMember($team))->create(['content' => str_repeat('a', 300)]);
 
-    $draft = app(BuildIssueDraft::class)->handle($item->fresh());
+    $draft = resolve(BuildIssueDraft::class)->handle($item->fresh());
 
     expect(mb_strlen($draft->title))->toBe(255)
         ->and($draft->origin)->toBe('Added outside a retro on October 5, 2026:');
@@ -66,7 +66,7 @@ it('maps Linear priorities with defaults and overrides', function (ActionItemPri
     $integration = TeamIntegration::factory()->linear()->create();
     $integration->forceFill(['settings' => [...$integration->settings, 'priorityMap' => $map]])->save();
 
-    $resolved = app(ResolveExportPriority::class)->handle($item->fresh(), $integration);
+    $resolved = resolve(ResolveExportPriority::class)->handle($item->fresh(), $integration);
 
     expect($resolved->value)->toBe($expected)->and($resolved->warning)->toBeNull();
 })->with([
@@ -82,7 +82,7 @@ it('maps Jira priorities against the create screen', function (array $map, ?Jira
     $integration = TeamIntegration::factory()->jira()->create();
     $integration->forceFill(['settings' => [...$integration->settings, 'priorityMap' => $map]])->save();
 
-    $resolved = app(ResolveExportPriority::class)->handle($item->fresh(), $integration, $fields);
+    $resolved = resolve(ResolveExportPriority::class)->handle($item->fresh(), $integration, $fields);
 
     expect($resolved->value)->toBe($expected)
         ->and($resolved->warning)->toBe($warning)
@@ -104,7 +104,7 @@ it('resolves the assignee from the mapping', function () {
     IntegrationUserMapping::factory()->manual()->create(['team_integration_id' => $integration->id, 'user_id' => $mapped->id, 'external_account_id' => 'acc-1']);
     IntegrationUserMapping::factory()->neverAssign()->create(['team_integration_id' => $integration->id, 'user_id' => $never->id]);
     $guest = Participant::factory()->guest()->create(['retro_id' => $retro->id]);
-    $resolve = app(ResolveExportAssignee::class);
+    $resolve = resolve(ResolveExportAssignee::class);
 
     $item->update(['assignee_user_id' => $mapped->id]);
     expect($resolve->handle($item->fresh(), $integration)->accountId)->toBe('acc-1');
@@ -127,7 +127,7 @@ it('matches an unmapped assignee by email once and stores it', function () {
     $item->update(['assignee_user_id' => $member->id]);
     Http::fake([jiraApiUrl('rest/api/3/user/search*') => Http::response([jiraAccount('acc-9', 'Grace H.')])]);
 
-    $resolved = app(ResolveExportAssignee::class)->handle($item->fresh(), $integration);
+    $resolved = resolve(ResolveExportAssignee::class)->handle($item->fresh(), $integration);
 
     expect($resolved->accountId)->toBe('acc-9')
         ->and($integration->accountFor($member)?->matched_by)->toBe(IntegrationUserMatch::Email);
@@ -139,7 +139,7 @@ it('leaves the assignee unmapped when no lookup is possible or it fails', functi
     $item->update(['assignee_user_id' => $member->id]);
     $integration = $setUp($retro->team_id, $member);
 
-    $resolved = app(ResolveExportAssignee::class)->handle($item->fresh(), $integration);
+    $resolved = resolve(ResolveExportAssignee::class)->handle($item->fresh(), $integration);
 
     expect($resolved->accountId)->toBeNull()
         ->and($resolved->warning)->toBe(ExportWarningCode::NotMapped)
@@ -164,7 +164,7 @@ it('leaves the assignee unmapped when no lookup is possible or it fails', functi
 it('caches the Jira create screen', function () {
     Http::fake([jiraApiUrl('rest/api/3/issue/createmeta/10000/issuetypes/11*') => Http::response(jiraCreateMeta(assignee: false))]);
     $integration = TeamIntegration::factory()->jira()->create();
-    $meta = app(JiraCreateMeta::class);
+    $meta = resolve(JiraCreateMeta::class);
 
     $first = $meta->fields($integration, '10000', '11');
     $meta->fields($integration, '10000', '11');

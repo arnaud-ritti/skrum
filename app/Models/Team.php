@@ -93,6 +93,6 @@ class Team extends Model
     /** @return HasMany<TeamHealthStatement, $this> */
     public function healthStatements(): HasMany
     {
-        return $this->hasMany(TeamHealthStatement::class)->orderBy('position')->orderBy('created_at');
+        return $this->hasMany(TeamHealthStatement::class)->orderBy('position')->oldest();
     }
 }

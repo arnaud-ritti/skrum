@@ -45,7 +45,7 @@ class PokerTimersController extends Controller
             (new PokerTimerChanged($locked->id, $lockedRound->id, $endsAt?->toIso8601String()))->sendToOthers();
 
             if ($endsAt !== null) {
-                RevealPokerRoundOnTimer::dispatch($lockedRound->id, $endsAt->toIso8601String())
+                dispatch(new RevealPokerRoundOnTimer($lockedRound->id, $endsAt->toIso8601String()))
                     ->delay($endsAt)
                     ->afterCommit();
             }

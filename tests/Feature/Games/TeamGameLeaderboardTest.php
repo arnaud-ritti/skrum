@@ -31,7 +31,7 @@ function leaderboardPlayer(GameRoom $room, string $name): array
 
 function teamLeaderboardOf(Team $team, string $period = 'all'): array
 {
-    return app(TeamGameLeaderboard::class)->handle($team->fresh(), $period);
+    return resolve(TeamGameLeaderboard::class)->handle($team->fresh(), $period);
 }
 
 it('ranks current members by points, wins and name across standalone and icebreaker rooms', function () {
@@ -41,7 +41,7 @@ it('ranks current members by points, wins and name across standalone and icebrea
     [$bea, $beaPlayer] = leaderboardPlayer($room, 'Bea');
     [, $cydPlayer] = leaderboardPlayer($room, 'Cyd');
     $retro = Retro::factory()->withIcebreaker()->inPhase(RetroPhase::Icebreaker)->create(['team_id' => $team->id, 'icebreaker_game' => GameKind::Hangman]);
-    $icebreaker = app(EnsureIcebreakerRoom::class)->handle($retro);
+    $icebreaker = resolve(EnsureIcebreakerRoom::class)->handle($retro);
     $adaParticipant = Participant::factory()->create(['retro_id' => $retro->id, 'user_id' => $ada->id]);
     $adaIcebreakerPlayer = GamePlayer::factory()->forParticipant($adaParticipant)->create(['game_room_id' => $icebreaker->id]);
 
@@ -133,7 +133,7 @@ it('counts weekly streaks back from this week or the last one', function () {
 
     awardGamePoints($room, $danPlayer, 1, false, ['created_at' => $twoWeeksAgo]);
 
-    expect(app(GameStreaks::class)->forUsers($team, [$ada->id, $bea->id, $cyd->id, $dan->id]))->toBe([
+    expect(resolve(GameStreaks::class)->forUsers($team, [$ada->id, $bea->id, $cyd->id, $dan->id]))->toBe([
         $ada->id => 3,
         $bea->id => 2,
         $cyd->id => 1,
@@ -144,9 +144,9 @@ it('counts weekly streaks back from this week or the last one', function () {
 it('starts ISO weeks on Monday in UTC', function () {
     $monday = CarbonImmutable::parse('2026-10-05', 'UTC');
 
-    expect(app(GameStreaks::class)->streak(['2026-10-05', '2026-09-28'], $monday))->toBe(2)
-        ->and(app(GameStreaks::class)->streak(['2026-09-28', '2026-09-14'], $monday))->toBe(1)
-        ->and(app(GameStreaks::class)->streak([], $monday))->toBe(0);
+    expect(resolve(GameStreaks::class)->streak(['2026-10-05', '2026-09-28'], $monday))->toBe(2)
+        ->and(resolve(GameStreaks::class)->streak(['2026-09-28', '2026-09-14'], $monday))->toBe(1)
+        ->and(resolve(GameStreaks::class)->streak([], $monday))->toBe(0);
 });
 
 it('drops the points of a deleted room', function () {
@@ -157,7 +157,7 @@ it('drops the points of a deleted room', function () {
 
     $room->delete();
 
-    expect(teamLeaderboardOf($team))->toBe([]);
+    expect(teamLeaderboardOf($team))->toBeEmpty();
 });
 
 it('defers the leaderboard on the team games page', function () {

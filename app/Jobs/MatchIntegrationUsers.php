@@ -3,10 +3,10 @@
 namespace App\Jobs;
 
 use App\Actions\Integrations\MatchIntegrationUserAccounts;
+use App\Exceptions\Integrations\IntegrationException;
+use App\Exceptions\Integrations\ProviderUnavailable;
+use App\Exceptions\Integrations\RateLimited;
 use App\Models\TeamIntegration;
-use App\Support\Integrations\Exceptions\IntegrationException;
-use App\Support\Integrations\Exceptions\ProviderUnavailable;
-use App\Support\Integrations\Exceptions\RateLimited;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -16,7 +16,7 @@ class MatchIntegrationUsers implements ShouldBeUnique, ShouldQueue
 {
     use Queueable;
 
-    private const RunningSeconds = 900;
+    private const int RunningSeconds = 900;
 
     public int $tries = 3;
 
@@ -30,7 +30,7 @@ class MatchIntegrationUsers implements ShouldBeUnique, ShouldQueue
     {
         Cache::put(self::runningKey($integration->id), true, self::RunningSeconds);
 
-        self::dispatch($integration->id);
+        dispatch(new self($integration->id));
     }
 
     public static function isRunning(TeamIntegration $integration): bool

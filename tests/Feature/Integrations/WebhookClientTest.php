@@ -4,14 +4,14 @@ use App\Enums\IntegrationDeliveryChannel;
 use App\Enums\IntegrationDeliveryKind;
 use App\Enums\IntegrationProvider;
 use App\Enums\IntegrationStatus;
+use App\Exceptions\Integrations\ProviderRejected;
+use App\Exceptions\Integrations\ProviderUnavailable;
+use App\Exceptions\Integrations\RateLimited;
+use App\Exceptions\Integrations\ReconnectRequired;
+use App\Exceptions\Integrations\UnsafeWebhookUrl;
 use App\Models\IntegrationDelivery;
 use App\Models\IntegrationDeliveryPayload;
 use App\Models\TeamIntegration;
-use App\Support\Integrations\Exceptions\ProviderRejected;
-use App\Support\Integrations\Exceptions\ProviderUnavailable;
-use App\Support\Integrations\Exceptions\RateLimited;
-use App\Support\Integrations\Exceptions\ReconnectRequired;
-use App\Support\Integrations\Exceptions\UnsafeWebhookUrl;
 use App\Support\Integrations\Webhook\ResponseExcerpt;
 use App\Support\Integrations\Webhook\SafeWebhookUrl;
 use App\Support\Integrations\Webhook\WebhookClient;
@@ -19,7 +19,7 @@ use App\Support\Integrations\Webhook\WebhookHealth;
 use App\Support\Integrations\Webhook\WebhookMessage;
 use Database\Factories\TeamIntegrationFactory;
 use Illuminate\Http\Client\Request;
-use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Exceptions;
 use Illuminate\Support\Facades\Http;
 
@@ -62,11 +62,11 @@ function outgoingWebhookMessage(string $id = 'delivery-1'): WebhookMessage
 }
 
 it('signs a versioned JSON envelope', function () {
-    $this->travelTo(Carbon::parse('2026-10-07 10:00:05', 'UTC'));
+    $this->travelTo(Date::parse('2026-10-07 10:00:05', 'UTC'));
     Http::fake(['hooks.example.com/*' => Http::response('', 204)]);
     $integration = TeamIntegration::factory()->webhook()->create();
 
-    app(WebhookClient::class)->send($integration, outgoingWebhookMessage());
+    resolve(WebhookClient::class)->send($integration, outgoingWebhookMessage());
 
     Http::assertSent(fn (Request $request) => $request->url() === TeamIntegrationFactory::WebhookUrl
         && $request->method() === 'POST'
@@ -74,7 +74,7 @@ it('signs a versioned JSON envelope', function () {
         && $request->header('User-Agent')[0] === 'skrum-webhooks/1'
         && $request->header('X-Skrum-Event')[0] === 'action_item.created'
         && $request->header('X-Skrum-Delivery')[0] === 'delivery-1'
-        && $request->header('X-Skrum-Timestamp')[0] === (string) Carbon::parse('2026-10-07 10:00:05', 'UTC')->getTimestamp()
+        && $request->header('X-Skrum-Timestamp')[0] === (string) Date::parse('2026-10-07 10:00:05', 'UTC')->getTimestamp()
         && outgoingWebhookSignatureIsValid($request)
         && json_decode($request->body(), true) === [
             'version' => 1,
@@ -93,8 +93,8 @@ it('computes the documented signature', function () {
 });
 
 it('pins the connection to the vetted address and never follows redirects', function () {
-    $options = app(WebhookClient::class)
-        ->pendingRequest(app(SafeWebhookUrl::class)->resolve(TeamIntegrationFactory::WebhookUrl))
+    $options = resolve(WebhookClient::class)
+        ->pendingRequest(resolve(SafeWebhookUrl::class)->resolve(TeamIntegrationFactory::WebhookUrl))
         ->getOptions();
 
     expect($options['curl'][CURLOPT_RESOLVE])->toBe(['hooks.example.com:443:93.184.216.34'])
@@ -108,13 +108,13 @@ it('records attempts and resets the failure counter on success', function () {
     $integration->forceFill(['consecutive_failures' => 4])->save();
     $delivery = outgoingWebhookDelivery($integration);
 
-    expect(fn () => app(WebhookClient::class)->send($integration, outgoingWebhookMessage($delivery->id), $delivery))
-        ->toThrow(ProviderUnavailable::class);
-    expect($delivery->fresh()->attempts)->toBe(1)
+    expect(fn () => resolve(WebhookClient::class)->send($integration, outgoingWebhookMessage($delivery->id), $delivery))
+        ->toThrow(ProviderUnavailable::class)
+        ->and($delivery->fresh()->attempts)->toBe(1)
         ->and($delivery->fresh()->response_status)->toBe(503)
         ->and($integration->fresh()->consecutive_failures)->toBe(4);
 
-    app(WebhookClient::class)->send($integration, outgoingWebhookMessage($delivery->id), $delivery->fresh());
+    resolve(WebhookClient::class)->send($integration, outgoingWebhookMessage($delivery->id), $delivery->fresh());
 
     expect($delivery->fresh()->attempts)->toBe(2)
         ->and($delivery->fresh()->response_status)->toBe(200)
@@ -129,7 +129,7 @@ it('maps receiver answers without reading their bodies', function (int $status, 
     $caught = null;
 
     try {
-        app(WebhookClient::class)->send($integration, outgoingWebhookMessage());
+        resolve(WebhookClient::class)->send($integration, outgoingWebhookMessage());
     } catch (Throwable $thrown) {
         $caught = $thrown;
     }
@@ -149,7 +149,7 @@ it('caps Retry-After at one hour', function (string $retryAfter, int $expected) 
     $rateLimited = null;
 
     try {
-        app(WebhookClient::class)->send(TeamIntegration::factory()->webhook()->create(), outgoingWebhookMessage());
+        resolve(WebhookClient::class)->send(TeamIntegration::factory()->webhook()->create(), outgoingWebhookMessage());
     } catch (RateLimited $exception) {
         $rateLimited = $exception;
     }
@@ -164,7 +164,7 @@ it('disables the webhook when the receiver answers 410', function () {
     Http::fake(['hooks.example.com/*' => Http::response('', 410)]);
     $integration = TeamIntegration::factory()->webhook()->create();
 
-    expect(fn () => app(WebhookClient::class)->send($integration, outgoingWebhookMessage()))
+    expect(fn () => resolve(WebhookClient::class)->send($integration, outgoingWebhookMessage()))
         ->toThrow(ReconnectRequired::class, 'The receiver asked skrum to stop.');
 
     $fresh = $integration->fresh();
@@ -181,7 +181,7 @@ it('keeps only the host of connection errors', function () {
     $unavailable = null;
 
     try {
-        app(WebhookClient::class)->send($integration, outgoingWebhookMessage($delivery->id), $delivery);
+        resolve(WebhookClient::class)->send($integration, outgoingWebhookMessage($delivery->id), $delivery);
     } catch (ProviderUnavailable $exception) {
         $unavailable = $exception;
     }
@@ -197,7 +197,7 @@ it('refuses an endpoint that became private without calling it', function () {
     $integration = TeamIntegration::factory()->webhook()->create();
     $delivery = outgoingWebhookDelivery($integration);
 
-    expect(fn () => app(WebhookClient::class)->send($integration, outgoingWebhookMessage($delivery->id), $delivery))
+    expect(fn () => resolve(WebhookClient::class)->send($integration, outgoingWebhookMessage($delivery->id), $delivery))
         ->toThrow(UnsafeWebhookUrl::class);
 
     Http::assertNothingSent();
@@ -213,7 +213,7 @@ it('retries instead of failing when the host cannot be resolved at send time', f
     $caught = null;
 
     try {
-        app(WebhookClient::class)->send($integration, outgoingWebhookMessage($delivery->id), $delivery);
+        resolve(WebhookClient::class)->send($integration, outgoingWebhookMessage($delivery->id), $delivery);
     } catch (Throwable $thrown) {
         $caught = $thrown;
     }
@@ -230,10 +230,9 @@ it('records the attempt when the signing secret is missing', function () {
     $integration->forceFill(['credentials' => ['url' => TeamIntegrationFactory::WebhookUrl]])->save();
     $delivery = outgoingWebhookDelivery($integration);
 
-    expect(fn () => app(WebhookClient::class)->send($integration, outgoingWebhookMessage($delivery->id), $delivery))
-        ->toThrow(ReconnectRequired::class);
-
-    expect($delivery->fresh()->attempts)->toBe(1)
+    expect(fn () => resolve(WebhookClient::class)->send($integration, outgoingWebhookMessage($delivery->id), $delivery))
+        ->toThrow(ReconnectRequired::class)
+        ->and($delivery->fresh()->attempts)->toBe(1)
         ->and($delivery->fresh()->last_attempt_at)->not->toBeNull()
         ->and($delivery->fresh()->response_status)->toBeNull();
 });
@@ -253,7 +252,7 @@ it('disables after 10 failures in a row without a success in 24 hours', function
         'last_delivery_succeeded_at' => $successHoursAgo === null ? null : now()->subHours($successHoursAgo),
     ])->save();
 
-    app(WebhookHealth::class)->failed($integration);
+    resolve(WebhookHealth::class)->failed($integration);
 
     $fresh = $integration->fresh();
 
@@ -276,18 +275,18 @@ it('stops counting while disabled and re-enables with a clean slate', function (
         'settings' => [...$integration->settings, 'disabledReason' => WebhookHealth::FailuresReason],
     ])->save();
 
-    app(WebhookHealth::class)->failed($integration);
+    resolve(WebhookHealth::class)->failed($integration);
 
     expect($integration->fresh()->consecutive_failures)->toBe(10);
 
-    app(WebhookHealth::class)->reenable($integration->fresh());
+    resolve(WebhookHealth::class)->reenable($integration->fresh());
 
     $fresh = $integration->fresh();
 
     expect($fresh->status)->toBe(IntegrationStatus::Active)
         ->and($fresh->consecutive_failures)->toBe(0)
         ->and($fresh->last_error)->toBeNull()
-        ->and(array_key_exists('disabledReason', $fresh->settings))->toBeFalse()
+        ->and($fresh->settings)->not->toHaveKey('disabledReason')
         ->and($fresh->setting('events'))->toBe([]);
 });
 
@@ -295,11 +294,11 @@ it('resolves the endpoint again before every send', function () {
     Http::fake(['hooks.example.com/*' => Http::response('', 204)]);
     $integration = TeamIntegration::factory()->webhook()->create();
 
-    app(WebhookClient::class)->send($integration, outgoingWebhookMessage());
+    resolve(WebhookClient::class)->send($integration, outgoingWebhookMessage());
 
     outgoingWebhookResolves(['169.254.169.254']);
 
-    expect(fn () => app(WebhookClient::class)->send($integration, outgoingWebhookMessage()))
+    expect(fn () => resolve(WebhookClient::class)->send($integration, outgoingWebhookMessage()))
         ->toThrow(UnsafeWebhookUrl::class);
 
     Http::assertSentCount(1);
@@ -312,7 +311,7 @@ it('never leaks the url or the secret through errors', function () {
     $caught = null;
 
     try {
-        app(WebhookClient::class)->send($integration, outgoingWebhookMessage($delivery->id), $delivery);
+        resolve(WebhookClient::class)->send($integration, outgoingWebhookMessage($delivery->id), $delivery);
     } catch (ProviderUnavailable $exception) {
         $caught = $exception;
     }
@@ -327,7 +326,7 @@ it('resets the failure counter even when the loaded model still holds zero', fun
     $stale = TeamIntegration::find($integration->id);
     TeamIntegration::whereKey($integration->id)->update(['consecutive_failures' => 5]);
 
-    app(WebhookHealth::class)->succeeded($stale);
+    resolve(WebhookHealth::class)->succeeded($stale);
 
     expect($integration->fresh()->consecutive_failures)->toBe(0)
         ->and($integration->fresh()->last_delivery_succeeded_at)->not->toBeNull();
@@ -337,10 +336,10 @@ it('uses one clock reading for the timestamp header and the sent-at field', func
     Http::fake(['hooks.example.com/*' => Http::response('', 204)]);
     $integration = TeamIntegration::factory()->webhook()->create();
 
-    app(WebhookClient::class)->send($integration, outgoingWebhookMessage());
+    resolve(WebhookClient::class)->send($integration, outgoingWebhookMessage());
 
-    Http::assertSent(function (Request $request) {
-        $sentAt = Carbon::parse(json_decode($request->body(), true)['sentAt'])->getTimestamp();
+    Http::assertSent(function (Request $request): bool {
+        $sentAt = Date::parse(json_decode($request->body(), true)['sentAt'])->getTimestamp();
 
         return (string) $sentAt === $request->header('X-Skrum-Timestamp')[0];
     });
@@ -352,7 +351,7 @@ it('keeps concurrent settings edits and explains a 410 even when already disable
     $stale = TeamIntegration::find($integration->id);
     $integration->forceFill(['settings' => [...$integration->settings, 'events' => ['retro.completed']]])->save();
 
-    expect(fn () => app(WebhookClient::class)->send($stale, outgoingWebhookMessage()))
+    expect(fn () => resolve(WebhookClient::class)->send($stale, outgoingWebhookMessage()))
         ->toThrow(ReconnectRequired::class);
 
     $fresh = $integration->fresh();
@@ -368,7 +367,7 @@ it('explains a missing signing secret', function () {
     $caught = null;
 
     try {
-        app(WebhookClient::class)->send($integration, outgoingWebhookMessage());
+        resolve(WebhookClient::class)->send($integration, outgoingWebhookMessage());
     } catch (ReconnectRequired $exception) {
         $caught = $exception;
     }
@@ -381,25 +380,25 @@ it('flags a missing stored url during the check', function () {
     $integration = TeamIntegration::factory()->webhook()->create();
     $integration->forceFill(['credentials' => ['webhookSecret' => TeamIntegrationFactory::WebhookSecret]])->save();
 
-    expect(fn () => app(WebhookClient::class)->ensureUsableUrl($integration))->toThrow(ReconnectRequired::class);
-    expect($integration->fresh()->status)->toBe(IntegrationStatus::ReconnectRequired);
+    expect(fn () => resolve(WebhookClient::class)->ensureUsableUrl($integration))->toThrow(ReconnectRequired::class)
+        ->and($integration->fresh()->status)->toBe(IntegrationStatus::ReconnectRequired);
 });
 
 it('discards the response body instead of buffering it', function () {
-    $options = app(WebhookClient::class)
-        ->pendingRequest(app(SafeWebhookUrl::class)->resolve(TeamIntegrationFactory::WebhookUrl))
+    $options = resolve(WebhookClient::class)
+        ->pendingRequest(resolve(SafeWebhookUrl::class)->resolve(TeamIntegrationFactory::WebhookUrl))
         ->getOptions();
 
     expect($options['curl'][CURLOPT_WRITEFUNCTION]('handle', 'abcdef'))->toBe(6);
 });
 
 it('keeps what it sent and the start of the answer for a delivery with a stored message', function () {
-    $this->travelTo(Carbon::parse('2026-10-07 10:00:05', 'UTC'));
+    $this->travelTo(Date::parse('2026-10-07 10:00:05', 'UTC'));
     Http::fake(['hooks.example.com/*' => Http::response(str_repeat('é', 1500), 500)]);
     $integration = TeamIntegration::factory()->webhook()->create();
     $delivery = outgoingWebhookDeliveryWithPayload($integration);
 
-    expect(fn () => app(WebhookClient::class)->send($integration, outgoingWebhookMessage($delivery->id), $delivery))
+    expect(fn () => resolve(WebhookClient::class)->send($integration, outgoingWebhookMessage($delivery->id), $delivery))
         ->toThrow(ProviderUnavailable::class);
 
     $payload = $delivery->payload()->sole();
@@ -412,7 +411,7 @@ it('keeps what it sent and the start of the answer for a delivery with a stored 
             'User-Agent' => 'skrum-webhooks/1',
             'X-Skrum-Event' => 'action_item.created',
             'X-Skrum-Delivery' => $delivery->id,
-            'X-Skrum-Timestamp' => (string) Carbon::parse('2026-10-07 10:00:05', 'UTC')->getTimestamp(),
+            'X-Skrum-Timestamp' => (string) Date::parse('2026-10-07 10:00:05', 'UTC')->getTimestamp(),
             'X-Skrum-Signature' => 'sha256=…'.substr($sent->header('X-Skrum-Signature')[0], -6),
         ])
         ->and($payload->response_status)->toBe(500)
@@ -425,7 +424,7 @@ it('masks the signature when the receiver echoes it back', function () {
     $integration = TeamIntegration::factory()->webhook()->create();
     $delivery = outgoingWebhookDeliveryWithPayload($integration);
 
-    expect(fn () => app(WebhookClient::class)->send($integration, outgoingWebhookMessage($delivery->id), $delivery))
+    expect(fn () => resolve(WebhookClient::class)->send($integration, outgoingWebhookMessage($delivery->id), $delivery))
         ->toThrow(ProviderRejected::class);
 
     $signature = Http::recorded()->first()[0]->header('X-Skrum-Signature')[0];
@@ -440,7 +439,7 @@ it('masks an echoed signature whatever its letter case', function () {
     $integration = TeamIntegration::factory()->webhook()->create();
     $delivery = outgoingWebhookDeliveryWithPayload($integration);
 
-    expect(fn () => app(WebhookClient::class)->send($integration, outgoingWebhookMessage($delivery->id), $delivery))
+    expect(fn () => resolve(WebhookClient::class)->send($integration, outgoingWebhookMessage($delivery->id), $delivery))
         ->toThrow(ProviderRejected::class);
 
     $signature = Http::recorded()->first()[0]->header('X-Skrum-Signature')[0];
@@ -452,8 +451,8 @@ it('stores nothing for a delivery without a stored message or for a test message
     Http::fake(['hooks.example.com/*' => Http::response('ok', 200)]);
     $integration = TeamIntegration::factory()->webhook()->create();
 
-    app(WebhookClient::class)->send($integration, outgoingWebhookMessage(), outgoingWebhookDelivery($integration));
-    app(WebhookClient::class)->send($integration, WebhookMessage::test());
+    resolve(WebhookClient::class)->send($integration, outgoingWebhookMessage(), outgoingWebhookDelivery($integration));
+    resolve(WebhookClient::class)->send($integration, WebhookMessage::test());
 
     expect(IntegrationDeliveryPayload::query()->count())->toBe(0);
 });
@@ -462,8 +461,8 @@ it('marks a redelivered message and only that one', function () {
     Http::fake(['hooks.example.com/*' => Http::response('', 204)]);
     $integration = TeamIntegration::factory()->webhook()->create();
 
-    app(WebhookClient::class)->send($integration, new WebhookMessage('delivery-1', 'action_item.created', '2026-10-07T10:00:00Z', [], redelivery: true));
-    app(WebhookClient::class)->send($integration, outgoingWebhookMessage('delivery-2'));
+    resolve(WebhookClient::class)->send($integration, new WebhookMessage('delivery-1', 'action_item.created', '2026-10-07T10:00:00Z', [], redelivery: true));
+    resolve(WebhookClient::class)->send($integration, outgoingWebhookMessage('delivery-2'));
 
     Http::assertSent(fn (Request $request) => $request->header('X-Skrum-Delivery')[0] === 'delivery-1'
         && $request->header('X-Skrum-Redelivery')[0] === 'true'
@@ -474,8 +473,8 @@ it('marks a redelivered message and only that one', function () {
 
 it('keeps only the first 2 KB of the answer it reads', function () {
     $excerpt = new ResponseExcerpt;
-    $options = app(WebhookClient::class)
-        ->pendingRequest(app(SafeWebhookUrl::class)->resolve(TeamIntegrationFactory::WebhookUrl), $excerpt)
+    $options = resolve(WebhookClient::class)
+        ->pendingRequest(resolve(SafeWebhookUrl::class)->resolve(TeamIntegrationFactory::WebhookUrl), $excerpt)
         ->getOptions();
 
     expect($options['curl'][CURLOPT_WRITEFUNCTION]('handle', str_repeat('a', 1500)))->toBe(1500)
@@ -492,7 +491,7 @@ it('reports a failure to keep the attempt without failing a successful send', fu
     $delivery = outgoingWebhookDeliveryWithPayload($integration);
     IntegrationDeliveryPayload::saving(fn () => throw new LogicException('insert failed with bindings: kept content'));
 
-    app(WebhookClient::class)->send($integration, outgoingWebhookMessage($delivery->id), $delivery);
+    resolve(WebhookClient::class)->send($integration, outgoingWebhookMessage($delivery->id), $delivery);
 
     Exceptions::assertReported(fn (RuntimeException $exception) => $exception->getMessage() === "Could not keep the webhook attempt of delivery {$delivery->id} (LogicException)."
         && $exception->getPrevious() === null);
@@ -506,13 +505,13 @@ it('shows nothing sent when the last attempt failed before sending', function ()
     $integration = TeamIntegration::factory()->webhook()->create();
     $delivery = outgoingWebhookDeliveryWithPayload($integration);
 
-    expect(fn () => app(WebhookClient::class)->send($integration, outgoingWebhookMessage($delivery->id), $delivery))
-        ->toThrow(ProviderUnavailable::class);
-    expect($delivery->payload()->sole()->response_excerpt)->toBe('upstream broke');
+    expect(fn () => resolve(WebhookClient::class)->send($integration, outgoingWebhookMessage($delivery->id), $delivery))
+        ->toThrow(ProviderUnavailable::class)
+        ->and($delivery->payload()->sole()->response_excerpt)->toBe('upstream broke');
 
     outgoingWebhookResolves([]);
 
-    expect(fn () => app(WebhookClient::class)->send($integration, outgoingWebhookMessage($delivery->id), $delivery->fresh()))
+    expect(fn () => resolve(WebhookClient::class)->send($integration, outgoingWebhookMessage($delivery->id), $delivery->fresh()))
         ->toThrow(ProviderUnavailable::class);
 
     $payload = $delivery->payload()->sole();
@@ -530,7 +529,7 @@ it('keeps the request without an answer when the receiver cannot be reached', fu
     $integration = TeamIntegration::factory()->webhook()->create();
     $delivery = outgoingWebhookDeliveryWithPayload($integration);
 
-    expect(fn () => app(WebhookClient::class)->send($integration, outgoingWebhookMessage($delivery->id), $delivery))
+    expect(fn () => resolve(WebhookClient::class)->send($integration, outgoingWebhookMessage($delivery->id), $delivery))
         ->toThrow(ProviderUnavailable::class);
 
     $payload = $delivery->payload()->sole();
@@ -546,18 +545,18 @@ it('replaces the previous attempt with the last one', function () {
     $integration = TeamIntegration::factory()->webhook()->create();
     $delivery = outgoingWebhookDeliveryWithPayload($integration);
 
-    $this->travelTo(Carbon::parse('2026-10-07 10:00:05', 'UTC'));
-    expect(fn () => app(WebhookClient::class)->send($integration, outgoingWebhookMessage($delivery->id), $delivery))
+    $this->travelTo(Date::parse('2026-10-07 10:00:05', 'UTC'));
+    expect(fn () => resolve(WebhookClient::class)->send($integration, outgoingWebhookMessage($delivery->id), $delivery))
         ->toThrow(ProviderUnavailable::class);
 
-    $this->travelTo(Carbon::parse('2026-10-07 10:00:15', 'UTC'));
-    app(WebhookClient::class)->send($integration, outgoingWebhookMessage($delivery->id), $delivery->fresh());
+    $this->travelTo(Date::parse('2026-10-07 10:00:15', 'UTC'));
+    resolve(WebhookClient::class)->send($integration, outgoingWebhookMessage($delivery->id), $delivery->fresh());
 
     $payload = $delivery->payload()->sole();
 
     expect($payload->response_status)->toBe(200)
         ->and($payload->response_excerpt)->toBe('second answer')
-        ->and($payload->request_headers['X-Skrum-Timestamp'])->toBe((string) Carbon::parse('2026-10-07 10:00:15', 'UTC')->getTimestamp())
+        ->and($payload->request_headers['X-Skrum-Timestamp'])->toBe((string) Date::parse('2026-10-07 10:00:15', 'UTC')->getTimestamp())
         ->and(json_decode((string) $payload->request_body, true)['sentAt'])->toBe('2026-10-07T10:00:15Z');
 });
 
@@ -566,7 +565,7 @@ it('keeps an excerpt cut in the middle of a character byte for byte', function (
     $integration = TeamIntegration::factory()->webhook()->create();
     $delivery = outgoingWebhookDeliveryWithPayload($integration);
 
-    app(WebhookClient::class)->send($integration, outgoingWebhookMessage($delivery->id), $delivery);
+    resolve(WebhookClient::class)->send($integration, outgoingWebhookMessage($delivery->id), $delivery);
 
     $excerpt = (string) $delivery->payload()->sole()->response_excerpt;
 
@@ -582,7 +581,7 @@ it('reports a failure to count the attempt without failing a successful send', f
     $delivery = outgoingWebhookDeliveryWithPayload($integration);
     IntegrationDelivery::saving(fn () => throw new LogicException('update failed'));
 
-    app(WebhookClient::class)->send($integration, outgoingWebhookMessage($delivery->id), $delivery);
+    resolve(WebhookClient::class)->send($integration, outgoingWebhookMessage($delivery->id), $delivery);
 
     Exceptions::assertReported(fn (RuntimeException $exception) => $exception->getMessage() === "Could not record the webhook attempt of delivery {$delivery->id} (LogicException)."
         && $exception->getPrevious() === null);

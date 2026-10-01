@@ -19,6 +19,7 @@ use App\Models\TeamIntegration;
 use App\Support\Integrations\Trackers\DoneMapping;
 use App\Support\Integrations\Trackers\TrackerIssue;
 use Carbon\CarbonImmutable;
+use Illuminate\Broadcasting\PendingBroadcast;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -50,7 +51,7 @@ class ApplyIssueChanges
      */
     public function handle(TeamIntegration $integration, array $externalIds, array $issues, bool $complete, bool $sourceWins = false): void
     {
-        $ids = array_values(array_unique(array_map('strval', $externalIds)));
+        $ids = array_values(array_unique(array_map(strval(...), $externalIds)));
 
         if ($ids === []) {
             return;
@@ -80,7 +81,7 @@ class ApplyIssueChanges
             ));
 
             foreach ($outcome['pushes'] as $linkId) {
-                PushActionItemState::dispatch($linkId);
+                dispatch(new PushActionItemState($linkId));
             }
 
             if (! $outcome['changed']) {
@@ -316,7 +317,7 @@ class ApplyIssueChanges
         }
 
         if (count($changed) > self::BroadcastEachTaskUpTo) {
-            rescue(fn () => broadcast(new PokerGameChanged($game->id)));
+            rescue(fn (): PendingBroadcast => broadcast(new PokerGameChanged($game->id)));
 
             return;
         }
@@ -325,7 +326,7 @@ class ApplyIssueChanges
             $task->loadCount('rounds');
             $payload = $this->presentPokerTask->handle($task);
 
-            rescue(fn () => broadcast(new PokerTaskSaved($game->id, $payload)));
+            rescue(fn (): PendingBroadcast => broadcast(new PokerTaskSaved($game->id, $payload)));
         }
     }
 }

@@ -10,7 +10,7 @@ use Illuminate\Support\Str;
  */
 class GameWord
 {
-    private const Separators = [' ', '-', "'"];
+    private const array Separators = [' ', '-', "'"];
 
     /**
      * @return array<int, string>

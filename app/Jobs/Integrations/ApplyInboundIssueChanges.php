@@ -5,11 +5,11 @@ namespace App\Jobs\Integrations;
 use App\Actions\Integrations\ApplyIssueChanges;
 use App\Actions\Integrations\TrackedIssues;
 use App\Enums\InboundEventStatus;
+use App\Exceptions\Integrations\IntegrationException;
+use App\Exceptions\Integrations\RateLimited;
+use App\Exceptions\Integrations\ReconnectRequired;
 use App\Models\IntegrationInboundEvent;
 use App\Models\TeamIntegration;
-use App\Support\Integrations\Exceptions\IntegrationException;
-use App\Support\Integrations\Exceptions\RateLimited;
-use App\Support\Integrations\Exceptions\ReconnectRequired;
 use App\Support\Integrations\IntegrationErrors;
 use App\Support\Integrations\StatusSync;
 use App\Support\Integrations\Trackers\Trackers;
@@ -45,7 +45,7 @@ class ApplyInboundIssueChanges implements ShouldBeUniqueUntilProcessing, ShouldQ
         $ids = $this->externalIds;
         sort($ids);
 
-        return $this->integrationId.':'.sha1(implode(',', $ids));
+        return $this->integrationId.':'.hash('xxh128', implode(',', $ids));
     }
 
     /** @return array<int, object> */

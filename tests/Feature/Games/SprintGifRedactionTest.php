@@ -47,7 +47,7 @@ it('keeps other players GIFs out of every payload before the reveal', function (
 
     $hostSnapshot = $this->actingAs($hostUser)->getJson(route('games.snapshot.show', $room))->assertOk()->json();
 
-    app('auth')->forgetGuards();
+    resolve('auth')->forgetGuards();
 
     $guestSnapshot = $this->withCookies(gameGuestCookie($guest))->withCredentials()->getJson(route('games.snapshot.show', $room))->assertOk()->json();
 
@@ -78,7 +78,7 @@ it('keeps vote counts and who voted for what secret until the close', function (
         $view = $this->actingAs($user)->getJson(route('games.snapshot.show', $room))->assertOk()->json('round');
 
         expect(gamePayloadJson($view))->not->toContain('"votes"')
-            ->and(array_map(fn (array $answer): array => array_keys($answer), $view['answers']))->each->toBe(['id', 'gif', 'playerId'])
+            ->and(array_map(array_keys(...), $view['answers']))->each->toBe(['id', 'gif', 'playerId'])
             ->and($view['voters'])->toHaveCount(2)
             ->and(gamePayloadJson($view))->not->toContain('"points"');
     }
@@ -89,7 +89,7 @@ it('keeps vote counts and who voted for what secret until the close', function (
 
     $this->actingAs($hostUser)->postJson(route('games.rounds.close.store', [$room, $round]))->assertOk();
 
-    Event::assertDispatched(GameRoundEnded::class, fn (GameRoundEnded $event) => collect($event->payload['answers'])->firstWhere('id', $hostAnswer->id)['votes'] === 2);
+    Event::assertDispatched(fn (GameRoundEnded $event) => collect($event->payload['answers'])->firstWhere('id', $hostAnswer->id)['votes'] === 2);
 });
 
 it('never names the author of a GIF on an anonymous retro, even after the close', function () {
@@ -124,6 +124,6 @@ it('never names the author of a GIF on an anonymous retro, even after the close'
         ->map(fn (GameBroadcastEvent $event) => $event->broadcastWith()['answers']);
 
     expect($authoredPayloads)->not->toBeEmpty()
-        ->and($authoredPayloads->flatten(1)->pluck('playerId')->filter()->all())->toBe([])
+        ->and($authoredPayloads->flatten(1)->pluck('playerId')->filter()->all())->toBeEmpty()
         ->and(Str::isUuid($answer->id))->toBeTrue();
 });

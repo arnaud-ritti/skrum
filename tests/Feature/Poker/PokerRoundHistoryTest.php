@@ -2,6 +2,7 @@
 
 use App\Enums\PokerRevealReason;
 use App\Models\PokerGame;
+use App\Models\PokerPlayer;
 use App\Models\PokerRound;
 use App\Models\PokerTask;
 use Illuminate\Support\Facades\DB;
@@ -39,7 +40,7 @@ it('lists rounds newest first with values only when revealed', function () {
         $table['memberPlayer']->id => '8',
     ])->and($response->getContent())->not->toContain('"13"');
 
-    app('auth')->forgetGuards();
+    resolve('auth')->forgetGuards();
 
     $this->withCookies(pokerGuestCookie($guest))->withCredentials()
         ->getJson(route('poker.tasks.rounds.index', [$table['game'], $task]))
@@ -83,7 +84,7 @@ it('loads the history with a constant number of queries', function () {
 
         foreach (range(1, $roundCount) as $offset) {
             $round = PokerRound::factory()->revealed()->create(['poker_task_id' => $task->id, 'number' => $next + $offset]);
-            $voters->each(fn ($voter) => pokerVote($round, $voter, '5'));
+            $voters->each(fn (PokerPlayer $voter) => pokerVote($round, $voter, '5'));
         }
     };
 

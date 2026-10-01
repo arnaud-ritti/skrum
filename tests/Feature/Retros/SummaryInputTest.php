@@ -41,7 +41,7 @@ function completedRetroWithContent(array $attributes = []): array
 it('sends revealed content, groups, votes and action items', function () {
     [$retro] = completedRetroWithContent();
 
-    $payload = json_decode(app(BuildSummaryInput::class)->handle($retro->fresh())->payload, true);
+    $payload = json_decode(resolve(BuildSummaryInput::class)->handle($retro->fresh())->payload, true);
 
     expect($payload['retroTitle'])->toBe('Sprint 12')
         ->and($payload['columns'])->toBe(['To improve'])
@@ -59,7 +59,7 @@ it('sends revealed content, groups, votes and action items', function () {
 it('never sends participant names or ids, authors, card uuids, reactions or comments', function (bool $anonymous) {
     [$retro, $alice, $bob, $lead, $child] = completedRetroWithContent(['is_anonymous' => $anonymous]);
 
-    $input = app(BuildSummaryInput::class)->handle($retro->fresh());
+    $input = resolve(BuildSummaryInput::class)->handle($retro->fresh());
     $sent = $input->instructions.$input->payload;
 
     expect($sent)
@@ -80,7 +80,7 @@ it('sends closed survey results without voters and text answers without authors'
     SurveyTextAnswer::factory()->create(['survey_id' => $text->id, 'participant_id' => $bob->id, 'content' => 'Pair more']);
     Survey::factory()->create(['retro_id' => $retro->id, 'kind' => SurveyKind::Single, 'question' => 'Still open?', 'is_closed' => false, 'position' => 2]);
 
-    $input = app(BuildSummaryInput::class)->handle($retro->fresh());
+    $input = resolve(BuildSummaryInput::class)->handle($retro->fresh());
     $payload = json_decode($input->payload, true);
 
     expect($payload['surveys'])->toBe([
@@ -94,19 +94,19 @@ it('sends at most fifty text answers per survey', function () {
     $text = Survey::factory()->create(['retro_id' => $retro->id, 'kind' => SurveyKind::Text, 'is_closed' => true]);
     SurveyTextAnswer::factory()->count(55)->create(['survey_id' => $text->id]);
 
-    $payload = json_decode(app(BuildSummaryInput::class)->handle($retro->fresh())->payload, true);
+    $payload = json_decode(resolve(BuildSummaryInput::class)->handle($retro->fresh())->payload, true);
 
     expect($payload['surveys'][0]['answers'])->toHaveCount(50);
 });
 
 it('sends health aggregates labelled by statement and the roti aggregate', function () {
     [$retro, $alice, $bob] = completedRetroWithContent(['health_check_enabled' => true]);
-    app(FreezeHealthStatements::class)->handle($retro);
+    resolve(FreezeHealthStatements::class)->handle($retro);
     HealthCheckAnswer::factory()->create(['retro_id' => $retro->id, 'participant_id' => $bob->id, 'statement' => 'interaction', 'score' => 8]);
     RotiVote::factory()->create(['retro_id' => $retro->id, 'participant_id' => $bob->id, 'score' => 4]);
     RotiVote::factory()->create(['retro_id' => $retro->id, 'participant_id' => $alice->id, 'score' => 5]);
 
-    $payload = json_decode(app(BuildSummaryInput::class)->handle($retro->fresh())->payload, true);
+    $payload = json_decode(resolve(BuildSummaryInput::class)->handle($retro->fresh())->payload, true);
 
     expect($payload['health']['statements'])->toContain(['label' => 'Interaction', 'average' => 8.0])
         ->and($payload['roti'])->toBe(['respondents' => 2, 'average' => 4.5]);
@@ -119,7 +119,7 @@ it('caps the input at thirty thousand characters keeping the most voted cards', 
     Vote::factory()->create(['retro_id' => $retro->id, 'card_id' => $popular->id]);
     Card::factory()->count(60)->create(['retro_id' => $retro->id, 'column_id' => $column->id, 'content' => str_repeat('y', 900)]);
 
-    $input = app(BuildSummaryInput::class)->handle($retro->fresh());
+    $input = resolve(BuildSummaryInput::class)->handle($retro->fresh());
 
     expect(mb_strlen($input->payload))->toBeLessThanOrEqual(BuildSummaryInput::MaxCharacters)
         ->and($input->cardIds[1])->toBe($popular->id)
@@ -134,7 +134,7 @@ it('keeps long text survey answers within the cap and still sends the cards', fu
         SurveyTextAnswer::factory()->count(50)->create(['survey_id' => $text->id, 'content' => str_repeat('z', 500)]);
     }
 
-    $input = app(BuildSummaryInput::class)->handle($retro->fresh());
+    $input = resolve(BuildSummaryInput::class)->handle($retro->fresh());
 
     expect(mb_strlen($input->payload))->toBeLessThanOrEqual(BuildSummaryInput::MaxCharacters)
         ->and($input->cardIds[1])->toBe($lead->id)
@@ -145,7 +145,7 @@ it('keeps many long action items within the cap', function () {
     [$retro] = completedRetroWithContent();
     ActionItem::factory()->count(80)->create(['retro_id' => $retro->id, 'content' => str_repeat('a', 500)]);
 
-    $input = app(BuildSummaryInput::class)->handle($retro->fresh());
+    $input = resolve(BuildSummaryInput::class)->handle($retro->fresh());
 
     expect(mb_strlen($input->payload))->toBeLessThanOrEqual(BuildSummaryInput::MaxCharacters)
         ->and(json_decode($input->payload, true)['cards'])->not->toBeEmpty();
@@ -156,8 +156,8 @@ it('writes in the creator locale', function () {
     [$creator] = retroMember($retro);
     $creator->update(['locale' => 'fr']);
 
-    expect(app(BuildSummaryInput::class)->outputLocale($retro->fresh()))->toBe('fr')
-        ->and(app(BuildSummaryInput::class)->handle($retro->fresh())->instructions)->toContain('French');
+    expect(resolve(BuildSummaryInput::class)->outputLocale($retro->fresh()))->toBe('fr')
+        ->and(resolve(BuildSummaryInput::class)->handle($retro->fresh())->instructions)->toContain('French');
 });
 
 function summaryInputFor(array $cardIds): SummaryInput
@@ -186,7 +186,7 @@ it('parses themes, suggestions and card insights from indexes', function () {
         ],
     ])."\n```";
 
-    $output = app(ParseSummaryOutput::class)->handle($reply, $input);
+    $output = resolve(ParseSummaryOutput::class)->handle($reply, $input);
 
     expect($output->summary)->toBe('The team shipped.')
         ->and($output->themes)->toBe([
@@ -210,16 +210,16 @@ it('trims the summary to two thousand characters and keeps at most eight themes 
         'suggestedActions' => array_map(fn (int $i) => ['content' => "Step {$i}"], range(1, 9)),
     ]);
 
-    $output = app(ParseSummaryOutput::class)->handle($reply, $input);
+    $output = resolve(ParseSummaryOutput::class)->handle($reply, $input);
 
     expect(mb_strlen($output->summary))->toBe(2000)
         ->and($output->themes)->toHaveCount(8)
         ->and($output->suggestedActions)->toHaveCount(8)
-        ->and($output->cardInsights)->toBe([]);
+        ->and($output->cardInsights)->toBeEmpty();
 });
 
 it('rejects output without a summary', function (string $reply) {
-    expect(app(ParseSummaryOutput::class)->handle($reply, summaryInputFor([])))->toBeNull();
+    expect(resolve(ParseSummaryOutput::class)->handle($reply, summaryInputFor([])))->toBeNull();
 })->with([
     'not json' => ['no'],
     'no summary' => ['{"themes": []}'],
@@ -237,7 +237,7 @@ it('ignores nested array indexes instead of failing', function () {
         ],
     ]);
 
-    $output = app(ParseSummaryOutput::class)->handle($reply, $input);
+    $output = resolve(ParseSummaryOutput::class)->handle($reply, $input);
 
     expect($output->themes)->toBe([['name' => 'Theme', 'cardIds' => ['card-a']]])
         ->and($output->cardInsights)->toBe(['card-a' => ['sentiment' => CardSentiment::Negative, 'category' => null]]);
@@ -248,7 +248,7 @@ it('asks for card insights on the first sixty cards only', function () {
     $column = Column::factory()->create(['retro_id' => $retro->id]);
     Card::factory()->count(100)->create(['retro_id' => $retro->id, 'column_id' => $column->id, 'content' => 'Short card']);
 
-    $input = app(BuildSummaryInput::class)->handle($retro->fresh());
+    $input = resolve(BuildSummaryInput::class)->handle($retro->fresh());
 
     expect($input->cardIds)->toHaveCount(100)
         ->and($input->instructions)->toContain('only for the cards whose "id" is 60 or lower');
@@ -264,7 +264,7 @@ it('ignores card insights beyond the first sixty cards', function () {
         ],
     ]);
 
-    $output = app(ParseSummaryOutput::class)->handle($reply, $input);
+    $output = resolve(ParseSummaryOutput::class)->handle($reply, $input);
 
     expect($output->cardInsights)->toBe(['card-60' => ['sentiment' => CardSentiment::Positive, 'category' => null]]);
 });

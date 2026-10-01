@@ -89,7 +89,7 @@ it('leaves an image out of the template when its copy fails', function () {
 
     $template = WhiteboardTemplate::query()->sole();
 
-    expect($template->scene['files'])->toBe([])
+    expect($template->scene['files'])->toBeEmpty()
         ->and(array_column($template->scene['elements'], 'id'))->toBe(['note', 'words', 'zone'])
         ->and(array_column($template->preview['shapes'], 'kind'))->toBe(['rect', 'rect']);
 
@@ -189,7 +189,7 @@ it('lets another member create a board from the template, on its own from then o
         ->and($board->facilitator->user_id)->toBe($other->id)
         ->and($elements)->toHaveCount(4)
         ->and($elements->pluck('author_member_id')->unique()->all())->toBe([$board->facilitator_member_id])
-        ->and($elements->pluck('element_id')->intersect(['note', 'words', 'zone', 'photo'])->all())->toBe([])
+        ->and($elements->pluck('element_id')->intersect(['note', 'words', 'zone', 'photo'])->all())->toBeEmpty()
         ->and($note['customData'])->toBe(['skrum' => ['kind' => 'sticky']])
         ->and($note['frameId'])->toBe($zone['id'])
         ->and($words['containerId'])->toBe($note['id'])

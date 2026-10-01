@@ -3,12 +3,12 @@
 namespace App\Support\Integrations\Slack;
 
 use App\Enums\IntegrationProvider;
+use App\Exceptions\Integrations\IntegrationException;
+use App\Exceptions\Integrations\ProviderRejected;
+use App\Exceptions\Integrations\ProviderUnavailable;
+use App\Exceptions\Integrations\RateLimited;
+use App\Exceptions\Integrations\ReconnectRequired;
 use App\Models\TeamIntegration;
-use App\Support\Integrations\Exceptions\IntegrationException;
-use App\Support\Integrations\Exceptions\ProviderRejected;
-use App\Support\Integrations\Exceptions\ProviderUnavailable;
-use App\Support\Integrations\Exceptions\RateLimited;
-use App\Support\Integrations\Exceptions\ReconnectRequired;
 use App\Support\Integrations\ProviderHttp;
 
 class SlackClient
@@ -21,9 +21,9 @@ class SlackClient
 
     public const Scope = 'incoming-webhook';
 
-    private const ReconnectErrors = ['invalid_auth', 'not_authed', 'token_revoked', 'token_expired', 'account_inactive'];
+    private const array ReconnectErrors = ['invalid_auth', 'not_authed', 'token_revoked', 'token_expired', 'account_inactive'];
 
-    private const LostChannelStatuses = [403, 404, 410];
+    private const array LostChannelStatuses = [403, 404, 410];
 
     public static function isWebhookUrl(string $url): bool
     {
@@ -55,7 +55,7 @@ class SlackClient
 
     public function authTest(TeamIntegration $integration): void
     {
-        $integration->withReconnectHandling(fn () => $this->call('auth.test', [], (string) $integration->credential('access_token')));
+        $integration->withReconnectHandling(fn (): array => $this->call('auth.test', [], (string) $integration->credential('access_token')));
     }
 
     public function revoke(TeamIntegration $integration): void
@@ -75,9 +75,7 @@ class SlackClient
         $integration->withReconnectHandling(function () use ($integration, $message): void {
             $url = $integration->credential('webhook_url');
 
-            if (! is_string($url) || ! self::isWebhookUrl($url)) {
-                throw new ReconnectRequired(IntegrationProvider::Slack, 'invalid_webhook_url');
-            }
+            throw_if(! is_string($url) || ! self::isWebhookUrl($url), ReconnectRequired::class, IntegrationProvider::Slack, 'invalid_webhook_url');
 
             $response = ProviderHttp::send(IntegrationProvider::Slack, fn () => ProviderHttp::request()->post($url, $message));
 
@@ -115,9 +113,7 @@ class SlackClient
 
         $payload = $response->json();
 
-        if (! is_array($payload)) {
-            throw new ProviderUnavailable(IntegrationProvider::Slack, 'invalid_response');
-        }
+        throw_unless(is_array($payload), ProviderUnavailable::class, IntegrationProvider::Slack, 'invalid_response');
 
         if (($payload['ok'] ?? false) === true) {
             return $payload;
@@ -125,9 +121,7 @@ class SlackClient
 
         $error = is_string($payload['error'] ?? null) ? $payload['error'] : 'unknown_error';
 
-        if (in_array($error, self::ReconnectErrors, true)) {
-            throw new ReconnectRequired(IntegrationProvider::Slack, $error);
-        }
+        throw_if(in_array($error, self::ReconnectErrors, true), ReconnectRequired::class, IntegrationProvider::Slack, $error);
 
         if ($error === 'ratelimited') {
             throw new RateLimited(IntegrationProvider::Slack, ProviderHttp::retryAfter($response), $error);

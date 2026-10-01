@@ -24,7 +24,7 @@ it('shuffles the question for the host until the first answer', function () {
     expect($question)->toBeIn(['Second?', 'Third?'])
         ->and($round->fresh()->question)->toBe($question);
 
-    Event::assertDispatched(GameQuestionChanged::class, fn (GameQuestionChanged $event) => $event->roundId === $round->id
+    Event::assertDispatched(fn (GameQuestionChanged $event) => $event->roundId === $round->id
         && $event->question === $question);
 });
 

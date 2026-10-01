@@ -61,7 +61,7 @@ it('creates round 1 when a task is first selected', function () {
         ->and($round->number)->toBe(1)
         ->and($round->isRevealed())->toBeFalse()
         ->and($round->timer_ends_at)->toBeNull();
-    Event::assertDispatched(PokerRoundChanged::class, fn (PokerRoundChanged $event) => $event->gameId === $game->id);
+    Event::assertDispatched(fn (PokerRoundChanged $event) => $event->gameId === $game->id);
 });
 
 it('copies anonymous votes into round 1', function () {
@@ -274,14 +274,14 @@ it('broadcasts vote changes without values', function () {
     castPokerVote($this, $member, $game, $round, '13')->assertOk();
     $this->actingAs($member)->deleteJson(route('poker.rounds.vote.destroy', [$game, $round]))->assertOk();
 
-    Event::assertDispatched(PokerVoteChanged::class, fn (PokerVoteChanged $event) => $event->broadcastWith() === [
+    Event::assertDispatched(fn (PokerVoteChanged $event) => $event->broadcastWith() === [
         'roundId' => $round->id,
         'playerId' => $memberPlayer->id,
         'hasVoted' => true,
         'votesCount' => 1,
         'version' => 1,
     ]);
-    Event::assertDispatched(PokerVoteChanged::class, fn (PokerVoteChanged $event) => $event->broadcastWith() === [
+    Event::assertDispatched(fn (PokerVoteChanged $event) => $event->broadcastWith() === [
         'roundId' => $round->id,
         'playerId' => $memberPlayer->id,
         'hasVoted' => false,

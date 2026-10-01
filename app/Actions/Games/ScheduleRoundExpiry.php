@@ -16,7 +16,7 @@ class ScheduleRoundExpiry
             return;
         }
 
-        CloseExpiredGameRound::dispatch($round->id, $endsAt->toIso8601String())
+        dispatch(new CloseExpiredGameRound($round->id, $endsAt->toIso8601String()))
             ->delay($endsAt)
             ->afterCommit();
     }

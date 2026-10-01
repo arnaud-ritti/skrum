@@ -57,6 +57,7 @@ use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 use Laravel\Mcp\Server\Testing\PendingTestResponse;
 use Laravel\Mcp\Server\Testing\TestResponse as McpTestResponse;
+use Tests\BrowserTestCase;
 use Tests\TestCase;
 
 /*
@@ -74,6 +75,12 @@ pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
     ->in('Feature');
 
+pest()->extend(BrowserTestCase::class)
+    ->use(RefreshDatabase::class)
+    ->in('Browser');
+
+pest()->browser()->timeout(20_000);
+
 /*
 |--------------------------------------------------------------------------
 | Expectations
@@ -85,9 +92,7 @@ pest()->extend(TestCase::class)
 |
 */
 
-expect()->extend('toBeOne', function () {
-    return $this->toBe(1);
-});
+expect()->extend('toBeOne', fn () => $this->toBe(1));
 
 /*
 |--------------------------------------------------------------------------
@@ -368,7 +373,7 @@ function issueTestMcpToken(User $user, array $scopes = [McpScope::Read], ?Team $
  */
 function postMcp(?string $token, array $payload = ['jsonrpc' => '2.0', 'id' => 1, 'method' => 'tools/list'], array $headers = []): TestResponse
 {
-    app('auth')->forgetGuards();
+    resolve('auth')->forgetGuards();
     app()->forgetScopedInstances();
 
     if ($token !== null) {
@@ -511,7 +516,7 @@ function mcpToolClass(string $name): string
     $tools = (new ReflectionClass(SkrumServer::class))->getProperty('tools')->getDefaultValue();
 
     foreach ($tools as $class) {
-        if (app($class)->name() === $name) {
+        if (resolve($class)->name() === $name) {
             return $class;
         }
     }
@@ -1136,7 +1141,7 @@ function fakeGameGifs(string ...$ids): void
         $endpoint = basename((string) parse_url($request->url(), PHP_URL_PATH));
 
         if (in_array($endpoint, ['search', 'trending'], true)) {
-            return Http::response(['data' => array_map(fn (string $id): array => gameGiphyItem($id), $ids)]);
+            return Http::response(['data' => array_map(gameGiphyItem(...), $ids)]);
         }
 
         if (in_array($endpoint, $ids, true)) {
@@ -1226,9 +1231,7 @@ function gitHubTestPrivateKey(): string
 
     $key = openssl_pkey_new(['private_key_bits' => 2048, 'private_key_type' => OPENSSL_KEYTYPE_RSA]);
 
-    if ($key === false || ! openssl_pkey_export($key, $exported)) {
-        throw new RuntimeException('Could not create the GitHub test key.');
-    }
+    throw_if($key === false || ! openssl_pkey_export($key, $exported), RuntimeException::class, 'Could not create the GitHub test key.');
 
     return $pem = $exported;
 }
@@ -1458,7 +1461,7 @@ function runStatusPush(ActionItemExternalLink $link): PushActionItemState
 {
     $job = (new PushActionItemState($link->id))->withFakeQueueInteractions();
 
-    app()->call([$job, 'handle']);
+    app()->call($job->handle(...));
 
     return $job;
 }

@@ -25,17 +25,17 @@ class McpGrant
 
     public function bind(): void
     {
-        app(McpGrantContext::class)->grant = $this;
+        resolve(McpGrantContext::class)->grant = $this;
     }
 
     public static function bound(): bool
     {
-        return app(McpGrantContext::class)->grant !== null;
+        return resolve(McpGrantContext::class)->grant !== null;
     }
 
     public static function current(): self
     {
-        return app(McpGrantContext::class)->grant
+        return resolve(McpGrantContext::class)->grant
             ?? throw new RuntimeException('No MCP grant is bound to this request.');
     }
 }

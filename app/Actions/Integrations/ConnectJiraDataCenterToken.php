@@ -5,10 +5,10 @@ namespace App\Actions\Integrations;
 use App\Enums\IntegrationAccess;
 use App\Enums\IntegrationProvider;
 use App\Enums\IntegrationStatus;
+use App\Exceptions\Integrations\ConnectionRefused;
 use App\Models\Team;
 use App\Models\TeamIntegration;
 use App\Models\User;
-use App\Support\Integrations\Exceptions\ConnectionRefused;
 use App\Support\Integrations\JiraDataCenter\JiraDataCenterClient;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -21,7 +21,7 @@ use SensitiveParameter;
  */
 class ConnectJiraDataCenterToken
 {
-    private const MinimumVersion = '8.14';
+    private const string MinimumVersion = '8.14';
 
     public function __construct(
         private JiraDataCenterClient $client,
@@ -50,7 +50,7 @@ class ConnectJiraDataCenterToken
             throw ValidationException::withMessages(['token' => $exception->getMessage()]);
         }
 
-        $unsupported = self::unsupportedReason($serverInfo);
+        $unsupported = $this->unsupportedReason($serverInfo);
 
         if ($unsupported !== null) {
             throw ValidationException::withMessages(['token' => $unsupported]);
@@ -66,7 +66,7 @@ class ConnectJiraDataCenterToken
                 ...ConnectJiraDataCenter::keptSettings($current),
                 ...ConnectJiraDataCenter::serverSettings($serverInfo),
                 'authMethod' => JiraDataCenterClient::AuthMethodToken,
-                'tokenOwner' => self::owner($owner),
+                'tokenOwner' => $this->owner($owner),
                 'tokenSavedAt' => now()->toIso8601String(),
             ],
             'scopes' => [],
@@ -80,9 +80,9 @@ class ConnectJiraDataCenterToken
     /**
      * @param  array<array-key, mixed>  $serverInfo
      */
-    private static function unsupportedReason(array $serverInfo): ?string
+    private function unsupportedReason(array $serverInfo): ?string
     {
-        $numbers = array_values(array_filter((array) ($serverInfo['versionNumbers'] ?? []), 'is_int'));
+        $numbers = array_values(array_filter((array) ($serverInfo['versionNumbers'] ?? []), is_int(...)));
 
         if (count($numbers) < 2) {
             return __("We couldn't read the Jira version.");
@@ -99,7 +99,7 @@ class ConnectJiraDataCenterToken
      * @param  array<array-key, mixed>  $myself
      * @return array{name: string, displayName: string}
      */
-    private static function owner(array $myself): array
+    private function owner(array $myself): array
     {
         $name = is_string($myself['name'] ?? null) ? mb_substr($myself['name'], 0, 255) : '';
         $displayName = is_string($myself['displayName'] ?? null) && trim($myself['displayName']) !== ''

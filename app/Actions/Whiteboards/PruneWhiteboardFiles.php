@@ -12,9 +12,9 @@ use Illuminate\Support\Str;
 
 class PruneWhiteboardFiles
 {
-    private const KeepHours = 24;
+    private const int KeepHours = 24;
 
-    private const Root = 'whiteboards';
+    private const string Root = 'whiteboards';
 
     public function handle(): int
     {

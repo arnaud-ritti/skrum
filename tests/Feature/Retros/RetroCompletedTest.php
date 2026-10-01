@@ -18,7 +18,7 @@ it('dispatches RetroCompleted once per transition into completed', function () {
     $this->actingAs($user)->putJson($phaseRoute, ['phase' => 'completed'])->assertOk();
 
     Event::assertDispatchedTimes(RetroCompleted::class, 1);
-    Event::assertDispatched(RetroCompleted::class, fn (RetroCompleted $event) => $event->retro->is($retro));
+    Event::assertDispatched(fn (RetroCompleted $event) => $event->retro->is($retro));
 
     $this->actingAs($user)->putJson($phaseRoute, ['phase' => 'discussing'])->assertOk();
     $this->actingAs($user)->putJson($phaseRoute, ['phase' => 'completed'])->assertOk();
@@ -42,6 +42,6 @@ it('broadcasts an empty results refresh', function () {
     $event = new ResultsChanged('retro-id');
 
     expect($event->broadcastAs())->toBe('results.changed')
-        ->and($event->broadcastWith())->toBe([])
+        ->and($event->broadcastWith())->toBeEmpty()
         ->and($event->broadcastOn()->name)->toBe('presence-retro.retro-id');
 });

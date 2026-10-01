@@ -2,9 +2,9 @@
 
 namespace App\Jobs\Integrations;
 
+use App\Exceptions\Integrations\WebhookContentMissing;
 use App\Models\IntegrationDelivery;
 use App\Models\IntegrationDeliveryPayload;
-use App\Support\Integrations\Exceptions\WebhookContentMissing;
 use App\Support\Integrations\Webhook\WebhookMessage;
 use Illuminate\Contracts\Encryption\DecryptException;
 
@@ -29,9 +29,7 @@ class RedeliverWebhook extends DeliverToChannel
     {
         $payload = $delivery->payload;
 
-        if ($payload === null) {
-            throw new WebhookContentMissing;
-        }
+        throw_if($payload === null, WebhookContentMissing::class);
 
         try {
             return $this->storedMessage($payload);

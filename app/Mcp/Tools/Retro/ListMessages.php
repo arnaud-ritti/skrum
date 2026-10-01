@@ -21,7 +21,7 @@ use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 #[IsOpenWorld(false)]
 class ListMessages extends SkrumTool
 {
-    private const MaxLimit = 200;
+    private const int MaxLimit = 200;
 
     protected string $name = 'retro.board.messages.list';
 
@@ -61,17 +61,13 @@ class ListMessages extends SkrumTool
         $sortsByVotes = ($validated['sort'] ?? 'position') === 'votes';
         $showsVoteTotals = $retro->showsVoteTotals();
 
-        if ($sortsByVotes && ! $showsVoteTotals) {
-            abort(422, __('Vote totals are not visible yet.'));
-        }
+        abort_if($sortsByVotes && ! $showsVoteTotals, 422, __('Vote totals are not visible yet.'));
 
         $columns = $retro->columns()
             ->when($validated['column_id'] ?? null, fn (Builder $query, string $columnId) => $query->whereKey($columnId))
             ->get();
 
-        if (($validated['column_id'] ?? null) !== null && $columns->isEmpty()) {
-            abort(404);
-        }
+        abort_if(($validated['column_id'] ?? null) !== null && $columns->isEmpty(), 404);
 
         $viewer = $this->context->participant($retro);
         $voteTotals = $showsVoteTotals ? $this->presentMessage->countVotes($retro) : null;
@@ -89,16 +85,16 @@ class ListMessages extends SkrumTool
             : $query->orderBy('columns.position')->orderBy('cards.position');
 
         [$pageNumber, $limit] = $this->pagination($validated, self::MaxLimit);
-        $page = $this->paginate($query->orderBy('cards.id'), $pageNumber, $limit, fn (Card $card) => $card);
+        $page = $this->paginate($query->orderBy('cards.id'), $pageNumber, $limit, fn (Card $card): Card => $card);
         $cardsByColumn = collect($page['items'])->groupBy('column_id');
 
         return Response::structured([
-            'columns' => $columns->map(fn (Column $column) => [
+            'columns' => $columns->map(fn (Column $column): array => [
                 'id' => $column->id,
                 'title' => $column->title,
                 'description' => $column->description,
                 'messages' => $cardsByColumn->get($column->id, collect())
-                    ->map(fn (Card $card) => $this->presentMessage->handle($card, $retro, $viewer, $voteTotals))
+                    ->map(fn (Card $card): array => $this->presentMessage->handle($card, $retro, $viewer, $voteTotals))
                     ->values()
                     ->all(),
             ])->values()->all(),

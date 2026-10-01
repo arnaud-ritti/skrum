@@ -65,7 +65,7 @@ it('shows the source status, missing flag and sync mode to members only', functi
         ->assertJsonPath('tasks.0.external.estimateConflict', null)
         ->assertJsonPath('tasks.0.external.syncMode', 'polling');
 
-    app('auth')->forgetGuards();
+    resolve('auth')->forgetGuards();
 
     $guestView = $this->withCookies(pokerGuestCookie($guest))->withCredentials()
         ->getJson(route('poker.snapshot.show', $table['game']))
@@ -112,7 +112,7 @@ it('keeps the skrum estimate by writing it again', function () {
 
     expect($task->fresh()->needs_sync)->toBeTrue();
     Queue::assertPushed(SyncTaskEstimate::class, fn (SyncTaskEstimate $job) => $job->taskId === $task->id);
-    Event::assertDispatched(PokerTaskSaved::class, fn (PokerTaskSaved $event) => $event->task['id'] === $task->id && $event->task['estimate'] === '5');
+    Event::assertDispatched(fn (PokerTaskSaved $event) => $event->task['id'] === $task->id && $event->task['estimate'] === '5');
 });
 
 it('uses the source estimate without a new round', function () {
@@ -130,7 +130,7 @@ it('uses the source estimate without a new round', function () {
         ->estimate->toBe('8')
         ->needs_sync->toBeFalse();
     Queue::assertNotPushed(SyncTaskEstimate::class);
-    Event::assertDispatched(PokerTaskSaved::class, fn (PokerTaskSaved $event) => $event->task['id'] === $task->id && $event->task['estimate'] === '8');
+    Event::assertDispatched(fn (PokerTaskSaved $event) => $event->task['id'] === $task->id && $event->task['estimate'] === '8');
 });
 
 it('clears a failed write-back when using the source estimate', function () {
@@ -225,7 +225,7 @@ it('reserves conflict resolution to the facilitator', function () {
 
     $this->actingAs($table['member'])->postJson(conflictRoute($table, $task), ['resolution' => 'nonsense'])->assertForbidden();
 
-    app('auth')->forgetGuards();
+    resolve('auth')->forgetGuards();
 
     $this->withCookies(pokerGuestCookie($guest))->withCredentials()
         ->postJson(conflictRoute($table, $task), ['resolution' => 'useSource'])
@@ -251,7 +251,7 @@ it('exposes the status and conflict to MCP clients', function () {
     $table = trackerTable();
     conflictingTask($table, attributes: ['external_status_category' => ExternalStatusCategory::Done]);
 
-    $tasks = app(McpPokerGame::class)->tasks($table['game']->fresh(), $table['memberPlayer']);
+    $tasks = resolve(McpPokerGame::class)->tasks($table['game']->fresh(), $table['memberPlayer']);
 
     expect($tasks[0]['external'])->toMatchArray([
         'statusCategory' => 'done',

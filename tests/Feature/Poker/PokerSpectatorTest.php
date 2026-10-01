@@ -38,7 +38,7 @@ it('switches oneself to spectator and back', function () {
         ->assertNoContent();
 
     expect($member->fresh()->is_spectator)->toBeTrue();
-    Event::assertDispatched(PokerGameChanged::class, fn (PokerGameChanged $event) => $event->gameId === $game->id);
+    Event::assertDispatched(fn (PokerGameChanged $event) => $event->gameId === $game->id);
 
     $this->actingAs($user)
         ->putJson(route('poker.players.spectator.update', [$game, $member]), ['spectator' => false])
@@ -117,14 +117,14 @@ it('withdraws the spectator\'s votes from every unrevealed round', function () {
         ->and($revealed->fresh()->version)->toBe(0);
 
     Event::assertDispatchedTimes(PokerVoteChanged::class, 2);
-    Event::assertDispatched(PokerVoteChanged::class, fn (PokerVoteChanged $event) => $event->broadcastWith() === [
+    Event::assertDispatched(fn (PokerVoteChanged $event) => $event->broadcastWith() === [
         'roundId' => $openRound->id,
         'playerId' => $member->id,
         'hasVoted' => false,
         'votesCount' => 1,
         'version' => 5,
     ]);
-    Event::assertDispatched(PokerVoteChanged::class, fn (PokerVoteChanged $event) => $event->roundId === $leftOpen->id
+    Event::assertDispatched(fn (PokerVoteChanged $event) => $event->roundId === $leftOpen->id
         && $event->votesCount === 0);
 });
 
@@ -158,10 +158,9 @@ it('never leaves a spectator vote when the switch races the vote', function () {
 
     PokerPlayer::query()->whereKey($member->id)->update(['is_spectator' => true]);
 
-    expect(fn () => app(PlayPokerCard::class)->handle($game->fresh(), $round->fresh(), $staleMember, '5'))
-        ->toThrow(AuthorizationException::class);
-
-    expect($round->votes()->count())->toBe(0);
+    expect(fn () => resolve(PlayPokerCard::class)->handle($game->fresh(), $round->fresh(), $staleMember, '5'))
+        ->toThrow(AuthorizationException::class)
+        ->and($round->votes()->count())->toBe(0);
 });
 
 it('lets a spectating facilitator facilitate but not vote', function () {
@@ -245,8 +244,8 @@ it('exposes isSpectator and canVote in the snapshot', function () {
     [$game, [, $facilitator], [, $member]] = spectatorTable();
     $member->update(['is_spectator' => true]);
 
-    $asMember = app(BuildPokerSnapshot::class)->handle($game->fresh(), $member->fresh());
-    $asFacilitator = app(BuildPokerSnapshot::class)->handle($game->fresh(), $facilitator->fresh());
+    $asMember = resolve(BuildPokerSnapshot::class)->handle($game->fresh(), $member->fresh());
+    $asFacilitator = resolve(BuildPokerSnapshot::class)->handle($game->fresh(), $facilitator->fresh());
 
     expect($asMember['me']['isSpectator'])->toBeTrue()
         ->and($asMember['me']['canVote'])->toBeFalse()

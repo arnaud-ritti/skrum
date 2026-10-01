@@ -22,13 +22,13 @@ it('lists the tracked ids of links and running game tasks, and the requested one
     $ended = PokerGame::factory()->create(['team_id' => $integration->team_id, 'ended_at' => now()->subDay()]);
     importedPokerTask($ended, ['external_id' => '20002', 'external_key' => 'GONE-1']);
 
-    $tracked = app(TrackedIssues::class);
+    $tracked = resolve(TrackedIssues::class);
     $ids = $tracked->ids($integration);
     sort($ids);
 
     expect($ids)->toBe(['10001', '20001'])
         ->and($tracked->among($integration, ['20001', '20002', '99999']))->toBe(['20001'])
-        ->and($tracked->among($integration, []))->toBe([])
+        ->and($tracked->among($integration, []))->toBeEmpty()
         ->and($tracked->containerKeys($integration))->toBe(['PROJ', 'TEAM']);
 });
 
@@ -44,18 +44,18 @@ it('lists the tracked GitHub issues of given repositories only', function () {
         ]);
     }
 
-    $found = app(TrackedIssues::class)->inRepositories($integration, ['555', 'not-a-repo']);
+    $found = resolve(TrackedIssues::class)->inRepositories($integration, ['555', 'not-a-repo']);
     sort($found);
 
     expect($found)->toBe(['555/1', '555/2'])
-        ->and(app(TrackedIssues::class)->inRepositories($integration, ['5%']))->toBe([]);
+        ->and(resolve(TrackedIssues::class)->inRepositories($integration, ['5%']))->toBeEmpty();
 });
 
 it('tracks nothing for a connection without a site', function () {
     ['integration' => $integration, 'link' => $link] = statusSyncLink(['external_site' => '']);
     $integration->forceFill(['settings' => [...$integration->settings, 'cloudId' => null]])->save();
 
-    expect(app(TrackedIssues::class)->ids($integration))->toBe([])
-        ->and(app(TrackedIssues::class)->links($integration)->count())->toBe(0)
-        ->and($link->external_site)->toBe('');
+    expect(resolve(TrackedIssues::class)->ids($integration))->toBeEmpty()
+        ->and(resolve(TrackedIssues::class)->links($integration)->count())->toBe(0)
+        ->and($link->external_site)->toBeEmpty();
 });

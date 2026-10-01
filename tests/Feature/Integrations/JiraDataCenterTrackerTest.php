@@ -5,13 +5,13 @@ use App\Actions\Poker\RenderTaskMarkdown;
 use App\Enums\IntegrationAccess;
 use App\Enums\IntegrationProvider;
 use App\Enums\PokerDeck;
+use App\Exceptions\Integrations\EstimateRejected;
 use App\Jobs\SyncTaskEstimate;
 use App\Models\PokerTask;
 use App\Models\TeamIntegration;
 use App\Support\Integrations\JiraDataCenter\JiraDataCenterClient;
 use App\Support\Integrations\JiraDataCenter\JiraDataCenterServer;
 use App\Support\Integrations\JiraDataCenter\WikiMarkupToMarkdown;
-use App\Support\Integrations\Trackers\EstimateRejected;
 use App\Support\Integrations\Trackers\JiraDataCenterTracker;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
@@ -142,9 +142,9 @@ it('writes story points back to the Data Center issue', function () {
 
 it('refuses unsafe ids before calling the server', function () {
     $integration = TeamIntegration::factory()->jiraDataCenter()->create();
-    $tracker = app(JiraDataCenterTracker::class);
+    $tracker = resolve(JiraDataCenterTracker::class);
 
-    expect($tracker->iterations($integration, '../7'))->toBe([])
+    expect($tracker->iterations($integration, '../7'))->toBeEmpty()
         ->and(fn () => $tracker->writeEstimate($integration, '../10001', '3'))->toThrow(EstimateRejected::class, 'This issue was not found in Jira Data Center.');
 
     Http::assertNothingSent();
@@ -176,7 +176,7 @@ it('detects story points on Data Center connections', function () {
 
 it('renders converted wiki descriptions without raw HTML or script links', function () {
     $markdown = (new WikiMarkupToMarkdown)->convert("*bold* [x](javascript:alert(1))\n\n<script>alert(2)</script>\n\n<img src=x onerror=alert(3)>\n\n[label|javascript:alert(4)] [label|https://example.com/\"onclick=\"alert(5)] !javascript:alert(6)!");
-    $html = app(RenderTaskMarkdown::class)->handle($markdown);
+    $html = resolve(RenderTaskMarkdown::class)->handle($markdown);
 
     expect($html)->toContain('<strong>bold</strong>')
         ->and($html)->toContain('&lt;script&gt;')
@@ -190,18 +190,18 @@ it('encodes the issue key of browse links', function () {
     enableIntegrations(IntegrationProvider::JiraDataCenter);
     $integration = TeamIntegration::factory()->jiraDataCenter()->create();
 
-    expect(app(JiraDataCenterClient::class)->browseUrl($integration, 'PROJ 1/../x'))->toBe('https://jira.example.com/browse/PROJ%201%2F..%2Fx')
-        ->and(app(JiraDataCenterClient::class)->browseUrl($integration, 'PROJ-1'))->toBe('https://jira.example.com/browse/PROJ-1');
+    expect(resolve(JiraDataCenterClient::class)->browseUrl($integration, 'PROJ 1/../x'))->toBe('https://jira.example.com/browse/PROJ%201%2F..%2Fx')
+        ->and(resolve(JiraDataCenterClient::class)->browseUrl($integration, 'PROJ-1'))->toBe('https://jira.example.com/browse/PROJ-1');
 });
 
 it('refuses board and issue ids longer than 20 digits before calling the server', function () {
     enableIntegrations(IntegrationProvider::JiraDataCenter);
     $integration = TeamIntegration::factory()->jiraDataCenter()->create();
-    $tracker = app(JiraDataCenterTracker::class);
+    $tracker = resolve(JiraDataCenterTracker::class);
     $tooLong = str_repeat('1', 21);
 
-    expect($tracker->iterations($integration, $tooLong))->toBe([])
-        ->and($tracker->issues($integration, [$tooLong]))->toBe([]);
+    expect($tracker->iterations($integration, $tooLong))->toBeEmpty()
+        ->and($tracker->issues($integration, [$tooLong]))->toBeEmpty();
 
     Http::assertNothingSent();
 });

@@ -67,7 +67,7 @@ it('lists the enabled providers with their connection', function () {
 it('shows the Telegram bot and a polling conflict', function () {
     enableIntegrations(IntegrationProvider::Telegram);
     Http::fake(['api.telegram.org/*/getMe' => Http::response(['ok' => true, 'result' => ['id' => 42, 'is_bot' => true, 'username' => 'skrum_test_bot']])]);
-    app(TelegramBot::class)->markConflict();
+    resolve(TelegramBot::class)->markConflict();
     $team = Team::factory()->create();
 
     $this->actingAs(integrationAdmin($team))->get(integrationsPageUrl($team))

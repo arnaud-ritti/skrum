@@ -32,8 +32,7 @@ class WorkspaceActionItemCommentsController extends Controller
         WorkspaceActionItemGuard::visible($user, $workspace, $actionItem);
 
         $comments = $actionItem->comments()
-            ->with(['authorParticipant.user', 'authorUser'])
-            ->orderBy('created_at')
+            ->with(['authorParticipant.user', 'authorUser'])->oldest()
             ->orderBy('id')
             ->get();
 

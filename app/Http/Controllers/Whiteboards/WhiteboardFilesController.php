@@ -19,7 +19,7 @@ use Symfony\Component\Mime\MimeTypes;
 
 class WhiteboardFilesController extends Controller
 {
-    private const MimeTypes = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
+    private const array MimeTypes = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
 
     public function store(Request $request, Whiteboard $board): JsonResponse
     {

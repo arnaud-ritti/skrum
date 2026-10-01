@@ -9,7 +9,7 @@ use App\Support\Integrations\Linear\LinearPriority;
 
 class ListProviderPriorities
 {
-    private const JiraLimit = 100;
+    private const int JiraLimit = 100;
 
     public function __construct(private JiraApis $jiraApis) {}
 

@@ -264,7 +264,7 @@ it('refuses upstream images that are not gif or webp or exceed 5 MB', function (
         ->assertStatus(502)
         ->assertJsonPath('message', 'This GIF could not be loaded.');
 
-    expect(Storage::allFiles())->toBe([]);
+    expect(Storage::allFiles())->toBeEmpty();
 })->with([
     'html' => [fn () => Http::response('<html><script>alert(1)</script></html>', 200, ['Content-Type' => 'text/html'])],
     'html labelled as gif' => [fn () => Http::response('<html><script>alert(1)</script></html>', 200, ['Content-Type' => 'image/gif'])],

@@ -30,7 +30,7 @@ it('gives the word to the leader only', function (GameKind $game) {
         $this->actingAs($user)->getJson(route('games.rounds.secret.show', [$table['room'], $table['round']]))->assertForbidden();
     }
 
-    app('auth')->forgetGuards();
+    resolve('auth')->forgetGuards();
 
     $this->withCookies(gameGuestCookie($guest))
         ->withCredentials()
@@ -62,7 +62,7 @@ it('reveals one letter per hint for the leader', function (GameKind $game) {
         ->and($mask[$shown[0]])->toBe(mb_str_split('rocket')[$shown[0]])
         ->and($table['round']->fresh()->revealed_positions)->toBe($shown);
 
-    Event::assertDispatched(GameHintRevealed::class, fn (GameHintRevealed $event) => $event->mask === $mask
+    Event::assertDispatched(fn (GameHintRevealed $event) => $event->mask === $mask
         && ! gamePayloadExposesWord($event->broadcastWith(), 'rocket'));
 })->with('guessing games');
 
@@ -93,7 +93,7 @@ it('never reveals a separator and counts letters only', function (string $word, 
 
     $this->postJson(route('games.rounds.hints.store', [$table['room'], $table['round']]))->assertUnprocessable();
 
-    expect(array_intersect($table['round']->fresh()->revealed_positions, $separators))->toBe([]);
+    expect(array_intersect($table['round']->fresh()->revealed_positions, $separators))->toBeEmpty();
 })->with([
     'hyphen' => ['to-do', 2, [2]],
     'apostrophe' => ["l'été", 2, [1]],
@@ -108,7 +108,7 @@ it('keeps hints to the leader', function () {
         ->postJson(route('games.rounds.hints.store', [$table['room'], $table['round']]))
         ->assertForbidden();
 
-    expect($table['round']->fresh()->revealed_positions)->toBe([]);
+    expect($table['round']->fresh()->revealed_positions)->toBeEmpty();
 });
 
 it('broadcasts a wrong guess to the others', function (GameKind $game) {
@@ -127,7 +127,7 @@ it('broadcasts a wrong guess to the others', function (GameKind $game) {
         ->and($guess->is_near_miss)->toBeFalse()
         ->and($guess->is_correct)->toBeFalse();
 
-    Event::assertDispatched(GameGuessMade::class, fn (GameGuessMade $event) => $event->broadcastWith() === [
+    Event::assertDispatched(fn (GameGuessMade $event) => $event->broadcastWith() === [
         'roundId' => $table['round']->id,
         'guessId' => $guess->id,
         'playerId' => $table['guesser']->id,
@@ -145,7 +145,7 @@ it('tells only the guesser that a guess was very close', function () {
 
     expect(GameGuess::query()->sole()->is_near_miss)->toBeTrue();
 
-    Event::assertDispatched(GameGuessMade::class, fn (GameGuessMade $event) => $event->broadcastWith()['text'] === 'rockt'
+    Event::assertDispatched(fn (GameGuessMade $event) => $event->broadcastWith()['text'] === 'rockt'
         && ! str_contains(gamePayloadJson($event->broadcastWith()), 'near')
         && ! str_contains(gamePayloadJson($event->broadcastWith()), 'veryClose'));
 });
@@ -170,7 +170,7 @@ it('accepts a correct guess whatever its case, accents and spacing', function (G
         ->and(str_contains(gamePayloadJson($response->json()), 'RoCkÉt'))->toBeFalse();
 
     Event::assertNotDispatched(GameGuessMade::class);
-    Event::assertDispatched(GameRoundEnded::class, fn (GameRoundEnded $event) => ! str_contains(gamePayloadJson($event->payload), 'RoCkÉt'));
+    Event::assertDispatched(fn (GameRoundEnded $event) => ! str_contains(gamePayloadJson($event->payload), 'RoCkÉt'));
 })->with('guessing games');
 
 it('lets guests guess', function () {

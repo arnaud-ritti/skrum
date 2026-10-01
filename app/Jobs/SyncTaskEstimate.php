@@ -5,14 +5,15 @@ namespace App\Jobs;
 use App\Actions\Integrations\PokerTaskSync;
 use App\Actions\Poker\PresentPokerTask;
 use App\Events\Poker\PokerTaskSaved;
+use App\Exceptions\Integrations\EstimateRejected;
+use App\Exceptions\Integrations\IntegrationException;
+use App\Exceptions\Integrations\ProviderUnavailable;
+use App\Exceptions\Integrations\RateLimited;
 use App\Models\PokerTask;
-use App\Support\Integrations\Exceptions\IntegrationException;
-use App\Support\Integrations\Exceptions\ProviderUnavailable;
-use App\Support\Integrations\Exceptions\RateLimited;
 use App\Support\Integrations\IntegrationErrors;
-use App\Support\Integrations\Trackers\EstimateRejected;
 use App\Support\Integrations\Trackers\Trackers;
 use DateTimeInterface;
+use Illuminate\Broadcasting\PendingBroadcast;
 use Illuminate\Contracts\Queue\ShouldBeUniqueUntilProcessing;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -158,8 +159,8 @@ class SyncTaskEstimate implements ShouldBeUniqueUntilProcessing, ShouldQueue
     {
         $task->loadCount('rounds');
 
-        $payload = app(PresentPokerTask::class)->handle($task);
+        $payload = resolve(PresentPokerTask::class)->handle($task);
 
-        rescue(fn () => broadcast(new PokerTaskSaved($task->poker_game_id, $payload)));
+        rescue(fn (): PendingBroadcast => broadcast(new PokerTaskSaved($task->poker_game_id, $payload)));
     }
 }

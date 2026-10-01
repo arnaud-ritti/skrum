@@ -3,9 +3,9 @@
 namespace App\Support\Integrations;
 
 use App\Enums\IntegrationProvider;
+use App\Exceptions\Integrations\ProviderUnavailable;
+use App\Exceptions\Integrations\ReconnectRequired;
 use App\Models\TeamIntegration;
-use App\Support\Integrations\Exceptions\ProviderUnavailable;
-use App\Support\Integrations\Exceptions\ReconnectRequired;
 use App\Support\Integrations\Jira\JiraClient;
 use App\Support\Integrations\JiraDataCenter\JiraDataCenterClient;
 use App\Support\Integrations\Linear\LinearClient;
@@ -19,11 +19,11 @@ use Illuminate\Support\Facades\DB;
  */
 class IntegrationTokens
 {
-    private const RefreshMarginSeconds = 60;
+    private const int RefreshMarginSeconds = 60;
 
-    private const LockSeconds = 30;
+    private const int LockSeconds = 30;
 
-    private const LockWaitSeconds = 20;
+    private const int LockWaitSeconds = 20;
 
     public function accessToken(TeamIntegration $integration): string
     {
@@ -44,7 +44,7 @@ class IntegrationTokens
     {
         return $integration->withReconnectHandling(function () use ($integration, $staleToken): string {
             if ($integration->provider === IntegrationProvider::JiraDataCenter) {
-                app(JiraDataCenterClient::class)->ensureConfiguredServer($integration);
+                resolve(JiraDataCenterClient::class)->ensureConfiguredServer($integration);
             }
 
             try {
@@ -75,7 +75,7 @@ class IntegrationTokens
 
     private function preparesJiraDataCenter(TeamIntegration $integration): bool
     {
-        app(JiraDataCenterClient::class)->ensureConfiguredServer($integration);
+        resolve(JiraDataCenterClient::class)->ensureConfiguredServer($integration);
 
         return $integration->setting('authMethod') === JiraDataCenterClient::AuthMethodOAuth;
     }
@@ -121,9 +121,9 @@ class IntegrationTokens
     private function client(IntegrationProvider $provider): RefreshesTokens
     {
         return match ($provider) {
-            IntegrationProvider::Jira => app(JiraClient::class),
-            IntegrationProvider::Linear => app(LinearClient::class),
-            IntegrationProvider::JiraDataCenter => app(JiraDataCenterClient::class),
+            IntegrationProvider::Jira => resolve(JiraClient::class),
+            IntegrationProvider::Linear => resolve(LinearClient::class),
+            IntegrationProvider::JiraDataCenter => resolve(JiraDataCenterClient::class),
             default => throw new ReconnectRequired($provider, 'no_token_refresh'),
         };
     }

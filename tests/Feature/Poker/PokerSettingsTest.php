@@ -167,7 +167,7 @@ it('regenerates the guest link and signs guests out', function () {
         ->and($guest->fresh()->guest_secret_hash)->toBeNull()
         ->and($guest->fresh()->guest_name)->not->toBeNull();
 
-    app('auth')->forgetGuards();
+    resolve('auth')->forgetGuards();
 
     $this->withCookies(pokerGuestCookie($guest))->withCredentials()
         ->getJson(route('poker.snapshot.show', $game))
@@ -190,6 +190,6 @@ it('broadcasts game changes', function () {
         ->assertNoContent();
 
     Event::assertDispatchedTimes(PokerGameChanged::class, 2);
-    Event::assertDispatched(PokerGameChanged::class, fn (PokerGameChanged $event) => $event->gameId === $game->id
+    Event::assertDispatched(fn (PokerGameChanged $event) => $event->gameId === $game->id
         && $event->broadcastWith() === []);
 });

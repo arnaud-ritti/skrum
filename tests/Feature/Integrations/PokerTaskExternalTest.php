@@ -82,7 +82,7 @@ it('broadcasts the reduced external object and answers the full one', function (
         ->assertJsonPath('external.sourceEstimate', '3')
         ->assertJsonPath('external.isManaged', true);
 
-    Event::assertDispatched(PokerTaskSaved::class, fn (PokerTaskSaved $event) => $event->task['external'] === [
+    Event::assertDispatched(fn (PokerTaskSaved $event) => $event->task['external'] === [
         'source' => 'jira',
         'key' => $task->external_key,
         'url' => $task->external_url,

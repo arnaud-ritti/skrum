@@ -59,9 +59,7 @@ class ActionItemsController extends Controller
 
         $validated = $request->validate(ActionItemRules::update(allowsGuests: true), ActionItemRules::messages());
 
-        $updated = DB::transaction(function () use ($retro, $actionItem, $actor, $validated): ActionItem {
-            return $this->applyActionItemChanges->handle($this->lockActionItem($retro, $actionItem), $actor, $validated);
-        });
+        $updated = DB::transaction(fn (): ActionItem => $this->applyActionItemChanges->handle($this->lockActionItem($retro, $actionItem), $actor, $validated));
 
         return response()->json(['actionItem' => $this->presentActionItem->handle($updated, $actor)]);
     }

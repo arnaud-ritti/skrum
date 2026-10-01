@@ -5,9 +5,9 @@ use App\Enums\IntegrationProvider;
 use App\Enums\PokerDeck;
 use App\Enums\PokerRevealReason;
 use App\Events\Poker\PokerTaskSaved;
+use App\Exceptions\Integrations\ProviderUnavailable;
 use App\Jobs\SyncTaskEstimate;
 use App\Models\PokerTask;
-use App\Support\Integrations\Exceptions\ProviderUnavailable;
 use Illuminate\Contracts\Queue\ShouldBeUniqueUntilProcessing;
 use Illuminate\Http\Client\Request;
 use Illuminate\Pipeline\Pipeline;
@@ -58,7 +58,7 @@ function runEstimateSyncThroughMiddleware(SyncTaskEstimate $job): void
     (new Pipeline(app()))
         ->send($job)
         ->through($job->middleware())
-        ->then(fn (SyncTaskEstimate $job) => app()->call([$job, 'handle']));
+        ->then(fn (SyncTaskEstimate $job) => app()->call($job->handle(...)));
 }
 
 it('is a unique, retried job', function () {
@@ -190,7 +190,7 @@ it('writes the estimate to the first story points field on the Jira edit screen'
     Http::assertSent(fn (Request $request) => $request->method() === 'PUT'
         && str_ends_with($request->url(), "/rest/api/3/issue/{$task->external_id}")
         && $request->data() == ['fields' => ['customfield_10016' => 5.0]]);
-    Event::assertDispatched(PokerTaskSaved::class, fn (PokerTaskSaved $event) => $event->task['id'] === $task->id
+    Event::assertDispatched(fn (PokerTaskSaved $event) => $event->task['id'] === $task->id
         && $event->task['external'] === ['source' => 'jira', 'key' => $task->external_key, 'url' => $task->external_url, 'isManaged' => true]);
 });
 
@@ -296,7 +296,7 @@ it('waits for the rate limit before retrying', function () {
     Http::fake(['api.atlassian.com/ex/jira/cloud-1/rest/api/3/issue/*/editmeta' => Http::response([], 429, ['Retry-After' => '42'])]);
 
     $job = (new SyncTaskEstimate($task->id))->withFakeQueueInteractions();
-    app()->call([$job, 'handle']);
+    app()->call($job->handle(...));
 
     $job->assertReleased(42);
     expect($task->fresh()?->sync_error)->toBeNull();
@@ -308,7 +308,7 @@ it('retries while the source is unavailable and records the final failure', func
     Http::fake(['api.atlassian.com/ex/jira/cloud-1/*' => Http::response([], 503)]);
     $job = new SyncTaskEstimate($task->id);
 
-    expect(fn () => app()->call([$job, 'handle']))->toThrow(ProviderUnavailable::class)
+    expect(fn () => app()->call($job->handle(...)))->toThrow(ProviderUnavailable::class)
         ->and($task->fresh()?->sync_error)->toBeNull();
 
     $job->failed(new ProviderUnavailable(IntegrationProvider::Jira));
@@ -418,14 +418,14 @@ it('never lets an external id escape the issue path', function () {
 it('lets a new write be queued once the unique lock window has passed', function () {
     Queue::fake();
 
-    SyncTaskEstimate::dispatch('locked-task-id');
-    SyncTaskEstimate::dispatch('locked-task-id');
+    dispatch(new SyncTaskEstimate('locked-task-id'));
+    dispatch(new SyncTaskEstimate('locked-task-id'));
 
     Queue::assertPushed(SyncTaskEstimate::class, 1);
 
     $this->travel(6)->minutes();
 
-    SyncTaskEstimate::dispatch('locked-task-id');
+    dispatch(new SyncTaskEstimate('locked-task-id'));
 
     Queue::assertPushed(SyncTaskEstimate::class, 2);
 });

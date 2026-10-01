@@ -4,14 +4,14 @@ namespace App\Console\Commands;
 
 use App\Actions\Whiteboards\PruneWhiteboardFiles;
 use App\Actions\Whiteboards\PurgeWhiteboardTombstones;
+use Illuminate\Console\Attributes\Description;
+use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
 
+#[Description('Remove expired whiteboard tombstones and unused images')]
+#[Signature('skrum:prune-whiteboards')]
 class PruneWhiteboardsCommand extends Command
 {
-    protected $signature = 'skrum:prune-whiteboards';
-
-    protected $description = 'Remove expired whiteboard tombstones and unused images';
-
     public function handle(
         PurgeWhiteboardTombstones $purgeWhiteboardTombstones,
         PruneWhiteboardFiles $pruneWhiteboardFiles,

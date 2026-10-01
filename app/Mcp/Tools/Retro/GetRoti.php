@@ -19,7 +19,7 @@ use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 #[IsOpenWorld(false)]
 class GetRoti extends SkrumTool
 {
-    private const TrendPoints = 6;
+    private const int TrendPoints = 6;
 
     protected string $name = 'retro.board.roti.get';
 
@@ -92,7 +92,7 @@ class GetRoti extends SkrumTool
             ->limit(self::TrendPoints)
             ->get()
             ->reverse()
-            ->map(fn (Retro $point) => [
+            ->map(fn (Retro $point): array => [
                 'boardId' => $point->id,
                 'title' => $point->title,
                 'completedAt' => $point->completed_at?->toIso8601String(),

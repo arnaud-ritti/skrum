@@ -74,7 +74,7 @@ it('reveals every position of a hit and broadcasts the pick', function () {
         ->picked_letters->toBe(['a'])
         ->picked_by->toBe([$player->id]);
 
-    Event::assertDispatched(GameLetterPicked::class, fn (GameLetterPicked $event) => $event->payload['hit'] === true
+    Event::assertDispatched(fn (GameLetterPicked $event) => $event->payload['hit'] === true
         && ! gamePayloadExposesWord($event->payload, 'zanzibar'));
 });
 
@@ -116,7 +116,7 @@ it('solves the word and credits the last picker', function () {
     $this->actingAs($user);
     pickLetter($room, $round, 'k')->assertOk();
 
-    app('auth')->forgetGuards();
+    resolve('auth')->forgetGuards();
     $response = $this->withCookies(gameGuestCookie($guest))
         ->withCredentials()
         ->postJson(route('games.rounds.letters.store', [$room, $round]), ['letter' => 'i'])
@@ -131,7 +131,7 @@ it('solves the word and credits the last picker', function () {
     ])
         ->and($round->fresh()->outcome)->toBe(GameRoundOutcome::Solved);
 
-    Event::assertDispatched(GameRoundEnded::class, fn (GameRoundEnded $event) => $event->payload['word'] === 'kiki');
+    Event::assertDispatched(fn (GameRoundEnded $event) => $event->payload['word'] === 'kiki');
 });
 
 it('loses after six misses and keeps the hit points', function () {

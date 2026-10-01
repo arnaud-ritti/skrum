@@ -30,9 +30,7 @@ class PresentGameRoundHistory
      */
     public function handle(GameRound $round): array
     {
-        if ($round->ended_at === null || $round->outcome === null) {
-            throw new LogicException('Only ended rounds have a history.');
-        }
+        throw_if($round->ended_at === null || $round->outcome === null, LogicException::class, 'Only ended rounds have a history.');
 
         return [
             'id' => $round->id,

@@ -33,14 +33,14 @@ class BuildInsights
 
         return [
             'themes' => $retro->themes()->with('cards:cards.id')->get()
-                ->map(fn (RetroTheme $theme) => [
+                ->map(fn (RetroTheme $theme): array => [
                     'id' => $theme->id,
                     'name' => $theme->name,
                     'cardIds' => $theme->cards->pluck('id')->values()->all(),
                 ])
                 ->values()->all(),
             'suggestedActions' => $retro->suggestedActions()->get()
-                ->map(fn (SuggestedAction $suggestion) => $this->presentSuggestedAction->handle($suggestion))
+                ->map(fn (SuggestedAction $suggestion): array => $this->presentSuggestedAction->handle($suggestion))
                 ->values()->all(),
         ];
     }

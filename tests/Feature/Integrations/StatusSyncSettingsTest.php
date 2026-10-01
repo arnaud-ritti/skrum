@@ -232,7 +232,7 @@ it('tells MCP clients which trackers sync and how', function () {
         ->patchJson(syncSettingsRoute($integration), ['status_sync' => true])
         ->assertOk();
 
-    expect(app(ListPokerSources::class)->handle($integration->team->fresh())[0])
+    expect(resolve(ListPokerSources::class)->handle($integration->team->fresh())[0])
         ->toMatchArray(['source' => 'jira', 'canSyncStatus' => true, 'syncMode' => 'polling']);
 });
 
@@ -281,7 +281,7 @@ it('saves nothing when sync cannot be turned on', function () {
 
 it('never lets a remap re-read be swallowed by a pending daily full read', function () {
     $integration = syncSettingsIntegration(IntegrationProvider::Linear, ['statusSync' => true]);
-    ReadTrackedIssues::dispatch($integration->id, true);
+    dispatch(new ReadTrackedIssues($integration->id, true));
 
     $this->actingAs(integrationAdmin($integration->team))
         ->patchJson(syncSettingsRoute($integration), ['treat_canceled_as_done' => false])
@@ -329,7 +329,7 @@ it('removes the webhooks registered since the connection was loaded when sync is
     );
     TeamIntegration::query()->findOrFail($integration->id)->mergeSettings(['webhookIds' => ['7002']]);
 
-    app(ToggleStatusSync::class)->handle($integration, false);
+    resolve(ToggleStatusSync::class)->handle($integration, false);
 
     expect($integration->fresh()->setting('webhookIds'))->toBe([])
         ->and($integration->fresh()->inbound_mode)->toBe(IntegrationInboundMode::Off);

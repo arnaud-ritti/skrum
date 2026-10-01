@@ -124,8 +124,7 @@ it('accepts a Jira event with its URL token and queues a re-read', function () {
     ['integration' => $integration] = statusSyncLink();
     jiraWebhookToken($integration);
 
-    postInboundWebhook(inboundJiraUrl($integration), jiraWebhookBody(), ['X-Atlassian-Webhook-Identifier' => 'delivery-1'])
-        ->assertStatus(202)
+    postInboundWebhook(inboundJiraUrl($integration), jiraWebhookBody(), ['X-Atlassian-Webhook-Identifier' => 'delivery-1'])->assertAccepted()
         ->assertCookieMissing(config('session.cookie'));
 
     Queue::assertPushed(ApplyInboundIssueChanges::class, fn (ApplyInboundIssueChanges $job) => $job->integrationId === $integration->id
@@ -170,7 +169,7 @@ it('answers duplicates with 200 and no job', function () {
     ['integration' => $integration] = statusSyncLink();
     jiraWebhookToken($integration);
 
-    postInboundWebhook(inboundJiraUrl($integration), jiraWebhookBody(), ['X-Atlassian-Webhook-Identifier' => 'same'])->assertStatus(202);
+    postInboundWebhook(inboundJiraUrl($integration), jiraWebhookBody(), ['X-Atlassian-Webhook-Identifier' => 'same'])->assertAccepted();
     postInboundWebhook(inboundJiraUrl($integration), jiraWebhookBody(), ['X-Atlassian-Webhook-Identifier' => 'same'])->assertOk();
 
     Queue::assertPushed(ApplyInboundIssueChanges::class, 1);
@@ -180,7 +179,7 @@ it('ignores issues skrum does not track', function () {
     ['integration' => $integration] = statusSyncLink();
     jiraWebhookToken($integration);
 
-    postInboundWebhook(inboundJiraUrl($integration), jiraWebhookBody('99999'))->assertStatus(202);
+    postInboundWebhook(inboundJiraUrl($integration), jiraWebhookBody('99999'))->assertAccepted();
 
     Queue::assertNothingPushed();
     expect(IntegrationInboundEvent::query()->sole()->status)->toBe(InboundEventStatus::Ignored);
@@ -238,7 +237,7 @@ it('routes Linear events by organization to every synced team', function () {
 
     [$body, $headers] = signedLinearWebhook();
 
-    postInboundWebhook(route('integrations.webhooks.store', ['source' => 'linear']), $body, $headers)->assertStatus(202);
+    postInboundWebhook(route('integrations.webhooks.store', ['source' => 'linear']), $body, $headers)->assertAccepted();
 
     Queue::assertPushed(ApplyInboundIssueChanges::class, 2);
     Queue::assertNotPushed(ApplyInboundIssueChanges::class, fn (ApplyInboundIssueChanges $job) => $job->integrationId === $off->id);
@@ -267,7 +266,7 @@ it('queues a re-read for GitHub issue events of the installation', function () {
     ]);
     [$body, $headers] = signedGitHubWebhook('issues', ['action' => 'closed', 'issue' => ['number' => 12], 'repository' => ['id' => 9001, 'full_name' => 'acme/api']]);
 
-    postInboundWebhook(route('integrations.webhooks.store', ['source' => 'github']), $body, $headers)->assertStatus(202);
+    postInboundWebhook(route('integrations.webhooks.store', ['source' => 'github']), $body, $headers)->assertAccepted();
 
     Queue::assertPushed(ApplyInboundIssueChanges::class, fn (ApplyInboundIssueChanges $job) => $job->externalIds === ['9001/12']);
 });
@@ -284,7 +283,7 @@ it('re-reads the issues of repositories removed from the installation', function
     ]);
     [$body, $headers] = signedGitHubWebhook('installation_repositories', ['action' => 'removed', 'repositories_removed' => [['id' => 9001]]]);
 
-    postInboundWebhook(route('integrations.webhooks.store', ['source' => 'github']), $body, $headers)->assertStatus(202);
+    postInboundWebhook(route('integrations.webhooks.store', ['source' => 'github']), $body, $headers)->assertAccepted();
 
     Queue::assertPushed(ApplyInboundIssueChanges::class, fn (ApplyInboundIssueChanges $job) => $job->externalIds === ['9001/12']);
 });
@@ -298,7 +297,7 @@ it('asks every team of the installation to reconnect once GitHub confirms the re
     Http::fake(['api.github.com/app/installations/4242' => Http::response($installation, $status)]);
     [$body, $headers] = signedGitHubWebhook('installation', ['action' => $action]);
 
-    postInboundWebhook(route('integrations.webhooks.store', ['source' => 'github']), $body, $headers)->assertStatus(202);
+    postInboundWebhook(route('integrations.webhooks.store', ['source' => 'github']), $body, $headers)->assertAccepted();
 
     expect($first->fresh()->status)->toBe(IntegrationStatus::ReconnectRequired)
         ->and($second->fresh()->status)->toBe(IntegrationStatus::ReconnectRequired)
@@ -316,7 +315,7 @@ it('ignores installation removals GitHub does not confirm', function () {
     Http::fake(['api.github.com/app/installations/4242' => Http::response(['id' => 4242, 'suspended_at' => null])]);
     [$body, $headers] = signedGitHubWebhook('installation', ['action' => 'suspend']);
 
-    postInboundWebhook(route('integrations.webhooks.store', ['source' => 'github']), $body, $headers)->assertStatus(202);
+    postInboundWebhook(route('integrations.webhooks.store', ['source' => 'github']), $body, $headers)->assertAccepted();
 
     expect($integration->fresh()->status)->toBe(IntegrationStatus::Active)
         ->and(Cache::has('github-installation-token:4242'))->toBeTrue()
@@ -329,7 +328,7 @@ it('treats a replayed installation event under a new delivery id as a duplicate'
     [$body, $headers] = signedGitHubWebhook('installation', ['action' => 'suspend']);
     $url = route('integrations.webhooks.store', ['source' => 'github']);
 
-    postInboundWebhook($url, $body, $headers)->assertStatus(202);
+    postInboundWebhook($url, $body, $headers)->assertAccepted();
     postInboundWebhook($url, $body, [...$headers, 'X-GitHub-Delivery' => 'github-delivery-2'])->assertOk();
 
     Http::assertSentCount(1);
@@ -340,8 +339,8 @@ it('keeps Jira delivery ids apart per connection', function () {
     jiraWebhookToken($integration);
     $other = jiraWebhookToken(withStatusSync(TeamIntegration::factory()->jira()->create()));
 
-    postInboundWebhook(inboundJiraUrl($other), jiraWebhookBody(), ['X-Atlassian-Webhook-Identifier' => 'same'])->assertStatus(202);
-    postInboundWebhook(inboundJiraUrl($integration), jiraWebhookBody(), ['X-Atlassian-Webhook-Identifier' => 'same'])->assertStatus(202);
+    postInboundWebhook(inboundJiraUrl($other), jiraWebhookBody(), ['X-Atlassian-Webhook-Identifier' => 'same'])->assertAccepted();
+    postInboundWebhook(inboundJiraUrl($integration), jiraWebhookBody(), ['X-Atlassian-Webhook-Identifier' => 'same'])->assertAccepted();
 
     Queue::assertPushed(ApplyInboundIssueChanges::class, fn (ApplyInboundIssueChanges $job) => $job->integrationId === $integration->id);
     expect(IntegrationInboundEvent::query()->count())->toBe(2);
@@ -382,7 +381,7 @@ it('marks the webhook active on its first verified event', function () {
     $integration->forceFill(['webhook_status' => IntegrationWebhookStatus::Pending])->save();
     jiraWebhookToken($integration);
 
-    postInboundWebhook(inboundJiraUrl($integration), jiraWebhookBody())->assertStatus(202);
+    postInboundWebhook(inboundJiraUrl($integration), jiraWebhookBody())->assertAccepted();
 
     expect($integration->fresh()->webhook_status)->toBe(IntegrationWebhookStatus::Active);
 });
@@ -419,12 +418,12 @@ it('processes a redelivered installation event when GitHub could not confirm it 
     [$body, $headers] = signedGitHubWebhook('installation', ['action' => 'suspend']);
     $url = route('integrations.webhooks.store', ['source' => 'github']);
 
-    postInboundWebhook($url, $body, $headers)->assertStatus(503);
+    postInboundWebhook($url, $body, $headers)->assertServiceUnavailable();
 
     expect(IntegrationInboundEvent::query()->count())->toBe(0)
         ->and($integration->fresh()->status)->toBe(IntegrationStatus::Active);
 
-    postInboundWebhook($url, $body, $headers)->assertStatus(202);
+    postInboundWebhook($url, $body, $headers)->assertAccepted();
 
     expect($integration->fresh()->status)->toBe(IntegrationStatus::ReconnectRequired);
 });
@@ -434,7 +433,7 @@ it('marks webhooks of a connection listening to them active when an event arrive
     $integration->forceFill(['inbound_mode' => IntegrationInboundMode::Webhook, 'webhook_status' => null])->save();
     [$body, $headers] = signedLinearWebhook();
 
-    postInboundWebhook(route('integrations.webhooks.store', ['source' => 'linear']), $body, $headers)->assertStatus(202);
+    postInboundWebhook(route('integrations.webhooks.store', ['source' => 'linear']), $body, $headers)->assertAccepted();
 
     expect($integration->fresh()->webhook_status)->toBe(IntegrationWebhookStatus::Active);
 });

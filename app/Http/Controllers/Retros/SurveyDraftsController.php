@@ -17,7 +17,7 @@ use Illuminate\Validation\Rule;
 
 class SurveyDraftsController extends Controller
 {
-    private const DraftsPerMinute = 10;
+    private const int DraftsPerMinute = 10;
 
     public function store(Request $request, Retro $retro, Llm $llm, DraftSurvey $draftSurvey): JsonResponse
     {

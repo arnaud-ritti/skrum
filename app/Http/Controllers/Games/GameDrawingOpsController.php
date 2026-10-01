@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Games;
 
 use App\Actions\Games\AddDrawingOp;
-use App\Actions\Games\UndoDrawingOp;
 use App\Http\Controllers\Controller;
 use App\Models\GamePlayer;
 use App\Models\GameRoom;
@@ -30,14 +29,5 @@ class GameDrawingOpsController extends Controller
         ]);
 
         return response()->json($addDrawingOp->handle($room, $round, $player, $validated['op'], $validated['client_op_id']), 201);
-    }
-
-    public function destroyLast(Request $request, GameRoom $room, GameRound $round, UndoDrawingOp $undoDrawingOp): JsonResponse
-    {
-        $player = GamePlayer::current($request);
-
-        GameRateLimit::hit("game-draw:{$player->id}", self::RateLimitPerSecond, self::SecondsPerDrawingToken);
-
-        return response()->json($undoDrawingOp->handle($room, $round, $player));
     }
 }

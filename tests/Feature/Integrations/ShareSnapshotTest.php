@@ -24,7 +24,7 @@ beforeEach(function () {
 
 function shareSnapshot(Retro $retro, Participant $viewer): array
 {
-    return app(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer);
+    return resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer);
 }
 
 function connectShareChannels(Team $team): void
@@ -144,13 +144,13 @@ it('offers poker shares to the facilitator and workspace admins while the game i
     $admin = PokerPlayer::factory()->create(['poker_game_id' => $game->id, 'user_id' => workspaceManager($game->team->workspace)->id]);
     $guest = pokerGuest($game);
     $delivery = IntegrationDelivery::factory()->forSubject($game)->sent()->create();
-    $snapshot = fn (PokerPlayer $player) => app(BuildPokerSnapshot::class)->handle($game->fresh(), $player->fresh());
+    $snapshot = fn (PokerPlayer $player) => resolve(BuildPokerSnapshot::class)->handle($game->fresh(), $player->fresh());
 
     expect($snapshot($facilitator)['share'])->toBe(['slack' => true, 'telegram' => true, 'msteams' => false, 'mattermost' => false, 'webhook' => false])
         ->and(array_column($snapshot($facilitator)['deliveries'], 'id'))->toBe([$delivery->id])
         ->and($snapshot($admin)['share'])->toBe(['slack' => true, 'telegram' => true, 'msteams' => false, 'mattermost' => false, 'webhook' => false])
         ->and($snapshot($member)['share'])->toBe(['slack' => false, 'telegram' => false, 'msteams' => false, 'mattermost' => false, 'webhook' => false])
-        ->and($snapshot($member)['deliveries'])->toBe([])
+        ->and($snapshot($member)['deliveries'])->toBeEmpty()
         ->and($snapshot($guest)['share'])->toBe(['slack' => false, 'telegram' => false, 'msteams' => false, 'mattermost' => false, 'webhook' => false]);
 
     $game->forceFill(['ended_at' => now()])->save();

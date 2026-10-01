@@ -5,14 +5,14 @@ namespace App\Console\Commands;
 use App\Actions\ActionItems\PruneActionItemNotifications;
 use App\Actions\ActionItems\SendActionItemReminders;
 use App\Models\User;
+use Illuminate\Console\Attributes\Description;
+use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
 
+#[Description('Send due-soon and overdue action item reminders, then prune old notifications')]
+#[Signature('action-items:send-reminders')]
 class SendActionItemRemindersCommand extends Command
 {
-    protected $signature = 'action-items:send-reminders';
-
-    protected $description = 'Send due-soon and overdue action item reminders, then prune old notifications';
-
     public function handle(SendActionItemReminders $sendActionItemReminders, PruneActionItemNotifications $pruneActionItemNotifications): int
     {
         if (! config('skrum.action_item_reminders.enabled')) {

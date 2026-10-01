@@ -37,7 +37,7 @@ class UpdateActionItem
         $locked->save();
 
         if ($assigneeChanged && ($locked->assignee_user_id !== null || $locked->assignee_participant_id !== null)) {
-            ActionItemAssigned::dispatch($locked);
+            event(new ActionItemAssigned($locked));
         }
 
         $this->broadcastActionItemChange->saved($locked);

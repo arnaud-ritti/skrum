@@ -13,7 +13,7 @@ beforeEach(fn () => Http::preventStrayRequests());
 it('enables Jira Data Center and GitHub from their env alone', function () {
     disableIntegrations();
 
-    expect(IntegrationProvider::enabled())->toBe([]);
+    expect(IntegrationProvider::enabled())->toBeEmpty();
 
     enableIntegrations(IntegrationProvider::JiraDataCenter, IntegrationProvider::GitHub);
 

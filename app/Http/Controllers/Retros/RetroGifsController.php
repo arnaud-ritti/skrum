@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\RateLimiter;
 
 class RetroGifsController extends Controller
 {
-    private const SearchesPerMinute = 20;
+    private const int SearchesPerMinute = 20;
 
     public function index(Request $request, Retro $retro, GifCatalog $gifCatalog): JsonResponse
     {
@@ -38,7 +38,7 @@ class RetroGifsController extends Controller
         );
 
         return response()->json([
-            'gifs' => array_map(fn (Gif $gif) => [
+            'gifs' => array_map(fn (Gif $gif): array => [
                 'id' => $gif->id,
                 'previewUrl' => route('gifs.show', ['gif' => $gif->id, 'size' => 'preview'], false),
                 'width' => $gif->width,

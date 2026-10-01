@@ -43,7 +43,7 @@ class ConnectUrlChannel
             'access' => IntegrationAccess::Write,
             'credentials' => ['url' => $url],
             'settings' => [
-                'host' => self::host($url),
+                'host' => $this->host($url),
                 'channelLabel' => self::label($channelLabel),
             ],
             'scopes' => [],
@@ -69,7 +69,7 @@ class ConnectUrlChannel
         return $integration;
     }
 
-    private static function host(string $url): string
+    private function host(string $url): string
     {
         $host = strtolower((string) parse_url($url, PHP_URL_HOST));
         $port = parse_url($url, PHP_URL_PORT);

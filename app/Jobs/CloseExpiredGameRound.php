@@ -61,6 +61,6 @@ class CloseExpiredGameRound implements ShouldQueue
 
         $delay = max(1, (int) ceil(now()->diffInSeconds($endsAt, true)));
 
-        self::dispatch($this->roundId, $this->timerEndsAt, $this->earlyRuns + 1)->delay(now()->addSeconds($delay));
+        dispatch(new self($this->roundId, $this->timerEndsAt, $this->earlyRuns + 1))->delay(now()->addSeconds($delay));
     }
 }

@@ -90,6 +90,6 @@ class CardGroupsController extends Controller
         $cards = new EloquentCollection($cards->all());
         $cards->load('participant.user');
 
-        return $cards->map(fn (Card $card) => $this->presentCard->handle($card, $retro, $viewer))->values()->all();
+        return $cards->map(fn (Card $card): array => $this->presentCard->handle($card, $retro, $viewer))->values()->all();
     }
 }

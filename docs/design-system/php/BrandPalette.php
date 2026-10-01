@@ -17,10 +17,15 @@ namespace App\Support\Branding;
 final class BrandPalette
 {
     private const LIGHT_BG = [0.985, 0.004, 80.0];
+
     private const LIGHT_CARD = [1.0, 0.0, 0.0];
+
     private const DARK_BG = [0.165, 0.008, 55.0];
+
     private const DARK_CARD = [0.205, 0.009, 55.0];
+
     private const LIGHT_ON = [0.990, 0.005, 80.0];
+
     private const DESTRUCTIVE_HUE = 18.0;
 
     /** @param array<string,array{0:float,1:float,2:float}> $light @param array<string,array{0:float,1:float,2:float}> $dark @param list<string> $warnings */
@@ -88,7 +93,7 @@ final class BrandPalette
             array_keys($vars), $vars,
         ));
 
-        return ":root {\n  --radius: " . ($this->radiusPx / 16) . "rem;\n" . $block($this->light) . "\n}\n.dark {\n" . $block($this->dark) . "\n}\n";
+        return ":root {\n  --radius: ".($this->radiusPx / 16)."rem;\n".$block($this->light)."\n}\n.dark {\n".$block($this->dark)."\n}\n";
     }
 
     // ------------------------------------------------------------------ colour maths (OKLCH ⇄ sRGB, WCAG)
@@ -98,7 +103,7 @@ final class BrandPalette
     {
         $hex = ltrim(trim($hex), '#');
         if (strlen($hex) === 3) {
-            $hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
+            $hex = $hex[0].$hex[0].$hex[1].$hex[1].$hex[2].$hex[2];
         }
         if (! preg_match('/^[0-9a-f]{6}$/i', $hex)) {
             throw new \InvalidArgumentException("Couleur invalide : #{$hex}");

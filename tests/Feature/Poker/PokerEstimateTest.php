@@ -42,7 +42,7 @@ it('sets the estimate after reveal', function () {
         ->and($task->estimate_numeric)->toBe(8.0)
         ->and($task->estimated_at)->not->toBeNull();
 
-    Event::assertDispatched(PokerTaskSaved::class, fn (PokerTaskSaved $event) => $event->gameId === $table['game']->id
+    Event::assertDispatched(fn (PokerTaskSaved $event) => $event->gameId === $table['game']->id
         && $event->task['estimate'] === '8');
 });
 
@@ -133,5 +133,5 @@ it('dispatches PokerTaskEstimated only when a card is set or changed', function 
     $this->putJson($url, ['value' => null])->assertOk();
     Event::assertDispatchedTimes(PokerTaskEstimated::class, 2);
 
-    Event::assertDispatched(PokerTaskEstimated::class, fn (PokerTaskEstimated $event) => $event->task->is($table['task']));
+    Event::assertDispatched(fn (PokerTaskEstimated $event) => $event->task->is($table['task']));
 });

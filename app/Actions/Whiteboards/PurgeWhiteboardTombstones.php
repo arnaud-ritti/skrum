@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\DB;
  */
 class PurgeWhiteboardTombstones
 {
-    private const KeepHours = 24;
+    private const int KeepHours = 24;
 
     public function handle(): int
     {

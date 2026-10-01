@@ -13,7 +13,7 @@ use Throwable;
 
 class ReverbGamePresenceRoster implements GamePresenceRoster
 {
-    private const TimeoutSeconds = 2;
+    private const int TimeoutSeconds = 2;
 
     public function __construct(private ?ClientInterface $client = null) {}
 
@@ -45,9 +45,7 @@ class ReverbGamePresenceRoster implements GamePresenceRoster
      */
     private function pusher(): Pusher
     {
-        if (config('broadcasting.default') !== 'reverb') {
-            throw new RuntimeException('Reverb is not the broadcaster.');
-        }
+        throw_if(config('broadcasting.default') !== 'reverb', RuntimeException::class, 'Reverb is not the broadcaster.');
 
         /** @var array{key: string, secret: string, app_id: string, options?: array<string, mixed>} $config */
         $config = config('broadcasting.connections.reverb');

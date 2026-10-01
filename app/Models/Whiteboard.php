@@ -62,7 +62,7 @@ class Whiteboard extends Model
     /** @return HasMany<WhiteboardMember, $this> */
     public function members(): HasMany
     {
-        return $this->hasMany(WhiteboardMember::class)->orderBy('created_at')->orderBy('id');
+        return $this->hasMany(WhiteboardMember::class)->oldest()->orderBy('id');
     }
 
     /** @return HasMany<WhiteboardElement, $this> */

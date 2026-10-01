@@ -38,7 +38,7 @@ function autoRevealTable(bool $autoReveal = true): array
 
 function autoReveal(PokerRound $round): bool
 {
-    return app(AutoRevealPokerRound::class)->handle($round->fresh());
+    return resolve(AutoRevealPokerRound::class)->handle($round->fresh());
 }
 
 it('never reveals while auto-reveal is off', function () {
@@ -236,7 +236,7 @@ it('answers revealed to the voter who completed the table', function () {
         ->assertJsonPath('myVote', '8');
 
     expect($table['round']->fresh()->revealed_at)->not->toBeNull();
-    Event::assertDispatched(PokerRoundChanged::class, fn (PokerRoundChanged $event) => $event->gameId === $table['game']->id);
+    Event::assertDispatched(fn (PokerRoundChanged $event) => $event->gameId === $table['game']->id);
 });
 
 it('re-checks on demand for any player', function () {

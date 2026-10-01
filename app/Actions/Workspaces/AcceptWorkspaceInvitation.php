@@ -11,13 +11,9 @@ class AcceptWorkspaceInvitation
 {
     public function handle(WorkspaceInvitation $invitation, User $user): void
     {
-        if (! $invitation->isPending()) {
-            throw new InvalidArgumentException('The invitation is no longer pending.');
-        }
+        throw_unless($invitation->isPending(), InvalidArgumentException::class, 'The invitation is no longer pending.');
 
-        if (! $invitation->matchesEmail($user->email)) {
-            throw new InvalidArgumentException('The invitation was sent to another email address.');
-        }
+        throw_unless($invitation->matchesEmail($user->email), InvalidArgumentException::class, 'The invitation was sent to another email address.');
 
         DB::transaction(function () use ($invitation, $user): void {
             $workspace = $invitation->workspace;

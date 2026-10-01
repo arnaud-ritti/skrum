@@ -12,8 +12,8 @@ class JiraApis
     public function for(TeamIntegration $integration): JiraApi
     {
         return match ($integration->provider) {
-            IntegrationProvider::Jira => app(JiraClient::class),
-            IntegrationProvider::JiraDataCenter => app(JiraDataCenterClient::class),
+            IntegrationProvider::Jira => resolve(JiraClient::class),
+            IntegrationProvider::JiraDataCenter => resolve(JiraDataCenterClient::class),
             default => throw new InvalidArgumentException("{$integration->provider->value} is not a Jira connection."),
         };
     }

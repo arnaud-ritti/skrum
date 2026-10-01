@@ -71,24 +71,24 @@ it('follows the forced modes whatever APP_URL is', function () {
     fakePublicResolver([], times: 0);
 
     config(['services.integrations.inbound_webhooks' => 'on']);
-    expect(app(InboundReachability::class)->isPublic())->toBeTrue();
+    expect(resolve(InboundReachability::class)->isPublic())->toBeTrue();
 
     config(['services.integrations.inbound_webhooks' => 'off', 'app.url' => 'https://skrum.example.com']);
-    expect(app(InboundReachability::class)->isPublic())->toBeFalse();
+    expect(resolve(InboundReachability::class)->isPublic())->toBeFalse();
 });
 
 it('treats an https host resolving to a public address as public', function () {
     config(['services.integrations.inbound_webhooks' => 'auto', 'app.url' => 'https://skrum.example.com']);
     fakePublicResolver(['10.0.0.5', '93.184.216.34']);
 
-    expect(app(InboundReachability::class)->isPublic())->toBeTrue();
+    expect(resolve(InboundReachability::class)->isPublic())->toBeTrue();
 });
 
 it('treats local or private APP_URLs as not public', function (string $url, array $addresses, int $lookups) {
     config(['services.integrations.inbound_webhooks' => 'auto', 'app.url' => $url]);
     fakePublicResolver($addresses, $lookups);
 
-    expect(app(InboundReachability::class)->isPublic())->toBeFalse();
+    expect(resolve(InboundReachability::class)->isPublic())->toBeFalse();
 })->with([
     'http' => ['http://skrum.example.com', ['93.184.216.34'], 0],
     'localhost' => ['https://localhost', ['127.0.0.1'], 0],
@@ -109,12 +109,12 @@ it('caches the answer for an hour', function () {
     config(['services.integrations.inbound_webhooks' => 'auto', 'app.url' => 'https://skrum.example.com']);
     fakePublicResolver(['93.184.216.34'], times: 2);
 
-    expect(app(InboundReachability::class)->isPublic())->toBeTrue()
-        ->and(app(InboundReachability::class)->isPublic())->toBeTrue();
+    expect(resolve(InboundReachability::class)->isPublic())->toBeTrue()
+        ->and(resolve(InboundReachability::class)->isPublic())->toBeTrue();
 
     $this->travel(61)->minutes();
 
-    expect(app(InboundReachability::class)->isPublic())->toBeTrue();
+    expect(resolve(InboundReachability::class)->isPublic())->toBeTrue();
 });
 
 it('does not cache an unresolvable host for an hour', function () {
@@ -123,8 +123,8 @@ it('does not cache an unresolvable host for an hour', function () {
     $resolver->shouldReceive('addresses')->twice()->andReturn([], ['93.184.216.34']);
     app()->instance(HostResolver::class, $resolver);
 
-    expect(app(InboundReachability::class)->isPublic())->toBeFalse()
-        ->and(app(InboundReachability::class)->isPublic())->toBeTrue();
+    expect(resolve(InboundReachability::class)->isPublic())->toBeFalse()
+        ->and(resolve(InboundReachability::class)->isPublic())->toBeTrue();
 });
 
 it('falls back to auto for an unknown mode and clamps the poll interval', function () {

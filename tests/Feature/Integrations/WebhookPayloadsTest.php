@@ -101,7 +101,7 @@ it('keeps no content for a message too large to store', function () {
     $delivery = webhookPayloadDelivery();
     $message = [...webhookPayloadMessage($delivery), 'data' => ['notes' => str_repeat('a', 260 * 1024)]];
 
-    app(StoreWebhookPayload::class)->handle($delivery, $message);
+    resolve(StoreWebhookPayload::class)->handle($delivery, $message);
 
     expect($delivery->payload()->exists())->toBeFalse();
 });
@@ -109,7 +109,7 @@ it('keeps no content for a message too large to store', function () {
 it('keeps a message that fits', function () {
     $delivery = webhookPayloadDelivery();
 
-    app(StoreWebhookPayload::class)->handle($delivery, webhookPayloadMessage($delivery));
+    resolve(StoreWebhookPayload::class)->handle($delivery, webhookPayloadMessage($delivery));
 
     expect($delivery->payload->message)->toBe(webhookPayloadMessage($delivery));
 });
@@ -137,7 +137,7 @@ it('keeps a message up to the 512 KB limit and nothing beyond it', function (int
     $emptyMessage = [...webhookPayloadMessage($delivery), 'data' => ['notes' => '']];
     $padding = $largestMessageBytes - strlen(json_encode($emptyMessage, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)) + $extraBytes;
 
-    app(StoreWebhookPayload::class)->handle($delivery, [...$emptyMessage, 'data' => ['notes' => str_repeat('a', $padding)]]);
+    resolve(StoreWebhookPayload::class)->handle($delivery, [...$emptyMessage, 'data' => ['notes' => str_repeat('a', $padding)]]);
 
     expect($delivery->payload()->exists())->toBe($kept);
 })->with([
@@ -160,7 +160,7 @@ it('keeps a message since the date it is given', function () {
     $this->travelTo(now()->startOfSecond());
     $delivery = webhookPayloadDelivery();
 
-    app(StoreWebhookPayload::class)->handle($delivery, webhookPayloadMessage($delivery), now()->subDays(29));
+    resolve(StoreWebhookPayload::class)->handle($delivery, webhookPayloadMessage($delivery), now()->subDays(29));
 
     expect($delivery->payload->created_at->equalTo(now()->subDays(29)))->toBeTrue();
 });
@@ -170,7 +170,7 @@ it('reports only the kind of failure when a message cannot be kept and carries o
     $delivery = webhookPayloadDelivery();
     $message = [...webhookPayloadMessage($delivery), 'data' => ['notes' => "Fix the deploy \xB1\x31"]];
 
-    app(StoreWebhookPayload::class)->keepIfPossible($delivery, $message);
+    resolve(StoreWebhookPayload::class)->keepIfPossible($delivery, $message);
 
     expect($delivery->payload()->exists())->toBeFalse();
     Exceptions::assertReported(fn (RuntimeException $exception) => $exception->getMessage() === "Could not keep the webhook message of delivery {$delivery->id} (JsonException).");
@@ -181,7 +181,7 @@ it('does not carry on after a deadlock while keeping a message', function () {
     $delivery = webhookPayloadDelivery();
     IntegrationDeliveryPayload::creating(fn () => throw new DeadlockException('deadlock detected'));
 
-    expect(fn () => app(StoreWebhookPayload::class)->keepIfPossible($delivery, webhookPayloadMessage($delivery)))
+    expect(fn () => resolve(StoreWebhookPayload::class)->keepIfPossible($delivery, webhookPayloadMessage($delivery)))
         ->toThrow(DeadlockException::class);
 
     Exceptions::assertNothingReported();

@@ -26,7 +26,7 @@ it('fetches emoji data once from the cdn and then serves it from storage', funct
         ->assertHeader('Content-Type', 'application/json')
         ->assertHeader('Cache-Control', 'immutable, max-age=31536000, public')
         ->assertHeader('X-Content-Type-Options', 'nosniff')
-        ->assertHeader('ETag', '"'.md5('[{"emoji":"👍"}]').'"')
+        ->assertHeader('ETag', '"'.hash('xxh128', '[{"emoji":"👍"}]').'"')
         ->assertContent('[{"emoji":"👍"}]');
 
     $this->get(emojiDataUrl('fr', 'data.json'))->assertOk();
@@ -52,7 +52,7 @@ it('answers head requests with the etag used for revalidation', function () {
 
     $this->call('HEAD', emojiDataUrl('en', 'messages.json'))
         ->assertOk()
-        ->assertHeader('ETag', '"'.md5('{"groups":[]}').'"');
+        ->assertHeader('ETag', '"'.hash('xxh128', '{"groups":[]}').'"');
 
     Http::assertNothingSent();
 });

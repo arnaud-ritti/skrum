@@ -20,7 +20,7 @@ it('broadcasts on the whiteboard presence channel', function () {
 
 it('names its events and keeps their payloads empty', function (WhiteboardBroadcastEvent $event, string $name) {
     expect($event->broadcastAs())->toBe($name)
-        ->and($event->broadcastWith())->toBe([]);
+        ->and($event->broadcastWith())->toBeEmpty();
 })->with([
     'board changed' => [fn () => new WhiteboardChanged('b'), 'board.changed'],
     'board deleted' => [fn () => new WhiteboardDeleted('b'), 'board.deleted'],

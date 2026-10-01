@@ -8,7 +8,7 @@ use Illuminate\Http\Response;
 
 class AvatarsController extends Controller
 {
-    private const DefaultStyle = 'thumbs';
+    private const string DefaultStyle = 'thumbs';
 
     public function show(string $seed): Response
     {

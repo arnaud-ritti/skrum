@@ -16,7 +16,7 @@ class QueueRetroSummary
             'summary_requested_at' => now(),
         ]);
 
-        GenerateRetroSummary::dispatch($locked->id)->afterCommit();
+        dispatch(new GenerateRetroSummary($locked->id))->afterCommit();
 
         (new ResultsChanged($locked->id))->sendToOthers();
     }

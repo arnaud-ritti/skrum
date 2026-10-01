@@ -20,7 +20,7 @@ export function IntegrationCard({
     const connection = card.connection;
 
     return (
-        <Card>
+        <Card data-test={`integration-card-${card.provider}`}>
             <CardHeader className="flex flex-row items-center justify-between gap-2">
                 <CardTitle className="flex items-center gap-2">
                     <Icon className="size-4" aria-hidden />

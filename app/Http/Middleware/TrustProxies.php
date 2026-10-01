@@ -21,6 +21,6 @@ class TrustProxies extends Middleware
             return '*';
         }
 
-        return array_values(array_filter(array_map('trim', explode(',', $proxies))));
+        return array_values(array_filter(array_map(trim(...), explode(',', $proxies))));
     }
 }

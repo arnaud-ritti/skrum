@@ -16,9 +16,9 @@ use Illuminate\Support\Facades\DB;
  */
 class UpdateStatusSyncSettings
 {
-    private const JiraStatusIdRule = 'regex:/^\d{1,20}\z/';
+    private const string JiraStatusIdRule = 'regex:/^\d{1,20}\z/';
 
-    private const LinearStateIdRule = 'regex:/^[A-Za-z0-9-]{1,64}\z/';
+    private const string LinearStateIdRule = 'regex:/^[A-Za-z0-9-]{1,64}\z/';
 
     public function __construct(private ToggleStatusSync $toggleStatusSync) {}
 
@@ -93,7 +93,7 @@ class UpdateStatusSyncSettings
         }
 
         if ($remapped && $wasOn) {
-            ReadTrackedIssues::dispatch($integration->id, full: true, remapped: true);
+            dispatch(new ReadTrackedIssues($integration->id, full: true, remapped: true));
         }
 
         return $integration;
@@ -110,7 +110,7 @@ class UpdateStatusSyncSettings
         $isJira = in_array($integration->provider, [IntegrationProvider::Jira, IntegrationProvider::JiraDataCenter], true);
         $group = $isJira ? 'projects' : 'teams';
         $container = (string) $mapping['container'];
-        $doneIds = is_array($mapping['done_status_ids'] ?? null) ? array_values(array_unique(array_map('strval', $mapping['done_status_ids']))) : [];
+        $doneIds = is_array($mapping['done_status_ids'] ?? null) ? array_values(array_unique(array_map(strval(...), $mapping['done_status_ids']))) : [];
 
         $entry = $isJira ? [
             'doneStatusIds' => $doneIds === [] ? null : $doneIds,

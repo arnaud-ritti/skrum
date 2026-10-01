@@ -2,7 +2,7 @@
 
 namespace App\Actions\Integrations;
 
-use App\Support\Integrations\Exceptions\TelegramConflict;
+use App\Exceptions\Integrations\TelegramConflict;
 use App\Support\Integrations\Telegram\TelegramBot;
 use App\Support\Integrations\Telegram\TelegramClient;
 use Illuminate\Support\Facades\Cache;
@@ -13,7 +13,7 @@ class PollTelegramUpdates
 {
     public const OffsetKey = 'telegram:update-offset';
 
-    private const ConflictWarningKey = 'telegram:conflict-warned';
+    private const string ConflictWarningKey = 'telegram:conflict-warned';
 
     public function __construct(
         private TelegramClient $telegram,

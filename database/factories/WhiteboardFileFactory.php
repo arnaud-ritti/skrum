@@ -15,7 +15,7 @@ class WhiteboardFileFactory extends Factory
     {
         return [
             'whiteboard_id' => Whiteboard::factory(),
-            'file_id' => sha1(fake()->uuid()),
+            'file_id' => fake()->unique()->sha1(),
             'path' => fn (array $attributes) => "whiteboards/{$attributes['whiteboard_id']}/{$attributes['file_id']}",
             'mime_type' => 'image/png',
             'size' => 1024,

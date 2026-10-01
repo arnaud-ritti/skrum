@@ -11,7 +11,7 @@ use App\Enums\GuessResult;
  */
 class GuessMatch
 {
-    private const ShortWordLetters = 4;
+    private const int ShortWordLetters = 4;
 
     public static function check(string $word, string $guess): GuessResult
     {

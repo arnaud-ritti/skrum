@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\DB;
 
 function snapshotFor(Retro $retro, Participant $viewer): array
 {
-    return app(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer);
+    return resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer);
 }
 
 function snapshotCard(array $snapshot, Card $card): array
@@ -66,7 +66,7 @@ it('presents cards for other participants when there is no viewer', function () 
     $retro = Retro::factory()->create();
     $card = Card::factory()->create(['retro_id' => $retro->id, 'content' => 'hidden']);
 
-    expect(app(PresentCard::class)->handle($card, $retro, null))
+    expect(resolve(PresentCard::class)->handle($card, $retro, null))
         ->toMatchArray(['content' => null, 'author' => null, 'isMine' => false]);
 });
 
@@ -189,7 +189,7 @@ it('reads the vote version together with the vote counts rather than from a stal
     Vote::factory()->create(['retro_id' => $retro->id, 'card_id' => $card->id, 'participant_id' => $viewer->id]);
     Retro::query()->whereKey($retro->id)->increment('votes_version');
 
-    $snapshot = app(BuildBoardSnapshot::class)->handle($staleRetro, $viewer);
+    $snapshot = resolve(BuildBoardSnapshot::class)->handle($staleRetro, $viewer);
 
     expect($snapshot['votesCast'])->toBe(1)
         ->and($snapshot['votesVersion'])->toBe(1);
@@ -257,7 +257,7 @@ it('hides gifs, reactions and comments of others when the facilitator steps back
 
 it('loads reactions and comments with a constant number of queries', function () {
     $retro = Retro::factory()->withHealthCheck()->inPhase(RetroPhase::Discussing)->create();
-    app(FreezeHealthStatements::class)->handle($retro);
+    resolve(FreezeHealthStatements::class)->handle($retro);
     [, $viewer] = retroMember($retro);
 
     $seed = function (int $cards) use ($retro): void {

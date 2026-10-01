@@ -44,7 +44,7 @@ it('keeps votes out of task payloads', function () {
     $round = openPokerRound($game);
     pokerVote($round, $player, '13');
 
-    $payload = app(PresentPokerTask::class)->handle($round->task->fresh());
+    $payload = resolve(PresentPokerTask::class)->handle($round->task->fresh());
 
     expect(array_keys($payload))->toBe(['id', 'title', 'description', 'descriptionHtml', 'position', 'estimate', 'estimatedAt', 'roundsCount', 'external'])
         ->and($payload['roundsCount'])->toBe(1)

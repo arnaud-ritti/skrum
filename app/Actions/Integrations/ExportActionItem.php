@@ -5,10 +5,10 @@ namespace App\Actions\Integrations;
 use App\Actions\ActionItems\BroadcastActionItemChange;
 use App\Actions\ActionItems\WorkspaceActionItemGuard;
 use App\Enums\IntegrationProvider;
+use App\Exceptions\Integrations\ReconnectRequired;
 use App\Models\ActionItem;
 use App\Models\TeamIntegration;
 use App\Models\User;
-use App\Support\Integrations\Exceptions\ReconnectRequired;
 use App\Support\Integrations\IntegrationTokens;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -140,9 +140,7 @@ class ExportActionItem
     {
         $value = $target[$key] ?? null;
 
-        if (! is_string($value)) {
-            throw new InvalidArgumentException("The export target has no {$key}.");
-        }
+        throw_unless(is_string($value), InvalidArgumentException::class, "The export target has no {$key}.");
 
         return $value;
     }

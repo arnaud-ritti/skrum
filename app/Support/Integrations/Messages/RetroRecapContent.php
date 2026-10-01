@@ -12,9 +12,9 @@ use Illuminate\Support\Str;
  */
 class RetroRecapContent implements ShareContent
 {
-    private const SummaryLimit = 2800;
+    private const int SummaryLimit = 2800;
 
-    private const NamesLimit = 2800;
+    private const int NamesLimit = 2800;
 
     /**
      * @param  array<string, mixed>  $webhookData

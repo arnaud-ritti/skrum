@@ -48,13 +48,13 @@ class CardPositionsController extends Controller
 
             $changed = $placeCard->handle($fresh, $locked->columns()->whereKey($validated['column_id'])->firstOrFail(), (int) $validated['index']);
 
-            (new CardsMoved($locked->id, $changed->map(fn (Card $moved) => $presentCard->handle($moved, $locked, null))->all()))->sendToOthers();
+            (new CardsMoved($locked->id, $changed->map(fn (Card $moved): array => $presentCard->handle($moved, $locked, null))->all()))->sendToOthers();
 
             return [$changed, $locked];
         });
 
         return response()->json([
-            'cards' => $changed->map(fn (Card $moved) => $presentCard->handle($moved, $presentingRetro, $participant))->all(),
+            'cards' => $changed->map(fn (Card $moved): array => $presentCard->handle($moved, $presentingRetro, $participant))->all(),
         ]);
     }
 }

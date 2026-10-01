@@ -25,9 +25,7 @@ class ImageAsLinkRenderer implements ExtensionInterface, NodeRendererInterface
 
     public function render(Node $node, ChildNodeRendererInterface $childRenderer): \Stringable|string
     {
-        if (! $node instanceof Image) {
-            throw new InvalidArgumentException('Incompatible node type: '.$node::class);
-        }
+        throw_unless($node instanceof Image, InvalidArgumentException::class, 'Incompatible node type: '.$node::class);
 
         $alt = $childRenderer->renderNodes($node->children());
         $url = trim($node->getUrl());

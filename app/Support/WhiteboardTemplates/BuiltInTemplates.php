@@ -23,7 +23,7 @@ class BuiltInTemplates
      */
     public const CharacterWidth = 0.6;
 
-    private const Base = [
+    private const array Base = [
         'angle' => 0,
         'strokeColor' => '#1e1e1e',
         'backgroundColor' => 'transparent',
@@ -45,7 +45,7 @@ class BuiltInTemplates
         'locked' => false,
     ];
 
-    private const Linear = [
+    private const array Linear = [
         'lastCommittedPoint' => null,
         'startBinding' => null,
         'endBinding' => null,
@@ -53,7 +53,7 @@ class BuiltInTemplates
         'endArrowhead' => null,
     ];
 
-    private const ByType = [
+    private const array ByType = [
         'text' => [
             'fontSize' => 20,
             'fontFamily' => 5,

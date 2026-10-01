@@ -5,10 +5,10 @@ namespace App\Actions\Integrations;
 use App\Enums\IntegrationAccess;
 use App\Enums\IntegrationProvider;
 use App\Enums\IntegrationStatus;
+use App\Exceptions\Integrations\ConnectionRefused;
 use App\Models\Team;
 use App\Models\TeamIntegration;
 use App\Models\User;
-use App\Support\Integrations\Exceptions\ConnectionRefused;
 use App\Support\Integrations\JiraDataCenter\JiraDataCenterClient;
 use App\Support\Integrations\JiraDataCenter\JiraDataCenterServer;
 use App\Support\Integrations\OAuthTokens;
@@ -20,7 +20,7 @@ use Illuminate\Support\Arr;
  */
 class ConnectJiraDataCenter implements OAuthConnector
 {
-    private const TokenSettings = ['tokenOwner', 'tokenSavedAt'];
+    private const array TokenSettings = ['tokenOwner', 'tokenSavedAt'];
 
     public function __construct(
         private JiraDataCenterClient $client,

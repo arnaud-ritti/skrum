@@ -72,13 +72,13 @@ it('validates custom decks', function (array $customCards, array $flags, ?array 
     'collide after trimming' => [[' 3', '3', '5'], [], null],
     'nine multibyte characters' => [['ＡＢＣＤＥＦＧＨＩ', '1'], [], null],
     'only special cards' => [['?', '☕'], [], null],
-    'twenty-one cards' => [array_map('strval', range(1, 21)), [], null],
+    'twenty-one cards' => [array_map(strval(...), range(1, 21)), [], null],
     'a single card' => [['1'], [], null],
     'blank card' => [['1', '   '], [], null],
     '? typed and requested' => [['1', '2', '?'], ['include_unknown' => true, 'include_coffee' => true], ['1', '2', '?', '☕']],
     'no special cards asked' => [['S', 'M', 'L'], ['include_unknown' => false, 'include_coffee' => false], ['S', 'M', 'L']],
     'eight multibyte characters' => [['ＡＢＣＤＥＦＧＨ', '1'], ['include_unknown' => false, 'include_coffee' => false], ['ＡＢＣＤＥＦＧＨ', '1']],
-    'twenty cards' => [array_map('strval', range(1, 20)), ['include_unknown' => false, 'include_coffee' => false], array_map('strval', range(1, 20))],
+    'twenty cards' => [array_map(strval(...), range(1, 20)), ['include_unknown' => false, 'include_coffee' => false], array_map(strval(...), range(1, 20))],
 ]);
 
 it('ignores custom cards for built-in decks', function () {

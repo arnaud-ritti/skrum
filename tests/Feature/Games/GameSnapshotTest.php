@@ -20,7 +20,7 @@ beforeEach(function () {
 
 function gameSnapshotFor(GameRoom $room, GamePlayer $viewer): array
 {
-    return app(BuildGameSnapshot::class)->handle($room->fresh(), $viewer->fresh());
+    return resolve(BuildGameSnapshot::class)->handle($room->fresh(), $viewer->fresh());
 }
 
 it('builds the room for its host', function () {
@@ -158,7 +158,7 @@ it('lists ended rounds newest first with names and without the active one', func
 it('refuses to present an active round as history', function () {
     $round = GameRound::factory()->create();
 
-    app(PresentGameRoundHistory::class)->handle($round);
+    resolve(PresentGameRoundHistory::class)->handle($round);
 })->throws(LogicException::class);
 
 it('names the facilitator host of an icebreaker room and links to the retro', function () {
@@ -209,7 +209,7 @@ it('builds the snapshot with a constant number of queries', function () {
 
         DB::flushQueryLog();
         DB::enableQueryLog();
-        app(BuildGameSnapshot::class)->handle($fresh, $viewer);
+        resolve(BuildGameSnapshot::class)->handle($fresh, $viewer);
         DB::disableQueryLog();
 
         return count(DB::getQueryLog());

@@ -41,7 +41,7 @@ class GiphyProvider implements GifProvider
         $items = $this->client()->get($endpoint, [...$query, 'api_key' => $this->key])->throw()->json('data', []);
 
         return collect(is_array($items) ? $items : [])
-            ->map(fn (mixed $item) => is_array($item) ? $this->toGif($item) : null)
+            ->map(fn (mixed $item): ?Gif => is_array($item) ? $this->toGif($item) : null)
             ->filter()
             ->values()
             ->all();
@@ -52,8 +52,8 @@ class GiphyProvider implements GifProvider
      */
     private function toGif(array $item): ?Gif
     {
-        $preview = data_get($item, 'images.fixed_width.webp') ?? data_get($item, 'images.fixed_width.url');
-        $full = data_get($item, 'images.original.webp') ?? data_get($item, 'images.original.url');
+        $preview = data_get($item, 'images.fixed_width.webp', data_get($item, 'images.fixed_width.url'));
+        $full = data_get($item, 'images.original.webp', data_get($item, 'images.original.url'));
 
         if (! is_string($preview) || ! is_string($full) || ! isset($item['id'])) {
             return null;

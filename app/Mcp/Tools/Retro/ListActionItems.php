@@ -92,7 +92,7 @@ class ListActionItems extends SkrumTool
             $query,
             $page,
             $limit,
-            fn (ActionItem $item) => $this->presentActionItem->handle($item, $grant->user),
+            fn (ActionItem $item): array => $this->presentActionItem->handle($item, $grant->user),
         ));
     }
 
@@ -104,9 +104,7 @@ class ListActionItems extends SkrumTool
         if ($teamId !== null) {
             $team = $this->context->team($teamId);
 
-            if ($workspaceId !== null && $team->workspace_id !== $workspaceId) {
-                throw new ModelNotFoundException;
-            }
+            throw_if($workspaceId !== null && $team->workspace_id !== $workspaceId, ModelNotFoundException::class);
 
             return [$team->id];
         }
@@ -119,9 +117,7 @@ class ListActionItems extends SkrumTool
 
         $inWorkspace = Team::query()->whereIn('id', $visible)->where('workspace_id', $workspaceId)->pluck('id')->all();
 
-        if ($inWorkspace === []) {
-            throw new ModelNotFoundException;
-        }
+        throw_if($inWorkspace === [], ModelNotFoundException::class);
 
         return $inWorkspace;
     }

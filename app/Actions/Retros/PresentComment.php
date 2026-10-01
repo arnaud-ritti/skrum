@@ -57,10 +57,10 @@ class PresentComment
 
         return $comments
             ->whereNull('parent_comment_id')
-            ->map(fn (CardComment|SurveyComment $comment) => [
+            ->map(fn (CardComment|SurveyComment $comment): array => [
                 ...$this->handle($comment, $retro, $viewer),
                 'replies' => $repliesByParent->get($comment->id, collect())
-                    ->map(fn (CardComment|SurveyComment $reply) => $this->handle($reply, $retro, $viewer))
+                    ->map(fn (CardComment|SurveyComment $reply): array => $this->handle($reply, $retro, $viewer))
                     ->values()
                     ->all(),
             ])

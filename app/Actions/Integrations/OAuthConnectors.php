@@ -10,11 +10,11 @@ class OAuthConnectors
     public function for(IntegrationProvider $provider): OAuthConnector
     {
         return match ($provider) {
-            IntegrationProvider::Slack => app(ConnectSlack::class),
-            IntegrationProvider::Jira => app(ConnectJira::class),
-            IntegrationProvider::Linear => app(ConnectLinear::class),
-            IntegrationProvider::JiraDataCenter => app(ConnectJiraDataCenter::class),
-            IntegrationProvider::GitHub => app(ConnectGitHub::class),
+            IntegrationProvider::Slack => resolve(ConnectSlack::class),
+            IntegrationProvider::Jira => resolve(ConnectJira::class),
+            IntegrationProvider::Linear => resolve(ConnectLinear::class),
+            IntegrationProvider::JiraDataCenter => resolve(ConnectJiraDataCenter::class),
+            IntegrationProvider::GitHub => resolve(ConnectGitHub::class),
             default => throw new InvalidArgumentException("{$provider->label()} does not connect through OAuth."),
         };
     }

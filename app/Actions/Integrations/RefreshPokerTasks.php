@@ -6,11 +6,11 @@ use App\Actions\Poker\PokerGuard;
 use App\Enums\IntegrationProvider;
 use App\Enums\IntegrationStatus;
 use App\Events\Poker\PokerGameChanged;
+use App\Exceptions\Integrations\IntegrationException;
+use App\Exceptions\Integrations\NotConnected;
+use App\Exceptions\Integrations\ReconnectRequired;
 use App\Models\PokerGame;
 use App\Models\PokerPlayer;
-use App\Support\Integrations\Exceptions\IntegrationException;
-use App\Support\Integrations\Exceptions\NotConnected;
-use App\Support\Integrations\Exceptions\ReconnectRequired;
 use App\Support\Integrations\Trackers\Trackers;
 
 /**
@@ -67,9 +67,7 @@ class RefreshPokerTasks
             $missing += $applied['missing'];
         }
 
-        if (! $attempted && $problem !== null) {
-            throw $problem;
-        }
+        throw_if(! $attempted && $problem !== null, $problem);
 
         if ($refreshed > 0) {
             (new PokerGameChanged($game->id))->sendToOthers();

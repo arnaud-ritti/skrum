@@ -20,13 +20,13 @@ function boardFromScene(array $elements, array $files = []): array
 {
     $team = Team::factory()->create();
 
-    $board = app(CreateWhiteboard::class)->handle($team, teamMember($team), 'Copy', ['elements' => $elements, 'files' => $files]);
+    $board = resolve(CreateWhiteboard::class)->handle($team, teamMember($team), 'Copy', ['elements' => $elements, 'files' => $files]);
 
     return [$board, $board->elements()->orderBy('seq')->get()->map(fn (WhiteboardElement $element): array => $element->data)];
 }
 
 it('gives five thousand valid indices in the order the canvas compares them', function () {
-    $indexes = app(GenerateFractionalIndexes::class)->handle(5000);
+    $indexes = resolve(GenerateFractionalIndexes::class)->handle(5000);
     $sorted = $indexes;
     sort($sorted, SORT_STRING);
 
@@ -38,7 +38,7 @@ it('gives five thousand valid indices in the order the canvas compares them', fu
         ->and($indexes[3905])->toBe('bzz')
         ->and($indexes[3906])->toBe('c000');
 
-    $sanitize = app(SanitizeWhiteboardElement::class);
+    $sanitize = resolve(SanitizeWhiteboardElement::class);
 
     foreach ($indexes as $index) {
         expect($sanitize->handle(sceneElement(['index' => $index])))->not->toBeNull();
@@ -66,9 +66,9 @@ it('copies a scene with fresh ids, the creator as author and every reference rew
 
     [$frame, $box, $label, $target, $link] = $copies->all();
     $rows = $board->elements()->orderBy('seq')->get();
-    $sanitize = app(SanitizeWhiteboardElement::class);
+    $sanitize = resolve(SanitizeWhiteboardElement::class);
 
-    expect($copies->pluck('id')->intersect(['frame', 'box', 'label', 'target', 'link'])->all())->toBe([])
+    expect($copies->pluck('id')->intersect(['frame', 'box', 'label', 'target', 'link'])->all())->toBeEmpty()
         ->and($copies->pluck('id')->unique())->toHaveCount(5)
         ->and($copies->pluck('index')->all())->toBe(['a0', 'a1', 'a2', 'a3', 'a4'])
         ->and($copies->pluck('version')->unique()->all())->toBe([1])
@@ -233,7 +233,7 @@ it('reads the live scene of a board in canvas order with the files it shows', fu
     $element(['id' => 'back', 'index' => 'a1', 'type' => 'image', 'fileId' => $shown->file_id], ['seq' => 2]);
     $element(['id' => 'deleted', 'index' => 'a0', 'isDeleted' => true], ['seq' => 3, 'is_deleted' => true]);
 
-    $scene = app(ReadWhiteboardScene::class)->handle($board);
+    $scene = resolve(ReadWhiteboardScene::class)->handle($board);
 
     expect(array_column($scene['elements'], 'id'))->toBe(['back', 'front'])
         ->and($scene['files'])->toBe([[

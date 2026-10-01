@@ -2,6 +2,7 @@
 
 namespace App\Support\Llm;
 
+use App\Exceptions\Llm\LlmUnavailable;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
@@ -36,9 +37,7 @@ class OpenAiCompatibleClient implements LlmClient
 
         $text = $response->json('choices.0.message.content');
 
-        if (! is_string($text)) {
-            throw new LlmUnavailable;
-        }
+        throw_unless(is_string($text), LlmUnavailable::class);
 
         return $text;
     }

@@ -67,7 +67,7 @@ it('toggles reactions idempotently and broadcasts only the survey and its commen
         ->assertJsonPath('survey.reactions', [['emoji' => '🎉', 'count' => 1, 'mine' => true, 'names' => []]]);
 
     expect(SurveyReaction::count())->toBe(1);
-    Event::assertDispatched(SurveyDiscussionChanged::class, fn (SurveyDiscussionChanged $event) => $event->broadcastAs() === 'survey.discussion.changed'
+    Event::assertDispatched(fn (SurveyDiscussionChanged $event) => $event->broadcastAs() === 'survey.discussion.changed'
         && $event->broadcastWith() === ['surveyId' => $survey->id, 'commentCount' => 0]);
 
     $this->actingAs($user)->deleteJson(route('retros.surveys.reactions.destroy', [$retro, $survey]), ['emoji' => '🎉'])
@@ -109,8 +109,8 @@ it('comments on a survey and sends the author their comment on their private cha
         ->assertJsonPath('comment.author.id', $participant->id);
 
     Event::assertNotDispatched(CommentCreated::class);
-    Event::assertDispatched(SurveyDiscussionChanged::class, fn (SurveyDiscussionChanged $event) => $event->broadcastWith() === ['surveyId' => $survey->id, 'commentCount' => 1]);
-    Event::assertDispatched(OwnSurveyCommentSaved::class, fn (OwnSurveyCommentSaved $event) => $event->comment['id'] === $response->json('comment.id')
+    Event::assertDispatched(fn (SurveyDiscussionChanged $event) => $event->broadcastWith() === ['surveyId' => $survey->id, 'commentCount' => 1]);
+    Event::assertDispatched(fn (OwnSurveyCommentSaved $event) => $event->comment['id'] === $response->json('comment.id')
         && $event->broadcastAs() === 'own-survey-comment.saved'
         && $event->broadcastOn()->name === "private-participant.{$participant->id}");
 });
@@ -157,7 +157,7 @@ it('lets authors edit and authors or the facilitator delete survey comments', fu
 
     expect($comment->fresh()->isDeleted())->toBeTrue()
         ->and($comment->fresh()->content)->toBeNull();
-    Event::assertDispatched(SurveyDiscussionChanged::class, fn (SurveyDiscussionChanged $event) => $event->commentCount === 1);
+    Event::assertDispatched(fn (SurveyDiscussionChanged $event) => $event->commentCount === 1);
 });
 
 it('returns 404 for survey comments of another retro', function () {
@@ -186,7 +186,7 @@ it('notifies the survey creator and thread participants who can see the results'
     ])->assertCreated();
 
     $notified = [];
-    Event::assertDispatched(CommentNotification::class, function (CommentNotification $event) use (&$notified, $survey, $thread, $replierUser) {
+    Event::assertDispatched(function (CommentNotification $event) use (&$notified, $survey, $thread, $replierUser): bool {
         $notified[] = $event->participantId;
 
         return $event->notification['surveyId'] === $survey->id
@@ -203,7 +203,7 @@ it('leaves the author name out of survey notifications on anonymous retros', fun
 
     $this->actingAs($user)->postJson(route('retros.surveys.comments.store', [$retro, $survey]), ['content' => 'Hi'])->assertCreated();
 
-    Event::assertDispatched(CommentNotification::class, fn (CommentNotification $event) => $event->participantId === $survey->created_by_participant_id
+    Event::assertDispatched(fn (CommentNotification $event) => $event->participantId === $survey->created_by_participant_id
         && ! array_key_exists('authorName', $event->notification));
 });
 

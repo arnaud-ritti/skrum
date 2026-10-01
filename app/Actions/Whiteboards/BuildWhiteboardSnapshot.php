@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\Whiteboard;
 use App\Models\WhiteboardElement;
 use App\Models\WhiteboardMember;
+use Illuminate\Contracts\Database\Query\Builder;
 
 /**
  * @phpstan-type Snapshot array{
@@ -120,7 +121,7 @@ class BuildWhiteboardSnapshot
             ->pluck('users.id');
 
         return User::query()
-            ->where(fn ($query) => $query
+            ->where(fn (Builder $query) => $query
                 ->whereIn('id', $team->members()->select('users.id'))
                 ->orWhereIn('id', $managerIds))
             ->when($viewer->user_id !== null, fn ($query) => $query->whereKeyNot($viewer->user_id))

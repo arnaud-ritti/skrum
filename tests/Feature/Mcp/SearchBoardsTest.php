@@ -65,9 +65,8 @@ it('never matches hidden cards', function () {
 
     expect($results)->toHaveCount(1)
         ->and(collect($results[0]['matches'])->pluck('id')->all())->toBe([$own->id])
-        ->and(json_encode($results))->not->toContain('Confidential');
-
-    expect(mcpSearch($user, ['query' => 'Confidential']))->toBe([]);
+        ->and(json_encode($results))->not->toContain('Confidential')
+        ->and(mcpSearch($user, ['query' => 'Confidential']))->toBeEmpty();
 });
 
 it('does not match summaries of unfinished or opted-out boards', function () {
@@ -84,7 +83,7 @@ it('does not match summaries of unfinished or opted-out boards', function () {
         'ai_summary_enabled' => false,
     ]);
 
-    expect(mcpSearch($user, ['query' => 'latency']))->toBe([]);
+    expect(mcpSearch($user, ['query' => 'latency']))->toBeEmpty();
 });
 
 it('does not match a summary that is not ready', function () {
@@ -97,7 +96,7 @@ it('does not match a summary that is not ready', function () {
         'ai_summary_enabled' => true,
     ]);
 
-    expect(mcpSearch($user, ['query' => 'latency']))->toBe([]);
+    expect(mcpSearch($user, ['query' => 'latency']))->toBeEmpty();
 });
 
 it('does not match summaries when no provider is configured', function () {
@@ -108,7 +107,7 @@ it('does not match summaries when no provider is configured', function () {
         'ai_summary_enabled' => true,
     ]);
 
-    expect(mcpSearch($user, ['query' => 'latency']))->toBe([]);
+    expect(mcpSearch($user, ['query' => 'latency']))->toBeEmpty();
 });
 
 it('escapes wildcards', function () {
@@ -152,7 +151,7 @@ it('validates the query and the limit', function (array $arguments) {
 it('limits searches per token', function () {
     [, $user] = mcpSearchTeam();
     $pending = actingAsMcp($user);
-    $tokenId = app(McpGrant::class)->tokenId;
+    $tokenId = resolve(McpGrant::class)->tokenId;
 
     foreach (range(1, 20) as $attempt) {
         RateLimiter::hit("mcp-search:{$tokenId}");

@@ -268,7 +268,7 @@ it('hides action item tools from read-only tokens', function () {
 
     $actionTools = ['retro.actions.create', 'retro.actions.update', 'retro.actions.complete'];
 
-    expect(array_intersect(mcpToolNames(actingAsMcp($user)), $actionTools))->toBe([])
+    expect(array_intersect(mcpToolNames(actingAsMcp($user)), $actionTools))->toBeEmpty()
         ->and(mcpToolNames(mcpWriter($user)))->toContain(...$actionTools);
 });
 

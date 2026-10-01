@@ -29,11 +29,11 @@ it('stores rounds with empty jsonb defaults and hides the word', function () {
 
     $fresh = $round->fresh();
 
-    expect($fresh->revealed_positions)->toBe([])
-        ->and($fresh->picked_letters)->toBe([])
-        ->and($fresh->picked_by)->toBe([])
-        ->and($fresh->clue)->toBe([])
-        ->and($fresh->drawing)->toBe([])
+    expect($fresh->revealed_positions)->toBeEmpty()
+        ->and($fresh->picked_letters)->toBeEmpty()
+        ->and($fresh->picked_by)->toBeEmpty()
+        ->and($fresh->clue)->toBeEmpty()
+        ->and($fresh->drawing)->toBeEmpty()
         ->and($fresh->misses)->toBe(0)
         ->and($fresh->isActive())->toBeTrue()
         ->and($fresh->toArray())->not->toHaveKeys(['word', 'picked_by'])

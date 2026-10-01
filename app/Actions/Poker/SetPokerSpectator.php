@@ -8,6 +8,7 @@ use App\Models\PokerGame;
 use App\Models\PokerPlayer;
 use App\Models\PokerRound;
 use App\Models\PokerTask;
+use Illuminate\Contracts\Database\Query\Builder;
 
 class SetPokerSpectator
 {
@@ -44,7 +45,7 @@ class SetPokerSpectator
         $rounds = PokerRound::query()
             ->whereIn('poker_task_id', PokerTask::query()->where('poker_game_id', $locked->id)->select('id'))
             ->whereNull('revealed_at')
-            ->whereHas('votes', fn ($query) => $query->where('poker_player_id', $player->id))
+            ->whereHas('votes', fn (Builder $query) => $query->where('poker_player_id', $player->id))
             ->orderBy('id')
             ->lockForUpdate()
             ->get();

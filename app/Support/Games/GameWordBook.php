@@ -30,7 +30,7 @@ class GameWordBook
         }
 
         /** @var array<int, array{word: string, drawable: bool}> */
-        return self::file('words', $locale);
+        return $this->file('words', $locale);
     }
 
     /**
@@ -56,13 +56,13 @@ class GameWordBook
         }
 
         /** @var array<int, string> */
-        return self::file('gif-questions', $locale);
+        return $this->file('gif-questions', $locale);
     }
 
     /**
      * @return array<int, mixed>
      */
-    private static function file(string $kind, string $locale): array
+    private function file(string $kind, string $locale): array
     {
         $locale = self::supported($locale);
 

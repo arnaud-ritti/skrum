@@ -7,7 +7,7 @@ it('lists the cards of each built-in deck', function () {
         ->and(PokerDeck::ModifiedFibonacci->cards())->toBe(['0', '½', '1', '2', '3', '5', '8', '13', '20', '40', '100', '?', '☕'])
         ->and(PokerDeck::Tshirt->cards())->toBe(['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', '?', '☕'])
         ->and(PokerDeck::PowersOfTwo->cards())->toBe(['0', '1', '2', '4', '8', '16', '32', '64', '?', '☕'])
-        ->and(PokerDeck::Custom->cards())->toBe([]);
+        ->and(PokerDeck::Custom->cards())->toBeEmpty();
 });
 
 it('parses numeric card values', function (string $card, ?float $value) {

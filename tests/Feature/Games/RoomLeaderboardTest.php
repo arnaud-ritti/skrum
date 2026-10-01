@@ -35,7 +35,7 @@ it('ranks a room by points, wins and name, guests included', function () {
     awardGamePoints($room, $guest, 12);
     awardGamePoints(GameRoom::factory()->create(['team_id' => $room->team_id]), $bob, 50);
 
-    expect(app(RoomLeaderboard::class)->handle($room->fresh()))->toBe([
+    expect(resolve(RoomLeaderboard::class)->handle($room->fresh()))->toBe([
         ['playerId' => $guest->id, 'points' => 12, 'wins' => 0, 'roundsPlayed' => 1],
         ['playerId' => $alice->id, 'points' => 10, 'wins' => 1, 'roundsPlayed' => 2],
         ['playerId' => $bob->id, 'points' => 10, 'wins' => 1, 'roundsPlayed' => 1],
@@ -53,7 +53,7 @@ it('sends the room leaderboard to every player', function () {
         ->assertJsonPath('leaderboard', [['playerId' => $player->id, 'points' => 4, 'wins' => 1, 'roundsPlayed' => 1]])
         ->assertJsonPath('scoresResetAt', null);
 
-    app('auth')->forgetGuards();
+    resolve('auth')->forgetGuards();
 
     $this->withCookies(gameGuestCookie($guest))->withCredentials()
         ->getJson(route('games.snapshot.show', $room))
@@ -71,9 +71,9 @@ it('resets the scores of a standalone room for its managers', function () {
         ->assertNoContent();
 
     expect($room->fresh()->scores_reset_at)->not->toBeNull()
-        ->and(app(RoomLeaderboard::class)->handle($room->fresh()))->toBe([])
+        ->and(resolve(RoomLeaderboard::class)->handle($room->fresh()))->toBeEmpty()
         ->and((int) GamePoint::query()->sum('points'))->toBe(7);
-    Event::assertDispatched(GameRoomChanged::class, fn (GameRoomChanged $event) => $event->roomId === $room->id);
+    Event::assertDispatched(fn (GameRoomChanged $event) => $event->roomId === $room->id);
 
     $this->travel(1)->seconds();
     awardGamePoints($room, $host, 3);
@@ -106,7 +106,7 @@ it('refuses resets to other players and guests', function () {
         ->deleteJson(route('games.scores.destroy', $room))
         ->assertForbidden();
 
-    app('auth')->forgetGuards();
+    resolve('auth')->forgetGuards();
 
     $this->withCookies(gameGuestCookie($guest))->withCredentials()
         ->deleteJson(route('games.scores.destroy', $room))
@@ -118,7 +118,7 @@ it('refuses resets to other players and guests', function () {
 it('keeps every point of an icebreaker room and cannot reset it', function () {
     $retro = Retro::factory()->withIcebreaker()->inPhase(RetroPhase::Icebreaker)->create(['icebreaker_game' => GameKind::Hangman]);
     [$facilitator] = retroFacilitator($retro);
-    $room = app(EnsureIcebreakerRoom::class)->handle($retro->fresh());
+    $room = resolve(EnsureIcebreakerRoom::class)->handle($retro->fresh());
     $room->forceFill(['scores_reset_at' => now()->addMinute()])->save();
     $host = $room->players()->sole();
     awardGamePoints($room, $host, 6, true);

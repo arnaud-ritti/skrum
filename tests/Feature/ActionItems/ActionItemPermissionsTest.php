@@ -27,7 +27,7 @@ it('decides who manages, completes and comments on board items', function (Closu
     $fixture = permissionsFixture();
     $actor = $makeActor($fixture);
     $item = $fixture['item']->fresh();
-    $permissions = app(ActionItemPermissions::class);
+    $permissions = resolve(ActionItemPermissions::class);
 
     expect($permissions->canEdit($item, $actor))->toBe($manages)
         ->and($permissions->canDelete($item, $actor))->toBe($manages)
@@ -40,13 +40,13 @@ it('decides who manages, completes and comments on board items', function (Closu
     'facilitator on the global page' => [fn (array $fixture) => ActionItemActor::forUser(retroFacilitator($fixture['retro'])[0]), true, true],
     'workspace admin' => [fn (array $fixture) => ActionItemActor::forUser(workspaceManager($fixture['retro']->team->workspace)), true, true],
     'workspace owner' => [fn (array $fixture) => ActionItemActor::forUser(workspaceManager($fixture['retro']->team->workspace, WorkspaceRole::Owner)), true, true],
-    'member assignee' => [function (array $fixture) {
+    'member assignee' => [function (array $fixture): ActionItemActor {
         [$user, $participant] = retroMember($fixture['retro']);
         $fixture['item']->update(['assignee_user_id' => $user->id]);
 
         return ActionItemActor::forParticipant($participant);
     }, false, true],
-    'guest assignee' => [function (array $fixture) {
+    'guest assignee' => [function (array $fixture): ActionItemActor {
         $guest = Participant::factory()->guest()->create(['retro_id' => $fixture['retro']->id]);
         $fixture['item']->update(['assignee_participant_id' => $guest->id]);
 
@@ -64,7 +64,7 @@ it('lets the facilitator of a running retro of the team complete earlier items',
     $elsewhere = Retro::factory()->create();
     [$strangerUser] = retroFacilitator($elsewhere);
     $item = $fixture['item']->fresh();
-    $permissions = app(ActionItemPermissions::class);
+    $permissions = resolve(ActionItemPermissions::class);
 
     expect($permissions->canComplete($item, ActionItemActor::forParticipant($participant)))->toBeTrue()
         ->and($permissions->canComplete($item, ActionItemActor::forUser($user)))->toBeTrue()
@@ -82,7 +82,7 @@ it('keeps items without a retro to their author and workspace admins', function 
     $other = teamMember($team);
     $admin = workspaceManager($team->workspace);
     $item = ActionItem::factory()->withoutRetro($team, $author)->create();
-    $permissions = app(ActionItemPermissions::class);
+    $permissions = resolve(ActionItemPermissions::class);
 
     expect($permissions->canCreateWithoutRetro($other, $team))->toBeTrue()
         ->and($permissions->canCreateWithoutRetro($admin, $team))->toBeFalse()
@@ -102,7 +102,7 @@ it('lets comment authors edit and managers delete comments', function () {
     $fixture = permissionsFixture();
     [$memberUser, $member] = retroMember($fixture['retro']);
     $comment = ActionItemComment::factory()->byParticipant($member)->create(['action_item_id' => $fixture['item']->id]);
-    $permissions = app(ActionItemPermissions::class);
+    $permissions = resolve(ActionItemPermissions::class);
 
     expect($permissions->canEditComment($comment, ActionItemActor::forParticipant($member)))->toBeTrue()
         ->and($permissions->canEditComment($comment, ActionItemActor::forUser($memberUser)))->toBeTrue()
@@ -115,7 +115,7 @@ it('explains refusals', function () {
     $fixture = permissionsFixture();
     $stranger = ActionItemActor::forParticipant(retroMember($fixture['retro'])[1]);
     $team = $fixture['retro']->team;
-    $permissions = app(ActionItemPermissions::class);
+    $permissions = resolve(ActionItemPermissions::class);
 
     expect(fn () => $permissions->authorizeEdit($fixture['item'], $stranger))
         ->toThrow(AuthorizationException::class, 'Only the author, the facilitator or an admin can change this action item.')

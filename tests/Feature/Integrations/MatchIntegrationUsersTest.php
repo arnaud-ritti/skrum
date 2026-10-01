@@ -54,7 +54,7 @@ it('maps team members with one active Jira account for their email', function ()
         'grace@example.com' => [jiraAccount('acc-1', 'Grace'), jiraAccount('acc-2', 'Grace H.')],
     ]);
 
-    app(MatchIntegrationUserAccounts::class)->handle($integration);
+    resolve(MatchIntegrationUserAccounts::class)->handle($integration);
 
     $mapping = $integration->accountFor($ada);
 
@@ -72,7 +72,7 @@ it('looks up current members with a verified email only', function () {
     User::factory()->create(['email' => 'outsider@example.com']);
     fakeJiraDirectory([]);
 
-    app(MatchIntegrationUserAccounts::class)->handle($integration);
+    resolve(MatchIntegrationUserAccounts::class)->handle($integration);
 
     Http::assertSentCount(1);
     Http::assertSent(fn (HttpClientRequest $request) => $request['query'] === 'ada@example.com');
@@ -89,7 +89,7 @@ it('never overwrites manual rows', function () {
         jiraApiUrl('rest/api/3/user/search*') => Http::response([jiraAccount('acc-other', 'Someone')]),
     ]);
 
-    app(MatchIntegrationUserAccounts::class)->handle($integration);
+    resolve(MatchIntegrationUserAccounts::class)->handle($integration);
 
     expect($integration->accountFor($manual)?->external_account_id)->toBe('acc-chosen')
         ->and($integration->accountFor($never)?->isNeverAssign())->toBeTrue();
@@ -111,7 +111,7 @@ it('re-checks existing rows', function () {
         jiraApiUrl('rest/api/3/user/search*') => Http::response([jiraAccount('acc-ada-new', 'Ada')]),
     ]);
 
-    app(MatchIntegrationUserAccounts::class)->handle($integration);
+    resolve(MatchIntegrationUserAccounts::class)->handle($integration);
 
     expect($integration->accountFor($stale)?->external_account_id)->toBe('acc-ada-new')
         ->and($integration->accountFor($inactive)?->account_inactive)->toBeTrue()
@@ -140,7 +140,7 @@ it('keeps an admin choice saved while the re-check waits on the provider', funct
         jiraApiUrl('rest/api/3/user/search*') => Http::response([jiraAccount('acc-other', 'Someone')]),
     ]);
 
-    app(MatchIntegrationUserAccounts::class)->handle($integration);
+    resolve(MatchIntegrationUserAccounts::class)->handle($integration);
 
     expect($integration->accountFor($excluded)?->isNeverAssign())->toBeTrue()
         ->and($integration->accountFor($chosen)?->external_account_id)->toBe('acc-chosen')
@@ -157,7 +157,7 @@ it('keeps a row saved by an admin while matching searches the provider', functio
         return Http::response([jiraAccount('acc-ada', 'Ada L.')]);
     }]);
 
-    app(MatchIntegrationUserAccounts::class)->handle($integration);
+    resolve(MatchIntegrationUserAccounts::class)->handle($integration);
 
     expect($integration->accountFor($ada)?->isNeverAssign())->toBeTrue();
 });
@@ -170,7 +170,7 @@ it('matches Linear members on this server', function () {
         'pageInfo' => ['hasNextPage' => false, 'endCursor' => null],
     ]]]);
 
-    app(MatchIntegrationUserAccounts::class)->handle($integration);
+    resolve(MatchIntegrationUserAccounts::class)->handle($integration);
 
     expect($integration->accountFor($ada)?->external_account_id)->toBe('lin-ada');
     Http::assertNotSent(fn (HttpClientRequest $request) => str_contains($request->body(), 'ada@example.com'));
@@ -182,8 +182,8 @@ it('does nothing for read-only connections or Jira without account access', func
     $withoutScope = TeamIntegration::factory()->jira()->create(['scopes' => ['offline_access', 'read:jira-work', 'write:jira-work']]);
     matchingMember($withoutScope->team, 'grace@example.com');
 
-    app(MatchIntegrationUserAccounts::class)->handle($read);
-    app(MatchIntegrationUserAccounts::class)->handle($withoutScope);
+    resolve(MatchIntegrationUserAccounts::class)->handle($read);
+    resolve(MatchIntegrationUserAccounts::class)->handle($withoutScope);
 
     Http::assertNothingSent();
 });
@@ -198,12 +198,12 @@ it('waits when the provider rate limits and clears the flag when done', function
     MatchIntegrationUsers::start($integration);
 
     $limited = (new MatchIntegrationUsers($integration->id))->withFakeQueueInteractions();
-    $limited->handle(app(MatchIntegrationUserAccounts::class));
+    $limited->handle(resolve(MatchIntegrationUserAccounts::class));
 
     $limited->assertReleased(42);
     expect(MatchIntegrationUsers::isRunning($integration))->toBeTrue();
 
-    (new MatchIntegrationUsers($integration->id))->withFakeQueueInteractions()->handle(app(MatchIntegrationUserAccounts::class));
+    (new MatchIntegrationUsers($integration->id))->withFakeQueueInteractions()->handle(resolve(MatchIntegrationUserAccounts::class));
 
     expect(MatchIntegrationUsers::isRunning($integration))->toBeFalse();
 });

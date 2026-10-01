@@ -15,6 +15,7 @@ use App\Models\Card;
 use App\Models\CardComment;
 use App\Models\Participant;
 use App\Models\Retro;
+use Illuminate\Contracts\Database\Query\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -178,13 +179,13 @@ class CardCommentsController extends Controller
         $threadParticipantIds = $comment->parent_comment_id === null
             ? collect()
             : $card->comments()
-                ->where(fn ($query) => $query->whereKey($comment->parent_comment_id)->orWhere('parent_comment_id', $comment->parent_comment_id))
+                ->where(fn (Builder $query) => $query->whereKey($comment->parent_comment_id)->orWhere('parent_comment_id', $comment->parent_comment_id))
                 ->pluck('participant_id');
 
         $recipients = $threadParticipantIds
             ->push($card->participant_id)
             ->unique()
-            ->reject(fn (string $participantId) => $participantId === $commenter->id);
+            ->reject(fn (string $participantId): bool => $participantId === $commenter->id);
 
         $notification = [
             'cardId' => $card->id,

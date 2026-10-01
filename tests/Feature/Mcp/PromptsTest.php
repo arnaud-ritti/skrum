@@ -8,6 +8,7 @@ use App\Mcp\Prompts\SkrumPrompt;
 use App\Mcp\Prompts\TeamHealth;
 use App\Models\ActionItem;
 use App\Models\Card;
+use App\Models\Column;
 use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\RetroTheme;
@@ -196,10 +197,12 @@ it('turns an unexpected prompt failure into a translated error without logging i
 it('drops the last messages of the board order when vote totals are hidden', function () {
     $retro = Retro::factory()->inPhase(RetroPhase::Voting)->create(['hide_vote_counts' => true]);
     [$user, $participant] = retroMember($retro);
+    $column = Column::factory()->create(['retro_id' => $retro->id]);
 
     foreach (range(1, 300) as $index) {
         Card::factory()->create([
             'retro_id' => $retro->id,
+            'column_id' => $column->id,
             'participant_id' => $participant->id,
             'content' => "Card {$index} ".str_repeat('x', 480),
             'position' => $index,
@@ -287,7 +290,7 @@ it('drops the oldest boards entirely when emptied themes are not enough', functi
         'health' => ['blob' => str_repeat('z', 25000)],
     ])->all()];
 
-    [$fitted, $trimmedThemes, $droppedBoards] = (fn (): array => $this->fit($data))->call(app(TeamHealth::class));
+    [$fitted, $trimmedThemes, $droppedBoards] = (fn (): array => $this->fit($data))->call(resolve(TeamHealth::class));
 
     expect(mb_strlen(json_encode($fitted, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)))->toBeLessThanOrEqual(SkrumPrompt::MaxContentLength)
         ->and($trimmedThemes)->toBeTrue()

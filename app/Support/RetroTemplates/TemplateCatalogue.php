@@ -11,13 +11,13 @@ class TemplateCatalogue
 
     public const Workspace = 'workspace';
 
-    private const CommonCount = 8;
+    private const int CommonCount = 8;
 
     /**
      * Key => [category, column colours], in the order of docs/superpowers/research/qretro/templates.md.
      * Positive columns are green, negative ones red.
      */
-    private const Templates = [
+    private const array Templates = [
         'went_well_to_improve_actions' => ['essentials', ['green', 'amber', 'blue']],
         'start_stop_continue' => ['essentials', ['green', 'red', 'blue']],
         'four_ls' => ['essentials', ['green', 'blue', 'amber', 'purple']],
@@ -73,7 +73,7 @@ class TemplateCatalogue
         self::Custom => [null, []],
     ];
 
-    private const ColumnEmoji = [
+    private const array ColumnEmoji = [
         'thumbs_up_down_ideas_recognition' => ['👍', '👎', '💡', '🏆'],
         'wrap' => ['😇', '🤗', '😨', '😵'],
         'appreciation' => ['😃', '🤔', '😢', '✅', '🙏'],

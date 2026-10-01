@@ -4,6 +4,7 @@ namespace App\Mcp;
 
 use App\Enums\WorkspaceRole;
 use App\Models\Team;
+use Illuminate\Contracts\Database\Query\Builder;
 
 class VisibleTeams
 {
@@ -32,9 +33,9 @@ class VisibleTeams
             ->pluck('workspaces.id');
 
         return Team::query()
-            ->where(fn ($query) => $query
+            ->where(fn (Builder $query) => $query
                 ->whereIn('workspace_id', $managedWorkspaceIds)
-                ->orWhereHas('members', fn ($members) => $members->whereKey($user->id)))
+                ->orWhereHas('members', fn (Builder $members) => $members->whereKey($user->id)))
             ->when($grant->teamId !== null, fn ($query) => $query->whereKey($grant->teamId))
             ->pluck('id')
             ->all();

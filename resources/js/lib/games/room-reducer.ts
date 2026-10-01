@@ -108,6 +108,28 @@ function requestResync(state: GameRoomState): GameRoomState {
     return { ...state, resyncRequests: state.resyncRequests + 1 };
 }
 
+/**
+ * A fresh snapshot knows nothing of `committedOpIds` (client only). Dropping
+ * them would let the live preview of a stroke committed moments ago show
+ * again once that stroke is undone or the drawing is cleared.
+ */
+function withCommittedOpIds(
+    fresh: GameSnapshot,
+    previous: GameSnapshot,
+): GameSnapshot {
+    const committedOpIds = previous.round?.committedOpIds;
+
+    if (
+        !fresh.round ||
+        fresh.round.id !== previous.round?.id ||
+        committedOpIds === undefined
+    ) {
+        return fresh;
+    }
+
+    return { ...fresh, round: { ...fresh.round, committedOpIds } };
+}
+
 export function roomReducer(
     state: GameRoomState,
     action: RoomAction,
@@ -121,7 +143,7 @@ export function roomReducer(
 
             return {
                 ...state,
-                snapshot: action.snapshot,
+                snapshot: withCommittedOpIds(action.snapshot, state.snapshot),
                 lastEnded: keepsEndCard ? state.lastEnded : null,
             };
         }

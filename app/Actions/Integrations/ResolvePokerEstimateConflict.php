@@ -30,9 +30,7 @@ class ResolvePokerEstimateConflict
 
         $conflict = PokerTaskSync::for($locked)->estimateConflict($task);
 
-        if ($conflict === null) {
-            abort(409, __('This estimate is already in sync.'));
-        }
+        abort_if($conflict === null, 409, __('This estimate is already in sync.'));
 
         if ($resolution === self::KeepSkrum) {
             $this->requestEstimateSync->retryAndBroadcast($locked, $task, $player);

@@ -61,7 +61,7 @@ it('duplicates a board for any member, who facilitates the copy', function () {
         ->and($copy->seq)->toBe(3)
         ->and($elements)->toHaveCount(3)
         ->and($elements->pluck('author_member_id')->unique()->all())->toBe([$copy->facilitator_member_id])
-        ->and($elements->pluck('element_id')->intersect(['note', 'words', 'photo'])->all())->toBe([])
+        ->and($elements->pluck('element_id')->intersect(['note', 'words', 'photo'])->all())->toBeEmpty()
         ->and($elements[0]->is_sticky)->toBeTrue()
         ->and($words['containerId'])->toBe($note['id'])
         ->and($words['text'])->toBe('Keep me')

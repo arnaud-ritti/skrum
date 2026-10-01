@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\DB;
 
 class DuplicateWhiteboard
 {
-    private const MaxTitleLength = 120;
+    private const int MaxTitleLength = 120;
 
     public function __construct(
         private CreateWhiteboard $createWhiteboard,

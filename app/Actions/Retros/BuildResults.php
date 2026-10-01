@@ -57,7 +57,7 @@ class BuildResults
         $canShare = $this->sharePermissions->retro($retro, $retro->participants->firstWhere('id', $viewer->id) ?? $viewer);
 
         return [
-            'participants' => $retro->participants->map(fn (Participant $participant) => $this->presentParticipant->handle($participant))->values()->all(),
+            'participants' => $retro->participants->map(fn (Participant $participant): array => $this->presentParticipant->handle($participant))->values()->all(),
             'health' => $health,
             'healthTrend' => $health === null ? null : $this->buildHealthTrend->forViewer($retro, $viewer),
             'surveys' => $surveys ?? $this->presentSurvey->many($retro, $viewer),

@@ -47,7 +47,7 @@ it('creates items on every path and announces each one', function () {
     $retro = Retro::factory()->inPhase(RetroPhase::Discussing)->create();
     [$user, $participant] = retroMember($retro);
     $theme = RetroTheme::factory()->create(['retro_id' => $retro->id, 'name' => 'Release pain']);
-    $create = app(CreateActionItem::class);
+    $create = resolve(CreateActionItem::class);
 
     $boardItem = $create->handle($retro->team, $retro, ActionItemActor::forParticipant($participant), ['content' => 'Speed up CI']);
     $promoted = $create->handle($retro->team, $retro, ActionItemActor::forParticipant($participant), ['content' => 'Automate the release'], $theme);
@@ -77,7 +77,7 @@ it('normalizes member participants to users', function () {
     $retro = Retro::factory()->create();
     [$user, $participant] = retroMember($retro);
     $guest = Participant::factory()->guest()->create(['retro_id' => $retro->id]);
-    $resolve = app(ResolveActionItemAssignee::class);
+    $resolve = resolve(ResolveActionItemAssignee::class);
 
     expect($resolve->handle($retro->team, $retro, ['assignee_participant_id' => $participant->id]))
         ->toBe(['assignee_user_id' => $user->id, 'assignee_participant_id' => null])
@@ -93,7 +93,7 @@ it('normalizes member participants to users', function () {
 it('refuses assignees outside the team', function (Closure $input, string $message) {
     $retro = Retro::factory()->create();
 
-    expect(fn () => app(ResolveActionItemAssignee::class)->handle($retro->team, $retro, $input($retro)))
+    expect(fn () => resolve(ResolveActionItemAssignee::class)->handle($retro->team, $retro, $input($retro)))
         ->toThrow(ValidationException::class, $message);
 })->with([
     'admin who is not in the team' => [fn (Retro $retro) => ['assignee_user_id' => workspaceManager($retro->team->workspace)->id], 'The assignee must be a member of this team.'],
@@ -107,7 +107,7 @@ it('refuses both assignee fields', function () {
     [$user] = retroMember($retro);
     $guest = Participant::factory()->guest()->create(['retro_id' => $retro->id]);
 
-    expect(fn () => app(ResolveActionItemAssignee::class)->handle($retro->team, $retro, [
+    expect(fn () => resolve(ResolveActionItemAssignee::class)->handle($retro->team, $retro, [
         'assignee_user_id' => $user->id,
         'assignee_participant_id' => $guest->id,
     ]))->toThrow(ValidationException::class, 'Choose either a team member or a guest as assignee, not both.');
@@ -118,7 +118,7 @@ it('keeps an assignee who left the team while the assignee is unchanged', functi
     [$user] = retroMember($retro);
     $item = ActionItem::factory()->assignedTo($user)->create(['retro_id' => $retro->id]);
     $retro->team->members()->detach($user);
-    $resolve = app(ResolveActionItemAssignee::class);
+    $resolve = resolve(ResolveActionItemAssignee::class);
 
     expect($resolve->handle($retro->team, $retro, ['assignee_user_id' => $user->id], $item))
         ->toBe(['assignee_user_id' => $user->id, 'assignee_participant_id' => null])
@@ -129,7 +129,7 @@ it('keeps an assignee who left the team while the assignee is unchanged', functi
 it('announces new assignees only', function () {
     [$retro, $item, $author] = authoredActionItem();
     [$assignee] = retroMember($retro);
-    $update = app(UpdateActionItem::class);
+    $update = resolve(UpdateActionItem::class);
 
     $update->handle($item, $author, ['content' => 'Reworded']);
     $update->handle($item, $author, ['assignee_user_id' => $assignee->id, 'assignee_participant_id' => null]);
@@ -143,7 +143,7 @@ it('announces new assignees only', function () {
 
 it('completes and reopens with the skrum origin', function () {
     [, $item, $author] = authoredActionItem();
-    $set = app(SetActionItemStatus::class);
+    $set = resolve(SetActionItemStatus::class);
 
     $set->handle($item, $author, ActionItemStatus::Completed);
 
@@ -152,15 +152,15 @@ it('completes and reopens with the skrum origin', function () {
     $set->handle($item, $author, ActionItemStatus::Open);
 
     expect($item->fresh()->isCompleted())->toBeFalse();
-    Event::assertDispatched(ActionItemCompleted::class, fn (ActionItemCompleted $event) => $event->actionItem->is($item) && $event->origin === ActionItemEventOrigin::Skrum);
-    Event::assertDispatched(ActionItemReopened::class, fn (ActionItemReopened $event) => $event->actionItem->is($item) && $event->origin === ActionItemEventOrigin::Skrum);
+    Event::assertDispatched(fn (ActionItemCompleted $event) => $event->actionItem->is($item) && $event->origin === ActionItemEventOrigin::Skrum);
+    Event::assertDispatched(fn (ActionItemReopened $event) => $event->actionItem->is($item) && $event->origin === ActionItemEventOrigin::Skrum);
 });
 
 it('treats the current status as a no-op', function () {
     [, $item, $author] = authoredActionItem();
     $item->update(['completed_at' => now()]);
 
-    app(SetActionItemStatus::class)->handle($item, $author, ActionItemStatus::Completed);
+    resolve(SetActionItemStatus::class)->handle($item, $author, ActionItemStatus::Completed);
 
     Event::assertNotDispatched(ActionItemCompleted::class);
     Event::assertNotDispatched(ActionItemReopened::class);
@@ -171,10 +171,10 @@ it('lets the external sync actor bypass permissions', function () {
     $retro = Retro::factory()->inPhase(RetroPhase::Voting)->create(['is_locked' => true]);
     $item = ActionItem::factory()->create(['retro_id' => $retro->id]);
 
-    app(SetActionItemStatus::class)->handle($item, new ExternalSyncActor('jira', 'PROJ-12'), ActionItemStatus::Completed);
+    resolve(SetActionItemStatus::class)->handle($item, new ExternalSyncActor('jira', 'PROJ-12'), ActionItemStatus::Completed);
 
     expect($item->fresh()->isCompleted())->toBeTrue();
-    Event::assertDispatched(ActionItemCompleted::class, fn (ActionItemCompleted $event) => $event->origin === ActionItemEventOrigin::External);
+    Event::assertDispatched(fn (ActionItemCompleted $event) => $event->origin === ActionItemEventOrigin::External);
     Event::assertDispatched(TeamActionItemSaved::class);
 });
 
@@ -182,9 +182,9 @@ it('refuses changes by people who may not make them', function () {
     [$retro, $item] = authoredActionItem();
     $stranger = ActionItemActor::forParticipant(retroMember($retro)[1]);
 
-    expect(fn () => app(UpdateActionItem::class)->handle($item, $stranger, ['content' => 'Hijacked']))->toThrow(AuthorizationException::class)
-        ->and(fn () => app(SetActionItemStatus::class)->handle($item, $stranger, ActionItemStatus::Completed))->toThrow(AuthorizationException::class)
-        ->and(fn () => app(DeleteActionItem::class)->handle($item, $stranger))->toThrow(AuthorizationException::class)
+    expect(fn () => resolve(UpdateActionItem::class)->handle($item, $stranger, ['content' => 'Hijacked']))->toThrow(AuthorizationException::class)
+        ->and(fn () => resolve(SetActionItemStatus::class)->handle($item, $stranger, ActionItemStatus::Completed))->toThrow(AuthorizationException::class)
+        ->and(fn () => resolve(DeleteActionItem::class)->handle($item, $stranger))->toThrow(AuthorizationException::class)
         ->and($item->fresh()->content)->not->toBe('Hijacked');
 });
 
@@ -192,7 +192,7 @@ it('applies field and status changes together', function () {
     [$retro, $item, $author] = authoredActionItem();
     [$user, $participant] = retroMember($retro);
 
-    $updated = app(ApplyActionItemChanges::class)->handle($item, $author, [
+    $updated = resolve(ApplyActionItemChanges::class)->handle($item, $author, [
         'content' => 'Pair on the pipeline',
         'priority' => 'low',
         'assignee_participant_id' => $participant->id,
@@ -209,10 +209,10 @@ it('applies field and status changes together', function () {
 it('deletes items and tells the team', function () {
     [, $item, $author] = authoredActionItem();
 
-    app(DeleteActionItem::class)->handle($item, $author);
+    resolve(DeleteActionItem::class)->handle($item, $author);
 
     expect(ActionItem::find($item->id))->toBeNull();
-    Event::assertDispatched(TeamActionItemDeleted::class, fn (TeamActionItemDeleted $event) => $event->actionItemId === $item->id);
+    Event::assertDispatched(fn (TeamActionItemDeleted $event) => $event->actionItemId === $item->id);
 });
 
 it('stores member assignees on create as users and keeps guests as participants', function () {
@@ -220,8 +220,8 @@ it('stores member assignees on create as users and keeps guests as participants'
     [$user, $participant] = retroMember($retro);
     $guest = Participant::factory()->guest()->create(['retro_id' => $retro->id]);
     $actor = ActionItemActor::forParticipant($participant);
-    $resolve = app(ResolveActionItemAssignee::class);
-    $create = app(CreateActionItem::class);
+    $resolve = resolve(ResolveActionItemAssignee::class);
+    $create = resolve(CreateActionItem::class);
 
     $memberItem = $create->handle($retro->team, $retro, $actor, [
         'content' => 'Member task',
@@ -243,7 +243,7 @@ it('keeps completed_at when completing an already completed item', function () {
     $completedAt = now()->subDay()->startOfSecond();
     $item->update(['completed_at' => $completedAt]);
 
-    app(SetActionItemStatus::class)->handle($item, $author, ActionItemStatus::Completed);
+    resolve(SetActionItemStatus::class)->handle($item, $author, ActionItemStatus::Completed);
 
     expect($item->fresh()->completed_at->equalTo($completedAt))->toBeTrue();
 });
@@ -260,7 +260,7 @@ function itemAssignedToNonManager(): array
 it('lets a non-editing assignee complete an item when the sent fields are unchanged', function () {
     [, $item, $assignee] = itemAssignedToNonManager();
 
-    $updated = app(ApplyActionItemChanges::class)->handle($item, $assignee, [
+    $updated = resolve(ApplyActionItemChanges::class)->handle($item, $assignee, [
         'content' => $item->content,
         'priority' => $item->priority->value,
         'assignee_user_id' => $item->assignee_user_id,
@@ -273,28 +273,25 @@ it('lets a non-editing assignee complete an item when the sent fields are unchan
 it('refuses a non-editing assignee who changes the content', function () {
     [, $item, $assignee] = itemAssignedToNonManager();
 
-    expect(fn () => app(ApplyActionItemChanges::class)->handle($item, $assignee, ['content' => 'Something else', 'status' => 'completed']))
+    expect(fn () => resolve(ApplyActionItemChanges::class)->handle($item, $assignee, ['content' => 'Something else', 'status' => 'completed']))
         ->toThrow(AuthorizationException::class);
 });
 
 it('answers a non-editor changing the assignee to an invalid one with a refusal, not a validation error', function () {
     [, $item, $assignee] = itemAssignedToNonManager();
 
-    expect(fn () => app(ApplyActionItemChanges::class)->handle($item, $assignee, ['assignee_user_id' => '00000000-0000-4000-8000-000000000000']))
+    expect(fn () => resolve(ApplyActionItemChanges::class)->handle($item, $assignee, ['assignee_user_id' => '00000000-0000-4000-8000-000000000000']))
         ->toThrow(AuthorizationException::class);
 });
 
 it('dispatches no domain events when the surrounding transaction rolls back', function () {
     [, $item, $author] = authoredActionItem();
 
-    try {
-        DB::transaction(function () use ($item, $author) {
-            app(SetActionItemStatus::class)->handle($item, $author, ActionItemStatus::Completed);
+    expect(fn () => DB::transaction(function () use ($item, $author): never {
+        resolve(SetActionItemStatus::class)->handle($item, $author, ActionItemStatus::Completed);
 
-            throw new RuntimeException('rollback');
-        });
-    } catch (RuntimeException) {
-    }
+        throw new RuntimeException('rollback');
+    }))->toThrow(RuntimeException::class);
 
     Event::assertNotDispatched(ActionItemCompleted::class);
 });

@@ -9,6 +9,7 @@ use App\Notifications\ActionItemReminderDigestNotification;
 use App\Notifications\ActionItemReminderNotification;
 use Carbon\CarbonImmutable;
 use Closure;
+use Illuminate\Contracts\Database\Query\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -44,7 +45,7 @@ class SendActionItemReminders
                     continue;
                 }
 
-                $unsent = $items->filter(fn (ActionItem $item) => $this->log($item, $user, $today))->values();
+                $unsent = $items->filter(fn (ActionItem $item): bool => $this->log($item, $user, $today))->values();
 
                 if ($unsent->isEmpty()) {
                     continue;
@@ -80,7 +81,7 @@ class SendActionItemReminders
                 ->from('team_user')
                 ->whereColumn('team_user.team_id', 'action_items.team_id')
                 ->whereColumn('team_user.user_id', 'action_items.assignee_user_id'))
-            ->whereHas('assigneeUser', fn ($query) => $query->whereNotNull('email_verified_at'))
+            ->whereHas('assigneeUser', fn (Builder $query) => $query->whereNotNull('email_verified_at'))
             ->with(['assigneeUser', 'team'])
             ->orderBy('due_on')
             ->orderBy('created_at')
@@ -117,7 +118,7 @@ class SendActionItemReminders
     {
         if ($user->action_item_reminders_by_email) {
             $user->notify(new ActionItemReminderDigestNotification(
-                $items->map(fn (ActionItem $item) => [
+                $items->map(fn (ActionItem $item): array => [
                     'actionItemId' => $item->id,
                     'kind' => $this->kind($item, $today)->value,
                 ])->values()->all(),

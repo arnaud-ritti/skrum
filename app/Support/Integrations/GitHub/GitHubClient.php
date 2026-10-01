@@ -3,12 +3,12 @@
 namespace App\Support\Integrations\GitHub;
 
 use App\Enums\IntegrationProvider;
+use App\Exceptions\Integrations\NotConnected;
+use App\Exceptions\Integrations\ProviderRejected;
+use App\Exceptions\Integrations\ProviderUnavailable;
+use App\Exceptions\Integrations\RateLimited;
+use App\Exceptions\Integrations\ReconnectRequired;
 use App\Models\TeamIntegration;
-use App\Support\Integrations\Exceptions\NotConnected;
-use App\Support\Integrations\Exceptions\ProviderRejected;
-use App\Support\Integrations\Exceptions\ProviderUnavailable;
-use App\Support\Integrations\Exceptions\RateLimited;
-use App\Support\Integrations\Exceptions\ReconnectRequired;
 use App\Support\Integrations\ProviderHttp;
 use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Contracts\Encryption\DecryptException;
@@ -34,28 +34,28 @@ class GitHubClient
 
     private const Provider = IntegrationProvider::GitHub;
 
-    private const TokenMinutes = 50;
+    private const int TokenMinutes = 50;
 
-    private const LockSeconds = 30;
+    private const int LockSeconds = 30;
 
-    private const LockWaitSeconds = 20;
+    private const int LockWaitSeconds = 20;
 
-    private const PageSize = 100;
+    private const int PageSize = 100;
 
-    private const MaxPages = 10;
+    private const int MaxPages = 10;
 
-    private const MaxRetryAfterSeconds = 3600;
+    private const int MaxRetryAfterSeconds = 3600;
 
-    private const RepositoriesCacheMinutes = 5;
+    private const int RepositoriesCacheMinutes = 5;
 
-    private const IdPattern = '/^\d{1,20}\z/';
+    private const string IdPattern = '/^\d{1,20}\z/';
 
     /** GitHub gives up on a webhook delivery after 10 seconds. */
-    private const InstallationCheckTimeoutSeconds = 8;
+    private const int InstallationCheckTimeoutSeconds = 8;
 
-    private const LoginPattern = '/^[A-Za-z0-9-]{1,39}\z/';
+    private const string LoginPattern = '/^[A-Za-z0-9-]{1,39}\z/';
 
-    private const RepositoryPattern = '/^[A-Za-z0-9._-]{1,100}\z/';
+    private const string RepositoryPattern = '/^[A-Za-z0-9._-]{1,100}\z/';
 
     public function __construct(private GitHubAppJwt $jwt) {}
 
@@ -79,9 +79,7 @@ class GitHubClient
 
         $token = $response->json('access_token');
 
-        if (! $response->successful() || ! is_string($token) || $token === '') {
-            throw new ProviderRejected(self::Provider, 'code_exchange_failed');
-        }
+        throw_if(! $response->successful() || ! is_string($token) || $token === '', ProviderRejected::class, self::Provider, 'code_exchange_failed');
 
         return $token;
     }
@@ -101,7 +99,7 @@ class GitHubClient
             }
 
             foreach ((array) $response->json('installations', []) as $installation) {
-                $summary = self::installationSummary($installation);
+                $summary = $this->installationSummary($installation);
 
                 if ($summary !== null) {
                     $installations[] = $summary;
@@ -274,7 +272,7 @@ class GitHubClient
     {
         /** @var array<int, array{id: string, name: string}> */
         return Cache::remember(
-            self::repositoriesKey($this->installationId($integration)),
+            $this->repositoriesKey($this->installationId($integration)),
             now()->addMinutes(self::RepositoriesCacheMinutes),
             fn (): array => $this->repositories($integration),
         );
@@ -286,7 +284,7 @@ class GitHubClient
      */
     public function knownRepositoryName(string $installationId, string $repositoryId): ?string
     {
-        $repositories = Cache::get(self::repositoriesKey($installationId));
+        $repositories = Cache::get($this->repositoriesKey($installationId));
 
         if (! is_array($repositories)) {
             return null;
@@ -304,12 +302,12 @@ class GitHubClient
 
     public function forgetInstallationToken(string $installationId): void
     {
-        Cache::forget(self::tokenKey($installationId));
+        Cache::forget($this->tokenKey($installationId));
     }
 
     public function forgetRepositories(string $installationId): void
     {
-        Cache::forget(self::repositoriesKey($installationId));
+        Cache::forget($this->repositoriesKey($installationId));
     }
 
     public static function safeFullName(mixed $fullName): ?string
@@ -343,7 +341,7 @@ class GitHubClient
     /**
      * @return array{id: string, accountLogin: string, accountType: 'Organization'|'User', canWriteIssues: bool}|null
      */
-    private static function installationSummary(mixed $installation): ?array
+    private function installationSummary(mixed $installation): ?array
     {
         if (! is_array($installation) || ! is_int($installation['id'] ?? null)) {
             return null;
@@ -366,7 +364,7 @@ class GitHubClient
     private function installationToken(TeamIntegration $integration): string
     {
         $installationId = $this->installationId($integration);
-        $key = self::tokenKey($installationId);
+        $key = $this->tokenKey($installationId);
 
         $cached = $this->cachedToken($key);
 
@@ -392,7 +390,7 @@ class GitHubClient
             throw new ReconnectRequired(self::Provider, $this->uninstalledMessage($integration));
         }
 
-        if ($response->status() === 403 && ! self::isRateLimited($response)) {
+        if ($response->status() === 403 && ! $this->isRateLimited($response)) {
             throw new ReconnectRequired(self::Provider, $this->suspendedMessage($integration));
         }
 
@@ -402,9 +400,7 @@ class GitHubClient
 
         $token = $response->json('token');
 
-        if (! is_string($token) || $token === '') {
-            throw new ProviderRejected(self::Provider, 'missing_installation_token');
-        }
+        throw_if(! is_string($token) || $token === '', ProviderRejected::class, self::Provider, 'missing_installation_token');
 
         Cache::put($key, Crypt::encryptString($token), now()->addMinutes(self::TokenMinutes));
 
@@ -432,19 +428,17 @@ class GitHubClient
     {
         $installationId = $integration->setting('installationId');
 
-        if (! is_string($installationId) || preg_match(self::IdPattern, $installationId) !== 1) {
-            throw new NotConnected(self::Provider);
-        }
+        throw_if(! is_string($installationId) || preg_match(self::IdPattern, $installationId) !== 1, NotConnected::class, self::Provider);
 
         return $installationId;
     }
 
-    private static function tokenKey(string $installationId): string
+    private function tokenKey(string $installationId): string
     {
         return "github-installation-token:{$installationId}";
     }
 
-    private static function repositoriesKey(string $installationId): string
+    private function repositoriesKey(string $installationId): string
     {
         return "github-repositories:{$installationId}";
     }
@@ -469,7 +463,7 @@ class GitHubClient
     /**
      * GitHub answers primary and secondary rate limits with 403 as well.
      */
-    private static function isRateLimited(Response $response): bool
+    private function isRateLimited(Response $response): bool
     {
         return $response->status() === 429
             || ($response->status() === 403 && ($response->header('x-ratelimit-remaining') === '0' || $response->header('Retry-After') !== ''));
@@ -477,7 +471,7 @@ class GitHubClient
 
     private function fail(Response $response): never
     {
-        if (self::isRateLimited($response)) {
+        if ($this->isRateLimited($response)) {
             throw new RateLimited(self::Provider, $this->retryAfter($response), ProviderHttp::message($response));
         }
 

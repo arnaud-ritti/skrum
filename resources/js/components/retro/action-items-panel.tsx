@@ -54,7 +54,10 @@ export function ActionItemsPanel() {
     };
 
     return (
-        <aside className="w-full shrink-0 space-y-3 p-4 lg:sticky lg:top-4 lg:max-h-dvh lg:w-80 lg:self-start lg:overflow-y-auto">
+        <aside
+            data-test="retro-action-items-panel"
+            className="w-full shrink-0 space-y-3 p-4 lg:sticky lg:top-4 lg:max-h-dvh lg:w-80 lg:self-start lg:overflow-y-auto"
+        >
             <h2 className="text-sm font-semibold">{t('Action items')}</h2>
             <ActionItemForm
                 assigneeGroups={groups}

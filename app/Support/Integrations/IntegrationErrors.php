@@ -6,12 +6,12 @@ use Illuminate\Support\Str;
 
 class IntegrationErrors
 {
-    private const MaxLength = 500;
+    private const int MaxLength = 500;
 
     /**
      * @var array<string, string>
      */
-    private const Patterns = [
+    private const array Patterns = [
         '#https://hooks\.slack\.com/\S+#i' => 'https://hooks.slack.com/***',
         '#(https://[^\s/"\']+\.(?:logic\.azure\.com|api\.powerplatform\.com)(?::\d+)?)/[^\s"\']*#i' => '$1/***',
         '#(https?://[^\s"\']+?)/hooks/[A-Za-z0-9]+#i' => '$1/hooks/***',

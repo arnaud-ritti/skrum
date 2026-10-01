@@ -25,7 +25,7 @@ enum TemplateCategory: string
      */
     public static function options(): array
     {
-        return array_map(fn (self $category) => [
+        return array_map(fn (self $category): array => [
             'value' => $category->value,
             'label' => $category->label(),
         ], self::cases());

@@ -13,6 +13,7 @@ use App\Models\PokerGame;
 use App\Models\PokerPlayer;
 use App\Models\PokerTask;
 use App\Models\User;
+use Illuminate\Contracts\Database\Query\Builder;
 
 /**
  * @phpstan-import-type Delivery from PresentIntegrationDelivery
@@ -168,7 +169,7 @@ class BuildPokerSnapshot
             ->pluck('users.id');
 
         return User::query()
-            ->where(fn ($query) => $query
+            ->where(fn (Builder $query) => $query
                 ->whereIn('id', $team->members()->select('users.id'))
                 ->orWhereIn('id', $managerIds))
             ->when($viewer->user_id !== null, fn ($query) => $query->whereKeyNot($viewer->user_id))

@@ -32,7 +32,7 @@ class DisconnectIntegration
             IntegrationProvider::Linear => fn () => $this->linear->revoke($integration),
             IntegrationProvider::GitHub => fn () => $this->gitHub->forgetRepositories((string) $integration->setting('installationId')),
             IntegrationProvider::Jira, IntegrationProvider::JiraDataCenter => fn () => $this->trackerWebhooks->removeQuietly($integration, TrackerWebhooks::ids($integration)),
-            IntegrationProvider::MicrosoftTeams, IntegrationProvider::Mattermost, IntegrationProvider::Webhook => fn () => null,
+            IntegrationProvider::MicrosoftTeams, IntegrationProvider::Mattermost, IntegrationProvider::Webhook => fn (): null => null,
         };
 
         $revoke();

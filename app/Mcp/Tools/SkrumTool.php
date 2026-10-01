@@ -2,11 +2,11 @@
 
 namespace App\Mcp\Tools;
 
+use App\Enums\McpFeature;
 use App\Enums\McpScope;
+use App\Exceptions\Integrations\IntegrationException;
 use App\Mcp\McpContext;
-use App\Mcp\McpFeature;
 use App\Mcp\McpGrant;
-use App\Support\Integrations\Exceptions\IntegrationException;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -83,7 +83,7 @@ abstract class SkrumTool extends Tool
 
     protected function context(): McpContext
     {
-        return app(McpContext::class);
+        return resolve(McpContext::class);
     }
 
     /**

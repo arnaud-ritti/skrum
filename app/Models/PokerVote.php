@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Database\Factories\PokerVoteFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Touches;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -18,15 +19,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read PokerPlayer $player
  */
 #[Fillable(['poker_round_id', 'poker_player_id', 'value'])]
+#[Touches(['round'])]
 class PokerVote extends Model
 {
     /** @use HasFactory<PokerVoteFactory> */
     use HasFactory;
 
     use HasUuids;
-
-    /** @var list<string> */
-    protected $touches = ['round'];
 
     /** @return BelongsTo<PokerRound, $this> */
     public function round(): BelongsTo

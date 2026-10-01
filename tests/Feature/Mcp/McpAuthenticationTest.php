@@ -45,12 +45,12 @@ it('refuses wrong, revoked and expired tokens', function (Closure $makeToken) {
         ->assertHeader('WWW-Authenticate', 'Bearer realm="skrum"');
 })->with([
     'unknown' => fn () => 'not-a-token',
-    'forged secret' => function () {
+    'forged secret' => function (): string {
         $token = issueTestMcpToken(User::factory()->create());
 
         return explode('|', $token)[0].'|skrum_forged';
     },
-    'revoked' => function () {
+    'revoked' => function (): string {
         $token = issueTestMcpToken(User::factory()->create());
         PersonalAccessToken::query()->delete();
 
@@ -123,8 +123,7 @@ it('limits requests per token', function () {
 
     postMcp($limited)->assertOk();
     postMcp($limited)->assertOk();
-    postMcp($limited)
-        ->assertStatus(429)
+    postMcp($limited)->assertTooManyRequests()
         ->assertHeader('Retry-After');
 
     postMcp($other)->assertOk();

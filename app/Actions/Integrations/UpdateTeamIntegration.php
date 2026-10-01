@@ -4,9 +4,9 @@ namespace App\Actions\Integrations;
 
 use App\Enums\IntegrationProvider;
 use App\Enums\IntegrationStatus;
+use App\Exceptions\Integrations\ReconnectRequired;
 use App\Models\TeamIntegration;
 use App\Models\User;
-use App\Support\Integrations\Exceptions\ReconnectRequired;
 use App\Support\Integrations\Linear\LinearPriority;
 use Closure;
 use Illuminate\Validation\Rule;
@@ -46,7 +46,7 @@ class UpdateTeamIntegration
             ],
             IntegrationProvider::Linear => [
                 'priority_map' => ['sometimes', 'array:high,medium,low'],
-                'priority_map.*' => ['required', Rule::in([...array_map('strval', LinearPriority::Scale), self::DefaultPriority])],
+                'priority_map.*' => ['required', Rule::in([...array_map(strval(...), LinearPriority::Scale), self::DefaultPriority])],
             ],
             IntegrationProvider::GitHub => [
                 'priority_labels' => ['sometimes', 'array:high,medium,low'],

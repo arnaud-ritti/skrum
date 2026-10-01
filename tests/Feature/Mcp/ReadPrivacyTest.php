@@ -40,7 +40,7 @@ it('never returns emails, guest secrets or guest links', function (string $tool,
         'summary_generated_at' => now(),
         'completed_at' => now(),
     ]);
-    app(FreezeHealthStatements::class)->handle($retro);
+    resolve(FreezeHealthStatements::class)->handle($retro);
     [$user, $participant] = retroMember($retro);
     $guest = Participant::factory()->guest()->create(['retro_id' => $retro->id, 'guest_name' => 'Zorgon Guestname']);
     $memberCard = Card::factory()->create(['retro_id' => $retro->id, 'participant_id' => $participant->id, 'content' => 'Privacy member card']);

@@ -2,18 +2,18 @@
 
 namespace App\Support\Integrations\Telegram;
 
-use App\Support\Integrations\Exceptions\IntegrationException;
+use App\Exceptions\Integrations\IntegrationException;
 use Illuminate\Support\Facades\Cache;
 
 class TelegramBot
 {
     public const ConflictKey = 'telegram:conflict';
 
-    private const UsernameTtlSeconds = 86400;
+    private const int UsernameTtlSeconds = 86400;
 
-    private const UnreachableTtlSeconds = 60;
+    private const int UnreachableTtlSeconds = 60;
 
-    private const ConflictTtlMinutes = 10;
+    private const int ConflictTtlMinutes = 10;
 
     public function __construct(private TelegramClient $telegram) {}
 

@@ -7,9 +7,11 @@ use App\Models\PersonalAccessToken;
 use App\Models\Team;
 use App\Models\User;
 use Carbon\CarbonInterface;
+use Illuminate\Contracts\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\NewAccessToken;
+use LogicException;
 
 class IssueMcpToken
 {
@@ -30,7 +32,7 @@ class IssueMcpToken
 
             $token = $newToken->accessToken;
 
-            assert($token instanceof PersonalAccessToken);
+            throw_unless($token instanceof PersonalAccessToken, LogicException::class, 'Sanctum issued a token that is not a skrum personal access token.');
 
             $token->forceFill([
                 'team_id' => $team?->id,
@@ -55,7 +57,7 @@ class IssueMcpToken
     private function ensureRoom(User $user): void
     {
         $active = $user->tokens()
-            ->where(fn ($query) => $query->whereNull('expires_at')->orWhere('expires_at', '>', now()))
+            ->where(fn (Builder $query) => $query->whereNull('expires_at')->orWhere('expires_at', '>', now()))
             ->count();
 
         if ($active < self::MaxActiveTokens) {

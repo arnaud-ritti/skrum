@@ -36,7 +36,7 @@ class PresentHealthCheck
         $myScores = $retro->healthCheckAnswers()->where('participant_id', $viewer->id)->pluck('score', 'statement');
 
         return [
-            'statements' => $retro->healthStatements()->get()->map(function (RetroHealthStatement $statement) use ($progress, $myScores) {
+            'statements' => $retro->healthStatements()->get()->map(function (RetroHealthStatement $statement) use ($progress, $myScores): array {
                 $presented = $this->presentHealthStatement->handle($statement);
 
                 return [

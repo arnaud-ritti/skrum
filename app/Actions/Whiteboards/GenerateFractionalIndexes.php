@@ -8,9 +8,9 @@ namespace App\Actions\Whiteboards;
  */
 class GenerateFractionalIndexes
 {
-    private const Digits = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+    private const string Digits = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
 
-    private const Base = 62;
+    private const int Base = 62;
 
     /**
      * @return list<string>

@@ -4,12 +4,12 @@ use App\Actions\Poker\RenderTaskMarkdown;
 
 function renderTaskMarkdown(?string $markdown): string
 {
-    return app(RenderTaskMarkdown::class)->handle($markdown);
+    return resolve(RenderTaskMarkdown::class)->handle($markdown);
 }
 
 it('renders nothing for an empty description', function () {
-    expect(renderTaskMarkdown(null))->toBe('')
-        ->and(renderTaskMarkdown('   '))->toBe('');
+    expect(renderTaskMarkdown(null))->toBeEmpty()
+        ->and(renderTaskMarkdown('   '))->toBeEmpty();
 });
 
 it('escapes raw html', function () {

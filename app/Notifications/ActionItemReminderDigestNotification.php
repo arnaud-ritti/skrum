@@ -81,7 +81,7 @@ class ActionItemReminderDigestNotification extends Notification implements Shoul
     private function itemsOfKind(Collection $items, ActionItemReminderKind $kind): SupportCollection
     {
         return collect($this->reminders)
-            ->filter(fn (array $reminder) => $reminder['kind'] === $kind->value && $items->has($reminder['actionItemId']))
+            ->filter(fn (array $reminder): bool => $reminder['kind'] === $kind->value && $items->has($reminder['actionItemId']))
             ->map(fn (array $reminder): ActionItem => $items[$reminder['actionItemId']])
             ->values();
     }

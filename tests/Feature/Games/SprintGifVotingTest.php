@@ -42,7 +42,7 @@ it('reveals the GIFs for the host and opens voting without ending the round', fu
     expect($round->fresh()->isActive())->toBeTrue()
         ->and(GamePoint::query()->count())->toBe(0);
 
-    Event::assertDispatched(GameRoundRevealed::class, fn (GameRoundRevealed $event) => $event->payload['answers'][0] === [
+    Event::assertDispatched(fn (GameRoundRevealed $event) => $event->payload['answers'][0] === [
         'id' => $answer->id,
         'gif' => gameGifPayload('party'),
         'playerId' => $member->id,
@@ -79,7 +79,7 @@ it('lets players vote for one favourite and change their mind', function () {
         ->answer_id->toBe($second->id);
 
     Event::assertDispatchedTimes(GameVoteChanged::class, 1);
-    Event::assertDispatched(GameVoteChanged::class, fn (GameVoteChanged $event) => $event->broadcastWith() === [
+    Event::assertDispatched(fn (GameVoteChanged $event) => $event->broadcastWith() === [
         'roundId' => $round->id,
         'playerId' => $voter->id,
         'voted' => true,
@@ -96,7 +96,7 @@ it('retracts a vote', function () {
     $this->actingAs($voterUser)->deleteJson(route('games.rounds.vote.destroy', [$room, $round]))->assertNoContent();
 
     expect(GameGifVote::query()->count())->toBe(0);
-    Event::assertDispatched(GameVoteChanged::class, fn (GameVoteChanged $event) => $event->voted === false);
+    Event::assertDispatched(fn (GameVoteChanged $event) => $event->voted === false);
 });
 
 it('refuses a vote for your own GIF', function () {
@@ -159,7 +159,7 @@ it('lets players without an answer and guests vote', function () {
 
     $this->actingAs($memberUser)->putJson(route('games.rounds.vote.update', [$room, $round]), ['answer_id' => $answer->id])->assertNoContent();
 
-    app('auth')->forgetGuards();
+    resolve('auth')->forgetGuards();
 
     $this->withCookies(gameGuestCookie($guest))
         ->withCredentials()

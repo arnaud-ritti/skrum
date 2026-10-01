@@ -16,10 +16,10 @@ function summarizedRetro(array $scores, int $silentParticipants = 0, ?Retro $ret
     $retro ??= Retro::factory()->withHealthCheck()->inPhase(RetroPhase::Completed)->create();
 
     if (! $retro->healthStatements()->exists()) {
-        app(FreezeHealthStatements::class)->handle($retro);
+        resolve(FreezeHealthStatements::class)->handle($retro);
     }
 
-    $respondents = max(array_map('count', $scores ?: [[]]));
+    $respondents = max(array_map(count(...), $scores ?: [[]]));
     $participants = Participant::factory()->count($respondents + $silentParticipants)->create(['retro_id' => $retro->id]);
 
     foreach ($scores as $statement => $statementScores) {
@@ -42,7 +42,7 @@ function summarizedRetro(array $scores, int $silentParticipants = 0, ?Retro $ret
 
 function healthSummary(Retro $retro): ?array
 {
-    return app(SummarizeHealthCheck::class)->handle($retro);
+    return resolve(SummarizeHealthCheck::class)->handle($retro);
 }
 
 it('reports every answered statement and excludes the others', function () {
@@ -121,7 +121,7 @@ it('summarises nothing when the health check is off or unanswered', function () 
 
 it('summarises the frozen set of 3 and of 10 statements', function (int $customs, array $archived, int $expected) {
     $retro = Retro::factory()->withHealthCheck()->inPhase(RetroPhase::Completed)->create();
-    $manage = app(ManageTeamHealthStatements::class);
+    $manage = resolve(ManageTeamHealthStatements::class);
 
     for ($number = 1; $number <= $customs; $number++) {
         $manage->add($retro->team, "Custom {$number}", "Axis {$number}");
@@ -131,7 +131,7 @@ it('summarises the frozen set of 3 and of 10 statements', function (int $customs
         $manage->archive($retro->team, $statement);
     }
 
-    app(FreezeHealthStatements::class)->handle($retro);
+    resolve(FreezeHealthStatements::class)->handle($retro);
 
     $summary = healthSummary(summarizedRetro([$retro->healthStatements()->first()->key => [6]], retro: $retro));
 
@@ -143,8 +143,8 @@ it('summarises the frozen set of 3 and of 10 statements', function (int $customs
 
 it('labels custom statements as typed', function () {
     $retro = Retro::factory()->withHealthCheck()->inPhase(RetroPhase::Completed)->create();
-    $custom = app(ManageTeamHealthStatements::class)->add($retro->team, 'We shipped what we promised', 'Delivery');
-    app(FreezeHealthStatements::class)->handle($retro);
+    $custom = resolve(ManageTeamHealthStatements::class)->add($retro->team, 'We shipped what we promised', 'Delivery');
+    resolve(FreezeHealthStatements::class)->handle($retro);
 
     $summary = healthSummary(summarizedRetro([$custom->id => [9], 'vision' => [3]], retro: $retro));
 

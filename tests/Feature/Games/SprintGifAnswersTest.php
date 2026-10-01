@@ -25,7 +25,7 @@ it('sets an answer and tells the others only that the player answered', function
     expect($response->json())->toBe(['myAnswer' => ['id' => $answer->id, 'gif' => gameGifPayload('party')]])
         ->and($answer->player_id)->toBe($member->id);
 
-    Event::assertDispatched(GameAnswerChanged::class, fn (GameAnswerChanged $event) => $event->broadcastWith() === [
+    Event::assertDispatched(fn (GameAnswerChanged $event) => $event->broadcastWith() === [
         'roundId' => $round->id,
         'playerId' => $member->id,
         'answered' => true,
@@ -53,7 +53,7 @@ it('removes the answer', function () {
     $this->actingAs($user)->deleteJson(route('games.rounds.answer.destroy', [$room, $round]))->assertNoContent();
 
     expect(GameGifAnswer::query()->count())->toBe(0);
-    Event::assertDispatched(GameAnswerChanged::class, fn (GameAnswerChanged $event) => $event->answered === false);
+    Event::assertDispatched(fn (GameAnswerChanged $event) => $event->answered === false);
 });
 
 it('lets the host and guests answer', function () {
@@ -63,7 +63,7 @@ it('lets the host and guests answer', function () {
 
     $this->actingAs($hostUser)->putJson(route('games.rounds.answer.update', [$room, $round]), ['gif_id' => 'party'])->assertOk();
 
-    app('auth')->forgetGuards();
+    resolve('auth')->forgetGuards();
 
     $this->withCookies(gameGuestCookie($guest))
         ->withCredentials()

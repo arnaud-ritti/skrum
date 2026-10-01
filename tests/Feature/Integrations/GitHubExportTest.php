@@ -8,12 +8,12 @@ use App\Events\ActionItems\TeamActionItemSaved;
 use App\Events\Retros\ActionItemExternalLinksChanged;
 use App\Events\Retros\ActionItemSaved;
 use App\Events\Retros\CarriedActionItemSaved;
+use App\Exceptions\Integrations\ProviderRejected;
 use App\Models\ActionItem;
 use App\Models\ActionItemExternalLink;
 use App\Models\IntegrationUserMapping;
 use App\Models\SocialAccount;
 use App\Models\TeamIntegration;
-use App\Support\Integrations\Exceptions\ProviderRejected;
 use App\Support\Integrations\GitHub\GitHubClient;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Event;
@@ -153,7 +153,7 @@ it('maps members through their GitHub sign-in only', function () {
     SocialAccount::factory()->create(['user_id' => $linked->id, 'provider' => 'github', 'provider_user_id' => '583231']);
     SocialAccount::factory()->create(['user_id' => $unlinked->id, 'provider' => 'google', 'provider_user_id' => '583231']);
 
-    app(MatchIntegrationUserAccounts::class)->handle($integration);
+    resolve(MatchIntegrationUserAccounts::class)->handle($integration);
 
     $mapping = $integration->userMappings()->sole();
 
@@ -251,7 +251,7 @@ it('names an unknown repository in words', function () {
     fakeGitHubTrackerApi(['api.github.com/repositories/9001' => Http::response(['full_name' => '../evil'])]);
     $integration = TeamIntegration::factory()->gitHub()->create();
 
-    expect(fn () => app(GitHubClient::class)->repositoryName($integration, '9001'))
+    expect(fn () => resolve(GitHubClient::class)->repositoryName($integration, '9001'))
         ->toThrow(ProviderRejected::class, "This repository isn't available to the GitHub App.");
 });
 
@@ -359,7 +359,7 @@ it('drops sign-in mappings whose GitHub account is gone or no longer linked', fu
     IntegrationUserMapping::factory()->create([...$sso, 'user_id' => $unlinked->id, 'external_account_id' => '583231']);
     IntegrationUserMapping::factory()->create([...$sso, 'user_id' => $relinked->id, 'external_account_id' => '583231']);
 
-    app(MatchIntegrationUserAccounts::class)->handle($integration);
+    resolve(MatchIntegrationUserAccounts::class)->handle($integration);
 
     expect($integration->accountFor($deleted))->toBeNull()
         ->and($integration->accountFor($unlinked))->toBeNull()

@@ -37,7 +37,7 @@ it('stores new elements, stamps the author and bumps the seq', function () {
         ->and($stored[0]->version)->toBe(1)
         ->and($stored[0]->version_nonce)->toBe(100);
 
-    Event::assertDispatched(WhiteboardElementsChanged::class, fn (WhiteboardElementsChanged $event) => $event->boardId === $board->id
+    Event::assertDispatched(fn (WhiteboardElementsChanged $event) => $event->boardId === $board->id
         && $event->seq === 2
         && $event->fromSeq === 0
         && count($event->elements ?? []) === 2);
@@ -191,7 +191,7 @@ it('broadcasts the accepted elements in the order of their index', function () {
         sceneElement(['id' => 'middle', 'index' => 'a1']),
     ])->assertJsonPath('rejected', []);
 
-    Event::assertDispatched(WhiteboardElementsChanged::class, fn (WhiteboardElementsChanged $event) => array_column($event->elements ?? [], 'id') === ['bottom', 'middle', 'top']);
+    Event::assertDispatched(fn (WhiteboardElementsChanged $event) => array_column($event->elements ?? [], 'id') === ['bottom', 'middle', 'top']);
 });
 
 it('stores text exactly as typed', function () {
@@ -252,7 +252,7 @@ it('refuses new elements on a full board but still accepts edits and deletions',
     [$user] = whiteboardMember($board);
     WhiteboardElement::factory()->create(['whiteboard_id' => $board->id, 'element_id' => 'old']);
 
-    $write = app(WriteWhiteboardElements::class);
+    $write = resolve(WriteWhiteboardElements::class);
     $write->maxLiveElements = 1;
 
     writeElements($this->actingAs($user), $board, [
@@ -291,7 +291,7 @@ it('refuses to bring a deleted element back on a full board', function () {
     WhiteboardElement::factory()->create(['whiteboard_id' => $board->id, 'element_id' => 'live']);
     WhiteboardElement::factory()->create(['whiteboard_id' => $board->id, 'element_id' => 'gone', 'is_deleted' => true]);
 
-    $write = app(WriteWhiteboardElements::class);
+    $write = resolve(WriteWhiteboardElements::class);
     $write->maxLiveElements = 1;
 
     writeElements($this->actingAs($user), $board, [sceneElement(['id' => 'gone', 'version' => 2])])
@@ -339,7 +339,7 @@ it('sends ids only when the payload is too big for one message', function () {
 
     writeElements($this->actingAs($user), $board, [$stroke])->assertJsonPath('rejected', []);
 
-    Event::assertDispatched(WhiteboardElementsChanged::class, fn (WhiteboardElementsChanged $event) => $event->elements === null
+    Event::assertDispatched(fn (WhiteboardElementsChanged $event) => $event->elements === null
         && $event->broadcastWith() === ['seq' => 1, 'fromSeq' => 0]);
 });
 

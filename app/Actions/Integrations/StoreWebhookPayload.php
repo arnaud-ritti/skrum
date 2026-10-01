@@ -13,7 +13,7 @@ class StoreWebhookPayload
 {
     public const MaxBytes = 524288;
 
-    private const EnvelopeBytes = 4096;
+    private const int EnvelopeBytes = 4096;
 
     /**
      * Keeps the message of a generic webhook delivery for viewing and

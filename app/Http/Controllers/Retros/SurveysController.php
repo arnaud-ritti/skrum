@@ -21,11 +21,11 @@ use Illuminate\Validation\ValidationException;
 
 class SurveysController extends Controller
 {
-    private const MaxSurveys = 10;
+    private const int MaxSurveys = 10;
 
-    private const MinOptions = 2;
+    private const int MinOptions = 2;
 
-    private const MaxOptions = 10;
+    private const int MaxOptions = 10;
 
     public function __construct(private PresentSurvey $presentSurvey) {}
 
@@ -202,7 +202,7 @@ class SurveysController extends Controller
         $this->ensureOptionsMatch($kind, $options);
 
         $inheritsVoters = $existing !== null && ! $retro->is_anonymous;
-        $showVoters = (bool) ($validated['show_voters'] ?? ($inheritsVoters ? $existing->show_voters : false));
+        $showVoters = (bool) ($validated['show_voters'] ?? ($inheritsVoters && $existing->show_voters));
 
         SurveyGuard::namesAllowed($retro, $showVoters);
 

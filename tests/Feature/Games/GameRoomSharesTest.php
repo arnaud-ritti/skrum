@@ -57,7 +57,7 @@ it('queues an invite for the host without any game content', function () {
         ->postJson(route('games.shares.store', $room), ['channel' => 'telegram'])
         ->assertAccepted();
 
-    Queue::assertPushed(DeliverToSlack::class, function (DeliverToSlack $job) use ($room) {
+    Queue::assertPushed(DeliverToSlack::class, function (DeliverToSlack $job) use ($room): bool {
         $json = json_encode($job->message, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 
         return str_contains($json, 'Hana Host invites you to play Hangman in \"Friday fun\" (Platform)')
@@ -129,7 +129,7 @@ it('refuses players who do not manage the room and guests', function () {
         ->postJson(route('games.shares.store', $room), ['channel' => 'slack'])
         ->assertForbidden();
 
-    app('auth')->forgetGuards();
+    resolve('auth')->forgetGuards();
 
     $this->withCookies(gameGuestCookie($guest))->withCredentials()
         ->postJson(route('games.shares.store', $room), ['channel' => 'slack'])
@@ -141,7 +141,7 @@ it('refuses players who do not manage the room and guests', function () {
 it('has no invite for icebreaker rooms', function () {
     $retro = Retro::factory()->withIcebreaker()->inPhase(RetroPhase::Icebreaker)->create();
     [$facilitator] = retroFacilitator($retro);
-    $room = app(EnsureIcebreakerRoom::class)->handle($retro->fresh());
+    $room = resolve(EnsureIcebreakerRoom::class)->handle($retro->fresh());
     TeamIntegration::factory()->slack()->create(['team_id' => $retro->team_id]);
 
     $this->actingAs($facilitator)
@@ -205,7 +205,7 @@ it('tells the room when a delivery finished', function () {
     $job->handle();
 
     expect($delivery->fresh()->status->value)->toBe('sent');
-    Event::assertDispatched(GameRoomChanged::class, fn (GameRoomChanged $event) => $event->roomId === $room->id
+    Event::assertDispatched(fn (GameRoomChanged $event) => $event->roomId === $room->id
         && $event->broadcastOn()->name === "presence-game.{$room->id}");
 });
 

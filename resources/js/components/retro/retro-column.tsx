@@ -66,6 +66,7 @@ export function RetroColumn({
 
     return (
         <section
+            data-test={`retro-column-${column.id}`}
             className={cn(
                 'flex w-72 shrink-0 flex-col rounded-lg border border-t-4 bg-muted/30 p-3',
                 columnAccent[column.color],
@@ -89,6 +90,7 @@ export function RetroColumn({
                         size="sm"
                         variant={isSortedByVotes ? 'secondary' : 'ghost'}
                         className="self-start"
+                        data-test="retro-sort-by-votes"
                         aria-pressed={isSortedByVotes}
                         onClick={() =>
                             setIsSortedByVotes((current) => !current)

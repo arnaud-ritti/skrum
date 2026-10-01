@@ -19,11 +19,8 @@ it('lists the 52 templates in catalogue order with custom last', function () {
             'went_well_to_improve_actions', 'start_stop_continue', 'four_ls', 'sailboat',
             'mad_sad_glad', 'thumbs_up_down_ideas_recognition', 'lean_coffee', 'original_four',
         ])
-        ->and($keys[52])->toBe(TemplateCatalogue::Custom);
-
-    foreach ($keys as $key) {
-        expect($key)->toMatch('/^[a-z0-9_]+$/');
-    }
+        ->and($keys[52])->toBe(TemplateCatalogue::Custom)
+        ->and($keys)->each->toMatch('/^[a-z0-9_]+$/');
 });
 
 it('marks the first eight templates as common', function () {

@@ -4,9 +4,10 @@ namespace App\Support\Integrations\Trackers;
 
 use App\Enums\ExternalIssueState;
 use App\Enums\PokerDeck;
+use App\Exceptions\Integrations\EstimateRejected;
+use App\Exceptions\Integrations\ProviderRejected;
+use App\Exceptions\Integrations\StatusPushRejected;
 use App\Models\TeamIntegration;
-use App\Support\Integrations\Exceptions\ProviderRejected;
-use App\Support\Integrations\Exceptions\StatusPushRejected;
 use App\Support\Integrations\Jira\JiraApi;
 use App\Support\Integrations\Jira\JiraTransitions;
 use Carbon\CarbonImmutable;
@@ -18,16 +19,16 @@ use Carbon\CarbonImmutable;
  */
 abstract class JiraIssueTracker implements IssueTracker, SyncsIssueStatus
 {
-    private const BaseFields = ['summary', 'description', 'assignee', 'status', 'updated', 'project'];
+    private const array BaseFields = ['summary', 'description', 'assignee', 'status', 'updated', 'project'];
 
     public const ProjectKeyPattern = IssueStatus::ContainerKeyPattern;
 
-    private const IssueIdPattern = '/^[A-Za-z0-9_-]+$/';
+    private const string IssueIdPattern = '/^[A-Za-z0-9_-]+$/';
 
     /**
      * Boards, sprints and the numeric issue ids of JQL.
      */
-    private const IdPattern = '/^\d{1,20}\z/';
+    private const string IdPattern = '/^\d{1,20}\z/';
 
     abstract protected function api(): JiraApi;
 
@@ -312,7 +313,7 @@ abstract class JiraIssueTracker implements IssueTracker, SyncsIssueStatus
     private function issuesMatching(TeamIntegration $integration, array $externalIds, ?CarbonImmutable $updatedSince): array
     {
         $ids = array_values(array_unique(array_filter($externalIds, fn (string $id): bool => preg_match(self::IdPattern, $id) === 1)));
-        $updated = $updatedSince === null ? '' : ' AND updated >= "-'.self::minutesSince($updatedSince).'m"';
+        $updated = $updatedSince === null ? '' : ' AND updated >= "-'.$this->minutesSince($updatedSince).'m"';
         $issues = [];
 
         foreach (array_chunk($ids, self::PreviewLimit) as $chunk) {
@@ -340,16 +341,14 @@ abstract class JiraIssueTracker implements IssueTracker, SyncsIssueStatus
         try {
             return $this->searchJql($integration, 'id in ('.implode(',', $ids).')'.$updated)->issues;
         } catch (ProviderRejected $exception) {
-            if ($exception->httpStatus !== 400) {
-                throw $exception;
-            }
+            throw_if($exception->httpStatus !== 400, $exception);
         }
 
         if (count($ids) === 1) {
             return [];
         }
 
-        $named = array_values(array_intersect($ids, self::namedIds((string) $exception->detail())));
+        $named = array_values(array_intersect($ids, $this->namedIds((string) $exception->detail())));
 
         if ($mayDropNamed && $named !== []) {
             $rest = array_values(array_diff($ids, $named));
@@ -371,7 +370,7 @@ abstract class JiraIssueTracker implements IssueTracker, SyncsIssueStatus
      *
      * @return array<int, string>
      */
-    private static function namedIds(string $detail): array
+    private function namedIds(string $detail): array
     {
         preg_match_all('/[\'"](\d{1,20})[\'"]|\b(?:id|key|issue)\s*[:=#]?\s*(\d{1,20})\b/i', $detail, $matches);
 
@@ -383,7 +382,7 @@ abstract class JiraIssueTracker implements IssueTracker, SyncsIssueStatus
      * zone; rounding up plus one minute covers the time until Jira runs the
      * query, so reads overlap rather than miss a change.
      */
-    private static function minutesSince(CarbonImmutable $since): int
+    private function minutesSince(CarbonImmutable $since): int
     {
         return max(1, (int) ceil($since->diffInSeconds(now()) / 60) + 1);
     }

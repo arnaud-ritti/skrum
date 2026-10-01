@@ -12,7 +12,7 @@ use stdClass;
 
 class BuildHealthTrend
 {
-    private const Points = 6;
+    private const int Points = 6;
 
     /**
      * Guests of one retro must not see the team's other retros.
@@ -69,8 +69,8 @@ class BuildHealthTrend
             $keys = $keysByRetro->get($point->id, []);
 
             $averages = collect($meansByRetro->get($point->id, []))
-                ->filter(fn (stdClass $row) => in_array($row->statement, $keys, true))
-                ->map(fn (stdClass $row) => round((float) $row->total / (int) $row->answers, 1))
+                ->filter(fn (stdClass $row): bool => in_array($row->statement, $keys, true))
+                ->map(fn (stdClass $row): float => round((float) $row->total / (int) $row->answers, 1))
                 ->values()
                 ->all();
 

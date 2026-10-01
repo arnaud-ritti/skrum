@@ -4,8 +4,8 @@ namespace App\Support\Integrations\Jira;
 
 use App\Enums\IntegrationAccess;
 use App\Enums\IntegrationProvider;
+use App\Exceptions\Integrations\NotConnected;
 use App\Models\TeamIntegration;
-use App\Support\Integrations\Exceptions\NotConnected;
 use App\Support\Integrations\IntegrationTokens;
 use App\Support\Integrations\OAuthTokens;
 use App\Support\Integrations\ProviderHttp;
@@ -153,9 +153,7 @@ class JiraClient implements JiraApi, RefreshesTokens
         return $integration->withReconnectHandling(function () use ($integration, $method, $path, $data): array {
             $cloudId = $integration->setting('cloudId');
 
-            if (! is_string($cloudId) || $cloudId === '') {
-                throw new NotConnected(IntegrationProvider::Jira);
-            }
+            throw_if(! is_string($cloudId) || $cloudId === '', NotConnected::class, IntegrationProvider::Jira);
 
             $url = self::ApiUrl.$cloudId.'/'.ltrim($path, '/');
             $token = $this->tokens->accessToken($integration);

@@ -42,7 +42,7 @@ it('lets the facilitator create a single choice survey', function () {
 
     expect($survey->created_by_participant_id)->toBe($facilitator->id)
         ->and($survey->position)->toBe(0);
-    Event::assertDispatched(SurveyChanged::class, fn (SurveyChanged $event) => $event->broadcastAs() === 'survey.changed'
+    Event::assertDispatched(fn (SurveyChanged $event) => $event->broadcastAs() === 'survey.changed'
         && $event->broadcastWith() === ['surveyId' => $survey->id, 'version' => 1, 'responseCount' => 0]);
 });
 
@@ -130,7 +130,7 @@ it('edits an unanswered survey and replaces its options', function () {
         ->assertJsonPath('survey.version', 2)
         ->assertJsonPath('survey.options.*.label', ['Red', 'Blue']);
 
-    Event::assertDispatched(SurveyChanged::class, fn (SurveyChanged $event) => $event->version === 2);
+    Event::assertDispatched(fn (SurveyChanged $event) => $event->version === 2);
 });
 
 it('refuses to edit a survey once it has answers', function (string $kind) {
@@ -160,7 +160,7 @@ it('toggles show who answered on an answered survey, even while locked', functio
         ->assertJsonPath('survey.showVoters', true)
         ->assertJsonPath('survey.version', 2);
 
-    Event::assertDispatched(SurveyChanged::class, fn (SurveyChanged $event) => $event->version === 2
+    Event::assertDispatched(fn (SurveyChanged $event) => $event->version === 2
         && ! str_contains(json_encode($event->broadcastWith()), $voter->id));
 });
 
@@ -190,7 +190,7 @@ it('deletes a survey with its answers, reactions and comments', function () {
         ->and(SurveyResponse::count())->toBe(0)
         ->and(SurveyReaction::count())->toBe(0)
         ->and(SurveyComment::count())->toBe(0);
-    Event::assertDispatched(SurveyDeleted::class, fn (SurveyDeleted $event) => $event->broadcastWith() === ['surveyId' => $survey->id]);
+    Event::assertDispatched(fn (SurveyDeleted $event) => $event->broadcastWith() === ['surveyId' => $survey->id]);
 });
 
 it('shows a survey to any participant, guests included', function () {

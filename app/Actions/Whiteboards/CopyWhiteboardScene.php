@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Storage;
  */
 class CopyWhiteboardScene
 {
-    private const ChunkSize = 500;
+    private const int ChunkSize = 500;
 
     public function __construct(
         private SanitizeWhiteboardElement $sanitizeWhiteboardElement,

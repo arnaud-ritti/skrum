@@ -6,7 +6,7 @@ use Illuminate\Support\Str;
 
 class LinkShareContent implements ShareContent
 {
-    private const TextLimit = 2900;
+    private const int TextLimit = 2900;
 
     /**
      * @param  array<string, mixed>  $webhookData

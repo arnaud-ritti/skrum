@@ -8,12 +8,12 @@ use App\Enums\IntegrationAccess;
 use App\Enums\IntegrationProvider;
 use App\Enums\IntegrationStatus;
 use App\Events\ActionItems\TeamActionItemSaved;
+use App\Exceptions\Integrations\ProviderUnavailable;
 use App\Jobs\Integrations\PushActionItemState;
 use App\Models\ActionItem;
 use App\Models\ActionItemExternalLink;
 use App\Models\Participant;
 use App\Models\TeamIntegration;
-use App\Support\Integrations\Exceptions\ProviderUnavailable;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\DB;
@@ -57,7 +57,7 @@ it('does not push changes that came from the source', function () {
     Queue::fake();
     ['item' => $item, 'link' => $link] = statusSyncLink();
 
-    DB::transaction(fn () => app(SetActionItemStatus::class)->handle(
+    DB::transaction(fn () => resolve(SetActionItemStatus::class)->handle(
         ActionItem::query()->whereKey($item->id)->lockForUpdate()->firstOrFail(),
         new ExternalSyncActor('jira', 'PROJ-1'),
         ActionItemStatus::Completed,

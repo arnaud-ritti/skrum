@@ -23,7 +23,7 @@ use Illuminate\Validation\ValidationException;
 
 class RetroSettingsController extends Controller
 {
-    private const OpenPhaseSettings = [
+    private const array OpenPhaseSettings = [
         'reactions_enabled', 'cursors_enabled', 'gifs_enabled', 'hide_vote_counts', 'is_locked', 'presentation_mode',
         'health_check_enabled', 'icebreaker_enabled', 'ai_summary_enabled', 'icebreaker_game',
     ];

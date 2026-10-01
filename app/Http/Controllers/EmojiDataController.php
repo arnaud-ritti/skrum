@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\EmojibaseLocale;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
@@ -12,27 +13,14 @@ use Illuminate\Support\Str;
 
 class EmojiDataController extends Controller
 {
-    /** App locale => Emojibase locale. */
-    public const EmojibaseLocales = [
-        'en' => 'en',
-        'fr' => 'fr',
-        'es' => 'es',
-        'de' => 'de',
-    ];
-
-    private const Files = ['data.json', 'messages.json'];
+    private const array Files = ['data.json', 'messages.json'];
 
     private const MaxBytes = 10 * 1024 * 1024;
-
-    public static function emojibaseLocale(string $appLocale): string
-    {
-        return self::EmojibaseLocales[$appLocale] ?? 'en';
-    }
 
     public function show(string $version, string $locale, string $file): Response
     {
         abort_unless($version === config('services.emoji_data.version'), 404);
-        abort_unless(in_array($locale, self::EmojibaseLocales, true), 404);
+        abort_unless(in_array($locale, EmojibaseLocale::Locales, true), 404);
         abort_unless(in_array($file, self::Files, true), 404);
 
         $disk = Storage::disk();
@@ -49,7 +37,7 @@ class EmojiDataController extends Controller
         return response($body, 200, [
             'Content-Type' => 'application/json',
             'Cache-Control' => 'public, max-age=31536000, immutable',
-            'ETag' => '"'.md5($body).'"',
+            'ETag' => '"'.hash('xxh128', $body).'"',
             'X-Content-Type-Options' => 'nosniff',
         ]);
     }

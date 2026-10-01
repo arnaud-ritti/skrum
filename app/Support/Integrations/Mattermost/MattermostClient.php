@@ -3,9 +3,9 @@
 namespace App\Support\Integrations\Mattermost;
 
 use App\Enums\IntegrationProvider;
+use App\Exceptions\Integrations\ReconnectRequired;
 use App\Models\TeamIntegration;
 use App\Rules\MattermostWebhookUrl;
-use App\Support\Integrations\Exceptions\ReconnectRequired;
 use App\Support\Integrations\ProviderHttp;
 use Illuminate\Http\Client\Response;
 
@@ -14,7 +14,7 @@ class MattermostClient
     /**
      * @var array<int, int>
      */
-    private const LostWebhookStatuses = [403, 404];
+    private const array LostWebhookStatuses = [403, 404];
 
     public function postMessage(TeamIntegration $integration, string $text): void
     {

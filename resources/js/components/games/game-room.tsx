@@ -2,6 +2,7 @@ import { ConnectionBanner } from '@/components/retro/connection-banner';
 import { SessionExpiredBanner } from '@/components/retro/session-expired-banner';
 import { useGameRoom } from '@/hooks/use-game-room';
 import type { GameSnapshot } from '@/lib/games/types';
+import { realtimeState } from '@/lib/realtime/realtime-state';
 import { GamePanel } from './game-panel';
 import { RoomProvider, type RoomContextValue } from './room-context';
 import { RoomFull } from './room-full';
@@ -40,7 +41,10 @@ export function GameRoom({ snapshot: initial }: { snapshot: GameSnapshot }) {
 
     return (
         <RoomProvider value={ctx}>
-            <div className="flex min-h-dvh flex-col">
+            <div
+                className="flex min-h-dvh flex-col"
+                data-realtime={realtimeState(room.connected, room.online)}
+            >
                 {room.sessionExpired && <SessionExpiredBanner />}
                 <div
                     className="flex flex-1 flex-col"

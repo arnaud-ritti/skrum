@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Route;
  * cookie or CSRF token; every request proves itself with its URL token or
  * signature.
  */
-Route::middleware(['throttle:120,1,integrationWebhooks', EnsureInboundWebhooks::class])->group(function () {
+Route::middleware(['throttle:120,1,integrationWebhooks', EnsureInboundWebhooks::class])->group(function (): void {
     Route::post('integrations/webhooks/{source}/{integration}/{token}', [InboundWebhooksController::class, 'store'])
         ->whereIn('source', ['jira', 'jira-dc'])
         ->whereUuid('integration')

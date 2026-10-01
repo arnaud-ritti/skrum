@@ -8,8 +8,8 @@ use App\Actions\Retros\ParseSummaryOutput;
 use App\Actions\Retros\StoreRetroInsights;
 use App\Enums\RetroPhase;
 use App\Enums\SummaryStatus;
+use App\Exceptions\Llm\InvalidLlmOutput;
 use App\Models\Retro;
-use App\Support\Llm\InvalidLlmOutput;
 use App\Support\Llm\Llm;
 use Illuminate\Contracts\Queue\ShouldBeUniqueUntilProcessing;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -67,9 +67,7 @@ class GenerateRetroSummary implements ShouldBeUniqueUntilProcessing, ShouldQueue
         $input = $buildSummaryInput->handle($retro);
         $output = $parseSummaryOutput->handle($llm->client()->complete($input->instructions, $input->payload), $input);
 
-        if ($output === null) {
-            throw new InvalidLlmOutput;
-        }
+        throw_if($output === null, InvalidLlmOutput::class);
 
         $storeRetroInsights->handle($retro, $output);
     }
@@ -101,6 +99,6 @@ class GenerateRetroSummary implements ShouldBeUniqueUntilProcessing, ShouldQueue
             'reason' => $exception === null ? null : $exception::class,
         ]);
 
-        app(ClearRetroInsights::class)->fail($this->retroId);
+        resolve(ClearRetroInsights::class)->fail($this->retroId);
     }
 }

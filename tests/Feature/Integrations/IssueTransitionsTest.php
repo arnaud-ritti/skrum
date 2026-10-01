@@ -2,8 +2,8 @@
 
 use App\Enums\ExternalIssueState;
 use App\Enums\IntegrationProvider;
+use App\Exceptions\Integrations\StatusPushRejected;
 use App\Models\TeamIntegration;
-use App\Support\Integrations\Exceptions\StatusPushRejected;
 use App\Support\Integrations\Trackers\Trackers;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
@@ -38,7 +38,7 @@ it('moves a Jira issue through the preferred done transition', function () {
         jiraTransition('31', '10002', 'Done', 'done'),
     ]);
 
-    $issue = app(Trackers::class)->syncing(IntegrationProvider::Jira)->transition($integration, '10001', ExternalIssueState::Done);
+    $issue = resolve(Trackers::class)->syncing(IntegrationProvider::Jira)->transition($integration, '10001', ExternalIssueState::Done);
 
     expect(jiraTransitionRequest()?->data())->toBe(['transition' => ['id' => '31']])
         ->and($issue?->issueStatus?->kind)->toBe('done');
@@ -53,7 +53,7 @@ it('uses the configured complete status, else only the listed done statuses', fu
         jiraTransition('31', '10002', 'Done', 'done'),
     ]);
 
-    app(Trackers::class)->syncing(IntegrationProvider::Jira)->transition($integration, '10001', ExternalIssueState::Done);
+    resolve(Trackers::class)->syncing(IntegrationProvider::Jira)->transition($integration, '10001', ExternalIssueState::Done);
 
     expect(jiraTransitionRequest()?->data())->toBe(['transition' => ['id' => $expected]]);
 })->with([
@@ -65,7 +65,7 @@ it('reopens to the configured status, else the first new then in-progress one', 
     $integration = jiraSyncIntegration(['statusMapping' => ['projects' => ['PROJ' => $mapping]]]);
     fakeJiraTransitions($this->jiraDone, $this->jiraOpen, $transitions);
 
-    app(Trackers::class)->syncing(IntegrationProvider::Jira)->transition($integration, '10001', ExternalIssueState::Open);
+    resolve(Trackers::class)->syncing(IntegrationProvider::Jira)->transition($integration, '10001', ExternalIssueState::Open);
 
     expect(jiraTransitionRequest()?->data())->toBe(['transition' => ['id' => $expected]]);
 })->with([
@@ -80,7 +80,7 @@ it('fills a required resolution', function (array $allowed, string $expected) {
         'resolution' => ['required' => true, 'hasDefaultValue' => false, 'allowedValues' => $allowed],
     ])]);
 
-    app(Trackers::class)->syncing(IntegrationProvider::Jira)->transition($integration, '10001', ExternalIssueState::Done);
+    resolve(Trackers::class)->syncing(IntegrationProvider::Jira)->transition($integration, '10001', ExternalIssueState::Done);
 
     expect(jiraTransitionRequest()?->data())->toBe(['transition' => ['id' => '31'], 'fields' => ['resolution' => ['name' => $expected]]]);
 })->with([
@@ -95,16 +95,16 @@ it('refuses a transition that needs other fields', function () {
         'customfield_10050' => ['required' => true, 'hasDefaultValue' => false],
     ])]);
 
-    expect(fn () => app(Trackers::class)->syncing(IntegrationProvider::Jira)->transition($integration, '10001', ExternalIssueState::Done))
-        ->toThrow(StatusPushRejected::class, 'Jira requires more fields to close PROJ-1. Close it in Jira.');
-    expect(jiraTransitionRequest())->toBeNull();
+    expect(fn () => resolve(Trackers::class)->syncing(IntegrationProvider::Jira)->transition($integration, '10001', ExternalIssueState::Done))
+        ->toThrow(StatusPushRejected::class, 'Jira requires more fields to close PROJ-1. Close it in Jira.')
+        ->and(jiraTransitionRequest())->toBeNull();
 });
 
 it('explains when no transition reaches the target', function () {
     $integration = jiraSyncIntegration();
     fakeJiraTransitions($this->jiraOpen, $this->jiraDone, [jiraTransition('11', '3', 'In Progress', 'indeterminate')]);
 
-    expect(fn () => app(Trackers::class)->syncing(IntegrationProvider::Jira)->transition($integration, '10001', ExternalIssueState::Done))
+    expect(fn () => resolve(Trackers::class)->syncing(IntegrationProvider::Jira)->transition($integration, '10001', ExternalIssueState::Done))
         ->toThrow(StatusPushRejected::class, 'No transition to a done status is available for PROJ-1.');
 });
 
@@ -112,7 +112,7 @@ it('skips the transition when the issue is already there', function () {
     $integration = jiraSyncIntegration();
     fakeJiraTransitions($this->jiraDone, $this->jiraDone, []);
 
-    $issue = app(Trackers::class)->syncing(IntegrationProvider::Jira)->transition($integration, '10001', ExternalIssueState::Done);
+    $issue = resolve(Trackers::class)->syncing(IntegrationProvider::Jira)->transition($integration, '10001', ExternalIssueState::Done);
 
     expect($issue?->key)->toBe('PROJ-1');
     Http::assertNotSent(fn (Request $request) => str_contains($request->url(), '/transitions'));
@@ -150,7 +150,7 @@ it('transitions Jira Data Center issues through REST v2', function () {
         },
     ]);
 
-    $issue = app(Trackers::class)->syncing(IntegrationProvider::JiraDataCenter)->transition($integration, '10001', ExternalIssueState::Done);
+    $issue = resolve(Trackers::class)->syncing(IntegrationProvider::JiraDataCenter)->transition($integration, '10001', ExternalIssueState::Done);
 
     expect($issue?->status)->toBe('Closed');
     Http::assertSent(fn (Request $request) => $request->method() === 'POST' && $request->url() === 'https://jira.example.com/rest/api/2/issue/10001/transitions');
@@ -163,7 +163,7 @@ it('moves Linear issues to the first completed or unstarted state', function (ar
     $current = $target === ExternalIssueState::Done ? 'unstarted' : 'completed';
     $mutations = [];
     fakeLinearGraphql([
-        'issueUpdate' => function (array $variables) use (&$mutations, &$current, $target) {
+        'issueUpdate' => function (array $variables) use (&$mutations, &$current, $target): array {
             $mutations[] = $variables;
             $current = $target === ExternalIssueState::Done ? 'completed' : 'unstarted';
 
@@ -175,7 +175,7 @@ it('moves Linear issues to the first completed or unstarted state', function (ar
             ['id' => 'st-todo', 'name' => 'Todo', 'type' => 'unstarted', 'position' => 1],
             ['id' => 'st-backlog', 'name' => 'Backlog', 'type' => 'backlog', 'position' => 0],
         ]]]]],
-        'issues(' => function () use (&$current) {
+        'issues(' => function () use (&$current): array {
             return ['issues' => ['nodes' => [linearTrackerIssue('lin-1', 'ENG-1', [
                 'state' => ['id' => "st-{$current}", 'name' => $current, 'type' => $current],
                 'team' => ['key' => 'ENG'],
@@ -183,7 +183,7 @@ it('moves Linear issues to the first completed or unstarted state', function (ar
         },
     ]);
 
-    app(Trackers::class)->syncing(IntegrationProvider::Linear)->transition($integration, 'lin-1', $target);
+    resolve(Trackers::class)->syncing(IntegrationProvider::Linear)->transition($integration, 'lin-1', $target);
 
     expect($mutations)->toBe([['id' => 'lin-1', 'stateId' => $expected]]);
 })->with([
@@ -203,7 +203,7 @@ it('closes GitHub issues as completed and reopens them', function (string $state
         ])),
     ]);
 
-    $issue = app(Trackers::class)->syncing(IntegrationProvider::GitHub)->transition($integration, '9001/3', $target);
+    $issue = resolve(Trackers::class)->syncing(IntegrationProvider::GitHub)->transition($integration, '9001/3', $target);
 
     expect($issue?->issueStatus?->id)->toBe($expected['state']);
     Http::assertSent(fn (Request $request) => $request->method() === 'PATCH'
@@ -219,7 +219,7 @@ it('answers null for issues the source no longer has', function () {
     $integration = TeamIntegration::factory()->gitHub()->create();
     fakeGitHubTrackerApi(['api.github.com/repositories/9001/issues/3' => Http::response(['message' => 'Not Found'], 404)]);
 
-    expect(app(Trackers::class)->syncing(IntegrationProvider::GitHub)->transition($integration, '9001/3', ExternalIssueState::Done))->toBeNull();
+    expect(resolve(Trackers::class)->syncing(IntegrationProvider::GitHub)->transition($integration, '9001/3', ExternalIssueState::Done))->toBeNull();
     Http::assertNotSent(fn (Request $request) => $request->method() === 'PATCH');
 });
 
@@ -240,7 +240,7 @@ it('reads the moved Jira issue directly, not through the lagging search', functi
         },
     ]);
 
-    $issue = app(Trackers::class)->syncing(IntegrationProvider::Jira)->transition($integration, '10001', ExternalIssueState::Done);
+    $issue = resolve(Trackers::class)->syncing(IntegrationProvider::Jira)->transition($integration, '10001', ExternalIssueState::Done);
 
     expect($issue?->issueStatus?->kind)->toBe('done')
         ->and($issue?->status)->toBe('Done');
@@ -251,14 +251,12 @@ it('answers the transition target when the moved Jira issue cannot be read back'
     Http::fake([
         jiraApiUrl('rest/api/3/search/jql') => Http::response(['issues' => [jiraTrackerIssue('10001', 'PROJ-1', $this->jiraOpen)], 'isLast' => true]),
         jiraApiUrl('rest/api/3/issue/10001?*') => Http::response(['errorMessages' => ['Issue does not exist']], 404),
-        jiraApiUrl('rest/api/3/issue/10001/transitions*') => function (Request $request) {
-            return $request->method() === 'POST'
-                ? Http::response(null, 204)
-                : Http::response(['transitions' => [jiraTransition('31', '10002', 'Done', 'done')]]);
-        },
+        jiraApiUrl('rest/api/3/issue/10001/transitions*') => fn (Request $request) => $request->method() === 'POST'
+            ? Http::response(null, 204)
+            : Http::response(['transitions' => [jiraTransition('31', '10002', 'Done', 'done')]]),
     ]);
 
-    $issue = app(Trackers::class)->syncing(IntegrationProvider::Jira)->transition($integration, '10001', ExternalIssueState::Done);
+    $issue = resolve(Trackers::class)->syncing(IntegrationProvider::Jira)->transition($integration, '10001', ExternalIssueState::Done);
 
     expect($issue?->key)->toBe('PROJ-1')
         ->and($issue?->status)->toBe('Done')
@@ -273,9 +271,9 @@ it('refuses a reopen transition that requires a resolution', function () {
         'resolution' => ['required' => true, 'hasDefaultValue' => false, 'allowedValues' => [['name' => 'Done']]],
     ])]);
 
-    expect(fn () => app(Trackers::class)->syncing(IntegrationProvider::Jira)->transition($integration, '10001', ExternalIssueState::Open))
-        ->toThrow(StatusPushRejected::class, 'Jira requires more fields to reopen PROJ-1. Reopen it in Jira.');
-    expect(jiraTransitionRequest())->toBeNull();
+    expect(fn () => resolve(Trackers::class)->syncing(IntegrationProvider::Jira)->transition($integration, '10001', ExternalIssueState::Open))
+        ->toThrow(StatusPushRejected::class, 'Jira requires more fields to reopen PROJ-1. Reopen it in Jira.')
+        ->and(jiraTransitionRequest())->toBeNull();
 });
 
 function linearSyncIntegration(): TeamIntegration
@@ -294,7 +292,7 @@ function linearSyncIntegration(): TeamIntegration
 function fakeLinearTransition(string $current, array $states, bool $accepted, array &$mutations): void
 {
     fakeLinearGraphql([
-        'issueUpdate' => function (array $variables) use (&$mutations, $accepted) {
+        'issueUpdate' => function (array $variables) use (&$mutations, $accepted): array {
             $mutations[] = $variables;
 
             return ['issueUpdate' => ['success' => $accepted]];
@@ -312,7 +310,7 @@ it('fails when Linear does not accept the state change', function () {
     $mutations = [];
     fakeLinearTransition('unstarted', [['id' => 'st-done', 'name' => 'Done', 'type' => 'completed', 'position' => 1]], false, $mutations);
 
-    expect(fn () => app(Trackers::class)->syncing(IntegrationProvider::Linear)->transition($integration, 'lin-1', ExternalIssueState::Done))
+    expect(fn () => resolve(Trackers::class)->syncing(IntegrationProvider::Linear)->transition($integration, 'lin-1', ExternalIssueState::Done))
         ->toThrow(StatusPushRejected::class, 'Linear did not accept this status change.');
 });
 
@@ -321,22 +319,22 @@ it('explains when the Linear team has no completed state', function () {
     $mutations = [];
     fakeLinearTransition('unstarted', [['id' => 'st-todo', 'name' => 'Todo', 'type' => 'unstarted', 'position' => 1]], true, $mutations);
 
-    expect(fn () => app(Trackers::class)->syncing(IntegrationProvider::Linear)->transition($integration, 'lin-1', ExternalIssueState::Done))
-        ->toThrow(StatusPushRejected::class, 'No transition to a done status is available for ENG-1.');
-    expect($mutations)->toBe([]);
+    expect(fn () => resolve(Trackers::class)->syncing(IntegrationProvider::Linear)->transition($integration, 'lin-1', ExternalIssueState::Done))
+        ->toThrow(StatusPushRejected::class, 'No transition to a done status is available for ENG-1.')
+        ->and($mutations)->toBeEmpty();
 });
 
 it('answers the chosen Linear state when the moved issue cannot be read back', function () {
     $integration = linearSyncIntegration();
     $updated = false;
     fakeLinearGraphql([
-        'issueUpdate' => function () use (&$updated) {
+        'issueUpdate' => function () use (&$updated): array {
             $updated = true;
 
             return ['issueUpdate' => ['success' => true]];
         },
         'states(first' => ['issue' => ['team' => ['states' => ['nodes' => [['id' => 'st-done', 'name' => 'Done', 'type' => 'completed', 'position' => 1]]]]]],
-        'issues(' => function () use (&$updated) {
+        'issues(' => function () use (&$updated): array {
             return ['issues' => ['nodes' => $updated ? [] : [linearTrackerIssue('lin-1', 'ENG-1', [
                 'state' => ['id' => 'st-todo', 'name' => 'Todo', 'type' => 'unstarted'],
                 'team' => ['key' => 'ENG'],
@@ -344,7 +342,7 @@ it('answers the chosen Linear state when the moved issue cannot be read back', f
         },
     ]);
 
-    $issue = app(Trackers::class)->syncing(IntegrationProvider::Linear)->transition($integration, 'lin-1', ExternalIssueState::Done);
+    $issue = resolve(Trackers::class)->syncing(IntegrationProvider::Linear)->transition($integration, 'lin-1', ExternalIssueState::Done);
 
     expect($issue?->status)->toBe('Done')
         ->and($issue?->issueStatus?->id)->toBe('st-done')
@@ -356,10 +354,10 @@ it('leaves a Linear issue that is already completed', function () {
     $mutations = [];
     fakeLinearTransition('completed', [], true, $mutations);
 
-    $issue = app(Trackers::class)->syncing(IntegrationProvider::Linear)->transition($integration, 'lin-1', ExternalIssueState::Done);
+    $issue = resolve(Trackers::class)->syncing(IntegrationProvider::Linear)->transition($integration, 'lin-1', ExternalIssueState::Done);
 
     expect($issue?->key)->toBe('ENG-1')
-        ->and($mutations)->toBe([]);
+        ->and($mutations)->toBeEmpty();
 });
 
 it('leaves a GitHub issue that is already closed as completed', function () {
@@ -367,7 +365,7 @@ it('leaves a GitHub issue that is already closed as completed', function () {
     $integration = TeamIntegration::factory()->gitHub()->create();
     fakeGitHubTrackerApi(['api.github.com/repositories/9001/issues/3' => Http::response(gitHubIssue(3, ['state' => 'closed', 'state_reason' => 'completed']))]);
 
-    $issue = app(Trackers::class)->syncing(IntegrationProvider::GitHub)->transition($integration, '9001/3', ExternalIssueState::Done);
+    $issue = resolve(Trackers::class)->syncing(IntegrationProvider::GitHub)->transition($integration, '9001/3', ExternalIssueState::Done);
 
     expect($issue?->key)->toBe('acme/api#3');
     Http::assertNotSent(fn (Request $request) => $request->method() === 'PATCH');
@@ -381,7 +379,7 @@ it('answers null when the GitHub issue moves away before the update', function (
         'api.github.com/repos/acme/api/issues/3' => Http::response(['message' => 'Moved'], $status),
     ]);
 
-    expect(app(Trackers::class)->syncing(IntegrationProvider::GitHub)->transition($integration, '9001/3', ExternalIssueState::Done))->toBeNull();
+    expect(resolve(Trackers::class)->syncing(IntegrationProvider::GitHub)->transition($integration, '9001/3', ExternalIssueState::Done))->toBeNull();
 })->with([301, 404, 410]);
 
 it('answers the requested GitHub state when the update response cannot be read', function () {
@@ -392,7 +390,7 @@ it('answers the requested GitHub state when the update response cannot be read',
         'api.github.com/repos/acme/api/issues/3' => Http::response([]),
     ]);
 
-    $issue = app(Trackers::class)->syncing(IntegrationProvider::GitHub)->transition($integration, '9001/3', ExternalIssueState::Done);
+    $issue = resolve(Trackers::class)->syncing(IntegrationProvider::GitHub)->transition($integration, '9001/3', ExternalIssueState::Done);
 
     expect($issue?->status)->toBe('closed')
         ->and($issue?->issueStatus?->kind)->toBe('completed');

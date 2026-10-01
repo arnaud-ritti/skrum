@@ -94,7 +94,7 @@ class StartGameRound
         $kept = GameRound::query()
             ->where('game_room_id', $room->id)
             ->whereNotNull('ended_at')
-            ->orderByDesc('ended_at')
+            ->latest('ended_at')
             ->orderByDesc('id')
             ->limit(GameRoom::KeptRounds)
             ->pluck('id');

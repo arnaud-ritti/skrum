@@ -19,7 +19,7 @@ function builtInScene(string $key, string $locale = 'en'): array
 {
     app()->setLocale($locale);
 
-    return collect(app(BuiltInTemplates::class)->elements($key))->keyBy('id')->all();
+    return collect(resolve(BuiltInTemplates::class)->elements($key))->keyBy('id')->all();
 }
 
 /**
@@ -43,14 +43,14 @@ it('offers the eight templates of the spec, each with a file', function () {
         expect(File::exists(resource_path("whiteboard-templates/{$key}.json")))->toBeTrue();
     }
 
-    expect(builtInScene('blank'))->toBe([]);
+    expect(builtInScene('blank'))->toBeEmpty();
 });
 
 it('builds scenes the board accepts as they are', function (string $key) {
-    $sanitize = app(SanitizeWhiteboardElement::class);
-    $elements = app(BuiltInTemplates::class)->elements($key);
+    $sanitize = resolve(SanitizeWhiteboardElement::class);
+    $elements = resolve(BuiltInTemplates::class)->elements($key);
 
-    expect(array_unique(array_column($elements, 'id')))->toHaveCount(count($elements));
+    expect(array_unique(array_column($elements, 'id')))->toHaveSameSize($elements);
 
     foreach ($elements as $element) {
         expect($sanitize->handle($element))->toEqual($element);
@@ -113,12 +113,12 @@ it('has every template line in every locale', function (string $locale) {
     $english = array_keys(Arr::dot(require lang_path('en/whiteboards.php')));
     $translated = array_keys(Arr::dot(require lang_path("{$locale}/whiteboards.php")));
 
-    expect(array_values(array_diff($english, $translated)))->toBe([])
-        ->and(array_values(array_diff($translated, $english)))->toBe([]);
+    expect(array_values(array_diff($english, $translated)))->toBeEmpty()
+        ->and(array_values(array_diff($translated, $english)))->toBeEmpty();
 })->with(['fr', 'de', 'es']);
 
 it('translates the name, the description and every text of a scene', function (string $key, string $locale) {
-    $templates = app(BuiltInTemplates::class);
+    $templates = resolve(BuiltInTemplates::class);
     app()->setLocale($locale);
 
     expect($templates->name($key))->not->toStartWith('whiteboards.')
@@ -175,7 +175,7 @@ it('creates a board from a template in the language of its creator', function ()
         ->and($notes->every(fn (WhiteboardElement $note) => ! $note->data['locked']))->toBeTrue()
         ->and($elements->firstWhere('type', 'text')->data['text'])->toBe("Que faisons-nous\nbien ?")
         ->and($elements->pluck('author_member_id')->unique()->all())->toBe([$board->facilitator_member_id])
-        ->and($elements->pluck('element_id')->intersect(['strengths', 'strength-note'])->all())->toBe([])
+        ->and($elements->pluck('element_id')->intersect(['strengths', 'strength-note'])->all())->toBeEmpty()
         ->and($board->seq)->toBe($elements->count())
         ->and($elements->count())->toBe(12);
 });
@@ -196,7 +196,7 @@ it('creates each template for a member and serves it back unchanged', function (
         ->assertOk()
         ->assertJsonPath('elements', $stored);
 
-    expect(count($stored))->toBe(count(app(BuiltInTemplates::class)->elements($key)));
+    expect($stored)->toHaveSameSize(resolve(BuiltInTemplates::class)->elements($key));
 })->with(BuiltInTemplates::Keys);
 
 it('creates an empty board without a template or with the blank one', function (array $extra) {

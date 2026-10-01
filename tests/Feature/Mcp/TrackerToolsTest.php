@@ -19,7 +19,7 @@ use App\Models\TeamIntegration;
 use App\Models\User;
 use Database\Factories\TeamIntegrationFactory;
 use Illuminate\Http\Client\Request;
-use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 
@@ -45,7 +45,7 @@ it('offers the tracker tools only when a visible team has an active tracker', fu
     $integration = TeamIntegration::factory()->jira()->create(['team_id' => $team->id]);
     $listed = fn (array $scopes = [McpScope::Read, McpScope::Write]) => array_values(array_intersect(mcpToolNames(actingAsMcp($user, $scopes)), $trackerTools));
 
-    expect($listed())->toBe([]);
+    expect($listed())->toBeEmpty();
 
     enableIntegrations(IntegrationProvider::Jira, IntegrationProvider::Slack);
 
@@ -56,7 +56,7 @@ it('offers the tracker tools only when a visible team has an active tracker', fu
     TeamIntegration::factory()->jira()->create();
     TeamIntegration::factory()->slack()->create(['team_id' => $team->id]);
 
-    expect($listed())->toBe([]);
+    expect($listed())->toBeEmpty();
 
     actingAsMcp($user)->tool(ListSources::class, ['team_id' => $team->id])->assertHasErrors(['Tool [poker.sources.list] not found.']);
 });
@@ -105,10 +105,8 @@ it('lists containers, then the iterations of one', function () {
     fakeJiraTrackerApi();
 
     expect(mcpStructured(actingAsMcp($user)->tool(ListIterations::class, ['team_id' => $team->id, 'source' => 'jira'])->assertOk()))
-        ->toBe(['containers' => [['id' => '7', 'name' => 'Sweep scrum board']], 'iterations' => []]);
-
-    expect(mcpStructured(actingAsMcp($user)->tool(ListIterations::class, ['team_id' => $team->id, 'source' => 'jira', 'container_id' => '7'])->assertOk()))
-        ->toBe(['containers' => null, 'iterations' => [['id' => '31', 'name' => 'Sprint 31', 'state' => 'active', 'startsOn' => null, 'endsOn' => null]]]);
+        ->toBe(['containers' => [['id' => '7', 'name' => 'Sweep scrum board']], 'iterations' => []])
+        ->and(mcpStructured(actingAsMcp($user)->tool(ListIterations::class, ['team_id' => $team->id, 'source' => 'jira', 'container_id' => '7'])->assertOk()))->toBe(['containers' => null, 'iterations' => [['id' => '31', 'name' => 'Sprint 31', 'state' => 'active', 'startsOn' => null, 'endsOn' => null]]]);
 });
 
 it('turns tracker failures into tool errors', function () {
@@ -217,7 +215,7 @@ it('reports status sync from the connection', function () {
 });
 
 it('lists GitHub repositories and milestones', function () {
-    $this->travelTo(Carbon::parse('2026-10-07 12:00:00'));
+    $this->travelTo(Date::parse('2026-10-07 12:00:00'));
     enableIntegrations(IntegrationProvider::GitHub);
     $team = Team::factory()->create();
     $user = teamMember($team);
@@ -225,10 +223,8 @@ it('lists GitHub repositories and milestones', function () {
     fakeGitHubTrackerApi();
 
     expect(mcpStructured(actingAsMcp($user)->tool(ListIterations::class, ['team_id' => $team->id, 'source' => 'github'])->assertOk())['containers'])
-        ->toBe([['id' => '9001', 'name' => 'acme/api'], ['id' => '9002', 'name' => 'acme/web']]);
-
-    expect(mcpStructured(actingAsMcp($user)->tool(ListIterations::class, ['team_id' => $team->id, 'source' => 'github', 'container_id' => '9001'])->assertOk())['iterations'][1])
-        ->toBe(['id' => '9001/2', 'name' => 'Sprint 2', 'state' => 'active', 'startsOn' => null, 'endsOn' => '2026-10-10']);
+        ->toBe([['id' => '9001', 'name' => 'acme/api'], ['id' => '9002', 'name' => 'acme/web']])
+        ->and(mcpStructured(actingAsMcp($user)->tool(ListIterations::class, ['team_id' => $team->id, 'source' => 'github', 'container_id' => '9001'])->assertOk())['iterations'][1])->toBe(['id' => '9001/2', 'name' => 'Sprint 2', 'state' => 'active', 'startsOn' => null, 'endsOn' => '2026-10-10']);
 });
 
 it('requires a repository for GitHub queries', function () {

@@ -4,12 +4,12 @@ namespace App\Support\Integrations\Linear;
 
 use App\Enums\IntegrationAccess;
 use App\Enums\IntegrationProvider;
+use App\Exceptions\Integrations\IntegrationException;
+use App\Exceptions\Integrations\ProviderRejected;
+use App\Exceptions\Integrations\ProviderUnavailable;
+use App\Exceptions\Integrations\RateLimited;
+use App\Exceptions\Integrations\ReconnectRequired;
 use App\Models\TeamIntegration;
-use App\Support\Integrations\Exceptions\IntegrationException;
-use App\Support\Integrations\Exceptions\ProviderRejected;
-use App\Support\Integrations\Exceptions\ProviderUnavailable;
-use App\Support\Integrations\Exceptions\RateLimited;
-use App\Support\Integrations\Exceptions\ReconnectRequired;
 use App\Support\Integrations\IntegrationTokens;
 use App\Support\Integrations\OAuthTokens;
 use App\Support\Integrations\ProviderHttp;
@@ -26,7 +26,7 @@ class LinearClient implements RefreshesTokens
 
     public const GraphqlUrl = 'https://api.linear.app/graphql';
 
-    private const DefaultRetryAfterSeconds = 60;
+    private const int DefaultRetryAfterSeconds = 60;
 
     public function __construct(private IntegrationTokens $tokens) {}
 
@@ -75,14 +75,12 @@ class LinearClient implements RefreshesTokens
     {
         $data = $this->data(ProviderHttp::send(
             IntegrationProvider::Linear,
-            fn () => $this->graphql($accessToken, 'query { viewer { organization { id name urlKey } } }', []),
+            fn (): Response => $this->graphql($accessToken, 'query { viewer { organization { id name urlKey } } }', []),
         ));
 
         $organization = data_get($data, 'viewer.organization');
 
-        if (! is_array($organization) || ! is_string($organization['id'] ?? null)) {
-            throw new ProviderRejected(IntegrationProvider::Linear, 'missing_organization');
-        }
+        throw_if(! is_array($organization) || ! is_string($organization['id'] ?? null), ProviderRejected::class, IntegrationProvider::Linear, 'missing_organization');
 
         return [
             'id' => $organization['id'],
@@ -99,11 +97,11 @@ class LinearClient implements RefreshesTokens
     {
         return $integration->withReconnectHandling(function () use ($integration, $query, $variables): array {
             $token = $this->tokens->accessToken($integration);
-            $response = ProviderHttp::send(IntegrationProvider::Linear, fn () => $this->graphql($token, $query, $variables));
+            $response = ProviderHttp::send(IntegrationProvider::Linear, fn (): Response => $this->graphql($token, $query, $variables));
 
             if ($response->status() === 401 && is_string($integration->credential('refresh_token'))) {
                 $token = $this->tokens->refresh($integration, $token);
-                $response = ProviderHttp::send(IntegrationProvider::Linear, fn () => $this->graphql($token, $query, $variables));
+                $response = ProviderHttp::send(IntegrationProvider::Linear, fn (): Response => $this->graphql($token, $query, $variables));
             }
 
             return $this->data($response);
@@ -144,17 +142,13 @@ class LinearClient implements RefreshesTokens
             $message = data_get($errors, '0.message');
             $detail = is_string($message) ? $message : 'GraphQL error';
 
-            if ($response->status() === 401 || in_array('AUTHENTICATION_ERROR', $codes, true)) {
-                throw new ReconnectRequired(IntegrationProvider::Linear, $detail);
-            }
+            throw_if($response->status() === 401 || in_array('AUTHENTICATION_ERROR', $codes, true), ReconnectRequired::class, IntegrationProvider::Linear, $detail);
 
             if ($response->status() === 429 || in_array('RATELIMITED', $codes, true)) {
                 throw new RateLimited(IntegrationProvider::Linear, ProviderHttp::retryAfter($response, self::DefaultRetryAfterSeconds), $detail);
             }
 
-            if ($response->serverError()) {
-                throw new ProviderUnavailable(IntegrationProvider::Linear, $detail);
-            }
+            throw_if($response->serverError(), ProviderUnavailable::class, IntegrationProvider::Linear, $detail);
 
             throw new ProviderRejected(IntegrationProvider::Linear, $detail, $response->status(), $errors);
         }

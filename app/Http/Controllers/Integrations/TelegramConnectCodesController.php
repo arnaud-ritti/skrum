@@ -3,10 +3,10 @@
 namespace App\Http\Controllers\Integrations;
 
 use App\Enums\IntegrationProvider;
+use App\Exceptions\Integrations\ProviderUnavailable;
 use App\Http\Controllers\Controller;
 use App\Models\Team;
 use App\Models\Workspace;
-use App\Support\Integrations\Exceptions\ProviderUnavailable;
 use App\Support\Integrations\Telegram\TelegramBot;
 use App\Support\Integrations\Telegram\TelegramConnectCodes;
 use Illuminate\Http\JsonResponse;
@@ -21,9 +21,7 @@ class TelegramConnectCodesController extends Controller
 
         $username = $bot->username();
 
-        if ($username === null) {
-            throw new ProviderUnavailable(IntegrationProvider::Telegram, 'getMe failed');
-        }
+        throw_if($username === null, ProviderUnavailable::class, IntegrationProvider::Telegram, 'getMe failed');
 
         $issued = $codes->issue($team, $request->user());
 

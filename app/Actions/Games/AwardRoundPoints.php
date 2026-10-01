@@ -26,7 +26,7 @@ class AwardRoundPoints
         $players = GamePlayer::query()
             ->with('participant')
             ->where('game_room_id', $room->id)
-            ->whereIn('id', array_map('strval', array_keys($rows)))
+            ->whereIn('id', array_map(strval(...), array_keys($rows)))
             ->get()
             ->keyBy('id');
 

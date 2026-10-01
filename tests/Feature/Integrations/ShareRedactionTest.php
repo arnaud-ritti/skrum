@@ -89,43 +89,21 @@ function redactionRetro(bool $anonymous): array
 it('keeps authors out of every channel on anonymous retros', function () {
     [$retro, $facilitator] = redactionRetro(anonymous: true);
 
-    foreach (sharedRecapTexts($retro, $facilitator) as $channel => $text) {
-        expect($text)
-            ->toContain('Deploys are slow')
-            ->toContain('Assignee Ada')
-            ->toContain('Guest Gus (guest)')
-            ->not->toContain('Author Zelda')
-            ->not->toContain('Voter Victor')
-            ->not->toContain('Creator Cora')
-            ->not->toContain($facilitator->name);
-    }
+    expect(sharedRecapTexts($retro, $facilitator))->each->toContain('Deploys are slow')->toContain('Assignee Ada')->toContain('Guest Gus (guest)')->not->toContain('Author Zelda')->not->toContain('Voter Victor')->not->toContain('Creator Cora')->not->toContain($facilitator->name);
 });
 
 it('names participants but never card authors on named retros', function () {
     [$retro, $facilitator] = redactionRetro(anonymous: false);
 
     $texts = sharedRecapTexts($retro, $facilitator);
-
-    foreach ($texts as $text) {
-        expect($text)->toContain('Creator Cora')->toContain('Author Zelda');
-    }
-
-    expect($texts['slack'])->not->toMatch('/Deploys are slow[^"]*Author Zelda/')
+    expect($texts)->each->toContain('Creator Cora')
+        ->toContain('Author Zelda')
+        ->and($texts['slack'])->not->toMatch('/Deploys are slow[^"]*Author Zelda/')
         ->and($texts['telegram'])->not->toMatch('/Deploys are slow[^\n]*Author Zelda/');
 });
 
 it('never sends comments, surveys, themes, sentiment or health answers to the chats', function () {
     [$retro, $facilitator] = redactionRetro(anonymous: false);
 
-    foreach (sharedRecapTexts($retro, $facilitator) as $text) {
-        expect($text)
-            ->not->toContain('Secret comment text')
-            ->not->toContain('Survey question Quinn')
-            ->not->toContain('Theme Tango')
-            ->not->toContain('Deployment pain')
-            ->not->toContain('negative')
-            ->not->toContain('xoxp-test-token')
-            ->not->toContain('hooks.slack.com')
-            ->not->toContain($retro->guest_token);
-    }
+    expect(sharedRecapTexts($retro, $facilitator))->each->not->toContain('Secret comment text')->not->toContain('Survey question Quinn')->not->toContain('Theme Tango')->not->toContain('Deployment pain')->not->toContain('negative')->not->toContain('xoxp-test-token')->not->toContain('hooks.slack.com')->not->toContain($retro->guest_token);
 });

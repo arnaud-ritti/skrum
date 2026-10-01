@@ -146,7 +146,7 @@ it('lets the host rename a room and change its access and locale', function () {
         ->access->toBe(GameRoomAccess::Link)
         ->locale->toBe('de');
 
-    Event::assertDispatched(GameRoomChanged::class, fn (GameRoomChanged $event) => $event->roomId === $room->id);
+    Event::assertDispatched(fn (GameRoomChanged $event) => $event->roomId === $room->id);
 });
 
 it('keeps room settings to managers', function () {
@@ -194,7 +194,7 @@ it('lets the creator or an admin delete a room', function (string $who) {
         ->and(GamePlayer::query()->count())->toBe(0)
         ->and(GameRound::query()->count())->toBe(0);
 
-    Event::assertDispatched(GameRoomDeleted::class, fn (GameRoomDeleted $event) => $event->roomId === $room->id);
+    Event::assertDispatched(fn (GameRoomDeleted $event) => $event->roomId === $room->id);
 })->with(['creator', 'admin']);
 
 it('refuses deletion to hosts who did not create the room and to members', function () {
@@ -227,7 +227,7 @@ it('regenerates the guest link and revokes existing guests', function () {
         ->and($response->json('guestUrl'))->toBe(route('games.join.show', $room->guest_token))
         ->and($guest->fresh()->guest_secret_hash)->toBeNull();
 
-    app('auth')->forgetGuards();
+    resolve('auth')->forgetGuards();
 
     $this->withCredentials()->withCookies(gameGuestCookie($guest))->getJson(route('games.snapshot.show', $room))->assertForbidden();
 });

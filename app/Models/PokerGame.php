@@ -66,7 +66,7 @@ class PokerGame extends Model implements DeliverySubject
     /** @return HasMany<PokerPlayer, $this> */
     public function players(): HasMany
     {
-        return $this->hasMany(PokerPlayer::class)->orderBy('created_at')->orderBy('id');
+        return $this->hasMany(PokerPlayer::class)->oldest()->orderBy('id');
     }
 
     /** @return HasMany<PokerTask, $this> */

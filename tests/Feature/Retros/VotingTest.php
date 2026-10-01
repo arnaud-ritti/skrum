@@ -25,7 +25,7 @@ function votingRetro(int $votes = 3): array
 
 function votingSnapshot(Retro $retro, Participant $viewer): array
 {
-    return app(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer);
+    return resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer);
 }
 
 it('casts votes and broadcasts only the overall count when vote counts are hidden', function () {
@@ -37,7 +37,7 @@ it('casts votes and broadcasts only the overall count when vote counts are hidde
         ->assertCreated()
         ->assertJson(['cardId' => $card->id, 'myVotes' => 1, 'remainingVotes' => 2, 'total' => null]);
 
-    Event::assertDispatched(VoteCast::class, fn (VoteCast $event) => $event->votesCast === 1
+    Event::assertDispatched(fn (VoteCast $event) => $event->votesCast === 1
         && array_keys($event->broadcastWith()) === ['votesCast', 'votesVersion']);
 });
 
@@ -50,7 +50,7 @@ it('broadcasts the card total while voting when vote counts are visible', functi
         ->assertCreated()
         ->assertJsonPath('total', 2);
 
-    Event::assertDispatched(VoteCast::class, fn (VoteCast $event) => $event->broadcastWith() === [
+    Event::assertDispatched(fn (VoteCast $event) => $event->broadcastWith() === [
         'votesCast' => 2,
         'votesVersion' => 1,
         'cardId' => $card->id,
@@ -62,7 +62,7 @@ it('broadcasts the card total while voting when vote counts are visible', functi
         ->assertOk()
         ->assertJsonPath('total', 1);
 
-    Event::assertDispatched(VoteRetracted::class, fn (VoteRetracted $event) => $event->broadcastWith()['total'] === 1
+    Event::assertDispatched(fn (VoteRetracted $event) => $event->broadcastWith()['total'] === 1
         && ! str_contains(json_encode($event->broadcastWith()), $participant->id));
 });
 
@@ -115,7 +115,7 @@ it('retracts one of the participant votes on a card', function () {
         ->assertJson(['myVotes' => 1, 'remainingVotes' => 2]);
 
     expect(Vote::find($othersVote->id))->not->toBeNull();
-    Event::assertDispatched(VoteRetracted::class, fn (VoteRetracted $event) => $event->votesCast === 2);
+    Event::assertDispatched(fn (VoteRetracted $event) => $event->votesCast === 2);
 });
 
 it('refuses to retract a vote the participant never cast', function () {
@@ -172,8 +172,8 @@ it('orders vote totals by a version that grows with every cast and retraction', 
 
     expect($retracted)->toBeGreaterThan($cast);
 
-    Event::assertDispatched(VoteCast::class, fn (VoteCast $event) => $event->votesVersion === $cast);
-    Event::assertDispatched(VoteRetracted::class, fn (VoteRetracted $event) => $event->votesVersion === $retracted);
+    Event::assertDispatched(fn (VoteCast $event) => $event->votesVersion === $cast);
+    Event::assertDispatched(fn (VoteRetracted $event) => $event->votesVersion === $retracted);
     expect($retro->fresh()->votes_version)->toBe($retracted);
 });
 
@@ -186,7 +186,7 @@ it('answers a retraction with the same total and version it broadcasts', functio
         ->deleteJson(route('retros.cards.votes.destroy', [$retro, $card]))
         ->assertOk();
 
-    Event::assertDispatched(VoteRetracted::class, fn (VoteRetracted $event) => $event->votesCast === $response->json('votesCast')
+    Event::assertDispatched(fn (VoteRetracted $event) => $event->votesCast === $response->json('votesCast')
         && $event->votesVersion === $response->json('votesVersion'));
 });
 

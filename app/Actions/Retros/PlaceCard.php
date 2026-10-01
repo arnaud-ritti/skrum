@@ -53,7 +53,7 @@ class PlaceCard
         $changed = $changed->unique('id')->values();
 
         if ($formerLead !== null && $formerLead->clearGroupNameWhenEmpty()) {
-            $changed = $changed->reject(fn (Card $moved) => $moved->is($formerLead))->push($formerLead->fresh())->values();
+            return $changed->reject(fn (Card $moved) => $moved->is($formerLead))->push($formerLead->fresh())->values();
         }
 
         return $changed;

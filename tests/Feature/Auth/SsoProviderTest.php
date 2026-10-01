@@ -22,8 +22,8 @@ beforeEach(function () {
 });
 
 it('enables no provider without credentials', function () {
-    expect(SsoProvider::enabled())->toBe([])
-        ->and(SsoProvider::options())->toBe([]);
+    expect(SsoProvider::enabled())->toBeEmpty()
+        ->and(SsoProvider::options())->toBeEmpty();
 });
 
 it('enables a provider only when every credential is present', function () {
@@ -125,7 +125,7 @@ it('sends a pkce challenge to google', function () {
         'services.google.redirect' => 'https://skrum.test/auth/google/callback',
     ]);
 
-    request()->setLaravelSession(app('session.store'));
+    request()->setLaravelSession(resolve('session.store'));
 
     $location = SsoProvider::Google->socialiteDriver()->redirect()->headers->get('Location');
 

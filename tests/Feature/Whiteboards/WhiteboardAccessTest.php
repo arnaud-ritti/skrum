@@ -115,7 +115,7 @@ it('lets the facilitator or a workspace admin delete the board', function () {
     $this->actingAs($facilitator)->deleteJson(route('whiteboards.destroy', $board))->assertNoContent();
 
     expect(Whiteboard::query()->count())->toBe(0);
-    Event::assertDispatched(WhiteboardDeleted::class, fn (WhiteboardDeleted $event) => $event->boardId === $board->id);
+    Event::assertDispatched(fn (WhiteboardDeleted $event) => $event->boardId === $board->id);
 
     $other = Whiteboard::factory()->create();
 

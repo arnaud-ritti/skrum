@@ -13,6 +13,7 @@ use App\Enums\IntegrationProvider;
 use App\Enums\IntegrationStatus;
 use App\Enums\RetroPhase;
 use App\Events\Games\GameRoomChanged;
+use App\Exceptions\Integrations\ProviderUnavailable;
 use App\Jobs\Integrations\DeliverToWebhook;
 use App\Models\ActionItem;
 use App\Models\GameRoom;
@@ -24,7 +25,6 @@ use App\Models\Retro;
 use App\Models\Team;
 use App\Models\TeamIntegration;
 use App\Models\User;
-use App\Support\Integrations\Exceptions\ProviderUnavailable;
 use App\Support\Integrations\Messages\LinkShareContent;
 use App\Support\Integrations\Webhook\WebhookHealth;
 use Database\Factories\TeamIntegrationFactory;
@@ -114,7 +114,7 @@ it('queues the results recap as structured fields without card authors', functio
         ->assertAccepted()
         ->assertJson(['kind' => 'retro_results']);
 
-    Queue::assertPushed(DeliverToWebhook::class, function (DeliverToWebhook $job) use ($retro) {
+    Queue::assertPushed(DeliverToWebhook::class, function (DeliverToWebhook $job) use ($retro): bool {
         $data = $job->data;
 
         return $job->event === 'retro.results'
@@ -233,7 +233,7 @@ it('refuses guests and non-managers before validating', function () {
         ->postJson(route('games.shares.store', $room), ['channel' => 'bogus'])
         ->assertForbidden();
 
-    app('auth')->forgetGuards();
+    resolve('auth')->forgetGuards();
 
     $this->withCookies(gameGuestCookie($guest))->withCredentials()
         ->postJson(route('games.shares.store', $room), ['channel' => 'webhook'])
@@ -245,11 +245,11 @@ it('refuses guests and non-managers before validating', function () {
 it('offers the webhook channel once it is connected', function () {
     [$retro] = webhookSharingRetro();
 
-    expect(app(ShareOptions::class)->channels($retro->team)['webhook'])->toBeTrue();
+    expect(resolve(ShareOptions::class)->channels($retro->team)['webhook'])->toBeTrue();
 
     config(['services.outgoing_webhooks.enabled' => false]);
 
-    expect(app(ShareOptions::class)->channels($retro->fresh()->team)['webhook'])->toBeFalse();
+    expect(resolve(ShareOptions::class)->channels($retro->fresh()->team)['webhook'])->toBeFalse();
 });
 
 it('delivers a signed share and tells the room', function () {
@@ -357,9 +357,9 @@ it('keeps the URL and the secret out of the job payload', function () {
 
 it('creates no delivery when a webhook share has no event name', function () {
     [$room, $host] = webhookSharingRoom();
-    $content = app(BuildLinkShare::class)->gameRoom($room, $host, false);
+    $content = resolve(BuildLinkShare::class)->gameRoom($room, $host, false);
 
-    expect(fn () => app(QueueShare::class)->handle($room, IntegrationDeliveryChannel::Webhook, IntegrationDeliveryKind::Event, $host, $content))
+    expect(fn () => resolve(QueueShare::class)->handle($room, IntegrationDeliveryChannel::Webhook, IntegrationDeliveryKind::Event, $host, $content))
         ->toThrow(InvalidArgumentException::class, 'Automatic events are not shares.');
 
     Queue::assertNothingPushed();
@@ -368,12 +368,11 @@ it('creates no delivery when a webhook share has no event name', function () {
 
 it('refuses email as a share channel before creating a delivery', function () {
     [$room, $host] = webhookSharingRoom();
-    $content = app(BuildLinkShare::class)->gameRoom($room, $host, false);
+    $content = resolve(BuildLinkShare::class)->gameRoom($room, $host, false);
 
-    expect(fn () => app(QueueShare::class)->handle($room, IntegrationDeliveryChannel::Email, IntegrationDeliveryKind::GameRoomLink, $host, $content))
-        ->toThrow(InvalidArgumentException::class);
-
-    expect(IntegrationDelivery::query()->count())->toBe(0);
+    expect(fn () => resolve(QueueShare::class)->handle($room, IntegrationDeliveryChannel::Email, IntegrationDeliveryKind::GameRoomLink, $host, $content))
+        ->toThrow(InvalidArgumentException::class)
+        ->and(IntegrationDelivery::query()->count())->toBe(0);
 });
 
 it('sends the guest suffix untranslated in a recap, whatever the locale', function () {
@@ -382,7 +381,7 @@ it('sends the guest suffix untranslated in a recap, whatever the locale', functi
     Participant::factory()->guest()->create(['retro_id' => $retro->id, 'guest_name' => 'Gus']);
     ActionItem::factory()->assignedToGuest(Participant::factory()->guest()->create(['retro_id' => $retro->id, 'guest_name' => 'Gia']))->create(['retro_id' => $retro->id]);
 
-    $data = app(BuildRetroRecap::class)->content($retro)->toWebhook();
+    $data = resolve(BuildRetroRecap::class)->content($retro)->toWebhook();
 
     expect($data['participants']['names'])->toContain('Gus (guest)')
         ->and($data['actionItems'][0]['assignee'])->toBe('Gia (guest)');
@@ -452,7 +451,7 @@ it('still queues a share whose message cannot be kept', function () {
     [$retro, $facilitator] = webhookSharingRetro();
     $content = new LinkShareContent('Open the board', 'Open', route('retros.show', $retro), ['title' => "Sprint \xB1\x31"]);
 
-    $delivery = app(QueueShare::class)->handle($retro, IntegrationDeliveryChannel::Webhook, IntegrationDeliveryKind::RetroLink, $facilitator, $content);
+    $delivery = resolve(QueueShare::class)->handle($retro, IntegrationDeliveryChannel::Webhook, IntegrationDeliveryKind::RetroLink, $facilitator, $content);
 
     expect($delivery->fresh()->status)->toBe(IntegrationDeliveryStatus::Queued)
         ->and($delivery->payload()->exists())->toBeFalse();

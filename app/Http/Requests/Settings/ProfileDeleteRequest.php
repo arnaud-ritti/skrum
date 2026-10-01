@@ -53,6 +53,6 @@ class ProfileDeleteRequest extends FormRequest
         return $user->workspaces()
             ->wherePivot('role', WorkspaceRole::Owner->value)
             ->get()
-            ->filter(fn (Workspace $workspace) => $workspace->owners()->count() === 1 && $workspace->members()->count() > 1);
+            ->filter(fn (Workspace $workspace): bool => $workspace->owners()->count() === 1 && $workspace->members()->count() > 1);
     }
 }

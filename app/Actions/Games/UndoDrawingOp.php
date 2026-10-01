@@ -35,7 +35,7 @@ class UndoDrawingOp
 
             $lockedRound->forceFill([
                 'drawing' => $drawing,
-                'drawing_points' => array_sum(array_map(fn (array $op): int => DrawingOp::pointCount($op), $drawing)),
+                'drawing_points' => array_sum(array_map(DrawingOp::pointCount(...), $drawing)),
             ])->save();
 
             (new GameDrawingUndone($lockedRoom, $lockedRound->id, count($drawing)))->sendToOthers();

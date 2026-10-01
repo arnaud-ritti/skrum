@@ -8,14 +8,14 @@ use Illuminate\Support\Str;
 
 class BuildIssueDraft
 {
-    private const TitleLength = 255;
+    private const int TitleLength = 255;
 
     public function handle(ActionItem $item): IssueDraft
     {
         $item->loadMissing(['retro', 'team.workspace']);
 
         $lines = array_values(array_filter(
-            array_map('trim', preg_split('/\R/u', $item->content) ?: []),
+            array_map(trim(...), preg_split('/\R/u', $item->content) ?: []),
             fn (string $line): bool => $line !== '',
         ));
 

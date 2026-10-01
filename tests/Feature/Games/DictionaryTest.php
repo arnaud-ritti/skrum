@@ -18,7 +18,7 @@ it('ships at least 250 valid words with 150 drawable ones', function (string $lo
 
     expect(count($entries))->toBeGreaterThanOrEqual(250)
         ->and(count($book->words($locale, drawableOnly: true)))->toBeGreaterThanOrEqual(150)
-        ->and(count($book->words($locale, drawableOnly: false)))->toBe(count($entries));
+        ->and($book->words($locale, drawableOnly: false))->toHaveSameSize($entries);
 
     foreach ($words as $word) {
         expect(mb_strlen($word))->toBeGreaterThanOrEqual(3, "Too short: [{$word}]")
@@ -36,17 +36,17 @@ it('ships at least 250 valid words with 150 drawable ones', function (string $lo
 
     $normalized = array_map(fn (string $word): string => preg_replace('/[\s\'-]+/', '', dictionaryFold($word)) ?? $word, $words);
 
-    expect(array_unique($normalized))->toHaveCount(count($words));
+    expect(array_unique($normalized))->toHaveSameSize($words);
 })->with('game locales');
 
 it('ships at least 60 GIF questions', function (string $locale) {
     $questions = (new GameWordBook)->questions($locale);
 
     expect(count($questions))->toBeGreaterThanOrEqual(60)
-        ->and(array_unique($questions))->toHaveCount(count($questions));
+        ->and(array_unique($questions))->toHaveSameSize($questions);
 
     foreach ($questions as $question) {
-        expect(trim($question))->not->toBe('')
+        expect(trim($question))->not->toBeEmpty()
             ->and(mb_strlen($question))->toBeLessThanOrEqual(200);
     }
 })->with('game locales');
@@ -55,9 +55,7 @@ it('builds guest names for every animal and adjective', function (string $locale
     $data = require resource_path("games/guest-names/{$locale}.php");
 
     foreach ($data['animals'] as $animal) {
-        foreach ($data['adjectives'] as $adjective) {
-            expect($adjective)->toHaveKey($animal['gender']);
-        }
+        expect($data['adjectives'])->each->toHaveKey($animal['gender']);
     }
 
     foreach (range(1, 30) as $attempt) {
@@ -82,5 +80,5 @@ it('lets tests replace the word book', function () {
 
 it('falls back to English for unknown locales', function () {
     expect((new GameWordBook)->words('xx', drawableOnly: false))->toBe((new GameWordBook)->words('en', drawableOnly: false))
-        ->and(GuestNames::random('xx'))->not->toBe('');
+        ->and(GuestNames::random('xx'))->not->toBeEmpty();
 });

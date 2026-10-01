@@ -4,9 +4,9 @@ namespace App\Support\Integrations\JiraDataCenter;
 
 use App\Enums\IntegrationAccess;
 use App\Enums\IntegrationProvider;
+use App\Exceptions\Integrations\ConnectionRefused;
+use App\Exceptions\Integrations\ReconnectRequired;
 use App\Models\TeamIntegration;
-use App\Support\Integrations\Exceptions\ConnectionRefused;
-use App\Support\Integrations\Exceptions\ReconnectRequired;
 use App\Support\Integrations\IntegrationTokens;
 use App\Support\Integrations\Jira\JiraApi;
 use App\Support\Integrations\OAuthTokens;
@@ -171,9 +171,7 @@ class JiraDataCenterClient implements JiraApi, RefreshesTokens
 
         $token = $integration->credential('personalAccessToken');
 
-        if (! is_string($token) || $token === '') {
-            throw new ReconnectRequired(self::Provider, 'missing_personal_access_token');
-        }
+        throw_if(! is_string($token) || $token === '', ReconnectRequired::class, self::Provider, 'missing_personal_access_token');
 
         $response = $this->send($method, $path, $data, $token);
 

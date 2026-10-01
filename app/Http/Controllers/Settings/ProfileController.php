@@ -57,7 +57,7 @@ class ProfileController extends Controller
         DB::transaction(function () use ($user): void {
             $user->workspaces()
                 ->get()
-                ->filter(fn (Workspace $workspace) => $workspace->members()->count() === 1)
+                ->filter(fn (Workspace $workspace): bool => $workspace->members()->count() === 1)
                 ->each->delete();
 
             $user->tokens()->delete();

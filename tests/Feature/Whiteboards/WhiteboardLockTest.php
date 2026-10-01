@@ -91,7 +91,7 @@ it('refuses uploads on a locked board, except the facilitator\'s', function () {
         ->assertJsonPath('errors.locked.0', 'This board is locked.');
 
     expect(WhiteboardFile::query()->count())->toBe(0)
-        ->and(Storage::allFiles())->toBe([]);
+        ->and(Storage::allFiles())->toBeEmpty();
 
     $upload($this->actingAs($facilitator))->assertCreated();
 

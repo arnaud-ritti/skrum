@@ -69,7 +69,7 @@ it('lets team members add items outside a retro', function () {
         'created_by_participant_id' => null,
         'theme_name' => null,
     ]);
-    Event::assertDispatched(TeamActionItemSaved::class, fn (TeamActionItemSaved $event) => $event->teamId === $team->id);
+    Event::assertDispatched(fn (TeamActionItemSaved $event) => $event->teamId === $team->id);
     Event::assertNotDispatched(ActionItemSaved::class);
 });
 
@@ -165,7 +165,7 @@ it('changes items in every phase from the workspace', function (RetroPhase $phas
 
     $phase === RetroPhase::Completed
         ? Event::assertNotDispatched(ActionItemSaved::class)
-        : Event::assertDispatched(ActionItemSaved::class, fn (ActionItemSaved $event) => $event->retroId === $retro->id);
+        : Event::assertDispatched(fn (ActionItemSaved $event) => $event->retroId === $retro->id);
 })->with([RetroPhase::Writing, RetroPhase::Voting, RetroPhase::Discussing, RetroPhase::Completed]);
 
 it('returns 423 only for locked retros that are still running', function () {
@@ -256,7 +256,7 @@ it('comments from the workspace as the user and keeps board comments editable th
 
     expect(ActionItemComment::query()->where('content', 'Following up')->sole()->only(['author_user_id', 'author_participant_id']))
         ->toBe(['author_user_id' => $author->id, 'author_participant_id' => null]);
-    Event::assertDispatched(TeamActionItemCommentsChanged::class, fn (TeamActionItemCommentsChanged $event) => $event->commentCount === 2);
+    Event::assertDispatched(fn (TeamActionItemCommentsChanged $event) => $event->commentCount === 2);
 });
 
 it('keeps comment rights on the workspace', function () {

@@ -79,7 +79,7 @@ it('validates the deck cards', function (array $cards) {
     'too long' => [['123456789', '2']],
     'duplicate after trim' => [[' 3', '3']],
     'only special cards' => [['?', '☕']],
-    'twenty-one cards' => [array_map('strval', range(1, 21))],
+    'twenty-one cards' => [array_map(strval(...), range(1, 21))],
 ]);
 
 it('treats names case- and space-insensitively', function () {

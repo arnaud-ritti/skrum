@@ -21,7 +21,7 @@ use Illuminate\Support\Facades\Gate;
  */
 class WebhookDeliveriesController extends Controller
 {
-    private const PerPage = 25;
+    private const int PerPage = 25;
 
     public function index(Workspace $workspace, Team $team, TeamIntegration $integration, PresentWebhookDelivery $presentWebhookDelivery): JsonResponse
     {
@@ -32,8 +32,7 @@ class WebhookDeliveriesController extends Controller
         $deliveries = IntegrationDelivery::query()
             ->withExists('payload')
             ->where('team_id', $team->id)
-            ->where('channel', IntegrationDeliveryChannel::Webhook->value)
-            ->orderByDesc('created_at')
+            ->where('channel', IntegrationDeliveryChannel::Webhook->value)->latest()
             ->orderByDesc('id')
             ->paginate(self::PerPage);
 

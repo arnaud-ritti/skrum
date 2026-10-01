@@ -23,7 +23,7 @@ use Illuminate\Support\Facades\DB;
  */
 class SaveTeamIntegration
 {
-    private const WebhookCredentials = ['webhookToken', 'webhookSecret'];
+    private const array WebhookCredentials = ['webhookToken', 'webhookSecret'];
 
     public function __construct(private TrackerWebhooks $trackerWebhooks) {}
 
@@ -82,7 +82,7 @@ class SaveTeamIntegration
             }
 
             if ($provider->isTracker() && $integration->canWrite() && ($siteChanged || ! $wasActiveWriter)) {
-                IntegrationActivated::dispatch($integration, $siteChanged);
+                event(new IntegrationActivated($integration, $siteChanged));
             }
 
             return $integration;

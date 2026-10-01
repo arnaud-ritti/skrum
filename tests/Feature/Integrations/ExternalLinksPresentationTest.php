@@ -31,7 +31,7 @@ function linkedBoardItem(): array
 it('presents external links to members only', function () {
     [$retro, $item, , $member] = linkedBoardItem();
     $guest = Participant::factory()->guest()->create(['retro_id' => $retro->id]);
-    $present = app(PresentActionItem::class);
+    $present = resolve(PresentActionItem::class);
     $loaded = $item->fresh()->loadForPresentation();
 
     expect(collect($present->handle($loaded, ActionItemActor::forParticipant($member))['externalLinks'])
@@ -68,15 +68,15 @@ it('announces new links on the member channels of running retros only', function
     $item = ActionItem::factory()->create(['retro_id' => $source->id]);
     ActionItemExternalLink::factory()->create(['action_item_id' => $item->id, 'external_key' => 'PROJ-3']);
 
-    app(BroadcastActionItemChange::class)->externalLinksChanged($item->fresh());
+    resolve(BroadcastActionItemChange::class)->externalLinksChanged($item->fresh());
 
     Event::assertDispatchedTimes(ActionItemExternalLinksChanged::class, 2);
-    Event::assertDispatched(ActionItemExternalLinksChanged::class, fn (ActionItemExternalLinksChanged $event) => $event->retroId === $carrying->id
+    Event::assertDispatched(fn (ActionItemExternalLinksChanged $event) => $event->retroId === $carrying->id
         && $event->broadcastOn()->name === "private-retro-members.{$carrying->id}"
         && $event->broadcastAs() === 'action-item.external-links.changed'
         && $event->broadcastWith()['actionItemId'] === $item->id
         && Arr::only($event->broadcastWith()['externalLinks'][0], ['source', 'key', 'url']) === ['source' => 'jira', 'key' => 'PROJ-3', 'url' => $item->externalLinks()->first()->external_url]);
-    Event::assertDispatched(ActionItemExternalLinksChanged::class, fn (ActionItemExternalLinksChanged $event) => $event->retroId === $source->id);
+    Event::assertDispatched(fn (ActionItemExternalLinksChanged $event) => $event->retroId === $source->id);
 });
 
 it('stores the inactive flag of account mappings', function () {

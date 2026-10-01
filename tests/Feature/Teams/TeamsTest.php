@@ -156,7 +156,7 @@ it('lists archived statements with their row ids for managers', function () {
     $admin = User::factory()->create();
     $workspace = workspaceWith($admin, WorkspaceRole::Admin);
     $team = Team::factory()->for($workspace)->create();
-    app(ManageTeamHealthStatements::class)->archive($team, 'vision');
+    resolve(ManageTeamHealthStatements::class)->archive($team, 'vision');
     $vision = $team->healthStatements()->where('builtin', 'vision')->sole();
 
     $this->actingAs($admin)
@@ -171,7 +171,7 @@ it('presents built-in statements translated and custom statements as stored', fu
     $admin = User::factory()->create(['locale' => 'fr']);
     $workspace = workspaceWith($admin, WorkspaceRole::Admin);
     $team = Team::factory()->for($workspace)->create();
-    $custom = app(ManageTeamHealthStatements::class)->add($team, 'We ship calmly', 'Calm');
+    $custom = resolve(ManageTeamHealthStatements::class)->add($team, 'We ship calmly', 'Calm');
 
     $this->actingAs($admin)
         ->get(route('teams.show', [$workspace, $team]))

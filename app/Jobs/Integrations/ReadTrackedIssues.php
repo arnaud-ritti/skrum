@@ -6,10 +6,10 @@ use App\Actions\Integrations\ApplyIssueChanges;
 use App\Actions\Integrations\TrackedIssues;
 use App\Enums\IntegrationInboundMode;
 use App\Enums\IntegrationWebhookStatus;
+use App\Exceptions\Integrations\IntegrationException;
+use App\Exceptions\Integrations\RateLimited;
+use App\Exceptions\Integrations\ReconnectRequired;
 use App\Models\TeamIntegration;
-use App\Support\Integrations\Exceptions\IntegrationException;
-use App\Support\Integrations\Exceptions\RateLimited;
-use App\Support\Integrations\Exceptions\ReconnectRequired;
 use App\Support\Integrations\IntegrationErrors;
 use App\Support\Integrations\IntegrationPolls;
 use App\Support\Integrations\StatusSync;
@@ -17,6 +17,7 @@ use App\Support\Integrations\Trackers\Trackers;
 use App\Support\Integrations\TrackerWebhooks;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
+use Illuminate\Contracts\Database\Query\Builder;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -184,7 +185,7 @@ class ReadTrackedIssues implements ShouldBeUnique, ShouldQueue
         $since = CarbonImmutable::instance($cursor)->subMinutes(IntegrationPolls::CursorOverlapMinutes);
         $issues = $trackers->syncing($integration->provider)->changedIssues($integration, $ids, $since);
 
-        $applyIssueChanges->handle($integration, array_map('strval', array_keys($issues)), $issues, complete: false);
+        $applyIssueChanges->handle($integration, array_map(strval(...), array_keys($issues)), $issues, complete: false);
 
         $this->watchWebhooks($integration, $issues !== []);
     }
@@ -212,7 +213,7 @@ class ReadTrackedIssues implements ShouldBeUnique, ShouldQueue
         TeamIntegration::query()
             ->whereKey($integration->id)
             ->whereIn('webhook_status', [IntegrationWebhookStatus::Pending->value, IntegrationWebhookStatus::Active->value])
-            ->where(fn ($quiet) => $quiet
+            ->where(fn (Builder $quiet) => $quiet
                 ->whereNull('last_inbound_at')
                 ->orWhere('last_inbound_at', '<=', now()->subHours(self::SilentWebhookHours)))
             ->update(['webhook_status' => IntegrationWebhookStatus::Failing->value]);

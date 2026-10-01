@@ -2,8 +2,8 @@
 
 namespace App\Support\Integrations\Webhook;
 
-use App\Support\Integrations\Exceptions\UnresolvableWebhookHost;
-use App\Support\Integrations\Exceptions\UnsafeWebhookUrl;
+use App\Exceptions\Integrations\UnresolvableWebhookHost;
+use App\Exceptions\Integrations\UnsafeWebhookUrl;
 use App\Support\Integrations\HostResolver;
 use App\Support\Integrations\PublicAddress;
 use GuzzleHttp\Psr7\Exception\MalformedUriException;
@@ -16,16 +16,16 @@ use GuzzleHttp\Psr7\Uri;
  */
 class SafeWebhookUrl
 {
-    private const MaxLength = 2048;
+    private const int MaxLength = 2048;
 
-    private const MinUnprivilegedPort = 1024;
+    private const int MinUnprivilegedPort = 1024;
 
-    private const MaxPort = 65535;
+    private const int MaxPort = 65535;
 
     /**
      * @var array<int, int>
      */
-    private const StandardPorts = [80, 443];
+    private const array StandardPorts = [80, 443];
 
     public function __construct(private HostResolver $resolver) {}
 
@@ -38,32 +38,26 @@ class SafeWebhookUrl
     {
         $hostAndPort = self::hostAndPort($url);
 
-        if ($hostAndPort === null) {
-            throw new UnsafeWebhookUrl;
-        }
+        throw_if($hostAndPort === null, UnsafeWebhookUrl::class);
 
         [$host, $port, $urlHost] = $hostAndPort;
         $addresses = filter_var($host, FILTER_VALIDATE_IP) !== false ? [$host] : $this->resolver->addresses($host);
 
-        if ($addresses === []) {
-            throw new UnresolvableWebhookHost;
-        }
+        throw_if($addresses === [], UnresolvableWebhookHost::class);
 
-        if (! self::allowsPrivateNetworks()) {
+        if (! $this->allowsPrivateNetworks()) {
             foreach ($addresses as $address) {
-                if (! PublicAddress::isPublic($address)) {
-                    throw new UnsafeWebhookUrl;
-                }
+                throw_unless(PublicAddress::isPublic($address), UnsafeWebhookUrl::class);
             }
         }
 
-        return new WebhookTarget($url, $host, $port, self::preferredAddress($addresses), $urlHost);
+        return new WebhookTarget($url, $host, $port, $this->preferredAddress($addresses), $urlHost);
     }
 
     /**
      * @param  array<int, string>  $addresses
      */
-    private static function preferredAddress(array $addresses): string
+    private function preferredAddress(array $addresses): string
     {
         foreach ($addresses as $address) {
             if (filter_var($address, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false) {
@@ -188,7 +182,7 @@ class SafeWebhookUrl
         return $port >= self::MinUnprivilegedPort && $port <= self::MaxPort;
     }
 
-    private static function allowsPrivateNetworks(): bool
+    private function allowsPrivateNetworks(): bool
     {
         return config('services.outgoing_webhooks.allow_private_networks') === true;
     }
