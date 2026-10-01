@@ -1350,5 +1350,10 @@
     "Could not reach :host.": "Could not reach :host.",
     "Webhook disabled.": "Webhook disabled.",
     "Disabled after 10 failed deliveries in a row.": "Disabled after 10 failed deliveries in a row.",
-    "This webhook URL is no longer allowed. Paste a new one.": "This webhook URL is no longer allowed. Paste a new one."
+    "This webhook URL is no longer allowed. Paste a new one.": "This webhook URL is no longer allowed. Paste a new one.",
+    "A retrospective is completed, with its results recap.": "A retrospective is completed, with its results recap.",
+    "An action item is created.": "An action item is created.",
+    "An action item is completed, in skrum or in a linked tracker.": "An action item is completed, in skrum or in a linked tracker.",
+    "An action item is reopened.": "An action item is reopened.",
+    "A planning poker task gets its final estimate.": "A planning poker task gets its final estimate."
 }

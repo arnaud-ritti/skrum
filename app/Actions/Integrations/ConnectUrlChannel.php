@@ -79,7 +79,7 @@ class ConnectUrlChannel
         return $port === null || $port === $defaultPort ? $host : "{$host}:{$port}";
     }
 
-    private static function label(?string $label): ?string
+    public static function label(?string $label): ?string
     {
         $trimmed = trim((string) $label);
 

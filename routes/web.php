@@ -53,6 +53,8 @@ use App\Http\Controllers\Integrations\RetroResultsEmailsController;
 use App\Http\Controllers\Integrations\RetroSharesController;
 use App\Http\Controllers\Integrations\TeamIntegrationsController;
 use App\Http\Controllers\Integrations\TelegramConnectCodesController;
+use App\Http\Controllers\Integrations\WebhookDeliveriesController;
+use App\Http\Controllers\Integrations\WebhookSecretsController;
 use App\Http\Controllers\Integrations\WorkspaceActionItemExportPreviewsController;
 use App\Http\Controllers\Integrations\WorkspaceActionItemExportsController;
 use App\Http\Controllers\InvitationAcceptancesController;
@@ -211,7 +213,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     ->middleware([EnsureIntegrationProviderEnabled::class.':telegram', 'throttle:10,1'])
                     ->name('teams.integrations.telegramCode.store');
                 Route::post('teams/{team}/integrations/{provider}', [IntegrationUrlsController::class, 'store'])
-                    ->whereIn('provider', ['msteams', 'mattermost'])
+                    ->whereIn('provider', ['msteams', 'mattermost', 'webhook'])
                     ->middleware('throttle:10,1,integrationUrls')
                     ->name('teams.integrations.urls.store');
                 Route::patch('teams/{team}/integrations/{integration}', [TeamIntegrationsController::class, 'update'])
@@ -252,6 +254,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     ->whereUuid('integration')
                     ->middleware('throttle:10,1')
                     ->name('teams.integrations.test.store');
+                Route::post('teams/{team}/integrations/{integration}/secret', [WebhookSecretsController::class, 'store'])
+                    ->whereUuid('integration')
+                    ->middleware('throttle:10,1,webhookSecrets')
+                    ->name('teams.integrations.secret.store');
+                Route::get('teams/{team}/integrations/{integration}/deliveries', [WebhookDeliveriesController::class, 'index'])
+                    ->whereUuid('integration')
+                    ->middleware('throttle:60,1,webhookDeliveries')
+                    ->name('teams.integrations.deliveries.index');
             });
 
             Route::post('teams/{team}/members', [TeamMembersController::class, 'store'])->name('teams.members.store');

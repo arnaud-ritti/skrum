@@ -6,6 +6,7 @@ use App\Actions\Integrations\DisconnectIntegration;
 use App\Actions\Integrations\PresentTeamIntegration;
 use App\Actions\Integrations\UpdateTeamIntegration;
 use App\Enums\IntegrationProvider;
+use App\Enums\WebhookEvent;
 use App\Http\Controllers\Controller;
 use App\Models\Team;
 use App\Models\TeamIntegration;
@@ -49,6 +50,7 @@ class TeamIntegrationsController extends Controller
                 'conflict' => $telegramBot->hasConflict(),
             ] : null,
             'mattermost' => IntegrationProvider::Mattermost->isEnabled() ? ['url' => MattermostWebhookUrl::serverUrl()] : null,
+            'webhookEvents' => IntegrationProvider::Webhook->isEnabled() ? WebhookEvent::options() : null,
         ]);
     }
 

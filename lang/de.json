@@ -1596,5 +1596,10 @@
     "Could not reach :host.": ":host war nicht erreichbar.",
     "Webhook disabled.": "Webhook deaktiviert.",
     "Disabled after 10 failed deliveries in a row.": "Nach 10 fehlgeschlagenen Zustellungen in Folge deaktiviert.",
-    "This webhook URL is no longer allowed. Paste a new one.": "Diese Webhook-URL ist nicht mehr erlaubt. Füge eine neue ein."
+    "This webhook URL is no longer allowed. Paste a new one.": "Diese Webhook-URL ist nicht mehr erlaubt. Füge eine neue ein.",
+    "A retrospective is completed, with its results recap.": "Eine Retrospektive wird abgeschlossen, mit der Zusammenfassung ihrer Ergebnisse.",
+    "An action item is created.": "Ein Aktionspunkt wird erstellt.",
+    "An action item is completed, in skrum or in a linked tracker.": "Ein Aktionspunkt wird erledigt, in skrum oder in einem verknüpften Tracker.",
+    "An action item is reopened.": "Ein Aktionspunkt wird wieder geöffnet.",
+    "A planning poker task gets its final estimate.": "Eine Planning-Poker-Aufgabe erhält ihre endgültige Schätzung."
 }

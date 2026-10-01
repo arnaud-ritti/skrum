@@ -23,6 +23,7 @@ class UpdateTeamIntegration
         private DetectJiraStoryPointFields $detectStoryPointFields,
         private ListProviderPriorities $listPriorities,
         private ConnectUrlChannel $connectUrlChannel,
+        private ConnectOutgoingWebhook $connectOutgoingWebhook,
     ) {}
 
     /**
@@ -42,6 +43,7 @@ class UpdateTeamIntegration
                 'priority_map.*' => ['required', Rule::in([...array_map('strval', LinearPriority::Scale), self::DefaultPriority])],
             ],
             IntegrationProvider::MicrosoftTeams, IntegrationProvider::Mattermost => $this->connectUrlChannel->rules($integration->provider, isUpdate: true),
+            IntegrationProvider::Webhook => $this->connectOutgoingWebhook->rules(isUpdate: true),
             default => [],
         };
     }
@@ -53,6 +55,10 @@ class UpdateTeamIntegration
     {
         if (in_array($integration->provider, [IntegrationProvider::MicrosoftTeams, IntegrationProvider::Mattermost], true)) {
             return $this->connectUrlChannel->update($integration, $user, $validated)->refresh();
+        }
+
+        if ($integration->provider === IntegrationProvider::Webhook) {
+            return $this->connectOutgoingWebhook->update($integration, $validated)->refresh();
         }
 
         if (is_string($validated['cloud_id'] ?? null)) {

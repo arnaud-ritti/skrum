@@ -2,6 +2,7 @@
 
 namespace App\Actions\Integrations;
 
+use App\Enums\IntegrationProvider;
 use App\Models\TeamIntegration;
 use Illuminate\Support\Arr;
 
@@ -21,7 +22,7 @@ class PresentTeamIntegration
         'github' => [],
         'msteams' => ['host', 'channelLabel'],
         'mattermost' => ['host', 'channelLabel'],
-        'webhook' => [],
+        'webhook' => ['host', 'channelLabel', 'secretCreatedAt', 'events', 'disabledReason'],
     ];
 
     /**
@@ -35,7 +36,8 @@ class PresentTeamIntegration
      *     connectedBy: string|null,
      *     connectedAt: string|null,
      *     lastCheckedAt: string|null,
-     *     lastError: string|null
+     *     lastError: string|null,
+     *     webhook: array{consecutiveFailures: int, lastDeliverySucceededAt: string|null}|null
      * }
      */
     public function handle(TeamIntegration $integration): array
@@ -51,6 +53,22 @@ class PresentTeamIntegration
             'connectedAt' => $integration->created_at?->toIso8601String(),
             'lastCheckedAt' => $integration->last_checked_at?->toIso8601String(),
             'lastError' => $integration->last_error,
+            'webhook' => $this->webhookHealth($integration),
+        ];
+    }
+
+    /**
+     * @return array{consecutiveFailures: int, lastDeliverySucceededAt: string|null}|null
+     */
+    private function webhookHealth(TeamIntegration $integration): ?array
+    {
+        if ($integration->provider !== IntegrationProvider::Webhook) {
+            return null;
+        }
+
+        return [
+            'consecutiveFailures' => $integration->consecutive_failures,
+            'lastDeliverySucceededAt' => $integration->last_delivery_succeeded_at?->toIso8601String(),
         ];
     }
 }

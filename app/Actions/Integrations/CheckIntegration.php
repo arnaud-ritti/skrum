@@ -13,6 +13,7 @@ use App\Support\Integrations\Mattermost\MattermostClient;
 use App\Support\Integrations\MicrosoftTeams\MicrosoftTeamsClient;
 use App\Support\Integrations\Slack\SlackClient;
 use App\Support\Integrations\Telegram\TelegramClient;
+use App\Support\Integrations\Webhook\WebhookClient;
 
 class CheckIntegration
 {
@@ -23,6 +24,7 @@ class CheckIntegration
         private LinearClient $linear,
         private MicrosoftTeamsClient $teams,
         private MattermostClient $mattermost,
+        private WebhookClient $webhooks,
         private IntegrationTokens $tokens,
     ) {}
 
@@ -35,7 +37,8 @@ class CheckIntegration
             IntegrationProvider::Linear => fn () => $this->linear->query($integration, 'query { viewer { id } }'),
             IntegrationProvider::MicrosoftTeams => fn () => $this->teams->ensureUsableUrl($integration),
             IntegrationProvider::Mattermost => fn () => $this->mattermost->ensureUsableUrl($integration),
-            IntegrationProvider::JiraDataCenter, IntegrationProvider::GitHub, IntegrationProvider::Webhook => throw new NotConnected($integration->provider),
+            IntegrationProvider::JiraDataCenter, IntegrationProvider::GitHub => throw new NotConnected($integration->provider),
+            IntegrationProvider::Webhook => fn () => $this->webhooks->ensureUsableUrl($integration),
         };
 
         $check();
