@@ -9,6 +9,9 @@ use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\User;
 use App\Models\Vote;
+use Illuminate\Http\Client\Request;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * @param  array<string, mixed>  $attributes
@@ -116,6 +119,96 @@ function plan07SaveSettings(mixed $page): mixed
 function plan07ShowsVoteTotal(Card $card): string
 {
     return "[...document.querySelectorAll('#card-{$card->id} [aria-label]')].some((element) => /^\\d+ votes?$/.test(element.getAttribute('aria-label')))";
+}
+
+function plan07CursorIsOver(Card $card): string
+{
+    return sprintf(
+        '(async () => { const tip = () => document.querySelector(".lc-cursor")?.getBoundingClientRect() ?? null; const before = tip(); await new Promise((resolve) => setTimeout(resolve, 200)); const after = tip(); const card = document.getElementById(%s); if (before === null || after === null || card === null) { return false; } const box = card.getBoundingClientRect(); return before.left === after.left && before.top === after.top && after.left >= box.left && after.left <= box.right && after.top >= box.top && after.top <= box.bottom; })()',
+        json_encode("card-{$card->id}"),
+    );
+}
+
+/**
+ * @return array{
+ *     id: string,
+ *     images: array<string, array<string, string>>
+ * }
+ */
+function plan07GiphyItem(string $id): array
+{
+    return [
+        'id' => $id,
+        'images' => [
+            'fixed_width' => ['url' => "https://media.giphy.com/{$id}/200w.gif", 'webp' => "https://media.giphy.com/{$id}/200w.webp", 'width' => '200', 'height' => '150'],
+            'original' => ['url' => "https://media.giphy.com/{$id}/giphy.gif", 'webp' => "https://media.giphy.com/{$id}/giphy.webp", 'width' => '480', 'height' => '360'],
+        ],
+    ];
+}
+
+function plan07FakeUpstreams(): void
+{
+    Storage::fake();
+    config(['services.emoji_data.version' => '17.0.0']);
+
+    $pixel = base64_decode('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7');
+    $json = ['Content-Type' => 'application/json; charset=utf-8'];
+    $emojis = (string) json_encode([
+        ['emoji' => '🚀', 'hexcode' => '1F680', 'group' => 0, 'subgroup' => 0, 'order' => 1, 'version' => 1, 'label' => 'rocket', 'tags' => ['launch', 'space']],
+        ['emoji' => '🦄', 'hexcode' => '1F984', 'group' => 0, 'subgroup' => 0, 'order' => 2, 'version' => 1, 'label' => 'unicorn', 'tags' => ['face']],
+    ], JSON_UNESCAPED_UNICODE);
+    $messages = (string) json_encode([
+        'groups' => [['key' => 'smileys-emotion', 'message' => 'smileys & emotion', 'order' => 0]],
+        'subgroups' => [['key' => 'face-smiling', 'message' => 'face smiling', 'order' => 0]],
+        'skinTones' => [
+            ['key' => 'light', 'message' => 'light skin tone'],
+            ['key' => 'medium-light', 'message' => 'medium-light skin tone'],
+            ['key' => 'medium', 'message' => 'medium skin tone'],
+            ['key' => 'medium-dark', 'message' => 'medium-dark skin tone'],
+            ['key' => 'dark', 'message' => 'dark skin tone'],
+        ],
+    ]);
+
+    Http::fake([
+        'api.giphy.com/v1/gifs/trending*' => fn () => Http::response(['data' => [plan07GiphyItem('hot1'), plan07GiphyItem('hot2')]]),
+        'api.giphy.com/v1/gifs/search*' => fn () => Http::response(['data' => [plan07GiphyItem('party1')]]),
+        'api.giphy.com/v1/gifs/party1*' => fn () => Http::response(['data' => plan07GiphyItem('party1')]),
+        'media.giphy.com/*' => fn () => Http::response($pixel, 200, ['Content-Type' => 'image/gif']),
+        'cdn.jsdelivr.net/npm/emojibase-data@17.0.0/en/data.json' => fn () => Http::response($emojis, 200, $json),
+        'cdn.jsdelivr.net/npm/emojibase-data@17.0.0/en/messages.json' => fn () => Http::response($messages, 200, $json),
+        '*' => fn () => Http::response('Unexpected request', 500),
+    ]);
+}
+
+function plan07EnableGifs(): void
+{
+    config(['services.gifs' => ['provider' => 'giphy', 'key' => 'plan07-gif-key', 'rating' => 'pg']]);
+}
+
+function plan07ImageLoaded(string $selector): string
+{
+    return sprintf(
+        '(() => { const image = document.querySelector(%s); return image !== null && image.complete && image.naturalWidth > 0; })()',
+        json_encode($selector),
+    );
+}
+
+function plan07Requested(string $path): string
+{
+    return sprintf(
+        'performance.getEntriesByType("resource").some((entry) => new URL(entry.name).origin === location.origin && new URL(entry.name).pathname === %s)',
+        json_encode($path),
+    );
+}
+
+function plan07ThirdPartyRequests(): string
+{
+    return '[...performance.getEntriesByType("resource").map((entry) => entry.name), ...[...document.querySelectorAll("img, source")].map((element) => element.currentSrc || element.src)].filter((url) => /giphy\.com|tenor\.com|tenor\.googleapis\.com|jsdelivr\.net/.test(url)).length';
+}
+
+function plan07ForeignImages(): string
+{
+    return '[...document.querySelectorAll("img, source")].filter((element) => new URL(element.currentSrc || element.src, location.href).origin !== location.origin).length';
 }
 
 it('[P07-03a] toggles card reactions with any emoji, counts them live and names the reactors in the tooltip', function () {
@@ -698,4 +791,383 @@ it('[P07-09] presents the highlighted card to everyone, lets a participant close
 
     expect($retro->fresh()->highlighted_card_id)->toBeNull()
         ->and($retro->fresh()->presentation_mode)->toBeTrue();
+});
+
+it('[P07-01a] shows a named cursor over the same card on another page and keeps it there when that page scrolls the board', function () {
+    [
+        'retro' => $retro,
+        'columns' => $columns,
+        'bob' => $bob,
+        'carol' => $carol,
+        'aliceParticipant' => $aliceParticipant,
+    ] = plan07Board();
+    $first = plan07Card($retro, $columns[0], $aliceParticipant, 'Slow CI');
+    $third = plan07Card($retro, $columns[2], $aliceParticipant, 'Keep the demo on Fridays');
+    $board = 'document.querySelector("main:has([data-test^=\"retro-column-\"])")';
+
+    $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
+    $carolPage = $this->awaitRealtime($this->signIn($carol, "/retros/{$retro->id}"));
+
+    foreach ([$bobPage, $carolPage] as $page) {
+        $page->resize(800, 700)
+            ->assertPresent('[role="group"][aria-label="2 online"]')
+            ->assertPresent('.lc-overlay')
+            ->assertScript("{$board}.scrollWidth > {$board}.clientWidth", true);
+    }
+
+    $carolPage->assertNotPresent('.lc-cursor')
+        ->assertScript("{$board}.scrollLeft", 0);
+
+    $bobPage->hover("#card-{$first->id}")->hover("#card-{$third->id}");
+
+    $carolPage->assertSeeIn('.lc-overlay', 'Bob Stone')
+        ->assertScript(plan07CursorIsOver($third), true);
+
+    $bobPage->assertNotPresent('.lc-cursor');
+
+    $carolPage->script("() => { const board = {$board}; board.scrollLeft = board.scrollWidth; return board.scrollLeft; }");
+    $carolPage->assertScript("{$board}.scrollLeft > 0", true);
+
+    $bobPage->hover("#card-{$first->id}")->hover("#card-{$third->id}");
+
+    $carolPage->assertSeeIn('.lc-overlay', 'Bob Stone')
+        ->assertScript(plan07CursorIsOver($third), true);
+
+    $carolPage->hover("#card-{$third->id}")->hover("#card-{$first->id}");
+
+    $bobPage->assertSeeIn('.lc-overlay', 'Carol Reyes')
+        ->assertScript(plan07CursorIsOver($first), true);
+});
+
+it('[P07-01b] removes a cursor when its window loses focus and when its owner chooses "Hide my cursor"', function () {
+    [
+        'retro' => $retro,
+        'columns' => $columns,
+        'bob' => $bob,
+        'carol' => $carol,
+        'aliceParticipant' => $aliceParticipant,
+    ] = plan07Board();
+    $first = plan07Card($retro, $columns[0], $aliceParticipant, 'Slow CI');
+    $second = plan07Card($retro, $columns[1], $aliceParticipant, 'Flaky tests');
+    $watchRemoval = '() => { const started = performance.now(); const overlay = document.querySelector(".lc-overlay"); const observer = new MutationObserver(() => { if (overlay.querySelector(".lc-cursor") === null) { window.plan07CursorGoneAfter = performance.now() - started; observer.disconnect(); } }); observer.observe(overlay, { childList: true }); return true; }';
+
+    $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
+    $carolPage = $this->awaitRealtime($this->signIn($carol, "/retros/{$retro->id}"));
+
+    foreach ([$bobPage, $carolPage] as $page) {
+        $page->assertPresent('[role="group"][aria-label="2 online"]')
+            ->assertPresent('.lc-overlay');
+    }
+
+    $bobPage->hover("#card-{$first->id}")->hover("#card-{$second->id}");
+    $carolPage->assertSeeIn('.lc-overlay', 'Bob Stone');
+
+    $carolPage->script($watchRemoval);
+    $bobPage->script('() => { window.dispatchEvent(new Event("blur")); return true; }');
+
+    $carolPage->assertNotPresent('.lc-cursor')
+        ->assertScript('window.plan07CursorGoneAfter < 1500', true);
+
+    $bobPage->hover("#card-{$first->id}")->hover("#card-{$second->id}");
+    $carolPage->assertSeeIn('.lc-overlay', 'Bob Stone');
+
+    $bobPage->click('[aria-label="Hide my cursor"]')
+        ->assertAriaAttribute('[aria-label="Show my cursor"]', 'pressed', 'true')
+        ->assertScript('localStorage.getItem("skrum.hideMyCursor")', 'true');
+    $carolPage->assertNotPresent('.lc-cursor');
+
+    $bobPage->hover("#card-{$first->id}")
+        ->hover("#card-{$second->id}")
+        ->click('[aria-label="Send a reaction 🎉"]');
+    $carolPage->assertSeeIn('.lr-overlay', 'Bob Stone')
+        ->assertNotPresent('.lc-cursor');
+
+    $carolPage->hover("#card-{$second->id}")->hover("#card-{$first->id}");
+    $bobPage->assertSeeIn('.lc-overlay', 'Carol Reyes');
+
+    $this->awaitRealtime($bobPage->navigate("/retros/{$retro->id}"));
+
+    $bobPage->assertAriaAttribute('[aria-label="Show my cursor"]', 'pressed', 'true')
+        ->click('[aria-label="Show my cursor"]')
+        ->assertAriaAttribute('[aria-label="Hide my cursor"]', 'pressed', 'false')
+        ->hover("#card-{$first->id}")
+        ->hover("#card-{$second->id}");
+    $carolPage->assertSeeIn('.lc-overlay', 'Bob Stone');
+});
+
+it('[P07-02a] flies quick reactions with the sender\'s name and gathers the same emoji from two people into one bubble', function () {
+    ['retro' => $retro, 'alice' => $alice, 'bob' => $bob] = plan07Board();
+    $watchGathering = '() => { window.plan07Gathered = 0; new MutationObserver(() => { for (const bubble of document.querySelectorAll(".lr-reaction[data-state=\"gathering\"]")) { window.plan07Gathered = Math.max(window.plan07Gathered, Number(bubble.dataset.count)); } }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["data-state", "data-count"] }); return true; }';
+
+    $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
+    $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
+
+    foreach ([$alicePage, $bobPage] as $page) {
+        $page->assertPresent('[role="group"][aria-label="2 online"]')
+            ->assertPresent('[role="toolbar"][aria-label="Reactions"]')
+            ->assertCount('[role="toolbar"][aria-label="Reactions"] [aria-label^="Send a reaction "]', 6);
+    }
+
+    $alicePage->click('[aria-label="Send a reaction 👏"]');
+    $bobPage->assertSeeIn('.lr-overlay', '👏')
+        ->assertSeeIn('.lr-overlay', 'Alice Martin');
+
+    $bobPage->click('[aria-label="Send a reaction 👍"]');
+    $alicePage->assertSeeIn('.lr-overlay', '👍')
+        ->assertSeeIn('.lr-overlay', 'Bob Stone');
+
+    $alicePage->script($watchGathering);
+    $bobPage->script($watchGathering);
+
+    $alicePage->click('[aria-label="Send a reaction 🎉"]');
+    $bobPage->click('[aria-label="Send a reaction 🎉"]');
+
+    foreach ([$alicePage, $bobPage] as $page) {
+        $page->assertScript('window.plan07Gathered >= 2', true);
+    }
+});
+
+it('[P07-02b] flies a reaction chosen in the full emoji picker', function () {
+    plan07FakeUpstreams();
+
+    ['retro' => $retro, 'alice' => $alice, 'bob' => $bob] = plan07Board();
+
+    $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
+    $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
+
+    foreach ([$alicePage, $bobPage] as $page) {
+        $page->assertPresent('[role="group"][aria-label="2 online"]');
+    }
+
+    $alicePage->click('[role="toolbar"][aria-label="Reactions"] [aria-label="Send a reaction"]')
+        ->assertSee('More emoji…')
+        ->click('More emoji…')
+        ->assertSeeIn('[role="dialog"]', 'Send a reaction')
+        ->assertVisible('[role="dialog"] [role="gridcell"][aria-label="Rocket"]')
+        ->click('[role="dialog"] [role="gridcell"][aria-label="Rocket"]')
+        ->assertNotPresent('[role="dialog"]');
+
+    $bobPage->assertSeeIn('.lr-overlay', '🚀')
+        ->assertSeeIn('.lr-overlay', 'Alice Martin');
+});
+
+it('[P07-06b] labels cursors "Participant" and sends unnamed reactions on an anonymous retro', function () {
+    [
+        'retro' => $retro,
+        'columns' => $columns,
+        'bob' => $bob,
+        'carol' => $carol,
+        'aliceParticipant' => $aliceParticipant,
+    ] = plan07Board(RetroPhase::Grouping, ['is_anonymous' => true]);
+    $first = plan07Card($retro, $columns[0], $aliceParticipant, 'Slow CI');
+    $second = plan07Card($retro, $columns[1], $aliceParticipant, 'Flaky tests');
+
+    $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
+    $carolPage = $this->awaitRealtime($this->signIn($carol, "/retros/{$retro->id}"));
+
+    foreach ([$bobPage, $carolPage] as $page) {
+        $page->assertPresent('[role="group"][aria-label="2 online"]')
+            ->assertPresent('.lc-overlay');
+    }
+
+    $bobPage->hover("#card-{$first->id}")->hover("#card-{$second->id}");
+
+    $carolPage->assertSeeIn('.lc-overlay', 'Participant')
+        ->assertDontSeeIn('.lc-overlay', 'Bob Stone');
+
+    $bobPage->click('[aria-label="Send a reaction 🎉"]');
+
+    $carolPage->assertPresent('.lr-reaction')
+        ->assertNotPresent('.lr-label');
+});
+
+it('[P07-05a] searches GIFs and shows them on cards through skrum, without any request from the browser to the provider', function () {
+    plan07FakeUpstreams();
+    plan07EnableGifs();
+
+    [
+        'retro' => $retro,
+        'columns' => $columns,
+        'alice' => $alice,
+        'bob' => $bob,
+        'carol' => $carol,
+    ] = plan07Board(RetroPhase::Writing);
+    $start = "[data-test=\"retro-column-{$columns[0]->id}\"]";
+    $result = '[role="dialog"] button[aria-label="Choose this GIF"]';
+
+    $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
+    $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
+    $carolPage = $this->awaitRealtime($this->signIn($carol, "/retros/{$retro->id}"));
+
+    $bobPage->assertVisible("{$start} form button:has-text(\"GIF\")")
+        ->click("{$start} form button:has-text(\"GIF\")")
+        ->assertSeeIn('[role="dialog"]', 'Choose a GIF')
+        ->assertSeeIn('[role="dialog"]', 'Powered by GIPHY')
+        ->assertCount($result, 2)
+        ->fill('[aria-label="Search GIFs…"]', 'party')
+        ->assertCount($result, 1)
+        ->assertAttribute("{$result} img", 'src', '/gifs/party1/preview')
+        ->assertScript(plan07ImageLoaded("{$result} img"), true)
+        ->click($result)
+        ->assertNotPresent('[role="dialog"]')
+        ->assertAttribute("{$start} form img", 'src', '/gifs/party1/preview')
+        ->assertPresent("{$start} form [aria-label=\"Remove GIF\"]")
+        ->click("{$start} form button:not([type=\"button\"])")
+        ->assertPresent('article[id^="card-"] button[aria-label="GIF"]');
+
+    $card = Card::query()->where('gif_id', 'party1')->sole();
+
+    expect($card->content)->toBeNull();
+
+    $bobPage->assertAttribute("#card-{$card->id} button[aria-label=\"GIF\"] img", 'src', '/gifs/party1/preview')
+        ->assertScript(plan07ImageLoaded("#card-{$card->id} button[aria-label=\"GIF\"] img"), true);
+
+    $carolPage->assertSeeIn("#card-{$card->id}", 'Hidden until writing ends')
+        ->assertNotPresent("#card-{$card->id} img");
+
+    $alicePage->press('Next')->assertSeeIn('[aria-current="step"]', 'Grouping');
+
+    $carolPage->assertSeeIn('[aria-current="step"]', 'Grouping')
+        ->assertAttribute("#card-{$card->id} button[aria-label=\"GIF\"] img", 'src', '/gifs/party1/preview')
+        ->assertScript(plan07ImageLoaded("#card-{$card->id} button[aria-label=\"GIF\"] img"), true)
+        ->click("#card-{$card->id} button[aria-label=\"GIF\"]")
+        ->assertAttribute('[role="dialog"] img', 'src', '/gifs/party1/full')
+        ->assertScript(plan07ImageLoaded('[role="dialog"] img'), true);
+
+    foreach ([$bobPage, $carolPage] as $page) {
+        $page->assertScript(plan07Requested('/gifs/party1/preview'), true)
+            ->assertScript(plan07ThirdPartyRequests(), 0)
+            ->assertScript(plan07ForeignImages(), 0)
+            ->assertScript('document.documentElement.outerHTML.includes("plan07-gif-key")', false)
+            ->assertScript('document.documentElement.outerHTML.includes("giphy.com")', false);
+    }
+
+    Http::assertSent(fn (Request $request): bool => str_starts_with($request->url(), 'https://api.giphy.com/v1/gifs/trending')
+        && str_contains($request->url(), 'api_key=plan07-gif-key')
+        && str_contains($request->url(), 'rating=pg'));
+    Http::assertSent(fn (Request $request): bool => str_starts_with($request->url(), 'https://api.giphy.com/v1/gifs/search')
+        && str_contains($request->url(), 'q=party')
+        && str_contains($request->url(), 'api_key=plan07-gif-key'));
+    Http::assertSent(fn (Request $request): bool => $request->url() === 'https://media.giphy.com/party1/200w.webp');
+    Http::assertSent(fn (Request $request): bool => $request->url() === 'https://media.giphy.com/party1/giphy.webp');
+    Http::assertNotSent(fn (Request $request): bool => str_contains($request->url(), 'tenor'));
+    Storage::assertExists('gifs/giphy/party1-preview');
+    Storage::assertExists('gifs/giphy/party1-full');
+});
+
+it('[P07-05b] serves the emoji picker data itself, fetching it once from the CDN on the server', function () {
+    plan07FakeUpstreams();
+
+    [
+        'retro' => $retro,
+        'columns' => $columns,
+        'bob' => $bob,
+        'carol' => $carol,
+        'aliceParticipant' => $aliceParticipant,
+    ] = plan07Board();
+    $card = plan07Card($retro, $columns[0], $aliceParticipant, 'Slow CI');
+    $rocket = '[role="dialog"] [role="gridcell"][aria-label="Rocket"]';
+
+    $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
+    $carolPage = $this->awaitRealtime($this->signIn($carol, "/retros/{$retro->id}"));
+
+    foreach ([$bobPage, $carolPage] as $page) {
+        $page->click("#card-{$card->id} [aria-label=\"Add a reaction\"]")
+            ->assertSee('More emoji…')
+            ->click('More emoji…')
+            ->assertSeeIn('[role="dialog"]', 'Add a reaction')
+            ->assertPresent('[role="dialog"] [aria-label="Search emoji…"]')
+            ->assertVisible($rocket)
+            ->assertPresent('[role="dialog"] [role="gridcell"][aria-label="Unicorn"]')
+            ->assertDontSee('Emoji list unavailable')
+            ->assertScript(plan07Requested('/emoji-data/17.0.0/en/data.json'), true)
+            ->assertScript(plan07Requested('/emoji-data/17.0.0/en/messages.json'), true)
+            ->assertScript(plan07ThirdPartyRequests(), 0);
+    }
+
+    Http::assertSentCount(2);
+    Http::assertSent(fn (Request $request): bool => $request->url() === 'https://cdn.jsdelivr.net/npm/emojibase-data@17.0.0/en/data.json');
+    Http::assertSent(fn (Request $request): bool => $request->url() === 'https://cdn.jsdelivr.net/npm/emojibase-data@17.0.0/en/messages.json');
+    Storage::assertExists('emoji-data/17.0.0/en/data.json');
+    Storage::assertExists('emoji-data/17.0.0/en/messages.json');
+});
+
+it('[P07-03b] adds a card reaction chosen in the full emoji picker', function () {
+    plan07FakeUpstreams();
+
+    [
+        'retro' => $retro,
+        'columns' => $columns,
+        'bob' => $bob,
+        'carol' => $carol,
+        'aliceParticipant' => $aliceParticipant,
+        'bobParticipant' => $bobParticipant,
+    ] = plan07Board();
+    $card = plan07Card($retro, $columns[0], $aliceParticipant, 'Slow CI');
+
+    $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
+    $carolPage = $this->awaitRealtime($this->signIn($carol, "/retros/{$retro->id}"));
+
+    $bobPage->click("#card-{$card->id} [aria-label=\"Add a reaction\"]")
+        ->assertSee('More emoji…')
+        ->click('More emoji…')
+        ->assertVisible('[role="dialog"] [role="gridcell"][aria-label="Rocket"]')
+        ->click('[role="dialog"] [role="gridcell"][aria-label="Rocket"]')
+        ->assertNotPresent('[role="dialog"]')
+        ->assertAriaAttribute(plan07Chip($card, '🚀', 1), 'pressed', 'true');
+
+    $carolPage->assertAriaAttribute(plan07Chip($card, '🚀', 1), 'pressed', 'false')
+        ->click(plan07Chip($card, '🚀', 1))
+        ->assertAriaAttribute(plan07Chip($card, '🚀', 2), 'pressed', 'true');
+
+    $bobPage->assertAriaAttribute(plan07Chip($card, '🚀', 2), 'pressed', 'true');
+
+    expect(CardReaction::query()->where('card_id', $card->id)->where('emoji', '🚀')->count())->toBe(2)
+        ->and(CardReaction::query()->where('participant_id', $bobParticipant->id)->sole()->emoji)->toBe('🚀');
+});
+
+it('[P07-07b] offers the "Allow GIFs" switch when a provider is configured and stops new GIFs while keeping the existing ones', function () {
+    plan07FakeUpstreams();
+    plan07EnableGifs();
+
+    [
+        'retro' => $retro,
+        'columns' => $columns,
+        'alice' => $alice,
+        'bob' => $bob,
+        'bobParticipant' => $bobParticipant,
+    ] = plan07Board(RetroPhase::Writing);
+    $card = plan07Card($retro, $columns[0], $bobParticipant, null, 0, 'party1');
+    $gifButtons = '[data-test^="retro-column-"] form button:has-text("GIF")';
+    $image = "#card-{$card->id} button[aria-label=\"GIF\"] img";
+
+    $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
+    $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
+
+    $bobPage->assertCount($gifButtons, 3)
+        ->assertAttribute($image, 'src', '/gifs/party1/preview')
+        ->assertScript(plan07ImageLoaded($image), true);
+
+    plan07OpenSettings($alicePage)
+        ->assertSee('Allow GIFs')
+        ->assertAriaAttribute('#retro-gifs', 'checked', 'true')
+        ->assertPresent('#retro-reactions')
+        ->assertPresent('#retro-cursors')
+        ->assertPresent('#retro-hide-vote-counts')
+        ->assertPresent('#retro-locked')
+        ->assertPresent('#retro-presentation')
+        ->click('#retro-gifs')
+        ->assertAriaAttribute('#retro-gifs', 'checked', 'false');
+    plan07SaveSettings($alicePage);
+
+    $bobPage->assertCount($gifButtons, 0)
+        ->assertCount('[aria-label="Add a card…"]', 3)
+        ->assertScript(plan07ImageLoaded($image), true)
+        ->assertScript(plan07ThirdPartyRequests(), 0);
+
+    expect($retro->fresh()->gifs_enabled)->toBeFalse()
+        ->and($card->fresh()->gif_id)->toBe('party1');
+
+    Http::assertSent(fn (Request $request): bool => str_starts_with($request->url(), 'https://api.giphy.com/v1/gifs/party1')
+        && str_contains($request->url(), 'api_key=plan07-gif-key'));
 });
