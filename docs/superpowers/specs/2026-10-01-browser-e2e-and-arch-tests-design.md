@@ -146,16 +146,16 @@ The plugin cannot inspect websocket frames, cut the network or control the brows
 
 ### 4.1 First slice
 
-The three walkthroughs have 49 steps (plan 4's prose split into 17, plan 10a's 16, plan 10b's 16).
+The three walkthroughs have 49 steps (plan 4's prose split into 17, plan 10a's 16, plan 10b's 16). Several steps become more than one test, and a step whose visual or audible part cannot be automated gets a separate `residual` row, so the coverage table has 70 rows.
 
-| Walkthrough | Steps | `auto` | `auto-substituted` | `residual` |
+| Walkthrough | Rows | `auto` | `auto-substituted` | `residual` |
 |---|---|---|---|---|
-| Plan 4, retro core | 17 | 13 | 2 | 2 |
-| Plan 10a, poker core | 16 | 15 | 1 | 0 |
-| Plan 10b, poker additions | 16 | 9 | 6 | 1 |
-| **Total** | **49** | **37** | **9** | **3** |
+| Plan 4, retro core | 26 | 19 | 5 | 2 |
+| Plan 10a, poker core | 16 | 13 | 3 | 0 |
+| Plan 10b, poker additions | 28 | 18 | 6 | 4 |
+| **Total** | **70** | **50** | **14** | **6** |
 
-Residual in this slice: the 375px/1440px layout and dark-mode judgement (plan 4), and the forged whisper (plan 10b step 14). The timer's sound (part of plan 10b step 8) is residual; the rest of that step is automated. These counts are estimates from reading the plans; the coverage table records the final classification.
+Residual in this slice: the visual judgement at 375px/1440px and of dark mode (plan 4); touch cursors, where a reaction starts on screen, the timer's sound and toast, and the forged whisper (plan 10b). These counts come from plan 16a as written; the coverage table records the final classification after implementation.
 
 ## 5. Architecture tests
 
@@ -167,7 +167,7 @@ Residual in this slice: the 375px/1440px layout and dark-mode judgement (plan 4)
 
 ### 5.2 Project rules
 
-1. `App\Enums` uses nothing from `App` outside `App\Enums`.
+1. `App\Enums` uses nothing from `App` outside `App\Enums`. One exception, stated on the test: `McpFeature`, which asks the container whether its feature is available (`Llm`, `McpTrackers`).
 2. `App\Models` does not use `App\Actions`, `App\Http` or `App\Mcp`.
 3. `App\Support`, `App\Jobs` and `App\Events` do not use `App\Http` or `App\Mcp`.
 4. `App\Actions` does not use `App\Http`.
@@ -175,25 +175,26 @@ Residual in this slice: the 375px/1440px layout and dark-mode judgement (plan 4)
 6. `App\Rules` classes implement `ValidationRule`.
 7. Every `Concerns` namespace contains only traits.
 8. `App\Mcp\Tools` classes extend `SkrumTool`.
-9. No class in `App` is `final`.
+9. No class in `App` is `final`. Enums are not checked: a PHP enum is final by nature.
 
 A rule that turns out not to describe the code as designed (for example rule 8, if some tools legitimately extend another base) is corrected in this spec before it is written as a test.
 
 ### 5.3 Code changes to pass
 
-Found by reading the code; the first run of the presets gives the exact list.
+The exact list, from running the presets and the rules against the code on 2026-10-01 (the `php` preset already passes).
 
 | Violation | Where | Change |
 |---|---|---|
-| `md5` or `sha1` | `app/Support/Gifs/GifCatalog.php`, `app/Http/Controllers/EmojiDataController.php`, `app/Support/Integrations/InboundReachability.php`, `app/Jobs/Integrations/ApplyInboundIssueChanges.php` | Use `hash()` with `xxh128` (keys) or `sha256`. Only cache keys and job-uniqueness keys change. |
+| `md5` or `sha1` | `app/Support/Gifs/GifCatalog.php`, `app/Http/Controllers/EmojiDataController.php`, `app/Support/Integrations/InboundReachability.php`, `app/Jobs/Integrations/ApplyInboundIssueChanges.php` | `hash('xxh128', …)`. Three are cache or job-uniqueness keys; the fourth is the `ETag` of the emoji data, an opaque validator only this controller produces. None is compared with a digest defined elsewhere. |
 | `assert` | `app/Actions/Mcp/IssueMcpToken.php` | An `instanceof` check that throws. |
 | `array_rand` | `app/Actions/Games/RevealGameHint.php` | `Arr::random()`. |
-| Enum outside `App\Enums` | `app/Mcp/McpFeature.php` | Move to `App\Enums`. |
-| Exceptions outside `App\Exceptions` | About 20 classes in `app/Support/Integrations`, `app/Support/Llm` and `app/Mcp/Prompts` | Move to `App\Exceptions\Integrations`, `App\Exceptions\Llm` and `App\Exceptions\Mcp`. Names and behaviour unchanged. |
-| Listeners without `handle` | `app/Listeners/QueueActionItemStatusPushes.php`, `app/Listeners/QueueWebhookEvents.php` | One listener per event, each with `handle()`. Shared logic moves to an action or a trait. |
-| A controller's public static helper used by actions | `EmojiDataController::emojibaseLocale()`, used by `BuildBoardSnapshot` and `BuildGameSnapshot` | Move the helper to `App\Support`. |
+| Enum outside `App\Enums` | `app/Mcp/McpFeature.php` | Move to `App\Enums` (rule 1's stated exception). |
+| Exceptions outside `App\Exceptions` | 22 classes: 17 in `app/Support/Integrations/Exceptions`, `Inbound/InboundSignatureInvalid`, `Trackers/EstimateRejected`, 2 in `app/Support/Llm`, 1 in `app/Mcp/Prompts` | Move to `App\Exceptions\Integrations`, `App\Exceptions\Llm` and `App\Exceptions\Mcp`. Names and behaviour unchanged. |
+| Listeners without `handle` | `app/Listeners/QueueActionItemStatusPushes.php`, `app/Listeners/QueueWebhookEvents.php` | One listener per event (seven), each with `handle()`; shared logic moves to two actions. Laravel's event discovery registers a listener that has `handle()`, so the seven explicit `Event::listen` lines in `AppServiceProvider` are removed (keeping them would run each listener twice). The order of the two listeners of the same event is then no longer fixed by code; they are independent. |
+| A controller's public static helper used by actions | `EmojiDataController::emojibaseLocale()` and its locale map, used by `BuildBoardSnapshot` and `BuildGameSnapshot` | Move to `App\Support\EmojibaseLocale`. |
+| A non-CRUD public controller method | `Games\GameDrawingOpsController::destroyLast()` | Its own controller, `GameLastDrawingOpsController::destroy()`. Route name and URL unchanged; the one frontend caller (`draw-board.tsx`) imports the new action. |
 
-- These are refactors: no behaviour changes, and the existing feature tests must stay green without edits other than imports and class names.
+- These are refactors: no behaviour changes, and the existing feature tests must stay green without edits other than imports, class names and the two `ETag` assertions of `tests/Feature/EmojiDataTest.php`.
 - An `ignoring()` is allowed only where the rule is wrong for that class, and carries the reason on the same test.
 - The exception moves and the listener split touch files that plan 15 is changing. Plan 16a starts after plan 15 is merged.
 
@@ -207,13 +208,14 @@ Found by reading the code; the first run of the presets gives the exact list.
 
 - The browser suite is not a PHPUnit test suite in `phpunit.xml`, so `php artisan test` does not pick it up.
 - `.gitignore` gains `/tests/Browser/Screenshots`.
+- `phpunit.xml` sets `memory_limit` to 512M: the architecture tests load the whole `app/` tree and exhaust PHP's default 128M.
 - Locally the suite runs inside Sail, where the database host resolves; the Sail image already installs Playwright's system dependencies.
 
 ### 6.1 CI
 
 `.github/workflows/tests.yml` gains a `browser` job: PHP 8.4 with `sockets` and `pdo_pgsql`, a PostgreSQL service with the `testing` database, Node, `npm ci`, `npx playwright install --with-deps chromium`, `composer test:browser`, and an upload of `tests/Browser/Screenshots` when the job fails.
 
-The existing `ci` job runs PHP 8.3 and has no PostgreSQL service. The plugin needs PHP 8.4, so that job's PHP version is raised to 8.4. Anything else wrong with that job is reported to the user, not redesigned here.
+The existing `ci` job runs PHP 8.3 and has no PostgreSQL service. The plugin needs PHP 8.4 and the `sockets` extension, and its hooks load in every Pest run, so that job's PHP version is raised to 8.4 and it gains the `sockets` extension. Anything else wrong with that job is reported to the user, not redesigned here.
 
 ## 7. Errors and failure modes
 
@@ -223,6 +225,7 @@ The existing `ci` job runs PHP 8.3 and has no PostgreSQL service. The plugin nee
 | Reverb cannot start or the port never answers | The test fails with the Reverb process's output. |
 | A realtime assertion never becomes true | The assertion times out; a screenshot of each open page is kept. |
 | A browser test calls `actingAs()` or injects a cookie | A test in the `Arch` suite reads the files under `tests/Browser` and fails on `actingAs(`, `withCookie(` or `withCookies(`. (Architecture expectations see classes and functions, not method calls, so this is a source scan.) |
+| A browser test calls `Event::fake()` with no argument | The same scan fails: a blanket fake removes the isolation listener of §3.3. Faking named events stays allowed. |
 | A walkthrough step has no row in the coverage table | Found in review of the coverage table; acceptance criterion 5. |
 
 ## 8. Changes to other specs
@@ -251,7 +254,7 @@ This spec supersedes the following statements; the specs themselves are not edit
 6. `composer test:arch` passes with the `php`, `security` and `laravel` presets and the project rules of §5.2; every `ignoring()` carries a reason.
 7. `composer test` contains no browser test and includes the `Arch` suite.
 8. CI runs the browser suite in its own job with PostgreSQL, Chromium and built assets, and uploads screenshots when it fails.
-9. The refactors of §5.3 change no behaviour: the existing suite passes with only imports and class names updated; phpstan, type-check and lint are green.
+9. The refactors of §5.3 change no behaviour: the existing suite passes with only imports, class names and the two emoji `ETag` assertions updated; phpstan, type-check and lint are green.
 10. Product code gains only `data-test` attributes, the `data-realtime` attribute and the refactors of §5.3.
 
 Later slices (plans 16b onward) each add their walkthroughs' rows to the coverage table under criterion 5's rule.
