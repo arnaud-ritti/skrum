@@ -133,6 +133,15 @@ use App\Http\Controllers\TeamMembersController;
 use App\Http\Controllers\TeamPokerGamesController;
 use App\Http\Controllers\TeamRetrosController;
 use App\Http\Controllers\TeamsController;
+use App\Http\Controllers\TeamWhiteboardsController;
+use App\Http\Controllers\WhiteboardJoinsController;
+use App\Http\Controllers\Whiteboards\WhiteboardElementsController;
+use App\Http\Controllers\Whiteboards\WhiteboardFacilitatorsController;
+use App\Http\Controllers\Whiteboards\WhiteboardFilesController;
+use App\Http\Controllers\Whiteboards\WhiteboardGuestTokensController;
+use App\Http\Controllers\Whiteboards\WhiteboardsController;
+use App\Http\Controllers\Whiteboards\WhiteboardSettingsController;
+use App\Http\Controllers\Whiteboards\WhiteboardSnapshotsController;
 use App\Http\Controllers\WorkspaceActionItemCommentsController;
 use App\Http\Controllers\WorkspaceActionItemsController;
 use App\Http\Controllers\WorkspaceActionItemSubtasksController;
@@ -145,6 +154,7 @@ use App\Http\Middleware\RememberCurrentWorkspace;
 use App\Http\Middleware\ResolveGamePlayer;
 use App\Http\Middleware\ResolvePokerPlayer;
 use App\Http\Middleware\ResolveRetroParticipant;
+use App\Http\Middleware\ResolveWhiteboardMember;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -209,6 +219,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::delete('teams/{team}', [TeamsController::class, 'destroy'])->name('teams.destroy');
             Route::post('teams/{team}/retros', [TeamRetrosController::class, 'store'])->name('teams.retros.store');
             Route::post('teams/{team}/poker-games', [TeamPokerGamesController::class, 'store'])->name('teams.pokerGames.store');
+            Route::post('teams/{team}/whiteboards', [TeamWhiteboardsController::class, 'store'])->name('teams.whiteboards.store');
             Route::get('teams/{team}/estimates', [TeamEstimatesController::class, 'index'])->name('teams.estimates.index');
             Route::post('teams/{team}/poker-decks', [PokerDecksController::class, 'store'])->name('teams.pokerDecks.store');
             Route::patch('teams/{team}/poker-decks/{pokerDeck}', [PokerDecksController::class, 'update'])->name('teams.pokerDecks.update')->whereUuid('pokerDeck');
@@ -470,6 +481,26 @@ Route::prefix('poker/{game}')
         Route::put('facilitator', [PokerFacilitatorsController::class, 'update'])->name('poker.facilitator.update');
         Route::put('players/{player}/spectator', [PokerSpectatorsController::class, 'update'])->name('poker.players.spectator.update')->whereUuid('player');
         Route::delete('/', [PokerGamesController::class, 'destroy'])->name('poker.destroy');
+    });
+
+Route::get('whiteboards/join/{guestToken}', [WhiteboardJoinsController::class, 'show'])->name('whiteboards.join.show');
+Route::post('whiteboards/join/{guestToken}', [WhiteboardJoinsController::class, 'store'])->name('whiteboards.join.store')->middleware('throttle:10,1');
+
+Route::prefix('whiteboards/{board}')
+    ->whereUuid('board')
+    ->middleware(ResolveWhiteboardMember::class)
+    ->scopeBindings()
+    ->group(function () {
+        Route::get('/', [WhiteboardsController::class, 'show'])->name('whiteboards.show');
+        Route::delete('/', [WhiteboardsController::class, 'destroy'])->name('whiteboards.destroy');
+        Route::get('snapshot', [WhiteboardSnapshotsController::class, 'show'])->name('whiteboards.snapshot.show');
+        Route::patch('settings', [WhiteboardSettingsController::class, 'update'])->name('whiteboards.settings.update');
+        Route::post('guest-token', [WhiteboardGuestTokensController::class, 'store'])->name('whiteboards.guestToken.store');
+        Route::put('facilitator', [WhiteboardFacilitatorsController::class, 'update'])->name('whiteboards.facilitator.update');
+        Route::get('elements', [WhiteboardElementsController::class, 'index'])->name('whiteboards.elements.index');
+        Route::put('elements', [WhiteboardElementsController::class, 'update'])->name('whiteboards.elements.update')->middleware('throttle:whiteboard-writes');
+        Route::post('files', [WhiteboardFilesController::class, 'store'])->name('whiteboards.files.store');
+        Route::get('files/{fileId}', [WhiteboardFilesController::class, 'show'])->name('whiteboards.files.show')->where('fileId', '[A-Za-z0-9_-]{1,64}');
     });
 
 Route::get('play/{guestToken}', [GameJoinsController::class, 'show'])->name('games.join.show');

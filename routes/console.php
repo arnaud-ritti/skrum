@@ -40,3 +40,8 @@ Schedule::command('skrum:check-integrations')
 Schedule::command('model:prune', ['--model' => [IntegrationDelivery::class, IntegrationDeliveryPayload::class, IntegrationInboundEvent::class]])
     ->daily()
     ->onOneServer();
+
+Schedule::command('skrum:prune-whiteboards')
+    ->daily()
+    ->withoutOverlapping()
+    ->onOneServer();

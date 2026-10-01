@@ -5,12 +5,14 @@ namespace App\Http\Controllers;
 use App\Actions\Games\FindGamePlayer;
 use App\Actions\Poker\ResolvePlayer;
 use App\Actions\Retros\ResolveParticipant;
+use App\Actions\Whiteboards\ResolveMember;
 use App\Contracts\GamePresenceRoster;
 use App\Models\GameRoom;
 use App\Models\Participant;
 use App\Models\PokerGame;
 use App\Models\Retro;
 use App\Models\Team;
+use App\Models\Whiteboard;
 use Illuminate\Broadcasting\Broadcasters\PusherBroadcaster;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -26,6 +28,7 @@ class BroadcastAuthorizationsController extends Controller
         ResolvePlayer $resolvePlayer,
         FindGamePlayer $findGamePlayer,
         GamePresenceRoster $gamePresenceRoster,
+        ResolveMember $resolveMember,
     ): JsonResponse {
         /** @var array{socket_id: string, channel_name: string} $validated */
         $validated = $request->validate([
@@ -35,6 +38,10 @@ class BroadcastAuthorizationsController extends Controller
 
         if (str_starts_with($validated['channel_name'], 'presence-game.')) {
             return $this->authorizeGameChannel($request, $validated, $findGamePlayer, $gamePresenceRoster);
+        }
+
+        if (str_starts_with($validated['channel_name'], 'presence-whiteboard.')) {
+            return $this->authorizeWhiteboardChannel($request, $validated, $resolveMember);
         }
 
         if (str_starts_with($validated['channel_name'], 'presence-poker.')) {
@@ -120,6 +127,39 @@ class BroadcastAuthorizationsController extends Controller
                 'name' => $player->displayName(),
                 'avatarUrl' => $player->avatarUrl(),
                 'isGuest' => $player->isGuest(),
+            ],
+        );
+
+        return response()->json(json_decode($signature, true));
+    }
+
+    /**
+     * @param  array{socket_id: string, channel_name: string}  $validated
+     */
+    private function authorizeWhiteboardChannel(Request $request, array $validated, ResolveMember $resolveMember): JsonResponse
+    {
+        $boardId = Str::after($validated['channel_name'], 'presence-whiteboard.');
+
+        abort_unless(Str::isUuid($boardId), 403);
+
+        $board = Whiteboard::query()->find($boardId);
+
+        abort_if($board === null, 403);
+        abort_unless($board->id === $boardId, 403);
+
+        $member = $resolveMember->handle($request, $board);
+
+        abort_if($member === null, 403);
+
+        $signature = $this->pusher()->authorizePresenceChannel(
+            $validated['channel_name'],
+            $validated['socket_id'],
+            $member->id,
+            [
+                'id' => $member->id,
+                'name' => $member->displayName(),
+                'avatarUrl' => $member->avatarUrl(),
+                'isGuest' => $member->isGuest(),
             ],
         );
 

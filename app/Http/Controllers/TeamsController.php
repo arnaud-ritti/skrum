@@ -7,6 +7,7 @@ use App\Actions\HealthCheck\PresentHealthStatement;
 use App\Actions\HealthCheck\TeamHealthStatements;
 use App\Actions\Poker\PresentPokerGameSummary;
 use App\Actions\Retros\BuildTemplateCatalogue;
+use App\Actions\Whiteboards\PresentWhiteboardSummary;
 use App\Enums\IntegrationProvider;
 use App\Enums\PokerDeck;
 use App\Enums\TemplateCategory;
@@ -16,6 +17,7 @@ use App\Models\SavedPokerDeck;
 use App\Models\Team;
 use App\Models\TeamHealthStatement;
 use App\Models\User;
+use App\Models\Whiteboard;
 use App\Models\Workspace;
 use App\Support\Llm\Llm;
 use Illuminate\Http\RedirectResponse;
@@ -30,6 +32,7 @@ class TeamsController extends Controller
         private TeamHealthStatements $teamHealthStatements,
         private PresentHealthStatement $presentHealthStatement,
         private PresentPokerGameSummary $presentPokerGameSummary,
+        private PresentWhiteboardSummary $presentWhiteboardSummary,
     ) {}
 
     public function store(Request $request, Workspace $workspace): RedirectResponse
@@ -90,6 +93,12 @@ class TeamsController extends Controller
             'pokerDecks' => $this->pokerDecks($request->user(), $workspace, $team),
             'pokerDeckOptions' => PokerDeck::options(),
             'canCreatePokerGame' => $request->user()->can('createPokerGame', $team),
+            'whiteboards' => $team->whiteboards()
+                ->with('facilitator.user')
+                ->latest('updated_at')
+                ->get()
+                ->map(fn (Whiteboard $board) => $this->presentWhiteboardSummary->handle($board)),
+            'canCreateWhiteboard' => $request->user()->can('createWhiteboard', $team),
             'canManageIntegrations' => IntegrationProvider::anyEnabled() && $request->user()->can('manageIntegrations', $team),
         ]);
     }

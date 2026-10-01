@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Actions\Whiteboards\WriteWhiteboardElements;
 use App\Contracts\GamePresenceRoster;
 use App\Contracts\PokerPresenceRoster;
 use App\Events\ActionItems\ActionItemCompleted;
@@ -20,6 +21,7 @@ use App\Mcp\VisibleTeams;
 use App\Models\Passkey;
 use App\Models\PersonalAccessToken;
 use App\Models\SavedPokerDeck;
+use App\Models\Whiteboard;
 use App\Policies\PokerDeckPolicy;
 use App\Support\Games\DecodedRules;
 use App\Support\Games\DrawAndGuessRules;
@@ -34,6 +36,7 @@ use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Foundation\DevCommands;
 use Illuminate\Http\Request;
 use Illuminate\Mail\Markdown;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
@@ -59,6 +62,7 @@ class AppServiceProvider extends ServiceProvider
             $app->make(DecodedRules::class),
             $app->make(SprintGifRules::class),
         ]));
+        $this->app->singleton(WriteWhiteboardElements::class);
         $this->app->scoped(McpGrantContext::class);
         $this->app->scoped(VisibleTeams::class);
         $this->app->scoped(McpTrackers::class);
@@ -77,6 +81,12 @@ class AppServiceProvider extends ServiceProvider
         Sanctum::usePersonalAccessTokenModel(PersonalAccessToken::class);
         RateLimiter::for('mcp', fn (Request $request): Limit => Limit::perMinute((int) config('skrum.mcp.rate_limit'))
             ->by('mcp-token:'.McpGrant::current()->tokenId));
+        RateLimiter::for('whiteboard-writes', function (Request $request): Limit {
+            $board = $request->route('board');
+            $boardId = $board instanceof Whiteboard ? $board->id : (string) $board;
+
+            return Limit::perSecond(20)->by((Auth::id() ?? $request->ip()).'|'.$boardId);
+        });
 
         Event::listen(IntegrationActivated::class, fn (IntegrationActivated $event) => MatchIntegrationUsers::start($event->integration));
         Event::listen(RetroCompleted::class, [QueueWebhookEvents::class, 'onRetroCompleted']);

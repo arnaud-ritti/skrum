@@ -13,6 +13,13 @@ export type PokerGameSummary = {
     lastActivityAt: string;
 };
 
+export type WhiteboardSummary = {
+    id: string;
+    title: string;
+    updatedAt: string | null;
+    facilitatorName: string | null;
+};
+
 export type EstimatedTaskRow = {
     id: string;
     title: string;
