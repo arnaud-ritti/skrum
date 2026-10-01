@@ -6,6 +6,7 @@ use App\Models\Whiteboard;
 use App\Models\WhiteboardElement;
 use App\Models\WhiteboardFile;
 use App\Models\WhiteboardTemplate;
+use App\Models\WhiteboardVersion;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -40,16 +41,25 @@ class PruneWhiteboardFiles
     }
 
     /**
-     * A template keeps its own copy of every image (spec §10), so only the
-     * board's elements use a board's file. Plan 17d adds versions.
+     * A file lives while a live element or a version of its board shows it
+     * (spec §6.5). A template keeps its own copy of every image (spec §10).
      */
     private function isUsed(WhiteboardFile $file): bool
     {
-        return WhiteboardElement::query()
+        $shownOnTheBoard = WhiteboardElement::query()
             ->where('whiteboard_id', $file->whiteboard_id)
             ->where('type', 'image')
             ->where('is_deleted', false)
             ->where('data->fileId', $file->file_id)
+            ->exists();
+
+        if ($shownOnTheBoard) {
+            return true;
+        }
+
+        return WhiteboardVersion::query()
+            ->where('whiteboard_id', $file->whiteboard_id)
+            ->whereJsonContains('scene->fileIds', $file->file_id)
             ->exists();
     }
 

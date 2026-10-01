@@ -9,6 +9,8 @@ use Illuminate\Validation\ValidationException;
 
 class SetWhiteboardPrivateWriting
 {
+    public function __construct(private ScheduleWhiteboardVersion $scheduleWhiteboardVersion) {}
+
     /**
      * The caller holds the lock on the board row and broadcasts `board.changed`.
      */
@@ -55,6 +57,8 @@ class SetWhiteboardPrivateWriting
         $this->revealInVersions($locked, array_values($revealedIds->all()));
 
         $locked->update(['private_writing' => false, 'seq' => $seq]);
+
+        $this->scheduleWhiteboardVersion->handle($locked, $fromSeq);
 
         (new WhiteboardElementsChanged($locked->id, $seq, $fromSeq, null))->sendToOthers();
     }
