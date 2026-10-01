@@ -165,3 +165,36 @@ Proven by running the tests of plan 16b.
 - Format documents with `node_modules/.bin/vp fmt <file>`; `npx prettier` formats differently.
 - `composer test` runs PHPStan without a memory limit and can crash at PHP's default 128M on host PHP; run `vendor/bin/phpstan analyse --memory-limit=2G`.
 - The browser suite holds 142 tests and takes about 270 seconds.
+
+## Findings from plan 16c (walkthroughs of plans 8a to 8e)
+
+Proven by running the tests of plan 16c.
+
+### Keyboard drag
+
+- `dragWithKeyboard()` fails on a list low on a scrolling page (the team page's health statements): the keyboard sensor scrolls the window one row per arrow key, and a drop sent two animation frames after the arrow lands on the starting row. Send the keys inline and, between the arrow and the drop, wait on the live region: `assertScript("document.querySelector('[id^=\"DndLiveRegion\"]').textContent", 'Moved Interaction to position 2.')`. That list announces the statement's axis label, not its text.
+- In Grouping, an arrow towards a tall target (a group) below the dragged item ends over the column, not the group; towards a target above it ends over the target. Arrange the target above the dragged card. (The downward case is recorded as an open product defect, P08d-01c.)
+
+### Selectors and controls
+
+- Nested `:has()` works: `div:has(> h3:has-text("Preview"))`, `section:has(h2:has-text("…"))`. `:text-is("…")` gives an exact text match where `assertSeeIn()` is ambiguous.
+- Emoji work in selectors: `[role="menuitem"]:has-text("🎉")`, `[aria-label="🎉, 1 reaction"]`.
+- `keys('[role="menu"]', 'Escape')` closes a Radix dropdown menu. `assertAttribute(…, 'aria-disabled', 'true')` and `assertAriaAttribute(…, 'checked', 'true')` work on Radix menu checkbox items and switches. A Radix collapsible opens with a plain click on its trigger.
+- `resize()` reflows breakpoint grids; row counts can be read with `getBoundingClientRect().top` in a script.
+
+### Context options
+
+- `visit($url, ['reducedMotion' => 'reduce'])` works: `matchMedia('(prefers-reduced-motion: reduce)').matches` is true in that page. Such a page joins as a guest by hand, since `joinAsGuest()` takes no options.
+
+### Server side
+
+- `config([...])` set in the test body, also in the middle of a test, applies to the next browser request (`navigate()` to the same path shows the change). `$this->travel()` applies to later browser requests too.
+- `Http::fake()` and `Http::sequence()` apply to browser requests and to jobs run by `workQueue()`; `Http::assertSentCount()` and `Http::recorded()` see both.
+- A job that fails when run by `workQueue()` is released with its backoff: travel past the backoff and call `workQueue()` again; the last attempt calls `failed()`, whose broadcast reaches the pages.
+- A dispatch made `afterCommit()` during a browser request reaches the `jobs` table inside the test transaction.
+- `fetch()` from a page with `script()` carries that context's session or guest cookie, so `fetch('/retros/{id}/snapshot')` returns that participant's snapshot; a `fetch(...).then(...)` chain returns the resolved value.
+- A stale dialog reaches a server refusal: with a dialog open, change the model from the test body (no broadcast), then submit.
+
+### Tooling
+
+- The browser suite holds 214 tests and takes about 390 seconds.

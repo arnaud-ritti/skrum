@@ -133,7 +133,7 @@ The plugin cannot inspect websocket frames, cut the network or control the brows
 - `data-realtime`: the root element of `retros/show`, `poker/show` and `games/show` carries `data-realtime="connecting"` or `"connected"`, taken from the state the channel hooks (`use-retro-channel.ts`, `use-poker-channel.ts`, `use-game-channel.ts`) already track.
 - Later slices may add `data-realtime` to another live page that subscribes to a channel (the workspace action-items page is the first), with only the state needed to know that the subscription succeeded; this stays within criterion 10.
 - `data-test`: added to an element only when a test cannot target it by English text or label (for example a card, a column, a poker hand card, a task row).
-- No other product change is made for the browser suite.
+- No other product change is made for the browser suite itself. A product defect that a walkthrough test confirms may be fixed when the fix is small and contained: in its own `fix(…)` commit, with a failing test first where the behaviour is server-side, and a line under "Defects found" in the coverage table. A defect that needs a design decision is recorded there as open and left to the product owner.
 
 ## 4. From walkthrough to tests
 
@@ -183,6 +183,7 @@ Residual in this slice: the visual judgement at 375px/1440px and of dark mode (p
 7. Every `Concerns` namespace contains only traits.
 8. `App\Mcp\Tools` classes extend `SkrumTool`.
 9. No class in `App` is `final`. Enums are not checked: a PHP enum is final by nature.
+10. Classes in `App\Listeners` are named with the `Listener` suffix (added with plan 16b, when the listeners were renamed).
 
 A rule that turns out not to describe the code as designed (for example rule 8, if some tools legitimately extend another base) is corrected in this spec before it is written as a test.
 
@@ -262,6 +263,6 @@ This spec supersedes the following statements; the specs themselves are not edit
 7. `composer test` contains no browser test and includes the `Arch` suite.
 8. CI runs the browser suite in its own job with PostgreSQL, Chromium and built assets, and uploads screenshots when it fails.
 9. The refactors of §5.3 change no behaviour: the existing suite passes with only imports, class names and the two emoji `ETag` assertions updated; phpstan, type-check and lint are green.
-10. Product code gains only `data-test` attributes, the `data-realtime` attribute and the refactors of §5.3.
+10. Product code gains only `data-test` attributes, the `data-realtime` attribute, the refactors of §5.3 (with the listener suffix of §5.2 rule 10), and the defect fixes listed under "Defects found" in the coverage table (§3.7).
 
 Later slices (plans 16b onward) each add their walkthroughs' rows to the coverage table under criterion 5's rule.
