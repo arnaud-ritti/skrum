@@ -55,6 +55,7 @@ use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 use Laravel\Mcp\Server\Testing\PendingTestResponse;
 use Laravel\Mcp\Server\Testing\TestResponse as McpTestResponse;
+use Tests\BrowserTestCase;
 use Tests\TestCase;
 
 /*
@@ -71,6 +72,12 @@ use Tests\TestCase;
 pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
     ->in('Feature');
+
+pest()->extend(BrowserTestCase::class)
+    ->use(RefreshDatabase::class)
+    ->in('Browser');
+
+pest()->browser()->timeout(20_000);
 
 /*
 |--------------------------------------------------------------------------
