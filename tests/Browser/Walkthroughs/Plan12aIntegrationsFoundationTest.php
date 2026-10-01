@@ -8,14 +8,8 @@ use App\Models\TeamIntegration;
 use App\Models\User;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
-use Tests\Browser\Support\ReverbServer;
 
 beforeEach(function () {
-    $reverbHost = ReverbServer::Host;
-    $reverbPort = ReverbServer::Port;
-
-    Http::preventStrayRequests();
-    Http::allowStrayRequests(["http://{$reverbHost}:{$reverbPort}/*"]);
     disableIntegrations();
 });
 
@@ -180,15 +174,21 @@ it('[P12a-03a] shows the /connect command, switches to Connected once the bot re
         ->assertSeeIn($telegram, 'Team chat')
         ->assertSeeIn($telegram, 'Ada Admin')
         ->assertDontSee('Waiting for the command…')
-        ->click("{$telegram} button:has-text(\"Send a test message\")")
-        ->assertSee('Test message sent.')
         ->assertDontSeeIn($telegram, 'Never');
 
     $integration = TeamIntegration::query()->sole();
+    $checkedWhenConnected = $integration->last_checked_at;
+
+    $this->travel(5)->minutes();
+
+    $page->click("{$telegram} button:has-text(\"Send a test message\")")
+        ->assertSee('Test message sent.');
 
     expect($integration->provider)->toBe(IntegrationProvider::Telegram)
         ->and($integration->team_id)->toBe($team->id)
-        ->and($integration->setting('chatId'))->toBe('-100123');
+        ->and($integration->setting('chatId'))->toBe('-100123')
+        ->and($checkedWhenConnected)->not->toBeNull()
+        ->and($integration->fresh()->last_checked_at->gt($checkedWhenConnected))->toBeTrue();
 
     Http::assertSent(fn (Request $request): bool => str_ends_with($request->url(), '/sendMessage')
         && $request['chat_id'] === '-100123'
