@@ -186,3 +186,44 @@ it('removes the token with the connection', function () {
     expect(TeamIntegration::query()->count())->toBe(0);
     Http::assertNothingSent();
 });
+
+it('never flashes the token back into the session when validation fails', function () {
+    fakeJiraDataCenterTokenCheck(401);
+    $team = Team::factory()->create();
+
+    $this->actingAs(integrationAdmin($team))
+        ->post(route('teams.integrations.jiraDataCenterToken.store', [$team->workspace, $team]), ['token' => JiraDataCenterPastedToken, 'access' => 'write', 'acknowledged' => '1'])
+        ->assertSessionHasErrors('token')
+        ->assertSessionHasInput('access', 'write')
+        ->assertSessionMissing('_old_input.token');
+});
+
+it('answers neutrally when the server does not report its version', function () {
+    Http::fake([
+        jiraDataCenterUrl('rest/api/2/myself') => Http::response(['name' => 'jdoe', 'displayName' => 'Jane Doe']),
+        jiraDataCenterUrl('rest/api/2/serverInfo') => Http::response(['serverTitle' => 'Acme Jira']),
+    ]);
+    $team = Team::factory()->create();
+
+    postJiraDataCenterToken(integrationAdmin($team), $team)
+        ->assertJsonValidationErrors(['token' => "We couldn't read the Jira version."]);
+
+    expect(TeamIntegration::query()->count())->toBe(0);
+});
+
+it('saves nothing when checking the token times out or the server fails', function (mixed $answer) {
+    Http::fake([
+        jiraDataCenterUrl('rest/api/2/myself') => $answer,
+        jiraDataCenterUrl('rest/api/2/serverInfo') => Http::response(['versionNumbers' => [8, 20, 1]]),
+    ]);
+    $team = Team::factory()->create();
+
+    $response = postJiraDataCenterToken(integrationAdmin($team), $team);
+
+    expect($response->isSuccessful())->toBeFalse()
+        ->and($response->getContent())->not->toContain(JiraDataCenterPastedToken)
+        ->and(TeamIntegration::query()->count())->toBe(0);
+})->with([
+    'timeout' => [fn () => Http::failedConnection('cURL error 28: Operation timed out')],
+    'server error' => [fn () => Http::response(['message' => 'Internal error'], 500)],
+]);

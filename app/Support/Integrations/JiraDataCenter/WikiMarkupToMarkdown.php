@@ -3,6 +3,8 @@
 namespace App\Support\Integrations\JiraDataCenter;
 
 use App\Support\Integrations\Jira\AdfToMarkdown;
+use Closure;
+use RuntimeException;
 
 /**
  * Jira Server/Data Center descriptions are wiki markup (spec 8 §4.1). The
@@ -24,17 +26,29 @@ class WikiMarkupToMarkdown
             return null;
         }
 
-        $blocks = [];
         $text = str_replace(["\r\n", "\r"], "\n", $wiki);
 
-        $text = (string) preg_replace_callback('/\{(code|noformat)(?::([^}]*))?\}(.*?)\{\1\}/s', function (array $match) use (&$blocks): string {
+        try {
+            $markdown = $this->markdown($text);
+        } catch (RuntimeException) {
+            $markdown = trim(mb_scrub($text, 'UTF-8'));
+        }
+
+        return $markdown === '' ? null : AdfToMarkdown::truncate($markdown);
+    }
+
+    private function markdown(string $text): string
+    {
+        $blocks = [];
+
+        $text = self::replace('/\{(code|noformat)(?::([^}]*))?\}(.*?)\{\1\}/s', function (array $match) use (&$blocks): string {
             $language = $match[1] === 'code' ? $this->language($match[2]) : '';
             $blocks[] = "```{$language}\n".trim($match[3], "\n")."\n```";
 
             return "\n".self::BlockMarker.(count($blocks) - 1).self::BlockMarker."\n";
         }, $text);
 
-        $text = (string) preg_replace_callback('/\{quote\}(.*?)\{quote\}/s', fn (array $match): string => "\n".implode("\n", array_map(
+        $text = self::replace('/\{quote\}(.*?)\{quote\}/s', fn (array $match): string => "\n".implode("\n", array_map(
             fn (string $line): string => rtrim("> {$line}"),
             explode("\n", trim($match[1], "\n")),
         ))."\n", $text);
@@ -45,15 +59,13 @@ class WikiMarkupToMarkdown
             array_push($lines, ...$this->line($line));
         }
 
-        $markdown = (string) preg_replace_callback(
+        $markdown = self::replace(
             '/'.self::BlockMarker.'(\d+)'.self::BlockMarker.'/u',
             fn (array $match): string => $blocks[(int) $match[1]] ?? '',
             implode("\n", $lines),
         );
 
-        $markdown = trim((string) preg_replace("/\n{3,}/", "\n\n", $markdown));
-
-        return $markdown === '' ? null : AdfToMarkdown::truncate($markdown);
+        return trim(self::replace("/\n{3,}/", "\n\n", $markdown));
     }
 
     /**
@@ -99,16 +111,16 @@ class WikiMarkupToMarkdown
             return self::InlineMarker.(count($kept) - 1).self::InlineMarker;
         };
 
-        $text = (string) preg_replace('/!([^!\s][^!\n]*)!/', '[attachment]', $text);
-        $text = (string) preg_replace_callback('/\{\{(.+?)\}\}/', fn (array $match): string => $keep("`{$match[1]}`"), $text);
-        $text = (string) preg_replace_callback('/\[([^\]|\n]*)\|([^\]\n]+)\]/', fn (array $match): string => $keep($this->link(trim($match[1]), trim($match[2]))), $text);
-        $text = (string) preg_replace_callback('/\[((?:https?|mailto):[^\]\s]+)\]/i', fn (array $match): string => $keep($this->link($match[1], $match[1])), $text);
-        $text = (string) preg_replace('/(?<![\w*])\*(?=\S)([^*\n]*?\S)\*(?![\w*])/u', '**$1**', $text);
-        $text = (string) preg_replace('/(?<![\w_])_(?=\S)([^_\n]*?\S)_(?![\w_])/u', '*$1*', $text);
-        $text = (string) preg_replace('/(?<![\w-])-(?=\S)([^-\n]*?\S)-(?![\w-])/u', '~~$1~~', $text);
-        $text = (string) preg_replace('/\{color(?::[^}]*)?\}/', '', $text);
+        $text = self::replace('/\{\{(.+?)\}\}/', fn (array $match): string => $keep("`{$match[1]}`"), $text);
+        $text = self::replace('/\[([^\]|\n]*)\|([^\]\n]+)\]/', fn (array $match): string => $keep($this->link(trim($match[1]), trim($match[2]))), $text);
+        $text = self::replace('/\[((?:https?|mailto):[^\]\s]+)\]/i', fn (array $match): string => $keep($this->link($match[1], $match[1])), $text);
+        $text = self::replace('/!([^!\s][^!\n]*)!/', '[attachment]', $text);
+        $text = self::replace('/(?<![\w*])\*(?=\S)([^*\n]*?\S)\*(?![\w*])/u', '**$1**', $text);
+        $text = self::replace('/(?<![\w_])_(?=\S)([^_\n]*?\S)_(?![\w_])/u', '*$1*', $text);
+        $text = self::replace('/(?<![\w-])-(?=\S)([^-\n]*?\S)-(?![\w-])/u', '~~$1~~', $text);
+        $text = self::replace('/\{color(?::[^}]*)?\}/', '', $text);
 
-        return (string) preg_replace_callback(
+        return self::replace(
             '/'.self::InlineMarker.'(\d+)'.self::InlineMarker.'/u',
             fn (array $match): string => $kept[(int) $match[1]] ?? '',
             $text,
@@ -139,5 +151,24 @@ class WikiMarkupToMarkdown
         }
 
         return '';
+    }
+
+    /**
+     * A failed replacement throws instead of turning the text into an empty
+     * string, so the description is kept raw rather than lost.
+     *
+     * @param  string|Closure(array<int|string, string>): string  $replacement
+     */
+    private static function replace(string $pattern, string|Closure $replacement, string $subject): string
+    {
+        $result = $replacement instanceof Closure
+            ? preg_replace_callback($pattern, $replacement, $subject)
+            : preg_replace($pattern, $replacement, $subject);
+
+        if ($result === null) {
+            throw new RuntimeException(preg_last_error_msg());
+        }
+
+        return $result;
     }
 }

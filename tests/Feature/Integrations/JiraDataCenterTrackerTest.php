@@ -8,6 +8,7 @@ use App\Enums\PokerDeck;
 use App\Jobs\SyncTaskEstimate;
 use App\Models\PokerTask;
 use App\Models\TeamIntegration;
+use App\Support\Integrations\JiraDataCenter\JiraDataCenterClient;
 use App\Support\Integrations\JiraDataCenter\JiraDataCenterServer;
 use App\Support\Integrations\JiraDataCenter\WikiMarkupToMarkdown;
 use App\Support\Integrations\Trackers\EstimateRejected;
@@ -183,4 +184,24 @@ it('renders converted wiki descriptions without raw HTML or script links', funct
         ->and($html)->not->toContain('<img')
         ->and($html)->not->toContain('href="javascript')
         ->and($html)->not->toContain('onclick="');
+});
+
+it('encodes the issue key of browse links', function () {
+    enableIntegrations(IntegrationProvider::JiraDataCenter);
+    $integration = TeamIntegration::factory()->jiraDataCenter()->create();
+
+    expect(app(JiraDataCenterClient::class)->browseUrl($integration, 'PROJ 1/../x'))->toBe('https://jira.example.com/browse/PROJ%201%2F..%2Fx')
+        ->and(app(JiraDataCenterClient::class)->browseUrl($integration, 'PROJ-1'))->toBe('https://jira.example.com/browse/PROJ-1');
+});
+
+it('refuses board and issue ids longer than 20 digits before calling the server', function () {
+    enableIntegrations(IntegrationProvider::JiraDataCenter);
+    $integration = TeamIntegration::factory()->jiraDataCenter()->create();
+    $tracker = app(JiraDataCenterTracker::class);
+    $tooLong = str_repeat('1', 21);
+
+    expect($tracker->iterations($integration, $tooLong))->toBe([])
+        ->and($tracker->issues($integration, [$tooLong]))->toBe([]);
+
+    Http::assertNothingSent();
 });

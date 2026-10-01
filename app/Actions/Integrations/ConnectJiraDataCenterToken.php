@@ -12,6 +12,7 @@ use App\Support\Integrations\Exceptions\ConnectionRefused;
 use App\Support\Integrations\JiraDataCenter\JiraDataCenterClient;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use SensitiveParameter;
 
 /**
  * Spec 8 §4.1 fallback: a token pasted by an Owner/Admin acts as the person
@@ -40,7 +41,7 @@ class ConnectJiraDataCenterToken
         ];
     }
 
-    public function handle(Team $team, User $user, string $token, IntegrationAccess $access): TeamIntegration
+    public function handle(Team $team, User $user, #[SensitiveParameter] string $token, IntegrationAccess $access): TeamIntegration
     {
         try {
             $owner = $this->client->probe($token, 'rest/api/2/myself');
@@ -49,8 +50,10 @@ class ConnectJiraDataCenterToken
             throw ValidationException::withMessages(['token' => $exception->getMessage()]);
         }
 
-        if (! self::supportsTokens($serverInfo)) {
-            throw ValidationException::withMessages(['token' => __('Personal access tokens need Jira 8.14 or later.')]);
+        $unsupported = self::unsupportedReason($serverInfo);
+
+        if ($unsupported !== null) {
+            throw ValidationException::withMessages(['token' => $unsupported]);
         }
 
         $current = $team->integration(IntegrationProvider::JiraDataCenter)->settings ?? [];
@@ -77,15 +80,19 @@ class ConnectJiraDataCenterToken
     /**
      * @param  array<array-key, mixed>  $serverInfo
      */
-    private static function supportsTokens(array $serverInfo): bool
+    private static function unsupportedReason(array $serverInfo): ?string
     {
         $numbers = array_values(array_filter((array) ($serverInfo['versionNumbers'] ?? []), 'is_int'));
 
         if (count($numbers) < 2) {
-            return false;
+            return __("We couldn't read the Jira version.");
         }
 
-        return version_compare("{$numbers[0]}.{$numbers[1]}", self::MinimumVersion, '>=');
+        if (version_compare("{$numbers[0]}.{$numbers[1]}", self::MinimumVersion, '<')) {
+            return __('Personal access tokens need Jira 8.14 or later.');
+        }
+
+        return null;
     }
 
     /**

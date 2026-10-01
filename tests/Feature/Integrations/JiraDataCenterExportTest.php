@@ -121,3 +121,19 @@ it('matches people by username search with exactly one equal email', function ()
         && $request['username'] === 'Ann@example.com'
         && (int) $request['maxResults'] === 2);
 });
+
+it('warns that a timed out Data Center issue may exist', function () {
+    Http::fake([
+        jiraDataCenterUrl('rest/api/2/issue/createmeta/*') => Http::response(['values' => jiraCreateMeta()['fields']]),
+        jiraDataCenterUrl('rest/api/2/issue') => Http::failedConnection('cURL error 28: Operation timed out'),
+    ]);
+    [$retro, $item, $author] = exportBoardItem();
+    TeamIntegration::factory()->jiraDataCenter()->create(['team_id' => $retro->team_id]);
+
+    $this->actingAs($author)
+        ->postJson(route('retros.action-items.exports.store', [$retro, $item]), ['source' => 'jira_dc', 'project_id' => '10000', 'issue_type_id' => '11'])
+        ->assertStatus(502)
+        ->assertJsonPath('message', 'The issue may have been created. Check Jira Data Center before trying again.');
+
+    expect(ActionItemExternalLink::query()->count())->toBe(0);
+});

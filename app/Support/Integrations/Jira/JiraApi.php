@@ -34,5 +34,8 @@ interface JiraApi
      */
     public function apiPath(string $resource): string;
 
+    /**
+     * The issue's web page; the key is encoded here.
+     */
     public function browseUrl(TeamIntegration $integration, string $key): string;
 }

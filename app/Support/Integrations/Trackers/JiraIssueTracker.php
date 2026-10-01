@@ -17,6 +17,11 @@ abstract class JiraIssueTracker implements IssueTracker
 
     private const IssueIdPattern = '/^[A-Za-z0-9_-]+$/';
 
+    /**
+     * Boards, sprints and the numeric issue ids of JQL.
+     */
+    private const IdPattern = '/^\d{1,20}\z/';
+
     abstract protected function api(): JiraApi;
 
     abstract protected function description(mixed $value): ?string;
@@ -54,7 +59,7 @@ abstract class JiraIssueTracker implements IssueTracker
 
     public function iterations(TeamIntegration $integration, string $containerId): array
     {
-        if (! ctype_digit($containerId)) {
+        if (preg_match(self::IdPattern, $containerId) !== 1) {
             return [];
         }
 
@@ -93,7 +98,7 @@ abstract class JiraIssueTracker implements IssueTracker
 
     public function issues(TeamIntegration $integration, array $externalIds): array
     {
-        $ids = array_values(array_unique(array_filter($externalIds, fn (string $id): bool => ctype_digit($id))));
+        $ids = array_values(array_unique(array_filter($externalIds, fn (string $id): bool => preg_match(self::IdPattern, $id) === 1)));
         $issues = [];
 
         foreach (array_chunk($ids, self::PreviewLimit) as $chunk) {
@@ -189,7 +194,7 @@ abstract class JiraIssueTracker implements IssueTracker
             key: $key,
             title: TrackerIssue::title($fields['summary'] ?? null, $key),
             description: $this->description($fields['description'] ?? null),
-            url: $this->api()->browseUrl($integration, rawurlencode($key)),
+            url: $this->api()->browseUrl($integration, $key),
             assignee: TrackerIssue::shorten(data_get($fields, 'assignee.displayName'), TrackerIssue::AssigneeLength),
             estimate: $this->estimate($integration, $fields),
             status: TrackerIssue::shorten(data_get($fields, 'status.name'), TrackerIssue::AssigneeLength),

@@ -1454,5 +1454,7 @@
     "No priority label": "No priority label",
     "Priority label: :label": "Priority label: :label",
     "Written to the issue description.": "Written to the issue description.",
-    "This repository isn't available to the GitHub App.": "This repository isn't available to the GitHub App."
+    "This repository isn't available to the GitHub App.": "This repository isn't available to the GitHub App.",
+    "We couldn't read the Jira version.": "We couldn't read the Jira version.",
+    "Export repository": "Export repository"
 }

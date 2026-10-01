@@ -1681,7 +1681,7 @@
     "Manage the installation": "Gestionar la instalación",
     "Imported tasks and exported issues keep their links but are no longer synced, and the people mappings are deleted. The GitHub App stays installed on :account: uninstall it there if no other team uses it.": "Las tareas importadas y las incidencias exportadas conservan sus enlaces pero dejan de sincronizarse, y se eliminan las asignaciones de personas. La aplicación de GitHub sigue instalada en :account: desinstálala allí si ningún otro equipo la usa.",
     "GitHub account": "Cuenta de GitHub",
-    "This installation can only read issues. Give the app \"Issues: read and write\" on GitHub to write estimates and export action items.": "Esta instalación solo puede leer incidencias. Concede a la aplicación «Issues: lectura y escritura» en GitHub para escribir estimaciones y exportar acciones.",
+    "This installation can only read issues. Give the app \"Issues: read and write\" on GitHub to write estimates and export action items.": "Esta instalación solo puede leer incidencias. Concede a la aplicación el permiso «Issues: lectura y escritura» en GitHub para escribir estimaciones y exportar acciones.",
     "Priority labels": "Etiquetas de prioridad",
     "Label added to exported issues for each priority. Leave empty to add none; skrum never creates labels.": "Etiqueta que se añade a las incidencias exportadas para cada prioridad. Déjala vacía para no añadir ninguna; skrum nunca crea etiquetas.",
     "Priority labels saved.": "Etiquetas de prioridad guardadas.",
@@ -1693,12 +1693,14 @@
     "Choose a repository": "Elige un repositorio",
     "Milestone": "Hito",
     "Choose a milestone": "Elige un hito",
-    "No open milestone.": "Ningún hito abierto.",
+    "No open milestone.": "No hay hitos abiertos.",
     "Search GitHub issues": "Buscar incidencias de GitHub",
     "No repository found.": "No se encontró ningún repositorio.",
     "Assignee: not mapped yet — skrum will use :name's GitHub sign-in": "Responsable: aún sin asociar — skrum usará el inicio de sesión con GitHub de :name",
     "No priority label": "Sin etiqueta de prioridad",
     "Priority label: :label": "Etiqueta de prioridad: :label",
     "Written to the issue description.": "Escrito en la descripción de la incidencia.",
-    "This repository isn't available to the GitHub App.": "Este repositorio no está disponible para la aplicación de GitHub."
+    "This repository isn't available to the GitHub App.": "Este repositorio no está disponible para la aplicación de GitHub.",
+    "We couldn't read the Jira version.": "No pudimos leer la versión de Jira.",
+    "Export repository": "Repositorio de exportación"
 }

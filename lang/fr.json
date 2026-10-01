@@ -1679,9 +1679,9 @@
     "Install the GitHub App": "Installer l'application GitHub",
     "Import issues into planning poker by milestone or search, write estimates into issue descriptions and export action items.": "Importez des tickets dans le planning poker par jalon ou par recherche, écrivez les estimations dans la description des tickets et exportez les actions.",
     "Manage the installation": "Gérer l'installation",
-    "Imported tasks and exported issues keep their links but are no longer synced, and the people mappings are deleted. The GitHub App stays installed on :account: uninstall it there if no other team uses it.": "Les tâches importées et les tickets exportés gardent leurs liens mais ne sont plus synchronisés, et les correspondances des personnes sont supprimées. L'application GitHub reste installée sur :account : désinstallez-la là-bas si aucune autre équipe ne l'utilise.",
+    "Imported tasks and exported issues keep their links but are no longer synced, and the people mappings are deleted. The GitHub App stays installed on :account: uninstall it there if no other team uses it.": "Les tâches importées et les tickets exportés gardent leurs liens mais ne sont plus synchronisés, et les correspondances des personnes sont supprimées. L'application GitHub reste installée sur :account : désinstallez-la sur GitHub si aucune autre équipe ne l'utilise.",
     "GitHub account": "Compte GitHub",
-    "This installation can only read issues. Give the app \"Issues: read and write\" on GitHub to write estimates and export action items.": "Cette installation peut seulement lire les tickets. Donnez à l'application « Issues : lecture et écriture » sur GitHub pour écrire les estimations et exporter les actions.",
+    "This installation can only read issues. Give the app \"Issues: read and write\" on GitHub to write estimates and export action items.": "Cette installation peut seulement lire les tickets. Donnez à l'application l'autorisation « Issues : lecture et écriture » sur GitHub pour écrire les estimations et exporter les actions.",
     "Priority labels": "Libellés de priorité",
     "Label added to exported issues for each priority. Leave empty to add none; skrum never creates labels.": "Libellé ajouté aux tickets exportés pour chaque priorité. Laissez vide pour n'en ajouter aucun ; skrum ne crée jamais de libellés.",
     "Priority labels saved.": "Libellés de priorité enregistrés.",
@@ -1700,5 +1700,7 @@
     "No priority label": "Aucun libellé de priorité",
     "Priority label: :label": "Libellé de priorité : :label",
     "Written to the issue description.": "Écrit dans la description du ticket.",
-    "This repository isn't available to the GitHub App.": "Ce dépôt n'est pas accessible à l'application GitHub."
+    "This repository isn't available to the GitHub App.": "Ce dépôt n'est pas accessible à l'application GitHub.",
+    "We couldn't read the Jira version.": "Nous n'avons pas pu lire la version de Jira.",
+    "Export repository": "Dépôt d'export"
 }

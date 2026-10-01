@@ -43,3 +43,14 @@ it('returns nothing for empty descriptions and truncates long ones', function ()
         ->and(mb_strlen((string) $long))->toBe(10000)
         ->and($long)->toEndWith('…');
 });
+
+it('converts links before images so exclamation marks in links survive', function () {
+    expect((new WikiMarkupToMarkdown)->convert('See [Wow!|https://example.com/a!b], [https://example.com/c!d] and !pic.png!'))
+        ->toBe('See [Wow!](https://example.com/a!b), [https://example.com/c!d](https://example.com/c!d) and [attachment]');
+});
+
+it('keeps the raw text when the conversion fails', function () {
+    $wiki = "Caf\xE9 *notes* for the team";
+
+    expect((new WikiMarkupToMarkdown)->convert($wiki))->toBe(mb_scrub($wiki, 'UTF-8'));
+});

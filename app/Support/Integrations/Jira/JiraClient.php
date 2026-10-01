@@ -132,7 +132,7 @@ class JiraClient implements JiraApi, RefreshesTokens
 
     public function browseUrl(TeamIntegration $integration, string $key): string
     {
-        return rtrim((string) $integration->setting('siteUrl', ''), '/')."/browse/{$key}";
+        return rtrim((string) $integration->setting('siteUrl', ''), '/').'/browse/'.rawurlencode($key);
     }
 
     /**

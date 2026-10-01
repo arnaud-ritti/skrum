@@ -8,7 +8,7 @@ use App\Enums\IntegrationStatus;
 use App\Models\PokerGame;
 use App\Models\PokerTask;
 use App\Models\TeamIntegration;
-use App\Support\Integrations\Trackers\JiraTracker;
+use App\Support\Integrations\Trackers\JiraIssueTracker;
 
 /**
  * The single place that decides whether the estimate of an imported task
@@ -159,7 +159,7 @@ class PokerTaskSync
 
     private static function storyPointsReason(IntegrationProvider $provider, ?TeamIntegration $integration): ?string
     {
-        if ($integration !== null && in_array($provider, [IntegrationProvider::Jira, IntegrationProvider::JiraDataCenter], true) && JiraTracker::storyPointFieldIds($integration) === []) {
+        if ($integration !== null && in_array($provider, [IntegrationProvider::Jira, IntegrationProvider::JiraDataCenter], true) && JiraIssueTracker::storyPointFieldIds($integration) === []) {
             return __('No story points field found.');
         }
 

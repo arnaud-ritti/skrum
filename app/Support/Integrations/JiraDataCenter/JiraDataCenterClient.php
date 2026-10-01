@@ -14,6 +14,7 @@ use App\Support\Integrations\ProviderHttp;
 use App\Support\Integrations\RefreshesTokens;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
+use SensitiveParameter;
 
 /**
  * Jira Server/Data Center (spec 8 §4.1): REST v2 on the one admin-trusted
@@ -47,12 +48,12 @@ class JiraDataCenterClient implements JiraApi, RefreshesTokens
     /**
      * @return array{access_token: string, refresh_token: string|null, expires_at: int|null, scopes: array<int, string>}
      */
-    public function exchangeCode(string $code, string $codeVerifier): array
+    public function exchangeCode(#[SensitiveParameter] string $code, #[SensitiveParameter] string $codeVerifier): array
     {
         return $this->tokenRequest(['grant_type' => 'authorization_code', 'code' => $code, 'code_verifier' => $codeVerifier]);
     }
 
-    public function refreshTokens(string $refreshToken): array
+    public function refreshTokens(#[SensitiveParameter] string $refreshToken): array
     {
         return $this->tokenRequest(['grant_type' => 'refresh_token', 'refresh_token' => $refreshToken]);
     }
@@ -63,7 +64,7 @@ class JiraDataCenterClient implements JiraApi, RefreshesTokens
      *
      * @return array<array-key, mixed>
      */
-    public function probe(string $token, string $path): array
+    public function probe(#[SensitiveParameter] string $token, string $path): array
     {
         $response = $this->send('GET', $path, [], $token);
 
@@ -113,7 +114,7 @@ class JiraDataCenterClient implements JiraApi, RefreshesTokens
 
     public function browseUrl(TeamIntegration $integration, string $key): string
     {
-        return JiraDataCenterServer::url("browse/{$key}");
+        return JiraDataCenterServer::url('browse/'.rawurlencode($key));
     }
 
     /**
@@ -181,7 +182,7 @@ class JiraDataCenterClient implements JiraApi, RefreshesTokens
     /**
      * @param  array<string, mixed>  $data
      */
-    private function send(string $method, string $path, array $data, string $token): Response
+    private function send(string $method, string $path, array $data, #[SensitiveParameter] string $token): Response
     {
         $options = $method === 'GET' ? ['query' => $data] : ['json' => $data];
 
