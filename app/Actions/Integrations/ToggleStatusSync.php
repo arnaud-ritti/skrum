@@ -12,6 +12,7 @@ use App\Models\TeamIntegration;
 use App\Support\Integrations\InboundModes;
 use App\Support\Integrations\StatusSync;
 use App\Support\Integrations\TrackerWebhooks;
+use Illuminate\Support\Str;
 
 /**
  * Spec 8 §5.1: turning sync on reads every tracked issue (the source wins
@@ -38,9 +39,11 @@ class ToggleStatusSync
     {
         $integration->ensureActive();
 
-        $since = now()->toIso8601String();
-
-        $integration->mergeSettings(['statusSync' => true, 'statusSyncSince' => $since, StatusSync::InitialReadPending => $since]);
+        $integration->mergeSettings([
+            'statusSync' => true,
+            'statusSyncSince' => now()->toIso8601String(),
+            StatusSync::InitialReadPending => Str::random(40),
+        ]);
 
         $mode = $this->inboundModes->for($integration);
         $pendingWithoutRegistration = $mode === IntegrationInboundMode::Webhook

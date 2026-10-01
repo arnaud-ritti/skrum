@@ -173,6 +173,7 @@ it('validates status mappings', function (IntegrationProvider $provider, array $
     'jira status id' => [IntegrationProvider::Jira, ['container' => 'PROJ', 'complete_status_id' => 'abc']],
     'unknown key' => [IntegrationProvider::Jira, ['container' => 'PROJ', 'complete_state_id' => 'x']],
     'linear state id' => [IntegrationProvider::Linear, ['container' => 'ENG', 'complete_state_id' => 'has spaces']],
+    'empty mapping' => [IntegrationProvider::Jira, []],
 ]);
 
 it('lists the projects of tracked issues and their statuses', function () {
@@ -234,15 +235,88 @@ it('tells MCP clients which trackers sync and how', function () {
         ->toMatchArray(['source' => 'jira', 'canSyncStatus' => true, 'syncMode' => 'polling']);
 });
 
-it('keeps the first read pending from turning sync on until sync is turned off', function () {
+it('keeps a distinct first read pending each time sync is turned on, until it is turned off', function () {
     $integration = syncSettingsIntegration();
     $admin = integrationAdmin($integration->team);
 
     $this->actingAs($admin)->patchJson(syncSettingsRoute($integration), ['status_sync' => true])->assertOk();
-
-    expect($integration->fresh()->setting('initialReadPendingSince'))->toBe('2026-10-07T10:30:00+00:00');
+    $firstMarker = $integration->fresh()->setting('initialReadPending');
 
     $this->actingAs($admin)->patchJson(syncSettingsRoute($integration), ['status_sync' => false])->assertOk();
 
-    expect($integration->fresh()->setting('initialReadPendingSince'))->toBeNull();
+    expect($integration->fresh()->setting('initialReadPending'))->toBeNull();
+
+    $this->actingAs($admin)->patchJson(syncSettingsRoute($integration), ['status_sync' => true])->assertOk();
+
+    expect($firstMarker)->toBeString()->toHaveLength(40)
+        ->and($integration->fresh()->setting('initialReadPending'))->toBeString()->not->toBe($firstMarker);
+});
+
+it('re-reads after a mapping change sent with sync already on', function () {
+    $integration = syncSettingsIntegration(settings: ['statusSync' => true]);
+
+    $this->actingAs(integrationAdmin($integration->team))
+        ->patchJson(syncSettingsRoute($integration), ['status_sync' => true, 'status_mapping' => ['container' => 'PROJ', 'complete_status_id' => '10002']])
+        ->assertOk();
+
+    Queue::assertPushed(ReadTrackedIssues::class, 1);
+    Queue::assertPushed(ReadTrackedIssues::class, fn (ReadTrackedIssues $job) => $job->full && $job->remapped && ! $job->initial);
+});
+
+it('saves nothing when sync cannot be turned on', function () {
+    $integration = syncSettingsIntegration(IntegrationProvider::Linear, attributes: ['status' => IntegrationStatus::ReconnectRequired]);
+
+    $this->actingAs(integrationAdmin($integration->team))
+        ->patchJson(syncSettingsRoute($integration), [
+            'status_sync' => true,
+            'treat_canceled_as_done' => false,
+            'status_mapping' => ['container' => 'ENG', 'complete_state_id' => 'state-1'],
+        ])
+        ->assertStatus(409);
+
+    expect($integration->fresh()->setting('treatCanceledAsDone'))->toBeNull()
+        ->and($integration->fresh()->setting('statusMapping'))->toBeNull();
+});
+
+it('never lets a remap re-read be swallowed by a pending daily full read', function () {
+    $integration = syncSettingsIntegration(IntegrationProvider::Linear, ['statusSync' => true]);
+    ReadTrackedIssues::dispatch($integration->id, true);
+
+    $this->actingAs(integrationAdmin($integration->team))
+        ->patchJson(syncSettingsRoute($integration), ['treat_canceled_as_done' => false])
+        ->assertOk();
+
+    Queue::assertPushed(ReadTrackedIssues::class, 2);
+});
+
+it('lists the states of a Linear team', function () {
+    $integration = syncSettingsIntegration(IntegrationProvider::Linear, ['statusSync' => true]);
+    Http::fake(['api.linear.app/graphql' => Http::response(['data' => ['teams' => ['nodes' => [['states' => ['nodes' => [
+        ['id' => 'state-done', 'name' => 'Done', 'type' => 'completed', 'position' => 3],
+    ]]]]]]])]);
+    $team = $integration->team;
+
+    $this->actingAs(integrationAdmin($team))
+        ->getJson(route('teams.integrations.statuses.index', [$team->workspace, $team, $integration]).'?container=ENG')
+        ->assertOk()
+        ->assertExactJson(['statuses' => [['id' => 'state-done', 'name' => 'Done', 'category' => 'done']]]);
+});
+
+it('asks to reconnect before listing statuses', function () {
+    $integration = syncSettingsIntegration(attributes: ['status' => IntegrationStatus::ReconnectRequired]);
+    $team = $integration->team;
+
+    $this->actingAs(integrationAdmin($team))
+        ->getJson(route('teams.integrations.statuses.index', [$team->workspace, $team, $integration]).'?container=PROJ')
+        ->assertStatus(409);
+});
+
+it('presents no status mapping for GitHub', function () {
+    $integration = syncSettingsIntegration(IntegrationProvider::GitHub, ['statusSync' => true, 'statusMapping' => ['teams' => []]]);
+
+    $this->actingAs(integrationAdmin($integration->team))
+        ->patchJson(syncSettingsRoute($integration), ['treat_canceled_as_done' => true])
+        ->assertOk()
+        ->assertJsonPath('settings.treatCanceledAsDone', true)
+        ->assertJsonMissingPath('settings.statusMapping');
 });

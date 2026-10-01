@@ -389,14 +389,18 @@ class TrackerWebhooks
     {
         $registered = $ids !== [];
 
-        $integration->mergeSettings([
+        if (! $this->storeRegistrationWhileSynced($integration, [
             'webhookIds' => $ids,
             'webhookProjects' => $projects,
             'webhookManual' => false,
             'webhookRegisteredAt' => $registered ? now()->toIso8601String() : $integration->setting('webhookRegisteredAt'),
             'webhookFailedAt' => null,
             'webhookFailedProjects' => [],
-        ]);
+        ])) {
+            $this->removeOrRetryLater($integration, $ids);
+
+            return;
+        }
 
         $integration->forceFill([
             'webhook_status' => match (true) {
@@ -408,6 +412,28 @@ class TrackerWebhooks
         ])->save();
 
         $this->inboundModes->refresh($integration);
+    }
+
+    /**
+     * Sync may have been turned off while the provider registered the
+     * webhooks; its removal then already ran without these ids.
+     *
+     * @param  array<string, mixed>  $changes
+     */
+    private function storeRegistrationWhileSynced(TeamIntegration $integration, array $changes): bool
+    {
+        return DB::transaction(function () use ($integration, $changes): bool {
+            $locked = TeamIntegration::query()->whereKey($integration->id)->lockForUpdate()->firstOrFail();
+            $isSynced = StatusSync::isOn($locked);
+
+            if ($isSynced) {
+                $locked->forceFill(['settings' => [...$locked->settings, ...$changes]])->save();
+            }
+
+            $integration->setRawAttributes($locked->getAttributes(), true);
+
+            return $isSynced;
+        });
     }
 
     /**

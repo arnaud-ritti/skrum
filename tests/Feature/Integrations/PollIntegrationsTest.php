@@ -339,7 +339,7 @@ it('holds its unique lock longer than it may be retried', function () {
 
 it('queues the first read again while it has not completed', function () {
     Queue::fake();
-    $integration = pollingIntegration(['last_polled_at' => now()], ['initialReadPendingSince' => '2026-10-07T10:00:00+00:00']);
+    $integration = pollingIntegration(['last_polled_at' => now()], ['initialReadPending' => 'first-read-token']);
 
     $this->artisan('skrum:poll-integrations')->assertSuccessful();
 
@@ -348,7 +348,7 @@ it('queues the first read again while it has not completed', function () {
 });
 
 it('clears the pending first read only once it completes', function () {
-    $integration = pollingIntegration(settings: ['initialReadPendingSince' => '2026-10-07T10:00:00+00:00']);
+    $integration = pollingIntegration(settings: ['initialReadPending' => 'first-read-token']);
     trackedJiraLink($integration, '10001');
     Http::fake([jiraApiUrl('rest/api/3/search/jql') => Http::sequence()
         ->push(['errorMessages' => ['Down for maintenance']], 503)
@@ -358,13 +358,71 @@ it('clears the pending first read only once it completes', function () {
 
     runTrackedRead($integration, full: true, initial: true);
 
-    expect($integration->fresh()->setting('initialReadPendingSince'))->toBe('2026-10-07T10:00:00+00:00');
+    expect($integration->fresh()->setting('initialReadPending'))->toBe('first-read-token');
 
     runTrackedRead($integration, full: true);
 
-    expect($integration->fresh()->setting('initialReadPendingSince'))->toBe('2026-10-07T10:00:00+00:00');
+    expect($integration->fresh()->setting('initialReadPending'))->toBe('first-read-token');
 
     runTrackedRead($integration, full: true, initial: true);
 
-    expect($integration->fresh()->setting('initialReadPendingSince'))->toBeNull();
+    expect($integration->fresh()->setting('initialReadPending'))->toBeNull();
+});
+
+it('keeps the first read owed when sync is turned off and on while it runs', function () {
+    $integration = pollingIntegration(settings: ['initialReadPending' => 'first-read-token']);
+    trackedJiraLink($integration, '10001');
+    Http::fake([jiraApiUrl('rest/api/3/search/jql') => function () use ($integration) {
+        $integration->fresh()->mergeSettings(['initialReadPending' => 'second-read-token']);
+
+        return Http::response(['issues' => [jiraTrackerIssue('10001', 'PROJ-1', ['project' => ['key' => 'PROJ']])], 'isLast' => true]);
+    }]);
+
+    runTrackedRead($integration, full: true, initial: true);
+
+    expect($integration->fresh()->setting('initialReadPending'))->toBe('second-read-token');
+});
+
+it('backs off a first read that keeps failing instead of queueing it every minute', function () {
+    $integration = pollingIntegration(['last_polled_at' => now()], ['initialReadPending' => 'first-read-token']);
+    trackedJiraLink($integration, '10001');
+    Http::fake([jiraApiUrl('rest/api/3/search/jql') => Http::response(['errorMessages' => ['Down for maintenance']], 503)]);
+
+    $job = runTrackedRead($integration, full: true, initial: true);
+    $job->failed(new RuntimeException('Gave up'));
+
+    Queue::fake();
+    $this->travel(1)->minute();
+    $this->artisan('skrum:poll-integrations')->assertSuccessful();
+    $this->travel(ReadTrackedIssues::InitialReadBackoffMinutes - 2)->minutes();
+    $this->artisan('skrum:poll-integrations')->assertSuccessful();
+
+    Queue::assertNothingPushed();
+
+    $this->travel(3)->minutes();
+    $this->artisan('skrum:poll-integrations')->assertSuccessful();
+
+    Queue::assertPushed(ReadTrackedIssues::class, fn (ReadTrackedIssues $job) => $job->full && $job->initial);
+});
+
+it('honours a long Retry-After on the first read', function () {
+    $integration = pollingIntegration(['last_polled_at' => now()], ['initialReadPending' => 'first-read-token']);
+    trackedJiraLink($integration, '10001');
+    Http::fake([jiraApiUrl('rest/api/3/search/jql') => Http::response(['errorMessages' => ['Slow down']], 429, ['Retry-After' => '1800'])]);
+
+    $job = runTrackedRead($integration, full: true, initial: true);
+
+    $job->assertNotReleased();
+    $job->assertNotFailed();
+
+    Queue::fake();
+    $this->travel(29)->minutes();
+    $this->artisan('skrum:poll-integrations')->assertSuccessful();
+
+    Queue::assertNothingPushed();
+
+    $this->travel(2)->minutes();
+    $this->artisan('skrum:poll-integrations')->assertSuccessful();
+
+    Queue::assertPushed(ReadTrackedIssues::class, fn (ReadTrackedIssues $job) => $job->full && $job->initial);
 });

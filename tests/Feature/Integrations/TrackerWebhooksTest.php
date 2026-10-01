@@ -429,3 +429,21 @@ it('asks to reconnect Jira Cloud connections without the webhook scope', functio
 
     Queue::assertNotPushed(RegisterTrackerWebhooks::class);
 });
+
+it('removes a webhook registered while sync was being turned off', function () {
+    $integration = webhookIntegration();
+    Http::fake([jiraApiUrl('rest/api/3/webhook') => function (Request $request) use ($integration) {
+        if ($request->method() === 'DELETE') {
+            return Http::response(null, 202);
+        }
+
+        $integration->fresh()->mergeSettings(['statusSync' => false]);
+
+        return Http::response(['webhookRegistrationResult' => [['createdWebhookId' => 7001]]]);
+    }]);
+
+    runWebhookRegistration($integration);
+
+    expect($integration->fresh()->setting('webhookIds', []))->toBe([]);
+    Http::assertSent(fn (Request $request) => $request->method() === 'DELETE' && $request['webhookIds'] === [7001]);
+});

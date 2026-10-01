@@ -43,7 +43,7 @@ class UpdateStatusSyncSettings
         if (in_array($provider, [IntegrationProvider::Jira, IntegrationProvider::JiraDataCenter], true)) {
             return [
                 ...$rules,
-                'status_mapping' => ['sometimes', 'array:container,done_status_ids,complete_status_id,reopen_status_id'],
+                'status_mapping' => ['sometimes', 'array:container,done_status_ids,complete_status_id,reopen_status_id', 'required_array_keys:container'],
                 'status_mapping.container' => $container,
                 'status_mapping.done_status_ids' => ['nullable', 'array', 'max:50'],
                 'status_mapping.done_status_ids.*' => ['string', self::JiraStatusIdRule],
@@ -55,7 +55,7 @@ class UpdateStatusSyncSettings
         if ($provider === IntegrationProvider::Linear) {
             return [
                 ...$rules,
-                'status_mapping' => ['sometimes', 'array:container,complete_state_id,reopen_state_id'],
+                'status_mapping' => ['sometimes', 'array:container,complete_state_id,reopen_state_id', 'required_array_keys:container'],
                 'status_mapping.container' => $container,
                 'status_mapping.complete_state_id' => ['nullable', 'string', self::LinearStateIdRule],
                 'status_mapping.reopen_state_id' => ['nullable', 'string', self::LinearStateIdRule],
@@ -70,7 +70,13 @@ class UpdateStatusSyncSettings
      */
     public function handle(TeamIntegration $integration, array $validated): TeamIntegration
     {
+        $wasOn = StatusSync::isOn($integration);
+        $toggles = array_key_exists('status_sync', $validated) && (bool) $validated['status_sync'] !== $wasOn;
         $remapped = false;
+
+        if ($toggles && ! $wasOn) {
+            $integration->ensureActive();
+        }
 
         if (array_key_exists('treat_canceled_as_done', $validated)) {
             $integration->mergeSettings(['treatCanceledAsDone' => (bool) $validated['treat_canceled_as_done']]);
@@ -82,12 +88,12 @@ class UpdateStatusSyncSettings
             $remapped = true;
         }
 
-        if (array_key_exists('status_sync', $validated)) {
-            return $this->toggleStatusSync->handle($integration, (bool) $validated['status_sync']);
+        if ($toggles) {
+            return $this->toggleStatusSync->handle($integration, ! $wasOn);
         }
 
-        if ($remapped && StatusSync::isOn($integration)) {
-            ReadTrackedIssues::dispatch($integration->id, true);
+        if ($remapped && $wasOn) {
+            ReadTrackedIssues::dispatch($integration->id, full: true, remapped: true);
         }
 
         return $integration;

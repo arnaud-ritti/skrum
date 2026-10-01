@@ -51,7 +51,11 @@ class PollIntegrationsCommand extends Command
 
                 $initialReadPending = StatusSync::initialReadPending($integration);
 
-                if (! $initialReadPending && ! IntegrationPolls::isDue($integration)) {
+                $isWaiting = $initialReadPending
+                    ? IntegrationPolls::isPaused($integration->id)
+                    : ! IntegrationPolls::isDue($integration);
+
+                if ($isWaiting) {
                     return;
                 }
 

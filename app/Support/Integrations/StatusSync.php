@@ -14,10 +14,11 @@ use Illuminate\Support\Facades\DB;
 class StatusSync
 {
     /**
-     * Set when sync is turned on, cleared once the first (source-wins)
-     * read completes, so a first read that keeps failing is queued again.
+     * A random token set when sync is turned on, cleared once the first
+     * (source-wins) read completes, so a first read that keeps failing is
+     * queued again.
      */
-    public const InitialReadPending = 'initialReadPendingSince';
+    public const InitialReadPending = 'initialReadPending';
 
     public static function isOn(TeamIntegration $integration): bool
     {
@@ -44,16 +45,16 @@ class StatusSync
      * Clears the marker only if sync was not turned off and on again while
      * this read ran: that newer first read is still owed.
      */
-    public static function finishInitialRead(TeamIntegration $integration, mixed $pendingSince): void
+    public static function finishInitialRead(TeamIntegration $integration, mixed $pendingToken): void
     {
-        if (! is_string($pendingSince)) {
+        if (! is_string($pendingToken)) {
             return;
         }
 
-        DB::transaction(function () use ($integration, $pendingSince): void {
+        DB::transaction(function () use ($integration, $pendingToken): void {
             $locked = TeamIntegration::query()->whereKey($integration->id)->lockForUpdate()->firstOrFail();
 
-            if ($locked->setting(self::InitialReadPending) !== $pendingSince) {
+            if ($locked->setting(self::InitialReadPending) !== $pendingToken) {
                 return;
             }
 

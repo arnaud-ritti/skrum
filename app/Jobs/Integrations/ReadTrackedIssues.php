@@ -22,6 +22,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 /**
  * Spec 8 §5.4: an incremental poll (issues updated since the cursor minus
@@ -42,23 +43,35 @@ class ReadTrackedIssues implements ShouldBeUnique, ShouldQueue
 
     public const RetryAfterErrorSeconds = 60;
 
+    /** Longer waits are not released: the read is owed to a later poll. */
+    public const MaxReleaseSeconds = 300;
+
+    public const InitialReadBackoffMinutes = 30;
+
     public int $maxExceptions = 1;
 
-    /** Longer than the retry window, so a released read keeps its lock. */
-    public int $uniqueFor = 1200;
+    /** The retry window plus the longest release, so a released read keeps its lock. */
+    public int $uniqueFor = self::RetryMinutes * 60 + self::MaxReleaseSeconds;
 
     public int $timeout = 300;
 
-    public function __construct(public string $integrationId, public bool $full = false, public bool $initial = false) {}
+    public function __construct(
+        public string $integrationId,
+        public bool $full = false,
+        public bool $initial = false,
+        public bool $remapped = false,
+    ) {}
 
     /**
-     * The first read after sync is turned on lets the source win, so a
-     * pending daily full read must never swallow it.
+     * The first read after sync is turned on lets the source win, and a
+     * read after the mapping changed must see the new mapping, so a
+     * pending daily full read must never swallow either.
      */
     public function uniqueId(): string
     {
         $kind = match (true) {
             $this->initial => 'initial',
+            $this->remapped => 'remap',
             $this->full => 'full',
             default => 'changes',
         };
@@ -86,7 +99,7 @@ class ReadTrackedIssues implements ShouldBeUnique, ShouldQueue
         }
 
         $startedAt = now();
-        $pendingSince = $this->initial ? $integration->setting(StatusSync::InitialReadPending) : null;
+        $pendingToken = $this->initial ? $integration->setting(StatusSync::InitialReadPending) : null;
         $ids = $trackedIssues->ids($integration);
 
         try {
@@ -114,18 +127,32 @@ class ReadTrackedIssues implements ShouldBeUnique, ShouldQueue
 
         $integration->forceFill(['last_polled_at' => now(), 'poll_cursor' => $startedAt])->save();
 
-        StatusSync::finishInitialRead($integration, $pendingSince);
+        StatusSync::finishInitialRead($integration, $pendingToken);
 
         $trackerWebhooks->registerIfNeeded($integration);
     }
 
     /**
-     * Full reads are retried; polls wait, as the next one reads the same
-     * changes from the kept cursor.
+     * A first read that gave up is owed to a later poll, after a backoff,
+     * so a source that keeps failing is not read every minute.
+     */
+    public function failed(?Throwable $exception): void
+    {
+        if (! $this->initial) {
+            return;
+        }
+
+        IntegrationPolls::pause($this->integrationId, self::InitialReadBackoffMinutes * 60);
+    }
+
+    /**
+     * Full reads are retried after short waits; polls (and full reads told
+     * to wait longer) pause the connection, as the next poll reads the same
+     * changes from the kept cursor and a pending first read is queued again.
      */
     private function postpone(TeamIntegration $integration, int $seconds): void
     {
-        if ($this->full) {
+        if ($this->full && $seconds <= self::MaxReleaseSeconds) {
             $this->release($seconds);
 
             return;

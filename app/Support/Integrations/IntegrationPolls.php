@@ -29,12 +29,17 @@ class IntegrationPolls
 
     public static function isDue(TeamIntegration $integration): bool
     {
-        if (Cache::has(self::pauseKey($integration->id))) {
+        if (self::isPaused($integration->id)) {
             return false;
         }
 
         return $integration->last_polled_at === null
             || $integration->last_polled_at->lte(now()->subMinutes(self::intervalMinutes($integration)));
+    }
+
+    public static function isPaused(string $integrationId): bool
+    {
+        return Cache::has(self::pauseKey($integrationId));
     }
 
     public static function pause(string $integrationId, int $seconds): void
