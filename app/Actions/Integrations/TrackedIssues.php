@@ -28,9 +28,12 @@ class TrackedIssues
      */
     public function links(TeamIntegration $integration): Builder
     {
+        $site = $integration->site();
+
         return ActionItemExternalLink::query()
+            ->when($site === null, fn (Builder $none) => $none->whereRaw('false'))
             ->where('source', $integration->provider->value)
-            ->where('external_site', (string) $integration->site())
+            ->where('external_site', (string) $site)
             ->where('external_id', '!=', '')
             ->whereHas('actionItem', fn ($items) => $items
                 ->where('team_id', $integration->team_id)
@@ -44,9 +47,12 @@ class TrackedIssues
      */
     public function tasks(TeamIntegration $integration): Builder
     {
+        $site = $integration->site();
+
         return PokerTask::query()
+            ->when($site === null, fn (Builder $none) => $none->whereRaw('false'))
             ->where('external_source', $integration->provider->value)
-            ->where('external_site', (string) $integration->site())
+            ->where('external_site', (string) $site)
             ->whereNotNull('external_id')
             ->whereHas('game', fn ($games) => $games
                 ->where('team_id', $integration->team_id)

@@ -173,6 +173,17 @@ it('retries a Jira search once without the deleted id the refusal names', functi
     Http::assertSent(fn (Request $request) => $request['jql'] === 'id in (10001,10002)');
 });
 
+it('keeps an issue whose id appears in a Jira refusal only as an unrelated number', function () {
+    enableIntegrations(IntegrationProvider::Jira);
+    $integration = TeamIntegration::factory()->jira()->create();
+    fakeJiraSearchRejecting(['10009'], "The value '10009' does not exist for the field 'id'. The search took 10001 ms.");
+
+    $issues = app(Trackers::class)->for(IntegrationProvider::Jira)->issues($integration, ['10001', '10009', '10002']);
+
+    expect(array_map('strval', array_keys($issues)))->toBe(['10001', '10002']);
+    Http::assertSent(fn (Request $request) => $request['jql'] === 'id in (10001,10002)');
+});
+
 it('splits a refused Jira search in halves when the refusal names no id', function () {
     enableIntegrations(IntegrationProvider::Jira);
     $integration = TeamIntegration::factory()->jira()->create();

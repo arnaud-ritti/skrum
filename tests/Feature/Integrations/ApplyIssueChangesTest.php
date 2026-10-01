@@ -6,11 +6,13 @@ use App\Enums\ActionItemEventOrigin;
 use App\Enums\ActionItemRecurrence;
 use App\Enums\ExternalIssueState;
 use App\Enums\ExternalStatusCategory;
+use App\Enums\IntegrationAccess;
 use App\Enums\RetroPhase;
 use App\Events\ActionItems\ActionItemCompleted;
 use App\Events\ActionItems\ActionItemReopened;
 use App\Events\Poker\PokerGameChanged;
 use App\Events\Poker\PokerTaskSaved;
+use App\Events\Retros\ActionItemExternalLinksChanged;
 use App\Jobs\Integrations\PushActionItemState;
 use App\Models\ActionItem;
 use App\Models\ActionItemExternalLink;
@@ -149,7 +151,7 @@ it('applies the source when the local change was already pushed', function () {
         item: ['completed_at' => '2026-10-07 10:15:00'],
     );
 
-    applyStatusSyncIssues($integration, [statusSyncIssue('10001', 'PROJ-1', 'new', '2026-10-07T10:10:00+00:00')]);
+    applyStatusSyncIssues($integration, [statusSyncIssue('10001', 'PROJ-1', 'new', '2026-10-07T10:17:00+00:00')]);
 
     expect($item->fresh()->completed_at)->toBeNull();
 });
@@ -182,7 +184,11 @@ it('marks missing issues only when every id was read, and clears the flag when t
 it('ignores links of other teams, other sites and items completed long ago', function () {
     ['integration' => $integration] = statusSyncLink();
     ['link' => $otherTeam] = statusSyncLink();
-    ['link' => $otherSite, 'integration' => $other] = statusSyncLink(['external_site' => 'cloud-2']);
+    $otherSite = ActionItemExternalLink::factory()->create([
+        'action_item_id' => ActionItem::factory()->create(['team_id' => $integration->team_id])->id,
+        'external_site' => 'cloud-2',
+        'external_id' => '10001',
+    ]);
     $old = ActionItemExternalLink::factory()->create([
         'action_item_id' => ActionItem::factory()->create(['team_id' => $integration->team_id, 'completed_at' => now()->subDays(100)])->id,
         'external_id' => '10001',
@@ -192,8 +198,107 @@ it('ignores links of other teams, other sites and items completed long ago', fun
 
     expect($otherTeam->fresh()->last_synced_at)->toBeNull()
         ->and($otherSite->fresh()->last_synced_at)->toBeNull()
-        ->and($old->fresh()->last_synced_at)->toBeNull()
-        ->and($other->team_id)->not->toBe($integration->team_id);
+        ->and($old->fresh()->last_synced_at)->toBeNull();
+});
+
+it('ignores a read older than what the link already knows', function () {
+    ['integration' => $integration, 'item' => $item, 'link' => $link] = statusSyncLink([
+        'external_state' => ExternalIssueState::Done,
+        'external_status_name' => 'Done',
+        'external_updated_at' => '2026-10-07 10:22:00',
+        'local_state_changed_at' => '2026-10-07 10:21:00',
+        'last_pushed_at' => '2026-10-07 10:22:00',
+        'last_pushed_state' => ExternalIssueState::Done,
+    ], item: ['completed_at' => '2026-10-07 10:21:00']);
+
+    applyStatusSyncIssues($integration, [statusSyncIssue('10001', 'PROJ-1', 'new', '2026-10-07T10:20:00+00:00')]);
+
+    expect($item->fresh()->completed_at)->not->toBeNull()
+        ->and($link->fresh()->external_state)->toBe(ExternalIssueState::Done)
+        ->and($link->fresh()->external_updated_at?->toIso8601String())->toBe('2026-10-07T10:22:00+00:00');
+    Queue::assertNotPushed(PushActionItemState::class);
+});
+
+it('ignores a read older than the last push when the link has no source time yet', function () {
+    ['integration' => $integration, 'item' => $item] = statusSyncLink([
+        'local_state_changed_at' => '2026-10-07 10:21:00',
+        'last_pushed_at' => '2026-10-07 10:22:00',
+        'last_pushed_state' => ExternalIssueState::Done,
+    ], item: ['completed_at' => '2026-10-07 10:21:00']);
+
+    applyStatusSyncIssues($integration, [statusSyncIssue('10001', 'PROJ-1', 'new', '2026-10-07T10:20:00+00:00')]);
+
+    expect($item->fresh()->completed_at)->not->toBeNull();
+});
+
+it('keeps a newer skrum change on the first read when the link was pushed before', function () {
+    ['integration' => $integration, 'item' => $item, 'link' => $link] = statusSyncLink([
+        'local_state_changed_at' => '2026-10-07 10:25:00',
+        'last_pushed_at' => '2026-10-07 09:00:00',
+        'last_pushed_state' => ExternalIssueState::Open,
+    ], item: ['completed_at' => '2026-10-07 10:25:00']);
+
+    applyStatusSyncIssues($integration, [statusSyncIssue('10001', 'PROJ-1', 'new', '2026-10-07T10:20:00+00:00')], sourceWins: true);
+
+    expect($item->fresh()->completed_at)->not->toBeNull();
+    Queue::assertPushed(PushActionItemState::class, fn (PushActionItemState $job) => $job->linkId === $link->id);
+});
+
+it('treats an issue without a readable status as found and leaves its state alone', function () {
+    ['integration' => $integration, 'item' => $item, 'link' => $link] = statusSyncLink([
+        'external_state' => ExternalIssueState::Open,
+        'external_status_name' => 'To Do',
+        'missing_at' => '2026-10-06 10:00:00',
+    ]);
+    $issue = statusSyncIssue('10001', 'PROJ-1', 'done');
+    $issue->issueStatus = null;
+
+    applyStatusSyncIssues($integration, [$issue]);
+
+    expect($link->fresh()->missing_at)->toBeNull()
+        ->and($link->fresh()->external_state)->toBe(ExternalIssueState::Open)
+        ->and($link->fresh()->external_status_name)->toBe('To Do')
+        ->and($item->fresh()->completed_at)->toBeNull();
+});
+
+it('keeps an unpushed skrum change when the source time is unknown', function () {
+    ['integration' => $integration, 'item' => $item] = statusSyncLink(
+        ['local_state_changed_at' => '2026-10-07 10:25:00'],
+        item: ['completed_at' => '2026-10-07 10:25:00'],
+    );
+
+    applyStatusSyncIssues($integration, [statusSyncIssue('10001', 'PROJ-1', 'new', null)]);
+
+    expect($item->fresh()->completed_at)->not->toBeNull();
+    Queue::assertPushed(PushActionItemState::class);
+});
+
+it('announces link changes only when a link or the item changed', function () {
+    Event::fake([ActionItemExternalLinksChanged::class]);
+    ['integration' => $integration, 'retro' => $retro] = statusSyncLink([
+        'external_state' => ExternalIssueState::Open,
+        'external_status_name' => 'To Do',
+    ]);
+    $retro->forceFill(['phase' => RetroPhase::Discussing])->save();
+
+    applyStatusSyncIssues($integration, [statusSyncIssue('10001', 'PROJ-1', 'new')]);
+    Event::assertNotDispatched(ActionItemExternalLinksChanged::class);
+
+    applyStatusSyncIssues($integration, [statusSyncIssue('10001', 'PROJ-1', 'indeterminate', overrides: ['status' => 'In Review'])]);
+    Event::assertDispatchedTimes(ActionItemExternalLinksChanged::class, 1);
+});
+
+it('does not queue pushes again and again on a read-only connection', function () {
+    ['integration' => $integration, 'item' => $item] = statusSyncLink(
+        ['local_state_changed_at' => '2026-10-07 10:25:00', 'sync_error' => 'skrum can only read from Jira.'],
+        IntegrationAccess::Read,
+        ['completed_at' => '2026-10-07 10:25:00'],
+    );
+
+    applyStatusSyncIssues($integration, [statusSyncIssue('10001', 'PROJ-1', 'new', '2026-10-07T10:20:00+00:00')]);
+
+    expect($item->fresh()->completed_at)->not->toBeNull();
+    Queue::assertNotPushed(PushActionItemState::class);
 });
 
 it('refreshes imported tasks of running games with their status', function () {

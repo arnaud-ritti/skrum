@@ -67,8 +67,8 @@ class ApplyIssueChanges
         $links = $this->trackedIssues->links($integration)->whereIn('external_id', $ids)->get();
 
         foreach ($links->groupBy('action_item_id') as $itemId => $itemLinks) {
-            /** @var array<int, string> $pushes */
-            $pushes = DB::transaction(fn (): array => $this->applyToItem(
+            /** @var array{pushes: array<int, string>, changed: bool} $outcome */
+            $outcome = DB::transaction(fn (): array => $this->applyToItem(
                 $integration,
                 (string) $itemId,
                 $itemLinks->pluck('id')->all(),
@@ -77,8 +77,12 @@ class ApplyIssueChanges
                 $sourceWins,
             ));
 
-            foreach ($pushes as $linkId) {
+            foreach ($outcome['pushes'] as $linkId) {
                 PushActionItemState::dispatch($linkId);
+            }
+
+            if (! $outcome['changed']) {
+                continue;
             }
 
             $item = ActionItem::query()->find($itemId);
@@ -90,40 +94,54 @@ class ApplyIssueChanges
     }
 
     /**
+     * An item has at most one link per source (unique index), so it is
+     * decided once per read.
+     *
      * @param  array<int, string>  $linkIds
      * @param  array<string, TrackerIssue>  $issues
-     * @return array<int, string> links whose skrum state won and must be pushed
+     * @return array{pushes: array<int, string>, changed: bool} links whose skrum state won and must be pushed
      */
     private function applyToItem(TeamIntegration $integration, string $itemId, array $linkIds, array $issues, bool $complete, bool $sourceWins): array
     {
         $item = ActionItem::query()->whereKey($itemId)->lockForUpdate()->first();
+        $outcome = ['pushes' => [], 'changed' => false];
 
         if ($item === null) {
-            return [];
+            return $outcome;
         }
-
-        $pushes = [];
 
         foreach (ActionItemExternalLink::query()->whereKey($linkIds)->lockForUpdate()->get() as $link) {
             $issue = $issues[$link->external_id] ?? null;
 
-            if ($issue === null || $issue->issueStatus === null) {
+            if ($issue === null) {
                 if ($complete && $link->missing_at === null) {
                     $link->forceFill(['missing_at' => now()])->save();
+                    $outcome['changed'] = true;
                 }
 
                 continue;
             }
 
-            $state = DoneMapping::state($integration, $issue->issueStatus);
+            $status = $issue->issueStatus;
 
-            $link->forceFill([
+            if ($status === null) {
+                $outcome['changed'] = $this->saveLink($link, ['missing_at' => null]) || $outcome['changed'];
+
+                continue;
+            }
+
+            if ($this->isStale($link, $status->updatedAt)) {
+                continue;
+            }
+
+            $state = DoneMapping::state($integration, $status);
+
+            $outcome['changed'] = $this->saveLink($link, [
                 'external_state' => $state,
                 'external_status_name' => $issue->status,
-                'external_updated_at' => $issue->issueStatus->updatedAt,
-                'last_synced_at' => now(),
+                'external_updated_at' => $status->updatedAt,
                 'missing_at' => null,
-            ])->save();
+            ]) || $outcome['changed'];
 
             $itemState = $item->isCompleted() ? ExternalIssueState::Done : ExternalIssueState::Open;
 
@@ -131,8 +149,12 @@ class ApplyIssueChanges
                 continue;
             }
 
-            if (! $sourceWins && $this->skrumWins($link, $issue->issueStatus->updatedAt)) {
-                $pushes[] = $link->id;
+            $sourceWinsLink = $sourceWins && $link->last_pushed_at === null;
+
+            if (! $sourceWinsLink && $this->skrumWins($link, $status->updatedAt)) {
+                if ($this->canPush($integration, $link)) {
+                    $outcome['pushes'][] = $link->id;
+                }
 
                 continue;
             }
@@ -142,14 +164,45 @@ class ApplyIssueChanges
                 new ExternalSyncActor($integration->provider->value, $link->external_key),
                 $state === ExternalIssueState::Done ? ActionItemStatus::Completed : ActionItemStatus::Open,
             );
+            $outcome['changed'] = true;
         }
 
-        return $pushes;
+        return $outcome;
+    }
+
+    /**
+     * Records a read on the link; true when what members see changed.
+     *
+     * @param  array<string, mixed>  $attributes
+     */
+    private function saveLink(ActionItemExternalLink $link, array $attributes): bool
+    {
+        $link->forceFill($attributes);
+        $changed = $link->isDirty(['external_state', 'external_status_name', 'missing_at']);
+        $link->forceFill(['last_synced_at' => now()])->save();
+
+        return $changed;
+    }
+
+    /**
+     * A read fetched before a newer read or push was recorded must not
+     * undo it.
+     */
+    private function isStale(ActionItemExternalLink $link, ?CarbonImmutable $sourceChangedAt): bool
+    {
+        if ($sourceChangedAt === null) {
+            return false;
+        }
+
+        $known = $link->external_updated_at ?? $link->last_pushed_at;
+
+        return $known !== null && $sourceChangedAt->lt($known);
     }
 
     /**
      * Decision 2: an unpushed skrum change (never pushed since, or its push
-     * failed) wins when it is at least as recent as the source's change.
+     * failed) wins when it is at least as recent as the source's change,
+     * or when the source's change time is unknown.
      */
     private function skrumWins(ActionItemExternalLink $link, ?CarbonImmutable $sourceChangedAt): bool
     {
@@ -163,7 +216,16 @@ class ApplyIssueChanges
             || $localChangedAt->gt($link->last_pushed_at)
             || $link->sync_error !== null;
 
-        return $unpushed && $sourceChangedAt !== null && $sourceChangedAt->lte($localChangedAt);
+        return $unpushed && ($sourceChangedAt === null || $sourceChangedAt->lte($localChangedAt));
+    }
+
+    /**
+     * A connection that cannot write already recorded why on the link;
+     * pushing again on every read would only record it again.
+     */
+    private function canPush(TeamIntegration $integration, ActionItemExternalLink $link): bool
+    {
+        return $integration->canWrite() || $link->sync_error === null;
     }
 
     /**

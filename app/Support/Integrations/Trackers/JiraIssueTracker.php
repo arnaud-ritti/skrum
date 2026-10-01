@@ -349,8 +349,7 @@ abstract class JiraIssueTracker implements IssueTracker, SyncsIssueStatus
             return [];
         }
 
-        preg_match_all('/\b\d{1,20}\b/', (string) $exception->detail(), $matches);
-        $named = array_intersect($ids, $matches[0]);
+        $named = array_values(array_intersect($ids, self::namedIds((string) $exception->detail())));
 
         if ($mayDropNamed && $named !== []) {
             $rest = array_values(array_diff($ids, $named));
@@ -364,6 +363,19 @@ abstract class JiraIssueTracker implements IssueTracker, SyncsIssueStatus
             ...$this->searchIds($integration, array_slice($ids, 0, $half), $updated, true),
             ...$this->searchIds($integration, array_slice($ids, $half), $updated, true),
         ];
+    }
+
+    /**
+     * Ids a refusal names: quoted (`'10009'`) or right after "id", "key" or
+     * "issue", so an unrelated number in the message drops nothing.
+     *
+     * @return array<int, string>
+     */
+    private static function namedIds(string $detail): array
+    {
+        preg_match_all('/[\'"](\d{1,20})[\'"]|\b(?:id|key|issue)\s*[:=#]?\s*(\d{1,20})\b/i', $detail, $matches);
+
+        return array_values(array_filter([...$matches[1], ...$matches[2]], fn (string $id): bool => $id !== ''));
     }
 
     /**

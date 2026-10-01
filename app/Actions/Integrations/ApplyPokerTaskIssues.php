@@ -36,7 +36,7 @@ class ApplyPokerTaskIssues
 
             $query = PokerTask::query()->where('poker_game_id', $locked->id)->whereKey($tasks->pluck('id')->all());
 
-            foreach ($query->get() as $task) {
+            foreach ($query->lockForUpdate()->get() as $task) {
                 $issue = $issues[(string) $task->external_id] ?? null;
 
                 if ($issue === null) {
