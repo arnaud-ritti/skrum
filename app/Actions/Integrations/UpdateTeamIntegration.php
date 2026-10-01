@@ -46,7 +46,7 @@ class UpdateTeamIntegration
             ],
             IntegrationProvider::Linear => [
                 'priority_map' => ['sometimes', 'array:high,medium,low'],
-                'priority_map.*' => ['required', Rule::in([...array_map('strval', LinearPriority::Scale), self::DefaultPriority])],
+                'priority_map.*' => ['required', Rule::in([...array_map(strval(...), LinearPriority::Scale), self::DefaultPriority])],
             ],
             IntegrationProvider::GitHub => [
                 'priority_labels' => ['sometimes', 'array:high,medium,low'],

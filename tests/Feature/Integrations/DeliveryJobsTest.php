@@ -59,7 +59,7 @@ it('marks a Slack delivery sent and announces it', function () {
         ->and($fresh->error)->toBeNull()
         ->and(TeamIntegration::query()->sole()->last_checked_at)->not->toBeNull();
     Http::assertSent(fn (Request $request) => $request->url() === 'https://hooks.slack.com/services/T000/B000/XXXX' && $request['text'] === 'hello');
-    Event::assertDispatched(ResultsChanged::class, fn (ResultsChanged $event) => $event->retroId === $delivery->subject_id);
+    Event::assertDispatched(fn (ResultsChanged $event) => $event->retroId === $delivery->subject_id);
 });
 
 it('sends Telegram deliveries as HTML without link previews', function () {
@@ -84,7 +84,7 @@ it('announces poker deliveries on the game channel', function () {
 
     runDeliveryJob(new DeliverToSlack($delivery->id, ['text' => 'hello'], 'en'));
 
-    Event::assertDispatched(PokerGameChanged::class, fn (PokerGameChanged $event) => $event->gameId === $game->id);
+    Event::assertDispatched(fn (PokerGameChanged $event) => $event->gameId === $game->id);
     Event::assertNotDispatched(ResultsChanged::class);
 });
 
@@ -112,8 +112,8 @@ it('leaves the delivery queued when the provider is down', function () {
     $job = new DeliverToSlack($delivery->id, ['text' => 'hello'], 'en');
     $job->withFakeQueueInteractions();
 
-    expect(fn () => $job->handle())->toThrow(ProviderUnavailable::class);
-    expect($delivery->fresh()->status)->toBe(IntegrationDeliveryStatus::Queued);
+    expect(fn () => $job->handle())->toThrow(ProviderUnavailable::class)
+        ->and($delivery->fresh()->status)->toBe(IntegrationDeliveryStatus::Queued);
     Event::assertNotDispatched(ResultsChanged::class);
 });
 
@@ -156,7 +156,7 @@ it('fails at once without calling the provider when the connection is gone', fun
 })->with([
     'disconnected' => [fn (TeamIntegration $integration) => $integration->delete(), 'Connect Slack in the team settings.'],
     'reconnect required' => [fn (TeamIntegration $integration) => $integration->forceFill(['status' => IntegrationStatus::ReconnectRequired])->save(), 'Reconnect Slack in the team settings.'],
-    'provider disabled' => [fn () => disableIntegrations(), 'Connect Slack in the team settings.'],
+    'provider disabled' => [disableIntegrations(...), 'Connect Slack in the team settings.'],
 ]);
 
 it('records the final failure after the last retry', function () {

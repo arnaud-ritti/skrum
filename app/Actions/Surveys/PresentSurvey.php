@@ -35,7 +35,7 @@ class PresentSurvey
         return $retro->surveys()
             ->with(self::Relations)
             ->get()
-            ->map(fn (Survey $survey) => $this->handle($survey, $retro, $viewer))
+            ->map(fn (Survey $survey): array => $this->handle($survey, $retro, $viewer))
             ->values()
             ->all();
     }
@@ -88,7 +88,7 @@ class PresentSurvey
             'myOptionIds' => $myOptionIds,
             'myText' => $myText,
             'resultsVisible' => $resultsVisible,
-            'options' => $survey->options->map(fn (SurveyOption $option) => [
+            'options' => $survey->options->map(fn (SurveyOption $option): array => [
                 'id' => $option->id,
                 'label' => $option->label,
                 'position' => $option->position,
@@ -103,7 +103,7 @@ class PresentSurvey
             'reactions' => $resultsVisible
                 ? $this->summarizeReactions->handle($survey->reactions, $retro, $viewer, $showsNames)
                 : [],
-            'commentCount' => $survey->comments->reject(fn (SurveyComment $comment) => $comment->isDeleted())->count(),
+            'commentCount' => $survey->comments->reject(fn (SurveyComment $comment): bool => $comment->isDeleted())->count(),
             'comments' => $resultsVisible ? $this->presentComment->threads($survey->comments, $retro, $viewer) : [],
         ];
     }
@@ -126,9 +126,9 @@ class PresentSurvey
     private function textAnswers(Survey $survey, Participant $viewer, bool $showsNames): array
     {
         return $survey->textAnswers
-            ->sort(fn (SurveyTextAnswer $first, SurveyTextAnswer $second) => [mb_strtolower($first->content), $first->id]
+            ->sort(fn (SurveyTextAnswer $first, SurveyTextAnswer $second): int => [mb_strtolower($first->content), $first->id]
                 <=> [mb_strtolower($second->content), $second->id])
-            ->map(fn (SurveyTextAnswer $answer) => [
+            ->map(fn (SurveyTextAnswer $answer): array => [
                 'id' => $answer->id,
                 'text' => $answer->content,
                 'authorId' => $showsNames ? $answer->participant_id : null,

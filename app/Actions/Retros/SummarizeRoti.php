@@ -19,14 +19,14 @@ class SummarizeRoti
             ->selectRaw('score, count(*) as total')
             ->groupBy('score')
             ->pluck('total', 'score')
-            ->mapWithKeys(fn (mixed $total, int|string $score) => [(int) $score => (int) $total]);
+            ->mapWithKeys(fn (mixed $total, int|string $score): array => [(int) $score => (int) $total]);
 
         $respondents = (int) $totals->sum();
-        $weighted = $totals->map(fn (int $total, int $score) => $score * $total)->sum();
+        $weighted = $totals->map(fn (int $total, int $score): int => $score * $total)->sum();
 
         return [
             'distribution' => collect(range(1, 5))
-                ->map(fn (int $score) => ['score' => $score, 'count' => $totals->get($score, 0)])
+                ->map(fn (int $score): array => ['score' => $score, 'count' => $totals->get($score, 0)])
                 ->all(),
             'average' => $respondents === 0 ? null : round($weighted / $respondents, 1),
             'respondents' => $respondents,

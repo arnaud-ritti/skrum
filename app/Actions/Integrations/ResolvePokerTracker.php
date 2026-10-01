@@ -15,15 +15,11 @@ class ResolvePokerTracker
     {
         $provider = IntegrationProvider::tryFrom($source);
 
-        if ($provider === null || ! $provider->isTracker() || ! $provider->isEnabled()) {
-            throw new NotFoundHttpException;
-        }
+        throw_if($provider === null || ! $provider->isTracker() || ! $provider->isEnabled(), NotFoundHttpException::class);
 
         $integration = $team->integration($provider);
 
-        if ($integration === null) {
-            throw new NotConnected($provider);
-        }
+        throw_if($integration === null, NotConnected::class, $provider);
 
         $integration->ensureActive();
 

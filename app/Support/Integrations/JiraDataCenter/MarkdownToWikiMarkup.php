@@ -11,15 +11,15 @@ use App\Actions\Integrations\IssueDraft;
  */
 class MarkdownToWikiMarkup
 {
-    private const Specials = '{}\[\]*_\-+^~!|#';
+    private const string Specials = '{}\[\]*_\-+^~!|#';
 
     /**
      * `-` and `_` only format whole words, and escaping them would break
      * Jira's linking of bare URLs.
      */
-    private const UrlSpecials = '{}\[\]*+^~!|#';
+    private const string UrlSpecials = '{}\[\]*+^~!|#';
 
-    private const BareUrl = '~(https?://\S+)~i';
+    private const string BareUrl = '~(https?://\S+)~i';
 
     /**
      * A backslash of the user's text is kept, but never next to another

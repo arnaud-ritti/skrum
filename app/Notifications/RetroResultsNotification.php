@@ -44,16 +44,16 @@ class RetroResultsNotification extends Notification implements ShouldBeEncrypted
             return false;
         }
 
-        return app(RetroResultsRecipients::class)->isRecipient($retro, $notifiable);
+        return resolve(RetroResultsRecipients::class)->isRecipient($retro, $notifiable);
     }
 
     public function toMail(object $notifiable): MailMessage
     {
         $retro = Retro::query()->with('team')->findOrFail($this->retroId);
 
-        return app(RetroRecapMail::class)->build(
-            app(BuildRetroRecap::class)->handle($retro),
-            app(SummarizeHealthCheck::class)->handle($retro),
+        return resolve(RetroRecapMail::class)->build(
+            resolve(BuildRetroRecap::class)->handle($retro),
+            resolve(SummarizeHealthCheck::class)->handle($retro),
         );
     }
 }

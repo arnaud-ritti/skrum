@@ -93,7 +93,7 @@ it('sends each mail in the recipient\'s locale', function () {
 
 it('writes the recap, the health score and the link in the mail', function () {
     [$retro, $facilitator] = emailableRetro(attributes: ['health_check_enabled' => true]);
-    app(FreezeHealthStatements::class)->handle($retro);
+    resolve(FreezeHealthStatements::class)->handle($retro);
     HealthCheckAnswer::factory()->create(['retro_id' => $retro->id, 'statement' => 'vision', 'score' => 7]);
 
     $mail = (new RetroResultsNotification($retro->id))->toMail($facilitator);

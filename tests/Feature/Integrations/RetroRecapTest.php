@@ -17,7 +17,7 @@ use App\Models\Team;
 use App\Models\User;
 use App\Models\Vote;
 use App\Support\Integrations\Messages\RetroRecap;
-use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Http;
 
 beforeEach(fn () => Http::preventStrayRequests());
@@ -27,14 +27,14 @@ function recapRetro(array $attributes = []): Retro
     return Retro::factory()->inPhase(RetroPhase::Completed)->create([
         'title' => 'Sprint 42',
         'team_id' => Team::factory()->create(['name' => 'Platform'])->id,
-        'completed_at' => Carbon::parse('2026-09-28 15:00'),
+        'completed_at' => Date::parse('2026-09-28 15:00'),
         ...$attributes,
     ]);
 }
 
 function recapOf(Retro $retro): RetroRecap
 {
-    return app(BuildRetroRecap::class)->handle($retro->fresh());
+    return resolve(BuildRetroRecap::class)->handle($retro->fresh());
 }
 
 function recapCard(Retro $retro, Column $column, int $votes, array $attributes = []): Card

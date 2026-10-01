@@ -7,11 +7,11 @@ use App\Support\Llm\LlmJson;
 
 class ParseSummaryOutput
 {
-    private const MaxSummaryCharacters = 2000;
+    private const int MaxSummaryCharacters = 2000;
 
-    private const MaxThemes = 8;
+    private const int MaxThemes = 8;
 
-    private const MaxSuggestedActions = 8;
+    private const int MaxSuggestedActions = 8;
 
     public function handle(string $reply, SummaryInput $input): ?SummaryOutput
     {

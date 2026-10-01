@@ -45,10 +45,10 @@ class ListTeamMembers extends SkrumTool
             ->where('workspace_id', $team->workspace_id)
             ->whereIn('user_id', $members->pluck('id'))
             ->get()
-            ->mapWithKeys(fn (WorkspaceMembership $membership) => [$membership->user_id => $membership->role->value]);
+            ->mapWithKeys(fn (WorkspaceMembership $membership): array => [$membership->user_id => $membership->role->value]);
 
         return Response::structured([
-            'members' => $members->map(fn (User $member) => [
+            'members' => $members->map(fn (User $member): array => [
                 'userId' => $member->id,
                 'name' => $member->name,
                 'avatarUrl' => url($member->avatarUrl()),

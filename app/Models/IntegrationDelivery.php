@@ -54,7 +54,7 @@ class IntegrationDelivery extends Model
     use HasUuids;
     use Prunable;
 
-    private const RetentionDays = 90;
+    private const int RetentionDays = 90;
 
     /**
      * Longer than the life of any delivery job: an automatic event retries

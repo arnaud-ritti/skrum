@@ -20,9 +20,9 @@ use Illuminate\Validation\ValidationException;
 
 class RetroSharesController extends Controller
 {
-    private const LinkKind = 'link';
+    private const string LinkKind = 'link';
 
-    private const ResultsKind = 'results';
+    private const string ResultsKind = 'results';
 
     public function __construct(
         private SharePermissions $sharePermissions,

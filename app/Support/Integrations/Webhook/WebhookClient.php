@@ -32,11 +32,11 @@ class WebhookClient
 
     public const UserAgent = 'skrum-webhooks/1';
 
-    private const GoneStatus = 410;
+    private const int GoneStatus = 410;
 
-    private const TooManyRequestsStatus = 429;
+    private const int TooManyRequestsStatus = 429;
 
-    private const MaskedSignatureLength = 6;
+    private const int MaskedSignatureLength = 6;
 
     public function __construct(
         private SafeWebhookUrl $safeWebhookUrl,
@@ -172,9 +172,7 @@ class WebhookClient
             throw new RateLimited(IntegrationProvider::Webhook, min(ProviderHttp::retryAfter($response), self::MaxRetryAfterSeconds), $answered);
         }
 
-        if ($response->serverError()) {
-            throw new ProviderUnavailable(IntegrationProvider::Webhook, $answered);
-        }
+        throw_if($response->serverError(), ProviderUnavailable::class, IntegrationProvider::Webhook, $answered);
 
         throw new ProviderRejected(IntegrationProvider::Webhook, $answered, $status);
     }
@@ -252,9 +250,7 @@ class WebhookClient
     {
         $url = $integration->credential('url');
 
-        if (! is_string($url)) {
-            throw new UnsafeWebhookUrl;
-        }
+        throw_unless(is_string($url), UnsafeWebhookUrl::class);
 
         return $url;
     }

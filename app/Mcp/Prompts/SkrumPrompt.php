@@ -17,7 +17,7 @@ abstract class SkrumPrompt extends Prompt
 {
     public const MaxContentLength = 60000;
 
-    private const Languages = ['en' => 'English', 'fr' => 'French', 'es' => 'Spanish', 'de' => 'German'];
+    private const array Languages = ['en' => 'English', 'fr' => 'French', 'es' => 'Spanish', 'de' => 'German'];
 
     public function shouldRegister(): bool
     {
@@ -29,11 +29,9 @@ abstract class SkrumPrompt extends Prompt
     final public function handle(Request $request): Response
     {
         try {
-            return $this->run($request, app(McpContext::class));
+            return $this->run($request, resolve(McpContext::class));
         } catch (Throwable $exception) {
-            if ($exception instanceof ValidationException) {
-                throw $exception;
-            }
+            throw_if($exception instanceof ValidationException, $exception);
 
             Log::error('MCP prompt failed.', [
                 'prompt' => $this->name(),
@@ -56,7 +54,7 @@ abstract class SkrumPrompt extends Prompt
      */
     protected function toolData(string $toolClass, array $arguments): array
     {
-        $result = app($toolClass)->handle(new Request($arguments));
+        $result = resolve($toolClass)->handle(new Request($arguments));
 
         if ($result instanceof Response) {
             throw new PromptToolFailed((string) $result->content());

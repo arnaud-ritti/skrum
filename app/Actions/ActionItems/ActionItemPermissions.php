@@ -9,6 +9,7 @@ use App\Models\Retro;
 use App\Models\Team;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Contracts\Database\Query\Builder;
 
 class ActionItemPermissions
 {
@@ -210,7 +211,7 @@ class ActionItemPermissions
         return Retro::query()
             ->where('team_id', $item->team_id)
             ->where('phase', '!=', RetroPhase::Completed->value)
-            ->whereHas('facilitator', fn ($query) => $query->where('user_id', $userId))
+            ->whereHas('facilitator', fn (Builder $query) => $query->where('user_id', $userId))
             ->exists();
     }
 

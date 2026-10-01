@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Validator;
  */
 class ClueEmoji implements ValidationRule
 {
-    private const LetterLike = '/\p{Regional_Indicator}|\x{20E3}|[\x{1F170}\x{1F171}\x{1F17E}\x{1F17F}\x{1F18E}\x{1F191}-\x{1F19A}\x{2139}\x{24C2}\x{1F520}-\x{1F522}\x{1F524}]/u';
+    private const string LetterLike = '/\p{Regional_Indicator}|\x{20E3}|[\x{1F170}\x{1F171}\x{1F17E}\x{1F17F}\x{1F18E}\x{1F191}-\x{1F19A}\x{2139}\x{24C2}\x{1F520}-\x{1F522}\x{1F524}]/u';
 
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {

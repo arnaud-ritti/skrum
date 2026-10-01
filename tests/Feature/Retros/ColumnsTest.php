@@ -30,7 +30,7 @@ it('adds a column at the end', function () {
         ->assertJsonPath('columns.2.title', 'Kudos')
         ->assertJsonPath('columns.2.position', 2);
 
-    Event::assertDispatched(ColumnsChanged::class, fn (ColumnsChanged $event) => count($event->columns) === 3);
+    Event::assertDispatched(fn (ColumnsChanged $event) => count($event->columns) === 3);
 });
 
 it('renames and removes empty columns only', function () {
@@ -132,7 +132,7 @@ it('edits the description of a column with cards but not its title', function ()
         ->assertUnprocessable();
 
     expect($first->fresh()->only(['title', 'description']))->toBe(['title' => 'First', 'description' => 'Clarified']);
-    Event::assertDispatched(ColumnsChanged::class, fn (ColumnsChanged $event) => $event->columns[0]['description'] === 'Clarified');
+    Event::assertDispatched(fn (ColumnsChanged $event) => $event->columns[0]['description'] === 'Clarified');
 });
 
 it('clears a description with null', function () {

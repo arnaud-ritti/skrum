@@ -10,7 +10,7 @@ it('enables a provider only when its configuration is complete', function (Integ
     disableIntegrations();
 
     expect($provider->isEnabled())->toBeFalse()
-        ->and(IntegrationProvider::enabled())->toBe([])
+        ->and(IntegrationProvider::enabled())->toBeEmpty()
         ->and(IntegrationProvider::anyEnabled())->toBeFalse();
 
     foreach (array_keys($config) as $missingKey) {
@@ -54,7 +54,7 @@ it('describes each provider', function () {
 it('offers email results only with a mailer that delivers', function (string $mailer, bool $expected) {
     config(['mail.default' => $mailer]);
 
-    expect(app(IntegrationAvailability::class)->emailEnabled())->toBe($expected);
+    expect(resolve(IntegrationAvailability::class)->emailEnabled())->toBe($expected);
 })->with([
     'log' => ['log', false],
     'array' => ['array', false],

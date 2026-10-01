@@ -72,7 +72,7 @@ class StoreRetroInsights
         $handledWordings = $locked->suggestedActions()
             ->where('status', '!=', SuggestedActionStatus::Pending)
             ->pluck('content')
-            ->map(fn (string $content) => mb_strtolower(trim($content)))
+            ->map(fn (string $content): string => mb_strtolower(trim($content)))
             ->all();
         $position = (int) $locked->suggestedActions()->max('position') + 1;
 

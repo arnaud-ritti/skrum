@@ -19,7 +19,7 @@ use Inertia\Response;
 
 class TeamEstimatesController extends Controller
 {
-    private const PerPage = 50;
+    private const int PerPage = 50;
 
     public function __construct(private PresentPokerRound $presentPokerRound) {}
 
@@ -50,9 +50,9 @@ class TeamEstimatesController extends Controller
         return Inertia::render('poker/estimates', [
             'workspace' => $workspace->only(['id', 'name', 'slug']),
             'team' => $team->only(['id', 'name']),
-            'games' => $games->map(fn (PokerGame $game) => ['id' => $game->id, 'title' => $game->title])->values(),
+            'games' => $games->map(fn (PokerGame $game): array => ['id' => $game->id, 'title' => $game->title])->values(),
             'filters' => ['game' => $gameId, 'q' => $search],
-            'tasks' => collect($tasks->items())->map(fn (PokerTask $task) => $this->presentRow($task, $user))->values(),
+            'tasks' => collect($tasks->items())->map(fn (PokerTask $task): array => $this->presentRow($task, $user))->values(),
             'pagination' => [
                 'currentPage' => $tasks->currentPage(),
                 'lastPage' => $tasks->lastPage(),
@@ -89,12 +89,12 @@ class TeamEstimatesController extends Controller
             'roundsCount' => (int) $task->rounds_count,
             'estimatedAt' => $task->estimated_at?->toIso8601String(),
             'rounds' => $task->rounds
-                ->map(fn (PokerRound $round) => $this->presentPokerRound->handle($round, $game, $viewerPlayerId))
+                ->map(fn (PokerRound $round): array => $this->presentPokerRound->handle($round, $game, $viewerPlayerId))
                 ->values()
                 ->all(),
             'players' => $game->players
                 ->filter(fn (PokerPlayer $player) => $voterIds->contains($player->id))
-                ->map(fn (PokerPlayer $player) => ['id' => $player->id, 'name' => $player->displayName()])
+                ->map(fn (PokerPlayer $player): array => ['id' => $player->id, 'name' => $player->displayName()])
                 ->values()
                 ->all(),
         ];

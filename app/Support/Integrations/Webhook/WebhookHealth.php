@@ -18,7 +18,7 @@ class WebhookHealth
 
     public const GoneReason = 'gone';
 
-    private const SuccessGraceHours = 24;
+    private const int SuccessGraceHours = 24;
 
     public function succeeded(TeamIntegration $integration): void
     {

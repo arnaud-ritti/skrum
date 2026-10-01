@@ -21,9 +21,7 @@ class TelegramConnectCodesController extends Controller
 
         $username = $bot->username();
 
-        if ($username === null) {
-            throw new ProviderUnavailable(IntegrationProvider::Telegram, 'getMe failed');
-        }
+        throw_if($username === null, ProviderUnavailable::class, IntegrationProvider::Telegram, 'getMe failed');
 
         $issued = $codes->issue($team, $request->user());
 

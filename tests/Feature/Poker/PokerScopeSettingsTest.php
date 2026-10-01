@@ -26,9 +26,9 @@ it('lets the facilitator flip each switch', function (string $field, string $sna
         ->assertNoContent();
 
     expect($game->fresh()->{$field})->toBe(! $default)
-        ->and(app(BuildPokerSnapshot::class)->handle($game->fresh(), $facilitator->fresh())['game'][$snapshotKey])->toBe(! $default);
+        ->and(resolve(BuildPokerSnapshot::class)->handle($game->fresh(), $facilitator->fresh())['game'][$snapshotKey])->toBe(! $default);
 
-    Event::assertDispatched(PokerGameChanged::class, fn (PokerGameChanged $event) => $event->gameId === $game->id);
+    Event::assertDispatched(fn (PokerGameChanged $event) => $event->gameId === $game->id);
 })->with('poker switches');
 
 it('refuses the switches to other players', function (string $field, string $snapshotKey, bool $default) {

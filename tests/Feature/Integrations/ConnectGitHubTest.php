@@ -118,13 +118,13 @@ it('connects read only when the app cannot write issues', function () {
 it('signs a verifiable app JWT', function () {
     $this->freezeTime();
 
-    [$header, $payload, $signature] = explode('.', app(GitHubAppJwt::class)->token());
-    $decode = fn (string $segment): array => json_decode((string) base64_decode(strtr($segment, '-_', '+/')), true);
+    [$header, $payload, $signature] = explode('.', resolve(GitHubAppJwt::class)->token());
+    $decode = fn (string $segment): array => json_decode(base64_decode(strtr($segment, '-_', '+/')), true);
     $publicKey = openssl_pkey_get_details(openssl_pkey_get_private(gitHubTestPrivateKey()))['key'];
 
     expect($decode($header))->toBe(['alg' => 'RS256', 'typ' => 'JWT'])
         ->and($decode($payload))->toBe(['iat' => now()->getTimestamp() - 60, 'exp' => now()->getTimestamp() + 540, 'iss' => 12345])
-        ->and(openssl_verify("{$header}.{$payload}", (string) base64_decode(strtr($signature, '-_', '+/')), $publicKey, OPENSSL_ALGO_SHA256))->toBe(1);
+        ->and(openssl_verify("{$header}.{$payload}", base64_decode(strtr($signature, '-_', '+/')), $publicKey, OPENSSL_ALGO_SHA256))->toBe(1);
 });
 
 it('caches the installation token encrypted and reuses it', function () {
@@ -134,7 +134,7 @@ it('caches the installation token encrypted and reuses it', function () {
         'repositories' => [['id' => 9001, 'full_name' => 'acme/api']],
     ])]);
     $integration = TeamIntegration::factory()->gitHub()->create();
-    $client = app(GitHubClient::class);
+    $client = resolve(GitHubClient::class);
 
     expect($client->repositories($integration))->toBe([['id' => '9001', 'name' => 'acme/api']])
         ->and($client->repositories($integration))->toBe([['id' => '9001', 'name' => 'acme/api']]);
@@ -159,7 +159,7 @@ it('mints a new token once GitHub refuses the cached one', function () {
         ->push(['total_count' => 0, 'repositories' => []])]);
     $integration = TeamIntegration::factory()->gitHub()->create();
 
-    expect(app(GitHubClient::class)->repositories($integration))->toBe([]);
+    expect(resolve(GitHubClient::class)->repositories($integration))->toBeEmpty();
 
     Http::assertSent(fn (Request $request) => str_starts_with($request->url(), 'https://api.github.com/installation/repositories')
         && $request->hasHeader('Authorization', 'Bearer ghs_fresh'));
@@ -192,7 +192,7 @@ it('turns GitHub rate limits into a wait', function () {
     $integration = TeamIntegration::factory()->gitHub()->create();
 
     try {
-        app(GitHubClient::class)->repositories($integration);
+        resolve(GitHubClient::class)->repositories($integration);
         $this->fail('The rate limit was not reported.');
     } catch (RateLimited $exception) {
         expect($exception->retryAfter)->toBe(120);
@@ -203,7 +203,7 @@ it('keeps the connection when minting the installation token is rate limited', f
     Http::fake(['api.github.com/app/installations/4242/access_tokens' => Http::response(['message' => 'You have exceeded a secondary rate limit'], $status, $headers)]);
     $integration = TeamIntegration::factory()->gitHub()->create();
 
-    expect(fn () => app(GitHubClient::class)->repositories($integration))->toThrow(RateLimited::class)
+    expect(fn () => resolve(GitHubClient::class)->repositories($integration))->toThrow(RateLimited::class)
         ->and($integration->fresh()?->status)->toBe(IntegrationStatus::Active);
 })->with([
     'retry after' => [['Retry-After' => '60'], 403],
@@ -215,7 +215,7 @@ it('asks to reconnect when minting the installation token is forbidden', functio
     Http::fake(['api.github.com/app/installations/4242/access_tokens' => Http::response(['message' => 'This installation has been suspended'], 403)]);
     $integration = TeamIntegration::factory()->gitHub()->create();
 
-    expect(fn () => app(GitHubClient::class)->repositories($integration))->toThrow(ReconnectRequired::class)
+    expect(fn () => resolve(GitHubClient::class)->repositories($integration))->toThrow(ReconnectRequired::class)
         ->and($integration->fresh()?->status)->toBe(IntegrationStatus::ReconnectRequired)
         ->and($integration->fresh()?->last_error)->toBe('The GitHub App is suspended on acme.');
 });

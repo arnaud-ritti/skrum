@@ -62,7 +62,7 @@ class TeamsController extends Controller
                 : [],
             'canManage' => $canManage,
             'openActionItemCount' => $team->actionItems()->whereNull('completed_at')->count(),
-            'retros' => $team->retros()->latest()->get()->map(fn (Retro $retro) => [
+            'retros' => $team->retros()->latest()->get()->map(fn (Retro $retro): array => [
                 'id' => $retro->id,
                 'title' => $retro->title,
                 'phase' => $retro->phase->value,
@@ -70,14 +70,14 @@ class TeamsController extends Controller
                 'createdAt' => $retro->created_at?->toIso8601String(),
             ]),
             'templateCategories' => TemplateCategory::options(),
-            'catalogue' => Inertia::optional(fn () => $buildTemplateCatalogue->handle($workspace)),
+            'catalogue' => Inertia::optional(fn (): array => $buildTemplateCatalogue->handle($workspace)),
             'llm' => [
                 'enabled' => $llm->isConfigured(),
                 'provider' => $llm->providerName(),
             ],
             'canCreateRetro' => $request->user()->can('createRetro', $team),
             'icebreakerGames' => $icebreakerGameOptions->options(),
-            'healthStatements' => $this->teamHealthStatements->all($team)->map(fn (TeamHealthStatement $statement) => [
+            'healthStatements' => $this->teamHealthStatements->all($team)->map(fn (TeamHealthStatement $statement): array => [
                 'id' => $statement->id ?? $statement->key(),
                 ...$this->presentHealthStatement->handle($statement),
                 'isArchived' => $statement->isArchived(),
@@ -86,7 +86,7 @@ class TeamsController extends Controller
             'pokerGames' => PresentPokerGameSummary::withCounts($team->pokerGames())
                 ->latest('updated_at')
                 ->get()
-                ->map(fn (PokerGame $game) => $this->presentPokerGameSummary->handle($game)),
+                ->map(fn (PokerGame $game): array => $this->presentPokerGameSummary->handle($game)),
             'pokerDecks' => $this->pokerDecks($request->user(), $workspace, $team),
             'pokerDeckOptions' => PokerDeck::options(),
             'canCreatePokerGame' => $request->user()->can('createPokerGame', $team),

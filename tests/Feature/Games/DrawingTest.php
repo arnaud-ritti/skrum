@@ -48,7 +48,7 @@ it('lets the drawer commit a stroke and broadcasts it', function () {
         ->drawing->toEqual([$stroke])
         ->drawing_points->toBe(2);
 
-    Event::assertDispatched(GameDrawingOpAdded::class, fn (GameDrawingOpAdded $event) => $event->op === $stroke
+    Event::assertDispatched(fn (GameDrawingOpAdded $event) => $event->op === $stroke
         && $event->clientOpId === 'abc-123'
         && $event->roundId === $table['round']->id
         && $event->count === 1);
@@ -95,13 +95,13 @@ it('keeps drawing to the drawer', function () {
         $this->deleteJson(route('games.rounds.drawing.destroy', [$table['room'], $table['round']]))->assertForbidden();
     }
 
-    app('auth')->forgetGuards();
+    resolve('auth')->forgetGuards();
 
     $this->withCookies(gameGuestCookie($guest))->withCredentials()
         ->postJson(route('games.rounds.drawing-ops.store', [$table['room'], $table['round']]), ['client_op_id' => 'x', 'op' => drawingStroke()])
         ->assertForbidden();
 
-    expect($table['round']->fresh()->drawing)->toBe([]);
+    expect($table['round']->fresh()->drawing)->toBeEmpty();
 });
 
 it('refuses drawing in Decoded and on ended rounds', function () {
@@ -124,7 +124,7 @@ it('validates the operation and its id', function (array $body) {
         ->postJson(route('games.rounds.drawing-ops.store', [$table['room'], $table['round']]), $body)
         ->assertUnprocessable();
 
-    expect($table['round']->fresh()->drawing)->toBe([]);
+    expect($table['round']->fresh()->drawing)->toBeEmpty();
 })->with([
     'missing op' => [['client_op_id' => 'op-1']],
     'missing id' => [['op' => ['type' => 'fill', 'color' => 'red', 'x' => 1, 'y' => 1]]],
@@ -185,7 +185,7 @@ it('undoes the last operation and frees its points', function () {
         ->drawing->toEqual([$first])
         ->drawing_points->toBe(3);
 
-    Event::assertDispatched(GameDrawingUndone::class, fn (GameDrawingUndone $event) => $event->roundId === $table['round']->id
+    Event::assertDispatched(fn (GameDrawingUndone $event) => $event->roundId === $table['round']->id
         && $event->count === 1);
 });
 

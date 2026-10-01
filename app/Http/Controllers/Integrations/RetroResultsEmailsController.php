@@ -26,7 +26,7 @@ use Throwable;
 
 class RetroResultsEmailsController extends Controller
 {
-    private const CooldownSeconds = 600;
+    private const int CooldownSeconds = 600;
 
     public function __construct(
         private IntegrationAvailability $integrationAvailability,

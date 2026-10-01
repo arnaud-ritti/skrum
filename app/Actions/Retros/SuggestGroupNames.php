@@ -37,9 +37,7 @@ class SuggestGroupNames
 
         $suggestions = $this->parse(LlmJson::decode($reply), $leadIds);
 
-        if ($suggestions === []) {
-            abort(502, __('Could not suggest names. Try again or name the groups yourself.'));
-        }
+        abort_if($suggestions === [], 502, __('Could not suggest names. Try again or name the groups yourself.'));
 
         return $suggestions;
     }
@@ -75,7 +73,7 @@ class SuggestGroupNames
                 'column' => $lead->column?->title,
                 'cards' => collect([$lead])->merge($lead->children)
                     ->pluck('content')
-                    ->filter(fn (?string $content) => $content !== null)
+                    ->filter(fn (?string $content): bool => $content !== null)
                     ->values()
                     ->all(),
             ];

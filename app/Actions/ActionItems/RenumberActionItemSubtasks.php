@@ -33,8 +33,7 @@ class RenumberActionItemSubtasks
         $ids = ActionItemSubtask::query()
             ->where('action_item_id', $actionItemId)
             ->when($exceptId !== null, fn ($query) => $query->whereKeyNot($exceptId))
-            ->orderBy('position')
-            ->orderBy('created_at')
+            ->orderBy('position')->oldest()
             ->pluck('id')
             ->all();
 

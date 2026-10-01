@@ -140,7 +140,7 @@ it('lets only the facilitator delete and reorder', function () {
     $this->actingAs($facilitator)->deleteJson(route('poker.tasks.destroy', [$game, $first]))->assertNoContent();
 
     expect(PokerTask::query()->whereKey($first->id)->exists())->toBeFalse();
-    Event::assertDispatched(PokerTaskDeleted::class, fn (PokerTaskDeleted $event) => $event->broadcastWith() === ['taskId' => $first->id]);
+    Event::assertDispatched(fn (PokerTaskDeleted $event) => $event->broadcastWith() === ['taskId' => $first->id]);
 });
 
 it('clears the current task when it is deleted', function () {
@@ -235,8 +235,8 @@ it('broadcasts task events to others', function () {
         ->putJson(route('poker.task-order.update', $game), ['task_ids' => [$other->id, $taskId]])
         ->assertNoContent();
 
-    Event::assertDispatched(PokerTaskSaved::class, fn (PokerTaskSaved $event) => $event->gameId === $game->id
+    Event::assertDispatched(fn (PokerTaskSaved $event) => $event->gameId === $game->id
         && $event->broadcastWith()['task']['id'] === $taskId
         && $event->broadcastWith()['task']['title'] === 'Broadcast me');
-    Event::assertDispatched(PokerTasksReordered::class, fn (PokerTasksReordered $event) => $event->broadcastWith() === ['taskIds' => [$other->id, $taskId]]);
+    Event::assertDispatched(fn (PokerTasksReordered $event) => $event->broadcastWith() === ['taskIds' => [$other->id, $taskId]]);
 });

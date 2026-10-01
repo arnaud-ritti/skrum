@@ -22,41 +22,41 @@ use InvalidArgumentException;
  */
 class GitHubTracker implements IssueTracker, SyncsIssueStatus
 {
-    private const Source = 'GitHub';
+    private const string Source = 'GitHub';
 
-    private const WriteAttempts = 3;
+    private const int WriteAttempts = 3;
 
-    private const IssueBatch = 100;
+    private const int IssueBatch = 100;
 
-    private const ChangedPages = 10;
+    private const int ChangedPages = 10;
 
-    private const IssueFields = 'fragment IssueFields on Issue { number title body url state stateReason updatedAt assignees(first: 1) { nodes { login } } }';
+    private const string IssueFields = 'fragment IssueFields on Issue { number title body url state stateReason updatedAt assignees(first: 1) { nodes { login } } }';
 
-    private const ReferencePattern = '~^(\d{1,20})/([1-9]\d{0,9})\z~';
+    private const string ReferencePattern = '~^(\d{1,20})/([1-9]\d{0,9})\z~';
 
     /**
      * Issue numbers are written into the GraphQL query as `Int` literals,
      * which are 32-bit.
      */
-    private const MaxIssueNumber = 2147483647;
+    private const int MaxIssueNumber = 2147483647;
 
-    private const StatusLength = 100;
+    private const int StatusLength = 100;
 
-    private const RepositoryIdPattern = '/^\d{1,20}\z/';
+    private const string RepositoryIdPattern = '/^\d{1,20}\z/';
 
-    private const ApiRepositoryPrefix = 'https://api.github.com/repos/';
+    private const string ApiRepositoryPrefix = 'https://api.github.com/repos/';
 
-    private const WebPrefix = 'https://github.com/';
+    private const string WebPrefix = 'https://github.com/';
 
     /**
      * Anywhere in the query, also after `(` or other punctuation: the
      * repository scope and the issue type are skrum's.
      */
-    private const ScopeQualifiers = '/(?<![\w-])-?(?:(?:repo|org|user|owner):[^\s()]+|(?:is|type):(?:pr|pull-?request|issue)(?![\w-]))/i';
+    private const string ScopeQualifiers = '/(?<![\w-])-?(?:(?:repo|org|user|owner):[^\s()]+|(?:is|type):(?:pr|pull-?request|issue)(?![\w-]))/i';
 
-    private const EmptyGroups = '/\(\s*\)/';
+    private const string EmptyGroups = '/\(\s*\)/';
 
-    private const UnavailableStatuses = [301, 404, 410];
+    private const array UnavailableStatuses = [301, 404, 410];
 
     public function __construct(private GitHubClient $client) {}
 
@@ -217,7 +217,7 @@ class GitHubTracker implements IssueTracker, SyncsIssueStatus
 
             $updated = $this->client->patch($integration, "repos/{$fullName}/issues/{$reference[1]}", ['body' => $written]);
 
-            if (self::landed($updated['body'] ?? null, $written, $estimate)) {
+            if ($this->landed($updated['body'] ?? null, $written, $estimate)) {
                 return;
             }
         }
@@ -244,7 +244,7 @@ class GitHubTracker implements IssueTracker, SyncsIssueStatus
         $issues = [];
 
         foreach ($numbersByRepository as $repositoryId => $numbers) {
-            foreach ($this->changedOrTracked($integration, (string) $repositoryId, array_map('strval', array_keys($numbers)), $since) as $raw) {
+            foreach ($this->changedOrTracked($integration, (string) $repositoryId, array_map(strval(...), array_keys($numbers)), $since) as $raw) {
                 if (! isset($numbers[(string) $raw['number']])) {
                     continue;
                 }
@@ -555,16 +555,16 @@ class GitHubTracker implements IssueTracker, SyncsIssueStatus
      * Line endings are compared normalised: GitHub may store the body it
      * was sent with CRLF turned into LF.
      */
-    private static function landed(mixed $body, string $written, ?string $estimate): bool
+    private function landed(mixed $body, string $written, ?string $estimate): bool
     {
         $body = is_string($body) ? $body : '';
 
         return EstimateBlock::count($body) === ($estimate === null ? 0 : 1)
             && EstimateBlock::value($body) === $estimate
-            && self::withLineFeeds(EstimateBlock::strip($body)) === self::withLineFeeds(EstimateBlock::strip($written));
+            && $this->withLineFeeds(EstimateBlock::strip($body)) === $this->withLineFeeds(EstimateBlock::strip($written));
     }
 
-    private static function withLineFeeds(string $text): string
+    private function withLineFeeds(string $text): string
     {
         return str_replace("\r\n", "\n", $text);
     }

@@ -11,7 +11,7 @@ use Laravel\Socialite\Two\User as SocialiteUser;
 
 function resolveSso(SsoProvider $provider, array $attributes, ?WorkspaceInvitation $invitation = null): User
 {
-    return app(ResolveSsoUser::class)->handle($provider, SocialiteUser::fake($attributes), $invitation);
+    return resolve(ResolveSsoUser::class)->handle($provider, SocialiteUser::fake($attributes), $invitation);
 }
 
 beforeEach(function () {
@@ -48,9 +48,8 @@ it('refuses to link into an account whose email was never verified', function ()
     $user = User::factory()->unverified()->create(['email' => 'bob@example.test']);
 
     expect(fn () => resolveSso(SsoProvider::Google, ['id' => 'g-1', 'email' => 'bob@example.test', 'email_verified' => true]))
-        ->toThrow(SsoLoginRefused::class, 'An account already uses this email address. Log in with your password instead.');
-
-    expect(SocialAccount::count())->toBe(0)
+        ->toThrow(SsoLoginRefused::class, 'An account already uses this email address. Log in with your password instead.')
+        ->and(SocialAccount::count())->toBe(0)
         ->and($user->fresh()->email_verified_at)->toBeNull();
 });
 
@@ -58,18 +57,16 @@ it('refuses to link an existing account through an unverified email', function (
     User::factory()->create(['email' => 'bob@example.test']);
 
     expect(fn () => resolveSso(SsoProvider::Google, ['id' => 'g-1', 'email' => 'bob@example.test', 'email_verified' => false]))
-        ->toThrow(SsoLoginRefused::class, 'An account already uses this email address. Log in with your password instead.');
-
-    expect(SocialAccount::count())->toBe(0);
+        ->toThrow(SsoLoginRefused::class, 'An account already uses this email address. Log in with your password instead.')
+        ->and(SocialAccount::count())->toBe(0);
 });
 
 it('links entra accounts only when xms_edov is true', function () {
     $user = User::factory()->create(['email' => 'ann@acme.test']);
 
     expect(fn () => resolveSso(SsoProvider::Entra, ['id' => 'e-1', 'email' => 'ann@acme.test']))
-        ->toThrow(SsoLoginRefused::class);
-
-    expect(resolveSso(SsoProvider::Entra, ['id' => 'e-1', 'email' => 'ann@acme.test', 'xms_edov' => true])->is($user))->toBeTrue();
+        ->toThrow(SsoLoginRefused::class)
+        ->and(resolveSso(SsoProvider::Entra, ['id' => 'e-1', 'email' => 'ann@acme.test', 'xms_edov' => true])->is($user))->toBeTrue();
 });
 
 it('creates a verified account for a new person', function () {
@@ -115,9 +112,8 @@ it('refuses to create an account from an unverified email', function () {
     User::factory()->create();
 
     expect(fn () => resolveSso(SsoProvider::Oidc, ['id' => 's-1', 'email' => 'new@example.test', 'email_verified' => false]))
-        ->toThrow(SsoLoginRefused::class);
-
-    expect(User::count())->toBe(1);
+        ->toThrow(SsoLoginRefused::class)
+        ->and(User::count())->toBe(1);
 });
 
 it('applies the signup gate', function () {
@@ -146,14 +142,12 @@ it('ignores an invitation addressed to someone else', function () {
     $invitation = WorkspaceInvitation::factory()->create(['email' => 'invited@example.test']);
 
     expect(fn () => resolveSso(SsoProvider::Oidc, ['id' => 's-2', 'email' => 'other@example.test', 'email_verified' => false], $invitation))
-        ->toThrow(SsoLoginRefused::class);
-
-    expect($invitation->fresh()->accepted_at)->toBeNull();
+        ->toThrow(SsoLoginRefused::class)
+        ->and($invitation->fresh()->accepted_at)->toBeNull();
 });
 
 it('refuses a provider user without an id', function () {
     expect(fn () => resolveSso(SsoProvider::Google, ['id' => '', 'email' => 'ann@acme.test', 'email_verified' => true]))
-        ->toThrow(SsoLoginRefused::class, 'Sign-in with Google failed. Please try again.');
-
-    expect(User::count())->toBe(0);
+        ->toThrow(SsoLoginRefused::class, 'Sign-in with Google failed. Please try again.')
+        ->and(User::count())->toBe(0);
 });

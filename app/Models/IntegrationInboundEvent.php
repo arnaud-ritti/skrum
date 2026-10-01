@@ -6,6 +6,7 @@ use App\Enums\InboundEventStatus;
 use App\Enums\IntegrationProvider;
 use Database\Factories\IntegrationInboundEventFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\WithoutTimestamps;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -29,6 +30,7 @@ use Illuminate\Support\Carbon;
  * @property-read TeamIntegration|null $integration
  */
 #[Fillable(['provider', 'team_integration_id', 'event_key', 'event_type', 'status', 'detail', 'received_at'])]
+#[WithoutTimestamps]
 class IntegrationInboundEvent extends Model
 {
     /** @use HasFactory<IntegrationInboundEventFactory> */
@@ -37,9 +39,7 @@ class IntegrationInboundEvent extends Model
     use HasUuids;
     use Prunable;
 
-    private const RetentionDays = 7;
-
-    public $timestamps = false;
+    private const int RetentionDays = 7;
 
     /** @return BelongsTo<TeamIntegration, $this> */
     public function integration(): BelongsTo

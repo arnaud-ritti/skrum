@@ -22,7 +22,7 @@ it('offers both games in the picker', function () {
     $room = GameRoom::factory()->create();
     [, $host] = gameRoomHost($room);
 
-    $games = collect(app(BuildGameSnapshot::class)->handle($room, $host)['games'])->pluck('available', 'value');
+    $games = collect(resolve(BuildGameSnapshot::class)->handle($room, $host)['games'])->pluck('available', 'value');
 
     expect($games['draw'])->toBeTrue()
         ->and($games['decoded'])->toBeTrue();
@@ -85,11 +85,11 @@ it('shows the word to the leader only', function (GameKind $game) {
     $this->actingAs($leaderUser)->getJson(route('games.snapshot.show', $room))->assertJsonPath('round.word', 'rocket');
     $this->actingAs($hostUser)->getJson(route('games.snapshot.show', $room))->assertJsonMissingPath('round.word');
 
-    app('auth')->forgetGuards();
+    resolve('auth')->forgetGuards();
 
     $this->withCookies(gameGuestCookie($guest))->getJson(route('games.snapshot.show', $room))->assertJsonMissingPath('round.word');
 
-    Event::assertDispatched(GameRoundStarted::class, fn (GameRoundStarted $event) => ! array_key_exists('word', $event->round)
+    Event::assertDispatched(fn (GameRoundStarted $event) => ! array_key_exists('word', $event->round)
         && ! gamePayloadExposesWord($event->round, 'rocket'));
 })->with([GameKind::DrawAndGuess, GameKind::Decoded]);
 
@@ -206,7 +206,7 @@ it('builds the snapshot of a word-guess round with a constant number of queries'
 
         DB::flushQueryLog();
         DB::enableQueryLog();
-        app(BuildGameSnapshot::class)->handle($room, $viewer);
+        resolve(BuildGameSnapshot::class)->handle($room, $viewer);
         DB::disableQueryLog();
 
         return count(DB::getQueryLog());

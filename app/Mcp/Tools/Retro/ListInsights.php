@@ -68,18 +68,18 @@ class ListInsights extends SkrumTool
         return Response::structured([
             'status' => $retro->effectiveSummaryStatus()->value ?? 'not_available',
             'generatedAt' => $retro->summary_generated_at?->toIso8601String(),
-            'themes' => collect($insights['themes'])->map(fn (array $theme) => [
+            'themes' => collect($insights['themes'])->map(fn (array $theme): array => [
                 'id' => $theme['id'],
                 'name' => $theme['name'],
                 'messageCount' => count($theme['cardIds']),
                 'messageIds' => $theme['cardIds'],
                 'sentiment' => [
-                    'positive' => collect($theme['cardIds'])->filter(fn (string $id) => $sentiments->get($id) === CardSentiment::Positive)->count(),
-                    'neutral' => collect($theme['cardIds'])->filter(fn (string $id) => $sentiments->get($id) === CardSentiment::Neutral)->count(),
-                    'negative' => collect($theme['cardIds'])->filter(fn (string $id) => $sentiments->get($id) === CardSentiment::Negative)->count(),
+                    'positive' => collect($theme['cardIds'])->filter(fn (string $id): bool => $sentiments->get($id) === CardSentiment::Positive)->count(),
+                    'neutral' => collect($theme['cardIds'])->filter(fn (string $id): bool => $sentiments->get($id) === CardSentiment::Neutral)->count(),
+                    'negative' => collect($theme['cardIds'])->filter(fn (string $id): bool => $sentiments->get($id) === CardSentiment::Negative)->count(),
                 ],
             ])->values()->all(),
-            'suggestedActions' => collect($insights['suggestedActions'])->map(fn (array $suggestion) => [
+            'suggestedActions' => collect($insights['suggestedActions'])->map(fn (array $suggestion): array => [
                 ...$suggestion,
                 'themeName' => $suggestion['themeId'] === null ? null : $themeNames->get($suggestion['themeId']),
             ])->values()->all(),

@@ -135,7 +135,7 @@ it('names and classifies the new providers', function () {
         ->and(IntegrationProvider::Webhook->connectsWithUrl())->toBeTrue()
         ->and(IntegrationProvider::Slack->connectsWithUrl())->toBeFalse()
         ->and(IntegrationProvider::JiraDataCenter->authMethods())->toBeArray()
-        ->and(IntegrationProvider::Slack->authMethods())->toBe([]);
+        ->and(IntegrationProvider::Slack->authMethods())->toBeEmpty();
 });
 
 it('uses fixed callback URLs for Jira Data Center and GitHub', function () {

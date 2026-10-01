@@ -20,6 +20,6 @@ class DeliverToMattermost extends DeliverToChannel
 
     protected function send(TeamIntegration $integration): void
     {
-        app(MattermostClient::class)->postMessage($integration, $this->text);
+        resolve(MattermostClient::class)->postMessage($integration, $this->text);
     }
 }

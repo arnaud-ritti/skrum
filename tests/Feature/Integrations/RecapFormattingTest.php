@@ -149,12 +149,5 @@ it('omits empty sections', function () {
     $slack = json_encode((new RetroRecapContent($recap))->toSlack(), JSON_UNESCAPED_UNICODE);
     $telegram = (new RetroRecapContent($recap))->toTelegram();
 
-    foreach ([$slack, $telegram] as $message) {
-        expect($message)->toContain('Participants: 3')
-            ->not->toContain('ROTI')
-            ->not->toContain('Summary')
-            ->not->toContain('Action items')
-            ->not->toContain('Suggested actions')
-            ->not->toContain('Top card per column');
-    }
+    expect([$slack, $telegram])->each->toContain('Participants: 3')->not->toContain('ROTI')->not->toContain('Summary')->not->toContain('Action items')->not->toContain('Suggested actions')->not->toContain('Top card per column');
 });

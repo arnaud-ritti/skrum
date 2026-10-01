@@ -30,9 +30,7 @@ class QueueShare
     {
         $integration = $provider->isEnabled() ? $team->integration($provider) : null;
 
-        if ($integration === null) {
-            throw new NotConnected($provider);
-        }
+        throw_if($integration === null, NotConnected::class, $provider);
 
         $integration->ensureActive();
 
@@ -58,11 +56,11 @@ class QueueShare
         $webhookData = $provider === IntegrationProvider::Webhook ? $content->toWebhook() : [];
 
         $makeJob = match ($provider) {
-            IntegrationProvider::Slack => fn (string $id) => new DeliverToSlack($id, $content->toSlack(), $locale),
-            IntegrationProvider::Telegram => fn (string $id) => new DeliverToTelegram($id, $content->toTelegram(), $locale),
-            IntegrationProvider::MicrosoftTeams => fn (string $id) => new DeliverToMicrosoftTeams($id, $content->toMicrosoftTeams(), $locale),
-            IntegrationProvider::Mattermost => fn (string $id) => new DeliverToMattermost($id, $content->toMattermost(), $locale),
-            IntegrationProvider::Webhook => fn (string $id) => new DeliverToWebhook($id, (string) $event, $occurredAt, $webhookData, $locale),
+            IntegrationProvider::Slack => fn (string $id): DeliverToSlack => new DeliverToSlack($id, $content->toSlack(), $locale),
+            IntegrationProvider::Telegram => fn (string $id): DeliverToTelegram => new DeliverToTelegram($id, $content->toTelegram(), $locale),
+            IntegrationProvider::MicrosoftTeams => fn (string $id): DeliverToMicrosoftTeams => new DeliverToMicrosoftTeams($id, $content->toMicrosoftTeams(), $locale),
+            IntegrationProvider::Mattermost => fn (string $id): DeliverToMattermost => new DeliverToMattermost($id, $content->toMattermost(), $locale),
+            IntegrationProvider::Webhook => fn (string $id): DeliverToWebhook => new DeliverToWebhook($id, (string) $event, $occurredAt, $webhookData, $locale),
             default => throw new InvalidArgumentException("{$provider->value} is not a share channel."),
         };
 

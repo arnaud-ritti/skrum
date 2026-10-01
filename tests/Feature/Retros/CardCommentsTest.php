@@ -34,9 +34,9 @@ it('comments on a card and sends the author their comment on their private chann
         ->assertJsonPath('comment.isMine', true)
         ->assertJsonPath('comment.author.id', $participant->id);
 
-    Event::assertDispatched(CommentCreated::class, fn (CommentCreated $event) => $event->comment['id'] === $response->json('comment.id')
+    Event::assertDispatched(fn (CommentCreated $event) => $event->comment['id'] === $response->json('comment.id')
         && $event->comment['isMine'] === false);
-    Event::assertDispatched(OwnCommentSaved::class, fn (OwnCommentSaved $event) => $event->participantId === $participant->id
+    Event::assertDispatched(fn (OwnCommentSaved $event) => $event->participantId === $participant->id
         && $event->comment['isMine'] === true
         && $event->broadcastOn()->name === "private-participant.{$participant->id}");
 });
@@ -86,7 +86,7 @@ it('lets only the author edit and the author or facilitator delete', function ()
     $this->actingAs($facilitator)->deleteJson(route('retros.comments.destroy', [$retro, $othersComment]))->assertNoContent();
 
     expect(CardComment::count())->toBe(0);
-    Event::assertDispatched(CommentDeleted::class, fn (CommentDeleted $event) => $event->commentId === $comment->id && $event->soft === false);
+    Event::assertDispatched(fn (CommentDeleted $event) => $event->commentId === $comment->id && $event->soft === false);
 });
 
 it('soft deletes a parent with replies and removes it with its last reply', function () {
@@ -97,14 +97,14 @@ it('soft deletes a parent with replies and removes it with its last reply', func
     $this->actingAs($user)->deleteJson(route('retros.comments.destroy', [$retro, $parent]))->assertNoContent();
 
     expect($parent->fresh())->content->toBeNull()->deleted_at->not->toBeNull();
-    Event::assertDispatched(CommentDeleted::class, fn (CommentDeleted $event) => $event->commentId === $parent->id && $event->soft === true);
+    Event::assertDispatched(fn (CommentDeleted $event) => $event->commentId === $parent->id && $event->soft);
 
     $this->actingAs($user)->patchJson(route('retros.comments.update', [$retro, $parent]), ['content' => 'Back'])->assertNotFound();
 
     $this->actingAs($user)->deleteJson(route('retros.comments.destroy', [$retro, $reply]))->assertNoContent();
 
     expect(CardComment::count())->toBe(0);
-    Event::assertDispatched(CommentDeleted::class, fn (CommentDeleted $event) => $event->commentId === $parent->id && $event->soft === false);
+    Event::assertDispatched(fn (CommentDeleted $event) => $event->commentId === $parent->id && $event->soft === false);
 });
 
 it('refuses comments before grouping, once completed and while locked', function (RetroPhase $phase, array $attributes, int $status) {
@@ -123,7 +123,7 @@ it('hides comment authors from others on anonymous retros', function () {
     $this->actingAs($user)->postJson(route('retros.cards.comments.store', [$retro, $card]), ['content' => 'Quiet'])
         ->assertJsonPath('comment.author.name', $user->name);
 
-    Event::assertDispatched(CommentCreated::class, fn (CommentCreated $event) => $event->comment['author'] === null);
+    Event::assertDispatched(fn (CommentCreated $event) => $event->comment['author'] === null);
 });
 
 it('notifies the card author and the thread participants but not the commenter', function () {
@@ -137,7 +137,7 @@ it('notifies the card author and the thread participants but not the commenter',
     $recipients = collect(Event::dispatched(CommentNotification::class))->map(fn (array $dispatch) => $dispatch[0]->participantId)->sort()->values()->all();
 
     expect($recipients)->toBe(collect([$card->participant_id, $earlier->id])->sort()->values()->all());
-    Event::assertDispatched(CommentNotification::class, fn (CommentNotification $event) => $event->broadcastWith()['threadId'] === $thread->id
+    Event::assertDispatched(fn (CommentNotification $event) => $event->broadcastWith()['threadId'] === $thread->id
         && $event->broadcastWith()['authorName'] === $user->name
         && $event->broadcastOn()->name === "private-participant.{$event->participantId}");
 });
@@ -147,7 +147,7 @@ it('notifies without naming anyone on anonymous retros', function () {
 
     $this->actingAs($user)->postJson(route('retros.cards.comments.store', [$retro, $card]), ['content' => 'Hi'])->assertCreated();
 
-    Event::assertDispatched(CommentNotification::class, fn (CommentNotification $event) => ! array_key_exists('authorName', $event->broadcastWith()));
+    Event::assertDispatched(fn (CommentNotification $event) => ! array_key_exists('authorName', $event->broadcastWith()));
 });
 
 it('does not notify the commenter about their own card', function () {
@@ -164,7 +164,7 @@ it('keeps a long comment notification excerpt within 80 characters', function ()
 
     $this->actingAs($user)->postJson(route('retros.cards.comments.store', [$retro, $card]), ['content' => str_repeat('a', 500)])->assertCreated();
 
-    Event::assertDispatched(CommentNotification::class, fn (CommentNotification $event) => mb_strlen($event->broadcastWith()['excerpt']) <= 80
+    Event::assertDispatched(fn (CommentNotification $event) => mb_strlen($event->broadcastWith()['excerpt']) <= 80
         && str_ends_with($event->broadcastWith()['excerpt'], '…'));
 });
 

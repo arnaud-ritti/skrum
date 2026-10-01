@@ -20,7 +20,7 @@ class EmojiDataController extends Controller
         'de' => 'de',
     ];
 
-    private const Files = ['data.json', 'messages.json'];
+    private const array Files = ['data.json', 'messages.json'];
 
     private const MaxBytes = 10 * 1024 * 1024;
 

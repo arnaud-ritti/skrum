@@ -13,6 +13,7 @@ use App\Models\Workspace;
 use App\Models\WorkspaceMembership;
 use Carbon\CarbonInterface;
 use Closure;
+use Illuminate\Contracts\Database\Query\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -21,9 +22,9 @@ use Inertia\Response;
 
 class ApiTokensController extends Controller
 {
-    private const Expirations = ['30_days', '90_days', '1_year', 'never'];
+    private const array Expirations = ['30_days', '90_days', '1_year', 'never'];
 
-    private const DefaultExpiration = '90_days';
+    private const string DefaultExpiration = '90_days';
 
     public function index(Request $request): Response
     {
@@ -71,7 +72,7 @@ class ApiTokensController extends Controller
         $newToken = $issueMcpToken->handle(
             $user,
             $validated['name'],
-            array_map(fn (string $scope): McpScope => McpScope::from($scope), $validated['scopes'] ?? []),
+            array_map(McpScope::from(...), $validated['scopes'] ?? []),
             isset($validated['team_id']) ? Team::query()->whereKey($validated['team_id'])->firstOrFail() : null,
             $this->expiresAt($validated['expiration']),
         );
@@ -165,7 +166,7 @@ class ApiTokensController extends Controller
 
         return Team::query()
             ->whereIn('workspace_id', $managedWorkspaceIds)
-            ->orWhereHas('members', fn ($query) => $query->whereKey($user->id))
+            ->orWhereHas('members', fn (Builder $query) => $query->whereKey($user->id))
             ->pluck('id')
             ->all();
     }

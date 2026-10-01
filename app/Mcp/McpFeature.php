@@ -12,8 +12,8 @@ enum McpFeature
     public function isAvailable(): bool
     {
         return match ($this) {
-            self::Insights => app(Llm::class)->isConfigured(),
-            self::Trackers => app(McpTrackers::class)->available(),
+            self::Insights => resolve(Llm::class)->isConfigured(),
+            self::Trackers => resolve(McpTrackers::class)->available(),
         };
     }
 }

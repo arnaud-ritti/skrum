@@ -45,7 +45,7 @@ function applyStatusSyncIssues(TeamIntegration $integration, array $issues, arra
         $keyed[$issue->externalId] = $issue;
     }
 
-    app(ApplyIssueChanges::class)->handle($integration, $ids, $keyed, $complete, $sourceWins);
+    resolve(ApplyIssueChanges::class)->handle($integration, $ids, $keyed, $complete, $sourceWins);
 }
 
 function syncedPokerTable(): array
@@ -70,7 +70,7 @@ it('completes the item as the system when the source is done', function () {
         ->and($link->external_status_name)->toBe('Done')
         ->and($link->external_updated_at?->toIso8601String())->toBe('2026-10-07T10:20:00+00:00')
         ->and($link->last_synced_at?->toIso8601String())->toBe('2026-10-07T10:30:00+00:00');
-    Event::assertDispatched(ActionItemCompleted::class, fn (ActionItemCompleted $event) => $event->origin === ActionItemEventOrigin::External);
+    Event::assertDispatched(fn (ActionItemCompleted $event) => $event->origin === ActionItemEventOrigin::External);
     Queue::assertNotPushed(PushActionItemState::class);
 });
 
@@ -95,7 +95,7 @@ it('reopens the item when the source reopens', function () {
 
     expect($item->fresh()->completed_at)->toBeNull()
         ->and($item->fresh()->completed_via_source)->toBeNull();
-    Event::assertDispatched(ActionItemReopened::class, fn (ActionItemReopened $event) => $event->origin === ActionItemEventOrigin::External);
+    Event::assertDispatched(fn (ActionItemReopened $event) => $event->origin === ActionItemEventOrigin::External);
 });
 
 it('only records the read when both sides agree', function () {
@@ -439,7 +439,7 @@ it('persists "Not found" when a manual refresh misses an issue', function () {
     $task = importedPokerTask($table['game']);
     fakeJiraTrackerApi([]);
 
-    $result = app(RefreshPokerTasks::class)->handle($table['game'], $table['facilitatorPlayer']);
+    $result = resolve(RefreshPokerTasks::class)->handle($table['game'], $table['facilitatorPlayer']);
 
     expect($result)->toBe(['refreshed' => 0, 'missing' => 1])
         ->and($task->fresh()->external_missing_at)->not->toBeNull();

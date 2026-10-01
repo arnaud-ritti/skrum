@@ -21,11 +21,11 @@ use Illuminate\Support\Facades\RateLimiter;
  */
 class HandleTelegramUpdate
 {
-    private const MaxInvalidAttempts = 5;
+    private const int MaxInvalidAttempts = 5;
 
-    private const LockoutSeconds = 3600;
+    private const int LockoutSeconds = 3600;
 
-    private const LeftStatuses = ['left', 'kicked'];
+    private const array LeftStatuses = ['left', 'kicked'];
 
     public function __construct(
         private TelegramClient $telegram,
@@ -170,7 +170,7 @@ class HandleTelegramUpdate
             return $chat['title'];
         }
 
-        $name = trim(((string) ($chat['first_name'] ?? '')).' '.((string) ($chat['last_name'] ?? '')));
+        $name = trim((($chat['first_name'] ?? '')).' '.(($chat['last_name'] ?? '')));
 
         return $name !== '' ? $name : (string) ($chat['username'] ?? __('Private chat'));
     }

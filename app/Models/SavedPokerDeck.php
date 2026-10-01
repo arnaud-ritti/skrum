@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Database\Factories\SavedPokerDeckFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Table;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -22,14 +23,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read User|null $creator
  */
 #[Fillable(['name', 'cards', 'created_by_user_id'])]
+#[Table(name: 'poker_decks')]
 class SavedPokerDeck extends Model
 {
     /** @use HasFactory<SavedPokerDeckFactory> */
     use HasFactory;
 
     use HasUuids;
-
-    protected $table = 'poker_decks';
 
     /** @return BelongsTo<Team, $this> */
     public function team(): BelongsTo

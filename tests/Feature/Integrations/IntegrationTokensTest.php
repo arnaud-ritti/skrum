@@ -29,7 +29,7 @@ it('calls Jira on the connected site with a fresh token', function () {
     Http::fake(['api.atlassian.com/ex/jira/cloud-1/rest/api/3/myself' => Http::response(['accountId' => 'me'])]);
     $integration = TeamIntegration::factory()->jira()->create();
 
-    expect(app(JiraClient::class)->get($integration, 'rest/api/3/myself'))->toBe(['accountId' => 'me']);
+    expect(resolve(JiraClient::class)->get($integration, 'rest/api/3/myself'))->toBe(['accountId' => 'me']);
 
     Http::assertSent(fn (Request $request) => $request->hasHeader('Authorization', 'Bearer jira-access'));
     Http::assertSentCount(1);
@@ -42,7 +42,7 @@ it('refreshes an expiring Jira token and stores the rotated refresh token', func
     ]);
     $integration = TeamIntegration::factory()->jira()->expiring()->create();
 
-    app(JiraClient::class)->get($integration, 'rest/api/3/myself');
+    resolve(JiraClient::class)->get($integration, 'rest/api/3/myself');
 
     $credentials = $integration->fresh()->readableCredentials();
 
@@ -68,7 +68,7 @@ it('reuses a token another worker refreshed', function () {
         'expires_at' => now()->addHour()->getTimestamp(),
     ]])->save();
 
-    app(JiraClient::class)->get($stale, 'rest/api/3/myself');
+    resolve(JiraClient::class)->get($stale, 'rest/api/3/myself');
 
     Http::assertNotSent(fn (Request $request) => $request->url() === JiraClient::TokenUrl);
     Http::assertSent(fn (Request $request) => $request->hasHeader('Authorization', 'Bearer jira-access-other-worker'));
@@ -78,9 +78,8 @@ it('requires a reconnect when the refresh token is refused', function () {
     Http::fake(['auth.atlassian.com/oauth/token' => Http::response(['error' => 'invalid_grant', 'error_description' => 'Unknown or invalid refresh token.'], 403)]);
     $integration = TeamIntegration::factory()->jira()->expiring()->create();
 
-    expect(fn () => app(JiraClient::class)->get($integration, 'rest/api/3/myself'))->toThrow(ReconnectRequired::class);
-
-    expect($integration->fresh()->status)->toBe(IntegrationStatus::ReconnectRequired)
+    expect(fn () => resolve(JiraClient::class)->get($integration, 'rest/api/3/myself'))->toThrow(ReconnectRequired::class)
+        ->and($integration->fresh()->status)->toBe(IntegrationStatus::ReconnectRequired)
         ->and($integration->fresh()->last_error)->toBe('Unknown or invalid refresh token.');
 });
 
@@ -93,16 +92,16 @@ it('refreshes once after a 401 and gives up after a second one', function () {
     $retried = TeamIntegration::factory()->jira()->create();
     $revoked = TeamIntegration::factory()->jira()->create();
 
-    expect(app(JiraClient::class)->get($retried, 'rest/api/3/one'))->toBe(['ok' => true])
+    expect(resolve(JiraClient::class)->get($retried, 'rest/api/3/one'))->toBe(['ok' => true])
         ->and($retried->fresh()->status)->toBe(IntegrationStatus::Active)
-        ->and(fn () => app(JiraClient::class)->get($revoked, 'rest/api/3/two'))->toThrow(ReconnectRequired::class)
+        ->and(fn () => resolve(JiraClient::class)->get($revoked, 'rest/api/3/two'))->toThrow(ReconnectRequired::class)
         ->and($revoked->fresh()->status)->toBe(IntegrationStatus::ReconnectRequired);
 });
 
 it('refuses Jira calls before a site is chosen', function () {
     $integration = TeamIntegration::factory()->setupRequired()->create();
 
-    expect(fn () => app(JiraClient::class)->get($integration, 'rest/api/3/myself'))->toThrow(NotConnected::class);
+    expect(fn () => resolve(JiraClient::class)->get($integration, 'rest/api/3/myself'))->toThrow(NotConnected::class);
 
     Http::assertNothingSent();
 });
@@ -113,14 +112,14 @@ it('lists the accessible Jira sites', function () {
         ['id' => 'conf-1', 'url' => 'https://acme.atlassian.net/wiki', 'name' => 'Acme wiki', 'scopes' => ['read:confluence-content.all']],
     ])]);
 
-    expect(app(JiraClient::class)->accessibleResources('token'))
+    expect(resolve(JiraClient::class)->accessibleResources('token'))
         ->toBe([['cloudId' => 'cloud-1', 'url' => 'https://acme.atlassian.net', 'name' => 'Acme']]);
 });
 
 it('builds authorization URLs with the scopes of each access level', function () {
-    parse_str((string) parse_url(app(JiraClient::class)->authorizationUrl('s', IntegrationAccess::Read), PHP_URL_QUERY), $read);
-    parse_str((string) parse_url(app(JiraClient::class)->authorizationUrl('s', IntegrationAccess::Write), PHP_URL_QUERY), $write);
-    parse_str((string) parse_url(app(LinearClient::class)->authorizationUrl('s', IntegrationAccess::Write), PHP_URL_QUERY), $linear);
+    parse_str((string) parse_url(resolve(JiraClient::class)->authorizationUrl('s', IntegrationAccess::Read), PHP_URL_QUERY), $read);
+    parse_str((string) parse_url(resolve(JiraClient::class)->authorizationUrl('s', IntegrationAccess::Write), PHP_URL_QUERY), $write);
+    parse_str((string) parse_url(resolve(LinearClient::class)->authorizationUrl('s', IntegrationAccess::Write), PHP_URL_QUERY), $linear);
 
     expect($read)->toMatchArray([
         'audience' => 'api.atlassian.com',
@@ -149,7 +148,7 @@ it('returns Linear data and maps GraphQL errors', function () {
         ->push(['errors' => [['message' => 'Argument invalid', 'extensions' => ['code' => 'INVALID_INPUT']]]], 400)
         ->push(['errors' => [['message' => 'Authentication required', 'extensions' => ['code' => 'AUTHENTICATION_ERROR']]]], 400)]);
     $integration = TeamIntegration::factory()->linear()->create();
-    $linear = app(LinearClient::class);
+    $linear = resolve(LinearClient::class);
 
     expect($linear->query($integration, 'query { viewer { id } }'))->toBe(['viewer' => ['id' => 'u1']])
         ->and(fn () => $linear->query($integration, 'query { viewer { id } }'))->toThrow(RateLimited::class)
@@ -163,7 +162,7 @@ it('returns Linear data and maps GraphQL errors', function () {
 it('reads the Linear organization with a new token', function () {
     Http::fake(['api.linear.app/graphql' => Http::response(['data' => ['viewer' => ['organization' => ['id' => 'org-9', 'name' => 'Nine', 'urlKey' => 'nine']]]])]);
 
-    expect(app(LinearClient::class)->organization('fresh-token'))->toBe(['id' => 'org-9', 'name' => 'Nine', 'urlKey' => 'nine']);
+    expect(resolve(LinearClient::class)->organization('fresh-token'))->toBe(['id' => 'org-9', 'name' => 'Nine', 'urlKey' => 'nine']);
 });
 
 it('refreshes an expiring Linear token with a form request', function () {
@@ -175,7 +174,7 @@ it('refreshes an expiring Linear token with a form request', function () {
         'credentials' => ['access_token' => 'linear-access', 'refresh_token' => 'linear-refresh', 'expires_at' => now()->addSeconds(30)->getTimestamp()],
     ]);
 
-    app(LinearClient::class)->query($integration, 'query { viewer { id } }');
+    resolve(LinearClient::class)->query($integration, 'query { viewer { id } }');
 
     $credentials = $integration->fresh()->readableCredentials();
 
@@ -204,7 +203,7 @@ it('refreshes a Linear token once after a 401 and retries the query', function (
     $credentials = ['access_token' => 'linear-access', 'refresh_token' => 'linear-refresh', 'expires_at' => now()->addHour()->getTimestamp()];
     $retried = TeamIntegration::factory()->linear()->create(['credentials' => $credentials]);
     $revoked = TeamIntegration::factory()->linear()->create(['credentials' => $credentials]);
-    $linear = app(LinearClient::class);
+    $linear = resolve(LinearClient::class);
 
     expect($linear->query($retried, 'query { viewer { id } }'))->toBe(['viewer' => ['id' => 'u1']])
         ->and($retried->fresh()->status)->toBe(IntegrationStatus::Active)

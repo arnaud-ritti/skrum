@@ -12,7 +12,7 @@ class GitHubMarkdown
 {
     public const Specials = '\\\\*_\[\]()#<>~|`&';
 
-    private const ZeroWidthSpace = "\u{200B}";
+    private const string ZeroWidthSpace = "\u{200B}";
 
     public static function escape(string $text): string
     {

@@ -142,7 +142,7 @@ it('refreshes an expiring Data Center token', function () {
     fakeJiraDataCenterOAuth();
     $integration = TeamIntegration::factory()->jiraDataCenter()->expiring()->create();
 
-    app(JiraDataCenterClient::class)->get($integration, 'rest/api/2/myself');
+    resolve(JiraDataCenterClient::class)->get($integration, 'rest/api/2/myself');
 
     Http::assertSent(fn (Request $request) => $request->url() === 'https://jira.example.com/rest/oauth2/latest/token'
         && $request['grant_type'] === 'refresh_token'
@@ -157,10 +157,9 @@ it('never sends credentials to another Jira server than the configured one', fun
     $integration = TeamIntegration::factory()->jiraDataCenter()->create();
     config(['services.jira_dc.base_url' => 'https://jira.other.example.com']);
 
-    expect(fn () => app(JiraDataCenterClient::class)->get($integration, 'rest/api/2/myself'))
-        ->toThrow(ReconnectRequired::class);
-
-    expect($integration->fresh()?->status)->toBe(IntegrationStatus::ReconnectRequired)
+    expect(fn () => resolve(JiraDataCenterClient::class)->get($integration, 'rest/api/2/myself'))
+        ->toThrow(ReconnectRequired::class)
+        ->and($integration->fresh()?->status)->toBe(IntegrationStatus::ReconnectRequired)
         ->and($integration->fresh()?->last_error)->toBe('skrum is now configured for another Jira server. Reconnect.');
     Http::assertNothingSent();
 });
@@ -169,7 +168,7 @@ it('does not follow redirects from the Jira server', function () {
     Http::fake([jiraDataCenterUrl('rest/api/2/myself') => Http::response('', 302, ['Location' => 'https://evil.example.com/steal'])]);
     $integration = TeamIntegration::factory()->jiraDataCenter()->create();
 
-    expect(fn () => app(JiraDataCenterClient::class)->get($integration, 'rest/api/2/myself'))
+    expect(fn () => resolve(JiraDataCenterClient::class)->get($integration, 'rest/api/2/myself'))
         ->toThrow(ProviderRejected::class);
 
     Http::assertSentCount(1);
@@ -204,9 +203,9 @@ it('computes the PKCE challenge of RFC 7636', function () {
 
 it('refuses to compute a challenge without an issued verifier', function () {
     $request = HttpRequest::create('/');
-    $request->setLaravelSession(app('session.store'));
+    $request->setLaravelSession(resolve('session.store'));
 
-    expect(fn () => app(OAuthState::class)->codeChallenge($request))->toThrow(LogicException::class);
+    expect(fn () => resolve(OAuthState::class)->codeChallenge($request))->toThrow(LogicException::class);
 });
 
 it('refuses a replayed callback', function () {
@@ -227,10 +226,9 @@ it('never refreshes a token against another Jira server than the configured one'
     $integration = TeamIntegration::factory()->jiraDataCenter()->expiring()->create();
     config(['services.jira_dc.base_url' => 'https://jira.other.example.com']);
 
-    expect(fn () => app(IntegrationTokens::class)->prepare($integration))
-        ->toThrow(ReconnectRequired::class);
-
-    expect($integration->fresh()?->status)->toBe(IntegrationStatus::ReconnectRequired)
+    expect(fn () => resolve(IntegrationTokens::class)->prepare($integration))
+        ->toThrow(ReconnectRequired::class)
+        ->and($integration->fresh()?->status)->toBe(IntegrationStatus::ReconnectRequired)
         ->and($integration->fresh()?->last_error)->toBe('skrum is now configured for another Jira server. Reconnect.');
     Http::assertNothingSent();
 });

@@ -158,7 +158,7 @@ it('queues game room invites without players or game state', function () {
         ->postJson(route('games.shares.store', $room), ['channel' => 'mattermost', 'include_guest_link' => true])
         ->assertAccepted();
 
-    Queue::assertPushed(DeliverToMicrosoftTeams::class, function (DeliverToMicrosoftTeams $job) use ($room) {
+    Queue::assertPushed(DeliverToMicrosoftTeams::class, function (DeliverToMicrosoftTeams $job) use ($room): bool {
         $json = json_encode($job->message, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 
         return str_contains($json, 'Hana Host invites you to play Hangman in \"Friday fun\" \\\\(Platform\\\\)')
@@ -231,7 +231,7 @@ it('refuses guests and non-managers before validating', function () {
         ->postJson(route('games.shares.store', $room), ['channel' => 'bogus'])
         ->assertForbidden();
 
-    app('auth')->forgetGuards();
+    resolve('auth')->forgetGuards();
 
     $this->withCookies(gameGuestCookie($guest))->withCredentials()
         ->postJson(route('games.shares.store', $room), ['channel' => 'msteams'])
@@ -246,21 +246,21 @@ it('offers the new channels only when available and allowed', function () {
     [$room] = chatConnectedGameRoom();
     $hostPlayer = GamePlayer::query()->where('game_room_id', $room->id)->sole();
 
-    expect(app(ShareOptions::class)->channels($retro->team))->toBe([
+    expect(resolve(ShareOptions::class)->channels($retro->team))->toBe([
         'slack' => false, 'telegram' => false, 'msteams' => true, 'mattermost' => true, 'webhook' => false,
     ])
-        ->and(app(ShareOptions::class)->retro($retro, $memberParticipant))->toBe([
+        ->and(resolve(ShareOptions::class)->retro($retro, $memberParticipant))->toBe([
             'slack' => false, 'telegram' => false, 'msteams' => false, 'mattermost' => false, 'webhook' => false, 'email' => false,
         ])
-        ->and(app(GameRoomShares::class)->availability($room, $hostPlayer))->toBe([
+        ->and(resolve(GameRoomShares::class)->availability($room, $hostPlayer))->toBe([
             'slack' => false, 'telegram' => false, 'msteams' => true, 'mattermost' => true, 'webhook' => false,
         ]);
 
     config(['services.mattermost.url' => '']);
     TeamIntegration::query()->where('team_id', $retro->team_id)->where('provider', 'msteams')->update(['status' => 'reconnect_required']);
 
-    expect(app(ShareOptions::class)->retro($retro->fresh(), $facilitatorParticipant)['msteams'])->toBeFalse()
-        ->and(app(ShareOptions::class)->retro($retro->fresh(), $facilitatorParticipant)['mattermost'])->toBeFalse();
+    expect(resolve(ShareOptions::class)->retro($retro->fresh(), $facilitatorParticipant)['msteams'])->toBeFalse()
+        ->and(resolve(ShareOptions::class)->retro($retro->fresh(), $facilitatorParticipant)['mattermost'])->toBeFalse();
 });
 
 it('delivers to Teams and tells the room', function () {
@@ -297,8 +297,8 @@ it('waits for Retry-After on 429 and retries outages', function () {
     runChatDeliveryJob($job)->assertReleased(delay: 12);
 
     expect(fn () => runChatDeliveryJob(new DeliverToMicrosoftTeams($delivery->id, ['type' => 'message'], 'en')))
-        ->toThrow(ProviderUnavailable::class);
-    expect($delivery->fresh()->status)->toBe(IntegrationDeliveryStatus::Queued);
+        ->toThrow(ProviderUnavailable::class)
+        ->and($delivery->fresh()->status)->toBe(IntegrationDeliveryStatus::Queued);
 });
 
 it('keeps the webhook URL out of the job payload', function () {

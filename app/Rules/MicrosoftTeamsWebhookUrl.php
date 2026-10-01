@@ -10,12 +10,12 @@ use Illuminate\Contracts\Validation\ValidationRule;
  */
 class MicrosoftTeamsWebhookUrl implements ValidationRule
 {
-    private const MaxLength = 2048;
+    private const int MaxLength = 2048;
 
     /**
      * @var array<int, string>
      */
-    private const HostSuffixes = ['.logic.azure.com', '.api.powerplatform.com'];
+    private const array HostSuffixes = ['.logic.azure.com', '.api.powerplatform.com'];
 
     public static function isValid(mixed $url): bool
     {

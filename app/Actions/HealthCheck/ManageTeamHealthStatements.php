@@ -70,7 +70,7 @@ class ManageTeamHealthStatements
         $this->change($team, function (Team $locked) use ($ids): void {
             $active = $this->teamHealthStatements->active($locked);
 
-            $ordered = collect($ids)->map(fn (string $id) => $this->match($active, $id));
+            $ordered = collect($ids)->map(fn (string $id): ?TeamHealthStatement => $this->match($active, $id));
 
             $resolvedIds = $ordered->map(fn (?TeamHealthStatement $statement) => $statement?->id)->all();
             $activeIds = $active->pluck('id')->all();
@@ -191,7 +191,7 @@ class ManageTeamHealthStatements
         $builtin = HealthStatement::tryFrom($statement);
 
         if ($builtin !== null) {
-            return $statements->first(fn (TeamHealthStatement $candidate) => $candidate->builtin === $builtin);
+            return $statements->first(fn (TeamHealthStatement $candidate): bool => $candidate->builtin === $builtin);
         }
 
         if (! Str::isUuid($statement)) {

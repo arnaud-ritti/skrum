@@ -57,7 +57,7 @@ class CreateActionItem
             $actionItem->subtasks()->create(['content' => $content, 'position' => $position]);
         }
 
-        ActionItemCreated::dispatch($actionItem);
+        event(new ActionItemCreated($actionItem));
 
         $this->broadcastActionItemChange->saved($actionItem);
 

@@ -11,9 +11,9 @@ use Illuminate\Support\Facades\Cache;
  */
 class JiraCreateMeta
 {
-    private const TtlSeconds = 600;
+    private const int TtlSeconds = 600;
 
-    private const FieldLimit = 200;
+    private const int FieldLimit = 200;
 
     public function __construct(private JiraApis $jiraApis) {}
 

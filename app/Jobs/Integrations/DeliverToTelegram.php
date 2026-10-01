@@ -20,6 +20,6 @@ class DeliverToTelegram extends DeliverToChannel
 
     protected function send(TeamIntegration $integration): void
     {
-        app(TelegramClient::class)->sendMessageTo($integration, $this->html);
+        resolve(TelegramClient::class)->sendMessageTo($integration, $this->html);
     }
 }

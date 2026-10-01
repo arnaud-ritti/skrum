@@ -97,7 +97,7 @@ it('shares the guest link with the facilitator only', function () {
     [, $facilitator] = retroFacilitator($retro);
     [, $member] = retroMember($retro);
 
-    $snapshot = app(BuildBoardSnapshot::class);
+    $snapshot = resolve(BuildBoardSnapshot::class);
 
     expect($snapshot->handle($retro->fresh(), $facilitator)['retro']['guestUrl'])->toBe(route('retros.join.show', $retro->guest_token))
         ->and($snapshot->handle($retro->fresh(), $member)['retro']['guestUrl'])->toBeNull();

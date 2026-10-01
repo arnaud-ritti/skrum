@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\PokerRevealReason;
 use Database\Factories\PokerRoundFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Touches;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -25,15 +26,13 @@ use Illuminate\Support\Carbon;
  * @property-read PokerTask $task
  */
 #[Fillable(['number', 'revealed_at', 'version', 'anonymous', 'timer_ends_at', 'reveal_reason'])]
+#[Touches(['task'])]
 class PokerRound extends Model
 {
     /** @use HasFactory<PokerRoundFactory> */
     use HasFactory;
 
     use HasUuids;
-
-    /** @var list<string> */
-    protected $touches = ['task'];
 
     /** @return BelongsTo<PokerTask, $this> */
     public function task(): BelongsTo

@@ -29,7 +29,7 @@ it('reveals as facilitator only', function () {
     expect($round->revealed_at)->not->toBeNull()
         ->and($round->reveal_reason)->toBe(PokerRevealReason::Manual);
 
-    Event::assertDispatched(PokerRoundChanged::class, fn (PokerRoundChanged $event) => $event->gameId === $table['game']->id);
+    Event::assertDispatched(fn (PokerRoundChanged $event) => $event->gameId === $table['game']->id);
 });
 
 it('needs a vote to reveal', function () {

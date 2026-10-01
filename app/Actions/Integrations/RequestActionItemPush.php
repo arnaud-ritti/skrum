@@ -28,17 +28,13 @@ class RequestActionItemPush
         $integration = $this->guard->integration($item->team, $link->source->value);
         $label = ['provider' => $link->source->label()];
 
-        if (! StatusSync::isOn($integration)) {
-            abort(409, __('Turn on status sync for :provider first.', $label));
-        }
+        abort_unless(StatusSync::isOn($integration), 409, __('Turn on status sync for :provider first.', $label));
 
-        if ($integration->site() !== $link->external_site) {
-            abort(409, __('This issue belongs to another :provider site.', $label));
-        }
+        abort_if($integration->site() !== $link->external_site, 409, __('This issue belongs to another :provider site.', $label));
 
         $link->forceFill(['sync_error' => null])->save();
 
-        PushActionItemState::dispatch($link->id);
+        dispatch(new PushActionItemState($link->id));
 
         return $item->loadForPresentation();
     }

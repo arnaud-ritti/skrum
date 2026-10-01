@@ -15,7 +15,7 @@ function presentedSurvey(Survey $survey, Participant $viewer): array
 {
     $fresh = $survey->fresh();
 
-    return app(PresentSurvey::class)->handle($fresh, $fresh->retro, $viewer);
+    return resolve(PresentSurvey::class)->handle($fresh, $fresh->retro, $viewer);
 }
 
 function surveyAudience(array $retroAttributes = []): array
@@ -197,7 +197,7 @@ it('adds surveys to the snapshot in order with a constant number of queries', fu
     $countQueries = function () use ($retro, $viewer): int {
         DB::flushQueryLog();
         DB::enableQueryLog();
-        app(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer);
+        resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer);
         DB::disableQueryLog();
 
         return count(DB::getQueryLog());
@@ -208,7 +208,7 @@ it('adds surveys to the snapshot in order with a constant number of queries', fu
 
     $seed(4);
 
-    $positions = collect(app(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer)['surveys'])->pluck('position')->all();
+    $positions = collect(resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer)['surveys'])->pluck('position')->all();
 
     expect($countQueries())->toBe($small)
         ->and($positions)->toBe(collect($positions)->sort()->values()->all())

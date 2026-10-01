@@ -16,7 +16,7 @@ it('finds positions of a letter across case and accents', function () {
     expect(GameWord::positionsOf('Éléphant', 'e'))->toBe([0, 2])
         ->and(GameWord::positionsOf('Brücke', 'U'))->toBe([2])
         ->and(GameWord::positionsOf('piña', 'n'))->toBe([2])
-        ->and(GameWord::positionsOf('sprint', 'z'))->toBe([]);
+        ->and(GameWord::positionsOf('sprint', 'z'))->toBeEmpty();
 });
 
 it('knows when every letter is revealed', function () {

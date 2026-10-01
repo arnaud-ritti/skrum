@@ -133,8 +133,8 @@ it('creates exactly one next occurrence', function () {
         ->and($next->comments()->count())->toBe(0)
         ->and(ActionItem::count())->toBe(2);
 
-    Event::assertDispatched(ActionItemCreated::class, fn (ActionItemCreated $event) => $event->actionItem->is($next));
-    Event::assertDispatched(TeamActionItemSaved::class, fn (TeamActionItemSaved $event) => $event->actionItem['id'] === $next->id
+    Event::assertDispatched(fn (ActionItemCreated $event) => $event->actionItem->is($next));
+    Event::assertDispatched(fn (TeamActionItemSaved $event) => $event->actionItem['id'] === $next->id
         && $event->actionItem['previousOccurrenceId'] === $item->id
         && $event->actionItem['retroId'] === null
         && $event->actionItem['recurrence'] === 'weekly');
@@ -171,7 +171,7 @@ it('drops guest and former member assignees from the next occurrence', function 
     $leaver = teamMember($team);
     $memberItem->update(['assignee_user_id' => $leaver->id]);
     $team->members()->detach($leaver);
-    $complete = app(SetActionItemStatus::class);
+    $complete = resolve(SetActionItemStatus::class);
 
     $complete->handle($guestItem, ActionItemActor::forParticipant($author), ActionItemStatus::Completed);
     $complete->handle($memberItem->fresh(), ActionItemActor::forUser($teamAuthor), ActionItemStatus::Completed);
@@ -200,7 +200,7 @@ it('stops the series when the item no longer repeats', function () {
 it('regenerates when the external sync completes the item', function () {
     [, , $item] = recurringTeamItem();
 
-    app(SetActionItemStatus::class)->handle($item, new ExternalSyncActor('jira', 'PROJ-7'), ActionItemStatus::Completed);
+    resolve(SetActionItemStatus::class)->handle($item, new ExternalSyncActor('jira', 'PROJ-7'), ActionItemStatus::Completed);
 
     expect($item->nextOccurrence()->exists())->toBeTrue();
 });

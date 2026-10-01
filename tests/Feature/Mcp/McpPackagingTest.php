@@ -16,7 +16,7 @@ it('refuses GET on the MCP endpoint', function () {
 });
 
 it('prunes expired tokens daily after thirty days', function () {
-    $commands = collect(app(Schedule::class)->events())
+    $commands = collect(resolve(Schedule::class)->events())
         ->map(fn (ScheduledEvent $event): string => (string) $event->command);
 
     expect($commands->contains(fn (string $command): bool => str_contains($command, 'sanctum:prune-expired --hours=720')))->toBeTrue();

@@ -29,7 +29,7 @@ class TeamHealthStatements
     public function active(Team $team): Collection
     {
         return $this->all($team)
-            ->reject(fn (TeamHealthStatement $statement) => $statement->isArchived())
+            ->reject(fn (TeamHealthStatement $statement): bool => $statement->isArchived())
             ->values();
     }
 
@@ -40,7 +40,7 @@ class TeamHealthStatements
      */
     public function defaults(): Collection
     {
-        return collect(HealthStatement::cases())->map(fn (HealthStatement $statement, int $position) => new TeamHealthStatement([
+        return collect(HealthStatement::cases())->map(fn (HealthStatement $statement, int $position): TeamHealthStatement => new TeamHealthStatement([
             'builtin' => $statement,
             'position' => $position,
         ]));

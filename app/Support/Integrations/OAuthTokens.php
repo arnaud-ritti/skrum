@@ -9,7 +9,7 @@ use Illuminate\Http\Client\Response;
 
 class OAuthTokens
 {
-    private const RefusedGrantErrors = ['invalid_grant', 'unauthorized_client'];
+    private const array RefusedGrantErrors = ['invalid_grant', 'unauthorized_client'];
 
     /**
      * @param  array<array-key, mixed>  $payload
@@ -19,9 +19,7 @@ class OAuthTokens
     {
         $accessToken = $payload['access_token'] ?? null;
 
-        if (! is_string($accessToken) || $accessToken === '') {
-            throw new ProviderRejected($provider, 'missing_access_token');
-        }
+        throw_if(! is_string($accessToken) || $accessToken === '', ProviderRejected::class, $provider, 'missing_access_token');
 
         $refreshToken = $payload['refresh_token'] ?? null;
         $expiresIn = $payload['expires_in'] ?? null;

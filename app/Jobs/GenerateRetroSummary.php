@@ -67,9 +67,7 @@ class GenerateRetroSummary implements ShouldBeUniqueUntilProcessing, ShouldQueue
         $input = $buildSummaryInput->handle($retro);
         $output = $parseSummaryOutput->handle($llm->client()->complete($input->instructions, $input->payload), $input);
 
-        if ($output === null) {
-            throw new InvalidLlmOutput;
-        }
+        throw_if($output === null, InvalidLlmOutput::class);
 
         $storeRetroInsights->handle($retro, $output);
     }
@@ -101,6 +99,6 @@ class GenerateRetroSummary implements ShouldBeUniqueUntilProcessing, ShouldQueue
             'reason' => $exception === null ? null : $exception::class,
         ]);
 
-        app(ClearRetroInsights::class)->fail($this->retroId);
+        resolve(ClearRetroInsights::class)->fail($this->retroId);
     }
 }

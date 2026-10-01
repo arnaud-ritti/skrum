@@ -19,9 +19,9 @@ class TelegramClient
 
     public const AllowedUpdates = ['message', 'channel_post', 'my_chat_member'];
 
-    private const LongPollMarginSeconds = 10;
+    private const int LongPollMarginSeconds = 10;
 
-    private const DefaultRetryAfterSeconds = 30;
+    private const int DefaultRetryAfterSeconds = 30;
 
     /**
      * @return array<string, mixed>
@@ -44,7 +44,7 @@ class TelegramClient
             'allowed_updates' => self::AllowedUpdates,
         ], $timeout + self::LongPollMarginSeconds);
 
-        return array_values(array_filter(is_array($result) ? $result : [], 'is_array'));
+        return array_values(array_filter(is_array($result) ? $result : [], is_array(...)));
     }
 
     public function sendMessage(string $chatId, string $html): void
@@ -106,9 +106,7 @@ class TelegramClient
         $status = $response->status();
         $description = is_array($payload) && is_string($payload['description'] ?? null) ? $payload['description'] : "HTTP {$status}";
 
-        if ($status === 409) {
-            throw new TelegramConflict($description);
-        }
+        throw_if($status === 409, TelegramConflict::class, $description);
 
         if ($status === 429) {
             $retryAfter = is_array($payload) ? data_get($payload, 'parameters.retry_after') : null;
@@ -116,13 +114,9 @@ class TelegramClient
             throw new RateLimited(IntegrationProvider::Telegram, is_numeric($retryAfter) ? max(1, (int) $retryAfter) : self::DefaultRetryAfterSeconds, $description);
         }
 
-        if ($status === 403 || ($status === 400 && Str::contains($description, 'chat not found', ignoreCase: true))) {
-            throw new ReconnectRequired(IntegrationProvider::Telegram, $description);
-        }
+        throw_if($status === 403 || ($status === 400 && Str::contains($description, 'chat not found', ignoreCase: true)), ReconnectRequired::class, IntegrationProvider::Telegram, $description);
 
-        if ($status >= 500) {
-            throw new ProviderUnavailable(IntegrationProvider::Telegram, $description);
-        }
+        throw_if($status >= 500, ProviderUnavailable::class, IntegrationProvider::Telegram, $description);
 
         throw new ProviderRejected(IntegrationProvider::Telegram, $description, $status);
     }

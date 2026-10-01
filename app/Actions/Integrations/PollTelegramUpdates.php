@@ -13,7 +13,7 @@ class PollTelegramUpdates
 {
     public const OffsetKey = 'telegram:update-offset';
 
-    private const ConflictWarningKey = 'telegram:conflict-warned';
+    private const string ConflictWarningKey = 'telegram:conflict-warned';
 
     public function __construct(
         private TelegramClient $telegram,

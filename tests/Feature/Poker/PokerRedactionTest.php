@@ -31,7 +31,7 @@ function pokerViewerRequest(TestCase $test, User|PokerPlayer $viewer): TestCase
         return $test->actingAs($viewer);
     }
 
-    app('auth')->forgetGuards();
+    resolve('auth')->forgetGuards();
 
     return $test->withCookies(pokerGuestCookie($viewer))->withCredentials();
 }
@@ -79,7 +79,7 @@ function pokerSurfacesFor(TestCase $test, array $table, User|PokerPlayer $viewer
     $game = $table['game']->fresh();
 
     $surfaces = [
-        'built snapshot' => app(BuildPokerSnapshot::class)->handle($game, $viewerPlayer->fresh()),
+        'built snapshot' => resolve(BuildPokerSnapshot::class)->handle($game, $viewerPlayer->fresh()),
         'snapshot endpoint' => pokerViewerRequest($test, $viewer)->getJson(route('poker.snapshot.show', $game))->assertOk()->getContent(),
         'page props' => pokerViewerRequest($test, $viewer)->get(route('poker.show', $game))->assertOk()->viewData('page')['props'],
         'round history' => pokerViewerRequest($test, $viewer)->getJson(route('poker.tasks.rounds.index', [$game, $table['task']]))->assertOk()->getContent(),

@@ -51,9 +51,7 @@ class PresentWebhookDelivery
     {
         $exists = $delivery->getAttribute('payload_exists');
 
-        if ($exists === null) {
-            throw new LogicException('Load the delivery with withExists(\'payload\') or loadExists(\'payload\') before presenting it.');
-        }
+        throw_if($exists === null, LogicException::class, 'Load the delivery with withExists(\'payload\') or loadExists(\'payload\') before presenting it.');
 
         return (bool) $exists;
     }

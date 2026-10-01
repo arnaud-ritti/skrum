@@ -45,7 +45,7 @@ it('broadcasts the respondent count and never a score', function () {
 
     $this->actingAs($user)->putJson(route('retros.roti.update', $retro), ['score' => 5])->assertOk();
 
-    Event::assertDispatched(RotiChanged::class, fn (RotiChanged $event) => $event->broadcastAs() === 'roti.changed'
+    Event::assertDispatched(fn (RotiChanged $event) => $event->broadcastAs() === 'roti.changed'
         && $event->broadcastWith() === ['respondents' => 2]);
 });
 
@@ -88,8 +88,8 @@ it('shows only the own score and the respondent count in the snapshot', function
     RotiVote::factory()->create(['retro_id' => $retro->id, 'score' => 1]);
     $nonVoter = Participant::factory()->create(['retro_id' => $retro->id]);
 
-    $voterSnapshot = app(BuildBoardSnapshot::class)->handle($retro->fresh(), $voter);
-    $nonVoterSnapshot = app(BuildBoardSnapshot::class)->handle($retro->fresh(), $nonVoter);
+    $voterSnapshot = resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $voter);
+    $nonVoterSnapshot = resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $nonVoter);
 
     expect($voterSnapshot['roti'])->toBe(['myScore' => 4, 'respondents' => 2])
         ->and($nonVoterSnapshot['roti'])->toBe(['myScore' => null, 'respondents' => 2]);
@@ -100,11 +100,11 @@ it('only carries the roti distribution in the completed snapshot', function () {
     [, $viewer] = retroMember($retro);
     RotiVote::factory()->create(['retro_id' => $retro->id, 'score' => 4]);
 
-    expect(app(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer)['results'])->toBeNull();
+    expect(resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer)['results'])->toBeNull();
 
     $retro->update(['phase' => RetroPhase::Completed]);
 
-    expect(app(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer)['results']['roti'])->toBe([
+    expect(resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer)['results']['roti'])->toBe([
         'distribution' => [
             ['score' => 1, 'count' => 0],
             ['score' => 2, 'count' => 0],

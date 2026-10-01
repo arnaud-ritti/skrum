@@ -17,11 +17,11 @@ beforeEach(function () {
 });
 
 it('resolves the tracker of each provider', function () {
-    expect(app(Trackers::class)->for(IntegrationProvider::Jira))->toBeInstanceOf(JiraTracker::class)
-        ->and(app(Trackers::class)->for(IntegrationProvider::Linear))->toBeInstanceOf(LinearTracker::class)
-        ->and(app(Trackers::class)->for(IntegrationProvider::JiraDataCenter))->toBeInstanceOf(JiraDataCenterTracker::class)
-        ->and(app(Trackers::class)->for(IntegrationProvider::GitHub))->toBeInstanceOf(GitHubTracker::class)
-        ->and(fn () => app(Trackers::class)->for(IntegrationProvider::Slack))->toThrow(InvalidArgumentException::class);
+    expect(resolve(Trackers::class)->for(IntegrationProvider::Jira))->toBeInstanceOf(JiraTracker::class)
+        ->and(resolve(Trackers::class)->for(IntegrationProvider::Linear))->toBeInstanceOf(LinearTracker::class)
+        ->and(resolve(Trackers::class)->for(IntegrationProvider::JiraDataCenter))->toBeInstanceOf(JiraDataCenterTracker::class)
+        ->and(resolve(Trackers::class)->for(IntegrationProvider::GitHub))->toBeInstanceOf(GitHubTracker::class)
+        ->and(fn () => resolve(Trackers::class)->for(IntegrationProvider::Slack))->toThrow(InvalidArgumentException::class);
 });
 
 it('lists Jira scrum boards by page and name', function () {
@@ -31,7 +31,7 @@ it('lists Jira scrum boards by page and name', function () {
     ])]);
     $integration = TeamIntegration::factory()->jira()->create();
 
-    $result = app(JiraTracker::class)->containers($integration, 'board', 2);
+    $result = resolve(JiraTracker::class)->containers($integration, 'board', 2);
 
     expect($result)->toBe([
         'containers' => [['id' => '7', 'name' => 'Team board'], ['id' => '9', 'name' => 'Other board']],
@@ -50,7 +50,7 @@ it('lists active and future Jira sprints', function () {
     ]])]);
     $integration = TeamIntegration::factory()->jira()->create();
 
-    expect(app(JiraTracker::class)->iterations($integration, '7'))->toBe([
+    expect(resolve(JiraTracker::class)->iterations($integration, '7'))->toBe([
         ['id' => '31', 'name' => 'Sprint 31', 'state' => 'active', 'startsOn' => '2026-09-28', 'endsOn' => '2026-10-12'],
         ['id' => '32', 'name' => 'Sprint 32', 'state' => 'upcoming', 'startsOn' => null, 'endsOn' => null],
     ]);
@@ -67,7 +67,7 @@ it('maps the issues of a Jira sprint with the story point candidates', function 
     ])]);
     $integration = TeamIntegration::factory()->jira()->create();
 
-    $list = app(JiraTracker::class)->iterationIssues($integration, '31');
+    $list = resolve(JiraTracker::class)->iterationIssues($integration, '31');
 
     expect($list->truncated)->toBeTrue()
         ->and($list->issues)->toHaveCount(2)
@@ -97,7 +97,7 @@ it('surfaces Jira JQL errors', function () {
     ], 400)]);
     $integration = TeamIntegration::factory()->jira()->create();
 
-    expect(fn () => app(JiraTracker::class)->search($integration, 'nope = 1'))
+    expect(fn () => resolve(JiraTracker::class)->search($integration, 'nope = 1'))
         ->toThrow(ProviderRejected::class, "Field 'nope' does not exist.");
 });
 
@@ -108,7 +108,7 @@ it('fetches Jira issues by id in batches of 100', function () {
     $integration = TeamIntegration::factory()->jira()->create();
     $ids = array_map(fn (int $n) => (string) (10000 + $n), range(1, 102));
 
-    $issues = app(JiraTracker::class)->issues($integration, [...$ids, 'not-a-jira-id']);
+    $issues = resolve(JiraTracker::class)->issues($integration, [...$ids, 'not-a-jira-id']);
 
     expect($issues)->toHaveCount(101)
         ->and($issues['10101']->key)->toBe('PROJ-101')
@@ -123,8 +123,8 @@ it('lists Linear teams filtered by name and paged in memory', function () {
     ]]);
     $integration = TeamIntegration::factory()->linear()->create();
 
-    $first = app(LinearTracker::class)->containers($integration, 'team', 1);
-    $second = app(LinearTracker::class)->containers($integration, 'team', 2);
+    $first = resolve(LinearTracker::class)->containers($integration, 'team', 1);
+    $second = resolve(LinearTracker::class)->containers($integration, 'team', 2);
 
     expect($first['containers'])->toHaveCount(50)
         ->and($first['hasMore'])->toBeTrue()
@@ -141,7 +141,7 @@ it('lists active and upcoming Linear cycles', function () {
     ]]]]]);
     $integration = TeamIntegration::factory()->linear()->create();
 
-    expect(app(LinearTracker::class)->iterations($integration, 'team-1'))->toBe([
+    expect(resolve(LinearTracker::class)->iterations($integration, 'team-1'))->toBe([
         ['id' => 'cycle-1', 'name' => 'Launch', 'state' => 'active', 'startsOn' => '2026-09-28', 'endsOn' => '2026-10-12'],
         ['id' => 'cycle-2', 'name' => 'Cycle 13', 'state' => 'upcoming', 'startsOn' => '2026-10-12', 'endsOn' => '2026-10-26'],
     ]);
@@ -160,8 +160,8 @@ it('maps Linear cycle issues and search results', function () {
     ]);
     $integration = TeamIntegration::factory()->linear()->create();
 
-    $cycle = app(LinearTracker::class)->iterationIssues($integration, 'cycle-1');
-    $search = app(LinearTracker::class)->search($integration, 'login');
+    $cycle = resolve(LinearTracker::class)->iterationIssues($integration, 'cycle-1');
+    $search = resolve(LinearTracker::class)->search($integration, 'login');
 
     expect($cycle->truncated)->toBeTrue()
         ->and($cycle->issues[0]->preview(true))->toBe([
@@ -188,7 +188,7 @@ it('fetches Linear issues by id', function () {
     )]]]);
     $integration = TeamIntegration::factory()->linear()->create();
 
-    $issues = app(LinearTracker::class)->issues($integration, ['uuid-1', 'uuid-gone']);
+    $issues = resolve(LinearTracker::class)->issues($integration, ['uuid-1', 'uuid-gone']);
 
     expect(array_keys($issues))->toBe(['uuid-1']);
 });
@@ -197,6 +197,6 @@ it('never lets a Jira board id change the requested path', function () {
     Http::fake();
     $integration = TeamIntegration::factory()->jira()->create();
 
-    expect(app(JiraTracker::class)->iterations($integration, '../../api/3/myself'))->toBe([]);
+    expect(resolve(JiraTracker::class)->iterations($integration, '../../api/3/myself'))->toBeEmpty();
     Http::assertNothingSent();
 });

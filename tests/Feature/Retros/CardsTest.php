@@ -32,7 +32,7 @@ it('writes a card at the end of a column and hides it from others', function () 
         ->assertJsonPath('card.isMine', true)
         ->assertJsonPath('card.position', 1);
 
-    Event::assertDispatched(CardCreated::class, fn (CardCreated $event) => $event->retroId === $retro->id
+    Event::assertDispatched(fn (CardCreated $event) => $event->retroId === $retro->id
         && $event->card['id'] === $response->json('card.id')
         && $event->card['hidden'] === true
         && $event->card['content'] === null
@@ -81,7 +81,7 @@ it('lets authors edit and delete their cards in writing and grouping', function 
     $this->actingAs($user)->deleteJson(route('retros.cards.destroy', [$retro, $card]))->assertNoContent();
 
     Event::assertDispatched(CardUpdated::class);
-    Event::assertDispatched(CardDeleted::class, fn (CardDeleted $event) => $event->cardId === $card->id && $event->ungroupedCards === []);
+    Event::assertDispatched(fn (CardDeleted $event) => $event->cardId === $card->id && $event->ungroupedCards === []);
     expect(Card::find($card->id))->toBeNull();
 })->with([RetroPhase::Writing, RetroPhase::Grouping]);
 
@@ -123,7 +123,7 @@ it('ungroups children when their lead card is deleted', function () {
     expect($child->fresh()->parent_card_id)->toBeNull()
         ->and($child->fresh()->position)->toBe(1)
         ->and($other->fresh()->position)->toBe(0);
-    Event::assertDispatched(CardDeleted::class, fn (CardDeleted $event) => collect($event->ungroupedCards)->pluck('id')->all() === [$child->id]
+    Event::assertDispatched(fn (CardDeleted $event) => collect($event->ungroupedCards)->pluck('id')->all() === [$child->id]
         && $event->ungroupedCards[0]['position'] === 1);
 });
 
@@ -144,7 +144,7 @@ it('moves own cards between columns while writing and resequences positions', fu
         ->and($first->fresh()->position)->toBe(1)
         ->and($staying->fresh()->position)->toBe(0);
 
-    Event::assertDispatched(CardsMoved::class, fn (CardsMoved $event) => collect($event->cards)->every(fn (array $card) => $card['content'] === null || $card['id'] !== $moving->id));
+    Event::assertDispatched(fn (CardsMoved $event) => collect($event->cards)->every(fn (array $card) => $card['content'] === null || $card['id'] !== $moving->id));
 });
 
 it('refuses moving others cards while writing but allows it while grouping', function () {
@@ -189,7 +189,7 @@ it('keeps content hidden from others in grouping broadcasts only when anonymous 
 
     $this->actingAs($user)->patchJson(route('retros.cards.update', [$retro, $card]), ['content' => 'Visible text']);
 
-    Event::assertDispatched(CardUpdated::class, fn (CardUpdated $event) => $event->card['content'] === 'Visible text' && $event->card['author'] === null);
+    Event::assertDispatched(fn (CardUpdated $event) => $event->card['content'] === 'Visible text' && $event->card['author'] === null);
 });
 
 it('sends the author their own card on their private channel', function () {
@@ -202,7 +202,7 @@ it('sends the author their own card on their private channel', function () {
         ->postJson(route('retros.cards.store', $retro), ['column_id' => $column->id, 'content' => 'Deploys are slow'])
         ->assertCreated();
 
-    Event::assertDispatched(OwnCardSaved::class, fn (OwnCardSaved $event) => $event->participantId === $participant->id
+    Event::assertDispatched(fn (OwnCardSaved $event) => $event->participantId === $participant->id
         && $event->card['id'] === $response->json('card.id')
         && $event->card['content'] === 'Deploys are slow'
         && $event->card['isMine'] === true
@@ -214,7 +214,7 @@ it('sends the author their own card on their private channel', function () {
         ->patchJson(route('retros.cards.update', [$retro, $response->json('card.id')]), ['content' => 'Deploys are faster'])
         ->assertOk();
 
-    Event::assertDispatched(OwnCardSaved::class, fn (OwnCardSaved $event) => $event->card['content'] === 'Deploys are faster'
+    Event::assertDispatched(fn (OwnCardSaved $event) => $event->card['content'] === 'Deploys are faster'
         && $event->socket === '333.444');
 });
 
@@ -247,13 +247,13 @@ it('sends the author their own content and authorship in anonymous retros while 
         ->postJson(route('retros.cards.store', $retro), ['column_id' => $column->id, 'content' => 'Deploys are slow'])
         ->assertCreated();
 
-    Event::assertDispatched(OwnCardSaved::class, fn (OwnCardSaved $event) => $event->participantId === $participant->id
+    Event::assertDispatched(fn (OwnCardSaved $event) => $event->participantId === $participant->id
         && $event->card['id'] === $response->json('card.id')
         && $event->card['content'] === 'Deploys are slow'
         && $event->card['author']['id'] === $participant->id
         && $event->card['isMine'] === true);
 
-    Event::assertDispatched(CardCreated::class, fn (CardCreated $event) => $event->card['id'] === $response->json('card.id')
+    Event::assertDispatched(fn (CardCreated $event) => $event->card['id'] === $response->json('card.id')
         && $event->card['content'] === null
         && $event->card['author'] === null
         && $event->card['isMine'] === false);
@@ -288,8 +288,8 @@ it('hides a gif from others while writing but sends it to its author', function 
         ->postJson(route('retros.cards.store', $retro), ['column_id' => $column->id, 'gif_id' => 'abc123'])
         ->assertCreated();
 
-    Event::assertDispatched(CardCreated::class, fn (CardCreated $event) => $event->card['hidden'] === true && $event->card['gif'] === null);
-    Event::assertDispatched(OwnCardSaved::class, fn (OwnCardSaved $event) => $event->card['hidden'] === false && $event->card['gif']['id'] === 'abc123');
+    Event::assertDispatched(fn (CardCreated $event) => $event->card['hidden'] === true && $event->card['gif'] === null);
+    Event::assertDispatched(fn (OwnCardSaved $event) => $event->card['hidden'] === false && $event->card['gif']['id'] === 'abc123');
 });
 
 it('refuses gif changes on cards of others', function () {

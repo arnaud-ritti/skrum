@@ -122,7 +122,7 @@ it('stores the summary, themes, suggestions and card insights', function () {
         ->and($first->fresh()->only(['sentiment', 'category']))->toBe(['sentiment' => CardSentiment::Negative, 'category' => 'Tooling'])
         ->and($second->fresh()->sentiment)->toBe(CardSentiment::Positive);
     Event::assertDispatched(ResultsChanged::class);
-    Event::assertDispatched(InsightsChanged::class, fn (InsightsChanged $event) => $event->broadcastWith() === []);
+    Event::assertDispatched(fn (InsightsChanged $event) => $event->broadcastWith() === []);
 });
 
 it('sends no participant data and only revealed content', function () {
@@ -190,8 +190,8 @@ it('lets the queue retry provider errors and unusable answers', function (string
     $reply === 'provider error' ? fakeLlmFailure() : fakeLlmReply(['themes' => []]);
     [$retro] = summarisedRetro();
 
-    expect(fn () => runSummaryJob($retro))->toThrow($exception);
-    expect($retro->fresh()->summary_status)->toBe(SummaryStatus::Pending);
+    expect(fn () => runSummaryJob($retro))->toThrow($exception)
+        ->and($retro->fresh()->summary_status)->toBe(SummaryStatus::Pending);
 })->with([
     'provider error' => ['provider error', LlmUnavailable::class],
     'no summary' => ['no summary', InvalidLlmOutput::class],
@@ -210,7 +210,7 @@ it('removes everything a summary deletion clears', function () {
     SuggestedAction::factory()->create(['retro_id' => $retro->id]);
     $first->forceFill(['sentiment' => CardSentiment::Positive, 'category' => 'Tooling'])->save();
 
-    app(ClearRetroInsights::class)->remove($retro);
+    resolve(ClearRetroInsights::class)->remove($retro);
 
     $retro->refresh();
 

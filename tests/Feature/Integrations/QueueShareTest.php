@@ -34,7 +34,7 @@ it('queues a Slack delivery for an active connection', function () {
     $content = new LinkShareContent('Sam invites you', 'Open', 'https://skrum.test/retros/1');
 
     app()->setLocale('fr');
-    $delivery = app(QueueShare::class)->handle($retro, IntegrationDeliveryChannel::Slack, IntegrationDeliveryKind::RetroLink, $sharer, $content);
+    $delivery = resolve(QueueShare::class)->handle($retro, IntegrationDeliveryChannel::Slack, IntegrationDeliveryKind::RetroLink, $sharer, $content);
 
     expect($delivery->only(['team_id', 'subject_id', 'requested_by_user_id']))->toBe([
         'team_id' => $retro->team_id,
@@ -55,7 +55,7 @@ it('keeps no content for a Slack share', function () {
     $retro = Retro::factory()->create();
     TeamIntegration::factory()->slack()->create(['team_id' => $retro->team_id]);
 
-    $delivery = app(QueueShare::class)->handle($retro, IntegrationDeliveryChannel::Slack, IntegrationDeliveryKind::RetroLink, User::factory()->create(), new LinkShareContent('a', 'b', 'https://skrum.test', ['title' => 'Sprint 42']));
+    $delivery = resolve(QueueShare::class)->handle($retro, IntegrationDeliveryChannel::Slack, IntegrationDeliveryKind::RetroLink, User::factory()->create(), new LinkShareContent('a', 'b', 'https://skrum.test', ['title' => 'Sprint 42']));
 
     expect($delivery->payload()->exists())->toBeFalse()
         ->and(IntegrationDeliveryPayload::query()->count())->toBe(0);
@@ -66,7 +66,7 @@ it('queues Telegram deliveries with the HTML message', function () {
     TeamIntegration::factory()->telegram()->create(['team_id' => $retro->team_id]);
     $content = new LinkShareContent('Sam invites you', 'Open', 'https://skrum.test/retros/1');
 
-    $delivery = app(QueueShare::class)->handle($retro, IntegrationDeliveryChannel::Telegram, IntegrationDeliveryKind::RetroLink, User::factory()->create(), $content);
+    $delivery = resolve(QueueShare::class)->handle($retro, IntegrationDeliveryChannel::Telegram, IntegrationDeliveryKind::RetroLink, User::factory()->create(), $content);
 
     Queue::assertPushed(DeliverToTelegram::class, fn (DeliverToTelegram $job) => $job->deliveryId === $delivery->id && $job->html === $content->toTelegram());
 });
@@ -75,9 +75,9 @@ it('refuses a team without an active connection', function (Closure $setUp, stri
     $retro = Retro::factory()->create();
     $setUp($retro);
 
-    expect(fn () => app(QueueShare::class)->handle($retro, IntegrationDeliveryChannel::Slack, IntegrationDeliveryKind::RetroLink, User::factory()->create(), new LinkShareContent('a', 'b', 'https://skrum.test')))
-        ->toThrow($exception);
-    expect(IntegrationDelivery::query()->count())->toBe(0);
+    expect(fn () => resolve(QueueShare::class)->handle($retro, IntegrationDeliveryChannel::Slack, IntegrationDeliveryKind::RetroLink, User::factory()->create(), new LinkShareContent('a', 'b', 'https://skrum.test')))
+        ->toThrow($exception)
+        ->and(IntegrationDelivery::query()->count())->toBe(0);
     Queue::assertNothingPushed();
 })->with([
     'not connected' => [fn () => null, NotConnected::class],
@@ -91,7 +91,7 @@ it('refuses a team without an active connection', function (Closure $setUp, stri
 it('refuses email as a share channel', function () {
     $retro = Retro::factory()->create();
 
-    expect(fn () => app(QueueShare::class)->handle($retro, IntegrationDeliveryChannel::Email, IntegrationDeliveryKind::RetroResults, User::factory()->create(), new LinkShareContent('a', 'b', 'https://skrum.test')))
+    expect(fn () => resolve(QueueShare::class)->handle($retro, IntegrationDeliveryChannel::Email, IntegrationDeliveryKind::RetroResults, User::factory()->create(), new LinkShareContent('a', 'b', 'https://skrum.test')))
         ->toThrow(InvalidArgumentException::class);
 });
 
@@ -99,9 +99,9 @@ it('keeps credentials out of the queued job', function () {
     $retro = Retro::factory()->create();
     TeamIntegration::factory()->slack()->create(['team_id' => $retro->team_id]);
 
-    app(QueueShare::class)->handle($retro, IntegrationDeliveryChannel::Slack, IntegrationDeliveryKind::RetroLink, User::factory()->create(), new LinkShareContent('a', 'b', 'https://skrum.test'));
+    resolve(QueueShare::class)->handle($retro, IntegrationDeliveryChannel::Slack, IntegrationDeliveryKind::RetroLink, User::factory()->create(), new LinkShareContent('a', 'b', 'https://skrum.test'));
 
-    Queue::assertPushed(DeliverToSlack::class, function (DeliverToSlack $job) {
+    Queue::assertPushed(DeliverToSlack::class, function (DeliverToSlack $job): bool {
         $serialized = serialize($job);
 
         return ! str_contains($serialized, 'hooks.slack.com') && ! str_contains($serialized, 'xoxp-test-token');
@@ -118,7 +118,7 @@ it('presents the latest delivery per channel', function () {
     IntegrationDelivery::factory()->forSubject($retro)->create(['kind' => IntegrationDeliveryKind::RetroResults]);
     IntegrationDelivery::factory()->create();
 
-    $latest = app(LatestDeliveries::class)->handle($retro, [IntegrationDeliveryKind::RetroLink]);
+    $latest = resolve(LatestDeliveries::class)->handle($retro, [IntegrationDeliveryKind::RetroLink]);
 
     expect(array_column($latest, 'id'))->toBe([$latestSlack->id, $telegram->id])
         ->and($latest[0])->toMatchArray([
@@ -149,7 +149,7 @@ it('escapes link shares for both chats', function () {
 });
 
 it('prunes deliveries daily', function () {
-    $prune = collect(app(Schedule::class)->events())
+    $prune = collect(resolve(Schedule::class)->events())
         ->first(fn (ScheduledEvent $event) => str_contains((string) $event->command, 'model:prune') && str_contains((string) $event->command, 'IntegrationDelivery'));
 
     expect($prune)->not->toBeNull()

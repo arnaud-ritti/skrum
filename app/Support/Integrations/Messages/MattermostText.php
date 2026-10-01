@@ -6,7 +6,7 @@ class MattermostText
 {
     public const MessageLimit = 16000;
 
-    private const Specials = '\\*_[]()#>~|<`';
+    private const string Specials = '\\*_[]()#>~|<`';
 
     /**
      * A zero-width space after "@" and "~" keeps user text from mentioning

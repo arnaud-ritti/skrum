@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\WorkspaceRole;
 use Database\Factories\WorkspaceFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\RouteKey;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -23,17 +24,13 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  */
 #[Fillable(['name', 'slug'])]
+#[RouteKey('slug')]
 class Workspace extends Model
 {
     /** @use HasFactory<WorkspaceFactory> */
     use HasFactory;
 
     use HasUuids;
-
-    public function getRouteKeyName(): string
-    {
-        return 'slug';
-    }
 
     /** @return BelongsToMany<User, $this, WorkspaceMembership, 'membership'> */
     public function members(): BelongsToMany

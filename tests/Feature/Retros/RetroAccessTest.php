@@ -118,7 +118,7 @@ it('rejects forged or foreign guest cookies', function (Closure $cookie) {
         ->assertForbidden()
         ->assertJsonPath('message', 'You no longer have access to this retrospective.');
 })->with([
-    'wrong secret' => fn ($retro, $guest) => retroGuestCookie($guest, 'nope'),
+    'wrong secret' => fn ($retro, Participant $guest) => retroGuestCookie($guest, 'nope'),
     'garbage' => fn ($retro) => ['retro_guest_'.$retro->id => 'not-a-uuid|x'],
     'other retro participant' => fn ($retro, $guest, $other) => ['retro_guest_'.$retro->id => $other->id.'|s3cret'],
 ]);

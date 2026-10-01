@@ -20,7 +20,7 @@ enum SsoProvider: string
      */
     public static function enabled(): array
     {
-        return array_values(array_filter(self::cases(), fn (self $provider) => $provider->isEnabled()));
+        return array_values(array_filter(self::cases(), fn (self $provider): bool => $provider->isEnabled()));
     }
 
     /**
@@ -31,7 +31,7 @@ enum SsoProvider: string
      */
     public static function options(): array
     {
-        return array_map(fn (self $provider) => [
+        return array_map(fn (self $provider): array => [
             'key' => $provider->value,
             'label' => $provider->label(),
         ], self::enabled());

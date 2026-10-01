@@ -26,6 +26,7 @@ use App\Models\Retro;
 use App\Models\User;
 use App\Support\Gifs\GifCatalog;
 use App\Support\Llm\Llm;
+use Illuminate\Contracts\Database\Query\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -131,7 +132,7 @@ class BuildBoardSnapshot
                 'transferCandidates' => $isFacilitator ? $this->transferCandidates($retro, $viewer) : [],
             ],
             'columns' => $this->presentColumns->handle($retro),
-            'cards' => $retro->cards->sortBy('position')->map(function (Card $card) use ($retro, $viewer, $showsTotals, $voteTotals, $myVotes, $showsCardInsights) {
+            'cards' => $retro->cards->sortBy('position')->map(function (Card $card) use ($retro, $viewer, $showsTotals, $voteTotals, $myVotes, $showsCardInsights): array {
                 $presented = $this->presentCard->handle($card, $retro, $viewer);
                 $isHidden = $presented['hidden'];
 
@@ -145,7 +146,7 @@ class BuildBoardSnapshot
                     ...$this->presentCard->insights($card, $isHidden, $showsCardInsights),
                 ];
             })->values()->all(),
-            'participants' => $retro->participants->map(fn (Participant $participant) => $this->presentParticipant->handle($participant))->values()->all(),
+            'participants' => $retro->participants->map(fn (Participant $participant): array => $this->presentParticipant->handle($participant))->values()->all(),
             'actionItems' => $this->presentActionItem->many(
                 $retro->actionItems->sortBy('created_at'),
                 ActionItemActor::forParticipant($viewerParticipant),
@@ -201,7 +202,7 @@ class BuildBoardSnapshot
 
         return $retro->team->members
             ->sortBy('name')
-            ->map(fn (User $member) => [
+            ->map(fn (User $member): array => [
                 'id' => $member->id,
                 'name' => $member->name,
                 'avatarUrl' => $member->avatarUrl(),
@@ -223,7 +224,7 @@ class BuildBoardSnapshot
         /** @var array<int, string> $retroIds */
         $retroIds = Retro::query()
             ->where('team_id', $retro->team_id)
-            ->whereHas('facilitator', fn ($query) => $query->where('user_id', $viewer->user_id))
+            ->whereHas('facilitator', fn (Builder $query) => $query->where('user_id', $viewer->user_id))
             ->pluck('id')
             ->all();
 
@@ -271,13 +272,13 @@ class BuildBoardSnapshot
             ->pluck('users.id');
 
         return User::query()
-            ->where(fn ($query) => $query
+            ->where(fn (Builder $query) => $query
                 ->whereIn('id', $team->members()->select('users.id'))
                 ->orWhereIn('id', $managerIds))
             ->when($viewer->user_id !== null, fn ($query) => $query->whereKeyNot($viewer->user_id))
             ->orderBy('name')
             ->get(['id', 'name'])
-            ->map(fn (User $user) => ['userId' => $user->id, 'name' => $user->name])
+            ->map(fn (User $user): array => ['userId' => $user->id, 'name' => $user->name])
             ->all();
     }
 

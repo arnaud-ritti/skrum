@@ -32,9 +32,7 @@ class Llm
         $key = $this->key();
         $model = $this->model();
 
-        if ($provider === null || $key === null || $model === null) {
-            throw new LlmUnavailable;
-        }
+        throw_if($provider === null || $key === null || $model === null, LlmUnavailable::class);
 
         return $provider === 'anthropic'
             ? new AnthropicClient($key, $model, $this->baseUrl())

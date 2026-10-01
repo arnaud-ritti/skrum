@@ -27,7 +27,7 @@ it('enables outgoing webhooks with their env flag', function () {
 it('accepts public endpoints', function (string $url, array $addresses, string $host, int $port) {
     outgoingWebhookResolves($addresses);
 
-    $target = app(SafeWebhookUrl::class)->resolve($url);
+    $target = resolve(SafeWebhookUrl::class)->resolve($url);
 
     expect($target->url)->toBe($url)
         ->and($target->host)->toBe($host)
@@ -45,7 +45,7 @@ it('accepts public endpoints', function (string $url, array $addresses, string $
 it('refuses private, reserved and invalid endpoints', function (string $url, array $addresses) {
     outgoingWebhookResolves($addresses);
 
-    expect(fn () => app(SafeWebhookUrl::class)->resolve($url))->toThrow(UnsafeWebhookUrl::class);
+    expect(fn () => resolve(SafeWebhookUrl::class)->resolve($url))->toThrow(UnsafeWebhookUrl::class);
 })->with([
     'plain http' => ['http://hooks.example.com/skrum', ['93.184.216.34']],
     'ftp' => ['ftp://hooks.example.com/skrum', ['93.184.216.34']],
@@ -91,7 +91,7 @@ it('refuses private, reserved and invalid endpoints', function (string $url, arr
 it('accepts boundary ports, an upper-case scheme and a numeric-looking label that is not last', function (string $url, int $port) {
     outgoingWebhookResolves();
 
-    expect(app(SafeWebhookUrl::class)->resolve($url)->port)->toBe($port);
+    expect(resolve(SafeWebhookUrl::class)->resolve($url)->port)->toBe($port);
 })->with([
     'port 65535' => ['https://hooks.example.com:65535/skrum', 65535],
     'port 1024' => ['https://hooks.example.com:1024/skrum', 1024],
@@ -103,12 +103,12 @@ it('accepts boundary ports, an upper-case scheme and a numeric-looking label tha
 it('strips a trailing dot from the host but pins the host as curl sees it', function () {
     outgoingWebhookResolves();
 
-    $target = app(SafeWebhookUrl::class)->resolve('https://hooks.example.com./skrum');
+    $target = resolve(SafeWebhookUrl::class)->resolve('https://hooks.example.com./skrum');
 
     expect($target->host)->toBe('hooks.example.com')
         ->and($target->pinnedResolve())->toBe('hooks.example.com.:443:93.184.216.34');
 
-    $plain = app(SafeWebhookUrl::class)->resolve('https://hooks.example.com/skrum');
+    $plain = resolve(SafeWebhookUrl::class)->resolve('https://hooks.example.com/skrum');
 
     expect($plain->pinnedResolve())->toBe('hooks.example.com:443:93.184.216.34');
 });
@@ -116,15 +116,15 @@ it('strips a trailing dot from the host but pins the host as curl sees it', func
 it('pins an IPv4 address when the host has both families', function () {
     outgoingWebhookResolves(['2606:2800:220:1:248:1893:25c8:1946', '93.184.216.34']);
 
-    expect(app(SafeWebhookUrl::class)->resolve('https://hooks.example.com/skrum')->address)->toBe('93.184.216.34');
+    expect(resolve(SafeWebhookUrl::class)->resolve('https://hooks.example.com/skrum')->address)->toBe('93.184.216.34');
 });
 
 it('refuses IP literals without resolving them', function () {
     $this->mock(HostResolver::class, fn (MockInterface $mock) => $mock->shouldNotReceive('addresses'));
 
-    expect(fn () => app(SafeWebhookUrl::class)->resolve('https://127.0.0.1/skrum'))->toThrow(UnsafeWebhookUrl::class)
-        ->and(fn () => app(SafeWebhookUrl::class)->resolve('https://169.254.169.254/latest/meta-data'))->toThrow(UnsafeWebhookUrl::class)
-        ->and(app(SafeWebhookUrl::class)->resolve('https://93.184.216.34/skrum')->pinnedResolve())->toBeNull();
+    expect(fn () => resolve(SafeWebhookUrl::class)->resolve('https://127.0.0.1/skrum'))->toThrow(UnsafeWebhookUrl::class)
+        ->and(fn () => resolve(SafeWebhookUrl::class)->resolve('https://169.254.169.254/latest/meta-data'))->toThrow(UnsafeWebhookUrl::class)
+        ->and(resolve(SafeWebhookUrl::class)->resolve('https://93.184.216.34/skrum')->pinnedResolve())->toBeNull();
 });
 
 it('allows plain http and private networks only when the instance does', function () {
@@ -134,7 +134,7 @@ it('allows plain http and private networks only when the instance does', functio
         'services.outgoing_webhooks.allow_private_networks' => true,
     ]);
 
-    $target = app(SafeWebhookUrl::class)->resolve('http://ci.internal:8080/hooks');
+    $target = resolve(SafeWebhookUrl::class)->resolve('http://ci.internal:8080/hooks');
 
     expect($target->port)->toBe(8080)
         ->and($target->address)->toBe('10.0.0.5')
@@ -169,6 +169,6 @@ it('validates webhook URLs with a single message', function () {
 it('tells a host that gave no address apart from an unsafe one', function () {
     outgoingWebhookResolves([]);
 
-    expect(fn () => app(SafeWebhookUrl::class)->resolve('https://nowhere.example.com/skrum'))
+    expect(fn () => resolve(SafeWebhookUrl::class)->resolve('https://nowhere.example.com/skrum'))
         ->toThrow(UnresolvableWebhookHost::class);
 });

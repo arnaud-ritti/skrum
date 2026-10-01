@@ -32,7 +32,7 @@ it('lets the clue giver set up to five emoji', function () {
 
     expect($table['round']->fresh()->clue)->toBe($clue);
 
-    Event::assertDispatched(GameClueChanged::class, fn (GameClueChanged $event) => $event->clue === $clue
+    Event::assertDispatched(fn (GameClueChanged $event) => $event->clue === $clue
         && ! gamePayloadExposesWord($event->broadcastWith(), 'rocket'));
 });
 
@@ -43,7 +43,7 @@ it('clears the clue', function () {
 
     putClue($table['room'], $table['round'], [])->assertOk()->assertJsonPath('clue', []);
 
-    expect($table['round']->fresh()->clue)->toBe([]);
+    expect($table['round']->fresh()->clue)->toBeEmpty();
 });
 
 it('refuses more than five emoji', function () {
@@ -65,7 +65,7 @@ it('refuses letters, digits and letter-like emoji in a clue', function (string $
         ->assertUnprocessable()
         ->assertJsonValidationErrors(['clue.1' => __('Use emoji only, without letters or digits.')]);
 
-    expect($table['round']->fresh()->clue)->toBe([]);
+    expect($table['round']->fresh()->clue)->toBeEmpty();
 })->with(['1️⃣', '#️⃣', '🇫🇷', '🅰️', '🆗', 'ℹ️', 'Ⓜ️', '🔤', 'a', 'rocket', '🚀🚀']);
 
 it('refuses a clue that is not a list', function (mixed $clue) {
@@ -99,7 +99,7 @@ it('keeps the clue to the clue giver of an active Decoded round', function () {
     $this->actingAs($decoded['leaderUser']);
     putClue($decoded['room'], $decoded['round'], ['🚀'])->assertConflict();
 
-    expect($decoded['round']->fresh()->clue)->toBe([]);
+    expect($decoded['round']->fresh()->clue)->toBeEmpty();
 });
 
 it('slows down a clue giver editing too fast', function () {
@@ -119,7 +119,7 @@ it('hands the emoji list location to every player', function () {
     gameRoomHost($room);
     $guest = gameRoomGuest($room);
 
-    expect(app(BuildGameSnapshot::class)->handle($room, $guest)['emojiData'])->toBe([
+    expect(resolve(BuildGameSnapshot::class)->handle($room, $guest)['emojiData'])->toBe([
         'baseUrl' => '/emoji-data/'.config('services.emoji_data.version'),
         'locale' => 'en',
     ]);

@@ -117,7 +117,7 @@ class PushActionItemState implements ShouldBeUniqueUntilProcessing, ShouldQueue
         } catch (ProviderUnavailable $exception) {
             throw $exception;
         } catch (IntegrationException $exception) {
-            $this->recordFailure(self::failureMessage($exception));
+            $this->recordFailure($this->failureMessage($exception));
             $this->announce($broadcast, $item);
 
             return;
@@ -140,13 +140,13 @@ class PushActionItemState implements ShouldBeUniqueUntilProcessing, ShouldQueue
         }
 
         $this->recordFailure($exception instanceof IntegrationException
-            ? self::failureMessage($exception)
+            ? $this->failureMessage($exception)
             : __('The status could not be written. Try again.'));
 
         $item = ActionItemExternalLink::query()->find($this->linkId)?->actionItem;
 
         if ($item !== null) {
-            $this->announce(app(BroadcastActionItemChange::class), $item);
+            $this->announce(resolve(BroadcastActionItemChange::class), $item);
         }
     }
 
@@ -189,7 +189,7 @@ class PushActionItemState implements ShouldBeUniqueUntilProcessing, ShouldQueue
         });
     }
 
-    private static function failureMessage(IntegrationException $exception): string
+    private function failureMessage(IntegrationException $exception): string
     {
         if ($exception instanceof StatusPushRejected || $exception instanceof ReconnectRequired || $exception instanceof ReadOnlyConnection) {
             return $exception->userMessage();

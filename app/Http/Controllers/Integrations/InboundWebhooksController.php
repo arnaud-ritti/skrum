@@ -31,7 +31,7 @@ use Throwable;
  */
 class InboundWebhooksController extends Controller
 {
-    private const MaxBodyBytes = 1_048_576;
+    private const int MaxBodyBytes = 1_048_576;
 
     public function __construct(
         private ReadInboundEvent $readInboundEvent,
@@ -41,9 +41,7 @@ class InboundWebhooksController extends Controller
 
     public function store(Request $request, string $source, ?string $integration = null, ?string $token = null): JsonResponse
     {
-        if ((int) $request->header('Content-Length', '0') > self::MaxBodyBytes || strlen($request->getContent()) > self::MaxBodyBytes) {
-            abort(413);
-        }
+        abort_if((int) $request->header('Content-Length', '0') > self::MaxBodyBytes || strlen($request->getContent()) > self::MaxBodyBytes, 413);
 
         $provider = ReadInboundEvent::provider($source);
 
@@ -93,7 +91,7 @@ class InboundWebhooksController extends Controller
 
         try {
             foreach ($batches as $integrationId => $externalIds) {
-                ApplyInboundIssueChanges::dispatch((string) $integrationId, $externalIds, $row->id);
+                dispatch(new ApplyInboundIssueChanges((string) $integrationId, $externalIds, $row->id));
             }
         } catch (Throwable $exception) {
             $row->delete();

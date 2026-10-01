@@ -68,7 +68,7 @@ it('keeps the word out of every snapshot while the round is active', function ()
             ->and(gamePayloadJson($snapshot))->not->toContain('"points"');
     }
 
-    app('auth')->forgetGuards();
+    resolve('auth')->forgetGuards();
 
     $guestSnapshot = $this->withCookies($table['guestCookie'])->withCredentials()
         ->getJson(route('games.snapshot.show', $table['room']))->assertOk()->json();
@@ -127,7 +127,7 @@ it('reveals the word to everyone once the round ends', function () {
 
     $this->actingAs($table['host'])->postJson(route('games.rounds.pass.store', [$table['room'], $table['round']]))->assertOk();
 
-    Event::assertDispatched(GameRoundEnded::class, fn (GameRoundEnded $event) => $event->payload['word'] === RedactedWord);
+    Event::assertDispatched(fn (GameRoundEnded $event) => $event->payload['word'] === RedactedWord);
 
     $this->actingAs($table['member'])
         ->getJson(route('games.snapshot.show', $table['room']))

@@ -20,7 +20,7 @@ function healthCheckRetro(array $attributes = []): Retro
 {
     $retro = Retro::factory()->withHealthCheck()->inPhase(RetroPhase::HealthCheck)->create($attributes);
 
-    app(FreezeHealthStatements::class)->handle($retro);
+    resolve(FreezeHealthStatements::class)->handle($retro);
 
     return $retro->fresh();
 }
@@ -107,7 +107,7 @@ it('broadcasts counts and who answered, never a score', function () {
 
     $this->actingAs($user)->putJson(healthAnswerRoute($retro, 'processes'), ['score' => 4])->assertOk();
 
-    Event::assertDispatched(HealthAnswered::class, function (HealthAnswered $event) use ($participant) {
+    Event::assertDispatched(function (HealthAnswered $event) use ($participant): bool {
         $processes = collect($event->broadcastWith()['statements'])->firstWhere('key', 'processes');
 
         return $event->broadcastAs() === 'health.answered'
@@ -123,7 +123,7 @@ it('hides who answered on anonymous retros', function () {
     $this->actingAs($user)->putJson(healthAnswerRoute($retro, 'processes'), ['score' => 4])
         ->assertJsonPath('statements.4', ['key' => 'processes', 'count' => 1, 'answeredBy' => []]);
 
-    Event::assertDispatched(HealthAnswered::class, fn (HealthAnswered $event) => collect($event->broadcastWith()['statements'])
+    Event::assertDispatched(fn (HealthAnswered $event) => collect($event->broadcastWith()['statements'])
         ->every(fn (array $statement) => $statement['answeredBy'] === []));
 });
 
@@ -134,7 +134,7 @@ it('sends each viewer only their own score in the snapshot', function () {
     HealthCheckAnswer::factory()->create(['retro_id' => $retro->id, 'participant_id' => $other->id, 'statement' => 'vision', 'score' => 2]);
     HealthCheckAnswer::factory()->create(['retro_id' => $retro->id, 'participant_id' => $viewer->id, 'statement' => 'motivation', 'score' => 9]);
 
-    $statements = collect(app(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer)['healthCheck']['statements'])->keyBy('key');
+    $statements = collect(resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer)['healthCheck']['statements'])->keyBy('key');
 
     expect(array_keys($statements['vision']))->toBe(['key', 'label', 'text', 'isBuiltin', 'count', 'answeredBy', 'myScore'])
         ->and($statements['vision']['count'])->toBe(1)
@@ -148,7 +148,7 @@ it('leaves the health check out of the snapshot when it is off and unanswered', 
     $retro = Retro::factory()->create();
     [, $viewer] = retroMember($retro);
 
-    expect(app(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer)['healthCheck'])->toBeNull();
+    expect(resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer)['healthCheck'])->toBeNull();
 });
 
 it('presents built-in statements translated and custom statements as stored', function () {
@@ -156,7 +156,7 @@ it('presents built-in statements translated and custom statements as stored', fu
     [, $viewer] = retroMember($retro);
     RetroHealthStatement::factory()->custom()->create(['retro_id' => $retro->id, 'key' => 'custom-1', 'label' => 'Pairing', 'text' => 'We pair often.', 'position' => 99]);
 
-    $statements = collect(app(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer)['healthCheck']['statements'])->keyBy('key');
+    $statements = collect(resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer)['healthCheck']['statements'])->keyBy('key');
 
     expect(collect($statements['vision'])->only(['key', 'label', 'text', 'isBuiltin'])->all())
         ->toBe(['key' => 'vision', 'label' => HealthStatement::Vision->label(), 'text' => HealthStatement::Vision->text(), 'isBuiltin' => true])
@@ -170,5 +170,5 @@ it('includes the health check in the snapshot when answers exist though it is of
     RetroHealthStatement::factory()->builtin(HealthStatement::Vision)->create(['retro_id' => $retro->id]);
     HealthCheckAnswer::factory()->create(['retro_id' => $retro->id, 'participant_id' => $viewer->id, 'statement' => 'vision', 'score' => 6]);
 
-    expect(app(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer)['healthCheck']['statements'][0]['myScore'])->toBe(6);
+    expect(resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer)['healthCheck']['statements'][0]['myScore'])->toBe(6);
 });

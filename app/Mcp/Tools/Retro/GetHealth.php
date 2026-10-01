@@ -76,7 +76,7 @@ class GetHealth extends SkrumTool
 
         return Response::structured([
             'status' => 'completed',
-            'categories' => collect($summary['statements'])->map(fn (array $statement) => [
+            'categories' => collect($summary['statements'])->map(fn (array $statement): array => [
                 'key' => $statement['key'],
                 'label' => $statement['label'],
                 'average' => $statement['average'],
@@ -90,7 +90,7 @@ class GetHealth extends SkrumTool
             'topStrength' => $summary['topStrength'],
             'growthArea' => $summary['growthArea'],
             'assessment' => $summary['assessment'],
-            'trend' => collect($this->buildHealthTrend->handle($retro))->map(fn (array $point) => [
+            'trend' => collect($this->buildHealthTrend->handle($retro))->map(fn (array $point): array => [
                 'boardId' => $point['retroId'],
                 'title' => $point['title'],
                 'completedAt' => $point['completedAt'],
@@ -107,7 +107,7 @@ class GetHealth extends SkrumTool
      */
     private function inProgress(Retro $retro): array
     {
-        $names = $retro->participants()->with('user')->get()->mapWithKeys(fn (Participant $participant) => [$participant->id => $participant->displayName()]);
+        $names = $retro->participants()->with('user')->get()->mapWithKeys(fn (Participant $participant): array => [$participant->id => $participant->displayName()]);
         $progress = collect($this->presentHealthProgress->handle($retro))->keyBy('key');
         $viewer = $this->context->participant($retro);
         $myScores = $viewer === null
@@ -116,7 +116,7 @@ class GetHealth extends SkrumTool
 
         return [
             'status' => 'in_progress',
-            'categories' => $retro->healthStatements()->get()->map(function (RetroHealthStatement $statement) use ($progress, $names) {
+            'categories' => $retro->healthStatements()->get()->map(function (RetroHealthStatement $statement) use ($progress, $names): array {
                 $presented = $this->presentHealthStatement->handle($statement);
 
                 return [
@@ -129,7 +129,7 @@ class GetHealth extends SkrumTool
                         ->all(),
                 ];
             })->values()->all(),
-            'myScores' => $myScores->map(fn (mixed $score) => (int) $score)->all(),
+            'myScores' => $myScores->map(fn (mixed $score): int => (int) $score)->all(),
         ];
     }
 }

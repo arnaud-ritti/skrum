@@ -24,12 +24,12 @@ class WorkspaceMembersController extends Controller
 
         return Inertia::render('workspaces/members', [
             'workspace' => $workspace->only(['id', 'name', 'slug']),
-            'members' => $workspace->members()->orderBy('name')->get()->map(fn (User $member) => [
+            'members' => $workspace->members()->orderBy('name')->get()->map(fn (User $member): array => [
                 ...$member->only(['id', 'name', 'email']),
                 'role' => $this->membershipOf($member)->role->value,
             ]),
             'invitations' => $workspace->invitations()->whereNull('accepted_at')->latest()->get()
-                ->map(fn (WorkspaceInvitation $invitation) => [
+                ->map(fn (WorkspaceInvitation $invitation): array => [
                     'id' => $invitation->id,
                     'email' => $invitation->email,
                     'role' => $invitation->role->value,
@@ -52,13 +52,9 @@ class WorkspaceMembersController extends Controller
         $currentRole = $member->roleIn($workspace);
         $actorIsOwner = $request->user()->roleIn($workspace) === WorkspaceRole::Owner;
 
-        if ($newRole === WorkspaceRole::Owner && ! $actorIsOwner) {
-            abort(403);
-        }
+        abort_if($newRole === WorkspaceRole::Owner && ! $actorIsOwner, 403);
 
-        if ($currentRole === WorkspaceRole::Owner && ! $actorIsOwner) {
-            abort(403);
-        }
+        abort_if($currentRole === WorkspaceRole::Owner && ! $actorIsOwner, 403);
 
         DB::transaction(function () use ($workspace, $member, $newRole, $currentRole): void {
             $this->lockWorkspace($workspace);
@@ -85,9 +81,7 @@ class WorkspaceMembersController extends Controller
             Gate::authorize('manageMembers', $workspace);
         }
 
-        if (! $isLeaving && $memberRole === WorkspaceRole::Owner && $actor->roleIn($workspace) !== WorkspaceRole::Owner) {
-            abort(403);
-        }
+        abort_if(! $isLeaving && $memberRole === WorkspaceRole::Owner && $actor->roleIn($workspace) !== WorkspaceRole::Owner, 403);
 
         DB::transaction(function () use ($workspace, $member, $memberRole): void {
             $this->lockWorkspace($workspace);

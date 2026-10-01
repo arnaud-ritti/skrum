@@ -50,7 +50,7 @@ function telegramCodeFor(): array
     $team = Team::factory()->create(['name' => 'Rocket']);
     $admin = integrationAdmin($team);
 
-    return [$team, $admin, app(TelegramConnectCodes::class)->issue($team, $admin)['code']];
+    return [$team, $admin, resolve(TelegramConnectCodes::class)->issue($team, $admin)['code']];
 }
 
 /**
@@ -100,7 +100,7 @@ it('connects a group that sends the command', function (string $text, string $ki
     fakeTelegramBot();
     [$team, $admin, $code] = telegramCodeFor();
 
-    app(HandleTelegramUpdate::class)->handle(telegramUpdate(1, str_replace('CODE', $code, $text), kind: $kind));
+    resolve(HandleTelegramUpdate::class)->handle(telegramUpdate(1, str_replace('CODE', $code, $text), kind: $kind));
 
     $integration = TeamIntegration::query()->sole();
 
@@ -120,8 +120,8 @@ it('connects a group that sends the command', function (string $text, string $ki
 it('accepts a code only once and only while it is the newest', function () {
     fakeTelegramBot();
     [$team, $admin, $first] = telegramCodeFor();
-    $second = app(TelegramConnectCodes::class)->issue($team, $admin)['code'];
-    $handler = app(HandleTelegramUpdate::class);
+    $second = resolve(TelegramConnectCodes::class)->issue($team, $admin)['code'];
+    $handler = resolve(HandleTelegramUpdate::class);
 
     $handler->handle(telegramUpdate(1, "/connect {$first}"));
 
@@ -144,7 +144,7 @@ it('expires codes after fifteen minutes', function () {
 
     $this->travel(16)->minutes();
 
-    app(HandleTelegramUpdate::class)->handle(telegramUpdate(1, "/connect {$code}"));
+    resolve(HandleTelegramUpdate::class)->handle(telegramUpdate(1, "/connect {$code}"));
 
     expect(TeamIntegration::query()->count())->toBe(0);
 });
@@ -153,16 +153,16 @@ it('ignores commands for another bot', function () {
     fakeTelegramBot();
     [, , $code] = telegramCodeFor();
 
-    app(HandleTelegramUpdate::class)->handle(telegramUpdate(1, "/connect@other_bot {$code}"));
+    resolve(HandleTelegramUpdate::class)->handle(telegramUpdate(1, "/connect@other_bot {$code}"));
 
     expect(TeamIntegration::query()->count())->toBe(0)
-        ->and(telegramReplies())->toBe([]);
+        ->and(telegramReplies())->toBeEmpty();
 });
 
 it('locks a chat out after five invalid codes', function () {
     fakeTelegramBot();
     [, , $code] = telegramCodeFor();
-    $handler = app(HandleTelegramUpdate::class);
+    $handler = resolve(HandleTelegramUpdate::class);
 
     foreach (range(1, 5) as $attempt) {
         $handler->handle(telegramUpdate($attempt, '/connect WRONG234'));
@@ -174,7 +174,7 @@ it('locks a chat out after five invalid codes', function () {
         ->and(telegramReplies())->toHaveCount(5);
 
     $this->travel(61)->minutes();
-    $fresh = app(TelegramConnectCodes::class)->issue(Team::query()->sole(), User::query()->first());
+    $fresh = resolve(TelegramConnectCodes::class)->issue(Team::query()->sole(), User::query()->first());
     $handler->handle(telegramUpdate(7, "/connect {$fresh['code']}"));
 
     expect(TeamIntegration::query()->count())->toBe(1);
@@ -183,7 +183,7 @@ it('locks a chat out after five invalid codes', function () {
 it('answers /start and /help and ignores everything else', function () {
     fakeTelegramBot();
     Log::spy();
-    $handler = app(HandleTelegramUpdate::class);
+    $handler = resolve(HandleTelegramUpdate::class);
 
     $handler->handle(telegramUpdate(1, '/start'));
     $handler->handle(telegramUpdate(2, 'our secret launch plan'));
@@ -201,7 +201,7 @@ it('follows a group upgraded to a supergroup', function () {
     fakeTelegramBot();
     $integration = TeamIntegration::factory()->telegram()->create(['settings' => ['chatId' => '-4001', 'chatTitle' => 'Team', 'chatType' => 'group']]);
 
-    app(HandleTelegramUpdate::class)->handle(['update_id' => 1, 'message' => [
+    resolve(HandleTelegramUpdate::class)->handle(['update_id' => 1, 'message' => [
         'message_id' => 1, 'date' => 1_700_000_000,
         'chat' => ['id' => -4001, 'title' => 'Team', 'type' => 'group'],
         'migrate_to_chat_id' => -1004001,
@@ -214,7 +214,7 @@ it('requires a reconnect when the bot leaves or is removed from the chat', funct
     fakeTelegramBot();
     $integration = TeamIntegration::factory()->telegram()->create();
 
-    app(HandleTelegramUpdate::class)->handle(['update_id' => 1, 'my_chat_member' => [
+    resolve(HandleTelegramUpdate::class)->handle(['update_id' => 1, 'my_chat_member' => [
         'chat' => ['id' => -100123, 'title' => 'Team chat', 'type' => 'supergroup'],
         'date' => 1_700_000_000,
         'old_chat_member' => ['status' => 'member', 'user' => ['id' => 42, 'is_bot' => true]],
@@ -246,7 +246,7 @@ it('warns once per hour when the bot is used elsewhere', function () {
     $this->artisan('skrum:telegram-poll', ['--timeout' => 0])->assertSuccessful();
     $this->artisan('skrum:telegram-poll', ['--timeout' => 0])->assertSuccessful();
 
-    expect(app(TelegramBot::class)->hasConflict())->toBeTrue();
+    expect(resolve(TelegramBot::class)->hasConflict())->toBeTrue();
     Log::shouldHaveReceived('warning')->once();
 });
 
@@ -261,7 +261,7 @@ it('does nothing without a bot token', function () {
 });
 
 it('polls every minute without overlapping', function () {
-    $event = collect(app(Schedule::class)->events())
+    $event = collect(resolve(Schedule::class)->events())
         ->first(fn (ScheduledEvent $event) => str_contains((string) $event->command, 'skrum:telegram-poll'));
 
     expect($event)->not->toBeNull()

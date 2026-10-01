@@ -133,9 +133,8 @@ it('de-duplicates inbound events per provider and prunes them after 7 days', fun
     $old = IntegrationInboundEvent::factory()->create(['received_at' => now()->subDays(8)]);
 
     expect(fn () => DB::transaction(fn () => IntegrationInboundEvent::factory()->create(['event_key' => 'delivery-1'])))
-        ->toThrow(UniqueConstraintViolationException::class);
-
-    expect($kept->fresh()->status)->toBe(InboundEventStatus::Applied)
+        ->toThrow(UniqueConstraintViolationException::class)
+        ->and($kept->fresh()->status)->toBe(InboundEventStatus::Applied)
         ->and($kept->fresh()->provider)->toBe(IntegrationProvider::Jira)
         ->and($kept->fresh()->integration->is($integration))->toBeTrue();
 

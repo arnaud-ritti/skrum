@@ -11,7 +11,7 @@ class PublicAddress
     /**
      * @var array<int, string>
      */
-    private const BlockedRanges = [
+    private const array BlockedRanges = [
         '0.0.0.0/8',
         '10.0.0.0/8',
         '100.64.0.0/10',

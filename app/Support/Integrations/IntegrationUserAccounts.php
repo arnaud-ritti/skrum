@@ -21,21 +21,21 @@ use Illuminate\Support\Str;
  */
 class IntegrationUserAccounts
 {
-    private const SearchLimit = 20;
+    private const int SearchLimit = 20;
 
-    private const JiraMatchLimit = 2;
+    private const int JiraMatchLimit = 2;
 
-    private const LinearPageSize = 250;
+    private const int LinearPageSize = 250;
 
-    private const LinearMaxPages = 40;
+    private const int LinearMaxPages = 40;
 
-    private const GitHubPageSize = 100;
+    private const int GitHubPageSize = 100;
 
-    private const GitHubMaxPages = 10;
+    private const int GitHubMaxPages = 10;
 
-    private const JiraAccountType = 'atlassian';
+    private const string JiraAccountType = 'atlassian';
 
-    private const LinearUserFields = 'id name displayName email active';
+    private const string LinearUserFields = 'id name displayName email active';
 
     public function __construct(
         private JiraClient $jira,
@@ -123,7 +123,7 @@ class IntegrationUserAccounts
     public function linearUsers(TeamIntegration $integration): array
     {
         return array_values(array_filter(array_map(
-            fn (array $node): ?ExternalAccount => $this->linearAccount($node),
+            $this->linearAccount(...),
             $this->linearNodes($integration),
         )));
     }
@@ -325,7 +325,7 @@ class IntegrationUserAccounts
     private function activeJiraAccounts(array $users): array
     {
         return array_values(array_filter(
-            array_map(fn (mixed $user): ?ExternalAccount => $this->jiraAccount($user), $users),
+            array_map($this->jiraAccount(...), $users),
             fn (?ExternalAccount $account): bool => $account !== null && $account->active,
         ));
     }
@@ -372,7 +372,7 @@ class IntegrationUserAccounts
     private function activeJiraDataCenterAccounts(array $users): array
     {
         return array_values(array_filter(
-            array_map(fn (mixed $user): ?ExternalAccount => $this->jiraDataCenterAccount($user), $users),
+            array_map($this->jiraDataCenterAccount(...), $users),
             fn (?ExternalAccount $account): bool => $account !== null && $account->active,
         ));
     }

@@ -20,6 +20,7 @@ use App\Models\Retro;
 use App\Models\Team;
 use App\Models\User;
 use App\Models\Workspace;
+use Illuminate\Contracts\Database\Query\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -51,20 +52,20 @@ class WorkspaceActionItemsController extends Controller
         $filters = ActionItemFilters::fromRequest($request, $teams);
         $facilitated = Retro::query()
             ->whereIn('team_id', $teams->pluck('id'))
-            ->whereHas('facilitator', fn ($query) => $query->where('user_id', $user->id))
+            ->whereHas('facilitator', fn (Builder $query) => $query->where('user_id', $user->id))
             ->get(['id', 'team_id', 'phase']);
 
         return Inertia::render('action-items/index', [
             'workspace' => $workspace->only(['id', 'name', 'slug']),
             'filters' => $filters->toArray(),
-            'items' => fn () => $this->items($user, $workspace, $filters, $actor),
-            'focusedItem' => fn () => $this->focusedItem($user, $workspace, $filters, $actor),
+            'items' => fn (): array => $this->items($user, $workspace, $filters, $actor),
+            'focusedItem' => fn (): ?array => $this->focusedItem($user, $workspace, $filters, $actor),
             'teams' => $this->presentTeams($teams),
             'creatableTeams' => $this->presentTeams($teams->filter(fn (Team $team) => $team->members->contains('id', $user->id))),
             'assignees' => $teams->flatMap(fn (Team $team) => $team->members)
                 ->unique('id')
                 ->sortBy('name')
-                ->map(fn (User $member) => ['id' => $member->id, 'name' => $member->name])
+                ->map(fn (User $member): array => ['id' => $member->id, 'name' => $member->name])
                 ->values(),
             'realtimeTeamIds' => $filters->teamId === null ? $teams->pluck('id')->values() : [$filters->teamId],
             'exportSources' => $this->listExportSources->forTeams($teams),
@@ -73,7 +74,7 @@ class WorkspaceActionItemsController extends Controller
                 'isWorkspaceManager' => $user->canManage($workspace),
                 'facilitatedRetroIds' => $facilitated->pluck('id')->values(),
                 'reviewTeamIds' => $facilitated
-                    ->reject(fn (Retro $retro) => $retro->phase === RetroPhase::Completed)
+                    ->reject(fn (Retro $retro): bool => $retro->phase === RetroPhase::Completed)
                     ->pluck('team_id')
                     ->unique()
                     ->values(),
@@ -178,11 +179,11 @@ class WorkspaceActionItemsController extends Controller
      */
     private function presentTeams(Collection $teams): array
     {
-        return $teams->map(fn (Team $team) => [
+        return $teams->map(fn (Team $team): array => [
             'id' => $team->id,
             'name' => $team->name,
             'members' => $team->members
-                ->map(fn (User $member) => ['id' => $member->id, 'name' => $member->name, 'avatarUrl' => $member->avatarUrl()])
+                ->map(fn (User $member): array => ['id' => $member->id, 'name' => $member->name, 'avatarUrl' => $member->avatarUrl()])
                 ->values()
                 ->all(),
         ])->values()->all();

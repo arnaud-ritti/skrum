@@ -149,7 +149,7 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/', fn () => Inertia::render('welcome', [
-    'canRegister' => app(SignupGate::class)->canShowRegistration(),
+    'canRegister' => resolve(SignupGate::class)->canShowRegistration(),
 ]))->name('home');
 
 Route::get('invitations/{token}', [InvitationLinksController::class, 'show'])->name('invitations.show');
@@ -169,7 +169,7 @@ Route::post('invitations/{token}/acceptance', [InvitationAcceptancesController::
     ->middleware('auth')
     ->name('invitations.acceptance.store');
 
-Route::middleware('guest')->group(function () {
+Route::middleware('guest')->group(function (): void {
     Route::get('auth/{provider}/redirect', [SsoRedirectsController::class, 'show'])->name('sso.redirect');
     Route::get('auth/{provider}/callback', [SsoCallbacksController::class, 'show'])->name('sso.callback');
 });
@@ -178,7 +178,7 @@ Route::put('locale', [LocalesController::class, 'update'])->name('locale.update'
 
 Route::pattern('statement', '[A-Za-z0-9_-]{1,64}');
 
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('dashboard', [CurrentWorkspaceController::class, 'show'])->name('dashboard');
     Route::get('workspaces/create', [WorkspacesController::class, 'create'])->name('workspaces.create');
     Route::post('workspaces', [WorkspacesController::class, 'store'])->name('workspaces.store');
@@ -199,7 +199,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::prefix('w/{workspace}')
         ->middleware(['can:view,workspace', RememberCurrentWorkspace::class])
         ->scopeBindings()
-        ->group(function () {
+        ->group(function (): void {
             Route::get('/', [WorkspacesController::class, 'show'])->name('workspaces.show');
             Route::delete('/', [WorkspacesController::class, 'destroy'])->name('workspaces.destroy');
 
@@ -216,7 +216,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('teams/{team}/games', [TeamGameRoomsController::class, 'index'])->name('teams.games.index');
             Route::post('teams/{team}/games', [TeamGameRoomsController::class, 'store'])->name('teams.games.store');
 
-            Route::middleware(EnsureIntegrationProviderEnabled::class)->group(function () {
+            Route::middleware(EnsureIntegrationProviderEnabled::class)->group(function (): void {
                 Route::get('teams/{team}/integrations', [TeamIntegrationsController::class, 'index'])->name('teams.integrations.index');
                 Route::get('teams/{team}/integrations/{provider}/connect', [IntegrationAuthorizationsController::class, 'create'])
                     ->whereIn('provider', ['slack', 'jira', 'linear', 'jira_dc', 'github'])
@@ -352,7 +352,7 @@ Route::prefix('retros/{retro}')
     ->whereUuid('retro')
     ->middleware(ResolveRetroParticipant::class)
     ->scopeBindings()
-    ->group(function () {
+    ->group(function (): void {
         Route::get('/', [RetrosController::class, 'show'])->name('retros.show');
         Route::delete('/', [RetrosController::class, 'destroy'])->name('retros.destroy');
         Route::put('phase', [RetroPhasesController::class, 'update'])->name('retros.phase.update');
@@ -438,7 +438,7 @@ Route::prefix('poker/{game}')
     ->whereUuid('game')
     ->middleware(ResolvePokerPlayer::class)
     ->scopeBindings()
-    ->group(function () {
+    ->group(function (): void {
         Route::get('/', [PokerGamesController::class, 'show'])->name('poker.show');
         Route::get('snapshot', [PokerSnapshotsController::class, 'show'])->name('poker.snapshot.show');
         Route::post('tasks', [PokerTasksController::class, 'store'])->name('poker.tasks.store');
@@ -479,7 +479,7 @@ Route::prefix('games/{room}')
     ->whereUuid('room')
     ->middleware(ResolveGamePlayer::class)
     ->scopeBindings()
-    ->group(function () {
+    ->group(function (): void {
         Route::get('/', [GameRoomsController::class, 'show'])->name('games.show');
         Route::get('snapshot', [GameSnapshotsController::class, 'show'])->name('games.snapshot.show');
         Route::patch('/', [GameRoomsController::class, 'update'])->name('games.update');

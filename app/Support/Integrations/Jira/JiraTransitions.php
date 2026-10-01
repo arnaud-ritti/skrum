@@ -16,11 +16,11 @@ use App\Support\Integrations\Trackers\DoneMapping;
  */
 class JiraTransitions
 {
-    private const PreferredDoneNames = ['Done', 'Closed', 'Resolved'];
+    private const array PreferredDoneNames = ['Done', 'Closed', 'Resolved'];
 
-    private const PreferredResolutions = ['Done', 'Fixed'];
+    private const array PreferredResolutions = ['Done', 'Fixed'];
 
-    private const ReopenCategories = ['new', 'indeterminate'];
+    private const array ReopenCategories = ['new', 'indeterminate'];
 
     /**
      * @param  array<array-key, mixed>  $transitions  as `GET issue/{id}/transitions?expand=transitions.fields` lists them

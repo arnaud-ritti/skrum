@@ -77,7 +77,7 @@ it('accepts Mattermost servers under a context path', function () {
 it('posts Teams messages to the stored workflow URL', function () {
     Http::fake(['prod-12.westeurope.logic.azure.com/*' => Http::response('', 202)]);
 
-    app(MicrosoftTeamsClient::class)->postMessage(teamsIntegration(), ['type' => 'message', 'attachments' => []]);
+    resolve(MicrosoftTeamsClient::class)->postMessage(teamsIntegration(), ['type' => 'message', 'attachments' => []]);
 
     Http::assertSent(fn (Request $request) => $request->url() === str_replace(':443', '', TeamIntegrationFactory::MicrosoftTeamsUrl)
         && $request['type'] === 'message');
@@ -87,10 +87,9 @@ it('asks to paste a new Teams URL when the workflow is gone', function (int $sta
     Http::fake(['prod-12.westeurope.logic.azure.com/*' => Http::response('{"error":{"code":"WorkflowNotFound"}}', $status)]);
     $integration = teamsIntegration();
 
-    expect(fn () => app(MicrosoftTeamsClient::class)->postMessage($integration, ['type' => 'message']))
-        ->toThrow(ReconnectRequired::class);
-
-    expect($integration->fresh()->status)->toBe(IntegrationStatus::ReconnectRequired)
+    expect(fn () => resolve(MicrosoftTeamsClient::class)->postMessage($integration, ['type' => 'message']))
+        ->toThrow(ReconnectRequired::class)
+        ->and($integration->fresh()->status)->toBe(IntegrationStatus::ReconnectRequired)
         ->and($integration->fresh()->last_error)->toBe('The Teams workflow URL no longer works. Paste a new one.');
 })->with([400, 401, 403, 404]);
 
@@ -106,14 +105,14 @@ it('maps Teams rate limits, outages and redirects', function () {
     $rateLimited = null;
 
     try {
-        app(MicrosoftTeamsClient::class)->postMessage($integration, ['type' => 'message']);
+        resolve(MicrosoftTeamsClient::class)->postMessage($integration, ['type' => 'message']);
     } catch (RateLimited $exception) {
         $rateLimited = $exception;
     }
 
     expect($rateLimited?->retryAfter)->toBe(12)
-        ->and(fn () => app(MicrosoftTeamsClient::class)->postMessage($integration, ['type' => 'message']))->toThrow(ProviderUnavailable::class)
-        ->and(fn () => app(MicrosoftTeamsClient::class)->postMessage($integration, ['type' => 'message']))->toThrow(ProviderRejected::class);
+        ->and(fn () => resolve(MicrosoftTeamsClient::class)->postMessage($integration, ['type' => 'message']))->toThrow(ProviderUnavailable::class)
+        ->and(fn () => resolve(MicrosoftTeamsClient::class)->postMessage($integration, ['type' => 'message']))->toThrow(ProviderRejected::class);
 
     Http::assertSentCount(3);
     expect($integration->fresh()->status)->toBe(IntegrationStatus::Active);
@@ -125,8 +124,8 @@ it('refuses a stored URL the instance no longer allows without calling it', func
     $mattermost = mattermostIntegration();
     config(['services.msteams.allowed_hosts' => [], 'services.mattermost.url' => 'https://mattermost.example.org']);
 
-    expect(fn () => app(MicrosoftTeamsClient::class)->postMessage($teams, ['type' => 'message']))->toThrow(ReconnectRequired::class)
-        ->and(fn () => app(MattermostClient::class)->postMessage($mattermost, 'hello'))->toThrow(ReconnectRequired::class);
+    expect(fn () => resolve(MicrosoftTeamsClient::class)->postMessage($teams, ['type' => 'message']))->toThrow(ReconnectRequired::class)
+        ->and(fn () => resolve(MattermostClient::class)->postMessage($mattermost, 'hello'))->toThrow(ReconnectRequired::class);
 
     Http::assertNothingSent();
     expect($teams->fresh()->status)->toBe(IntegrationStatus::ReconnectRequired)
@@ -136,7 +135,7 @@ it('refuses a stored URL the instance no longer allows without calling it', func
 it('posts Mattermost messages as text', function () {
     Http::fake(['chat.example.com/*' => Http::response('ok')]);
 
-    app(MattermostClient::class)->postMessage(mattermostIntegration(), '**hello**');
+    resolve(MattermostClient::class)->postMessage(mattermostIntegration(), '**hello**');
 
     Http::assertSent(fn (Request $request) => $request->url() === TeamIntegrationFactory::MattermostUrl
         && $request->data() === ['text' => '**hello**']);
@@ -146,10 +145,9 @@ it('asks to paste a new Mattermost webhook only when it is gone', function (int 
     Http::fake(['chat.example.com/*' => Http::response($body, $status)]);
     $integration = mattermostIntegration();
 
-    expect(fn () => app(MattermostClient::class)->postMessage($integration, 'hello'))
-        ->toThrow($reconnect ? ReconnectRequired::class : ProviderRejected::class);
-
-    expect($integration->fresh()->status)->toBe($reconnect ? IntegrationStatus::ReconnectRequired : IntegrationStatus::Active);
+    expect(fn () => resolve(MattermostClient::class)->postMessage($integration, 'hello'))
+        ->toThrow($reconnect ? ReconnectRequired::class : ProviderRejected::class)
+        ->and($integration->fresh()->status)->toBe($reconnect ? IntegrationStatus::ReconnectRequired : IntegrationStatus::Active);
 })->with([
     'invalid webhook' => [400, '{"id":"web.incoming_webhook.invalid.app_error","message":"Invalid webhook"}', true],
     'other 400' => [400, '{"message":"Unable to parse incoming data"}', false],
@@ -160,7 +158,7 @@ it('asks to paste a new Mattermost webhook only when it is gone', function (int 
 it('retries Mattermost outages', function () {
     Http::fake(['chat.example.com/*' => Http::response('', 503)]);
 
-    expect(fn () => app(MattermostClient::class)->postMessage(mattermostIntegration(), 'hello'))->toThrow(ProviderUnavailable::class);
+    expect(fn () => resolve(MattermostClient::class)->postMessage(mattermostIntegration(), 'hello'))->toThrow(ProviderUnavailable::class);
 });
 
 it('never exposes webhook keys in errors', function () {
@@ -168,7 +166,7 @@ it('never exposes webhook keys in errors', function () {
     $unavailable = null;
 
     try {
-        app(MicrosoftTeamsClient::class)->postMessage(teamsIntegration(), ['type' => 'message']);
+        resolve(MicrosoftTeamsClient::class)->postMessage(teamsIntegration(), ['type' => 'message']);
     } catch (ProviderUnavailable $exception) {
         $unavailable = $exception;
     }

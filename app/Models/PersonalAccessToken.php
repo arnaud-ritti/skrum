@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\McpScope;
 use Carbon\CarbonInterface;
 use Database\Factories\PersonalAccessTokenFactory;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -24,6 +25,14 @@ use Laravel\Sanctum\PersonalAccessToken as SanctumPersonalAccessToken;
  * @property CarbonInterface|null $created_at
  * @property-read Team|null $team
  */
+#[Fillable([
+    'name',
+    'token',
+    'abilities',
+    'expires_at',
+    'team_id',
+    'token_hint',
+])]
 class PersonalAccessToken extends SanctumPersonalAccessToken
 {
     /** @use HasFactory<PersonalAccessTokenFactory> */
@@ -38,18 +47,6 @@ class PersonalAccessToken extends SanctumPersonalAccessToken
         'token_hint' => '0000',
     ];
 
-    /**
-     * @var list<string>
-     */
-    protected $fillable = [
-        'name',
-        'token',
-        'abilities',
-        'expires_at',
-        'team_id',
-        'token_hint',
-    ];
-
     /** @return BelongsTo<Team, $this> */
     public function team(): BelongsTo
     {
@@ -62,7 +59,7 @@ class PersonalAccessToken extends SanctumPersonalAccessToken
     public function scopes(): array
     {
         return array_values(array_filter(array_map(
-            fn (string $ability): ?McpScope => McpScope::tryFrom($ability),
+            McpScope::tryFrom(...),
             $this->abilities ?? [],
         )));
     }

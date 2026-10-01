@@ -69,7 +69,7 @@ class SavedPokerDeckRules
      */
     public static function ensureExclusive(array $input): void
     {
-        if (! filled($input['saved_deck_id'] ?? null) || ! array_key_exists('custom_cards', $input)) {
+        if (blank($input['saved_deck_id'] ?? null) || ! array_key_exists('custom_cards', $input)) {
             return;
         }
 

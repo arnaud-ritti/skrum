@@ -20,7 +20,7 @@ use Illuminate\Support\Arr;
  */
 class ConnectJiraDataCenter implements OAuthConnector
 {
-    private const TokenSettings = ['tokenOwner', 'tokenSavedAt'];
+    private const array TokenSettings = ['tokenOwner', 'tokenSavedAt'];
 
     public function __construct(
         private JiraDataCenterClient $client,

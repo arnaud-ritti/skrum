@@ -73,7 +73,7 @@ class SetPokerEstimate
         (new PokerTaskSaved($locked->id, $this->presentPokerTask->handle($task)))->sendToOthers();
 
         if ($value !== null && $value !== $previous) {
-            PokerTaskEstimated::dispatch($task);
+            event(new PokerTaskEstimated($task));
         }
 
         return $task;

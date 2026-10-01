@@ -85,8 +85,8 @@ class ActionItemQuery
                 'case when action_items.completed_at is null then (case action_items.priority when ? then 0 when ? then 1 else 2 end) end',
                 [ActionItemPriority::High->value, ActionItemPriority::Medium->value],
             )
-            ->orderByDesc('action_items.completed_at')
-            ->orderByDesc('action_items.created_at')
+            ->latest('action_items.completed_at')
+            ->latest('action_items.created_at')
             ->orderBy('action_items.id');
     }
 

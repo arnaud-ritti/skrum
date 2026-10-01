@@ -24,11 +24,11 @@ class WorkspaceTemplatesController extends Controller
         return Inertia::render('workspaces/templates', [
             'workspace' => $workspace->only(['id', 'name', 'slug']),
             'templates' => $workspace->templates()->with('columns')->orderBy('name')->get()
-                ->map(fn (WorkspaceTemplate $template) => $this->present($template))
+                ->map(fn (WorkspaceTemplate $template): array => $this->present($template))
                 ->values(),
             'categories' => TemplateCategory::options(),
             'canManage' => $request->user()->canManage($workspace),
-            'catalogue' => Inertia::optional(fn () => $buildTemplateCatalogue->handle($workspace)),
+            'catalogue' => Inertia::optional(fn (): array => $buildTemplateCatalogue->handle($workspace)),
         ]);
     }
 

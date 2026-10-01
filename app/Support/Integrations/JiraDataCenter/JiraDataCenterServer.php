@@ -9,7 +9,7 @@ namespace App\Support\Integrations\JiraDataCenter;
  */
 class JiraDataCenterServer
 {
-    private const KeyLength = 40;
+    private const int KeyLength = 40;
 
     public static function baseUrl(): string
     {

@@ -67,9 +67,9 @@ it('reports failed tests with the matching status', function () {
     $slack = TeamIntegration::factory()->slack()->create(['team_id' => $team->id]);
     $telegram = TeamIntegration::factory()->telegram()->create(['team_id' => $team->id]);
 
-    testIntegration($admin, $slack)->assertStatus(409)->assertJsonPath('message', 'Reconnect Slack in the team settings.');
+    testIntegration($admin, $slack)->assertConflict()->assertJsonPath('message', 'Reconnect Slack in the team settings.');
     testIntegration($admin, $telegram)->assertStatus(502)->assertJsonPath('message', 'Telegram did not respond. Try again later.');
-    testIntegration($admin, $slack->fresh())->assertStatus(409);
+    testIntegration($admin, $slack->fresh())->assertConflict();
 
     expect($slack->fresh()->status)->toBe(IntegrationStatus::ReconnectRequired)
         ->and($telegram->fresh()->status)->toBe(IntegrationStatus::Active);
@@ -173,7 +173,7 @@ it('skips connections of disabled providers', function () {
 });
 
 it('runs the connection check daily on one server', function () {
-    $event = collect(app(Schedule::class)->events())
+    $event = collect(resolve(Schedule::class)->events())
         ->first(fn (ScheduledEvent $event) => str_contains((string) $event->command, 'skrum:check-integrations'));
 
     expect($event)->not->toBeNull()

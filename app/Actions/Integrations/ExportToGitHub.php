@@ -25,7 +25,7 @@ use Illuminate\Support\Str;
  */
 class ExportToGitHub
 {
-    private const UnsafeLabels = ['.', '..'];
+    private const array UnsafeLabels = ['.', '..'];
 
     public function __construct(
         private GitHubClient $client,
@@ -56,9 +56,7 @@ class ExportToGitHub
         try {
             $issue = $this->send($integration, $fullName, $payload);
         } catch (ProviderRejected $exception) {
-            if (! isset($payload['assignees']) || $exception->httpStatus !== 422) {
-                throw $exception;
-            }
+            throw_if(! isset($payload['assignees']) || $exception->httpStatus !== 422, $exception);
 
             unset($payload['assignees']);
             $assignee = $assignee->withoutAccount(ExportWarningCode::AssigneeRejected);
@@ -68,9 +66,7 @@ class ExportToGitHub
         $number = $issue['number'] ?? null;
         $url = $issue['html_url'] ?? null;
 
-        if (! is_int($number) || ! is_string($url) || ! str_starts_with($url, "https://github.com/{$fullName}/issues/")) {
-            throw new IssueCreationUncertain(IntegrationProvider::GitHub, 'invalid_issue_response');
-        }
+        throw_if(! is_int($number) || ! is_string($url) || ! str_starts_with($url, "https://github.com/{$fullName}/issues/"), IssueCreationUncertain::class, IntegrationProvider::GitHub, 'invalid_issue_response');
 
         if (isset($payload['assignees']) && ! $this->isAssigned($issue, (string) $login)) {
             $assignee = $assignee->withoutAccount(ExportWarningCode::AssigneeRejected);
@@ -102,7 +98,7 @@ class ExportToGitHub
 
     private function body(IssueDraft $draft): string
     {
-        $lines = array_map(fn (string $line): string => GitHubMarkdown::escape($line), $draft->lines);
+        $lines = array_map(GitHubMarkdown::escape(...), $draft->lines);
         $body = implode("\n\n", $lines)."\n\n".GitHubMarkdown::escape($draft->origin)." {$draft->link}";
 
         return $draft->dueOn === null ? $body : $body."\n\n".__('Due: :date', ['date' => $draft->dueOn]);
@@ -123,9 +119,7 @@ class ExportToGitHub
         try {
             $this->client->get($integration, "repos/{$fullName}/labels/".rawurlencode($label));
         } catch (ProviderRejected $exception) {
-            if ($exception->httpStatus !== 404) {
-                throw $exception;
-            }
+            throw_if($exception->httpStatus !== 404, $exception);
 
             return new ExportPriority(null, ExportWarningCode::PriorityUnavailable, $label);
         }

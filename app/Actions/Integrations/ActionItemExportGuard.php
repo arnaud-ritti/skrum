@@ -51,9 +51,7 @@ class ActionItemExportGuard
 
         $integration = $team->integration($provider);
 
-        if ($integration === null) {
-            throw new NotConnected($provider);
-        }
+        throw_if($integration === null, NotConnected::class, $provider);
 
         $integration->ensureWritable();
 

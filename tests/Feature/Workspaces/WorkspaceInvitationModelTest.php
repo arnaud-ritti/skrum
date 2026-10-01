@@ -11,7 +11,7 @@ it('issues an invitation that can be found by its plain token only', function ()
     $inviter = User::factory()->create();
     $workspace = Workspace::factory()->withMember($inviter, WorkspaceRole::Owner)->create();
 
-    $issued = app(CreateWorkspaceInvitation::class)->handle($workspace, $inviter, 'new@example.com', WorkspaceRole::Admin);
+    $issued = resolve(CreateWorkspaceInvitation::class)->handle($workspace, $inviter, 'new@example.com', WorkspaceRole::Admin);
 
     expect($issued->invitation->token_hash)->not->toBe($issued->token)
         ->and(WorkspaceInvitation::findByToken($issued->token)?->id)->toBe($issued->invitation->id)
@@ -24,7 +24,7 @@ it('issues an invitation that can be found by its plain token only', function ()
 it('replaces a previous pending invitation for the same email', function () {
     $inviter = User::factory()->create();
     $workspace = Workspace::factory()->withMember($inviter, WorkspaceRole::Owner)->create();
-    $createInvitation = app(CreateWorkspaceInvitation::class);
+    $createInvitation = resolve(CreateWorkspaceInvitation::class);
 
     $first = $createInvitation->handle($workspace, $inviter, 'new@example.com', WorkspaceRole::Member);
     $second = $createInvitation->handle($workspace, $inviter, 'NEW@example.com', WorkspaceRole::Admin);
@@ -51,7 +51,7 @@ it('adds the invitee with the invited role and marks the invitation accepted', f
     $user = User::factory()->create();
     $invitation = WorkspaceInvitation::factory()->create(['role' => WorkspaceRole::Admin, 'email' => $user->email]);
 
-    app(AcceptWorkspaceInvitation::class)->handle($invitation, $user);
+    resolve(AcceptWorkspaceInvitation::class)->handle($invitation, $user);
 
     expect($user->roleIn($invitation->workspace))->toBe(WorkspaceRole::Admin)
         ->and($invitation->fresh()->accepted_at)->not->toBeNull()
@@ -63,7 +63,7 @@ it('never changes the role of an existing member', function () {
     $workspace = Workspace::factory()->withMember($user, WorkspaceRole::Owner)->create();
     $invitation = WorkspaceInvitation::factory()->for($workspace)->create(['role' => WorkspaceRole::Member, 'email' => $user->email]);
 
-    app(AcceptWorkspaceInvitation::class)->handle($invitation, $user);
+    resolve(AcceptWorkspaceInvitation::class)->handle($invitation, $user);
 
     expect($user->roleIn($workspace))->toBe(WorkspaceRole::Owner);
 });
@@ -72,7 +72,7 @@ it('refuses to accept an expired invitation', function () {
     $user = User::factory()->create();
     $invitation = WorkspaceInvitation::factory()->expired()->create(['email' => $user->email]);
 
-    expect(fn () => app(AcceptWorkspaceInvitation::class)->handle($invitation, $user))
+    expect(fn () => resolve(AcceptWorkspaceInvitation::class)->handle($invitation, $user))
         ->toThrow(InvalidArgumentException::class)
         ->and($user->belongsToWorkspace($invitation->workspace))->toBeFalse();
 });
@@ -81,7 +81,7 @@ it('refuses to accept an already accepted invitation', function () {
     $user = User::factory()->create();
     $invitation = WorkspaceInvitation::factory()->accepted()->create(['email' => $user->email]);
 
-    expect(fn () => app(AcceptWorkspaceInvitation::class)->handle($invitation, $user))
+    expect(fn () => resolve(AcceptWorkspaceInvitation::class)->handle($invitation, $user))
         ->toThrow(InvalidArgumentException::class);
 });
 
@@ -89,7 +89,7 @@ it('refuses to accept an invitation sent to another email address', function () 
     $user = User::factory()->create();
     $invitation = WorkspaceInvitation::factory()->create(['email' => 'someone-else@example.com']);
 
-    expect(fn () => app(AcceptWorkspaceInvitation::class)->handle($invitation, $user))
+    expect(fn () => resolve(AcceptWorkspaceInvitation::class)->handle($invitation, $user))
         ->toThrow(InvalidArgumentException::class)
         ->and($user->belongsToWorkspace($invitation->workspace))->toBeFalse();
 });

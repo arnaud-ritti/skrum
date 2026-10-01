@@ -50,17 +50,17 @@ class HandleInertiaRequests extends Middleware
             'features' => [
                 'mcp' => (bool) config('skrum.mcp.enabled'),
             ],
-            'translations' => fn () => $this->translations(app()->getLocale()),
+            'translations' => fn (): array => $this->translations(app()->getLocale()),
             'workspaces' => fn () => $request->user()?->workspaces()
                 ->orderBy('name')
                 ->get()
                 ->map(fn (Workspace $workspace) => $workspace->only(['id', 'name', 'slug']))
                 ->all() ?? [],
-            'currentWorkspace' => fn () => $this->currentWorkspace($request),
-            'notifications' => fn () => $request->user() === null
+            'currentWorkspace' => fn (): ?array => $this->currentWorkspace($request),
+            'notifications' => fn (): ?array => $request->user() === null
                 ? null
                 : ['unreadCount' => $request->user()->unreadNotifications()->count()],
-            'actionItems' => fn () => $this->actionItemCounts($request),
+            'actionItems' => fn (): ?array => $this->actionItemCounts($request),
         ];
     }
 
@@ -133,7 +133,7 @@ class HandleInertiaRequests extends Middleware
         }
 
         return [
-            'overdueAssignedCount' => app(ActionItemQuery::class)->visibleTo($user, $workspace)
+            'overdueAssignedCount' => resolve(ActionItemQuery::class)->visibleTo($user, $workspace)
                 ->where('assignee_user_id', $user->id)
                 ->whereNull('completed_at')
                 ->where('due_on', '<', ActionItem::today()->toDateString())

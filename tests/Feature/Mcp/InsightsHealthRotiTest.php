@@ -89,7 +89,7 @@ it('reports never-requested insights as not available with empty lists', functio
 function mcpHealthBoard(RetroPhase $phase, bool $anonymous = false): array
 {
     $retro = Retro::factory()->withHealthCheck()->inPhase($phase)->create(['is_anonymous' => $anonymous]);
-    app(FreezeHealthStatements::class)->handle($retro);
+    resolve(FreezeHealthStatements::class)->handle($retro);
     [$user, $participant] = retroMember($retro);
 
     return [$retro, $user, $participant];
@@ -115,9 +115,8 @@ it('shows progress and only the viewer own scores while collecting', function ()
         ->and($interaction['answers'])->toBe(2)
         ->and($interaction['answeredBy'])->toEqualCanonicalizing([$user->name, $other->displayName()])
         ->and($interaction)->not->toHaveKey('average')
-        ->and($result['myScores'])->toBe([HealthStatement::Interaction->value => 7]);
-
-    expect(json_encode($result))->not->toContain('"score":2');
+        ->and($result['myScores'])->toBe([HealthStatement::Interaction->value => 7])
+        ->and(json_encode($result))->not->toContain('"score":2');
 });
 
 it('names no one who answered on anonymous boards', function () {
@@ -126,7 +125,7 @@ it('names no one who answered on anonymous boards', function () {
 
     $categories = mcpStructured(actingAsMcp($user)->tool(GetHealth::class, ['board_id' => $retro->id]))['categories'];
 
-    expect(collect($categories)->pluck('answeredBy')->flatten()->all())->toBe([]);
+    expect(collect($categories)->pluck('answeredBy')->flatten()->all())->toBeEmpty();
 });
 
 it('shows only respondents between the health check and completion', function () {

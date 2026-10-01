@@ -53,7 +53,7 @@ it('queues a board link to Slack for the facilitator', function () {
 
     $delivery = IntegrationDelivery::query()->sole();
     expect($response->json('id'))->toBe($delivery->id);
-    Queue::assertPushed(DeliverToSlack::class, function (DeliverToSlack $job) use ($retro, $delivery) {
+    Queue::assertPushed(DeliverToSlack::class, function (DeliverToSlack $job) use ($retro, $delivery): bool {
         $json = slackJobJson($job);
 
         return $job->deliveryId === $delivery->id

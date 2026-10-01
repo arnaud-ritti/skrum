@@ -43,7 +43,7 @@ it('gives answers random ids', function () {
 });
 
 it('presents a GIF through the proxy', function () {
-    expect(app(PresentGameGif::class)->handle('abc123'))->toBe([
+    expect(resolve(PresentGameGif::class)->handle('abc123'))->toBe([
         'id' => 'abc123',
         'previewUrl' => route('gifs.show', ['gif' => 'abc123', 'size' => 'preview'], false),
         'url' => route('gifs.show', ['gif' => 'abc123', 'size' => 'full'], false),
@@ -58,7 +58,7 @@ it('picks a question the room did not ask recently', function () {
     gifQuestionRound($room, 'Two?', 2);
     gifQuestionRound($other, 'Three?', 1);
 
-    expect(app(PickGifQuestion::class)->handle($room))->toBe('Three?');
+    expect(resolve(PickGifQuestion::class)->handle($room))->toBe('Three?');
 });
 
 it('only avoids the last twenty questions', function () {
@@ -70,7 +70,7 @@ it('only avoids the last twenty questions', function () {
         gifQuestionRound($room, 'Two?', $minutesAgo);
     }
 
-    expect(app(PickGifQuestion::class)->handle($room))->toBe('One?');
+    expect(resolve(PickGifQuestion::class)->handle($room))->toBe('One?');
 });
 
 it('starts over when every question was asked, never repeating the current one', function () {
@@ -79,21 +79,21 @@ it('starts over when every question was asked, never repeating the current one',
     gifQuestionRound($room, 'One?', 2);
     gifQuestionRound($room, 'Two?', 1);
 
-    expect(app(PickGifQuestion::class)->handle($room, 'Two?'))->toBe('One?');
+    expect(resolve(PickGifQuestion::class)->handle($room, 'Two?'))->toBe('One?');
 });
 
 it('uses the room locale', function () {
     app()->instance(GameWordBook::class, new GameWordBook(questions: ['en' => ['English?'], 'fr' => ['Français ?']]));
     $room = GameRoom::factory()->game(GameKind::SprintGif)->create(['locale' => 'fr']);
 
-    expect(app(PickGifQuestion::class)->handle($room))->toBe('Français ?');
+    expect(resolve(PickGifQuestion::class)->handle($room))->toBe('Français ?');
 });
 
 it('serves GIFs used by game answers', function () {
     fakeGameGifs('answered1');
     GameGifAnswer::factory()->create(['gif_id' => 'answered1']);
 
-    $catalog = app(GifCatalog::class);
+    $catalog = resolve(GifCatalog::class);
 
     expect($catalog->servable('answered1')?->id)->toBe('answered1')
         ->and($catalog->servable('stranger'))->toBeNull();
@@ -122,7 +122,7 @@ it('refuses to present revealed answers loaded without their vote counts', funct
     $round = gifQuestionRound($room, 'Which GIF sums up the sprint?', 5);
     GameGifAnswer::factory()->create(['game_round_id' => $round->id, 'gif_id' => 'party']);
 
-    app(PresentGifAnswers::class)->closedFrom($round->gifAnswers()->get(), $round, $room);
+    resolve(PresentGifAnswers::class)->closedFrom($round->gifAnswers()->get(), $round, $room);
 })->throws(LogicException::class);
 
 it('presents answers of a passed round without vote counts', function () {
@@ -131,7 +131,7 @@ it('presents answers of a passed round without vote counts', function () {
     $round = GameRound::factory()->game(GameKind::SprintGif)->ended(GameRoundOutcome::Passed)->create(['game_room_id' => $room->id, 'word' => null]);
     GameGifAnswer::factory()->create(['game_round_id' => $round->id, 'gif_id' => 'party']);
 
-    $answers = app(PresentGifAnswers::class)->closedFrom($round->gifAnswers()->get(), $round, $room);
+    $answers = resolve(PresentGifAnswers::class)->closedFrom($round->gifAnswers()->get(), $round, $room);
 
     expect($answers)->toHaveCount(1)->and($answers[0]['votes'])->toBeNull();
 });

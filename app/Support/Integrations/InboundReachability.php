@@ -15,12 +15,12 @@ class InboundReachability
      */
     public const Modes = ['auto', 'on', 'off'];
 
-    private const CacheSeconds = 3600;
+    private const int CacheSeconds = 3600;
 
     /**
      * @var array<int, string>
      */
-    private const PrivateSuffixes = ['.local', '.localhost', '.test', '.internal', '.lan', '.home.arpa'];
+    private const array PrivateSuffixes = ['.local', '.localhost', '.test', '.internal', '.lan', '.home.arpa'];
 
     public function __construct(private HostResolver $resolver) {}
 

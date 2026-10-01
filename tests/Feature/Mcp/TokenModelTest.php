@@ -69,7 +69,7 @@ it('deletes the tokens bound to a deleted team', function () {
 });
 
 it('prunes tokens 30 days after they expired, every day', function () {
-    $event = collect(app(Schedule::class)->events())
+    $event = collect(resolve(Schedule::class)->events())
         ->first(fn (ScheduledEvent $event) => str_contains((string) $event->command, 'sanctum:prune-expired --hours=720'));
 
     expect($event)->not->toBeNull()

@@ -13,6 +13,7 @@ use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\Survey;
 use App\Models\SurveyComment;
+use Illuminate\Contracts\Database\Query\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -184,7 +185,7 @@ class SurveyCommentsController extends Controller
         $threadParticipantIds = $comment->parent_comment_id === null
             ? collect()
             : $survey->comments()
-                ->where(fn ($query) => $query->whereKey($comment->parent_comment_id)->orWhere('parent_comment_id', $comment->parent_comment_id))
+                ->where(fn (Builder $query) => $query->whereKey($comment->parent_comment_id)->orWhere('parent_comment_id', $comment->parent_comment_id))
                 ->pluck('participant_id');
 
         $answeredIds = $survey->is_closed ? null : $survey->answeredParticipantIds();
@@ -193,8 +194,8 @@ class SurveyCommentsController extends Controller
             ->push($survey->created_by_participant_id)
             ->filter()
             ->unique()
-            ->reject(fn (string $participantId) => $participantId === $commenter->id)
-            ->filter(fn (string $participantId) => $answeredIds === null || $answeredIds->contains($participantId));
+            ->reject(fn (string $participantId): bool => $participantId === $commenter->id)
+            ->filter(fn (string $participantId): bool => $answeredIds === null || $answeredIds->contains($participantId));
 
         $notification = [
             'surveyId' => $survey->id,

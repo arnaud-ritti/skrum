@@ -21,7 +21,7 @@ class AnalyzeRetro extends SkrumPrompt
 
     protected string $description = 'Analyse one retrospective board: its summary, themes, agreements, health check, ROTI and messages.';
 
-    private const Instructions = <<<'TEXT'
+    private const string Instructions = <<<'TEXT'
         You are helping a team reflect on a retrospective from skrum. The JSON below holds the board's summary, its themes and suggested actions (when available), its agreements (action items), its health check, its ROTI and its messages (most voted first when votes are visible).
         Identify the key themes, the risks, and what the team should change next time. Check that the agreements cover the top themes, and point to pending suggested actions the user may promote.
         Never guess who wrote an anonymous message.

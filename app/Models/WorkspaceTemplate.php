@@ -68,7 +68,7 @@ class WorkspaceTemplate extends Model
      */
     public function presentColumns(): array
     {
-        return $this->columns->map(fn (WorkspaceTemplateColumn $column) => [
+        return $this->columns->map(fn (WorkspaceTemplateColumn $column): array => [
             'title' => $column->title,
             'description' => $column->description,
             'color' => $column->color->value,

@@ -93,7 +93,7 @@ it('exposes the flag in the snapshot and the provider on the team page', functio
     $retro = Retro::factory()->create(['team_id' => $team->id, 'ai_summary_enabled' => true]);
     [, $viewer] = retroMember($retro);
 
-    expect(app(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer)['retro']['aiSummaryEnabled'])->toBeTrue();
+    expect(resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer)['retro']['aiSummaryEnabled'])->toBeTrue();
 
     $this->actingAs($user)->get(route('teams.show', [$team->workspace, $team]))
         ->assertInertia(fn (Assert $page) => $page->where('llm', ['enabled' => true, 'provider' => 'Anthropic']));

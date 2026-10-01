@@ -12,6 +12,7 @@ use App\Mcp\Tools\SkrumTool;
 use App\Models\PokerGame;
 use App\Models\PokerTask;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Contracts\Database\Query\Builder;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -58,7 +59,7 @@ class SyncTask extends SkrumTool
 
         $task = PokerTask::query()
             ->whereKey($validated['task_id'])
-            ->whereHas('game', fn ($query) => $query->whereIn('team_id', $this->context->visibleTeamIds()))
+            ->whereHas('game', fn (Builder $query) => $query->whereIn('team_id', $this->context->visibleTeamIds()))
             ->firstOrFail();
         $game = $task->game;
 

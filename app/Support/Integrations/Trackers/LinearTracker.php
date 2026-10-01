@@ -13,13 +13,13 @@ use Carbon\CarbonImmutable;
 
 class LinearTracker implements IssueTracker, SyncsIssueStatus
 {
-    private const IssueFields = 'id identifier title description url estimate updatedAt assignee { displayName } state { id name type } team { key }';
+    private const string IssueFields = 'id identifier title description url estimate updatedAt assignee { displayName } state { id name type } team { key }';
 
     public const TeamKeyPattern = IssueStatus::ContainerKeyPattern;
 
-    private const MaxTeams = 250;
+    private const int MaxTeams = 250;
 
-    private const MaxEstimate = 64;
+    private const int MaxEstimate = 64;
 
     public function __construct(private LinearClient $client) {}
 
@@ -142,7 +142,7 @@ class LinearTracker implements IssueTracker, SyncsIssueStatus
                 ['id' => $externalId, 'estimate' => $value],
             );
         } catch (ProviderRejected $exception) {
-            throw new EstimateRejected(__('Linear rejected this estimate: :message', ['message' => $exception->userMessage()]));
+            throw new EstimateRejected(__('Linear rejected this estimate: :message', ['message' => $exception->userMessage()]), $exception->getCode(), $exception);
         }
 
         if (data_get($result, 'issueUpdate.success') !== true) {
@@ -185,7 +185,7 @@ class LinearTracker implements IssueTracker, SyncsIssueStatus
             'id' => $state['id'],
             'name' => $state['name'],
             'category' => DoneMapping::category($integration->provider, $state['type'])->value,
-        ], self::states((array) data_get($data, 'teams.nodes.0.states.nodes', [])));
+        ], $this->states((array) data_get($data, 'teams.nodes.0.states.nodes', [])));
     }
 
     public function transition(TeamIntegration $integration, string $externalId, ExternalIssueState $target): ?TrackerIssue
@@ -205,7 +205,7 @@ class LinearTracker implements IssueTracker, SyncsIssueStatus
             'query($id: String!) { issue(id: $id) { team { states(first: 100) { nodes { id name type position } } } } }',
             ['id' => $externalId],
         );
-        $state = $this->targetState($integration, $issue->issueStatus->container, self::states((array) data_get($data, 'issue.team.states.nodes', [])), $target)
+        $state = $this->targetState($integration, $issue->issueStatus->container, $this->states((array) data_get($data, 'issue.team.states.nodes', [])), $target)
             ?? throw StatusPushRejected::unavailable($integration->provider, $issue->key, $target);
 
         $result = $this->client->query(
@@ -273,7 +273,7 @@ class LinearTracker implements IssueTracker, SyncsIssueStatus
      * @param  array<array-key, mixed>  $nodes
      * @return array<int, array{id: string, name: string, type: string, position: float}>
      */
-    private static function states(array $nodes): array
+    private function states(array $nodes): array
     {
         $states = [];
 

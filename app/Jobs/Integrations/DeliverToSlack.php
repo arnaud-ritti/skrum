@@ -23,6 +23,6 @@ class DeliverToSlack extends DeliverToChannel
 
     protected function send(TeamIntegration $integration): void
     {
-        app(SlackClient::class)->postMessage($integration, $this->message);
+        resolve(SlackClient::class)->postMessage($integration, $this->message);
     }
 }

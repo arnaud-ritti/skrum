@@ -18,7 +18,7 @@ use App\Support\Integrations\GitHub\GitHubClient;
  */
 class ConnectGitHub implements OAuthConnector
 {
-    private const InstallationIdPattern = '/^\d{1,20}\z/';
+    private const string InstallationIdPattern = '/^\d{1,20}\z/';
 
     public function __construct(private GitHubClient $client, private SaveTeamIntegration $saveTeamIntegration) {}
 

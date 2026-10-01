@@ -79,7 +79,7 @@ class PokerDeckRules
      */
     public static function withSpecialCards(array $cards, bool $includeUnknown, bool $includeCoffee): array
     {
-        $cards = array_values(array_map('trim', $cards));
+        $cards = array_values(array_map(trim(...), $cards));
 
         if ($includeUnknown && ! in_array(PokerDeck::UnknownCard, $cards, true)) {
             $cards[] = PokerDeck::UnknownCard;

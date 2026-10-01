@@ -57,7 +57,7 @@ it('does not push changes that came from the source', function () {
     Queue::fake();
     ['item' => $item, 'link' => $link] = statusSyncLink();
 
-    DB::transaction(fn () => app(SetActionItemStatus::class)->handle(
+    DB::transaction(fn () => resolve(SetActionItemStatus::class)->handle(
         ActionItem::query()->whereKey($item->id)->lockForUpdate()->firstOrFail(),
         new ExternalSyncActor('jira', 'PROJ-1'),
         ActionItemStatus::Completed,

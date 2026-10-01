@@ -31,7 +31,7 @@ function hangmanIcebreaker(array $attributes = []): array
     ]);
     [$facilitator] = retroFacilitator($retro);
 
-    return [$retro, $facilitator, app(EnsureIcebreakerRoom::class)->handle($retro->fresh())];
+    return [$retro, $facilitator, resolve(EnsureIcebreakerRoom::class)->handle($retro->fresh())];
 }
 
 it('creates the icebreaker room when the retro enters the phase', function () {
@@ -121,7 +121,7 @@ it('broadcasts icebreaker rounds on the retro channel', function () {
 
     $this->actingAs($facilitator)->postJson(route('games.rounds.store', $room))->assertCreated();
 
-    Event::assertDispatched(GameRoundStarted::class, fn (GameRoundStarted $event) => $event->broadcastOn()->name === "presence-retro.{$retro->id}");
+    Event::assertDispatched(fn (GameRoundStarted $event) => $event->broadcastOn()->name === "presence-retro.{$retro->id}");
 });
 
 it('refuses game mutations on a completed retro and keeps the history readable', function () {
@@ -157,7 +157,7 @@ it('abandons the active round when the retro leaves the icebreaker', function ()
         ->and($round->fresh()->ended_at)->not->toBeNull()
         ->and(GamePoint::query()->count())->toBe(0);
 
-    Event::assertDispatched(GameRoundEnded::class, fn (GameRoundEnded $event) => $event->payload['outcome'] === 'abandoned'
+    Event::assertDispatched(fn (GameRoundEnded $event) => $event->payload['outcome'] === 'abandoned'
         && $event->broadcastOn()->name === "presence-retro.{$retro->id}");
 });
 

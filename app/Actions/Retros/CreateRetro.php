@@ -81,7 +81,7 @@ class CreateRetro
     private function columns(string $template, ?WorkspaceTemplate $workspaceTemplate): array
     {
         if ($workspaceTemplate !== null) {
-            return $workspaceTemplate->columns->map(fn (WorkspaceTemplateColumn $column) => [
+            return $workspaceTemplate->columns->map(fn (WorkspaceTemplateColumn $column): array => [
                 'title' => $column->title,
                 'description' => $column->description,
                 'color' => $column->color,
@@ -90,9 +90,7 @@ class CreateRetro
 
         $definition = TemplateCatalogue::find($template);
 
-        if ($definition === null) {
-            throw new InvalidArgumentException("Unknown retro template [{$template}].");
-        }
+        throw_if($definition === null, InvalidArgumentException::class, "Unknown retro template [{$template}].");
 
         return $definition->translatedColumns();
     }

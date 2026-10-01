@@ -70,9 +70,8 @@ it('marks the integration when a provider call loses access', function () {
     $integration = TeamIntegration::factory()->slack()->create();
 
     expect(fn () => $integration->withReconnectHandling(fn () => throw new ReconnectRequired(IntegrationProvider::Slack, 'token_revoked')))
-        ->toThrow(ReconnectRequired::class);
-
-    expect($integration->fresh()->status)->toBe(IntegrationStatus::ReconnectRequired)
+        ->toThrow(ReconnectRequired::class)
+        ->and($integration->fresh()->status)->toBe(IntegrationStatus::ReconnectRequired)
         ->and($integration->fresh()->last_error)->toBe('token_revoked');
 });
 
@@ -98,7 +97,7 @@ it('tells active, writable and readable connections apart', function () {
 
 it('finds the active integration of an enabled provider only', function () {
     $integration = TeamIntegration::factory()->slack()->create();
-    $availability = app(IntegrationAvailability::class);
+    $availability = resolve(IntegrationAvailability::class);
 
     expect($availability->activeIntegration($integration->team, IntegrationProvider::Slack))->toBeNull();
 
@@ -118,9 +117,8 @@ it('keeps account mappings per member and deletes them with the integration', fu
     $never = IntegrationUserMapping::factory()->neverAssign()->create(['team_integration_id' => $integration->id]);
 
     expect(fn () => DB::transaction(fn () => IntegrationUserMapping::factory()->create(['team_integration_id' => $integration->id, 'user_id' => $user->id])))
-        ->toThrow(UniqueConstraintViolationException::class);
-
-    expect($integration->accountFor($user)?->id)->toBe($mapping->id)
+        ->toThrow(UniqueConstraintViolationException::class)
+        ->and($integration->accountFor($user)?->id)->toBe($mapping->id)
         ->and($mapping->matched_by)->toBe(IntegrationUserMatch::Email)
         ->and($mapping->isNeverAssign())->toBeFalse()
         ->and($never->isNeverAssign())->toBeTrue();

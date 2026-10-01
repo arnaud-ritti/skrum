@@ -15,7 +15,7 @@ use App\Support\Integrations\JiraDataCenter\MarkdownToWikiMarkup;
 
 class ExportToJira
 {
-    private const IssueKeyPattern = '/^[A-Z][A-Z0-9_]*-\d+\z/';
+    private const string IssueKeyPattern = '/^[A-Z][A-Z0-9_]*-\d+\z/';
 
     public function __construct(
         private JiraApis $jiraApis,
@@ -50,9 +50,7 @@ class ExportToJira
         try {
             $created = $this->send($integration, $payload);
         } catch (ProviderRejected $exception) {
-            if (! isset($payload['assignee']) || ! array_key_exists('assignee', $exception->errors)) {
-                throw $exception;
-            }
+            throw_if(! isset($payload['assignee']) || ! array_key_exists('assignee', $exception->errors), $exception);
 
             unset($payload['assignee']);
             $assignee = $assignee->withoutAccount(ExportWarningCode::AssigneeRejected);

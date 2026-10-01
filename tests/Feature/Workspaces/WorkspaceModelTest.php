@@ -8,7 +8,7 @@ use App\Models\Workspace;
 it('creates a workspace owned by its creator', function () {
     $user = User::factory()->create();
 
-    $workspace = app(CreateWorkspace::class)->handle($user, 'Acme Corp');
+    $workspace = resolve(CreateWorkspace::class)->handle($user, 'Acme Corp');
 
     expect($workspace->name)->toBe('Acme Corp')
         ->and($workspace->slug)->toMatch('/^acme-corp-[a-z0-9]{6}$/')
@@ -17,7 +17,7 @@ it('creates a workspace owned by its creator', function () {
 });
 
 it('falls back to a generic slug when the name has no latin characters', function () {
-    $workspace = app(CreateWorkspace::class)->handle(User::factory()->create(), '!!!');
+    $workspace = resolve(CreateWorkspace::class)->handle(User::factory()->create(), '!!!');
 
     expect($workspace->slug)->toMatch('/^workspace-[a-z0-9]{6}$/');
 });

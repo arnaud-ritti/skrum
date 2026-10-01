@@ -287,7 +287,7 @@ it('drops the oldest boards entirely when emptied themes are not enough', functi
         'health' => ['blob' => str_repeat('z', 25000)],
     ])->all()];
 
-    [$fitted, $trimmedThemes, $droppedBoards] = (fn (): array => $this->fit($data))->call(app(TeamHealth::class));
+    [$fitted, $trimmedThemes, $droppedBoards] = (fn (): array => $this->fit($data))->call(resolve(TeamHealth::class));
 
     expect(mb_strlen(json_encode($fitted, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)))->toBeLessThanOrEqual(SkrumPrompt::MaxContentLength)
         ->and($trimmedThemes)->toBeTrue()

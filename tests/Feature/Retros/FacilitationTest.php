@@ -33,7 +33,7 @@ it('moves to adjacent phases only', function () {
     $this->actingAs($user)->putJson(route('retros.phase.update', $retro), ['phase' => 'discussing'])->assertUnprocessable();
     $this->actingAs($user)->putJson(route('retros.phase.update', $retro), ['phase' => 'writing'])->assertOk();
 
-    Event::assertDispatched(PhaseChanged::class, fn (PhaseChanged $event) => $event->phase === 'grouping');
+    Event::assertDispatched(fn (PhaseChanged $event) => $event->phase === 'grouping');
 });
 
 it('completes and reopens a retro', function () {
@@ -101,7 +101,7 @@ it('highlights top level cards while discussing', function () {
     $this->actingAs($user)->putJson(route('retros.highlight.update', $retro), ['card_id' => Card::factory()->create()->id])->assertUnprocessable();
 
     expect($retro->fresh()->highlighted_card_id)->toBe($card->id);
-    Event::assertDispatched(CardHighlighted::class, fn (CardHighlighted $event) => $event->cardId === $card->id);
+    Event::assertDispatched(fn (CardHighlighted $event) => $event->cardId === $card->id);
 
     $retro->update(['phase' => RetroPhase::Voting]);
 
@@ -134,7 +134,7 @@ it('updates settings and asks clients to refetch', function () {
         'votes_per_participant' => 3,
         'guest_access_enabled' => true,
     ]);
-    Event::assertDispatched(RetroSettingsChanged::class, fn (RetroSettingsChanged $event) => $event->broadcastWith() === []);
+    Event::assertDispatched(fn (RetroSettingsChanged $event) => $event->broadcastWith() === []);
 });
 
 it('only turns anonymity off before any card exists', function () {
@@ -223,7 +223,7 @@ it('deletes the retro', function () {
     $this->actingAs($user)->deleteJson(route('retros.destroy', $retro))->assertNoContent();
 
     expect(Retro::find($retro->id))->toBeNull();
-    Event::assertDispatched(RetroDeleted::class, fn (RetroDeleted $event) => $event->retroId === $retro->id);
+    Event::assertDispatched(fn (RetroDeleted $event) => $event->retroId === $retro->id);
 });
 
 it('updates the engagement settings and asks clients to refetch', function () {

@@ -13,7 +13,7 @@ class AdfToMarkdown
 {
     public const MaxLength = 10000;
 
-    private const SafeLinkSchemes = ['http', 'https', 'mailto'];
+    private const array SafeLinkSchemes = ['http', 'https', 'mailto'];
 
     /**
      * @param  array<array-key, mixed>|null  $document
@@ -129,7 +129,7 @@ class AdfToMarkdown
 
         $marks = array_values(array_filter(
             is_array($node['marks'] ?? null) ? $node['marks'] : [],
-            fn (mixed $mark): bool => is_array($mark),
+            is_array(...),
         ));
         $types = array_map(fn (array $mark): mixed => $mark['type'] ?? null, $marks);
 

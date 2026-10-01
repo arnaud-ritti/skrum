@@ -99,9 +99,7 @@ abstract class DeliverToChannel implements ShouldBeEncrypted, ShouldQueue
         $provider = $this->provider();
         $integration = $provider->isEnabled() ? $delivery->team->integration($provider) : null;
 
-        if ($integration === null) {
-            throw new NotConnected($provider);
-        }
+        throw_if($integration === null, NotConnected::class, $provider);
 
         $integration->ensureActive();
 

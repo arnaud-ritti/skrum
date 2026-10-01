@@ -28,7 +28,7 @@ class BuildRetroRecap
 
     public const CardContentLimit = 300;
 
-    private const MachineGuestSuffix = '(guest)';
+    private const string MachineGuestSuffix = '(guest)';
 
     public function __construct(private SummarizeRoti $summarizeRoti) {}
 

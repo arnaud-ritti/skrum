@@ -25,7 +25,7 @@ beforeEach(function () {
 
 function runGameExpiryJob(GameRound $round, string $timerEndsAt): void
 {
-    (new CloseExpiredGameRound($round->id, $timerEndsAt))->handle(app(ExpireGameRound::class));
+    (new CloseExpiredGameRound($round->id, $timerEndsAt))->handle(resolve(ExpireGameRound::class));
 }
 
 it('sets and clears the room timer as host', function () {
@@ -38,7 +38,7 @@ it('sets and clears the room timer as host', function () {
         ->assertExactJson(['timerEndsAt' => '2026-10-06T10:01:30+00:00']);
 
     expect($room->fresh()->timer_ends_at?->toIso8601String())->toBe('2026-10-06T10:01:30+00:00');
-    Event::assertDispatched(GameTimerChanged::class, fn (GameTimerChanged $event) => $event->timerEndsAt === '2026-10-06T10:01:30+00:00');
+    Event::assertDispatched(fn (GameTimerChanged $event) => $event->timerEndsAt === '2026-10-06T10:01:30+00:00');
 
     $this->actingAs($user)
         ->putJson(route('games.timer.update', $room), ['seconds' => null])
@@ -116,7 +116,7 @@ it('ends the round as timed out when the job runs after the timer', function () 
     runGameExpiryJob($round, '2026-10-06T10:01:00+00:00');
 
     expect($round->fresh()->outcome)->toBe(GameRoundOutcome::TimedOut);
-    Event::assertDispatched(GameRoundEnded::class, fn (GameRoundEnded $event) => $event->payload['outcome'] === 'timed_out');
+    Event::assertDispatched(fn (GameRoundEnded $event) => $event->payload['outcome'] === 'timed_out');
 });
 
 it('ignores stale, early and cleared timers', function (string $case) {
@@ -192,7 +192,7 @@ it('leaves the round active when the rules handle the expiry themselves', functi
     $round = activeGameRound($room);
 
     $this->travel(2)->minutes();
-    app(ExpireGameRound::class)->handle($room->fresh());
+    resolve(ExpireGameRound::class)->handle($room->fresh());
 
     expect($round->fresh()->isActive())->toBeTrue();
 });

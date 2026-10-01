@@ -30,7 +30,7 @@ function timedTable(bool $autoReveal = false): array
 
 function runTimerJob(PokerRound $round, string $timerEndsAt): void
 {
-    (new RevealPokerRoundOnTimer($round->id, $timerEndsAt))->handle(app(AutoRevealPokerRound::class));
+    (new RevealPokerRoundOnTimer($round->id, $timerEndsAt))->handle(resolve(AutoRevealPokerRound::class));
 }
 
 it('sets and clears the timer as facilitator', function () {
@@ -121,7 +121,7 @@ it('broadcasts the new end time', function () {
         ->putJson(route('poker.rounds.timer.update', [$game, $round]), ['seconds' => 30])
         ->assertOk();
 
-    Event::assertDispatched(PokerTimerChanged::class, fn (PokerTimerChanged $event) => $event->broadcastAs() === 'timer.changed'
+    Event::assertDispatched(fn (PokerTimerChanged $event) => $event->broadcastAs() === 'timer.changed'
         && $event->broadcastWith() === ['roundId' => $round->id, 'timerEndsAt' => '2026-10-05T10:00:30+00:00']);
 });
 
@@ -244,7 +244,7 @@ it('ignores a job for a deleted round', function () {
     $roundId = $round->id;
     $round->task->delete();
 
-    (new RevealPokerRoundOnTimer($roundId, '2026-10-05T10:00:30+00:00'))->handle(app(AutoRevealPokerRound::class));
+    (new RevealPokerRoundOnTimer($roundId, '2026-10-05T10:00:30+00:00'))->handle(resolve(AutoRevealPokerRound::class));
 
     expect(PokerRound::query()->find($roundId))->toBeNull();
 });

@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\RateLimiter;
 
 class GameGifsController extends Controller
 {
-    private const SearchesPerMinute = 20;
+    private const int SearchesPerMinute = 20;
 
     public function index(Request $request, GameRoom $room, GifCatalog $gifCatalog, GameRulesRegistry $gameRulesRegistry): JsonResponse
     {

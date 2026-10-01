@@ -48,13 +48,12 @@ class ListBoardActionItems extends SkrumTool
 
         $items = $retro->actionItems()
             ->with(McpActionItem::relations())
-            ->withCount('comments')
-            ->orderBy('created_at')
+            ->withCount('comments')->oldest()
             ->orderBy('id')
             ->get();
 
         return Response::structured([
-            'items' => $items->map(fn (ActionItem $item) => $this->presentActionItem->handle($item, $viewer))->values()->all(),
+            'items' => $items->map(fn (ActionItem $item): array => $this->presentActionItem->handle($item, $viewer))->values()->all(),
         ]);
     }
 }

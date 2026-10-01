@@ -154,7 +154,7 @@ it('never broadcasts the chosen option, the text or who answered', function () {
 
     $this->actingAs($user)->putJson(route('retros.surveys.response.update', [$retro, $survey]), ['text' => 'secret feedback'])->assertOk();
 
-    Event::assertDispatched(SurveyChanged::class, fn (SurveyChanged $event) => $event->broadcastWith() === ['surveyId' => $survey->id, 'version' => 1, 'responseCount' => 1]
+    Event::assertDispatched(fn (SurveyChanged $event) => $event->broadcastWith() === ['surveyId' => $survey->id, 'version' => 1, 'responseCount' => 1]
         && ! str_contains(json_encode($event->broadcastWith()), 'secret feedback')
         && ! str_contains(json_encode($event->broadcastWith()), $participant->id));
 });

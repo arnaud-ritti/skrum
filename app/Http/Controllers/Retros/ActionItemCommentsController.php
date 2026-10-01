@@ -36,8 +36,7 @@ class ActionItemCommentsController extends Controller
         $item = $retro->actionItems()->whereKey($actionItem->id)->firstOrFail();
 
         $comments = $item->comments()
-            ->with(['authorParticipant.user', 'authorUser'])
-            ->orderBy('created_at')
+            ->with(['authorParticipant.user', 'authorUser'])->oldest()
             ->orderBy('id')
             ->get();
 
@@ -52,9 +51,7 @@ class ActionItemCommentsController extends Controller
 
         $validated = $request->validate(['content' => ['required', 'string', 'max:500']]);
 
-        $comment = DB::transaction(function () use ($retro, $actionItem, $actor, $validated): ActionItemComment {
-            return $this->addActionItemComment->handle($this->lockActionItem($retro, $actionItem), $actor, $validated['content']);
-        });
+        $comment = DB::transaction(fn (): ActionItemComment => $this->addActionItemComment->handle($this->lockActionItem($retro, $actionItem), $actor, $validated['content']));
 
         return response()->json(['comment' => $this->presentActionItemComment->handle($comment, $actor)], 201);
     }
@@ -67,9 +64,7 @@ class ActionItemCommentsController extends Controller
 
         $validated = $request->validate(['content' => ['required', 'string', 'max:500']]);
 
-        $comment = DB::transaction(function () use ($retro, $actionItemComment, $actor, $validated): ActionItemComment {
-            return $this->updateActionItemComment->handle($this->lockComment($retro, $actionItemComment), $actor, $validated['content']);
-        });
+        $comment = DB::transaction(fn (): ActionItemComment => $this->updateActionItemComment->handle($this->lockComment($retro, $actionItemComment), $actor, $validated['content']));
 
         return response()->json(['comment' => $this->presentActionItemComment->handle($comment, $actor)]);
     }

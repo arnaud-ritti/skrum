@@ -11,12 +11,12 @@ use App\Support\Integrations\Exceptions\ProviderRejected;
 use App\Support\Integrations\Trackers\EstimateRejected;
 use App\Support\Integrations\Trackers\GitHubTracker;
 use Illuminate\Http\Client\Request;
-use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Http;
 
 beforeEach(function () {
     Http::preventStrayRequests();
-    $this->travelTo(Carbon::parse('2026-10-07 12:00:00'));
+    $this->travelTo(Date::parse('2026-10-07 12:00:00'));
 });
 
 /**
@@ -139,9 +139,8 @@ it('rewrites only the managed block, for any deck', function () {
     $task = gitHubSyncTask($table, 'XL');
 
     expect(PokerTaskSync::for($table['game'])->unsupportedReason($task))->toBeNull()
-        ->and(runGitHubSync($task)->synced_at)->not->toBeNull();
-
-    expect(gitHubPatches())->toHaveCount(1)
+        ->and(runGitHubSync($task)->synced_at)->not->toBeNull()
+        ->and(gitHubPatches())->toHaveCount(1)
         ->and(gitHubPatches()[0]['body'])->toBe("{$body}\n\n".renderedEstimateBlock('XL'));
 });
 
@@ -152,7 +151,7 @@ it('does not write when the block already holds the estimate', function () {
     ]);
 
     expect(runGitHubSync(gitHubSyncTask($table, '5'))->needs_sync)->toBeFalse()
-        ->and(gitHubPatches())->toBe([]);
+        ->and(gitHubPatches())->toBeEmpty();
 });
 
 it('removes the block when the estimate is cleared', function () {
@@ -209,7 +208,7 @@ it('refuses bodies over the GitHub limit and missing issues', function () {
 
     expect(runGitHubSync(gitHubSyncTask($table, '8'))->sync_error)->toBe('The issue description is too long to add the estimate.')
         ->and(runGitHubSync(gitHubSyncTask($table, '8', 8))->sync_error)->toBe('This issue was not found in GitHub.')
-        ->and(gitHubPatches())->toBe([]);
+        ->and(gitHubPatches())->toBeEmpty();
 });
 
 it('marks tasks of read-only GitHub connections as unsupported', function () {
@@ -227,12 +226,12 @@ it('reads tracked issues in batches of 100 per repository', function () {
     $integration = TeamIntegration::factory()->gitHub()->create();
     $ids = array_map(fn (int $number): string => "9001/{$number}", range(1, 150));
 
-    $issues = app(GitHubTracker::class)->issues($integration, $ids);
+    $issues = resolve(GitHubTracker::class)->issues($integration, $ids);
 
     expect($issues)->toHaveCount(149)
         ->and($issues)->not->toHaveKey('9001/42')
-        ->and($issues['9001/7']->key)->toBe('acme/api#7');
-    expect(Http::recorded(fn (Request $request) => $request->url() === 'https://api.github.com/graphql'))->toHaveCount(2);
+        ->and($issues['9001/7']->key)->toBe('acme/api#7')
+        ->and(Http::recorded(fn (Request $request) => $request->url() === 'https://api.github.com/graphql'))->toHaveCount(2);
     Http::assertSent(fn (Request $request) => $request->url() === 'https://api.github.com/graphql'
         && $request['variables'] === ['owner' => 'acme', 'name' => 'api']
         && substr_count($request['query'], ': issue(number: ') === 100);
@@ -245,11 +244,11 @@ it('refuses unsafe GitHub references', function () {
         'api.github.com/repositories/9003' => Http::response(gitHubRepository(9003, 'acme/..')),
     ]);
     $integration = TeamIntegration::factory()->gitHub()->create();
-    $tracker = app(GitHubTracker::class);
+    $tracker = resolve(GitHubTracker::class);
 
-    expect($tracker->iterations($integration, '../9001'))->toBe([])
-        ->and($tracker->iterationIssues($integration, '9001/../2')->issues)->toBe([])
-        ->and($tracker->issues($integration, ['../1', '9001/abc']))->toBe([])
+    expect($tracker->iterations($integration, '../9001'))->toBeEmpty()
+        ->and($tracker->iterationIssues($integration, '9001/../2')->issues)->toBeEmpty()
+        ->and($tracker->issues($integration, ['../1', '9001/abc']))->toBeEmpty()
         ->and(fn () => $tracker->writeEstimate($integration, '9001/../7', '3'))->toThrow(EstimateRejected::class)
         ->and(fn () => $tracker->iterations($integration, '9003'))->toThrow(ProviderRejected::class);
 
@@ -285,7 +284,7 @@ it('refuses issue numbers GitHub GraphQL cannot read', function () {
     expect(GitHubTracker::issueReference('9001/007'))->toBeNull()
         ->and(GitHubTracker::issueReference('9001/2147483648'))->toBeNull()
         ->and(GitHubTracker::issueReference('9001/2147483647'))->toBe(['9001', '2147483647'])
-        ->and(app(GitHubTracker::class)->issues($integration, ['9001/007', '9001/2147483648', '9001/0']))->toBe([]);
+        ->and(resolve(GitHubTracker::class)->issues($integration, ['9001/007', '9001/2147483648', '9001/0']))->toBeEmpty();
 
     Http::assertNotSent(fn (Request $request) => $request->url() === 'https://api.github.com/graphql');
 });
@@ -297,7 +296,7 @@ it('reports a transferred issue as not found on write-back', function () {
     ]);
 
     expect(runGitHubSync(gitHubSyncTask($table, '8'))->sync_error)->toBe('This issue was not found in GitHub.')
-        ->and(gitHubPatches())->toBe([]);
+        ->and(gitHubPatches())->toBeEmpty();
 });
 
 it('reads closed issues on refresh', function () {
@@ -307,7 +306,7 @@ it('reads closed issues on refresh', function () {
     ]);
     $integration = TeamIntegration::factory()->gitHub()->create();
 
-    expect(app(GitHubTracker::class)->issues($integration, ['9001/7'])['9001/7']->status)->toBe('closed');
+    expect(resolve(GitHubTracker::class)->issues($integration, ['9001/7'])['9001/7']->status)->toBe('closed');
 });
 
 it('fails the refresh on GraphQL errors other than missing issues', function () {
@@ -317,7 +316,7 @@ it('fails the refresh on GraphQL errors other than missing issues', function () 
     ]);
     $integration = TeamIntegration::factory()->gitHub()->create();
 
-    expect(fn () => app(GitHubTracker::class)->issues($integration, ['9001/7']))->toThrow(ProviderRejected::class);
+    expect(fn () => resolve(GitHubTracker::class)->issues($integration, ['9001/7']))->toThrow(ProviderRejected::class);
 });
 
 it('leaves out the issues of a repository the installation no longer sees', function () {
@@ -327,7 +326,7 @@ it('leaves out the issues of a repository the installation no longer sees', func
     ]);
     $integration = TeamIntegration::factory()->gitHub()->create();
 
-    expect(app(GitHubTracker::class)->issues($integration, ['9001/7']))->toBe([]);
+    expect(resolve(GitHubTracker::class)->issues($integration, ['9001/7']))->toBeEmpty();
 
     Http::assertNotSent(fn (Request $request) => $request->url() === 'https://api.github.com/graphql');
 });
@@ -341,7 +340,7 @@ it('reads and writes back an issue whose body holds an unclosed marker and thous
         'api.github.com/repos/acme/api/issues/7' => fn (Request $request) => Http::response(gitHubIssue(7, ['body' => $request['body']])),
     ]);
 
-    $issue = app(GitHubTracker::class)->issues($table['integration'], ['9001/7'])['9001/7'];
+    $issue = resolve(GitHubTracker::class)->issues($table['integration'], ['9001/7'])['9001/7'];
 
     expect($issue->estimate)->toBeNull()
         ->and(runGitHubSync(gitHubSyncTask($table, '5'))->synced_at)->not->toBeNull()

@@ -43,7 +43,7 @@ it('exports an action item to Jira Data Center with wiki markup and a name assig
         ->assertJsonPath('actionItem.externalLinks.0.syncState', 'off')
         ->assertJsonPath('warnings', []);
 
-    Http::assertSent(function (Request $request) {
+    Http::assertSent(function (Request $request): bool {
         if ($request->url() !== 'https://jira.example.com/rest/api/2/issue') {
             return false;
         }
@@ -111,7 +111,7 @@ it('matches people by username search with exactly one equal email', function ()
         jiraDataCenterUrl('rest/api/2/user?*') => Http::response(['name' => 'ann', 'displayName' => 'Ann Lee', 'active' => true]),
     ]);
     $integration = TeamIntegration::factory()->jiraDataCenter()->create();
-    $accounts = app(IntegrationUserAccounts::class);
+    $accounts = resolve(IntegrationUserAccounts::class);
 
     $matches = $accounts->matchEmails($integration, ['Ann@example.com', 'bob@example.com']);
 

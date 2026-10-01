@@ -80,9 +80,7 @@ it('lists the user tokens without their secrets', function () {
         expect($props)->not->toContain($storedHash);
     }
 
-    foreach ($response->viewData('page')['props']['tokens'] as $entry) {
-        expect($entry)->not->toHaveKeys(['token', 'plainText', 'plainTextToken']);
-    }
+    expect($response->viewData('page')['props']['tokens'])->each->not->toHaveKeys(['token', 'plainText', 'plainTextToken']);
 });
 
 it('throttles token creation to ten attempts a minute', function () {

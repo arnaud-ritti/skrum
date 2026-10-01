@@ -96,7 +96,7 @@ it('refuses calls to tools outside the grant', function (array $scopes, string $
     $user = teamMember(Team::factory()->create());
 
     actingAsMcp($user, $scopes)->tool(mcpToolClass($name), [])->assertHasErrors(["Tool [{$name}] not found."]);
-})->with(function () use ($writeTools) {
+})->with(function () use ($writeTools): array {
     $cases = [];
 
     foreach ([...$writeTools, 'retro.board.messages.delete_own'] as $name) {

@@ -89,7 +89,7 @@ class RegisterTrackerWebhooks implements ShouldBeUnique, ShouldQueue
             return;
         }
 
-        app(TrackerWebhooks::class)->recordRejection($integration);
+        resolve(TrackerWebhooks::class)->recordRejection($integration);
         $integration->forceFill(['webhook_status' => IntegrationWebhookStatus::Failing])->save();
     }
 

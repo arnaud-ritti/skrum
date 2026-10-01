@@ -25,7 +25,7 @@ function usedTranslationKeys(): array
             $source = File::get($file->getPathname());
 
             return collect($patterns)
-                ->flatMap(function (string $pattern) use ($source) {
+                ->flatMap(function (string $pattern) use ($source): array {
                     preg_match_all($pattern, $source, $matches);
 
                     return $matches[1];
@@ -48,7 +48,7 @@ function ternaryTranslationKeys(string $source): array
     preg_match_all('/(?<![\w.$])(?:t|__)\(/', $source, $calls, PREG_OFFSET_CAPTURE);
 
     return collect($calls[0])
-        ->flatMap(function (array $call) use ($source) {
+        ->flatMap(function (array $call) use ($source): array {
             $argument = translationCallArgument($source, $call[1] + strlen($call[0]));
 
             if (! str_contains($argument, '?')) {
@@ -113,20 +113,20 @@ it('defines every used key in every locale', function (string $locale) {
 
     $missingKeys = array_values(array_diff(usedTranslationKeys(), array_keys($translations)));
 
-    expect($missingKeys)->toBe([]);
+    expect($missingKeys)->toBeEmpty();
 })->with(['en', 'fr', 'es', 'de']);
 
 it('keeps every english key in every other locale', function (string $locale) {
     $englishKeys = array_keys(json_decode(File::get(lang_path('en.json')), true));
     $localeKeys = array_keys(json_decode(File::get(lang_path("{$locale}.json")), true));
 
-    expect(array_values(array_diff($englishKeys, $localeKeys)))->toBe([]);
+    expect(array_values(array_diff($englishKeys, $localeKeys)))->toBeEmpty();
 })->with(['fr', 'es', 'de']);
 
 it('keeps every template line in every other locale', function (string $locale) {
     $english = array_keys(Arr::dot(require lang_path('en/templates.php')));
     $translated = array_keys(Arr::dot(require lang_path("{$locale}/templates.php")));
 
-    expect(array_values(array_diff($english, $translated)))->toBe([])
-        ->and(array_values(array_diff($translated, $english)))->toBe([]);
+    expect(array_values(array_diff($english, $translated)))->toBeEmpty()
+        ->and(array_values(array_diff($translated, $english)))->toBeEmpty();
 })->with(['fr', 'es', 'de']);

@@ -31,13 +31,9 @@ trait SendsToWebhook
     {
         $integration = IntegrationProvider::Webhook->isEnabled() ? $delivery->team->integration(IntegrationProvider::Webhook) : null;
 
-        if ($integration === null) {
-            throw new NotConnected(IntegrationProvider::Webhook);
-        }
+        throw_if($integration === null, NotConnected::class, IntegrationProvider::Webhook);
 
-        if (! $integration->isActive()) {
-            throw new WebhookDisabled;
-        }
+        throw_unless($integration->isActive(), WebhookDisabled::class);
 
         return $integration;
     }
@@ -46,7 +42,7 @@ trait SendsToWebhook
     {
         $delivery = IntegrationDelivery::query()->with('payload')->findOrFail($this->deliveryId);
 
-        app(WebhookClient::class)->send($integration, $this->message($delivery), $delivery);
+        resolve(WebhookClient::class)->send($integration, $this->message($delivery), $delivery);
     }
 
     protected function afterFailure(IntegrationDelivery $delivery, ?Throwable $exception): void
@@ -61,6 +57,6 @@ trait SendsToWebhook
             return;
         }
 
-        app(WebhookHealth::class)->failed($integration);
+        resolve(WebhookHealth::class)->failed($integration);
     }
 }

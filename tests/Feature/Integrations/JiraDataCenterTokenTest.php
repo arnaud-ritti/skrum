@@ -68,7 +68,7 @@ it('saves a personal access token that acts as its owner', function () {
         ->and($integration->credential('personalAccessToken'))->toBe(JiraDataCenterPastedToken)
         ->and((string) DB::table('team_integrations')->value('credentials'))->not->toContain(JiraDataCenterPastedToken)
         ->and($integration->setting('tokenOwner'))->toBe(['name' => 'jdoe', 'displayName' => 'Jane Doe'])
-        ->and($integration->scopes)->toBe([]);
+        ->and($integration->scopes)->toBeEmpty();
 
     foreach (['rest/api/2/myself', 'rest/api/2/serverInfo', 'rest/api/2/field'] as $path) {
         Http::assertSent(fn (Request $request) => $request->url() === "https://jira.example.com/{$path}"
@@ -159,9 +159,8 @@ it('asks for a new token once Jira revokes it', function () {
     Http::fake([jiraDataCenterUrl('rest/api/2/myself') => Http::response(['errorMessages' => ['Unauthorized']], 401)]);
     $integration = TeamIntegration::factory()->jiraDataCenter(IntegrationAccess::Write, 'pat')->create();
 
-    expect(fn () => app(JiraDataCenterClient::class)->get($integration, 'rest/api/2/myself'))->toThrow(ReconnectRequired::class);
-
-    expect($integration->fresh()?->status)->toBe(IntegrationStatus::ReconnectRequired)
+    expect(fn () => resolve(JiraDataCenterClient::class)->get($integration, 'rest/api/2/myself'))->toThrow(ReconnectRequired::class)
+        ->and($integration->fresh()?->status)->toBe(IntegrationStatus::ReconnectRequired)
         ->and($integration->fresh()?->last_error)->toBe('The Jira personal access token was revoked or has expired. Paste a new one.');
     Http::assertSent(fn (Request $request) => $request->hasHeader('Authorization', 'Bearer '.TeamIntegrationFactory::JiraDataCenterToken));
 });
@@ -170,7 +169,7 @@ it('stops using stored tokens once they are turned off', function () {
     config(['services.jira_dc.personal_tokens' => false]);
     $integration = TeamIntegration::factory()->jiraDataCenter(IntegrationAccess::Write, 'pat')->create();
 
-    expect(fn () => app(JiraDataCenterClient::class)->get($integration, 'rest/api/2/myself'))->toThrow(ReconnectRequired::class);
+    expect(fn () => resolve(JiraDataCenterClient::class)->get($integration, 'rest/api/2/myself'))->toThrow(ReconnectRequired::class);
 
     Http::assertNothingSent();
 });

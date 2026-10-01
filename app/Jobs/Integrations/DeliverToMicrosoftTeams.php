@@ -23,6 +23,6 @@ class DeliverToMicrosoftTeams extends DeliverToChannel
 
     protected function send(TeamIntegration $integration): void
     {
-        app(MicrosoftTeamsClient::class)->postMessage($integration, $this->message);
+        resolve(MicrosoftTeamsClient::class)->postMessage($integration, $this->message);
     }
 }

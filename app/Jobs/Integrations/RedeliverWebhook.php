@@ -29,9 +29,7 @@ class RedeliverWebhook extends DeliverToChannel
     {
         $payload = $delivery->payload;
 
-        if ($payload === null) {
-            throw new WebhookContentMissing;
-        }
+        throw_if($payload === null, WebhookContentMissing::class);
 
         try {
             return $this->storedMessage($payload);

@@ -36,9 +36,7 @@ class OpenAiCompatibleClient implements LlmClient
 
         $text = $response->json('choices.0.message.content');
 
-        if (! is_string($text)) {
-            throw new LlmUnavailable;
-        }
+        throw_unless(is_string($text), LlmUnavailable::class);
 
         return $text;
     }

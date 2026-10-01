@@ -75,6 +75,6 @@ class RequestEstimateSync
     {
         $task->forceFill(['needs_sync' => true, 'sync_error' => null])->save();
 
-        SyncTaskEstimate::dispatch($task->id)->afterCommit();
+        dispatch(new SyncTaskEstimate($task->id))->afterCommit();
     }
 }

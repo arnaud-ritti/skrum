@@ -9,7 +9,7 @@ use SensitiveParameter;
 
 class AnthropicClient implements LlmClient
 {
-    private const MaxTokens = 4096;
+    private const int MaxTokens = 4096;
 
     public function __construct(
         #[SensitiveParameter] private string $key,
@@ -37,9 +37,7 @@ class AnthropicClient implements LlmClient
 
         $text = $response->json('content.0.text');
 
-        if (! is_string($text)) {
-            throw new LlmUnavailable;
-        }
+        throw_unless(is_string($text), LlmUnavailable::class);
 
         return $text;
     }

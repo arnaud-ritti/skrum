@@ -20,7 +20,7 @@ it('renders the games pages', function () {
         ->get(route('games.show', $room))
         ->assertInertia(fn (Assert $page) => $page->component('games/show'));
 
-    app('auth')->forgetGuards();
+    resolve('auth')->forgetGuards();
 
     $this->get(route('games.join.show', $room->guest_token))
         ->assertInertia(fn (Assert $page) => $page->component('games/join'));

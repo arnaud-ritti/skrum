@@ -10,7 +10,7 @@ class MicrosoftTeamsText
 {
     public const PayloadLimitBytes = 28000;
 
-    private const Specials = '\\*_[]()#>~`';
+    private const string Specials = '\\*_[]()#>~`';
 
     public static function escape(string $text): string
     {

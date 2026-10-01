@@ -43,7 +43,7 @@ class ListActionItemNotifications
 
         return [
             'notifications' => $visible
-                ->map(fn (DatabaseNotification $notification) => $this->present($notification, $items[$notification->data['actionItemId']]))
+                ->map(fn (DatabaseNotification $notification): array => $this->present($notification, $items[$notification->data['actionItemId']]))
                 ->values()
                 ->all(),
             'unreadCount' => $user->unreadNotifications()->count(),

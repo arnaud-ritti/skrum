@@ -140,9 +140,7 @@ class ExportActionItem
     {
         $value = $target[$key] ?? null;
 
-        if (! is_string($value)) {
-            throw new InvalidArgumentException("The export target has no {$key}.");
-        }
+        throw_unless(is_string($value), InvalidArgumentException::class, "The export target has no {$key}.");
 
         return $value;
     }

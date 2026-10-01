@@ -79,7 +79,7 @@ class WorkspaceTemplateRequest extends FormRequest
         /** @var array<int, array{title: string, description?: ?string, color: string}> $columns */
         $columns = array_values($this->validated('columns'));
 
-        return array_map(fn (array $column) => [
+        return array_map(fn (array $column): array => [
             'title' => $column['title'],
             'description' => $column['description'] ?? null,
             'color' => $column['color'],

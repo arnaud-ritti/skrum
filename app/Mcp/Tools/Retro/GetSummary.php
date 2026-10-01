@@ -62,8 +62,8 @@ class GetSummary extends SkrumTool
                 'provider' => $presented['provider'],
             ] : null,
             'summaryStatus' => $status?->value,
-            'participants' => $retro->participants()->with('user')->orderBy('created_at')->get()
-                ->map(fn (Participant $participant) => [
+            'participants' => $retro->participants()->with('user')->oldest()->get()
+                ->map(fn (Participant $participant): array => [
                     'name' => $participant->displayName(),
                     'avatarUrl' => url($participant->avatarUrl()),
                 ])

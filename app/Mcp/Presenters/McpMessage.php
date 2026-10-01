@@ -48,7 +48,7 @@ class McpMessage
             ->selectRaw('card_id, count(*) as total')
             ->groupBy('card_id')
             ->pluck('total', 'card_id')
-            ->map(fn (mixed $total) => (int) $total)
+            ->map(fn (mixed $total): int => (int) $total)
             ->all();
     }
 
@@ -83,14 +83,14 @@ class McpMessage
             ...$this->presentCard->insights($card, $isHidden, $this->llm->isConfigured()),
             'groupName' => $presented['groupName'],
             'reactions' => $isHidden ? [] : array_map(
-                fn (array $reaction) => ['emoji' => $reaction['emoji'], 'count' => $reaction['count']],
+                fn (array $reaction): array => ['emoji' => $reaction['emoji'], 'count' => $reaction['count']],
                 $this->summarizeReactions->handle($card->reactions, $retro, $viewer, showsNames: false),
             ),
             'commentCount' => $this->presentCard->commentCount($card, $isHidden),
             'gif' => $presented['gif'] === null ? null : ['url' => url($presented['gif']['url'])],
             'grouped' => $card->children
                 ->sortBy('position')
-                ->map(fn (Card $child) => $this->handle($child, $retro, $viewer, $voteTotals))
+                ->map(fn (Card $child): array => $this->handle($child, $retro, $viewer, $voteTotals))
                 ->values()
                 ->all(),
         ];

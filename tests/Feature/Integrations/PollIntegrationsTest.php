@@ -56,7 +56,7 @@ function trackedJiraLink(TeamIntegration $integration, string $externalId, array
 function runTrackedRead(TeamIntegration $integration, bool $full = false, bool $initial = false): ReadTrackedIssues
 {
     $job = (new ReadTrackedIssues($integration->id, $full, $initial))->withFakeQueueInteractions();
-    app()->call([$job, 'handle']);
+    app()->call($job->handle(...));
 
     return $job;
 }
@@ -150,7 +150,7 @@ it('reads open items, items completed within 90 days and tasks of running games 
 
     runTrackedRead($integration, full: true);
 
-    Http::assertSent(function (Request $request) {
+    Http::assertSent(function (Request $request): bool {
         $jql = (string) ($request['jql'] ?? '');
 
         return str_contains($jql, '10001') && str_contains($jql, '10002')
@@ -162,9 +162,9 @@ it('never drops the first read after sync is turned on behind a daily full read'
     Queue::fake();
     $integration = pollingIntegration();
 
-    ReadTrackedIssues::dispatch($integration->id, true);
-    ReadTrackedIssues::dispatch($integration->id, true, true);
-    ReadTrackedIssues::dispatch($integration->id);
+    dispatch(new ReadTrackedIssues($integration->id, true));
+    dispatch(new ReadTrackedIssues($integration->id, true, true));
+    dispatch(new ReadTrackedIssues($integration->id));
 
     Queue::assertPushed(ReadTrackedIssues::class, 3);
     Queue::assertPushed(ReadTrackedIssues::class, fn (ReadTrackedIssues $job) => $job->full && $job->initial);
@@ -305,7 +305,7 @@ it('keeps the inbound mode while the instance address cannot be resolved', funct
 it('counts only the reads it actually queued', function () {
     Queue::fake();
     $integration = pollingIntegration(['last_polled_at' => null]);
-    ReadTrackedIssues::dispatch($integration->id);
+    dispatch(new ReadTrackedIssues($integration->id));
 
     $this->artisan('skrum:poll-integrations')
         ->expectsOutputToContain('Queued 0 integration reads.')

@@ -9,7 +9,7 @@ use Illuminate\Support\Arr;
 
 class PickGifQuestion
 {
-    private const RecentQuestions = 20;
+    private const int RecentQuestions = 20;
 
     public function __construct(private GameWordBook $gameWordBook) {}
 
@@ -21,7 +21,7 @@ class PickGifQuestion
         $recent = GameRound::query()
             ->where('game_room_id', $room->id)
             ->whereNotNull('question')
-            ->orderByDesc('started_at')
+            ->latest('started_at')
             ->orderByDesc('id')
             ->limit(self::RecentQuestions)
             ->pluck('question')

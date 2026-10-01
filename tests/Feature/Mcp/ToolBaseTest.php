@@ -248,7 +248,7 @@ it('limits write and delete calls per token while reads keep working', function 
 it('reports invisible resources exactly like missing ones', function (string $resolver, Closure $foreign) {
     $user = User::factory()->create();
     bindMcpGrant($user);
-    $context = app(McpContext::class);
+    $context = resolve(McpContext::class);
 
     foreach ([$foreign()->id, (string) Str::uuid(), 'not-a-uuid'] as $id) {
         expect(fn () => $context->{$resolver}($id))->toThrow(ModelNotFoundException::class);
@@ -270,7 +270,7 @@ it('resolves resources of teams the user can see', function () {
 
     foreach ([$member, $admin] as $user) {
         bindMcpGrant($user);
-        $context = app(McpContext::class);
+        $context = resolve(McpContext::class);
 
         expect($context->team($team->id)->id)->toBe($team->id)
             ->and($context->retro($retro->id)->id)->toBe($retro->id)
@@ -284,7 +284,7 @@ it('limits a bound token to its team', function () {
     $bound = Team::factory()->withMember($user)->create();
     $other = Team::factory()->withMember($user)->create();
     bindMcpGrant($user, team: $bound);
-    $context = app(McpContext::class);
+    $context = resolve(McpContext::class);
 
     expect($context->visibleTeamIds())->toBe([$bound->id])
         ->and(fn () => $context->team($other->id))->toThrow(ModelNotFoundException::class);
@@ -307,7 +307,7 @@ it('returns nothing for a bound team the user no longer sees', function () {
         ->tool(ListTeams::class)
         ->assertStructuredContent(['items' => [], 'page' => 1, 'hasMore' => false]);
 
-    expect(fn () => app(McpContext::class)->team($team->id))->toThrow(ModelNotFoundException::class);
+    expect(fn () => resolve(McpContext::class)->team($team->id))->toThrow(ModelNotFoundException::class);
 });
 
 it('reads existing participants and players without creating any', function () {
@@ -316,7 +316,7 @@ it('reads existing participants and players without creating any', function () {
     $retro = Retro::factory()->create(['team_id' => $team->id]);
     $game = PokerGame::factory()->create(['team_id' => $team->id]);
     bindMcpGrant($user);
-    $context = app(McpContext::class);
+    $context = resolve(McpContext::class);
 
     expect($context->participant($retro))->toBeNull()
         ->and($context->pokerPlayer($game))->toBeNull()
@@ -332,7 +332,7 @@ it('creates participants and players once for writes and keeps spectators', func
     $watchedGame = PokerGame::factory()->create(['team_id' => $team->id]);
     $spectator = PokerPlayer::factory()->spectator()->create(['poker_game_id' => $watchedGame->id, 'user_id' => $user->id]);
     bindMcpGrant($user);
-    $context = app(McpContext::class);
+    $context = resolve(McpContext::class);
 
     $participant = $context->participantForWrite($retro);
     $player = $context->pokerPlayerForWrite($game);
@@ -359,7 +359,7 @@ it('presents boards with their counts and link', function () {
     ActionItem::factory()->create(['retro_id' => $retro->id, 'created_by_participant_id' => $participants->first()->id]);
     ActionItem::factory()->completed()->create(['retro_id' => $retro->id, 'created_by_participant_id' => $participants->first()->id]);
 
-    $board = app(McpBoard::class)->handle(McpBoard::withCounts(Retro::query())->findOrFail($retro->id));
+    $board = resolve(McpBoard::class)->handle(McpBoard::withCounts(Retro::query())->findOrFail($retro->id));
 
     expect($board)->toMatchArray([
         'id' => $retro->id,

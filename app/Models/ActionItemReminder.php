@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\ActionItemReminderKind;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\WithoutTimestamps;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
@@ -20,11 +21,10 @@ use Illuminate\Support\Carbon;
  * @property Carbon $sent_at
  */
 #[Fillable(['action_item_id', 'user_id', 'kind', 'due_on', 'sent_at'])]
+#[WithoutTimestamps]
 class ActionItemReminder extends Model
 {
     use HasUuids;
-
-    public $timestamps = false;
 
     protected function casts(): array
     {

@@ -66,7 +66,7 @@ class PresentActionItem
             'recurrence' => $item->recurrence?->value,
             'previousOccurrenceId' => $item->previous_occurrence_id,
             'subtasks' => $item->subtasks
-                ->map(fn (ActionItemSubtask $subtask) => [
+                ->map(fn (ActionItemSubtask $subtask): array => [
                     'id' => $subtask->id,
                     'content' => $subtask->content,
                     'isCompleted' => $subtask->isCompleted(),

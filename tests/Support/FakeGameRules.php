@@ -70,9 +70,7 @@ class FakeGameRules implements GameRules
 
     public function expire(GameRoom $room, GameRound $round): ?GameRoundOutcome
     {
-        if ($this->expiryThrows) {
-            throw new RuntimeException('Expiry failed.');
-        }
+        throw_if($this->expiryThrows, RuntimeException::class, 'Expiry failed.');
 
         return $this->expiryOutcome;
     }

@@ -9,8 +9,8 @@ it('builds a fresh grant for every request', function () {
     $ann = teamMember($alpha);
     $bob = teamMember($beta);
 
-    $annToken = app(IssueMcpToken::class)->handle($ann, 'ann', [], null, null)->plainTextToken;
-    $bobToken = app(IssueMcpToken::class)->handle($bob, 'bob', [], null, null)->plainTextToken;
+    $annToken = resolve(IssueMcpToken::class)->handle($ann, 'ann', [], null, null)->plainTextToken;
+    $bobToken = resolve(IssueMcpToken::class)->handle($bob, 'bob', [], null, null)->plainTextToken;
 
     $first = json_encode(postMcp($annToken, mcpToolCallPayload('retro.teams.list'))->assertOk()->json());
     $second = json_encode(postMcp($bobToken, mcpToolCallPayload('retro.teams.list'))->assertOk()->json());

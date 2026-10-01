@@ -11,16 +11,16 @@ use App\Support\Integrations\InboundModes;
 use App\Support\Integrations\IntegrationPolls;
 use App\Support\Integrations\StatusSync;
 use App\Support\Integrations\TrackerWebhooks;
+use Illuminate\Console\Attributes\Description;
+use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
 use Illuminate\Queue\Events\UniqueJobSkipped;
 use Illuminate\Support\Facades\Event;
 
+#[Description('Queue a read of every synced tracker integration that is due')]
+#[Signature('skrum:poll-integrations')]
 class PollIntegrationsCommand extends Command
 {
-    protected $signature = 'skrum:poll-integrations';
-
-    protected $description = 'Queue a read of every synced tracker integration that is due';
-
     public function handle(InboundModes $inboundModes, TrackerWebhooks $trackerWebhooks): int
     {
         $trackers = array_map(
@@ -62,7 +62,7 @@ class PollIntegrationsCommand extends Command
 
                     $this->info("Queueing a read of {$integration->provider->label()} integration `{$integration->id}`…");
                     $skippedBefore = $skipped;
-                    ReadTrackedIssues::dispatch($integration->id, $initialReadPending, $initialReadPending);
+                    dispatch(new ReadTrackedIssues($integration->id, $initialReadPending, $initialReadPending));
 
                     if ($skipped === $skippedBefore) {
                         $queued++;

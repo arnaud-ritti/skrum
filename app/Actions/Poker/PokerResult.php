@@ -9,7 +9,7 @@ use App\Models\PokerVote;
 
 class PokerResult
 {
-    private const Epsilon = 1e-9;
+    private const float Epsilon = 1e-9;
 
     /**
      * @return array{

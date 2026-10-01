@@ -13,7 +13,7 @@ class MicrosoftTeamsClient
     /**
      * @var array<int, int>
      */
-    private const LostWorkflowStatuses = [400, 401, 403, 404];
+    private const array LostWorkflowStatuses = [400, 401, 403, 404];
 
     /**
      * @param  array<string, mixed>  $message

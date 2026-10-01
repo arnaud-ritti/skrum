@@ -14,7 +14,7 @@ class HangmanRules implements GameRules
 {
     public const MaxMisses = 6;
 
-    private const SolveBonus = 5;
+    private const int SolveBonus = 5;
 
     public function __construct(private DrawGameWord $drawGameWord) {}
 

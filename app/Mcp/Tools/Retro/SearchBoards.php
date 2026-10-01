@@ -30,13 +30,13 @@ use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 #[IsOpenWorld(false)]
 class SearchBoards extends SkrumTool
 {
-    private const MaxLimit = 20;
+    private const int MaxLimit = 20;
 
-    private const PerMinute = 20;
+    private const int PerMinute = 20;
 
-    private const MatchesPerKind = 5;
+    private const int MatchesPerKind = 5;
 
-    private const MaxRowsPerKind = 200;
+    private const int MaxRowsPerKind = 200;
 
     protected string $name = 'retro.boards.search';
 
@@ -74,9 +74,7 @@ class SearchBoards extends SkrumTool
         $grant = McpGrant::current();
         $key = "mcp-search:{$grant->tokenId}";
 
-        if (RateLimiter::tooManyAttempts($key, self::PerMinute)) {
-            abort(429, __('Too many searches, wait a moment.'));
-        }
+        abort_if(RateLimiter::tooManyAttempts($key, self::PerMinute), 429, __('Too many searches, wait a moment.'));
 
         RateLimiter::hit($key);
 
@@ -102,10 +100,10 @@ class SearchBoards extends SkrumTool
             ->get();
 
         return Response::structured([
-            'results' => $retros->map(fn (Retro $retro) => [
+            'results' => $retros->map(fn (Retro $retro): array => [
                 'board' => $this->presentBoard->handle($retro),
                 'matches' => $matches->get($retro->id, collect())
-                    ->map(fn (array $match) => ['kind' => $match['kind'], 'id' => $match['id'], 'snippet' => $match['snippet']])
+                    ->map(fn (array $match): array => ['kind' => $match['kind'], 'id' => $match['id'], 'snippet' => $match['snippet']])
                     ->values()
                     ->all(),
             ])->values()->all(),
@@ -124,7 +122,7 @@ class SearchBoards extends SkrumTool
             ->latest()
             ->limit(self::MaxRowsPerKind)
             ->get(['id', 'title'])
-            ->map(fn (Retro $retro) => ['retroId' => $retro->id, 'kind' => 'title', 'id' => null, 'snippet' => LikePattern::snippet($retro->title, $term)]);
+            ->map(fn (Retro $retro): array => ['retroId' => $retro->id, 'kind' => 'title', 'id' => null, 'snippet' => LikePattern::snippet($retro->title, $term)]);
     }
 
     /**
@@ -149,7 +147,7 @@ class SearchBoards extends SkrumTool
             ->latest()
             ->limit(self::MaxRowsPerKind)
             ->get(['id', 'summary'])
-            ->map(fn (Retro $retro) => ['retroId' => $retro->id, 'kind' => 'summary', 'id' => null, 'snippet' => LikePattern::snippet((string) $retro->summary, $term)]);
+            ->map(fn (Retro $retro): array => ['retroId' => $retro->id, 'kind' => 'summary', 'id' => null, 'snippet' => LikePattern::snippet((string) $retro->summary, $term)]);
     }
 
     /**
@@ -160,15 +158,14 @@ class SearchBoards extends SkrumTool
     {
         return ActionItem::query()
             ->whereIn('retro_id', $retroIds)
-            ->where('content', 'ilike', $pattern)
-            ->orderByDesc('created_at')
+            ->where('content', 'ilike', $pattern)->latest()
             ->orderByDesc('id')
             ->limit(self::MaxRowsPerKind)
             ->get(['id', 'retro_id', 'content', 'created_at'])
             ->reverse()
             ->groupBy('retro_id')
             ->flatMap(fn (Collection $items) => $items->take(self::MatchesPerKind))
-            ->map(fn (ActionItem $item) => ['retroId' => (string) $item->retro_id, 'kind' => 'action', 'id' => $item->id, 'snippet' => LikePattern::snippet($item->content, $term)]);
+            ->map(fn (ActionItem $item): array => ['retroId' => (string) $item->retro_id, 'kind' => 'action', 'id' => $item->id, 'snippet' => LikePattern::snippet($item->content, $term)]);
     }
 
     /**
@@ -188,14 +185,13 @@ class SearchBoards extends SkrumTool
             ->where('content', 'ilike', $pattern)
             ->where(fn (Builder $query) => $query
                 ->whereNotIn('retro_id', $hidingRetroIds)
-                ->orWhereIn('participant_id', $ownParticipantIds))
-            ->orderByDesc('created_at')
+                ->orWhereIn('participant_id', $ownParticipantIds))->latest()
             ->orderByDesc('id')
             ->limit(self::MaxRowsPerKind)
             ->get(['id', 'retro_id', 'content', 'position'])
             ->sortBy('position')
             ->groupBy('retro_id')
             ->flatMap(fn (Collection $cards) => $cards->take(self::MatchesPerKind))
-            ->map(fn (Card $card) => ['retroId' => $card->retro_id, 'kind' => 'message', 'id' => $card->id, 'snippet' => LikePattern::snippet((string) $card->content, $term)]);
+            ->map(fn (Card $card): array => ['retroId' => $card->retro_id, 'kind' => 'message', 'id' => $card->id, 'snippet' => LikePattern::snippet((string) $card->content, $term)]);
     }
 }

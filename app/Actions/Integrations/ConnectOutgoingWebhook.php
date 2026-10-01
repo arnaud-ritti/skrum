@@ -22,7 +22,7 @@ use Illuminate\Validation\ValidationException;
  */
 class ConnectOutgoingWebhook
 {
-    private const SecretBytes = 32;
+    private const int SecretBytes = 32;
 
     public function __construct(
         private SaveTeamIntegration $saveTeamIntegration,
@@ -57,9 +57,9 @@ class ConnectOutgoingWebhook
         $integration = $this->saveTeamIntegration->handle($team, IntegrationProvider::Webhook, $user, [
             'status' => IntegrationStatus::Active,
             'access' => IntegrationAccess::Write,
-            'credentials' => ['url' => $url, 'webhookSecret' => self::newSecret()],
+            'credentials' => ['url' => $url, 'webhookSecret' => $this->newSecret()],
             'settings' => [
-                'host' => self::host($url),
+                'host' => $this->host($url),
                 'channelLabel' => ConnectUrlChannel::label($channelLabel),
                 'secretCreatedAt' => now()->toIso8601ZuluString(),
                 'events' => [],
@@ -95,7 +95,7 @@ class ConnectOutgoingWebhook
             $urlChanged = $newUrl !== $integration->credential('url');
 
             $integration->forceFill(['credentials' => [...$this->credentials($integration), 'url' => $newUrl]]);
-            $settings['host'] = self::host($newUrl);
+            $settings['host'] = $this->host($newUrl);
 
             if ($urlChanged) {
                 $integration->forceFill(['consecutive_failures' => 0]);
@@ -130,7 +130,7 @@ class ConnectOutgoingWebhook
 
     public function rotateSecret(TeamIntegration $integration): string
     {
-        $secret = self::newSecret();
+        $secret = $this->newSecret();
 
         $integration->forceFill([
             'credentials' => [...$this->credentials($integration), 'webhookSecret' => $secret],
@@ -148,12 +148,12 @@ class ConnectOutgoingWebhook
         return $integration->readableCredentials() ?? throw new ReconnectRequired(IntegrationProvider::Webhook, $integration->last_error);
     }
 
-    private static function newSecret(): string
+    private function newSecret(): string
     {
         return bin2hex(random_bytes(self::SecretBytes));
     }
 
-    private static function host(string $url): string
+    private function host(string $url): string
     {
         return strtolower((string) parse_url($url, PHP_URL_HOST));
     }

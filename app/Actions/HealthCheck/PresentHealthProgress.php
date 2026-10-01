@@ -18,12 +18,11 @@ class PresentHealthProgress
      */
     public function handle(Retro $retro): array
     {
-        $answersByStatement = $retro->healthCheckAnswers()
-            ->orderBy('created_at')
+        $answersByStatement = $retro->healthCheckAnswers()->oldest()
             ->get(['participant_id', 'statement'])
             ->groupBy('statement');
 
-        return $retro->healthStatements()->get(['key'])->map(function (RetroHealthStatement $statement) use ($retro, $answersByStatement) {
+        return $retro->healthStatements()->get(['key'])->map(function (RetroHealthStatement $statement) use ($retro, $answersByStatement): array {
             /** @var Collection<int, HealthCheckAnswer> $answers */
             $answers = $answersByStatement->get($statement->key, collect());
 

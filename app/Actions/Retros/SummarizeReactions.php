@@ -30,7 +30,7 @@ class SummarizeReactions
 
         return $reactions
             ->groupBy('emoji')
-            ->map(fn (Collection $group, string $emoji) => [
+            ->map(fn (Collection $group, string $emoji): array => [
                 'emoji' => $emoji,
                 'count' => $group->count(),
                 'mine' => $viewer !== null && $group->contains('participant_id', $viewer->id),
@@ -57,7 +57,7 @@ class SummarizeReactions
     public function forOthers(Collection $reactions, Retro $retro, ?bool $showsNames = null): array
     {
         return array_map(
-            fn (array $summary) => ['emoji' => $summary['emoji'], 'count' => $summary['count'], 'names' => $summary['names']],
+            fn (array $summary): array => ['emoji' => $summary['emoji'], 'count' => $summary['count'], 'names' => $summary['names']],
             $this->handle($reactions, $retro, null, $showsNames),
         );
     }

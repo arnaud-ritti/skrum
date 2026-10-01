@@ -12,17 +12,17 @@ use App\Support\Integrations\Exceptions\ProviderRejected;
  */
 class GitHubAppJwt
 {
-    private const ClockSkewSeconds = 60;
+    private const int ClockSkewSeconds = 60;
 
-    private const LifetimeSeconds = 540;
+    private const int LifetimeSeconds = 540;
 
     public function token(): string
     {
         $now = now()->getTimestamp();
         $appId = (string) config('services.github_app.app_id');
         $segments = [
-            self::encode(['alg' => 'RS256', 'typ' => 'JWT']),
-            self::encode([
+            $this->encode(['alg' => 'RS256', 'typ' => 'JWT']),
+            $this->encode([
                 'iat' => $now - self::ClockSkewSeconds,
                 'exp' => $now + self::LifetimeSeconds,
                 'iss' => ctype_digit($appId) ? (int) $appId : $appId,
@@ -56,7 +56,7 @@ class GitHubAppJwt
     /**
      * @param  array<string, int|string>  $data
      */
-    private static function encode(array $data): string
+    private function encode(array $data): string
     {
         return Base64Url::encode((string) json_encode($data));
     }

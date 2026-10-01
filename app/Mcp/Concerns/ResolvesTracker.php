@@ -15,7 +15,7 @@ trait ResolvesTracker
      */
     protected function trackerFor(Team $team, string $source): TeamIntegration
     {
-        $resolvePokerTracker = app(ResolvePokerTracker::class);
+        $resolvePokerTracker = resolve(ResolvePokerTracker::class);
 
         if (! $resolvePokerTracker->teamHasTracker($team)) {
             throw ValidationException::withMessages(['source' => __('This team has no connected tracker.')]);

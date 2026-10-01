@@ -56,13 +56,9 @@ class TrackerWebhooksController extends Controller
 
         $label = ['provider' => $integration->provider->label()];
 
-        if (! StatusSync::isOn($integration)) {
-            abort(409, __('Turn on status sync for :provider first.', $label));
-        }
+        abort_unless(StatusSync::isOn($integration), 409, __('Turn on status sync for :provider first.', $label));
 
-        if (! $this->inboundModes->acceptsWebhooks($integration->provider)) {
-            abort(409, __("This skrum instance can't receive webhooks; it checks :provider regularly instead.", $label));
-        }
+        abort_unless($this->inboundModes->acceptsWebhooks($integration->provider), 409, __("This skrum instance can't receive webhooks; it checks :provider regularly instead.", $label));
 
         if ($request->boolean('registered')) {
             $integration = $this->webhooks->confirmManual($integration);
@@ -70,15 +66,11 @@ class TrackerWebhooksController extends Controller
             return response()->json($this->presentTeamIntegration->handle($integration->load('connectedBy')), 202);
         }
 
-        if (! $this->webhooks->canRegister($integration)) {
-            abort(409, __('Reconnect :provider so skrum can register its webhook.', $label));
-        }
+        abort_unless($this->webhooks->canRegister($integration), 409, __('Reconnect :provider so skrum can register its webhook.', $label));
 
-        if ($this->webhooks->isManuallyRegistered($integration)) {
-            abort(409, __('This webhook was registered by hand in :provider; skrum leaves it as it is.', $label));
-        }
+        abort_if($this->webhooks->isManuallyRegistered($integration), 409, __('This webhook was registered by hand in :provider; skrum leaves it as it is.', $label));
 
-        RegisterTrackerWebhooks::dispatch($integration->id, true);
+        dispatch(new RegisterTrackerWebhooks($integration->id, true));
 
         return response()->json($this->presentTeamIntegration->handle($integration->load('connectedBy')), 202);
     }

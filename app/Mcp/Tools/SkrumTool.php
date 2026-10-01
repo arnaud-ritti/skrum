@@ -83,7 +83,7 @@ abstract class SkrumTool extends Tool
 
     protected function context(): McpContext
     {
-        return app(McpContext::class);
+        return resolve(McpContext::class);
     }
 
     /**

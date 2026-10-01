@@ -14,11 +14,11 @@ use RuntimeException;
  */
 class WikiMarkupToMarkdown
 {
-    private const SafeLinkSchemes = ['http', 'https', 'mailto'];
+    private const array SafeLinkSchemes = ['http', 'https', 'mailto'];
 
-    private const BlockMarker = "\u{E000}";
+    private const string BlockMarker = "\u{E000}";
 
-    private const InlineMarker = "\u{E001}";
+    private const string InlineMarker = "\u{E001}";
 
     public function convert(?string $wiki): ?string
     {
@@ -41,14 +41,14 @@ class WikiMarkupToMarkdown
     {
         $blocks = [];
 
-        $text = self::replace('/\{(code|noformat)(?::([^}]*))?\}(.*?)\{\1\}/s', function (array $match) use (&$blocks): string {
+        $text = $this->replace('/\{(code|noformat)(?::([^}]*))?\}(.*?)\{\1\}/s', function (array $match) use (&$blocks): string {
             $language = $match[1] === 'code' ? $this->language($match[2]) : '';
             $blocks[] = "```{$language}\n".trim($match[3], "\n")."\n```";
 
             return "\n".self::BlockMarker.(count($blocks) - 1).self::BlockMarker."\n";
         }, $text);
 
-        $text = self::replace('/\{quote\}(.*?)\{quote\}/s', fn (array $match): string => "\n".implode("\n", array_map(
+        $text = $this->replace('/\{quote\}(.*?)\{quote\}/s', fn (array $match): string => "\n".implode("\n", array_map(
             fn (string $line): string => rtrim("> {$line}"),
             explode("\n", trim($match[1], "\n")),
         ))."\n", $text);
@@ -59,13 +59,9 @@ class WikiMarkupToMarkdown
             array_push($lines, ...$this->line($line));
         }
 
-        $markdown = self::replace(
-            '/'.self::BlockMarker.'(\d+)'.self::BlockMarker.'/u',
-            fn (array $match): string => $blocks[(int) $match[1]] ?? '',
-            implode("\n", $lines),
-        );
+        $markdown = $this->replace('/'.self::BlockMarker.'(\d+)'.self::BlockMarker.'/u', fn (array $match): string => $blocks[(int) $match[1]] ?? '', implode("\n", $lines));
 
-        return trim(self::replace("/\n{3,}/", "\n\n", $markdown));
+        return trim($this->replace("/\n{3,}/", "\n\n", $markdown));
     }
 
     /**
@@ -94,7 +90,7 @@ class WikiMarkupToMarkdown
         }
 
         if (preg_match('/^\s*\|(.*)\|\s*$/', $line, $match) === 1) {
-            $cells = array_map('trim', explode('|', $this->inline($match[1])));
+            $cells = array_map(trim(...), explode('|', $this->inline($match[1])));
 
             return ['| '.implode(' | ', $cells).' |'];
         }
@@ -111,20 +107,16 @@ class WikiMarkupToMarkdown
             return self::InlineMarker.(count($kept) - 1).self::InlineMarker;
         };
 
-        $text = self::replace('/\{\{(.+?)\}\}/', fn (array $match): string => $keep("`{$match[1]}`"), $text);
-        $text = self::replace('/\[([^\]|\n]*)\|([^\]\n]+)\]/', fn (array $match): string => $keep($this->link(trim($match[1]), trim($match[2]))), $text);
-        $text = self::replace('/\[((?:https?|mailto):[^\]\s]+)\]/i', fn (array $match): string => $keep($this->link($match[1], $match[1])), $text);
-        $text = self::replace('/!([^!\s][^!\n]*)!/', '[attachment]', $text);
-        $text = self::replace('/(?<![\w*])\*(?=\S)([^*\n]*?\S)\*(?![\w*])/u', '**$1**', $text);
-        $text = self::replace('/(?<![\w_])_(?=\S)([^_\n]*?\S)_(?![\w_])/u', '*$1*', $text);
-        $text = self::replace('/(?<![\w-])-(?=\S)([^-\n]*?\S)-(?![\w-])/u', '~~$1~~', $text);
-        $text = self::replace('/\{color(?::[^}]*)?\}/', '', $text);
+        $text = $this->replace('/\{\{(.+?)\}\}/', fn (array $match): string => $keep("`{$match[1]}`"), $text);
+        $text = $this->replace('/\[([^\]|\n]*)\|([^\]\n]+)\]/', fn (array $match): string => $keep($this->link(trim($match[1]), trim($match[2]))), $text);
+        $text = $this->replace('/\[((?:https?|mailto):[^\]\s]+)\]/i', fn (array $match): string => $keep($this->link($match[1], $match[1])), $text);
+        $text = $this->replace('/!([^!\s][^!\n]*)!/', '[attachment]', $text);
+        $text = $this->replace('/(?<![\w*])\*(?=\S)([^*\n]*?\S)\*(?![\w*])/u', '**$1**', $text);
+        $text = $this->replace('/(?<![\w_])_(?=\S)([^_\n]*?\S)_(?![\w_])/u', '*$1*', $text);
+        $text = $this->replace('/(?<![\w-])-(?=\S)([^-\n]*?\S)-(?![\w-])/u', '~~$1~~', $text);
+        $text = $this->replace('/\{color(?::[^}]*)?\}/', '', $text);
 
-        return self::replace(
-            '/'.self::InlineMarker.'(\d+)'.self::InlineMarker.'/u',
-            fn (array $match): string => $kept[(int) $match[1]] ?? '',
-            $text,
-        );
+        return $this->replace('/'.self::InlineMarker.'(\d+)'.self::InlineMarker.'/u', fn (array $match): string => $kept[(int) $match[1]] ?? '', $text);
     }
 
     private function link(string $label, string $url): string
@@ -159,7 +151,7 @@ class WikiMarkupToMarkdown
      *
      * @param  string|Closure(array<int|string, string>): string  $replacement
      */
-    private static function replace(string $pattern, string|Closure $replacement, string $subject): string
+    private function replace(string $pattern, string|Closure $replacement, string $subject): string
     {
         $result = $replacement instanceof Closure
             ? preg_replace_callback($pattern, $replacement, $subject)

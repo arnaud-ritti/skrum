@@ -13,11 +13,11 @@ use Illuminate\Http\Request;
  */
 class ReadInboundEvent
 {
-    private const KeyLength = 191;
+    private const int KeyLength = 191;
 
-    private const TypeLength = 100;
+    private const int TypeLength = 100;
 
-    private const TimestampToleranceMs = 60_000;
+    private const int TimestampToleranceMs = 60_000;
 
     public static function provider(string $source): IntegrationProvider
     {
@@ -49,9 +49,7 @@ class ReadInboundEvent
         $integration = $this->integrationWithToken(IntegrationProvider::Jira, $integrationId, $token);
         $jwt = $request->bearerToken();
 
-        if ($jwt !== null && ! JiraWebhookJwt::isValid($jwt, (string) config('services.jira.client_secret'))) {
-            throw new InboundSignatureInvalid($integration);
-        }
+        throw_if($jwt !== null && ! JiraWebhookJwt::isValid($jwt, (string) config('services.jira.client_secret')), InboundSignatureInvalid::class, $integration);
 
         return $this->jiraEvent(IntegrationProvider::Jira, $request, $integration);
     }
@@ -64,9 +62,7 @@ class ReadInboundEvent
         if ($signature !== '') {
             $secret = $integration->credential('webhookSecret');
 
-            if (! is_string($secret) || $secret === '' || ! hash_equals('sha256='.hash_hmac('sha256', $request->getContent(), $secret), $signature)) {
-                throw new InboundSignatureInvalid($integration);
-            }
+            throw_if(! is_string($secret) || $secret === '' || ! hash_equals('sha256='.hash_hmac('sha256', $request->getContent(), $secret), $signature), InboundSignatureInvalid::class, $integration);
         }
 
         return $this->jiraEvent(IntegrationProvider::JiraDataCenter, $request, $integration);
@@ -77,20 +73,16 @@ class ReadInboundEvent
         $secret = (string) config('services.linear.webhook_secret');
         $signature = (string) $request->header('Linear-Signature', '');
 
-        if ($secret === '' || $signature === '' || ! hash_equals(hash_hmac('sha256', $request->getContent(), $secret), $signature)) {
-            throw new InboundSignatureInvalid;
-        }
+        throw_if($secret === '' || $signature === '' || ! hash_equals(hash_hmac('sha256', $request->getContent(), $secret), $signature), InboundSignatureInvalid::class);
 
         $payload = $this->payload($request);
         $sentAt = $payload['webhookTimestamp'] ?? null;
 
-        if (! is_int($sentAt) || abs(now()->getTimestampMs() - $sentAt) > self::TimestampToleranceMs) {
-            throw new InboundSignatureInvalid;
-        }
+        throw_if(! is_int($sentAt) || abs(now()->getTimestampMs() - $sentAt) > self::TimestampToleranceMs, InboundSignatureInvalid::class);
 
         $organizationId = $payload['organizationId'] ?? null;
         $issueId = ($payload['type'] ?? null) === 'Issue' ? data_get($payload, 'data.id') : null;
-        $type = implode('.', array_filter([$payload['type'] ?? null, $payload['action'] ?? null], 'is_string'));
+        $type = implode('.', array_filter([$payload['type'] ?? null, $payload['action'] ?? null], is_string(...)));
 
         return new InboundEvent(
             provider: IntegrationProvider::Linear,
@@ -108,9 +100,7 @@ class ReadInboundEvent
         $secret = (string) config('services.github_app.webhook_secret');
         $signature = (string) $request->header('X-Hub-Signature-256', '');
 
-        if ($secret === '' || ! hash_equals('sha256='.hash_hmac('sha256', $request->getContent(), $secret), $signature)) {
-            throw new InboundSignatureInvalid;
-        }
+        throw_if($secret === '' || ! hash_equals('sha256='.hash_hmac('sha256', $request->getContent(), $secret), $signature), InboundSignatureInvalid::class);
 
         $payload = $this->payload($request);
         $event = (string) $request->header('X-GitHub-Event', '');
@@ -144,9 +134,7 @@ class ReadInboundEvent
             : TeamIntegration::query()->where('provider', $provider->value)->find($integrationId);
         $expected = $integration?->readableCredentials()['webhookToken'] ?? null;
 
-        if ($integration === null || ! is_string($expected) || $expected === '' || ! is_string($token) || ! hash_equals($expected, $token)) {
-            throw new InboundSignatureInvalid($integration);
-        }
+        throw_if($integration === null || ! is_string($expected) || $expected === '' || ! is_string($token) || ! hash_equals($expected, $token), InboundSignatureInvalid::class, $integration);
 
         return $integration;
     }

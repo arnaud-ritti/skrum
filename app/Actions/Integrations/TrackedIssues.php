@@ -19,9 +19,9 @@ class TrackedIssues
 
     public const ContainerKeyPattern = IssueStatus::ContainerKeyPattern;
 
-    private const IssueKeyPattern = '/^([A-Z][A-Z0-9_]{0,49})-\d+\z/';
+    private const string IssueKeyPattern = '/^([A-Z][A-Z0-9_]{0,49})-\d+\z/';
 
-    private const RepositoryIdPattern = '/^\d{1,20}\z/';
+    private const string RepositoryIdPattern = '/^\d{1,20}\z/';
 
     /**
      * @return Builder<ActionItemExternalLink>
@@ -35,9 +35,9 @@ class TrackedIssues
             ->where('source', $integration->provider->value)
             ->where('external_site', (string) $site)
             ->where('external_id', '!=', '')
-            ->whereHas('actionItem', fn ($items) => $items
+            ->whereHas('actionItem', fn (\Illuminate\Contracts\Database\Query\Builder $items) => $items
                 ->where('team_id', $integration->team_id)
-                ->where(fn ($state) => $state
+                ->where(fn (\Illuminate\Contracts\Database\Query\Builder $state) => $state
                     ->whereNull('completed_at')
                     ->orWhere('completed_at', '>=', now()->subDays(self::RecentlyCompletedDays))));
     }
@@ -54,7 +54,7 @@ class TrackedIssues
             ->where('external_source', $integration->provider->value)
             ->where('external_site', (string) $site)
             ->whereNotNull('external_id')
-            ->whereHas('game', fn ($games) => $games
+            ->whereHas('game', fn (\Illuminate\Contracts\Database\Query\Builder $games) => $games
                 ->where('team_id', $integration->team_id)
                 ->whereNull('ended_at'));
     }
@@ -75,7 +75,7 @@ class TrackedIssues
      */
     public function among(TeamIntegration $integration, array $externalIds): array
     {
-        return $externalIds === [] ? [] : $this->externalIds($integration, array_map('strval', $externalIds));
+        return $externalIds === [] ? [] : $this->externalIds($integration, array_map(strval(...), $externalIds));
     }
 
     /**
@@ -109,7 +109,7 @@ class TrackedIssues
             }
         }
 
-        $keys = array_map('strval', array_keys($keys));
+        $keys = array_map(strval(...), array_keys($keys));
         sort($keys);
 
         return $keys;
@@ -130,7 +130,7 @@ class TrackedIssues
             }
 
             if ($repositoryIds !== []) {
-                $query->where(function ($any) use ($repositoryIds): void {
+                $query->where(function (\Illuminate\Contracts\Database\Query\Builder $any) use ($repositoryIds): void {
                     foreach ($repositoryIds as $repositoryId) {
                         $any->orWhere('external_id', 'like', "{$repositoryId}/%");
                     }
@@ -144,6 +144,6 @@ class TrackedIssues
             }
         }
 
-        return array_map('strval', array_keys($found));
+        return array_map(strval(...), array_keys($found));
     }
 }

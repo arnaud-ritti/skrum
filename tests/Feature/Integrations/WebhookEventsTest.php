@@ -99,7 +99,7 @@ it('sends nothing without a subscription', function () {
     [$retro, , $participant] = webhookEventRetro();
     subscribedWebhook($retro->team, []);
 
-    app(CreateActionItem::class)->handle($retro->team, $retro, ActionItemActor::forParticipant($participant), ['content' => 'Fix the deploy']);
+    resolve(CreateActionItem::class)->handle($retro->team, $retro, ActionItemActor::forParticipant($participant), ['content' => 'Fix the deploy']);
 
     Queue::assertNotPushed(DeliverWebhookEvent::class);
     expect(IntegrationDelivery::query()->count())->toBe(0);
@@ -111,7 +111,7 @@ it('sends action_item.created while the retro is still in Writing, with the item
     [$ada] = retroMember($retro);
     $ada->forceFill(['name' => 'Ada Assignee'])->save();
 
-    $item = app(CreateActionItem::class)->handle($retro->team, $retro, ActionItemActor::forParticipant($participant), [
+    $item = resolve(CreateActionItem::class)->handle($retro->team, $retro, ActionItemActor::forParticipant($participant), [
         'content' => 'Fix the deploy',
         'priority' => 'high',
         'due_on' => '2026-10-15',
@@ -159,9 +159,9 @@ it('sends action_item.completed and action_item.reopened with origin and actor',
     ActionItemComment::factory()->create(['action_item_id' => $item->id, 'content' => 'Secret discussion']);
     $actor = ActionItemActor::forParticipant($participant);
 
-    app(SetActionItemStatus::class)->handle($item, $actor, ActionItemStatus::Completed);
-    app(SetActionItemStatus::class)->handle($item->fresh(), $actor, ActionItemStatus::Open);
-    app(SetActionItemStatus::class)->handle($item->fresh(), new ExternalSyncActor('jira', 'PROJ-12'), ActionItemStatus::Completed);
+    resolve(SetActionItemStatus::class)->handle($item, $actor, ActionItemStatus::Completed);
+    resolve(SetActionItemStatus::class)->handle($item->fresh(), $actor, ActionItemStatus::Open);
+    resolve(SetActionItemStatus::class)->handle($item->fresh(), new ExternalSyncActor('jira', 'PROJ-12'), ActionItemStatus::Completed);
 
     [$completed, $reopened, $external] = pushedWebhookEvents()->all();
 
@@ -187,9 +187,9 @@ it('hides guest actors but still sends their events', function () {
     subscribedWebhook($retro->team, ['action_item.created', 'action_item.completed']);
     $guest = Participant::factory()->guest()->create(['retro_id' => $retro->id, 'guest_name' => 'Gus']);
 
-    $created = app(CreateActionItem::class)->handle($retro->team, $retro, ActionItemActor::forParticipant($guest), ['content' => 'Guest idea']);
+    $created = resolve(CreateActionItem::class)->handle($retro->team, $retro, ActionItemActor::forParticipant($guest), ['content' => 'Guest idea']);
     $assigned = ActionItem::factory()->assignedToGuest($guest)->create(['content' => 'Guest task']);
-    app(SetActionItemStatus::class)->handle($assigned, ActionItemActor::forParticipant($guest), ActionItemStatus::Completed);
+    resolve(SetActionItemStatus::class)->handle($assigned, ActionItemActor::forParticipant($guest), ActionItemStatus::Completed);
 
     [$createdJob, $completedJob] = pushedWebhookEvents()->all();
 
@@ -207,9 +207,9 @@ it('sends retro.completed on each completion with the recap rules', function () 
     $carla->forceFill(['name' => 'Carla Author'])->save();
     webhookTopCard($retro, $carlaParticipant, $facilitatorParticipant);
 
-    app(ChangeRetroPhase::class)->handle($retro->fresh(), RetroPhase::Completed);
-    app(ChangeRetroPhase::class)->handle($retro->fresh(), RetroPhase::Discussing);
-    app(ChangeRetroPhase::class)->handle($retro->fresh(), RetroPhase::Completed);
+    resolve(ChangeRetroPhase::class)->handle($retro->fresh(), RetroPhase::Completed);
+    resolve(ChangeRetroPhase::class)->handle($retro->fresh(), RetroPhase::Discussing);
+    resolve(ChangeRetroPhase::class)->handle($retro->fresh(), RetroPhase::Completed);
 
     $jobs = pushedWebhookEvents();
 
@@ -259,7 +259,7 @@ it('builds the payload at event time', function () {
     subscribedWebhook($retro->team, ['action_item.created']);
     Http::fake(['hooks.example.com/*' => Http::response('', 200)]);
 
-    $item = app(CreateActionItem::class)->handle($retro->team, $retro, ActionItemActor::forParticipant($participant), ['content' => 'Short-lived']);
+    $item = resolve(CreateActionItem::class)->handle($retro->team, $retro, ActionItemActor::forParticipant($participant), ['content' => 'Short-lived']);
     $job = pushedWebhookEvents()->sole();
     $item->delete();
 
@@ -273,7 +273,7 @@ it('keeps X-Skrum-Delivery across retries and signs each attempt', function () {
     [$retro, , $participant] = webhookEventRetro();
     subscribedWebhook($retro->team, ['action_item.created']);
     Http::fakeSequence('hooks.example.com/*')->push('', 503)->push('', 200);
-    app(CreateActionItem::class)->handle($retro->team, $retro, ActionItemActor::forParticipant($participant), ['content' => 'Retry me']);
+    resolve(CreateActionItem::class)->handle($retro->team, $retro, ActionItemActor::forParticipant($participant), ['content' => 'Retry me']);
     $job = pushedWebhookEvents()->sole();
     $retry = fn () => new DeliverWebhookEvent($job->deliveryId, $job->event, $job->occurredAt, $job->data, $job->locale);
 
@@ -296,7 +296,7 @@ it('retries for about three and a half hours, waiting for Retry-After up to an h
     [$retro, , $participant] = webhookEventRetro();
     subscribedWebhook($retro->team, ['action_item.created']);
     Http::fake(['hooks.example.com/*' => Http::response('', 429, ['Retry-After' => '86400'])]);
-    app(CreateActionItem::class)->handle($retro->team, $retro, ActionItemActor::forParticipant($participant), ['content' => 'Busy receiver']);
+    resolve(CreateActionItem::class)->handle($retro->team, $retro, ActionItemActor::forParticipant($participant), ['content' => 'Busy receiver']);
     $job = pushedWebhookEvents()->sole();
 
     expect($job->tries)->toBe(7)
@@ -309,7 +309,7 @@ it('does not retry other client errors', function () {
     [$retro, , $participant] = webhookEventRetro();
     subscribedWebhook($retro->team, ['action_item.created']);
     Http::fake(['hooks.example.com/*' => Http::response('', 422)]);
-    app(CreateActionItem::class)->handle($retro->team, $retro, ActionItemActor::forParticipant($participant), ['content' => 'Refused']);
+    resolve(CreateActionItem::class)->handle($retro->team, $retro, ActionItemActor::forParticipant($participant), ['content' => 'Refused']);
 
     runOutgoingWebhookJob(pushedWebhookEvents()->sole())->assertFailed();
 
@@ -324,8 +324,8 @@ it('disables the webhook after 10 failed deliveries in a row, then stops queuein
     Http::fake(['hooks.example.com/*' => Http::response('', 404)]);
     $actor = ActionItemActor::forParticipant($participant);
 
-    app(CreateActionItem::class)->handle($retro->team, $retro, $actor, ['content' => 'First']);
-    app(CreateActionItem::class)->handle($retro->team, $retro, $actor, ['content' => 'Second']);
+    resolve(CreateActionItem::class)->handle($retro->team, $retro, $actor, ['content' => 'First']);
+    resolve(CreateActionItem::class)->handle($retro->team, $retro, $actor, ['content' => 'Second']);
     [$first, $second] = pushedWebhookEvents()->all();
 
     runOutgoingWebhookJob($first)->assertFailed();
@@ -339,7 +339,7 @@ it('disables the webhook after 10 failed deliveries in a row, then stops queuein
     expect(IntegrationDelivery::query()->where('id', $second->deliveryId)->sole()->error)->toBe('Webhook disabled.');
     Http::assertSentCount(1);
 
-    app(CreateActionItem::class)->handle($retro->team, $retro, $actor, ['content' => 'Third']);
+    resolve(CreateActionItem::class)->handle($retro->team, $retro, $actor, ['content' => 'Third']);
 
     expect(pushedWebhookEvents())->toHaveCount(2)
         ->and(IntegrationDelivery::query()->count())->toBe(2);
@@ -351,7 +351,7 @@ it('keeps sending after a failure when a delivery succeeded recently', function 
     $integration->forceFill(['consecutive_failures' => 9, 'last_delivery_succeeded_at' => now()->subHour()])->save();
     Http::fake(['hooks.example.com/*' => Http::response('', 404)]);
 
-    app(CreateActionItem::class)->handle($retro->team, $retro, ActionItemActor::forParticipant($participant), ['content' => 'Once']);
+    resolve(CreateActionItem::class)->handle($retro->team, $retro, ActionItemActor::forParticipant($participant), ['content' => 'Once']);
     runOutgoingWebhookJob(pushedWebhookEvents()->sole())->assertFailed();
 
     expect($integration->fresh()->status)->toBe(IntegrationStatus::Active)
@@ -365,13 +365,13 @@ it('never sends automatic events to Slack, Telegram, Teams or Mattermost', funct
     TeamIntegration::factory()->microsoftTeams()->create(['team_id' => $retro->team_id]);
     TeamIntegration::factory()->mattermost()->create(['team_id' => $retro->team_id]);
 
-    $item = app(CreateActionItem::class)->handle($retro->team, $retro, ActionItemActor::forParticipant($participant), ['content' => 'No chat']);
-    app(SetActionItemStatus::class)->handle($item, ActionItemActor::forParticipant($participant), ActionItemStatus::Completed);
+    $item = resolve(CreateActionItem::class)->handle($retro->team, $retro, ActionItemActor::forParticipant($participant), ['content' => 'No chat']);
+    resolve(SetActionItemStatus::class)->handle($item, ActionItemActor::forParticipant($participant), ActionItemStatus::Completed);
 
     Queue::assertNotPushed(DeliverWebhookEvent::class);
 
     subscribedWebhook($retro->team);
-    app(SetActionItemStatus::class)->handle($item->fresh(), ActionItemActor::forParticipant($participant), ActionItemStatus::Open);
+    resolve(SetActionItemStatus::class)->handle($item->fresh(), ActionItemActor::forParticipant($participant), ActionItemStatus::Open);
 
     Queue::assertPushed(DeliverWebhookEvent::class, 1);
     expect(IntegrationDelivery::query()->pluck('channel')->unique()->all())->toBe([IntegrationDeliveryChannel::Webhook]);
@@ -383,7 +383,7 @@ it('keeps the action and later listeners alive when building an event fails', fu
     subscribedWebhook($retro->team, ['action_item.created']);
     $this->mock(BuildWebhookEventData::class, fn ($mock) => $mock->shouldReceive('actionItemCreated')->andThrow(new RuntimeException('boom')));
 
-    $item = app(CreateActionItem::class)->handle($retro->team, $retro, ActionItemActor::forParticipant($participant), ['content' => 'Fix the deploy']);
+    $item = resolve(CreateActionItem::class)->handle($retro->team, $retro, ActionItemActor::forParticipant($participant), ['content' => 'Fix the deploy']);
 
     expect($item->exists)->toBeTrue()
         ->and(IntegrationDelivery::query()->count())->toBe(0);
@@ -397,7 +397,7 @@ it('marks the delivery failed when queuing the event fails', function () {
     subscribedWebhook($retro->team, ['action_item.created']);
     $this->mock(Dispatcher::class, fn ($mock) => $mock->shouldReceive('dispatch')->andThrow(new RuntimeException('queue down')));
 
-    $item = app(CreateActionItem::class)->handle($retro->team, $retro, ActionItemActor::forParticipant($participant), ['content' => 'Fix the deploy']);
+    $item = resolve(CreateActionItem::class)->handle($retro->team, $retro, ActionItemActor::forParticipant($participant), ['content' => 'Fix the deploy']);
 
     expect($item->exists)->toBeTrue()
         ->and(IntegrationDelivery::query()->sole()->status)->toBe(IntegrationDeliveryStatus::Failed);
@@ -408,7 +408,7 @@ it('sends nothing to the webhook of another team', function () {
     [$retro, , $participant] = webhookEventRetro();
     subscribedWebhook(Team::factory()->create());
 
-    app(CreateActionItem::class)->handle($retro->team, $retro, ActionItemActor::forParticipant($participant), ['content' => 'Fix the deploy']);
+    resolve(CreateActionItem::class)->handle($retro->team, $retro, ActionItemActor::forParticipant($participant), ['content' => 'Fix the deploy']);
 
     Queue::assertNotPushed(DeliverWebhookEvent::class);
     expect(IntegrationDelivery::query()->count())->toBe(0);
@@ -419,7 +419,7 @@ it('tells an external reopen apart with completedVia', function () {
     subscribedWebhook($retro->team, ['action_item.reopened']);
     $item = ActionItem::factory()->completed()->create(['retro_id' => $retro->id]);
 
-    app(SetActionItemStatus::class)->handle($item, new ExternalSyncActor('jira', 'PROJ-12'), ActionItemStatus::Open);
+    resolve(SetActionItemStatus::class)->handle($item, new ExternalSyncActor('jira', 'PROJ-12'), ActionItemStatus::Open);
 
     $job = pushedWebhookEvents()->sole();
 
@@ -435,7 +435,7 @@ it('sends the guest suffix untranslated whatever the locale', function () {
     $guest = Participant::factory()->guest()->create(['retro_id' => $retro->id, 'guest_name' => 'Gus']);
     $assigned = ActionItem::factory()->assignedToGuest($guest)->create(['content' => 'Guest task']);
 
-    app(SetActionItemStatus::class)->handle($assigned, ActionItemActor::forParticipant($guest), ActionItemStatus::Completed);
+    resolve(SetActionItemStatus::class)->handle($assigned, ActionItemActor::forParticipant($guest), ActionItemStatus::Completed);
 
     expect(pushedWebhookEvents()->sole()->data['actionItem']['assignee'])->toBe(['name' => 'Gus (guest)']);
 });
@@ -444,7 +444,7 @@ it('keeps the message of an automatic event for its delivery log', function () {
     [$retro, , $participant] = webhookEventRetro();
     subscribedWebhook($retro->team, ['action_item.created']);
 
-    app(CreateActionItem::class)->handle($retro->team, $retro, ActionItemActor::forParticipant($participant), ['content' => 'Fix the deploy']);
+    resolve(CreateActionItem::class)->handle($retro->team, $retro, ActionItemActor::forParticipant($participant), ['content' => 'Fix the deploy']);
 
     $job = pushedWebhookEvents()->sole();
     $delivery = IntegrationDelivery::query()->sole();
@@ -463,7 +463,7 @@ it('still sends an event whose message cannot be kept, without leaving a row nob
     subscribedWebhook($retro->team, ['action_item.created']);
     IntegrationDeliveryPayload::creating(fn () => DB::statement('select 1 / 0'));
 
-    $item = app(CreateActionItem::class)->handle($retro->team, $retro, ActionItemActor::forParticipant($participant), ['content' => 'Fix the deploy']);
+    $item = resolve(CreateActionItem::class)->handle($retro->team, $retro, ActionItemActor::forParticipant($participant), ['content' => 'Fix the deploy']);
 
     $delivery = IntegrationDelivery::query()->sole();
 

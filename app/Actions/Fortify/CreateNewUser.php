@@ -30,7 +30,7 @@ class CreateNewUser implements CreatesNewUsers
 
         $invitation = WorkspaceInvitation::findByToken(request()->session()->get('invitation_token'));
 
-        if (! app(SignupGate::class)->allows($input['email'], $invitation)) {
+        if (! resolve(SignupGate::class)->allows($input['email'], $invitation)) {
             throw ValidationException::withMessages([
                 'email' => __('Signups are restricted on this instance.'),
             ]);
@@ -51,7 +51,7 @@ class CreateNewUser implements CreatesNewUsers
             if ($invitation?->isPending() && $invitation->matchesEmail($user->email)) {
                 $user->forceFill(['email_verified_at' => now()])->save();
 
-                app(AcceptWorkspaceInvitation::class)->handle($invitation, $user);
+                resolve(AcceptWorkspaceInvitation::class)->handle($invitation, $user);
 
                 request()->session()->forget(['invitation_token', 'url.intended']);
             }

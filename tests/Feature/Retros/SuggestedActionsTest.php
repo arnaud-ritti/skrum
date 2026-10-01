@@ -158,10 +158,10 @@ it('shows insights from discussing on, the same for every viewer', function () {
     [, $first] = retroMember($retro);
     [, $second] = retroMember($retro);
 
-    expect(app(BuildBoardSnapshot::class)->handle($retro->fresh(), $first)['insights'])->toBeNull();
+    expect(resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $first)['insights'])->toBeNull();
 
     $retro->update(['phase' => RetroPhase::Discussing]);
-    $snapshots = [app(BuildBoardSnapshot::class)->handle($retro->fresh(), $first), app(BuildBoardSnapshot::class)->handle($retro->fresh(), $second)];
+    $snapshots = [resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $first), resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $second)];
 
     expect($snapshots[0]['insights'])->toBe([
         'themes' => [['id' => $theme->id, 'name' => 'Release pain', 'cardIds' => [$card->id]]],
@@ -179,7 +179,7 @@ it('hides stored insights once no provider is configured', function () {
     $card->forceFill(['sentiment' => CardSentiment::Negative, 'category' => 'Tooling'])->save();
     [, $member] = retroMember($retro);
 
-    $snapshot = app(BuildBoardSnapshot::class)->handle($retro->fresh(), $member);
+    $snapshot = resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $member);
 
     expect($snapshot['insights'])->toBeNull()
         ->and(collect($snapshot['cards'])->firstWhere('id', $card->id))->toMatchArray(['sentiment' => null, 'category' => null]);
@@ -191,16 +191,16 @@ it('never sends card insights of hidden cards or in card broadcasts', function (
     $card->forceFill(['sentiment' => CardSentiment::Positive, 'category' => 'Tooling'])->save();
     [, $viewer] = retroMember($retro);
 
-    expect(collect(app(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer)['cards'])->firstWhere('id', $card->id))
+    expect(collect(resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer)['cards'])->firstWhere('id', $card->id))
         ->toMatchArray(['sentiment' => null, 'category' => null])
-        ->and(app(PresentCard::class)->handle($card->fresh(), $retro, null))->not->toHaveKeys(['sentiment', 'category']);
+        ->and(resolve(PresentCard::class)->handle($card->fresh(), $retro, null))->not->toHaveKeys(['sentiment', 'category']);
 });
 
 it('tells members of a completed retro they cannot handle suggestions', function () {
     [$retro] = suggestingRetro(RetroPhase::Completed);
     [, $member] = retroMember($retro);
 
-    expect(app(BuildBoardSnapshot::class)->handle($retro->fresh(), $member)['viewer']['canHandleSuggestions'])->toBeFalse();
+    expect(resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $member)['viewer']['canHandleSuggestions'])->toBeFalse();
 });
 
 it('exposes the summary state in the results', function () {
@@ -209,11 +209,11 @@ it('exposes the summary state in the results', function () {
     ]);
     [, $viewer] = retroMember($retro);
 
-    expect(app(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer)['results']['summary'])->toBeNull();
+    expect(resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer)['results']['summary'])->toBeNull();
 
     configureLlm();
 
-    expect(app(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer)['results']['summary'])
+    expect(resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer)['results']['summary'])
         ->toMatchArray(['text' => 'Text', 'status' => 'failed', 'provider' => 'Anthropic']);
 });
 
@@ -221,7 +221,7 @@ it('stores no insights when the summary was removed during the run', function ()
     $retro = Retro::factory()->inPhase(RetroPhase::Completed)->create(['summary_status' => null]);
     $card = Card::factory()->create(['retro_id' => $retro->id]);
 
-    app(StoreRetroInsights::class)->handle($retro, new SummaryOutput('Text', [['name' => 'Theme', 'cardIds' => [$card->id]]], [['content' => 'Do it', 'theme' => null]], []));
+    resolve(StoreRetroInsights::class)->handle($retro, new SummaryOutput('Text', [['name' => 'Theme', 'cardIds' => [$card->id]]], [['content' => 'Do it', 'theme' => null]], []));
 
     expect($retro->fresh()->summary)->toBeNull()
         ->and($retro->themes()->count())->toBe(0)
@@ -232,7 +232,7 @@ it('hides suggestion handling while a discussing retro is locked', function () {
     [$retro, , $suggestion] = suggestingRetro(RetroPhase::Discussing, ['is_locked' => true]);
     [$user, $participant] = retroMember($retro);
 
-    expect(app(BuildBoardSnapshot::class)->handle($retro->fresh(), $participant)['viewer']['canHandleSuggestions'])->toBeFalse();
+    expect(resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $participant)['viewer']['canHandleSuggestions'])->toBeFalse();
 
     $this->actingAs($user)->deleteJson(route('retros.suggested-actions.destroy', [$retro, $suggestion]))->assertStatus(423);
 });

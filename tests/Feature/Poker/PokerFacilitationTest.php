@@ -149,7 +149,7 @@ it('deletes as facilitator or workspace admin only', function (string $who) {
     $this->actingAs($actor)->deleteJson(route('poker.destroy', $game))->assertNoContent();
 
     expect(PokerGame::query()->whereKey($game->id)->exists())->toBeFalse();
-    Event::assertDispatched(PokerGameDeleted::class, fn (PokerGameDeleted $event) => $event->gameId === $game->id);
+    Event::assertDispatched(fn (PokerGameDeleted $event) => $event->gameId === $game->id);
 })->with(['facilitator', 'admin', 'owner']);
 
 it('deletes ended games', function () {

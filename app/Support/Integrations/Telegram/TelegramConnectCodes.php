@@ -16,9 +16,9 @@ class TelegramConnectCodes
 {
     public const Alphabet = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 
-    private const Length = 8;
+    private const int Length = 8;
 
-    private const TtlMinutes = 15;
+    private const int TtlMinutes = 15;
 
     /**
      * @return array{code: string, expiresAt: CarbonImmutable}

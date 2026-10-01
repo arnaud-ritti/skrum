@@ -23,7 +23,7 @@ class BuildSummaryInput
      */
     public const MaxInsightCards = 60;
 
-    private const MaxTextAnswersPerSurvey = 50;
+    private const int MaxTextAnswersPerSurvey = 50;
 
     public function __construct(private SummarizeHealthCheck $summarizeHealthCheck) {}
 
@@ -40,7 +40,7 @@ class BuildSummaryInput
             'actionItems' => [],
             'health' => $this->health($retro),
             'surveys' => array_map(
-                fn (array $survey) => isset($survey['answers']) ? [...$survey, 'answers' => []] : $survey,
+                fn (array $survey): array => isset($survey['answers']) ? [...$survey, 'answers' => []] : $survey,
                 $surveys,
             ),
             'roti' => $this->roti($retro),
@@ -157,10 +157,10 @@ class BuildSummaryInput
         $childrenByParent = $retro->cards->whereNotNull('parent_card_id')->sortBy('position')->groupBy('parent_card_id');
         $leads = $retro->cards
             ->whereNull('parent_card_id')
-            ->filter(fn (Card $card) => $card->content !== null)
+            ->filter(fn (Card $card): bool => $card->content !== null)
             ->sortBy([
-                fn (Card $a, Card $b) => (int) ($voteTotals[$b->id] ?? 0) <=> (int) ($voteTotals[$a->id] ?? 0),
-                fn (Card $a, Card $b) => $a->position <=> $b->position,
+                fn (Card $a, Card $b): int => (int) ($voteTotals[$b->id] ?? 0) <=> (int) ($voteTotals[$a->id] ?? 0),
+                fn (Card $a, Card $b): int => $a->position <=> $b->position,
             ]);
 
         $cards = [];
@@ -169,14 +169,14 @@ class BuildSummaryInput
         foreach ($leads as $lead) {
             $nextIndex = count($cardIds) + 1;
             /** @var Collection<int, Card> $children */
-            $children = $childrenByParent->get($lead->id, collect())->filter(fn (Card $child) => $child->content !== null)->values();
+            $children = $childrenByParent->get($lead->id, collect())->filter(fn (Card $child): bool => $child->content !== null)->values();
             $entry = [
                 'id' => $nextIndex,
                 'column' => $columnTitles[$lead->column_id] ?? null,
                 'text' => $lead->content,
                 'groupName' => $lead->group_name,
                 'votes' => (int) ($voteTotals[$lead->id] ?? 0),
-                'grouped' => $children->map(fn (Card $child, int $offset) => ['id' => $nextIndex + 1 + $offset, 'text' => $child->content])->all(),
+                'grouped' => $children->map(fn (Card $child, int $offset): array => ['id' => $nextIndex + 1 + $offset, 'text' => $child->content])->all(),
             ];
 
             if (! $this->fits([...$data, 'cards' => [...$cards, $entry]])) {
@@ -210,7 +210,7 @@ class BuildSummaryInput
             'participation' => $summary['participation'],
             'alignment' => $summary['alignment'],
             'statements' => array_map(
-                fn (array $statement) => ['label' => $statement['label'], 'average' => $statement['average']],
+                fn (array $statement): array => ['label' => $statement['label'], 'average' => $statement['average']],
                 $summary['statements'],
             ),
         ];
@@ -245,7 +245,7 @@ class BuildSummaryInput
                 }
 
                 return [...$entry, 'options' => $survey->options
-                    ->map(fn (SurveyOption $option) => ['label' => $option->label, 'count' => (int) $option->responses_count])
+                    ->map(fn (SurveyOption $option): array => ['label' => $option->label, 'count' => (int) $option->responses_count])
                     ->values()->all()];
             })
             ->values()

@@ -84,9 +84,7 @@ class PresentGifAnswers
                 return [$answer->id => null];
             }
 
-            if (! array_key_exists('votes_count', $answer->getAttributes())) {
-                throw new LogicException('Load the answers withCount(\'votes\') before presenting a revealed round.');
-            }
+            throw_unless(array_key_exists('votes_count', $answer->getAttributes()), LogicException::class, 'Load the answers withCount(\'votes\') before presenting a revealed round.');
 
             return [$answer->id => (int) $answer->getAttribute('votes_count')];
         });

@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\DB;
  */
 function carriedIds(Retro $retro): array
 {
-    return app(CarriedActionItems::class)->handle($retro->fresh())['items']->pluck('id')->sort()->values()->all();
+    return resolve(CarriedActionItems::class)->handle($retro->fresh())['items']->pluck('id')->sort()->values()->all();
 }
 
 it('carries only earlier open or recently completed items', function () {
@@ -35,7 +35,7 @@ it('carries only earlier open or recently completed items', function () {
     ActionItem::factory()->create(['retro_id' => $otherTeam->id]);
 
     expect(carriedIds($current))->toBe(collect([$open->id, $completedDuringReview->id])->sort()->values()->all())
-        ->and(app(CarriedActionItems::class)->handle($current->fresh())['hasMore'])->toBeFalse();
+        ->and(resolve(CarriedActionItems::class)->handle($current->fresh())['hasMore'])->toBeFalse();
 });
 
 it('carries items added outside a retro only into later retros', function () {
@@ -45,7 +45,7 @@ it('carries items added outside a retro only into later retros', function () {
     $next = Retro::factory()->create(['team_id' => $team->id, 'created_at' => '2026-10-04 10:00:00']);
     $teamItem = ActionItem::factory()->withoutRetro($team, teamMember($team))->create(['created_at' => '2026-10-02 10:00:00']);
 
-    expect(carriedIds($running))->toBe([])
+    expect(carriedIds($running))->toBeEmpty()
         ->and(carriedIds($next))->toBe([$teamItem->id]);
 });
 
@@ -54,7 +54,7 @@ it('caps the carried items at two hundred', function () {
     $retro = Retro::factory()->create(['team_id' => $team->id]);
     ActionItem::factory()->count(201)->withoutRetro($team, teamMember($team))->create(['created_at' => now()->subDay()]);
 
-    $carried = app(CarriedActionItems::class)->handle($retro->fresh());
+    $carried = resolve(CarriedActionItems::class)->handle($retro->fresh());
 
     expect($carried['items'])->toHaveCount(200)
         ->and($carried['hasMore'])->toBeTrue();
@@ -67,7 +67,7 @@ it('adds carried items and the team context to member snapshots', function () {
     $current = Retro::factory()->anonymous()->create(['team_id' => $team->id]);
     [$user, $viewer] = retroMember($current);
 
-    $snapshot = app(BuildBoardSnapshot::class)->handle($current->fresh(), $viewer);
+    $snapshot = resolve(BuildBoardSnapshot::class)->handle($current->fresh(), $viewer);
 
     expect($snapshot['carriedActionItems'])->toHaveCount(1)
         ->and($snapshot['carriedActionItems'][0]['id'])->toBe($item->id)
@@ -96,8 +96,8 @@ it('marks the facilitator and workspace admins as managers', function () {
     [, $facilitator] = retroFacilitator($retro);
     [, $admin] = workspaceAdminParticipant($retro);
 
-    $facilitatorView = app(BuildBoardSnapshot::class)->handle($retro->fresh(), $facilitator)['viewer'];
-    $adminView = app(BuildBoardSnapshot::class)->handle($retro->fresh(), $admin)['viewer'];
+    $facilitatorView = resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $facilitator)['viewer'];
+    $adminView = resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $admin)['viewer'];
 
     expect($facilitatorView)->toMatchArray([
         'canManageActionItems' => true,
@@ -120,7 +120,7 @@ it('never gives carried items to guests', function () {
     $member = teamMember($team);
     $guest = Participant::factory()->guest()->create(['retro_id' => $current->id]);
 
-    $snapshot = app(BuildBoardSnapshot::class)->handle($current->fresh(), $guest);
+    $snapshot = resolve(BuildBoardSnapshot::class)->handle($current->fresh(), $guest);
 
     expect($snapshot['carriedActionItems'])->toBe([])
         ->and($snapshot['carriedActionItemsHasMore'])->toBeFalse()
@@ -146,7 +146,7 @@ it('builds the action item parts of the snapshot with a constant number of queri
     $countQueries = function () use ($current, $viewer): int {
         DB::flushQueryLog();
         DB::enableQueryLog();
-        app(BuildBoardSnapshot::class)->handle($current->fresh(), $viewer);
+        resolve(BuildBoardSnapshot::class)->handle($current->fresh(), $viewer);
         DB::disableQueryLog();
 
         return count(DB::getQueryLog());
@@ -185,7 +185,7 @@ it('agrees with the broadcast fan-out on which retros carry an item', function (
     ]);
 
     $viaBroadcast = fn () => $items->mapWithKeys(fn (ActionItem $item) => [
-        $item->id => collect(app(BroadcastActionItemChange::class)->carryingRetroIds($item->fresh()))->sort()->values()->all(),
+        $item->id => collect(resolve(BroadcastActionItemChange::class)->carryingRetroIds($item->fresh()))->sort()->values()->all(),
     ]);
     $viaQuery = fn () => $items->mapWithKeys(fn (ActionItem $item) => [
         $item->id => $retros

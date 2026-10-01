@@ -10,7 +10,7 @@ use App\Support\Integrations\Base64Url;
  */
 class JiraWebhookJwt
 {
-    private const LeewaySeconds = 60;
+    private const int LeewaySeconds = 60;
 
     public static function isValid(string $token, string $secret): bool
     {

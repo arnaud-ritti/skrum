@@ -25,9 +25,9 @@ class TeamHealth extends SkrumPrompt
 
     protected string $description = "Describe a team's health over its last six completed retrospectives: health score, ROTI, agreements and recurring themes.";
 
-    private const BoardCount = 6;
+    private const int BoardCount = 6;
 
-    private const Instructions = <<<'TEXT'
+    private const string Instructions = <<<'TEXT'
         You are helping a team understand how it is doing across its last completed retrospectives in skrum. The JSON below lists the boards oldest first with their health check, ROTI, agreements and recurring themes (or most voted messages), then the health and ROTI trends and the team's currently open and overdue agreements.
         Describe the trends, the strongest and weakest health categories, how many agreements get closed, and what keeps repeating. Compare a category only across boards that asked it (match categories by their key) and mention when the statement set changed (sameStatements false). If there is no data, say "health check not run yet".
         TEXT;
@@ -51,7 +51,7 @@ class TeamHealth extends SkrumPrompt
 
             $boards = $this->lastCompletedBoards($team);
 
-            $rows = array_map(fn (array $board): array => $this->board($board), $boards);
+            $rows = array_map($this->board(...), $boards);
             $newest = $rows === [] ? null : $rows[array_key_last($rows)];
 
             $data = [
@@ -90,7 +90,7 @@ class TeamHealth extends SkrumPrompt
             ->where('team_id', $team->id)
             ->where('phase', RetroPhase::Completed)
             ->whereNotNull('completed_at')
-            ->orderByDesc('completed_at')
+            ->latest('completed_at')
             ->orderByDesc('id')
             ->limit(self::BoardCount)
             ->get();

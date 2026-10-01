@@ -14,7 +14,7 @@ class MattermostClient
     /**
      * @var array<int, int>
      */
-    private const LostWebhookStatuses = [403, 404];
+    private const array LostWebhookStatuses = [403, 404];
 
     public function postMessage(TeamIntegration $integration, string $text): void
     {

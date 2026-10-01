@@ -18,7 +18,7 @@ class OutgoingWebhookUrl implements ValidationRule
         }
 
         try {
-            app(SafeWebhookUrl::class)->resolve($value);
+            resolve(SafeWebhookUrl::class)->resolve($value);
         } catch (UnsafeWebhookUrl) {
             $fail(__('This URL points to a private or invalid address.'));
         }

@@ -26,7 +26,7 @@ it('presents the sync state of each link to members', function (array $link, boo
     ['item' => $item, 'retro' => $retro] = statusSyncLink($link, syncOn: $syncOn);
     [, $member] = retroMember($retro);
 
-    $presented = app(PresentActionItem::class)->handle($item->fresh()->loadForPresentation(), ActionItemActor::forParticipant($member));
+    $presented = resolve(PresentActionItem::class)->handle($item->fresh()->loadForPresentation(), ActionItemActor::forParticipant($member));
 
     expect($presented['externalLinks'][0]['syncState'])->toBe($expected);
 })->with([
@@ -46,7 +46,7 @@ it('presents every sync field of a link', function () {
     ]);
     [, $member] = retroMember($retro);
 
-    expect(app(PresentActionItem::class)->handle($item->fresh()->loadForPresentation(), ActionItemActor::forParticipant($member))['externalLinks'])->toBe([[
+    expect(resolve(PresentActionItem::class)->handle($item->fresh()->loadForPresentation(), ActionItemActor::forParticipant($member))['externalLinks'])->toBe([[
         'id' => $link->id,
         'source' => 'jira',
         'key' => 'PROJ-1',
@@ -62,7 +62,7 @@ it('presents every sync field of a link', function () {
 it('gives guests no links and broadcasts none', function () {
     ['item' => $item, 'retro' => $retro] = statusSyncLink(['sync_error' => 'Secret failure detail']);
     $guest = Participant::factory()->guest()->create(['retro_id' => $retro->id]);
-    $present = app(PresentActionItem::class);
+    $present = resolve(PresentActionItem::class);
     $loaded = $item->fresh()->loadForPresentation();
 
     expect($present->handle($loaded, ActionItemActor::forParticipant($guest))['externalLinks'])->toBe([])
@@ -78,13 +78,13 @@ it('says which tracker completed an item until it changes again', function () {
     ['item' => $item, 'retro' => $retro] = statusSyncLink();
     [, $member] = retroMember($retro);
     $setStatus = fn (ActionItemActor|ExternalSyncActor $actor, ActionItemStatus $status) => DB::transaction(
-        fn () => app(SetActionItemStatus::class)->handle(ActionItem::query()->whereKey($item->id)->lockForUpdate()->firstOrFail(), $actor, $status),
+        fn () => resolve(SetActionItemStatus::class)->handle(ActionItem::query()->whereKey($item->id)->lockForUpdate()->firstOrFail(), $actor, $status),
     );
 
     $setStatus(new ExternalSyncActor('jira', 'PROJ-1'), ActionItemStatus::Completed);
     $loaded = $item->fresh()->loadForPresentation();
     $guest = Participant::factory()->guest()->create(['retro_id' => $retro->id]);
-    $present = app(PresentActionItem::class);
+    $present = resolve(PresentActionItem::class);
 
     expect($present->handle($loaded, ActionItemActor::forParticipant($member))['completedVia'])->toBe('jira')
         ->and($present->handle($loaded, ActionItemActor::forParticipant($guest))['completedVia'])->toBeNull()
@@ -103,6 +103,6 @@ it('shows boards a pending sync as soon as a push is queued', function () {
         ->patchJson(route('workspaces.actionItems.update', [$retro->team->workspace, $item]), ['status' => 'completed'])
         ->assertOk();
 
-    Event::assertDispatched(ActionItemExternalLinksChanged::class, fn (ActionItemExternalLinksChanged $event) => $event->actionItemId === $item->id
+    Event::assertDispatched(fn (ActionItemExternalLinksChanged $event) => $event->actionItemId === $item->id
         && $event->broadcastWith()['externalLinks'][0]['syncState'] === 'pending');
 });

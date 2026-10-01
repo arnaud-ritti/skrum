@@ -18,7 +18,7 @@ class DrawGameWord
         $available = array_values(array_diff($pool, $this->history($room)->pluck('word')->all()));
 
         if ($available === []) {
-            $previous = $this->history($room)->orderByDesc('created_at')->value('word');
+            $previous = $this->history($room)->latest()->value('word');
 
             $this->history($room)->delete();
 

@@ -39,7 +39,7 @@ it('names and clears a group', function () {
         ->assertExactJson(['cardId' => $lead->id, 'groupName' => 'Deploys']);
 
     expect($lead->fresh()->group_name)->toBe('Deploys');
-    Event::assertDispatched(CardGroupNamed::class, fn (CardGroupNamed $event) => $event->broadcastAs() === 'card.group-named'
+    Event::assertDispatched(fn (CardGroupNamed $event) => $event->broadcastAs() === 'card.group-named'
         && $event->broadcastWith() === ['cardId' => $lead->id, 'groupName' => 'Deploys']);
 
     $this->actingAs($user)->deleteJson(route('retros.cards.group-name.destroy', [$retro, $lead]))
@@ -123,11 +123,11 @@ it('hides the name of hidden cards and shows it on anonymous retros', function (
     [$retro, , $lead, $viewer] = namedGroupRetro(RetroPhase::Writing, ['is_anonymous' => true]);
     $lead->update(['group_name' => 'Deploys']);
 
-    $hidden = collect(app(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer)['cards'])->firstWhere('id', $lead->id);
+    $hidden = collect(resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer)['cards'])->firstWhere('id', $lead->id);
 
     $retro->update(['phase' => RetroPhase::Grouping]);
 
-    $revealed = collect(app(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer)['cards'])->firstWhere('id', $lead->id);
+    $revealed = collect(resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer)['cards'])->firstWhere('id', $lead->id);
 
     expect($hidden['groupName'])->toBeNull()
         ->and($revealed['groupName'])->toBe('Deploys')
@@ -145,7 +145,7 @@ it('moves the name to the target when it has none', function () {
     expect(collect($response->json('cards'))->firstWhere('id', $target->id)['groupName'])->toBe('Deploys')
         ->and($target->fresh()->group_name)->toBe('Deploys')
         ->and($lead->fresh()->group_name)->toBeNull();
-    Event::assertDispatched(CardGrouped::class, fn (CardGrouped $event) => collect($event->cards)->firstWhere('id', $target->id)['groupName'] === 'Deploys'
+    Event::assertDispatched(fn (CardGrouped $event) => collect($event->cards)->firstWhere('id', $target->id)['groupName'] === 'Deploys'
         && collect($event->cards)->firstWhere('id', $lead->id)['groupName'] === null);
 });
 
@@ -172,7 +172,7 @@ it('clears the former lead name when its last child is grouped elsewhere', funct
 
     expect(collect($response->json('cards'))->firstWhere('id', $lead->id)['groupName'])->toBeNull()
         ->and($lead->fresh()->group_name)->toBeNull();
-    Event::assertDispatched(CardGrouped::class, fn (CardGrouped $event) => collect($event->cards)->firstWhere('id', $lead->id)['groupName'] === null);
+    Event::assertDispatched(fn (CardGrouped $event) => collect($event->cards)->firstWhere('id', $lead->id)['groupName'] === null);
 });
 
 it('clears the name when the last grouped card is ungrouped', function () {
@@ -184,7 +184,7 @@ it('clears the name when the last grouped card is ungrouped', function () {
 
     expect(collect($response->json('cards'))->firstWhere('id', $lead->id)['groupName'])->toBeNull()
         ->and($lead->fresh()->group_name)->toBeNull();
-    Event::assertDispatched(CardUngrouped::class, fn (CardUngrouped $event) => collect($event->cards)->firstWhere('id', $lead->id)['groupName'] === null);
+    Event::assertDispatched(fn (CardUngrouped $event) => collect($event->cards)->firstWhere('id', $lead->id)['groupName'] === null);
 });
 
 it('keeps the name while grouped cards remain', function () {
@@ -207,7 +207,7 @@ it('clears the name when the last grouped card is moved out', function () {
 
     expect(collect($response->json('cards'))->firstWhere('id', $lead->id)['groupName'])->toBeNull()
         ->and($lead->fresh()->group_name)->toBeNull();
-    Event::assertDispatched(CardsMoved::class, fn (CardsMoved $event) => collect($event->cards)->firstWhere('id', $lead->id)['groupName'] === null);
+    Event::assertDispatched(fn (CardsMoved $event) => collect($event->cards)->firstWhere('id', $lead->id)['groupName'] === null);
 });
 
 it('clears the name when the last grouped card is moved to another column', function () {
@@ -221,7 +221,7 @@ it('clears the name when the last grouped card is moved to another column', func
 
     expect(collect($response->json('cards'))->firstWhere('id', $lead->id)['groupName'])->toBeNull()
         ->and($lead->fresh()->group_name)->toBeNull();
-    Event::assertDispatched(CardsMoved::class, fn (CardsMoved $event) => collect($event->cards)->firstWhere('id', $lead->id)['groupName'] === null);
+    Event::assertDispatched(fn (CardsMoved $event) => collect($event->cards)->firstWhere('id', $lead->id)['groupName'] === null);
 });
 
 it('clears the name when the last grouped card is deleted', function () {
@@ -232,7 +232,7 @@ it('clears the name when the last grouped card is deleted', function () {
     $this->actingAs($user)->deleteJson(route('retros.cards.destroy', [$retro, $lead->children()->sole()]))->assertNoContent();
 
     expect($lead->fresh()->group_name)->toBeNull();
-    Event::assertDispatched(CardGroupNamed::class, fn (CardGroupNamed $event) => $event->cardId === $lead->id && $event->groupName === null);
+    Event::assertDispatched(fn (CardGroupNamed $event) => $event->cardId === $lead->id && $event->groupName === null);
 });
 
 it('leaves no name behind when the named lead is deleted', function () {

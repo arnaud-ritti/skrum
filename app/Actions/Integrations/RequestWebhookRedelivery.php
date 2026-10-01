@@ -36,27 +36,17 @@ class RequestWebhookRedelivery
             $source = IntegrationDelivery::query()->with('payload')->findOrFail($original->id);
             $webhook = TeamIntegration::query()->find($integration->id);
 
-            if ($webhook === null || $webhook->provider !== IntegrationProvider::Webhook) {
-                abort(404);
-            }
+            abort_if($webhook === null || $webhook->provider !== IntegrationProvider::Webhook, 404);
 
-            if ($source->team_id !== $webhook->team_id || $source->channel !== IntegrationDeliveryChannel::Webhook) {
-                abort(404);
-            }
+            abort_if($source->team_id !== $webhook->team_id || $source->channel !== IntegrationDeliveryChannel::Webhook, 404);
 
             $payload = $source->payload;
 
-            if ($payload === null) {
-                abort(409, __('This delivery\'s content is no longer kept.'));
-            }
+            abort_if($payload === null, 409, __('This delivery\'s content is no longer kept.'));
 
-            if ($source->isStillBeingSent()) {
-                abort(409, __('This delivery is still being sent.'));
-            }
+            abort_if($source->isStillBeingSent(), 409, __('This delivery is still being sent.'));
 
-            if (! $webhook->isActive()) {
-                abort(409, __('Turn the webhook back on before redelivering.'));
-            }
+            abort_unless($webhook->isActive(), 409, __('Turn the webhook back on before redelivering.'));
 
             $alreadyQueued = IntegrationDelivery::query()
                 ->where('redelivery_of_id', $rootId)
@@ -64,9 +54,7 @@ class RequestWebhookRedelivery
                 ->where('created_at', '>', now()->subHours(IntegrationDelivery::StaleQueuedHours))
                 ->exists();
 
-            if ($alreadyQueued) {
-                abort(409, __('This delivery is already being redelivered.'));
-            }
+            abort_if($alreadyQueued, 409, __('This delivery is already being redelivered.'));
 
             $redelivery = IntegrationDelivery::query()->create([
                 'team_id' => $source->team_id,
@@ -91,7 +79,7 @@ class RequestWebhookRedelivery
         });
 
         try {
-            app(Dispatcher::class)->dispatch((new RedeliverWebhook($redelivery->id, app()->getLocale()))->afterCommit());
+            resolve(Dispatcher::class)->dispatch((new RedeliverWebhook($redelivery->id, app()->getLocale()))->afterCommit());
         } catch (Throwable $exception) {
             report($exception);
 

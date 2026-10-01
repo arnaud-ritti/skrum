@@ -121,7 +121,7 @@ it('connects a single Jira site and detects its story points fields', function (
     Http::assertSent(fn (Request $request) => $request->url() === 'https://auth.atlassian.com/oauth/token'
         && $request['grant_type'] === 'authorization_code'
         && $request['code'] === 'jira-code');
-    Event::assertDispatched(IntegrationActivated::class, fn (IntegrationActivated $event) => $event->integration->is($integration) && ! $event->siteChanged);
+    Event::assertDispatched(fn (IntegrationActivated $event) => $event->integration->is($integration) && ! $event->siteChanged);
 });
 
 it('does not announce read-only connections', function () {
@@ -214,7 +214,7 @@ it('upgrades read access without losing the site or imported references', functi
         ->and($integration->setting('exportProjectId'))->toBe('10000')
         ->and($task->fresh()->game->team_id)->toBe($team->id)
         ->and($task->fresh()->external_site)->toBe($integration->site());
-    Event::assertDispatched(IntegrationActivated::class, fn (IntegrationActivated $event) => ! $event->siteChanged);
+    Event::assertDispatched(fn (IntegrationActivated $event) => ! $event->siteChanged);
 });
 
 it('deletes account mappings when reconnecting to another site only', function () {
@@ -246,7 +246,7 @@ it('deletes account mappings when reconnecting to another site only', function (
     expect($fresh->site())->toBe('cloud-9')
         ->and($fresh->setting('exportProjectId'))->toBeNull()
         ->and($fresh->userMappings()->count())->toBe(0);
-    Event::assertDispatched(IntegrationActivated::class, fn (IntegrationActivated $event) => $event->siteChanged);
+    Event::assertDispatched(fn (IntegrationActivated $event) => $event->siteChanged);
 });
 
 it('lets the admin choose the story points field and detect again', function () {

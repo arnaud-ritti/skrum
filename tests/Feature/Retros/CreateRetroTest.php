@@ -29,7 +29,7 @@ it('creates a retro with translated template columns and the creator as facilita
     [$user, , $team] = teamWithMember();
     app()->setLocale('fr');
 
-    $retro = app(CreateRetro::class)->handle($team, $user, new NewRetro('Sprint 42', 'start_stop_continue'));
+    $retro = resolve(CreateRetro::class)->handle($team, $user, new NewRetro('Sprint 42', 'start_stop_continue'));
 
     expect($retro->phase)->toBe(RetroPhase::Writing)
         ->and($retro->template)->toBe('start_stop_continue')
@@ -49,7 +49,7 @@ it('creates a retro with translated template columns and the creator as facilita
 it('creates a custom retro without columns', function () {
     [$user, , $team] = teamWithMember();
 
-    expect(app(CreateRetro::class)->handle($team, $user, new NewRetro('Free form', 'custom'))->columns)->toHaveCount(0);
+    expect(resolve(CreateRetro::class)->handle($team, $user, new NewRetro('Free form', 'custom'))->columns)->toBeEmpty();
 });
 
 it('creates a retro from every catalogue template', function () {
@@ -57,7 +57,7 @@ it('creates a retro from every catalogue template', function () {
     app()->setLocale('de');
 
     foreach (TemplateCatalogue::all() as $definition) {
-        $retro = app(CreateRetro::class)->handle($team, $user, new NewRetro($definition->key, $definition->key));
+        $retro = resolve(CreateRetro::class)->handle($team, $user, new NewRetro($definition->key, $definition->key));
 
         expect($retro->columns->map->only(['title', 'description'])->all())
             ->toBe(array_map(fn (array $column) => ['title' => $column['title'], 'description' => $column['description']], $definition->translatedColumns()));
@@ -67,7 +67,7 @@ it('creates a retro from every catalogue template', function () {
 it('starts in the first enabled phase with the chosen options', function () {
     [$user, , $team] = teamWithMember();
 
-    $retro = app(CreateRetro::class)->handle($team, $user, new NewRetro(
+    $retro = resolve(CreateRetro::class)->handle($team, $user, new NewRetro(
         title: 'Sprint 43',
         template: 'mad_sad_glad',
         isAnonymous: true,
@@ -81,7 +81,7 @@ it('starts in the first enabled phase with the chosen options', function () {
         ->and($retro->health_check_enabled)->toBeFalse()
         ->and($retro->votes_per_participant)->toBe(4);
 
-    $healthCheck = app(CreateRetro::class)->handle($team, $user, new NewRetro('Sprint 44', 'mad_sad_glad', healthCheckEnabled: true, icebreakerEnabled: true));
+    $healthCheck = resolve(CreateRetro::class)->handle($team, $user, new NewRetro('Sprint 44', 'mad_sad_glad', healthCheckEnabled: true, icebreakerEnabled: true));
 
     expect($healthCheck->phase)->toBe(RetroPhase::HealthCheck);
 });
@@ -92,7 +92,7 @@ it('copies the columns of a workspace template and remembers it', function () {
     $template->columns()->create(['title' => 'Energy', 'description' => 'How charged you feel', 'color' => 'green', 'position' => 0]);
     $template->columns()->create(['title' => 'Blockers', 'description' => null, 'color' => 'red', 'position' => 1]);
 
-    $retro = app(CreateRetro::class)->handle($team, $user, new NewRetro('Pulse', $template->catalogueKey()));
+    $retro = resolve(CreateRetro::class)->handle($team, $user, new NewRetro('Pulse', $template->catalogueKey()));
 
     expect($retro->template)->toBe(TemplateCatalogue::Workspace)
         ->and($retro->workspace_template_id)->toBe($template->id)
@@ -176,9 +176,9 @@ it('refuses templates outside the catalogue and the workspace', function (Closur
 
 it('lists the team retros newest first and loads the catalogue on demand', function () {
     [$user, $workspace, $team] = teamWithMember();
-    $older = app(CreateRetro::class)->handle($team, $user, new NewRetro('Older', 'four_ls'));
+    $older = resolve(CreateRetro::class)->handle($team, $user, new NewRetro('Older', 'four_ls'));
     $this->travel(1)->minutes();
-    $newer = app(CreateRetro::class)->handle($team, $user, new NewRetro('Newer', 'four_ls'));
+    $newer = resolve(CreateRetro::class)->handle($team, $user, new NewRetro('Newer', 'four_ls'));
     $template = WorkspaceTemplate::factory()->withColumns()->for($workspace)->create();
 
     $this->actingAs($user)

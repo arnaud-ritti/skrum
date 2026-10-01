@@ -82,7 +82,7 @@ it('re-registers when a new project appears and deletes the old webhook', functi
         ? Http::response(null, 202)
         : Http::response(['webhookRegistrationResult' => [['createdWebhookId' => 7002]]])]);
 
-    app(TrackerWebhooks::class)->registerIfNeeded($integration);
+    resolve(TrackerWebhooks::class)->registerIfNeeded($integration);
     Queue::assertPushed(RegisterTrackerWebhooks::class, fn (RegisterTrackerWebhooks $job) => $job->integrationId === $integration->id);
 
     runWebhookRegistration($integration);
@@ -132,7 +132,7 @@ it('registers Jira Data Center webhooks only for Jira administrators', function 
         ->and($integration->setting('webhookIds'))->toBe($administers ? ['12'] : [])
         ->and($integration->setting('webhookManual'))->toBe(! $administers)
         ->and($integration->webhook_status)->toBe($administers ? IntegrationWebhookStatus::Pending : null)
-        ->and(app(InboundModes::class)->hint($integration))->toBe($administers ? null : InboundModes::HintManual);
+        ->and(resolve(InboundModes::class)->hint($integration))->toBe($administers ? null : InboundModes::HintManual);
     $administers
         ? Http::assertSent(fn (Request $request) => $request->method() === 'POST' && $request['filters'] === ['issue-related-events-section' => 'project in ("ENG", "PROJ")'])
         : Http::assertNotSent(fn (Request $request) => $request->method() === 'POST');
@@ -244,7 +244,7 @@ it('retries a rate-limited registration without counting a failure', function ()
     Http::fake([jiraApiUrl('rest/api/3/webhook') => Http::response(null, 429, ['Retry-After' => '40'])]);
     $job = (new RegisterTrackerWebhooks($integration->id))->withFakeQueueInteractions();
 
-    app()->call([$job, 'handle']);
+    app()->call($job->handle(...));
 
     $job->assertReleased(40);
     expect($integration->fresh()->setting('webhookIds'))->toBeNull();
@@ -342,7 +342,7 @@ it('backs off a rejected registration until a day passes or the projects change'
     expect($integration->webhook_status)->toBe(IntegrationWebhookStatus::Failing);
     Http::assertSentCount(1);
 
-    app(TrackerWebhooks::class)->registerIfNeeded($integration);
+    resolve(TrackerWebhooks::class)->registerIfNeeded($integration);
     Queue::assertNotPushed(RegisterTrackerWebhooks::class);
 
     ActionItemExternalLink::factory()->create([
@@ -352,14 +352,14 @@ it('backs off a rejected registration until a day passes or the projects change'
         'external_id' => '10009',
         'external_key' => 'OPS-9',
     ]);
-    app(TrackerWebhooks::class)->registerIfNeeded($integration);
+    resolve(TrackerWebhooks::class)->registerIfNeeded($integration);
     Queue::assertPushed(RegisterTrackerWebhooks::class, 1);
 });
 
 it('retries a rejected registration after a day', function () {
     $integration = webhookIntegration(settings: ['webhookFailedAt' => now()->subHours(25)->toIso8601String(), 'webhookFailedProjects' => ['ENG', 'PROJ']]);
 
-    app(TrackerWebhooks::class)->registerIfNeeded($integration);
+    resolve(TrackerWebhooks::class)->registerIfNeeded($integration);
 
     Queue::assertPushed(RegisterTrackerWebhooks::class, 1);
 });
@@ -400,7 +400,7 @@ it('removes Jira Data Center webhooks when the connection is removed', function 
 it('keeps an active hand-registered webhook active when confirmed again', function () {
     $integration = webhookIntegration(IntegrationProvider::JiraDataCenter, ['webhookManual' => true], ['webhook_status' => IntegrationWebhookStatus::Active]);
 
-    app(TrackerWebhooks::class)->confirmManual($integration);
+    resolve(TrackerWebhooks::class)->confirmManual($integration);
 
     expect($integration->fresh()->webhook_status)->toBe(IntegrationWebhookStatus::Active);
 });
@@ -480,5 +480,5 @@ it('stops treating a webhook as live when the Data Center account no longer admi
     expect($integration->setting('webhookManual'))->toBeTrue()
         ->and($integration->webhook_status)->toBeNull()
         ->and($integration->inbound_mode)->toBe(IntegrationInboundMode::Polling)
-        ->and(app(TrackerWebhooks::class)->isManuallyRegistered($integration))->toBeFalse();
+        ->and(resolve(TrackerWebhooks::class)->isManuallyRegistered($integration))->toBeFalse();
 });

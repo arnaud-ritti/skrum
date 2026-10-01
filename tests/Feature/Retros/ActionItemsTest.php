@@ -73,7 +73,7 @@ it('creates items with priority, due date and assignee', function () {
         ->assertJsonPath('actionItem.isMine', true);
 
     Event::assertDispatched(ActionItemCreated::class);
-    Event::assertDispatched(ActionItemSaved::class, fn (ActionItemSaved $event) => $event->retroId === $retro->id && $event->actionItem['isMine'] === false);
+    Event::assertDispatched(fn (ActionItemSaved $event) => $event->retroId === $retro->id && $event->actionItem['isMine'] === false);
 });
 
 it('defaults the priority to medium and accepts past due dates', function () {
@@ -189,7 +189,7 @@ it('edits and deletes items of the author', function () {
     $this->actingAs($user)->deleteJson(route('retros.action-items.destroy', [$retro, $item]))->assertNoContent();
 
     expect(ActionItem::find($item->id))->toBeNull();
-    Event::assertDispatched(ActionItemDeleted::class, fn (ActionItemDeleted $event) => $event->actionItemId === $item->id);
+    Event::assertDispatched(fn (ActionItemDeleted $event) => $event->actionItemId === $item->id);
 });
 
 it('applies the permission matrix on the board', function (string $role, string $action, int $status) {
@@ -259,7 +259,7 @@ it('creates action items through the shared action', function () {
     [, $author] = retroMember($retro);
     $theme = RetroTheme::factory()->create(['retro_id' => $retro->id, 'name' => 'Release pain']);
 
-    $item = app(CreateActionItem::class)->handle($retro->team, $retro, ActionItemActor::forParticipant($author), ['content' => 'Automate the release'], $theme);
+    $item = resolve(CreateActionItem::class)->handle($retro->team, $retro, ActionItemActor::forParticipant($author), ['content' => 'Automate the release'], $theme);
 
     expect($item->only(['content', 'created_by_participant_id', 'theme_id', 'theme_name']))->toBe([
         'content' => 'Automate the release',
@@ -274,11 +274,11 @@ it('keeps the theme name of an action item after its theme is removed', function
     $theme = RetroTheme::factory()->create(['retro_id' => $retro->id, 'name' => 'Release pain']);
     $item = ActionItem::factory()->create(['retro_id' => $retro->id, 'theme_id' => $theme->id, 'theme_name' => 'Release pain']);
 
-    expect(app(PresentActionItem::class)->handle($item->fresh()))->toMatchArray(['themeId' => $theme->id, 'themeName' => 'Release pain']);
+    expect(resolve(PresentActionItem::class)->handle($item->fresh()))->toMatchArray(['themeId' => $theme->id, 'themeName' => 'Release pain']);
 
     $theme->delete();
 
-    expect(app(PresentActionItem::class)->handle($item->fresh()))->toMatchArray(['themeId' => null, 'themeName' => 'Release pain']);
+    expect(resolve(PresentActionItem::class)->handle($item->fresh()))->toMatchArray(['themeId' => null, 'themeName' => 'Release pain']);
 });
 
 it('never lets clients write the theme of an action item', function () {

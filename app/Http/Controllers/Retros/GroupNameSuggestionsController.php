@@ -17,9 +17,9 @@ use Illuminate\Validation\ValidationException;
 
 class GroupNameSuggestionsController extends Controller
 {
-    private const RequestsPerMinutePerParticipant = 5;
+    private const int RequestsPerMinutePerParticipant = 5;
 
-    private const RequestsPerMinutePerRetro = 20;
+    private const int RequestsPerMinutePerRetro = 20;
 
     public function store(Request $request, Retro $retro, Llm $llm, SuggestGroupNames $suggestGroupNames): JsonResponse
     {

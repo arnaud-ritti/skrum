@@ -82,7 +82,7 @@ it('connects the Linear workspace', function () {
         && str_contains($request->header('Content-Type')[0] ?? '', 'application/x-www-form-urlencoded'));
     Http::assertSent(fn (Request $request) => $request->url() === 'https://api.linear.app/graphql'
         && $request->hasHeader('Authorization', 'Bearer linear-access-new'));
-    Event::assertDispatched(IntegrationActivated::class, fn (IntegrationActivated $event) => ! $event->siteChanged);
+    Event::assertDispatched(fn (IntegrationActivated $event) => ! $event->siteChanged);
 });
 
 it('deletes account mappings when reconnecting to another organization', function () {
@@ -102,7 +102,7 @@ it('deletes account mappings when reconnecting to another organization', functio
     expect($fresh->site())->toBe('org-2')
         ->and($fresh->setting('exportTeamId'))->toBeNull()
         ->and($fresh->userMappings()->count())->toBe(0);
-    Event::assertDispatched(IntegrationActivated::class, fn (IntegrationActivated $event) => $event->siteChanged);
+    Event::assertDispatched(fn (IntegrationActivated $event) => $event->siteChanged);
 });
 
 it('keeps settings and mappings when reconnecting to the same organization', function () {

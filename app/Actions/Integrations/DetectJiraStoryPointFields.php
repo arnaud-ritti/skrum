@@ -9,12 +9,12 @@ use Illuminate\Support\Str;
 
 class DetectJiraStoryPointFields
 {
-    private const StoryPointsSchema = 'com.pyxis.greenhopper.jira:jsw-story-points';
+    private const string StoryPointsSchema = 'com.pyxis.greenhopper.jira:jsw-story-points';
 
     /**
      * @var array<string, int>
      */
-    private const NameRanks = ['story points' => 1, 'story point estimate' => 2];
+    private const array NameRanks = ['story points' => 1, 'story point estimate' => 2];
 
     public function __construct(private JiraApis $jiraApis) {}
 

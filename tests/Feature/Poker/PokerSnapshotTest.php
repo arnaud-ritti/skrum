@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\DB;
  */
 function pokerSnapshot(PokerGame $game, PokerPlayer $viewer): array
 {
-    return app(BuildPokerSnapshot::class)->handle($game->fresh(), $viewer->fresh());
+    return resolve(BuildPokerSnapshot::class)->handle($game->fresh(), $viewer->fresh());
 }
 
 /**
@@ -85,9 +85,9 @@ it('lists no voters in the history mode of an unrevealed round', function () {
     pokerVote($round, $facilitator, '5');
     pokerVote($round, $member, '8');
 
-    $presented = app(PresentPokerRound::class)->handle($round->fresh(['votes']), $game->fresh(), $member->id, listUnrevealedVoters: false);
+    $presented = resolve(PresentPokerRound::class)->handle($round->fresh(['votes']), $game->fresh(), $member->id, listUnrevealedVoters: false);
 
-    expect($presented['votes'])->toBe([])
+    expect($presented['votes'])->toBeEmpty()
         ->and($presented['votesCount'])->toBe(2)
         ->and($presented['myVote'])->toBe('8')
         ->and($presented['result'])->toBeNull();
@@ -226,7 +226,7 @@ it('builds the snapshot with a constant number of queries', function () {
 
         DB::flushQueryLog();
         DB::enableQueryLog();
-        app(BuildPokerSnapshot::class)->handle($fresh, $viewer);
+        resolve(BuildPokerSnapshot::class)->handle($fresh, $viewer);
         DB::disableQueryLog();
 
         return count(DB::getQueryLog());

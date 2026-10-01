@@ -46,8 +46,8 @@ it('comments on board items and names authors on anonymous retros', function () 
         ->assertJsonPath('comments.1.author.name', $user->name);
 
     expect(ActionItemComment::query()->pluck('author_participant_id')->unique()->all())->toBe([$participant->id])
-        ->and(app(PresentActionItem::class)->handle($item->fresh())['commentCount'])->toBe(2);
-    Event::assertDispatched(ActionItemCommentsChanged::class, fn (ActionItemCommentsChanged $event) => $event->retroId === $retro->id
+        ->and(resolve(PresentActionItem::class)->handle($item->fresh())['commentCount'])->toBe(2);
+    Event::assertDispatched(fn (ActionItemCommentsChanged $event) => $event->retroId === $retro->id
         && $event->broadcastWith() === ['actionItemId' => $item->id, 'commentCount' => 2]);
 });
 

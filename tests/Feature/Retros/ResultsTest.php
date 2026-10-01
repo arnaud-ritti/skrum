@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\DB;
 
 function resultsOf(Retro $retro, Participant $viewer): ?array
 {
-    return app(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer)['results'];
+    return resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer)['results'];
 }
 
 function fakeHealthSummary(): array
@@ -115,7 +115,7 @@ it('has no health section or trend without health answers', function () {
 
 it('summarises real health answers into statement averages and a score', function () {
     $retro = Retro::factory()->withHealthCheck()->inPhase(RetroPhase::Completed)->create();
-    app(FreezeHealthStatements::class)->handle($retro);
+    resolve(FreezeHealthStatements::class)->handle($retro);
     [, $viewer] = retroMember($retro);
     $other = Participant::factory()->create(['retro_id' => $retro->id]);
 
@@ -138,7 +138,7 @@ it('summarises real health answers into statement averages and a score', functio
 
 it('keeps the query count constant as ratings, participants, surveys and health answers grow', function () {
     $retro = Retro::factory()->withHealthCheck()->inPhase(RetroPhase::Completed)->create();
-    app(FreezeHealthStatements::class)->handle($retro);
+    resolve(FreezeHealthStatements::class)->handle($retro);
     [, $viewer] = retroMember($retro);
     RotiVote::factory()->create(['retro_id' => $retro->id]);
     HealthCheckAnswer::factory()->create(['retro_id' => $retro->id, 'participant_id' => $viewer->id]);

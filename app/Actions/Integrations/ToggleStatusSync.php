@@ -58,10 +58,10 @@ class ToggleStatusSync
         ])->save();
 
         if ($this->trackerWebhooks->canRegister($integration)) {
-            RegisterTrackerWebhooks::dispatch($integration->id);
+            dispatch(new RegisterTrackerWebhooks($integration->id));
         }
 
-        ReadTrackedIssues::dispatch($integration->id, true, true);
+        dispatch(new ReadTrackedIssues($integration->id, true, true));
 
         return $integration;
     }
@@ -89,7 +89,7 @@ class ToggleStatusSync
         });
 
         if ($webhookIds !== []) {
-            RemoveTrackerWebhooks::dispatch($integration->id, $webhookIds);
+            dispatch(new RemoveTrackerWebhooks($integration->id, $webhookIds));
         }
 
         return $integration;
