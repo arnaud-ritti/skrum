@@ -40,7 +40,8 @@ class PruneWhiteboardFiles
     }
 
     /**
-     * A file lives while a live element of its board shows it (spec §6.5). A template keeps its own copy of every image (spec §10).
+     * A file lives while a live element of its board shows it (spec §6.5).
+     * A template keeps its own copy of every image (spec §10).
      */
     private function isUsed(WhiteboardFile $file): bool
     {
