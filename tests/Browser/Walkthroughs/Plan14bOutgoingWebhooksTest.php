@@ -226,6 +226,7 @@ it('[P14b-03a] subscribes the webhook to the five automatic events', function ()
         $page->assertAriaAttribute("[id=\"webhook-event-{$event}\"]", 'checked', 'true');
     }
 });
+
 it('[P14b-02a] sends a board link to the webhook from the board', function () {
     [$team, $admin] = p14bTeam();
     p14bWebhook($team);
@@ -336,6 +337,7 @@ it('[P14b-02c] sends the recap of an anonymous retro with a participant count an
         ->and($request->body())->not->toContain($carla->email)
         ->and($request->body())->not->toContain($admin->email);
 });
+
 it('[P14b-03b] sends created, completed and reopened for an action item and logs the three deliveries', function () {
     [$team, $admin] = p14bTeam();
     p14bWebhook($team, WebhookEvent::values());
@@ -461,6 +463,7 @@ it('[P14b-03d] sends poker.task.estimated when the facilitator saves an estimate
         ->click('Show deliveries')
         ->assertScript(p14bDeliveryCells('poker.task.estimated'), 'Sent | 1 | 204 | —');
 });
+
 it('[P14b-04a] retries an event seven times with the same delivery id against a receiver answering 500', function () {
     [$team, $admin] = p14bTeam();
     $integration = p14bWebhook($team, ['action_item.created']);
@@ -599,4 +602,49 @@ it('[P14b-05] stops at once when the receiver answers 410 and says that the rece
         ->assertSee('Re-enable')
         ->click('Show deliveries')
         ->assertScript(p14bDeliveryCells('action_item.completed'), 'Failed | 1 | 410 | The receiver asked skrum to stop.');
+});
+
+it('[P14b-07] gives a team member no way to the webhook: no Integrations link, 403 on the page and on a posted URL', function () {
+    [$team] = p14bTeam();
+    p14bReceiverAnswers();
+    $integration = p14bWebhook($team);
+    $member = teamMember($team);
+    $member->forceFill(['name' => 'Bob Member', 'locale' => 'en'])->save();
+    $storeUrl = route('teams.integrations.urls.store', [$team->workspace, $team, 'provider' => IntegrationProvider::Webhook->value], false);
+    $receiverUrl = 'https://hooks.example.com/skrum/taken-over';
+
+    $page = $this->signIn($member, route('teams.show', [$team->workspace, $team], false));
+
+    $page->assertSee('Games')
+        ->assertNotPresent('a[href$="/integrations"]');
+
+    $status = $page->script(<<<JS
+        async () => {
+            const cookie = document.cookie.split('; ').find((entry) => entry.startsWith('XSRF-TOKEN='));
+            const token = decodeURIComponent(cookie.slice('XSRF-TOKEN='.length));
+            const response = await fetch('{$storeUrl}', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-XSRF-TOKEN': token,
+                },
+                body: JSON.stringify({ url: '{$receiverUrl}', channel_label: 'Taken over' }),
+            });
+
+            return response.status;
+        }
+        JS);
+
+    expect($status)->toBe(403)
+        ->and(TeamIntegration::query()->count())->toBe(1)
+        ->and($integration->fresh()->credential('url'))->toBe(TeamIntegrationFactory::WebhookUrl);
+
+    $page->navigate(p14bIntegrationsPath($team))
+        ->assertSee('403')
+        ->assertNotPresent('[data-test^="integration-card-"]')
+        ->assertDontSee('hooks.example.com');
+
+    Http::assertNothingSent();
 });
