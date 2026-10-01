@@ -255,3 +255,79 @@ it('refuses unsafe GitHub references', function () {
 
     Http::assertNotSent(fn (Request $request) => str_contains($request->url(), '/milestones'));
 });
+
+it('keeps search results to the chosen repository whatever the query smuggles in', function () {
+    $table = trackerTable(IntegrationProvider::GitHub);
+    fakeGitHubTrackerApi([
+        'api.github.com/search/issues*' => Http::response(['total_count' => 2, 'incomplete_results' => false, 'items' => [
+            gitHubIssue(7),
+            gitHubIssue(8, ['repository_url' => 'https://api.github.com/repos/other/repo', 'html_url' => 'https://github.com/other/repo/issues/8']),
+            gitHubIssue(9, ['repository_url' => 'https://api.github.com/repos/ACME/API', 'html_url' => 'https://github.com/ACME/API/issues/9']),
+        ]]),
+    ]);
+
+    $this->actingAs($table['member'])
+        ->postJson(route('poker.imports.preview.store', [$table['game'], 'github']), ['mode' => 'query', 'query' => '(repo:other/repo) bug OR(org:evil) -user:x is:pr', 'container' => '9001'])
+        ->assertOk()
+        ->assertJsonCount(2, 'issues')
+        ->assertJsonPath('issues.0.key', 'acme/api#7')
+        ->assertJsonPath('issues.1.key', 'ACME/API#9');
+
+    Http::assertSent(fn (Request $request) => str_starts_with($request->url(), 'https://api.github.com/search/issues')
+        && $request['q'] === 'bug OR repo:acme/api is:issue');
+});
+
+it('refuses issue numbers GitHub GraphQL cannot read', function () {
+    enableIntegrations(IntegrationProvider::GitHub);
+    fakeGitHubTrackerApi();
+    $integration = TeamIntegration::factory()->gitHub()->create();
+
+    expect(GitHubTracker::issueReference('9001/007'))->toBeNull()
+        ->and(GitHubTracker::issueReference('9001/2147483648'))->toBeNull()
+        ->and(GitHubTracker::issueReference('9001/2147483647'))->toBe(['9001', '2147483647'])
+        ->and(app(GitHubTracker::class)->issues($integration, ['9001/007', '9001/2147483648', '9001/0']))->toBe([]);
+
+    Http::assertNotSent(fn (Request $request) => $request->url() === 'https://api.github.com/graphql');
+});
+
+it('reports a transferred issue as not found on write-back', function () {
+    $table = trackerTable(IntegrationProvider::GitHub);
+    fakeGitHubTrackerApi([
+        'api.github.com/repositories/9001/issues/7' => Http::response(['message' => 'Moved Permanently', 'url' => 'https://api.github.com/repositories/9002/issues/1'], 301),
+    ]);
+
+    expect(runGitHubSync(gitHubSyncTask($table, '8'))->sync_error)->toBe('This issue was not found in GitHub.')
+        ->and(gitHubPatches())->toBe([]);
+});
+
+it('reads closed issues on refresh', function () {
+    enableIntegrations(IntegrationProvider::GitHub);
+    fakeGitHubTrackerApi([
+        'api.github.com/graphql' => gitHubGraphqlIssues([7 => gitHubIssue(7, ['state' => 'closed', 'state_reason' => 'completed'])]),
+    ]);
+    $integration = TeamIntegration::factory()->gitHub()->create();
+
+    expect(app(GitHubTracker::class)->issues($integration, ['9001/7'])['9001/7']->status)->toBe('closed');
+});
+
+it('fails the refresh on GraphQL errors other than missing issues', function () {
+    enableIntegrations(IntegrationProvider::GitHub);
+    fakeGitHubTrackerApi([
+        'api.github.com/graphql' => Http::response(['data' => null, 'errors' => [['type' => 'RATE_LIMITED', 'message' => 'API rate limit exceeded']]]),
+    ]);
+    $integration = TeamIntegration::factory()->gitHub()->create();
+
+    expect(fn () => app(GitHubTracker::class)->issues($integration, ['9001/7']))->toThrow(ProviderRejected::class);
+});
+
+it('leaves out the issues of a repository the installation no longer sees', function () {
+    enableIntegrations(IntegrationProvider::GitHub);
+    fakeGitHubTrackerApi([
+        'api.github.com/repositories/9001' => Http::response(['message' => 'Not Found'], 404),
+    ]);
+    $integration = TeamIntegration::factory()->gitHub()->create();
+
+    expect(app(GitHubTracker::class)->issues($integration, ['9001/7']))->toBe([]);
+
+    Http::assertNotSent(fn (Request $request) => $request->url() === 'https://api.github.com/graphql');
+});

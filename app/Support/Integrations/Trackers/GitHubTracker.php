@@ -28,7 +28,15 @@ class GitHubTracker implements IssueTracker
 
     private const IssueFields = 'fragment IssueFields on Issue { number title body url state stateReason updatedAt assignees(first: 1) { nodes { login } } }';
 
-    private const ReferencePattern = '~^(\d{1,20})/(\d{1,10})\z~';
+    private const ReferencePattern = '~^(\d{1,20})/([1-9]\d{0,9})\z~';
+
+    /**
+     * Issue numbers are written into the GraphQL query as `Int` literals,
+     * which are 32-bit.
+     */
+    private const MaxIssueNumber = 2147483647;
+
+    private const StatusLength = 100;
 
     private const RepositoryIdPattern = '/^\d{1,20}\z/';
 
@@ -36,7 +44,15 @@ class GitHubTracker implements IssueTracker
 
     private const WebPrefix = 'https://github.com/';
 
-    private const ScopeQualifiers = '/(?:^|\s)-?(?:repo|org|user|owner):\S+/i';
+    /**
+     * Anywhere in the query, also after `(` or other punctuation: the
+     * repository scope and the issue type are skrum's.
+     */
+    private const ScopeQualifiers = '/(?<![\w-])-?(?:(?:repo|org|user|owner):[^\s()]+|(?:is|type):(?:pr|pull-?request|issue)(?![\w-]))/i';
+
+    private const EmptyGroups = '/\(\s*\)/';
+
+    private const UnavailableStatuses = [301, 404, 410];
 
     public function __construct(private GitHubClient $client) {}
 
@@ -102,7 +118,7 @@ class GitHubTracker implements IssueTracker
             'per_page' => self::PreviewLimit,
         ]);
 
-        return $this->list($repositoryId, (array) $response->json(), GitHubClient::hasNextPage($response));
+        return $this->list($repositoryId, $fullName, (array) $response->json(), GitHubClient::hasNextPage($response));
     }
 
     public function search(TeamIntegration $integration, string $query, ?string $containerId = null): TrackerIssueList
@@ -112,14 +128,15 @@ class GitHubTracker implements IssueTracker
         }
 
         $fullName = $this->client->repositoryName($integration, $containerId);
-        $text = trim((string) preg_replace(self::ScopeQualifiers, ' ', $query));
+        $text = (string) preg_replace(self::EmptyGroups, ' ', (string) preg_replace(self::ScopeQualifiers, ' ', $query));
+        $text = trim((string) preg_replace('/\s+/', ' ', $text));
         $response = $this->client->get($integration, 'search/issues', [
             'q' => trim("{$text} repo:{$fullName} is:issue"),
             'per_page' => self::PreviewLimit,
         ]);
         $items = (array) ($response['items'] ?? []);
 
-        return $this->list($containerId, $items, (int) ($response['total_count'] ?? 0) > count($items) || ($response['incomplete_results'] ?? false) === true);
+        return $this->list($containerId, $fullName, $items, (int) ($response['total_count'] ?? 0) > count($items) || ($response['incomplete_results'] ?? false) === true);
     }
 
     /**
@@ -209,7 +226,11 @@ class GitHubTracker implements IssueTracker
      */
     public static function issueReference(string $externalId): ?array
     {
-        return preg_match(self::ReferencePattern, $externalId, $match) === 1 ? [$match[1], $match[2]] : null;
+        if (preg_match(self::ReferencePattern, $externalId, $match) !== 1 || (int) $match[2] > self::MaxIssueNumber) {
+            return null;
+        }
+
+        return [$match[1], $match[2]];
     }
 
     /**
@@ -252,7 +273,7 @@ class GitHubTracker implements IssueTracker
             url: $url,
             assignee: TrackerIssue::shorten(data_get($raw, 'assignees.0.login'), TrackerIssue::AssigneeLength),
             estimate: $estimate === null ? null : mb_substr($estimate, 0, TrackerIssue::EstimateLength),
-            status: TrackerIssue::shorten($raw['state'] ?? null, TrackerIssue::AssigneeLength),
+            status: TrackerIssue::shorten($raw['state'] ?? null, self::StatusLength),
         );
     }
 
@@ -264,7 +285,7 @@ class GitHubTracker implements IssueTracker
         try {
             $issue = $this->client->get($integration, "repositories/{$repositoryId}/issues/{$number}");
         } catch (ProviderRejected $exception) {
-            if (in_array($exception->httpStatus, [404, 410], true)) {
+            if (in_array($exception->httpStatus, self::UnavailableStatuses, true)) {
                 return null;
             }
 
@@ -288,7 +309,7 @@ class GitHubTracker implements IssueTracker
         try {
             $fullName = $this->client->repositoryName($integration, $repositoryId);
         } catch (ProviderRejected $exception) {
-            if (in_array($exception->httpStatus, [404, 410], true)) {
+            if (in_array($exception->httpStatus, self::UnavailableStatuses, true)) {
                 return [];
             }
 
@@ -340,14 +361,23 @@ class GitHubTracker implements IssueTracker
     }
 
     /**
+     * Items of any other repository are dropped: GitHub ORs `repo:`
+     * qualifiers, and every item is labelled with `$repositoryId`.
+     *
      * @param  array<array-key, mixed>  $items
      */
-    private function list(string $repositoryId, array $items, bool $truncated): TrackerIssueList
+    private function list(string $repositoryId, string $fullName, array $items, bool $truncated): TrackerIssueList
     {
         $issues = [];
 
         foreach ($items as $raw) {
-            if (is_array($raw) && ! isset($raw['pull_request']) && ($issue = $this->issue($repositoryId, $raw)) !== null) {
+            if (! is_array($raw) || isset($raw['pull_request']) || strcasecmp((string) self::fullName($raw), $fullName) !== 0) {
+                continue;
+            }
+
+            $issue = $this->issue($repositoryId, $raw);
+
+            if ($issue !== null) {
                 $issues[] = $issue;
             }
         }
