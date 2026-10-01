@@ -29,7 +29,7 @@ class WhiteboardElementFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'is_deleted' => true,
-            'data' => [...self::rectangle($attributes['element_id']), 'isDeleted' => true],
+            'data' => fn (array $resolved) => [...self::rectangle($resolved['element_id']), 'isDeleted' => true],
         ]);
     }
 

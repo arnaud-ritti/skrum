@@ -135,6 +135,7 @@ use App\Http\Controllers\TeamRetrosController;
 use App\Http\Controllers\TeamsController;
 use App\Http\Controllers\TeamWhiteboardsController;
 use App\Http\Controllers\WhiteboardJoinsController;
+use App\Http\Controllers\Whiteboards\WhiteboardElementsController;
 use App\Http\Controllers\Whiteboards\WhiteboardFacilitatorsController;
 use App\Http\Controllers\Whiteboards\WhiteboardGuestTokensController;
 use App\Http\Controllers\Whiteboards\WhiteboardsController;
@@ -495,6 +496,8 @@ Route::prefix('whiteboards/{board}')
         Route::patch('settings', [WhiteboardSettingsController::class, 'update'])->name('whiteboards.settings.update');
         Route::post('guest-token', [WhiteboardGuestTokensController::class, 'store'])->name('whiteboards.guestToken.store');
         Route::put('facilitator', [WhiteboardFacilitatorsController::class, 'update'])->name('whiteboards.facilitator.update');
+        Route::get('elements', [WhiteboardElementsController::class, 'index'])->name('whiteboards.elements.index');
+        Route::put('elements', [WhiteboardElementsController::class, 'update'])->name('whiteboards.elements.update')->middleware('throttle:whiteboard-writes');
     });
 
 Route::get('play/{guestToken}', [GameJoinsController::class, 'show'])->name('games.join.show');

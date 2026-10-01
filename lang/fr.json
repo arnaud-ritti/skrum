@@ -1787,5 +1787,6 @@
     "The redelivery could not be queued. Try again.": "Le renvoi n’a pas pu être mis en file d’attente. Réessayez.",
     "You no longer have access to this board.": "Vous n'avez plus accès à ce tableau.",
     "Only the facilitator or a workspace admin can delete this board.": "Seul l'animateur ou un administrateur de l'espace peut supprimer ce tableau.",
-    "Join a whiteboard": "Rejoindre un tableau blanc"
+    "Join a whiteboard": "Rejoindre un tableau blanc",
+    "This board changed too much. Reloading it.": "Ce tableau a trop changé. Rechargement en cours."
 }
