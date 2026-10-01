@@ -89,7 +89,9 @@ it('leaves an image out of the template when its copy fails', function () {
 
     $template = WhiteboardTemplate::query()->sole();
 
-    expect($template->scene['files'])->toBe([]);
+    expect($template->scene['files'])->toBe([])
+        ->and(array_column($template->scene['elements'], 'id'))->toBe(['note', 'words', 'zone'])
+        ->and(array_column($template->preview['shapes'], 'kind'))->toBe(['rect', 'rect']);
 
     Storage::assertMissing("whiteboard-templates/{$template->id}/{$file->file_id}");
 });
@@ -137,6 +139,15 @@ it('refuses a name already used in the workspace, whatever its case', function (
         ->assertJsonPath('errors.name.0', 'A template with this name already exists.');
 
     saveTemplate($this->actingAs($user), $board, ['name' => 'Elsewhere'])->assertCreated();
+});
+
+it('refuses a name the database folds to one already used', function () {
+    [$board, $user] = boardWorthSaving();
+    WhiteboardTemplate::factory()->create(['workspace_id' => $board->team->workspace_id, 'name' => 'İstanbul']);
+
+    saveTemplate($this->actingAs($user), $board, ['name' => 'İstanbul'])
+        ->assertUnprocessable()
+        ->assertJsonPath('errors.name.0', 'A template with this name already exists.');
 });
 
 it('keeps the name unique in the database too', function () {
@@ -194,10 +205,12 @@ it('lets another member create a board from the template, on its own from then o
         ->assertOk()
         ->assertJsonPath('rejected', []);
 
+    expect($template->fresh()->scene['elements'][1]['text'])->toBe('Ship it');
+
     $template->delete();
     $source->delete();
 
-    expect($template->scene['elements'][1]['text'])->toBe('Ship it');
+    expect($board->elements()->where('element_id', $words['id'])->sole()->data['text'])->toBe('Changed');
     Storage::assertExists("whiteboards/{$board->id}/{$file->file_id}");
     Storage::assertMissing("whiteboard-templates/{$template->id}/{$file->file_id}");
 });

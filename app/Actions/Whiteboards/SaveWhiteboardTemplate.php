@@ -36,12 +36,16 @@ class SaveWhiteboardTemplate
             $template = $workspace->whiteboardTemplates()->make([
                 'name' => $name,
                 'description' => $description,
-                'preview' => $this->presentWhiteboardPreview->handle($scene['elements']),
                 'created_by_user_id' => $user->id,
             ]);
 
             $template->id = $template->newUniqueId();
-            $template->scene = ['elements' => $scene['elements'], 'files' => $this->copyFiles($template, $scene['files'])];
+
+            $files = $this->copyFiles($template, $scene['files']);
+            $elements = $this->withoutImagesLeftOut($scene['elements'], $files);
+
+            $template->preview = $this->presentWhiteboardPreview->handle($elements);
+            $template->scene = ['elements' => $elements, 'files' => $files];
             $template->save();
 
             return $template;
@@ -49,9 +53,24 @@ class SaveWhiteboardTemplate
     }
 
     /**
+     * @param  list<array<string, mixed>>  $elements
+     * @param  list<SceneFile>  $files
+     * @return list<array<string, mixed>>
+     */
+    private function withoutImagesLeftOut(array $elements, array $files): array
+    {
+        $copiedFileIds = array_column($files, 'fileId');
+
+        return array_values(array_filter(
+            $elements,
+            fn (array $element): bool => ($element['type'] ?? null) !== 'image' || in_array($element['fileId'] ?? null, $copiedFileIds, true),
+        ));
+    }
+
+    /**
      * The template owns its images: the board may be changed or deleted.
-     * An image that cannot be copied is not listed, so a board created from
-     * the template leaves its element out.
+     * An image that cannot be copied is not listed, and the element that
+     * shows it is left out of the template (spec §10).
      *
      * @param  list<SceneFile>  $files
      * @return list<SceneFile>

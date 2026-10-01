@@ -26,7 +26,7 @@ class WhiteboardTemplateRules
     public static function ensureNameIsFree(Workspace $lockedWorkspace, string $name, ?WhiteboardTemplate $ignore = null): void
     {
         $isTaken = $lockedWorkspace->whiteboardTemplates()
-            ->whereRaw('lower(name) = ?', [mb_strtolower(trim($name))])
+            ->whereRaw('lower(name) = lower(?)', [trim($name)])
             ->when($ignore !== null, fn ($query) => $query->whereKeyNot($ignore?->id))
             ->exists();
 
