@@ -865,10 +865,13 @@ it('[P08e-11b] treats a summary still pending after ten minutes as failed and le
 
     Http::assertNothingSent();
 
-    expect($retro->fresh()->summary_status)->toBe(SummaryStatus::Pending);
+    expect($retro->fresh()->summary_status)->toBe(SummaryStatus::Pending)
+        ->and(DB::table('jobs')->count())->toBe(1);
 
     $alicePage->click("{$summary} button:has-text(\"Retry\")")
         ->assertSeeIn($summary, 'Generating the summary…');
+
+    expect(DB::table('jobs')->count())->toBe(2);
 
     $this->workQueue();
 
@@ -877,5 +880,17 @@ it('[P08e-11b] treats a summary still pending after ten minutes as failed and le
 
     Http::assertSentCount(1);
 
-    expect($retro->fresh()->summary_status)->toBe(SummaryStatus::Ready);
+    expect($retro->fresh()->summary_status)->toBe(SummaryStatus::Ready)
+        ->and(DB::table('jobs')->count())->toBe(1);
+
+    $this->workQueue();
+
+    Http::assertSentCount(1);
+
+    expect($retro->fresh()->summary_status)->toBe(SummaryStatus::Ready)
+        ->and($retro->fresh()->summary)->not->toBeNull()
+        ->and(DB::table('jobs')->count())->toBe(0);
+
+    $alicePage->navigate("/retros/{$retro->id}")
+        ->assertSeeIn($summary, 'The team shipped but releases hurt.');
 });
