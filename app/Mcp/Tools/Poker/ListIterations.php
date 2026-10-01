@@ -7,6 +7,7 @@ use App\Enums\McpScope;
 use App\Mcp\Concerns\ResolvesTracker;
 use App\Mcp\McpContext;
 use App\Mcp\McpFeature;
+use App\Mcp\PokerTrackerSources;
 use App\Mcp\Tools\SkrumTool;
 use App\Support\Integrations\TrackerBrowseLimit;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
@@ -25,7 +26,7 @@ class ListIterations extends SkrumTool
 
     protected string $name = 'poker.iterations.list';
 
-    protected string $description = 'Without container_id, list the first 50 containers of a connected tracker (Jira scrum boards, Linear teams). With container_id, list its active and upcoming iterations (Jira sprints, Linear cycles).';
+    protected string $description = 'Without container_id, list the first 50 containers of a connected tracker (Jira boards, Linear teams, GitHub repositories). With container_id, list its active and upcoming iterations (Jira sprints, Linear cycles, GitHub open milestones).';
 
     public function __construct(
         private McpContext $context,
@@ -36,8 +37,8 @@ class ListIterations extends SkrumTool
     {
         return [
             'team_id' => $schema->string()->format('uuid')->required(),
-            'source' => $schema->string()->enum(['jira', 'linear'])->required(),
-            'container_id' => $schema->string()->max(100)->description('A Jira board id or a Linear team id.'),
+            'source' => $schema->string()->enum(PokerTrackerSources::Values)->required(),
+            'container_id' => $schema->string()->max(100)->description('A Jira board id, a Linear team id or a GitHub repository id.'),
         ];
     }
 
@@ -55,7 +56,7 @@ class ListIterations extends SkrumTool
     {
         $validated = $request->validate([
             'team_id' => ['required', 'uuid'],
-            'source' => ['required', 'string', Rule::in(['jira', 'linear'])],
+            'source' => ['required', 'string', Rule::in(PokerTrackerSources::Values)],
             'container_id' => ['nullable', 'string', 'max:100'],
         ]);
 

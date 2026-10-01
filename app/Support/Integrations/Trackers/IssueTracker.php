@@ -27,7 +27,11 @@ interface IssueTracker
 
     public function iterationIssues(TeamIntegration $integration, string $iterationId): TrackerIssueList;
 
-    public function search(TeamIntegration $integration, string $query): TrackerIssueList;
+    /**
+     * `$containerId` scopes the search where the source needs it (GitHub
+     * searches one repository).
+     */
+    public function search(TeamIntegration $integration, string $query, ?string $containerId = null): TrackerIssueList;
 
     /**
      * @param  array<int, string>  $externalIds

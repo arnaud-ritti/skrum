@@ -16,13 +16,13 @@ class PreviewPokerImport
 
     public function __construct(private Trackers $trackers) {}
 
-    public function fetch(TeamIntegration $integration, string $mode, ?string $iterationId, ?string $query): TrackerIssueList
+    public function fetch(TeamIntegration $integration, string $mode, ?string $iterationId, ?string $query, ?string $containerId = null): TrackerIssueList
     {
         $tracker = $this->trackers->for($integration->provider);
 
         return $mode === self::ModeIteration
             ? $tracker->iterationIssues($integration, (string) $iterationId)
-            : $tracker->search($integration, (string) $query);
+            : $tracker->search($integration, (string) $query, $containerId);
     }
 
     /**
@@ -31,9 +31,9 @@ class PreviewPokerImport
      *     truncated: bool
      * }
      */
-    public function handle(PokerGame $game, TeamIntegration $integration, string $mode, ?string $iterationId, ?string $query): array
+    public function handle(PokerGame $game, TeamIntegration $integration, string $mode, ?string $iterationId, ?string $query, ?string $containerId = null): array
     {
-        $list = $this->fetch($integration, $mode, $iterationId, $query);
+        $list = $this->fetch($integration, $mode, $iterationId, $query, $containerId);
 
         $imported = $game->tasks()
             ->where('external_source', $integration->provider->value)

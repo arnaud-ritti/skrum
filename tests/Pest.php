@@ -10,10 +10,14 @@ use App\Enums\McpScope;
 use App\Enums\PokerDeck;
 use App\Enums\RetroPhase;
 use App\Enums\WorkspaceRole;
+use App\Jobs\Integrations\DeliverToChannel;
+use App\Jobs\Integrations\PushActionItemState;
 use App\Mcp\McpGrant;
 use App\Mcp\Servers\SkrumServer;
 use App\Models\ActionItem;
+use App\Models\ActionItemExternalLink;
 use App\Models\Card;
+use App\Models\Column;
 use App\Models\GamePlayer;
 use App\Models\GamePoint;
 use App\Models\GameRoom;
@@ -32,11 +36,18 @@ use App\Models\SurveyResponse;
 use App\Models\Team;
 use App\Models\TeamIntegration;
 use App\Models\User;
+use App\Models\Vote;
 use App\Models\Workspace;
 use App\Support\Games\GameRules;
 use App\Support\Games\GameRulesRegistry;
+use App\Support\Integrations\HostResolver;
+use App\Support\Integrations\JiraDataCenter\JiraDataCenterServer;
 use App\Support\Integrations\OAuthState;
+use App\Support\Integrations\Trackers\IssueStatus;
+use App\Support\Integrations\Trackers\TrackerIssue;
+use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
+use Database\Factories\TeamIntegrationFactory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request as HttpRequest;
 use Illuminate\Support\Facades\Http;
@@ -616,6 +627,20 @@ function disableIntegrations(): void
         'services.jira.client_secret' => null,
         'services.linear.client_id' => null,
         'services.linear.client_secret' => null,
+        'services.jira_dc.base_url' => null,
+        'services.jira_dc.client_id' => null,
+        'services.jira_dc.client_secret' => null,
+        'services.jira_dc.personal_tokens' => true,
+        'services.github_app.app_id' => null,
+        'services.github_app.slug' => null,
+        'services.github_app.client_id' => null,
+        'services.github_app.client_secret' => null,
+        'services.github_app.private_key' => '',
+        'services.github_app.private_key_path' => null,
+        'services.msteams.enabled' => false,
+        'services.msteams.allowed_hosts' => [],
+        'services.mattermost.url' => '',
+        'services.outgoing_webhooks.enabled' => false,
     ]);
 }
 
@@ -627,8 +652,76 @@ function enableIntegrations(IntegrationProvider ...$providers): void
             IntegrationProvider::Telegram => ['services.telegram.bot_token' => '123456:telegram-token'],
             IntegrationProvider::Jira => ['services.jira.client_id' => 'jira-client', 'services.jira.client_secret' => 'jira-secret'],
             IntegrationProvider::Linear => ['services.linear.client_id' => 'linear-client', 'services.linear.client_secret' => 'linear-secret'],
+            IntegrationProvider::JiraDataCenter => [
+                'services.jira_dc.base_url' => 'https://jira.example.com',
+                'services.jira_dc.client_id' => 'jira-dc-client',
+                'services.jira_dc.client_secret' => 'jira-dc-secret',
+                'services.jira_dc.personal_tokens' => true,
+            ],
+            IntegrationProvider::GitHub => [
+                'services.github_app.app_id' => '12345',
+                'services.github_app.slug' => 'skrum-test',
+                'services.github_app.client_id' => 'github-client',
+                'services.github_app.client_secret' => 'github-secret',
+                'services.github_app.private_key' => gitHubTestPrivateKey(),
+            ],
+            IntegrationProvider::MicrosoftTeams => ['services.msteams.enabled' => true],
+            IntegrationProvider::Mattermost => ['services.mattermost.url' => 'https://chat.example.com'],
+            IntegrationProvider::Webhook => ['services.outgoing_webhooks.enabled' => true],
         });
     }
+}
+
+/**
+ * Fakes DNS for outgoing webhooks: every host resolves to the given addresses.
+ *
+ * @param  array<int, string>  $addresses
+ */
+function outgoingWebhookResolves(array $addresses = ['93.184.216.34']): void
+{
+    app()->instance(HostResolver::class, new class($addresses) extends HostResolver
+    {
+        /**
+         * @param  array<int, string>  $fixed
+         */
+        public function __construct(private array $fixed) {}
+
+        public function addresses(string $host): array
+        {
+            return $this->fixed;
+        }
+    });
+}
+
+function outgoingWebhookSignatureIsValid(HttpRequest $request, string $secret = TeamIntegrationFactory::WebhookSecret): bool
+{
+    $timestamp = $request->header('X-Skrum-Timestamp')[0] ?? '';
+    $expected = 'sha256='.hash_hmac('sha256', "{$timestamp}.{$request->body()}", $secret);
+
+    return hash_equals($expected, $request->header('X-Skrum-Signature')[0] ?? '');
+}
+
+function runOutgoingWebhookJob(DeliverToChannel $job): DeliverToChannel
+{
+    $job->withFakeQueueInteractions();
+    $job->handle();
+
+    return $job;
+}
+
+/**
+ * One voted card "Faster reviews" in a "Wins" column, written by $author.
+ */
+function webhookTopCard(Retro $retro, Participant $author, Participant $voter): void
+{
+    $column = Column::factory()->create(['retro_id' => $retro->id, 'title' => 'Wins']);
+    $card = Card::factory()->create([
+        'retro_id' => $retro->id,
+        'column_id' => $column->id,
+        'participant_id' => $author->id,
+        'content' => 'Faster reviews',
+    ]);
+    Vote::factory()->create(['retro_id' => $retro->id, 'card_id' => $card->id, 'participant_id' => $voter->id]);
 }
 
 /**
@@ -647,6 +740,7 @@ function integrationOAuthSession(
         'teamId' => $team->id,
         'access' => $access->value,
         'expiresAt' => now()->addMinutes($expiresInMinutes)->getTimestamp(),
+        'codeVerifier' => str_repeat('v', 64),
     ]];
 }
 
@@ -735,8 +829,12 @@ function trackerTable(IntegrationProvider $source = IntegrationProvider::Jira, I
 
     $game = PokerGame::factory()->deck($deck)->withGuestAccess()->create();
     $factory = TeamIntegration::factory();
-    $integration = ($source === IntegrationProvider::Jira ? $factory->jira($access) : $factory->linear($access))
-        ->create(['team_id' => $game->team_id]);
+    $integration = (match ($source) {
+        IntegrationProvider::Linear => $factory->linear($access),
+        IntegrationProvider::JiraDataCenter => $factory->jiraDataCenter($access),
+        IntegrationProvider::GitHub => $factory->gitHub($access),
+        default => $factory->jira($access),
+    })->create(['team_id' => $game->team_id]);
     [$facilitator, $facilitatorPlayer] = pokerFacilitator($game);
     [$member, $memberPlayer] = pokerMember($game);
 
@@ -755,8 +853,15 @@ function trackerTable(IntegrationProvider $source = IntegrationProvider::Jira, I
  */
 function importedPokerTask(PokerGame $game, array $attributes = [], IntegrationProvider $source = IntegrationProvider::Jira): PokerTask
 {
+    $site = match ($source) {
+        IntegrationProvider::Linear => 'org-1',
+        IntegrationProvider::JiraDataCenter => JiraDataCenterServer::key(TeamIntegrationFactory::JiraDataCenterUrl),
+        IntegrationProvider::GitHub => TeamIntegrationFactory::GitHubInstallationId,
+        default => 'cloud-1',
+    };
+
     $task = PokerTask::factory()
-        ->imported($source, $source === IntegrationProvider::Jira ? 'cloud-1' : 'org-1')
+        ->imported($source, $site)
         ->create(['poker_game_id' => $game->id]);
 
     $task->forceFill($attributes)->save();
@@ -1103,4 +1208,255 @@ function awardGamePoints(GameRoom $room, GamePlayer $player, int $points, bool $
         'is_win' => $isWin,
         ...$attributes,
     ]);
+}
+
+/**
+ * A real RSA key, generated once per process, so GitHub App JWTs can be
+ * signed and verified in tests.
+ */
+function gitHubTestPrivateKey(): string
+{
+    static $pem = null;
+
+    if (is_string($pem)) {
+        return $pem;
+    }
+
+    $key = openssl_pkey_new(['private_key_bits' => 2048, 'private_key_type' => OPENSSL_KEYTYPE_RSA]);
+
+    if ($key === false || ! openssl_pkey_export($key, $exported)) {
+        throw new RuntimeException('Could not create the GitHub test key.');
+    }
+
+    return $pem = $exported;
+}
+
+function fakeGitHubInstallationToken(string $token = 'ghs_installation_token'): void
+{
+    Http::fake(['api.github.com/app/installations/*/access_tokens' => Http::response(['token' => $token, 'expires_at' => now()->addHour()->toIso8601String()], 201)]);
+}
+
+function jiraDataCenterUrl(string $path): string
+{
+    return 'jira.example.com/'.ltrim($path, '/');
+}
+
+function renderedEstimateBlock(string $value): string
+{
+    return "<!-- skrum:estimate -->\n**Estimate:** {$value}\n<!-- /skrum:estimate -->";
+}
+
+/**
+ * @return array<string, mixed>
+ */
+function gitHubRepository(int $id, string $fullName): array
+{
+    return ['id' => $id, 'full_name' => $fullName, 'name' => explode('/', $fullName)[1]];
+}
+
+/**
+ * An issue as the GitHub REST API returns it, in `acme/api`.
+ *
+ * @param  array<string, mixed>  $overrides
+ * @return array<string, mixed>
+ */
+function gitHubIssue(int $number, array $overrides = []): array
+{
+    return [
+        'number' => $number,
+        'title' => "Issue {$number}",
+        'body' => "About issue {$number}",
+        'html_url' => "https://github.com/acme/api/issues/{$number}",
+        'repository_url' => 'https://api.github.com/repos/acme/api',
+        'state' => 'open',
+        'assignees' => [['login' => 'octocat', 'id' => 583231]],
+        ...$overrides,
+    ];
+}
+
+/**
+ * Fakes the GitHub endpoints poker uses for repository 9001 (`acme/api`).
+ * Routes given first win, including over a default with the same pattern.
+ *
+ * @param  array<string, mixed>  $routes
+ */
+function fakeGitHubTrackerApi(array $routes = []): void
+{
+    $defaults = [
+        'api.github.com/app/installations/*/access_tokens' => Http::response(['token' => 'ghs_installation_token', 'expires_at' => now()->addHour()->toIso8601String()], 201),
+        'api.github.com/installation/repositories*' => Http::response([
+            'total_count' => 2,
+            'repositories' => [gitHubRepository(9001, 'acme/api'), gitHubRepository(9002, 'acme/web')],
+        ]),
+        'api.github.com/repositories/9001' => Http::response(gitHubRepository(9001, 'acme/api')),
+        'api.github.com/repos/acme/api/milestones*' => Http::response([
+            ['number' => 3, 'title' => 'Sprint 3', 'due_on' => '2026-10-20T07:00:00Z'],
+            ['number' => 2, 'title' => 'Sprint 2', 'due_on' => '2026-10-10T07:00:00Z'],
+            ['number' => 4, 'title' => 'Someday', 'due_on' => null],
+            ['number' => 1, 'title' => 'Late', 'due_on' => '2026-09-01T07:00:00Z'],
+        ]),
+        'api.github.com/repos/acme/api/issues?*' => Http::response([
+            gitHubIssue(1),
+            gitHubIssue(5, ['pull_request' => ['url' => 'https://api.github.com/repos/acme/api/pulls/5']]),
+            gitHubIssue(2),
+        ]),
+        'api.github.com/search/issues*' => Http::response(['total_count' => 1, 'incomplete_results' => false, 'items' => [gitHubIssue(7)]]),
+        'api.github.com/repositories/9001/issues/*' => fn (HttpRequest $request) => Http::response(gitHubIssue((int) basename($request->url()))),
+        'api.github.com/graphql' => gitHubGraphqlIssues(),
+    ];
+
+    Http::fake([...$routes, ...array_diff_key($defaults, $routes)]);
+}
+
+/**
+ * Answers `GitHubTracker::issues()`'s batched GraphQL read from REST-shaped
+ * fixtures (`gitHubIssue()`); a number missing from `$issues` comes back
+ * null with a NOT_FOUND error, as GitHub answers for deleted issues and
+ * pull requests. Without `$issues`, every requested number exists.
+ *
+ * @param  array<int, array<string, mixed>>|null  $issues
+ */
+function gitHubGraphqlIssues(?array $issues = null): Closure
+{
+    return function (HttpRequest $request) use ($issues) {
+        preg_match_all('/\bi(\d+): issue\(number: \d+\)/', (string) $request['query'], $matches);
+        $repository = [];
+        $errors = [];
+
+        foreach ($matches[1] as $number) {
+            $raw = $issues === null ? gitHubIssue((int) $number) : ($issues[(int) $number] ?? null);
+
+            if ($raw === null) {
+                $repository["i{$number}"] = null;
+                $errors[] = ['type' => 'NOT_FOUND', 'path' => ['repository', "i{$number}"], 'message' => 'Could not resolve to an Issue.'];
+
+                continue;
+            }
+
+            $repository["i{$number}"] = [
+                'number' => $raw['number'],
+                'title' => $raw['title'],
+                'body' => $raw['body'],
+                'url' => $raw['html_url'],
+                'state' => strtoupper($raw['state']),
+                'stateReason' => isset($raw['state_reason']) ? strtoupper($raw['state_reason']) : null,
+                'updatedAt' => $raw['updated_at'] ?? '2026-10-07T09:00:00Z',
+                'assignees' => ['nodes' => array_map(fn (array $assignee): array => ['login' => $assignee['login']], $raw['assignees'])],
+            ];
+        }
+
+        return Http::response(['data' => ['repository' => $repository], ...($errors === [] ? [] : ['errors' => $errors])]);
+    };
+}
+
+/**
+ * @param  array<string, mixed>  $fields
+ * @return array<string, mixed>
+ */
+function jiraTransition(string $id, string $toId, string $toName, string $category, array $fields = []): array
+{
+    return ['id' => $id, 'name' => $toName, 'to' => ['id' => $toId, 'name' => $toName, 'statusCategory' => ['key' => $category]], 'fields' => $fields];
+}
+
+/**
+ * Jira Cloud issue 10001 (PROJ-1) reads as `$before`, then as `$after`
+ * once a transition was posted.
+ *
+ * @param  array<string, mixed>  $before
+ * @param  array<string, mixed>  $after
+ * @param  array<int, array<string, mixed>>  $transitions
+ */
+function fakeJiraTransitions(array $before, array $after, array $transitions): void
+{
+    $posted = false;
+
+    Http::fake([
+        jiraApiUrl('rest/api/3/search/jql') => function () use (&$posted, $before, $after) {
+            return Http::response(['issues' => [jiraTrackerIssue('10001', 'PROJ-1', $posted ? $after : $before)], 'isLast' => true]);
+        },
+        jiraApiUrl('rest/api/3/issue/10001?*') => function () use (&$posted, $before, $after) {
+            return Http::response(jiraTrackerIssue('10001', 'PROJ-1', $posted ? $after : $before));
+        },
+        jiraApiUrl('rest/api/3/issue/10001/transitions*') => function (HttpRequest $request) use (&$posted, $transitions) {
+            if ($request->method() === 'POST') {
+                $posted = true;
+
+                return Http::response(null, 204);
+            }
+
+            return Http::response(['transitions' => $transitions]);
+        },
+    ]);
+}
+
+/**
+ * An item of a completed retro exported to Jira `cloud-1` as PROJ-1
+ * (issue 10001), with status sync on. The author created it on the board
+ * and owns it on the workspace pages too.
+ *
+ * @param  array<string, mixed>  $link
+ * @param  array<string, mixed>  $item
+ * @return array{integration: TeamIntegration, item: ActionItem, link: ActionItemExternalLink, retro: Retro, author: User}
+ */
+function statusSyncLink(array $link = [], IntegrationAccess $access = IntegrationAccess::Write, array $item = [], bool $syncOn = true): array
+{
+    enableIntegrations(IntegrationProvider::Jira);
+    [$retro, $actionItem, $author] = exportBoardItem($item);
+    $actionItem->forceFill(['created_by_user_id' => $author->id])->save();
+    $integration = TeamIntegration::factory()->jira($access)->create(['team_id' => $retro->team_id]);
+    $integration->forceFill(['settings' => [...$integration->settings, 'statusSync' => $syncOn, 'statusSyncSince' => '2026-10-01T00:00:00+00:00']])->save();
+    $externalLink = ActionItemExternalLink::factory()->create([
+        'action_item_id' => $actionItem->id,
+        'external_id' => '10001',
+        'external_key' => 'PROJ-1',
+        'external_url' => 'https://acme.atlassian.net/browse/PROJ-1',
+    ]);
+    $externalLink->forceFill($link)->save();
+
+    return [
+        'integration' => $integration->fresh() ?? $integration,
+        'item' => $actionItem->fresh() ?? $actionItem,
+        'link' => $externalLink->fresh() ?? $externalLink,
+        'retro' => $retro,
+        'author' => $author,
+    ];
+}
+
+/**
+ * A tracker read as the trackers return it; `$kind` is the provider's
+ * category (Jira `new`/`indeterminate`/`done`, Linear state type, GitHub
+ * `open`/`completed`/`not_planned`).
+ *
+ * @param  array<string, mixed>  $overrides
+ */
+function statusSyncIssue(string $externalId, string $key, string $kind, ?string $updatedAt = '2026-10-07T10:00:00+00:00', array $overrides = []): TrackerIssue
+{
+    $name = (string) ($overrides['status'] ?? ($kind === 'done' || $kind === 'completed' ? 'Done' : 'To Do'));
+
+    return new TrackerIssue(
+        externalId: $externalId,
+        key: $key,
+        title: (string) ($overrides['title'] ?? "Issue {$key}"),
+        description: $overrides['description'] ?? null,
+        url: (string) ($overrides['url'] ?? "https://acme.atlassian.net/browse/{$key}"),
+        assignee: $overrides['assignee'] ?? null,
+        estimate: $overrides['estimate'] ?? null,
+        status: $name,
+        issueStatus: new IssueStatus(
+            id: (string) ($overrides['statusId'] ?? ($kind === 'done' ? '10002' : '10000')),
+            name: $name,
+            kind: $kind,
+            container: (string) ($overrides['container'] ?? Str::before($key, '-')),
+            updatedAt: $updatedAt === null ? null : CarbonImmutable::parse($updatedAt),
+        ),
+    );
+}
+
+function runStatusPush(ActionItemExternalLink $link): PushActionItemState
+{
+    $job = (new PushActionItemState($link->id))->withFakeQueueInteractions();
+
+    app()->call([$job, 'handle']);
+
+    return $job;
 }

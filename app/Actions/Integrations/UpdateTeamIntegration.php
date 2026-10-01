@@ -22,6 +22,9 @@ class UpdateTeamIntegration
         private SaveTeamIntegration $saveTeamIntegration,
         private DetectJiraStoryPointFields $detectStoryPointFields,
         private ListProviderPriorities $listPriorities,
+        private ConnectUrlChannel $connectUrlChannel,
+        private ConnectOutgoingWebhook $connectOutgoingWebhook,
+        private UpdateStatusSyncSettings $updateStatusSyncSettings,
     ) {}
 
     /**
@@ -29,9 +32,14 @@ class UpdateTeamIntegration
      */
     public function rules(TeamIntegration $integration): array
     {
-        return match ($integration->provider) {
+        $rules = match ($integration->provider) {
             IntegrationProvider::Jira => [
                 'cloud_id' => ['sometimes', 'required', 'string', Rule::in($this->ids($integration->setting('sites', []), 'cloudId'))],
+                'story_point_field_id' => ['sometimes', 'required', 'string', Rule::in($this->ids($integration->setting('numberFields', []), 'id'))],
+                'priority_map' => ['sometimes', 'array:high,medium,low'],
+                'priority_map.*' => ['nullable', 'string', 'max:50', $this->jiraPriorityRule($integration)],
+            ],
+            IntegrationProvider::JiraDataCenter => [
                 'story_point_field_id' => ['sometimes', 'required', 'string', Rule::in($this->ids($integration->setting('numberFields', []), 'id'))],
                 'priority_map' => ['sometimes', 'array:high,medium,low'],
                 'priority_map.*' => ['nullable', 'string', 'max:50', $this->jiraPriorityRule($integration)],
@@ -40,8 +48,16 @@ class UpdateTeamIntegration
                 'priority_map' => ['sometimes', 'array:high,medium,low'],
                 'priority_map.*' => ['required', Rule::in([...array_map('strval', LinearPriority::Scale), self::DefaultPriority])],
             ],
+            IntegrationProvider::GitHub => [
+                'priority_labels' => ['sometimes', 'array:high,medium,low'],
+                'priority_labels.*' => ['nullable', 'string', 'max:50', 'not_regex:/^\s*\.{1,2}\s*\z/'],
+            ],
+            IntegrationProvider::MicrosoftTeams, IntegrationProvider::Mattermost => $this->connectUrlChannel->rules($integration->provider, isUpdate: true),
+            IntegrationProvider::Webhook => $this->connectOutgoingWebhook->rules(isUpdate: true),
             default => [],
         };
+
+        return [...$rules, ...$this->updateStatusSyncSettings->rules($integration)];
     }
 
     /**
@@ -49,15 +65,20 @@ class UpdateTeamIntegration
      */
     public function handle(TeamIntegration $integration, User $user, array $validated): TeamIntegration
     {
+        if (in_array($integration->provider, [IntegrationProvider::MicrosoftTeams, IntegrationProvider::Mattermost], true)) {
+            return $this->connectUrlChannel->update($integration, $user, $validated)->refresh();
+        }
+
+        if ($integration->provider === IntegrationProvider::Webhook) {
+            return $this->connectOutgoingWebhook->update($integration, $validated)->refresh();
+        }
+
         if (is_string($validated['cloud_id'] ?? null)) {
             $integration = $this->chooseJiraSite($integration, $user, $validated['cloud_id']);
         }
 
         if (is_string($validated['story_point_field_id'] ?? null)) {
-            $integration->forceFill(['settings' => [
-                ...$integration->settings,
-                'storyPointFieldOverride' => $validated['story_point_field_id'],
-            ]])->save();
+            $integration->mergeSettings(['storyPointFieldOverride' => $validated['story_point_field_id']]);
 
             $integration = $this->detectStoryPointFields->applyOverride($integration);
         }
@@ -67,6 +88,20 @@ class UpdateTeamIntegration
 
             $integration = $this->savePriorityMap($integration, $validated['priority_map']);
         }
+
+        if (is_array($validated['priority_labels'] ?? null)) {
+            $integration->ensureWritable();
+
+            $labels = (array) $integration->setting('priorityLabels', []);
+
+            foreach ($validated['priority_labels'] as $level => $label) {
+                $labels[$level] = is_string($label) && trim($label) !== '' ? trim($label) : null;
+            }
+
+            $integration->mergeSettings(['priorityLabels' => $labels]);
+        }
+
+        $integration = $this->updateStatusSyncSettings->handle($integration, $validated);
 
         return $integration->refresh();
     }
@@ -85,14 +120,12 @@ class UpdateTeamIntegration
                 continue;
             }
 
-            $map[$level] = $integration->provider === IntegrationProvider::Jira
+            $map[$level] = in_array($integration->provider, [IntegrationProvider::Jira, IntegrationProvider::JiraDataCenter], true)
                 ? $this->jiraPriority($integration, $value)
                 : (int) $value;
         }
 
-        $integration->forceFill(['settings' => [...$integration->settings, 'priorityMap' => $map]])->save();
-
-        return $integration;
+        return $integration->mergeSettings(['priorityMap' => $map]);
     }
 
     /**

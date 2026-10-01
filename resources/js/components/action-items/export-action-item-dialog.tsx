@@ -43,6 +43,7 @@ type Choice = {
     projectId: string | null;
     issueTypeId: string | null;
     teamId: string | null;
+    repositoryId: string | null;
 };
 
 type Translate = (
@@ -65,6 +66,7 @@ function assigneeLine(
     preview: ExportPreview,
     provider: string,
     t: Translate,
+    isGitHub: boolean,
 ): string {
     switch (preview.assignee.state) {
         case 'mapped':
@@ -73,10 +75,15 @@ function assigneeLine(
                 provider,
             });
         case 'willMatch':
-            return t(
-                'Assignee: not mapped yet — skrum will try to match :name by email',
-                { name: preview.assignee.displayName ?? '' },
-            );
+            return isGitHub
+                ? t(
+                      "Assignee: not mapped yet — skrum will use :name's GitHub sign-in",
+                      { name: preview.assignee.displayName ?? '' },
+                  )
+                : t(
+                      'Assignee: not mapped yet — skrum will try to match :name by email',
+                      { name: preview.assignee.displayName ?? '' },
+                  );
         case 'guest':
             return t('Unassigned (guest)');
         case 'never':
@@ -144,16 +151,20 @@ export function ExportActionItemDialog({
     const [targets, setTargets] = useState<ExportTargets | null>(null);
     const [selectedProject, setSelectedProject] =
         useState<ExportTargetOption | null>(null);
+    const [selectedRepository, setSelectedRepository] =
+        useState<ExportTargetOption | null>(null);
     const currentProject = useRef<string | null>(null);
     const [choice, setChoice] = useState<Choice>({
         projectId: null,
         issueTypeId: null,
         teamId: null,
+        repositoryId: null,
     });
     const [preview, setPreview] = useState<ExportPreview | null>(null);
     const [loadError, setLoadError] = useState<string | null>(null);
     const [busy, setBusy] = useState(false);
-    const isJira = source.source === 'jira';
+    const isJira = source.source === 'jira' || source.source === 'jira_dc';
+    const isGitHub = source.source === 'github';
     const previewUrl = endpoints.exportPreview(item.id, source.source).url;
     const targetsRequest = `${requestedProject ?? ''}|${searchedProjects}`;
     const loadingTargets =
@@ -208,6 +219,15 @@ export function ExportActionItemDialog({
                             (project) => project.id === loadedProject,
                         ) ?? (previous?.id === loadedProject ? previous : null),
                 );
+                setSelectedRepository(
+                    (previous) =>
+                        previous ??
+                        loaded.repositories?.find(
+                            (repository) =>
+                                repository.id === loaded.defaults.repositoryId,
+                        ) ??
+                        null,
+                );
                 setChoice((previous) => ({
                     projectId: loadedProject,
                     issueTypeId:
@@ -218,6 +238,10 @@ export function ExportActionItemDialog({
                             ? previous.issueTypeId
                             : (loaded.defaults.issueTypeId ?? null),
                     teamId: loaded.defaults.teamId ?? null,
+                    repositoryId:
+                        previous.repositoryId ??
+                        loaded.defaults.repositoryId ??
+                        null,
                 }));
                 setLoadError(null);
                 setLoadedRequest(request);
@@ -274,13 +298,23 @@ export function ExportActionItemDialog({
         !loadingTargets &&
         (isJira
             ? choice.projectId !== null && choice.issueTypeId !== null
-            : choice.teamId !== null);
+            : isGitHub
+              ? choice.repositoryId !== null
+              : choice.teamId !== null);
     const listedProjects = targets?.projects ?? [];
     const projectOptions =
         selectedProject === null ||
         listedProjects.some((project) => project.id === selectedProject.id)
             ? listedProjects
             : [selectedProject, ...listedProjects];
+    const listedRepositories = targets?.repositories ?? [];
+    const repositoryOptions =
+        selectedRepository === null ||
+        listedRepositories.some(
+            (repository) => repository.id === selectedRepository.id,
+        )
+            ? listedRepositories
+            : [selectedRepository, ...listedRepositories];
 
     const submit = async () => {
         if (!ready || busy) {
@@ -296,7 +330,12 @@ export function ExportActionItemDialog({
                       project_id: choice.projectId,
                       issue_type_id: choice.issueTypeId,
                   }
-                : { source: source.source, team_id: choice.teamId };
+                : isGitHub
+                  ? {
+                        source: source.source,
+                        repository_id: choice.repositoryId,
+                    }
+                  : { source: source.source, team_id: choice.teamId };
             const response = await run(
                 retroRequest<{
                     actionItem: ActionItem;
@@ -398,6 +437,45 @@ export function ExportActionItemDialog({
                                     }
                                 />
                             </>
+                        ) : isGitHub ? (
+                            <>
+                                <div className="flex items-center gap-2">
+                                    <Input
+                                        value={projectQuery}
+                                        maxLength={100}
+                                        placeholder={t('Search repositories')}
+                                        aria-label={t('Search repositories')}
+                                        disabled={busy}
+                                        onChange={(event) =>
+                                            setProjectQuery(event.target.value)
+                                        }
+                                    />
+                                    {loadingTargets && <Spinner />}
+                                </div>
+                                {!loadingTargets &&
+                                    searchedProjects !== '' &&
+                                    listedRepositories.length === 0 && (
+                                        <p className="text-sm text-muted-foreground">
+                                            {t('No repository found.')}
+                                        </p>
+                                    )}
+                                <TargetSelect
+                                    label={t('Repository')}
+                                    value={choice.repositoryId}
+                                    options={repositoryOptions}
+                                    disabled={busy || loadingTargets}
+                                    onChange={(repositoryId) => {
+                                        setSelectedRepository(
+                                            repositoryOptions.find(
+                                                (repository) =>
+                                                    repository.id ===
+                                                    repositoryId,
+                                            ) ?? null,
+                                        );
+                                        setChoice({ ...choice, repositoryId });
+                                    }}
+                                />
+                            </>
                         ) : (
                             <TargetSelect
                                 label={t('Linear team')}
@@ -413,15 +491,23 @@ export function ExportActionItemDialog({
                 )}
                 {preview !== null && (
                     <ul className="space-y-1 text-sm text-muted-foreground">
-                        <li>{assigneeLine(preview, source.label, t)}</li>
                         <li>
-                            {preview.priority.name === null
-                                ? t('Priority: :provider default', {
-                                      provider: source.label,
-                                  })
-                                : t('Priority: :name', {
-                                      name: preview.priority.name,
-                                  })}
+                            {assigneeLine(preview, source.label, t, isGitHub)}
+                        </li>
+                        <li>
+                            {isGitHub
+                                ? preview.priority.name === null
+                                    ? t('No priority label')
+                                    : t('Priority label: :label', {
+                                          label: preview.priority.name,
+                                      })
+                                : preview.priority.name === null
+                                  ? t('Priority: :provider default', {
+                                        provider: source.label,
+                                    })
+                                  : t('Priority: :name', {
+                                        name: preview.priority.name,
+                                    })}
                         </li>
                     </ul>
                 )}

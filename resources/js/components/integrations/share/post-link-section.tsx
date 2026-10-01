@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { useTrans } from '@/hooks/use-trans';
-import { ShareChannels } from '@/lib/integrations';
+import { postLinkLabel, ShareChannels } from '@/lib/integrations';
 import type {
     IntegrationDelivery,
     ShareAvailability,
@@ -87,9 +87,7 @@ export function PostLinkSection({
                         disabled={busy !== null}
                         onClick={() => void post(channel)}
                     >
-                        {channel === 'slack'
-                            ? t('Post link to Slack')
-                            : t('Post link to Telegram')}
+                        {postLinkLabel(channel, t)}
                     </Button>
                 ))}
             </div>

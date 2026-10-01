@@ -9,7 +9,7 @@ use App\Models\User;
 
 interface OAuthConnector
 {
-    public function authorizationUrl(string $state, IntegrationAccess $access): string;
+    public function authorizationUrl(string $state, IntegrationAccess $access, string $codeChallenge): string;
 
-    public function connect(Team $team, User $user, IntegrationAccess $access, string $code): TeamIntegration;
+    public function connect(Team $team, User $user, IntegrationAccess $access, OAuthCallback $callback): TeamIntegration;
 }

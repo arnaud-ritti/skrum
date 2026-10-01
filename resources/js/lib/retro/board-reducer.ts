@@ -336,6 +336,10 @@ export function upsertActionItem(
                   commentsRevision: existing.commentsRevision,
                   externalLinks:
                       incoming.externalLinks ?? existing.externalLinks,
+                  completedVia:
+                      incoming.completedAt === null
+                          ? null
+                          : (incoming.completedVia ?? existing.completedVia),
               }
             : item,
     );

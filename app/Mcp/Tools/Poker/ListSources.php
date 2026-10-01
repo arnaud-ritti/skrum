@@ -20,7 +20,7 @@ class ListSources extends SkrumTool
 {
     protected string $name = 'poker.sources.list';
 
-    protected string $description = 'List the issue trackers (Jira, Linear) connected to a team for planning poker, with their status and whether tasks can be imported and estimates written back. Credentials and provider errors are never returned.';
+    protected string $description = 'List the issue trackers (Jira, Jira Data Center, Linear, GitHub) connected to a team for planning poker, with their status, whether tasks can be imported and estimates written back (GitHub: into the issue description, for every deck), and whether status sync is on. Chat channels, credentials and provider errors are never returned.';
 
     public function __construct(
         private McpContext $context,

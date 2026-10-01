@@ -1,8 +1,10 @@
 <?php
 
 use App\Enums\IntegrationAccess;
+use App\Enums\IntegrationInboundMode;
 use App\Enums\IntegrationProvider;
 use App\Enums\IntegrationStatus;
+use App\Enums\IntegrationWebhookStatus;
 use App\Events\Integrations\IntegrationActivated;
 use App\Jobs\MatchIntegrationUsers;
 use App\Models\IntegrationUserMapping;
@@ -84,8 +86,8 @@ it('asks for read or read-and-write access', function (string $access, string $s
     expect($query['scope'])->toBe($scope)
         ->and(session('integrations.oauth.access'))->toBe($access);
 })->with([
-    'read' => ['read', 'offline_access read:jira-work read:board-scope:jira-software read:sprint:jira-software'],
-    'write' => ['write', 'offline_access read:jira-work read:board-scope:jira-software read:sprint:jira-software write:jira-work read:jira-user'],
+    'read' => ['read', 'offline_access read:jira-work read:board-scope:jira-software read:sprint:jira-software manage:jira-webhook'],
+    'write' => ['write', 'offline_access read:jira-work read:board-scope:jira-software read:sprint:jira-software manage:jira-webhook write:jira-work read:jira-user'],
 ]);
 
 it('connects a single Jira site and detects its story points fields', function () {
@@ -298,4 +300,60 @@ it('detects story points on Jira connections only', function () {
     $this->actingAs(integrationAdmin($team))
         ->postJson(route('teams.integrations.detection.store', [$team->workspace, $team, $slack]))
         ->assertNotFound();
+});
+
+it('keeps the webhook URL token and status sync when reconnecting to the same site', function () {
+    fakeJiraOAuth();
+    $team = Team::factory()->create();
+    $integration = TeamIntegration::factory()->jira()->create(['team_id' => $team->id]);
+    $integration->forceFill([
+        'credentials' => [...(array) $integration->readableCredentials(), 'webhookToken' => 'kept-webhook-token'],
+        'settings' => [...$integration->settings, 'statusSync' => true, 'webhookIds' => ['7001']],
+        'inbound_mode' => IntegrationInboundMode::Webhook,
+        'webhook_status' => IntegrationWebhookStatus::Active,
+    ])->save();
+
+    jiraCallback(integrationAdmin($team), $team);
+
+    $fresh = $integration->fresh();
+
+    expect($fresh->credential('webhookToken'))->toBe('kept-webhook-token')
+        ->and($fresh->credential('access_token'))->toBe('jira-access-new')
+        ->and($fresh->setting('webhookIds'))->toBe(['7001'])
+        ->and($fresh->inbound_mode)->toBe(IntegrationInboundMode::Webhook)
+        ->and($fresh->webhook_status)->toBe(IntegrationWebhookStatus::Active);
+});
+
+it('turns status sync off cleanly when reconnecting to another site', function () {
+    Http::fake([
+        'auth.atlassian.com/oauth/token' => Http::response(['access_token' => 'jira-access-new', 'refresh_token' => 'jira-refresh-new', 'expires_in' => 3600, 'scope' => 'offline_access read:jira-work write:jira-work read:jira-user']),
+        'api.atlassian.com/oauth/token/accessible-resources' => Http::response([['id' => 'cloud-9', 'url' => 'https://other.atlassian.net', 'name' => 'Other']]),
+        jiraApiUrl('rest/api/3/webhook') => Http::response(null, 202),
+        'api.atlassian.com/ex/jira/cloud-9/rest/api/3/field' => Http::response(jiraFieldsFixture()),
+    ]);
+    $team = Team::factory()->create();
+    $integration = TeamIntegration::factory()->jira()->create(['team_id' => $team->id]);
+    $integration->forceFill([
+        'credentials' => [...(array) $integration->readableCredentials(), 'webhookToken' => 'old-site-token'],
+        'settings' => [...$integration->settings, 'statusSync' => true, 'webhookIds' => ['7001'], 'initialReadPending' => 'pending-token'],
+        'inbound_mode' => IntegrationInboundMode::Webhook,
+        'webhook_status' => IntegrationWebhookStatus::Active,
+        'webhook_expires_at' => now()->addDays(20),
+    ])->save();
+
+    jiraCallback(integrationAdmin($team), $team);
+
+    $fresh = $integration->fresh();
+
+    expect($fresh->site())->toBe('cloud-9')
+        ->and($fresh->credential('webhookToken'))->toBeNull()
+        ->and($fresh->setting('statusSync'))->toBeNull()
+        ->and($fresh->setting('webhookIds'))->toBeNull()
+        ->and($fresh->setting('initialReadPending'))->toBeNull()
+        ->and($fresh->inbound_mode)->toBe(IntegrationInboundMode::Off)
+        ->and($fresh->webhook_status)->toBeNull()
+        ->and($fresh->webhook_expires_at)->toBeNull();
+    Http::assertSent(fn (Request $request) => $request->method() === 'DELETE'
+        && str_contains($request->url(), 'ex/jira/cloud-1/rest/api/3/webhook')
+        && $request['webhookIds'] === [7001]);
 });

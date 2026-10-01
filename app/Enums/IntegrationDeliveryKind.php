@@ -8,4 +8,5 @@ enum IntegrationDeliveryKind: string
     case PokerLink = 'poker_link';
     case RetroResults = 'retro_results';
     case GameRoomLink = 'game_room_link';
+    case Event = 'event';
 }

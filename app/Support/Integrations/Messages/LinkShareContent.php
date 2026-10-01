@@ -8,11 +8,20 @@ class LinkShareContent implements ShareContent
 {
     private const TextLimit = 2900;
 
+    /**
+     * @param  array<string, mixed>  $webhookData
+     */
     public function __construct(
         public string $text,
         public string $buttonLabel,
         public string $url,
+        public array $webhookData = [],
     ) {}
+
+    public function toWebhook(): array
+    {
+        return $this->webhookData;
+    }
 
     public function toSlack(): array
     {
@@ -38,5 +47,19 @@ class LinkShareContent implements ShareContent
         $label = TelegramText::escape($this->buttonLabel);
 
         return "{$text}\n\n<a href=\"{$url}\">{$label}</a>";
+    }
+
+    public function toMicrosoftTeams(): array
+    {
+        return MicrosoftTeamsText::message(
+            [MicrosoftTeamsText::block(Str::limit($this->text, self::TextLimit, '…'))],
+            MicrosoftTeamsText::openUrl($this->buttonLabel, $this->url),
+        );
+    }
+
+    public function toMattermost(): string
+    {
+        return MattermostText::escape(Str::limit($this->text, self::TextLimit, '…'))
+            ."\n\n".MattermostText::link($this->buttonLabel, $this->url);
     }
 }

@@ -13,7 +13,7 @@ use App\Support\Integrations\IntegrationAvailability;
 
 class ShareOptions
 {
-    private const NoChannels = ['slack' => false, 'telegram' => false];
+    public const NoChannels = ['slack' => false, 'telegram' => false, 'msteams' => false, 'mattermost' => false, 'webhook' => false];
 
     public function __construct(
         private SharePermissions $sharePermissions,
@@ -21,7 +21,7 @@ class ShareOptions
     ) {}
 
     /**
-     * @return array{slack: bool, telegram: bool}
+     * @return array{slack: bool, telegram: bool, msteams: bool, mattermost: bool, webhook: bool}
      */
     public function channels(Team $team): array
     {
@@ -30,11 +30,14 @@ class ShareOptions
         return [
             'slack' => $this->isActive($team, IntegrationProvider::Slack),
             'telegram' => $this->isActive($team, IntegrationProvider::Telegram),
+            'msteams' => $this->isActive($team, IntegrationProvider::MicrosoftTeams),
+            'mattermost' => $this->isActive($team, IntegrationProvider::Mattermost),
+            'webhook' => $this->isActive($team, IntegrationProvider::Webhook),
         ];
     }
 
     /**
-     * @return array{slack: bool, telegram: bool, email: bool}
+     * @return array{slack: bool, telegram: bool, msteams: bool, mattermost: bool, webhook: bool, email: bool}
      */
     public function retro(Retro $retro, Participant $viewer): array
     {
@@ -46,7 +49,7 @@ class ShareOptions
     }
 
     /**
-     * @return array{slack: bool, telegram: bool}
+     * @return array{slack: bool, telegram: bool, msteams: bool, mattermost: bool, webhook: bool}
      */
     public function pokerGame(PokerGame $game, PokerPlayer $viewer): array
     {

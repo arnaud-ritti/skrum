@@ -10,6 +10,7 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { useTrans } from '@/hooks/use-trans';
+import { recapDialogTitle } from '@/lib/integrations';
 import { retroRequest } from '@/lib/retro/api';
 import type { IntegrationDelivery, ShareChannel } from '@/types';
 import { useBoard } from '../board-context';
@@ -33,14 +34,18 @@ export function RecapShareDialog({ channel, onClose }: Props) {
 
         setBusy(true);
 
-        const delivery = await ctx.run(
-            retroRequest<IntegrationDelivery>(
-                RetroSharesController.store(retro.id),
-                { channel, kind: 'results' },
-            ),
-        );
+        let delivery: IntegrationDelivery | undefined;
 
-        setBusy(false);
+        try {
+            delivery = await ctx.run(
+                retroRequest<IntegrationDelivery>(
+                    RetroSharesController.store(retro.id),
+                    { channel, kind: 'results' },
+                ),
+            );
+        } finally {
+            setBusy(false);
+        }
 
         if (delivery === undefined) {
             return;
@@ -62,9 +67,7 @@ export function RecapShareDialog({ channel, onClose }: Props) {
         >
             <DialogContent>
                 <DialogTitle>
-                    {channel === 'telegram'
-                        ? t('Share the results to Telegram')
-                        : t('Share the results to Slack')}
+                    {channel === null ? null : recapDialogTitle(channel, t)}
                 </DialogTitle>
                 <DialogDescription>
                     {t('The recap includes:')}

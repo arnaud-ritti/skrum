@@ -39,6 +39,7 @@ it('presents every field of a board item', function () {
         'isOverdue' => true,
         'status' => 'open',
         'completedAt' => null,
+        'completedVia' => null,
         'assignee' => [
             'kind' => 'member',
             'id' => $assignee->id,

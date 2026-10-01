@@ -27,6 +27,7 @@ class ExportActionItem
         private ResolveExportAssignee $resolveAssignee,
         private ExportToJira $exportToJira,
         private ExportToLinear $exportToLinear,
+        private ExportToGitHub $exportToGitHub,
         private BroadcastActionItemChange $broadcast,
     ) {}
 
@@ -40,9 +41,11 @@ class ExportActionItem
 
         WorkspaceActionItemGuard::writable($item);
 
-        $this->tokens->accessToken($integration);
+        $this->tokens->prepare($integration);
 
         try {
+            $target = $this->checkTarget($integration, $target);
+
             /** @var array{0: ActionItem, 1: ExportOutcome} $result */
             $result = DB::transaction(fn (): array => $this->export($item, $user, $integration, $target));
         } catch (ReconnectRequired $exception) {
@@ -81,12 +84,15 @@ class ExportActionItem
         $draft = $this->buildIssueDraft->handle($locked);
         $assignee = $this->resolveAssignee->handle($locked, $integration);
 
-        $outcome = $integration->provider === IntegrationProvider::Jira
-            ? $this->exportToJira->create($integration, $locked, $draft, $assignee, [
+        $outcome = match ($integration->provider) {
+            IntegrationProvider::Jira, IntegrationProvider::JiraDataCenter => $this->exportToJira->create($integration, $locked, $draft, $assignee, [
                 'project_id' => $this->targetId($target, 'project_id'),
                 'issue_type_id' => $this->targetId($target, 'issue_type_id'),
-            ])
-            : $this->exportToLinear->create($integration, $locked, $draft, $assignee, ['team_id' => $this->targetId($target, 'team_id')]);
+            ]),
+            IntegrationProvider::Linear => $this->exportToLinear->create($integration, $locked, $draft, $assignee, ['team_id' => $this->targetId($target, 'team_id')]),
+            IntegrationProvider::GitHub => $this->exportToGitHub->create($integration, $locked, $draft, $assignee, ['repository_id' => $this->targetId($target, 'repository_id')]),
+            default => throw new InvalidArgumentException("{$integration->provider->value} does not export action items."),
+        };
 
         $link->update([
             'external_id' => $outcome->issue->id,
@@ -97,6 +103,23 @@ class ExportActionItem
         $this->rememberTarget($integration, $target);
 
         return [$locked->loadForPresentation(), $outcome];
+    }
+
+    /**
+     * Slow target checks run before the item lock is taken.
+     *
+     * @param  array<string, mixed>  $target
+     * @return array<string, mixed>
+     */
+    private function checkTarget(TeamIntegration $integration, array $target): array
+    {
+        if ($integration->provider !== IntegrationProvider::GitHub) {
+            return $target;
+        }
+
+        $repositoryName = $this->exportToGitHub->repositoryName($integration, $this->targetId($target, 'repository_id'));
+
+        return [...$target, 'repository_name' => $repositoryName];
     }
 
     private function ensureNotExported(ActionItem $item, TeamIntegration $integration): void
@@ -129,9 +152,11 @@ class ExportActionItem
      */
     private function rememberTarget(TeamIntegration $integration, array $target): void
     {
-        $saved = $integration->provider === IntegrationProvider::Jira
-            ? ['exportProjectId' => $target['project_id'], 'exportIssueTypeId' => $target['issue_type_id']]
-            : ['exportTeamId' => $target['team_id']];
+        $saved = match ($integration->provider) {
+            IntegrationProvider::Jira, IntegrationProvider::JiraDataCenter => ['exportProjectId' => $target['project_id'], 'exportIssueTypeId' => $target['issue_type_id']],
+            IntegrationProvider::GitHub => ['exportRepositoryId' => $target['repository_id'], 'exportRepositoryName' => $target['repository_name'] ?? null],
+            default => ['exportTeamId' => $target['team_id']],
+        };
 
         $current = TeamIntegration::query()->whereKey($integration->id)->lockForUpdate()->firstOrFail();
 

@@ -176,6 +176,9 @@ class McpPokerGame
                     'url' => $presented['external']['url'],
                     'syncState' => $presented['external']['syncState'] ?? null,
                     'syncError' => $presented['external']['syncError'] ?? null,
+                    'statusCategory' => $presented['external']['statusCategory'] ?? null,
+                    'missing' => $presented['external']['missing'] ?? false,
+                    'estimateConflict' => $presented['external']['estimateConflict'] ?? null,
                 ],
             ];
         })->values()->all();

@@ -4,8 +4,15 @@ namespace App\Providers;
 
 use App\Contracts\GamePresenceRoster;
 use App\Contracts\PokerPresenceRoster;
+use App\Events\ActionItems\ActionItemCompleted;
+use App\Events\ActionItems\ActionItemCreated;
+use App\Events\ActionItems\ActionItemReopened;
 use App\Events\Integrations\IntegrationActivated;
+use App\Events\Poker\PokerTaskEstimated;
+use App\Events\RetroCompleted;
 use App\Jobs\MatchIntegrationUsers;
+use App\Listeners\QueueActionItemStatusPushes;
+use App\Listeners\QueueWebhookEvents;
 use App\Mcp\McpGrant;
 use App\Mcp\McpGrantContext;
 use App\Mcp\McpTrackers;
@@ -72,6 +79,13 @@ class AppServiceProvider extends ServiceProvider
             ->by('mcp-token:'.McpGrant::current()->tokenId));
 
         Event::listen(IntegrationActivated::class, fn (IntegrationActivated $event) => MatchIntegrationUsers::start($event->integration));
+        Event::listen(RetroCompleted::class, [QueueWebhookEvents::class, 'onRetroCompleted']);
+        Event::listen(ActionItemCreated::class, [QueueWebhookEvents::class, 'onActionItemCreated']);
+        Event::listen(ActionItemCompleted::class, [QueueWebhookEvents::class, 'onActionItemCompleted']);
+        Event::listen(ActionItemReopened::class, [QueueWebhookEvents::class, 'onActionItemReopened']);
+        Event::listen(ActionItemCompleted::class, [QueueActionItemStatusPushes::class, 'onActionItemCompleted']);
+        Event::listen(ActionItemReopened::class, [QueueActionItemStatusPushes::class, 'onActionItemReopened']);
+        Event::listen(PokerTaskEstimated::class, [QueueWebhookEvents::class, 'onPokerTaskEstimated']);
 
         if ($this->app->environment('local')) {
             $reverbPort = (int) config('reverb.servers.reverb.port');

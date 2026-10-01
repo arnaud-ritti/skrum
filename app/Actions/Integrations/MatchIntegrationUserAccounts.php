@@ -4,7 +4,9 @@ namespace App\Actions\Integrations;
 
 use App\Enums\IntegrationProvider;
 use App\Enums\IntegrationUserMatch;
+use App\Enums\SsoProvider;
 use App\Models\IntegrationUserMapping;
+use App\Models\SocialAccount;
 use App\Models\TeamIntegration;
 use App\Models\User;
 use App\Support\Integrations\ExternalAccount;
@@ -14,8 +16,9 @@ use Illuminate\Support\Str;
 
 /**
  * Spec §7.1 automatic matching: existing rows are only re-checked (stale
- * email rows are deleted so they can match again, inactive manual rows are
- * flagged), then members without a row are matched by verified email.
+ * email and sign-in rows are deleted so they can match again, inactive
+ * manual rows are flagged), then members without a row are matched by
+ * verified email, or for GitHub by the GitHub account they sign in with.
  */
 class MatchIntegrationUserAccounts
 {
@@ -46,11 +49,17 @@ class MatchIntegrationUserAccounts
 
         foreach ($mappings as $mapping) {
             $accountId = (string) $mapping->external_account_id;
+
+            if ($mapping->matched_by === IntegrationUserMatch::Sso && ! $this->isSignInLinked($mapping->user_id, $accountId)) {
+                $this->unchanged($integration, $mapping)->delete();
+
+                continue;
+            }
             $account = $known === null ? $this->accounts->find($integration, $accountId) : $known->get($accountId);
             $usable = $account !== null && $account->active;
             $unchanged = $this->unchanged($integration, $mapping);
 
-            if (! $usable && $mapping->matched_by === IntegrationUserMatch::Email) {
+            if (! $usable && in_array($mapping->matched_by, [IntegrationUserMatch::Email, IntegrationUserMatch::Sso], true)) {
                 $unchanged->delete();
 
                 continue;
@@ -62,6 +71,19 @@ class MatchIntegrationUserAccounts
                 'checked_at' => now(),
             ]);
         }
+    }
+
+    /**
+     * A sign-in match lasts only while the member still signs in with that
+     * GitHub account.
+     */
+    private function isSignInLinked(string $userId, string $accountId): bool
+    {
+        return SocialAccount::query()
+            ->where('user_id', $userId)
+            ->where('provider', SsoProvider::GitHub->value)
+            ->where('provider_user_id', $accountId)
+            ->exists();
     }
 
     /**
@@ -84,6 +106,22 @@ class MatchIntegrationUserAccounts
     private function matchUnmapped(TeamIntegration $integration, ?array $directory): void
     {
         $mapped = $integration->userMappings()->pluck('user_id')->all();
+
+        if ($integration->provider === IntegrationProvider::GitHub) {
+            $members = $integration->team->members()->whereNotIn('users.id', $mapped)->get();
+
+            foreach ($this->accounts->matchSso($integration, $members) as $userId => $account) {
+                $integration->userMappings()->firstOrCreate(['user_id' => $userId], [
+                    'external_account_id' => $account->id,
+                    'external_display_name' => $account->displayName,
+                    'matched_by' => IntegrationUserMatch::Sso,
+                    'account_inactive' => false,
+                    'checked_at' => now(),
+                ]);
+            }
+
+            return;
+        }
 
         $members = $integration->team->members()
             ->whereNotNull('email_verified_at')

@@ -1,10 +1,8 @@
 import { router } from '@inertiajs/react';
-import { ExternalLink, ListChecks, RefreshCw } from 'lucide-react';
+import { ExternalLink, ListChecks } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import JiraFieldDetectionsController from '@/actions/App/Http/Controllers/Integrations/JiraFieldDetectionsController';
 import TeamIntegrationsController from '@/actions/App/Http/Controllers/Integrations/TeamIntegrationsController';
-import { Button } from '@/components/ui/button';
 import {
     Select,
     SelectContent,
@@ -26,6 +24,8 @@ import { IntegrationCard } from './integration-card';
 import { IntegrationDetails } from './integration-details';
 import { PeoplePanel } from './people-panel';
 import { PrioritiesPanel } from './priorities-panel';
+import { StatusSyncSection } from './status-sync-section';
+import { StoryPointsField } from './story-points-field';
 
 type Props = {
     card: IntegrationProviderCard;
@@ -80,8 +80,6 @@ function ConnectedJira({
     const [busy, setBusy] = useState(false);
     const { settings } = connection;
     const sites = settings.sites ?? [];
-    const numberFields = settings.numberFields ?? [];
-    const storyPointFields = settings.storyPointFields ?? [];
     const target = { ...scope, integration: connection.id };
 
     const send = async (request: Promise<unknown>, successMessage: string) => {
@@ -106,20 +104,6 @@ function ConnectedJira({
                 cloud_id: cloudId,
             }),
             t('Jira connected.'),
-        );
-
-    const chooseField = (fieldId: string) =>
-        void send(
-            retroRequest(TeamIntegrationsController.update(target), {
-                story_point_field_id: fieldId,
-            }),
-            t('Story points field saved.'),
-        );
-
-    const detect = () =>
-        void send(
-            retroRequest(JiraFieldDetectionsController.store(target)),
-            t('Fields detected again.'),
         );
 
     return (
@@ -220,54 +204,7 @@ function ConnectedJira({
                             },
                         ]}
                     />
-                    <div className="space-y-2">
-                        <p className="text-sm font-medium">
-                            {t('Story points field')}
-                        </p>
-                        <div className="flex flex-wrap items-center gap-2">
-                            {numberFields.length === 0 ? (
-                                <p className="text-sm text-muted-foreground">
-                                    {t('No story points field found.')}
-                                </p>
-                            ) : (
-                                <Select
-                                    disabled={busy}
-                                    value={storyPointFields[0]?.id}
-                                    onValueChange={chooseField}
-                                >
-                                    <SelectTrigger
-                                        className="w-full sm:w-72"
-                                        aria-label={t('Story points field')}
-                                    >
-                                        <SelectValue
-                                            placeholder={t('Choose a field')}
-                                        />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {numberFields.map((field) => (
-                                            <SelectItem
-                                                key={field.id}
-                                                value={field.id}
-                                            >
-                                                {field.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            )}
-                            {connection.status === 'active' && (
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    disabled={busy}
-                                    onClick={detect}
-                                >
-                                    <RefreshCw className="size-4" aria-hidden />
-                                    {t('Detect again')}
-                                </Button>
-                            )}
-                        </div>
-                    </div>
+                    <StoryPointsField scope={scope} connection={connection} />
                     {connection.status === 'active' &&
                         connection.access === 'write' && (
                             <>
@@ -282,6 +219,13 @@ function ConnectedJira({
                                 />
                             </>
                         )}
+                    {connection.status === 'active' && (
+                        <StatusSyncSection
+                            scope={scope}
+                            card={card}
+                            connection={connection}
+                        />
+                    )}
                 </>
             )}
         </IntegrationCard>

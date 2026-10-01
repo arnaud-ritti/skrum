@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\ExternalStatusCategory;
 use Database\Factories\PokerTaskFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -36,6 +37,10 @@ use Illuminate\Support\Carbon;
  * @property bool $needs_sync
  * @property string|null $sync_error
  * @property Carbon|null $synced_at
+ * @property string|null $external_status_name
+ * @property ExternalStatusCategory|null $external_status_category
+ * @property Carbon|null $external_updated_at
+ * @property Carbon|null $external_missing_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read PokerGame $game
@@ -79,6 +84,9 @@ class PokerTask extends Model
             'external_refreshed_at' => 'datetime',
             'needs_sync' => 'boolean',
             'synced_at' => 'datetime',
+            'external_status_category' => ExternalStatusCategory::class,
+            'external_updated_at' => 'datetime',
+            'external_missing_at' => 'datetime',
         ];
     }
 }

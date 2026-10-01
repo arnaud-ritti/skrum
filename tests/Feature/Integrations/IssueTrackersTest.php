@@ -3,6 +3,8 @@
 use App\Enums\IntegrationProvider;
 use App\Models\TeamIntegration;
 use App\Support\Integrations\Exceptions\ProviderRejected;
+use App\Support\Integrations\Trackers\GitHubTracker;
+use App\Support\Integrations\Trackers\JiraDataCenterTracker;
 use App\Support\Integrations\Trackers\JiraTracker;
 use App\Support\Integrations\Trackers\LinearTracker;
 use App\Support\Integrations\Trackers\Trackers;
@@ -17,6 +19,8 @@ beforeEach(function () {
 it('resolves the tracker of each provider', function () {
     expect(app(Trackers::class)->for(IntegrationProvider::Jira))->toBeInstanceOf(JiraTracker::class)
         ->and(app(Trackers::class)->for(IntegrationProvider::Linear))->toBeInstanceOf(LinearTracker::class)
+        ->and(app(Trackers::class)->for(IntegrationProvider::JiraDataCenter))->toBeInstanceOf(JiraDataCenterTracker::class)
+        ->and(app(Trackers::class)->for(IntegrationProvider::GitHub))->toBeInstanceOf(GitHubTracker::class)
         ->and(fn () => app(Trackers::class)->for(IntegrationProvider::Slack))->toThrow(InvalidArgumentException::class);
 });
 
@@ -84,7 +88,7 @@ it('maps the issues of a Jira sprint with the story point candidates', function 
 
     Http::assertSent(fn (Request $request) => $request['jql'] === 'sprint = 31 ORDER BY Rank ASC'
         && $request['maxResults'] === 100
-        && $request['fields'] === ['summary', 'description', 'assignee', 'status', 'customfield_10016']);
+        && $request['fields'] === ['summary', 'description', 'assignee', 'status', 'updated', 'project', 'customfield_10016']);
 });
 
 it('surfaces Jira JQL errors', function () {

@@ -52,6 +52,49 @@ return [
         'client_id' => env('LINEAR_CLIENT_ID'),
         'client_secret' => env('LINEAR_CLIENT_SECRET'),
         'redirect' => rtrim((string) env('APP_URL', ''), '/').'/integrations/linear/callback',
+        'webhook_secret' => env('LINEAR_WEBHOOK_SECRET'),
+    ],
+
+    'jira_dc' => [
+        'base_url' => env('JIRA_DC_BASE_URL'),
+        'client_id' => env('JIRA_DC_CLIENT_ID'),
+        'client_secret' => env('JIRA_DC_CLIENT_SECRET'),
+        'personal_tokens' => (bool) env('JIRA_DC_PERSONAL_TOKENS', true),
+        'redirect' => rtrim((string) env('APP_URL', ''), '/').'/integrations/jira-dc/callback',
+    ],
+
+    'github_app' => [
+        'app_id' => env('GITHUB_APP_ID'),
+        'slug' => env('GITHUB_APP_SLUG'),
+        'client_id' => env('GITHUB_APP_CLIENT_ID'),
+        'client_secret' => env('GITHUB_APP_CLIENT_SECRET'),
+        'private_key' => str_replace('\n', "\n", (string) env('GITHUB_APP_PRIVATE_KEY', '')),
+        'private_key_path' => env('GITHUB_APP_PRIVATE_KEY_PATH'),
+        'webhook_secret' => env('GITHUB_APP_WEBHOOK_SECRET'),
+        'redirect' => rtrim((string) env('APP_URL', ''), '/').'/integrations/github/callback',
+    ],
+
+    'msteams' => [
+        'enabled' => (bool) env('MSTEAMS_ENABLED', false),
+        'allowed_hosts' => array_values(array_filter(array_map(
+            fn (string $host): string => strtolower(trim($host)),
+            explode(',', (string) env('MSTEAMS_ALLOWED_HOSTS', '')),
+        ))),
+    ],
+
+    'mattermost' => [
+        'url' => rtrim((string) env('MATTERMOST_URL', ''), '/'),
+    ],
+
+    'outgoing_webhooks' => [
+        'enabled' => (bool) env('OUTGOING_WEBHOOKS_ENABLED', false),
+        'allow_private_networks' => (bool) env('OUTGOING_WEBHOOKS_ALLOW_PRIVATE_NETWORKS', false),
+        'allow_http' => (bool) env('OUTGOING_WEBHOOKS_ALLOW_HTTP', false),
+    ],
+
+    'integrations' => [
+        'inbound_webhooks' => env('INTEGRATIONS_INBOUND_WEBHOOKS', 'auto'),
+        'poll_minutes' => (int) env('INTEGRATIONS_POLL_MINUTES', 5),
     ],
 
     'google' => [

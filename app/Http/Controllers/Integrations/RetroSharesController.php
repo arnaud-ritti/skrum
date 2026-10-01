@@ -13,7 +13,6 @@ use App\Enums\RetroPhase;
 use App\Http\Controllers\Controller;
 use App\Models\Participant;
 use App\Models\Retro;
-use App\Support\Integrations\Messages\RetroRecapContent;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -62,7 +61,7 @@ class RetroSharesController extends Controller
             $isResults ? IntegrationDeliveryKind::RetroResults : IntegrationDeliveryKind::RetroLink,
             $sharer,
             $isResults
-                ? new RetroRecapContent($this->buildRetroRecap->handle($retro))
+                ? $this->buildRetroRecap->content($retro)
                 : $this->buildLinkShare->retro($retro, $sharer, $includeGuestLink),
         );
 

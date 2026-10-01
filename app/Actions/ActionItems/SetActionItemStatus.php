@@ -32,7 +32,10 @@ class SetActionItemStatus
             return $locked->loadForPresentation();
         }
 
-        $locked->update(['completed_at' => $completing ? now() : null]);
+        $locked->forceFill([
+            'completed_at' => $completing ? now() : null,
+            'completed_via_source' => $completing && $actor instanceof ExternalSyncActor ? $actor->source : null,
+        ])->save();
 
         if ($completing) {
             $this->createNextOccurrence->handle($locked);
@@ -42,11 +45,11 @@ class SetActionItemStatus
         $origin = $actor instanceof ExternalSyncActor ? ActionItemEventOrigin::External : ActionItemEventOrigin::Skrum;
 
         if ($completing) {
-            ActionItemCompleted::dispatch($locked, $origin);
+            ActionItemCompleted::dispatch($locked, $origin, $actor);
         }
 
         if (! $completing) {
-            ActionItemReopened::dispatch($locked, $origin);
+            ActionItemReopened::dispatch($locked, $origin, $actor);
         }
 
         $this->broadcastActionItemChange->saved($locked);

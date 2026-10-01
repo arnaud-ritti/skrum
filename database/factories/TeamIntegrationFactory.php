@@ -8,6 +8,7 @@ use App\Enums\IntegrationStatus;
 use App\Models\Team;
 use App\Models\TeamIntegration;
 use App\Support\Integrations\Jira\JiraClient;
+use App\Support\Integrations\JiraDataCenter\JiraDataCenterServer;
 use App\Support\Integrations\Linear\LinearClient;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -16,6 +17,64 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class TeamIntegrationFactory extends Factory
 {
+    public const MicrosoftTeamsUrl = 'https://prod-12.westeurope.logic.azure.com:443/workflows/abc123/triggers/manual/paths/invoke?api-version=2016-06-01&sig=teams-signature';
+
+    public const MattermostUrl = 'https://chat.example.com/hooks/abcdefghijklmnopqrstuvwxyz';
+
+    public const WebhookUrl = 'https://hooks.example.com/skrum/incoming';
+
+    public const WebhookSecret = '0f1e2d3c4b5a69788796a5b4c3d2e1f00f1e2d3c4b5a69788796a5b4c3d2e1f0';
+
+    public const JiraDataCenterUrl = 'https://jira.example.com';
+
+    public const JiraDataCenterToken = 'jira-dc-personal-token-0123456789';
+
+    public const GitHubInstallationId = '4242';
+
+    public function microsoftTeams(): static
+    {
+        return $this->state(fn () => [
+            'provider' => IntegrationProvider::MicrosoftTeams,
+            'status' => IntegrationStatus::Active,
+            'access' => IntegrationAccess::Write,
+            'credentials' => ['url' => self::MicrosoftTeamsUrl],
+            'settings' => ['host' => 'prod-12.westeurope.logic.azure.com', 'channelLabel' => '#retros'],
+            'scopes' => [],
+        ]);
+    }
+
+    public function mattermost(): static
+    {
+        return $this->state(fn () => [
+            'provider' => IntegrationProvider::Mattermost,
+            'status' => IntegrationStatus::Active,
+            'access' => IntegrationAccess::Write,
+            'credentials' => ['url' => self::MattermostUrl],
+            'settings' => ['host' => 'chat.example.com', 'channelLabel' => 'town-square'],
+            'scopes' => [],
+        ]);
+    }
+
+    /**
+     * @param  array<int, string>  $events
+     */
+    public function webhook(array $events = []): static
+    {
+        return $this->state(fn () => [
+            'provider' => IntegrationProvider::Webhook,
+            'status' => IntegrationStatus::Active,
+            'access' => IntegrationAccess::Write,
+            'credentials' => ['url' => self::WebhookUrl, 'webhookSecret' => self::WebhookSecret],
+            'settings' => [
+                'host' => 'hooks.example.com',
+                'channelLabel' => null,
+                'secretCreatedAt' => '2026-10-01T09:00:00Z',
+                'events' => $events,
+            ],
+            'scopes' => [],
+        ]);
+    }
+
     public function definition(): array
     {
         return [
@@ -68,6 +127,46 @@ class TeamIntegrationFactory extends Factory
             'credentials' => ['access_token' => 'linear-access', 'refresh_token' => null, 'expires_at' => null],
             'settings' => ['organizationId' => 'org-1', 'organizationName' => 'Acme', 'urlKey' => 'acme'],
             'scopes' => LinearClient::scopesFor($access),
+        ]);
+    }
+
+    public function jiraDataCenter(IntegrationAccess $access = IntegrationAccess::Write, string $authMethod = 'oauth'): static
+    {
+        $usesToken = $authMethod === 'pat';
+
+        return $this->state(fn () => [
+            'provider' => IntegrationProvider::JiraDataCenter,
+            'status' => IntegrationStatus::Active,
+            'access' => $access,
+            'credentials' => $usesToken
+                ? ['personalAccessToken' => self::JiraDataCenterToken]
+                : ['access_token' => 'jira-dc-access', 'refresh_token' => 'jira-dc-refresh', 'expires_at' => now()->addHour()->getTimestamp()],
+            'settings' => [
+                'authMethod' => $authMethod,
+                'serverKey' => JiraDataCenterServer::key(self::JiraDataCenterUrl),
+                'baseUrl' => self::JiraDataCenterUrl,
+                'serverTitle' => 'Acme Jira',
+                'version' => '9.12.2',
+                'storyPointFields' => [['id' => 'customfield_10002', 'name' => 'Story Points']],
+                'numberFields' => [['id' => 'customfield_10002', 'name' => 'Story Points']],
+                ...($usesToken ? [
+                    'tokenOwner' => ['name' => 'jdoe', 'displayName' => 'Jane Doe'],
+                    'tokenSavedAt' => '2026-10-01T09:00:00+00:00',
+                ] : []),
+            ],
+            'scopes' => $usesToken ? [] : [$access === IntegrationAccess::Write ? 'WRITE' : 'READ'],
+        ]);
+    }
+
+    public function gitHub(IntegrationAccess $access = IntegrationAccess::Write): static
+    {
+        return $this->state(fn () => [
+            'provider' => IntegrationProvider::GitHub,
+            'status' => IntegrationStatus::Active,
+            'access' => $access,
+            'credentials' => [],
+            'settings' => ['installationId' => self::GitHubInstallationId, 'accountLogin' => 'acme', 'accountType' => 'Organization'],
+            'scopes' => [],
         ]);
     }
 

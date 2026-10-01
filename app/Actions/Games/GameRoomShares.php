@@ -17,8 +17,6 @@ use Illuminate\Auth\Access\AuthorizationException;
  */
 class GameRoomShares
 {
-    private const NoChannels = ['slack' => false, 'telegram' => false];
-
     public function __construct(
         private ShareOptions $shareOptions,
         private LatestDeliveries $latestDeliveries,
@@ -59,12 +57,12 @@ class GameRoomShares
     }
 
     /**
-     * @return array{slack: bool, telegram: bool}
+     * @return array{slack: bool, telegram: bool, msteams: bool, mattermost: bool, webhook: bool}
      */
     public function availability(GameRoom $room, GamePlayer $player): array
     {
         if (! $this->canShare($room, $player)) {
-            return self::NoChannels;
+            return ShareOptions::NoChannels;
         }
 
         return $this->shareOptions->channels($room->team);

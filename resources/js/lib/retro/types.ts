@@ -6,7 +6,11 @@ import type {
     GameSnapshot,
 } from '@/lib/games/types';
 import type { IntegrationDelivery, ShareAvailability } from '@/types';
-import type { ExportSource, ExternalLink } from '@/types/integrations';
+import type {
+    ExportSource,
+    ExternalLink,
+    TrackerProviderKey,
+} from '@/types/integrations';
 
 export type RetroPhase =
     | 'health_check'
@@ -206,6 +210,8 @@ export type ActionItem = {
     isOverdue: boolean;
     status: ActionItemStatus;
     completedAt: string | null;
+    /** The tracker whose status sync completed the item. */
+    completedVia: TrackerProviderKey | null;
     assignee: ActionItemAssignee | null;
     createdBy: ActionItemPerson | null;
     isMine: boolean;

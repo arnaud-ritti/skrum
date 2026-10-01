@@ -13,11 +13,14 @@ class IntegrationErrors
      */
     private const Patterns = [
         '#https://hooks\.slack\.com/\S+#i' => 'https://hooks.slack.com/***',
+        '#(https://[^\s/"\']+\.(?:logic\.azure\.com|api\.powerplatform\.com)(?::\d+)?)/[^\s"\']*#i' => '$1/***',
+        '#(https?://[^\s"\']+?)/hooks/[A-Za-z0-9]+#i' => '$1/hooks/***',
         '#\bbot\d+:[A-Za-z0-9_-]+#' => 'bot***',
         '#\bxox[a-z]-[A-Za-z0-9-]+#i' => 'xox***',
         '#\bBearer\s+[^\s,;"\']+#i' => 'Bearer ***',
         '#\b(access_token|refresh_token|client_secret|code)=[^&\s"\']+#i' => '$1=***',
         '#("(?:access_token|refresh_token|client_secret|code)"\s*:\s*")[^"]*#i' => '$1***',
+        '#(/integrations/webhooks/jira(?:-dc)?/[0-9a-f-]{36}/)[A-Za-z0-9]{40}#i' => '$1***',
         '#(https?://[^\s?\#"\']+)[?\#][^\s"\']*#i' => '$1',
     ];
 

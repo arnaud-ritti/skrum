@@ -12,7 +12,7 @@ use App\Support\Integrations\ProviderHttp;
 use App\Support\Integrations\RefreshesTokens;
 use Illuminate\Http\Client\Response;
 
-class JiraClient implements RefreshesTokens
+class JiraClient implements JiraApi, RefreshesTokens
 {
     public const AuthorizeUrl = 'https://auth.atlassian.com/authorize';
 
@@ -22,7 +22,7 @@ class JiraClient implements RefreshesTokens
 
     public const ApiUrl = 'https://api.atlassian.com/ex/jira/';
 
-    public const ReadScopes = ['offline_access', 'read:jira-work', 'read:board-scope:jira-software', 'read:sprint:jira-software'];
+    public const ReadScopes = ['offline_access', 'read:jira-work', 'read:board-scope:jira-software', 'read:sprint:jira-software', 'manage:jira-webhook'];
 
     public const WriteScopes = ['write:jira-work', 'read:jira-user'];
 
@@ -123,6 +123,25 @@ class JiraClient implements RefreshesTokens
     public function put(TeamIntegration $integration, string $path, array $body = []): array
     {
         return $this->request($integration, 'PUT', $path, $body);
+    }
+
+    /**
+     * @param  array<string, mixed>  $body
+     * @return array<array-key, mixed>
+     */
+    public function delete(TeamIntegration $integration, string $path, array $body = []): array
+    {
+        return $this->request($integration, 'DELETE', $path, $body);
+    }
+
+    public function apiPath(string $resource): string
+    {
+        return 'rest/api/3/'.ltrim($resource, '/');
+    }
+
+    public function browseUrl(TeamIntegration $integration, string $key): string
+    {
+        return rtrim((string) $integration->setting('siteUrl', ''), '/').'/browse/'.rawurlencode($key);
     }
 
     /**

@@ -1,7 +1,9 @@
 import RetroActionItemExportPreviewsController from '@/actions/App/Http/Controllers/Integrations/RetroActionItemExportPreviewsController';
 import RetroActionItemExportsController from '@/actions/App/Http/Controllers/Integrations/RetroActionItemExportsController';
+import RetroActionItemLinkSyncsController from '@/actions/App/Http/Controllers/Integrations/RetroActionItemLinkSyncsController';
 import WorkspaceActionItemExportPreviewsController from '@/actions/App/Http/Controllers/Integrations/WorkspaceActionItemExportPreviewsController';
 import WorkspaceActionItemExportsController from '@/actions/App/Http/Controllers/Integrations/WorkspaceActionItemExportsController';
+import WorkspaceActionItemLinkSyncsController from '@/actions/App/Http/Controllers/Integrations/WorkspaceActionItemLinkSyncsController';
 import ActionItemCommentsController from '@/actions/App/Http/Controllers/Retros/ActionItemCommentsController';
 import ActionItemSubtasksController from '@/actions/App/Http/Controllers/Retros/ActionItemSubtasksController';
 import ActionItemsController from '@/actions/App/Http/Controllers/Retros/ActionItemsController';
@@ -31,6 +33,7 @@ export type ActionItemEndpoints = {
         actionItemId: string,
         source: TrackerProviderKey,
     ) => EndpointRoute;
+    syncLink: (actionItemId: string, externalLinkId: string) => EndpointRoute;
 };
 
 export function boardActionItemEndpoints(retroId: string): ActionItemEndpoints {
@@ -75,6 +78,12 @@ export function boardActionItemEndpoints(retroId: string): ActionItemEndpoints {
                 { retro: retroId, actionItem },
                 { query: { source } },
             ),
+        syncLink: (actionItem, externalLink) =>
+            RetroActionItemLinkSyncsController.store({
+                retro: retroId,
+                actionItem,
+                externalLink,
+            }),
     };
 }
 
@@ -131,5 +140,11 @@ export function workspaceActionItemEndpoints(
                 { workspace, actionItem },
                 { query: { source } },
             ),
+        syncLink: (actionItem, externalLink) =>
+            WorkspaceActionItemLinkSyncsController.store({
+                workspace,
+                actionItem,
+                externalLink,
+            }),
     };
 }

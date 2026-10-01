@@ -34,11 +34,15 @@ use App\Http\Controllers\Integrations\IntegrationAccountsController;
 use App\Http\Controllers\Integrations\IntegrationAuthorizationsController;
 use App\Http\Controllers\Integrations\IntegrationCallbacksController;
 use App\Http\Controllers\Integrations\IntegrationPrioritiesController;
+use App\Http\Controllers\Integrations\IntegrationStatusesController;
 use App\Http\Controllers\Integrations\IntegrationTargetsController;
 use App\Http\Controllers\Integrations\IntegrationTestsController;
+use App\Http\Controllers\Integrations\IntegrationUrlsController;
 use App\Http\Controllers\Integrations\IntegrationUserMappingsController;
 use App\Http\Controllers\Integrations\IntegrationUserMatchesController;
+use App\Http\Controllers\Integrations\JiraDataCenterTokensController;
 use App\Http\Controllers\Integrations\JiraFieldDetectionsController;
+use App\Http\Controllers\Integrations\PokerEstimateConflictsController;
 use App\Http\Controllers\Integrations\PokerImportContainersController;
 use App\Http\Controllers\Integrations\PokerImportIterationsController;
 use App\Http\Controllers\Integrations\PokerImportPreviewsController;
@@ -48,12 +52,17 @@ use App\Http\Controllers\Integrations\PokerSharesController;
 use App\Http\Controllers\Integrations\PokerTaskSyncsController;
 use App\Http\Controllers\Integrations\RetroActionItemExportPreviewsController;
 use App\Http\Controllers\Integrations\RetroActionItemExportsController;
+use App\Http\Controllers\Integrations\RetroActionItemLinkSyncsController;
 use App\Http\Controllers\Integrations\RetroResultsEmailsController;
 use App\Http\Controllers\Integrations\RetroSharesController;
 use App\Http\Controllers\Integrations\TeamIntegrationsController;
 use App\Http\Controllers\Integrations\TelegramConnectCodesController;
+use App\Http\Controllers\Integrations\TrackerWebhooksController;
+use App\Http\Controllers\Integrations\WebhookDeliveriesController;
+use App\Http\Controllers\Integrations\WebhookSecretsController;
 use App\Http\Controllers\Integrations\WorkspaceActionItemExportPreviewsController;
 use App\Http\Controllers\Integrations\WorkspaceActionItemExportsController;
+use App\Http\Controllers\Integrations\WorkspaceActionItemLinkSyncsController;
 use App\Http\Controllers\InvitationAcceptancesController;
 use App\Http\Controllers\InvitationLinksController;
 use App\Http\Controllers\LocalesController;
@@ -176,8 +185,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('notifications/read-all', [ReadAllNotificationsController::class, 'store'])->name('notifications.readAll');
     Route::patch('notifications/{notification}', [NotificationsController::class, 'update'])->name('notifications.update')->whereUuid('notification');
 
+    Route::get('integrations/jira-dc/callback', [IntegrationCallbacksController::class, 'show'])
+        ->defaults('provider', 'jira_dc')
+        ->middleware(EnsureIntegrationProviderEnabled::class)
+        ->name('integrations.jiraDataCenter.callback');
+
     Route::get('integrations/{provider}/callback', [IntegrationCallbacksController::class, 'show'])
-        ->whereIn('provider', ['slack', 'jira', 'linear'])
+        ->whereIn('provider', ['slack', 'jira', 'linear', 'github'])
         ->middleware(EnsureIntegrationProviderEnabled::class)
         ->name('integrations.callback');
 
@@ -204,13 +218,21 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::middleware(EnsureIntegrationProviderEnabled::class)->group(function () {
                 Route::get('teams/{team}/integrations', [TeamIntegrationsController::class, 'index'])->name('teams.integrations.index');
                 Route::get('teams/{team}/integrations/{provider}/connect', [IntegrationAuthorizationsController::class, 'create'])
-                    ->whereIn('provider', ['slack', 'jira', 'linear'])
+                    ->whereIn('provider', ['slack', 'jira', 'linear', 'jira_dc', 'github'])
                     ->name('teams.integrations.connect');
                 Route::post('teams/{team}/integrations/telegram/code', [TelegramConnectCodesController::class, 'store'])
                     ->middleware([EnsureIntegrationProviderEnabled::class.':telegram', 'throttle:10,1'])
                     ->name('teams.integrations.telegramCode.store');
+                Route::post('teams/{team}/integrations/jira-dc/token', [JiraDataCenterTokensController::class, 'store'])
+                    ->middleware([EnsureIntegrationProviderEnabled::class.':jira_dc', 'throttle:10,1,jiraDataCenterTokens'])
+                    ->name('teams.integrations.jiraDataCenterToken.store');
+                Route::post('teams/{team}/integrations/{provider}', [IntegrationUrlsController::class, 'store'])
+                    ->whereIn('provider', ['msteams', 'mattermost', 'webhook'])
+                    ->middleware('throttle:10,1,integrationUrls')
+                    ->name('teams.integrations.urls.store');
                 Route::patch('teams/{team}/integrations/{integration}', [TeamIntegrationsController::class, 'update'])
                     ->whereUuid('integration')
+                    ->middleware('throttle:60,1,integrationUpdates')
                     ->name('teams.integrations.update');
                 Route::post('teams/{team}/integrations/{integration}/detection', [JiraFieldDetectionsController::class, 'store'])
                     ->whereUuid('integration')
@@ -235,6 +257,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 Route::get('teams/{team}/integrations/{integration}/priorities', [IntegrationPrioritiesController::class, 'index'])
                     ->whereUuid('integration')
                     ->name('teams.integrations.priorities.index');
+                Route::get('teams/{team}/integrations/{integration}/statuses', [IntegrationStatusesController::class, 'index'])
+                    ->whereUuid('integration')
+                    ->middleware('throttle:30,1,integrationStatuses')
+                    ->name('teams.integrations.statuses.index');
                 Route::get('teams/{team}/integrations/{integration}/targets', [IntegrationTargetsController::class, 'index'])
                     ->whereUuid('integration')
                     ->middleware('throttle:30,1')
@@ -246,6 +272,22 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     ->whereUuid('integration')
                     ->middleware('throttle:10,1')
                     ->name('teams.integrations.test.store');
+                Route::get('teams/{team}/integrations/{integration}/webhook', [TrackerWebhooksController::class, 'show'])
+                    ->whereUuid('integration')
+                    ->middleware('throttle:10,1,trackerWebhookDetails')
+                    ->name('teams.integrations.trackerWebhook.show');
+                Route::post('teams/{team}/integrations/{integration}/webhook', [TrackerWebhooksController::class, 'store'])
+                    ->whereUuid('integration')
+                    ->middleware('throttle:10,1,trackerWebhooks')
+                    ->name('teams.integrations.trackerWebhook.store');
+                Route::post('teams/{team}/integrations/{integration}/secret', [WebhookSecretsController::class, 'store'])
+                    ->whereUuid('integration')
+                    ->middleware('throttle:10,1,webhookSecrets')
+                    ->name('teams.integrations.secret.store');
+                Route::get('teams/{team}/integrations/{integration}/deliveries', [WebhookDeliveriesController::class, 'index'])
+                    ->whereUuid('integration')
+                    ->middleware('throttle:60,1,webhookDeliveries')
+                    ->name('teams.integrations.deliveries.index');
             });
 
             Route::post('teams/{team}/members', [TeamMembersController::class, 'store'])->name('teams.members.store');
@@ -287,6 +329,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 ->middleware(EnsureIntegrationProviderEnabled::class)
                 ->name('workspaces.actionItemExports.store')
                 ->whereUuid('actionItem');
+            Route::post('action-items/{actionItem}/external-links/{externalLink}/sync', [WorkspaceActionItemLinkSyncsController::class, 'store'])
+                ->middleware([EnsureIntegrationProviderEnabled::class, 'throttle:10,1,actionItemLinkSyncs'])
+                ->name('workspaces.actionItemLinkSyncs.store')
+                ->whereUuid(['actionItem', 'externalLink']);
         });
 });
 
@@ -350,6 +396,10 @@ Route::prefix('retros/{retro}')
             ->middleware(EnsureIntegrationProviderEnabled::class)
             ->name('retros.action-items.exports.store')
             ->whereUuid('actionItem');
+        Route::post('action-items/{actionItem}/external-links/{externalLink}/sync', [RetroActionItemLinkSyncsController::class, 'store'])
+            ->middleware([EnsureIntegrationProviderEnabled::class, 'throttle:10,1,actionItemLinkSyncs'])
+            ->name('retros.action-items.external-links.sync.store')
+            ->whereUuid(['actionItem', 'externalLink']);
         Route::post('summary', [RetroSummariesController::class, 'store'])->name('retros.summary.store');
         Route::delete('summary', [RetroSummariesController::class, 'destroy'])->name('retros.summary.destroy');
         Route::post('shares', [RetroSharesController::class, 'store'])->middleware('throttle:5,1,shares')->name('retros.shares.store');
@@ -397,16 +447,17 @@ Route::prefix('poker/{game}')
         Route::get('tasks/{task}/rounds', [PokerRoundsController::class, 'index'])->name('poker.tasks.rounds.index')->whereUuid('task');
         Route::put('tasks/{task}/estimate', [PokerTaskEstimatesController::class, 'update'])->name('poker.tasks.estimate.update')->whereUuid('task');
         Route::post('tasks/{task}/sync', [PokerTaskSyncsController::class, 'store'])->name('poker.tasks.sync.store')->whereUuid('task');
+        Route::post('tasks/{task}/estimate-conflict', [PokerEstimateConflictsController::class, 'store'])->name('poker.tasks.estimate-conflict.store')->whereUuid('task');
         Route::patch('settings', [PokerSettingsController::class, 'update'])->name('poker.settings.update');
         Route::get('saved-decks', [PokerSavedDecksController::class, 'index'])->name('poker.saved-decks.index');
         Route::put('status', [PokerStatusesController::class, 'update'])->name('poker.status.update');
         Route::post('guest-token', [PokerGuestTokensController::class, 'store'])->name('poker.guest-token.store');
         Route::post('shares', [PokerSharesController::class, 'store'])->middleware('throttle:5,1,shares')->name('poker.shares.store');
-        Route::get('imports/{source}/containers', [PokerImportContainersController::class, 'index'])->name('poker.imports.containers.index')->where('source', 'jira|linear');
-        Route::get('imports/{source}/iterations', [PokerImportIterationsController::class, 'index'])->name('poker.imports.iterations.index')->where('source', 'jira|linear');
-        Route::post('imports/{source}/preview', [PokerImportPreviewsController::class, 'store'])->name('poker.imports.preview.store')->where('source', 'jira|linear');
+        Route::get('imports/{source}/containers', [PokerImportContainersController::class, 'index'])->name('poker.imports.containers.index')->where('source', 'jira|linear|jira_dc|github');
+        Route::get('imports/{source}/iterations', [PokerImportIterationsController::class, 'index'])->name('poker.imports.iterations.index')->where('source', 'jira|linear|jira_dc|github');
+        Route::post('imports/{source}/preview', [PokerImportPreviewsController::class, 'store'])->name('poker.imports.preview.store')->where('source', 'jira|linear|jira_dc|github');
         Route::post('imports/refresh', [PokerImportRefreshesController::class, 'store'])->middleware('throttle:10,1,poker-refresh')->name('poker.imports.refresh.store');
-        Route::post('imports/{source}', [PokerImportsController::class, 'store'])->name('poker.imports.store')->where('source', 'jira|linear');
+        Route::post('imports/{source}', [PokerImportsController::class, 'store'])->name('poker.imports.store')->where('source', 'jira|linear|jira_dc|github');
         Route::put('facilitator', [PokerFacilitatorsController::class, 'update'])->name('poker.facilitator.update');
         Route::put('players/{player}/spectator', [PokerSpectatorsController::class, 'update'])->name('poker.players.spectator.update')->whereUuid('player');
         Route::delete('/', [PokerGamesController::class, 'destroy'])->name('poker.destroy');

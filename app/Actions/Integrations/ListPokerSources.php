@@ -20,7 +20,9 @@ class ListPokerSources
      *     access: string,
      *     canImport: bool,
      *     canWriteBack: bool,
-     *     writeBackUnavailableReason: ?string
+     *     writeBackUnavailableReason: ?string,
+     *     canSyncStatus: bool,
+     *     syncMode: string
      * }>
      */
     public function handle(Team $team): array
@@ -50,6 +52,8 @@ class ListPokerSources
                 'canImport' => $integration->isActive(),
                 'canWriteBack' => $reason === null,
                 'writeBackUnavailableReason' => $reason,
+                'canSyncStatus' => $integration->isActive() && $integration->setting('statusSync') === true,
+                'syncMode' => $integration->inbound_mode->value,
             ];
         }
 
@@ -61,6 +65,8 @@ class ListPokerSources
         $name = match ($integration->provider) {
             IntegrationProvider::Jira => $integration->setting('siteName'),
             IntegrationProvider::Linear => $integration->setting('organizationName'),
+            IntegrationProvider::JiraDataCenter => $integration->setting('serverTitle'),
+            IntegrationProvider::GitHub => $integration->setting('accountLogin'),
             default => null,
         };
 

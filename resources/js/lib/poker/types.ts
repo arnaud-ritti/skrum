@@ -26,9 +26,14 @@ export type PokerRound = {
     result: PokerResult | null;
 };
 
-export type PokerTrackerSource = 'jira' | 'linear';
+export type PokerTrackerSource = 'jira' | 'linear' | 'jira_dc' | 'github';
 
 export type PokerSyncState = 'synced' | 'pending' | 'failed' | 'unsupported';
+
+export type PokerEstimateConflict = {
+    sourceEstimate: string;
+    matchingCard: string | null;
+};
 
 /**
  * Guests and broadcasts only get source, key, url and isManaged; the other
@@ -45,6 +50,11 @@ export type PokerTaskExternal = {
     syncState?: PokerSyncState | null;
     syncError?: string | null;
     unsupportedReason?: string | null;
+    status?: string | null;
+    statusCategory?: 'todo' | 'in_progress' | 'done' | null;
+    missing?: boolean;
+    estimateConflict?: PokerEstimateConflict | null;
+    syncMode?: 'webhook' | 'polling' | 'off';
 };
 
 export type PokerTrackerConnection = { connected: boolean; canWrite: boolean };
@@ -77,7 +87,15 @@ export type TrackerIssuePreview = {
 export const TrackerLabels: Record<PokerTrackerSource, string> = {
     jira: 'Jira',
     linear: 'Linear',
+    jira_dc: 'Jira Data Center',
+    github: 'GitHub',
 };
+
+export function isPokerTrackerSource(
+    value: string,
+): value is PokerTrackerSource {
+    return Object.hasOwn(TrackerLabels, value);
+}
 
 export function connectedTrackers(
     integrations: PokerIntegrations | null,

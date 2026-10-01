@@ -49,7 +49,7 @@ class PreviewActionItemExport
             return ['state' => 'mapped', 'displayName' => $mapping->external_display_name];
         }
 
-        if ($mapping === null && $user->email_verified_at !== null && IntegrationMappingGuard::hasAccountScope($integration)) {
+        if ($mapping === null && ResolveExportAssignee::canLookUp($integration, $user)) {
             return ['state' => 'willMatch', 'displayName' => $user->name];
         }
 

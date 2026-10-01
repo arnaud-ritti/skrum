@@ -208,5 +208,8 @@ it('exposes the tracker reference and write-back state of imported tasks', funct
         'url' => $task->external_url,
         'syncState' => 'failed',
         'syncError' => 'Boom',
+        'statusCategory' => null,
+        'missing' => false,
+        'estimateConflict' => null,
     ]);
 });

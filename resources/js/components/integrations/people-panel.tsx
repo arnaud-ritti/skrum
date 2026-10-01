@@ -17,8 +17,10 @@ import { useTrans } from '@/hooks/use-trans';
 import { integrationErrorMessage } from '@/lib/integrations';
 import { retroRequest } from '@/lib/retro/api';
 import type {
+    IntegrationProviderKey,
     IntegrationScope,
     TeamIntegration,
+    UserMapping,
     UserMappingRow,
     UserMappings,
 } from '@/types';
@@ -49,13 +51,32 @@ function MappingBadge({ row }: { row: UserMappingRow }) {
         return <Badge variant="secondary">{t('Never assign')}</Badge>;
     }
 
-    return (
-        <Badge variant="secondary">
-            {mapping.matchedBy === 'email'
-                ? t('Matched by email')
-                : t('Set manually')}
-        </Badge>
-    );
+    const matchedBy: Record<UserMapping['matchedBy'], string> = {
+        email: t('Matched by email'),
+        manual: t('Set manually'),
+        sso: t('Linked via GitHub sign-in'),
+    };
+
+    return <Badge variant="secondary">{matchedBy[mapping.matchedBy]}</Badge>;
+}
+
+type Translate = ReturnType<typeof useTrans>['t'];
+
+function matchingHint(provider: IntegrationProviderKey, t: Translate): string {
+    switch (provider) {
+        case 'jira':
+            return t("Jira: members' emails are looked up on your Jira site.");
+        case 'jira_dc':
+            return t(
+                "Jira Data Center: members' emails are looked up on your Jira server.",
+            );
+        case 'github':
+            return t(
+                'GitHub: members who signed in to skrum with GitHub are matched automatically.',
+            );
+        default:
+            return t('Linear: emails are compared on this server.');
+    }
 }
 
 export function PeoplePanel({ scope, connection, providerLabel }: Props) {
@@ -196,11 +217,7 @@ export function PeoplePanel({ scope, connection, providerLabel }: Props) {
                 <div>
                     <h3 className="text-sm font-medium">{t('People')}</h3>
                     <p className="text-xs text-muted-foreground">
-                        {connection.provider === 'jira'
-                            ? t(
-                                  "Jira: members' emails are looked up on your Jira site.",
-                              )
-                            : t('Linear: emails are compared on this server.')}
+                        {matchingHint(connection.provider, t)}
                     </p>
                 </div>
                 <Button
@@ -214,7 +231,9 @@ export function PeoplePanel({ scope, connection, providerLabel }: Props) {
                     ) : (
                         <RefreshCw className="size-4" aria-hidden />
                     )}
-                    {t('Match by email')}
+                    {connection.provider === 'github'
+                        ? t('Match GitHub sign-ins')
+                        : t('Match by email')}
                 </Button>
             </div>
             {error !== null && (

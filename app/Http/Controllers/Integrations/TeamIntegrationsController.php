@@ -6,10 +6,13 @@ use App\Actions\Integrations\DisconnectIntegration;
 use App\Actions\Integrations\PresentTeamIntegration;
 use App\Actions\Integrations\UpdateTeamIntegration;
 use App\Enums\IntegrationProvider;
+use App\Enums\WebhookEvent;
 use App\Http\Controllers\Controller;
 use App\Models\Team;
 use App\Models\TeamIntegration;
 use App\Models\Workspace;
+use App\Rules\MattermostWebhookUrl;
+use App\Support\Integrations\InboundReachability;
 use App\Support\Integrations\Telegram\TelegramBot;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -40,6 +43,7 @@ class TeamIntegrationsController extends Controller
                     'label' => $provider->label(),
                     'usesOAuth' => $provider->usesOAuth(),
                     'isTracker' => $provider->isTracker(),
+                    'authMethods' => $provider->authMethods(),
                     'connection' => $integration === null ? null : $this->presentTeamIntegration->handle($integration),
                 ];
             }, IntegrationProvider::enabled()),
@@ -47,6 +51,9 @@ class TeamIntegrationsController extends Controller
                 'botUsername' => $telegramBot->username(),
                 'conflict' => $telegramBot->hasConflict(),
             ] : null,
+            'mattermost' => IntegrationProvider::Mattermost->isEnabled() ? ['url' => MattermostWebhookUrl::serverUrl()] : null,
+            'webhookEvents' => IntegrationProvider::Webhook->isEnabled() ? WebhookEvent::options() : null,
+            'pollMinutes' => InboundReachability::pollIntervalMinutes(),
         ]);
     }
 

@@ -38,7 +38,7 @@ it('offers every channel to a facilitator who is a team member', function () {
     connectShareChannels($retro->team);
     [, $facilitator] = retroFacilitator($retro);
 
-    expect(shareSnapshot($retro, $facilitator)['integrations'])->toBe(['slack' => true, 'telegram' => true, 'email' => true]);
+    expect(shareSnapshot($retro, $facilitator)['integrations'])->toBe(['slack' => true, 'telegram' => true, 'msteams' => false, 'mattermost' => false, 'webhook' => false, 'email' => true]);
 });
 
 it('offers channels to workspace admins', function () {
@@ -46,7 +46,7 @@ it('offers channels to workspace admins', function () {
     connectShareChannels($retro->team);
     [, $admin] = workspaceAdminParticipant($retro);
 
-    expect(shareSnapshot($retro, $admin)['integrations'])->toBe(['slack' => true, 'telegram' => true, 'email' => true]);
+    expect(shareSnapshot($retro, $admin)['integrations'])->toBe(['slack' => true, 'telegram' => true, 'msteams' => false, 'mattermost' => false, 'webhook' => false, 'email' => true]);
 });
 
 it('offers nothing to other members, guests and a facilitator outside the team', function (Closure $viewerOf) {
@@ -57,7 +57,7 @@ it('offers nothing to other members, guests and a facilitator outside the team',
 
     $snapshot = shareSnapshot($retro, $viewer);
 
-    expect($snapshot['integrations'])->toBe(['slack' => false, 'telegram' => false, 'email' => false])
+    expect($snapshot['integrations'])->toBe(['slack' => false, 'telegram' => false, 'msteams' => false, 'mattermost' => false, 'webhook' => false, 'email' => false])
         ->and($snapshot['linkDeliveries'])->toBe([]);
 })->with([
     'member' => [fn (Retro $retro) => retroMember($retro)[1]],
@@ -77,7 +77,7 @@ it('hides channels that are disabled or not active', function () {
     config(['services.telegram.bot_token' => null]);
     [, $facilitator] = retroFacilitator($retro);
 
-    expect(shareSnapshot($retro, $facilitator)['integrations'])->toBe(['slack' => false, 'telegram' => false, 'email' => true]);
+    expect(shareSnapshot($retro, $facilitator)['integrations'])->toBe(['slack' => false, 'telegram' => false, 'msteams' => false, 'mattermost' => false, 'webhook' => false, 'email' => true]);
 });
 
 it('offers email only with a delivering mailer', function (string $mailer) {
@@ -146,14 +146,14 @@ it('offers poker shares to the facilitator and workspace admins while the game i
     $delivery = IntegrationDelivery::factory()->forSubject($game)->sent()->create();
     $snapshot = fn (PokerPlayer $player) => app(BuildPokerSnapshot::class)->handle($game->fresh(), $player->fresh());
 
-    expect($snapshot($facilitator)['share'])->toBe(['slack' => true, 'telegram' => true])
+    expect($snapshot($facilitator)['share'])->toBe(['slack' => true, 'telegram' => true, 'msteams' => false, 'mattermost' => false, 'webhook' => false])
         ->and(array_column($snapshot($facilitator)['deliveries'], 'id'))->toBe([$delivery->id])
-        ->and($snapshot($admin)['share'])->toBe(['slack' => true, 'telegram' => true])
-        ->and($snapshot($member)['share'])->toBe(['slack' => false, 'telegram' => false])
+        ->and($snapshot($admin)['share'])->toBe(['slack' => true, 'telegram' => true, 'msteams' => false, 'mattermost' => false, 'webhook' => false])
+        ->and($snapshot($member)['share'])->toBe(['slack' => false, 'telegram' => false, 'msteams' => false, 'mattermost' => false, 'webhook' => false])
         ->and($snapshot($member)['deliveries'])->toBe([])
-        ->and($snapshot($guest)['share'])->toBe(['slack' => false, 'telegram' => false]);
+        ->and($snapshot($guest)['share'])->toBe(['slack' => false, 'telegram' => false, 'msteams' => false, 'mattermost' => false, 'webhook' => false]);
 
     $game->forceFill(['ended_at' => now()])->save();
 
-    expect($snapshot($facilitator)['share'])->toBe(['slack' => false, 'telegram' => false]);
+    expect($snapshot($facilitator)['share'])->toBe(['slack' => false, 'telegram' => false, 'msteams' => false, 'mattermost' => false, 'webhook' => false]);
 });

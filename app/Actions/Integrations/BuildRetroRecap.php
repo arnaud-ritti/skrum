@@ -11,6 +11,7 @@ use App\Models\Column;
 use App\Models\Participant;
 use App\Models\Retro;
 use App\Support\Integrations\Messages\RetroRecap;
+use App\Support\Integrations\Messages\RetroRecapContent;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
@@ -26,6 +27,8 @@ class BuildRetroRecap
     public const SuggestedActionLimit = 5;
 
     public const CardContentLimit = 300;
+
+    private const MachineGuestSuffix = '(guest)';
 
     public function __construct(private SummarizeRoti $summarizeRoti) {}
 
@@ -60,14 +63,23 @@ class BuildRetroRecap
     }
 
     /**
+     * The recap for every channel, with the structured form the generic
+     * webhook sends (spec 8 §4.5), from one read of the retro.
+     */
+    public function content(Retro $retro): RetroRecapContent
+    {
+        $recap = $this->handle($retro);
+
+        return new RetroRecapContent($recap, $this->webhookData($retro, $recap));
+    }
+
+    /**
      * @return array<int, string>
      */
-    private function participantNames(Retro $retro): array
+    private function participantNames(Retro $retro, bool $forMachines = false): array
     {
         return $retro->participants
-            ->map(fn (Participant $participant): string => $participant->isGuest()
-                ? __(':name (guest)', ['name' => $participant->displayName()])
-                : $participant->displayName())
+            ->map(fn (Participant $participant): string => $this->participantName($participant, $forMachines))
             ->sort(fn (string $first, string $second): int => strcasecmp($first, $second))
             ->values()
             ->all();
@@ -83,9 +95,9 @@ class BuildRetroRecap
     }
 
     /**
-     * @return Collection<int, array{content: string, assignee: ?string, dueOn: ?string, isCompleted: bool}>
+     * @return Collection<int, ActionItem>
      */
-    private function actionItems(Retro $retro): Collection
+    private function sortedActionItems(Retro $retro): Collection
     {
         return $retro->actionItems()
             ->with(['assigneeUser', 'assigneeParticipant.user'])
@@ -95,6 +107,15 @@ class BuildRetroRecap
                 fn (ActionItem $first, ActionItem $second): int => $first->priority->sortWeight() <=> $second->priority->sortWeight(),
                 fn (ActionItem $first, ActionItem $second): int => $first->created_at <=> $second->created_at,
             ])
+            ->values();
+    }
+
+    /**
+     * @return Collection<int, array{content: string, assignee: ?string, dueOn: ?string, isCompleted: bool}>
+     */
+    private function actionItems(Retro $retro): Collection
+    {
+        return $this->sortedActionItems($retro)
             ->map(fn (ActionItem $item): array => [
                 'content' => Str::squish($item->content),
                 'assignee' => $this->assignee($item),
@@ -104,7 +125,44 @@ class BuildRetroRecap
             ->values();
     }
 
-    private function assignee(ActionItem $item): ?string
+    /**
+     * @return array<string, mixed>
+     */
+    private function webhookData(Retro $retro, RetroRecap $recap): array
+    {
+        $actionItems = $this->sortedActionItems($retro);
+
+        return [
+            'title' => $recap->title,
+            'url' => $recap->url,
+            'completedAt' => ($retro->completed_at ?? now())->toIso8601ZuluString(),
+            'participants' => [
+                'count' => $recap->participantCount,
+                'names' => $retro->is_anonymous ? null : $this->participantNames($retro, forMachines: true),
+            ],
+            'cardCount' => $recap->cardCount,
+            'roti' => $recap->rotiAverage === null ? null : [
+                'average' => round($recap->rotiAverage, 1),
+                'respondents' => $recap->rotiRespondents,
+            ],
+            'summary' => $recap->summary,
+            'actionItems' => $actionItems->take(self::ActionItemLimit)
+                ->map(fn (ActionItem $item): array => [
+                    'content' => Str::squish($item->content),
+                    'assignee' => $this->assignee($item, forMachines: true),
+                    'dueOn' => $item->due_on?->toDateString(),
+                    'priority' => $item->priority->value,
+                    'isCompleted' => $item->isCompleted(),
+                ])
+                ->values()
+                ->all(),
+            'moreActionItems' => max(0, $actionItems->count() - self::ActionItemLimit),
+            'suggestedActions' => $recap->suggestedActions,
+            'topCards' => $recap->topCards,
+        ];
+    }
+
+    public function assignee(ActionItem $item, bool $forMachines = false): ?string
     {
         if ($item->assigneeUser !== null) {
             return $item->assigneeUser->name;
@@ -116,9 +174,18 @@ class BuildRetroRecap
             return null;
         }
 
-        return $participant->isGuest()
-            ? __(':name (guest)', ['name' => $participant->displayName()])
-            : $participant->displayName();
+        return $this->participantName($participant, $forMachines);
+    }
+
+    private function participantName(Participant $participant, bool $forMachines): string
+    {
+        if (! $participant->isGuest()) {
+            return $participant->displayName();
+        }
+
+        return $forMachines
+            ? "{$participant->displayName()} ".self::MachineGuestSuffix
+            : __(':name (guest)', ['name' => $participant->displayName()]);
     }
 
     /**

@@ -11,6 +11,7 @@ import {
     type PokerTaskExternal,
 } from '@/lib/poker/types';
 import { retroRequest } from '@/lib/retro/api';
+import { EstimateConflict } from './estimate-conflict';
 import { useGame } from './game-context';
 
 type Props = { task: PokerTask; external: PokerTaskExternal };
@@ -76,6 +77,24 @@ export function TaskSourceDetails({ task, external }: Props) {
                     </span>
                 )}
                 <SyncBadge external={external} source={source} />
+                {external.statusCategory === 'done' && (
+                    <Badge variant="secondary">
+                        {t('Done in :source', { source })}
+                    </Badge>
+                )}
+                {external.statusCategory !== 'done' && external.status && (
+                    <Badge variant="outline">
+                        {t(':status in :source', {
+                            status: external.status,
+                            source,
+                        })}
+                    </Badge>
+                )}
+                {external.missing && (
+                    <Badge variant="destructive">
+                        {t('Not found in :source', { source })}
+                    </Badge>
+                )}
                 {canSync && (
                     <Button
                         size="sm"
@@ -90,6 +109,13 @@ export function TaskSourceDetails({ task, external }: Props) {
                     </Button>
                 )}
             </div>
+            {external.estimateConflict && (
+                <EstimateConflict
+                    task={task}
+                    conflict={external.estimateConflict}
+                    source={source}
+                />
+            )}
             {external.syncState === 'failed' && external.syncError && (
                 <p className="text-destructive">{external.syncError}</p>
             )}
@@ -111,18 +137,30 @@ function SyncBadge({
     source: string;
 }) {
     const { t } = useTrans();
+    const hint =
+        external.source === 'github'
+            ? t('Written to the issue description.')
+            : undefined;
 
     switch (external.syncState) {
         case 'synced':
             return (
-                <Badge variant="secondary">
+                <Badge variant="secondary" title={hint}>
                     {t('Synced to :source', { source })}
                 </Badge>
             );
         case 'pending':
-            return <Badge variant="outline">{t('Sync pending')}</Badge>;
+            return (
+                <Badge variant="outline" title={hint}>
+                    {t('Sync pending')}
+                </Badge>
+            );
         case 'failed':
-            return <Badge variant="destructive">{t('Sync failed')}</Badge>;
+            return (
+                <Badge variant="destructive" title={hint}>
+                    {t('Sync failed')}
+                </Badge>
+            );
         case 'unsupported':
             return (
                 <Badge variant="outline" className="whitespace-normal">

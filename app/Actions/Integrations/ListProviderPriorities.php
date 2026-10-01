@@ -4,29 +4,37 @@ namespace App\Actions\Integrations;
 
 use App\Enums\IntegrationProvider;
 use App\Models\TeamIntegration;
-use App\Support\Integrations\Jira\JiraClient;
+use App\Support\Integrations\Jira\JiraApis;
 use App\Support\Integrations\Linear\LinearPriority;
 
 class ListProviderPriorities
 {
     private const JiraLimit = 100;
 
-    public function __construct(private JiraClient $jira) {}
+    public function __construct(private JiraApis $jiraApis) {}
 
     /**
      * @return array<int, array{id: string|int, name: string}>
      */
     public function handle(TeamIntegration $integration): array
     {
+        if ($integration->provider === IntegrationProvider::GitHub) {
+            return [];
+        }
+
         if ($integration->provider === IntegrationProvider::Linear) {
             return LinearPriority::options();
         }
 
-        $response = $this->jira->get($integration, 'rest/api/3/priority/search', ['maxResults' => self::JiraLimit]);
+        $api = $this->jiraApis->for($integration);
+
+        $listed = $integration->provider === IntegrationProvider::JiraDataCenter
+            ? $api->get($integration, $api->apiPath('priority'))
+            : (array) ($api->get($integration, $api->apiPath('priority/search'), ['maxResults' => self::JiraLimit])['values'] ?? []);
 
         $priorities = [];
 
-        foreach ((array) ($response['values'] ?? []) as $priority) {
+        foreach ($listed as $priority) {
             if (! is_array($priority) || ! is_string($priority['id'] ?? null) || ! is_string($priority['name'] ?? null)) {
                 continue;
             }

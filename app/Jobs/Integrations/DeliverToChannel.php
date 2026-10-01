@@ -94,7 +94,7 @@ abstract class DeliverToChannel implements ShouldBeEncrypted, ShouldQueue
         return $delivery;
     }
 
-    private function integration(IntegrationDelivery $delivery): TeamIntegration
+    protected function integration(IntegrationDelivery $delivery): TeamIntegration
     {
         $provider = $this->provider();
         $integration = $provider->isEnabled() ? $delivery->team->integration($provider) : null;
@@ -116,9 +116,15 @@ abstract class DeliverToChannel implements ShouldBeEncrypted, ShouldQueue
 
         $delivery->markFailed($message);
         $this->announce($delivery);
+        $this->afterFailure($delivery, $exception);
     }
 
-    private function announce(IntegrationDelivery $delivery): void
+    /**
+     * Runs once a delivery ended failed, after the subject was told.
+     */
+    protected function afterFailure(IntegrationDelivery $delivery, ?Throwable $exception): void {}
+
+    protected function announce(IntegrationDelivery $delivery): void
     {
         $subject = $delivery->subject;
 

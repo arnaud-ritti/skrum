@@ -3,15 +3,21 @@
 namespace App\Support\Integrations;
 
 use App\Enums\IntegrationProvider;
+use App\Enums\SsoProvider;
+use App\Models\SocialAccount;
 use App\Models\TeamIntegration;
+use App\Models\User;
 use App\Support\Integrations\Exceptions\ProviderRejected;
+use App\Support\Integrations\GitHub\GitHubClient;
 use App\Support\Integrations\Jira\JiraClient;
+use App\Support\Integrations\JiraDataCenter\JiraDataCenterClient;
 use App\Support\Integrations\Linear\LinearClient;
 use Illuminate\Support\Str;
 
 /**
- * Accounts of the team's Jira site or Linear workspace. Provider emails
- * are compared here, in memory, and never stored or returned.
+ * Accounts of the team's Jira site, Jira server, Linear workspace or GitHub
+ * installation. Provider emails are compared here, in memory, and never
+ * stored or returned; GitHub is matched through SSO links only.
  */
 class IntegrationUserAccounts
 {
@@ -23,21 +29,34 @@ class IntegrationUserAccounts
 
     private const LinearMaxPages = 40;
 
+    private const GitHubPageSize = 100;
+
+    private const GitHubMaxPages = 10;
+
     private const JiraAccountType = 'atlassian';
 
     private const LinearUserFields = 'id name displayName email active';
 
-    public function __construct(private JiraClient $jira, private LinearClient $linear) {}
+    public function __construct(
+        private JiraClient $jira,
+        private LinearClient $linear,
+        private JiraDataCenterClient $jiraDataCenter,
+        private GitHubClient $gitHub,
+    ) {}
 
     public function find(TeamIntegration $integration, string $accountId): ?ExternalAccount
     {
         try {
             return match ($integration->provider) {
                 IntegrationProvider::Jira => $this->jiraAccount($this->jira->get($integration, 'rest/api/3/user', ['accountId' => $accountId])),
+                IntegrationProvider::JiraDataCenter => $this->jiraDataCenterAccount($this->jiraDataCenter->get($integration, 'rest/api/2/user', ['username' => $accountId])),
                 IntegrationProvider::Linear => $this->linearAccount(data_get(
                     $this->linear->query($integration, 'query User($id: String!) { user(id: $id) { '.self::LinearUserFields.' } }', ['id' => $accountId]),
                     'user',
                 )),
+                IntegrationProvider::GitHub => preg_match('/^\d{1,20}\z/', $accountId) === 1
+                    ? $this->gitHubAccount($this->gitHub->get($integration, "user/{$accountId}"))
+                    : null,
                 default => null,
             };
         } catch (ProviderRejected) {
@@ -51,6 +70,10 @@ class IntegrationUserAccounts
      */
     public function matchEmails(TeamIntegration $integration, array $emails): array
     {
+        if ($integration->provider === IntegrationProvider::GitHub) {
+            return [];
+        }
+
         if ($integration->provider === IntegrationProvider::Linear) {
             return $this->matchLinearEmails($this->linearUsers($integration), $emails);
         }
@@ -58,7 +81,9 @@ class IntegrationUserAccounts
         $matches = [];
 
         foreach ($emails as $email) {
-            $account = $this->matchJiraEmail($integration, $email);
+            $account = $integration->provider === IntegrationProvider::JiraDataCenter
+                ? $this->matchJiraDataCenterEmail($integration, $email)
+                : $this->matchJiraEmail($integration, $email);
 
             if ($account !== null) {
                 $matches[Str::lower($email)] = $account;
@@ -108,13 +133,109 @@ class IntegrationUserAccounts
      */
     public function search(TeamIntegration $integration, string $query): array
     {
+        if ($integration->provider === IntegrationProvider::GitHub) {
+            return $this->searchGitHub($integration, Str::lower($query));
+        }
+
         if ($integration->provider === IntegrationProvider::Linear) {
             return $this->searchLinear($integration, Str::lower($query));
+        }
+
+        if ($integration->provider === IntegrationProvider::JiraDataCenter) {
+            return $this->activeJiraDataCenterAccounts($this->jiraDataCenter->get($integration, 'rest/api/2/user/search', ['username' => $query, 'maxResults' => self::SearchLimit]));
         }
 
         $results = $this->jira->get($integration, 'rest/api/3/user/search', ['query' => $query, 'maxResults' => self::SearchLimit]);
 
         return $this->activeJiraAccounts($results);
+    }
+
+    /**
+     * Spec 8 §4.2: members who signed in to skrum with GitHub, keyed by
+     * user id. No email is ever sent to GitHub.
+     *
+     * @param  iterable<int, User>  $members
+     * @return array<string, ExternalAccount>
+     */
+    public function matchSso(TeamIntegration $integration, iterable $members): array
+    {
+        $ids = collect($members)->map(fn (User $member): string => $member->id)->all();
+        $linked = SocialAccount::query()
+            ->where('provider', SsoProvider::GitHub->value)
+            ->whereIn('user_id', $ids)
+            ->pluck('provider_user_id', 'user_id');
+        $matches = [];
+
+        foreach ($linked as $userId => $gitHubUserId) {
+            $account = $this->find($integration, (string) $gitHubUserId);
+
+            if ($account !== null && $account->active) {
+                $matches[(string) $userId] = $account;
+            }
+        }
+
+        return $matches;
+    }
+
+    /**
+     * Organization members, or the export repository's collaborators for an
+     * installation on a personal account; filtered here by login, page by
+     * page until enough accounts are found.
+     *
+     * @return array<int, ExternalAccount>
+     */
+    private function searchGitHub(TeamIntegration $integration, string $needle): array
+    {
+        $login = $integration->setting('accountLogin');
+        $repositoryId = $integration->setting('exportRepositoryId');
+
+        $path = match (true) {
+            $integration->setting('accountType') === 'Organization' && GitHubClient::isLogin($login) => "orgs/{$login}/members",
+            is_string($repositoryId) => 'repos/'.$this->gitHub->repositoryName($integration, $repositoryId).'/collaborators',
+            default => null,
+        };
+
+        if ($path === null) {
+            return [];
+        }
+
+        $found = [];
+
+        for ($page = 1; $page <= self::GitHubMaxPages; $page++) {
+            $response = $this->gitHub->response($integration, 'GET', $path, ['per_page' => self::GitHubPageSize, 'page' => $page]);
+
+            foreach ((array) $response->json() as $user) {
+                $account = $this->gitHubAccount($user);
+
+                if ($account === null || ! $account->active || ! str_contains(Str::lower($account->displayName), $needle)) {
+                    continue;
+                }
+
+                $found[] = $account;
+
+                if (count($found) === self::SearchLimit) {
+                    return $found;
+                }
+            }
+
+            if (! GitHubClient::hasNextPage($response)) {
+                break;
+            }
+        }
+
+        return $found;
+    }
+
+    /**
+     * The display name is the login; bots are never assignable.
+     */
+    private function gitHubAccount(mixed $user): ?ExternalAccount
+    {
+        if (! is_array($user) || ! is_int($user['id'] ?? null) || ! GitHubClient::isLogin($user['login'] ?? null)) {
+            return null;
+        }
+
+        return new ExternalAccount((string) $user['id'], $user['login'], ($user['type'] ?? 'User') === 'User');
     }
 
     /**
@@ -224,6 +345,49 @@ class IntegrationUserAccounts
         return new ExternalAccount(
             $user['accountId'],
             is_string($user['displayName'] ?? null) ? $user['displayName'] : $user['accountId'],
+            ($user['active'] ?? false) === true,
+            is_string($email) && $email !== '' ? $email : null,
+        );
+    }
+
+    /**
+     * Spec 8 §4.1: accepted when exactly one active result has the
+     * member's email.
+     */
+    private function matchJiraDataCenterEmail(TeamIntegration $integration, string $email): ?ExternalAccount
+    {
+        $results = $this->jiraDataCenter->get($integration, 'rest/api/2/user/search', ['username' => $email, 'maxResults' => self::JiraMatchLimit]);
+        $candidates = array_values(array_filter(
+            $this->activeJiraDataCenterAccounts($results),
+            fn (ExternalAccount $account): bool => $account->email() !== null && Str::lower($account->email()) === Str::lower($email),
+        ));
+
+        return count($candidates) === 1 ? $candidates[0] : null;
+    }
+
+    /**
+     * @param  array<array-key, mixed>  $users
+     * @return array<int, ExternalAccount>
+     */
+    private function activeJiraDataCenterAccounts(array $users): array
+    {
+        return array_values(array_filter(
+            array_map(fn (mixed $user): ?ExternalAccount => $this->jiraDataCenterAccount($user), $users),
+            fn (?ExternalAccount $account): bool => $account !== null && $account->active,
+        ));
+    }
+
+    private function jiraDataCenterAccount(mixed $user): ?ExternalAccount
+    {
+        if (! is_array($user) || ! is_string($user['name'] ?? null) || $user['name'] === '') {
+            return null;
+        }
+
+        $email = $user['emailAddress'] ?? null;
+
+        return new ExternalAccount(
+            $user['name'],
+            is_string($user['displayName'] ?? null) && $user['displayName'] !== '' ? $user['displayName'] : $user['name'],
             ($user['active'] ?? false) === true,
             is_string($email) && $email !== '' ? $email : null,
         );

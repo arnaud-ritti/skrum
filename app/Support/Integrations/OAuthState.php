@@ -7,6 +7,8 @@ use App\Enums\IntegrationProvider;
 use App\Models\Team;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use LogicException;
+use SensitiveParameter;
 
 class OAuthState
 {
@@ -15,6 +17,8 @@ class OAuthState
     private const TtlMinutes = 10;
 
     private const Length = 40;
+
+    private const VerifierLength = 64;
 
     public function issue(Request $request, IntegrationProvider $provider, Team $team, IntegrationAccess $access): string
     {
@@ -26,13 +30,14 @@ class OAuthState
             'teamId' => $team->id,
             'access' => $access->value,
             'expiresAt' => now()->addMinutes(self::TtlMinutes)->getTimestamp(),
+            'codeVerifier' => Str::random(self::VerifierLength),
         ]);
 
         return $state;
     }
 
     /**
-     * @return array{teamId: string, access: IntegrationAccess}|null
+     * @return array{teamId: string, access: IntegrationAccess, codeVerifier: ?string}|null
      */
     public function consume(Request $request, IntegrationProvider $provider, mixed $state): ?array
     {
@@ -60,6 +65,29 @@ class OAuthState
             return null;
         }
 
-        return ['teamId' => $stored['teamId'], 'access' => $access];
+        return [
+            'teamId' => $stored['teamId'],
+            'access' => $access,
+            'codeVerifier' => is_string($stored['codeVerifier'] ?? null) ? $stored['codeVerifier'] : null,
+        ];
+    }
+
+    /**
+     * The PKCE S256 challenge of the verifier issued with the current state.
+     */
+    public function codeChallenge(Request $request): string
+    {
+        $verifier = data_get($request->session()->get(self::SessionKey), 'codeVerifier');
+
+        if (! is_string($verifier) || $verifier === '') {
+            throw new LogicException('No PKCE verifier was issued with the OAuth state.');
+        }
+
+        return self::challenge($verifier);
+    }
+
+    public static function challenge(#[SensitiveParameter] string $verifier): string
+    {
+        return Base64Url::encode(hash('sha256', $verifier, true));
     }
 }

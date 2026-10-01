@@ -17,6 +17,7 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useTrans } from '@/hooks/use-trans';
+import { hasShareChannel } from '@/lib/integrations';
 import { retroRequest } from '@/lib/retro/api';
 import { DeleteGameDialog } from './delete-game-dialog';
 import { useGame } from './game-context';
@@ -42,7 +43,7 @@ export function GameMenu() {
     const { game, me, share } = ctx.snapshot;
     const open = ctx.sessionExpired ? null : chosen;
     const isEnded = game.endedAt !== null;
-    const canShare = share.slack || share.telegram;
+    const canShare = hasShareChannel(share);
 
     if (!me.isFacilitator && !me.canDelete) {
         return null;

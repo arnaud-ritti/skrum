@@ -19,7 +19,21 @@ class TrackerIssue
         public ?string $assignee,
         public ?string $estimate,
         public ?string $status,
+        public ?IssueStatus $issueStatus = null,
     ) {}
+
+    /**
+     * The issue as a confirmed write left it, when the source cannot be
+     * read back right away.
+     */
+    public function withStatus(IssueStatus $issueStatus, ?string $status): self
+    {
+        $moved = clone $this;
+        $moved->issueStatus = $issueStatus;
+        $moved->status = $status;
+
+        return $moved;
+    }
 
     public static function title(mixed $value, string $fallback): string
     {

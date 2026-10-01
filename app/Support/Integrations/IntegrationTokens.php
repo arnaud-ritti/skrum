@@ -7,6 +7,7 @@ use App\Models\TeamIntegration;
 use App\Support\Integrations\Exceptions\ProviderUnavailable;
 use App\Support\Integrations\Exceptions\ReconnectRequired;
 use App\Support\Integrations\Jira\JiraClient;
+use App\Support\Integrations\JiraDataCenter\JiraDataCenterClient;
 use App\Support\Integrations\Linear\LinearClient;
 use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Support\Facades\Cache;
@@ -42,6 +43,10 @@ class IntegrationTokens
     public function refresh(TeamIntegration $integration, ?string $staleToken = null): string
     {
         return $integration->withReconnectHandling(function () use ($integration, $staleToken): string {
+            if ($integration->provider === IntegrationProvider::JiraDataCenter) {
+                app(JiraDataCenterClient::class)->ensureConfiguredServer($integration);
+            }
+
             try {
                 return Cache::lock("integration-token:{$integration->id}", self::LockSeconds)
                     ->block(self::LockWaitSeconds, fn (): string => $this->refreshLocked($integration, $staleToken));
@@ -49,6 +54,30 @@ class IntegrationTokens
                 throw new ProviderUnavailable($integration->provider, 'token_refresh_busy');
             }
         });
+    }
+
+    /**
+     * Refreshes an expiring OAuth token before the caller takes row locks.
+     * Jira DC personal access tokens and GitHub installations have none.
+     */
+    public function prepare(TeamIntegration $integration): void
+    {
+        $refreshes = match ($integration->provider) {
+            IntegrationProvider::Jira, IntegrationProvider::Linear => true,
+            IntegrationProvider::JiraDataCenter => $this->preparesJiraDataCenter($integration),
+            default => false,
+        };
+
+        if ($refreshes) {
+            $this->accessToken($integration);
+        }
+    }
+
+    private function preparesJiraDataCenter(TeamIntegration $integration): bool
+    {
+        app(JiraDataCenterClient::class)->ensureConfiguredServer($integration);
+
+        return $integration->setting('authMethod') === JiraDataCenterClient::AuthMethodOAuth;
     }
 
     private function refreshLocked(TeamIntegration $integration, ?string $staleToken): string
@@ -94,6 +123,7 @@ class IntegrationTokens
         return match ($provider) {
             IntegrationProvider::Jira => app(JiraClient::class),
             IntegrationProvider::Linear => app(LinearClient::class),
+            IntegrationProvider::JiraDataCenter => app(JiraDataCenterClient::class),
             default => throw new ReconnectRequired($provider, 'no_token_refresh'),
         };
     }

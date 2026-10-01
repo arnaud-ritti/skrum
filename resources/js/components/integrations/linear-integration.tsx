@@ -7,6 +7,7 @@ import { IntegrationCard } from './integration-card';
 import { IntegrationDetails } from './integration-details';
 import { PeoplePanel } from './people-panel';
 import { PrioritiesPanel } from './priorities-panel';
+import { StatusSyncSection } from './status-sync-section';
 
 type Props = {
     card: IntegrationProviderCard;
@@ -120,6 +121,13 @@ export function LinearIntegration({ card, scope }: Props) {
                         />
                     </>
                 )}
+            {connection.status === 'active' && (
+                <StatusSyncSection
+                    scope={scope}
+                    card={card}
+                    connection={connection}
+                />
+            )}
         </IntegrationCard>
     );
 }
