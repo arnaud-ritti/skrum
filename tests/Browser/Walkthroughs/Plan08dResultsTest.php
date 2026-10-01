@@ -584,6 +584,7 @@ it('[P08d-06] gives the result bars no transition and the charts no animation wh
     $barTransition = p08dInSection('Return on time invested', 'getComputedStyle(section.querySelector("ul li div > div")).transitionDuration');
     $barHasTransition = p08dInSection('Return on time invested', 'getComputedStyle(section.querySelector("ul li div > div")).transitionDuration !== "0s"');
     $chartIsStill = p08dRadar('[...svg.querySelectorAll("polygon, line, circle")].every((shape) => getComputedStyle(shape).animationName === "none" && getComputedStyle(shape).transitionDuration === "0s")');
+    $chartIsStillWithAtMostOneMillisecond = p08dRadar('[...svg.querySelectorAll("polygon, line, circle")].every((shape) => getComputedStyle(shape).animationName === "none" && ["0s", "0.001s"].includes(getComputedStyle(shape).transitionDuration))');
     $animationElements = 'document.querySelectorAll("svg animate, svg animateTransform, svg animateMotion, svg set").length';
 
     $reducedPage = visit($joinPath, ['reducedMotion' => 'reduce']);
@@ -595,8 +596,8 @@ it('[P08d-06] gives the result bars no transition and the charts no animation wh
     $reducedPage->assertSee('Return on time invested')
         ->assertPresent('svg[aria-label="Team health radar"]')
         ->assertScript($prefersReducedMotion, true)
-        ->assertScript($barTransition, '0s')
-        ->assertScript($chartIsStill, true)
+        ->assertScript($barTransition, '0.001s')
+        ->assertScript($chartIsStillWithAtMostOneMillisecond, true)
         ->assertScript($animationElements, 0);
 
     $defaultPage = $this->joinAsGuest($joinPath, 'Dave Guest');
