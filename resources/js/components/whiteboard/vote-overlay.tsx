@@ -9,6 +9,7 @@ import type { WhiteboardVoting } from '@/lib/whiteboard/types';
 type Props = {
     api: ExcalidrawImperativeAPI;
     voting: WhiteboardVoting;
+    busyIds: string[];
     onVote: (elementId: string, count: number) => void;
 };
 
@@ -21,7 +22,7 @@ const controlButton =
  * under the canvas's own controls (z-index 3, between the canvas layers at
  * 1–2 and its interface at 4).
  */
-export function VoteOverlay({ api, voting, onVote }: Props) {
+export function VoteOverlay({ api, voting, busyIds, onVote }: Props) {
     const { t } = useTrans();
     const view = useCanvasView(api);
     const ids = useMemo(
@@ -52,6 +53,7 @@ export function VoteOverlay({ api, voting, onVote }: Props) {
             {boxes.map((box) => {
                 const count = mine.get(box.id) ?? 0;
                 const total = totals.get(box.id) ?? 0;
+                const busy = busyIds.includes(box.id);
 
                 return (
                     <div
@@ -82,7 +84,7 @@ export function VoteOverlay({ api, voting, onVote }: Props) {
                                     type="button"
                                     className={controlButton}
                                     aria-label={t('Remove a vote')}
-                                    disabled={count === 0}
+                                    disabled={busy || count === 0}
                                     onClick={() => onVote(box.id, count - 1)}
                                 >
                                     <Minus className="size-3" />
@@ -99,7 +101,7 @@ export function VoteOverlay({ api, voting, onVote }: Props) {
                                     type="button"
                                     className={controlButton}
                                     aria-label={t('Add a vote')}
-                                    disabled={voting.remaining === 0}
+                                    disabled={busy || voting.remaining === 0}
                                     onClick={() => onVote(box.id, count + 1)}
                                 >
                                     <Plus className="size-3" />
@@ -116,7 +118,10 @@ export function VoteOverlay({ api, voting, onVote }: Props) {
                                 )}
                                 aria-pressed={count === 1}
                                 aria-label={t('Vote for this note')}
-                                disabled={count === 0 && voting.remaining === 0}
+                                disabled={
+                                    busy ||
+                                    (count === 0 && voting.remaining === 0)
+                                }
                                 onClick={() =>
                                     onVote(box.id, count === 1 ? 0 : 1)
                                 }

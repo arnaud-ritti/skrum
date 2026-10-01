@@ -101,7 +101,7 @@ export function ResultsPanel({ state, api, onClose }: Props) {
     return (
         <aside
             aria-label={t('Vote results')}
-            className="w-80 shrink-0 space-y-4 overflow-y-auto border-l bg-background p-4 pb-20 max-md:absolute max-md:inset-0 max-md:z-50 max-md:w-auto"
+            className="w-80 shrink-0 space-y-4 overflow-y-auto border-l bg-background p-4 pb-20 max-md:order-first max-md:max-h-[40dvh] max-md:w-auto max-md:border-b max-md:border-l-0 max-md:pb-4"
         >
             <div className="flex items-center gap-2">
                 <h2 className="flex-1 font-medium">{t('Vote results')}</h2>

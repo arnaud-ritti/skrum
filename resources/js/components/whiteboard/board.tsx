@@ -76,6 +76,7 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
         false,
     );
     const [historyOpen, setHistoryOpen] = useState(false);
+    const [votesInFlight, setVotesInFlight] = useState<string[]>([]);
     const sync = useRef<SceneSync | null>(null);
     const canvas = useRef<HTMLDivElement | null>(null);
     const toolbarSlot = useWhiteboardToolbarSlot(canvas, api !== null);
@@ -221,9 +222,11 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
     }, [privateWriting]);
 
     const vote = async (elementId: string, count: number) => {
-        if (!voting) {
+        if (!voting || votesInFlight.includes(elementId)) {
             return;
         }
+
+        setVotesInFlight((ids) => [...ids, elementId]);
 
         const tally = await request(
             retroRequest<VoteTally>(
@@ -235,6 +238,8 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
                 { count },
             ),
         );
+
+        setVotesInFlight((ids) => ids.filter((id) => id !== elementId));
 
         if (tally === undefined) {
             void state.refetch();
@@ -344,7 +349,10 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
                             {' · '}
                             {t(':count of :total finished voting', {
                                 count: voting.finishedCount ?? 0,
-                                total: state.online.length,
+                                total: Math.max(
+                                    state.online.length,
+                                    voting.finishedCount ?? 0,
+                                ),
                             })}
                             {board.cursorsEnabled &&
                                 ` · ${t('Cursors are hidden while the vote is open.')}`}
@@ -367,7 +375,7 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
                         toolbarSlot,
                     )}
                 <div
-                    className="whiteboard-canvas relative flex min-h-0 flex-1"
+                    className="whiteboard-canvas relative flex min-h-0 flex-1 max-md:flex-col"
                     data-facilitator={me.isFacilitator}
                 >
                     <div
@@ -413,6 +421,7 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
                             <VoteOverlay
                                 api={api}
                                 voting={voting}
+                                busyIds={votesInFlight}
                                 onVote={(elementId, count) =>
                                     void vote(elementId, count)
                                 }
