@@ -272,3 +272,74 @@ it('never leaks the url or the secret through errors', function () {
         ->and($caught?->getMessage())->not->toContain(TeamIntegrationFactory::WebhookSecret)
         ->and($caught?->getPrevious())->toBeNull();
 });
+
+it('resets the failure counter even when the loaded model still holds zero', function () {
+    $integration = TeamIntegration::factory()->webhook()->create();
+    $stale = TeamIntegration::find($integration->id);
+    TeamIntegration::whereKey($integration->id)->update(['consecutive_failures' => 5]);
+
+    app(WebhookHealth::class)->succeeded($stale);
+
+    expect($integration->fresh()->consecutive_failures)->toBe(0)
+        ->and($integration->fresh()->last_delivery_succeeded_at)->not->toBeNull();
+});
+
+it('uses one clock reading for the timestamp header and the sent-at field', function () {
+    Http::fake(['hooks.example.com/*' => Http::response('', 204)]);
+    $integration = TeamIntegration::factory()->webhook()->create();
+
+    app(WebhookClient::class)->send($integration, outgoingWebhookMessage());
+
+    Http::assertSent(function (Request $request) {
+        $sentAt = Carbon::parse(json_decode($request->body(), true)['sentAt'])->getTimestamp();
+
+        return (string) $sentAt === $request->header('X-Skrum-Timestamp')[0];
+    });
+});
+
+it('keeps concurrent settings edits and explains a 410 even when already disabled', function () {
+    Http::fake(['hooks.example.com/*' => Http::response('', 410)]);
+    $integration = TeamIntegration::factory()->webhook()->reconnectRequired('Disabled after 10 failed deliveries in a row.')->create();
+    $stale = TeamIntegration::find($integration->id);
+    $integration->forceFill(['settings' => [...$integration->settings, 'events' => ['retro.completed']]])->save();
+
+    expect(fn () => app(WebhookClient::class)->send($stale, outgoingWebhookMessage()))
+        ->toThrow(ReconnectRequired::class);
+
+    $fresh = $integration->fresh();
+
+    expect($fresh->setting('events'))->toBe(['retro.completed'])
+        ->and($fresh->setting('disabledReason'))->toBe(WebhookHealth::GoneReason)
+        ->and($fresh->last_error)->toBe('The receiver asked skrum to stop.');
+});
+
+it('explains a missing signing secret', function () {
+    $integration = TeamIntegration::factory()->webhook()->create();
+    $integration->forceFill(['credentials' => ['url' => TeamIntegrationFactory::WebhookUrl]])->save();
+    $caught = null;
+
+    try {
+        app(WebhookClient::class)->send($integration, outgoingWebhookMessage());
+    } catch (ReconnectRequired $exception) {
+        $caught = $exception;
+    }
+
+    expect($caught?->getMessage())->toBe('The signing secret is missing. Rotate it to continue.')
+        ->and($integration->fresh()->last_error)->toBe('The signing secret is missing. Rotate it to continue.');
+});
+
+it('flags a missing stored url during the check', function () {
+    $integration = TeamIntegration::factory()->webhook()->create();
+    $integration->forceFill(['credentials' => ['webhookSecret' => TeamIntegrationFactory::WebhookSecret]])->save();
+
+    expect(fn () => app(WebhookClient::class)->ensureUsableUrl($integration))->toThrow(ReconnectRequired::class);
+    expect($integration->fresh()->status)->toBe(IntegrationStatus::ReconnectRequired);
+});
+
+it('discards the response body instead of buffering it', function () {
+    $options = app(WebhookClient::class)
+        ->pendingRequest(app(SafeWebhookUrl::class)->resolve(TeamIntegrationFactory::WebhookUrl))
+        ->getOptions();
+
+    expect($options['curl'][CURLOPT_WRITEFUNCTION]('handle', 'abcdef'))->toBe(6);
+});

@@ -22,10 +22,36 @@ class WebhookHealth
 
     public function succeeded(TeamIntegration $integration): void
     {
+        $succeededAt = now();
+
+        TeamIntegration::query()->whereKey($integration->id)->update([
+            'consecutive_failures' => 0,
+            'last_delivery_succeeded_at' => $succeededAt,
+        ]);
+
         $integration->forceFill([
             'consecutive_failures' => 0,
-            'last_delivery_succeeded_at' => now(),
-        ])->save();
+            'last_delivery_succeeded_at' => $succeededAt,
+        ])->syncOriginal();
+    }
+
+    public function gone(TeamIntegration $integration): void
+    {
+        DB::transaction(function () use ($integration): void {
+            $locked = TeamIntegration::query()->lockForUpdate()->find($integration->id);
+
+            if ($locked === null) {
+                return;
+            }
+
+            $locked->forceFill([
+                'status' => IntegrationStatus::ReconnectRequired,
+                'last_error' => __('The receiver asked skrum to stop.'),
+                'settings' => [...$locked->settings, 'disabledReason' => self::GoneReason],
+            ])->save();
+        });
+
+        $integration->refresh();
     }
 
     public function failed(TeamIntegration $integration): void

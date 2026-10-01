@@ -68,19 +68,22 @@ class WebhookClient
             ->withoutRedirecting()
             ->withUserAgent(self::UserAgent);
 
+        $curl = [CURLOPT_WRITEFUNCTION => static fn ($handle, string $chunk): int => strlen($chunk)];
         $resolve = $target->pinnedResolve();
 
-        if ($resolve === null) {
-            return $request;
+        if ($resolve !== null) {
+            $curl[CURLOPT_RESOLVE] = [$resolve];
         }
 
-        return $request->withOptions(['curl' => [CURLOPT_RESOLVE => [$resolve]]]);
+        return $request->withOptions(['curl' => $curl]);
     }
 
     public function ensureUsableUrl(TeamIntegration $integration): void
     {
         $integration->withReconnectHandling(function () use ($integration): void {
-            if (! SafeWebhookUrl::hasAllowedShape($this->url($integration))) {
+            $url = $integration->credential('url');
+
+            if (! is_string($url) || ! SafeWebhookUrl::hasAllowedShape($url)) {
                 throw new ReconnectRequired(IntegrationProvider::Webhook, __('This webhook URL is no longer allowed. Paste a new one.'));
             }
         });
@@ -88,8 +91,9 @@ class WebhookClient
 
     private function post(WebhookTarget $target, WebhookMessage $message, TeamIntegration $integration, string $secret): Response
     {
-        $timestamp = now()->getTimestamp();
-        $body = $message->body($integration->team, now());
+        $sentAt = now();
+        $timestamp = $sentAt->getTimestamp();
+        $body = $message->body($integration->team, $sentAt);
 
         try {
             return $this->pendingRequest($target)
@@ -120,7 +124,7 @@ class WebhookClient
         $answered = __('The receiver answered :status.', ['status' => $status]);
 
         if ($status === self::GoneStatus) {
-            $integration->forceFill(['settings' => [...$integration->settings, 'disabledReason' => WebhookHealth::GoneReason]])->save();
+            $this->health->gone($integration);
 
             throw new WebhookGone;
         }
@@ -161,7 +165,7 @@ class WebhookClient
         $secret = $integration->credential('webhookSecret');
 
         if (! is_string($secret) || $secret === '') {
-            throw new ReconnectRequired(IntegrationProvider::Webhook, $integration->last_error);
+            throw new ReconnectRequired(IntegrationProvider::Webhook, __('The signing secret is missing. Rotate it to continue.'));
         }
 
         return $secret;

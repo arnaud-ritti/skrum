@@ -1601,5 +1601,6 @@
     "An action item is created.": "Se crea una acción a realizar.",
     "An action item is completed, in skrum or in a linked tracker.": "Se completa una acción a realizar, en skrum o en un gestor de incidencias vinculado.",
     "An action item is reopened.": "Se reabre una acción a realizar.",
-    "A planning poker task gets its final estimate.": "Una tarea de planning poker recibe su estimación final."
+    "A planning poker task gets its final estimate.": "Una tarea de planning poker recibe su estimación final.",
+    "The signing secret is missing. Rotate it to continue.": "Falta el secreto de firma. Rótalo para continuar."
 }

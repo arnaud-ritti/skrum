@@ -1355,5 +1355,6 @@
     "An action item is created.": "An action item is created.",
     "An action item is completed, in skrum or in a linked tracker.": "An action item is completed, in skrum or in a linked tracker.",
     "An action item is reopened.": "An action item is reopened.",
-    "A planning poker task gets its final estimate.": "A planning poker task gets its final estimate."
+    "A planning poker task gets its final estimate.": "A planning poker task gets its final estimate.",
+    "The signing secret is missing. Rotate it to continue.": "The signing secret is missing. Rotate it to continue."
 }
