@@ -21,7 +21,7 @@ This spec turns the walkthroughs into automated browser tests, keeps a short man
 - Architecture tests (`pestphp/pest-plugin-arch`, already installed): the `php`, `security` and `laravel` presets plus project rules, and the code changes needed to pass them.
 - A CI job for the browser suite, and Composer scripts to run each suite.
 - **First slice (plan 16a):** the harness, the architecture tests, and the walkthroughs of plan 4 (retro core), plan 10a and plan 10b (planning poker).
-- **Later slices (plans 16b onward, this same spec):** plans 6, 7, 8a–8e, 9a, 9b, 11b (API tokens page only), 12a–12d, 13a–13d, 14a–14d and 15.
+- **Later slices (plans 16b onward, this same spec):** plans 6, 7, 8a–8e, 9a, 9b, 11b (API tokens page only), 12a–12d, 13a–13d, 14a–14d and 15; and the whiteboard walkthroughs of plans 17a–17d (plan 16f), whose walkthroughs are the files `docs/superpowers/walkthroughs/plan-17*.md`.
 
 ### Out of scope
 
@@ -132,6 +132,7 @@ The plugin cannot inspect websocket frames, cut the network or control the brows
 
 - `data-realtime`: the root element of `retros/show`, `poker/show` and `games/show` carries `data-realtime="connecting"` or `"connected"`, taken from the state the channel hooks (`use-retro-channel.ts`, `use-poker-channel.ts`, `use-game-channel.ts`) already track.
 - Later slices may add `data-realtime` to another live page that subscribes to a channel (the workspace action-items page is the first), with only the state needed to know that the subscription succeeded; this stays within criterion 10.
+- The whiteboard root may also carry a `data-scene` stamp (live element count and version sums, no content), so a test can wait for a scene change instead of reading canvas pixels; this stays within criterion 10.
 - `data-test`: added to an element only when a test cannot target it by English text or label (for example a card, a column, a poker hand card, a task row).
 - No other product change is made for the browser suite itself. A product defect that a walkthrough test confirms may be fixed when the fix is small and contained: in its own `fix(…)` commit, with a failing test first where the behaviour is server-side, and a line under "Defects found" in the coverage table. A defect that needs a design decision is recorded there as open and left to the product owner.
 
@@ -147,6 +148,7 @@ The plugin cannot inspect websocket frames, cut the network or control the brows
 | `auto` | Covered by a browser test as written. |
 | `auto-substituted` | Covered by a browser test using a substitution from §3.6. |
 | `residual` | Not automated; listed in the residual checklist with the reason. |
+| `removed` | The walkthrough section describes a feature the product owner removed; no test, and the row says when it was removed. |
 
 - **Residual checklist:** `docs/superpowers/walkthroughs/residual-manual-checklist.md` lists each residual step, why it is not automated, and how to check it by hand.
 - **Smoke tests:** `tests/Browser/Smoke/` holds the harness's own tests (two isolated users, one realtime round trip).

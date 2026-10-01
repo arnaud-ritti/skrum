@@ -8,12 +8,14 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
 use Tests\Browser\Support\CapturesVisuals;
 use Tests\Browser\Support\InteractsWithBrowser;
+use Tests\Browser\Support\InteractsWithWhiteboards;
 use Tests\Browser\Support\ReverbServer;
 
 abstract class BrowserTestCase extends TestCase
 {
     use CapturesVisuals;
     use InteractsWithBrowser;
+    use InteractsWithWhiteboards;
 
     protected function setUp(): void
     {
