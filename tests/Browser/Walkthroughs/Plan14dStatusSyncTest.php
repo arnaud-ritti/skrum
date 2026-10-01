@@ -2,6 +2,7 @@
 
 use App\Enums\ExternalIssueState;
 use App\Enums\ExternalStatusCategory;
+use App\Enums\InboundEventStatus;
 use App\Enums\IntegrationAccess;
 use App\Enums\IntegrationInboundMode;
 use App\Enums\IntegrationProvider;
@@ -10,6 +11,7 @@ use App\Enums\RetroPhase;
 use App\Enums\WorkspaceRole;
 use App\Models\ActionItem;
 use App\Models\ActionItemExternalLink;
+use App\Models\IntegrationInboundEvent;
 use App\Models\PokerGame;
 use App\Models\PokerTask;
 use App\Models\Retro;
@@ -284,6 +286,17 @@ function p14dLinearIssue(string $type): array
 }
 
 /**
+ * @return array<int, array{id: string, name: string}>
+ */
+function p14dJiraPriorities(): array
+{
+    return [
+        ['id' => '2', 'name' => 'High'],
+        ['id' => '3', 'name' => 'Medium'],
+    ];
+}
+
+/**
  * @param  array<string, string>  $headers
  */
 function p14dPostWebhook(string $url, string $body, array $headers = []): TestResponse
@@ -334,14 +347,14 @@ function p14dLinearEvent(string $delivery): TestResponse
 /**
  * @param  array<string, mixed>  $payload
  */
-function p14dGitHubEvent(string $event, array $payload, string $delivery): TestResponse
+function p14dGitHubEvent(string $event, array $payload, string $delivery, string $secret = 'github-webhook-secret'): TestResponse
 {
     $body = json_encode(['installation' => ['id' => 4242], ...$payload], JSON_THROW_ON_ERROR);
 
     return p14dPostWebhook(route('integrations.webhooks.store', ['source' => 'github'], false), $body, [
         'X-GitHub-Event' => $event,
         'X-GitHub-Delivery' => $delivery,
-        'X-Hub-Signature-256' => 'sha256='.hash_hmac('sha256', $body, 'github-webhook-secret'),
+        'X-Hub-Signature-256' => 'sha256='.hash_hmac('sha256', $body, $secret),
     ]);
 }
 
@@ -352,7 +365,8 @@ it('[P14d-01a] turns status sync on for Jira after a confirmation and shows the 
     Http::fake([
         jiraApiUrl('rest/api/3/webhook') => Http::response(['webhookRegistrationResult' => [['createdWebhookId' => 7001]]]),
         jiraApiUrl('rest/api/3/search/jql') => Http::response(['issues' => [p14dJiraIssue()], 'isLast' => true]),
-        'api.atlassian.com/*' => Http::response([]),
+        jiraApiUrl('rest/api/3/priority/search*') => Http::response(['values' => p14dJiraPriorities()]),
+        'api.atlassian.com/*' => Http::response(['message' => 'Unexpected request in a browser test.'], 404),
     ]);
     $path = p14dIntegrationsPath($retro);
     $switch = 'label:has-text("Sync status") button[role="checkbox"]';
@@ -400,7 +414,10 @@ it('[P14d-01b] asks to reconnect a Jira connection made without the webhook scop
     p14dEnable(IntegrationProvider::Jira);
     ['retro' => $retro, 'ada' => $ada, 'integration' => $integration] = p14dSyncedItem(IntegrationProvider::Jira, mode: IntegrationInboundMode::Polling);
     $integration->forceFill(['scopes' => ['offline_access', 'read:jira-work', 'write:jira-work']])->save();
-    Http::fake(['api.atlassian.com/*' => Http::response([])]);
+    Http::fake([
+        jiraApiUrl('rest/api/3/priority/search*') => Http::response(['values' => p14dJiraPriorities()]),
+        'api.atlassian.com/*' => Http::response(['message' => 'Unexpected request in a browser test.'], 404),
+    ]);
 
     $page = $this->signIn($ada, p14dIntegrationsPath($retro));
 
@@ -417,7 +434,7 @@ it('[P14d-02] completes the action item on the open board when its issue is clos
     ['retro' => $retro, 'ada' => $ada, 'integration' => $integration, 'item' => $item] = p14dSyncedItem(IntegrationProvider::Jira);
     Http::fake([
         jiraApiUrl('rest/api/3/search/jql') => Http::response(['issues' => [p14dJiraIssue('done')], 'isLast' => true]),
-        'api.atlassian.com/*' => Http::response([]),
+        'api.atlassian.com/*' => Http::response(['message' => 'Unexpected request in a browser test.'], 404),
     ]);
     $card = "#action-item-{$item->id}";
 
@@ -451,7 +468,7 @@ it('[P14d-03a] moves the Jira issue to Done when the action item is completed on
         jiraTransition('21', '10005', 'Closed', 'done'),
         jiraTransition('31', '10002', 'Done', 'done'),
     ]);
-    Http::fake(['api.atlassian.com/*' => Http::response([])]);
+    Http::fake(['api.atlassian.com/*' => Http::response(['message' => 'Unexpected request in a browser test.'], 404)]);
     $card = "#action-item-{$item->id}";
 
     $page = $this->awaitRealtime($this->signIn($ada, "/retros/{$retro->id}"));
@@ -484,7 +501,7 @@ it('[P14d-03b] fills the resolution that the Jira transition requires', function
             'resolution' => ['required' => true, 'hasDefaultValue' => false, 'allowedValues' => $allowedValues],
         ]),
     ]);
-    Http::fake(['api.atlassian.com/*' => Http::response([])]);
+    Http::fake(['api.atlassian.com/*' => Http::response(['message' => 'Unexpected request in a browser test.'], 404)]);
     $card = "#action-item-{$item->id}";
 
     $page = $this->awaitRealtime($this->signIn($ada, "/retros/{$retro->id}"));
@@ -523,7 +540,7 @@ it('[P14d-04a] moves the Jira issue back to an open status when the action item 
         jiraTransition('41', '3', 'In Progress', 'indeterminate'),
         jiraTransition('51', '10000', 'To Do', 'new'),
     ]);
-    Http::fake(['api.atlassian.com/*' => Http::response([])]);
+    Http::fake(['api.atlassian.com/*' => Http::response(['message' => 'Unexpected request in a browser test.'], 404)]);
     $card = "#action-item-{$item->id}";
 
     $page = $this->awaitRealtime($this->signIn($ada, "/retros/{$retro->id}"));
@@ -555,7 +572,7 @@ it('[P14d-04b] reopens the action item on the open board when its issue is reope
     );
     Http::fake([
         jiraApiUrl('rest/api/3/search/jql') => Http::response(['issues' => [p14dJiraIssue('new')], 'isLast' => true]),
-        'api.atlassian.com/*' => Http::response([]),
+        'api.atlassian.com/*' => Http::response(['message' => 'Unexpected request in a browser test.'], 404),
     ]);
     $card = "#action-item-{$item->id}";
 
@@ -594,7 +611,7 @@ it('[P14d-05a] lets the Jira change win when it is the more recent of two opposi
     );
     Http::fake([
         jiraApiUrl('rest/api/3/search/jql') => Http::response(['issues' => [p14dJiraIssue('done', $reopenedAt->addSeconds(20))], 'isLast' => true]),
-        'api.atlassian.com/*' => Http::response([]),
+        'api.atlassian.com/*' => Http::response(['message' => 'Unexpected request in a browser test.'], 404),
     ]);
     $card = "#action-item-{$item->id}";
 
@@ -634,7 +651,7 @@ it('[P14d-05b] gives a tie to skrum, pushes its state once and does not loop on 
     fakeJiraTransitions(p14dJiraFields('new', $completedAt), p14dJiraFields('done', $completedAt->addSeconds(5)), [
         jiraTransition('31', '10002', 'Done', 'done'),
     ]);
-    Http::fake(['api.atlassian.com/*' => Http::response([])]);
+    Http::fake(['api.atlassian.com/*' => Http::response(['message' => 'Unexpected request in a browser test.'], 404)]);
     $card = "#action-item-{$item->id}";
 
     $page = $this->awaitRealtime($this->signIn($ada, "/retros/{$retro->id}"));
@@ -651,13 +668,21 @@ it('[P14d-05b] gives a tie to skrum, pushes its state once and does not loop on 
     $page->assertScript(p14dCardSays($item, 'Done in Jira'), true)
         ->assertPresent("{$card} [aria-label=\"Reopen\"]");
 
+    $readsBeforeEcho = p14dSentCount('POST', '/rest/api/3/search/jql');
+
     p14dJiraEvent($integration, 'delivery-2')->assertAccepted();
 
-    while (p14dDueJobs() > 0) {
-        $this->workQueue();
-    }
+    expect(p14dDueJobs())->toBe(1)
+        ->and(IntegrationInboundEvent::query()->where('team_integration_id', $integration->id)->count())->toBe(2);
 
-    $page->assertPresent("{$card} [aria-label=\"Reopen\"]");
+    $this->workQueue();
+
+    expect(p14dDueJobs())->toBe(0)
+        ->and(DB::table('jobs')->count())->toBe(0)
+        ->and(p14dSentCount('POST', '/rest/api/3/search/jql'))->toBe($readsBeforeEcho + 1);
+
+    $page->assertPresent("{$card} [aria-label=\"Reopen\"]")
+        ->assertScript(p14dCardSays($item, 'Done in Jira'), true);
 
     expect(p14dSentCount('POST', '/transitions'))->toBe(1)
         ->and($item->fresh()->completed_at)->not->toBeNull()
@@ -699,7 +724,8 @@ it('[P14d-06] maps a custom done status and reopen target for a Jira project and
 
             return Http::response(null, 204);
         },
-        'api.atlassian.com/*' => Http::response([]),
+        jiraApiUrl('rest/api/3/priority/search*') => Http::response(['values' => p14dJiraPriorities()]),
+        'api.atlassian.com/*' => Http::response(['message' => 'Unexpected request in a browser test.'], 404),
     ]);
     $card = "#action-item-{$item->id}";
 
@@ -878,7 +904,7 @@ it('[P14d-08a] closes the GitHub issue as completed and reopens it from the boar
             return Http::response(gitHubIssue(3, $state));
         },
     ]);
-    Http::fake(['api.github.com/*' => Http::response([])]);
+    Http::fake(['api.github.com/*' => Http::response(['message' => 'Unexpected request in a browser test.'], 404)]);
     $card = "#action-item-{$item->id}";
 
     $page = $this->awaitRealtime($this->signIn($ada, "/retros/{$retro->id}"));
@@ -926,7 +952,7 @@ it('[P14d-08b] completes the action item when its GitHub issue is closed as not 
             'updated_at' => now()->toIso8601String(),
         ])]),
     ]);
-    Http::fake(['api.github.com/*' => Http::response([])]);
+    Http::fake(['api.github.com/*' => Http::response(['message' => 'Unexpected request in a browser test.'], 404)]);
     $card = "#action-item-{$item->id}";
 
     $page = $this->awaitRealtime($this->signIn($ada, "/retros/{$retro->id}"));
@@ -959,7 +985,8 @@ it('[P14d-09a] registers the Jira Data Center webhook itself when the token belo
         jiraDataCenterUrl('rest/api/2/mypermissions*') => Http::response(['permissions' => ['ADMINISTER' => ['havePermission' => true]]]),
         jiraDataCenterUrl('rest/webhooks/1.0/webhook') => Http::response(['self' => 'https://jira.example.com/rest/webhooks/1.0/webhook/12'], 201),
         jiraDataCenterUrl('rest/api/2/search') => Http::response(['issues' => [p14dJiraDataCenterIssue()], 'total' => 1]),
-        'jira.example.com/*' => Http::response([]),
+        jiraDataCenterUrl('rest/api/2/priority') => Http::response(p14dJiraPriorities()),
+        'jira.example.com/*' => Http::response(['message' => 'Unexpected request in a browser test.'], 404),
     ]);
     $path = p14dIntegrationsPath($retro);
     $switch = 'label:has-text("Sync status") button[role="checkbox"]';
@@ -1001,7 +1028,8 @@ it('[P14d-09b] shows the manual webhook panel to a non-administrator and goes li
     Http::fake([
         jiraDataCenterUrl('rest/api/2/mypermissions*') => Http::response(['permissions' => ['ADMINISTER' => ['havePermission' => false]]]),
         jiraDataCenterUrl('rest/api/2/search') => Http::response(['issues' => [p14dJiraDataCenterIssue()], 'total' => 1]),
-        'jira.example.com/*' => Http::response([]),
+        jiraDataCenterUrl('rest/api/2/priority') => Http::response(p14dJiraPriorities()),
+        'jira.example.com/*' => Http::response(['message' => 'Unexpected request in a browser test.'], 404),
     ]);
     $path = p14dIntegrationsPath($retro);
     $switch = 'label:has-text("Sync status") button[role="checkbox"]';
@@ -1062,7 +1090,7 @@ it('[P14d-10a] shows the status of the Jira issue on its imported poker task as 
         jiraApiUrl('rest/api/3/search/jql') => function () use (&$status) {
             return Http::response(['issues' => [p14dJiraIssue($status)], 'isLast' => true]);
         },
-        'api.atlassian.com/*' => Http::response([]),
+        'api.atlassian.com/*' => Http::response(['message' => 'Unexpected request in a browser test.'], 404),
     ]);
 
     $page = $this->awaitRealtime($this->signIn($ada, "/poker/{$game->id}"));
@@ -1107,7 +1135,7 @@ it('[P14d-10b] flags a story points change made in Jira and takes the Jira value
     ]);
     Http::fake([
         jiraApiUrl('rest/api/3/search/jql') => Http::response(['issues' => [p14dJiraIssue('new', null, ['customfield_10016' => 8])], 'isLast' => true]),
-        'api.atlassian.com/*' => Http::response([]),
+        'api.atlassian.com/*' => Http::response(['message' => 'Unexpected request in a browser test.'], 404),
     ]);
 
     $page = $this->awaitRealtime($this->signIn($ada, "/poker/{$game->id}"));
@@ -1146,7 +1174,7 @@ it('[P14d-10c] writes the skrum estimate back to Jira when the facilitator keeps
         jiraApiUrl('rest/api/3/search/jql') => Http::response(['issues' => [p14dJiraIssue('new', null, ['customfield_10016' => 8])], 'isLast' => true]),
         jiraApiUrl('rest/api/3/issue/*/editmeta') => Http::response(['fields' => ['customfield_10016' => ['name' => 'Story point estimate']]]),
         jiraApiUrl('rest/api/3/issue/*') => Http::response(null, 204),
-        'api.atlassian.com/*' => Http::response([]),
+        'api.atlassian.com/*' => Http::response(['message' => 'Unexpected request in a browser test.'], 404),
     ]);
 
     $page = $this->awaitRealtime($this->signIn($ada, "/poker/{$game->id}"));
@@ -1191,7 +1219,7 @@ it('[P14d-10d] cannot take a Jira value that is not a card of the deck', functio
     ]);
     Http::fake([
         jiraApiUrl('rest/api/3/search/jql') => Http::response(['issues' => [p14dJiraIssue('new', null, ['customfield_10016' => 7])], 'isLast' => true]),
-        'api.atlassian.com/*' => Http::response([]),
+        'api.atlassian.com/*' => Http::response(['message' => 'Unexpected request in a browser test.'], 404),
     ]);
 
     $page = $this->awaitRealtime($this->signIn($ada, "/poker/{$game->id}"));
@@ -1217,7 +1245,7 @@ it('[P14d-11a] says it checks every 5 minutes and answers 404 to webhooks when i
     config(['services.integrations.inbound_webhooks' => 'off']);
     ['retro' => $retro, 'ada' => $ada, 'integration' => $integration] = p14dSyncedItem(IntegrationProvider::GitHub, mode: null);
     fakeGitHubTrackerApi();
-    Http::fake(['api.github.com/*' => Http::response([])]);
+    Http::fake(['api.github.com/*' => Http::response(['message' => 'Unexpected request in a browser test.'], 404)]);
     $switch = 'label:has-text("Sync status") button[role="checkbox"]';
 
     $page = $this->signIn($ada, p14dIntegrationsPath($retro));
@@ -1254,7 +1282,7 @@ it('[P14d-11b] completes the action item on the open board when the poll finds i
     $integration->forceFill(['last_polled_at' => now()->subMinutes(6), 'poll_cursor' => now()->subMinutes(6)])->save();
     Http::fake([
         jiraApiUrl('rest/api/3/search/jql') => Http::response(['issues' => [p14dJiraIssue('done')], 'isLast' => true]),
-        'api.atlassian.com/*' => Http::response([]),
+        'api.atlassian.com/*' => Http::response(['message' => 'Unexpected request in a browser test.'], 404),
     ]);
     $card = "#action-item-{$item->id}";
 
@@ -1287,7 +1315,7 @@ it('[P14d-12] asks to reconnect on the card once GitHub reports that the App was
     fakeGitHubTrackerApi([
         'api.github.com/app/installations/4242' => Http::response(['message' => 'Not Found'], 404),
     ]);
-    Http::fake(['api.github.com/*' => Http::response([])]);
+    Http::fake(['api.github.com/*' => Http::response(['message' => 'Unexpected request in a browser test.'], 404)]);
     $path = p14dIntegrationsPath($retro);
 
     $page = $this->signIn($ada, $path);
@@ -1304,4 +1332,47 @@ it('[P14d-12] asks to reconnect on the card once GitHub reports that the App was
         ->assertDontSee('Sync status');
 
     expect($integration->fresh()->last_error)->toBe('The GitHub App was uninstalled from acme.');
+});
+
+it('[P14d-13a] refuses a GitHub webhook whose signature is wrong and leaves the action item on the open board as it was', function () {
+    p14dEnable(IntegrationProvider::GitHub);
+    ['retro' => $retro, 'ada' => $ada, 'integration' => $integration, 'item' => $item] = p14dSyncedItem(IntegrationProvider::GitHub);
+    fakeGitHubTrackerApi([
+        'api.github.com/graphql' => gitHubGraphqlIssues([3 => gitHubIssue(3, [
+            'state' => 'closed',
+            'state_reason' => 'completed',
+            'updated_at' => now()->toIso8601String(),
+        ])]),
+    ]);
+    Http::fake(['api.github.com/*' => Http::response(['message' => 'Unexpected request in a browser test.'], 404)]);
+    $card = "#action-item-{$item->id}";
+
+    $page = $this->awaitRealtime($this->signIn($ada, "/retros/{$retro->id}"));
+
+    $page->assertPresent("{$card} [aria-label=\"Mark as done\"]");
+
+    p14dGitHubEvent('issues', [
+        'action' => 'closed',
+        'issue' => ['number' => 3],
+        'repository' => ['id' => 9001, 'full_name' => 'acme/api'],
+    ], 'github-delivery-1', 'not-the-github-secret')
+        ->assertUnauthorized()
+        ->assertExactJson(['message' => 'Invalid signature.']);
+
+    $event = IntegrationInboundEvent::query()->sole();
+
+    expect($event->status)->toBe(InboundEventStatus::Rejected)
+        ->and($event->detail)->toBe('signature_mismatch')
+        ->and(DB::table('jobs')->count())->toBe(0)
+        ->and(p14dSentCount('POST', '/graphql'))->toBe(0)
+        ->and($integration->fresh()->last_inbound_at)->toBeNull();
+
+    $snapshotItem = collect($this->snapshotOf($page, "/retros/{$retro->id}/snapshot")['actionItems'])->firstWhere('id', $item->id);
+
+    expect($snapshotItem['completedAt'])->toBeNull();
+
+    $page->assertPresent("{$card} [aria-label=\"Mark as done\"]")
+        ->assertNotPresent("{$card} [aria-label=\"Reopen\"]");
+
+    expect($item->fresh()->completed_at)->toBeNull();
 });
