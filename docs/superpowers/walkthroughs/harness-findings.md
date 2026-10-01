@@ -134,7 +134,7 @@ Proven by running the tests of plan 16b.
 
 ### Keyboard drag
 
-- A key sent right after the pick-up is lost unless one timer turn precedes it, Escape included: `$page->script('() => new Promise((resolve) => setTimeout(() => resolve(true), 0))')`. Assertions in between are not a substitute.
+- A key sent after the pick-up can be lost unless one timer turn precedes it, Escape included: `$page->script('() => new Promise((resolve) => setTimeout(() => resolve(true), 0))')`. Assertions in between are not a substitute. The mechanism was not isolated: the sensor's late `keydown` listener (spike, "Lost key 1") does not explain all of it, since `[P06-08a]` made eight page round trips between the pick-up and Escape and still lost the key until the timer turn was added. Keep the recipe whatever the cause.
 - Inside dnd-kit's `onDragStart` (6.3.1), `event.active.rect.current.initial` is null; measure the element.
 
 ### Scripts
