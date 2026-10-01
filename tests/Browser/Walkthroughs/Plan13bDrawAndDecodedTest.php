@@ -10,6 +10,7 @@ use App\Models\GameRound;
 use App\Models\User;
 use App\Support\Games\GameWordBook;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 function p13bRenamed(User $user, string $name): User
 {
@@ -139,6 +140,32 @@ function p13bGuess(mixed $page, string $text): void
     $page->assertVisible('input[aria-label="Your guess"]')
         ->fill('input[aria-label="Your guess"]', $text)
         ->click('section[aria-labelledby="game-guesses"] button[type="submit"]');
+}
+
+function p13bSeedEmojiData(): void
+{
+    Storage::fake();
+
+    $version = config('services.emoji_data.version');
+    $emoji = [
+        ['emoji' => '🚀', 'label' => 'rocket', 'group' => 0, 'subgroup' => 0, 'order' => 1, 'version' => 0.6, 'tags' => ['launch']],
+        ['emoji' => '🌕', 'label' => 'full moon', 'group' => 0, 'subgroup' => 0, 'order' => 2, 'version' => 0.6, 'tags' => ['moon']],
+        ['emoji' => "1\u{FE0F}\u{20E3}", 'label' => 'keycap: 1', 'group' => 0, 'subgroup' => 0, 'order' => 3, 'version' => 0.6, 'tags' => ['keycap']],
+    ];
+    $messages = [
+        'groups' => [['key' => 'objects', 'message' => 'objects', 'order' => 0]],
+        'subgroups' => [['key' => 'sky', 'message' => 'sky', 'order' => 0]],
+        'skinTones' => [
+            ['key' => 'light', 'message' => 'light skin tone'],
+            ['key' => 'medium-light', 'message' => 'medium-light skin tone'],
+            ['key' => 'medium', 'message' => 'medium skin tone'],
+            ['key' => 'medium-dark', 'message' => 'medium-dark skin tone'],
+            ['key' => 'dark', 'message' => 'dark skin tone'],
+        ],
+    ];
+
+    Storage::put("emoji-data/{$version}/en/data.json", (string) json_encode($emoji, JSON_UNESCAPED_UNICODE));
+    Storage::put("emoji-data/{$version}/en/messages.json", (string) json_encode($messages));
 }
 
 it('[P13b-01] waits for another player when the host switches to Draw & Guess alone', function () {
@@ -546,4 +573,253 @@ it('[P13b-10] preselects the next online player as the drawer of the next round'
         ->assertSeeIn('button[aria-label="Who draws?"]', 'Ada Host');
 
     expect($round->fresh()->outcome)->toBe(GameRoundOutcome::Passed);
+});
+
+it('[P13b-11a] lets the clue giver add emoji from the quick row and the full list and remove one, live for the others', function () {
+    p13bSeedEmojiData();
+    ['room' => $room, 'ada' => $ada, 'bob' => $bob, 'round' => $round] = p13bTable(GameKind::Decoded, 'rocket');
+
+    $leader = $this->awaitRealtime($this->signIn($bob, "/games/{$room->id}"));
+    $guesser = $this->awaitRealtime($this->signIn($ada, "/games/{$room->id}"));
+
+    $leader->assertSee('Your word to describe')
+        ->assertSee('rocket')
+        ->assertSee('Describe the word with up to five emoji, without letters or digits.');
+
+    $guesser->assertSee('Bob Leader is giving clues')
+        ->assertPresent('[role="img"][aria-label="No clue yet"]')
+        ->assertPresent('[role="img"][aria-label="6 letters left to find"]')
+        ->assertDontSee('rocket');
+
+    $leader->click('[aria-label="Add an emoji"]')
+        ->assertVisible('[role="menuitem"]:has-text("👍")')
+        ->assertSee('More emoji…')
+        ->click('[role="menuitem"]:has-text("👍")')
+        ->assertVisible('[aria-label="Remove 👍"]');
+
+    $guesser->assertPresent('[role="img"][aria-label="Clue: 👍"]');
+
+    $leader->assertNotPresent('[role="menu"]')
+        ->click('[aria-label="Add an emoji"]')
+        ->assertSee('More emoji…')
+        ->click('More emoji…')
+        ->assertVisible('button[frimousse-emoji][aria-label="Rocket"]')
+        ->click('button[frimousse-emoji][aria-label="Rocket"]')
+        ->assertNotPresent('[role="dialog"]')
+        ->assertVisible('[aria-label="Remove 🚀"]');
+
+    $guesser->assertPresent('[role="img"][aria-label="Clue: 👍 🚀"]');
+
+    $leader->click('[aria-label="Add an emoji"]')
+        ->assertSee('More emoji…')
+        ->click('More emoji…')
+        ->assertVisible('button[frimousse-emoji][aria-label="Full moon"]')
+        ->click('button[frimousse-emoji][aria-label="Full moon"]')
+        ->assertNotPresent('[role="dialog"]')
+        ->assertVisible('[aria-label="Remove 🌕"]');
+
+    $guesser->assertPresent('[role="img"][aria-label="Clue: 👍 🚀 🌕"]');
+
+    $leader->click('[aria-label="Remove 👍"]')
+        ->assertNotPresent('[aria-label="Remove 👍"]')
+        ->assertCount('[aria-label^="Remove "]', 2);
+
+    $guesser->assertPresent('[role="img"][aria-label="Clue: 🚀 🌕"]');
+
+    expect($round->fresh()->clue)->toBe(['🚀', '🌕']);
+});
+
+it('[P13b-11b] refuses a keycap as a clue and offers no sixth slot', function () {
+    p13bSeedEmojiData();
+    ['room' => $room, 'ada' => $ada, 'bob' => $bob, 'round' => $round] = p13bTable(GameKind::Decoded, 'rocket', [
+        'clue' => ['👍', '👏', '🎉', '🤔'],
+    ]);
+
+    $leader = $this->awaitRealtime($this->signIn($bob, "/games/{$room->id}"));
+    $guesser = $this->awaitRealtime($this->signIn($ada, "/games/{$room->id}"));
+
+    $guesser->assertPresent('[role="img"][aria-label="Clue: 👍 👏 🎉 🤔"]');
+
+    $leader->assertCount('[aria-label^="Remove "]', 4)
+        ->click('[aria-label="Add an emoji"]')
+        ->assertSee('More emoji…')
+        ->click('More emoji…')
+        ->assertVisible('button[frimousse-emoji][aria-label="Keycap: 1"]')
+        ->click('button[frimousse-emoji][aria-label="Keycap: 1"]')
+        ->assertSee('Use emoji only, without letters or digits.')
+        ->assertNotPresent('[role="dialog"]')
+        ->assertCount('[aria-label^="Remove "]', 4);
+
+    expect($round->fresh()->clue)->toBe(['👍', '👏', '🎉', '🤔']);
+
+    $leader->click('[aria-label="Add an emoji"]')
+        ->assertSee('More emoji…')
+        ->click('More emoji…')
+        ->assertVisible('button[frimousse-emoji][aria-label="Rocket"]')
+        ->click('button[frimousse-emoji][aria-label="Rocket"]')
+        ->assertCount('[aria-label^="Remove "]', 5)
+        ->assertNotPresent('[aria-label="Add an emoji"]');
+
+    $guesser->assertPresent('[role="img"][aria-label="Clue: 👍 👏 🎉 🤔 🚀"]');
+
+    expect($round->fresh()->clue)->toBe(['👍', '👏', '🎉', '🤔', '🚀']);
+});
+
+it('[P13b-11c] lets a guesser solve a Decoded round from the clue', function () {
+    ['room' => $room, 'ada' => $ada, 'adaPlayer' => $adaPlayer, 'bob' => $bob, 'round' => $round] = p13bTable(GameKind::Decoded, 'rocket', [
+        'clue' => ['🚀', '🌕'],
+    ]);
+    $chat = 'section[aria-labelledby="game-guesses"]';
+
+    $leader = $this->awaitRealtime($this->signIn($bob, "/games/{$room->id}"));
+    $guesser = $this->awaitRealtime($this->signIn($ada, "/games/{$room->id}"));
+
+    $leader->assertSee('You know the word, so you cannot guess.')
+        ->assertNotPresent('input[aria-label="Your guess"]');
+
+    $guesser->assertPresent('[role="group"][aria-label="2 online"]')
+        ->assertPresent('[role="img"][aria-label="Clue: 🚀 🌕"]');
+
+    p13bGuess($guesser, 'planet');
+
+    $leader->assertSeeIn($chat, 'planet');
+
+    p13bGuess($guesser, 'Rocket');
+
+    $guesser->assertSee('You found it!');
+
+    foreach ([$leader, $guesser] as $page) {
+        $page->assertSee('Guessed')
+            ->assertSee('rocket')
+            ->assertSee('Ada Host found it!')
+            ->assertNotPresent($chat);
+    }
+
+    expect($round->fresh()->outcome)->toBe(GameRoundOutcome::Guessed)
+        ->and($round->fresh()->winner_player_id)->toBe($adaPlayer->id);
+});
+
+it('[P13b-12a] lets the host end a Decoded round with "Pass"', function () {
+    ['room' => $room, 'ada' => $ada, 'bob' => $bob, 'round' => $round] = p13bTable(GameKind::Decoded, 'rocket');
+
+    $leader = $this->awaitRealtime($this->signIn($bob, "/games/{$room->id}"));
+    $host = $this->awaitRealtime($this->signIn($ada, "/games/{$room->id}"));
+
+    $leader->assertSee('Pass');
+
+    $host->assertPresent('[role="group"][aria-label="2 online"]')
+        ->assertSee('Pass')
+        ->assertDontSee('Give up')
+        ->click('Pass');
+
+    foreach ([$leader, $host] as $page) {
+        $page->assertSeeIn('main [data-slot="badge"]', 'Passed')
+            ->assertSee('rocket')
+            ->assertDontSee('found it!');
+    }
+
+    $host->assertSee('Next round');
+
+    expect($round->fresh()->outcome)->toBe(GameRoundOutcome::Passed)
+        ->and($round->fresh()->winner_player_id)->toBeNull();
+});
+
+it('[P13b-12b] shows "Give up" to the host of a Hangman round and to nobody else', function () {
+    ['room' => $room, 'ada' => $ada, 'bob' => $bob, 'round' => $round] = p13bTable(GameKind::Hangman, 'quartz', [
+        'leader_player_id' => null,
+    ]);
+
+    $member = $this->awaitRealtime($this->signIn($bob, "/games/{$room->id}"));
+    $host = $this->awaitRealtime($this->signIn($ada, "/games/{$room->id}"));
+
+    $member->assertCount('[role="group"][aria-label="Letters"] button', 26)
+        ->assertDontSee('Give up')
+        ->assertNotPresent('button:has-text("Pass")');
+
+    $host->assertPresent('[role="group"][aria-label="2 online"]')
+        ->assertNotPresent('button:has-text("Pass")')
+        ->assertSee('Give up')
+        ->click('Give up');
+
+    foreach ([$member, $host] as $page) {
+        $page->assertSeeIn('main [data-slot="badge"]', 'Passed')
+            ->assertSee('quartz')
+            ->assertNotPresent('[role="group"][aria-label="Letters"]');
+    }
+
+    expect($round->fresh()->outcome)->toBe(GameRoundOutcome::Passed);
+});
+
+it('[P13b-13a] replays the drawing of a Draw & Guess round in the history, read-only', function () {
+    ['room' => $room, 'ada' => $ada, 'adaPlayer' => $adaPlayer] = p13bRoom(GameKind::DrawAndGuess);
+    [$bob, $bobPlayer] = gameRoomMember($room);
+    p13bRenamed($bob, 'Bob Leader');
+    GameRound::factory()
+        ->game(GameKind::DrawAndGuess)
+        ->word('lantern')
+        ->ledBy($bobPlayer)
+        ->ended(GameRoundOutcome::Guessed)
+        ->create([
+            'game_room_id' => $room->id,
+            'winner_player_id' => $adaPlayer->id,
+            'drawing' => [p13bLine()],
+            'drawing_points' => 2,
+        ]);
+    $canvas = '[role="dialog"] canvas[aria-label="Drawing of lantern"]';
+
+    $page = $this->awaitRealtime($this->signIn($ada, "/games/{$room->id}"));
+
+    $page->click('History')
+        ->assertSee('Last rounds')
+        ->assertVisible('[role="dialog"] li button:has-text("lantern")')
+        ->assertSeeIn('[role="dialog"] li button:has-text("lantern")', 'Guessed')
+        ->click('[role="dialog"] li button:has-text("lantern")')
+        ->assertVisible($canvas)
+        ->assertSeeIn('[role="dialog"]', 'Led by Bob Leader')
+        ->assertSeeIn('[role="dialog"]', 'Ada Host found it!')
+        ->assertScript(p13bPixelScript('Drawing of lantern', 400, 300), '23 23 23 255')
+        ->assertScript(p13bPixelScript('Drawing of lantern', 400, 100), '255 255 255 255')
+        ->assertNotPresent('[role="dialog"] [role="toolbar"]')
+        ->assertNotPresent('[role="dialog"] canvas.cursor-crosshair');
+
+    p13bPointer($page, 'pointerdown', [[0.25, 0.2]], 'Drawing of lantern');
+    p13bPointer($page, 'pointermove', [[0.5, 0.2], [0.75, 0.2]], 'Drawing of lantern');
+    p13bPointer($page, 'pointerup', [[0.75, 0.2]], 'Drawing of lantern');
+
+    $page->script('() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve(true))))');
+
+    $page->assertScript(p13bPixelScript('Drawing of lantern', 400, 120), '255 255 255 255')
+        ->assertScript(p13bPixelScript('Drawing of lantern', 400, 300), '23 23 23 255');
+});
+
+it('[P13b-13b] shows the clue of a Decoded round in the history', function () {
+    ['room' => $room, 'ada' => $ada] = p13bRoom(GameKind::Decoded);
+    [$bob, $bobPlayer] = gameRoomMember($room);
+    p13bRenamed($bob, 'Bob Leader');
+    GameRound::factory()
+        ->game(GameKind::DrawAndGuess)
+        ->word('lantern')
+        ->ledBy($bobPlayer)
+        ->ended(GameRoundOutcome::Guessed)
+        ->create(['game_room_id' => $room->id, 'ended_at' => now()->subMinutes(10)]);
+    GameRound::factory()
+        ->game(GameKind::Decoded)
+        ->word('rocket')
+        ->ledBy($bobPlayer)
+        ->ended(GameRoundOutcome::Passed)
+        ->create(['game_room_id' => $room->id, 'clue' => ['🚀', '🌕']]);
+
+    $page = $this->awaitRealtime($this->signIn($ada, "/games/{$room->id}"));
+
+    $page->click('History')
+        ->assertSee('Last rounds')
+        ->assertCount('[role="dialog"] li button', 2)
+        ->assertSeeIn('[role="dialog"] li button:has-text("rocket")', 'Passed')
+        ->click('[role="dialog"] li button:has-text("rocket")')
+        ->assertPresent('[role="dialog"] [role="img"][aria-label="Clue: 🚀 🌕"]')
+        ->assertSeeIn('[role="dialog"]', 'rocket')
+        ->assertSeeIn('[role="dialog"]', 'Led by Bob Leader')
+        ->assertNotPresent('[role="dialog"] canvas')
+        ->click('[role="dialog"] button:has-text("Back")')
+        ->assertCount('[role="dialog"] li button', 2);
 });
