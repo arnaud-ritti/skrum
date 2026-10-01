@@ -100,19 +100,28 @@ function p08bBoardStatements(): string
 }
 
 /**
+ * @param  array<string, mixed>  $snapshot
  * @return array{
  *     keys: string,
  *     fields: string,
  *     myScores: array<int, ?int>,
  *     counts: array<int, int>,
- *     answeredBy: array<int, string>
+ *     answeredBy: array<int, string>,
+ *     results: mixed
  * }
  */
-function p08bHealthSnapshot(mixed $page, Retro $retro): array
+function p08bHealthSnapshot(array $snapshot): array
 {
-    $json = $page->script("() => fetch('/retros/{$retro->id}/snapshot', { headers: { Accept: 'application/json' } }).then((response) => response.json()).then((snapshot) => JSON.stringify({ keys: Object.keys(snapshot.healthCheck).join(','), fields: [...new Set(snapshot.healthCheck.statements.flatMap((statement) => Object.keys(statement)))].sort().join(','), myScores: snapshot.healthCheck.statements.map((statement) => statement.myScore), counts: snapshot.healthCheck.statements.map((statement) => statement.count), answeredBy: snapshot.healthCheck.statements[0].answeredBy }))");
+    $statements = collect($snapshot['healthCheck']['statements']);
 
-    return json_decode((string) $json, true, flags: JSON_THROW_ON_ERROR);
+    return [
+        'keys' => implode(',', array_keys($snapshot['healthCheck'])),
+        'fields' => $statements->flatMap(fn (array $statement): array => array_keys($statement))->unique()->sort()->implode(','),
+        'myScores' => $statements->pluck('myScore')->all(),
+        'counts' => $statements->pluck('count')->all(),
+        'answeredBy' => $statements[0]['answeredBy'],
+        'results' => $snapshot['results'],
+    ];
 }
 
 function p08bOpenSettings(mixed $page): mixed
@@ -293,13 +302,14 @@ it('[P08b-03a] shows who answered and how many, and never a score of someone els
         ->assertNotPresent('[aria-label="Answered"]')
         ->assertNotPresent("{$row} button:has-text(\"Clear\")");
 
-    $carolView = p08bHealthSnapshot($carolPage, $retro);
+    $carolView = p08bHealthSnapshot($this->snapshotOf($carolPage, "/retros/{$retro->id}/snapshot"));
 
     expect($carolView['keys'])->toBe('statements')
         ->and($carolView['fields'])->toBe($fields)
         ->and($carolView['myScores'])->toBe([null, null, null, null, null, null])
         ->and($carolView['counts'])->toBe([1, 0, 0, 0, 0, 0])
-        ->and($carolView['answeredBy'])->toBe([$aliceParticipant->id]);
+        ->and($carolView['answeredBy'])->toBe([$aliceParticipant->id])
+        ->and($carolView['results'])->toBeNull();
 
     $carolPage->click(p08bScore($interaction, 3))
         ->assertAttribute(p08bScore($interaction, 3), 'aria-checked', 'true')
@@ -313,12 +323,13 @@ it('[P08b-03a] shows who answered and how many, and never a score of someone els
         ->assertAttribute(p08bScore($interaction, 3), 'aria-checked', 'false')
         ->assertCount(p08bChecked(), 1);
 
-    $aliceView = p08bHealthSnapshot($alicePage, $retro);
+    $aliceView = p08bHealthSnapshot($this->snapshotOf($alicePage, "/retros/{$retro->id}/snapshot"));
 
     expect($aliceView['fields'])->toBe($fields)
         ->and($aliceView['myScores'])->toBe([7, null, null, null, null, null])
         ->and($aliceView['counts'])->toBe([2, 0, 0, 0, 0, 0])
         ->and($aliceView['answeredBy'])->toHaveCount(2)
+        ->and($aliceView['results'])->toBeNull()
         ->and($retro->healthCheckAnswers()->orderBy('score')->pluck('score')->all())->toBe([3, 7]);
 });
 
@@ -381,11 +392,12 @@ it('[P08b-04] shows counts only and no avatar on an anonymous retro', function (
         ->assertNotPresent('ol > li:has([role="radiogroup"]) img')
         ->assertNotPresent(p08bChecked());
 
-    $bobView = p08bHealthSnapshot($bobPage, $retro);
+    $bobView = p08bHealthSnapshot($this->snapshotOf($bobPage, "/retros/{$retro->id}/snapshot"));
 
     expect($bobView['counts'])->toBe([1, 0, 0, 0, 0, 0])
-        ->and($bobView['answeredBy'])->toBeEmpty()
-        ->and($bobView['myScores'])->toBe([null, null, null, null, null, null]);
+        ->and($bobView['answeredBy'])->toBeArray()->toBeEmpty()
+        ->and($bobView['myScores'])->toBe([null, null, null, null, null, null])
+        ->and($bobView['results'])->toBeNull();
 });
 
 it('[P08b-05a] disables the score buttons for everyone when the board is closed for editing', function () {
