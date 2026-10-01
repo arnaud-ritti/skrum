@@ -84,7 +84,28 @@ function p08cTextAnswers(string $question): string
     return "[...document.querySelectorAll('{$answers}')].map((answer) => answer.firstChild.textContent).join(' | ')";
 }
 
-it('[P08c-01] creates a single choice, a multiple choice and a free text survey that a guest sees without reloading', function () {
+/**
+ * @param  array<string, mixed>  $snapshot
+ * @return array<string, mixed>
+ */
+function p08cSurveySent(array $snapshot, string $question): array
+{
+    return collect($snapshot['surveys'])->firstOrFail('question', $question);
+}
+
+function p08cAwaitShowVoters(mixed $page, string $question): mixed
+{
+    $actions = p08cCard($question).' [aria-label="Survey actions"]';
+
+    $page->click($actions)
+        ->assertAriaAttribute('[role="menuitemcheckbox"]', 'checked', 'true')
+        ->keys('[role="menu"]', 'Escape')
+        ->assertNotPresent('[role="menu"]');
+
+    return $page;
+}
+
+it('[P08c-01]creates a single choice, a multiple choice and a free text survey that a guest sees without reloading', function () {
     [$retro, $alice] = p08cBoard();
     $single = p08cCard('How was the sprint?');
     $multiple = p08cCard('Which practices helped?');
@@ -275,8 +296,15 @@ it('[P08c-02c] lists the free text answers, sorted by text and without names, on
         ->assertSeeIn($card, '1 response');
 
     $carolPage->assertSeeIn($card, '1 response')
-        ->assertNotPresent($list)
-        ->assertScript('document.documentElement.outerHTML.includes("Shorter standups")', false);
+        ->assertNotPresent($list);
+
+    $carolSnapshot = $this->snapshotOf($carolPage, "/retros/{$retro->id}/snapshot");
+    $sent = p08cSurveySent($carolSnapshot, 'What should we try next?');
+
+    expect($sent['responseCount'])->toBe(1)
+        ->and($sent['resultsVisible'])->toBeFalse()
+        ->and($sent['textAnswers'])->toBeNull()
+        ->and(json_encode($carolSnapshot, JSON_THROW_ON_ERROR))->not->toContain('Shorter standups');
 
     $carolPage->fill($input, 'Automate the changelog')
         ->click("{$card} button:has-text(\"Submit\")")
@@ -364,8 +392,20 @@ it('[P08c-04a] shows who answered, and who wrote a free text answer, only once t
         ->assertPresent('[role="menuitemcheckbox"]')
         ->click('[role="menuitemcheckbox"]')
         ->assertNotPresent('[role="menu"]')
-        ->assertEnabled("{$single} [aria-label=\"Survey actions\"]")
+        ->assertEnabled("{$single} [aria-label=\"Survey actions\"]");
+
+    p08cAwaitShowVoters($alicePage, 'How was the sprint?')
         ->assertNotPresent("{$single} img");
+
+    foreach ([$alicePage, $carolPage] as $page) {
+        $sent = p08cSurveySent($this->snapshotOf($page, "/retros/{$retro->id}/snapshot"), 'How was the sprint?');
+
+        expect($sent['showVoters'])->toBeTrue()
+            ->and($sent['resultsVisible'])->toBeFalse()
+            ->and($sent['responseCount'])->toBe(1)
+            ->and(array_column($sent['options'], 'count'))->toBe([null, null, null])
+            ->and(array_column($sent['options'], 'voters'))->toBe([null, null, null]);
+    }
 
     $alicePage->click("{$great} button")
         ->assertSeeIn($great, '100% · 2')
@@ -387,6 +427,17 @@ it('[P08c-04a] shows who answered, and who wrote a free text answer, only once t
         ->click('[role="menuitemcheckbox"]')
         ->assertNotPresent('[role="menu"]')
         ->assertEnabled("{$text} [aria-label=\"Survey actions\"]");
+
+    p08cAwaitShowVoters($alicePage, 'What should we try next?');
+
+    $carolSnapshot = $this->snapshotOf($carolPage, "/retros/{$retro->id}/snapshot");
+    $sent = p08cSurveySent($carolSnapshot, 'What should we try next?');
+
+    expect($sent['showVoters'])->toBeTrue()
+        ->and($sent['resultsVisible'])->toBeFalse()
+        ->and($sent['responseCount'])->toBe(1)
+        ->and($sent['textAnswers'])->toBeNull()
+        ->and(json_encode($carolSnapshot, JSON_THROW_ON_ERROR))->not->toContain('Shorter standups');
 
     $carolPage->assertNotPresent($answers)
         ->assertDontSeeIn($text, 'Shorter standups');
@@ -456,8 +507,16 @@ it('[P08c-05] hides the reactions and comments of a survey from someone who has 
         ->assertDontSeeIn($card, 'Pairing saved us')
         ->assertNotPresent("{$card} [aria-label^=\"🎉\"]")
         ->assertNotPresent("{$card} [aria-label=\"Add a reaction\"]")
-        ->assertNotPresent($comments)
-        ->assertScript('document.documentElement.outerHTML.includes("Pairing saved us")', false);
+        ->assertNotPresent($comments);
+
+    $carolSnapshot = $this->snapshotOf($carolPage, "/retros/{$retro->id}/snapshot");
+    $sent = p08cSurveySent($carolSnapshot, 'How was the sprint?');
+
+    expect($sent['resultsVisible'])->toBeFalse()
+        ->and($sent['commentCount'])->toBe(1)
+        ->and($sent['comments'])->toBe([])
+        ->and($sent['reactions'])->toBe([])
+        ->and(json_encode($carolSnapshot, JSON_THROW_ON_ERROR))->not->toContain('Pairing saved us');
 
     $carolPage->click("{$fine} button")
         ->assertSeeIn($fine, '50% · 1')
