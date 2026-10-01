@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Whiteboards;
 
 use App\Actions\Whiteboards\OrderWhiteboardElements;
 use App\Actions\Whiteboards\PresentWhiteboardElement;
+use App\Actions\Whiteboards\WhiteboardGuard;
 use App\Actions\Whiteboards\WriteWhiteboardElements;
 use App\Http\Controllers\Controller;
 use App\Models\Whiteboard;
@@ -43,6 +44,8 @@ class WhiteboardElementsController extends Controller
     public function update(Request $request, Whiteboard $board, WriteWhiteboardElements $writeWhiteboardElements): JsonResponse
     {
         $member = WhiteboardMember::current($request);
+
+        WhiteboardGuard::notLocked($board, $member);
 
         $payload = json_decode($request->getContent(), true);
 

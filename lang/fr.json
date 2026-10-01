@@ -1825,5 +1825,6 @@
     "Delete :title": "Supprimer :title",
     "Duplicate this board": "Dupliquer ce tableau",
     "Save as template": "Enregistrer comme modèle",
-    "Everyone in the workspace can start a board from it.": "Tous les membres de l'espace de travail peuvent créer un tableau à partir de ce modèle."
+    "Everyone in the workspace can start a board from it.": "Tous les membres de l'espace de travail peuvent créer un tableau à partir de ce modèle.",
+    "This board is locked.": "Ce tableau est verrouillé."
 }

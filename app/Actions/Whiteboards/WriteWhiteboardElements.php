@@ -36,6 +36,8 @@ class WriteWhiteboardElements
         return DB::transaction(function () use ($board, $member, $rawElements): array {
             $locked = Whiteboard::query()->whereKey($board->id)->lockForUpdate()->firstOrFail();
 
+            WhiteboardGuard::notLocked($locked, $member);
+
             $fromSeq = $locked->seq;
             $seq = $fromSeq;
             $isFacilitator = $locked->isFacilitator($member);

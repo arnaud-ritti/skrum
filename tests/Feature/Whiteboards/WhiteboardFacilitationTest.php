@@ -54,3 +54,17 @@ it('never lets a guest facilitate', function () {
         ->putJson(route('whiteboards.facilitator.update', $board), ['user_id' => $facilitator->id])
         ->assertForbidden();
 });
+
+it('switches follow-me off when the facilitator changes, and leaves the lock alone', function (bool $takesControl) {
+    $board = Whiteboard::factory()->create(['follow_enabled' => true, 'locked' => true]);
+    [$facilitator] = whiteboardFacilitator($board);
+    [$next] = whiteboardMember($board);
+
+    $this->actingAs($takesControl ? $next : $facilitator)
+        ->putJson(route('whiteboards.facilitator.update', $board), ['user_id' => $next->id])
+        ->assertNoContent();
+
+    expect($board->fresh()->follow_enabled)->toBeFalse()
+        ->and($board->fresh()->locked)->toBeTrue()
+        ->and($board->fresh()->facilitator?->user_id)->toBe($next->id);
+})->with(['a hand-over' => false, 'a take-over' => true]);

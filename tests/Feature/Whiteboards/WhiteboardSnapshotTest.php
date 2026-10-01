@@ -1,5 +1,7 @@
 <?php
 
+use App\Enums\WorkspaceRole;
+use App\Models\User;
 use App\Models\Whiteboard;
 use App\Models\WhiteboardElement;
 
@@ -87,4 +89,27 @@ it('gives the server time to the millisecond', function () {
     $serverTime = $this->actingAs($user)->getJson(route('whiteboards.snapshot.show', $board))->json('serverTime');
 
     expect($serverTime)->toMatch('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/');
+});
+
+it('offers the facilitator the people who can take over, by name', function () {
+    $board = Whiteboard::factory()->withGuestAccess()->create();
+    [$user] = whiteboardFacilitator($board);
+    $zoe = teamMember($board->team);
+    $zoe->forceFill(['name' => 'Zoe'])->save();
+    $adam = workspaceManager($board->team->workspace);
+    $adam->forceFill(['name' => 'Adam'])->save();
+    $outsider = User::factory()->create(['name' => 'Olaf']);
+    $board->team->workspace->members()->attach($outsider, ['role' => WorkspaceRole::Member->value]);
+    whiteboardGuest($board);
+
+    $this->actingAs($user)
+        ->getJson(route('whiteboards.snapshot.show', $board))
+        ->assertJsonPath('me.transferCandidates', [
+            ['userId' => $adam->id, 'name' => 'Adam'],
+            ['userId' => $zoe->id, 'name' => 'Zoe'],
+        ]);
+
+    $this->actingAs($zoe)
+        ->getJson(route('whiteboards.snapshot.show', $board))
+        ->assertJsonPath('me.transferCandidates', []);
 });

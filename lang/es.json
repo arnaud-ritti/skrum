@@ -1825,5 +1825,6 @@
     "Delete :title": "Eliminar :title",
     "Duplicate this board": "Duplicar esta pizarra",
     "Save as template": "Guardar como plantilla",
-    "Everyone in the workspace can start a board from it.": "Todas las personas del espacio pueden crear una pizarra a partir de ella."
+    "Everyone in the workspace can start a board from it.": "Todas las personas del espacio pueden crear una pizarra a partir de ella.",
+    "This board is locked.": "Esta pizarra está bloqueada."
 }

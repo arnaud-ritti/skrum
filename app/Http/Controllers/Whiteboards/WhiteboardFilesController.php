@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Whiteboards;
 
 use App\Actions\Whiteboards\SanitizeWhiteboardElement;
+use App\Actions\Whiteboards\WhiteboardGuard;
 use App\Http\Controllers\Controller;
 use App\Models\Whiteboard;
 use App\Models\WhiteboardFile;
@@ -23,6 +24,8 @@ class WhiteboardFilesController extends Controller
     public function store(Request $request, Whiteboard $board): JsonResponse
     {
         $member = WhiteboardMember::current($request);
+
+        WhiteboardGuard::notLocked($board, $member);
 
         $validated = $request->validate([
             'file_id' => ['required', 'string', 'regex:'.SanitizeWhiteboardElement::FileIdPattern],
@@ -45,6 +48,8 @@ class WhiteboardFilesController extends Controller
 
         $file = DB::transaction(function () use ($board, $member, $validated, $upload, $mimeType): WhiteboardFile {
             $locked = Whiteboard::query()->whereKey($board->id)->lockForUpdate()->firstOrFail();
+
+            WhiteboardGuard::notLocked($locked, $member);
 
             if ((int) $locked->files()->sum('size') + $upload->getSize() > Whiteboard::MaxStorageBytes) {
                 throw ValidationException::withMessages(['file' => __('This board has reached its image storage limit.')]);

@@ -2,6 +2,8 @@
 
 namespace App\Actions\Whiteboards;
 
+use App\Enums\WorkspaceRole;
+use App\Models\User;
 use App\Models\Whiteboard;
 use App\Models\WhiteboardElement;
 use App\Models\WhiteboardMember;
@@ -29,7 +31,8 @@ use App\Models\WhiteboardMember;
  *         isGuest: bool,
  *         isFacilitator: bool,
  *         canTakeControl: bool,
- *         canDelete: bool
+ *         canDelete: bool,
+ *         transferCandidates: array<int, array{userId: string, name: string}>
  *     },
  *     members: array<int, array{id: string, name: string, avatarUrl: string, isGuest: bool}>,
  *     elements: array<int, array<string, mixed>>,
@@ -82,6 +85,7 @@ class BuildWhiteboardSnapshot
                 'isFacilitator' => $isFacilitator,
                 'canTakeControl' => ! $isGuest && ! $isFacilitator,
                 'canDelete' => $isFacilitator || $isManager,
+                'transferCandidates' => $isFacilitator && ! $isGuest ? $this->transferCandidates($board, $viewer) : [],
             ],
             'members' => $board->members
                 ->map(fn (WhiteboardMember $member): array => [
@@ -102,6 +106,28 @@ class BuildWhiteboardSnapshot
             ],
             'serverTime' => now()->utc()->format('Y-m-d\TH:i:s.v\Z'),
         ];
+    }
+
+    /**
+     * @return array<int, array{userId: string, name: string}>
+     */
+    private function transferCandidates(Whiteboard $board, WhiteboardMember $viewer): array
+    {
+        $team = $board->team;
+
+        $managerIds = $team->workspace->members()
+            ->wherePivotIn('role', [WorkspaceRole::Owner->value, WorkspaceRole::Admin->value])
+            ->pluck('users.id');
+
+        return User::query()
+            ->where(fn ($query) => $query
+                ->whereIn('id', $team->members()->select('users.id'))
+                ->orWhereIn('id', $managerIds))
+            ->when($viewer->user_id !== null, fn ($query) => $query->whereKeyNot($viewer->user_id))
+            ->orderBy('name')
+            ->get(['id', 'name'])
+            ->map(fn (User $user): array => ['userId' => $user->id, 'name' => $user->name])
+            ->all();
     }
 
     /**

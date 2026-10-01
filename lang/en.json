@@ -1581,5 +1581,6 @@
     "Delete :title": "Delete :title",
     "Duplicate this board": "Duplicate this board",
     "Save as template": "Save as template",
-    "Everyone in the workspace can start a board from it.": "Everyone in the workspace can start a board from it."
+    "Everyone in the workspace can start a board from it.": "Everyone in the workspace can start a board from it.",
+    "This board is locked.": "This board is locked."
 }

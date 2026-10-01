@@ -313,3 +313,30 @@ it('throttles writes with the whiteboard limiter', function () {
     expect(Route::getRoutes()->getByName('whiteboards.elements.update')->gatherMiddleware())
         ->toContain('throttle:whiteboard-writes');
 });
+
+it('rejects a guest who deletes, moves or unlocks a locked element and hands back the stored copy', function (array $change) {
+    $board = Whiteboard::factory()->withGuestAccess()->create(['seq' => 1]);
+    whiteboardFacilitator($board);
+    $guest = whiteboardGuest($board);
+    $frame = sceneElement(['id' => 'frame', 'locked' => true, 'x' => 7]);
+    WhiteboardElement::factory()->create([
+        'whiteboard_id' => $board->id, 'element_id' => 'frame', 'version_nonce' => 100, 'data' => $frame,
+    ]);
+
+    writeElements($this->withCookies(whiteboardGuestCookie($guest))->withCredentials(), $board, [[...$frame, 'version' => 2, ...$change]])
+        ->assertOk()
+        ->assertJsonPath('seq', 1)
+        ->assertJsonPath('rejected.0.reason', 'locked')
+        ->assertJsonPath('rejected.0.element', $frame);
+
+    $stored = $board->elements()->sole();
+
+    expect($stored->data)->toEqual($frame)
+        ->and($stored->is_deleted)->toBeFalse();
+
+    Event::assertNotDispatched(WhiteboardElementsChanged::class);
+})->with([
+    'delete' => [['isDeleted' => true]],
+    'move' => [['x' => 500]],
+    'unlock' => [['locked' => false]],
+]);

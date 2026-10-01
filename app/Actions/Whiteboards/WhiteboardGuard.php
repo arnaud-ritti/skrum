@@ -5,6 +5,7 @@ namespace App\Actions\Whiteboards;
 use App\Models\Whiteboard;
 use App\Models\WhiteboardMember;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
 class WhiteboardGuard
 {
@@ -24,6 +25,24 @@ class WhiteboardGuard
         }
 
         throw new AuthorizationException(__('Guests cannot do this.'));
+    }
+
+    /**
+     * A 403 with `errors.locked`: the client must tell a locked board, on
+     * which it stays, from an access that ended (spec §11.2).
+     */
+    public static function notLocked(Whiteboard $board, WhiteboardMember $member): void
+    {
+        if (! $board->locked || $board->isFacilitator($member)) {
+            return;
+        }
+
+        $message = __('This board is locked.');
+
+        throw new HttpResponseException(response()->json([
+            'message' => $message,
+            'errors' => ['locked' => [$message]],
+        ], 403));
     }
 
     public static function canDelete(Whiteboard $board, WhiteboardMember $member): void
