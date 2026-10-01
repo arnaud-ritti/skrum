@@ -1,5 +1,7 @@
 # Plan 17c — whiteboard facilitation: walkthrough
 
+> **Note, 2026-10-01 — dot voting was removed.** After this walkthrough was run the product owner decided to remove dot voting (and private writing) from the whiteboard. Sections 5, 6 and 7 below, the lines B7.x and V/C/S lines they hold, and the voting parts of R2, G5 and of the "Result" section describe a feature that no longer exists; they are kept as the record of what was observed on 2026-10-01 at e6ab183 and 1666178 and are not to be replayed. Sections 1 to 4 (timer, board lock, element lock, follow-me), B5.x, B6.x and the regression lines still apply.
+
 Run on 2026-10-01 in Chrome against the local Sail stack, at commit e6ab183, on a fresh board "Walkthrough 17c" (`01a0f785-c6a2-72a6-825b-9026652a0a6b`). Member A = Fran Facilitator on `http://localhost`; guest B = "Guest Gia" on `http://127.0.0.1` (separate cookie jar, same Chrome). Ticked lines were observed; unticked lines carry the reason. Each line reads Setup, then Action, then Expected; the lines named B5.x, B6.x and B7.x are the browser checks of plan 17c, Tasks 5 to 7.
 
 ## Result
@@ -104,6 +106,8 @@ Run `vendor/bin/sail artisan migrate --no-interaction` and `npm run build`. Acco
 
 ## 5. Given an open voting session, then no payload received by any member contains another member's votes or any total, and a member cannot exceed their budget
 
+**Removed on 2026-10-01** with dot voting. Record of the run, not to be replayed.
+
 The secrecy invariant itself is proved by `WhiteboardVotingSecrecyTest` over every surface (snapshot, element fetch, write responses, broadcasts, versions, logs), not by this replay; the lines below observe it from the browser.
 
 - [x] **V5.1** Setup: a board with at least three sticky notes. Action: A opens a vote with 3 votes; B votes three times. In A's tab read `GET snapshot` and `GET vote-sessions/<id>` by `fetch`, and watch A's page. Expected: A's `voting.myVotes` is empty, there is no total and no other member's vote anywhere in the two bodies; B's fourth vote answers 422. — four notes in scope; no `count`, no total and no trace of the guest in A's two bodies; B's fourth vote 422 "You have no votes left."
@@ -118,6 +122,8 @@ The secrecy invariant itself is proved by `WhiteboardVotingSecrecyTest` over eve
 
 ## 6. Given a closed session, then every member sees the same counts on notes and the same ranked list
 
+**Removed on 2026-10-01** with dot voting. Record of the run, not to be replayed.
+
 - [x] **C6.1** Setup: the vote of section 5 holds votes from A and B. Action: A closes it. Expected: A and B show the same counts on the notes and the same ranked list. — "1. Alpha 2 votes, 2. Beta 2 votes" and a badge "2" on each, in both
 
 - [x] **B7.8** A closes the vote: in A and B the controls become count badges with the same numbers, and the results panel opens beside the canvas (the canvas shrinks; nothing is covered) with the same ranked list. "Show on the board" centres the note. A deleted note's entry has its button disabled. — re-check at 1666178: disabled in A within 50 ms of the delete and in B, enabled again in both after A's undo; "Show on the board" still centres a note; controls becoming badges and the panel opening were seen again. First run at e6ab183, **defect 3**, since fixed: disabled in B, still enabled in A, who deleted the note. Everything else on the line was observed ("Show on the board" centred the note; the animation is slow in a background tab)
@@ -126,6 +132,8 @@ The secrecy invariant itself is proved by `WhiteboardVotingSecrecyTest` over eve
 
 
 ## 7. Given an open session, when a sticky in scope has its text changed, then the write is rejected
+
+**Removed on 2026-10-01** with dot voting. Record of the run, not to be replayed. The fix found here for a note that somebody else resized (B7.5, the note keeps its height when its text is edited) is in the sync and stays.
 
 - [x] **S7.1** Setup: an open vote with a sticky in scope. Action: B sends a `PUT elements` by `fetch` with the sticky's bound text element, its `version` raised by one and its `text` and `originalText` changed. Expected: the response is HTTP 200 (not a 4xx) with `seq` equal to `fromSeq`, `rejected.length === 1`, `rejected[0].id` the id of that text element, `rejected[0].reason === 'voting'` and `rejected[0].element` the stored element with its old `text`, as `WhiteboardVotingWritesTest` pins; the text element is unchanged (same `text`, `originalText` and `version`) in `GET snapshot`. — 200, seq 21 = fromSeq 21, one rejected, `voting`, stored text "Alpha", version 7 before and after
 
@@ -151,6 +159,8 @@ The secrecy invariant itself is proved by `WhiteboardVotingSecrecyTest` over eve
 - [x] **G5** Setup: a board with a vote result, a locked shape and a timer. Action: duplicate it. Expected: the copy has no vote, no lock and no timer. — two copies, the second made while the board itself was locked with a timer running: no vote session, `locked` false, `timer_ends_at` null. The locked shape is still locked in the copy (the element's own flag is copied)
 
 ## Feature tests that pin these criteria
+
+Since the removal of 2026-10-01 the files `WhiteboardVotingTest`, `WhiteboardVotingWritesTest`, `WhiteboardVoteModelTest` and `WhiteboardVotingSecrecyTest` no longer exist, and `WhiteboardElementWritesTest` no longer holds a text freeze or a refund. The kept cases they held moved: the facilitation defaults of a board to `WhiteboardModelTest`, the refusal of people outside the team on the timer to `WhiteboardTimerTest`, the second write of an element whose id is "0" to `WhiteboardElementWritesTest`.
 
 - `WhiteboardTimerTest`: shared countdown, the five-minute cut-off of the snapshot.
 - `WhiteboardLockTest`: board lock on writes and uploads, 403 `errors.locked`.

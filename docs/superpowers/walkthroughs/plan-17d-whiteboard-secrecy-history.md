@@ -1,5 +1,7 @@
 # Plan 17d — whiteboard secrecy and history: walkthrough
 
+> **Note, 2026-10-01 — private writing was removed.** After this walkthrough was run the product owner decided to remove private writing (and dot voting) from the whiteboard. The part "Private writing (R9)" below (sections 1 to 4), the "quick vote" regression line, the lines about hidden notes in "Result" and the table of the secrecy invariant at the end describe features that no longer exist; they are kept as the record of what was observed and are not to be replayed. "Version history (R10)" (sections 5 to 7) still applies; what the controller observed for sections 5 and 7 on 2026-10-01, before the removal, is recorded under each.
+
 ## Result
 
 Date: 2026-10-01. Commit under test: 42e59a3. Run in Chrome against the local Sail stack on a fresh board "Walkthrough 17d" (`01a0f80f-4e04-7340-ba8f-dae20c767daa`), created from the Demo Team page with the Blank template.
@@ -46,7 +48,9 @@ Run `vendor/bin/sail artisan migrate --no-interaction` and `npm run build`. Keep
 
 ## Private writing (R9)
 
-### 1. A masked note carries no text for anyone but its author
+**Removed on 2026-10-01.** Sections 1 to 4 are the record of the run at 42e59a3 and are not to be replayed: the switch, the masked notes, the reveal and the "Reveal the notes first." refusals no longer exist.
+
+### 1. A masked note carries no text for anyone but its author (removed)
 
 Given private writing is on, when member A writes a sticky, then member B and the facilitator see a masked note at the same place and no payload they receive contains its text.
 
@@ -56,7 +60,7 @@ Given private writing is on, when member A writes a sticky, then member B and th
 - [ ] B7.5 — Action: before switching private writing on, B writes a note "Old note"; with the switch on, B types more into it, then adds a plain text and a rectangle with a label. Expected: A reads "Old note" and what B types into it, the plain text and the rectangle's label; none of them is masked. — not replayed: no B (see Result)
 - [ ] B7.10 — Action: with the switch on, A and B each type in a hidden note of their own at the same time for a minute. Expected: neither browser shows the "Reconnecting…" banner; each sees its own text and the other's "•••" mark. — not replayed: no B (see Result)
 
-### 2. A masked note cannot be changed by another member
+### 2. A masked note cannot be changed by another member (removed)
 
 Given a masked note, when another member edits or deletes it, then the write is rejected and the author's text is intact.
 
@@ -66,7 +70,7 @@ Given a masked note, when another member edits or deletes it, then the write is 
 - [ ] B7.11 — Action: with the switch on, A and B each add a sticky note within the same second (before either browser has fetched the other's note) and both keep typing in their own. If that cannot be done by hand, from A's console send `PUT elements` with A's masked copy of B's note text at a new index and `version + 1`. Expected: neither sees the toast "Only its author can change a hidden note.", neither text editor closes, and each network log shows a few `PUT elements` at most, not one per flush; `select element_id, data->>'index', version from whiteboard_elements where whiteboard_id = '<id>' order by data->>'index'` shows four different indices once both are idle and both texts are intact; the forced call answers `rejected: []` and B still reads the text. Then B closes the tab while A's canvas still holds B's note: A's `PUT elements` do not repeat. — not replayed: no B (see Result); rests on "takes the new index a canvas gives a hidden note of someone else, and nothing else"
 - [ ] B7.12 — Action: while B is typing in one hidden note of B's, A drags B's other hidden note; then, while A is typing in a note of A's in one tab, A drags B's note from a second tab. Expected: A gets the toast; B's editor stays open; the editor of A's first tab stays open. — not replayed: no B (see Result)
 
-### 3. The reveal shows every note to every member
+### 3. The reveal shows every note to every member (removed)
 
 Given the facilitator reveals, then every member sees every note's text without reloading.
 
@@ -74,7 +78,7 @@ Given the facilitator reveals, then every member sees every note's text without 
 - [ ] Action: A clicks "Reveal the notes". — done by A, with only A's two tabs connected
 - [ ] Expected: every browser shows "Secret idea" within about a second; the deleted note does not come back; the banner and the marks are gone (B7.7). — not replayed for another member. Observed in A's two tabs: banner gone in both without a reload, `privateWriting` false, the deleted note did not come back (still a tombstone in `GET elements?since=0`, absent from the snapshot), and the preview of "V3 hidden with green note", saved while that note was on the board, shows the board without it
 
-### 4. Features that would leak a hidden note are refused
+### 4. Features that would leak a hidden note are refused (removed)
 
 While private writing is on, voting, version history, duplicate and save-as-template answer 422 "Reveal the notes first."
 
@@ -92,6 +96,8 @@ Given edits over more than 5 minutes, then automatic versions exist, at most one
 - [ ] Action: edit, wait five minutes, edit again, wait five minutes; read `select name, seq, created_at from whiteboard_versions where whiteboard_id = '<id>' order by created_at`.
 - [ ] Expected: one automatic version per five-minute window of activity, none while idle (B8.2). The cap of 50 is pinned by `WhiteboardAutomaticVersionsTest` ("keeps the last fifty automatic versions and every named one") and not replayed by hand (B8.9). — not replayed. Observed without a worker: the first write queued `StoreAutomaticWhiteboardVersion` with `available_at` five minutes later, and so did the first write after each saved or "Before restore" version; no automatic version exists. `WhiteboardAutomaticVersionsTest` passes at 42e59a3 (run with `WhiteboardPrivateWritingTest` and `WhiteboardVersionsTest`: 52 passed)
 
+Observed by the controller in Chrome on 2026-10-01, before the removal of dot voting and private writing: after the queue worker was restarted, it created one automatic version of the board. The five-minute cadence over several windows of activity was not observed, so the lines above stay unticked.
+
 ### 6. Restore
 
 Given a version, when the facilitator restores it, then every connected browser shows that scene and a "Before restore" version exists that restores the prior state.
@@ -108,7 +114,11 @@ A guest gets 403 on every version endpoint.
 - [ ] Action: from the guest's console, the seven version requests (`GET versions`, `POST versions`, `GET`, `PATCH`, `DELETE versions/<id>`, `POST …/restore`, `POST …/copy`).
 - [ ] Expected: 403 "Guests cannot do this." for each; no history button.
 
+Observed by the controller in Chrome on 2026-10-01, before the removal of dot voting and private writing, with a guest on the board and the id of a real version: all seven version requests (`GET versions`, `POST versions`, `GET`, `PATCH` and `DELETE versions/<id>`, `POST …/restore`, `POST …/copy`) answered 403 "Guests cannot do this."; the guest's top bar had no history button; and the guest's change of the settings (`PATCH settings`) answered 403. The three lines above were not ticked by the walkthrough agent and are covered by this observation.
+
 ## Feature tests that pin these criteria
+
+Since the removal of 2026-10-01: `WhiteboardPrivateWritingTest` and `WhiteboardPrivateWritingSwitchTest` no longer exist, `WhiteboardSecrecyModelTest` is now `WhiteboardVersionModelTest`, and the table below (the surfaces of the secrecy invariant) names tests that were removed with the feature. Version history is pinned by `WhiteboardAutomaticVersionsTest`, `WhiteboardVersionsTest`, `WhiteboardVersionRestoreTest` and `WhiteboardVersionModelTest`.
 
 - `WhiteboardPrivateWritingTest`
 - `WhiteboardPrivateWritingSwitchTest`
