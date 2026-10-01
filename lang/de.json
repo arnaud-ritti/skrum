@@ -1826,5 +1826,12 @@
     "Duplicate this board": "Dieses Board duplizieren",
     "Save as template": "Als Vorlage speichern",
     "Everyone in the workspace can start a board from it.": "Alle im Workspace können daraus ein Board starten.",
-    "This board is locked.": "Dieses Board ist gesperrt."
+    "This board is locked.": "Dieses Board ist gesperrt.",
+    "A vote is already open.": "Es läuft bereits eine Abstimmung.",
+    "This vote is closed.": "Diese Abstimmung ist geschlossen.",
+    "Choose a frame of this board.": "Wählen Sie einen Rahmen dieses Boards.",
+    "There are no sticky notes to vote on.": "Es gibt keine Haftnotizen, über die abgestimmt werden kann.",
+    "Only one vote per note is allowed.": "Pro Haftnotiz ist nur eine Stimme erlaubt.",
+    "This note is not part of the vote.": "Diese Haftnotiz gehört nicht zur Abstimmung.",
+    "Close the vote first.": "Schließen Sie zuerst die Abstimmung."
 }

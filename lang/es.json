@@ -1826,5 +1826,12 @@
     "Duplicate this board": "Duplicar esta pizarra",
     "Save as template": "Guardar como plantilla",
     "Everyone in the workspace can start a board from it.": "Todas las personas del espacio pueden crear una pizarra a partir de ella.",
-    "This board is locked.": "Esta pizarra está bloqueada."
+    "This board is locked.": "Esta pizarra está bloqueada.",
+    "A vote is already open.": "Ya hay una votación abierta.",
+    "This vote is closed.": "Esta votación está cerrada.",
+    "Choose a frame of this board.": "Elige un marco de esta pizarra.",
+    "There are no sticky notes to vote on.": "No hay notas adhesivas sobre las que votar.",
+    "Only one vote per note is allowed.": "Solo se permite un voto por nota.",
+    "This note is not part of the vote.": "Esta nota no forma parte de la votación.",
+    "Close the vote first.": "Cierra primero la votación."
 }

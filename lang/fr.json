@@ -1826,5 +1826,12 @@
     "Duplicate this board": "Dupliquer ce tableau",
     "Save as template": "Enregistrer comme modèle",
     "Everyone in the workspace can start a board from it.": "Tous les membres de l'espace de travail peuvent créer un tableau à partir de ce modèle.",
-    "This board is locked.": "Ce tableau est verrouillé."
+    "This board is locked.": "Ce tableau est verrouillé.",
+    "A vote is already open.": "Un vote est déjà en cours.",
+    "This vote is closed.": "Ce vote est clos.",
+    "Choose a frame of this board.": "Choisissez un cadre de ce tableau.",
+    "There are no sticky notes to vote on.": "Il n'y a aucun post-it sur lequel voter.",
+    "Only one vote per note is allowed.": "Un seul vote par post-it est autorisé.",
+    "This note is not part of the vote.": "Ce post-it ne fait pas partie du vote.",
+    "Close the vote first.": "Clôturez d'abord le vote."
 }

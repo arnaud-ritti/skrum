@@ -9,6 +9,9 @@ use App\Models\WhiteboardElement;
 use App\Models\WhiteboardMember;
 
 /**
+ * @phpstan-import-type Voting from PresentWhiteboardVoting
+ * @phpstan-import-type PastVote from PresentWhiteboardVoting
+ *
  * @phpstan-type Snapshot array{
  *     board: array{
  *         id: string,
@@ -37,6 +40,8 @@ use App\Models\WhiteboardMember;
  *     members: array<int, array{id: string, name: string, avatarUrl: string, isGuest: bool}>,
  *     elements: array<int, array<string, mixed>>,
  *     seq: int,
+ *     voting: ?Voting,
+ *     votingHistory: list<PastVote>,
  *     links: array{team: ?string},
  *     serverTime: string
  * }
@@ -48,6 +53,7 @@ class BuildWhiteboardSnapshot
     public function __construct(
         private PresentWhiteboardElement $presentWhiteboardElement,
         private OrderWhiteboardElements $orderWhiteboardElements,
+        private PresentWhiteboardVoting $presentWhiteboardVoting,
     ) {}
 
     /**
@@ -101,6 +107,8 @@ class BuildWhiteboardSnapshot
                 ->map(fn (WhiteboardElement $element): array => $this->presentWhiteboardElement->handle($element, $viewer))
                 ->all(),
             'seq' => $board->seq,
+            'voting' => $this->presentWhiteboardVoting->current($board, $viewer),
+            'votingHistory' => $this->presentWhiteboardVoting->history($board, $viewer),
             'links' => [
                 'team' => $isGuest ? null : route('teams.show', [$board->team->workspace, $board->team], absolute: false),
             ],

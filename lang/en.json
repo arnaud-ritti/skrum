@@ -1582,5 +1582,12 @@
     "Duplicate this board": "Duplicate this board",
     "Save as template": "Save as template",
     "Everyone in the workspace can start a board from it.": "Everyone in the workspace can start a board from it.",
-    "This board is locked.": "This board is locked."
+    "This board is locked.": "This board is locked.",
+    "A vote is already open.": "A vote is already open.",
+    "This vote is closed.": "This vote is closed.",
+    "Choose a frame of this board.": "Choose a frame of this board.",
+    "There are no sticky notes to vote on.": "There are no sticky notes to vote on.",
+    "Only one vote per note is allowed.": "Only one vote per note is allowed.",
+    "This note is not part of the vote.": "This note is not part of the vote.",
+    "Close the vote first.": "Close the vote first."
 }

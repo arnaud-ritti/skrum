@@ -5,6 +5,7 @@ use App\Events\Whiteboards\WhiteboardChanged;
 use App\Events\Whiteboards\WhiteboardDeleted;
 use App\Events\Whiteboards\WhiteboardElementsChanged;
 use App\Events\Whiteboards\WhiteboardTimerChanged;
+use App\Events\Whiteboards\WhiteboardVoteChanged;
 use Illuminate\Broadcasting\PresenceChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
@@ -43,4 +44,12 @@ it('carries the end time in the timer event', function () {
         ->and($running->broadcastOn()->name)->toBe('presence-whiteboard.b')
         ->and($running->broadcastWith())->toBe(['timerEndsAt' => '2026-10-11T10:00:30+00:00'])
         ->and($stopped->broadcastWith())->toBe(['timerEndsAt' => null]);
+});
+
+it('carries only the session and the progress in the vote event', function () {
+    $event = new WhiteboardVoteChanged('b', 'session-id', 2);
+
+    expect($event->broadcastAs())->toBe('vote.changed')
+        ->and($event->broadcastOn()->name)->toBe('presence-whiteboard.b')
+        ->and($event->broadcastWith())->toBe(['sessionId' => 'session-id', 'finishedCount' => 2]);
 });

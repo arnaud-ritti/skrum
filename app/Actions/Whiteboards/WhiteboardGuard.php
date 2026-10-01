@@ -4,8 +4,10 @@ namespace App\Actions\Whiteboards;
 
 use App\Models\Whiteboard;
 use App\Models\WhiteboardMember;
+use App\Models\WhiteboardVoteSession;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Validation\ValidationException;
 
 class WhiteboardGuard
 {
@@ -43,6 +45,24 @@ class WhiteboardGuard
             'message' => $message,
             'errors' => ['locked' => [$message]],
         ], 403));
+    }
+
+    public static function openVoteSession(WhiteboardVoteSession $session): void
+    {
+        if ($session->isOpen()) {
+            return;
+        }
+
+        throw ValidationException::withMessages(['votes' => __('This vote is closed.')]);
+    }
+
+    public static function noOpenVoteSession(Whiteboard $board): void
+    {
+        if (! $board->voteSessions()->whereNull('closed_at')->exists()) {
+            return;
+        }
+
+        throw ValidationException::withMessages(['votes' => __('A vote is already open.')]);
     }
 
     public static function canDelete(Whiteboard $board, WhiteboardMember $member): void
