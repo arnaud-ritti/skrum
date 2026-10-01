@@ -104,7 +104,9 @@ In `tests/Browser/Support/`:
 | `dragWithKeyboard($page, $handle, array $keys)` | Moves a sortable item with the keyboard (focus, Space, arrows, Space). |
 
 - **Waiting:** no fixed sleeps. The plugin's assertions retry until the timeout, so after `awaitRealtime()` the assertion on the other page is the wait.
-- **Drag-and-drop:** the boards use dnd-kit with a pointer sensor that needs 6px of movement; the plugin's `drag()` does one press, one move and one release, which is unreliable there. Tests use the keyboard sensor, which the product already supports and documents for screen readers.
+- **Drag-and-drop:** the boards use dnd-kit with a pointer sensor that needs 6px of movement; the plugin's `drag()` does one press, one move and one release, which is unreliable there. Tests use the keyboard sensor, which the product already supports and documents for screen readers. Keys are sent one at a time, and the helper waits for the sensor between them (a turn of the page's event loop after the pick-up, then the next animation frames or the "Moved … to position N." announcement after each arrow): keys sent back to back are lost (spike finding c). These waits follow the page's own events; they are not fixed sleeps.
+- **Reverb process:** the suite's Reverb child process must not write to the test runner's output pipe (spike finding: it keeps the pipe open and hangs a piped run); its output goes to a file that the failure message quotes.
+- **Reconnect time:** after Reverb comes back, the Echo client reconnected after about 13 seconds in the spike, so the browser timeout is 20 seconds.
 - **Guest links:** read from the dialog's input, not from the clipboard.
 - **Arranging data:** tests reuse the existing helpers in `tests/Pest.php` (`retroFacilitator()`, `retroMember()`, `teamMember()`, `workspaceManager()`, `pokerFacilitator()`, `pokerMember()`) and factory states (`RetroFactory::inPhase()`, `withGuestAccess()`, `PokerGameFactory::withGuestAccess()`, `deck()`). They do not use the guest-cookie helpers or the fake presence rosters: guests join through the interface and presence comes from Reverb.
 - **Users** are created with locale `en`.
