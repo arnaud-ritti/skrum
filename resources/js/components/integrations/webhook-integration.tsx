@@ -84,7 +84,10 @@ export function WebhookIntegration({ card, scope, events }: Props) {
         setErrors({});
 
         const label = channelLabel.trim();
-        const body = { url, channel_label: label === '' ? null : label };
+        const body = {
+            ...(url === '' ? {} : { url }),
+            channel_label: label === '' ? null : label,
+        };
 
         try {
             if (connection === null) {
@@ -107,7 +110,11 @@ export function WebhookIntegration({ card, scope, events }: Props) {
             }
 
             setOpen(false);
-            toast.success(t(':provider connected.', { provider: card.label }));
+            toast.success(
+                connection === null
+                    ? t(':provider connected.', { provider: card.label })
+                    : t('Connection saved.'),
+            );
             router.reload({ only: ['providers'] });
         } catch (error) {
             if (error instanceof RetroRequestError && error.status === 422) {
@@ -242,7 +249,7 @@ export function WebhookIntegration({ card, scope, events }: Props) {
                             <Input
                                 id={urlId}
                                 type="url"
-                                required
+                                required={connection === null}
                                 autoComplete="off"
                                 value={url}
                                 onChange={(event) => setUrl(event.target.value)}

@@ -1392,5 +1392,9 @@
     "Failed": "Failed",
     "Queued": "Queued",
     "Page :page of :pages": "Page :page of :pages",
-    "Nothing is sent to :host anymore. Remove the endpoint on your side if you no longer need it.": "Nothing is sent to :host anymore. Remove the endpoint on your side if you no longer need it."
+    "Nothing is sent to :host anymore. Remove the endpoint on your side if you no longer need it.": "Nothing is sent to :host anymore. Remove the endpoint on your side if you no longer need it.",
+    "Could not load the deliveries.": "Could not load the deliveries.",
+    "Board link": "Board link",
+    "Game link": "Game link",
+    "Room invite": "Room invite"
 }

@@ -1638,5 +1638,9 @@
     "Failed": "Fallido",
     "Queued": "En cola",
     "Page :page of :pages": "Página :page de :pages",
-    "Nothing is sent to :host anymore. Remove the endpoint on your side if you no longer need it.": "Ya no se enviará nada a :host. Elimina el endpoint por tu parte si ya no lo necesitas."
+    "Nothing is sent to :host anymore. Remove the endpoint on your side if you no longer need it.": "Ya no se enviará nada a :host. Elimina el endpoint por tu parte si ya no lo necesitas.",
+    "Could not load the deliveries.": "No se pudieron cargar los envíos.",
+    "Board link": "Enlace del tablero",
+    "Game link": "Enlace del juego",
+    "Room invite": "Invitación a la sala"
 }

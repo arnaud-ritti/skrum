@@ -1602,7 +1602,7 @@
     "An action item is completed, in skrum or in a linked tracker.": "Une action à mener est terminée, dans skrum ou dans un outil de suivi lié.",
     "An action item is reopened.": "Une action à mener est rouverte.",
     "A planning poker task gets its final estimate.": "Une tâche de planning poker reçoit son estimation finale.",
-    "The signing secret is missing. Rotate it to continue.": "Le secret de signature est manquant. Faites-en pivoter un nouveau pour continuer.",
+    "The signing secret is missing. Rotate it to continue.": "Le secret de signature est manquant. Renouvelez le secret pour continuer.",
     "Send board links, game invites, results and the events you choose to your own HTTPS endpoint, signed with a secret.": "Envoyez les liens des tableaux, les invitations aux jeux, les résultats et les événements de votre choix à votre propre point de terminaison HTTPS, signés avec un secret.",
     "Paste the URL of an endpoint that accepts POST requests with a JSON body.": "Collez l'URL d'un point de terminaison qui accepte des requêtes POST avec un corps JSON.",
     "Endpoint URL": "URL du point de terminaison",
@@ -1638,5 +1638,9 @@
     "Failed": "Échec",
     "Queued": "En attente",
     "Page :page of :pages": "Page :page sur :pages",
-    "Nothing is sent to :host anymore. Remove the endpoint on your side if you no longer need it.": "Plus rien n'est envoyé à :host. Supprimez le point de terminaison de votre côté si vous n'en avez plus besoin."
+    "Nothing is sent to :host anymore. Remove the endpoint on your side if you no longer need it.": "Plus rien n'est envoyé à :host. Supprimez le point de terminaison de votre côté si vous n'en avez plus besoin.",
+    "Could not load the deliveries.": "Impossible de charger les envois.",
+    "Board link": "Lien du tableau",
+    "Game link": "Lien du jeu",
+    "Room invite": "Invitation à la salle"
 }
