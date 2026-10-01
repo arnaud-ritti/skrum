@@ -556,22 +556,69 @@ it('[P10b-15c] still labels cursors "Participant" and sends unnamed reactions on
         ->assertNotPresent('.lr-label');
 });
 
-it('[P10b-16] shows the scope additions in French after a guest switches language', function () {
-    ['game' => $game] = p10bTable(['auto_reveal' => true]);
-    openPokerRound($game);
+dataset('p10bLocales', [
+    'fr' => ['fr', 'Français', 'Révélation automatique', 'Votes anonymes', 'Vous observez — passez en mode Jouer pour voter', 'Observateurs', 'Révélé automatiquement — tout le monde a voté', 'Minuteur', 'Arrêter le minuteur', "Menu de l'animateur", 'Paramètres…', 'Les jeux de cartes de votre équipe', 'Révéler automatiquement quand tout le monde a voté ou à la fin du minuteur'],
+    'es' => ['es', 'Español', 'Revelado automático', 'Votos anónimos', 'Estás observando: cambia a Jugar para votar', 'Observando', 'Revelado automáticamente — todos votaron', 'Temporizador', 'Detener temporizador', 'Menú del facilitador', 'Ajustes…', 'Las barajas de tu equipo', 'Revelar automáticamente cuando todos hayan votado o termine el temporizador'],
+    'de' => ['de', 'Deutsch', 'Automatisch aufdecken', 'Anonyme Stimmen', 'Du schaust zu – wechsle zu Spielen, um abzustimmen', 'Zuschauer', 'Automatisch aufgedeckt — alle haben abgestimmt', 'Timer', 'Timer stoppen', 'Moderationsmenü', 'Einstellungen…', 'Kartensätze deines Teams', 'Automatisch aufdecken, wenn alle abgestimmt haben oder der Timer abläuft'],
+]);
+
+it('[P10b-16a] translates the spectator, auto-reveal and anonymous strings after a guest switches language', function (string $locale, string $languageName, string $autoReveal, string $anonymousVotes, string $watchingNote, string $watching, string $revealedNote) {
+    ['game' => $game, 'adaPlayer' => $adaPlayer, 'bobPlayer' => $bobPlayer] = p10bTable(['auto_reveal' => true, 'anonymous_votes' => true]);
+    $round = openPokerRound($game);
+    pokerVote($round, $adaPlayer, '3');
+    pokerVote($round, $bobPlayer, '5');
+    $round->forceFill(['revealed_at' => now(), 'reveal_reason' => PokerRevealReason::EveryoneVoted])->save();
 
     $c = $this->awaitRealtime(p10bJoinAsSpectator($game, 'Casey'));
 
     $c->assertSee('Auto-reveal')
         ->assertSee("You're watching — switch to Play to vote")
+        ->assertSee('Revealed automatically — everyone voted')
         ->assertPresent('section[aria-label="Watching"]')
+        ->assertPresent('section[aria-label="Anonymous votes"]')
         ->click('[aria-label="Language"]')
-        ->assertVisible('[role="option"]:has-text("Français")')
-        ->click('[role="option"]:has-text("Français")')
-        ->assertSee('Révélation automatique')
-        ->assertSee('Vous observez — passez en mode Jouer pour voter')
-        ->assertPresent('section[aria-label="Observateurs"]');
-});
+        ->assertVisible("[role=\"option\"]:has-text(\"{$languageName}\")")
+        ->click("[role=\"option\"]:has-text(\"{$languageName}\")")
+        ->assertSee($autoReveal)
+        ->assertSee($anonymousVotes)
+        ->assertSee($watchingNote)
+        ->assertSee($revealedNote)
+        ->assertPresent("section[aria-label=\"{$watching}\"]")
+        ->assertPresent("section[aria-label=\"{$anonymousVotes}\"]")
+        ->assertDontSee("You're watching — switch to Play to vote")
+        ->assertDontSee('Revealed automatically — everyone voted')
+        ->assertNotPresent('section[aria-label="Watching"]')
+        ->assertNotPresent('section[aria-label="Anonymous votes"]');
+})->with('p10bLocales');
+
+it('[P10b-16b] translates the timer menu, the auto-reveal note and the saved decks for a facilitator in their language', function (string $locale, string $languageName, string $autoReveal, string $anonymousVotes, string $watchingNote, string $watching, string $revealedNote, string $timer, string $stopTimer, string $facilitatorMenu, string $settings, string $teamDecks, string $autoRevealNote) {
+    ['game' => $game, 'ada' => $ada] = p10bTable(['auto_reveal' => true]);
+    openPokerRound($game);
+    SavedPokerDeck::factory()->create([
+        'team_id' => $game->team_id,
+        'name' => 'Team scale',
+        'created_by_user_id' => $ada->id,
+    ]);
+    $ada->forceFill(['locale' => $locale])->save();
+
+    $a = $this->awaitRealtime($this->signIn($ada, "/poker/{$game->id}"));
+
+    $a->assertSee($autoReveal)
+        ->assertPresent("[aria-label=\"{$timer}\"]")
+        ->click("[aria-label=\"{$timer}\"]")
+        ->assertSeeIn('[role="menu"]', $stopTimer)
+        ->assertDontSee('Stop timer')
+        ->keys('[role="menu"]', 'Escape')
+        ->assertNotPresent('[role="menu"]')
+        ->click("[aria-label=\"{$facilitatorMenu}\"]")
+        ->assertSee($settings)
+        ->click($settings)
+        ->assertSee($teamDecks)
+        ->assertSee($autoRevealNote)
+        ->assertSee('Team scale')
+        ->assertDontSee("Your team's decks")
+        ->assertDontSee('Reveal automatically when everyone has voted or the timer ends');
+})->with('p10bLocales');
 
 it('[P10b-04] shows named cursors between rounds and lets a player hide theirs', function () {
     ['game' => $game, 'ada' => $ada, 'bob' => $bob] = p10bTable();

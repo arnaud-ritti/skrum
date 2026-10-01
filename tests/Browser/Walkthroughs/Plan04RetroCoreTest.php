@@ -132,6 +132,9 @@ it('[P04-02] hides the cards of other participants behind placeholders during Wr
         [$carolPage, 'Keep the demo on Fridays', ['Ship smaller pull requests', 'Stop skipping code review']],
     ];
 
+    $bobPage->navigate("/retros/{$retro->id}");
+    $this->awaitRealtime($bobPage);
+
     foreach ($views as [$page, $own, $others]) {
         $page->assertCount('article[id^="card-"]', 3)
             ->assertScript($placeholders, 2)
@@ -234,7 +237,7 @@ it('[P04-05a] shows the vote totals and sorts the cards by votes during Discussi
     $slow = plan04Card($retro, $columns[0], $aliceParticipant, 'Slow CI', 1);
     Vote::factory()->create(['retro_id' => $retro->id, 'card_id' => $flaky->id, 'participant_id' => $aliceParticipant->id]);
     Vote::factory()->count(3)->create(['retro_id' => $retro->id, 'card_id' => $slow->id, 'participant_id' => $bobParticipant->id]);
-    $start = plan04Column($columns[0]);
+    $sort = plan04Column($columns[0]).' button:has-text("Sort by votes")';
 
     $page = $this->signIn($bob, "/retros/{$retro->id}");
 
@@ -242,8 +245,9 @@ it('[P04-05a] shows the vote totals and sorts the cards by votes during Discussi
         ->assertPresent("#card-{$flaky->id} [aria-label=\"1 vote\"]")
         ->assertNotPresent('[aria-label="Add a vote"]')
         ->assertScript(plan04CardOrder($columns[0]), "card-{$slow->id},card-{$flaky->id}")
-        ->click("{$start} button[aria-pressed=\"true\"]")
-        ->assertPresent("{$start} button[aria-pressed=\"false\"]")
+        ->assertAriaAttribute($sort, 'pressed', 'true')
+        ->click($sort)
+        ->assertAriaAttribute($sort, 'pressed', 'false')
         ->assertScript(plan04CardOrder($columns[0]), "card-{$flaky->id},card-{$slow->id}");
 });
 

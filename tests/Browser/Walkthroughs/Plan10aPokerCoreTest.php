@@ -152,6 +152,7 @@ it('[P10a-03] rejects a custom deck with a repeated card or without an estimate 
 
     expect(PokerGame::query()->count())->toBe(0);
 });
+
 it('[P10a-04a] adds tasks in order and renders their Markdown safely', function () {
     $game = p10aGame();
     [$ada] = p10aFacilitator($game);
@@ -273,6 +274,7 @@ it('[P10a-06] lets a guest join through the link with a restricted view', functi
         ->assertSee('Add task')
         ->assertNotPresent('[aria-label="Language"]');
 });
+
 it('[P10a-07a] shows the task picked by the facilitator as current to everyone', function () {
     $game = p10aGame(['guest_access_enabled' => true]);
     [$ada] = p10aFacilitator($game);
