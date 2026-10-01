@@ -41,7 +41,7 @@ New table `integration_delivery_payloads` (up-only migration):
 
 **Never stored:** the signing secret, the webhook URL, the full signature.
 
-**Size limit:** when the encoded `message` plus `request_body` exceed 512 KB, no payload row is written and the delivery shows "Content not kept". (Recaps are already capped well below this.)
+**Size limit:** When the message, counted twice (the body repeats it) plus 4 KB of envelope, exceeds 512 KB, no payload row is written when the delivery is queued and the delivery shows "Content not kept". (Recaps are already capped well below this.)
 
 **Retention:** `IntegrationDeliveryPayload` is prunable after **30 days** (`created_at`) through the existing daily `model:prune`. The delivery row keeps its 90-day retention and its metadata (event, status, attempts, response status, error).
 
@@ -50,16 +50,16 @@ New table `integration_delivery_payloads` (up-only migration):
 ### 4.1 Storing payloads
 
 - When a webhook delivery is created (`QueueShare`, `QueueWebhookEvents`, redelivery), its payload row is created in the same transaction with `message` filled.
-- `WebhookClient::send()` updates `request_headers`, `request_body`, `response_status` and `response_excerpt` after each attempt (the last attempt wins).
-- The stored `X-Skrum-Signature` is masked: `sha256=…` followed by its last 6 characters. All other headers are stored as sent (`Content-Type`, `User-Agent`, `X-Skrum-Event`, `X-Skrum-Delivery`, `X-Skrum-Timestamp`, `X-Skrum-Redelivery`).
-- Reading the response: at most 2 048 bytes are read and kept; the rest is discarded unread, as today. The address pinning and redirect refusal of spec 8 §4.5 are unchanged.
+- `WebhookClient::send()` updates `request_headers`, `request_body`, `response_status` and `response_excerpt` after each attempt (the last attempt wins; an attempt that fails before anything is sent, such as an unsafe URL, clears the stored request and response).
+- The stored `X-Skrum-Signature` is masked: `sha256=…` followed by its last 6 characters. An echoed signature in the response excerpt is masked the same way. All other headers are stored as sent (`Content-Type`, `Accept`, `User-Agent`, `X-Skrum-Event`, `X-Skrum-Delivery`, `X-Skrum-Timestamp`, `X-Skrum-Redelivery`).
+- Reading the response: at most 2 048 bytes are read and kept; the rest is discarded unread, as today. The excerpt is collected from curl's write callback; with faked HTTP the response body stands in for it. The address pinning and redirect refusal of spec 8 §4.5 are unchanged.
 
 ### 4.2 Redeliver
 
 `POST …/integrations/{integration}/deliveries/{delivery}/redelivery` by an Owner/Admin:
 
 1. Checks eligibility (§4.3); refuses with **409** and the reason otherwise.
-2. Creates a new delivery row: same `team_id`, `channel`, `kind`, `event`, `team_integration_id`, `subject_type`/`subject_id`; `redelivery_of_id` = the original; `requested_by_user_id` = the current user; status `queued`.
+2. Creates a new delivery row: same `team_id`, `channel`, `kind`, `event`, `subject_type`/`subject_id`; `team_integration_id` = the current webhook connection; `redelivery_of_id` = the root original (a redelivery of a redelivery points to the first delivery of the chain); `requested_by_user_id` = the current user; status `queued`.
 3. Copies the original's `message` into the new payload row.
 4. Queues `DeliverToWebhook` for the new row with the normal share retries (4 tries, backoff 10 s, 60 s, 300 s).
 5. Answers **202** with the presented new delivery.
@@ -75,11 +75,11 @@ When sent, the redelivery:
 ### 4.3 Eligibility
 
 A delivery can be redelivered when all hold:
-- it belongs to this team's webhook integration (else **404**);
+- it belongs to this team's webhook log (`team_id` and channel `webhook`, across reconnections) (else **404**);
 - its payload row still exists (else **409** "This delivery's content is no longer kept.");
 - its status is `sent` or `failed` (a `queued` original is still retrying: **409** "This delivery is still being sent.");
 - the webhook integration is active (else **409** "Turn the webhook back on before redelivering.");
-- no redelivery of the same original is currently queued (else **409** "This delivery is already being redelivered.").
+- no redelivery of the same root original is currently queued (the guard is per root) (else **409** "This delivery is already being redelivered.").
 
 ### 4.4 Viewing
 
@@ -101,7 +101,7 @@ A delivery can be redelivered when all hold:
 - View and redeliver: Owners/Admins only (`TeamPolicy::manageIntegrations`), checked before validation and before any lookup that could reveal existence. Members and guests get **403**.
 - Both routes sit behind `EnsureIntegrationProviderEnabled` for `webhook` (404 when the provider is off) and `scopeBindings()`.
 - Throttles: redeliver `throttle:10,1,webhookRedeliveries` per user; view shares the existing `throttle:60,1,webhookDeliveries`.
-- Payload contents, headers and response excerpts never appear in logs, exception messages, job payloads or `failed_jobs` (jobs carry the delivery id only).
+- Payload contents, headers and response excerpts never appear in logs or exception messages. Share and event jobs are encrypted on the queue (`ShouldBeEncrypted`), so `failed_jobs` never holds their message in clear; the redelivery job carries the delivery id only.
 
 ## 6. Interface
 
@@ -109,6 +109,7 @@ On the webhook card's deliveries panel (`webhook-deliveries-panel.tsx`):
 - each row with `hasContent` shows **View** and, when eligible, **Redeliver**;
 - rows without content show "Content no longer kept" (or "Content not kept" when it was never stored);
 - redeliveries are labelled "Redelivery";
+- redeliveries are excluded from the share lines on the retro, poker and game pages (`LatestDeliveries`), which keep showing the original share; a redelivery's outcome shows in the webhook log only;
 - **View** opens a dialog with two tabs: *Request* (headers table, pretty-printed JSON body, copy button) and *Response* (status and excerpt as plain text);
 - **Redeliver** asks "Send this delivery again to :host?"; on success the panel reloads its first page; a 409 shows its message inline.
 
@@ -135,10 +136,11 @@ Pest feature tests with `Http::fake()` and `Http::preventStrayRequests()`:
 - viewing: Owner/Admin 200 with the documented shape; member and guest 403; another integration's delivery 404; pruned 404; provider disabled 404;
 - redelivery: same `id`/`event`/`occurredAt`/`data`, fresh `sentAt`, valid signature with the current secret, `X-Skrum-Delivery` = original id, `X-Skrum-Redelivery: true`, new row linked by `redelivery_of_id`, payload copied;
 - refusals: pruned, still queued, webhook disabled, redelivery already queued (409 each with its message); throttle 429;
+- a redelivery whose content disappeared fails with "This delivery's content is no longer kept." without counting toward the automatic disabling;
 - a failed redelivery counts toward auto-disable; a successful one resets the counter;
 - an unsafe current URL fails the new row without touching the original;
 - redelivering `action_item.completed` changes no action item and queues no status push;
-- no payload content appears in a failed job's payload;
+- no payload content appears in a failed job's payload (the redelivery job carries the delivery id only; share and event jobs are encrypted);
 - translation keys exist in all four languages.
 
 Manual walkthrough: point a webhook at a request inspector, complete an action item, view the delivery, stop the receiver, complete another, see it fail, restart the receiver, redeliver it, and see the same id with `X-Skrum-Redelivery: true` arrive.
