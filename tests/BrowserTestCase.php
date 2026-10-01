@@ -6,11 +6,13 @@ use Illuminate\Foundation\Http\Events\RequestHandled;
 use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
+use Tests\Browser\Support\CapturesVisuals;
 use Tests\Browser\Support\InteractsWithBrowser;
 use Tests\Browser\Support\ReverbServer;
 
 abstract class BrowserTestCase extends TestCase
 {
+    use CapturesVisuals;
     use InteractsWithBrowser;
 
     protected function setUp(): void
