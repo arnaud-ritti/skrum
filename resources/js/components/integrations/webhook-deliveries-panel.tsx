@@ -161,9 +161,7 @@ export function WebhookDeliveriesPanel({ scope, connection }: Props) {
     };
 
     const canRedeliver = (delivery: WebhookDelivery): boolean =>
-        delivery.hasContent &&
-        delivery.status !== 'queued' &&
-        connection.status === 'active';
+        delivery.redeliverable && connection.status === 'active';
 
     const contentNote = (delivery: WebhookDelivery): string => {
         const createdAt =

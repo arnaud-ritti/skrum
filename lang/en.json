@@ -1539,5 +1539,6 @@
     "Delivery details": "Delivery details",
     "Could not load this delivery.": "Could not load this delivery.",
     "Status: :status": "Status: :status",
-    "Actions": "Actions"
+    "Actions": "Actions",
+    "The redelivery could not be queued. Try again.": "The redelivery could not be queued. Try again."
 }

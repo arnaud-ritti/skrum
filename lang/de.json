@@ -386,7 +386,7 @@
     "Verify Email Address": "E-Mail-Adresse bestätigen",
     "Verify authentication code": "Authentifizierungscode überprüfen",
     "Verify your email address": "Bestätige deine E-Mail-Adresse",
-    "View": "Ansicht",
+    "View": "Ansehen",
     "View :name": ":name anzeigen",
     "View recovery codes": "Wiederherstellungscodes anzeigen",
     "Warning": "Warnung",
@@ -1783,5 +1783,6 @@
     "Delivery queued again.": "Zustellung erneut eingereiht.",
     "Delivery details": "Zustellungsdetails",
     "Could not load this delivery.": "Diese Zustellung konnte nicht geladen werden.",
-    "Status: :status": "Status: :status"
+    "Status: :status": "Status: :status",
+    "The redelivery could not be queued. Try again.": "Die erneute Zustellung konnte nicht in die Warteschlange gestellt werden. Versuche es erneut."
 }

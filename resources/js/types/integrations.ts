@@ -148,6 +148,7 @@ export type WebhookDelivery = {
     createdAt: string | null;
     lastAttemptAt: string | null;
     hasContent: boolean;
+    redeliverable: boolean;
     redeliveryOf: string | null;
 };
 

@@ -386,7 +386,7 @@
     "Verify Email Address": "Vérifier l'adresse e-mail",
     "Verify authentication code": "Vérifier le code d'authentification",
     "Verify your email address": "Vérifier votre adresse e-mail",
-    "View": "Vue",
+    "View": "Voir",
     "View :name": "Voir :name",
     "View recovery codes": "Afficher les codes de récupération",
     "Warning": "Attention",
@@ -1783,5 +1783,6 @@
     "Delivery queued again.": "Envoi remis en file d’attente.",
     "Delivery details": "Détails de l’envoi",
     "Could not load this delivery.": "Impossible de charger cet envoi.",
-    "Status: :status": "Statut : :status"
+    "Status: :status": "Statut : :status",
+    "The redelivery could not be queued. Try again.": "Le renvoi n’a pas pu être mis en file d’attente. Réessayez."
 }

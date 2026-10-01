@@ -56,6 +56,13 @@ class IntegrationDelivery extends Model
 
     private const RetentionDays = 90;
 
+    /**
+     * Longer than the life of any delivery job: an automatic event retries
+     * for 3 h 42 min 30 s, plus the time it waits on the queue. A row still
+     * queued after that lost its job.
+     */
+    public const StaleQueuedHours = 6;
+
     /** @return BelongsTo<Team, $this> */
     public function team(): BelongsTo
     {
@@ -90,6 +97,15 @@ class IntegrationDelivery extends Model
     public function redeliveryOf(): BelongsTo
     {
         return $this->belongsTo(self::class, 'redelivery_of_id');
+    }
+
+    public function isStillBeingSent(): bool
+    {
+        if ($this->status !== IntegrationDeliveryStatus::Queued) {
+            return false;
+        }
+
+        return $this->created_at === null || $this->created_at->greaterThan(now()->subHours(self::StaleQueuedHours));
     }
 
     public function markSent(?int $recipientCount = null): void

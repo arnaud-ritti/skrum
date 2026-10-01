@@ -413,10 +413,14 @@ it('marks the redelivery failed when its job cannot be queued, and lets the deli
     $workingDispatcher = app(Dispatcher::class);
     $this->mock(Dispatcher::class, fn ($mock) => $mock->shouldReceive('dispatch')->once()->andThrow(new RuntimeException('queue down')));
 
-    $redelivery = app(RequestWebhookRedelivery::class)->handle($integration, $delivery, $admin);
+    expect(fn () => app(RequestWebhookRedelivery::class)->handle($integration, $delivery, $admin))
+        ->toThrow(fn (HttpException $exception) => expect($exception->getStatusCode())->toBe(503)
+            ->and($exception->getMessage())->toBe('The redelivery could not be queued. Try again.'));
 
-    expect($redelivery->fresh()->status)->toBe(IntegrationDeliveryStatus::Failed)
-        ->and($redelivery->fresh()->error)->toBe('The message could not be delivered.');
+    $redelivery = IntegrationDelivery::query()->whereNotNull('redelivery_of_id')->sole();
+
+    expect($redelivery->status)->toBe(IntegrationDeliveryStatus::Failed)
+        ->and($redelivery->error)->toBe('The message could not be delivered.');
     Exceptions::assertReported(fn (RuntimeException $exception) => $exception->getMessage() === 'queue down');
 
     $this->instance(Dispatcher::class, $workingDispatcher);
@@ -425,7 +429,7 @@ it('marks the redelivery failed when its job cannot be queued, and lets the deli
     Queue::assertPushed(RedeliverWebhook::class, 1);
 });
 
-it('stops waiting for a redelivery queued more than 4 hours ago', function (int $minutesAgo, bool $allowed) {
+it('stops waiting for a redelivery queued more than 6 hours ago', function (int $minutesAgo, bool $allowed) {
     [, $admin, $integration, $delivery] = redeliverableWebhookDelivery();
     $lost = app(RequestWebhookRedelivery::class)->handle($integration, $delivery, $admin);
     $lost->forceFill(['created_at' => now()->subMinutes($minutesAgo)])->save();
@@ -441,11 +445,11 @@ it('stops waiting for a redelivery queued more than 4 hours ago', function (int 
     expect($redelivery->redelivery_of_id)->toBe($delivery->id);
     Queue::assertPushed(RedeliverWebhook::class, 2);
 })->with([
-    'just under 4 hours' => [239, false],
-    'just over 4 hours' => [241, true],
+    'just under 6 hours' => [359, false],
+    'just over 6 hours' => [361, true],
 ]);
 
-it('stops waiting for a delivery queued more than 4 hours ago', function (int $minutesAgo, bool $allowed) {
+it('stops waiting for a delivery queued more than 6 hours ago', function (int $minutesAgo, bool $allowed) {
     [, $admin, $integration, $delivery] = redeliverableWebhookDelivery(IntegrationDeliveryStatus::Queued);
     $delivery->forceFill(['created_at' => now()->subMinutes($minutesAgo)])->save();
 
@@ -457,8 +461,8 @@ it('stops waiting for a delivery queued more than 4 hours ago', function (int $m
 
     expect(app(RequestWebhookRedelivery::class)->handle($integration, $delivery, $admin)->redelivery_of_id)->toBe($delivery->id);
 })->with([
-    'just under 4 hours' => [239, false],
-    'just over 4 hours' => [241, true],
+    'just under 6 hours' => [359, false],
+    'just over 6 hours' => [361, true],
 ]);
 
 it('lets the content of a redelivery expire with the first delivery', function () {
@@ -532,3 +536,35 @@ it('reads the stored message once per attempt', function () {
 
     expect($payloadReads)->toBe(1);
 });
+
+it('refuses to redeliver content that can no longer be decrypted', function () {
+    [, $admin, $integration, $delivery] = redeliverableWebhookDelivery();
+    DB::table('integration_delivery_payloads')->where('integration_delivery_id', $delivery->id)->update(['message' => 'written-with-another-key']);
+
+    expectRedeliveryRefused(fn () => app(RequestWebhookRedelivery::class)->handle($integration, $delivery, $admin), "This delivery's content is no longer kept.");
+
+    Queue::assertNotPushed(RedeliverWebhook::class);
+    expect(IntegrationDelivery::query()->count())->toBe(1);
+});
+
+it('tells the log which deliveries can be redelivered', function (string $status, int $minutesAgo, bool $hasContent, bool $redeliverable) {
+    [$team, $admin, $integration, $delivery] = redeliverableWebhookDelivery(IntegrationDeliveryStatus::from($status));
+    $delivery->forceFill(['created_at' => now()->subMinutes($minutesAgo)])->save();
+
+    if (! $hasContent) {
+        $delivery->payload()->delete();
+    }
+
+    $this->actingAs($admin)
+        ->getJson(route('teams.integrations.deliveries.index', [$team->workspace, $team, $integration]))
+        ->assertOk()
+        ->assertJsonPath('data.0.hasContent', $hasContent)
+        ->assertJsonPath('data.0.redeliverable', $redeliverable);
+})->with([
+    'failed with content' => ['failed', 1, true, true],
+    'sent with content' => ['sent', 1, true, true],
+    'failed without content' => ['failed', 1, false, false],
+    'queued just under 6 hours ago' => ['queued', 359, true, false],
+    'queued just over 6 hours ago' => ['queued', 361, true, true],
+    'queued long ago without content' => ['queued', 361, false, false],
+]);

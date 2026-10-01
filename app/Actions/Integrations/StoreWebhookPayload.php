@@ -4,6 +4,7 @@ namespace App\Actions\Integrations;
 
 use App\Models\IntegrationDelivery;
 use DateTimeInterface;
+use Illuminate\Database\DeadlockException;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 use Throwable;
@@ -45,7 +46,8 @@ class StoreWebhookPayload
      * never stops the delivery itself, which goes on as "content not kept".
      * The savepoint leaves the caller's transaction usable, and only the
      * class of the cause is reported, since a query error's message carries
-     * its bound values.
+     * its bound values. A deadlock is rethrown: it aborts the caller's
+     * transaction without rolling back to the savepoint.
      *
      * @param  array{id: string, event: string, occurredAt: string, data: array<string, mixed>}  $message
      */
@@ -53,6 +55,8 @@ class StoreWebhookPayload
     {
         try {
             DB::transaction(fn () => $this->handle($delivery, $message));
+        } catch (DeadlockException $exception) {
+            throw $exception;
         } catch (Throwable $exception) {
             $causeName = class_basename($exception);
 

@@ -6,6 +6,7 @@ use App\Enums\IntegrationDeliveryKind;
 use App\Models\IntegrationDelivery;
 use App\Models\IntegrationDeliveryPayload;
 use App\Models\TeamIntegration;
+use Illuminate\Database\DeadlockException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Exceptions;
 use Illuminate\Support\Facades\Schema;
@@ -173,4 +174,15 @@ it('reports only the kind of failure when a message cannot be kept and carries o
 
     expect($delivery->payload()->exists())->toBeFalse();
     Exceptions::assertReported(fn (RuntimeException $exception) => $exception->getMessage() === "Could not keep the webhook message of delivery {$delivery->id} (JsonException).");
+});
+
+it('does not carry on after a deadlock while keeping a message', function () {
+    Exceptions::fake();
+    $delivery = webhookPayloadDelivery();
+    IntegrationDeliveryPayload::creating(fn () => throw new DeadlockException('deadlock detected'));
+
+    expect(fn () => app(StoreWebhookPayload::class)->keepIfPossible($delivery, webhookPayloadMessage($delivery)))
+        ->toThrow(DeadlockException::class);
+
+    Exceptions::assertNothingReported();
 });

@@ -63,7 +63,7 @@ New table `integration_delivery_payloads` (up-only migration):
 1. Checks eligibility (§4.3); refuses with **409** and the reason otherwise.
 2. Creates a new delivery row: same `team_id`, `channel`, `kind`, `event`, `subject_type`/`subject_id`; `team_integration_id` = the current webhook connection; `redelivery_of_id` = the root original (a redelivery of a redelivery points to the first delivery of the chain); `requested_by_user_id` = the current user; status `queued`.
 3. Copies the original's `message` into the new payload row, which keeps the `created_at` of the payload it was copied from (§3, retention).
-4. Queues `RedeliverWebhook` for the new row with the normal share retries (4 tries, backoff 10 s, 60 s, 300 s). When the job cannot be queued, the new row is marked failed ("The message could not be delivered.") and the error is reported, so the row never stays `queued` without a job.
+4. Queues `RedeliverWebhook` for the new row with the normal share retries (4 tries, backoff 10 s, 60 s, 300 s). When the job cannot be queued, the new row is marked failed ("The message could not be delivered."), the error is reported and the request answers **503** "The redelivery could not be queued. Try again.", so the row never stays `queued` without a job.
 5. Answers **202** with the presented new delivery.
 
 When sent, the redelivery:
@@ -79,11 +79,11 @@ When sent, the redelivery:
 A delivery can be redelivered when all hold:
 - it belongs to this team's webhook log (`team_id` and channel `webhook`, across reconnections) (else **404**);
 - its payload row still exists (else **409** "This delivery's content is no longer kept.");
-- its status is `sent` or `failed`, or it has been `queued` for more than 4 hours (a `queued` original is still retrying: **409** "This delivery is still being sent.");
+- its status is `sent` or `failed`, or it has been `queued` for more than 6 hours (a `queued` original is still retrying: **409** "This delivery is still being sent.");
 - the webhook integration is active (else **409** "Turn the webhook back on before redelivering.");
-- no redelivery of the same root original has been queued in the last 4 hours and is still `queued` (the guard is per root) (else **409** "This delivery is already being redelivered.").
+- no redelivery of the same root original has been queued in the last 6 hours and is still `queued` (the guard is per root) (else **409** "This delivery is already being redelivered.").
 
-**Stale rows:** a row still `queued` more than 4 hours after its creation lost its job (the longest retry schedule, an automatic event's, lasts about 3.5 hours). Both guards ignore such rows, so a lost job never blocks redelivery for good. The row itself is left as it is.
+**Stale rows:** a row still `queued` more than 6 hours after its creation lost its job (the longest retry schedule, an automatic event's, lasts 3 h 42 min 30 s, plus the time each attempt waits on the queue). Both guards ignore such rows, so a lost job never blocks redelivery for good. The row itself is left as it is. The log exposes `redeliverable: bool` per row (content kept and not still being sent, by the same rule), and the interface offers **Redeliver** from it.
 
 ### 4.4 Viewing
 
@@ -98,7 +98,7 @@ A delivery can be redelivered when all hold:
 }
 ```
 
-**404** when the delivery is not this integration's, its payload has been pruned, or its content can no longer be decrypted. The existing paginated log (`…/deliveries`) gains `hasContent: bool` and `redeliveryOf: ?string` per row.
+**404** when the delivery is not this integration's, its payload has been pruned, or its content can no longer be decrypted. The existing paginated log (`…/deliveries`) gains `hasContent: bool`, `redeliverable: bool` and `redeliveryOf: ?string` per row.
 
 ## 5. Permissions and limits
 
@@ -124,11 +124,11 @@ Every new string exists in `lang/{en,fr,es,de}.json`.
 | Situation | Result |
 |---|---|
 | Payload pruned or never stored | View 404; Redeliver 409 "This delivery's content is no longer kept." |
-| Original still queued (for less than 4 hours) | 409 "This delivery is still being sent." |
-| Content that can no longer be decrypted | View 404; a queued redelivery fails with "This delivery's content is no longer kept." without counting toward the automatic disabling |
-| Redelivery job cannot be queued | The new row is marked failed; the delivery can be redelivered again |
+| Original still queued (for less than 6 hours) | 409 "This delivery is still being sent." |
+| Content that can no longer be decrypted | View 404; Redeliver 409 "This delivery's content is no longer kept."; a queued redelivery fails with "This delivery's content is no longer kept." without counting toward the automatic disabling |
+| Redelivery job cannot be queued | 503 "The redelivery could not be queued. Try again."; the new row is marked failed; the delivery can be redelivered again |
 | Webhook disabled | 409 "Turn the webhook back on before redelivering." |
-| Redelivery already queued (for less than 4 hours) | 409 "This delivery is already being redelivered." |
+| Redelivery already queued (for less than 6 hours) | 409 "This delivery is already being redelivered." |
 | URL now unsafe (private address, bad shape) | The new row fails with spec 8's unsafe-URL message; the original is unchanged |
 | Receiver 410 | Webhook disabled as gone (spec 8 §4.7), same as any delivery |
 | Too many redeliveries | 429 |
@@ -141,7 +141,7 @@ Pest feature tests with `Http::fake()` and `Http::preventStrayRequests()`:
 - pruning deletes payloads older than 30 days and keeps the delivery row; a redelivery made on day 29 loses its content on day 30 of the first delivery;
 - viewing: Owner/Admin 200 with the documented shape; member and guest 403; another integration's delivery 404; pruned 404; provider disabled 404;
 - redelivery: same `id`/`event`/`occurredAt`/`data`, fresh `sentAt`, valid signature with the current secret, `X-Skrum-Delivery` = original id, `X-Skrum-Redelivery: true`, new row linked by `redelivery_of_id`, payload copied;
-- refusals: pruned, still queued, webhook disabled, redelivery already queued (409 each with its message); throttle 429; a row queued more than 4 hours ago no longer blocks; a redelivery whose job cannot be queued ends failed;
+- refusals: pruned, still queued, webhook disabled, redelivery already queued (409 each with its message); throttle 429; a row queued more than 6 hours ago no longer blocks; a redelivery whose job cannot be queued ends failed with 503;
 - a redelivery whose content disappeared fails with "This delivery's content is no longer kept." without counting toward the automatic disabling;
 - a failed redelivery counts toward auto-disable; a successful one resets the counter;
 - an unsafe current URL fails the new row without touching the original;

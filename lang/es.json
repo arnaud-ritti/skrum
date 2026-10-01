@@ -1783,5 +1783,6 @@
     "Delivery queued again.": "Envío puesto de nuevo en cola.",
     "Delivery details": "Detalles del envío",
     "Could not load this delivery.": "No se pudo cargar este envío.",
-    "Status: :status": "Estado: :status"
+    "Status: :status": "Estado: :status",
+    "The redelivery could not be queued. Try again.": "No se pudo poner el reenvío en cola. Inténtalo de nuevo."
 }

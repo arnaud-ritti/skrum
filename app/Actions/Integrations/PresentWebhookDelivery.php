@@ -8,6 +8,10 @@ use LogicException;
 class PresentWebhookDelivery
 {
     /**
+     * `redeliverable` follows the delivery's own rules of
+     * RequestWebhookRedelivery (content kept, not still being sent); the
+     * state of the webhook is left to the caller.
+     *
      * @return array{
      *     id: string,
      *     event: string|null,
@@ -19,11 +23,14 @@ class PresentWebhookDelivery
      *     createdAt: string|null,
      *     lastAttemptAt: string|null,
      *     hasContent: bool,
+     *     redeliverable: bool,
      *     redeliveryOf: string|null
      * }
      */
     public function handle(IntegrationDelivery $delivery): array
     {
+        $hasContent = $this->hasContent($delivery);
+
         return [
             'id' => $delivery->id,
             'event' => $delivery->event,
@@ -34,7 +41,8 @@ class PresentWebhookDelivery
             'error' => $delivery->error,
             'createdAt' => $delivery->created_at?->toIso8601String(),
             'lastAttemptAt' => $delivery->last_attempt_at?->toIso8601String(),
-            'hasContent' => $this->hasContent($delivery),
+            'hasContent' => $hasContent,
+            'redeliverable' => $hasContent && ! $delivery->isStillBeingSent(),
             'redeliveryOf' => $delivery->redelivery_of_id,
         ];
     }

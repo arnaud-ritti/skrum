@@ -10,17 +10,12 @@ use App\Models\IntegrationDelivery;
 use App\Models\TeamIntegration;
 use App\Models\User;
 use Illuminate\Contracts\Bus\Dispatcher;
+use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Support\Facades\DB;
 use Throwable;
 
 class RequestWebhookRedelivery
 {
-    /**
-     * Longer than the life of any delivery job (an automatic event retries
-     * for about 3.5 hours): a row still queued after that lost its job.
-     */
-    public const StaleQueuedHours = 4;
-
     public function __construct(private StoreWebhookPayload $storeWebhookPayload) {}
 
     /**
@@ -29,13 +24,11 @@ class RequestWebhookRedelivery
      * message, and that row is locked, so two quick clicks anywhere in the
      * chain cannot queue the same message twice. A row whose job was lost
      * stops blocking once it is stale, and a redelivery that cannot be
-     * queued ends failed instead of staying queued.
+     * queued ends failed instead of staying queued (503).
      */
     public function handle(TeamIntegration $integration, IntegrationDelivery $original, User $requester): IntegrationDelivery
     {
         $redelivery = DB::transaction(function () use ($integration, $original, $requester): IntegrationDelivery {
-            $staleBefore = now()->subHours(self::StaleQueuedHours);
-
             $rootId = IntegrationDelivery::query()->whereKey($original->id)->value('redelivery_of_id') ?? $original->id;
 
             IntegrationDelivery::query()->lockForUpdate()->findOrFail($rootId);
@@ -57,10 +50,7 @@ class RequestWebhookRedelivery
                 abort(409, __('This delivery\'s content is no longer kept.'));
             }
 
-            $stillBeingSent = $source->status === IntegrationDeliveryStatus::Queued
-                && $source->created_at?->greaterThan($staleBefore);
-
-            if ($stillBeingSent) {
+            if ($source->isStillBeingSent()) {
                 abort(409, __('This delivery is still being sent.'));
             }
 
@@ -71,7 +61,7 @@ class RequestWebhookRedelivery
             $alreadyQueued = IntegrationDelivery::query()
                 ->where('redelivery_of_id', $rootId)
                 ->where('status', IntegrationDeliveryStatus::Queued->value)
-                ->where('created_at', '>', $staleBefore)
+                ->where('created_at', '>', now()->subHours(IntegrationDelivery::StaleQueuedHours))
                 ->exists();
 
             if ($alreadyQueued) {
@@ -91,7 +81,11 @@ class RequestWebhookRedelivery
                 'redelivery_of_id' => $rootId,
             ]);
 
-            $this->storeWebhookPayload->handle($redelivery, $payload->message, $payload->created_at);
+            try {
+                $this->storeWebhookPayload->handle($redelivery, $payload->message, $payload->created_at);
+            } catch (DecryptException) {
+                abort(409, __('This delivery\'s content is no longer kept.'));
+            }
 
             return $redelivery;
         });
@@ -102,6 +96,8 @@ class RequestWebhookRedelivery
             report($exception);
 
             $redelivery->markFailed(__('The message could not be delivered.'));
+
+            abort(503, __('The redelivery could not be queued. Try again.'));
         }
 
         return $redelivery;
