@@ -109,6 +109,7 @@ export function SortableCard({
     return (
         <div
             ref={setNodeRef}
+            data-test={`retro-card-handle-${id}`}
             style={{ transform: CSS.Transform.toString(transform), transition }}
             className={cn(
                 isDragging && 'opacity-50',
@@ -150,6 +151,7 @@ export function GroupableCard({
                 drag.setNodeRef(node);
                 drop.setNodeRef(node);
             }}
+            data-test={`retro-card-handle-${id}`}
             className={cn(
                 'rounded-md',
                 !disabled && 'cursor-grab',
