@@ -13,6 +13,7 @@ import { useWhiteboard } from '@/hooks/use-whiteboard';
 import { useWhiteboardCursors } from '@/hooks/use-whiteboard-cursors';
 import { useWhiteboardFollow } from '@/hooks/use-whiteboard-follow';
 import { useWhiteboardToolbarSlot } from '@/hooks/use-whiteboard-toolbar-slot';
+import { realtimeState } from '@/lib/realtime/realtime-state';
 import {
     CanvasLocales,
     isDark,
@@ -26,6 +27,7 @@ import {
     type ExcalidrawImperativeAPI,
 } from '@/lib/whiteboard/excalidraw';
 import { restoreScene } from '@/lib/whiteboard/restore';
+import { sceneStamp } from '@/lib/whiteboard/scene-stamp';
 import { createSceneSync, type SceneSync } from '@/lib/whiteboard/scene-sync';
 import type {
     RejectReason,
@@ -63,6 +65,7 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
     const [initialElements] = useState(() =>
         restoreScene(initial.current.elements),
     );
+    const [stamp, setStamp] = useState(() => sceneStamp(initialElements));
     const cursors = useWhiteboardCursors({
         api,
         presence: state.presence,
@@ -172,7 +175,14 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
     }
 
     return (
-        <div className="flex h-dvh flex-col">
+        <div
+            className="flex h-dvh flex-col"
+            data-realtime={realtimeState(
+                state.connected && api !== null,
+                state.online,
+            )}
+            data-scene={stamp}
+        >
             {state.sessionExpired && <SessionExpiredBanner />}
             <div
                 className="flex min-h-0 flex-1 flex-col"
@@ -238,12 +248,16 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
                         excalidrawAPI={setApi}
                         initialData={{ elements: initialElements as never }}
                         name={board.title}
-                        onChange={(elements, appState) =>
+                        onChange={(elements, appState) => {
+                            const reported =
+                                elements as unknown as SceneElement[];
+
+                            setStamp(sceneStamp(reported));
                             sync.current?.handleChange(
-                                elements as unknown as SceneElement[],
+                                reported,
                                 appState.editingTextElement?.id ?? null,
-                            )
-                        }
+                            );
+                        }}
                         onPointerUpdate={cursors.onPointerUpdate}
                         langCode={CanvasLocales[locale as string] ?? 'en'}
                         theme={dark ? 'dark' : 'light'}
