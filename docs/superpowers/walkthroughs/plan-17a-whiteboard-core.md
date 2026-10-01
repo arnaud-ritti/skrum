@@ -4,12 +4,22 @@ Run on 2026-10-01 in Chrome against the local Sail stack, after the final-review
 
 ## Result
 
-Sections 1–8 pass, with three lines not replayed (image paste, non-member 403, in-board guest action) and two defects found:
+Sections 1–8 pass, with three lines not replayed (image paste, non-member 403, in-board guest action) and two defects found (the first is fixed, see "Second pass"):
 
 - **Library button and help-dialog links still visible.** The rules in `resources/css/app.css` exist but lose to the library's own stylesheet (same specificity, loaded later with the lazy chunk). The "Library" button (top right) and the help dialog's Documentation / blog / issue / YouTube links are shown.
 - **Sticky notes are dark in the dark theme.** The canvas dark mode inverts element colours, so a yellow note renders dark brown while its swatch is yellow.
 
 Latency (spec §6.4): 11 `PUT elements` requests during drags took 39–114 ms (median 56 ms), and a drag sends its intermediate states (one element went from version 5 to 49 during a single drag). Local machine, scripted drags rather than a steady 10 s hand drag.
+
+### Second pass (commit 7f34fca)
+
+Checked again in Chrome after the follow-up work:
+
+- [x] The "Library" button is gone; the help dialog shows no outbound link and no library name; the main menu has no links group.
+- [x] Reload causes no write (0 `PUT elements`).
+- [x] Flying reactions: the bar sits bottom-centre for the member and the guest; a 👍 and a ❤️ sent by the guest appeared on the member's page with the guest's name.
+- [x] The sticky colour swatches now show the colour the note really has in the dark theme (notes are still dark in the dark theme: the canvas dark mode inverts element colours).
+- [ ] Image paste, the non-member 403 and reactions in the light theme were not replayed.
 
 ## 1. Create from the team page
 
