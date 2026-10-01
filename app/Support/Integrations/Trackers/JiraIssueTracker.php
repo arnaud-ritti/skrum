@@ -4,16 +4,20 @@ namespace App\Support\Integrations\Trackers;
 
 use App\Enums\PokerDeck;
 use App\Models\TeamIntegration;
+use App\Support\Integrations\Exceptions\ProviderRejected;
 use App\Support\Integrations\Jira\JiraApi;
+use Carbon\CarbonImmutable;
 
 /**
  * Jira Cloud and Jira Server/Data Center share boards, sprints, JQL and
  * story points; they differ in the search endpoint, the description format
  * and the REST version, which the subclasses provide.
  */
-abstract class JiraIssueTracker implements IssueTracker
+abstract class JiraIssueTracker implements IssueTracker, SyncsIssueStatus
 {
-    private const BaseFields = ['summary', 'description', 'assignee', 'status'];
+    private const BaseFields = ['summary', 'description', 'assignee', 'status', 'updated', 'project'];
+
+    public const ProjectKeyPattern = '/^[A-Z][A-Z0-9_]{0,49}\z/';
 
     private const IssueIdPattern = '/^[A-Za-z0-9_-]+$/';
 
@@ -98,16 +102,7 @@ abstract class JiraIssueTracker implements IssueTracker
 
     public function issues(TeamIntegration $integration, array $externalIds): array
     {
-        $ids = array_values(array_unique(array_filter($externalIds, fn (string $id): bool => preg_match(self::IdPattern, $id) === 1)));
-        $issues = [];
-
-        foreach (array_chunk($ids, self::PreviewLimit) as $chunk) {
-            foreach ($this->searchJql($integration, 'id in ('.implode(',', $chunk).')')->issues as $issue) {
-                $issues[$issue->externalId] = $issue;
-            }
-        }
-
-        return $issues;
+        return $this->issuesMatching($integration, $externalIds, null);
     }
 
     public function writeEstimate(TeamIntegration $integration, string $externalId, ?string $estimate): void
@@ -133,6 +128,38 @@ abstract class JiraIssueTracker implements IssueTracker
         }
 
         $this->api()->put($integration, $issuePath, ['fields' => [$fieldId => $value]]);
+    }
+
+    public function changedIssues(TeamIntegration $integration, array $externalIds, CarbonImmutable $since): array
+    {
+        return $this->issuesMatching($integration, $externalIds, $since);
+    }
+
+    public function statuses(TeamIntegration $integration, string $container): array
+    {
+        if (preg_match(self::ProjectKeyPattern, $container) !== 1) {
+            return [];
+        }
+
+        $statuses = [];
+
+        foreach ($this->api()->get($integration, $this->api()->apiPath("project/{$container}/statuses")) as $issueType) {
+            foreach ((array) (is_array($issueType) ? ($issueType['statuses'] ?? []) : []) as $status) {
+                $id = is_array($status) ? ($status['id'] ?? null) : null;
+
+                if (! is_string($id) && ! is_int($id)) {
+                    continue;
+                }
+
+                $statuses[(string) $id] = [
+                    'id' => (string) $id,
+                    'name' => is_string($status['name'] ?? null) ? $status['name'] : (string) $id,
+                    'category' => DoneMapping::category($integration->provider, (string) data_get($status, 'statusCategory.key', 'new'))->value,
+                ];
+            }
+        }
+
+        return array_values($statuses);
     }
 
     /**
@@ -198,6 +225,106 @@ abstract class JiraIssueTracker implements IssueTracker
             assignee: TrackerIssue::shorten(data_get($fields, 'assignee.displayName'), TrackerIssue::AssigneeLength),
             estimate: $this->estimate($integration, $fields),
             status: TrackerIssue::shorten(data_get($fields, 'status.name'), TrackerIssue::AssigneeLength),
+            issueStatus: $this->issueStatus($fields),
+        );
+    }
+
+    /**
+     * Jira refuses a whole `id in (…)` query when one of the ids no longer
+     * exists; that chunk is then read issue by issue, so deleted or hidden
+     * issues are simply absent.
+     *
+     * @param  array<int, string>  $externalIds
+     * @return array<string, TrackerIssue>
+     */
+    private function issuesMatching(TeamIntegration $integration, array $externalIds, ?CarbonImmutable $updatedSince): array
+    {
+        $ids = array_values(array_unique(array_filter($externalIds, fn (string $id): bool => preg_match(self::IdPattern, $id) === 1)));
+        $updated = $updatedSince === null ? '' : ' AND updated >= "-'.self::minutesSince($updatedSince).'m"';
+        $issues = [];
+
+        foreach (array_chunk($ids, self::PreviewLimit) as $chunk) {
+            try {
+                $found = $this->searchJql($integration, 'id in ('.implode(',', $chunk).')'.$updated)->issues;
+            } catch (ProviderRejected $exception) {
+                if ($exception->httpStatus !== 400) {
+                    throw $exception;
+                }
+
+                $found = $this->readOneByOne($integration, $chunk, $updatedSince);
+            }
+
+            foreach ($found as $issue) {
+                $issues[$issue->externalId] = $issue;
+            }
+        }
+
+        return $issues;
+    }
+
+    /**
+     * @param  array<int, string>  $ids  digits only
+     * @return array<int, TrackerIssue>
+     */
+    private function readOneByOne(TeamIntegration $integration, array $ids, ?CarbonImmutable $updatedSince): array
+    {
+        $issues = [];
+
+        foreach ($ids as $id) {
+            try {
+                $raw = $this->api()->get($integration, $this->api()->apiPath("issue/{$id}"), [
+                    'fields' => implode(',', $this->requestedFields($integration)),
+                ]);
+            } catch (ProviderRejected $exception) {
+                if (in_array($exception->httpStatus, [403, 404], true)) {
+                    continue;
+                }
+
+                throw $exception;
+            }
+
+            $issue = $this->issue($integration, $raw);
+            $updatedAt = $issue?->issueStatus?->updatedAt;
+
+            if ($issue === null || ($updatedSince !== null && ($updatedAt === null || $updatedAt->lt($updatedSince)))) {
+                continue;
+            }
+
+            $issues[] = $issue;
+        }
+
+        return $issues;
+    }
+
+    /**
+     * Relative minutes keep the query independent of the Jira user's time
+     * zone; rounding up overlaps the previous read rather than missing one.
+     */
+    private static function minutesSince(CarbonImmutable $since): int
+    {
+        return max(1, (int) ceil($since->diffInSeconds(now()) / 60));
+    }
+
+    /**
+     * @param  array<array-key, mixed>  $fields
+     */
+    private function issueStatus(array $fields): ?IssueStatus
+    {
+        $id = data_get($fields, 'status.id');
+
+        if (! is_string($id) && ! is_int($id)) {
+            return null;
+        }
+
+        $kind = data_get($fields, 'status.statusCategory.key');
+        $project = data_get($fields, 'project.key');
+
+        return new IssueStatus(
+            id: (string) $id,
+            name: TrackerIssue::shorten(data_get($fields, 'status.name'), TrackerIssue::AssigneeLength),
+            kind: is_string($kind) ? $kind : 'undefined',
+            container: is_string($project) ? $project : null,
+            updatedAt: IssueStatus::time($fields['updated'] ?? null),
         );
     }
 

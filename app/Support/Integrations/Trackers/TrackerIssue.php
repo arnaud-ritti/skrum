@@ -19,6 +19,7 @@ class TrackerIssue
         public ?string $assignee,
         public ?string $estimate,
         public ?string $status,
+        public ?IssueStatus $issueStatus = null,
     ) {}
 
     public static function title(mixed $value, string $fallback): string

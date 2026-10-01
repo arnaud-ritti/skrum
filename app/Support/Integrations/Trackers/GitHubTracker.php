@@ -8,6 +8,7 @@ use App\Support\Integrations\Exceptions\ProviderRejected;
 use App\Support\Integrations\GitHub\EstimateBlock;
 use App\Support\Integrations\GitHub\GitHubClient;
 use App\Support\Integrations\Jira\AdfToMarkdown;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
@@ -18,13 +19,15 @@ use InvalidArgumentException;
  * `{repositoryId}/{number}` so renames do not break them, and the estimate
  * lives in the managed block of the body.
  */
-class GitHubTracker implements IssueTracker
+class GitHubTracker implements IssueTracker, SyncsIssueStatus
 {
     private const Source = 'GitHub';
 
     private const WriteAttempts = 3;
 
     private const IssueBatch = 100;
+
+    private const ChangedPages = 10;
 
     private const IssueFields = 'fragment IssueFields on Issue { number title body url state stateReason updatedAt assignees(first: 1) { nodes { login } } }';
 
@@ -222,6 +225,46 @@ class GitHubTracker implements IssueTracker
     }
 
     /**
+     * One listing per repository with tracked issues, matched in memory:
+     * GitHub cannot filter issues by number and update time together.
+     */
+    public function changedIssues(TeamIntegration $integration, array $externalIds, CarbonImmutable $since): array
+    {
+        $numbersByRepository = [];
+
+        foreach (array_unique($externalIds) as $externalId) {
+            $reference = self::issueReference($externalId);
+
+            if ($reference !== null) {
+                $numbersByRepository[$reference[0]][$reference[1]] = true;
+            }
+        }
+
+        $issues = [];
+
+        foreach ($numbersByRepository as $repositoryId => $numbers) {
+            foreach ($this->changedInRepository($integration, (string) $repositoryId, $since) as $raw) {
+                if (! isset($numbers[(string) $raw['number']])) {
+                    continue;
+                }
+
+                $issue = $this->issue((string) $repositoryId, $raw);
+
+                if ($issue !== null) {
+                    $issues[$issue->externalId] = $issue;
+                }
+            }
+        }
+
+        return $issues;
+    }
+
+    public function statuses(TeamIntegration $integration, string $container): array
+    {
+        return [];
+    }
+
+    /**
      * @return array{0: string, 1: string}|null
      */
     public static function issueReference(string $externalId): ?array
@@ -274,6 +317,7 @@ class GitHubTracker implements IssueTracker
             assignee: TrackerIssue::shorten(data_get($raw, 'assignees.0.login'), TrackerIssue::AssigneeLength),
             estimate: $estimate === null ? null : mb_substr($estimate, 0, TrackerIssue::EstimateLength),
             status: TrackerIssue::shorten($raw['state'] ?? null, self::StatusLength),
+            issueStatus: $this->issueStatus($repositoryId, $raw),
         );
     }
 
@@ -349,6 +393,86 @@ class GitHubTracker implements IssueTracker
         }
 
         return $issues;
+    }
+
+    /**
+     * Issues (never pull requests) of the repository updated since `$since`,
+     * newest first and at most `ChangedPages` pages; items of any other
+     * repository are dropped.
+     *
+     * @return array<int, array<array-key, mixed>>
+     */
+    private function changedInRepository(TeamIntegration $integration, string $repositoryId, CarbonImmutable $since): array
+    {
+        try {
+            $fullName = $this->client->repositoryName($integration, $repositoryId);
+        } catch (ProviderRejected $exception) {
+            if (in_array($exception->httpStatus, self::UnavailableStatuses, true)) {
+                return [];
+            }
+
+            throw $exception;
+        }
+
+        $changed = [];
+
+        for ($page = 1; $page <= self::ChangedPages; $page++) {
+            $response = $this->client->response($integration, 'GET', "repos/{$fullName}/issues", [
+                'since' => $since->utc()->toIso8601ZuluString(),
+                'state' => 'all',
+                'sort' => 'updated',
+                'direction' => 'desc',
+                'per_page' => self::PreviewLimit,
+                'page' => $page,
+            ]);
+
+            foreach ((array) $response->json() as $raw) {
+                if (! is_array($raw) || isset($raw['pull_request']) || ! is_int($raw['number'] ?? null)) {
+                    continue;
+                }
+
+                if (strcasecmp((string) self::fullName($raw), $fullName) === 0) {
+                    $changed[] = $raw;
+                }
+            }
+
+            if (! GitHubClient::hasNextPage($response)) {
+                break;
+            }
+        }
+
+        return $changed;
+    }
+
+    /**
+     * Accepts the REST shape (`state_reason`, `updated_at`) and the GraphQL
+     * one (`stateReason`, `updatedAt`, upper case).
+     *
+     * @param  array<array-key, mixed>  $raw
+     */
+    private function issueStatus(string $repositoryId, array $raw): ?IssueStatus
+    {
+        $state = strtolower((string) ($raw['state'] ?? ''));
+
+        if (! in_array($state, ['open', 'closed'], true)) {
+            return null;
+        }
+
+        $reason = strtolower((string) ($raw['state_reason'] ?? $raw['stateReason'] ?? ''));
+
+        $kind = match (true) {
+            $state === 'open' => IssueStatus::GitHubOpen,
+            $reason === 'not_planned' => IssueStatus::GitHubNotPlanned,
+            default => IssueStatus::GitHubCompleted,
+        };
+
+        return new IssueStatus(
+            id: $state,
+            name: $state,
+            kind: $kind,
+            container: $repositoryId,
+            updatedAt: IssueStatus::time($raw['updated_at'] ?? $raw['updatedAt'] ?? null),
+        );
     }
 
     /**

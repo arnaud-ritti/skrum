@@ -17,4 +17,15 @@ class Trackers
             default => throw new InvalidArgumentException("{$provider->value} is not an issue tracker."),
         };
     }
+
+    public function syncing(IntegrationProvider $provider): SyncsIssueStatus
+    {
+        $tracker = $this->for($provider);
+
+        if (! $tracker instanceof SyncsIssueStatus) {
+            throw new InvalidArgumentException("{$provider->value} cannot sync statuses.");
+        }
+
+        return $tracker;
+    }
 }

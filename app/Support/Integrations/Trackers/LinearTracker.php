@@ -7,10 +7,13 @@ use App\Models\TeamIntegration;
 use App\Support\Integrations\Exceptions\ProviderRejected;
 use App\Support\Integrations\Jira\AdfToMarkdown;
 use App\Support\Integrations\Linear\LinearClient;
+use Carbon\CarbonImmutable;
 
-class LinearTracker implements IssueTracker
+class LinearTracker implements IssueTracker, SyncsIssueStatus
 {
-    private const IssueFields = 'id identifier title description url estimate assignee { displayName } state { name }';
+    private const IssueFields = 'id identifier title description url estimate updatedAt assignee { displayName } state { id name type } team { key }';
+
+    public const TeamKeyPattern = '/^[A-Z][A-Z0-9_]{0,49}\z/';
 
     private const MaxTeams = 250;
 
@@ -145,6 +148,93 @@ class LinearTracker implements IssueTracker
         }
     }
 
+    public function changedIssues(TeamIntegration $integration, array $externalIds, CarbonImmutable $since): array
+    {
+        $issues = [];
+
+        foreach (array_chunk(array_values(array_unique($externalIds)), self::PreviewLimit) as $chunk) {
+            $data = $this->client->query(
+                $integration,
+                'query($ids: [ID!], $since: DateTimeOrDuration) { issues(first: '.self::PreviewLimit.', filter: {id: {in: $ids}, updatedAt: {gte: $since}}) { nodes { '.self::IssueFields.' } } }',
+                ['ids' => $chunk, 'since' => $since->utc()->toIso8601ZuluString()],
+            );
+
+            foreach ($this->list((array) data_get($data, 'issues', []))->issues as $issue) {
+                $issues[$issue->externalId] = $issue;
+            }
+        }
+
+        return $issues;
+    }
+
+    public function statuses(TeamIntegration $integration, string $container): array
+    {
+        if (preg_match(self::TeamKeyPattern, $container) !== 1) {
+            return [];
+        }
+
+        $data = $this->client->query(
+            $integration,
+            'query($key: String!) { teams(first: 1, filter: {key: {eq: $key}}) { nodes { states(first: 100) { nodes { id name type position } } } } }',
+            ['key' => $container],
+        );
+
+        return array_map(fn (array $state): array => [
+            'id' => $state['id'],
+            'name' => $state['name'],
+            'category' => DoneMapping::category($integration->provider, $state['type'])->value,
+        ], self::states((array) data_get($data, 'teams.nodes.0.states.nodes', [])));
+    }
+
+    /**
+     * Workflow states ordered by their position in the team's workflow.
+     *
+     * @param  array<array-key, mixed>  $nodes
+     * @return array<int, array{id: string, name: string, type: string, position: float}>
+     */
+    private static function states(array $nodes): array
+    {
+        $states = [];
+
+        foreach ($nodes as $state) {
+            if (is_array($state) && is_string($state['id'] ?? null) && is_string($state['type'] ?? null)) {
+                $states[] = [
+                    'id' => $state['id'],
+                    'name' => is_string($state['name'] ?? null) ? $state['name'] : $state['id'],
+                    'type' => $state['type'],
+                    'position' => is_numeric($state['position'] ?? null) ? (float) $state['position'] : 0.0,
+                ];
+            }
+        }
+
+        usort($states, fn (array $first, array $second): int => $first['position'] <=> $second['position']);
+
+        return $states;
+    }
+
+    /**
+     * @param  array<array-key, mixed>  $node
+     */
+    private function issueStatus(array $node): ?IssueStatus
+    {
+        $id = data_get($node, 'state.id');
+
+        if (! is_string($id)) {
+            return null;
+        }
+
+        $type = data_get($node, 'state.type');
+        $team = data_get($node, 'team.key');
+
+        return new IssueStatus(
+            id: $id,
+            name: TrackerIssue::shorten(data_get($node, 'state.name'), TrackerIssue::AssigneeLength),
+            kind: is_string($type) ? $type : 'unstarted',
+            container: is_string($team) ? $team : null,
+            updatedAt: IssueStatus::time($node['updatedAt'] ?? null),
+        );
+    }
+
     private function linearEstimate(?string $estimate, bool $allowsZero): ?int
     {
         if ($estimate === null) {
@@ -214,6 +304,7 @@ class LinearTracker implements IssueTracker
             assignee: TrackerIssue::shorten(data_get($node, 'assignee.displayName'), TrackerIssue::AssigneeLength),
             estimate: TrackerIssue::formatEstimate($node['estimate'] ?? null),
             status: TrackerIssue::shorten(data_get($node, 'state.name'), TrackerIssue::AssigneeLength),
+            issueStatus: $this->issueStatus($node),
         );
     }
 
