@@ -20,6 +20,7 @@ import type {
 const FlushDelayMs = 300;
 const RetryDelayMs = 2000;
 const MaxBatch = 200;
+const MaxIdleFetches = 3;
 const FatalStatuses = [401, 403, 404, 419];
 
 export type SceneSyncDeps = {
@@ -359,18 +360,26 @@ export function createSceneSync(deps: SceneSyncDeps): SceneSync {
     /**
      * A change announced while a fetch was in flight may have been committed
      * after the server read the delta, so fetch again until the announced seq
-     * is reached. A fetch that brings nothing new ends the loop; the next
-     * event or poll takes over.
+     * is reached, whether or not the fetch that just ended brought anything:
+     * an event is sent after its commit, so a fetch started after it holds
+     * the change. A few fetches in a row that bring nothing end the loop; the
+     * next event or poll takes over.
      */
     const resync = (): Promise<void> => {
         resyncing ??= (async () => {
             try {
-                let before: number;
+                let idleFetches = 0;
 
                 do {
-                    before = seq;
+                    const before = seq;
+
                     await fetchDelta();
-                } while (!disposed && seq < wantedSeq && seq > before);
+                    idleFetches = seq > before ? 0 : idleFetches + 1;
+                } while (
+                    !disposed &&
+                    seq < wantedSeq &&
+                    idleFetches < MaxIdleFetches
+                );
 
                 deps.onOffline(false);
             } catch (error) {
