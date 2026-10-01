@@ -17,6 +17,8 @@ class BuildLinkShare
 {
     public function retro(Retro $retro, User $sharer, bool $includeGuestLink): LinkShareContent
     {
+        $url = $includeGuestLink ? route('retros.join.show', $retro->guest_token) : route('retros.show', $retro);
+
         return new LinkShareContent(
             __(':sharer invites you to the retrospective ":title" (:team)', [
                 'sharer' => $sharer->name,
@@ -24,12 +26,15 @@ class BuildLinkShare
                 'team' => $retro->team->name,
             ]),
             __('Open the retrospective'),
-            $includeGuestLink ? route('retros.join.show', $retro->guest_token) : route('retros.show', $retro),
+            $url,
+            ['title' => $retro->title, 'url' => $url, 'sharedBy' => $sharer->name],
         );
     }
 
     public function pokerGame(PokerGame $game, User $sharer, bool $includeGuestLink): LinkShareContent
     {
+        $url = $includeGuestLink ? route('poker.join.show', $game->guest_token) : route('poker.show', $game);
+
         return new LinkShareContent(
             __(':sharer invites you to the planning poker game ":title" (:team)', [
                 'sharer' => $sharer->name,
@@ -37,7 +42,8 @@ class BuildLinkShare
                 'team' => $game->team->name,
             ]),
             __('Open the game'),
-            $includeGuestLink ? route('poker.join.show', $game->guest_token) : route('poker.show', $game),
+            $url,
+            ['title' => $game->title, 'url' => $url, 'sharedBy' => $sharer->name],
         );
     }
 
@@ -47,6 +53,8 @@ class BuildLinkShare
      */
     public function gameRoom(GameRoom $room, User $sharer, bool $includeGuestLink): LinkShareContent
     {
+        $url = $includeGuestLink ? route('games.join.show', $room->guest_token) : route('games.show', $room);
+
         return new LinkShareContent(
             __(':sharer invites you to play :game in ":room" (:team)', [
                 'sharer' => $sharer->name,
@@ -55,7 +63,14 @@ class BuildLinkShare
                 'team' => $room->team->name,
             ]),
             __('Join the game'),
-            $includeGuestLink ? route('games.join.show', $room->guest_token) : route('games.show', $room),
+            $url,
+            [
+                'title' => (string) $room->name,
+                'game' => $room->game->label(),
+                'team' => $room->team->name,
+                'url' => $url,
+                'sharedBy' => $sharer->name,
+            ],
         );
     }
 }

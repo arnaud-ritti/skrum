@@ -10,10 +10,12 @@ use App\Enums\McpScope;
 use App\Enums\PokerDeck;
 use App\Enums\RetroPhase;
 use App\Enums\WorkspaceRole;
+use App\Jobs\Integrations\DeliverToChannel;
 use App\Mcp\McpGrant;
 use App\Mcp\Servers\SkrumServer;
 use App\Models\ActionItem;
 use App\Models\Card;
+use App\Models\Column;
 use App\Models\GamePlayer;
 use App\Models\GamePoint;
 use App\Models\GameRoom;
@@ -32,6 +34,7 @@ use App\Models\SurveyResponse;
 use App\Models\Team;
 use App\Models\TeamIntegration;
 use App\Models\User;
+use App\Models\Vote;
 use App\Models\Workspace;
 use App\Support\Games\GameRules;
 use App\Support\Games\GameRulesRegistry;
@@ -690,6 +693,29 @@ function outgoingWebhookSignatureIsValid(HttpRequest $request, string $secret = 
     $expected = 'sha256='.hash_hmac('sha256', "{$timestamp}.{$request->body()}", $secret);
 
     return hash_equals($expected, $request->header('X-Skrum-Signature')[0] ?? '');
+}
+
+function runOutgoingWebhookJob(DeliverToChannel $job): DeliverToChannel
+{
+    $job->withFakeQueueInteractions();
+    $job->handle();
+
+    return $job;
+}
+
+/**
+ * One voted card "Faster reviews" in a "Wins" column, written by $author.
+ */
+function webhookTopCard(Retro $retro, Participant $author, Participant $voter): void
+{
+    $column = Column::factory()->create(['retro_id' => $retro->id, 'title' => 'Wins']);
+    $card = Card::factory()->create([
+        'retro_id' => $retro->id,
+        'column_id' => $column->id,
+        'participant_id' => $author->id,
+        'content' => 'Faster reviews',
+    ]);
+    Vote::factory()->create(['retro_id' => $retro->id, 'card_id' => $card->id, 'participant_id' => $voter->id]);
 }
 
 /**

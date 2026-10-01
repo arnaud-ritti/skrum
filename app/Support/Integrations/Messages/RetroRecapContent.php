@@ -16,7 +16,15 @@ class RetroRecapContent implements ShareContent
 
     private const NamesLimit = 2800;
 
-    public function __construct(public RetroRecap $recap) {}
+    /**
+     * @param  array<string, mixed>  $webhookData
+     */
+    public function __construct(public RetroRecap $recap, public array $webhookData = []) {}
+
+    public function toWebhook(): array
+    {
+        return $this->webhookData;
+    }
 
     public function toSlack(): array
     {

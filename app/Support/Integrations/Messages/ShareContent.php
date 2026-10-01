@@ -20,4 +20,11 @@ interface ShareContent
     public function toMicrosoftTeams(): array;
 
     public function toMattermost(): string;
+
+    /**
+     * The `data` object of a generic webhook body (spec 8 §4.5).
+     *
+     * @return array<string, mixed>
+     */
+    public function toWebhook(): array;
 }

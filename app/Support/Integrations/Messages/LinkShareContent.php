@@ -8,11 +8,20 @@ class LinkShareContent implements ShareContent
 {
     private const TextLimit = 2900;
 
+    /**
+     * @param  array<string, mixed>  $webhookData
+     */
     public function __construct(
         public string $text,
         public string $buttonLabel,
         public string $url,
+        public array $webhookData = [],
     ) {}
+
+    public function toWebhook(): array
+    {
+        return $this->webhookData;
+    }
 
     public function toSlack(): array
     {

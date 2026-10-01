@@ -11,6 +11,7 @@ use App\Models\Column;
 use App\Models\Participant;
 use App\Models\Retro;
 use App\Support\Integrations\Messages\RetroRecap;
+use App\Support\Integrations\Messages\RetroRecapContent;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
@@ -60,6 +61,17 @@ class BuildRetroRecap
     }
 
     /**
+     * The recap for every channel, with the structured form the generic
+     * webhook sends (spec 8 §4.5), from one read of the retro.
+     */
+    public function content(Retro $retro): RetroRecapContent
+    {
+        $recap = $this->handle($retro);
+
+        return new RetroRecapContent($recap, $this->webhookData($retro, $recap));
+    }
+
+    /**
      * @return array<int, string>
      */
     private function participantNames(Retro $retro): array
@@ -83,9 +95,9 @@ class BuildRetroRecap
     }
 
     /**
-     * @return Collection<int, array{content: string, assignee: ?string, dueOn: ?string, isCompleted: bool}>
+     * @return Collection<int, ActionItem>
      */
-    private function actionItems(Retro $retro): Collection
+    private function sortedActionItems(Retro $retro): Collection
     {
         return $retro->actionItems()
             ->with(['assigneeUser', 'assigneeParticipant.user'])
@@ -95,6 +107,15 @@ class BuildRetroRecap
                 fn (ActionItem $first, ActionItem $second): int => $first->priority->sortWeight() <=> $second->priority->sortWeight(),
                 fn (ActionItem $first, ActionItem $second): int => $first->created_at <=> $second->created_at,
             ])
+            ->values();
+    }
+
+    /**
+     * @return Collection<int, array{content: string, assignee: ?string, dueOn: ?string, isCompleted: bool}>
+     */
+    private function actionItems(Retro $retro): Collection
+    {
+        return $this->sortedActionItems($retro)
             ->map(fn (ActionItem $item): array => [
                 'content' => Str::squish($item->content),
                 'assignee' => $this->assignee($item),
@@ -102,6 +123,40 @@ class BuildRetroRecap
                 'isCompleted' => $item->isCompleted(),
             ])
             ->values();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function webhookData(Retro $retro, RetroRecap $recap): array
+    {
+        $actionItems = $this->sortedActionItems($retro);
+
+        return [
+            'title' => $recap->title,
+            'url' => $recap->url,
+            'completedAt' => ($retro->completed_at ?? now())->toIso8601ZuluString(),
+            'participants' => ['count' => $recap->participantCount, 'names' => $recap->participantNames],
+            'cardCount' => $recap->cardCount,
+            'roti' => $recap->rotiAverage === null ? null : [
+                'average' => round($recap->rotiAverage, 1),
+                'respondents' => $recap->rotiRespondents,
+            ],
+            'summary' => $recap->summary,
+            'actionItems' => $actionItems->take(self::ActionItemLimit)
+                ->map(fn (ActionItem $item): array => [
+                    'content' => Str::squish($item->content),
+                    'assignee' => $this->assignee($item),
+                    'dueOn' => $item->due_on?->toDateString(),
+                    'priority' => $item->priority->value,
+                    'isCompleted' => $item->isCompleted(),
+                ])
+                ->values()
+                ->all(),
+            'moreActionItems' => max(0, $actionItems->count() - self::ActionItemLimit),
+            'suggestedActions' => $recap->suggestedActions,
+            'topCards' => $recap->topCards,
+        ];
     }
 
     private function assignee(ActionItem $item): ?string
