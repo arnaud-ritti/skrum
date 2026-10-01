@@ -99,7 +99,7 @@ function p14cFakeJiraDataCenter(array $routes = []): void
         jiraDataCenterUrl('rest/api/2/issue/createmeta/*') => Http::response(['values' => jiraCreateMeta()['fields']]),
         jiraDataCenterUrl('rest/api/2/issue') => Http::response(['id' => '10042', 'key' => 'PROJ-42'], 201),
         jiraDataCenterUrl('rest/api/2/issue/*') => Http::response(null, 204),
-        'jira.example.com/*' => Http::response([]),
+        'jira.example.com/*' => Http::response(['message' => 'Unexpected request in a browser test.'], 404),
     ];
 
     Http::fake([...$routes, ...array_diff_key($defaults, $routes)]);
@@ -165,7 +165,7 @@ function p14cGitHubPatches(): array
 
 it('[P14c-01] offers OAuth first on the Jira Data Center card and shows an OAuth connection with its access', function () {
     p14cEnable(IntegrationProvider::JiraDataCenter);
-    Http::fake(['jira.example.com/*' => Http::response([])]);
+    Http::fake(['jira.example.com/*' => Http::response(['message' => 'Unexpected request in a browser test.'], 404)]);
     $team = Team::factory()->create();
     $admin = p14cAdmin($team);
     $path = p14cIntegrationsPath($team);
@@ -197,7 +197,11 @@ it('[P14c-05a] connects Jira Data Center with a personal access token and shows 
     Http::fake([
         jiraDataCenterUrl('rest/api/2/myself') => Http::response(['name' => 'jdoe', 'displayName' => 'Jane Doe', 'emailAddress' => 'jane@example.com']),
         jiraDataCenterUrl('rest/api/2/serverInfo') => Http::response(['serverTitle' => 'Acme Jira', 'version' => '8.20.1', 'versionNumbers' => [8, 20, 1]]),
-        'jira.example.com/*' => Http::response([]),
+        jiraDataCenterUrl('rest/api/2/field') => Http::response([
+            ['id' => 'customfield_10002', 'name' => 'Story Points', 'custom' => true, 'schema' => ['type' => 'number', 'custom' => 'com.atlassian.jira.plugin.system.customfieldtypes:float']],
+        ]),
+        jiraDataCenterUrl('rest/api/2/priority') => Http::response([['id' => '1', 'name' => 'Blocker'], ['id' => '2', 'name' => 'High']]),
+        'jira.example.com/*' => Http::response(['message' => 'Unexpected request in a browser test.'], 404),
     ]);
     $token = 'pasted-jira-token-abcdefghijklmnop';
     $team = Team::factory()->create();
@@ -261,7 +265,7 @@ it('[P14c-05b] refuses a token Jira rejects and a server older than Jira 8.14', 
         jiraDataCenterUrl('rest/api/2/serverInfo') => function () use (&$versionNumbers) {
             return Http::response(['serverTitle' => 'Acme Jira', 'version' => implode('.', $versionNumbers), 'versionNumbers' => $versionNumbers]);
         },
-        'jira.example.com/*' => Http::response([]),
+        'jira.example.com/*' => Http::response(['message' => 'Unexpected request in a browser test.'], 404),
     ]);
     $team = Team::factory()->create();
     $admin = p14cAdmin($team);
@@ -291,7 +295,8 @@ it('[P14c-06] asks for a new token once Jira answers that the token was revoked'
     p14cEnable(IntegrationProvider::JiraDataCenter);
     Http::fake([
         jiraDataCenterUrl('rest/api/2/myself') => Http::response(['message' => 'Unauthorized'], 401),
-        'jira.example.com/*' => Http::response([]),
+        jiraDataCenterUrl('rest/api/2/priority') => Http::response([['id' => '1', 'name' => 'Blocker'], ['id' => '2', 'name' => 'High']]),
+        'jira.example.com/*' => Http::response(['message' => 'Unexpected request in a browser test.'], 404),
     ]);
     $team = Team::factory()->create();
     $admin = p14cAdmin($team);
@@ -470,7 +475,7 @@ it('[P14c-05c] creates the exported issue with the personal access token, so Jir
 it('[P14c-07] links the GitHub card to the App installation and shows the connected account', function () {
     p14cEnable(IntegrationProvider::GitHub);
     fakeGitHubTrackerApi();
-    Http::fake(['api.github.com/*' => Http::response([])]);
+    Http::fake(['api.github.com/*' => Http::response(['message' => 'Unexpected request in a browser test.'], 404)]);
     $team = Team::factory()->create();
     $admin = p14cAdmin($team);
     $path = p14cIntegrationsPath($team);
@@ -499,7 +504,7 @@ it('[P14c-08] imports the open issues of a GitHub milestone into a poker game', 
             ['number' => 2, 'title' => 'Sprint 2', 'due_on' => now()->addDays(5)->toIso8601ZuluString()],
         ]),
     ]);
-    Http::fake(['api.github.com/*' => Http::response([])]);
+    Http::fake(['api.github.com/*' => Http::response(['message' => 'Unexpected request in a browser test.'], 404)]);
 
     $page = $this->awaitRealtime($this->signIn($table['facilitator'], "/poker/{$table['game']->id}"));
 
@@ -660,6 +665,75 @@ it('[P14c-10] updates the block in place and keeps the text written around it on
         ->and(substr_count($patches[0]['body'], '<!-- skrum:estimate -->'))->toBe(1);
 });
 
+it('[P14c-11] removes the block from the GitHub issue body when the facilitator clears the estimate', function () {
+    $table = p14cTable(IntegrationProvider::GitHub);
+    $body = "Intro edited on GitHub\n\n".renderedEstimateBlock('3');
+    fakeGitHubTrackerApi([
+        'api.github.com/repositories/9001/issues/7' => Http::response(gitHubIssue(7, ['body' => $body])),
+        'api.github.com/repos/acme/api/issues/7' => fn (Request $request) => Http::response(gitHubIssue(7, ['body' => $request['body']])),
+    ]);
+    $task = importedPokerTask($table['game'], [
+        'external_id' => '9001/7',
+        'external_key' => 'acme/api#7',
+        'external_url' => 'https://github.com/acme/api/issues/7',
+        'title' => 'Checkout bug',
+        'estimate' => '3',
+        'estimate_numeric' => 3,
+        'estimated_at' => now()->subHour(),
+        'synced_at' => now()->subHour(),
+        'external_estimate' => '3',
+    ], IntegrationProvider::GitHub);
+    $round = PokerRound::factory()->revealed()->create(['poker_task_id' => $task->id]);
+    pokerVote($round, $table['facilitatorPlayer'], '3');
+    $table['game']->forceFill(['current_task_id' => $task->id])->save();
+    $estimateUrl = route('poker.tasks.estimate.update', [$table['game'], $task], false);
+    $estimateBadge = '[data-slot="badge"]:text-is("Estimate: 3")';
+
+    $page = $this->awaitRealtime($this->signIn($table['facilitator'], "/poker/{$table['game']->id}"));
+
+    $page->assertPresent($estimateBadge)
+        ->assertSee('Synced to GitHub');
+
+    $status = $page->script(<<<JS
+        async () => {
+            const cookie = document.cookie.split('; ').find((entry) => entry.startsWith('XSRF-TOKEN='));
+            const token = decodeURIComponent(cookie.slice('XSRF-TOKEN='.length));
+            const response = await fetch('{$estimateUrl}', {
+                method: 'PUT',
+                credentials: 'same-origin',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-XSRF-TOKEN': token,
+                },
+                body: JSON.stringify({ value: null }),
+            });
+
+            return response.status;
+        }
+        JS);
+
+    expect($status)->toBe(200);
+
+    $page->assertNotPresent($estimateBadge)
+        ->assertSee('Sync pending');
+
+    while (p14cDueJobs() > 0) {
+        $this->workQueue();
+    }
+
+    $patches = p14cGitHubPatches();
+
+    expect($patches)->toHaveCount(1)
+        ->and($patches[0]->url())->toBe('https://api.github.com/repos/acme/api/issues/7')
+        ->and($patches[0]['body'])->toBe('Intro edited on GitHub')
+        ->and($task->fresh()->estimate)->toBeNull();
+
+    $page->assertSee('Synced to GitHub')
+        ->assertDontSee('Sync pending')
+        ->assertNotPresent($estimateBadge);
+});
+
 it('[P14c-12] exports an action item to GitHub for a member linked by GitHub sign-in, with the priority label', function () {
     p14cEnable(IntegrationProvider::GitHub);
     fakeGitHubTrackerApi([
@@ -671,7 +745,7 @@ it('[P14c-12] exports an action item to GitHub for a member linked by GitHub sig
             'assignees' => [['login' => 'octocat']],
         ], 201),
     ]);
-    Http::fake(['api.github.com/*' => Http::response([])]);
+    Http::fake(['api.github.com/*' => Http::response(['message' => 'Unexpected request in a browser test.'], 404)]);
     [$retro, $ada, $item] = p14cBoardItem(['priority' => ActionItemPriority::High]);
     $integration = TeamIntegration::factory()->gitHub()->create(['team_id' => $retro->team_id]);
     $integration->forceFill(['settings' => [...$integration->settings, 'priorityLabels' => ['high' => 'priority: high']]])->save();
@@ -713,7 +787,7 @@ it('[P14c-13] asks to reconnect once GitHub answers that the App was uninstalled
     fakeGitHubTrackerApi([
         'api.github.com/app/installations/4242' => Http::response(['message' => 'Not Found'], 404),
     ]);
-    Http::fake(['api.github.com/*' => Http::response([])]);
+    Http::fake(['api.github.com/*' => Http::response(['message' => 'Unexpected request in a browser test.'], 404)]);
     $team = Team::factory()->create();
     $admin = p14cAdmin($team);
     $integration = TeamIntegration::factory()->gitHub()->create(['team_id' => $team->id]);
