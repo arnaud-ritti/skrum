@@ -130,6 +130,8 @@ One class, `BuildWhiteboardSnapshot`, builds it for the viewer. All redaction li
 ### 6.6 Validation and limits
 
 - Element `type` must be in the whitelist of §6.1; unknown keys are stripped; numbers must be finite.
+- `version` is an integer from 1 to 2 147 483 647 and `versionNonce` a non-negative integer that fits the column; an element outside either range is rejected as `invalid`, never a server error.
+- Shape: the keys Excalidraw reads without checking must have the shape it expects, because one malformed element would stop the canvas from loading for the whole board. `points` is required for line, arrow and freedraw and is a list of at least one `[number, number]` pair; `text` is a required string for text elements; `pressures` is a list of numbers; `groupIds` a list of strings; `boundElements` null or a list of `{id, type}`; `frameId` and `containerId` null or an element id; `index` null or a valid fractional index; `scale` and `lastCommittedPoint` a pair of numbers (the latter may be null); `startBinding` and `endBinding` null or `{elementId, focus, gap, fixedPoint?}`; `roundness`, `crop` and `fixedSegments` null or their Excalidraw shape; style keys (colours, fill and stroke style, stroke width, roughness, opacity, angle, seed, font size and family, line height, alignments, arrowheads, frame name, image status, the boolean flags) are scalars of the expected type. Anything else is rejected as `invalid`.
 - `link` is kept only when it is an `http` or `https` URL. Text is at most 10 000 characters. `customData` is reduced to `{skrum: {kind: 'sticky'}}` or removed.
 - One element's JSON is at most 64 KB. A board holds at most 5 000 live elements (422 "This board is full.").
 - Writes are limited to 20 requests per second per member (429).
