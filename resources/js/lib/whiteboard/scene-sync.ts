@@ -467,7 +467,8 @@ export function createSceneSync(deps: SceneSyncDeps): SceneSync {
                     error instanceof RetroRequestError &&
                     error.status === 409
                 ) {
-                    await replaceScene().catch(() => setOffline(true));
+                    // Older than the purge mark: no delta can catch up.
+                    recover();
                 } else {
                     setOffline(true);
                 }
