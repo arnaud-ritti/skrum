@@ -70,7 +70,11 @@ it('exports a board item to Jira', function () {
 
     $this->actingAs($author)->postJson(...jiraExportRequest($retro, $item))
         ->assertCreated()
-        ->assertJsonPath('actionItem.externalLinks', [['source' => 'jira', 'key' => 'PROJ-42', 'url' => 'https://acme.atlassian.net/browse/PROJ-42']])
+        ->assertJsonCount(1, 'actionItem.externalLinks')
+        ->assertJsonPath('actionItem.externalLinks.0.source', 'jira')
+        ->assertJsonPath('actionItem.externalLinks.0.key', 'PROJ-42')
+        ->assertJsonPath('actionItem.externalLinks.0.url', 'https://acme.atlassian.net/browse/PROJ-42')
+        ->assertJsonPath('actionItem.externalLinks.0.syncState', 'off')
         ->assertJsonPath('warnings', []);
 
     $fields = jiraCreatePayload();

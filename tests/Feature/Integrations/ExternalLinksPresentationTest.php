@@ -11,6 +11,7 @@ use App\Models\IntegrationUserMapping;
 use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\Team;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
 
@@ -33,10 +34,12 @@ it('presents external links to members only', function () {
     $present = app(PresentActionItem::class);
     $loaded = $item->fresh()->loadForPresentation();
 
-    expect($present->handle($loaded, ActionItemActor::forParticipant($member))['externalLinks'])->toBe([
-        ['source' => 'jira', 'key' => 'PROJ-12', 'url' => 'https://acme.atlassian.net/browse/PROJ-12'],
-        ['source' => 'linear', 'key' => 'ENG-7', 'url' => 'https://linear.app/acme/issue/ENG-7'],
-    ])
+    expect(collect($present->handle($loaded, ActionItemActor::forParticipant($member))['externalLinks'])
+        ->map(fn (array $link): array => Arr::only($link, ['source', 'key', 'url', 'syncState']))
+        ->all())->toBe([
+            ['source' => 'jira', 'key' => 'PROJ-12', 'url' => 'https://acme.atlassian.net/browse/PROJ-12', 'syncState' => 'off'],
+            ['source' => 'linear', 'key' => 'ENG-7', 'url' => 'https://linear.app/acme/issue/ENG-7', 'syncState' => 'off'],
+        ])
         ->and($present->handle($loaded, ActionItemActor::forParticipant($guest))['externalLinks'])->toBe([])
         ->and($present->handle($loaded)['externalLinks'])->toBeNull();
 });
@@ -71,7 +74,8 @@ it('announces new links on the member channels of running retros only', function
     Event::assertDispatched(ActionItemExternalLinksChanged::class, fn (ActionItemExternalLinksChanged $event) => $event->retroId === $carrying->id
         && $event->broadcastOn()->name === "private-retro-members.{$carrying->id}"
         && $event->broadcastAs() === 'action-item.external-links.changed'
-        && $event->broadcastWith() === ['actionItemId' => $item->id, 'externalLinks' => [['source' => 'jira', 'key' => 'PROJ-3', 'url' => $item->externalLinks()->first()->external_url]]]);
+        && $event->broadcastWith()['actionItemId'] === $item->id
+        && Arr::only($event->broadcastWith()['externalLinks'][0], ['source', 'key', 'url']) === ['source' => 'jira', 'key' => 'PROJ-3', 'url' => $item->externalLinks()->first()->external_url]);
     Event::assertDispatched(ActionItemExternalLinksChanged::class, fn (ActionItemExternalLinksChanged $event) => $event->retroId === $source->id);
 });
 

@@ -63,7 +63,11 @@ it('exports an action item to a GitHub repository', function () {
     $this->actingAs($author)
         ->postJson(route('retros.action-items.exports.store', [$retro, $item]), ['source' => 'github', 'repository_id' => '9001'])
         ->assertCreated()
-        ->assertJsonPath('actionItem.externalLinks', [['source' => 'github', 'key' => 'acme/api#12', 'url' => 'https://github.com/acme/api/issues/12']])
+        ->assertJsonCount(1, 'actionItem.externalLinks')
+        ->assertJsonPath('actionItem.externalLinks.0.source', 'github')
+        ->assertJsonPath('actionItem.externalLinks.0.key', 'acme/api#12')
+        ->assertJsonPath('actionItem.externalLinks.0.url', 'https://github.com/acme/api/issues/12')
+        ->assertJsonPath('actionItem.externalLinks.0.syncState', 'off')
         ->assertJsonPath('warnings', []);
 
     $payload = gitHubCreatedIssuePayload();

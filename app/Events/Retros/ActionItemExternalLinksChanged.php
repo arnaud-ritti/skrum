@@ -5,7 +5,7 @@ namespace App\Events\Retros;
 class ActionItemExternalLinksChanged extends RetroMembersBroadcastEvent
 {
     /**
-     * @param  array<int, array{source: string, key: string, url: string}>  $externalLinks
+     * @param  array<int, array<string, mixed>>  $externalLinks
      */
     public function __construct(string $retroId, public string $actionItemId, public array $externalLinks)
     {

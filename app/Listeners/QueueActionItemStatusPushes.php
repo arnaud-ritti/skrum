@@ -55,7 +55,7 @@ class QueueActionItemStatusPushes
         }
 
         $item->externalLinks()->update(['local_state_changed_at' => now()]);
-        $refused = false;
+        $changed = false;
 
         foreach ($links as $link) {
             $integration = LinkStatusSync::integration($link, $item->team);
@@ -66,15 +66,16 @@ class QueueActionItemStatusPushes
 
             if (! $integration->canWrite()) {
                 $link->forceFill(['sync_error' => (new ReadOnlyConnection($integration->provider))->userMessage()])->save();
-                $refused = true;
+                $changed = true;
 
                 continue;
             }
 
             PushActionItemState::dispatch($link->id)->afterCommit();
+            $changed = true;
         }
 
-        if ($refused) {
+        if ($changed) {
             rescue(fn () => $this->broadcast->externalLinksChanged($item));
         }
     }

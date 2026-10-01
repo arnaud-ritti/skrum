@@ -36,7 +36,11 @@ it('exports an action item to Jira Data Center with wiki markup and a name assig
     $this->actingAs($author)
         ->postJson(route('retros.action-items.exports.store', [$retro, $item]), ['source' => 'jira_dc', 'project_id' => '10000', 'issue_type_id' => '11'])
         ->assertCreated()
-        ->assertJsonPath('actionItem.externalLinks', [['source' => 'jira_dc', 'key' => 'PROJ-42', 'url' => 'https://jira.example.com/browse/PROJ-42']])
+        ->assertJsonCount(1, 'actionItem.externalLinks')
+        ->assertJsonPath('actionItem.externalLinks.0.source', 'jira_dc')
+        ->assertJsonPath('actionItem.externalLinks.0.key', 'PROJ-42')
+        ->assertJsonPath('actionItem.externalLinks.0.url', 'https://jira.example.com/browse/PROJ-42')
+        ->assertJsonPath('actionItem.externalLinks.0.syncState', 'off')
         ->assertJsonPath('warnings', []);
 
     Http::assertSent(function (Request $request) {

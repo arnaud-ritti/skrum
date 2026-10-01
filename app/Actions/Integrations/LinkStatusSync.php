@@ -2,6 +2,8 @@
 
 namespace App\Actions\Integrations;
 
+use App\Enums\ExternalIssueState;
+use App\Models\ActionItem;
 use App\Models\ActionItemExternalLink;
 use App\Models\Team;
 use App\Models\TeamIntegration;
@@ -14,6 +16,16 @@ use App\Support\Integrations\StatusSync;
  */
 class LinkStatusSync
 {
+    public const Off = 'off';
+
+    public const Synced = 'synced';
+
+    public const Pending = 'pending';
+
+    public const Failed = 'failed';
+
+    public const Missing = 'missing';
+
     public static function integration(ActionItemExternalLink $link, Team $team): ?TeamIntegration
     {
         if (! $link->source->isEnabled()) {
@@ -29,5 +41,30 @@ class LinkStatusSync
         }
 
         return $integration;
+    }
+
+    /**
+     * Spec 8 §7: `pending` until the source was read or while its state
+     * differs from the item's (a push or a read is on its way).
+     */
+    public static function state(ActionItemExternalLink $link, ActionItem $item): string
+    {
+        $integration = self::integration($link, $item->team);
+
+        if ($integration === null || ! $integration->isActive()) {
+            return self::Off;
+        }
+
+        if ($link->missing_at !== null) {
+            return self::Missing;
+        }
+
+        if ($link->sync_error !== null) {
+            return self::Failed;
+        }
+
+        $itemState = $item->isCompleted() ? ExternalIssueState::Done : ExternalIssueState::Open;
+
+        return $link->external_state === $itemState ? self::Synced : self::Pending;
     }
 }

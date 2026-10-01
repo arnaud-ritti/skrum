@@ -4,6 +4,7 @@ namespace App\Actions\Retros;
 
 use App\Actions\ActionItems\ActionItemActor;
 use App\Actions\ActionItems\ActionItemPermissions;
+use App\Actions\Integrations\LinkStatusSync;
 use App\Enums\ActionItemStatus;
 use App\Models\ActionItem;
 use App\Models\ActionItemExternalLink;
@@ -15,7 +16,7 @@ class PresentActionItem
     public function __construct(private ActionItemPermissions $permissions) {}
 
     /**
-     * Creators and assignees are always named, also on anonymous retros. External issue links are for members: guests get none, and payloads presented without a viewer (broadcasts) carry null so clients keep what they know.
+     * Creators and assignees are always named, also on anonymous retros. External issue links are for members: guests get none, and payloads presented without a viewer (broadcasts) carry null so clients keep what they know; so is `completedVia`.
      *
      * @return array{
      *     id: string,
@@ -27,6 +28,7 @@ class PresentActionItem
      *     isOverdue: bool,
      *     status: string,
      *     completedAt: ?string,
+     *     completedVia: ?string,
      *     assignee: ?array{kind: string, id: string, name: string, avatarUrl: string, isTeamMember: bool},
      *     createdBy: ?array{name: string, avatarUrl: string},
      *     isMine: bool,
@@ -37,7 +39,7 @@ class PresentActionItem
      *     recurrence: ?string,
      *     previousOccurrenceId: ?string,
      *     subtasks: array<int, array{id: string, content: string, isCompleted: bool, position: int}>,
-     *     externalLinks: ?array<int, array{source: string, key: string, url: string}>,
+     *     externalLinks: ?array<int, array{id: string, source: string, key: string, url: string, state: ?string, statusName: ?string, syncState: string, syncError: ?string, lastSyncedAt: ?string}>,
      *     createdAt: ?string
      * }
      */
@@ -53,6 +55,7 @@ class PresentActionItem
             'isOverdue' => $item->isOverdue($today ?? ActionItem::today()),
             'status' => $item->isCompleted() ? ActionItemStatus::Completed->value : ActionItemStatus::Open->value,
             'completedAt' => $item->completed_at?->toIso8601String(),
+            'completedVia' => $viewer?->user === null ? null : $item->completed_via_source,
             'assignee' => $this->assignee($item),
             'createdBy' => $this->createdBy($item),
             'isMine' => $viewer !== null && $this->permissions->isAuthor($item, $viewer),
@@ -77,17 +80,27 @@ class PresentActionItem
     }
 
     /**
-     * @return array<int, array{source: string, key: string, url: string}>
+     * @return array<int, array{id: string, source: string, key: string, url: string, state: ?string, statusName: ?string, syncState: string, syncError: ?string, lastSyncedAt: ?string}>
      */
     public function presentExternalLinks(ActionItem $item): array
     {
         return $item->externalLinks
             ->sortBy(fn (ActionItemExternalLink $link): string => $link->source->value)
-            ->map(fn (ActionItemExternalLink $link): array => [
-                'source' => $link->source->value,
-                'key' => $link->external_key,
-                'url' => $link->external_url,
-            ])
+            ->map(function (ActionItemExternalLink $link) use ($item): array {
+                $syncState = LinkStatusSync::state($link, $item);
+
+                return [
+                    'id' => $link->id,
+                    'source' => $link->source->value,
+                    'key' => $link->external_key,
+                    'url' => $link->external_url,
+                    'state' => $link->external_state?->value,
+                    'statusName' => $link->external_status_name,
+                    'syncState' => $syncState,
+                    'syncError' => $syncState === LinkStatusSync::Failed ? $link->sync_error : null,
+                    'lastSyncedAt' => $link->last_synced_at?->toIso8601String(),
+                ];
+            })
             ->values()
             ->all();
     }
@@ -109,7 +122,7 @@ class PresentActionItem
     }
 
     /**
-     * @return ?array<int, array{source: string, key: string, url: string}>
+     * @return ?array<int, array{id: string, source: string, key: string, url: string, state: ?string, statusName: ?string, syncState: string, syncError: ?string, lastSyncedAt: ?string}>
      */
     private function externalLinksFor(ActionItem $item, ?ActionItemActor $viewer): ?array
     {
