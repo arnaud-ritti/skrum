@@ -26,7 +26,11 @@ A test is found by its identifier: `vendor/bin/pest tests/Browser/Walkthroughs -
 | Plan 8c: surveys                      | 10      | 10      | 0                  | 0          |
 | Plan 8d: results                      | 16      | 13      | 1                  | 2          |
 | Plan 8e: LLM features                 | 22      | 9       | 11                 | 2          |
-| **Total**                             | **201** | **146** | **40**             | **15**     |
+| Plan 13a: games foundation            | 11      | 5       | 5                  | 1          |
+| Plan 13b: Draw & Guess and Decoded    | 21      | 11      | 8                  | 2          |
+| Plan 13c: Sprint in one GIF           | 8       | 0       | 7                  | 1          |
+| Plan 13d: icebreaker, scores, invites | 26      | 16      | 7                  | 3          |
+| **Total**                             | **267** | **178** | **67**             | **22**     |
 
 ## Plan 4: retro board core
 
@@ -313,6 +317,100 @@ Walkthrough: `docs/superpowers/plans/2026-09-30-plan-8e-llm.md, final walkthroug
 | P08e-11b | docs/superpowers/plans/2026-09-30-plan-8e-llm.md:5520 | tests/Browser/Walkthroughs/Plan08eLlmTest.php | auto-substituted |
 | P08e-11r | docs/superpowers/plans/2026-09-30-plan-8e-llm.md:5511 | (none)                                        | residual         |
 
+## Plan 13a: games foundation
+
+Walkthrough: `docs/superpowers/plans/2026-10-06-plan-13a-games-foundation.md, final walkthrough`.
+
+| Id       | Walkthrough step                                                     | Test file                                                 | Status           |
+| -------- | -------------------------------------------------------------------- | --------------------------------------------------------- | ---------------- |
+| P13a-01  | docs/superpowers/plans/2026-10-06-plan-13a-games-foundation.md:10651 | tests/Browser/Walkthroughs/Plan13aGamesFoundationTest.php | auto             |
+| P13a-02  | docs/superpowers/plans/2026-10-06-plan-13a-games-foundation.md:10652 | tests/Browser/Walkthroughs/Plan13aGamesFoundationTest.php | auto-substituted |
+| P13a-03  | docs/superpowers/plans/2026-10-06-plan-13a-games-foundation.md:10653 | tests/Browser/Walkthroughs/Plan13aGamesFoundationTest.php | auto-substituted |
+| P13a-04a | docs/superpowers/plans/2026-10-06-plan-13a-games-foundation.md:10654 | tests/Browser/Walkthroughs/Plan13aGamesFoundationTest.php | auto             |
+| P13a-04b | docs/superpowers/plans/2026-10-06-plan-13a-games-foundation.md:10654 | tests/Browser/Walkthroughs/Plan13aGamesFoundationTest.php | auto-substituted |
+| P13a-05  | docs/superpowers/plans/2026-10-06-plan-13a-games-foundation.md:10655 | tests/Browser/Walkthroughs/Plan13aGamesFoundationTest.php | auto             |
+| P13a-06a | docs/superpowers/plans/2026-10-06-plan-13a-games-foundation.md:10656 | tests/Browser/Walkthroughs/Plan13aGamesFoundationTest.php | auto-substituted |
+| P13a-06b | docs/superpowers/plans/2026-10-06-plan-13a-games-foundation.md:10656 | tests/Browser/Walkthroughs/Plan13aGamesFoundationTest.php | auto-substituted |
+| P13a-07  | docs/superpowers/plans/2026-10-06-plan-13a-games-foundation.md:10657 | tests/Browser/Walkthroughs/Plan13aGamesFoundationTest.php | auto             |
+| P13a-08  | docs/superpowers/plans/2026-10-06-plan-13a-games-foundation.md:10658 | (none)                                                    | residual         |
+| P13a-09  | docs/superpowers/plans/2026-10-06-plan-13a-games-foundation.md:10659 | tests/Browser/Walkthroughs/Plan13aGamesFoundationTest.php | auto             |
+
+## Plan 13b: Draw & Guess and Decoded
+
+Walkthrough: `docs/superpowers/plans/2026-10-06-plan-13b-games-draw-and-decoded.md, final walkthrough`.
+
+| Id       | Walkthrough step                                                          | Test file                                                | Status           |
+| -------- | ------------------------------------------------------------------------- | -------------------------------------------------------- | ---------------- |
+| P13b-01  | docs/superpowers/plans/2026-10-06-plan-13b-games-draw-and-decoded.md:5573 | tests/Browser/Walkthroughs/Plan13bDrawAndDecodedTest.php | auto             |
+| P13b-02  | docs/superpowers/plans/2026-10-06-plan-13b-games-draw-and-decoded.md:5574 | tests/Browser/Walkthroughs/Plan13bDrawAndDecodedTest.php | auto             |
+| P13b-03  | docs/superpowers/plans/2026-10-06-plan-13b-games-draw-and-decoded.md:5575 | tests/Browser/Walkthroughs/Plan13bDrawAndDecodedTest.php | auto-substituted |
+| P13b-04a | docs/superpowers/plans/2026-10-06-plan-13b-games-draw-and-decoded.md:5576 | tests/Browser/Walkthroughs/Plan13bDrawAndDecodedTest.php | auto-substituted |
+| P13b-04b | docs/superpowers/plans/2026-10-06-plan-13b-games-draw-and-decoded.md:5576 | tests/Browser/Walkthroughs/Plan13bDrawAndDecodedTest.php | auto-substituted |
+| P13b-04t | docs/superpowers/plans/2026-10-06-plan-13b-games-draw-and-decoded.md:5576 | (none)                                                   | residual         |
+| P13b-05a | docs/superpowers/plans/2026-10-06-plan-13b-games-draw-and-decoded.md:5577 | tests/Browser/Walkthroughs/Plan13bDrawAndDecodedTest.php | auto-substituted |
+| P13b-05b | docs/superpowers/plans/2026-10-06-plan-13b-games-draw-and-decoded.md:5577 | (none)                                                   | residual         |
+| P13b-05c | docs/superpowers/plans/2026-10-06-plan-13b-games-draw-and-decoded.md:5577 | tests/Browser/Walkthroughs/Plan13bDrawAndDecodedTest.php | auto             |
+| P13b-06  | docs/superpowers/plans/2026-10-06-plan-13b-games-draw-and-decoded.md:5578 | tests/Browser/Walkthroughs/Plan13bDrawAndDecodedTest.php | auto-substituted |
+| P13b-07  | docs/superpowers/plans/2026-10-06-plan-13b-games-draw-and-decoded.md:5579 | tests/Browser/Walkthroughs/Plan13bDrawAndDecodedTest.php | auto             |
+| P13b-08  | docs/superpowers/plans/2026-10-06-plan-13b-games-draw-and-decoded.md:5580 | tests/Browser/Walkthroughs/Plan13bDrawAndDecodedTest.php | auto             |
+| P13b-09  | docs/superpowers/plans/2026-10-06-plan-13b-games-draw-and-decoded.md:5581 | tests/Browser/Walkthroughs/Plan13bDrawAndDecodedTest.php | auto             |
+| P13b-10  | docs/superpowers/plans/2026-10-06-plan-13b-games-draw-and-decoded.md:5582 | tests/Browser/Walkthroughs/Plan13bDrawAndDecodedTest.php | auto             |
+| P13b-11a | docs/superpowers/plans/2026-10-06-plan-13b-games-draw-and-decoded.md:5583 | tests/Browser/Walkthroughs/Plan13bDrawAndDecodedTest.php | auto-substituted |
+| P13b-11b | docs/superpowers/plans/2026-10-06-plan-13b-games-draw-and-decoded.md:5583 | tests/Browser/Walkthroughs/Plan13bDrawAndDecodedTest.php | auto-substituted |
+| P13b-11c | docs/superpowers/plans/2026-10-06-plan-13b-games-draw-and-decoded.md:5583 | tests/Browser/Walkthroughs/Plan13bDrawAndDecodedTest.php | auto             |
+| P13b-12a | docs/superpowers/plans/2026-10-06-plan-13b-games-draw-and-decoded.md:5584 | tests/Browser/Walkthroughs/Plan13bDrawAndDecodedTest.php | auto             |
+| P13b-12b | docs/superpowers/plans/2026-10-06-plan-13b-games-draw-and-decoded.md:5584 | tests/Browser/Walkthroughs/Plan13bDrawAndDecodedTest.php | auto             |
+| P13b-13a | docs/superpowers/plans/2026-10-06-plan-13b-games-draw-and-decoded.md:5585 | tests/Browser/Walkthroughs/Plan13bDrawAndDecodedTest.php | auto-substituted |
+| P13b-13b | docs/superpowers/plans/2026-10-06-plan-13b-games-draw-and-decoded.md:5585 | tests/Browser/Walkthroughs/Plan13bDrawAndDecodedTest.php | auto             |
+
+## Plan 13c: Sprint in one GIF
+
+Walkthrough: `docs/superpowers/plans/2026-10-06-plan-13c-games-sprint-gif.md, final walkthrough`.
+
+| Id       | Walkthrough step                                                    | Test file                                           | Status           |
+| -------- | ------------------------------------------------------------------- | --------------------------------------------------- | ---------------- |
+| P13c-01  | docs/superpowers/plans/2026-10-06-plan-13c-games-sprint-gif.md:3918 | tests/Browser/Walkthroughs/Plan13cSprintGifTest.php | auto-substituted |
+| P13c-02  | docs/superpowers/plans/2026-10-06-plan-13c-games-sprint-gif.md:3919 | tests/Browser/Walkthroughs/Plan13cSprintGifTest.php | auto-substituted |
+| P13c-02r | docs/superpowers/plans/2026-10-06-plan-13c-games-sprint-gif.md:3916 | (none)                                              | residual         |
+| P13c-03  | docs/superpowers/plans/2026-10-06-plan-13c-games-sprint-gif.md:3920 | tests/Browser/Walkthroughs/Plan13cSprintGifTest.php | auto-substituted |
+| P13c-04  | docs/superpowers/plans/2026-10-06-plan-13c-games-sprint-gif.md:3921 | tests/Browser/Walkthroughs/Plan13cSprintGifTest.php | auto-substituted |
+| P13c-05a | docs/superpowers/plans/2026-10-06-plan-13c-games-sprint-gif.md:3922 | tests/Browser/Walkthroughs/Plan13cSprintGifTest.php | auto-substituted |
+| P13c-05b | docs/superpowers/plans/2026-10-06-plan-13c-games-sprint-gif.md:3922 | tests/Browser/Walkthroughs/Plan13cSprintGifTest.php | auto-substituted |
+| P13c-06  | docs/superpowers/plans/2026-10-06-plan-13c-games-sprint-gif.md:3923 | tests/Browser/Walkthroughs/Plan13cSprintGifTest.php | auto-substituted |
+
+## Plan 13d: icebreaker, scores, invites
+
+Walkthrough: `docs/superpowers/plans/2026-10-06-plan-13d-games-icebreaker-scores-invites.md, final walkthrough`.
+
+| Id       | Walkthrough step                                                                   | Test file                                                                                   | Status           |
+| -------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | ---------------- |
+| P13d-00p | docs/superpowers/plans/2026-10-06-plan-13d-games-icebreaker-scores-invites.md:4429 | (none)                                                                                      | residual         |
+| P13d-01  | docs/superpowers/plans/2026-10-06-plan-13d-games-icebreaker-scores-invites.md:4431 | tests/Browser/Walkthroughs/Plan13bDrawAndDecodedTest.php (`P13b-01` to `P13b-10`, Task 3)   | auto-substituted |
+| P13d-02  | docs/superpowers/plans/2026-10-06-plan-13d-games-icebreaker-scores-invites.md:4432 | tests/Browser/Walkthroughs/Plan13bDrawAndDecodedTest.php (`P13b-01` to `P13b-10`, Task 3)   | auto             |
+| P13d-03  | docs/superpowers/plans/2026-10-06-plan-13d-games-icebreaker-scores-invites.md:4433 | tests/Browser/Walkthroughs/Plan13cSprintGifTest.php (`P13c-03`, `P13c-04`, `P13c-05a`)      | auto-substituted |
+| P13d-04  | docs/superpowers/plans/2026-10-06-plan-13d-games-icebreaker-scores-invites.md:4434 | tests/Browser/Walkthroughs/Plan13aGamesFoundationTest.php (`P13a-01` to `P13a-05`, Task 1)  | auto             |
+| P13d-05  | docs/superpowers/plans/2026-10-06-plan-13d-games-icebreaker-scores-invites.md:4435 | tests/Browser/Walkthroughs/Plan13bDrawAndDecodedTest.php (`P13b-11a` to `P13b-13b`, Task 4) | auto             |
+| P13d-06a | docs/superpowers/plans/2026-10-06-plan-13d-games-icebreaker-scores-invites.md:4436 | tests/Browser/Walkthroughs/Plan13dIcebreakerScoresInvitesTest.php                           | auto             |
+| P13d-06b | docs/superpowers/plans/2026-10-06-plan-13d-games-icebreaker-scores-invites.md:4437 | tests/Browser/Walkthroughs/Plan13dIcebreakerScoresInvitesTest.php                           | auto             |
+| P13d-06c | docs/superpowers/plans/2026-10-06-plan-13d-games-icebreaker-scores-invites.md:4438 | tests/Browser/Walkthroughs/Plan13dIcebreakerScoresInvitesTest.php                           | auto             |
+| P13d-06d | docs/superpowers/plans/2026-10-06-plan-13d-games-icebreaker-scores-invites.md:4439 | tests/Browser/Walkthroughs/Plan13dIcebreakerScoresInvitesTest.php                           | auto-substituted |
+| P13d-06e | docs/superpowers/plans/2026-10-06-plan-13d-games-icebreaker-scores-invites.md:4440 | tests/Browser/Walkthroughs/Plan13dIcebreakerScoresInvitesTest.php                           | auto             |
+| P13d-07  | docs/superpowers/plans/2026-10-06-plan-13d-games-icebreaker-scores-invites.md:4441 | tests/Browser/Walkthroughs/Plan13dIcebreakerScoresInvitesTest.php                           | auto             |
+| P13d-08  | docs/superpowers/plans/2026-10-06-plan-13d-games-icebreaker-scores-invites.md:4442 | (none)                                                                                      | residual         |
+| P13d-09a | docs/superpowers/plans/2026-10-06-plan-13d-games-icebreaker-scores-invites.md:4444 | tests/Browser/Walkthroughs/Plan13dIcebreakerScoresInvitesTest.php                           | auto             |
+| P13d-09b | docs/superpowers/plans/2026-10-06-plan-13d-games-icebreaker-scores-invites.md:4446 | tests/Browser/Walkthroughs/Plan13dIcebreakerScoresInvitesTest.php                           | auto             |
+| P13d-10a | docs/superpowers/plans/2026-10-06-plan-13d-games-icebreaker-scores-invites.md:4447 | tests/Browser/Walkthroughs/Plan13dIcebreakerScoresInvitesTest.php                           | auto             |
+| P13d-10b | docs/superpowers/plans/2026-10-06-plan-13d-games-icebreaker-scores-invites.md:4447 | tests/Browser/Walkthroughs/Plan13dIcebreakerScoresInvitesTest.php                           | auto             |
+| P13d-10c | docs/superpowers/plans/2026-10-06-plan-13d-games-icebreaker-scores-invites.md:4447 | (none)                                                                                      | residual         |
+| P13d-11a | docs/superpowers/plans/2026-10-06-plan-13d-games-icebreaker-scores-invites.md:4448 | tests/Browser/Walkthroughs/Plan13dIcebreakerScoresInvitesTest.php                           | auto             |
+| P13d-11b | docs/superpowers/plans/2026-10-06-plan-13d-games-icebreaker-scores-invites.md:4448 | tests/Browser/Walkthroughs/Plan13dIcebreakerScoresInvitesTest.php                           | auto             |
+| P13d-12a | docs/superpowers/plans/2026-10-06-plan-13d-games-icebreaker-scores-invites.md:4450 | tests/Browser/Walkthroughs/Plan13dIcebreakerScoresInvitesTest.php                           | auto-substituted |
+| P13d-12b | docs/superpowers/plans/2026-10-06-plan-13d-games-icebreaker-scores-invites.md:4451 | tests/Browser/Walkthroughs/Plan13dIcebreakerScoresInvitesTest.php                           | auto-substituted |
+| P13d-12c | docs/superpowers/plans/2026-10-06-plan-13d-games-icebreaker-scores-invites.md:4452 | tests/Browser/Walkthroughs/Plan13dIcebreakerScoresInvitesTest.php                           | auto             |
+| P13d-12d | docs/superpowers/plans/2026-10-06-plan-13d-games-icebreaker-scores-invites.md:4453 | tests/Browser/Walkthroughs/Plan13dIcebreakerScoresInvitesTest.php                           | auto-substituted |
+| P13d-12f | docs/superpowers/plans/2026-10-06-plan-13d-games-icebreaker-scores-invites.md:4453 | tests/Browser/Walkthroughs/Plan13dIcebreakerScoresInvitesTest.php                           | auto             |
+| P13d-12e | docs/superpowers/plans/2026-10-06-plan-13d-games-icebreaker-scores-invites.md:4454 | tests/Browser/Walkthroughs/Plan13dIcebreakerScoresInvitesTest.php                           | auto-substituted |
+
 ## Notes
 
 Where a walkthrough's wording and today's interface differ, the test follows the feature's spec.
@@ -415,6 +513,38 @@ Where a walkthrough's wording and today's interface differ, the test follows the
 - P08e-11b: "Stop the queue worker, complete a retro, wait 10 minutes" is done by leaving the job in the `database` queue, travelling 11 minutes and reloading the page. Nothing in the product marks the row as failed: `Retro::effectiveSummaryStatus()` reads a pending request older than 10 minutes as failed when the snapshot is built, so the database still says `pending` and the page changes only on reload. Retry queues a second job (the job's unique lock lasts 540 seconds and has expired), so two jobs wait: the test asserts the `jobs` count (1 before Retry, 2 after), runs the older one, which writes the summary with one request to the provider, then runs the second, which finds the summary ready and does nothing (still one request, the summary kept, no job left). The walkthrough's alternative ("set `summary_requested_at` back with tinker") is not used.
 - P08e-07, P08e-09: the theme name also appears in the suggestion's "Theme: …" line, so the tests match the heading with `p:text-is("…")` instead of a text assertion.
 
+- **P13a-02**: the walkthrough said "copy the guest link". The header has no field holding the link, only the icon button "Copy guest link", which writes to the clipboard and shows "Link copied". The test replaces `navigator.clipboard.writeText` in the host's page, presses the button, and reads what the product passed to it. The join link is `/play/{token}`. The suggestion "in the browser's language" is asserted for English only (the suite's browser locale), against `resources/games/guest-names/en.php`.
+- **P13a-03**: "not visible in the page source or the network tab" is asserted on `content()` and on the snapshot JSON fetched from inside each page, for the host and the guest, before and after a reload. Hangman has no leader, so nobody receives the word. The word is fixed by binding the real `GameWordBook` with a one-word list, because the round is started with the "Start" button.
+- **P13a-04b**: "the same letter twice shows a toast". A picked key is disabled for every player once the pick is broadcast, so the toast "This letter was already picked." only appears in a race. The test writes the first pick to the database without a broadcast and lets the guest press the still-enabled key.
+- **P13a-06a / P13a-06b**: the browser's clock does not move with `travel()`. The tests assert the countdown badge before the travel and the end card after it, not the countdown reaching zero on screen.
+- **P13a-07**: the walkthrough said the guest sees "Your access to this room has ended." "after the next action". Today the settings change broadcasts `game.room.changed`, the guest's page refetches its snapshot at once and shows the message without any action. The test asserts that, and also that the guest is sent to `/login` on a reload and that the old link is "no longer valid".
+- **P13b-02**: the walkthrough said "Who draws?" is preselected on the guest. Feature spec §4.1 and `nextLeaderId()` preselect the next online player after the previous leader in join order, and the first online player when no round was led yet, which is the host in a new room. The test asserts the host is preselected, then chooses the guest in the picker. The rotation after a led round is asserted by `P13b-10`.
+- **P13b-03 to P13b-09, P13b-10**: a second team member ("Bob Leader") is the drawer instead of the walkthrough's guest on a phone, so rounds can be arranged with factories. The guest's way into a Draw & Guess round is `P13b-02`.
+- **P13b-04a, P13b-04b, P13b-05a, P13b-06, P13b-13a**: the canvas is driven by `PointerEvent`s dispatched with `script()` (with `setPointerCapture` replaced on the canvas element, because a synthetic pointer cannot be captured) and checked by reading pixels with `getImageData()`. "A long stroke keeps flowing without gaps" is asserted as: 451 points become two stored operations of 400 and 52 points, the second starting at the first one's last point, with the joint pixel painted on the viewer's canvas.
+- **P13b-05a**: "compare screenshots" is replaced by three sampled pixels and a checksum of the whole canvas on both pages; the comparison across real devices is `P13b-05b`.
+- **P13b-08**: "the button counts down to zero at half the letters" is asserted on a four-letter word ("lamp"): "(2 left)", "(1 left)", then "(0 left)" disabled.
+- **P13b-11a / P13b-11b**: the walkthrough named 🚀 and 🌕 "from the picker". The quick row holds 👍 ❤️ 👏 🎉 🤔 👎 today, so 👍 comes from the quick row and 🚀 and 🌕 from the full list. The full list's data normally comes from `cdn.jsdelivr.net` through `EmojiDataController`; the tests put a three-emoji data set on a faked storage disk instead. The refused emoji is the keycap 1️⃣; the flag 🇫🇷 is not tested because the picker hides flags where the system font cannot draw them. `P13b-11b` also asserts that a full clue offers no sixth slot (the server message "A clue holds five emoji at most." cannot be reached from the interface).
+- **P13b-11c**: not a walkthrough sentence of its own; it adds the guess path of a Decoded round (wrong guess shown to the clue giver, correct guess ends the round), which step 11 implies.
+- **P13b-12b**: "Give up" ends a Hangman round with the outcome "Passed"; the test asserts the badge "Passed".
+- **P13c-01 to P13c-06**: GIPHY is faked; the fake derives the returned ids from the search word so that two players never receive the same ids. The Tenor variant of the attribution line is not exercised (`P13c-02r`).
+- **P13c-02**: "check the network tab: no other player's GIF id before the reveal" is asserted as: the id is absent from the other page's document, and absent from the JSON snapshot that the other page fetches from `/games/{room}/snapshot`. Payload redaction of the broadcasts stays covered by `tests/Feature/Games/SprintGifRedactionTest.php`. The test also asserts that the GIF proxy serves the faked image (`naturalWidth` of the shown GIF is 1).
+- **P13c-03, P13c-05b, P13d-06d**: the one-minute wait is replaced by the `database` queue, a 61-second jump of the server clock and one run of the queue. The browser's own countdown does not move, so the tests do not assert "Time's up" in the header badge; they assert what the expiry did.
+- **P13c-03**: "the host sets a new timer" is asserted as a new expiry job and a future `timer_ends_at`, not as a countdown value, because the browser's clock is 61 seconds behind the server's after the jump.
+- **P13c-04**: the walkthrough has two players, who each have exactly one GIF to vote for; the test seeds a third answer by an offline member so that "changes the vote" has a second target. Answers are seeded with factories; picking them through the dialog is covered by `P13c-02`.
+- **P13c-06**: today's interface has no control that starts the next round while a round is in its voting window ("Next round" is rendered only by the end card; see "Defects found"). The only way the interface sends that request is a host page that is behind: the test arranges a round in its voting window with an answer and a vote without a broadcast, reloads Bob's page only, and Ada's page, which has not seen the round, still shows "Start". Her click closes the voting round with its points and starts the next one, which both pages show. The server rule is also covered by `tests/Feature/Games/SprintGifTest.php` ("closes the voting when the host starts the next round, but not before the reveal").
+- **P13d-03**: step 3 of the plan 13d walkthrough restates the plan 13c walkthrough; it is covered by `P13c-03`, `P13c-04` and `P13c-05a`.
+- **P13d-06a**: "and move to Icebreaker" needs no action: a retro created with the Icebreaker phase starts in it (`CreateRetro` uses `Retro::firstPhase()`). The new-retro dialog's options sit inside its "Settings" collapsible, closed by default; the test opens it first.
+- **P13d-06c**: the test switches to Decoded; the walkthrough does not name the target game.
+- **P13d-09a**: the round is arranged one letter from the end because letter picks are rate-limited to a burst of three per player. The same test covers "guests score only in their room" (spec §4.7): the guest is on the room's Scores tab and absent from the team leaderboard, and the guest's browser is sent to `/login` when it opens the team's Games page.
+- **P13d-10a**: the two weeks are arranged by seeding `game_points.created_at`, as the walkthrough allows.
+- **P13d-11a**: the podium, "Show all" and "Replay" are checked for a member and for a guest who joins the completed retro through its guest link. The replay asserts that the canvas "Drawing of rocket" is shown, not what is painted on it; canvas content is covered by the Draw tests of Tasks 1–4.
+- **P13d-12a, P13d-12b**: "the message opens `/games/{room}`" and "opens the guest join page" are asserted on the link that skrum sends to the faked provider, and by opening that path in a browser.
+- **P13d-12d**: "Archive the Slack channel" is a faked `404 channel_is_archived` answer from the Slack webhook. The failed line is visible because Telegram is also connected; Slack as the only channel is `[P13d-12f]`, which needed a product fix (see "Defects found").
+- **P13d-12e**: the walkthrough says "Spec 8's channels (Teams, Mattermost, webhook) are not built yet and do not appear". Plan 14 has built them since. Following the games spec §3.1 ("each channel is offered independently"), the test asserts that the three channels appear when the team connected them, that each posts, and that Slack and Telegram do not appear when they are not connected.
+- **P13b-05c**: not a walkthrough sentence of its own. It is the regression test of the defect that `[P13b-05a]` exposed (a cleared stroke shown again to a viewer whose room snapshot was refreshed after the stroke); see "Defects found".
+- **P13d-12f**: not a walkthrough sentence of its own. When Slack is the team's only share channel and it needs a reconnect, the delivery line "Slack: failed — Reconnect Slack in the team settings." has to stay visible (games spec §3.1 and §6); see "Defects found".
+- **P13d-09a, P13d-09b, P13d-10a, P13d-10b**: the team leaderboard's points are asserted in the `span.font-semibold` of the person's row, because a row also holds the rank and `assertSeeIn()` matches substrings.
+
 ## Defects found
 
 Add one line per defect: identifier, what was wrong, the commit that fixed it.
@@ -443,7 +573,15 @@ Add one line per defect: identifier, what was wrong, the commit that fixed it.
     - Candidate fix: a collision detection for the board's `DndContext` (`board.tsx`) that prefers a card under the dragged item over the column that contains it, with `closestCenter` as the fallback. Small in code (one function), medium in risk: it changes every drag on the board, so the drag walkthroughs of plans 4, 6 and 8d must be run again.
     - Test: `[P08d-01c]` drags upwards, so it does not pin the defect and will keep passing when it is fixed; the fix needs a test that drags a group downwards.
 - `[P13b-05c]` (plan 13b, step 5): in Draw & Guess a viewer saw a stroke again for up to three seconds after the drawer had undone it or cleared the drawing, when the viewer's page had fetched a fresh snapshot between the stroke and the undo (a player joining, a room change, a reconnect, or the resync that follows the page's own subscription). The `replace` action of `room-reducer.ts` dropped the client-only `committedOpIds`, so the live preview of the stroke, kept for three seconds, was no longer hidden once its committed operation was gone. Fixed in the commit `fix(games): keep the committed stroke ids when a room snapshot is replaced`; `[P13b-05c]` failed before the fix (the pixel of the cleared line was still `23 23 23 255`).
-- `[P13d-12f]` (plan 13d, step 12): when the team's only share channel failed with a reconnect error (Slack answering `404 channel_is_archived`), the room's "Invite" button and its open dialog disappeared, so the line "Slack: failed — Reconnect Slack in the team settings." was never shown, against the games spec §3.1 and §6 ("delivery failures … show on the delivery line"). `RoomInviteButton` and `PostLinkSection` rendered nothing as soon as no channel was available. Fixed in the commit `fix(games): keep the invite dialog and its failed delivery line when no share channel is left`: both stay while the room has a delivery line to show (deliveries are only sent to viewers who may invite), without channel buttons or the guest-link checkbox. Open, for the user: the retro board's "Share" button (`share-board-button.tsx`) and the poker menu's "Share" item (`game-menu.tsx`) have the same gate (`hasShareChannel()` only) and still hide the failed line in the same situation; not changed here.
+- `[P13d-12f]` (plan 13d, step 12): when the team's only share channel failed with a reconnect error (Slack answering `404 channel_is_archived`), the room's "Invite" button and its open dialog disappeared, so the line "Slack: failed — Reconnect Slack in the team settings." was never shown, against the games spec §3.1 and §6 ("delivery failures … show on the delivery line"). `RoomInviteButton` and `PostLinkSection` rendered nothing as soon as no channel was available. Fixed in the commit `fix(games): keep the invite dialog and its failed delivery line when no share channel is left`: both stay while the room has a delivery line to show (deliveries are only sent to viewers who may invite), without channel buttons or the guest-link checkbox. `[P13d-12f]` failed before the fix (the line was never on the page).
+- `[P13d-12f]` (plan 13d, step 12), open, for the user: the retro board's "Share" button (`share-board-button.tsx`) and the poker menu's "Share" item (`game-menu.tsx`) have the same gate as the games room had (`hasShareChannel()` only). Not changed: the games fix does not reach them, and whether a failed delivery should keep a share control visible there is a product decision.
+    - Impact: when the team's only share channel needs a reconnect after a failed post, the retro board's "Share" button unmounts its open dialog and the failed delivery line is not shown; the poker menu loses its "Share" item the same way. Because `PostLinkSection` is shared, a poker dialog that is already open keeps the failed line, but it cannot be reopened afterwards.
+    - Candidate fix: give `share-board-button.tsx` and `game-menu.tsx` the condition that `room-invite-button.tsx` now has (keep the control while the snapshot holds a delivery line). Small: two components and their tests.
+    - Test: none pins it; `[P13d-12f]` covers the games room only, and no browser test opens the retro or poker share dialog.
+- `[P13c-06]` (plan 13c, step 6), open, for the user: plan 13c's text says that "Next round" closes a round that is in its voting window, but the interface offers no such control: `StartRoundControls` is rendered only by the end card, so a host cannot start the next round while the round is being voted on, except from a page that has not seen the voting round. The server rule works and is covered (`SprintGifTest`). Not fixed: adding a control is a design decision.
+    - Impact: a host who wants to cut a voting window short has to finish the round first and then start the next one; this costs one click and loses nothing.
+    - Candidate fix: render `StartRoundControls` (or a "Next round" button) in the voting state of the Sprint panel for the host. Small in code, but it changes the host's controls during voting, which is why it is left for the user.
+    - Test: `[P13c-06]` takes the stale-page route and asserts today's behaviour; it keeps passing when a button is added, and the new control needs its own test.
 
 ## Verification of plan 16a
 
