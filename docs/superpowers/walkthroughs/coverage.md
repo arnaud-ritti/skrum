@@ -442,6 +442,7 @@ Add one line per defect: identifier, what was wrong, the commit that fixed it.
     - Options: keep today's behaviour and the workaround, or give the board a collision strategy that prefers a card over the column that contains it (the candidate fix below).
     - Candidate fix: a collision detection for the board's `DndContext` (`board.tsx`) that prefers a card under the dragged item over the column that contains it, with `closestCenter` as the fallback. Small in code (one function), medium in risk: it changes every drag on the board, so the drag walkthroughs of plans 4, 6 and 8d must be run again.
     - Test: `[P08d-01c]` drags upwards, so it does not pin the defect and will keep passing when it is fixed; the fix needs a test that drags a group downwards.
+- `[P13b-05c]` (plan 13b, step 5): in Draw & Guess a viewer saw a stroke again for up to three seconds after the drawer had undone it or cleared the drawing, when the viewer's page had fetched a fresh snapshot between the stroke and the undo (a player joining, a room change, a reconnect, or the resync that follows the page's own subscription). The `replace` action of `room-reducer.ts` dropped the client-only `committedOpIds`, so the live preview of the stroke, kept for three seconds, was no longer hidden once its committed operation was gone. Fixed in the commit `fix(games): keep the committed stroke ids when a room snapshot is replaced`; `[P13b-05c]` failed before the fix (the pixel of the cleared line was still `23 23 23 255`).
 
 ## Verification of plan 16a
 
