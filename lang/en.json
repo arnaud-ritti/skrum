@@ -1573,5 +1573,10 @@
     "Choose either a built-in template or a workspace template.": "Choose either a built-in template or a workspace template.",
     "Choose a template of this workspace.": "Choose a template of this workspace.",
     "Only the creator of this template or a workspace admin can change it.": "Only the creator of this template or a workspace admin can change it.",
-    ":title (copy)": ":title (copy)"
+    ":title (copy)": ":title (copy)",
+    "Whiteboard templates": "Whiteboard templates",
+    "No whiteboard templates yet.": "No whiteboard templates yet.",
+    "Save a board as a template from its menu.": "Save a board as a template from its menu.",
+    "Boards already created from it are not changed.": "Boards already created from it are not changed.",
+    "Delete :title": "Delete :title"
 }

@@ -34,7 +34,9 @@ import type {
     RetroSummary,
     TeamHealthStatement,
     TeamSummary,
+    WhiteboardGalleryItem,
     WhiteboardSummary,
+    WhiteboardTemplateSummary,
     WorkspaceSummary,
     SavedPokerDeck,
 } from '@/types';
@@ -61,6 +63,8 @@ type Props = {
     pokerDecks: SavedPokerDeck[];
     whiteboards: WhiteboardSummary[];
     canCreateWhiteboard: boolean;
+    whiteboardTemplates: WhiteboardTemplateSummary[];
+    whiteboardGallery?: WhiteboardGalleryItem[];
 };
 
 export default function ShowTeam({
@@ -85,6 +89,8 @@ export default function ShowTeam({
     pokerDecks,
     whiteboards,
     canCreateWhiteboard,
+    whiteboardTemplates,
+    whiteboardGallery,
 }: Props) {
     const { t } = useTrans();
     const params = { workspace: workspace.slug, team: team.id };
@@ -204,6 +210,8 @@ export default function ShowTeam({
                     teamId={team.id}
                     boards={whiteboards}
                     canCreate={canCreateWhiteboard}
+                    templates={whiteboardTemplates}
+                    gallery={whiteboardGallery}
                 />
                 <HealthStatementsSection
                     statements={healthStatements}

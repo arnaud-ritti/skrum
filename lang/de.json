@@ -1817,5 +1817,10 @@
     "Choose either a built-in template or a workspace template.": "Wählen Sie entweder eine integrierte Vorlage oder eine Workspace-Vorlage.",
     "Choose a template of this workspace.": "Wählen Sie eine Vorlage dieses Workspace.",
     "Only the creator of this template or a workspace admin can change it.": "Nur der Ersteller dieser Vorlage oder ein Workspace-Admin kann sie ändern.",
-    ":title (copy)": ":title (Kopie)"
+    ":title (copy)": ":title (Kopie)",
+    "Whiteboard templates": "Whiteboard-Vorlagen",
+    "No whiteboard templates yet.": "Noch keine Whiteboard-Vorlagen.",
+    "Save a board as a template from its menu.": "Speichern Sie ein Board über sein Menü als Vorlage.",
+    "Boards already created from it are not changed.": "Bereits daraus erstellte Boards werden nicht verändert.",
+    "Delete :title": ":title löschen"
 }

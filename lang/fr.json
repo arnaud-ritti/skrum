@@ -1817,5 +1817,10 @@
     "Choose either a built-in template or a workspace template.": "Choisissez soit un modèle intégré, soit un modèle de l'espace de travail.",
     "Choose a template of this workspace.": "Choisissez un modèle de cet espace de travail.",
     "Only the creator of this template or a workspace admin can change it.": "Seul le créateur de ce modèle ou un administrateur de l'espace peut le modifier.",
-    ":title (copy)": ":title (copie)"
+    ":title (copy)": ":title (copie)",
+    "Whiteboard templates": "Modèles de tableau blanc",
+    "No whiteboard templates yet.": "Aucun modèle de tableau blanc pour l'instant.",
+    "Save a board as a template from its menu.": "Enregistrez un tableau comme modèle depuis son menu.",
+    "Boards already created from it are not changed.": "Les tableaux déjà créés à partir de ce modèle ne sont pas modifiés.",
+    "Delete :title": "Supprimer :title"
 }

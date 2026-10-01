@@ -1817,5 +1817,10 @@
     "Choose either a built-in template or a workspace template.": "Elige una plantilla integrada o una plantilla del espacio de trabajo.",
     "Choose a template of this workspace.": "Elige una plantilla de este espacio de trabajo.",
     "Only the creator of this template or a workspace admin can change it.": "Solo el creador de esta plantilla o un administrador del espacio puede modificarla.",
-    ":title (copy)": ":title (copia)"
+    ":title (copy)": ":title (copia)",
+    "Whiteboard templates": "Plantillas de pizarra",
+    "No whiteboard templates yet.": "Aún no hay plantillas de pizarra.",
+    "Save a board as a template from its menu.": "Guarda una pizarra como plantilla desde su menú.",
+    "Boards already created from it are not changed.": "Las pizarras ya creadas a partir de ella no cambian.",
+    "Delete :title": "Eliminar :title"
 }
