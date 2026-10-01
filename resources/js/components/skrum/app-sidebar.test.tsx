@@ -127,6 +127,14 @@ describe('AppSidebar', () => {
         ).toBeTruthy();
     });
 
+    it('renders no settings landmark when it has no links', () => {
+        renderSidebar({ links: { teams: '/w1' } });
+
+        expect(
+            screen.queryByRole('navigation', { name: 'Settings' }),
+        ).toBeNull();
+    });
+
     it('is a labelled navigation landmark', () => {
         renderSidebar();
 

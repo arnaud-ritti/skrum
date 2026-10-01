@@ -264,6 +264,9 @@ export function AppSidebar({
         { key: 'admin', label: t('Administration'), icon: ShieldCheck },
     ];
 
+    const hasFooterLinks =
+        links.settings !== undefined || links.admin !== undefined;
+
     return (
         <Sidebar collapsible="icon">
             <SidebarHeader>
@@ -330,13 +333,15 @@ export function AppSidebar({
             </SidebarContent>
 
             <SidebarFooter>
-                <nav aria-label={t('Settings')}>
-                    <NavEntries
-                        entries={footerEntries}
-                        active={active}
-                        links={links}
-                    />
-                </nav>
+                {hasFooterLinks && (
+                    <nav aria-label={t('Settings')}>
+                        <NavEntries
+                            entries={footerEntries}
+                            active={active}
+                            links={links}
+                        />
+                    </nav>
+                )}
                 {footer}
             </SidebarFooter>
         </Sidebar>
