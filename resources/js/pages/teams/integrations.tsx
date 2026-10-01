@@ -5,6 +5,7 @@ import { JiraIntegration } from '@/components/integrations/jira-integration';
 import { LinearIntegration } from '@/components/integrations/linear-integration';
 import { SlackIntegration } from '@/components/integrations/slack-integration';
 import { UrlChannelIntegration } from '@/components/integrations/url-channel-integration';
+import { WebhookIntegration } from '@/components/integrations/webhook-integration';
 import { TelegramIntegration } from '@/components/integrations/telegram-integration';
 import { Button } from '@/components/ui/button';
 import { useTrans } from '@/hooks/use-trans';
@@ -14,6 +15,7 @@ import type {
     MattermostServerInfo,
     TeamSummary,
     TelegramBotInfo,
+    WebhookEventOption,
     WorkspaceSummary,
 } from '@/types';
 
@@ -23,6 +25,7 @@ type Props = {
     providers: IntegrationProviderCard[];
     telegram: TelegramBotInfo | null;
     mattermost: MattermostServerInfo | null;
+    webhookEvents: WebhookEventOption[] | null;
 };
 
 export default function TeamIntegrations({
@@ -31,6 +34,7 @@ export default function TeamIntegrations({
     providers,
     telegram,
     mattermost,
+    webhookEvents,
 }: Props) {
     const { t } = useTrans();
     const scope: IntegrationScope = {
@@ -99,6 +103,15 @@ export default function TeamIntegrations({
                                     card={card}
                                     scope={scope}
                                     mattermost={mattermost}
+                                />
+                            );
+                        case 'webhook':
+                            return (
+                                <WebhookIntegration
+                                    key={card.provider}
+                                    card={card}
+                                    scope={scope}
+                                    events={webhookEvents ?? []}
                                 />
                             );
                         default:

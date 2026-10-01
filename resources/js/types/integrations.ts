@@ -38,6 +38,9 @@ export type IntegrationSettings = {
     priorityMap?: IntegrationPriorityMap;
     host?: string;
     channelLabel?: string | null;
+    secretCreatedAt?: string;
+    events?: WebhookEventName[];
+    disabledReason?: WebhookDisabledReason;
 };
 
 export type TeamIntegration = {
@@ -51,6 +54,7 @@ export type TeamIntegration = {
     connectedAt: string | null;
     lastCheckedAt: string | null;
     lastError: string | null;
+    webhook: WebhookHealth | null;
 };
 
 export type IntegrationProviderCard = {
@@ -90,6 +94,46 @@ export type DeliveryKind =
     | 'game_room_link';
 
 export type DeliveryStatus = 'queued' | 'sent' | 'failed';
+
+export type WebhookEventName =
+    | 'retro.completed'
+    | 'action_item.created'
+    | 'action_item.completed'
+    | 'action_item.reopened'
+    | 'poker.task.estimated';
+
+export type WebhookEventOption = {
+    name: WebhookEventName;
+    description: string;
+};
+
+export type WebhookDisabledReason = 'failures' | 'gone';
+
+export type WebhookHealth = {
+    consecutiveFailures: number;
+    lastDeliverySucceededAt: string | null;
+};
+
+export type WebhookDelivery = {
+    id: string;
+    event: string | null;
+    kind: string;
+    status: DeliveryStatus;
+    attempts: number;
+    responseStatus: number | null;
+    error: string | null;
+    createdAt: string | null;
+    lastAttemptAt: string | null;
+};
+
+export type WebhookDeliveryPage = {
+    data: WebhookDelivery[];
+    currentPage: number;
+    lastPage: number;
+    total: number;
+};
+
+export type ConnectedWebhook = TeamIntegration & { secret: string };
 
 export type IntegrationDelivery = {
     id: string;
