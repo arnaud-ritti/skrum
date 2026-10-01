@@ -469,12 +469,12 @@ class GitHubClient
         return min(self::MaxRetryAfterSeconds, max(1, $seconds));
     }
 
-    private function uninstalledMessage(TeamIntegration $integration): string
+    public function uninstalledMessage(TeamIntegration $integration): string
     {
         return __('The GitHub App was uninstalled from :account.', ['account' => (string) $integration->setting('accountLogin', 'GitHub')]);
     }
 
-    private function suspendedMessage(TeamIntegration $integration): string
+    public function suspendedMessage(TeamIntegration $integration): string
     {
         return __('The GitHub App is suspended on :account.', ['account' => (string) $integration->setting('accountLogin', 'GitHub')]);
     }

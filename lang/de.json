@@ -1711,5 +1711,6 @@
     "The status could not be written. Try again.": "Der Status konnte nicht geschrieben werden. Versuche es erneut.",
     "Turn on status sync for :provider first.": "Aktiviere zuerst die Statussynchronisierung für :provider.",
     "This issue belongs to another :provider site.": "Dieses Issue gehört zu einer anderen :provider-Site.",
-    "Guests cannot sync action items.": "Gäste können keine Aktionen synchronisieren."
+    "Guests cannot sync action items.": "Gäste können keine Aktionen synchronisieren.",
+    "Invalid signature.": "Ungültige Signatur."
 }

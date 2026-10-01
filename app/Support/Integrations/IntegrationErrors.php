@@ -20,6 +20,7 @@ class IntegrationErrors
         '#\bBearer\s+[^\s,;"\']+#i' => 'Bearer ***',
         '#\b(access_token|refresh_token|client_secret|code)=[^&\s"\']+#i' => '$1=***',
         '#("(?:access_token|refresh_token|client_secret|code)"\s*:\s*")[^"]*#i' => '$1***',
+        '#(/integrations/webhooks/jira(?:-dc)?/[0-9a-f-]{36}/)[A-Za-z0-9]{40}#i' => '$1***',
         '#(https?://[^\s?\#"\']+)[?\#][^\s"\']*#i' => '$1',
     ];
 

@@ -1465,5 +1465,6 @@
     "The status could not be written. Try again.": "The status could not be written. Try again.",
     "Turn on status sync for :provider first.": "Turn on status sync for :provider first.",
     "This issue belongs to another :provider site.": "This issue belongs to another :provider site.",
-    "Guests cannot sync action items.": "Guests cannot sync action items."
+    "Guests cannot sync action items.": "Guests cannot sync action items.",
+    "Invalid signature.": "Invalid signature."
 }

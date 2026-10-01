@@ -11,4 +11,15 @@ class Base64Url
     {
         return rtrim(strtr(base64_encode($value), '+/', '-_'), '=');
     }
+
+    /**
+     * The decoded bytes, or null when the value is not base64url.
+     */
+    public static function decode(string $value): ?string
+    {
+        $padded = str_pad($value, strlen($value) + (4 - strlen($value) % 4) % 4, '=');
+        $decoded = base64_decode(strtr($padded, '-_', '+/'), true);
+
+        return $decoded === false ? null : $decoded;
+    }
 }
