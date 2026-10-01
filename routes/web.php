@@ -39,6 +39,7 @@ use App\Http\Controllers\Integrations\IntegrationTestsController;
 use App\Http\Controllers\Integrations\IntegrationUrlsController;
 use App\Http\Controllers\Integrations\IntegrationUserMappingsController;
 use App\Http\Controllers\Integrations\IntegrationUserMatchesController;
+use App\Http\Controllers\Integrations\JiraDataCenterTokensController;
 use App\Http\Controllers\Integrations\JiraFieldDetectionsController;
 use App\Http\Controllers\Integrations\PokerImportContainersController;
 use App\Http\Controllers\Integrations\PokerImportIterationsController;
@@ -217,6 +218,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 Route::post('teams/{team}/integrations/telegram/code', [TelegramConnectCodesController::class, 'store'])
                     ->middleware([EnsureIntegrationProviderEnabled::class.':telegram', 'throttle:10,1'])
                     ->name('teams.integrations.telegramCode.store');
+                Route::post('teams/{team}/integrations/jira-dc/token', [JiraDataCenterTokensController::class, 'store'])
+                    ->middleware([EnsureIntegrationProviderEnabled::class.':jira_dc', 'throttle:10,1,jiraDataCenterTokens'])
+                    ->name('teams.integrations.jiraDataCenterToken.store');
                 Route::post('teams/{team}/integrations/{provider}', [IntegrationUrlsController::class, 'store'])
                     ->whereIn('provider', ['msteams', 'mattermost', 'webhook'])
                     ->middleware('throttle:10,1,integrationUrls')

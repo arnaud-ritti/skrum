@@ -42,6 +42,7 @@ class TeamIntegrationsController extends Controller
                     'label' => $provider->label(),
                     'usesOAuth' => $provider->usesOAuth(),
                     'isTracker' => $provider->isTracker(),
+                    'authMethods' => $provider->authMethods(),
                     'connection' => $integration === null ? null : $this->presentTeamIntegration->handle($integration),
                 ];
             }, IntegrationProvider::enabled()),

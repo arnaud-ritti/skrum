@@ -4,6 +4,7 @@ namespace App\Actions\Integrations;
 
 use App\Enums\IntegrationProvider;
 use App\Models\TeamIntegration;
+use App\Support\Integrations\JiraDataCenter\JiraDataCenterClient;
 use Illuminate\Support\Arr;
 
 class PresentTeamIntegration
@@ -18,7 +19,7 @@ class PresentTeamIntegration
         'telegram' => ['chatId', 'chatTitle', 'chatType'],
         'jira' => ['cloudId', 'siteName', 'siteUrl', 'sites', 'storyPointFields', 'numberFields', 'priorityMap'],
         'linear' => ['organizationName', 'urlKey', 'priorityMap'],
-        'jira_dc' => [],
+        'jira_dc' => ['serverTitle', 'version', 'baseUrl', 'authMethod', 'storyPointFields', 'numberFields', 'priorityMap'],
         'github' => [],
         'msteams' => ['host', 'channelLabel'],
         'mattermost' => ['host', 'channelLabel'],
@@ -48,7 +49,7 @@ class PresentTeamIntegration
             'status' => $integration->status->value,
             'statusLabel' => $integration->status->label(),
             'access' => $integration->access->value,
-            'settings' => Arr::only($integration->settings, self::SettingKeys[$integration->provider->value]),
+            'settings' => $this->settings($integration),
             'connectedBy' => $integration->connectedBy?->name,
             'connectedAt' => $integration->created_at?->toIso8601String(),
             'lastCheckedAt' => $integration->last_checked_at?->toIso8601String(),
@@ -70,5 +71,20 @@ class PresentTeamIntegration
             'consecutiveFailures' => $integration->consecutive_failures,
             'lastDeliverySucceededAt' => $integration->last_delivery_succeeded_at?->toIso8601String(),
         ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function settings(TeamIntegration $integration): array
+    {
+        $settings = Arr::only($integration->settings, self::SettingKeys[$integration->provider->value]);
+
+        if ($integration->provider === IntegrationProvider::JiraDataCenter && $integration->setting('authMethod') === JiraDataCenterClient::AuthMethodToken) {
+            $settings['tokenOwner'] = $integration->setting('tokenOwner.displayName');
+            $settings['tokenSavedAt'] = $integration->setting('tokenSavedAt');
+        }
+
+        return $settings;
     }
 }
