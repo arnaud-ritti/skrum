@@ -65,6 +65,18 @@ class WhiteboardGuard
         throw ValidationException::withMessages(['votes' => __('A vote is already open.')]);
     }
 
+    /**
+     * Versions and copies hold the real text of every note (spec §9, §11.5).
+     */
+    public static function notPrivateWriting(Whiteboard $board): void
+    {
+        if (! $board->private_writing) {
+            return;
+        }
+
+        throw ValidationException::withMessages(['board' => __('Reveal the notes first.')]);
+    }
+
     public static function canDelete(Whiteboard $board, WhiteboardMember $member): void
     {
         if ($board->isFacilitator($member)) {

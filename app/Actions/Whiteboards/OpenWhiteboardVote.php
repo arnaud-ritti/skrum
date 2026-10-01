@@ -22,6 +22,7 @@ class OpenWhiteboardVote
             $locked = Whiteboard::query()->whereKey($board->id)->lockForUpdate()->firstOrFail();
 
             WhiteboardGuard::facilitator($locked, $member);
+            WhiteboardGuard::notPrivateWriting($locked);
             WhiteboardGuard::noOpenVoteSession($locked);
 
             if ($frameElementId !== null && ! $this->isLiveFrame($locked, $frameElementId)) {
