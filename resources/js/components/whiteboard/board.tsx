@@ -6,6 +6,7 @@ import { SessionExpiredBanner } from '@/components/retro/session-expired-banner'
 import { useLocalPreference } from '@/hooks/use-local-preference';
 import { useTrans } from '@/hooks/use-trans';
 import { useWhiteboard } from '@/hooks/use-whiteboard';
+import { useWhiteboardCursors } from '@/hooks/use-whiteboard-cursors';
 import {
     Excalidraw,
     restoreElements,
@@ -19,6 +20,7 @@ import type {
 } from '@/lib/whiteboard/types';
 import { BoardGone } from './board-gone';
 import { BoardMenu } from './board-menu';
+import { StickyTool } from './sticky-tool';
 import { TopBar } from './top-bar';
 
 const HideMyCursorKey = 'skrum.hideMyCursor';
@@ -56,6 +58,17 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
     );
     const sync = useRef<SceneSync | null>(null);
     const initial = useRef(snapshot);
+    const cursors = useWhiteboardCursors({
+        api,
+        presence: state.presence,
+        online: state.online,
+        meId: state.snapshot.me.id,
+        enabled: state.snapshot.board.cursorsEnabled,
+        hidden: hideMyCursor,
+    });
+    const forgetCursor = useRef(cursors.forget);
+
+    forgetCursor.current = cursors.forget;
     const dark = useSyncExternalStore(subscribeToTheme, isDark, () => false);
     const boardId = snapshot.board.id;
     const { fail, listeners } = state;
@@ -95,7 +108,7 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
         listeners.current = {
             onElementsChanged: (payload) => created.handleRemote(payload),
             onResync: () => void created.resync(),
-            onLeaving: () => {},
+            onLeaving: (member) => forgetCursor.current(member.id),
         };
 
         return () => {
@@ -132,6 +145,7 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
                 inert={state.sessionExpired}
             >
                 <TopBar state={state}>
+                    {api && <StickyTool api={api} />}
                     <BoardMenu
                         state={state}
                         hideMyCursor={hideMyCursor}
@@ -155,6 +169,7 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
                                 elements as unknown as SceneElement[],
                             )
                         }
+                        onPointerUpdate={cursors.onPointerUpdate}
                         langCode={ExcalidrawLocales[locale as string] ?? 'en'}
                         theme={dark ? 'dark' : 'light'}
                         UIOptions={{

@@ -1809,5 +1809,7 @@
     "This element could not be saved.": "Cet élément n'a pas pu être enregistré.",
     "Only the facilitator can change a locked element.": "Seul l'animateur peut modifier un élément verrouillé.",
     "This image could not be added.": "Cette image n'a pas pu être ajoutée.",
-    "This board is full.": "Ce tableau est plein."
+    "This board is full.": "Ce tableau est plein.",
+    "Sticky note": "Post-it",
+    "Add a sticky note": "Ajouter un post-it"
 }

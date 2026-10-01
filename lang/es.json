@@ -1809,5 +1809,7 @@
     "This element could not be saved.": "No se pudo guardar este elemento.",
     "Only the facilitator can change a locked element.": "Solo el facilitador puede modificar un elemento bloqueado.",
     "This image could not be added.": "No se pudo añadir esta imagen.",
-    "This board is full.": "Esta pizarra está llena."
+    "This board is full.": "Esta pizarra está llena.",
+    "Sticky note": "Nota adhesiva",
+    "Add a sticky note": "Añadir una nota adhesiva"
 }

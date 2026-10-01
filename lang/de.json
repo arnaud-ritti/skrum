@@ -1809,5 +1809,7 @@
     "This element could not be saved.": "Dieses Element konnte nicht gespeichert werden.",
     "Only the facilitator can change a locked element.": "Nur der Moderator kann ein gesperrtes Element ändern.",
     "This image could not be added.": "Dieses Bild konnte nicht hinzugefügt werden.",
-    "This board is full.": "Dieses Board ist voll."
+    "This board is full.": "Dieses Board ist voll.",
+    "Sticky note": "Haftnotiz",
+    "Add a sticky note": "Haftnotiz hinzufügen"
 }
