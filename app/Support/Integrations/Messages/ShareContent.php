@@ -13,4 +13,11 @@ interface ShareContent
     public function toSlack(): array;
 
     public function toTelegram(): string;
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function toMicrosoftTeams(): array;
+
+    public function toMattermost(): string;
 }
