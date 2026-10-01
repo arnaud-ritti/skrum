@@ -6,10 +6,12 @@ import { toast } from 'sonner';
 import { ConnectionBanner } from '@/components/retro/connection-banner';
 import { SessionExpiredBanner } from '@/components/retro/session-expired-banner';
 import { TimerDisplay } from '@/components/retro/timer-display';
+import { Button } from '@/components/ui/button';
 import { useLocalPreference } from '@/hooks/use-local-preference';
 import { useTrans } from '@/hooks/use-trans';
 import { useWhiteboard } from '@/hooks/use-whiteboard';
 import { useWhiteboardCursors } from '@/hooks/use-whiteboard-cursors';
+import { useWhiteboardFollow } from '@/hooks/use-whiteboard-follow';
 import { useWhiteboardToolbarSlot } from '@/hooks/use-whiteboard-toolbar-slot';
 import {
     Excalidraw,
@@ -80,6 +82,13 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
         meId: state.snapshot.me.id,
         enabled: board.cursorsEnabled,
         hidden: hideMyCursor,
+    });
+    const follow = useWhiteboardFollow({
+        api,
+        presence: state.presence,
+        enabled: board.followEnabled,
+        leading: me.isFacilitator,
+        facilitatorId: board.facilitatorMemberId,
     });
     const forgetCursor = useRef(cursors.forget);
 
@@ -194,6 +203,24 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
                         <span className="flex items-center gap-1.5">
                             <Lock className="size-4" aria-hidden="true" />
                             {t('This board is locked.')}
+                        </span>
+                    )}
+                    {board.followEnabled && me.isFacilitator && (
+                        <span>{t('Everyone follows your view.')}</span>
+                    )}
+                    {follow.following && !follow.paused && (
+                        <span>{t('Following the facilitator')}</span>
+                    )}
+                    {follow.paused && (
+                        <span className="flex items-center gap-2">
+                            {t('Following paused')}
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={follow.resume}
+                            >
+                                {t('Resume')}
+                            </Button>
                         </span>
                     )}
                 </StatusBar>

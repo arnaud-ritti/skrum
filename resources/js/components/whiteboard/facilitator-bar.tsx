@@ -1,4 +1,4 @@
-import { AlarmClock, Lock, LockOpen } from 'lucide-react';
+import { AlarmClock, Lock, LockOpen, Presentation } from 'lucide-react';
 import { useState } from 'react';
 import WhiteboardSettingsController from '@/actions/App/Http/Controllers/Whiteboards/WhiteboardSettingsController';
 import WhiteboardTimersController from '@/actions/App/Http/Controllers/Whiteboards/WhiteboardTimersController';
@@ -17,7 +17,7 @@ import { retroRequest } from '@/lib/retro/api';
 
 const Minutes = [1, 3, 5, 10];
 
-/** The facilitator's tools; follow-me and the vote join them in later tasks. */
+/** The facilitator's tools; the vote joins them in a later task. */
 export function FacilitatorBar({ state }: { state: WhiteboardState }) {
     const { t } = useTrans();
     const request = useWhiteboardRequest();
@@ -100,6 +100,20 @@ export function FacilitatorBar({ state }: { state: WhiteboardState }) {
                 ) : (
                     <LockOpen className="size-4" />
                 )}
+            </Button>
+            <Button
+                size="sm"
+                variant={board.followEnabled ? 'default' : 'outline'}
+                aria-pressed={board.followEnabled}
+                aria-label={t('Bring everyone to me')}
+                title={t('Bring everyone to me')}
+                onClick={() =>
+                    void updateSettings({
+                        follow_enabled: !board.followEnabled,
+                    })
+                }
+            >
+                <Presentation className="size-4" />
             </Button>
         </div>
     );

@@ -1838,5 +1838,10 @@
     "Lock the board": "Board sperren",
     "Unlock the board": "Board entsperren",
     "Notes cannot be edited while a vote is open.": "Haftnotizen können während einer Abstimmung nicht bearbeitet werden.",
-    "No one else can facilitate this board yet.": "Noch kann niemand sonst dieses Board moderieren."
+    "No one else can facilitate this board yet.": "Noch kann niemand sonst dieses Board moderieren.",
+    "Bring everyone to me": "Alle zu meiner Ansicht holen",
+    "Everyone follows your view.": "Alle folgen Ihrer Ansicht.",
+    "Following the facilitator": "Sie folgen dem Moderator",
+    "Following paused": "Folgen pausiert",
+    "Resume": "Fortsetzen"
 }

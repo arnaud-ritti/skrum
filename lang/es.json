@@ -1838,5 +1838,10 @@
     "Lock the board": "Bloquear la pizarra",
     "Unlock the board": "Desbloquear la pizarra",
     "Notes cannot be edited while a vote is open.": "Las notas no se pueden editar mientras hay una votación abierta.",
-    "No one else can facilitate this board yet.": "Nadie más puede facilitar esta pizarra todavía."
+    "No one else can facilitate this board yet.": "Nadie más puede facilitar esta pizarra todavía.",
+    "Bring everyone to me": "Traer a todos a mi vista",
+    "Everyone follows your view.": "Todos siguen tu vista.",
+    "Following the facilitator": "Siguiendo al facilitador",
+    "Following paused": "Seguimiento en pausa",
+    "Resume": "Reanudar"
 }

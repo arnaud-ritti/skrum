@@ -1838,5 +1838,10 @@
     "Lock the board": "Verrouiller le tableau",
     "Unlock the board": "Déverrouiller le tableau",
     "Notes cannot be edited while a vote is open.": "Les post-it ne peuvent pas être modifiés pendant un vote.",
-    "No one else can facilitate this board yet.": "Personne d'autre ne peut encore animer ce tableau."
+    "No one else can facilitate this board yet.": "Personne d'autre ne peut encore animer ce tableau.",
+    "Bring everyone to me": "Amener tout le monde à ma vue",
+    "Everyone follows your view.": "Tout le monde suit votre vue.",
+    "Following the facilitator": "Vous suivez l'animateur",
+    "Following paused": "Suivi en pause",
+    "Resume": "Reprendre"
 }

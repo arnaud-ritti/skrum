@@ -1594,5 +1594,10 @@
     "Lock the board": "Lock the board",
     "Unlock the board": "Unlock the board",
     "Notes cannot be edited while a vote is open.": "Notes cannot be edited while a vote is open.",
-    "No one else can facilitate this board yet.": "No one else can facilitate this board yet."
+    "No one else can facilitate this board yet.": "No one else can facilitate this board yet.",
+    "Bring everyone to me": "Bring everyone to me",
+    "Everyone follows your view.": "Everyone follows your view.",
+    "Following the facilitator": "Following the facilitator",
+    "Following paused": "Following paused",
+    "Resume": "Resume"
 }
