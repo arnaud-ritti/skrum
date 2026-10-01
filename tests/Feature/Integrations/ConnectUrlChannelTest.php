@@ -5,6 +5,7 @@ use App\Enums\IntegrationStatus;
 use App\Models\Team;
 use App\Models\TeamIntegration;
 use App\Models\User;
+use App\Rules\MattermostWebhookUrl;
 use Database\Factories\TeamIntegrationFactory;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
@@ -214,4 +215,61 @@ it('re-validates stored URLs in the daily check without posting', function () {
         ->and($teams->fresh()->last_checked_at)->not->toBeNull()
         ->and($mattermost->fresh()->status)->toBe(IntegrationStatus::ReconnectRequired);
     Http::assertNothingSent();
+});
+
+it('keeps a non-default port in the Mattermost host', function () {
+    [$team, $admin] = urlChannelAdmin();
+    config(['services.mattermost.url' => 'https://chat.example.com:8065']);
+
+    $this->actingAs($admin)
+        ->postJson(route('teams.integrations.urls.store', [$team->workspace, $team, 'mattermost']), ['url' => 'https://chat.example.com:8065/hooks/abcdefghijklmnopqrstuvwxyz'])
+        ->assertCreated()
+        ->assertJson(['settings' => ['host' => 'chat.example.com:8065']]);
+});
+
+it('refuses control characters in the channel label on store and update', function () {
+    [$team, $admin] = urlChannelAdmin();
+    $integration = TeamIntegration::factory()->microsoftTeams()->create(['team_id' => $team->id]);
+
+    $this->actingAs($admin)
+        ->postJson(route('teams.integrations.urls.store', [$team->workspace, $team, 'msteams']), ['url' => TeamIntegrationFactory::MicrosoftTeamsUrl, 'channel_label' => "retros\nplanning"])
+        ->assertJsonValidationErrors(['channel_label']);
+    $this->actingAs($admin)
+        ->patchJson(route('teams.integrations.update', [$team->workspace, $team, $integration]), ['channel_label' => "a\tb"])
+        ->assertJsonValidationErrors(['channel_label']);
+});
+
+it('refuses a Mattermost URL with a trailing newline', function () {
+    config(['services.mattermost.url' => 'https://chat.example.com']);
+
+    expect(MattermostWebhookUrl::isValid('https://chat.example.com/hooks/abcdefghijklmnopqrstuvwxyz'))->toBeTrue()
+        ->and(MattermostWebhookUrl::isValid("https://chat.example.com/hooks/abcdefghijklmnopqrstuvwxyz\n"))->toBeFalse();
+});
+
+it('keeps the update route reserved to admins before validation', function () {
+    $team = Team::factory()->create();
+    $integration = TeamIntegration::factory()->microsoftTeams()->create(['team_id' => $team->id]);
+
+    $this->actingAs(teamMember($team))
+        ->patchJson(route('teams.integrations.update', [$team->workspace, $team, $integration]), ['channel_label' => str_repeat('a', 500)])
+        ->assertForbidden();
+});
+
+it('answers 404 on update while the provider is disabled', function () {
+    [$team, $admin] = urlChannelAdmin();
+    $integration = TeamIntegration::factory()->microsoftTeams()->create(['team_id' => $team->id]);
+    config(['services.msteams.enabled' => false]);
+
+    $this->actingAs($admin)
+        ->patchJson(route('teams.integrations.update', [$team->workspace, $team, $integration]), ['channel_label' => 'x'])
+        ->assertNotFound();
+});
+
+it('refuses a too long channel label on update', function () {
+    [$team, $admin] = urlChannelAdmin();
+    $integration = TeamIntegration::factory()->microsoftTeams()->create(['team_id' => $team->id]);
+
+    $this->actingAs($admin)
+        ->patchJson(route('teams.integrations.update', [$team->workspace, $team, $integration]), ['channel_label' => str_repeat('a', 81)])
+        ->assertJsonValidationErrors(['channel_label' => 'The channel label field must not be greater than 80 characters.']);
 });

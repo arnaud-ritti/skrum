@@ -23,7 +23,7 @@ class MattermostWebhookUrl implements ValidationRule
             return false;
         }
 
-        return preg_match('#^'.preg_quote($server, '#').'/hooks/[A-Za-z0-9]{26}$#', $url) === 1;
+        return preg_match('#^'.preg_quote($server, '#').'/hooks/[A-Za-z0-9]{26}\\z#', $url) === 1;
     }
 
     public function validate(string $attribute, mixed $value, Closure $fail): void

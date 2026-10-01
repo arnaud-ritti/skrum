@@ -32,7 +32,7 @@ class ConnectUrlChannel
 
         return [
             'url' => $isUpdate ? ['sometimes', ...$url] : $url,
-            'channel_label' => ['sometimes', 'nullable', 'string', 'max:'.self::LabelMaxLength],
+            'channel_label' => ['sometimes', 'nullable', 'string', 'max:'.self::LabelMaxLength, 'regex:/^[^\p{Cc}]*$/u'],
         ];
     }
 
@@ -43,7 +43,7 @@ class ConnectUrlChannel
             'access' => IntegrationAccess::Write,
             'credentials' => ['url' => $url],
             'settings' => [
-                'host' => strtolower((string) parse_url($url, PHP_URL_HOST)),
+                'host' => self::host($url),
                 'channelLabel' => self::label($channelLabel),
             ],
             'scopes' => [],
@@ -67,6 +67,16 @@ class ConnectUrlChannel
         $integration->forceFill(['settings' => [...$integration->settings, 'channelLabel' => self::label($label)]])->save();
 
         return $integration;
+    }
+
+    private static function host(string $url): string
+    {
+        $host = strtolower((string) parse_url($url, PHP_URL_HOST));
+        $port = parse_url($url, PHP_URL_PORT);
+
+        $defaultPort = parse_url($url, PHP_URL_SCHEME) === 'http' ? 80 : 443;
+
+        return $port === null || $port === $defaultPort ? $host : "{$host}:{$port}";
     }
 
     private static function label(?string $label): ?string

@@ -1586,5 +1586,7 @@
     "Send to webhook": "An den Webhook senden",
     "Share the results to Microsoft Teams": "Ergebnisse in Microsoft Teams teilen",
     "Share the results to Mattermost": "Ergebnisse in Mattermost teilen",
-    "Send the results to the webhook": "Ergebnisse an den Webhook senden"
+    "Send the results to the webhook": "Ergebnisse an den Webhook senden",
+    "Connection saved.": "Verbindung gespeichert.",
+    "Post board links, game invites and results to a Mattermost channel through an incoming webhook.": "Teile Board-Links, Spieleinladungen und Ergebnisse über einen eingehenden Webhook in einem Mattermost-Kanal."
 }

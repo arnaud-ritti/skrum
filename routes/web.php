@@ -216,6 +216,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     ->name('teams.integrations.urls.store');
                 Route::patch('teams/{team}/integrations/{integration}', [TeamIntegrationsController::class, 'update'])
                     ->whereUuid('integration')
+                    ->middleware('throttle:10,1,integrationUrls')
                     ->name('teams.integrations.update');
                 Route::post('teams/{team}/integrations/{integration}/detection', [JiraFieldDetectionsController::class, 'store'])
                     ->whereUuid('integration')

@@ -58,10 +58,14 @@ export function UrlChannelIntegration({ card, scope, mattermost }: Props) {
         ? t(
               'Post board links, game invites and results to a Microsoft Teams channel through a Workflows webhook.',
           )
-        : t(
-              'Post board links, game invites and results to a Mattermost channel through an incoming webhook of :url.',
-              { url: mattermost?.url ?? '' },
-          );
+        : mattermost === null
+          ? t(
+                'Post board links, game invites and results to a Mattermost channel through an incoming webhook.',
+            )
+          : t(
+                'Post board links, game invites and results to a Mattermost channel through an incoming webhook of :url.',
+                { url: mattermost.url },
+            );
     const help = isTeams
         ? t(
               'In Teams, add the workflow "Post to a channel when a webhook request is received" to the channel and paste its URL.',
@@ -95,10 +99,17 @@ export function UrlChannelIntegration({ card, scope, mattermost }: Props) {
                           ...scope,
                           integration: connection.id,
                       }),
-                { url, channel_label: label === '' ? null : label },
+                {
+                    ...(url === '' ? {} : { url }),
+                    channel_label: label === '' ? null : label,
+                },
             );
             setOpen(false);
-            toast.success(t(':provider connected.', { provider: card.label }));
+            toast.success(
+                connection === null
+                    ? t(':provider connected.', { provider: card.label })
+                    : t('Connection saved.'),
+            );
             router.reload({ only: ['providers'] });
         } catch (error) {
             if (error instanceof RetroRequestError && error.status === 422) {
@@ -188,7 +199,7 @@ export function UrlChannelIntegration({ card, scope, mattermost }: Props) {
                             <Input
                                 id={urlId}
                                 type="url"
-                                required
+                                required={connection === null}
                                 autoComplete="off"
                                 value={url}
                                 onChange={(event) => setUrl(event.target.value)}
@@ -202,6 +213,7 @@ export function UrlChannelIntegration({ card, scope, mattermost }: Props) {
                             <Input
                                 id={labelId}
                                 maxLength={80}
+                                autoComplete="off"
                                 value={channelLabel}
                                 onChange={(event) =>
                                     setChannelLabel(event.target.value)
