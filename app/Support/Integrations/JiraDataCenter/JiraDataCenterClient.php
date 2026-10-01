@@ -78,6 +78,19 @@ class JiraDataCenterClient implements JiraApi, RefreshesTokens
         return $this->decode($response);
     }
 
+    /**
+     * A connection made for another server than the configured one sends
+     * nothing, not even a token refresh.
+     */
+    public function ensureConfiguredServer(TeamIntegration $integration): void
+    {
+        $integration->withReconnectHandling(function () use ($integration): void {
+            if ($integration->setting('serverKey') !== JiraDataCenterServer::key()) {
+                throw new ReconnectRequired(self::Provider, __('skrum is now configured for another Jira server. Reconnect.'));
+            }
+        });
+    }
+
     public function get(TeamIntegration $integration, string $path, array $query = []): array
     {
         return $this->request($integration, 'GET', $path, $query);
@@ -110,9 +123,7 @@ class JiraDataCenterClient implements JiraApi, RefreshesTokens
     private function request(TeamIntegration $integration, string $method, string $path, array $data): array
     {
         return $integration->withReconnectHandling(function () use ($integration, $method, $path, $data): array {
-            if ($integration->setting('serverKey') !== JiraDataCenterServer::key()) {
-                throw new ReconnectRequired(self::Provider, __('skrum is now configured for another Jira server. Reconnect.'));
-            }
+            $this->ensureConfiguredServer($integration);
 
             $response = $integration->setting('authMethod') === self::AuthMethodToken
                 ? $this->withPersonalToken($integration, $method, $path, $data)

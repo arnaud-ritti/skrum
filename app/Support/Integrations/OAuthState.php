@@ -7,6 +7,7 @@ use App\Enums\IntegrationProvider;
 use App\Models\Team;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use LogicException;
 
 class OAuthState
 {
@@ -77,7 +78,11 @@ class OAuthState
     {
         $verifier = data_get($request->session()->get(self::SessionKey), 'codeVerifier');
 
-        return self::challenge(is_string($verifier) ? $verifier : '');
+        if (! is_string($verifier) || $verifier === '') {
+            throw new LogicException('No PKCE verifier was issued with the OAuth state.');
+        }
+
+        return self::challenge($verifier);
     }
 
     public static function challenge(string $verifier): string

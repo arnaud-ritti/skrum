@@ -43,6 +43,10 @@ class IntegrationTokens
     public function refresh(TeamIntegration $integration, ?string $staleToken = null): string
     {
         return $integration->withReconnectHandling(function () use ($integration, $staleToken): string {
+            if ($integration->provider === IntegrationProvider::JiraDataCenter) {
+                app(JiraDataCenterClient::class)->ensureConfiguredServer($integration);
+            }
+
             try {
                 return Cache::lock("integration-token:{$integration->id}", self::LockSeconds)
                     ->block(self::LockWaitSeconds, fn (): string => $this->refreshLocked($integration, $staleToken));
@@ -60,13 +64,20 @@ class IntegrationTokens
     {
         $refreshes = match ($integration->provider) {
             IntegrationProvider::Jira, IntegrationProvider::Linear => true,
-            IntegrationProvider::JiraDataCenter => $integration->setting('authMethod') === JiraDataCenterClient::AuthMethodOAuth,
+            IntegrationProvider::JiraDataCenter => $this->preparesJiraDataCenter($integration),
             default => false,
         };
 
         if ($refreshes) {
             $this->accessToken($integration);
         }
+    }
+
+    private function preparesJiraDataCenter(TeamIntegration $integration): bool
+    {
+        app(JiraDataCenterClient::class)->ensureConfiguredServer($integration);
+
+        return $integration->setting('authMethod') === JiraDataCenterClient::AuthMethodOAuth;
     }
 
     private function refreshLocked(TeamIntegration $integration, ?string $staleToken): string

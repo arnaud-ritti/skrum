@@ -8,18 +8,25 @@ use App\Models\TeamIntegration;
 use App\Models\User;
 use App\Support\Integrations\Exceptions\ProviderRejected;
 use App\Support\Integrations\Exceptions\ReconnectRequired;
+use App\Support\Integrations\IntegrationTokens;
 use App\Support\Integrations\JiraDataCenter\JiraDataCenterClient;
 use App\Support\Integrations\JiraDataCenter\JiraDataCenterServer;
 use App\Support\Integrations\OAuthState;
 use Illuminate\Http\Client\Request;
+use Illuminate\Http\Request as HttpRequest;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 
 beforeEach(function () {
     Http::preventStrayRequests();
     Queue::fake();
     enableIntegrations(IntegrationProvider::JiraDataCenter);
+});
+
+afterEach(function () {
+    Str::createRandomStringsNormally();
 });
 
 function fakeJiraDataCenterOAuth(): void
@@ -51,6 +58,7 @@ function jiraDataCenterCallback(User $user, Team $team, IntegrationAccess $acces
 }
 
 it('asks Jira Data Center for read or write access with PKCE', function (string $access, string $scope) {
+    Str::createRandomStringsUsing(fn (int $length): string => str_repeat('w', $length));
     $team = Team::factory()->create();
 
     $response = $this->actingAs(integrationAdmin($team))
@@ -64,8 +72,8 @@ it('asks Jira Data Center for read or write access with PKCE', function (string 
         ->and($query['client_id'])->toBe('jira-dc-client')
         ->and($query['redirect_uri'])->toEndWith('/integrations/jira-dc/callback')
         ->and($query['code_challenge_method'])->toBe('S256')
-        ->and($query['code_challenge'])->toBe(OAuthState::challenge((string) session('integrations.oauth.codeVerifier')))
-        ->and(session('integrations.oauth.codeVerifier'))->toHaveLength(64);
+        ->and($query['code_challenge'])->toBe('VLdPo7dRMXA8V_FxhD3Fi37GM4EMHUFGl6ezFNX8bV0')
+        ->and(session('integrations.oauth.codeVerifier'))->toBe(str_repeat('w', 64));
 })->with([
     'read' => ['read', 'READ'],
     'write' => ['write', 'WRITE'],
@@ -188,4 +196,41 @@ it('checks a Data Center connection with its myself endpoint', function () {
 
     Http::assertSent(fn (Request $request) => $request->url() === 'https://jira.example.com/rest/api/2/myself'
         && $request->hasHeader('Authorization', 'Bearer jira-dc-access'));
+});
+
+it('computes the PKCE challenge of RFC 7636', function () {
+    expect(OAuthState::challenge('dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk'))->toBe('E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM');
+});
+
+it('refuses to compute a challenge without an issued verifier', function () {
+    $request = HttpRequest::create('/');
+    $request->setLaravelSession(app('session.store'));
+
+    expect(fn () => app(OAuthState::class)->codeChallenge($request))->toThrow(LogicException::class);
+});
+
+it('refuses a replayed callback', function () {
+    fakeJiraDataCenterOAuth();
+    $team = Team::factory()->create();
+    $admin = integrationAdmin($team);
+
+    jiraDataCenterCallback($admin, $team)->assertRedirect();
+
+    $this->actingAs($admin)
+        ->get(route('integrations.jiraDataCenter.callback', ['code' => 'jira-dc-code', 'state' => 'oauth-state-0123456789abcdefghijklmnopqrstu']))
+        ->assertInertiaFlash('toast', ['type' => 'error', 'message' => 'Could not connect Jira Data Center. Try again.']);
+
+    Http::assertSentCount(3);
+});
+
+it('never refreshes a token against another Jira server than the configured one', function () {
+    $integration = TeamIntegration::factory()->jiraDataCenter()->expiring()->create();
+    config(['services.jira_dc.base_url' => 'https://jira.other.example.com']);
+
+    expect(fn () => app(IntegrationTokens::class)->prepare($integration))
+        ->toThrow(ReconnectRequired::class);
+
+    expect($integration->fresh()?->status)->toBe(IntegrationStatus::ReconnectRequired)
+        ->and($integration->fresh()?->last_error)->toBe('skrum is now configured for another Jira server. Reconnect.');
+    Http::assertNothingSent();
 });
