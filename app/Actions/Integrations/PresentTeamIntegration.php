@@ -17,6 +17,11 @@ class PresentTeamIntegration
         'telegram' => ['chatId', 'chatTitle', 'chatType'],
         'jira' => ['cloudId', 'siteName', 'siteUrl', 'sites', 'storyPointFields', 'numberFields', 'priorityMap'],
         'linear' => ['organizationName', 'urlKey', 'priorityMap'],
+        'jira_dc' => [],
+        'github' => [],
+        'msteams' => ['host', 'channelLabel'],
+        'mattermost' => ['host', 'channelLabel'],
+        'webhook' => [],
     ];
 
     /**

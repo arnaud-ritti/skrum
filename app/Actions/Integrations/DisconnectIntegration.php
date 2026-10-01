@@ -26,7 +26,7 @@ class DisconnectIntegration
             IntegrationProvider::Slack => fn () => $this->slack->revoke($integration),
             IntegrationProvider::Telegram => fn () => $this->leaveChatUnlessShared($integration),
             IntegrationProvider::Linear => fn () => $this->linear->revoke($integration),
-            IntegrationProvider::Jira => fn () => null,
+            IntegrationProvider::Jira, IntegrationProvider::JiraDataCenter, IntegrationProvider::GitHub, IntegrationProvider::MicrosoftTeams, IntegrationProvider::Mattermost, IntegrationProvider::Webhook => fn () => null,
         };
 
         $revoke();

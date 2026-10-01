@@ -616,6 +616,20 @@ function disableIntegrations(): void
         'services.jira.client_secret' => null,
         'services.linear.client_id' => null,
         'services.linear.client_secret' => null,
+        'services.jira_dc.base_url' => null,
+        'services.jira_dc.client_id' => null,
+        'services.jira_dc.client_secret' => null,
+        'services.jira_dc.personal_tokens' => true,
+        'services.github_app.app_id' => null,
+        'services.github_app.slug' => null,
+        'services.github_app.client_id' => null,
+        'services.github_app.client_secret' => null,
+        'services.github_app.private_key' => '',
+        'services.github_app.private_key_path' => null,
+        'services.msteams.enabled' => false,
+        'services.msteams.allowed_hosts' => [],
+        'services.mattermost.url' => '',
+        'services.outgoing_webhooks.enabled' => false,
     ]);
 }
 
@@ -627,6 +641,22 @@ function enableIntegrations(IntegrationProvider ...$providers): void
             IntegrationProvider::Telegram => ['services.telegram.bot_token' => '123456:telegram-token'],
             IntegrationProvider::Jira => ['services.jira.client_id' => 'jira-client', 'services.jira.client_secret' => 'jira-secret'],
             IntegrationProvider::Linear => ['services.linear.client_id' => 'linear-client', 'services.linear.client_secret' => 'linear-secret'],
+            IntegrationProvider::JiraDataCenter => [
+                'services.jira_dc.base_url' => 'https://jira.example.com',
+                'services.jira_dc.client_id' => 'jira-dc-client',
+                'services.jira_dc.client_secret' => 'jira-dc-secret',
+                'services.jira_dc.personal_tokens' => true,
+            ],
+            IntegrationProvider::GitHub => [
+                'services.github_app.app_id' => '12345',
+                'services.github_app.slug' => 'skrum-test',
+                'services.github_app.client_id' => 'github-client',
+                'services.github_app.client_secret' => 'github-secret',
+                'services.github_app.private_key' => 'test-private-key',
+            ],
+            IntegrationProvider::MicrosoftTeams => ['services.msteams.enabled' => true],
+            IntegrationProvider::Mattermost => ['services.mattermost.url' => 'https://chat.example.com'],
+            IntegrationProvider::Webhook => ['services.outgoing_webhooks.enabled' => true],
         });
     }
 }

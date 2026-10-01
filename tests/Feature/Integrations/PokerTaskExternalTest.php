@@ -30,7 +30,7 @@ it('shows the full external object and the connections to non-guest players', fu
         'unsupportedReason' => null,
         'isManaged' => true,
     ])
-        ->and($response->json('integrations'))->toBe(['jira' => ['connected' => true, 'canWrite' => true], 'linear' => null])
+        ->and($response->json('integrations'))->toBe(['jira' => ['connected' => true, 'canWrite' => true], 'linear' => null, 'jira_dc' => null, 'github' => null])
         ->and($response->json('tasks.0.external.syncState'))->toBe('synced');
 });
 

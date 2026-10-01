@@ -1315,5 +1315,6 @@
     "Invite to the room": "Invite to the room",
     "Include the guest link (anyone who can see the message can join)": "Include the guest link (anyone who can see the message can join)",
     "Posted guest links stop working if you regenerate the link.": "Posted guest links stop working if you regenerate the link.",
-    "Only members of :team can join.": "Only members of :team can join."
+    "Only members of :team can join.": "Only members of :team can join.",
+    "Webhook": "Webhook"
 }

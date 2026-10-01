@@ -4,6 +4,7 @@ namespace App\Actions\Integrations;
 
 use App\Enums\IntegrationProvider;
 use App\Models\TeamIntegration;
+use App\Support\Integrations\Exceptions\NotConnected;
 use App\Support\Integrations\Exceptions\ReconnectRequired;
 use App\Support\Integrations\IntegrationTokens;
 use App\Support\Integrations\Jira\JiraClient;
@@ -28,6 +29,7 @@ class CheckIntegration
             IntegrationProvider::Telegram => fn () => $this->telegram->getChat($integration),
             IntegrationProvider::Jira => fn () => $this->checkJiraSite($integration),
             IntegrationProvider::Linear => fn () => $this->linear->query($integration, 'query { viewer { id } }'),
+            IntegrationProvider::JiraDataCenter, IntegrationProvider::GitHub, IntegrationProvider::MicrosoftTeams, IntegrationProvider::Mattermost, IntegrationProvider::Webhook => throw new NotConnected($integration->provider),
         };
 
         $check();

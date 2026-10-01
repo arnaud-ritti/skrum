@@ -40,5 +40,25 @@
         <env name="JIRA_CLIENT_SECRET" value=""/>
         <env name="LINEAR_CLIENT_ID" value=""/>
         <env name="LINEAR_CLIENT_SECRET" value=""/>
+        <env name="LINEAR_WEBHOOK_SECRET" value=""/>
+        <env name="JIRA_DC_BASE_URL" value=""/>
+        <env name="JIRA_DC_CLIENT_ID" value=""/>
+        <env name="JIRA_DC_CLIENT_SECRET" value=""/>
+        <env name="JIRA_DC_PERSONAL_TOKENS" value="true"/>
+        <env name="GITHUB_APP_ID" value=""/>
+        <env name="GITHUB_APP_SLUG" value=""/>
+        <env name="GITHUB_APP_CLIENT_ID" value=""/>
+        <env name="GITHUB_APP_CLIENT_SECRET" value=""/>
+        <env name="GITHUB_APP_PRIVATE_KEY" value=""/>
+        <env name="GITHUB_APP_PRIVATE_KEY_PATH" value=""/>
+        <env name="GITHUB_APP_WEBHOOK_SECRET" value=""/>
+        <env name="MSTEAMS_ENABLED" value="false"/>
+        <env name="MSTEAMS_ALLOWED_HOSTS" value=""/>
+        <env name="MATTERMOST_URL" value=""/>
+        <env name="OUTGOING_WEBHOOKS_ENABLED" value="false"/>
+        <env name="OUTGOING_WEBHOOKS_ALLOW_PRIVATE_NETWORKS" value="false"/>
+        <env name="OUTGOING_WEBHOOKS_ALLOW_HTTP" value="false"/>
+        <env name="INTEGRATIONS_INBOUND_WEBHOOKS" value="off"/>
+        <env name="INTEGRATIONS_POLL_MINUTES" value="5"/>
     </php>
 </phpunit>

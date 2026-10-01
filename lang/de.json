@@ -1561,5 +1561,6 @@
     "Invite to the room": "In den Raum einladen",
     "Include the guest link (anyone who can see the message can join)": "Gastlink einfügen (alle, die die Nachricht sehen, können beitreten)",
     "Posted guest links stop working if you regenerate the link.": "Gepostete Gastlinks funktionieren nicht mehr, wenn du den Link neu erzeugst.",
-    "Only members of :team can join.": "Nur Mitglieder von :team können beitreten."
+    "Only members of :team can join.": "Nur Mitglieder von :team können beitreten.",
+    "Webhook": "Webhook"
 }
