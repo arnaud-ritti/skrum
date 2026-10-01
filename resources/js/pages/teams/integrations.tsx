@@ -1,6 +1,8 @@
 import { Head, Link } from '@inertiajs/react';
 import TeamsController from '@/actions/App/Http/Controllers/TeamsController';
 import Heading from '@/components/heading';
+import { GitHubIntegration } from '@/components/integrations/github-integration';
+import { JiraDataCenterIntegration } from '@/components/integrations/jira-data-center-integration';
 import { JiraIntegration } from '@/components/integrations/jira-integration';
 import { LinearIntegration } from '@/components/integrations/linear-integration';
 import { SlackIntegration } from '@/components/integrations/slack-integration';
@@ -112,6 +114,22 @@ export default function TeamIntegrations({
                                     card={card}
                                     scope={scope}
                                     events={webhookEvents ?? []}
+                                />
+                            );
+                        case 'jira_dc':
+                            return (
+                                <JiraDataCenterIntegration
+                                    key={card.provider}
+                                    card={card}
+                                    scope={scope}
+                                />
+                            );
+                        case 'github':
+                            return (
+                                <GitHubIntegration
+                                    key={card.provider}
+                                    card={card}
+                                    scope={scope}
                                 />
                             );
                         default:

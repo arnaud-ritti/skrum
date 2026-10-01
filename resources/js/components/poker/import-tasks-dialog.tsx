@@ -34,6 +34,7 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useTrans } from '@/hooks/use-trans';
 import {
     TrackerLabels,
+    isPokerTrackerSource,
     type PokerTrackerSource,
     type TrackerContainer,
     type TrackerIssuePreview,
@@ -51,6 +52,56 @@ type Props = {
     onOpenChange: (open: boolean) => void;
     sources: PokerTrackerSource[];
 };
+
+type Translate = ReturnType<typeof useTrans>['t'];
+
+type ImportTerms = {
+    container: string;
+    searchContainers: string;
+    chooseContainer: string;
+    iteration: string;
+    chooseIteration: string;
+    noIteration: string;
+    queryPlaceholder: string;
+};
+
+function importTerms(source: PokerTrackerSource, t: Translate): ImportTerms {
+    switch (source) {
+        case 'jira':
+        case 'jira_dc':
+            return {
+                container: t('Board'),
+                searchContainers: t('Search boards'),
+                chooseContainer: t('Choose a board'),
+                iteration: t('Sprint'),
+                chooseIteration: t('Choose a sprint'),
+                noIteration: t('No active or upcoming sprint.'),
+                queryPlaceholder: t(
+                    'JQL, for example project = PROJ AND sprint in openSprints()',
+                ),
+            };
+        case 'github':
+            return {
+                container: t('Repository'),
+                searchContainers: t('Search repositories'),
+                chooseContainer: t('Choose a repository'),
+                iteration: t('Milestone'),
+                chooseIteration: t('Choose a milestone'),
+                noIteration: t('No open milestone.'),
+                queryPlaceholder: t('Search GitHub issues'),
+            };
+        default:
+            return {
+                container: t('Team'),
+                searchContainers: t('Search teams'),
+                chooseContainer: t('Choose a team'),
+                iteration: t('Cycle'),
+                chooseIteration: t('Choose a cycle'),
+                noIteration: t('No active or upcoming cycle.'),
+                queryPlaceholder: t('Search Linear issues'),
+            };
+    }
+}
 
 export function ImportTasksDialog({ open, onOpenChange, sources }: Props) {
     const { t } = useTrans();
@@ -98,7 +149,8 @@ function ImportForm({
     const [loading, setLoading] = useState(false);
     const [importing, setImporting] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const isJira = source === 'jira';
+    const isGitHub = source === 'github';
+    const terms = importTerms(source, t);
     const iterationsRequest = useRef(0);
     const previewRequest = useRef(0);
 
@@ -121,7 +173,7 @@ function ImportForm({
     );
 
     useEffect(() => {
-        if (mode !== 'iteration') {
+        if (mode !== 'iteration' && !isGitHub) {
             return;
         }
 
@@ -150,10 +202,10 @@ function ImportForm({
             stale = true;
             clearTimeout(timer);
         };
-    }, [gameId, source, mode, containerSearch, fail]);
+    }, [gameId, source, mode, isGitHub, containerSearch, fail]);
 
     const chooseSource = (next: string) => {
-        if (next !== 'jira' && next !== 'linear') {
+        if (!isPokerTrackerSource(next)) {
             return;
         }
 
@@ -211,7 +263,11 @@ function ImportForm({
                 PokerImportPreviewsController.store({ game: gameId, source }),
                 mode === 'iteration'
                     ? { mode, iteration_id: iteration }
-                    : { mode, query },
+                    : {
+                          mode,
+                          query,
+                          container: isGitHub ? container : undefined,
+                      },
             );
 
             if (requestId !== previewRequest.current) {
@@ -298,7 +354,36 @@ function ImportForm({
     };
 
     const canShow =
-        mode === 'iteration' ? iteration !== '' : query.trim() !== '';
+        mode === 'iteration'
+            ? iteration !== ''
+            : query.trim() !== '' && (!isGitHub || container !== '');
+
+    const containerPicker = (
+        <div className="space-y-1.5">
+            <Label htmlFor="import-container-search">{terms.container}</Label>
+            <Input
+                id="import-container-search"
+                value={containerSearch}
+                placeholder={terms.searchContainers}
+                onChange={(event) => setContainerSearch(event.target.value)}
+            />
+            <Select
+                value={container}
+                onValueChange={(next) => void chooseContainer(next)}
+            >
+                <SelectTrigger aria-label={terms.chooseContainer}>
+                    <SelectValue placeholder={terms.chooseContainer} />
+                </SelectTrigger>
+                <SelectContent>
+                    {containers.map((item) => (
+                        <SelectItem key={item.id} value={item.id}>
+                            {item.name}
+                        </SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+        </div>
+    );
 
     return (
         <div className="space-y-4">
@@ -334,7 +419,7 @@ function ImportForm({
                 })}
             >
                 <ToggleGroupItem value="iteration">
-                    {isJira ? t('Sprint') : t('Cycle')}
+                    {terms.iteration}
                 </ToggleGroupItem>
                 <ToggleGroupItem value="query">{t('Query')}</ToggleGroupItem>
             </ToggleGroup>
@@ -345,57 +430,9 @@ function ImportForm({
             >
                 {mode === 'iteration' ? (
                     <div className="grid gap-3 sm:grid-cols-2">
+                        {containerPicker}
                         <div className="space-y-1.5">
-                            <Label htmlFor="import-container-search">
-                                {isJira ? t('Board') : t('Team')}
-                            </Label>
-                            <Input
-                                id="import-container-search"
-                                value={containerSearch}
-                                placeholder={
-                                    isJira
-                                        ? t('Search boards')
-                                        : t('Search teams')
-                                }
-                                onChange={(event) =>
-                                    setContainerSearch(event.target.value)
-                                }
-                            />
-                            <Select
-                                value={container}
-                                onValueChange={(next) =>
-                                    void chooseContainer(next)
-                                }
-                            >
-                                <SelectTrigger
-                                    aria-label={
-                                        isJira
-                                            ? t('Choose a board')
-                                            : t('Choose a team')
-                                    }
-                                >
-                                    <SelectValue
-                                        placeholder={
-                                            isJira
-                                                ? t('Choose a board')
-                                                : t('Choose a team')
-                                        }
-                                    />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {containers.map((item) => (
-                                        <SelectItem
-                                            key={item.id}
-                                            value={item.id}
-                                        >
-                                            {item.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label>{isJira ? t('Sprint') : t('Cycle')}</Label>
+                            <Label>{terms.iteration}</Label>
                             <Select
                                 value={iteration}
                                 onValueChange={(next) => {
@@ -405,18 +442,10 @@ function ImportForm({
                                 disabled={iterations === null}
                             >
                                 <SelectTrigger
-                                    aria-label={
-                                        isJira
-                                            ? t('Choose a sprint')
-                                            : t('Choose a cycle')
-                                    }
+                                    aria-label={terms.chooseIteration}
                                 >
                                     <SelectValue
-                                        placeholder={
-                                            isJira
-                                                ? t('Choose a sprint')
-                                                : t('Choose a cycle')
-                                        }
+                                        placeholder={terms.chooseIteration}
                                     />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -435,33 +464,28 @@ function ImportForm({
                             </Select>
                             {iterations !== null && iterations.length === 0 && (
                                 <p className="text-xs text-muted-foreground">
-                                    {isJira
-                                        ? t('No active or upcoming sprint.')
-                                        : t('No active or upcoming cycle.')}
+                                    {terms.noIteration}
                                 </p>
                             )}
                         </div>
                     </div>
                 ) : (
-                    <div className="space-y-1.5">
-                        <Label htmlFor="import-query">{t('Query')}</Label>
-                        <Textarea
-                            id="import-query"
-                            value={query}
-                            maxLength={1000}
-                            rows={2}
-                            placeholder={
-                                isJira
-                                    ? t(
-                                          'JQL, for example project = PROJ AND sprint in openSprints()',
-                                      )
-                                    : t('Search Linear issues')
-                            }
-                            onChange={(event) => {
-                                setQuery(event.target.value);
-                                resetPreview();
-                            }}
-                        />
+                    <div className="space-y-3">
+                        {isGitHub && containerPicker}
+                        <div className="space-y-1.5">
+                            <Label htmlFor="import-query">{t('Query')}</Label>
+                            <Textarea
+                                id="import-query"
+                                value={query}
+                                maxLength={1000}
+                                rows={2}
+                                placeholder={terms.queryPlaceholder}
+                                onChange={(event) => {
+                                    setQuery(event.target.value);
+                                    resetPreview();
+                                }}
+                            />
+                        </div>
                     </div>
                 )}
 

@@ -27,6 +27,8 @@ type Props = {
     card: IntegrationProviderCard;
     connection: TeamIntegration;
     description: string;
+    label?: string;
+    title?: string;
 };
 
 export function DisconnectIntegrationDialog({
@@ -34,6 +36,8 @@ export function DisconnectIntegrationDialog({
     card,
     connection,
     description,
+    label,
+    title,
 }: Props) {
     const { t } = useTrans();
     const [open, setOpen] = useState(false);
@@ -67,12 +71,13 @@ export function DisconnectIntegrationDialog({
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
                 <Button variant="destructive" size="sm">
-                    {t('Disconnect')}
+                    {label ?? t('Disconnect')}
                 </Button>
             </DialogTrigger>
             <DialogContent>
                 <DialogTitle>
-                    {t('Disconnect :provider?', { provider: card.label })}
+                    {title ??
+                        t('Disconnect :provider?', { provider: card.label })}
                 </DialogTitle>
                 <DialogDescription>{description}</DialogDescription>
                 <DialogFooter className="gap-2">
@@ -85,7 +90,7 @@ export function DisconnectIntegrationDialog({
                         onClick={() => void disconnect()}
                     >
                         {busy && <Spinner />}
-                        {t('Disconnect')}
+                        {label ?? t('Disconnect')}
                     </Button>
                 </DialogFooter>
             </DialogContent>

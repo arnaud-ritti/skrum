@@ -111,18 +111,30 @@ function SyncBadge({
     source: string;
 }) {
     const { t } = useTrans();
+    const hint =
+        external.source === 'github'
+            ? t('Written to the issue description.')
+            : undefined;
 
     switch (external.syncState) {
         case 'synced':
             return (
-                <Badge variant="secondary">
+                <Badge variant="secondary" title={hint}>
                     {t('Synced to :source', { source })}
                 </Badge>
             );
         case 'pending':
-            return <Badge variant="outline">{t('Sync pending')}</Badge>;
+            return (
+                <Badge variant="outline" title={hint}>
+                    {t('Sync pending')}
+                </Badge>
+            );
         case 'failed':
-            return <Badge variant="destructive">{t('Sync failed')}</Badge>;
+            return (
+                <Badge variant="destructive" title={hint}>
+                    {t('Sync failed')}
+                </Badge>
+            );
         case 'unsupported':
             return (
                 <Badge variant="outline" className="whitespace-normal">

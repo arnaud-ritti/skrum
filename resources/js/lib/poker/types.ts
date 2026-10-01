@@ -26,7 +26,7 @@ export type PokerRound = {
     result: PokerResult | null;
 };
 
-export type PokerTrackerSource = 'jira' | 'linear';
+export type PokerTrackerSource = 'jira' | 'linear' | 'jira_dc' | 'github';
 
 export type PokerSyncState = 'synced' | 'pending' | 'failed' | 'unsupported';
 
@@ -77,7 +77,15 @@ export type TrackerIssuePreview = {
 export const TrackerLabels: Record<PokerTrackerSource, string> = {
     jira: 'Jira',
     linear: 'Linear',
+    jira_dc: 'Jira Data Center',
+    github: 'GitHub',
 };
+
+export function isPokerTrackerSource(
+    value: string,
+): value is PokerTrackerSource {
+    return Object.hasOwn(TrackerLabels, value);
+}
 
 export function connectedTrackers(
     integrations: PokerIntegrations | null,

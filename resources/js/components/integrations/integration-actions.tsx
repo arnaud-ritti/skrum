@@ -16,7 +16,7 @@ import type {
 
 type ConnectLinkProps = {
     scope: IntegrationScope;
-    provider: 'slack' | 'jira' | 'linear';
+    provider: 'slack' | 'jira' | 'linear' | 'jira_dc' | 'github';
     label: string;
     access?: IntegrationAccess;
     variant?: 'default' | 'outline';

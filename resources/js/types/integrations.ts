@@ -16,6 +16,8 @@ export type IntegrationStatus =
 
 export type IntegrationAccess = 'read' | 'write';
 
+export type IntegrationAuthMethod = 'oauth' | 'pat';
+
 export type JiraSite = { cloudId: string; url: string; name: string };
 
 export type JiraField = { id: string; name: string };
@@ -41,6 +43,17 @@ export type IntegrationSettings = {
     secretCreatedAt?: string;
     events?: WebhookEventName[];
     disabledReason?: WebhookDisabledReason;
+    serverTitle?: string;
+    version?: string;
+    baseUrl?: string;
+    authMethod?: IntegrationAuthMethod;
+    tokenOwner?: string | null;
+    tokenSavedAt?: string | null;
+    installationId?: string;
+    accountLogin?: string;
+    accountType?: 'Organization' | 'User';
+    exportRepositoryId?: string;
+    priorityLabels?: Partial<Record<PriorityLevel, string | null>>;
 };
 
 export type TeamIntegration = {
@@ -61,6 +74,7 @@ export type IntegrationProviderCard = {
     provider: IntegrationProviderKey;
     label: string;
     usesOAuth: boolean;
+    authMethods: IntegrationAuthMethod[];
     isTracker: boolean;
     connection: TeamIntegration | null;
 };
@@ -151,7 +165,7 @@ export type ShareAvailability = Record<ShareChannel, boolean>;
 
 export type RetroResultsAudience = 'participants' | 'team';
 
-export type TrackerProviderKey = 'jira' | 'linear';
+export type TrackerProviderKey = 'jira' | 'linear' | 'jira_dc' | 'github';
 
 export type PriorityLevel = 'high' | 'medium' | 'low';
 
@@ -168,7 +182,7 @@ export type ExternalAccount = { accountId: string; displayName: string };
 export type UserMapping = {
     accountId: string | null;
     displayName: string | null;
-    matchedBy: 'email' | 'manual';
+    matchedBy: 'email' | 'manual' | 'sso';
     accountInactive: boolean;
 };
 
@@ -202,10 +216,12 @@ export type ExportTargets = {
     projects?: ExportTargetOption[];
     issueTypes?: ExportTargetOption[];
     teams?: ExportTargetOption[];
+    repositories?: ExportTargetOption[];
     defaults: {
         projectId?: string | null;
         issueTypeId?: string | null;
         teamId?: string | null;
+        repositoryId?: string | null;
     };
 };
 

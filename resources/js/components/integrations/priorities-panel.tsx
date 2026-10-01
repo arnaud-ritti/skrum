@@ -54,7 +54,8 @@ export function PrioritiesPanel({ scope, connection }: Props) {
     const [busy, setBusy] = useState(false);
     const { workspace, team } = scope;
     const integration = connection.id;
-    const isJira = connection.provider === 'jira';
+    const isJira =
+        connection.provider === 'jira' || connection.provider === 'jira_dc';
     const map = connection.settings.priorityMap ?? {};
     const levelLabels: Record<PriorityLevel, string> = {
         high: t('High'),
