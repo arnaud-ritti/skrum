@@ -9,6 +9,7 @@ use App\Enums\IntegrationStatus;
 use App\Jobs\Integrations\PushActionItemState;
 use App\Jobs\Integrations\RedeliverWebhook;
 use App\Models\IntegrationDelivery;
+use App\Models\IntegrationDeliveryPayload;
 use App\Models\Team;
 use App\Models\TeamIntegration;
 use App\Models\User;
@@ -178,4 +179,137 @@ it('fails a redelivery whose content disappeared without counting it', function 
         ->and($redelivery->fresh()->error)->toBe("This delivery's content is no longer kept.")
         ->and($integration->fresh()->consecutive_failures)->toBe(0);
     Http::assertNothingSent();
+});
+
+it('shows an Owner or Admin what was sent and answered', function () {
+    [$team, $admin, $integration, $delivery] = redeliverableWebhookDelivery();
+    $delivery->payload->forceFill([
+        'request_headers' => ['X-Skrum-Event' => 'action_item.completed', 'X-Skrum-Signature' => 'sha256=…a1b2c3'],
+        'request_body' => '{"id":"x"}',
+        'response_status' => 503,
+        'response_excerpt' => 'Service Unavailable',
+    ])->save();
+
+    $this->actingAs($admin)
+        ->getJson(route('teams.integrations.deliveries.show', [$team->workspace, $team, $integration, $delivery->id]))
+        ->assertOk()
+        ->assertExactJson([
+            'id' => $delivery->id,
+            'event' => 'action_item.completed',
+            'status' => 'failed',
+            'attempts' => 7,
+            'redeliveryOf' => null,
+            'request' => [
+                'headers' => ['X-Skrum-Event' => 'action_item.completed', 'X-Skrum-Signature' => 'sha256=…a1b2c3'],
+                'body' => '{"id":"x"}',
+            ],
+            'response' => ['status' => 503, 'excerpt' => 'Service Unavailable'],
+        ]);
+});
+
+it('shows a response excerpt cut inside a character', function () {
+    [$team, $admin, $integration, $delivery] = redeliverableWebhookDelivery();
+    $delivery->payload->forceFill(['response_status' => 500, 'response_excerpt' => 'Erreur '.substr('é', 0, 1)])->save();
+
+    $this->actingAs($admin)
+        ->getJson(route('teams.integrations.deliveries.show', [$team->workspace, $team, $integration, $delivery->id]))
+        ->assertOk()
+        ->assertJsonPath('response.excerpt', 'Erreur ?');
+});
+
+it('keeps payloads to Owners and Admins', function () {
+    [$team, , $integration, $delivery] = redeliverableWebhookDelivery();
+    $member = teamMember($team);
+
+    $this->actingAs($member)
+        ->getJson(route('teams.integrations.deliveries.show', [$team->workspace, $team, $integration, $delivery->id]))
+        ->assertForbidden();
+    $this->actingAs($member)
+        ->postJson(route('teams.integrations.deliveries.redelivery.store', [$team->workspace, $team, $integration, $delivery->id]))
+        ->assertForbidden();
+
+    Queue::assertNotPushed(RedeliverWebhook::class);
+});
+
+it('answers 404 for deliveries outside the team\'s webhook log', function () {
+    [$team, $admin, $integration, $delivery] = redeliverableWebhookDelivery();
+    [, , , $foreign] = redeliverableWebhookDelivery();
+    $slack = IntegrationDelivery::factory()->create(['team_id' => $team->id, 'channel' => IntegrationDeliveryChannel::Slack]);
+    $show = fn (string $id) => route('teams.integrations.deliveries.show', [$team->workspace, $team, $integration, $id]);
+
+    $this->actingAs($admin)->getJson($show($foreign->id))->assertNotFound();
+    $this->actingAs($admin)->getJson($show($slack->id))->assertNotFound();
+    $this->actingAs($admin)
+        ->postJson(route('teams.integrations.deliveries.redelivery.store', [$team->workspace, $team, $integration, $foreign->id]))
+        ->assertNotFound();
+
+    $delivery->payload()->delete();
+
+    $this->actingAs($admin)->getJson($show($delivery->id))->assertNotFound();
+
+    config(['services.outgoing_webhooks.enabled' => false]);
+
+    $this->actingAs($admin)->getJson($show($delivery->id))->assertNotFound();
+});
+
+it('redelivers through the endpoint and lists the redelivery', function () {
+    [$team, $admin, $integration, $delivery] = redeliverableWebhookDelivery();
+    $this->travel(5)->seconds();
+
+    $response = $this->actingAs($admin)
+        ->postJson(route('teams.integrations.deliveries.redelivery.store', [$team->workspace, $team, $integration, $delivery->id]))
+        ->assertAccepted()
+        ->assertJson(['event' => 'action_item.completed', 'status' => 'queued', 'redeliveryOf' => $delivery->id, 'hasContent' => true]);
+
+    $this->actingAs($admin)
+        ->postJson(route('teams.integrations.deliveries.redelivery.store', [$team->workspace, $team, $integration, $delivery->id]))
+        ->assertConflict()
+        ->assertJson(['message' => 'This delivery is already being redelivered.']);
+
+    $this->actingAs($admin)
+        ->getJson(route('teams.integrations.deliveries.index', [$team->workspace, $team, $integration]))
+        ->assertOk()
+        ->assertJsonPath('data.0.id', $response->json('id'))
+        ->assertJsonPath('data.0.redeliveryOf', $delivery->id)
+        ->assertJsonPath('data.0.hasContent', true)
+        ->assertJsonPath('data.1.id', $delivery->id)
+        ->assertJsonPath('data.1.hasContent', true);
+    Queue::assertPushed(RedeliverWebhook::class, 1);
+});
+
+it('redelivers a delivery made through an earlier connection', function () {
+    [$team, $admin, $integration, $delivery] = redeliverableWebhookDelivery();
+    $integration->delete();
+    $current = TeamIntegration::factory()->webhook()->create(['team_id' => $team->id]);
+
+    $this->actingAs($admin)
+        ->getJson(route('teams.integrations.deliveries.show', [$team->workspace, $team, $current, $delivery->id]))
+        ->assertOk();
+    $this->actingAs($admin)
+        ->postJson(route('teams.integrations.deliveries.redelivery.store', [$team->workspace, $team, $current, $delivery->id]))
+        ->assertAccepted();
+
+    expect(IntegrationDelivery::query()->whereNotNull('redelivery_of_id')->sole()->team_integration_id)->toBe($current->id);
+});
+
+it('throttles redeliveries per user', function () {
+    [$team, $admin, $integration] = redeliverableWebhookDelivery();
+    $url = fn (IntegrationDelivery $delivery) => route('teams.integrations.deliveries.redelivery.store', [$team->workspace, $team, $integration, $delivery->id]);
+    $deliveries = collect(range(1, 11))->map(function () use ($team, $integration) {
+        $delivery = IntegrationDelivery::factory()->failed()->create([
+            'team_id' => $team->id,
+            'channel' => IntegrationDeliveryChannel::Webhook,
+            'kind' => IntegrationDeliveryKind::Event,
+            'event' => 'action_item.completed',
+            'team_integration_id' => $integration->id,
+            'requested_by_user_id' => null,
+        ]);
+        IntegrationDeliveryPayload::factory()->create(['integration_delivery_id' => $delivery->id, 'message' => ['id' => $delivery->id, 'event' => 'action_item.completed', 'occurredAt' => '2026-10-07T10:00:00Z', 'data' => []]]);
+
+        return $delivery;
+    });
+
+    $deliveries->take(10)->each(fn (IntegrationDelivery $delivery) => $this->actingAs($admin)->postJson($url($delivery))->assertAccepted());
+
+    $this->actingAs($admin)->postJson($url($deliveries->last()))->assertTooManyRequests();
 });

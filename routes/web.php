@@ -59,6 +59,7 @@ use App\Http\Controllers\Integrations\TeamIntegrationsController;
 use App\Http\Controllers\Integrations\TelegramConnectCodesController;
 use App\Http\Controllers\Integrations\TrackerWebhooksController;
 use App\Http\Controllers\Integrations\WebhookDeliveriesController;
+use App\Http\Controllers\Integrations\WebhookRedeliveriesController;
 use App\Http\Controllers\Integrations\WebhookSecretsController;
 use App\Http\Controllers\Integrations\WorkspaceActionItemExportPreviewsController;
 use App\Http\Controllers\Integrations\WorkspaceActionItemExportsController;
@@ -288,6 +289,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     ->whereUuid('integration')
                     ->middleware('throttle:60,1,webhookDeliveries')
                     ->name('teams.integrations.deliveries.index');
+                Route::get('teams/{team}/integrations/{integration}/deliveries/{delivery}', [WebhookDeliveriesController::class, 'show'])
+                    ->whereUuid(['integration', 'delivery'])
+                    ->middleware('throttle:60,1,webhookDeliveries')
+                    ->name('teams.integrations.deliveries.show');
+                Route::post('teams/{team}/integrations/{integration}/deliveries/{delivery}/redelivery', [WebhookRedeliveriesController::class, 'store'])
+                    ->whereUuid(['integration', 'delivery'])
+                    ->middleware('throttle:10,1,webhookRedeliveries')
+                    ->name('teams.integrations.deliveries.redelivery.store');
             });
 
             Route::post('teams/{team}/members', [TeamMembersController::class, 'store'])->name('teams.members.store');

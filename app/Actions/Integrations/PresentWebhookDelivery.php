@@ -16,7 +16,9 @@ class PresentWebhookDelivery
      *     responseStatus: int|null,
      *     error: string|null,
      *     createdAt: string|null,
-     *     lastAttemptAt: string|null
+     *     lastAttemptAt: string|null,
+     *     hasContent: bool,
+     *     redeliveryOf: string|null
      * }
      */
     public function handle(IntegrationDelivery $delivery): array
@@ -31,6 +33,19 @@ class PresentWebhookDelivery
             'error' => $delivery->error,
             'createdAt' => $delivery->created_at?->toIso8601String(),
             'lastAttemptAt' => $delivery->last_attempt_at?->toIso8601String(),
+            'hasContent' => $this->hasContent($delivery),
+            'redeliveryOf' => $delivery->redelivery_of_id,
         ];
+    }
+
+    private function hasContent(IntegrationDelivery $delivery): bool
+    {
+        $exists = $delivery->getAttribute('payload_exists');
+
+        if ($exists === null) {
+            return $delivery->payload()->exists();
+        }
+
+        return (bool) $exists;
     }
 }
