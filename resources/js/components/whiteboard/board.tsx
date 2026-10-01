@@ -65,7 +65,8 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
     const [initialElements] = useState(() =>
         restoreScene(initial.current.elements),
     );
-    const [stamp, setStamp] = useState(() => sceneStamp(initialElements));
+    const [initialStamp] = useState(() => sceneStamp(initialElements));
+    const root = useRef<HTMLDivElement | null>(null);
     const cursors = useWhiteboardCursors({
         api,
         presence: state.presence,
@@ -176,12 +177,13 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
 
     return (
         <div
+            ref={root}
             className="flex h-dvh flex-col"
             data-realtime={realtimeState(
                 state.connected && api !== null,
                 state.online,
             )}
-            data-scene={stamp}
+            data-scene={initialStamp}
         >
             {state.sessionExpired && <SessionExpiredBanner />}
             <div
@@ -252,7 +254,10 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
                             const reported =
                                 elements as unknown as SceneElement[];
 
-                            setStamp(sceneStamp(reported));
+                            root.current?.setAttribute(
+                                'data-scene',
+                                sceneStamp(reported),
+                            );
                             sync.current?.handleChange(
                                 reported,
                                 appState.editingTextElement?.id ?? null,
