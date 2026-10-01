@@ -129,7 +129,7 @@ One class, `BuildWhiteboardSnapshot`, builds it for the viewer. All redaction li
 - `POST files` (multipart) stores an image before the element that uses it is written. An image element whose file id is unknown for the board is rejected. Excalidraw adds an image to the scene before it has computed its file id; the client does not send an image element until the id is set.
 - Allowed: PNG, JPEG, WebP, GIF, detected from content. SVG upload is refused (script risk). At most 5 MB per file and 100 MB per board (422 beyond).
 - Files are served by `GET files/{fileId}` (Excalidraw's file id, so a client derives the URL from an image element without a lookup) to members of the board only, with `Content-Disposition: inline`, the stored MIME type and `X-Content-Type-Options: nosniff`.
-- A file is deleted when no live element, version (§9) or template (§10) references it; a daily command cleans up.
+- A file is deleted when no live element or version (§9) of its board references it; a daily command cleans up. A template (§10) keeps its own copy of every image under `whiteboard-templates/{templateId}/`, deleted with the template, so it never keeps a board's file alive. The same command removes the folder of a board or template that no longer exists, once every file in it is more than 24 hours old (a copy writes its files before the transaction that creates their owner commits).
 
 ### 6.6 Validation and limits
 
@@ -155,7 +155,7 @@ One class, `BuildWhiteboardSnapshot`, builds it for the viewer. All redaction li
 - **whiteboard_versions**: `id` (UUID), `whiteboard_id` (cascade), `name` (nullable string 80; null = automatic), `scene` (json: live elements with their real text), `seq` (unsigned bigint), `created_by_member_id` (nullable FK; null = automatic), `created_at`. Index (`whiteboard_id`, `created_at`).
 - **whiteboard_vote_sessions**: `id` (UUID), `whiteboard_id` (cascade), `votes_per_member` (unsigned tinyint, 1–20), `frame_element_id` (nullable string 40), `allow_multiple` (bool), `opened_by_member_id` (nullable FK), `closed_at` (nullable timestamp), `dismissed_at` (nullable timestamp), `results` (nullable json, written at close: `[{elementId, text, count}]`), timestamps. At most one row per board with `closed_at` null (partial unique index).
 - **whiteboard_votes**: `id`, `whiteboard_vote_session_id` (cascade), `whiteboard_member_id` (cascade), `element_id` (string 40), `count` (unsigned tinyint), timestamps. Unique (session, member, element).
-- **whiteboard_templates**: `id` (UUID), `workspace_id` (cascade), `name` (string 80), `description` (nullable string 300), `scene` (json), `created_by_user_id` (nullable FK → users, `nullOnDelete`), timestamps. Unique (`workspace_id`, `lower(name)`). Template images are copied to a template-owned directory and referenced from `scene.files`.
+- **whiteboard_templates**: `id` (UUID), `workspace_id` (cascade), `name` (string 80), `description` (nullable string 300), `scene` (json: `{elements, files: [{fileId, path, mimeType, size}]}`, the live elements in canvas order as stored, without authors), `preview` (json: `{width, height, shapes}`, a text-free outline of the scene computed at save for the gallery thumbnail), `created_by_user_id` (nullable FK → users, `nullOnDelete`), timestamps. Unique (`workspace_id`, `lower(name)`). Template images are copied to a template-owned directory and referenced from `scene.files`.
 
 Models get factories.
 
@@ -182,11 +182,11 @@ A `WhiteboardGuard` mirrors `PokerGuard`: `facilitator`, `canWrite(element)`, `n
 
 ## 10. Templates and export
 
-- **Built-in templates** are JSON scenes in `resources/whiteboard-templates/{key}.json` with translated name and description: Blank, Brainstorm, Flowchart, User story map, Impact map, SWOT, Lean canvas, 2×2 matrix. Structure elements (frames, headings, backgrounds) are `locked`; sample sticky notes are not. Texts inside built-in scenes are translation keys resolved at creation in the creator's locale.
-- **Creation:** the dialog shows a gallery (built-in, then workspace templates) with a thumbnail rendered client-side from the scene, name and description. Creating copies the scene with fresh element ids (bindings, frame membership and bound text remapped), author = creator.
+- **Built-in templates** are JSON scenes in `resources/whiteboard-templates/{key}.json` with translated name and description: Blank, Brainstorm, Flowchart, User story map, Impact map, SWOT, Lean canvas, 2×2 matrix. Structure elements (frames, headings, backgrounds) are `locked`; sample sticky notes are not. Texts inside built-in scenes are translation keys (`lang/{locale}/whiteboards.php`) resolved at creation in the creator's locale; a scene file lists only what differs from the element defaults, and the size of each text is estimated on the server, a test checking that every label fits its shape in the four locales.
+- **Creation:** the dialog shows a gallery (built-in, then workspace templates) with a thumbnail rendered client-side from an outline of the scene (shapes and colours, no text; scenes themselves stay on the server), name and description. `template` and `workspaceTemplateId` are mutually exclusive; neither means Blank. Creating copies the scene with fresh element ids, fresh stacking indices in the same order and version 1 (bindings, frame membership, bound text and groups remapped; a reference to an element outside the scene is dropped; an image whose stored file is missing is left out), author = creator.
 - **Save as template:** any non-guest member. Name 1–80, unique per workspace case-insensitively; description up to 300. Copies live elements and their images; drops authors, votes and private flags. At most 50 per workspace (422). Blocked while private writing is on.
 - **Manage:** the template's creator or a workspace Owner/Admin renames, edits the description or deletes. Changing or deleting a template never changes a board created from it.
-- **Duplicate board** uses the same copy path, keeping the title with " (copy)".
+- **Duplicate board** uses the same copy path, keeping the title with " (copy)" (translated, cut to 120 characters). The copy is in the same team with default settings, the requester facilitates it, and the source is neither changed nor notified.
 - **Export:** PNG, SVG and `.excalidraw` through Excalidraw's export dialog, from what the viewer's browser holds; a masked note exports masked.
 
 ## 11. Facilitation
@@ -236,10 +236,10 @@ Team-scoped (`auth`, `verified`, `w/{workspace}` group, `scopeBindings`):
 | Method | Path | Body | Response |
 |---|---|---|---|
 | POST | `/w/{workspace}/teams/{team}/whiteboards` | `{title, template?: string, workspaceTemplateId?: uuid}` | redirect to the board |
-| PATCH | `/w/{workspace}/whiteboard-templates/{template}` | `{name?, description?}` | back |
-| DELETE | `/w/{workspace}/whiteboard-templates/{template}` | — | back |
+| PATCH | `/w/{workspace}/whiteboard-templates/{whiteboardTemplate}` | `{name?, description?}` | back |
+| DELETE | `/w/{workspace}/whiteboard-templates/{whiteboardTemplate}` | — | back |
 
-The team page props gain `whiteboards: [{id, title, updatedAt, facilitatorName, canDelete}]` and `whiteboardTemplates: [{id, name, description, canManage}]`.
+The team page props gain `whiteboards: [{id, title, updatedAt, facilitatorName, canDelete}]` and `whiteboardTemplates: [{id, name, description, canManage}]`, and, loaded when the creation dialog opens, `whiteboardGallery: [{key, workspaceTemplateId, name, description, preview}]` (built-in templates, then the workspace's by name).
 
 Board-scoped, prefix `whiteboards/{board}` (`whereUuid`, middleware `ResolveWhiteboardMember`, `scopeBindings`):
 
@@ -256,8 +256,8 @@ Board-scoped, prefix `whiteboards/{board}` (`whereUuid`, middleware `ResolveWhit
 | POST | `guest-token` | — | facilitator | `{guestUrl}`, `board.changed` |
 | PUT | `facilitator` | `{userId}` | facilitator; or a team member with `userId` = self | 204, `board.changed` |
 | DELETE | `/` | — | facilitator, workspace Owner/Admin | 204, `board.deleted` |
-| POST | `duplicate` | — | non-guest member | `{url}` |
-| POST | `template` | `{name, description?}` | non-guest member | 201 |
+| POST | `duplicate` | — | non-guest member | 201 `{url}` |
+| POST | `template` | `{name, description?}` | non-guest member | 201 `{id, name}` |
 | POST | `vote-sessions` | §11.4 | facilitator | 201, `board.changed` |
 | PUT | `vote-sessions/{session}/votes/{elementId}` | `{count}` | member | `{myVotes, remaining}`, `vote.changed` |
 | POST | `vote-sessions/{session}/close` | — | facilitator | 204, `board.changed` |
