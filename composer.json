@@ -100,6 +100,12 @@
             "@php artisan config:clear --ansi",
             "pest --testsuite=Arch"
         ],
+        "test:browser": [
+            "Composer\\Config::disableProcessTimeout",
+            "@php artisan config:clear --ansi",
+            "npm run build",
+            "pest tests/Browser"
+        ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
             "@php artisan package:discover --ansi"
