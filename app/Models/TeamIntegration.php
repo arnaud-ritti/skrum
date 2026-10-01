@@ -115,6 +115,8 @@ class TeamIntegration extends Model
         $site = match ($this->provider) {
             IntegrationProvider::Jira => $this->setting('cloudId'),
             IntegrationProvider::Linear => $this->setting('organizationId'),
+            IntegrationProvider::JiraDataCenter => $this->setting('serverKey'),
+            IntegrationProvider::GitHub => $this->setting('installationId'),
             default => null,
         };
 

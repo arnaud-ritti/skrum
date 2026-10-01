@@ -14,12 +14,6 @@ enum IntegrationProvider: string
     case Mattermost = 'mattermost';
     case Webhook = 'webhook';
 
-    /**
-     * Configured providers whose connection flow ships in a later plan stay
-     * disabled, so an early env value cannot expose a half-built card.
-     */
-    private const Unreleased = [self::JiraDataCenter, self::GitHub];
-
     private const ServerPathPattern = '#^(/[A-Za-z0-9._~-]+)?/?$#';
 
     /**
@@ -52,7 +46,7 @@ enum IntegrationProvider: string
 
     public function isEnabled(): bool
     {
-        return $this->isConfigured() && ! in_array($this, self::Unreleased, true);
+        return $this->isConfigured();
     }
 
     public function isConfigured(): bool

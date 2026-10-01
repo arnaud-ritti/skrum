@@ -39,6 +39,7 @@ use App\Models\Workspace;
 use App\Support\Games\GameRules;
 use App\Support\Games\GameRulesRegistry;
 use App\Support\Integrations\HostResolver;
+use App\Support\Integrations\JiraDataCenter\JiraDataCenterServer;
 use App\Support\Integrations\OAuthState;
 use Carbon\CarbonInterface;
 use Database\Factories\TeamIntegrationFactory;
@@ -657,7 +658,7 @@ function enableIntegrations(IntegrationProvider ...$providers): void
                 'services.github_app.slug' => 'skrum-test',
                 'services.github_app.client_id' => 'github-client',
                 'services.github_app.client_secret' => 'github-secret',
-                'services.github_app.private_key' => 'test-private-key',
+                'services.github_app.private_key' => gitHubTestPrivateKey(),
             ],
             IntegrationProvider::MicrosoftTeams => ['services.msteams.enabled' => true],
             IntegrationProvider::Mattermost => ['services.mattermost.url' => 'https://chat.example.com'],
@@ -822,8 +823,12 @@ function trackerTable(IntegrationProvider $source = IntegrationProvider::Jira, I
 
     $game = PokerGame::factory()->deck($deck)->withGuestAccess()->create();
     $factory = TeamIntegration::factory();
-    $integration = ($source === IntegrationProvider::Jira ? $factory->jira($access) : $factory->linear($access))
-        ->create(['team_id' => $game->team_id]);
+    $integration = (match ($source) {
+        IntegrationProvider::Linear => $factory->linear($access),
+        IntegrationProvider::JiraDataCenter => $factory->jiraDataCenter($access),
+        IntegrationProvider::GitHub => $factory->gitHub($access),
+        default => $factory->jira($access),
+    })->create(['team_id' => $game->team_id]);
     [$facilitator, $facilitatorPlayer] = pokerFacilitator($game);
     [$member, $memberPlayer] = pokerMember($game);
 
@@ -842,8 +847,15 @@ function trackerTable(IntegrationProvider $source = IntegrationProvider::Jira, I
  */
 function importedPokerTask(PokerGame $game, array $attributes = [], IntegrationProvider $source = IntegrationProvider::Jira): PokerTask
 {
+    $site = match ($source) {
+        IntegrationProvider::Linear => 'org-1',
+        IntegrationProvider::JiraDataCenter => JiraDataCenterServer::key(TeamIntegrationFactory::JiraDataCenterUrl),
+        IntegrationProvider::GitHub => TeamIntegrationFactory::GitHubInstallationId,
+        default => 'cloud-1',
+    };
+
     $task = PokerTask::factory()
-        ->imported($source, $source === IntegrationProvider::Jira ? 'cloud-1' : 'org-1')
+        ->imported($source, $site)
         ->create(['poker_game_id' => $game->id]);
 
     $task->forceFill($attributes)->save();
@@ -1190,4 +1202,30 @@ function awardGamePoints(GameRoom $room, GamePlayer $player, int $points, bool $
         'is_win' => $isWin,
         ...$attributes,
     ]);
+}
+
+/**
+ * A real RSA key, generated once per process, so GitHub App JWTs can be
+ * signed and verified in tests.
+ */
+function gitHubTestPrivateKey(): string
+{
+    static $pem = null;
+
+    if (is_string($pem)) {
+        return $pem;
+    }
+
+    $key = openssl_pkey_new(['private_key_bits' => 2048, 'private_key_type' => OPENSSL_KEYTYPE_RSA]);
+
+    if ($key === false || ! openssl_pkey_export($key, $exported)) {
+        throw new RuntimeException('Could not create the GitHub test key.');
+    }
+
+    return $pem = $exported;
+}
+
+function jiraDataCenterUrl(string $path): string
+{
+    return 'jira.example.com/'.ltrim($path, '/');
 }

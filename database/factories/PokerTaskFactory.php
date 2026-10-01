@@ -37,14 +37,18 @@ class PokerTaskFactory extends Factory
     {
         return $this->state(function () use ($source, $site) {
             $number = fake()->unique()->numberBetween(1, 99999);
-            $key = $source === IntegrationProvider::Jira ? "PROJ-{$number}" : "ENG-{$number}";
+
+            [$id, $key, $url] = match ($source) {
+                IntegrationProvider::Linear => [fake()->uuid(), "ENG-{$number}", "https://linear.app/acme/issue/ENG-{$number}"],
+                IntegrationProvider::JiraDataCenter => [(string) (10000 + $number), "PROJ-{$number}", "https://jira.example.com/browse/PROJ-{$number}"],
+                IntegrationProvider::GitHub => ["9001/{$number}", "acme/api#{$number}", "https://github.com/acme/api/issues/{$number}"],
+                default => [(string) (10000 + $number), "PROJ-{$number}", "https://acme.atlassian.net/browse/PROJ-{$number}"],
+            };
 
             return [
                 'external_source' => $source->value,
-                'external_id' => $source === IntegrationProvider::Jira ? (string) (10000 + $number) : fake()->uuid(),
-                'external_url' => $source === IntegrationProvider::Jira
-                    ? "https://acme.atlassian.net/browse/{$key}"
-                    : "https://linear.app/acme/issue/{$key}",
+                'external_id' => $id,
+                'external_url' => $url,
                 'external_site' => $site,
                 'external_key' => $key,
                 'external_refreshed_at' => now(),
