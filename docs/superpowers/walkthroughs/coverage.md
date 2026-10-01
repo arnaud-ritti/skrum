@@ -132,6 +132,8 @@ Where a walkthrough's wording and today's interface differ, the test follows the
 Add one line per defect: identifier, what was wrong, the commit that fixed it.
 
 - `[P06-08a]` (polish pass PB1): the drag preview of a retro card was always 256 px wide (the `w-64` fallback) instead of as wide as the card (262 px in the default layout). `board.tsx` read `event.active.rect.current.initial` in `onDragStart`, which dnd-kit 6.3.1 only fills in a later layout effect, so the width was always undefined. Fixed in the commit `fix(retro): give the drag preview the width of the dragged card` by measuring the card element when the drag starts.
+- `[P07-09]` (plan 7, step 9), open, for the user: closing the presentation overlay with Escape takes two presses when the presented card has a reaction chip with names. The dialog puts the focus on its first control, the chip, whose names tooltip opens on focus; the first Escape closes only that tooltip. The test asserts today's behaviour (two presses). Not fixed: where the overlay puts its focus is a design decision.
+- `[P07-08a]` (plan 7, step 8), open, for the user: the drag wrapper of a card (`SortableCard`, `GroupableCard` in `dnd.tsx`) carries dnd-kit's `aria-disabled="true"` whenever the card cannot be dragged (locked board, another participant's card), and wraps every control of the card. The controls still work with a pointer, but assistive technology, like Playwright's actionability check, treats them as disabled (the `Comments (n)` toggle of a locked board is the case the test meets; it is clicked from a script). Not fixed: changing the wrapper's ARIA is an accessibility design decision.
 
 ## Verification of plan 16a
 
