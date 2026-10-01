@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Prunable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
 
@@ -34,14 +35,17 @@ use Illuminate\Support\Carbon;
  * @property int $attempts
  * @property int|null $response_status
  * @property Carbon|null $last_attempt_at
+ * @property string|null $redelivery_of_id
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Team $team
  * @property-read Model|null $subject
  * @property-read User|null $requestedBy
  * @property-read TeamIntegration|null $integration
+ * @property-read IntegrationDeliveryPayload|null $payload
+ * @property-read IntegrationDelivery|null $redeliveryOf
  */
-#[Fillable(['team_id', 'channel', 'kind', 'subject_type', 'subject_id', 'requested_by_user_id', 'status', 'recipient_count', 'error', 'sent_at', 'team_integration_id', 'event', 'attempts', 'response_status', 'last_attempt_at'])]
+#[Fillable(['team_id', 'channel', 'kind', 'subject_type', 'subject_id', 'requested_by_user_id', 'status', 'recipient_count', 'error', 'sent_at', 'team_integration_id', 'event', 'attempts', 'response_status', 'last_attempt_at', 'redelivery_of_id'])]
 class IntegrationDelivery extends Model
 {
     /** @use HasFactory<IntegrationDeliveryFactory> */
@@ -74,6 +78,18 @@ class IntegrationDelivery extends Model
     public function integration(): BelongsTo
     {
         return $this->belongsTo(TeamIntegration::class, 'team_integration_id');
+    }
+
+    /** @return HasOne<IntegrationDeliveryPayload, $this> */
+    public function payload(): HasOne
+    {
+        return $this->hasOne(IntegrationDeliveryPayload::class);
+    }
+
+    /** @return BelongsTo<IntegrationDelivery, $this> */
+    public function redeliveryOf(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'redelivery_of_id');
     }
 
     public function markSent(?int $recipientCount = null): void
