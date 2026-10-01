@@ -142,6 +142,32 @@ class GitHubClient
     }
 
     /**
+     * How the app sees an installation a webhook says was removed: 'deleted'
+     * when GitHub no longer knows it, 'suspend' while suspended, null when it
+     * is still active.
+     *
+     * @return 'deleted'|'suspend'|null
+     */
+    public function installationRemoval(string $installationId): ?string
+    {
+        if (preg_match(self::IdPattern, $installationId) !== 1) {
+            return null;
+        }
+
+        $response = $this->call('GET', "app/installations/{$installationId}", [], $this->jwt->token());
+
+        if ($response->status() === 404) {
+            return 'deleted';
+        }
+
+        if (! $response->successful()) {
+            $this->fail($response);
+        }
+
+        return $response->json('suspended_at') !== null ? 'suspend' : null;
+    }
+
+    /**
      * @param  array<string, mixed>  $query
      * @return array<array-key, mixed>
      */

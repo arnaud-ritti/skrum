@@ -121,7 +121,9 @@ class ReadInboundEvent
 
         return new InboundEvent(
             provider: IntegrationProvider::GitHub,
-            key: $this->key($request, 'X-GitHub-Delivery'),
+            key: str_starts_with($event, 'installation')
+                ? 'installation:'.hash('sha256', $request->getContent())
+                : $this->key($request, 'X-GitHub-Delivery'),
             type: $this->type("{$event}.{$action}"),
             integrations: is_int($installationId)
                 ? TeamIntegration::query()->where('provider', IntegrationProvider::GitHub->value)->where('settings->installationId', (string) $installationId)->get()
@@ -183,15 +185,16 @@ class ReadInboundEvent
     }
 
     /**
-     * The delivery id, else a hash of the body — scoped to the connection
-     * for per-connection URLs, so two teams' identical deliveries from one
-     * site are not taken for duplicates.
+     * The delivery id, else a hash of the body. Per-connection URLs scope
+     * the key to their connection, so one team's deliveries can neither
+     * collide with nor pre-empt another's.
      */
-    private function key(Request $request, string $header, string $scope = ''): string
+    private function key(Request $request, string $header, ?string $scope = null): string
     {
         $delivery = trim((string) $request->header($header, ''));
+        $key = $delivery !== '' ? $delivery : hash('sha256', $request->getContent());
 
-        return $delivery !== '' ? mb_substr($delivery, 0, self::KeyLength) : hash('sha256', "{$scope}\n{$request->getContent()}");
+        return mb_substr($scope === null ? $key : "{$scope}:{$key}", 0, self::KeyLength);
     }
 
     private function type(mixed $type): string

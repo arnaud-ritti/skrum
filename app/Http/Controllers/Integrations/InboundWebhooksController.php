@@ -11,6 +11,7 @@ use App\Http\Controllers\Controller;
 use App\Jobs\Integrations\ApplyInboundIssueChanges;
 use App\Models\IntegrationInboundEvent;
 use App\Models\TeamIntegration;
+use App\Support\Integrations\Exceptions\IntegrationException;
 use App\Support\Integrations\GitHub\GitHubClient;
 use App\Support\Integrations\Inbound\InboundEvent;
 use App\Support\Integrations\Inbound\InboundSignatureInvalid;
@@ -20,6 +21,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 /**
  * Spec 8 §5.3: webhooks are hints, the API is the truth. A verified
@@ -69,20 +71,30 @@ class InboundWebhooksController extends Controller
         $this->markHeard($event);
 
         if ($event->installationRemoved !== null) {
-            $this->removeInstallation($event);
-            $row->update(['status' => InboundEventStatus::Applied]);
+            $removal = $this->confirmedRemoval($event);
+
+            if ($removal !== null) {
+                $this->removeInstallation($event, $removal);
+                $row->update(['status' => InboundEventStatus::Applied]);
+            }
 
             return response()->json(['status' => 'accepted'], 202);
         }
 
         $batches = $this->batches($event);
 
-        if ($batches !== []) {
-            $row->update(['status' => InboundEventStatus::Applied]);
+        try {
+            foreach ($batches as $integrationId => $externalIds) {
+                ApplyInboundIssueChanges::dispatch((string) $integrationId, $externalIds, $row->id);
+            }
+        } catch (Throwable $exception) {
+            $row->delete();
+
+            throw $exception;
         }
 
-        foreach ($batches as $integrationId => $externalIds) {
-            ApplyInboundIssueChanges::dispatch((string) $integrationId, $externalIds, $row->id);
+        if ($batches !== []) {
+            $row->update(['status' => InboundEventStatus::Applied]);
         }
 
         return response()->json(['status' => 'accepted'], 202);
@@ -122,14 +134,38 @@ class InboundWebhooksController extends Controller
         }
     }
 
-    private function removeInstallation(InboundEvent $event): void
+    /**
+     * Installation events are hints too: only what GitHub reports now counts,
+     * so a replayed or stale removal changes nothing.
+     *
+     * @return 'deleted'|'suspend'|null
+     */
+    private function confirmedRemoval(InboundEvent $event): ?string
+    {
+        if ($event->installationId === null || $event->integrations->isEmpty()) {
+            return null;
+        }
+
+        try {
+            return $this->gitHub->installationRemoval($event->installationId);
+        } catch (IntegrationException $exception) {
+            report($exception);
+
+            return null;
+        }
+    }
+
+    /**
+     * @param  'deleted'|'suspend'  $removal
+     */
+    private function removeInstallation(InboundEvent $event, string $removal): void
     {
         foreach ($event->integrations as $integration) {
             if ($integration->status === IntegrationStatus::ReconnectRequired) {
                 continue;
             }
 
-            $integration->markReconnectRequired($event->installationRemoved === 'suspend'
+            $integration->markReconnectRequired($removal === 'suspend'
                 ? $this->gitHub->suspendedMessage($integration)
                 : $this->gitHub->uninstalledMessage($integration));
         }

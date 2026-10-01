@@ -10,6 +10,8 @@ use App\Models\ActionItemExternalLink;
 use App\Models\IntegrationInboundEvent;
 use App\Models\TeamIntegration;
 use Carbon\CarbonImmutable;
+use Illuminate\Contracts\Queue\ShouldBeUniqueUntilProcessing;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -128,7 +130,7 @@ it('accepts a Jira event with its URL token and queues a re-read', function () {
     Queue::assertPushed(ApplyInboundIssueChanges::class, fn (ApplyInboundIssueChanges $job) => $job->integrationId === $integration->id
         && $job->externalIds === ['10001']);
     $event = IntegrationInboundEvent::query()->sole();
-    expect($event->event_key)->toBe('delivery-1')
+    expect($event->event_key)->toBe("{$integration->id}:delivery-1")
         ->and($event->event_type)->toBe('jira:issue_updated')
         ->and($event->status)->toBe(InboundEventStatus::Applied)
         ->and($event->team_integration_id)->toBe($integration->id)
@@ -286,10 +288,13 @@ it('re-reads the issues of repositories removed from the installation', function
     Queue::assertPushed(ApplyInboundIssueChanges::class, fn (ApplyInboundIssueChanges $job) => $job->externalIds === ['9001/12']);
 });
 
-it('asks every team to reconnect when the GitHub App is uninstalled or suspended', function (string $action, string $message) {
+it('asks every team of the installation to reconnect once GitHub confirms the removal', function (string $action, array $installation, int $status, string $message) {
     $first = TeamIntegration::factory()->gitHub()->create();
     $second = TeamIntegration::factory()->gitHub()->create();
+    $other = TeamIntegration::factory()->gitHub()->create();
+    $other->forceFill(['settings' => [...$other->settings, 'installationId' => '5151']])->save();
     Cache::put('github-installation-token:4242', 'cached', now()->addMinutes(50));
+    Http::fake(['api.github.com/app/installations/4242' => Http::response($installation, $status)]);
     [$body, $headers] = signedGitHubWebhook('installation', ['action' => $action]);
 
     postInboundWebhook(route('integrations.webhooks.store', ['source' => 'github']), $body, $headers)->assertStatus(202);
@@ -297,11 +302,79 @@ it('asks every team to reconnect when the GitHub App is uninstalled or suspended
     expect($first->fresh()->status)->toBe(IntegrationStatus::ReconnectRequired)
         ->and($second->fresh()->status)->toBe(IntegrationStatus::ReconnectRequired)
         ->and($first->fresh()->last_error)->toBe($message)
+        ->and($other->fresh()->status)->toBe(IntegrationStatus::Active)
         ->and(Cache::has('github-installation-token:4242'))->toBeFalse();
 })->with([
-    'deleted' => ['deleted', 'The GitHub App was uninstalled from acme.'],
-    'suspended' => ['suspend', 'The GitHub App is suspended on acme.'],
+    'deleted' => ['deleted', ['message' => 'Not Found'], 404, 'The GitHub App was uninstalled from acme.'],
+    'suspended' => ['suspend', ['id' => 4242, 'suspended_at' => '2026-10-07T10:29:00Z'], 200, 'The GitHub App is suspended on acme.'],
 ]);
+
+it('ignores installation removals GitHub does not confirm', function () {
+    $integration = TeamIntegration::factory()->gitHub()->create();
+    Cache::put('github-installation-token:4242', 'cached', now()->addMinutes(50));
+    Http::fake(['api.github.com/app/installations/4242' => Http::response(['id' => 4242, 'suspended_at' => null])]);
+    [$body, $headers] = signedGitHubWebhook('installation', ['action' => 'suspend']);
+
+    postInboundWebhook(route('integrations.webhooks.store', ['source' => 'github']), $body, $headers)->assertStatus(202);
+
+    expect($integration->fresh()->status)->toBe(IntegrationStatus::Active)
+        ->and(Cache::has('github-installation-token:4242'))->toBeTrue()
+        ->and(IntegrationInboundEvent::query()->sole()->status)->toBe(InboundEventStatus::Ignored);
+});
+
+it('treats a replayed installation event under a new delivery id as a duplicate', function () {
+    TeamIntegration::factory()->gitHub()->create();
+    Http::fake(['api.github.com/app/installations/4242' => Http::response(['id' => 4242, 'suspended_at' => '2026-10-07T10:29:00Z'])]);
+    [$body, $headers] = signedGitHubWebhook('installation', ['action' => 'suspend']);
+    $url = route('integrations.webhooks.store', ['source' => 'github']);
+
+    postInboundWebhook($url, $body, $headers)->assertStatus(202);
+    postInboundWebhook($url, $body, [...$headers, 'X-GitHub-Delivery' => 'github-delivery-2'])->assertOk();
+
+    Http::assertSentCount(1);
+});
+
+it('keeps Jira delivery ids apart per connection', function () {
+    ['integration' => $integration] = statusSyncLink();
+    jiraWebhookToken($integration);
+    $other = jiraWebhookToken(withStatusSync(TeamIntegration::factory()->jira()->create()));
+
+    postInboundWebhook(inboundJiraUrl($other), jiraWebhookBody(), ['X-Atlassian-Webhook-Identifier' => 'same'])->assertStatus(202);
+    postInboundWebhook(inboundJiraUrl($integration), jiraWebhookBody(), ['X-Atlassian-Webhook-Identifier' => 'same'])->assertStatus(202);
+
+    Queue::assertPushed(ApplyInboundIssueChanges::class, fn (ApplyInboundIssueChanges $job) => $job->integrationId === $integration->id);
+    expect(IntegrationInboundEvent::query()->count())->toBe(2);
+});
+
+it('refuses a badly signed GitHub delivery', function () {
+    [$body, $headers] = signedGitHubWebhook('issues', ['action' => 'closed']);
+
+    postInboundWebhook(route('integrations.webhooks.store', ['source' => 'github']), $body, [...$headers, 'X-Hub-Signature-256' => 'sha256='.str_repeat('0', 64)])
+        ->assertUnauthorized();
+});
+
+it('refuses an unknown connection like a wrong token and 404s a malformed token', function () {
+    ['integration' => $integration] = statusSyncLink();
+    jiraWebhookToken($integration);
+
+    postInboundWebhook(route('integrations.webhooks.tracker.store', ['source' => 'jira', 'integration' => fake()->uuid(), 'token' => InboundJiraToken]), jiraWebhookBody())
+        ->assertUnauthorized();
+    postInboundWebhook(inboundJiraUrl($integration, substr(InboundJiraToken, 1)), jiraWebhookBody())->assertNotFound();
+});
+
+it('keeps no event row when the re-read cannot be queued, so the provider retry is not a duplicate', function () {
+    ['integration' => $integration] = statusSyncLink();
+    jiraWebhookToken($integration);
+    Bus::shouldReceive('dispatch')->andThrow(new RuntimeException('Queue unavailable'));
+
+    postInboundWebhook(inboundJiraUrl($integration), jiraWebhookBody(), ['X-Atlassian-Webhook-Identifier' => 'delivery-1'])->assertServerError();
+
+    expect(IntegrationInboundEvent::query()->count())->toBe(0);
+});
+
+it('lets a change arriving during a re-read queue another one', function () {
+    expect(new ApplyInboundIssueChanges('integration', ['10001']))->toBeInstanceOf(ShouldBeUniqueUntilProcessing::class);
+});
 
 it('marks the webhook active on its first verified event', function () {
     ['integration' => $integration] = statusSyncLink();

@@ -14,7 +14,7 @@ use App\Support\Integrations\IntegrationErrors;
 use App\Support\Integrations\StatusSync;
 use App\Support\Integrations\Trackers\Trackers;
 use DateTimeInterface;
-use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Illuminate\Contracts\Queue\ShouldBeUniqueUntilProcessing;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Queue\Middleware\WithoutOverlapping;
@@ -24,7 +24,7 @@ use Throwable;
  * Re-reads the issues a webhook named with the connection's own
  * credentials and applies what the source says (spec 8 §5.3, §5.5).
  */
-class ApplyInboundIssueChanges implements ShouldBeUnique, ShouldQueue
+class ApplyInboundIssueChanges implements ShouldBeUniqueUntilProcessing, ShouldQueue
 {
     use Queueable;
 
