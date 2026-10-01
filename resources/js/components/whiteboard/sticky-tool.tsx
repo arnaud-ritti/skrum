@@ -7,7 +7,9 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useTrans } from '@/hooks/use-trans';
+import { cn } from '@/lib/utils';
 import {
+    CanvasDarkFilterClass,
     CaptureUpdateAction,
     ToolbarDom,
     restoreElements,
@@ -130,12 +132,19 @@ export function StickyTool({ api, inToolbar = false }: Props) {
                     <button
                         key={color}
                         type="button"
-                        className="size-7 rounded border"
-                        style={{ backgroundColor: color }}
+                        className="size-7 overflow-hidden rounded border"
                         title={colorNames[position]}
                         aria-label={`${t('Add a sticky note')}: ${colorNames[position]}`}
                         onClick={() => add(color)}
-                    />
+                    >
+                        <span
+                            className={cn(
+                                'block size-full',
+                                CanvasDarkFilterClass,
+                            )}
+                            style={{ backgroundColor: color }}
+                        />
+                    </button>
                 ))}
             </DropdownMenuContent>
         </DropdownMenu>

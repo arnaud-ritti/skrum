@@ -46,6 +46,15 @@ export type RequiredProps = Pick<
 >;
 
 /**
+ * Excalidraw 0.18.1 draws the canvas of the dark theme through the filter
+ * `invert(93%) hue-rotate(180deg)` (its `THEME_FILTER`, not exported), so a
+ * colour shown outside the canvas needs the same filter to look as it will
+ * on it. Written out in full because Tailwind reads class names from source.
+ */
+export const CanvasDarkFilterClass =
+    'dark:[filter:invert(93%)_hue-rotate(180deg)]';
+
+/**
  * Markup of the shapes toolbar in Excalidraw 0.18.1, which has no prop or
  * component for adding a tool: where the eraser sits, what wraps a tool, and
  * the classes its own buttons carry (size, hover, focus and theme come with

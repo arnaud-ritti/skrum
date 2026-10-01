@@ -82,7 +82,7 @@ Acceptance criteria for every requirement are in §16.
 ### 6.1 Elements
 
 - The canvas is Excalidraw. Its element set (rectangle, diamond, ellipse, arrow, line, freedraw, text, image, frame) is the board's element set.
-- **Sticky note:** a rectangle with a bound text element, marked `customData.skrum = {kind: 'sticky'}`. A skrum button in the canvas shapes toolbar, between the image tool and the eraser, creates one in the chosen colour (six colours, each named for assistive technology); when that toolbar is not on screen the button sits in skrum's top bar instead, so the tool is always reachable. Votes (§11.4) and private writing (§11.5) apply to sticky notes only.
+- **Sticky note:** a rectangle with a bound text element, marked `customData.skrum = {kind: 'sticky'}`. A skrum button in the canvas shapes toolbar, between the image tool and the eraser, creates one in the chosen colour (six colours, each named for assistive technology; in the dark theme the swatches are shown through the canvas's dark filter so that they match the note, the stored colours being the same in both themes); when that toolbar is not on screen the button sits in skrum's top bar instead, so the tool is always reachable. Votes (§11.4) and private writing (§11.5) apply to sticky notes only.
 - The server is the source of truth. One row per element (§7); the author is the member who first wrote the element and is never read from the client payload.
 - Flowcharts use Excalidraw's shapes, bound arrows and its built-in flowchart shortcuts; nothing custom.
 
@@ -116,7 +116,7 @@ One class, `BuildWhiteboardSnapshot`, builds it for the viewer. All redaction li
 - Deleting is a write with `isDeleted: true` (a tombstone). Tombstones are purged 24 hours later by a scheduled command, which does not touch the board's `updated_at` (the team page sorts on it); a client whose last `seq` is older than the oldest purge refetches the snapshot (`GET elements?since=` answers 409).
 - Broadcast `elements.changed` to others: `{seq, fromSeq, elements}` when the JSON is at most 8 KB and no private sticky is touched; otherwise `{seq, fromSeq}` and clients call `GET elements?since={their seq}`.
 - A client applies changes with `reconcileElements` then `updateScene`. It tracks the last applied `seq`; a `fromSeq` that does not match it, a resubscription or a reconnect triggers `GET elements?since=` (coalesced). It also remembers the highest `seq` announced by an event or a write response: when a fetch ends below it (the change was committed while the fetch was in flight) it fetches again, even when that fetch brought nothing new, and gives up after three fetches in a row that bring nothing (the next event or poll takes over). A fetch is also made once when the canvas becomes ready, for events that arrived before it.
-- Restoring on the client keeps the server's `index`, `version` and `versionNonce` (§6.2). Two exceptions are written back so that every client agrees: an element without an index and two elements with the same index get a new index from the first client that sees them. An element the canvas cannot restore is left out and logged to the console; the rest of the board loads.
+- Restoring on the client keeps the server's `index`, `version` and `versionNonce` (§6.2). Two exceptions are written back so that every client agrees: an element without an index and two elements with the same index get a new index from the first client that sees them. An element the canvas cannot restore is left out and logged to the console; the rest of the board loads. A remote change the canvas cannot merge is logged and the client replaces its scene with the server's snapshot.
 
 ### 6.4 Drafts, cursors and reactions
 
@@ -126,7 +126,7 @@ One class, `BuildWhiteboardSnapshot`, builds it for the viewer. All redaction li
 
 ### 6.5 Images
 
-- `POST files` (multipart) stores an image before the element that uses it is written. An image element whose file id is unknown for the board is rejected.
+- `POST files` (multipart) stores an image before the element that uses it is written. An image element whose file id is unknown for the board is rejected. Excalidraw adds an image to the scene before it has computed its file id; the client does not send an image element until the id is set.
 - Allowed: PNG, JPEG, WebP, GIF, detected from content. SVG upload is refused (script risk). At most 5 MB per file and 100 MB per board (422 beyond).
 - Files are served by `GET files/{fileId}` (Excalidraw's file id, so a client derives the URL from an image element without a lookup) to members of the board only, with `Content-Disposition: inline`, the stored MIME type and `X-Content-Type-Options: nosniff`.
 - A file is deleted when no live element, version (§9) or template (§10) references it; a daily command cleans up.

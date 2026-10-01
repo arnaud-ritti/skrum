@@ -153,7 +153,12 @@ export function restoreScene(
 
     try {
         return withServerVersions(restoreAll(ordered), ordered);
-    } catch {
+    } catch (error) {
+        console.error(
+            'whiteboard: the elements could not be restored together',
+            error,
+        );
+
         return withServerVersions(restoreOneByOne(ordered), ordered);
     }
 }

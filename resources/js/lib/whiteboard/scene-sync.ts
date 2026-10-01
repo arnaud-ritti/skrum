@@ -58,6 +58,7 @@ export function createSceneSync(deps: SceneSyncDeps): SceneSync {
     let flushing = false;
     let disposed = false;
     let resyncing: Promise<void> | null = null;
+    let recovering: Promise<void> | null = null;
 
     const scene = () =>
         api.getSceneElementsIncludingDeleted() as unknown as SceneElement[];
@@ -136,6 +137,15 @@ export function createSceneSync(deps: SceneSyncDeps): SceneSync {
                     'whiteboard: a remote change was left out',
                     error,
                 );
+
+                // What never reached the canvas is not known to be held:
+                // the server's scene has to replace ours.
+                const shown = new Set(scene().map((element) => element.id));
+
+                remember(elements.filter((element) => shown.has(element.id)));
+                recover();
+
+                return;
             }
         }
 
@@ -346,6 +356,23 @@ export function createSceneSync(deps: SceneSyncDeps): SceneSync {
         seq = snapshot.seq;
     };
 
+    const recover = () => {
+        recovering ??= replaceScene()
+            .catch((error: unknown) => {
+                if (isFatal(error)) {
+                    deps.onFatal(error);
+
+                    return;
+                }
+
+                console.error('whiteboard: the board was not reloaded', error);
+                deps.onOffline(true);
+            })
+            .finally(() => {
+                recovering = null;
+            });
+    };
+
     const fetchDelta = async () => {
         const delta = await retroRequest<ElementsDelta>(
             WhiteboardElementsController.index(boardId, {
@@ -413,6 +440,16 @@ export function createSceneSync(deps: SceneSyncDeps): SceneSync {
                 }
 
                 if (seen === undefined && element.isDeleted) {
+                    continue;
+                }
+
+                // Excalidraw inserts an image before it has computed its
+                // file id; the change that sets the id queues the element.
+                if (
+                    element.type === 'image' &&
+                    !element.isDeleted &&
+                    typeof element.fileId !== 'string'
+                ) {
                     continue;
                 }
 
