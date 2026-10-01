@@ -1,0 +1,135 @@
+#!/usr/bin/env bash
+#
+# Runs tests/Browser in N processes side by side (Pest --shard), each with its own
+# database (testing_browser_<i>), Reverb port (<base port> + i) and storage disk.
+#
+#   bin/test-browser [shards=4] [base-port=8098] [-- extra pest arguments]
+#
+# Needs built assets (`npm run build`) and the Sail database container.
+# A subset is run without shards: Pest reports a failure when --shard meets --filter.
+# Prints one line per shard and a total; exits non-zero when a shard failed.
+
+set -u
+
+cd "$(dirname "$0")/.."
+
+shards="${1:-4}"
+base_port="${2:-8098}"
+shift $(( $# < 2 ? $# : 2 ))
+
+if [ "${1:-}" = "--" ]; then
+    shift
+fi
+
+if ! [[ "$shards" =~ ^[1-9][0-9]*$ && "$base_port" =~ ^[1-9][0-9]*$ ]]; then
+    echo "Usage: bin/test-browser [shards=4] [base-port=8098] [-- extra pest arguments]" >&2
+    exit 2
+fi
+
+for argument in "$@"; do
+    if [[ "$argument" == --filter* ]]; then
+        echo "--filter cannot be combined with shards (Pest exits non-zero although the tests pass). Run the file or the filter without this script." >&2
+        exit 2
+    fi
+done
+
+database_container="${BROWSER_DB_CONTAINER:-skrum-pgsql-1}"
+database_user="${BROWSER_DB_USER:-sail}"
+log_directory="storage/logs/browser-shards"
+
+if [ ! -f public/build/manifest.json ]; then
+    echo "Browser tests need built assets: run \`npm run build\` first." >&2
+    exit 2
+fi
+
+for i in $(seq 1 "$shards"); do
+    port=$(( base_port + i ))
+
+    if lsof -nP -iTCP:"$port" -sTCP:LISTEN >/dev/null 2>&1; then
+        echo "Port $port (shard $i) is already in use. Free it or pick another base port." >&2
+        exit 2
+    fi
+
+    database="testing_browser_$i"
+
+    if ! docker exec "$database_container" psql -U "$database_user" -d postgres -tAc "select 1 from pg_database where datname = '$database'" | grep -q 1; then
+        docker exec "$database_container" createdb -U "$database_user" "$database" || exit 2
+    fi
+done
+
+mkdir -p "$log_directory"
+
+# Every Pest process empties this folder when it starts; emptied here, no shard
+# can remove the screenshot another shard has just written.
+rm -rf tests/Browser/Screenshots
+
+pids=()
+
+stop_shards() {
+    for pid in "${pids[@]}"; do
+        kill "$pid" 2>/dev/null
+    done
+
+    for i in $(seq 1 "$shards"); do
+        lsof -nP -t -iTCP:$(( base_port + i )) -sTCP:LISTEN 2>/dev/null | xargs kill 2>/dev/null
+    done
+
+    exit 130
+}
+
+trap stop_shards INT TERM
+
+started_at=$(date +%s)
+
+for i in $(seq 1 "$shards"); do
+    BROWSER_SHARD="$i" \
+    BROWSER_REVERB_PORT=$(( base_port + i )) \
+    DB_HOST=127.0.0.1 \
+    DB_DATABASE="testing_browser_$i" \
+        php -d memory_limit=2G vendor/bin/pest tests/Browser --shard="$i/$shards" "$@" \
+        > "$log_directory/shard-$i.log" 2>&1 &
+
+    pids+=("$!")
+done
+
+count() {
+    sed -E $'s/\x1b\\[[0-9;]*m//g' "$1" | grep -oE "(\"$2\":[0-9]+|[0-9]+ $2)" | tail -1 | grep -oE '[0-9]+' || echo 0
+}
+
+total_passed=0
+total_failed=0
+failed_shards=0
+
+for i in $(seq 1 "$shards"); do
+    log="$log_directory/shard-$i.log"
+
+    wait "${pids[$(( i - 1 ))]}"
+    status=$?
+
+    passed=$(count "$log" passed)
+    failed=$(count "$log" failed)
+    total_passed=$(( total_passed + passed ))
+    total_failed=$(( total_failed + failed ))
+
+    if [ "$status" -eq 0 ]; then
+        outcome="PASS"
+    else
+        outcome="FAIL"
+        failed_shards=$(( failed_shards + 1 ))
+    fi
+
+    echo "Shard $i/$shards: $outcome (exit $status), $passed passed, $failed failed, port $(( base_port + i )), log $log"
+
+    if [ "$status" -ne 0 ]; then
+        tail -n 40 "$log" | cut -c 1-4000
+    fi
+done
+
+elapsed=$(( $(date +%s) - started_at ))
+
+if [ "$failed_shards" -gt 0 ]; then
+    echo "Total: FAIL, $total_passed passed, $total_failed failed, $failed_shards of $shards shards failed, ${elapsed}s"
+    exit 1
+fi
+
+echo "Total: PASS, $total_passed passed, 0 failed, $shards shards, ${elapsed}s"

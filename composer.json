@@ -106,6 +106,10 @@
             "npm run build",
             "pest tests/Browser"
         ],
+        "test:browser:shards": [
+            "Composer\\Config::disableProcessTimeout",
+            "bin/test-browser"
+        ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
             "@php artisan package:discover --ansi"

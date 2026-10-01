@@ -3,6 +3,7 @@
 namespace Tests\Browser\Support;
 
 use Illuminate\Support\Sleep;
+use InvalidArgumentException;
 use RuntimeException;
 use Symfony\Component\Process\Process;
 
@@ -10,7 +11,9 @@ class ReverbServer
 {
     public const string Host = '127.0.0.1';
 
-    public const int Port = 8097;
+    public const int DefaultPort = 8097;
+
+    public const string PortVariable = 'BROWSER_REVERB_PORT';
 
     public const string AppId = 'skrum-browser';
 
@@ -27,6 +30,24 @@ class ReverbServer
     private static ?string $outputFile = null;
 
     private static bool $stopsAtShutdown = false;
+
+    /**
+     * Each run of the browser suite (and each shard of a sharded run) needs a port of its own.
+     */
+    public static function port(): int
+    {
+        $port = getenv(self::PortVariable);
+
+        if ($port === false || $port === '') {
+            return self::DefaultPort;
+        }
+
+        $variable = self::PortVariable;
+
+        throw_unless(ctype_digit($port) && (int) $port >= 1 && (int) $port <= 65535, InvalidArgumentException::class, "{$variable} must be a port number between 1 and 65535, got `{$port}`.");
+
+        return (int) $port;
+    }
 
     public static function ensureRunning(): void
     {
@@ -47,7 +68,7 @@ class ReverbServer
             return;
         }
 
-        $port = self::Port;
+        $port = self::port();
         $host = self::Host;
         $outputFile = (string) tempnam(sys_get_temp_dir(), 'skrum-browser-reverb-');
 
@@ -93,7 +114,7 @@ class ReverbServer
 
     public static function stop(): void
     {
-        $port = self::Port;
+        $port = self::port();
 
         if (self::$process === null) {
             throw_if(self::isListening(), RuntimeException::class, "A Reverb server this test run did not start is listening on port {$port}, so it cannot be stopped. Stop that process and run the suite again.");
@@ -115,7 +136,7 @@ class ReverbServer
 
     private static function isListening(): bool
     {
-        $connection = @fsockopen(self::Host, self::Port, $errorCode, $errorMessage, 0.2);
+        $connection = @fsockopen(self::Host, self::port(), $errorCode, $errorMessage, 0.2);
 
         if ($connection === false) {
             return false;

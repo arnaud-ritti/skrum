@@ -6,6 +6,8 @@ use Illuminate\Foundation\Http\Events\RequestHandled;
 use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\ParallelTesting;
+use Tests\Browser\Support\BrowserShard;
 use Tests\Browser\Support\CapturesVisuals;
 use Tests\Browser\Support\InteractsWithBrowser;
 use Tests\Browser\Support\InteractsWithWhiteboards;
@@ -30,6 +32,8 @@ abstract class BrowserTestCase extends TestCase
         }
 
         $this->configureBrowserEnvironment();
+
+        $this->isolateShard();
 
         ReverbServer::ensureRunning();
 
@@ -60,15 +64,32 @@ abstract class BrowserTestCase extends TestCase
             'broadcasting.connections.reverb.secret' => ReverbServer::AppSecret,
             'broadcasting.connections.reverb.app_id' => ReverbServer::AppId,
             'broadcasting.connections.reverb.client.host' => ReverbServer::Host,
-            'broadcasting.connections.reverb.client.port' => ReverbServer::Port,
+            'broadcasting.connections.reverb.client.port' => ReverbServer::port(),
             'broadcasting.connections.reverb.client.scheme' => 'http',
             'broadcasting.connections.reverb.options.host' => ReverbServer::Host,
-            'broadcasting.connections.reverb.options.port' => ReverbServer::Port,
+            'broadcasting.connections.reverb.options.port' => ReverbServer::port(),
             'broadcasting.connections.reverb.options.scheme' => 'http',
             'broadcasting.connections.reverb.options.useTLS' => false,
         ]);
 
         Broadcast::forgetDrivers();
+    }
+
+    /**
+     * Shards run side by side, each with its own database and Reverb port, but in one checkout:
+     * files written to the default disk, or to the disk `Storage::fake()` swaps in, would be shared.
+     */
+    private function isolateShard(): void
+    {
+        $shard = BrowserShard::current();
+
+        if ($shard === null) {
+            return;
+        }
+
+        ParallelTesting::resolveTokenUsing(fn (): string => BrowserShard::token($shard));
+
+        config(['filesystems.disks.local.root' => BrowserShard::diskRoot($shard)]);
     }
 
     /**
