@@ -277,7 +277,7 @@ it('[P12c-03a] imports a Linear cycle after switching the source', function () {
         ->assertPresent('[data-test="poker-task-row"]:has-text("Login form") [data-slot="badge"]:text-is("ENG-1")')
         ->assertPresent('[data-test="poker-task-row"]:has-text("Signup form") [data-slot="badge"]:text-is("ENG-2")');
 
-    Http::assertSent(fn (Request $request): bool => str_contains((string) $request['query'], 'cycle(id')
+    Http::assertSent(fn (Request $request): bool => str_contains((string) data_get($request->data(), 'query'), 'cycle(id')
         && data_get($request->data(), 'variables.id') === 'cycle-1');
 
     expect(PokerTask::query()->where('poker_game_id', $game->id)->orderBy('position')->pluck('external_key')->all())
