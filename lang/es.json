@@ -1812,5 +1812,9 @@
     "This board is full.": "Esta pizarra está llena.",
     "Sticky note": "Nota adhesiva",
     "Add a sticky note": "Añadir una nota adhesiva",
-    "Yellow": "Amarillo"
+    "Yellow": "Amarillo",
+    "This workspace already has 50 whiteboard templates.": "Este espacio de trabajo ya tiene 50 plantillas de pizarra.",
+    "Choose either a built-in template or a workspace template.": "Elige una plantilla integrada o una plantilla del espacio de trabajo.",
+    "Choose a template of this workspace.": "Elige una plantilla de este espacio de trabajo.",
+    "Only the creator of this template or a workspace admin can change it.": "Solo el creador de esta plantilla o un administrador del espacio puede modificarla."
 }

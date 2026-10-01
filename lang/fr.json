@@ -1812,5 +1812,9 @@
     "This board is full.": "Ce tableau est plein.",
     "Sticky note": "Post-it",
     "Add a sticky note": "Ajouter un post-it",
-    "Yellow": "Jaune"
+    "Yellow": "Jaune",
+    "This workspace already has 50 whiteboard templates.": "Cet espace de travail a déjà 50 modèles de tableau blanc.",
+    "Choose either a built-in template or a workspace template.": "Choisissez soit un modèle intégré, soit un modèle de l'espace de travail.",
+    "Choose a template of this workspace.": "Choisissez un modèle de cet espace de travail.",
+    "Only the creator of this template or a workspace admin can change it.": "Seul le créateur de ce modèle ou un administrateur de l'espace peut le modifier."
 }

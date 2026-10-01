@@ -63,6 +63,12 @@ class Workspace extends Model
         return $this->hasMany(WorkspaceTemplate::class);
     }
 
+    /** @return HasMany<WhiteboardTemplate, $this> */
+    public function whiteboardTemplates(): HasMany
+    {
+        return $this->hasMany(WhiteboardTemplate::class);
+    }
+
     /** @return HasMany<Team, $this> */
     public function teams(): HasMany
     {

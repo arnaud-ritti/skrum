@@ -1568,5 +1568,9 @@
     "This board is full.": "This board is full.",
     "Sticky note": "Sticky note",
     "Add a sticky note": "Add a sticky note",
-    "Yellow": "Yellow"
+    "Yellow": "Yellow",
+    "This workspace already has 50 whiteboard templates.": "This workspace already has 50 whiteboard templates.",
+    "Choose either a built-in template or a workspace template.": "Choose either a built-in template or a workspace template.",
+    "Choose a template of this workspace.": "Choose a template of this workspace.",
+    "Only the creator of this template or a workspace admin can change it.": "Only the creator of this template or a workspace admin can change it."
 }

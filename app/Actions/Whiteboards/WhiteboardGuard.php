@@ -17,6 +17,15 @@ class WhiteboardGuard
         throw new AuthorizationException(__('Only the facilitator can do this.'));
     }
 
+    public static function notGuest(WhiteboardMember $member): void
+    {
+        if (! $member->isGuest()) {
+            return;
+        }
+
+        throw new AuthorizationException(__('Guests cannot do this.'));
+    }
+
     public static function canDelete(Whiteboard $board, WhiteboardMember $member): void
     {
         if ($board->isFacilitator($member)) {

@@ -142,6 +142,7 @@ use App\Http\Controllers\Whiteboards\WhiteboardGuestTokensController;
 use App\Http\Controllers\Whiteboards\WhiteboardsController;
 use App\Http\Controllers\Whiteboards\WhiteboardSettingsController;
 use App\Http\Controllers\Whiteboards\WhiteboardSnapshotsController;
+use App\Http\Controllers\Whiteboards\WhiteboardTemplatesController;
 use App\Http\Controllers\WorkspaceActionItemCommentsController;
 use App\Http\Controllers\WorkspaceActionItemsController;
 use App\Http\Controllers\WorkspaceActionItemSubtasksController;
@@ -149,6 +150,7 @@ use App\Http\Controllers\WorkspaceInvitationsController;
 use App\Http\Controllers\WorkspaceMembersController;
 use App\Http\Controllers\WorkspacesController;
 use App\Http\Controllers\WorkspaceTemplatesController;
+use App\Http\Controllers\WorkspaceWhiteboardTemplatesController;
 use App\Http\Middleware\EnsureIntegrationProviderEnabled;
 use App\Http\Middleware\RememberCurrentWorkspace;
 use App\Http\Middleware\ResolveGamePlayer;
@@ -329,6 +331,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('templates', [WorkspaceTemplatesController::class, 'store'])->name('workspaces.templates.store');
             Route::patch('templates/{template}', [WorkspaceTemplatesController::class, 'update'])->name('workspaces.templates.update')->whereUuid('template');
             Route::delete('templates/{template}', [WorkspaceTemplatesController::class, 'destroy'])->name('workspaces.templates.destroy')->whereUuid('template');
+            Route::patch('whiteboard-templates/{whiteboardTemplate}', [WorkspaceWhiteboardTemplatesController::class, 'update'])->name('workspaces.whiteboardTemplates.update')->whereUuid('whiteboardTemplate');
+            Route::delete('whiteboard-templates/{whiteboardTemplate}', [WorkspaceWhiteboardTemplatesController::class, 'destroy'])->name('workspaces.whiteboardTemplates.destroy')->whereUuid('whiteboardTemplate');
 
             Route::get('action-items', [WorkspaceActionItemsController::class, 'index'])->name('workspaces.actionItems.index');
             Route::post('action-items', [WorkspaceActionItemsController::class, 'store'])->name('workspaces.actionItems.store');
@@ -501,6 +505,7 @@ Route::prefix('whiteboards/{board}')
         Route::put('elements', [WhiteboardElementsController::class, 'update'])->name('whiteboards.elements.update')->middleware('throttle:whiteboard-writes');
         Route::post('files', [WhiteboardFilesController::class, 'store'])->name('whiteboards.files.store');
         Route::get('files/{fileId}', [WhiteboardFilesController::class, 'show'])->name('whiteboards.files.show')->where('fileId', '[A-Za-z0-9_-]{1,64}');
+        Route::post('template', [WhiteboardTemplatesController::class, 'store'])->name('whiteboards.template.store');
     });
 
 Route::get('play/{guestToken}', [GameJoinsController::class, 'show'])->name('games.join.show');
