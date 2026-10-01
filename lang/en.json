@@ -1540,5 +1540,7 @@
     "Could not load this delivery.": "Could not load this delivery.",
     "Status: :status": "Status: :status",
     "Actions": "Actions",
-    "The redelivery could not be queued. Try again.": "The redelivery could not be queued. Try again."
+    "The redelivery could not be queued. Try again.": "The redelivery could not be queued. Try again.",
+    "You no longer have access to this board.": "You no longer have access to this board.",
+    "Only the facilitator or a workspace admin can delete this board.": "Only the facilitator or a workspace admin can delete this board."
 }

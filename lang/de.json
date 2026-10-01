@@ -1784,5 +1784,7 @@
     "Delivery details": "Zustellungsdetails",
     "Could not load this delivery.": "Diese Zustellung konnte nicht geladen werden.",
     "Status: :status": "Status: :status",
-    "The redelivery could not be queued. Try again.": "Die erneute Zustellung konnte nicht in die Warteschlange gestellt werden. Versuche es erneut."
+    "The redelivery could not be queued. Try again.": "Die erneute Zustellung konnte nicht in die Warteschlange gestellt werden. Versuche es erneut.",
+    "You no longer have access to this board.": "Sie haben keinen Zugriff mehr auf dieses Board.",
+    "Only the facilitator or a workspace admin can delete this board.": "Nur der Moderator oder ein Workspace-Admin kann dieses Board löschen."
 }
