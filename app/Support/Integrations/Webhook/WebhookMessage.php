@@ -24,6 +24,7 @@ class WebhookMessage
         public string $event,
         public string $occurredAt,
         public array $data,
+        public bool $redelivery = false,
     ) {}
 
     public static function test(): self

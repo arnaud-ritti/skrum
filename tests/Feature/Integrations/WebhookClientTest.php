@@ -5,12 +5,14 @@ use App\Enums\IntegrationDeliveryKind;
 use App\Enums\IntegrationProvider;
 use App\Enums\IntegrationStatus;
 use App\Models\IntegrationDelivery;
+use App\Models\IntegrationDeliveryPayload;
 use App\Models\TeamIntegration;
 use App\Support\Integrations\Exceptions\ProviderRejected;
 use App\Support\Integrations\Exceptions\ProviderUnavailable;
 use App\Support\Integrations\Exceptions\RateLimited;
 use App\Support\Integrations\Exceptions\ReconnectRequired;
 use App\Support\Integrations\Exceptions\UnsafeWebhookUrl;
+use App\Support\Integrations\Webhook\ResponseExcerpt;
 use App\Support\Integrations\Webhook\SafeWebhookUrl;
 use App\Support\Integrations\Webhook\WebhookClient;
 use App\Support\Integrations\Webhook\WebhookHealth;
@@ -18,6 +20,7 @@ use App\Support\Integrations\Webhook\WebhookMessage;
 use Database\Factories\TeamIntegrationFactory;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Exceptions;
 use Illuminate\Support\Facades\Http;
 
 beforeEach(function () {
@@ -375,4 +378,93 @@ it('discards the response body instead of buffering it', function () {
         ->getOptions();
 
     expect($options['curl'][CURLOPT_WRITEFUNCTION]('handle', 'abcdef'))->toBe(6);
+});
+
+it('keeps what it sent and the start of the answer for a delivery with a stored message', function () {
+    $this->travelTo(Carbon::parse('2026-10-07 10:00:05', 'UTC'));
+    Http::fake(['hooks.example.com/*' => Http::response(str_repeat('é', 1500), 500)]);
+    $integration = TeamIntegration::factory()->webhook()->create();
+    $delivery = outgoingWebhookDelivery($integration);
+    $delivery->payload()->create(['message' => [
+        'id' => $delivery->id,
+        'event' => 'action_item.created',
+        'occurredAt' => '2026-10-07T10:00:00Z',
+        'data' => [],
+    ]]);
+
+    expect(fn () => app(WebhookClient::class)->send($integration, outgoingWebhookMessage($delivery->id), $delivery))
+        ->toThrow(ProviderUnavailable::class);
+
+    $payload = $delivery->payload()->sole();
+    $sent = Http::recorded()->first()[0];
+
+    expect($payload->request_body)->toBe($sent->body())
+        ->and($payload->request_headers)->toBe([
+            'Content-Type' => 'application/json',
+            'User-Agent' => 'skrum-webhooks/1',
+            'X-Skrum-Event' => 'action_item.created',
+            'X-Skrum-Delivery' => $delivery->id,
+            'X-Skrum-Timestamp' => (string) Carbon::parse('2026-10-07 10:00:05', 'UTC')->getTimestamp(),
+            'X-Skrum-Signature' => 'sha256=…'.substr($sent->header('X-Skrum-Signature')[0], -6),
+        ])
+        ->and($payload->response_status)->toBe(500)
+        ->and(strlen((string) $payload->response_excerpt))->toBe(2048)
+        ->and((string) $payload->response_excerpt)->toBe(str_repeat('é', 1024));
+});
+
+it('stores nothing for a delivery without a stored message or for a test message', function () {
+    Http::fake(['hooks.example.com/*' => Http::response('ok', 200)]);
+    $integration = TeamIntegration::factory()->webhook()->create();
+
+    app(WebhookClient::class)->send($integration, outgoingWebhookMessage(), outgoingWebhookDelivery($integration));
+    app(WebhookClient::class)->send($integration, WebhookMessage::test());
+
+    expect(IntegrationDeliveryPayload::query()->count())->toBe(0);
+});
+
+it('marks a redelivered message and only that one', function () {
+    Http::fake(['hooks.example.com/*' => Http::response('', 204)]);
+    $integration = TeamIntegration::factory()->webhook()->create();
+
+    app(WebhookClient::class)->send($integration, new WebhookMessage('delivery-1', 'action_item.created', '2026-10-07T10:00:00Z', [], redelivery: true));
+    app(WebhookClient::class)->send($integration, outgoingWebhookMessage('delivery-2'));
+
+    Http::assertSent(fn (Request $request) => $request->header('X-Skrum-Delivery')[0] === 'delivery-1'
+        && $request->header('X-Skrum-Redelivery')[0] === 'true'
+        && outgoingWebhookSignatureIsValid($request));
+    Http::assertSent(fn (Request $request) => $request->header('X-Skrum-Delivery')[0] === 'delivery-2'
+        && ! $request->hasHeader('X-Skrum-Redelivery'));
+});
+
+it('keeps only the first 2 KB of the answer it reads', function () {
+    $excerpt = new ResponseExcerpt;
+    $options = app(WebhookClient::class)
+        ->pendingRequest(app(SafeWebhookUrl::class)->resolve(TeamIntegrationFactory::WebhookUrl), $excerpt)
+        ->getOptions();
+
+    expect($options['curl'][CURLOPT_WRITEFUNCTION]('handle', str_repeat('a', 1500)))->toBe(1500)
+        ->and($options['curl'][CURLOPT_WRITEFUNCTION]('handle', str_repeat('b', 1500)))->toBe(1500)
+        ->and($excerpt->value())->toBe(str_repeat('a', 1500).str_repeat('b', 548))
+        ->and($options['curl'][CURLOPT_RESOLVE])->toBe(['hooks.example.com:443:93.184.216.34'])
+        ->and($options['allow_redirects'])->toBeFalse();
+});
+
+it('reports a failure to keep the attempt without failing a successful send', function () {
+    Exceptions::fake();
+    Http::fake(['hooks.example.com/*' => Http::response('', 204)]);
+    $integration = TeamIntegration::factory()->webhook()->create();
+    $delivery = outgoingWebhookDelivery($integration);
+    $delivery->payload()->create(['message' => [
+        'id' => $delivery->id,
+        'event' => 'action_item.created',
+        'occurredAt' => '2026-10-07T10:00:00Z',
+        'data' => [],
+    ]]);
+    IntegrationDeliveryPayload::saving(fn () => throw new RuntimeException('database unavailable'));
+
+    app(WebhookClient::class)->send($integration, outgoingWebhookMessage($delivery->id), $delivery);
+
+    Exceptions::assertReported(RuntimeException::class);
+    expect($delivery->fresh()->attempts)->toBe(1)
+        ->and($delivery->payload()->sole()->request_body)->toBeNull();
 });

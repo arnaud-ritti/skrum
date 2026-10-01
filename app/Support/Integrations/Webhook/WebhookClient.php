@@ -16,11 +16,12 @@ use App\Support\Integrations\ProviderHttp;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
+use Throwable;
 
 /**
  * Posts signed JSON to an Owner/Admin's endpoint (spec 8 §4.5). The URL is
  * re-checked and the address pinned on every send; redirects are refused
- * and only the status code of the answer is read.
+ * and only the status code and the first 2 KB of the answer are read.
  */
 class WebhookClient
 {
@@ -33,6 +34,8 @@ class WebhookClient
     private const GoneStatus = 410;
 
     private const TooManyRequestsStatus = 429;
+
+    private const MaskedSignatureLength = 6;
 
     public function __construct(
         private SafeWebhookUrl $safeWebhookUrl,
@@ -47,13 +50,18 @@ class WebhookClient
     public function send(TeamIntegration $integration, WebhookMessage $message, ?IntegrationDelivery $delivery = null): void
     {
         $integration->withReconnectHandling(function () use ($integration, $message, $delivery): void {
+            $request = null;
             $response = null;
+            $excerpt = new ResponseExcerpt;
 
             try {
-                $response = $this->post($this->target($integration), $message, $integration, $this->secret($integration));
+                $target = $this->target($integration);
+                $request = $this->request($message, $integration, $this->secret($integration));
+                $response = $this->post($target, $request, $excerpt);
             } finally {
                 if ($delivery !== null) {
                     $this->recordAttempt($delivery, $response?->status());
+                    $this->capture($delivery, $request, $response, $excerpt);
                 }
             }
 
@@ -61,13 +69,17 @@ class WebhookClient
         });
     }
 
-    public function pendingRequest(WebhookTarget $target): PendingRequest
+    public function pendingRequest(WebhookTarget $target, ?ResponseExcerpt $excerpt = null): PendingRequest
     {
         $request = ProviderHttp::request(self::TimeoutSeconds)
             ->withoutRedirecting()
             ->withUserAgent(self::UserAgent);
 
-        $curl = [CURLOPT_WRITEFUNCTION => static fn ($handle, string $chunk): int => strlen($chunk)];
+        $curl = [CURLOPT_WRITEFUNCTION => static function ($handle, string $chunk) use ($excerpt): int {
+            $excerpt?->append($chunk);
+
+            return strlen($chunk);
+        }];
         $resolve = $target->pinnedResolve();
 
         if ($resolve !== null) {
@@ -75,6 +87,11 @@ class WebhookClient
         }
 
         return $request->withOptions(['curl' => $curl]);
+    }
+
+    public static function maskedSignature(string $signature): string
+    {
+        return 'sha256=…'.substr($signature, -self::MaskedSignatureLength);
     }
 
     public function ensureUsableUrl(TeamIntegration $integration): void
@@ -99,21 +116,32 @@ class WebhookClient
         }
     }
 
-    private function post(WebhookTarget $target, WebhookMessage $message, TeamIntegration $integration, string $secret): Response
+    private function request(WebhookMessage $message, TeamIntegration $integration, string $secret): WebhookRequest
     {
         $sentAt = now();
         $timestamp = $sentAt->getTimestamp();
         $body = $message->body($integration->team, $sentAt);
 
+        $headers = [
+            'X-Skrum-Event' => $message->event,
+            'X-Skrum-Delivery' => $message->id,
+            'X-Skrum-Timestamp' => (string) $timestamp,
+            'X-Skrum-Signature' => self::signature($secret, $timestamp, $body),
+        ];
+
+        if ($message->redelivery) {
+            $headers['X-Skrum-Redelivery'] = 'true';
+        }
+
+        return new WebhookRequest($headers, $body);
+    }
+
+    private function post(WebhookTarget $target, WebhookRequest $request, ResponseExcerpt $excerpt): Response
+    {
         try {
-            return $this->pendingRequest($target)
-                ->withHeaders([
-                    'X-Skrum-Event' => $message->event,
-                    'X-Skrum-Delivery' => $message->id,
-                    'X-Skrum-Timestamp' => (string) $timestamp,
-                    'X-Skrum-Signature' => self::signature($secret, $timestamp, $body),
-                ])
-                ->withBody($body, 'application/json')
+            return $this->pendingRequest($target, $excerpt)
+                ->withHeaders($request->headers)
+                ->withBody($request->body, 'application/json')
                 ->post($target->url);
         } catch (ConnectionException) {
             throw new ProviderUnavailable(IntegrationProvider::Webhook, __('Could not reach :host.', ['host' => $target->host]), timedOut: true);
@@ -157,6 +185,39 @@ class WebhookClient
             'last_attempt_at' => now(),
             'response_status' => $status,
         ])->save();
+    }
+
+    /**
+     * Keeping the attempt is a courtesy for the delivery log: a storage
+     * failure is reported but never turns a sent message into a failed one.
+     */
+    private function capture(IntegrationDelivery $delivery, ?WebhookRequest $request, ?Response $response, ResponseExcerpt $excerpt): void
+    {
+        if ($request === null) {
+            return;
+        }
+
+        try {
+            $payload = $delivery->payload;
+
+            if ($payload === null) {
+                return;
+            }
+
+            $payload->forceFill([
+                'request_headers' => [
+                    'Content-Type' => 'application/json',
+                    'User-Agent' => self::UserAgent,
+                    ...$request->headers,
+                    'X-Skrum-Signature' => self::maskedSignature($request->headers['X-Skrum-Signature']),
+                ],
+                'request_body' => $request->body,
+                'response_status' => $response?->status(),
+                'response_excerpt' => $response === null ? null : $excerpt->orBodyOf($response),
+            ])->save();
+        } catch (Throwable $exception) {
+            report($exception);
+        }
     }
 
     private function url(TeamIntegration $integration): string
