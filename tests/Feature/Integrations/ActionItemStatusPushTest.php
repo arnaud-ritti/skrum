@@ -129,6 +129,30 @@ it('marks a link missing when the issue is gone', function () {
         ->and($link->fresh()->sync_error)->toBeNull();
 });
 
+it('treats an issue whose status cannot be read as found, not missing', function () {
+    ['item' => $item, 'link' => $link] = statusSyncLink(['missing_at' => '2026-10-06 10:00:00']);
+    $item->forceFill(['completed_at' => now()])->save();
+    Http::fake([jiraApiUrl('rest/api/3/search/jql') => Http::response(['issues' => [jiraTrackerIssue('10001', 'PROJ-1')], 'isLast' => true])]);
+
+    runStatusPush($link);
+
+    expect($link->fresh()->missing_at)->toBeNull()
+        ->and($link->fresh()->last_pushed_at)->toBeNull();
+    Http::assertNotSent(fn (Request $request) => str_contains($request->url(), '/transitions'));
+});
+
+it('clears an old failure when a new push is queued', function () {
+    Queue::fake();
+    ['item' => $item, 'retro' => $retro, 'author' => $author, 'link' => $link] = statusSyncLink(['sync_error' => 'Old failure']);
+
+    $this->actingAs($author)
+        ->patchJson(route('workspaces.actionItems.update', [$retro->team->workspace, $item]), ['status' => 'completed'])
+        ->assertOk();
+
+    Queue::assertPushed(PushActionItemState::class);
+    expect($link->fresh()->sync_error)->toBeNull();
+});
+
 it('waits when the source rate limits', function () {
     ['item' => $item, 'link' => $link] = statusSyncLink();
     $item->forceFill(['completed_at' => now()])->save();

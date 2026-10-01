@@ -277,8 +277,12 @@ class GitHubTracker implements IssueTracker, SyncsIssueStatus
         $fullName = $raw === null ? null : self::fullName($raw);
         $issue = $raw === null ? null : $this->issue($reference[0], $raw);
 
-        if ($fullName === null || $issue === null || $issue->issueStatus === null) {
+        if ($fullName === null || $issue === null) {
             return null;
+        }
+
+        if ($issue->issueStatus === null) {
+            return $issue;
         }
 
         if (DoneMapping::state($integration, $issue->issueStatus) === $target) {

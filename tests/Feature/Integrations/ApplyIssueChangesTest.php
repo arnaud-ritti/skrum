@@ -1,12 +1,14 @@
 <?php
 
 use App\Actions\Integrations\ApplyIssueChanges;
+use App\Actions\Integrations\LinkStatusSync;
 use App\Actions\Integrations\RefreshPokerTasks;
 use App\Enums\ActionItemEventOrigin;
 use App\Enums\ActionItemRecurrence;
 use App\Enums\ExternalIssueState;
 use App\Enums\ExternalStatusCategory;
 use App\Enums\IntegrationAccess;
+use App\Enums\IntegrationProvider;
 use App\Enums\RetroPhase;
 use App\Events\ActionItems\ActionItemCompleted;
 use App\Events\ActionItems\ActionItemReopened;
@@ -20,6 +22,7 @@ use App\Models\PokerTask;
 use App\Models\TeamIntegration;
 use App\Support\Integrations\Trackers\TrackerIssue;
 use Carbon\CarbonImmutable;
+use Illuminate\Http\Client\Request as HttpRequest;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
@@ -299,6 +302,87 @@ it('does not queue pushes again and again on a read-only connection', function (
 
     expect($item->fresh()->completed_at)->not->toBeNull();
     Queue::assertNotPushed(PushActionItemState::class);
+});
+
+it('keeps a reopening made while the push ran when the push echoes back', function () {
+    ['integration' => $integration, 'item' => $item, 'link' => $link] = statusSyncLink(
+        ['local_state_changed_at' => '2026-10-07 10:30:00'],
+        item: ['completed_at' => '2026-10-07 10:30:00'],
+    );
+    $open = ['status' => ['id' => '10000', 'name' => 'To Do', 'statusCategory' => ['key' => 'new']], 'project' => ['key' => 'PROJ'], 'updated' => '2026-10-07T10:00:00.000+0000'];
+    $done = ['status' => ['id' => '10002', 'name' => 'Done', 'statusCategory' => ['key' => 'done']], 'project' => ['key' => 'PROJ'], 'updated' => '2026-10-07T10:30:04.000+0000'];
+    Http::fake([
+        jiraApiUrl('rest/api/3/search/jql') => Http::response(['issues' => [jiraTrackerIssue('10001', 'PROJ-1', $open)], 'isLast' => true]),
+        jiraApiUrl('rest/api/3/issue/10001?*') => Http::response(jiraTrackerIssue('10001', 'PROJ-1', $done)),
+        jiraApiUrl('rest/api/3/issue/10001/transitions*') => function (HttpRequest $request) use ($item, $link) {
+            if ($request->method() !== 'POST') {
+                return Http::response(['transitions' => [jiraTransition('31', '10002', 'Done', 'done')]]);
+            }
+
+            $this->travel(3)->seconds();
+            $item->forceFill(['completed_at' => null])->save();
+            ActionItemExternalLink::query()->whereKey($link->id)->update(['local_state_changed_at' => now()]);
+            $this->travel(2)->seconds();
+
+            return Http::response(null, 204);
+        },
+    ]);
+
+    runStatusPush($link);
+    applyStatusSyncIssues($integration, [statusSyncIssue('10001', 'PROJ-1', 'done', '2026-10-07T10:30:04+00:00')]);
+
+    expect($item->fresh()->completed_at)->toBeNull();
+    Queue::assertPushed(PushActionItemState::class, fn (PushActionItemState $job) => $job->linkId === $link->id);
+});
+
+it('clears a failed push once both sides agree', function () {
+    ['integration' => $integration, 'item' => $item, 'link' => $link] = statusSyncLink([
+        'external_state' => ExternalIssueState::Open,
+        'local_state_changed_at' => '2026-10-07 10:20:00',
+        'sync_error' => 'Jira requires more fields to close PROJ-1. Close it in Jira.',
+    ], item: ['completed_at' => '2026-10-07 10:20:00']);
+
+    applyStatusSyncIssues($integration, [statusSyncIssue('10001', 'PROJ-1', 'done', '2026-10-07T10:25:00+00:00')]);
+
+    $link->refresh();
+    expect($link->sync_error)->toBeNull()
+        ->and(LinkStatusSync::state($link, $item->fresh()))->toBe(LinkStatusSync::Synced);
+    Queue::assertNotPushed(PushActionItemState::class);
+});
+
+it('pushes a source change to the other synced tracker of the item', function () {
+    enableIntegrations(IntegrationProvider::Jira, IntegrationProvider::Linear);
+    ['integration' => $jira, 'item' => $item, 'link' => $jiraLink] = statusSyncLink();
+    $linear = TeamIntegration::factory()->linear()->create(['team_id' => $jira->team_id]);
+    $linear->forceFill(['settings' => [...$linear->settings, 'statusSync' => true]])->save();
+    $linearLink = ActionItemExternalLink::factory()->create([
+        'action_item_id' => $item->id,
+        'source' => IntegrationProvider::Linear,
+        'external_site' => 'org-1',
+        'external_id' => 'lin-1',
+        'external_key' => 'ENG-1',
+        'external_url' => 'https://linear.app/acme/issue/ENG-1',
+    ]);
+
+    applyStatusSyncIssues($jira, [statusSyncIssue('10001', 'PROJ-1', 'done', '2026-10-07T10:20:00+00:00')]);
+
+    expect($item->fresh()->completed_at)->not->toBeNull()
+        ->and($linearLink->fresh()->local_state_changed_at?->toIso8601String())->toBe('2026-10-07T10:30:00+00:00')
+        ->and($jiraLink->fresh()->local_state_changed_at)->toBeNull();
+    Queue::assertPushed(PushActionItemState::class, fn (PushActionItemState $job) => $job->linkId === $linearLink->id);
+    Queue::assertNotPushed(PushActionItemState::class, fn (PushActionItemState $job) => $job->linkId === $jiraLink->id);
+});
+
+it('trusts the source time again once the last push is no longer recent', function () {
+    ['integration' => $integration, 'item' => $item] = statusSyncLink([
+        'local_state_changed_at' => '2026-10-07 10:14:00',
+        'last_pushed_at' => '2026-10-07 10:15:00',
+        'last_pushed_state' => ExternalIssueState::Done,
+    ], item: ['completed_at' => '2026-10-07 10:14:00']);
+
+    applyStatusSyncIssues($integration, [statusSyncIssue('10001', 'PROJ-1', 'new', '2026-10-07T10:12:00+00:00')]);
+
+    expect($item->fresh()->completed_at)->toBeNull();
 });
 
 it('refreshes imported tasks of running games with their status', function () {

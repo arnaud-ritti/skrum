@@ -30,7 +30,8 @@ interface SyncsIssueStatus
     /**
      * Moves the issue to open or done (spec 8 §5.2) unless it is there
      * already, and returns it as the source now has it; null when the
-     * source no longer has the issue.
+     * source no longer has the issue, unchanged (without a status) when
+     * its status cannot be read.
      *
      * @throws StatusPushRejected when no transition or state can be used
      */

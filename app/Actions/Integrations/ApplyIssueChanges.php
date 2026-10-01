@@ -32,6 +32,8 @@ class ApplyIssueChanges
 {
     public const BroadcastEachTaskUpTo = 10;
 
+    public const PushClockFallbackMinutes = 10;
+
     public function __construct(
         private TrackedIssues $trackedIssues,
         private SetActionItemStatus $setActionItemStatus,
@@ -135,15 +137,16 @@ class ApplyIssueChanges
             }
 
             $state = DoneMapping::state($integration, $status);
+            $itemState = $item->isCompleted() ? ExternalIssueState::Done : ExternalIssueState::Open;
+            $echoesLastPush = $this->echoesLastPush($link, $state, $status->updatedAt);
 
             $outcome['changed'] = $this->saveLink($link, [
                 'external_state' => $state,
                 'external_status_name' => $issue->status,
                 'external_updated_at' => $status->updatedAt,
                 'missing_at' => null,
+                ...($state === $itemState ? ['sync_error' => null] : []),
             ]) || $outcome['changed'];
-
-            $itemState = $item->isCompleted() ? ExternalIssueState::Done : ExternalIssueState::Open;
 
             if ($state === $itemState) {
                 continue;
@@ -151,7 +154,7 @@ class ApplyIssueChanges
 
             $sourceWinsLink = $sourceWins && $link->last_pushed_at === null;
 
-            if (! $sourceWinsLink && $this->skrumWins($link, $status->updatedAt)) {
+            if (! $sourceWinsLink && $this->skrumWins($link, $itemState, $status->updatedAt, $echoesLastPush)) {
                 if ($this->canPush($integration, $link)) {
                     $outcome['pushes'][] = $link->id;
                 }
@@ -165,9 +168,41 @@ class ApplyIssueChanges
                 $state === ExternalIssueState::Done ? ActionItemStatus::Completed : ActionItemStatus::Open,
             );
             $outcome['changed'] = true;
+            $outcome['pushes'] = [...$outcome['pushes'], ...$this->markOtherTrackersChanged($item, $linkIds)];
         }
 
         return $outcome;
+    }
+
+    /**
+     * Ruling: skrum is the hub between the trackers of one item, so a
+     * change one source made is pushed to the item's other synced links
+     * instead of each tracker flipping the item back.
+     *
+     * @param  array<int, string>  $appliedLinkIds
+     * @return array<int, string> the links to push
+     */
+    private function markOtherTrackersChanged(ActionItem $item, array $appliedLinkIds): array
+    {
+        $pushes = [];
+        $otherLinks = ActionItemExternalLink::query()
+            ->where('action_item_id', $item->id)
+            ->whereKeyNot($appliedLinkIds)
+            ->lockForUpdate()
+            ->get();
+
+        foreach ($otherLinks as $link) {
+            $integration = LinkStatusSync::integration($link, $item->team);
+
+            if ($integration === null || ! $integration->isActive()) {
+                continue;
+            }
+
+            $link->forceFill(['local_state_changed_at' => now(), 'sync_error' => null])->save();
+            $pushes[] = $link->id;
+        }
+
+        return $pushes;
     }
 
     /**
@@ -178,7 +213,7 @@ class ApplyIssueChanges
     private function saveLink(ActionItemExternalLink $link, array $attributes): bool
     {
         $link->forceFill($attributes);
-        $changed = $link->isDirty(['external_state', 'external_status_name', 'missing_at']);
+        $changed = $link->isDirty(['external_state', 'external_status_name', 'missing_at', 'sync_error']);
         $link->forceFill(['last_synced_at' => now()])->save();
 
         return $changed;
@@ -186,7 +221,8 @@ class ApplyIssueChanges
 
     /**
      * A read fetched before a newer read or push was recorded must not
-     * undo it.
+     * undo it. Without a source time the push time stands in, on skrum's
+     * clock, so only while that push is recent.
      */
     private function isStale(ActionItemExternalLink $link, ?CarbonImmutable $sourceChangedAt): bool
     {
@@ -194,17 +230,35 @@ class ApplyIssueChanges
             return false;
         }
 
-        $known = $link->external_updated_at ?? $link->last_pushed_at;
+        $recentPushAt = $link->last_pushed_at?->gte(now()->subMinutes(self::PushClockFallbackMinutes))
+            ? $link->last_pushed_at
+            : null;
+        $known = $link->external_updated_at ?? $recentPushAt;
 
         return $known !== null && $sourceChangedAt->lt($known);
     }
 
     /**
-     * Decision 2: an unpushed skrum change (never pushed since, or its push
-     * failed) wins when it is at least as recent as the source's change,
-     * or when the source's change time is unknown.
+     * The source reports exactly what skrum's last push left there, and
+     * nothing newer: it has not changed since that push.
      */
-    private function skrumWins(ActionItemExternalLink $link, ?CarbonImmutable $sourceChangedAt): bool
+    private function echoesLastPush(ActionItemExternalLink $link, ExternalIssueState $state, ?CarbonImmutable $sourceChangedAt): bool
+    {
+        if ($link->last_pushed_at === null || $link->last_pushed_state !== $state || $link->external_state !== $state) {
+            return false;
+        }
+
+        return $sourceChangedAt === null
+            || ($link->external_updated_at !== null && $sourceChangedAt->lte($link->external_updated_at));
+    }
+
+    /**
+     * Decision 2: an unpushed skrum change (never pushed since, its push
+     * failed, or the item changed while it was pushed) wins when it is at
+     * least as recent as the source's change, when the source's change
+     * time is unknown, or when the source only echoes skrum's last push.
+     */
+    private function skrumWins(ActionItemExternalLink $link, ExternalIssueState $itemState, ?CarbonImmutable $sourceChangedAt, bool $echoesLastPush): bool
     {
         $localChangedAt = $link->local_state_changed_at;
 
@@ -214,9 +268,14 @@ class ApplyIssueChanges
 
         $unpushed = $link->last_pushed_at === null
             || $localChangedAt->gt($link->last_pushed_at)
-            || $link->sync_error !== null;
+            || $link->sync_error !== null
+            || $link->last_pushed_state !== $itemState;
 
-        return $unpushed && ($sourceChangedAt === null || $sourceChangedAt->lte($localChangedAt));
+        if (! $unpushed) {
+            return false;
+        }
+
+        return $echoesLastPush || $sourceChangedAt === null || $sourceChangedAt->lte($localChangedAt);
     }
 
     /**

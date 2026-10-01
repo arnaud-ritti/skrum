@@ -192,8 +192,8 @@ class LinearTracker implements IssueTracker, SyncsIssueStatus
     {
         $issue = $this->issueById($integration, $externalId);
 
-        if ($issue === null || $issue->issueStatus === null) {
-            return null;
+        if ($issue?->issueStatus === null) {
+            return $issue;
         }
 
         if (DoneMapping::state($integration, $issue->issueStatus) === $target) {
@@ -220,7 +220,9 @@ class LinearTracker implements IssueTracker, SyncsIssueStatus
 
         $name = TrackerIssue::shorten($state['name'], TrackerIssue::AssigneeLength);
 
-        return $this->issueById($integration, $externalId) ?? $issue->withStatus(
+        $readBack = $this->issueById($integration, $externalId);
+
+        return $readBack?->issueStatus !== null ? $readBack : $issue->withStatus(
             new IssueStatus($state['id'], $name, $state['type'], $issue->issueStatus->container, null),
             $name,
         );

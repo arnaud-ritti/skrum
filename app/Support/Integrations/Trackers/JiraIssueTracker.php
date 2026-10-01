@@ -169,8 +169,8 @@ abstract class JiraIssueTracker implements IssueTracker, SyncsIssueStatus
     {
         $issue = ctype_digit($externalId) ? $this->issueById($integration, $externalId) : null;
 
-        if ($issue === null || $issue->issueStatus === null) {
-            return null;
+        if ($issue?->issueStatus === null) {
+            return $issue;
         }
 
         if (DoneMapping::state($integration, $issue->issueStatus) === $target) {

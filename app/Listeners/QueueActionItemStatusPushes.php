@@ -71,6 +71,7 @@ class QueueActionItemStatusPushes
                 continue;
             }
 
+            $link->forceFill(['sync_error' => null])->save();
             PushActionItemState::dispatch($link->id)->afterCommit();
             $changed = true;
         }

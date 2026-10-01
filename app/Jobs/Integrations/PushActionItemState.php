@@ -20,6 +20,7 @@ use App\Support\Integrations\Trackers\DoneMapping;
 use App\Support\Integrations\Trackers\TrackerIssue;
 use App\Support\Integrations\Trackers\Trackers;
 use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
 use DateTimeInterface;
 use Illuminate\Contracts\Queue\ShouldBeUniqueUntilProcessing;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -73,6 +74,7 @@ class PushActionItemState implements ShouldBeUniqueUntilProcessing, ShouldQueue
 
     public function handle(Trackers $trackers, BroadcastActionItemChange $broadcast): void
     {
+        $pushedAt = now();
         $link = ActionItemExternalLink::query()->with('actionItem.team')->find($this->linkId);
 
         if ($link === null || $link->external_id === '') {
@@ -121,7 +123,7 @@ class PushActionItemState implements ShouldBeUniqueUntilProcessing, ShouldQueue
             return;
         }
 
-        $this->recordOutcome($integration, $target, $issue);
+        $this->recordOutcome($integration, $target, $issue, $pushedAt);
         $this->announce($broadcast, $item);
     }
 
@@ -148,9 +150,14 @@ class PushActionItemState implements ShouldBeUniqueUntilProcessing, ShouldQueue
         }
     }
 
-    private function recordOutcome(TeamIntegration $integration, ExternalIssueState $target, ?TrackerIssue $issue): void
+    /**
+     * The push time is when the item was read, so a change made while the
+     * provider was called still counts as unpushed. An issue whose status
+     * cannot be read is found, but nothing was written to it.
+     */
+    private function recordOutcome(TeamIntegration $integration, ExternalIssueState $target, ?TrackerIssue $issue, CarbonInterface $pushedAt): void
     {
-        DB::transaction(function () use ($integration, $target, $issue): void {
+        DB::transaction(function () use ($integration, $target, $issue, $pushedAt): void {
             $link = ActionItemExternalLink::query()->whereKey($this->linkId)->lockForUpdate()->first();
 
             if ($link === null) {
@@ -163,12 +170,18 @@ class PushActionItemState implements ShouldBeUniqueUntilProcessing, ShouldQueue
                 return;
             }
 
+            if ($issue->issueStatus === null) {
+                $link->forceFill(['missing_at' => null])->save();
+
+                return;
+            }
+
             $link->forceFill([
                 'last_pushed_state' => $target,
-                'last_pushed_at' => now(),
-                'external_state' => $issue->issueStatus === null ? $target : DoneMapping::state($integration, $issue->issueStatus),
+                'last_pushed_at' => $pushedAt,
+                'external_state' => DoneMapping::state($integration, $issue->issueStatus),
                 'external_status_name' => $issue->status,
-                'external_updated_at' => $issue->issueStatus?->updatedAt,
+                'external_updated_at' => $issue->issueStatus->updatedAt,
                 'last_synced_at' => now(),
                 'sync_error' => null,
                 'missing_at' => null,
