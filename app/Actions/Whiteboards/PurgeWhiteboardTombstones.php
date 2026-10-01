@@ -6,6 +6,10 @@ use App\Models\Whiteboard;
 use App\Models\WhiteboardElement;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * The purge mark is written through the base query so that the board's
+ * `updated_at`, the sort key of the team page, does not move.
+ */
 class PurgeWhiteboardTombstones
 {
     private const KeepHours = 24;
@@ -28,7 +32,7 @@ class PurgeWhiteboardTombstones
 
                 $highest = (int) $expired()->where('whiteboard_id', $boardId)->max('seq');
 
-                Whiteboard::query()->whereKey($boardId)->update(['purged_seq' => max($board->purged_seq, $highest)]);
+                Whiteboard::query()->whereKey($boardId)->toBase()->update(['purged_seq' => max($board->purged_seq, $highest)]);
 
                 return $expired()->where('whiteboard_id', $boardId)->delete();
             });

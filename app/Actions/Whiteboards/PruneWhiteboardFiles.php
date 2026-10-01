@@ -6,6 +6,7 @@ use App\Models\Whiteboard;
 use App\Models\WhiteboardElement;
 use App\Models\WhiteboardFile;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class PruneWhiteboardFiles
 {
@@ -55,7 +56,13 @@ class PruneWhiteboardFiles
     private function deleteFoldersOfGoneBoards(): void
     {
         foreach (Storage::directories(self::Root) as $directory) {
-            if (Whiteboard::query()->whereKey(basename($directory))->exists()) {
+            $boardId = basename($directory);
+
+            if (! Str::isUuid($boardId)) {
+                continue;
+            }
+
+            if (Whiteboard::query()->whereKey($boardId)->exists()) {
                 continue;
             }
 

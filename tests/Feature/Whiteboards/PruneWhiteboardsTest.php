@@ -23,6 +23,20 @@ it('purges tombstones older than a day and remembers how far', function () {
         ->and($board->fresh()->purged_seq)->toBe(6);
 });
 
+it('leaves the board where it was in the team list when it purges', function () {
+    $this->travelTo(now()->subDays(3));
+    $board = Whiteboard::factory()->create(['seq' => 4]);
+    WhiteboardElement::factory()->deleted()->create(['whiteboard_id' => $board->id, 'seq' => 4]);
+    $this->travelBack();
+
+    $lastChange = $board->fresh()->updated_at;
+
+    $this->artisan('skrum:prune-whiteboards')->assertSuccessful();
+
+    expect($board->fresh()->purged_seq)->toBe(4)
+        ->and($board->fresh()->updated_at->equalTo($lastChange))->toBeTrue();
+});
+
 it('never lowers the purge mark', function () {
     $board = Whiteboard::factory()->create(['seq' => 9, 'purged_seq' => 8]);
 
@@ -76,4 +90,13 @@ it('deletes day-old images no live element uses and the folders of gone boards',
     Storage::assertMissing($unused->path);
     Storage::assertMissing($ofDeleted->path);
     Storage::assertMissing('whiteboards/00000000-0000-0000-0000-000000000000/orphan');
+});
+
+it('leaves folders that are not a board alone', function () {
+    Storage::fake();
+    Storage::put('whiteboards/not-a-board/file', 'bytes');
+
+    $this->artisan('skrum:prune-whiteboards')->assertSuccessful();
+
+    Storage::assertExists('whiteboards/not-a-board/file');
 });
