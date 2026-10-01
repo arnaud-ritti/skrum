@@ -4,24 +4,25 @@
 
 **Goal:** A facilitator runs a silent-writing round in which nobody, the facilitator included, receives the text of another person's sticky note before the reveal, and any member brings back an earlier state of the board from automatic or named versions.
 
-**Architecture:** Privacy is a column on the element row (`is_private`), set by the write path while the board's `private_writing` switch is on and cleared only by the reveal. `PresentWhiteboardElement`, already the only serializer of an element, masks a private row for every viewer but its author; a write that touches a private row is broadcast without elements, so each client fetches its own copy. The write path refuses, with reason `private`, anything another member does to a private row or to its binding. A version is a row holding the live scene as stored (real text); a queued job stores one five minutes after the first change that follows the last version. Restore rewrites the board from a version inside the board lock, as ordinary element rows with higher versions, so clients converge through the normal delta.
+**Architecture:** Privacy is a column on the element row (`is_private`), set by the write path while the board's `private_writing` switch is on and cleared only by the reveal. `PresentWhiteboardElement`, already the only serializer of an element, masks a private row for every viewer but its author; a write that touches a private row is broadcast without elements, so each client fetches its own copy. The write path refuses, with reason `private`, anything another member does to a private row or to its binding. A version is a row holding the live scene as stored (real text); a queued job stores one five minutes after the first change that follows the last version. Restore rewrites the board from a version inside the board lock, as ordinary element rows with higher versions, so clients converge through the normal delta. A version also remembers which of its elements were private when it was stored (`private_element_ids`); the reveal takes the revealed ones off that list, and nothing a version later shows (preview, restore, copy) holds what is left on it: a note deleted while it was hidden.
 
 **Tech Stack:** Laravel 13, PHP 8.4, PostgreSQL, Pest 5, queue worker, Reverb, Inertia 3 + React 19, Wayfinder, `@excalidraw/excalidraw` 0.18.1 (only through `resources/js/lib/whiteboard/excalidraw.ts`).
 
 **Spec:** `docs/superpowers/specs/2026-10-01-whiteboard-design.md` — this plan covers R9 and R10: §11.5, §9, the columns and table of §7 they need (`private_writing`, `is_private`, `last_versioned_seq`, `whiteboard_versions`), version ownership of files in §6.5, the versions rows and the `privateWriting` settings key of §12, the history panel and masked-note marks of §13, and "Private writing" and "Version history" of §16. Read it and `.superpowers/sdd/whiteboard-rules.md` before starting. The spec was edited with this plan (list at the end, "Spec edits made with this plan").
 
-**Written in advance.** This plan was written in a separate worktree at commit `e0524df` (plan 17b Tasks 1–7 merged, Task 8 in progress, Task 9 not started) while plan 17c was being written in parallel and could not be read. Everything that touches 17c is isolated in steps titled **"17c step"** and listed in the last section, "Assumptions to reconcile". Read that section before Task 1.
+**Prepared in advance, reconciled at `aff67e7`.** A first version of this plan was written at `e0524df`, before plan 17b was finished and without sight of plan 17c. It has been reconciled with the code both plans produced (plans `2026-10-10-plan-17b-whiteboard-templates.md` and `2026-10-11-plan-17c-whiteboard-facilitation.md`, their walkthroughs, and the tree at `aff67e7`). What the reconciliation changed is listed in the last section.
 
-**How the code here was checked:** nothing in this plan was run: the worktree had no `vendor/` and no `node_modules/`. Every PHP signature, helper and test idiom was read in the repository at `e0524df`, and every canvas name in `node_modules/@excalidraw/excalidraw/dist` (files cited where used). Test code is complete and is the specification; implementation code is a proposal (rule 2 of the implementers' rules applies: fix the smallest thing that makes the tests and the spec true, and report it).
+**How the code here was checked:** every task was built once, in order, on a throwaway copy of the tree at `aff67e7`, and the tree was restored afterwards. On that prototype: `DB_HOST=127.0.0.1 php artisan test --compact tests/Feature/Whiteboards tests/Feature/TranslationKeysTest.php tests/Feature/UuidPrimaryKeysTest.php` passed (541 tests), the complete suite passed (4156 tests), Pint and PHPStan were clean on every touched PHP file, `npm run build` succeeded, `npm run types:check` showed only the known `manage-passkeys.tsx` error and `npx vp check` was clean on the touched frontend files. Every complete file and every snippet in this plan is the prototype's text. **Nothing was run in a browser**: what only a browser can show is listed per frontend task as "Browser checks" and replayed by the walkthrough that follows this plan. Canvas names were read in `node_modules/@excalidraw/excalidraw/dist` (files cited where used). Rule 2 of the implementers' rules still applies: if something here fails, fix the smallest thing that makes the tests and the spec true, and report it.
 
 ## Global Constraints
 
 - No new dependency, PHP or JS. No JavaScript test runner: client logic stays thin, rules live on the server.
-- Every primary and foreign key is a UUID (`tests/Feature/UuidPrimaryKeysTest.php`). Migrations have `up` only. This plan's migration is dated `2026_10_12_100000`, after every whiteboard migration of 17a–17c.
+- Every primary and foreign key is a UUID (`tests/Feature/UuidPrimaryKeysTest.php`). Migrations have `up` only. This plan's migration is dated `2026_10_12_100000`, after the last whiteboard migration on the branch (`2026_10_11_100000_add_whiteboard_facilitation.php`).
+- Facilitation UI follows plan 17c: facilitator tools live in `facilitator-bar.tsx` (in the top bar, facilitator only), what everyone must know in the status row (`<StatusBar>` in `board.tsx`), overlays above the canvas use `use-whiteboard-overlay.ts` and `z-[3]`, and a request that may fail goes through `useWhiteboardRequest()` (toast with the server's message).
 - Request bodies are snake_case (`private_writing`); Excalidraw elements keep camelCase. Route names are camelCase segments, URLs kebab-case, controllers plural with CRUD method names, one controller per non-CRUD action.
 - Every UI string goes through `__()` / `t()` with its key in `lang/en.json`, `fr.json`, `de.json`, `es.json` (`tests/Feature/TranslationKeysTest.php`). Each task lists the keys it adds, with translations. `lang/*.json` are not sorted: append.
 - The board UI never names the canvas library and shows none of its branding; overlays never cover canvas controls, the reactions bar or the shapes toolbar.
-- **The secrecy invariant (spec §11.5):** the text of another member's private sticky never leaves the server — snapshot, Inertia page, `GET elements`, `rejected` copies, `elements.changed`, versions, duplicate, template, log lines — for the facilitator too. Every test of a surface uses `whiteboardPayloadExposes()` (Task 1). No code in this plan passes an element, a scene or a version to `Log::`, to an exception message or to a broadcast.
+- **The secrecy invariant (spec §11.5):** the text of another member's private sticky never leaves the server — snapshot, Inertia page, `GET elements`, `rejected` copies, `elements.changed`, versions, duplicate, template, vote results, log lines — for the facilitator too. A note deleted while it was hidden is never shown at all: not by the reveal, not by a version stored while it was live. Every test of a surface uses `whiteboardPayloadExposes()` (Task 1). No code in this plan passes an element, a scene or a version to `Log::`, to an exception message or to a broadcast.
 - All element payloads leave the server through `PresentWhiteboardElement`. Raw `data` is only read by server-side copies (`ReadWhiteboardScene`, versions, restore), each of which checks `WhiteboardGuard::notPrivateWriting` inside the board lock when its output can reach a client.
 - Every mutation: resolve member → guard → transaction with `lockForUpdate` on the board row → re-check inside the lock → broadcast with `sendToOthers()` (which already waits for the commit, `app/Events/Concerns/SendsToOthers.php`).
 - Anything the server writes as an element passes `SanitizeWhiteboardElement` and keeps valid fractional indices.
@@ -38,7 +39,7 @@
 1. **A member holds a masked note and their canvas sends it back** — unchanged (a retry), edited (they dragged or typed on it), deleted (eraser, "clear canvas"), with a lower nonce, or as the facilitator. The author's text must survive every one of them and the sender's canvas must return to the masked copy. Pinned in Task 2: "refuses every change another member makes to a private note and keeps the text".
 2. **The text of a note reaches the server without its container** (the container was rejected, or the batch was split between the two) while private writing is on. It must not be broadcast or served in clear. Pinned in Task 2: "treats a bound text whose container is unknown as private while private writing is on".
 3. **The database refuses a statement that carries note text** (deadlock, constraint, lost connection). Laravel's `QueryException` message contains the statement with its bindings, and PostgreSQL adds the failing row: the report must hold neither. Pinned in Task 2: "keeps the text of a note out of the log, even when the database refuses the write", and in Task 4: "keeps the scene out of the log when a version cannot be stored".
-4. **The automatic-version job is lost, or never due** (worker restarted mid-job, failed job, a board created from a template whose `seq` starts above zero). Versions must start again by themselves. Pinned in Task 4: "queues the versions a lost job never stored" and "schedules the first version of a board created from a scene".
+4. **A note is deleted while it is hidden.** The reveal must not show it, a later write by its author that leaves it deleted must not make its tombstone public, and a version stored while it was still on the board must never preview, restore or copy it. Pinned in Task 3: "never shows a private note that was deleted before the reveal" and "lets a version stored while the notes were hidden show what the reveal showed, and nothing else"; in Task 5: "never previews a note that was deleted before the reveal"; in Task 6: "never restores or copies a note that was deleted before the reveal".
 5. **Restore meets an element it cannot simply rewrite**: its row is gone (tombstone purged) while a browser left open still holds that tombstone at a higher version, or a client pushed it to the highest version number. Restore must bring the element back where it can, leave the rest of the board restored, and never answer 500. Pinned in Task 6: "brings back an element whose row is gone under a fresh id" and "restores the rest when an element sits at the highest version number".
 
 ---
@@ -60,13 +61,14 @@ Backend (new unless marked):
 | `app/Actions/Whiteboards/WhiteboardGuard.php` (modify) | `notPrivateWriting` |
 | `app/Actions/Whiteboards/SetWhiteboardPrivateWriting.php` | Switch on; reveal |
 | `app/Http/Controllers/Whiteboards/WhiteboardSettingsController.php` (modify) | `private_writing` key |
-| `app/Actions/Whiteboards/DuplicateWhiteboard.php`, `SaveWhiteboardTemplate.php` (modify) | Blocked while private writing is on |
+| `app/Actions/Whiteboards/DuplicateWhiteboard.php`, `SaveWhiteboardTemplate.php`, `OpenWhiteboardVote.php` (modify) | Blocked while private writing is on |
 | `app/Actions/Whiteboards/StoreWhiteboardVersion.php` | Live scene → version row; retention |
 | `app/Actions/Whiteboards/ScheduleWhiteboardVersion.php` | First change after the last version → delayed job |
 | `app/Jobs/StoreAutomaticWhiteboardVersion.php` | The delayed job |
 | `app/Actions/Whiteboards/QueueMissedWhiteboardVersions.php`, `app/Console/Commands/PruneWhiteboardsCommand.php` (modify) | Daily catch-up |
 | `app/Actions/Whiteboards/PruneWhiteboardFiles.php` (modify) | A version keeps its images alive |
 | `app/Actions/Whiteboards/PresentWhiteboardVersion.php` | List item of a version |
+| `app/Actions/Whiteboards/ReadWhiteboardVersion.php` | The elements a version may show |
 | `app/Http/Controllers/Whiteboards/WhiteboardVersionsController.php` | index, store, show, update, destroy |
 | `app/Actions/Whiteboards/RestoreWhiteboardVersion.php`, `app/Http/Controllers/Whiteboards/WhiteboardVersionRestoresController.php` | Restore |
 | `app/Actions/Whiteboards/CopyWhiteboardVersion.php`, `app/Http/Controllers/Whiteboards/WhiteboardVersionCopiesController.php` | Copy to a new board |
@@ -77,16 +79,21 @@ Frontend (new unless marked):
 
 | Path | Responsibility |
 |---|---|
-| `resources/js/lib/whiteboard/types.ts`, `excalidraw.ts` (modify) | `privateWriting`, reason `private`, version types, API members used |
-| `resources/js/components/whiteboard/private-writing-banner.tsx` | Banner and "Reveal the notes" |
+| `resources/js/lib/whiteboard/types.ts` (modify) | `privateWriting`, reason `private`, version types |
+| `resources/js/hooks/use-whiteboard-overlay.ts` (modify) | `useMaskedNoteBoxes` |
 | `resources/js/components/whiteboard/masked-notes.tsx` | "•••" marks above masked notes |
+| `resources/js/components/whiteboard/facilitator-bar.tsx` (modify) | The private-writing button; no vote while it is on |
+| `resources/js/components/whiteboard/board-menu.tsx` (modify) | Duplicate and save-as-template disabled while it is on |
+| `resources/js/lib/whiteboard/appearance.ts` | Canvas locale and theme, shared by the board and the preview |
 | `resources/js/components/whiteboard/history-panel.tsx`, `version-preview.tsx` | History panel, read-only preview |
-| `resources/js/components/whiteboard/board.tsx`, `board-menu.tsx`, `top-bar.tsx` (modify) | Switch, banner, overlay, history button, resync on reveal |
+| `resources/js/components/whiteboard/board.tsx` (modify) | Status-row sentence, marks, history button and panel, resync on reveal |
+| `resources/css/app.css` (modify) | The preview canvas shows no menu and no help button |
 
 Shared shapes used by several tasks:
 
 ```
 VersionScene   = array{elements: list<array<string, mixed>>, fileIds: list<string>}      (whiteboard_versions.scene)
+private_element_ids = list<string>   (whiteboard_versions column: ids of `scene.elements` that were private when stored and not revealed since)
 VersionSummary = array{id: string, name: ?string, createdAt: string, createdByName: ?string, automatic: bool}
 Scene          = array{elements: list<array<string, mixed>>, files: list<SceneFile>}     (CopyWhiteboardScene, unchanged)
 ```
@@ -102,7 +109,7 @@ both keep the stored id, index, version, versionNonce, isDeleted, position and s
 Why this shape is safe on the client, checked in the library and in plan 17a's code:
 
 - `restoreElements` marks a non-deleted text whose `text` is empty as deleted and bumps its version (`node_modules/@excalidraw/excalidraw/dist/dev/chunk-4FTI6OG3.js`, lines 20529–20532: `if (!text && !element.isDeleted) { element = {...element, originalText: text, isDeleted: true}; element = bumpVersion(element); }`). `resources/js/lib/whiteboard/restore.ts` (`withServerVersions`) then puts the server's `version` and `versionNonce` back. So a client holds a masked text as a locally deleted text whose stamp equals the one `scene-sync.ts` recorded in `known`: `handleChange` skips it (`seen === stamp(element)`), and it is never written back.
-- Because the bound text is deleted locally, the canvas draws the note empty; the "•••" mark is skrum's overlay (Task 7).
+- Because the bound text is deleted locally, the canvas draws the note empty; the "•••" mark is skrum's overlay (Task 7), in the layer plan 17c built for vote badges.
 - `reconcileElements` keeps the local copy only when it is being edited, has a higher version, or has the same version and a **lower** nonce (`dist/dev/index.js`, lines 32828–32837, `shouldDiscardRemoteElement`). After the reveal the real copy arrives with the same version and the same nonce as the masked one, so it replaces it. The reveal therefore changes no version: it only gives the revealed rows a new `seq` so that `GET elements?since=` returns them.
 - If the canvas does change a masked copy (drag, erase, typing creates a new bound text), the write is refused with reason `private` and `scene-sync.ts` forces the server's masked copy back (`settle` → `force`), or drops the element the server never had (`dropLocally`).
 
@@ -121,14 +128,14 @@ Why this shape is safe on the client, checked in the library and in plan 17a's c
   - Columns `whiteboards.private_writing` (bool, default false), `whiteboards.last_versioned_seq` (unsigned bigint, default 0), `whiteboard_elements.is_private` (bool, default false); table `whiteboard_versions`.
   - `Whiteboard::$private_writing: bool`, `Whiteboard::$last_versioned_seq: int`, `Whiteboard::versions(): HasMany<WhiteboardVersion>`; factory state `Whiteboard::factory()->privateWriting()`.
   - `WhiteboardElement::$is_private: bool` (fillable, cast).
-  - `WhiteboardVersion` (`id`, `whiteboard_id`, `name: ?string`, `scene: VersionScene`, `seq: int`, `created_by_member_id: ?string`, `created_at`; no `updated_at`), constants `WhiteboardVersion::MaxNamed = 100`, `WhiteboardVersion::KeptAutomatic = 50`, `isAutomatic(): bool`, `createdBy(): BelongsTo<WhiteboardMember>`, `whiteboard(): BelongsTo<Whiteboard>`; factory state `->named(string $name = 'Checkpoint')`.
+  - `WhiteboardVersion` (`id`, `whiteboard_id`, `name: ?string`, `scene: VersionScene`, `private_element_ids: list<string>`, `seq: int`, `created_by_member_id: ?string`, `created_at`; no `updated_at`), constants `WhiteboardVersion::MaxNamed = 100`, `WhiteboardVersion::KeptAutomatic = 50`, `isAutomatic(): bool`, `createdBy(): BelongsTo<WhiteboardMember>`, `whiteboard(): BelongsTo<Whiteboard>`; factory state `->named(string $name = 'Checkpoint')`.
   - Snapshot key `board.privateWriting: bool`.
   - A board filled by `CopyWhiteboardScene` has `last_versioned_seq === seq`.
   - Test helpers in `tests/Pest.php`: `stickyWithText(string $id, string $text): array{0: array, 1: array}`, `storeWhiteboardElement(Whiteboard $board, array $data, int $seq, ?WhiteboardMember $author = null, bool $private = false): WhiteboardElement`, `putWhiteboardElements(mixed $test, Whiteboard $board, array $elements): TestResponse`, `whiteboardViewer(mixed $test, User|WhiteboardMember $viewer): mixed`, `whiteboardPayloadExposes(mixed $payload, string $secret): bool`, `privateWritingBoard(): array{board: Whiteboard, facilitator: User, author: User, authorMember: WhiteboardMember, other: User, otherMember: WhiteboardMember, guest: WhiteboardMember, secret: string}`.
 
 - [ ] **Step 1: Add the shared test helpers**
 
-Append to `tests/Pest.php`, after `sceneElement()`. Add `use App\Models\WhiteboardElement;` to the imports (the others used here — `User`, `Whiteboard`, `WhiteboardMember`, `TestResponse` — are already imported; check with `grep -n '^use' tests/Pest.php`).
+Append to `tests/Pest.php`, after `sceneElement()` (the last function of the file). Every class used here — `User`, `Whiteboard`, `WhiteboardElement`, `WhiteboardMember`, `TestResponse` — is already imported. Plan 17c's `whiteboardSticky()` stores a note and its text as rows without an author; the helpers below build the wire form (`stickyWithText`) and store a row with an author and a privacy flag (`storeWhiteboardElement`), which is what this plan's tests need. None of these names exists in `tests/Pest.php` or in a test file (checked with `grep -rn '^function ' tests`).
 
 ```php
 /**
@@ -282,6 +289,7 @@ it('stores a version with a creation date only, and removes it with its board', 
         'whiteboard_id' => $board->id,
         'created_by_member_id' => $member->id,
         'scene' => ['elements' => [sceneElement(['id' => 'box'])], 'fileIds' => []],
+        'private_element_ids' => ['box'],
     ]);
 
     expect(Str::isUuid($automatic->id))->toBeTrue()
@@ -289,8 +297,10 @@ it('stores a version with a creation date only, and removes it with its board', 
         ->and($automatic->fresh()->created_at->toDateTimeString())->toBe('2026-10-12 10:00:00')
         ->and($automatic->fresh()->isAutomatic())->toBeTrue()
         ->and($automatic->fresh()->seq)->toBe(4)
+        ->and($automatic->fresh()->private_element_ids)->toBe([])
         ->and($named->fresh()->isAutomatic())->toBeFalse()
         ->and($named->fresh()->scene['elements'][0]['id'])->toBe('box')
+        ->and($named->fresh()->private_element_ids)->toBe(['box'])
         ->and($named->createdBy->is($member))->toBeTrue()
         ->and($board->versions()->count())->toBe(2);
 
@@ -365,6 +375,7 @@ return new class extends Migration
             $table->foreignUuid('whiteboard_id')->constrained()->cascadeOnDelete();
             $table->string('name', 80)->nullable();
             $table->json('scene');
+            $table->json('private_element_ids');
             $table->unsignedBigInteger('seq');
             $table->foreignUuid('created_by_member_id')->nullable()->constrained('whiteboard_members')->nullOnDelete();
             $table->timestamp('created_at')->nullable();
@@ -375,7 +386,7 @@ return new class extends Migration
 };
 ```
 
-The `update` gives every existing board `last_versioned_seq = seq`: "nothing to version yet", so that its next write is "the first write after the last version" and schedules one (Task 4). Without it an existing board with content would never get an automatic version.
+`private_element_ids` has no database default (PostgreSQL allows none that Laravel's `json` column can express portably): the factory and `StoreWhiteboardVersion` (Task 4) always set it. The `update` gives every existing board `last_versioned_seq = seq`: "nothing to version yet", so that its next write is "the first write after the last version" and schedules one (Task 4). Without it an existing board with content would never get an automatic version.
 
 - [ ] **Step 5: Models and factories**
 
@@ -396,7 +407,9 @@ use Illuminate\Support\Carbon;
 
 /**
  * The live scene of a board at one moment, as stored: real text, no viewer.
- * A null name means the version was stored automatically.
+ * `private_element_ids` lists the elements that were private then and have
+ * not been revealed since: nothing may show them (spec §9). A null name
+ * means the version was stored automatically.
  *
  * @phpstan-type VersionScene array{elements: list<array<string, mixed>>, fileIds: list<string>}
  *
@@ -404,13 +417,14 @@ use Illuminate\Support\Carbon;
  * @property string $whiteboard_id
  * @property string|null $name
  * @property VersionScene $scene
+ * @property list<string> $private_element_ids
  * @property int $seq
  * @property string|null $created_by_member_id
  * @property Carbon $created_at
  * @property-read Whiteboard $whiteboard
  * @property-read WhiteboardMember|null $createdBy
  */
-#[Fillable(['whiteboard_id', 'name', 'scene', 'seq', 'created_by_member_id'])]
+#[Fillable(['whiteboard_id', 'name', 'scene', 'private_element_ids', 'seq', 'created_by_member_id'])]
 class WhiteboardVersion extends Model
 {
     /** @use HasFactory<WhiteboardVersionFactory> */
@@ -445,6 +459,7 @@ class WhiteboardVersion extends Model
     {
         return [
             'scene' => 'array',
+            'private_element_ids' => 'array',
             'seq' => 'integer',
         ];
     }
@@ -473,6 +488,7 @@ class WhiteboardVersionFactory extends Factory
             'whiteboard_id' => Whiteboard::factory(),
             'name' => null,
             'scene' => ['elements' => [], 'fileIds' => []],
+            'private_element_ids' => [],
             'seq' => 0,
             'created_by_member_id' => null,
         ];
@@ -485,7 +501,7 @@ class WhiteboardVersionFactory extends Factory
 }
 ```
 
-In `app/Models/Whiteboard.php`: add `@property bool $private_writing` and `@property int $last_versioned_seq` to the docblock; add `'private_writing'` and `'last_versioned_seq'` to the `#[Fillable([...])]` list; add `'private_writing' => 'boolean'` and `'last_versioned_seq' => 'integer'` to `casts()`; add the relation:
+In `app/Models/Whiteboard.php`: add `@property bool $private_writing` and `@property int $last_versioned_seq` to the docblock (after `$purged_seq`); add `'private_writing'` and `'last_versioned_seq'` at the end of the `#[Fillable([...])]` list (it already holds plan 17c's `locked`, `follow_enabled`, `timer_ends_at`: keep them); add `'private_writing' => 'boolean'` and `'last_versioned_seq' => 'integer'` to `casts()`; add the relation:
 
 ```php
     /** @return HasMany<WhiteboardVersion, $this> */
@@ -508,7 +524,7 @@ In `database/factories/WhiteboardFactory.php`, after `withGuestAccess()`:
 
 - [ ] **Step 6: Snapshot flag and the copy path**
 
-In `app/Actions/Whiteboards/BuildWhiteboardSnapshot.php` add `privateWriting: bool` to the `board` shape of the `@phpstan-type Snapshot` (after `reactionsEnabled: bool`, with a comma on the line above) and, in the `board` array, after `'reactionsEnabled' => $board->reactions_enabled,`:
+In `app/Actions/Whiteboards/BuildWhiteboardSnapshot.php` add ` *         privateWriting: bool,` to the `board` shape of the `@phpstan-type Snapshot`, after the `followEnabled: bool,` line, and, in the `board` array, after `'followEnabled' => $board->follow_enabled,`:
 
 ```php
                 'privateWriting' => $board->private_writing,
@@ -555,7 +571,7 @@ The heart of R9. After this task a board whose `private_writing` column is true 
 
 **Interfaces:**
 - Consumes (Task 1): `Whiteboard::$private_writing`, `WhiteboardElement::$is_private`, the helpers `privateWritingBoard()`, `stickyWithText()`, `storeWhiteboardElement()`, `putWhiteboardElements()`, `whiteboardViewer()`, `whiteboardPayloadExposes()`.
-- Consumes (existing): `PresentWhiteboardElement::handle(WhiteboardElement $element, WhiteboardMember $viewer): array`; `WriteWhiteboardElements::handle(Whiteboard $board, WhiteboardMember $member, array $rawElements): array{seq: int, fromSeq: int, rejected: list<array{id: ?string, reason: string, element: ?array}>}`; `WhiteboardElementsChanged(string $boardId, int $seq, int $fromSeq, ?array $elements)`.
+- Consumes (existing): `PresentWhiteboardElement::handle(WhiteboardElement $element, WhiteboardMember $viewer): array`; `WriteWhiteboardElements::handle(Whiteboard $board, WhiteboardMember $member, array $rawElements): array{seq: int, fromSeq: int, rejected: list<array{id: ?string, reason: string, element: ?array}>}` as plan 17c left it (constructor with `PresentWhiteboardVoting`, the deferral queue of the voting freeze, `storedElements(Whiteboard, array, bool $withContainers)`, `refusal(?WhiteboardElement, array, bool, Collection, int)`, `save(Whiteboard, WhiteboardMember, ?WhiteboardElement, array, int)`); `WhiteboardElementsChanged(string $boardId, int $seq, int $fromSeq, ?array $elements)`.
 - Produces:
   - Masked wire shape (see "Wire shape of a private note" above) from `PresentWhiteboardElement::handle`, unchanged signature.
   - Rejection reason `'private'`.
@@ -564,11 +580,11 @@ The heart of R9. After this task a board whose `private_writing` column is true 
 
 **Rules implemented here** (spec §11.5; the board row is locked, `$existing` is the stored row of the incoming element, `$container` the stored row its `containerId` names — rows saved earlier in the same batch count as stored):
 
-1. *Refusal `private`*, checked right after `stale` and before `locked`, for the facilitator too:
+1. *Refusal `private`*, checked inside `refusal()` right after `stale` and before `locked`, for the facilitator too (plan 17c's `voting` reasons are decided after `refusal()` and stay where they are; its 403 on a locked board comes before any element is looked at):
    - `$existing` is private and its author is not the writer (edit, move, delete, re-bind, detach, restore of a tombstone);
    - `$container` is private and its author is not the writer (binding a text to someone else's private note);
    - `$container` is private and `$existing` exists with another author (a private note only takes text written by its own author).
-2. *Privacy of the saved row*: false whenever the board's `private_writing` is off. Otherwise true when `$existing` is private, or `$container` is private, or the element is new and is either a sticky note (it carries the sticky marker) or a text with a `containerId` whose container is not stored. A write never clears the flag while private writing is on.
+2. *Privacy of the saved row*: while the board's `private_writing` is off, true only for a private row that the write leaves deleted (a note deleted while it was hidden stays private until its author brings it back), false otherwise. While it is on, true when `$existing` is private, or `$container` is private, or the element is new and is either a sticky note (it carries the sticky marker) or a text with a `containerId` whose container is not stored. A write never clears the flag while private writing is on.
 3. *Broadcast*: when any accepted row is private, `elements` is null (ids-only form), whatever the size.
 4. A masked copy sent back unchanged has the stored `version` and `versionNonce`: the existing "same write" rule ignores it. A masked copy with a higher nonce is `stale`. Neither reaches rule 1, and neither changes anything.
 
@@ -1041,87 +1057,60 @@ class PresentWhiteboardElement
 
 - [ ] **Step 5: The write rules**
 
-Edit `app/Actions/Whiteboards/WriteWhiteboardElements.php` as follows. (Plan 17c edits the same class for the board lock and the voting text freeze: keep its changes, and place the `private` check right after `stale` in `refusal()`.)
+Edit `app/Actions/Whiteboards/WriteWhiteboardElements.php`. Everything plan 17c put there (the deferral queue, `targets`, `isWordsOfTarget`, `changesWordsOfTarget`, `rebindsWordsOfTarget`, the `vote.changed` broadcast) stays as it is.
 
-a. Constructor: add a fourth dependency.
+a. Constructor: add a fifth dependency, after `PresentWhiteboardVoting`.
 
 ```php
-    public function __construct(
-        private SanitizeWhiteboardElement $sanitizeWhiteboardElement,
-        private PresentWhiteboardElement $presentWhiteboardElement,
-        private OrderWhiteboardElements $orderWhiteboardElements,
+        private PresentWhiteboardVoting $presentWhiteboardVoting,
         private KeepWhiteboardTextOutOfLogs $keepWhiteboardTextOutOfLogs,
-    ) {}
 ```
 
-b. `handle()`: wrap the existing transaction, body unchanged.
+b. `handle()`: wrap the existing transaction, body unchanged. The first line becomes
 
 ```php
         return $this->keepWhiteboardTextOutOfLogs->handle($board->id, fn (): array => DB::transaction(function () use ($board, $member, $rawElements): array {
-            // the existing body
-        }));
 ```
 
-c. Inside the loop, replace from `$existing = $stored->get($element['id']);` to the `$saved = …` line by:
+and the closing `});` of the transaction becomes `}));`.
+
+c. Containers are always loaded. The private rules read the row a text is bound to whether or not a vote is open, so `storedElements()` loses its third parameter: the call becomes
+
+```php
+            $stored = $this->storedElements($locked, $rawElements);
+```
+
+the signature becomes `private function storedElements(Whiteboard $board, array $rawElements): Collection`, and these four lines of its body are deleted (the rest, which loads the containers named by the batch and by the stored rows, is unchanged):
+
+```php
+        if (! $withContainers) {
+            return $stored;
+        }
+
+```
+
+With no vote open the extra rows change nothing else: `targets()` returns `[]` for a null session.
+
+d. Inside the loop, three lines change: the container is resolved right after `$existing`, and the calls to `refusal()` and `save()` take the new arguments.
 
 ```php
                 $existing = $stored->get($element['id']);
                 $container = $this->container($element, $stored);
+```
 
-                if ($this->isSameWrite($existing, $element)) {
-                    continue;
-                }
-
+```php
                 $reason = $this->refusal($existing, $container, $element, $member, $isFacilitator, $fileIds, $liveCount);
+```
 
-                if ($reason !== null) {
-                    $rejected[] = $this->rejection($element['id'], $reason, $existing, $member);
-
-                    continue;
-                }
-
-                $liveCount += $this->liveDelta($existing, $element);
-                $seq++;
-
+```php
                 $saved = $this->save($locked, $member, $existing, $element, $seq, $this->isPrivate($locked, $existing, $container, $element));
 ```
 
-d. `storedElements()` also loads the containers the batch names:
-
-```php
-        $ids = collect($rawElements)
-            ->flatMap(fn (mixed $raw): array => [$this->rawId($raw), $this->rawContainerId($raw)])
-            ->filter()
-            ->unique()
-            ->values();
-```
-
-with, next to `rawId()`:
-
-```php
-    private function rawContainerId(mixed $raw): ?string
-    {
-        if (! is_array($raw)) {
-            return null;
-        }
-
-        $containerId = $raw['containerId'] ?? null;
-
-        if (! is_string($containerId) || preg_match(SanitizeWhiteboardElement::IdPattern, $containerId) !== 1) {
-            return null;
-        }
-
-        return $containerId;
-    }
-```
+Rows saved earlier in the batch are in `$stored` (`$stored->put(...)` after each save), so a text that follows its note in the batch finds the note as its container.
 
 e. `refusal()` gains the container and the writer, and the `private` reason after `stale`:
 
 ```php
-    /**
-     * @param  array<string, mixed>  $element
-     * @param  Collection<string, int>  $fileIds
-     */
     private function refusal(?WhiteboardElement $existing, ?WhiteboardElement $container, array $element, WhiteboardMember $member, bool $isFacilitator, Collection $fileIds, int $liveCount): ?string
     {
         if ($this->isStale($existing, $element)) {
@@ -1131,12 +1120,11 @@ e. `refusal()` gains the container and the writer, and the `private` reason afte
         if ($this->touchesPrivate($existing, $container, $member)) {
             return 'private';
         }
-
-        // the existing `locked`, `file` and `full` checks, unchanged
-    }
 ```
 
-f. New private methods:
+(the `locked`, `file` and `full` checks follow, unchanged).
+
+f. New private methods, placed before `isStale()`:
 
 ```php
     /**
@@ -1178,14 +1166,16 @@ f. New private methods:
     /**
      * A write gives privacy and never takes it away while private writing
      * is on; only the reveal clears it. A new text whose container is not
-     * stored yet is private too: it may be the text of a note still on its way.
+     * stored yet is private too: it may be the text of a note still on its
+     * way. Once the notes are revealed, a note deleted while it was hidden
+     * stays private until its author brings it back.
      *
      * @param  array<string, mixed>  $element
      */
     private function isPrivate(Whiteboard $board, ?WhiteboardElement $existing, ?WhiteboardElement $container, array $element): bool
     {
         if (! $board->private_writing) {
-            return false;
+            return (bool) $existing?->is_private && $element['isDeleted'];
         }
 
         if ($existing?->is_private || $container?->is_private) {
@@ -1214,14 +1204,16 @@ h. `broadcastable()` starts with the ids-only rule:
         }
 ```
 
-(`array_any` is PHP 8.4, like `array_all` already used in `SanitizeWhiteboardElement`.) Update the docblock of `broadcastable()`: "null when the payload would exceed one message or holds a private element; clients then fetch their own copy".
+(`array_any` is PHP 8.4, like `array_all` already used in `SanitizeWhiteboardElement`.)
 
-What rule 2 means when private writing is off: `isPrivate()` answers false, so a private tombstone its author brings back after the reveal becomes an ordinary note; before that write `touchesPrivate()` still protects it from everyone else, because it reads the row's flag, not the board's.
+What rule 2 means once the notes are revealed: a private tombstone its author brings back becomes an ordinary note; a write of the author that leaves it deleted (the canvas repairing an index, for instance) keeps it private, so its text never appears in a delta; and before either write `touchesPrivate()` still protects it from everyone else, because it reads the row's flag, not the board's.
+
+A consequence to know, not a defect: a label typed into a plain shape while private writing is on is public when the shape reaches the server first (the canvas sends a container before its text) and hidden until the reveal when the label arrives alone. The rule errs on the side of hiding.
 
 - [ ] **Step 6: Run the tests**
 
 Run: `DB_HOST=127.0.0.1 php artisan test --compact tests/Feature/Whiteboards`
-Expected: PASS, the existing write, delta, snapshot and event tests included (none of their rows is private).
+Expected: PASS, the existing write, delta, snapshot, event, lock and voting tests included (none of their rows is private; the voting write tests of plan 17c exercise the same loop).
 
 - [ ] **Step 7: Gates and commit**
 
@@ -1240,7 +1232,7 @@ git commit -m "feat(whiteboard): private notes are masked for everyone but their
 
 **Files:**
 - Create: `app/Actions/Whiteboards/SetWhiteboardPrivateWriting.php`
-- Modify: `app/Actions/Whiteboards/WhiteboardGuard.php`, `app/Http/Controllers/Whiteboards/WhiteboardSettingsController.php`, `app/Actions/Whiteboards/DuplicateWhiteboard.php`, `app/Actions/Whiteboards/SaveWhiteboardTemplate.php`, `lang/{en,fr,de,es}.json`
+- Modify: `app/Actions/Whiteboards/WhiteboardGuard.php`, `app/Http/Controllers/Whiteboards/WhiteboardSettingsController.php`, `app/Actions/Whiteboards/DuplicateWhiteboard.php`, `app/Actions/Whiteboards/SaveWhiteboardTemplate.php`, `app/Actions/Whiteboards/OpenWhiteboardVote.php`, `lang/{en,fr,de,es}.json`
 - Test: `tests/Feature/Whiteboards/WhiteboardPrivateWritingSwitchTest.php`
 
 **Interfaces:**
@@ -1249,13 +1241,15 @@ git commit -m "feat(whiteboard): private notes are masked for everyone but their
   - `PATCH whiteboards/{board}/settings` accepts `private_writing: bool` (facilitator; 204; `board.changed`, and `elements.changed` in the ids-only form when a note was revealed).
   - `SetWhiteboardPrivateWriting::handle(Whiteboard $locked, bool $on): void` — the caller holds the lock on the board row.
   - `WhiteboardGuard::notPrivateWriting(Whiteboard $board): void` — throws a `ValidationException` (422) whose message is "Reveal the notes first.". Used by Tasks 5 and 6.
-  - `POST duplicate` and `POST template` answer 422 "Reveal the notes first." while private writing is on.
+  - `POST duplicate`, `POST template` and `POST vote-sessions` answer 422 "Reveal the notes first." while private writing is on; `PATCH settings {private_writing: true}` answers 422 "Close the vote first." while a vote is open.
+  - The reveal removes the revealed element ids from `private_element_ids` of every version of the board.
 
 **The reveal, precisely** (spec §11.5, inside the lock):
 1. Every **live** private row of the board gets `is_private = false` and `seq = board.seq + 1` (one statement, one new seq for all of them). Versions and nonces do not change.
 2. Private **tombstones** keep their flag: a note deleted while hidden is never shown. They stay masked in `GET elements` until the nightly purge removes them; `ReadWhiteboardScene` only reads live rows, so no copy holds them.
-3. The board gets `private_writing = false` and, when at least one row was revealed, the new `seq`.
-4. After the commit: `elements.changed` `{seq, fromSeq}` (no elements) when a row was revealed, then `board.changed`. The text reaches a client only through `GET elements?since=` or the snapshot.
+3. Every version of the board whose `private_element_ids` is not empty loses the revealed ids from that list (read with `get(['id', 'private_element_ids'])`: the scenes are not loaded). What stays listed was deleted before the reveal.
+4. The board gets `private_writing = false` and, when at least one row was revealed, the new `seq`.
+5. After the commit: `elements.changed` `{seq, fromSeq}` (no elements) when a row was revealed, then `board.changed`. The text reaches a client only through `GET elements?since=` or the snapshot.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -1269,6 +1263,8 @@ use App\Events\Whiteboards\WhiteboardElementsChanged;
 use App\Models\Whiteboard;
 use App\Models\WhiteboardElement;
 use App\Models\WhiteboardTemplate;
+use App\Models\WhiteboardVersion;
+use App\Models\WhiteboardVoteSession;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Testing\TestResponse;
@@ -1363,7 +1359,16 @@ it('never shows a private note that was deleted before the reveal', function () 
     putWhiteboardElements($this->actingAs($table['other']), $board, [[...$text, 'text' => '', 'originalText' => '', 'version' => 3]])
         ->assertJsonPath('rejected.0.reason', 'private');
 
-    putWhiteboardElements($this->actingAs($table['author']), $board, [[...$text, 'version' => 3]])
+    putWhiteboardElements($this->actingAs($table['author']), $board, [[...$text, 'version' => 3, 'isDeleted' => true, 'index' => 'a2V']])
+        ->assertJsonPath('rejected', []);
+
+    $rewritten = $this->actingAs($table['other'])->getJson(route('whiteboards.elements.index', [$board, 'since' => 4]))->assertOk();
+
+    expect($tombstone->fresh()->is_private)->toBeTrue()
+        ->and($tombstone->fresh()->version)->toBe(3)
+        ->and(whiteboardPayloadExposes($rewritten->getContent(), $table['secret']))->toBeFalse();
+
+    putWhiteboardElements($this->actingAs($table['author']), $board, [[...$text, 'version' => 4]])
         ->assertJsonPath('rejected', []);
 
     expect($tombstone->fresh()->is_private)->toBeFalse()
@@ -1372,6 +1377,23 @@ it('never shows a private note that was deleted before the reveal', function () 
     $this->actingAs($table['other'])
         ->getJson(route('whiteboards.snapshot.show', $board))
         ->assertJsonPath('elements.1.text', $table['secret']);
+});
+
+it('lets a version stored while the notes were hidden show what the reveal showed, and nothing else', function () {
+    $table = privateWritingBoard();
+    $board = $table['board'];
+    $version = WhiteboardVersion::factory()->create([
+        'whiteboard_id' => $board->id,
+        'private_element_ids' => ['dropped', 'dropped-text', 'note', 'note-text'],
+    ]);
+    $untouched = WhiteboardVersion::factory()->named()->create(['whiteboard_id' => $board->id]);
+    $elsewhere = WhiteboardVersion::factory()->create(['private_element_ids' => ['note', 'note-text']]);
+
+    setPrivateWriting($this->actingAs($table['facilitator']), $board, false)->assertNoContent();
+
+    expect($version->fresh()->private_element_ids)->toBe(['dropped', 'dropped-text'])
+        ->and($untouched->fresh()->private_element_ids)->toBe([])
+        ->and($elsewhere->fresh()->private_element_ids)->toBe(['note', 'note-text']);
 });
 
 it('changes nothing when the switch already has that value', function () {
@@ -1462,16 +1484,50 @@ it('copies the notes once they are revealed, and never one deleted while hidden'
         ->and(whiteboardPayloadExposes($template->scene, $table['secret']))->toBeTrue()
         ->and(whiteboardPayloadExposes($template->scene, 'Dropped thought'))->toBeFalse();
 });
+
+it('refuses to hide the notes while a vote is open', function () {
+    $board = Whiteboard::factory()->create();
+    [$facilitator] = whiteboardFacilitator($board);
+    whiteboardSticky($board, 'note');
+    $session = openWhiteboardVote($board);
+
+    setPrivateWriting($this->actingAs($facilitator), $board, true)
+        ->assertStatus(422)
+        ->assertJsonPath('message', 'Close the vote first.');
+
+    expect($board->fresh()->private_writing)->toBeFalse();
+
+    $session->update(['closed_at' => now(), 'results' => []]);
+
+    setPrivateWriting($this->actingAs($facilitator), $board, true)->assertNoContent();
+
+    expect($board->fresh()->private_writing)->toBeTrue();
+});
+
+it('refuses to open a vote while the notes are hidden', function () {
+    $table = privateWritingBoard();
+
+    $this->actingAs($table['facilitator'])
+        ->postJson(route('whiteboards.voteSessions.store', $table['board']), ['votes_per_member' => 3, 'allow_multiple' => false])
+        ->assertStatus(422)
+        ->assertJsonPath('message', 'Reveal the notes first.');
+
+    $this->actingAs($table['author'])
+        ->postJson(route('whiteboards.voteSessions.store', $table['board']), ['votes_per_member' => 3, 'allow_multiple' => false])
+        ->assertForbidden();
+
+    expect(WhiteboardVoteSession::query()->count())->toBe(0);
+});
 ```
 
 - [ ] **Step 2: Run it to see it fail**
 
 Run: `DB_HOST=127.0.0.1 php artisan test --compact tests/Feature/Whiteboards/WhiteboardPrivateWritingSwitchTest.php`
-Expected: FAIL — the first test finds `private_writing` still false (the key is not validated, so it is ignored); the duplicate test gets 201.
+Expected: FAIL — the first test finds `private_writing` still false (the key is not validated, so it is ignored); the duplicate test gets 201; the vote is opened although the notes are hidden.
 
 - [ ] **Step 3: The guard**
 
-Add to `app/Actions/Whiteboards/WhiteboardGuard.php` (import `Illuminate\Validation\ValidationException`; `PokerGuard::openRound` throws a 422 the same way):
+Add to `app/Actions/Whiteboards/WhiteboardGuard.php`, before `canDelete()` (`ValidationException` is already imported; `openVoteSession()` throws a 422 the same way):
 
 ```php
     /**
@@ -1500,6 +1556,9 @@ namespace App\Actions\Whiteboards;
 
 use App\Events\Whiteboards\WhiteboardElementsChanged;
 use App\Models\Whiteboard;
+use App\Models\WhiteboardVersion;
+use Illuminate\Support\Collection;
+use Illuminate\Validation\ValidationException;
 
 class SetWhiteboardPrivateWriting
 {
@@ -1512,13 +1571,17 @@ class SetWhiteboardPrivateWriting
             return;
         }
 
-        if ($on) {
-            $locked->update(['private_writing' => true]);
+        if (! $on) {
+            $this->reveal($locked);
 
             return;
         }
 
-        $this->reveal($locked);
+        if ($locked->voteSessions()->whereNull('closed_at')->exists()) {
+            throw ValidationException::withMessages(['private_writing' => __('Close the vote first.')]);
+        }
+
+        $locked->update(['private_writing' => true]);
     }
 
     /**
@@ -1531,27 +1594,45 @@ class SetWhiteboardPrivateWriting
         $fromSeq = $locked->seq;
         $seq = $fromSeq + 1;
 
-        $revealed = $locked->elements()
-            ->where('is_private', true)
-            ->where('is_deleted', false)
-            ->update(['is_private' => false, 'seq' => $seq]);
+        $hidden = $locked->elements()->where('is_private', true)->where('is_deleted', false);
+        $revealedIds = $hidden->clone()->pluck('element_id');
 
-        if ($revealed === 0) {
+        if ($revealedIds->isEmpty()) {
             $locked->update(['private_writing' => false]);
 
             return;
         }
 
+        $hidden->update(['is_private' => false, 'seq' => $seq]);
+
+        $this->revealInVersions($locked, $revealedIds);
+
         $locked->update(['private_writing' => false, 'seq' => $seq]);
 
         (new WhiteboardElementsChanged($locked->id, $seq, $fromSeq, null))->sendToOthers();
+    }
+
+    /**
+     * A version stored while the notes were hidden may now show them; what
+     * stays on its list was deleted before the reveal and is never shown.
+     *
+     * @param  Collection<int, string>  $revealedIds
+     */
+    private function revealInVersions(Whiteboard $locked, Collection $revealedIds): void
+    {
+        $locked->versions()
+            ->whereJsonLength('private_element_ids', '>', 0)
+            ->get(['id', 'private_element_ids'])
+            ->each(fn (WhiteboardVersion $version) => $version->update([
+                'private_element_ids' => array_values(array_diff($version->private_element_ids, $revealedIds->all())),
+            ]));
     }
 }
 ```
 
 - [ ] **Step 5: The settings key**
 
-In `app/Http/Controllers/Whiteboards/WhiteboardSettingsController.php` (plan 17c adds its own keys to the same method: keep them): inject the action, validate the key, take it out of the mass update and apply it inside the lock, before `board.changed`.
+In `app/Http/Controllers/Whiteboards/WhiteboardSettingsController.php` (plan 17c's `locked` and `follow_enabled` keys stay): inject the action, validate the key, take it out of the mass update and apply it inside the lock, before `board.changed`. The whole method:
 
 ```php
     public function update(Request $request, Whiteboard $board, SetWhiteboardPrivateWriting $setWhiteboardPrivateWriting): Response
@@ -1565,6 +1646,8 @@ In `app/Http/Controllers/Whiteboards/WhiteboardSettingsController.php` (plan 17c
             'guest_access_enabled' => ['sometimes', 'boolean'],
             'cursors_enabled' => ['sometimes', 'boolean'],
             'reactions_enabled' => ['sometimes', 'boolean'],
+            'locked' => ['sometimes', 'boolean'],
+            'follow_enabled' => ['sometimes', 'boolean'],
             'private_writing' => ['sometimes', 'boolean'],
         ]);
 
@@ -1598,7 +1681,7 @@ In `app/Actions/Whiteboards/DuplicateWhiteboard.php`, right after the `$locked =
             WhiteboardGuard::notPrivateWriting($locked);
 ```
 
-In `app/Actions/Whiteboards/SaveWhiteboardTemplate.php`, right after its `$locked = …lockForUpdate()->firstOrFail();` line (before the workspace lock):
+In `app/Actions/Whiteboards/SaveWhiteboardTemplate.php`, right after its `$locked = …lockForUpdate()->firstOrFail();` line (before the workspace lock), with a blank line on each side:
 
 ```php
             WhiteboardGuard::notPrivateWriting($locked);
@@ -1606,88 +1689,29 @@ In `app/Actions/Whiteboards/SaveWhiteboardTemplate.php`, right after its `$locke
 
 The check sits inside the board lock: a facilitator switching private writing on waits for the copy, or the copy sees the switch. Neither path reads `is_private`: once the notes are revealed no live row carries it, and `ReadWhiteboardScene` reads live rows only.
 
-- [ ] **Step 7: Translations**
+- [ ] **Step 7: Private writing and voting exclude each other**
+
+Spec §11.4 and §11.5. Plan 17c left both halves to this plan (its `OpenWhiteboardVote` has no check, and there was no switch to refuse).
+
+Turning private writing on while a vote is open is refused inside `SetWhiteboardPrivateWriting::handle()` (already in the file of Step 4): 422 "Close the vote first." — the key plan 17c added for dismissing an open vote, reused as it is.
+
+Opening a vote while the notes are hidden: in `app/Actions/Whiteboards/OpenWhiteboardVote.php`, inside the board lock, right after `WhiteboardGuard::facilitator($locked, $member);`:
+
+```php
+            WhiteboardGuard::notPrivateWriting($locked);
+```
+
+A member who is not the facilitator still gets 403 first. Both rules are pinned by the last two tests of Step 1, which use plan 17c's helpers `whiteboardSticky()` and `openWhiteboardVote()`.
+
+The two cannot overlap afterwards either: no live private row exists while a vote is open (the reveal clears them all, and a private tombstone brought back with the switch off becomes ordinary), so the text a closing vote copies into its results (`CloseWhiteboardVote::label`) is never a hidden one.
+
+- [ ] **Step 8: Translations**
 
 | Key (English) | French | German | Spanish |
 |---|---|---|---|
-| Reveal the notes first. | Révélez d'abord les post-it. | Decken Sie zuerst die Haftnotizen auf. | Revela primero las notas adhesivas. |
+| Reveal the notes first. | Révélez d'abord les post-it. | Decken Sie zuerst die Haftnotizen auf. | Revela primero las notas. |
 
-Add the key to `lang/en.json` (value = key) and the three others; run `grep -n '"Reveal the notes first."' lang/fr.json` first.
-
-- [ ] **Step 8: 17c step — private writing and voting exclude each other**
-
-Spec §11.4 and §11.5: private writing cannot be turned on while a voting session is open, and a voting session cannot be opened while private writing is on. This step needs plan 17c's `whiteboard_vote_sessions` table (spec §7: `id`, `whiteboard_id`, `votes_per_member`, `frame_element_id`, `allow_multiple`, `opened_by_member_id`, `closed_at`, `dismissed_at`, `results`, timestamps) and its `POST vote-sessions` endpoint. Use 17c's model, factory, guard and route names where they exist; the code below uses the query builder and the names of the spec so that it states the rule without depending on them.
-
-Add to `tests/Feature/Whiteboards/WhiteboardPrivateWritingSwitchTest.php` (imports `Illuminate\Support\Facades\DB`, `Illuminate\Support\Str`):
-
-```php
-it('refuses to hide the notes while a vote is open', function () {
-    $board = Whiteboard::factory()->create();
-    [$facilitator] = whiteboardFacilitator($board);
-
-    DB::table('whiteboard_vote_sessions')->insert([
-        'id' => (string) Str::uuid(),
-        'whiteboard_id' => $board->id,
-        'votes_per_member' => 3,
-        'allow_multiple' => false,
-        'created_at' => now(),
-        'updated_at' => now(),
-    ]);
-
-    setPrivateWriting($this->actingAs($facilitator), $board, true)
-        ->assertStatus(422)
-        ->assertJsonPath('message', 'Close the vote first.');
-
-    expect($board->fresh()->private_writing)->toBeFalse();
-
-    DB::table('whiteboard_vote_sessions')->where('whiteboard_id', $board->id)->update(['closed_at' => now()]);
-
-    setPrivateWriting($this->actingAs($facilitator), $board, true)->assertNoContent();
-});
-
-it('refuses to open a vote while the notes are hidden', function () {
-    $table = privateWritingBoard();
-
-    $this->actingAs($table['facilitator'])
-        ->postJson(route('whiteboards.voteSessions.store', $table['board']), ['votes_per_member' => 3, 'allow_multiple' => false])
-        ->assertStatus(422)
-        ->assertJsonPath('message', 'Reveal the notes first.');
-
-    expect(DB::table('whiteboard_vote_sessions')->where('whiteboard_id', $table['board']->id)->exists())->toBeFalse();
-});
-```
-
-In `SetWhiteboardPrivateWriting::handle()`, before `$locked->update(['private_writing' => true]);`:
-
-```php
-            $this->ensureNoOpenVote($locked);
-```
-
-```php
-    private function ensureNoOpenVote(Whiteboard $locked): void
-    {
-        $open = DB::table('whiteboard_vote_sessions')
-            ->where('whiteboard_id', $locked->id)
-            ->whereNull('closed_at')
-            ->exists();
-
-        if (! $open) {
-            return;
-        }
-
-        throw ValidationException::withMessages(['private_writing' => __('Close the vote first.')]);
-    }
-```
-
-(imports in the action: `Illuminate\Support\Facades\DB`, `Illuminate\Validation\ValidationException`.)
-
-In 17c's action or controller that opens a session, inside its board lock and before the insert: `WhiteboardGuard::notPrivateWriting($locked);` (if 17c already wrote a check against a column that did not exist yet, replace it by this call).
-
-| Key (English) | French | German | Spanish |
-|---|---|---|---|
-| Close the vote first. | Clôturez d'abord le vote. | Schließen Sie zuerst die Abstimmung. | Cierra primero la votación. |
-
-If 17c already has a key with this meaning, reuse it and change the assertion.
+Add the key to `lang/en.json` (value = key) and the three others; `lang/*.json` are not sorted: append. "Close the vote first." exists in the four files.
 
 - [ ] **Step 9: Run, gates, commit**
 
@@ -1696,12 +1720,10 @@ Expected: PASS.
 
 ```bash
 vendor/bin/pint --dirty --format agent
-vendor/bin/phpstan analyse --memory-limit=1G app/Actions/Whiteboards/SetWhiteboardPrivateWriting.php app/Actions/Whiteboards/WhiteboardGuard.php app/Http/Controllers/Whiteboards/WhiteboardSettingsController.php app/Actions/Whiteboards/DuplicateWhiteboard.php app/Actions/Whiteboards/SaveWhiteboardTemplate.php
-git add app/Actions/Whiteboards/SetWhiteboardPrivateWriting.php app/Actions/Whiteboards/WhiteboardGuard.php app/Http/Controllers/Whiteboards/WhiteboardSettingsController.php app/Actions/Whiteboards/DuplicateWhiteboard.php app/Actions/Whiteboards/SaveWhiteboardTemplate.php lang/en.json lang/fr.json lang/de.json lang/es.json tests/Feature/Whiteboards/WhiteboardPrivateWritingSwitchTest.php
+vendor/bin/phpstan analyse --memory-limit=1G app/Actions/Whiteboards/SetWhiteboardPrivateWriting.php app/Actions/Whiteboards/WhiteboardGuard.php app/Http/Controllers/Whiteboards/WhiteboardSettingsController.php app/Actions/Whiteboards/DuplicateWhiteboard.php app/Actions/Whiteboards/SaveWhiteboardTemplate.php app/Actions/Whiteboards/OpenWhiteboardVote.php
+git add app/Actions/Whiteboards/SetWhiteboardPrivateWriting.php app/Actions/Whiteboards/WhiteboardGuard.php app/Http/Controllers/Whiteboards/WhiteboardSettingsController.php app/Actions/Whiteboards/DuplicateWhiteboard.php app/Actions/Whiteboards/SaveWhiteboardTemplate.php app/Actions/Whiteboards/OpenWhiteboardVote.php lang/en.json lang/fr.json lang/de.json lang/es.json tests/Feature/Whiteboards/WhiteboardPrivateWritingSwitchTest.php
 git commit -m "feat(whiteboard): the private writing switch, the reveal and the actions it blocks"
 ```
-
-(Add 17c's file to the `git add` when Step 8 changed one.)
 
 ---
 ### Task 4: Automatic versions
@@ -1714,7 +1736,7 @@ git commit -m "feat(whiteboard): the private writing switch, the reveal and the 
 **Interfaces:**
 - Consumes: `ReadWhiteboardScene::handle(Whiteboard $board): array{elements: list<array>, files: list<SceneFile>}` (live elements in canvas order, real text); `KeepWhiteboardTextOutOfLogs::handle(string, Closure): mixed` (Task 2); `WhiteboardVersion`, `Whiteboard::versions()`, `Whiteboard::$last_versioned_seq` (Task 1); `WriteWhiteboardElements`, `SetWhiteboardPrivateWriting` (Tasks 2–3); the job idiom of `app/Jobs/RevealPokerRoundOnTimer.php` and its dispatch in `app/Http/Controllers/Poker/PokerTimersController.php` (`::dispatch(...)->delay(...)->afterCommit()`).
 - Produces:
-  - `StoreWhiteboardVersion::handle(Whiteboard $locked, ?WhiteboardMember $member, ?string $name): WhiteboardVersion` — the caller holds the lock on the board row. Stores the live scene as `{elements, fileIds}`, sets `last_versioned_seq = seq` without moving `updated_at`, and, for an automatic version (`$name === null`), deletes the automatic versions beyond the 50 most recent. It does **not** check the cap of named versions (Task 5 does, Task 6 must not).
+  - `StoreWhiteboardVersion::handle(Whiteboard $locked, ?WhiteboardMember $member, ?string $name): WhiteboardVersion` — the caller holds the lock on the board row. Stores the live scene as `{elements, fileIds}` and, in `private_element_ids`, the ids of the live rows that are private at that moment; sets `last_versioned_seq = seq` without moving `updated_at`, and, for an automatic version (`$name === null`), deletes the automatic versions beyond the 50 most recent. It does **not** check the cap of named versions (Task 5 does, Task 6 must not).
   - `ScheduleWhiteboardVersion::handle(Whiteboard $locked, int $fromSeq): void` — call inside the lock after any change of `seq`; dispatches the job, delayed 5 minutes and after commit, when `$fromSeq === $locked->last_versioned_seq`.
   - `App\Jobs\StoreAutomaticWhiteboardVersion(public string $boardId)`, constant `DelayMinutes = 5`.
   - `QueueMissedWhiteboardVersions::handle(): int`, run by `skrum:prune-whiteboards`.
@@ -1811,6 +1833,7 @@ it('stores the live scene with its real text and remembers how far it goes', fun
         ->and(array_column($version->scene['elements'], 'id'))->toBe(['photo', 'note', 'note-text'])
         ->and($version->scene['elements'][2]['text'])->toBe('Secret idea 7391')
         ->and($version->scene['fileIds'])->toBe([$file->file_id])
+        ->and($version->private_element_ids)->toBe(['note', 'note-text'])
         ->and($board->fresh()->last_versioned_seq)->toBe(4)
         ->and($board->fresh()->updated_at->equalTo($changedAt))->toBeTrue();
 });
@@ -1985,9 +2008,6 @@ use App\Models\Whiteboard;
 use App\Models\WhiteboardMember;
 use App\Models\WhiteboardVersion;
 
-/**
- * @phpstan-import-type VersionScene from WhiteboardVersion
- */
 class StoreWhiteboardVersion
 {
     public function __construct(
@@ -2006,6 +2026,7 @@ class StoreWhiteboardVersion
         $version = $this->keepWhiteboardTextOutOfLogs->handle($locked->id, fn (): WhiteboardVersion => $locked->versions()->create([
             'name' => $name,
             'scene' => ['elements' => $elements, 'fileIds' => $this->fileIds($elements)],
+            'private_element_ids' => $this->privateElementIds($locked),
             'seq' => $locked->seq,
             'created_by_member_id' => $member?->id,
         ]));
@@ -2025,13 +2046,25 @@ class StoreWhiteboardVersion
      */
     private function fileIds(array $elements): array
     {
-        return collect($elements)
+        return array_values(collect($elements)
             ->where('type', 'image')
             ->pluck('fileId')
             ->filter(fn (mixed $fileId): bool => is_string($fileId))
             ->unique()
-            ->values()
-            ->all();
+            ->all());
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function privateElementIds(Whiteboard $locked): array
+    {
+        return array_values($locked->elements()
+            ->where('is_private', true)
+            ->where('is_deleted', false)
+            ->orderBy('element_id')
+            ->pluck('element_id')
+            ->all());
     }
 
     /**
@@ -2174,7 +2207,7 @@ class QueueMissedWhiteboardVersions
 }
 ```
 
-In `app/Console/Commands/PruneWhiteboardsCommand.php`: change `$description` to `'Remove expired whiteboard tombstones and unused images, and queue missed versions'`, add `QueueMissedWhiteboardVersions $queueMissedWhiteboardVersions` to `handle()` and, before `return self::SUCCESS;`:
+In `app/Console/Commands/PruneWhiteboardsCommand.php`: change `$description` to `'Remove expired whiteboard tombstones and unused images, and queue missed versions'`, add `QueueMissedWhiteboardVersions $queueMissedWhiteboardVersions` as the third parameter of `handle()` (one parameter per line, `): int {` on the closing line, which is how Pint formats it) and, before `return self::SUCCESS;`:
 
 ```php
         $this->info('Queuing missed versions...');
@@ -2186,7 +2219,7 @@ In `app/Console/Commands/PruneWhiteboardsCommand.php`: change `$description` to 
 
 - [ ] **Step 5: Schedule from every change of `seq`**
 
-In `app/Actions/Whiteboards/WriteWhiteboardElements.php`: add `private ScheduleWhiteboardVersion $scheduleWhiteboardVersion,` to the constructor and, right after `$locked->update(['seq' => $seq]);`:
+In `app/Actions/Whiteboards/WriteWhiteboardElements.php`: add `private ScheduleWhiteboardVersion $scheduleWhiteboardVersion,` to the constructor (after `KeepWhiteboardTextOutOfLogs`) and, right after `$locked->update(['seq' => $seq]);`, before the broadcasts:
 
 ```php
             $this->scheduleWhiteboardVersion->handle($locked, $fromSeq);
@@ -2194,7 +2227,7 @@ In `app/Actions/Whiteboards/WriteWhiteboardElements.php`: add `private ScheduleW
 
 (That line is only reached when `seq` moved: the early return for an unchanged `seq` is above it.)
 
-In `app/Actions/Whiteboards/SetWhiteboardPrivateWriting.php`: add a constructor `public function __construct(private ScheduleWhiteboardVersion $scheduleWhiteboardVersion) {}` and, in `reveal()`, after `$locked->update(['private_writing' => false, 'seq' => $seq]);`:
+In `app/Actions/Whiteboards/SetWhiteboardPrivateWriting.php`: add a constructor `public function __construct(private ScheduleWhiteboardVersion $scheduleWhiteboardVersion) {}` as the first member of the class and, in `reveal()`, after `$locked->update(['private_writing' => false, 'seq' => $seq]);` (blank line on each side):
 
 ```php
         $this->scheduleWhiteboardVersion->handle($locked, $fromSeq);
@@ -2207,7 +2240,7 @@ In `app/Actions/Whiteboards/PruneWhiteboardFiles.php` replace `isUsed()` and its
 ```php
     /**
      * A file lives while a live element or a version of its board shows it
-     * (spec §6.5). A template keeps its own copy of every image.
+     * (spec §6.5). A template keeps its own copy of every image (spec §10).
      */
     private function isUsed(WhiteboardFile $file): bool
     {
@@ -2234,7 +2267,7 @@ In `app/Actions/Whiteboards/PruneWhiteboardFiles.php` replace `isUsed()` and its
 - [ ] **Step 7: Run the tests**
 
 Run: `DB_HOST=127.0.0.1 php artisan test --compact tests/Feature/Whiteboards`
-Expected: PASS. From now on every test that writes to a board whose `seq` equals `last_versioned_seq` runs the job at once (the test queue is synchronous) and stores one version; no earlier test counts versions, and `privateWritingBoard()` never triggers it (`seq` 2, `last_versioned_seq` 0).
+Expected: PASS. From now on every test that writes to a board whose `seq` equals `last_versioned_seq` runs the job at once (the test queue is synchronous) and stores one version; no test of plans 17a–17c counts versions or pushed jobs (the complete suite passed on the prototype), and `privateWritingBoard()` never triggers it (`seq` 2, `last_versioned_seq` 0).
 
 - [ ] **Step 8: Gates and commit**
 
@@ -2252,7 +2285,7 @@ git commit -m "feat(whiteboard): automatic versions every five minutes of activi
 ### Task 5: Version endpoints — list, save, preview, rename, delete
 
 **Files:**
-- Create: `app/Actions/Whiteboards/PresentWhiteboardVersion.php`, `app/Http/Controllers/Whiteboards/WhiteboardVersionsController.php`
+- Create: `app/Actions/Whiteboards/PresentWhiteboardVersion.php`, `app/Actions/Whiteboards/ReadWhiteboardVersion.php`, `app/Http/Controllers/Whiteboards/WhiteboardVersionsController.php`
 - Modify: `routes/web.php`, `lang/{en,fr,de,es}.json`
 - Test: `tests/Feature/Whiteboards/WhiteboardVersionsTest.php`
 
@@ -2269,13 +2302,14 @@ git commit -m "feat(whiteboard): automatic versions every five minutes of activi
 | DELETE | `versions/{version}` | `whiteboards.versions.destroy` | facilitator | 204 |
 
   - `PresentWhiteboardVersion::handle(WhiteboardVersion $version): array{id: string, name: ?string, createdAt: string, createdByName: ?string, automatic: bool}` (`VersionSummary`).
+  - `ReadWhiteboardVersion::handle(WhiteboardVersion $version): list<array<string, mixed>>` — the elements of a version without those listed in `private_element_ids`. The only way a scene leaves a version: Task 6 uses it for restore and copy.
 
 **Rules** (spec §9):
 - A guest gets 403 "Guests cannot do this." on every endpoint, before any other answer.
 - List and preview answer 422 "Reveal the notes first." while private writing is on. Saving, renaming and deleting stay allowed: they return no content of a scene.
 - Save: `name` required, 1–80 characters (trimmed by the framework). At most 100 named versions per board: 422 "This board already has 100 saved versions.". Saving sets `last_versioned_seq`.
 - Rename: `name` 1–80. Naming an automatic version makes it a named one: it leaves the rotation of the 50 automatic versions and counts in the 100, so the cap is checked. Delete: any version.
-- Preview returns the stored elements as they are (after the reveal nothing is private) and, in `files`, the images of the version that the board still stores.
+- Preview returns what `ReadWhiteboardVersion` gives (the stored elements, minus the notes that were deleted before the reveal) and, in `files`, the images of the version that the board still stores.
 - No broadcast: the history panel fetches the list when it opens.
 
 - [ ] **Step 1: Write the failing test**
@@ -2412,6 +2446,26 @@ it('previews a version: its elements and the images the board still stores', fun
         ]]);
 });
 
+it('never previews a note that was deleted before the reveal', function () {
+    $board = Whiteboard::factory()->create();
+    [$user] = whiteboardMember($board);
+    [$note, $text] = stickyWithText('note', 'Revealed idea');
+    [$dropped, $droppedText] = stickyWithText('dropped', 'Dropped thought 5522');
+    $version = WhiteboardVersion::factory()->create([
+        'whiteboard_id' => $board->id,
+        'scene' => ['elements' => [$note, $text, $dropped, $droppedText], 'fileIds' => []],
+        'private_element_ids' => ['dropped', 'dropped-text'],
+    ]);
+
+    $preview = $this->actingAs($user)
+        ->getJson(route('whiteboards.versions.show', [$board, $version]))
+        ->assertOk()
+        ->assertJsonPath('elements.*.id', ['note', 'note-text'])
+        ->assertJsonPath('elements.1.text', 'Revealed idea');
+
+    expect(whiteboardPayloadExposes($preview->getContent(), 'Dropped thought'))->toBeFalse();
+});
+
 it('lets the facilitator rename and delete a version, and no one else', function () {
     $board = Whiteboard::factory()->create();
     [$facilitator] = whiteboardFacilitator($board);
@@ -2537,7 +2591,40 @@ it('keeps the history closed while the notes are hidden', function (string $view
 Run: `DB_HOST=127.0.0.1 php artisan test --compact tests/Feature/Whiteboards/WhiteboardVersionsTest.php`
 Expected: FAIL — `Route [whiteboards.versions.index] not defined`.
 
-- [ ] **Step 3: Presenter**
+- [ ] **Step 3: Presenter and reader**
+
+`app/Actions/Whiteboards/ReadWhiteboardVersion.php`:
+
+```php
+<?php
+
+namespace App\Actions\Whiteboards;
+
+use App\Models\WhiteboardVersion;
+
+/**
+ * The elements a version may show: all of them but those that were private
+ * when it was stored and that no reveal has shown since (spec §9). They
+ * carry real text, so every caller checks `notPrivateWriting` first.
+ */
+class ReadWhiteboardVersion
+{
+    /**
+     * @return list<array<string, mixed>>
+     */
+    public function handle(WhiteboardVersion $version): array
+    {
+        $neverRevealed = array_flip($version->private_element_ids);
+
+        return array_values(array_filter(
+            $version->scene['elements'],
+            fn (array $element): bool => ! isset($neverRevealed[$element['id']]),
+        ));
+    }
+}
+```
+
+A note left out may leave a dangling `boundElements` entry on a shape that stays; the sanitizer and the canvas both accept that (the canvas treats a missing bound text as none).
 
 `app/Actions/Whiteboards/PresentWhiteboardVersion.php`:
 
@@ -2581,6 +2668,7 @@ class PresentWhiteboardVersion
 namespace App\Http\Controllers\Whiteboards;
 
 use App\Actions\Whiteboards\PresentWhiteboardVersion;
+use App\Actions\Whiteboards\ReadWhiteboardVersion;
 use App\Actions\Whiteboards\StoreWhiteboardVersion;
 use App\Actions\Whiteboards\WhiteboardGuard;
 use App\Http\Controllers\Controller;
@@ -2638,13 +2726,13 @@ class WhiteboardVersionsController extends Controller
         return response()->json($presentWhiteboardVersion->handle($version), 201);
     }
 
-    public function show(Request $request, Whiteboard $board, WhiteboardVersion $version): JsonResponse
+    public function show(Request $request, Whiteboard $board, WhiteboardVersion $version, ReadWhiteboardVersion $readWhiteboardVersion): JsonResponse
     {
         WhiteboardGuard::notGuest(WhiteboardMember::current($request));
         WhiteboardGuard::notPrivateWriting($board);
 
         return response()->json([
-            'elements' => $version->scene['elements'],
+            'elements' => $readWhiteboardVersion->handle($version),
             'files' => $board->files()
                 ->whereIn('file_id', $version->scene['fileIds'])
                 ->orderBy('file_id')
@@ -2717,7 +2805,7 @@ class WhiteboardVersionsController extends Controller
 
 - [ ] **Step 5: Routes**
 
-In `routes/web.php` import `App\Http\Controllers\Whiteboards\WhiteboardVersionsController` and add, at the end of the `whiteboards/{board}` group:
+In `routes/web.php` import `App\Http\Controllers\Whiteboards\WhiteboardVersionsController` and add, at the end of the `whiteboards/{board}` group (after the `duplicate` route):
 
 ```php
         Route::get('versions', [WhiteboardVersionsController::class, 'index'])->name('whiteboards.versions.index');
@@ -2734,8 +2822,8 @@ The group already has `scopeBindings()`: `{version}` resolves through `$board->v
 | Key (English) | French | German | Spanish |
 |---|---|---|---|
 | This board already has 100 saved versions. | Ce tableau a déjà 100 versions enregistrées. | Dieses Board hat bereits 100 gespeicherte Versionen. | Esta pizarra ya tiene 100 versiones guardadas. |
-| Guests cannot do this. | exists | exists | exists |
-| Reveal the notes first. | added in Task 3 | — | — |
+
+"Guests cannot do this." exists; "Reveal the notes first." was added in Task 3.
 
 - [ ] **Step 7: Run, gates, commit**
 
@@ -2744,8 +2832,8 @@ Expected: PASS.
 
 ```bash
 vendor/bin/pint --dirty --format agent
-vendor/bin/phpstan analyse --memory-limit=1G app/Actions/Whiteboards/PresentWhiteboardVersion.php app/Http/Controllers/Whiteboards/WhiteboardVersionsController.php
-git add app/Actions/Whiteboards/PresentWhiteboardVersion.php app/Http/Controllers/Whiteboards/WhiteboardVersionsController.php routes/web.php lang/en.json lang/fr.json lang/de.json lang/es.json tests/Feature/Whiteboards/WhiteboardVersionsTest.php
+vendor/bin/phpstan analyse --memory-limit=1G app/Actions/Whiteboards/PresentWhiteboardVersion.php app/Actions/Whiteboards/ReadWhiteboardVersion.php app/Http/Controllers/Whiteboards/WhiteboardVersionsController.php
+git add app/Actions/Whiteboards/PresentWhiteboardVersion.php app/Actions/Whiteboards/ReadWhiteboardVersion.php app/Http/Controllers/Whiteboards/WhiteboardVersionsController.php routes/web.php lang/en.json lang/fr.json lang/de.json lang/es.json tests/Feature/Whiteboards/WhiteboardVersionsTest.php
 git commit -m "feat(whiteboard): list, save, preview, rename and delete versions"
 ```
 
@@ -2758,7 +2846,7 @@ git commit -m "feat(whiteboard): list, save, preview, rename and delete versions
 - Test: `tests/Feature/Whiteboards/WhiteboardVersionRestoreTest.php`
 
 **Interfaces:**
-- Consumes: `StoreWhiteboardVersion::handle(Whiteboard $locked, ?WhiteboardMember $member, ?string $name): WhiteboardVersion`, `ScheduleWhiteboardVersion::handle(Whiteboard $locked, int $fromSeq): void` (Task 4); `KeepWhiteboardTextOutOfLogs::handle` (Task 2); `WhiteboardGuard::notGuest`, `::facilitator`, `::notPrivateWriting`; `SanitizeWhiteboardElement::handle(mixed): ?array`, `SanitizeWhiteboardElement::MaxVersion`; `CreateWhiteboard::handle(Team $team, User $creator, string $title, array $scene): Whiteboard` (scene = `{elements, files: list<{fileId, path, mimeType, size}>}`); `DuplicateWhiteboard::title(string): string`; events `WhiteboardElementsChanged`, `WhiteboardChanged`.
+- Consumes: `StoreWhiteboardVersion::handle(Whiteboard $locked, ?WhiteboardMember $member, ?string $name): WhiteboardVersion`, `ScheduleWhiteboardVersion::handle(Whiteboard $locked, int $fromSeq): void` (Task 4); `ReadWhiteboardVersion::handle(WhiteboardVersion): list<array>` (Task 5); `Whiteboard::voteSessions()`, `WhiteboardVoteSession::votes()`, the test helpers `whiteboardSticky()`, `openWhiteboardVote()`, `castWhiteboardVote()` and the factory state `WhiteboardVoteSession::factory()->closed(array $results)` (plan 17c); `KeepWhiteboardTextOutOfLogs::handle` (Task 2); `WhiteboardGuard::notGuest`, `::facilitator`, `::notPrivateWriting`; `SanitizeWhiteboardElement::handle(mixed): ?array`, `SanitizeWhiteboardElement::MaxVersion`; `CreateWhiteboard::handle(Team $team, User $creator, string $title, array $scene): Whiteboard` (scene = `{elements, files: list<{fileId, path, mimeType, size}>}`); `DuplicateWhiteboard::title(string): string`; events `WhiteboardElementsChanged`, `WhiteboardChanged`.
 - Produces:
   - `POST whiteboards/{board}/versions/{version}/restore` → `whiteboards.versions.restore.store`, facilitator, 204; `elements.changed` (ids-only) when something changed, then `board.changed`.
   - `POST whiteboards/{board}/versions/{version}/copy` → `whiteboards.versions.copy.store`, non-guest member, 201 `{url}` (relative URL of the new board).
@@ -2768,12 +2856,12 @@ git commit -m "feat(whiteboard): list, save, preview, rename and delete versions
 **Restore, precisely** (spec §9; one transaction, board row locked, facilitator and `notPrivateWriting` re-checked inside):
 
 1. Store the current scene as a named version "Before restore · {date}" (`StoreWhiteboardVersion`, created by the facilitator). It is not counted against the cap of 100 when it is stored: a restore is never refused because the history is full.
-2. Take the elements of the chosen version, in their stored order, through `SanitizeWhiteboardElement`; leave out what it refuses and any image whose file the board no longer stores.
+2. Take the elements the chosen version may show (`ReadWhiteboardVersion`), in their stored order, through `SanitizeWhiteboardElement`; leave out what it refuses and any image whose file the board no longer stores.
 3. An element whose row no longer exists (its tombstone was purged), or whose row is a tombstone already at the highest version number, comes back under a **fresh id**, version 1, and every reference to it inside the restored elements is rewritten (`containerId`, `frameId`, `boundElements[].id`, `startBinding/endBinding.elementId`). Reason: a browser left open for days may still hold the old tombstone at a version the server no longer knows; under the old id the canvas would keep its tombstone (`reconcileElements` keeps the higher version) and write the deletion back.
 4. Every other element is written over its row with `version = max(stored, version's) + 1` (at most the highest version number), a new nonce, `isDeleted = false`, `is_private = false`, and the next `seq`. An element whose row is live, carries the same `version` and `versionNonce` as in the version and needs no reference rewritten is left alone: nothing changed since.
 5. Every live row that is not part of the restored set becomes a tombstone: `isDeleted = true`, `version + 1`, new nonce, next `seq`.
 6. A live row at the highest version number can be neither rewritten nor tombstoned: it is left as it is (a client put it there; the rest of the board is restored).
-7. **17c step:** an open voting session is closed without results and every closed, undismissed session is dismissed.
+7. An open voting session is closed without results (`results = []`, its votes deleted, as `CloseWhiteboardVote` deletes them) and every closed, undismissed session is dismissed, the one just closed included.
 8. `whiteboards.seq` takes the last `seq`; `ScheduleWhiteboardVersion` is called (the "Before restore" version made this the first change after the last version). After commit: `elements.changed` `{seq, fromSeq}` without elements, then `board.changed`.
 
 Indices are those of the version: the restored elements keep the relative order they had. A tombstone may now share an index with a live element; the canvas repairs that and writes the repair back (spec §6.3), which is the existing rule.
@@ -2795,6 +2883,7 @@ use App\Models\Whiteboard;
 use App\Models\WhiteboardElement;
 use App\Models\WhiteboardFile;
 use App\Models\WhiteboardVersion;
+use App\Models\WhiteboardVoteSession;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
@@ -3054,6 +3143,29 @@ it('restores an image the board still stores and leaves out one it lost', functi
     expect($board->elements()->get()->pluck('data.fileId')->all())->toBe([$file->file_id]);
 });
 
+it('never restores or copies a note that was deleted before the reveal', function () {
+    $board = Whiteboard::factory()->create(['title' => 'Retro']);
+    [$facilitator] = whiteboardFacilitator($board);
+    [$note, $text] = stickyWithText('note', 'Revealed idea');
+    [$dropped, $droppedText] = stickyWithText('dropped', 'Dropped thought 5522');
+    $version = WhiteboardVersion::factory()->create([
+        'whiteboard_id' => $board->id,
+        'scene' => ['elements' => [$note, $text, $dropped, $droppedText], 'fileIds' => []],
+        'private_element_ids' => ['dropped', 'dropped-text'],
+    ]);
+
+    $this->actingAs($facilitator)->postJson(route('whiteboards.versions.copy.store', [$board, $version]))->assertCreated();
+    restoreVersion($this->actingAs($facilitator), $board, $version)->assertNoContent();
+
+    $stored = WhiteboardElement::query()->get()->map(fn (WhiteboardElement $element): array => $element->data)->all();
+    $snapshot = $this->actingAs($facilitator)->getJson(route('whiteboards.snapshot.show', $board))->assertOk();
+
+    expect(WhiteboardElement::query()->count())->toBe(4)
+        ->and(whiteboardPayloadExposes($stored, 'Revealed idea'))->toBeTrue()
+        ->and(whiteboardPayloadExposes($stored, 'Dropped thought'))->toBeFalse()
+        ->and(whiteboardPayloadExposes($snapshot->getContent(), 'Dropped thought'))->toBeFalse();
+});
+
 it('only lets the facilitator restore, and never while the notes are hidden', function () {
     [$board, $facilitator, $version] = boardWithHistory();
     [$member] = whiteboardMember($board);
@@ -3168,6 +3280,31 @@ it('refuses to copy a version for guests, outsiders and while the notes are hidd
     expect(Whiteboard::query()->count())->toBe(1)
         ->and(whiteboardPayloadExposes($hidden->getContent(), $table['secret']))->toBeFalse();
 });
+
+it('closes an open vote without results and dismisses a closed one when a version is restored', function () {
+    [$board, $facilitator, $version] = boardWithHistory();
+    [, $voter] = whiteboardMember($board);
+    whiteboardSticky($board, 'voted');
+    $results = [['elementId' => 'voted', 'text' => 'Counted', 'count' => 2]];
+    $closed = WhiteboardVoteSession::factory()->closed($results)->create(['whiteboard_id' => $board->id, 'closed_at' => now()->subHour()]);
+    $open = openWhiteboardVote($board);
+    castWhiteboardVote($open, $voter, 'voted');
+
+    restoreVersion($this->actingAs($facilitator), $board, $version)->assertNoContent();
+
+    expect($open->fresh()->closed_at)->not->toBeNull()
+        ->and($open->fresh()->results)->toBe([])
+        ->and($open->fresh()->dismissed_at)->not->toBeNull()
+        ->and($open->votes()->count())->toBe(0)
+        ->and($closed->fresh()->dismissed_at)->not->toBeNull()
+        ->and($closed->fresh()->results)->toBe($results);
+
+    $this->actingAs($facilitator)
+        ->getJson(route('whiteboards.snapshot.show', $board))
+        ->assertOk()
+        ->assertJsonPath('voting', null)
+        ->assertJsonPath('votingHistory.*.id', [$closed->id]);
+});
 ```
 
 - [ ] **Step 2: Run it to see it fail**
@@ -3205,6 +3342,7 @@ class RestoreWhiteboardVersion
         private SanitizeWhiteboardElement $sanitizeWhiteboardElement,
         private ScheduleWhiteboardVersion $scheduleWhiteboardVersion,
         private KeepWhiteboardTextOutOfLogs $keepWhiteboardTextOutOfLogs,
+        private ReadWhiteboardVersion $readWhiteboardVersion,
     ) {}
 
     public function handle(Whiteboard $board, WhiteboardMember $member, WhiteboardVersion $version): void
@@ -3222,6 +3360,8 @@ class RestoreWhiteboardVersion
             $fromSeq = $locked->seq;
             $seq = $this->rewrite($locked, $member, $chosen, $fromSeq);
 
+            $this->endVoting($locked);
+
             if ($seq !== $fromSeq) {
                 $locked->update(['seq' => $seq]);
 
@@ -3234,9 +3374,23 @@ class RestoreWhiteboardVersion
         }));
     }
 
+    /**
+     * The notes a vote counted may be gone or changed (spec §9): an open
+     * session ends without results, and no closed session keeps its badges.
+     */
+    private function endVoting(Whiteboard $locked): void
+    {
+        $open = $locked->voteSessions()->whereNull('closed_at')->first();
+
+        $open?->votes()->delete();
+        $open?->update(['results' => [], 'closed_at' => now()]);
+
+        $locked->voteSessions()->whereNull('dismissed_at')->update(['dismissed_at' => now()]);
+    }
+
     private function safetyName(): string
     {
-        return __('Before restore · :date', ['date' => now()->locale(app()->getLocale())->isoFormat('LL LT')]);
+        return __('Before restore · :date', ['date' => now()->settings(['locale' => app()->getLocale()])->isoFormat('LL LT')]);
     }
 
     /**
@@ -3300,7 +3454,7 @@ class RestoreWhiteboardVersion
         $fileIds = $locked->files()->pluck('file_id')->flip();
         $elements = [];
 
-        foreach ($chosen->scene['elements'] as $raw) {
+        foreach ($this->readWhiteboardVersion->handle($chosen) as $raw) {
             $element = $this->sanitizeWhiteboardElement->handle($raw);
 
             if ($element === null || $element['isDeleted']) {
@@ -3435,6 +3589,8 @@ class RestoreWhiteboardVersion
 Why each piece is right, against the code it relies on:
 - `nextVersion`: `$existing` reaches it only when its version is below `MaxVersion` (`cannotBeRewritten` was checked first), so the result is always above the stored version and never above the column's range.
 - `isUnchanged` compares the whole element with `==`: the same stamp with a rewritten reference (`label` in the first test) is a change.
+- `safetyName()` uses `->settings(['locale' => …])`, the idiom of `ActionItemReminderDigestNotification`: `now()->locale(…)` returns `static|string` for PHPStan.
+- `endVoting()` updates the open session through the model so that the `results` cast writes `[]`; the mass update of `dismissed_at` needs no cast. `PresentWhiteboardVoting::history()` leaves out a session without results, so the vote ended by a restore never shows in the results panel.
 - The reference keys are those `RemapWhiteboardScene` rewrites; here a reference to an element that was not given a fresh id is kept as it is, including one that points outside the version (it pointed there when the version was stored).
 - `write` mirrors `WriteWhiteboardElements::save()`; an element recreated under a fresh id has the restoring facilitator as author, because the version stores no authors.
 - `KeepWhiteboardTextOutOfLogs` wraps the transaction because the "Before restore" insert and every element update carry text.
@@ -3496,6 +3652,7 @@ class CopyWhiteboardVersion
     public function __construct(
         private CreateWhiteboard $createWhiteboard,
         private DuplicateWhiteboard $duplicateWhiteboard,
+        private ReadWhiteboardVersion $readWhiteboardVersion,
     ) {}
 
     /**
@@ -3512,7 +3669,7 @@ class CopyWhiteboardVersion
             $chosen = $locked->versions()->whereKey($version->id)->firstOrFail();
 
             return $this->createWhiteboard->handle($locked->team, $user, $this->duplicateWhiteboard->title($locked->title), [
-                'elements' => $chosen->scene['elements'],
+                'elements' => $this->readWhiteboardVersion->handle($chosen),
                 'files' => $this->files($locked, $chosen),
             ]);
         });
@@ -3579,67 +3736,12 @@ In `routes/web.php` import both controllers and add after the `versions/{version
 | Key (English) | French | German | Spanish |
 |---|---|---|---|
 | Before restore · :date | Avant restauration · :date | Vor der Wiederherstellung · :date | Antes de restaurar · :date |
-| :title (copy) | exists (plan 17b) | exists | exists |
-| Only the facilitator can do this. | exists | exists | exists |
 
-- [ ] **Step 6: 17c step — a restore ends the vote**
+":title (copy)" (plan 17b) and "Only the facilitator can do this." exist.
 
-Spec §9: "An open voting session is closed without results (`results = []`); a closed, undismissed session is dismissed." Needs plan 17c's `whiteboard_vote_sessions` table; use its model when it exists (the query builder below only states the rule).
+- [ ] **Step 6: Check the vote and the lock against plan 17c**
 
-Add to `tests/Feature/Whiteboards/WhiteboardVersionRestoreTest.php` (imports `Illuminate\Support\Facades\DB`, `Illuminate\Support\Str`):
-
-```php
-it('closes an open vote without results and dismisses a closed one when a version is restored', function () {
-    [$board, $facilitator, $version] = boardWithHistory();
-    $open = (string) Str::uuid();
-    $closed = (string) Str::uuid();
-    $results = json_encode([['elementId' => 'same', 'text' => 'Counted', 'count' => 2]]);
-
-    DB::table('whiteboard_vote_sessions')->insert([
-        'id' => $closed, 'whiteboard_id' => $board->id, 'votes_per_member' => 3, 'allow_multiple' => false,
-        'closed_at' => now()->subHour(), 'dismissed_at' => null, 'results' => $results,
-        'created_at' => now()->subHours(2), 'updated_at' => now()->subHour(),
-    ]);
-    DB::table('whiteboard_vote_sessions')->insert([
-        'id' => $open, 'whiteboard_id' => $board->id, 'votes_per_member' => 3, 'allow_multiple' => false,
-        'closed_at' => null, 'dismissed_at' => null, 'results' => null,
-        'created_at' => now(), 'updated_at' => now(),
-    ]);
-
-    restoreVersion($this->actingAs($facilitator), $board, $version)->assertNoContent();
-
-    $sessions = DB::table('whiteboard_vote_sessions')->where('whiteboard_id', $board->id)->get()->keyBy('id');
-
-    expect($sessions[$open]->closed_at)->not->toBeNull()
-        ->and(json_decode($sessions[$open]->results, true))->toBe([])
-        ->and($sessions[$open]->dismissed_at)->not->toBeNull()
-        ->and($sessions[$closed]->dismissed_at)->not->toBeNull()
-        ->and(json_decode($sessions[$closed]->results, true))->toBe(json_decode($results, true));
-});
-```
-
-In `RestoreWhiteboardVersion::handle()`, right after the `$seq = $this->rewrite(...)` line, call `$this->endVoting($locked);`:
-
-```php
-    /**
-     * The notes a vote counted may be gone or changed (spec §9): an open
-     * session ends without results, and no closed session keeps its badges.
-     */
-    private function endVoting(Whiteboard $locked): void
-    {
-        DB::table('whiteboard_vote_sessions')
-            ->where('whiteboard_id', $locked->id)
-            ->whereNull('closed_at')
-            ->update(['closed_at' => now(), 'results' => json_encode([]), 'updated_at' => now()]);
-
-        DB::table('whiteboard_vote_sessions')
-            ->where('whiteboard_id', $locked->id)
-            ->whereNull('dismissed_at')
-            ->update(['dismissed_at' => now(), 'updated_at' => now()]);
-    }
-```
-
-The session closed by the first statement is dismissed by the second: it has no results to show. `board.changed`, already sent at the end of the restore, makes every client refetch the snapshot and drop its voting UI.
+Nothing to write: `endVoting()` is in the action of Step 3 and its test ("closes an open vote without results and dismisses a closed one when a version is restored") in the file of Step 1. Confirm by reading that `board.changed`, sent at the end of the restore, is what makes every client drop its voting UI (`use-whiteboard.ts` refetches the snapshot on it; the snapshot then has `voting: null`), and that restore is not stopped by the board lock: `WhiteboardGuard::notLocked` is only called by the element and file writes, and restore is facilitator-only.
 
 - [ ] **Step 7: Run, gates, commit**
 
@@ -3657,166 +3759,144 @@ git commit -m "feat(whiteboard): restore a version and copy one to a new board"
 
 ### Task 7: Board UI — private writing
 
-Proposal, not run. Names checked: `ExcalidrawImperativeAPI.onChange(callback): UnsubscribeCallback`, `.onScrollChange(callback: (scrollX, scrollY, zoom) => void): UnsubscribeCallback`, `.getSceneElements()`, `.getAppState()` (`node_modules/@excalidraw/excalidraw/dist/types/excalidraw/types.d.ts`, lines 611–634); `AppState.scrollX`, `scrollY`, `zoom: Zoom` (`{value}`), same file lines 245–252; the screen position of a scene point is `(sceneX + scrollX) * zoom.value + offsetLeft` (`sceneCoordsToViewportCoords`, `dist/dev/chunk-4FTI6OG3.js` lines 1329–1339) — without `offsetLeft`/`offsetTop` it is relative to the canvas container; the canvas root `.excalidraw` is `position: relative; overflow: hidden` without a `z-index` (`dist/dev/index.css` lines 5579–5589), its canvases have `z-index` 1 and 2 and its UI layer 4 (`--zIndex-canvas`, `--zIndex-interactiveCanvas`, `--zIndex-layerUI`, same file), so a sibling with `z-index: 3` in the same container is drawn above the drawing and below every canvas control.
+Built and type-checked on the prototype, never opened in a browser. Names checked: `ExcalidrawImperativeAPI.onChange(callback): UnsubscribeCallback`, `.onScrollChange(callback)`, `.getSceneElements()` (non-deleted elements), `.getAppState()` (`node_modules/@excalidraw/excalidraw/dist/types/excalidraw/types.d.ts`, lines 604–634); the layer rule plan 17c wrote down in `vote-overlay.tsx` (a sibling of the canvas with `z-[3]` sits above the drawing, canvases at 1–2, and below the canvas's interface at 4); `closeTextEditor()` (`resources/js/lib/whiteboard/excalidraw.ts`).
 
 **Files:**
-- Create: `resources/js/components/whiteboard/private-writing-banner.tsx`, `resources/js/components/whiteboard/masked-notes.tsx`
-- Modify: `resources/js/lib/whiteboard/types.ts`, `resources/js/lib/whiteboard/excalidraw.ts`, `resources/js/components/whiteboard/board.tsx`, `resources/js/components/whiteboard/board-menu.tsx`, `lang/{en,fr,de,es}.json`
+- Create: `resources/js/components/whiteboard/masked-notes.tsx`
+- Modify: `resources/js/lib/whiteboard/types.ts`, `resources/js/hooks/use-whiteboard-overlay.ts`, `resources/js/components/whiteboard/board.tsx`, `resources/js/components/whiteboard/facilitator-bar.tsx`, `resources/js/components/whiteboard/board-menu.tsx`, `lang/{en,fr,de,es}.json`
 
 **Interfaces:**
-- Consumes: snapshot `board.privateWriting` (Task 1); rejection reason `private` and the masked wire shape (Task 2); `PATCH settings {private_writing}` (Task 3) through Wayfinder `WhiteboardSettingsController.update(boardId)`; `retroRequest`, `RetroRequestError` (`resources/js/lib/retro/api.ts`); `WhiteboardState` (`resources/js/hooks/use-whiteboard.ts`); `SceneSync.resync()` (`resources/js/lib/whiteboard/scene-sync.ts`).
-- Produces: `WhiteboardSnapshot['board']['privateWriting']: boolean`; `RejectReason` includes `'private'`; `<PrivateWritingBanner state={state} />`; `<MaskedNotes api={api} />`. Task 8 reads `board.privateWriting` to disable the history button.
+- Consumes: snapshot `board.privateWriting` (Task 1); rejection reason `private` and the masked wire shape (Task 2); `PATCH settings {private_writing}` (Task 3) through Wayfinder `WhiteboardSettingsController.update(boardId)`; `FacilitatorBar`'s own `updateSettings(settings: Record<string, boolean>)`; `useCanvasView(api): CanvasView | null`, `NoteBox` (`use-whiteboard-overlay.ts`); `<StatusBar>`; `SceneSync.resync()`.
+- Produces: `WhiteboardSnapshot['board']['privateWriting']: boolean`; `RejectReason` includes `'private'`; `useMaskedNoteBoxes(api: ExcalidrawImperativeAPI | null): MaskedNoteBox[]` with `MaskedNoteBox = NoteBox & { angle: number }`; `<MaskedNotes api={api} />`. Task 8 reads `privateWriting` in `board.tsx` to disable the history button.
 
 No change to `scene-sync.ts` or `restore.ts`: see "Wire shape of a private note" at the top of this plan for why a masked note is neither deleted on the server nor written back.
 
-- [ ] **Step 1: Types** — in `resources/js/lib/whiteboard/types.ts` add `privateWriting: boolean;` to `WhiteboardSnapshot['board']` and `'private'` to `RejectReason`. In `resources/js/lib/whiteboard/excalidraw.ts` add `'getSceneElements' | 'onChange' | 'onScrollChange'` to the `RequiredApi` pick (the list of API members skrum relies on, checked at build time).
+- [ ] **Step 1: Types** — in `resources/js/lib/whiteboard/types.ts` add `privateWriting: boolean;` to `WhiteboardSnapshot['board']` (after `followEnabled`) and `| 'private'` to `RejectReason` (after `'voting'`).
 
-- [ ] **Step 2: Rejection message and resync on the switch** — in `board.tsx`:
+- [ ] **Step 2: Where the masked notes are** — in `resources/js/hooks/use-whiteboard-overlay.ts`, add two optional keys to the file's `CanvasElement` type:
 
-  - add `private: ''` to the initial `rejectionMessages` record and `private: t('Only its author can change a hidden note.')` to the assignment below it (shown as a toast when the canvas let the viewer drag, edit or erase a masked note; the canvas then returns to the server copy by the existing `settle` path);
-  - after the polling effect:
+```ts
+    angle?: number;
+    isDeleted: boolean;
+    customData?: Record<string, unknown>;
+    boundElements?: readonly { id: string; type: string }[] | null;
+```
 
-```tsx
-    const privateWriting = state.snapshot.board.privateWriting;
+and append to the file:
 
-    // The reveal reaches the other clients as an `elements.changed` without
-    // elements; the tab that asked for it, and a tab that missed the event,
-    // learn it from the snapshot and fetch the notes here.
+```ts
+export type MaskedNoteBox = NoteBox & { angle: number };
+
+const isMasked = (element: CanvasElement) =>
+    (element.customData?.skrum as { masked?: unknown } | undefined)?.masked ===
+    true;
+
+/**
+ * The notes whose text this viewer was not given (spec §11.5), in scene
+ * coordinates. A masked note someone copied and typed into has a live text
+ * of its own and is left out.
+ */
+export function useMaskedNoteBoxes(
+    api: ExcalidrawImperativeAPI | null,
+): MaskedNoteBox[] {
+    const [boxes, setBoxes] = useState<MaskedNoteBox[]>([]);
+
     useEffect(() => {
-        void sync.current?.resync();
-    }, [privateWriting]);
+        if (!api) {
+            setBoxes([]);
+
+            return;
+        }
+
+        let signature = '';
+
+        const read = (elements: readonly CanvasElement[]) => {
+            const live = new Set(
+                elements
+                    .filter((element) => !element.isDeleted)
+                    .map((element) => element.id),
+            );
+            const next = elements
+                .filter(
+                    (element) =>
+                        !element.isDeleted &&
+                        isMasked(element) &&
+                        !(element.boundElements ?? []).some(
+                            (bound) =>
+                                bound.type === 'text' && live.has(bound.id),
+                        ),
+                )
+                .map(({ id, x, y, width, height, angle }) => ({
+                    id,
+                    x,
+                    y,
+                    width,
+                    height,
+                    angle: angle ?? 0,
+                }));
+            const nextSignature = next
+                .map((box) => Object.values(box).join(':'))
+                .join('|');
+
+            // onChange also fires on every selection and pointer state.
+            if (nextSignature === signature) {
+                return;
+            }
+
+            signature = nextSignature;
+            setBoxes(next);
+        };
+
+        read(api.getSceneElements());
+
+        return api.onChange((elements) => read(elements));
+    }, [api]);
+
+    return boxes;
+}
 ```
 
-- [ ] **Step 3: The switch** — in `board-menu.tsx`, in the facilitator block, after the "Show flying reactions" item:
+It is the shape of `useNoteBoxes` just above it, without a list of ids: the marker on the element decides. A masked note's bound text is deleted locally, so the note has no live text and gets its mark; once revealed, the server copy has no `masked` marker and the mark goes. Known limit, accepted: a member who duplicates a masked note gets an empty note of their own that shows the mark until they type in it (the marker is copied by the canvas and dropped by the server on write).
+
+- [ ] **Step 3: The marks** — `resources/js/components/whiteboard/masked-notes.tsx`:
 
 ```tsx
-<DropdownMenuCheckboxItem
-    checked={board.privateWriting}
-    onCheckedChange={(checked) => updateSettings({ private_writing: checked })}
->
-    {t('Private writing')}
-</DropdownMenuCheckboxItem>
-```
+import { useTrans } from '@/hooks/use-trans';
+import {
+    useCanvasView,
+    useMaskedNoteBoxes,
+} from '@/hooks/use-whiteboard-overlay';
+import type { ExcalidrawImperativeAPI } from '@/lib/whiteboard/excalidraw';
 
-`updateSettings` already toasts the server's message on failure ("Close the vote first.") and refetches the snapshot on success. If plan 17c built a facilitator bar (spec §13: timer, vote, private writing, lock, follow), put the switch there instead, with the same call, and keep one switch only. In the same file, the "Duplicate this board" and "Save as template" items of plan 17b get `disabled={board.privateWriting}` (the server answers 422 "Reveal the notes first." anyway).
-
-- [ ] **Step 4: The banner** — `private-writing-banner.tsx`, rendered in `board.tsx` right after `<ConnectionBanner … />`:
-
-```tsx
-export function PrivateWritingBanner({ state }: { state: WhiteboardState }) {
+/**
+ * "•••" on every note whose text the server kept from this viewer (spec
+ * §11.5). Same layer as the vote badges: above the drawing, under the
+ * canvas's own controls, and never in the way of a click.
+ */
+export function MaskedNotes({ api }: { api: ExcalidrawImperativeAPI }) {
     const { t } = useTrans();
-    const { board, me } = state.snapshot;
+    const view = useCanvasView(api);
+    const boxes = useMaskedNoteBoxes(api);
 
-    if (!board.privateWriting) {
+    if (!view) {
         return null;
     }
 
-    const reveal = async () => {
-        try {
-            await retroRequest(WhiteboardSettingsController.update(board.id), { private_writing: false });
-            await state.refetch();
-        } catch (error) {
-            toast.error(
-                error instanceof RetroRequestError && error.status > 0
-                    ? error.message
-                    : t('Something went wrong. Please try again.'),
-            );
-        }
-    };
-
-    return (
-        <div
-            role="status"
-            className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 bg-violet-100 px-4 py-1 text-center text-sm text-violet-900 dark:bg-violet-950 dark:text-violet-100"
-        >
-            <span>{t('Notes are hidden until the facilitator reveals them. Other elements stay visible.')}</span>
-            <span className="text-xs opacity-80">{t('The size of a note hints at the length of its text.')}</span>
-            {me.isFacilitator && (
-                <Button size="sm" variant="outline" onClick={reveal}>
-                    {t('Reveal the notes')}
-                </Button>
-            )}
-        </div>
-    );
-}
-```
-
-The banner is a row of the page's flex column, above the canvas: it covers nothing.
-
-- [ ] **Step 5: The marks** — `masked-notes.tsx`. Give the canvas container `relative` (`className="whiteboard-canvas relative min-h-0 flex-1"`; do not add `isolate`: the canvas's own layers must keep stacking against the page) and render `{api && privateWriting && <MaskedNotes api={api} />}` inside it, after `<Excalidraw>…</Excalidraw>` (`privateWriting` is the constant of Step 2; masked notes only exist while the switch is on, so the overlay costs nothing the rest of the time).
-
-```tsx
-type Mark = { id: string; left: number; top: number; width: number; height: number; angle: number; size: number };
-
-type Shape = SceneElement & {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-    angle?: number;
-    customData?: { skrum?: { masked?: boolean } };
-    boundElements?: { id: string; type: string }[] | null;
-};
-
-function marksOf(api: ExcalidrawImperativeAPI): Mark[] {
-    const { scrollX, scrollY, zoom } = api.getAppState();
-    const elements = api.getSceneElements() as unknown as Shape[];
-    const live = new Set(elements.map((element) => element.id));
-
-    return elements
-        .filter(
-            (element) =>
-                element.customData?.skrum?.masked === true &&
-                !(element.boundElements ?? []).some((bound) => bound.type === 'text' && live.has(bound.id)),
-        )
-        .map((element) => ({
-            id: element.id,
-            left: (element.x + scrollX) * zoom.value,
-            top: (element.y + scrollY) * zoom.value,
-            width: element.width * zoom.value,
-            height: element.height * zoom.value,
-            angle: element.angle ?? 0,
-            size: Math.max(12, 28 * zoom.value),
-        }));
-}
-
-export function MaskedNotes({ api }: { api: ExcalidrawImperativeAPI }) {
-    const { t } = useTrans();
-    const [marks, setMarks] = useState<Mark[]>([]);
-
-    useEffect(() => {
-        const update = () => {
-            const next = marksOf(api);
-
-            setMarks((current) => (JSON.stringify(current) === JSON.stringify(next) ? current : next));
-        };
-
-        update();
-
-        const offChange = api.onChange(update);
-        const offScroll = api.onScrollChange(update);
-
-        return () => {
-            offChange();
-            offScroll();
-        };
-    }, [api]);
-
     return (
         <div className="pointer-events-none absolute inset-0 z-[3] overflow-hidden">
-            {marks.map((mark) => (
+            {boxes.map((box) => (
                 <span
-                    key={mark.id}
+                    key={box.id}
                     role="img"
                     aria-label={t('Hidden note')}
                     className="absolute flex items-center justify-center text-foreground/60 select-none"
                     style={{
-                        left: mark.left,
-                        top: mark.top,
-                        width: mark.width,
-                        height: mark.height,
-                        fontSize: mark.size,
-                        transform: `rotate(${mark.angle}rad)`,
+                        left: (box.x + view.scrollX) * view.zoom,
+                        top: (box.y + view.scrollY) * view.zoom,
+                        width: box.width * view.zoom,
+                        height: box.height * view.zoom,
+                        fontSize: Math.max(12, 28 * view.zoom),
+                        transform: `rotate(${box.angle}rad)`,
                     }}
                 >
                     •••
@@ -3827,56 +3907,162 @@ export function MaskedNotes({ api }: { api: ExcalidrawImperativeAPI }) {
 }
 ```
 
-`getSceneElements()` returns the non-deleted elements: a masked note's bound text is deleted locally, so the note has no live text and gets its mark; once revealed, the server copy has no `masked` marker and the mark goes. The comparison keeps the frequent `onChange` calls (every pointer move) from re-rendering when nothing moved. Known limit, accepted: a member who duplicates a masked note gets an empty note of their own that shows the mark until they type in it (the marker is copied by the canvas and dropped by the server on write).
+In `board.tsx`, inside the `<div ref={canvas} …>` that holds `<Excalidraw>`, right before `{api && voting && (<VoteOverlay …`:
+
+```tsx
+                        {api && privateWriting && <MaskedNotes api={api} />}
+```
+
+(`privateWriting` is the constant of Step 5.) The mark is centred on the note and turns with it (`transform-origin` is the centre, which is what the canvas rotates around).
+
+- [ ] **Step 4: The button** — in `facilitator-bar.tsx`, import `Eye` and `EyeOff` from `lucide-react`, update the component's comment to "Timer, board lock, follow-me, private writing and vote: the facilitator's tools.", and add between the follow-me button and the vote button:
+
+```tsx
+            <Button
+                size="sm"
+                variant={board.privateWriting ? 'default' : 'outline'}
+                aria-pressed={board.privateWriting}
+                aria-label={t(
+                    board.privateWriting
+                        ? 'Reveal the notes'
+                        : 'Private writing',
+                )}
+                title={t(
+                    board.privateWriting
+                        ? 'Reveal the notes'
+                        : 'Private writing',
+                )}
+                onClick={() =>
+                    void updateSettings({
+                        private_writing: !board.privateWriting,
+                    })
+                }
+            >
+                {board.privateWriting ? (
+                    <>
+                        <Eye className="size-4" />
+                        {t('Reveal the notes')}
+                    </>
+                ) : (
+                    <EyeOff className="size-4" />
+                )}
+            </Button>
+```
+
+`updateSettings` already shows the server's refusal in a toast ("Close the vote first.") and refetches the snapshot on success. One switch only: nothing is added to the board menu for the facilitator. On the "Start a vote" button of the same file, the `title` and `disabled` props become:
+
+```tsx
+                    title={t(
+                        board.privateWriting
+                            ? 'Reveal the notes first.'
+                            : 'Start a vote',
+                    )}
+                    disabled={api === null || board.privateWriting}
+```
+
+In `board-menu.tsx`, the "Duplicate this board" and "Save as template" items get `disabled={board.privateWriting}` (the server answers 422 "Reveal the notes first." anyway).
+
+- [ ] **Step 5: `board.tsx`** —
+
+  - import `EyeOff` from `lucide-react` (beside `Lock`) and `{ MaskedNotes } from './masked-notes'`;
+  - add `private: ''` to the initial `rejectionMessages` record and `private: t('Only its author can change a hidden note.')` to the assignment below it;
+  - `onRejected` of `createSceneSync` becomes:
+
+```tsx
+            onRejected: (reason) => {
+                // Typing into someone's hidden note: the editor would keep
+                // writing a text the server refuses at every key.
+                if (reason === 'private') {
+                    queueMicrotask(closeTextEditor);
+                }
+
+                toast.error(rejectionMessages.current[reason], { id: reason });
+            },
+```
+
+  - after the polling effect:
+
+```tsx
+    const privateWriting = board.privateWriting;
+
+    // The reveal reaches the other tabs as an `elements.changed` without
+    // elements; the tab that asked for it, and a tab that missed the event,
+    // learn it from the snapshot and fetch the notes here.
+    useEffect(() => {
+        void sync.current?.resync();
+    }, [privateWriting]);
+```
+
+  - in `<StatusBar>`, after the "This board is locked." item:
+
+```tsx
+                    {privateWriting && (
+                        <span className="flex flex-wrap items-center gap-x-2">
+                            <EyeOff className="size-4" aria-hidden="true" />
+                            {t(
+                                'Notes are hidden until the facilitator reveals them. Other elements stay visible.',
+                            )}
+                            <span className="text-xs text-muted-foreground">
+                                {t(
+                                    'The size of a note hints at the length of its text.',
+                                )}
+                            </span>
+                        </span>
+                    )}
+```
+
+The status row is a row of the page's flex column, between the top bar and the canvas: it covers nothing. Everyone sees the sentence, the facilitator included.
 
 - [ ] **Step 6: Translations**
 
 | Key (English) | French | German | Spanish |
 |---|---|---|---|
 | Private writing | Écriture privée | Privates Schreiben | Escritura privada |
-| Notes are hidden until the facilitator reveals them. Other elements stay visible. | Les post-it sont masqués jusqu'à ce que l'animateur les révèle. Les autres éléments restent visibles. | Haftnotizen bleiben verborgen, bis der Moderator sie aufdeckt. Andere Elemente bleiben sichtbar. | Las notas adhesivas quedan ocultas hasta que el facilitador las revele. Los demás elementos siguen visibles. |
-| The size of a note hints at the length of its text. | La taille d'un post-it laisse deviner la longueur de son texte. | Die Größe einer Haftnotiz lässt die Länge ihres Textes erahnen. | El tamaño de una nota adhesiva deja intuir la longitud de su texto. |
-| Reveal the notes | Révéler les post-it | Haftnotizen aufdecken | Revelar las notas adhesivas |
-| Hidden note | Post-it masqué | Verborgene Haftnotiz | Nota adhesiva oculta |
-| Only its author can change a hidden note. | Seul son auteur peut modifier un post-it masqué. | Nur der Autor kann eine verborgene Haftnotiz ändern. | Solo su autor puede modificar una nota adhesiva oculta. |
-| Something went wrong. Please try again. | exists | exists | exists |
+| Reveal the notes | Révéler les post-it | Haftnotizen aufdecken | Revelar las notas |
+| Notes are hidden until the facilitator reveals them. Other elements stay visible. | Les post-it sont masqués jusqu'à ce que l'animateur les révèle. Les autres éléments restent visibles. | Haftnotizen bleiben verborgen, bis der Moderator sie aufdeckt. Andere Elemente bleiben sichtbar. | Las notas quedan ocultas hasta que el facilitador las revele. Los demás elementos siguen visibles. |
+| The size of a note hints at the length of its text. | La taille d'un post-it laisse deviner la longueur de son texte. | Die Größe einer Haftnotiz lässt die Länge ihres Textes erahnen. | El tamaño de una nota deja intuir la longitud de su texto. |
+| Hidden note | Post-it masqué | Verborgene Haftnotiz | Nota oculta |
+| Only its author can change a hidden note. | Seul son auteur peut modifier un post-it masqué. | Nur der Autor kann eine verborgene Haftnotiz ändern. | Solo su autor puede modificar una nota oculta. |
+
+"Reveal the notes first." (Task 3), "Close the vote first." and "Something went wrong. Please try again." exist.
 
 - [ ] **Step 7: Gates and commit**
 
-Run: `npm run build && npm run types:check && npx vp check resources/js/lib/whiteboard/types.ts resources/js/lib/whiteboard/excalidraw.ts resources/js/components/whiteboard/board.tsx resources/js/components/whiteboard/board-menu.tsx resources/js/components/whiteboard/private-writing-banner.tsx resources/js/components/whiteboard/masked-notes.tsx && DB_HOST=127.0.0.1 php artisan test --compact tests/Feature/TranslationKeysTest.php`
-Expected: no error in these files; test PASS.
+Run: `npm run build && npm run types:check && npx vp check resources/js/lib/whiteboard/types.ts resources/js/hooks/use-whiteboard-overlay.ts resources/js/components/whiteboard/board.tsx resources/js/components/whiteboard/board-menu.tsx resources/js/components/whiteboard/facilitator-bar.tsx resources/js/components/whiteboard/masked-notes.tsx && DB_HOST=127.0.0.1 php artisan test --compact tests/Feature/TranslationKeysTest.php`
+Expected: no error in these files (run `npx vp check --fix <file>` for a formatting remark); test PASS.
 
 ```bash
-git add resources/js/lib/whiteboard/types.ts resources/js/lib/whiteboard/excalidraw.ts resources/js/components/whiteboard/board.tsx resources/js/components/whiteboard/board-menu.tsx resources/js/components/whiteboard/private-writing-banner.tsx resources/js/components/whiteboard/masked-notes.tsx lang/en.json lang/fr.json lang/de.json lang/es.json
-git commit -m "feat(whiteboard): private writing switch, banner and masked note marks on the board"
+git add resources/js/lib/whiteboard/types.ts resources/js/hooks/use-whiteboard-overlay.ts resources/js/components/whiteboard/board.tsx resources/js/components/whiteboard/board-menu.tsx resources/js/components/whiteboard/facilitator-bar.tsx resources/js/components/whiteboard/masked-notes.tsx lang/en.json lang/fr.json lang/de.json lang/es.json
+git commit -m "feat(whiteboard): private writing button, status sentence and masked note marks on the board"
 ```
 
 **Browser checks (for the walkthrough):**
-- B7.1 Facilitator A: the board menu has "Private writing"; a member and a guest do not see it. Switching it on shows the violet banner with the spec's sentence in every browser without a reload; only A's banner has "Reveal the notes".
+- B7.1 Facilitator A: the facilitator bar has an eye button titled "Private writing"; a member and a guest have no facilitator bar. Clicking it shows, in the status row of every browser and without a reload, "Notes are hidden until the facilitator reveals them. Other elements stay visible." and the size hint; A's button now reads "Reveal the notes".
 - B7.2 Member B (127.0.0.1) adds a sticky note and types "Secret idea": B sees the text; A and a guest see an empty note of the same colour at the same place with "•••" centred on it. In A's browser, `fetch` of `GET snapshot` and `GET elements?since=0` (XSRF header) returns no "Secret idea".
-- B7.3 A pans and zooms: every "•••" stays on its note; a note scrolled under the shapes toolbar, the zoom controls or the reactions bar has its mark behind them, never over them; the marks never block a click on the canvas.
-- B7.4 A drags B's masked note, erases it, and double-clicks it to type: each time the canvas returns to the masked note within about a second, a toast says "Only its author can change a hidden note.", and B's browser still shows "Secret idea" in place.
+- B7.3 A pans and zooms: every "•••" stays on its note; a note scrolled under the shapes toolbar, the zoom controls or the reactions bar has its mark behind them, never over them; the marks never block a click on the canvas; a rotated note has its mark rotated with it.
+- B7.4 A drags B's masked note, erases it, and double-clicks it to type: each time the canvas returns to the masked note within about a second, a toast says "Only its author can change a hidden note.", the text editor closes, and B's browser still shows "Secret idea" in place.
 - B7.5 A note that existed before the switch keeps its text for everyone; typing into it while the switch is on shows for everyone. A plain text and a rectangle with a label added while the switch is on are visible to everyone.
 - B7.6 B opens the board in a second tab: the note shows its text there too.
-- B7.7 A clicks "Reveal the notes": within about a second every browser, A's included, shows "Secret idea" without a reload, the marks and the banner disappear. B deleted a second hidden note before the reveal: it does not appear.
+- B7.7 A clicks "Reveal the notes": within about a second every browser, A's included, shows "Secret idea" without a reload, the marks and the status sentence disappear. B deleted a second hidden note before the reveal: it does not appear.
 - B7.8 While the switch is on: "Duplicate this board" and "Save as template" are disabled; calling `POST duplicate` from the console answers 422 "Reveal the notes first.". Exporting as PNG from A's browser shows B's note empty.
-- B7.9 **17c:** with a vote open the switch answers the toast "Close the vote first."; with the switch on, opening a vote is refused with "Reveal the notes first.".
+- B7.9 With a vote open, clicking the private-writing button shows the toast "Close the vote first." and changes nothing; with private writing on, "Start a vote" is disabled and `POST vote-sessions` from the console answers 422 "Reveal the notes first.".
+- B7.10 Two members type hidden notes at the same time for a minute: nobody sees the "reconnecting" banner, and each sees their own text and the other's marks.
 
 ---
 
 ### Task 8: Board UI — the history panel
 
-Proposal, not run. Names checked: props `viewModeEnabled?: boolean` and `initialData` with `scrollToContent?: boolean` (`dist/types/excalidraw/types.d.ts` lines 407 and 436, `dist/types/excalidraw/data/types.d.ts` line 32); `UIOptions.canvasActions` keys `changeViewBackgroundColor`, `clearCanvas`, `export`, `loadScene`, `saveToActiveFile`, `toggleTheme`, `saveAsImage` (`types.d.ts` lines 475–483); `MainMenu.DefaultItems.SaveAsImage` (`dist/types/excalidraw/components/main-menu/DefaultItems.d.ts`); `ExcalidrawImperativeAPI.addFiles(data: BinaryFileData[])` (`types.d.ts` line 619). Without a `<MainMenu>` child the canvas renders its default menu, which ends with links to the library's sites: the preview must pass its own.
+Built and type-checked on the prototype, never opened in a browser. Names checked: props `viewModeEnabled?: boolean` and `initialData` with `scrollToContent?: boolean` (`dist/types/excalidraw/types.d.ts` line 436, `dist/types/excalidraw/data/types.d.ts` line 32); `CanvasActions` keys `changeViewBackgroundColor`, `clearCanvas`, `export`, `loadScene`, `saveToActiveFile`, `toggleTheme`, `saveAsImage` (`types.d.ts`, `export type CanvasActions`); `ExcalidrawImperativeAPI.addFiles(data: BinaryFileData[])` and `.refresh()` (`types.d.ts` lines 617–619); the classes `main-menu-trigger` and `help-icon` (`dist/dev/index.js` lines 17560 and 16716). Without a `<MainMenu>` child the canvas renders its default menu, which ends with links to the library's sites: the preview passes an empty one and hides its button.
 
 **Files:**
-- Create: `resources/js/components/whiteboard/history-panel.tsx`, `resources/js/components/whiteboard/version-preview.tsx`
-- Modify: `resources/js/lib/whiteboard/types.ts`, `resources/js/components/whiteboard/top-bar.tsx`, `resources/js/components/whiteboard/board.tsx`, `lang/{en,fr,de,es}.json`
+- Create: `resources/js/lib/whiteboard/appearance.ts`, `resources/js/components/whiteboard/history-panel.tsx`, `resources/js/components/whiteboard/version-preview.tsx`
+- Modify: `resources/js/lib/whiteboard/types.ts`, `resources/js/components/whiteboard/board.tsx`, `resources/css/app.css`, `lang/{en,fr,de,es}.json`
 
 **Interfaces:**
-- Consumes: Wayfinder actions generated by `npm run build` from Tasks 5–6: `WhiteboardVersionsController.index(boardId)`, `.store(boardId)`, `.show({ board, version })`, `.update({ board, version })`, `.destroy({ board, version })`, `WhiteboardVersionRestoresController.store({ board, version })`, `WhiteboardVersionCopiesController.store({ board, version })`; `retroRequest`, `RetroRequestError`; `restoreScene` (`resources/js/lib/whiteboard/restore.ts`); `downloadBoardFile(boardId, fileId)` (`resources/js/lib/whiteboard/files.ts`); `Sheet`, `SheetContent`, `SheetTitle` (`resources/js/components/ui/sheet.tsx`), `Dialog` parts, `DropdownMenu` parts; `board.privateWriting`, `me.isGuest`, `me.isFacilitator`.
-- Produces: nothing for later tasks.
+- Consumes: Wayfinder actions generated by `npm run build` from Tasks 5–6: `WhiteboardVersionsController.index(boardId)`, `.store(boardId)`, `.show({ board, version })`, `.update({ board, version })`, `.destroy({ board, version })`, `WhiteboardVersionRestoresController.store({ board, version })`, `WhiteboardVersionCopiesController.store({ board, version })`; `retroRequest`, `RetroRequestError`; `useWhiteboardRequest()`; `restoreScene`; `downloadBoardFile(boardId, fileId)`; `Sheet`, `SheetContent`, `SheetTitle`, `Dialog` parts, `DropdownMenu` parts, `Skeleton`, `InputError`; `privateWriting`, `me.isGuest`, `me.isFacilitator`.
+- Produces: `CanvasLocales`, `subscribeToTheme`, `isDark` (`appearance.ts`); `<HistoryPanel state open onOpenChange onRestored />`; `<VersionPreview boardId version title date onClose />`. Nothing for later tasks.
 
-- [ ] **Step 1: Types** — in `types.ts`:
+- [ ] **Step 1: Types** — append to `resources/js/lib/whiteboard/types.ts`:
 
 ```ts
 export type WhiteboardVersionSummary = {
@@ -3893,83 +4079,746 @@ export type WhiteboardVersionScene = {
 };
 ```
 
-- [ ] **Step 2: The button** — `top-bar.tsx` takes a new prop `onOpenHistory: () => void` and renders, between `<PresenceStrip … />` and `{children}`, for `!state.snapshot.me.isGuest` only:
+- [ ] **Step 2: Share the canvas's locale and theme** — the preview is a second canvas and needs what `board.tsx` keeps to itself. Create `resources/js/lib/whiteboard/appearance.ts`:
 
-```tsx
-<Button
-    size="icon"
-    variant="outline"
-    aria-label={t('Version history')}
-    title={board.privateWriting ? t('Reveal the notes first.') : t('Version history')}
-    disabled={board.privateWriting}
-    onClick={onOpenHistory}
->
-    <History className="size-4" />
-</Button>
+```ts
+/** The canvas's language codes for skrum's locales. */
+export const CanvasLocales: Record<string, string> = {
+    en: 'en',
+    fr: 'fr-FR',
+    de: 'de-DE',
+    es: 'es-ES',
+};
+
+export function subscribeToTheme(onChange: () => void) {
+    const observer = new MutationObserver(onChange);
+
+    observer.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['class'],
+    });
+
+    return () => observer.disconnect();
+}
+
+export const isDark = () => document.documentElement.classList.contains('dark');
 ```
 
-(`History` from `lucide-react`.) In `board.tsx`: `const [historyOpen, setHistoryOpen] = useState(false)`, `<TopBar state={state} onOpenHistory={() => setHistoryOpen(true)}>`, and next to `<BoardReactions … />`:
+In `board.tsx` delete the constant `ExcalidrawLocales` and the functions `subscribeToTheme` and `isDark`, import the three names from `@/lib/whiteboard/appearance`, and write `langCode={CanvasLocales[locale as string] ?? 'en'}`.
+
+- [ ] **Step 3: The button and the panel in `board.tsx`** — import `History` from `lucide-react` and `{ HistoryPanel } from './history-panel'`; add `const [historyOpen, setHistoryOpen] = useState(false);`; among the children of `<TopBar>`, right before `<BoardMenu`:
 
 ```tsx
-<HistoryPanel
-    state={state}
-    open={historyOpen}
-    onOpenChange={setHistoryOpen}
-    onRestored={() => {
-        void sync.current?.resync();
-        void state.refetch();
-    }}
-/>
+                    {!me.isGuest && (
+                        <Button
+                            size="icon"
+                            variant="outline"
+                            aria-label={t('Version history')}
+                            title={t(
+                                privateWriting
+                                    ? 'Reveal the notes first.'
+                                    : 'Version history',
+                            )}
+                            disabled={privateWriting}
+                            onClick={() => setHistoryOpen(true)}
+                        >
+                            <History className="size-4" />
+                        </Button>
+                    )}
 ```
 
-The restore is broadcast to the others; the tab that asked for it fetches the delta itself, as it does after any write.
-
-- [ ] **Step 3: `HistoryPanel`** — `({ state, open, onOpenChange, onRestored }: { state: WhiteboardState; open: boolean; onOpenChange: (open: boolean) => void; onRestored: () => void })`. A `Sheet` on the right (`<SheetContent side="right" className="flex w-full flex-col gap-4 sm:max-w-md">`), mounted content only while `open`:
-
-  - Title `t('Version history')`.
-  - A form: `Input` (`maxLength={80}`, `aria-label={t('Version name')}`, placeholder `t('Version name')`) and a button `t('Save this version')` (disabled while empty or saving). Submit: `retroRequest(WhiteboardVersionsController.store(board.id), { name })` → `toast.success(t('Version saved.'))`, clear the input, reload the list. A 422 shows `error.message` under the input (the cap, or validation) and keeps what was typed.
-  - The list, loaded when the panel opens and after each action: `retroRequest<WhiteboardVersionSummary[]>(WhiteboardVersionsController.index(board.id))`. While loading: three `Skeleton` rows. Empty: `t('No version yet.')`. A failure shows `error.message` in place of the list (422 "Reveal the notes first." if private writing was switched on meanwhile) with a `t('Retry')` button.
-  - Each row: the name, or `t('Automatic version')` when `automatic`; under it the date (`new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(createdAt))`, `locale` from `usePage().props` as in `board.tsx`) and, when `createdByName`, `t('by :name', { name: createdByName })`; a button `t('Preview')`; a `DropdownMenu` (trigger: `MoreHorizontal` icon, `aria-label={t('Version actions')}`) with `t('Copy to a new board')` for everyone and, for `me.isFacilitator`, `t('Restore')`, `t('Rename')`, `t('Delete')` (destructive).
-  - Copy: `const { url } = await retroRequest<{ url: string }>(WhiteboardVersionCopiesController.store({ board: board.id, version: id }))` → `router.visit(url)`.
-  - Restore: a confirmation `Dialog` — title `t('Restore this version?')`, text `t('The board goes back to this version for everyone. The current state is saved first.')`, buttons `t('Cancel')` / `t('Restore')`. On confirm: `retroRequest(WhiteboardVersionRestoresController.store({ board: board.id, version: id }))` → `toast.success(t('Version restored.'))`, `onRestored()`, reload the list (the "Before restore" version appears on top).
-  - Rename: a `Dialog` with an `Input` prefilled with the name (empty for an automatic version), `maxLength={80}`, `t('Save')` → `PATCH` with `{ name }`; a 422 shows under the input.
-  - Delete: a confirmation `Dialog` — title `t('Delete this version?')`, buttons `t('Cancel')` / `t('Delete')` → `DELETE`.
-  - Every failed action: `toast.error(error instanceof RetroRequestError && error.status > 0 ? error.message : t('Something went wrong. Please try again.'))`, panel and dialog left as they were (spec §13).
-
-  The panel is a sheet above the page with its own overlay: it does not sit on the canvas while the user draws.
-
-- [ ] **Step 4: `VersionPreview`** — `({ boardId, version, onClose }: { boardId: string; version: WhiteboardVersionSummary | null; onClose: () => void })`. A `Dialog` open while `version !== null`, `<DialogContent className="flex h-[85vh] max-w-6xl flex-col" aria-describedby={undefined}>`, title = the version's name or `t('Automatic version')`, followed by its date. It fetches `retroRequest<WhiteboardVersionScene>(WhiteboardVersionsController.show({ board: boardId, version: version.id }))`, shows a `Skeleton` until it has the scene, then:
+and right after `<BoardReactions state={state} />` (the reactions bar must stay the sibling that follows the canvas container: `app.css` relies on it):
 
 ```tsx
-<div className="min-h-0 flex-1">
-    <Excalidraw
-        excalidrawAPI={setPreviewApi}
-        initialData={{ elements: restoreScene(scene.elements) as never, scrollToContent: true }}
-        viewModeEnabled
-        langCode={ExcalidrawLocales[locale as string] ?? 'en'}
-        theme={dark ? 'dark' : 'light'}
-        aiEnabled={false}
-        UIOptions={{
-            canvasActions: {
-                loadScene: false,
-                saveToActiveFile: false,
-                toggleTheme: false,
-                export: false,
-                clearCanvas: false,
-                changeViewBackgroundColor: false,
-            },
-        }}
-    >
-        <MainMenu>
-            <MainMenu.DefaultItems.SaveAsImage />
-        </MainMenu>
-    </Excalidraw>
-</div>
+                {!me.isGuest && (
+                    <HistoryPanel
+                        state={state}
+                        open={historyOpen && !privateWriting}
+                        onOpenChange={setHistoryOpen}
+                        onRestored={() => {
+                            void sync.current?.resync();
+                            void state.refetch();
+                        }}
+                    />
+                )}
 ```
 
-  No `onChange`, no scene sync, no cursors: nothing the viewer does in the preview is written anywhere. When `previewApi` and the scene are there, for each `scene.files` entry: `downloadBoardFile(boardId, file.id)` then `previewApi.addFiles([{ id: file.id, dataURL, mimeType, created: Date.now() } as never])` (the call `scene-sync.ts` makes for the board's own images); a failed download leaves the image's placeholder. Move `ExcalidrawLocales` and the `dark` hook of `board.tsx` to a small shared module of the same folder if importing them from `board.tsx` would create a cycle. The preview is mounted from `HistoryPanel` (state `previewed: WhiteboardVersionSummary | null`).
+`top-bar.tsx` is not changed: it renders its children. The restore is broadcast to the others; the tab that asked for it fetches the delta itself, as it does after any write. The panel closes by itself when private writing is switched on.
 
-- [ ] **Step 5: Translations**
+- [ ] **Step 4: `history-panel.tsx`**
+
+```tsx
+import { router, usePage } from '@inertiajs/react';
+import { MoreHorizontal } from 'lucide-react';
+import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { toast } from 'sonner';
+import WhiteboardVersionCopiesController from '@/actions/App/Http/Controllers/Whiteboards/WhiteboardVersionCopiesController';
+import WhiteboardVersionRestoresController from '@/actions/App/Http/Controllers/Whiteboards/WhiteboardVersionRestoresController';
+import WhiteboardVersionsController from '@/actions/App/Http/Controllers/Whiteboards/WhiteboardVersionsController';
+import InputError from '@/components/input-error';
+import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useTrans } from '@/hooks/use-trans';
+import type { WhiteboardState } from '@/hooks/use-whiteboard';
+import { useWhiteboardRequest } from '@/hooks/use-whiteboard-request';
+import { RetroRequestError, retroRequest } from '@/lib/retro/api';
+import type { WhiteboardVersionSummary } from '@/lib/whiteboard/types';
+import { VersionPreview } from './version-preview';
+
+type Props = {
+    state: WhiteboardState;
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    /** The board was rewritten: this tab has to fetch what the others were sent. */
+    onRestored: () => void;
+};
+
+type Asked = {
+    kind: 'restore' | 'rename' | 'delete';
+    version: WhiteboardVersionSummary;
+};
+
+export function HistoryPanel({ state, open, onOpenChange, onRestored }: Props) {
+    const { t } = useTrans();
+
+    return (
+        <Sheet open={open} onOpenChange={onOpenChange}>
+            <SheetContent
+                side="right"
+                className="w-full gap-4 overflow-y-auto p-4 sm:max-w-md"
+                aria-describedby={undefined}
+            >
+                <SheetTitle>{t('Version history')}</SheetTitle>
+                {open && <History state={state} onRestored={onRestored} />}
+            </SheetContent>
+        </Sheet>
+    );
+}
+
+function History({ state, onRestored }: Pick<Props, 'state' | 'onRestored'>) {
+    const { t } = useTrans();
+    const { locale } = usePage().props;
+    const request = useWhiteboardRequest();
+    const { board, me } = state.snapshot;
+    const [versions, setVersions] = useState<WhiteboardVersionSummary[] | null>(
+        null,
+    );
+    const [loadError, setLoadError] = useState<string | null>(null);
+    const [name, setName] = useState('');
+    const [nameError, setNameError] = useState<string | undefined>();
+    const [saving, setSaving] = useState(false);
+    const [previewed, setPreviewed] = useState<WhiteboardVersionSummary | null>(
+        null,
+    );
+    const [asked, setAsked] = useState<Asked | null>(null);
+    const dates = new Intl.DateTimeFormat(locale, {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+    });
+    const labelOf = (version: WhiteboardVersionSummary) =>
+        version.name ?? t('Automatic version');
+    const dateOf = (version: WhiteboardVersionSummary) =>
+        dates.format(new Date(version.createdAt));
+    const failure = t('Something went wrong. Please try again.');
+
+    const load = useCallback(async () => {
+        setLoadError(null);
+
+        try {
+            setVersions(
+                await retroRequest<WhiteboardVersionSummary[]>(
+                    WhiteboardVersionsController.index(board.id),
+                ),
+            );
+        } catch (error) {
+            setVersions(null);
+            setLoadError(
+                error instanceof RetroRequestError && error.status > 0
+                    ? error.message
+                    : failure,
+            );
+        }
+    }, [board.id, failure]);
+
+    useEffect(() => {
+        void load();
+    }, [load]);
+
+    const save = async (event: FormEvent) => {
+        event.preventDefault();
+        setSaving(true);
+        setNameError(undefined);
+
+        try {
+            await retroRequest(WhiteboardVersionsController.store(board.id), {
+                name,
+            });
+            toast.success(t('Version saved.'));
+            setName('');
+            await load();
+        } catch (error) {
+            setNameError(
+                error instanceof RetroRequestError && error.status > 0
+                    ? error.message
+                    : failure,
+            );
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const copy = async (version: WhiteboardVersionSummary) => {
+        const copied = await request(
+            retroRequest<{ url: string }>(
+                WhiteboardVersionCopiesController.store({
+                    board: board.id,
+                    version: version.id,
+                }),
+            ),
+        );
+
+        if (copied) {
+            router.visit(copied.url);
+        }
+    };
+
+    const restore = async (version: WhiteboardVersionSummary) => {
+        const done = await request(
+            retroRequest(
+                WhiteboardVersionRestoresController.store({
+                    board: board.id,
+                    version: version.id,
+                }),
+            ),
+        );
+
+        if (done === undefined) {
+            return;
+        }
+
+        toast.success(t('Version restored.'));
+        setAsked(null);
+        onRestored();
+        await load();
+    };
+
+    const remove = async (version: WhiteboardVersionSummary) => {
+        const done = await request(
+            retroRequest(
+                WhiteboardVersionsController.destroy({
+                    board: board.id,
+                    version: version.id,
+                }),
+            ),
+        );
+
+        if (done === undefined) {
+            return;
+        }
+
+        setAsked(null);
+        await load();
+    };
+
+    return (
+        <>
+            <form onSubmit={save} className="space-y-2">
+                <div className="flex gap-2">
+                    <Input
+                        required
+                        maxLength={80}
+                        value={name}
+                        onChange={(event) => setName(event.target.value)}
+                        aria-label={t('Version name')}
+                        placeholder={t('Version name')}
+                    />
+                    <Button disabled={saving || name.trim() === ''}>
+                        {t('Save this version')}
+                    </Button>
+                </div>
+                <InputError message={nameError} />
+            </form>
+
+            {loadError !== null && (
+                <div className="space-y-2">
+                    <p role="alert" className="text-sm text-muted-foreground">
+                        {loadError}
+                    </p>
+                    <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => void load()}
+                    >
+                        {t('Retry')}
+                    </Button>
+                </div>
+            )}
+
+            {loadError === null && versions === null && (
+                <div className="space-y-2" aria-busy="true">
+                    <Skeleton className="h-14" />
+                    <Skeleton className="h-14" />
+                    <Skeleton className="h-14" />
+                </div>
+            )}
+
+            {versions !== null && versions.length === 0 && (
+                <p className="text-sm text-muted-foreground">
+                    {t('No version yet.')}
+                </p>
+            )}
+
+            {versions !== null && versions.length > 0 && (
+                <ul className="space-y-2">
+                    {versions.map((version) => (
+                        <li
+                            key={version.id}
+                            className="flex items-center gap-2 rounded-md border p-2"
+                        >
+                            <div className="min-w-0 flex-1">
+                                <p className="truncate text-sm font-medium">
+                                    {labelOf(version)}
+                                </p>
+                                <p className="truncate text-xs text-muted-foreground">
+                                    {dateOf(version)}
+                                    {version.createdByName !== null &&
+                                        ` · ${t('by :name', { name: version.createdByName })}`}
+                                </p>
+                            </div>
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setPreviewed(version)}
+                            >
+                                {t('Preview')}
+                            </Button>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button
+                                        size="icon"
+                                        variant="ghost"
+                                        aria-label={t('Version actions')}
+                                    >
+                                        <MoreHorizontal className="size-4" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuItem
+                                        onSelect={() => void copy(version)}
+                                    >
+                                        {t('Copy to a new board')}
+                                    </DropdownMenuItem>
+                                    {me.isFacilitator && (
+                                        <>
+                                            <DropdownMenuItem
+                                                onSelect={() =>
+                                                    setAsked({
+                                                        kind: 'restore',
+                                                        version,
+                                                    })
+                                                }
+                                            >
+                                                {t('Restore')}
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem
+                                                onSelect={() =>
+                                                    setAsked({
+                                                        kind: 'rename',
+                                                        version,
+                                                    })
+                                                }
+                                            >
+                                                {t('Rename')}
+                                            </DropdownMenuItem>
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuItem
+                                                variant="destructive"
+                                                onSelect={() =>
+                                                    setAsked({
+                                                        kind: 'delete',
+                                                        version,
+                                                    })
+                                                }
+                                            >
+                                                {t('Delete')}
+                                            </DropdownMenuItem>
+                                        </>
+                                    )}
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </li>
+                    ))}
+                </ul>
+            )}
+
+            <VersionPreview
+                boardId={board.id}
+                version={previewed}
+                title={previewed === null ? '' : labelOf(previewed)}
+                date={previewed === null ? '' : dateOf(previewed)}
+                onClose={() => setPreviewed(null)}
+            />
+
+            <Dialog
+                open={asked?.kind === 'restore'}
+                onOpenChange={(open) => !open && setAsked(null)}
+            >
+                <DialogContent>
+                    <DialogTitle>{t('Restore this version?')}</DialogTitle>
+                    <DialogDescription>
+                        {t(
+                            'The board goes back to this version for everyone. The current state is saved first.',
+                        )}
+                    </DialogDescription>
+                    <DialogFooter>
+                        <Button
+                            variant="outline"
+                            onClick={() => setAsked(null)}
+                        >
+                            {t('Cancel')}
+                        </Button>
+                        <Button
+                            onClick={() => asked && void restore(asked.version)}
+                        >
+                            {t('Restore')}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog
+                open={asked?.kind === 'delete'}
+                onOpenChange={(open) => !open && setAsked(null)}
+            >
+                <DialogContent aria-describedby={undefined}>
+                    <DialogTitle>{t('Delete this version?')}</DialogTitle>
+                    <DialogFooter>
+                        <Button
+                            variant="outline"
+                            onClick={() => setAsked(null)}
+                        >
+                            {t('Cancel')}
+                        </Button>
+                        <Button
+                            variant="destructive"
+                            onClick={() => asked && void remove(asked.version)}
+                        >
+                            {t('Delete')}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog
+                open={asked?.kind === 'rename'}
+                onOpenChange={(open) => !open && setAsked(null)}
+            >
+                <DialogContent aria-describedby={undefined}>
+                    {asked?.kind === 'rename' && (
+                        <RenameVersionForm
+                            boardId={board.id}
+                            version={asked.version}
+                            onRenamed={() => {
+                                setAsked(null);
+                                void load();
+                            }}
+                        />
+                    )}
+                </DialogContent>
+            </Dialog>
+        </>
+    );
+}
+
+function RenameVersionForm({
+    boardId,
+    version,
+    onRenamed,
+}: {
+    boardId: string;
+    version: WhiteboardVersionSummary;
+    onRenamed: () => void;
+}) {
+    const { t } = useTrans();
+    const [name, setName] = useState(version.name ?? '');
+    const [error, setError] = useState<string | undefined>();
+    const [saving, setSaving] = useState(false);
+
+    const submit = async (event: FormEvent) => {
+        event.preventDefault();
+        setSaving(true);
+        setError(undefined);
+
+        try {
+            await retroRequest(
+                WhiteboardVersionsController.update({
+                    board: boardId,
+                    version: version.id,
+                }),
+                { name },
+            );
+            onRenamed();
+        } catch (failure) {
+            setError(
+                failure instanceof RetroRequestError && failure.status > 0
+                    ? failure.message
+                    : t('Something went wrong. Please try again.'),
+            );
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    return (
+        <form onSubmit={submit} className="space-y-4">
+            <DialogTitle>{t('Rename')}</DialogTitle>
+            <Input
+                required
+                maxLength={80}
+                autoFocus
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                aria-label={t('Version name')}
+            />
+            <InputError message={error} />
+            <DialogFooter>
+                <Button disabled={saving || name.trim() === ''}>
+                    {t('Save')}
+                </Button>
+            </DialogFooter>
+        </form>
+    );
+}
+```
+
+What it does: a sheet on the right, above the page with its own overlay (it does not sit on the canvas while someone draws), content mounted only while open. A form saves a named version (a 422 — the cap, or validation — shows under the input and keeps what was typed). The list is loaded when the panel opens and after each action: three skeleton rows while loading, "No version yet." when empty, the server's message with "Retry" when it fails. Each row: the name or "Automatic version", the date in the viewer's locale and "by <name>", "Preview", and a menu with "Copy to a new board" for everyone and "Restore", "Rename", "Delete" for the facilitator. Restore and delete ask for confirmation; every failed action says why in a toast and leaves the panel and its dialog as they were (spec §13).
+
+- [ ] **Step 5: `version-preview.tsx`**
+
+```tsx
+import { usePage } from '@inertiajs/react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
+import WhiteboardVersionsController from '@/actions/App/Http/Controllers/Whiteboards/WhiteboardVersionsController';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useTrans } from '@/hooks/use-trans';
+import { RetroRequestError, retroRequest } from '@/lib/retro/api';
+import {
+    CanvasLocales,
+    isDark,
+    subscribeToTheme,
+} from '@/lib/whiteboard/appearance';
+import {
+    Excalidraw,
+    MainMenu,
+    type ExcalidrawImperativeAPI,
+} from '@/lib/whiteboard/excalidraw';
+import { downloadBoardFile } from '@/lib/whiteboard/files';
+import { restoreScene } from '@/lib/whiteboard/restore';
+import type {
+    WhiteboardVersionScene,
+    WhiteboardVersionSummary,
+} from '@/lib/whiteboard/types';
+
+type Props = {
+    boardId: string;
+    version: WhiteboardVersionSummary | null;
+    title: string;
+    date: string;
+    onClose: () => void;
+};
+
+export function VersionPreview({
+    boardId,
+    version,
+    title,
+    date,
+    onClose,
+}: Props) {
+    return (
+        <Dialog
+            open={version !== null}
+            onOpenChange={(open) => !open && onClose()}
+        >
+            <DialogContent
+                className="flex h-[85vh] flex-col sm:max-w-6xl"
+                aria-describedby={undefined}
+            >
+                <DialogTitle>
+                    {title}
+                    <span className="ml-2 text-sm font-normal text-muted-foreground">
+                        {date}
+                    </span>
+                </DialogTitle>
+                {version !== null && (
+                    <PreviewCanvas boardId={boardId} versionId={version.id} />
+                )}
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+/**
+ * A second canvas, read-only, fed once: no onChange, no scene sync, no
+ * cursors. Nothing done here is written anywhere.
+ */
+function PreviewCanvas({
+    boardId,
+    versionId,
+}: {
+    boardId: string;
+    versionId: string;
+}) {
+    const { t } = useTrans();
+    const { locale } = usePage().props;
+    const dark = useSyncExternalStore(subscribeToTheme, isDark, () => false);
+    const [scene, setScene] = useState<WhiteboardVersionScene | null>(null);
+    const [error, setError] = useState<string | null>(null);
+    const [api, setApi] = useState<ExcalidrawImperativeAPI | null>(null);
+    const failure = t('Something went wrong. Please try again.');
+
+    useEffect(() => {
+        let cancelled = false;
+
+        retroRequest<WhiteboardVersionScene>(
+            WhiteboardVersionsController.show({
+                board: boardId,
+                version: versionId,
+            }),
+        )
+            .then((fetched) => {
+                if (!cancelled) {
+                    setScene(fetched);
+                }
+            })
+            .catch((caught: unknown) => {
+                if (!cancelled) {
+                    setError(
+                        caught instanceof RetroRequestError && caught.status > 0
+                            ? caught.message
+                            : failure,
+                    );
+                }
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [boardId, versionId, failure]);
+
+    useEffect(() => {
+        if (!api || !scene) {
+            return;
+        }
+
+        let cancelled = false;
+
+        // The dialog opens with a zoom: the canvas measured itself too early.
+        const settled = setTimeout(() => api.refresh(), 300);
+
+        for (const file of scene.files) {
+            downloadBoardFile(boardId, file.id)
+                .then(({ dataURL, mimeType }) => {
+                    if (cancelled) {
+                        return;
+                    }
+
+                    api.addFiles([
+                        {
+                            id: file.id,
+                            dataURL,
+                            mimeType,
+                            created: Date.now(),
+                        } as never,
+                    ]);
+                })
+                .catch(() => undefined);
+        }
+
+        return () => {
+            cancelled = true;
+            clearTimeout(settled);
+        };
+    }, [api, scene, boardId]);
+
+    if (error !== null) {
+        return (
+            <p role="alert" className="text-sm text-muted-foreground">
+                {error}
+            </p>
+        );
+    }
+
+    if (scene === null) {
+        return <Skeleton className="min-h-0 flex-1" />;
+    }
+
+    return (
+        <div className="whiteboard-preview relative min-h-0 flex-1">
+            <Excalidraw
+                excalidrawAPI={setApi}
+                initialData={{
+                    elements: restoreScene(scene.elements) as never,
+                    scrollToContent: true,
+                }}
+                viewModeEnabled
+                langCode={CanvasLocales[locale as string] ?? 'en'}
+                theme={dark ? 'dark' : 'light'}
+                aiEnabled={false}
+                UIOptions={{
+                    canvasActions: {
+                        loadScene: false,
+                        saveToActiveFile: false,
+                        toggleTheme: false,
+                        export: false,
+                        saveAsImage: false,
+                        clearCanvas: false,
+                        changeViewBackgroundColor: false,
+                    },
+                }}
+            >
+                {/* Without a menu of ours the canvas renders its own, with links to the library's sites. */}
+                <MainMenu />
+            </Excalidraw>
+        </div>
+    );
+}
+```
+
+No `onChange`, no scene sync, no cursors: nothing the viewer does in the preview is written anywhere. The images are added the way `scene-sync.ts` adds the board's own; a failed download leaves the image's placeholder. `api.refresh()` after the dialog's opening animation makes the canvas measure its place again. The dialog is a child of the sheet in the React tree, which is how Radix stacks one modal on another.
+
+- [ ] **Step 6: The preview shows no menu and no help button** — append to the board block of `resources/css/app.css` (after the rule about `toggleElementLock`):
+
+```css
+/*
+ * The preview of a version (spec §9) is a second, read-only canvas inside a
+ * dialog. Its menu button and its help button open panels of Excalidraw
+ * 0.18.1 that the dialog would cover or that link to the library's sites,
+ * and neither has a prop: both are hidden.
+ */
+.whiteboard-preview .main-menu-trigger,
+.whiteboard-preview .help-icon {
+    display: none !important;
+}
+```
+
+- [ ] **Step 7: Translations**
 
 | Key (English) | French | German | Spanish |
 |---|---|---|---|
@@ -3985,33 +4834,31 @@ The restore is broadcast to the others; the tab that asked for it fetches the de
 | The board goes back to this version for everyone. The current state is saved first. | Le tableau revient à cette version pour tout le monde. L'état actuel est d'abord enregistré. | Das Board kehrt für alle zu dieser Version zurück. Der aktuelle Stand wird vorher gespeichert. | La pizarra vuelve a esta versión para todos. Antes se guarda el estado actual. |
 | Version restored. | Version restaurée. | Version wiederhergestellt. | Versión restaurada. |
 | Delete this version? | Supprimer cette version ? | Diese Version löschen? | ¿Eliminar esta versión? |
-| Preview, Restore, Rename, Delete, Cancel, Save, Retry, by :name, Reveal the notes first., Something went wrong. Please try again. | exist | exist | exist |
 
-Run `grep -n '"<key>"' lang/fr.json` for each new row first: `tests/Feature/TranslationKeysTest.php` is the judge.
+"Preview", "Restore", "Rename", "Delete", "Cancel", "Save", "Retry", "by :name", "Reveal the notes first." and "Something went wrong. Please try again." exist. Run `grep -n '"<key>"' lang/fr.json` for each new row first: `tests/Feature/TranslationKeysTest.php` is the judge.
 
-- [ ] **Step 6: Gates and commit**
+- [ ] **Step 8: Gates and commit**
 
-Run: `npm run build && npm run types:check && npx vp check resources/js/lib/whiteboard/types.ts resources/js/components/whiteboard/top-bar.tsx resources/js/components/whiteboard/board.tsx resources/js/components/whiteboard/history-panel.tsx resources/js/components/whiteboard/version-preview.tsx && DB_HOST=127.0.0.1 php artisan test --compact tests/Feature/TranslationKeysTest.php`
+Run: `npm run build && npm run types:check && npx vp check resources/js/lib/whiteboard/types.ts resources/js/lib/whiteboard/appearance.ts resources/js/components/whiteboard/board.tsx resources/js/components/whiteboard/history-panel.tsx resources/js/components/whiteboard/version-preview.tsx && DB_HOST=127.0.0.1 php artisan test --compact tests/Feature/TranslationKeysTest.php`
 Expected: no error in these files; test PASS.
 
 ```bash
-git add resources/js/lib/whiteboard/types.ts resources/js/components/whiteboard/top-bar.tsx resources/js/components/whiteboard/board.tsx resources/js/components/whiteboard/history-panel.tsx resources/js/components/whiteboard/version-preview.tsx lang/en.json lang/fr.json lang/de.json lang/es.json
+git add resources/js/lib/whiteboard/types.ts resources/js/lib/whiteboard/appearance.ts resources/js/components/whiteboard/board.tsx resources/js/components/whiteboard/history-panel.tsx resources/js/components/whiteboard/version-preview.tsx resources/css/app.css lang/en.json lang/fr.json lang/de.json lang/es.json
 git commit -m "feat(whiteboard): history panel with preview, restore and copy to a new board"
 ```
 
-(Add the shared module of Step 4 if one was created.)
-
 **Browser checks (for the walkthrough):**
-- B8.1 A member sees the history button in the top bar; a guest (127.0.0.1) does not. While private writing is on the button is disabled with the title "Reveal the notes first.".
+- B8.1 A member sees the history button (clock icon) in the top bar, left of the board menu; a guest (127.0.0.1) does not. While private writing is on the button is disabled with the title "Reveal the notes first.", and an open panel closes.
 - B8.2 The panel lists versions newest first; an automatic one reads "Automatic version" with its date, a named one its name, date and "by <name>".
 - B8.3 "Save this version" with a name adds it on top with a success toast; an empty name cannot be submitted.
-- B8.4 "Preview" opens a read-only canvas showing that version, images included, that can be panned and zoomed but not edited; its menu offers only "Save as image"; no library name, logo or link appears; closing it leaves the board untouched (no `PUT elements` in the network log while the preview was open).
+- B8.4 "Preview" opens a dialog with a read-only canvas showing that version, images included, that can be panned and zoomed but not edited; it has no menu button and no help button; no library name, logo or link appears; closing it leaves the board untouched (no `PUT elements` in the network log while the preview was open) and the sticky-note button is still in the board's own toolbar.
 - B8.5 Facilitator: "Restore" asks for confirmation, then every browser (member B and a guest too) shows the version's scene within about a second without a reload, and a "Before restore · <date>" version is on top of the list. Restoring that one brings the previous state back in every browser.
 - B8.6 A non-facilitating member sees "Copy to a new board" only in the row menu; the facilitator also sees "Restore", "Rename", "Delete".
 - B8.7 "Copy to a new board" lands on "<title> (copy)" with the version's elements and images, the member as facilitator; the source board is unchanged.
-- B8.8 Rename and delete update the list; a failed action (stop the server, or rename with 81 characters through the console) leaves the panel and its dialog open with a message.
+- B8.8 Rename and delete update the list; a failed action (rename with 81 characters through the console, or stop the server) leaves the panel and its dialog open with a message.
 - B8.9 After five minutes of edits (or after running `vendor/bin/sail artisan queue:work --once` once the delayed job is due) an "Automatic version" appears when the panel is reopened.
-- B8.10 **17c:** restoring while a vote is open ends the vote in every browser without results; badges of a closed vote disappear.
+- B8.10 Restoring while a vote is open ends the vote in every browser without results; badges of a closed vote disappear and the results panel closes.
+- B8.11 A version saved while notes were hidden, then previewed after the reveal: it shows the revealed notes and not the one that was deleted before the reveal.
 
 ---
 
@@ -4031,18 +4878,18 @@ Title `# Plan 17d — whiteboard secrecy and history: walkthrough`, a "Before st
 
 Private writing (R9)
 
-1. **Given private writing is on, when member A writes a sticky, then member B and the facilitator see a masked note at the same place and no payload they receive contains its text.** Setup: facilitator A and member B on the same board, private writing on. Action: B writes a note "Secret idea"; A fetches `GET snapshot` and `GET elements?since=0` from the console. Expected: A sees the note masked with "•••" at the same place, same size and colour; neither response contains "Secret idea"; B's second tab shows the text. Include B7.1, B7.2, B7.3, B7.5, B7.6.
+1. **Given private writing is on, when member A writes a sticky, then member B and the facilitator see a masked note at the same place and no payload they receive contains its text.** Setup: facilitator A and member B on the same board, private writing on. Action: B writes a note "Secret idea"; A fetches `GET snapshot` and `GET elements?since=0` from the console. Expected: A sees the note masked with "•••" at the same place, same size and colour; neither response contains "Secret idea"; B's second tab shows the text. Include B7.1, B7.2, B7.3, B7.5, B7.6, B7.10.
 2. **Given a masked note, when another member edits or deletes it, then the write is rejected and the author's text is intact.** Setup: as 1. Action: A drags, erases and types on B's note; A sends `PUT elements` from the console with the masked text at `version + 1` and `text: "Overwritten"`. Expected: each attempt returns to the masked note; the console call answers `rejected[0].reason = "private"` with an element whose `text` is empty; `select data->>'text' from whiteboard_elements where element_id = '<text id>'` still reads "Secret idea". Include B7.4.
 3. **Given the facilitator reveals, then every member sees every note's text without reloading.** Setup: as 1, plus a second hidden note B deleted. Action: A clicks "Reveal the notes". Expected: every browser shows "Secret idea" within about a second; the deleted note does not come back; the banner and the marks are gone. Include B7.7.
-4. **While private writing is on, voting, version history, duplicate and save-as-template answer 422 "Reveal the notes first."** Setup: private writing on. Action: from A's console, `POST duplicate`, `POST template`, `GET versions`, `GET versions/<id>`, `POST versions/<id>/restore`, `POST versions/<id>/copy`, and opening a vote. Expected: 422 with that message for each; the menu entries and the history button are disabled. Include B7.8, B7.9, B8.1.
+4. **While private writing is on, voting, version history, duplicate and save-as-template answer 422 "Reveal the notes first."** Setup: private writing on. Action: from A's console, `POST duplicate`, `POST template`, `GET versions`, `GET versions/<id>`, `POST versions/<id>/restore`, `POST versions/<id>/copy`, and opening a vote. Expected: 422 with that message for each; the menu entries, "Start a vote" and the history button are disabled. `POST versions` (saving) answers 201: it returns nothing of a scene (spec §9). Include B7.8, B7.9, B8.1.
 
 Version history (R10)
 
 5. **Given edits over more than 5 minutes, then automatic versions exist, at most one per 5 minutes, and never more than 50.** Setup: a board, the queue worker running. Action: edit, wait five minutes, edit again, wait five minutes; read `select name, seq, created_at from whiteboard_versions where whiteboard_id = '<id>' order by created_at`. Expected: one automatic version per five-minute window of activity, none while idle. The cap of 50 is pinned by `WhiteboardAutomaticVersionsTest` ("keeps the last fifty automatic versions and every named one") and not replayed by hand. Include B8.2, B8.9.
-6. **Given a version, when the facilitator restores it, then every connected browser shows that scene and a "Before restore" version exists that restores the prior state.** Setup: A and B on a board with a saved version, then more edits. Action: A restores the version, then restores "Before restore · …". Expected: both browsers show the version, then the previous state, each time without a reload. Include B8.3, B8.4, B8.5, B8.6, B8.7, B8.8, B8.10.
+6. **Given a version, when the facilitator restores it, then every connected browser shows that scene and a "Before restore" version exists that restores the prior state.** Setup: A and B on a board with a saved version, then more edits. Action: A restores the version, then restores "Before restore · …". Expected: both browsers show the version, then the previous state, each time without a reload. Include B8.3, B8.4, B8.5, B8.6, B8.7, B8.8, B8.10, B8.11.
 7. **A guest gets 403 on every version endpoint.** Setup: guest on 127.0.0.1. Action: from the guest's console, the seven version requests (`GET versions`, `POST versions`, `GET`, `PATCH`, `DELETE versions/<id>`, `POST …/restore`, `POST …/copy`). Expected: 403 "Guests cannot do this." for each; no history button.
 
-End with a "Feature tests that pin these criteria" list: `WhiteboardPrivateWritingTest`, `WhiteboardPrivateWritingSwitchTest`, `WhiteboardAutomaticVersionsTest`, `WhiteboardVersionsTest`, `WhiteboardVersionRestoreTest`, `WhiteboardSecrecyModelTest`, and a table "surface of the invariant → test" with these rows: snapshot, Inertia page and `GET elements` → "masks a private note for everyone but its author"; `rejected` copies → "refuses every change another member makes to a private note and keeps the text"; `elements.changed` → "never broadcasts the elements of a write that touches a private note" and "reveals every live private note and makes every client fetch it"; versions → "keeps the history closed while the notes are hidden" and "refuses to copy a version for guests, outsiders and while the notes are hidden"; duplicate and template → "refuses duplicate and save as template until the notes are revealed" and "copies the notes once they are revealed, and never one deleted while hidden"; export → client-side from the masked copies (B7.8); log lines → "keeps the text of a note out of the log, even when the database refuses the write" and "keeps the scene out of the log when a version cannot be stored".
+End with a "Feature tests that pin these criteria" list: `WhiteboardPrivateWritingTest`, `WhiteboardPrivateWritingSwitchTest`, `WhiteboardAutomaticVersionsTest`, `WhiteboardVersionsTest`, `WhiteboardVersionRestoreTest`, `WhiteboardSecrecyModelTest`, and a table "surface of the invariant → test" with these rows: snapshot, Inertia page and `GET elements` → "masks a private note for everyone but its author"; `rejected` copies → "refuses every change another member makes to a private note and keeps the text"; `elements.changed` → "never broadcasts the elements of a write that touches a private note" and "reveals every live private note and makes every client fetch it"; versions → "keeps the history closed while the notes are hidden", "refuses to copy a version for guests, outsiders and while the notes are hidden", "never previews a note that was deleted before the reveal" and "never restores or copies a note that was deleted before the reveal"; voting → "refuses to hide the notes while a vote is open" and "refuses to open a vote while the notes are hidden"; duplicate and template → "refuses duplicate and save as template until the notes are revealed" and "copies the notes once they are revealed, and never one deleted while hidden"; export → client-side from the masked copies (B7.8); log lines → "keeps the text of a note out of the log, even when the database refuses the write" and "keeps the scene out of the log when a version cannot be stored".
 
 - [ ] **Step 2: Full gates**
 
@@ -4051,7 +4898,7 @@ vendor/bin/pint --dirty --format agent
 DB_HOST=127.0.0.1 php -d memory_limit=-1 vendor/bin/pest --compact
 composer lint
 npm run build && npm run types:check
-npx vp check resources/js/lib/whiteboard resources/js/components/whiteboard resources/js/hooks/use-whiteboard.ts
+npx vp check resources/js/lib/whiteboard resources/js/components/whiteboard resources/js/hooks/use-whiteboard.ts resources/js/hooks/use-whiteboard-overlay.ts
 vendor/bin/sail artisan migrate --no-interaction
 ```
 
@@ -4059,7 +4906,7 @@ Expected: the suite passes; PHPStan and Pint clean; `types:check` shows only the
 
 - [ ] **Step 3: Check the invariant once more by reading**
 
-Run `grep -rn "->data\b" app/Actions/Whiteboards app/Http/Controllers/Whiteboards app/Events/Whiteboards app/Jobs/StoreAutomaticWhiteboardVersion.php` and, for every hit outside `PresentWhiteboardElement`, state in the report where the value goes: a server-side copy guarded by `notPrivateWriting`, a version row, the restore, an index or lock comparison, or — the only broadcast — `WriteWhiteboardElements::broadcastable()` after its private check. A hit that reaches a response, a broadcast or a log without one of these is a defect: fix it with a test. Do the same for `Log::`, `logger(` and `report(` in the same folders (expected: none that receives an element, a scene or a version).
+Run `grep -rn "->data\b" app/Actions/Whiteboards app/Http/Controllers/Whiteboards app/Events/Whiteboards app/Jobs/StoreAutomaticWhiteboardVersion.php` and, for every hit outside `PresentWhiteboardElement`, state in the report where the value goes: a server-side copy guarded by `notPrivateWriting`, a version row, the restore, an index, lock or voting comparison, the text a closing vote copies into its results (no live private row exists while a vote is open, Task 3 Step 7), or — the only broadcast — `WriteWhiteboardElements::broadcastable()` after its private check. A hit that reaches a response, a broadcast or a log without one of these is a defect: fix it with a test. Do the same for `Log::`, `logger(` and `report(` in the same folders (expected: none that receives an element, a scene or a version).
 
 - [ ] **Step 4: Fix what the gates show**, re-run the affected gate, and record each fix in the report.
 
@@ -4076,9 +4923,37 @@ git commit -m "docs(whiteboard): walkthrough for private writing and version his
 
 ---
 
+## Appendix: translation keys
+
+Every key this plan adds, by task (each task repeats its own rows). English value = key.
+
+| Task | Key (English) | French | German | Spanish |
+|---|---|---|---|---|
+| 3 | Reveal the notes first. | Révélez d'abord les post-it. | Decken Sie zuerst die Haftnotizen auf. | Revela primero las notas. |
+| 5 | This board already has 100 saved versions. | Ce tableau a déjà 100 versions enregistrées. | Dieses Board hat bereits 100 gespeicherte Versionen. | Esta pizarra ya tiene 100 versiones guardadas. |
+| 6 | Before restore · :date | Avant restauration · :date | Vor der Wiederherstellung · :date | Antes de restaurar · :date |
+| 7 | Private writing | Écriture privée | Privates Schreiben | Escritura privada |
+| 7 | Reveal the notes | Révéler les post-it | Haftnotizen aufdecken | Revelar las notas |
+| 7 | Notes are hidden until the facilitator reveals them. Other elements stay visible. | Les post-it sont masqués jusqu'à ce que l'animateur les révèle. Les autres éléments restent visibles. | Haftnotizen bleiben verborgen, bis der Moderator sie aufdeckt. Andere Elemente bleiben sichtbar. | Las notas quedan ocultas hasta que el facilitador las revele. Los demás elementos siguen visibles. |
+| 7 | The size of a note hints at the length of its text. | La taille d'un post-it laisse deviner la longueur de son texte. | Die Größe einer Haftnotiz lässt die Länge ihres Textes erahnen. | El tamaño de una nota deja intuir la longitud de su texto. |
+| 7 | Hidden note | Post-it masqué | Verborgene Haftnotiz | Nota oculta |
+| 7 | Only its author can change a hidden note. | Seul son auteur peut modifier un post-it masqué. | Nur der Autor kann eine verborgene Haftnotiz ändern. | Solo su autor puede modificar una nota oculta. |
+| 8 | Version history | Historique des versions | Versionsverlauf | Historial de versiones |
+| 8 | Version name | Nom de la version | Name der Version | Nombre de la versión |
+| 8 | Save this version | Enregistrer cette version | Diese Version speichern | Guardar esta versión |
+| 8 | Version saved. | Version enregistrée. | Version gespeichert. | Versión guardada. |
+| 8 | No version yet. | Aucune version pour l'instant. | Noch keine Version. | Aún no hay versiones. |
+| 8 | Automatic version | Version automatique | Automatische Version | Versión automática |
+| 8 | Version actions | Actions sur la version | Aktionen für die Version | Acciones de la versión |
+| 8 | Copy to a new board | Copier dans un nouveau tableau | In ein neues Board kopieren | Copiar a una pizarra nueva |
+| 8 | Restore this version? | Restaurer cette version ? | Diese Version wiederherstellen? | ¿Restaurar esta versión? |
+| 8 | The board goes back to this version for everyone. The current state is saved first. | Le tableau revient à cette version pour tout le monde. L'état actuel est d'abord enregistré. | Das Board kehrt für alle zu dieser Version zurück. Der aktuelle Stand wird vorher gespeichert. | La pizarra vuelve a esta versión para todos. Antes se guarda el estado actual. |
+| 8 | Version restored. | Version restaurée. | Version wiederhergestellt. | Versión restaurada. |
+| 8 | Delete this version? | Supprimer cette version ? | Diese Version löschen? | ¿Eliminar esta versión? |
+
 ## Spec edits made with this plan
 
-Each is a decision the spec needed for this slice; none changes a behaviour the user decided. They are in the same commit as this plan.
+Each is a decision the spec needed for this slice; none changes a behaviour the user decided. Items 1–13 were written with the first version of this plan; items 14–18 with the reconciliation.
 
 1. **§7 `whiteboard_versions.scene`** is `{elements, fileIds}`: the ids of the images beside the elements, so that the image prune can ask "does a version show this file" without reading every scene.
 2. **§9 automatic versions:** one at most every five minutes (a job that finds a younger automatic version does nothing); a board made from a template, a duplicate or a version starts with nothing left to version; the daily command queues the version of a board whose job was lost.
@@ -4093,28 +4968,23 @@ Each is a decision the spec needed for this slice; none changes a behaviour the 
 11. **§11.5 invariant, log lines:** a database error on a statement that carries note text is reported without the statement or its bindings.
 12. **§12:** the `PATCH settings` row lists `elements.changed`; the versions rows give the 201 bodies.
 13. **§13:** a rejection for reason `locked` or `private` says why in a toast (the first is what plan 17a built).
+14. **§7 `whiteboard_versions.private_element_ids`** (new column) and **§9 "What a version shows"**: a version remembers which elements were private when it was stored; the reveal takes the revealed ones off the list; preview, restore and copy leave out what stays on it. Without it, item 10's promise was false: a version stored while a note was still on the board would have shown it after the reveal.
+15. **§11.5 reveal:** a write by its author that leaves a hidden-deleted note deleted keeps it private; only bringing it back makes it ordinary.
+16. **§9 restore:** the votes of the session a restore closes are deleted, as at an ordinary close.
+17. **§11.5 scope / §13:** the sentence about hidden notes is an item of the status row; the switch is a button of the facilitator bar; "•••" marks use the overlay layer of the vote badges.
+18. **§13 history:** the history button sits in the top bar for non-guests; the preview is a read-only canvas in a dialog, without the canvas's menu and help buttons.
 
-## Assumptions to reconcile
+## Reconciliation with plans 17b and 17c
 
-Read this before Task 1. The plan was written at `e0524df`, without sight of plan 17c or of the end of plan 17b.
+What the first version of this plan assumed, and what the branch really holds at `aff67e7`:
 
-**Plan 17b, not finished when this was written**
-- Task 8 (board UI: "Duplicate this board", "Save as template", export name) was in progress: `board-menu.tsx` and `board.tsx` had uncommitted changes and `save-template-dialog.tsx` was untracked. Task 7 Step 3 of this plan disables those two menu items while private writing is on: apply it to whatever Task 8 shipped.
-- Task 9 (walkthrough) had not started.
-- `DuplicateWhiteboard` and `SaveWhiteboardTemplate` are edited here as they were at `e0524df` (one line each after the board lock, and `DuplicateWhiteboard::title()` made public). If their shape changed, keep the rule: `WhiteboardGuard::notPrivateWriting($locked)` inside the board lock, before the scene is read.
+- **Voting (17c):** model `WhiteboardVoteSession` (`element_ids`, `results` cast to array, `isOpen()`, `votes()`), `Whiteboard::voteSessions()`, route `whiteboards.voteSessions.store` with `votes_per_member` / `allow_multiple`, helpers `whiteboardSticky()`, `openWhiteboardVote()`, `castWhiteboardVote()`, factory state `closed()`. The former "17c steps" that used the query builder now use these. `OpenWhiteboardVote` had no private-writing check: Task 3 adds it. "Close the vote first." already existed and is reused.
+- **`WriteWhiteboardElements` (17c):** has a deferral queue for the voting text freeze and loads containers only while a vote is open. Task 2 was rewritten against it: containers are always loaded, `private` sits in `refusal()` after `stale`, the voting reasons stay after it.
+- **`WhiteboardSettingsController` (17c):** validates `locked` and `follow_enabled`; Task 3 shows the whole method with `private_writing` added.
+- **Snapshot, model, types (17c):** `locked`, `followEnabled`, `timerEndsAt`, `voting`, `votingHistory` exist; this plan's keys are inserted after `followEnabled`.
+- **Board UI (17c):** a facilitator bar, a status row and an overlay layer exist. The switch moved from the board menu to the facilitator bar, the banner became an item of the status row, the marks use `useCanvasView` and a hook beside `useNoteBoxes`, requests use `useWhiteboardRequest`.
+- **Board menu (17b Task 8):** "Duplicate this board" and "Save as template" are `DropdownMenuItem`s of `board-menu.tsx`; Task 7 disables them. `DuplicateWhiteboard` and `SaveWhiteboardTemplate` have the shape the first version read.
+- **Migration date:** 17c's is `2026_10_11_100000`; `2026_10_12_100000` stays.
+- **Found while prototyping, not assumptions:** the never-revealed hole in versions (spec edit 14) and in tombstone rewrites (15); `now()->locale()` does not pass PHPStan; the history button needs no change to `top-bar.tsx`; `DialogContent` needs `sm:max-w-6xl` (its default is `sm:max-w-lg`); the preview dropped "Save as image" because the canvas opens that dialog outside the Radix dialog, where it cannot be used.
 
-**Plan 17c, written in parallel**
-- *Tables and names taken from the spec, not from 17c's code:* table `whiteboard_vote_sessions` with `closed_at`, `dismissed_at`, `results`, `votes_per_member`, `allow_multiple`; route name `whiteboards.voteSessions.store`; body keys `votes_per_member`, `allow_multiple`. The three "17c steps" (Task 3 Step 8, Task 6 Step 6, browser checks B7.9 and B8.10) use the query builder so that they hold whatever the model is called; switch them to 17c's model, factory, guard (`WhiteboardGuard::openVoteSession` in the spec) and route names. If 17c is not on the branch when 17d is implemented, these steps cannot pass: implement them when it is.
-- *Opening a vote while the notes are hidden* must answer 422 "Reveal the notes first." (`WhiteboardGuard::notPrivateWriting($locked)` inside 17c's lock). 17c may have left this to 17d or written it against a column that did not exist.
-- *The message "Close the vote first."* is this plan's wording; reuse 17c's key if it has one with the same meaning.
-- *`WriteWhiteboardElements`* is edited by both plans (17c: board lock, element lock by the facilitator, text freeze with reason `voting`; 17d: reason `private`, the flag, the ids-only rule, the wrapper, version scheduling). Order of refusals after reconciliation: `stale`, `private`, then 17c's and 17a's (`voting`, `locked`, `file`, `full`). The 403 of a locked board is 17c's and comes before any element is looked at.
-- *`WhiteboardSettingsController::update`* is edited by both (17c: `locked`, `follow_enabled`; 17d: `private_writing`). Keep one validation array and one transaction; `private_writing` is pulled out of the mass update and applied through `SetWhiteboardPrivateWriting`.
-- *`BuildWhiteboardSnapshot`, `types.ts`, `Whiteboard` (fillable, casts), `WhiteboardFactory`* gain keys from both plans: merge, do not replace.
-- *Migration date:* `2026_10_12_100000` assumes 17c's migrations are dated `2026_10_11_*` or earlier. If 17c used a later date, rename this one after it; nothing in it depends on 17c's columns.
-- *Where the switch lives:* this plan puts "Private writing" in the board menu. If 17c built the facilitator bar of spec §13, move it there (Task 7 Step 3).
-- *Overlay:* this plan adds its own overlay element for the "•••" marks (`masked-notes.tsx`, `z-index: 3`, positioned from scene coordinates, zoom and scroll). If 17c built an overlay layer for vote badges, render the marks in that layer instead of adding a second one, and keep the two rules: container-relative coordinates, below the canvas UI layer.
-- *The board lock of 17c and restore:* restore is facilitator-only, so a locked board does not refuse it. If 17c's lock also blocks the facilitator somewhere, restore must stay allowed.
-- *Text freeze during a vote and the reveal:* they cannot overlap (each refuses the other), so no rule combines them.
-- *Tombstone purge:* unchanged by this plan. A private tombstone is purged like any other after 24 hours.
-
-**Things only a browser can show** (collected in the walkthrough): that a masked note is drawn empty with its mark and stays so through pan, zoom and remote updates; that the reveal replaces the masked copies without a reload in every tab, the facilitator's included; that the preview canvas shows no library branding and writes nothing; that two canvases on one page (the board and the preview) do not disturb the sticky-note button, which looks for the toolbar inside the board's own container.
+**Things only a browser can show** (collected in the walkthrough): that a masked note is drawn empty with its mark and stays so through pan, zoom and remote updates; that the reveal replaces the masked copies without a reload in every tab, the facilitator's included; that closing the text editor on a `private` refusal leaves the canvas calm; that the preview canvas shows no library branding and writes nothing; that two canvases on one page (the board and the preview) do not disturb the sticky-note button, which looks for the toolbar inside the board's own container; that a dialog opened from the sheet stacks and closes cleanly.
