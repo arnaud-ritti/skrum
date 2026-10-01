@@ -21,6 +21,7 @@ use App\Notifications\RetroResultsNotification;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
 
 beforeEach(function () {
@@ -296,6 +297,7 @@ it('[P12b-03a] shares the recap of an anonymous retro with counts, named action 
 
 it('[P12b-04a] emails the results to participants with an account in their own language, never to guests, and refuses a second send for ten minutes', function () {
     config(['mail.default' => 'smtp']);
+    Mail::fake();
     Notification::fake();
     p12bFakeChats();
     [$retro, $fran] = p12bRetro(RetroPhase::Completed, ['completed_at' => now()]);
