@@ -1578,5 +1578,8 @@
     "No whiteboard templates yet.": "No whiteboard templates yet.",
     "Save a board as a template from its menu.": "Save a board as a template from its menu.",
     "Boards already created from it are not changed.": "Boards already created from it are not changed.",
-    "Delete :title": "Delete :title"
+    "Delete :title": "Delete :title",
+    "Duplicate this board": "Duplicate this board",
+    "Save as template": "Save as template",
+    "Everyone in the workspace can start a board from it.": "Everyone in the workspace can start a board from it."
 }

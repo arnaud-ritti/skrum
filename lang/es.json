@@ -1822,5 +1822,8 @@
     "No whiteboard templates yet.": "Aún no hay plantillas de pizarra.",
     "Save a board as a template from its menu.": "Guarda una pizarra como plantilla desde su menú.",
     "Boards already created from it are not changed.": "Las pizarras ya creadas a partir de ella no cambian.",
-    "Delete :title": "Eliminar :title"
+    "Delete :title": "Eliminar :title",
+    "Duplicate this board": "Duplicar esta pizarra",
+    "Save as template": "Guardar como plantilla",
+    "Everyone in the workspace can start a board from it.": "Todas las personas del espacio pueden crear una pizarra a partir de ella."
 }

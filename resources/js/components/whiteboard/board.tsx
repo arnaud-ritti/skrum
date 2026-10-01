@@ -176,6 +176,7 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
                     <Excalidraw
                         excalidrawAPI={setApi}
                         initialData={{ elements: initialElements as never }}
+                        name={state.snapshot.board.title}
                         onChange={(elements) =>
                             sync.current?.handleChange(
                                 elements as unknown as SceneElement[],

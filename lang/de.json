@@ -1822,5 +1822,8 @@
     "No whiteboard templates yet.": "Noch keine Whiteboard-Vorlagen.",
     "Save a board as a template from its menu.": "Speichern Sie ein Board über sein Menü als Vorlage.",
     "Boards already created from it are not changed.": "Bereits daraus erstellte Boards werden nicht verändert.",
-    "Delete :title": ":title löschen"
+    "Delete :title": ":title löschen",
+    "Duplicate this board": "Dieses Board duplizieren",
+    "Save as template": "Als Vorlage speichern",
+    "Everyone in the workspace can start a board from it.": "Alle im Workspace können daraus ein Board starten."
 }

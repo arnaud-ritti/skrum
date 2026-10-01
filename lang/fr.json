@@ -1822,5 +1822,8 @@
     "No whiteboard templates yet.": "Aucun modèle de tableau blanc pour l'instant.",
     "Save a board as a template from its menu.": "Enregistrez un tableau comme modèle depuis son menu.",
     "Boards already created from it are not changed.": "Les tableaux déjà créés à partir de ce modèle ne sont pas modifiés.",
-    "Delete :title": "Supprimer :title"
+    "Delete :title": "Supprimer :title",
+    "Duplicate this board": "Dupliquer ce tableau",
+    "Save as template": "Enregistrer comme modèle",
+    "Everyone in the workspace can start a board from it.": "Tous les membres de l'espace de travail peuvent créer un tableau à partir de ce modèle."
 }
