@@ -11,6 +11,14 @@ const P17cLockedToast = '[data-sonner-toast]:has-text("This board is locked.")';
 const P17cTimesUpToast = '[data-sonner-toast]:has-text("Time\'s up!")';
 const P17cViewMode = '.whiteboard-canvas .excalidraw.excalidraw--view-mode';
 const P17cCanvas = '.whiteboard-canvas canvas.excalidraw__canvas.interactive';
+const P17cLeadingNotice = 'div[role="status"]:has-text("Everyone follows your view.")';
+const P17cFollowingNotice = 'div[role="status"]:has-text("Following the facilitator")';
+const P17cPausedNotice = 'div[role="status"]:has-text("Following paused")';
+const P17cResume = 'div[role="status"] button:text-is("Resume")';
+const P17cFollowSwitch = '[aria-label="Bring everyone to me"]';
+const P17cZoomLabel = '.whiteboard-canvas .reset-zoom-button';
+const P17cZoomIn = '.whiteboard-canvas .zoom-in-button';
+const P17cZoomOut = '.whiteboard-canvas .zoom-out-button';
 
 function p17cRenamed(User $user, string $name): User
 {
@@ -96,6 +104,15 @@ function p17cPause(mixed $page, int $milliseconds): void
 function p17cTimerSeconds(mixed $page): int
 {
     return (int) $page->script('() => { const [minutes, seconds] = document.querySelector(\'[role="timer"]\').textContent.trim().split(":").map(Number); return minutes * 60 + seconds; }');
+}
+
+function p17cOpenBoardMenu(mixed $page): mixed
+{
+    $page->assertNotPresent('[role="menu"]')
+        ->click('[aria-label="Board menu"]')
+        ->assertPresent('[role="menu"]');
+
+    return $page;
 }
 
 it('[P17c-01a] shows the timer, lock and follow buttons to the facilitator only, and refuses the timer, the lock and follow-me to a member and to a guest', function () {
@@ -562,4 +579,365 @@ it('[P17c-03b] lets the facilitator lock a shape from the canvas menu, hides the
     $this->awaitWhiteboardScene($guestPage, $board);
 
     expect($locked->refresh()->data['locked'])->toBeFalse();
+});
+
+it('[P17c-04a] brings a guest to the facilitator\'s zoom, pauses the guest who zooms without moving the facilitator, and resumes at the facilitator\'s current view', function () {
+    ['board' => $board, 'fran' => $fran] = p17cBoard();
+
+    $franPage = $this->awaitRealtime($this->signIn($fran, p17cBoardPath($board)));
+    $guestPage = $this->awaitRealtime($this->joinAsGuest(p17cJoinPath($board), 'Guest Gia'));
+
+    foreach ([$franPage, $guestPage] as $page) {
+        $page->assertPresent('[role="group"][aria-label="2 online"]')
+            ->assertSeeIn(P17cZoomLabel, '100%')
+            ->assertNotPresent('div[role="status"]');
+    }
+
+    $franPage->click(P17cFollowSwitch)
+        ->assertAriaAttribute(P17cFollowSwitch, 'pressed', 'true')
+        ->assertPresent(P17cLeadingNotice);
+
+    $guestPage->assertPresent(P17cFollowingNotice)
+        ->assertNotPresent(P17cPausedNotice);
+
+    expect($board->fresh()->follow_enabled)->toBeTrue()
+        ->and($this->whiteboardSnapshot($guestPage, $board)['board']['followEnabled'])->toBeTrue();
+
+    $franPage->click(P17cZoomIn)
+        ->assertSeeIn(P17cZoomLabel, '110%');
+
+    $guestPage->assertSeeIn(P17cZoomLabel, '110%');
+
+    p17cPause($guestPage, 2400);
+
+    $guestPage->assertPresent(P17cFollowingNotice)
+        ->assertNotPresent(P17cPausedNotice)
+        ->assertSeeIn(P17cZoomLabel, '110%');
+
+    $guestPage->click(P17cZoomOut)
+        ->assertSeeIn(P17cZoomLabel, '100%')
+        ->assertPresent(P17cPausedNotice)
+        ->assertPresent(P17cResume)
+        ->assertNotPresent(P17cFollowingNotice);
+
+    p17cPause($franPage, 800);
+
+    $franPage->assertSeeIn(P17cZoomLabel, '110%')
+        ->assertPresent(P17cLeadingNotice)
+        ->assertNotPresent(P17cPausedNotice);
+
+    $franPage->click(P17cZoomIn)
+        ->assertSeeIn(P17cZoomLabel, '120%');
+
+    p17cPause($guestPage, 2400);
+
+    $guestPage->assertSeeIn(P17cZoomLabel, '100%')
+        ->assertPresent(P17cPausedNotice);
+
+    $guestPage->click(P17cResume)
+        ->assertSeeIn(P17cZoomLabel, '120%')
+        ->assertPresent(P17cFollowingNotice)
+        ->assertNotPresent(P17cResume);
+
+    $franPage->assertSeeIn(P17cZoomLabel, '120%');
+});
+
+it('[P17c-04b] brings a guest who joins while follow-me is on to the facilitator\'s view, and frees everyone when it is switched off', function () {
+    ['board' => $board, 'fran' => $fran] = p17cBoard(['follow_enabled' => true]);
+
+    $franPage = $this->awaitRealtime($this->signIn($fran, p17cBoardPath($board)));
+
+    $franPage->assertPresent(P17cLeadingNotice)
+        ->assertAriaAttribute(P17cFollowSwitch, 'pressed', 'true')
+        ->click(P17cZoomIn)
+        ->assertSeeIn(P17cZoomLabel, '110%')
+        ->click(P17cZoomIn)
+        ->assertSeeIn(P17cZoomLabel, '120%');
+
+    $guestPage = $this->awaitRealtime($this->joinAsGuest(p17cJoinPath($board), 'Guest Gia'));
+
+    $guestPage->assertPresent(P17cFollowingNotice)
+        ->assertSeeIn(P17cZoomLabel, '120%')
+        ->assertNotPresent(P17cPausedNotice);
+
+    $franPage->click(P17cFollowSwitch)
+        ->assertAriaAttribute(P17cFollowSwitch, 'pressed', 'false')
+        ->assertNotPresent('div[role="status"]');
+
+    $guestPage->assertNotPresent('div[role="status"]');
+
+    $guestPage->click(P17cZoomOut)
+        ->assertSeeIn(P17cZoomLabel, '110%');
+
+    p17cPause($guestPage, 800);
+
+    $guestPage->assertNotPresent('div[role="status"]')
+        ->assertSeeIn(P17cZoomLabel, '110%');
+
+    $franPage->assertSeeIn(P17cZoomLabel, '120%');
+
+    expect($board->fresh()->follow_enabled)->toBeFalse()
+        ->and($this->whiteboardSnapshot($guestPage, $board)['board']['followEnabled'])->toBeFalse();
+});
+
+it('[P17c-04c] lets a guest in view mode on a locked board follow the facilitator, pause by zooming and resume', function () {
+    ['board' => $board, 'fran' => $fran] = p17cBoard(['locked' => true, 'follow_enabled' => true]);
+
+    $franPage = $this->awaitRealtime($this->signIn($fran, p17cBoardPath($board)));
+    $guestPage = $this->awaitRealtime($this->joinAsGuest(p17cJoinPath($board), 'Guest Gia'));
+
+    $guestPage->assertPresent(P17cViewMode)
+        ->assertPresent(P17cLockedNotice)
+        ->assertPresent(P17cFollowingNotice);
+
+    $franPage->click(P17cZoomIn)
+        ->assertSeeIn(P17cZoomLabel, '110%');
+
+    $guestPage->assertSeeIn(P17cZoomLabel, '110%')
+        ->assertNotPresent(P17cPausedNotice);
+
+    $guestPage->click(P17cZoomOut)
+        ->assertSeeIn(P17cZoomLabel, '100%')
+        ->assertPresent(P17cPausedNotice)
+        ->assertPresent(P17cLockedNotice);
+
+    $guestPage->click(P17cResume)
+        ->assertSeeIn(P17cZoomLabel, '110%')
+        ->assertPresent(P17cFollowingNotice)
+        ->assertPresent(P17cViewMode);
+
+    $franPage->assertSeeIn(P17cZoomLabel, '110%');
+});
+
+it('[P17c-04d] zooms a follower with a narrower window out until the facilitator\'s view fits in it', function () {
+    ['board' => $board, 'fran' => $fran] = p17cBoard(['follow_enabled' => true]);
+    $size = '() => { const box = document.querySelector(".whiteboard-canvas").getBoundingClientRect(); return JSON.stringify([box.width, box.height]); }';
+
+    $franPage = $this->awaitRealtime($this->signIn($fran, p17cBoardPath($board)));
+    $guestPage = $this->awaitRealtime($this->joinAsGuest(p17cJoinPath($board), 'Guest Gia'));
+
+    $guestPage->assertPresent(P17cFollowingNotice)
+        ->assertSeeIn(P17cZoomLabel, '100%');
+
+    $guestPage->resize(900, 1117)
+        ->assertScript('window.innerWidth', 900);
+
+    [$franWidth, $franHeight] = json_decode((string) $franPage->script($size), true);
+    [$guestWidth, $guestHeight] = json_decode((string) $guestPage->script($size), true);
+    $fitted = min($guestWidth / $franWidth, $guestHeight / $franHeight);
+
+    expect($fitted)->toBeGreaterThan(0.3)->toBeLessThan(0.6);
+
+    $guestPage->assertSeeIn(P17cZoomLabel, number_format($fitted * 100).'%')
+        ->assertPresent(P17cFollowingNotice)
+        ->assertNotPresent(P17cPausedNotice);
+
+    $franPage->assertSeeIn(P17cZoomLabel, '100%');
+});
+
+it('[P17c-05a] lists the team members and the workspace admins in the hand-over dialog, hands facilitation over without a reload, switches follow-me off at each change, and lets the former facilitator take control back', function () {
+    ['board' => $board, 'fran' => $fran, 'franMember' => $franMember] = p17cBoard();
+    [$max, $maxMember] = whiteboardMember($board);
+    p17cRenamed($max, 'Max Member');
+    p17cRenamed(workspaceManager($board->team->workspace), 'Ada Admin');
+    $handOver = '[role="dialog"] button:text-is("Hand over")';
+
+    $franPage = $this->awaitRealtime($this->signIn($fran, p17cBoardPath($board)));
+    $maxPage = $this->awaitRealtime($this->signIn($max, p17cBoardPath($board)));
+    $guestPage = $this->awaitRealtime($this->joinAsGuest(p17cJoinPath($board), 'Guest Gia'));
+
+    $franPage->assertPresent('[role="group"][aria-label="3 online"]')
+        ->click(P17cFollowSwitch)
+        ->assertPresent(P17cLeadingNotice);
+
+    $maxPage->assertPresent(P17cFollowingNotice)
+        ->assertNotPresent(P17cTools);
+
+    p17cOpenBoardMenu($franPage)
+        ->assertNotPresent('[role="menuitem"]:has-text("Take control")')
+        ->click('[role="menuitem"]:has-text("Hand over facilitation")')
+        ->assertPresent('[role="dialog"] #whiteboard-new-facilitator')
+        ->assertDisabled($handOver)
+        ->click('#whiteboard-new-facilitator')
+        ->assertPresent('[role="listbox"]');
+
+    $offered = json_decode((string) $franPage->script('() => JSON.stringify(Array.from(document.querySelectorAll(\'[role="listbox"] [role="option"]\')).map((option) => option.textContent.trim()))'), true);
+    $candidates = array_column($this->whiteboardSnapshot($franPage, $board)['me']['transferCandidates'], 'name');
+
+    expect($offered)->toBe(['Ada Admin', 'Max Member'])
+        ->and($candidates)->toBe(['Ada Admin', 'Max Member'])
+        ->and($this->whiteboardSnapshot($guestPage, $board)['me']['transferCandidates'])->toBeArray()->toBeEmpty();
+
+    $franPage->click('[role="option"]:has-text("Max Member")')
+        ->assertNotPresent('[role="listbox"]')
+        ->click($handOver)
+        ->assertNotPresent('[role="dialog"]')
+        ->assertNotPresent(P17cTools)
+        ->assertNotPresent('div[role="status"]');
+
+    $maxPage->assertPresent(P17cTools)
+        ->assertAriaAttribute(P17cFollowSwitch, 'pressed', 'false')
+        ->assertNotPresent('div[role="status"]');
+
+    $afterHandOver = $this->whiteboardSnapshot($guestPage, $board)['board'];
+
+    expect($board->fresh()->facilitator_member_id)->toBe($maxMember->id)
+        ->and($board->fresh()->follow_enabled)->toBeFalse()
+        ->and($afterHandOver['facilitatorMemberId'])->toBe($maxMember->id)
+        ->and($afterHandOver['followEnabled'])->toBeFalse();
+
+    $maxPage->click(P17cFollowSwitch)
+        ->assertPresent(P17cLeadingNotice);
+
+    $franPage->assertPresent(P17cFollowingNotice);
+    $guestPage->assertPresent(P17cFollowingNotice);
+
+    p17cOpenBoardMenu($franPage)
+        ->assertNotPresent('[role="menuitem"]:has-text("Hand over facilitation")')
+        ->click('[role="menuitem"]:has-text("Take control")')
+        ->assertNotPresent('[role="menu"]')
+        ->assertPresent(P17cTools)
+        ->assertAriaAttribute(P17cFollowSwitch, 'pressed', 'false')
+        ->assertNotPresent('div[role="status"]');
+
+    $maxPage->assertNotPresent(P17cTools)
+        ->assertNotPresent('div[role="status"]');
+
+    $guestPage->assertNotPresent('div[role="status"]');
+
+    $afterTakeOver = $this->whiteboardSnapshot($guestPage, $board)['board'];
+
+    expect($board->fresh()->facilitator_member_id)->toBe($franMember->id)
+        ->and($board->fresh()->follow_enabled)->toBeFalse()
+        ->and($afterTakeOver['facilitatorMemberId'])->toBe($franMember->id)
+        ->and($afterTakeOver['followEnabled'])->toBeFalse();
+});
+
+it('[P17c-05b] says that no one else can facilitate when the facilitator is alone in the team, and never offers or allows facilitation to a guest', function () {
+    ['board' => $board, 'fran' => $fran, 'franMember' => $franMember] = p17cBoard();
+
+    $franPage = $this->awaitRealtime($this->signIn($fran, p17cBoardPath($board)));
+    $guestPage = $this->awaitRealtime($this->joinAsGuest(p17cJoinPath($board), 'Guest Gia'));
+
+    p17cOpenBoardMenu($franPage)
+        ->click('[role="menuitem"]:has-text("Hand over facilitation")')
+        ->assertSeeIn('[role="dialog"]', 'No one else can facilitate this board yet.')
+        ->assertNotPresent('[role="dialog"] #whiteboard-new-facilitator')
+        ->assertNotPresent('[role="dialog"] button:text-is("Hand over")')
+        ->click('[role="dialog"] button:text-is("Cancel")')
+        ->assertNotPresent('[role="dialog"]')
+        ->assertPresent(P17cTools);
+
+    p17cOpenBoardMenu($guestPage)
+        ->assertPresent('[role="menuitemcheckbox"]:has-text("Hide my cursor")')
+        ->assertCount('[role="menu"] [role="menuitem"]', 0)
+        ->assertDontSeeIn('[role="menu"]', 'Take control')
+        ->assertDontSeeIn('[role="menu"]', 'Hand over facilitation');
+
+    $attempt = p17cSend($guestPage, 'PUT', "/whiteboards/{$board->id}/facilitator", ['user_id' => $fran->id]);
+
+    expect($attempt['status'])->toBe(403)
+        ->and($attempt['body']['message'])->toBe('Only the facilitator can do this.')
+        ->and($board->fresh()->facilitator_member_id)->toBe($franMember->id)
+        ->and($this->whiteboardSnapshot($guestPage, $board)['me']['canTakeControl'])->toBeFalse();
+});
+
+it('[P17c-06] flies reactions both ways on a locked board with the sender\'s name, and removes the bar for everyone when the facilitator switches reactions off', function () {
+    ['board' => $board, 'fran' => $fran] = p17cBoard(['locked' => true]);
+    $bar = '.whiteboard-reactions[role="toolbar"][aria-label="Reactions"]';
+
+    $franPage = $this->awaitRealtime($this->signIn($fran, p17cBoardPath($board)));
+    $guestPage = $this->awaitRealtime($this->joinAsGuest(p17cJoinPath($board), 'Guest Gia'));
+
+    foreach ([$franPage, $guestPage] as $page) {
+        $page->assertPresent('[role="group"][aria-label="2 online"]')
+            ->assertPresent($bar);
+    }
+
+    $guestPage->assertPresent(P17cViewMode)
+        ->assertPresent(P17cLockedNotice)
+        ->click('[aria-label="Send a reaction ❤️"]');
+
+    $franPage->assertSeeIn('.lr-overlay', '❤️')
+        ->assertSeeIn('.lr-overlay', 'Guest Gia');
+
+    $franPage->click('[aria-label="Send a reaction 🎉"]');
+
+    $guestPage->assertSeeIn('.lr-overlay', '🎉')
+        ->assertSeeIn('.lr-overlay', 'Fran Facilitator');
+
+    p17cOpenBoardMenu($franPage)
+        ->assertAriaAttribute('[role="menuitemcheckbox"]:has-text("Show flying reactions")', 'checked', 'true')
+        ->click('[role="menuitemcheckbox"]:has-text("Show flying reactions")');
+
+    $guestPage->assertNotPresent($bar)
+        ->assertPresent(P17cLockedNotice);
+
+    $franPage->assertNotPresent($bar);
+
+    expect($board->fresh()->reactions_enabled)->toBeFalse()
+        ->and($board->fresh()->locked)->toBeTrue();
+});
+
+it('[P17c-07] names no canvas library and shows no outbound link on a board with the timer, the lock and follow-me in use', function () {
+    ['board' => $board, 'fran' => $fran] = p17cBoard(['locked' => true, 'follow_enabled' => true, 'timer_ends_at' => now()->addMinutes(5)]);
+    $scan = '() => { const words = [document.body.innerText, ...Array.from(document.querySelectorAll("[aria-label], [title]")).flatMap((node) => [node.getAttribute("aria-label") ?? "", node.getAttribute("title") ?? ""])].join("\n").toLowerCase(); const links = Array.from(document.querySelectorAll("a[href]")).filter((link) => link.getClientRects().length > 0 && new URL(link.href, location.href).origin !== location.origin).length; return JSON.stringify({ named: words.includes("excalidraw"), links }); }';
+
+    $franPage = $this->awaitRealtime($this->signIn($fran, p17cBoardPath($board)));
+    $guestPage = $this->awaitRealtime($this->joinAsGuest(p17cJoinPath($board), 'Guest Gia'));
+
+    $franPage->assertPresent(P17cLeadingNotice)
+        ->assertPresent('[role="timer"]')
+        ->click('[aria-label="Timer"]')
+        ->assertPresent('[role="menuitem"]:has-text("Stop timer")');
+
+    $guestPage->assertPresent(P17cLockedNotice)
+        ->assertPresent(P17cFollowingNotice)
+        ->assertPresent('[role="timer"]');
+
+    expect(json_decode((string) $franPage->script($scan), true))->toBe(['named' => false, 'links' => 0])
+        ->and(json_decode((string) $guestPage->script($scan), true))->toBe(['named' => false, 'links' => 0]);
+});
+
+it('[P17c-08] duplicates a locked board with a running timer and follow-me into a copy that has none of them, and keeps a locked shape locked', function () {
+    ['board' => $board, 'fran' => $fran] = p17cBoard(['locked' => true, 'follow_enabled' => true, 'timer_ends_at' => now()->addMinutes(5)]);
+
+    $page = $this->awaitRealtime($this->signIn($fran, p17cBoardPath($board)));
+
+    $shape = $this->addWhiteboardElement($page, $board, ['x' => 300, 'y' => 300, 'locked' => true]);
+
+    $this->awaitWhiteboardElements($page, 1);
+
+    $page->assertPresent('[role="timer"]')
+        ->assertAriaAttribute('[aria-label="Unlock the board"]', 'pressed', 'true')
+        ->assertAriaAttribute(P17cFollowSwitch, 'pressed', 'true');
+
+    p17cOpenBoardMenu($page)
+        ->click('[role="menuitem"]:has-text("Duplicate this board")')
+        ->assertSeeIn('header > h1', 'Sprint board (copy)');
+
+    $copy = Whiteboard::query()->where('title', 'Sprint board (copy)')->sole();
+
+    $this->awaitRealtime($page);
+    $this->awaitWhiteboardElements($page, 1);
+
+    $page->assertPathIs(p17cBoardPath($copy))
+        ->assertNotPresent('[role="timer"]')
+        ->assertNotPresent('div[role="status"]')
+        ->assertAriaAttribute('[aria-label="Lock the board"]', 'pressed', 'false')
+        ->assertAriaAttribute(P17cFollowSwitch, 'pressed', 'false');
+
+    $copied = WhiteboardElement::query()->where('whiteboard_id', $copy->id)->sole();
+    $snapshot = $this->whiteboardSnapshot($page, $copy);
+
+    expect($copy->id)->not->toBe($board->id)
+        ->and($copy->locked)->toBeFalse()
+        ->and($copy->follow_enabled)->toBeFalse()
+        ->and($copy->timer_ends_at)->toBeNull()
+        ->and($copied->element_id)->not->toBe($shape['id'])
+        ->and($copied->data['locked'])->toBeTrue()
+        ->and($snapshot['me']['isFacilitator'])->toBeTrue()
+        ->and($snapshot['board']['timerEndsAt'])->toBeNull()
+        ->and($board->fresh()->locked)->toBeTrue()
+        ->and($board->fresh()->timer_ends_at)->not->toBeNull();
 });
