@@ -260,3 +260,47 @@ Proven by running the tests of plan 16d.
 
 - The browser suite holds 268 tests and takes about 475 seconds; `composer test` runs 3661 tests in about 146 seconds.
 - Global helper prefixes taken so far: `plan04*`, `plan06*`, `plan07*`, `p08a*` to `p08e*`, `p09a*`, `p09b*`, `p10a*`, `p10b*`, `p13a*` to `p13d*`.
+
+## Findings from plan 16e (integrations walkthroughs)
+
+Proven by running the tests of plan 16e and of its final fix wave.
+
+### Selectors
+
+- Each provider card has the hook `[data-test="integration-card-<provider>"]`. The provider's label is in the card's title and in its description, so `assertSeeIn()` on the card is ambiguous for it: use `{card} [data-slot="card-title"]`. The status badge is `{card} [data-slot="badge"]`.
+- "Reconnect" inside a card that needs reconnecting matches the badge and the link: use `a:text-is("Reconnect")`.
+- `assertSee()` and `assertDontSee()` ignore case and match substrings: `assertDontSee('Estimate: 3')` still finds "GitHub estimate: 3". Address a badge with `[data-slot="badge"]:text-is("…")`.
+- An id containing dots is addressed as `[id="webhook-event-action_item.completed"]`.
+- A connection made through the interface never shows "Never" as its last check: connecting stamps `last_checked_at`. Only a connection arranged with the factory starts with "Never".
+
+### Provider fakes
+
+- `Http::fake()` made in the test body applies to browser requests, to jobs run by `workQueue()` and to Artisan commands run from the test body (`skrum:telegram-poll`, `skrum:check-integrations`, `skrum:poll-integrations`).
+- Fakes registered first win, so a host catch-all registered last (`'api.github.com/*'`) leaves the specific routes in charge. The catch-all answers 404: with an empty 200 an unfaked call passes silently. Every matching closure fake is called even when an earlier fake answers, so a closure catch-all cannot tell which requests it answered; read `Http::recorded()` and look at the responses.
+- A closure fake that reads a variable by reference (`use (&$status)`) is evaluated per request, so a test can change a provider's answer between two steps.
+- The integrations page of a tracker with write access loads the priority list (`rest/api/3/priority/search` for Jira Cloud, `rest/api/2/priority` for Jira Data Center); a token connection also reads `rest/api/2/field`.
+- `$request['variables']` of a recorded GraphQL request can be a `stdClass`: cast it to an array before comparing.
+- The response body of a fake is stored as the delivery's response excerpt and shown in the Response tab of the delivery details.
+
+### Bindings, configuration and time
+
+- `outgoingWebhookResolves()` binds a `HostResolver` with `app()->instance()`; the binding applies to browser requests and to jobs. The connect form then accepts `https://hooks.example.com/…`, and `https://127.0.0.1/…` is still refused by the real URL check.
+- `config(['mail.default' => 'smtp'])` with `Notification::fake()` makes "Send to email" appear on the Results share menu; add `Mail::fake()` so that no mailer can be reached. `Notification::assertSentTo()` sees the locale of each recipient.
+- `$this->travel()` in the test body moves the server's clock for the next browser request: it ends a cooldown kept in the cache, and a job released with a backoff is picked up by the next `workQueue()` once exactly the backoff has been travelled. After a travel of some hours the page's session has expired; sign in again.
+- `travelTo()` a time inside the current minute, before `signIn()`, works with a realtime page.
+- The API tokens page is behind the password confirmation: confirm once through `/user/confirm-password` (`p11bConfirmPassword()`), and later requests of the same context pass. The new token is Inertia flash data: a later `navigate()` no longer carries it.
+
+### Queue and requests from the test process
+
+- A job that ends with `$this->fail()` leaves `workQueue()` green; assert the outcome on the page or in the database. A job refused on validation does not block the next job.
+- `while (dueJobs() > 0) { $this->workQueue(); }` drains a chain of jobs. To prove that one particular event was handled, assert the number of due jobs before running it and a request it sends afterwards (`[P14d-05b]`).
+- A badge driven by a queued job changes on every open page after `workQueue()`, without a reload. The delivery log is not live: "Hide deliveries" then "Show deliveries" reloads it.
+- Inbound webhooks are posted from the test process with `test()->call('POST', …)` and a raw signed body (`p14dPostWebhook()`); the queued re-read then runs with `workQueue()`.
+- A test-process request to `/mcp` with a valid bearer token leaves the default guard on `sanctum` for the following browser requests; restore it after the call (`p11bPostMcp()`).
+- `script()` returns the value resolved by an `async () => { … }` function: a request the interface has no control for is sent with `fetch()` from the page, with the `XSRF-TOKEN` cookie as `X-XSRF-TOKEN` (`[P12d-05]`, `[P14b-07]`, `[P14c-11]`). Sent without `X-Socket-ID`, the page that sent it receives the resulting broadcast too.
+- `Artisan::call('model:prune', …)` from the test body works inside the test transaction, and the next browser request sees the result.
+
+### Tooling
+
+- The browser suite held 383 tests (7030 assertions) and took about 625 seconds at the verification of plan 16e; the final fix wave added three tests (386), and the whole suite was not run again. `composer test` runs 3661 tests in about 148 seconds.
+- Global helper prefixes taken by plan 16e: `p11b*`, `p12a*` to `p12d*`, `p14a*` to `p14d*`, `p15*`; constants `P14dWebhookToken` and `P14dWebhookSecret`.

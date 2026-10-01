@@ -70,7 +70,7 @@ Run each finished test file twice in a row before committing it.
 Conditions the spec implies that a happy-path reading could miss, each pinned by a test.
 
 1. No test may send a request to a real provider. Expected: every fake list ends with a host catch-all or stray requests are prevented, and `Http::assertSent` proves what skrum sent. Pinned by each task's fake helper.
-2. A member who is not Owner or Admin cannot manage integrations. Expected: read-only controls or a refusal. Pinned by the permission tests of Tasks 1 and 7.
+2. A member who is not Owner or Admin cannot manage integrations. Expected: read-only controls or a refusal. Pinned by `[P12a-01b]` (Task 1: no Integrations link and 403 on the integrations page) and by `[P14b-07]` (added to the outgoing-webhooks file of Task 7 by the final fix wave: no link, 403 on the page and 403 on a webhook URL posted from the member's page).
 3. A revoked or failing connection shows "Reconnect required" and stops further calls. Pinned by the reconnect tests of Tasks 1, 3, 6 and 10.
 4. A duplicated export request creates one issue. Pinned by the duplicate-request test of Task 6.
 5. A webhook secret and an API token are shown once and never again. Pinned by the secret-rotation test of Task 7 and the token tests of Task 9.
