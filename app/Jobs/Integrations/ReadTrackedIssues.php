@@ -29,7 +29,8 @@ use Illuminate\Support\Facades\Log;
  * deletions — daily, and when sync is turned on (the source then wins).
  * Reads of one connection never overlap. A failed incremental poll waits
  * for the next interval with its cursor kept; a failed full read is
- * released and retried, so the source-wins read is never lost.
+ * released and retried; a source-wins read that still fails is queued
+ * again by the poll until it completes, so it is never lost.
  */
 class ReadTrackedIssues implements ShouldBeUnique, ShouldQueue
 {
@@ -85,6 +86,7 @@ class ReadTrackedIssues implements ShouldBeUnique, ShouldQueue
         }
 
         $startedAt = now();
+        $pendingSince = $this->initial ? $integration->setting(StatusSync::InitialReadPending) : null;
         $ids = $trackedIssues->ids($integration);
 
         try {
@@ -111,6 +113,8 @@ class ReadTrackedIssues implements ShouldBeUnique, ShouldQueue
         }
 
         $integration->forceFill(['last_polled_at' => now(), 'poll_cursor' => $startedAt])->save();
+
+        StatusSync::finishInitialRead($integration, $pendingSince);
 
         $trackerWebhooks->registerIfProjectsChanged($integration);
     }

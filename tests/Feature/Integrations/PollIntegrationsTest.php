@@ -336,3 +336,35 @@ it('holds its unique lock longer than it may be retried', function () {
 
     expect(now()->addSeconds($job->uniqueFor)->gt($job->retryUntil()))->toBeTrue();
 });
+
+it('queues the first read again while it has not completed', function () {
+    Queue::fake();
+    $integration = pollingIntegration(['last_polled_at' => now()], ['initialReadPendingSince' => '2026-10-07T10:00:00+00:00']);
+
+    $this->artisan('skrum:poll-integrations')->assertSuccessful();
+
+    Queue::assertPushed(ReadTrackedIssues::class, 1);
+    Queue::assertPushed(ReadTrackedIssues::class, fn (ReadTrackedIssues $job) => $job->integrationId === $integration->id && $job->full && $job->initial);
+});
+
+it('clears the pending first read only once it completes', function () {
+    $integration = pollingIntegration(settings: ['initialReadPendingSince' => '2026-10-07T10:00:00+00:00']);
+    trackedJiraLink($integration, '10001');
+    Http::fake([jiraApiUrl('rest/api/3/search/jql') => Http::sequence()
+        ->push(['errorMessages' => ['Down for maintenance']], 503)
+        ->push(['issues' => [jiraTrackerIssue('10001', 'PROJ-1', ['project' => ['key' => 'PROJ']])], 'isLast' => true])
+        ->push(['issues' => [jiraTrackerIssue('10001', 'PROJ-1', ['project' => ['key' => 'PROJ']])], 'isLast' => true]),
+    ]);
+
+    runTrackedRead($integration, full: true, initial: true);
+
+    expect($integration->fresh()->setting('initialReadPendingSince'))->toBe('2026-10-07T10:00:00+00:00');
+
+    runTrackedRead($integration, full: true);
+
+    expect($integration->fresh()->setting('initialReadPendingSince'))->toBe('2026-10-07T10:00:00+00:00');
+
+    runTrackedRead($integration, full: true, initial: true);
+
+    expect($integration->fresh()->setting('initialReadPendingSince'))->toBeNull();
+});

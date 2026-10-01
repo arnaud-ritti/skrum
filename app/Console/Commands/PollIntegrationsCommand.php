@@ -9,6 +9,7 @@ use App\Jobs\Integrations\ReadTrackedIssues;
 use App\Models\TeamIntegration;
 use App\Support\Integrations\InboundModes;
 use App\Support\Integrations\IntegrationPolls;
+use App\Support\Integrations\StatusSync;
 use App\Support\Integrations\TrackerWebhooks;
 use Illuminate\Console\Command;
 use Illuminate\Queue\Events\UniqueJobSkipped;
@@ -48,13 +49,15 @@ class PollIntegrationsCommand extends Command
                     $trackerWebhooks->registerIfProjectsChanged($integration);
                 }
 
-                if (! IntegrationPolls::isDue($integration)) {
+                $initialReadPending = StatusSync::initialReadPending($integration);
+
+                if (! $initialReadPending && ! IntegrationPolls::isDue($integration)) {
                     return;
                 }
 
                 $this->info("Queueing a read of {$integration->provider->label()} integration `{$integration->id}`…");
                 $skippedBefore = $skipped;
-                ReadTrackedIssues::dispatch($integration->id);
+                ReadTrackedIssues::dispatch($integration->id, $initialReadPending, $initialReadPending);
 
                 if ($skipped === $skippedBefore) {
                     $queued++;

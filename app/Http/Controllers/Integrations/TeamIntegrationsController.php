@@ -12,6 +12,7 @@ use App\Models\Team;
 use App\Models\TeamIntegration;
 use App\Models\Workspace;
 use App\Rules\MattermostWebhookUrl;
+use App\Support\Integrations\InboundReachability;
 use App\Support\Integrations\Telegram\TelegramBot;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -52,6 +53,7 @@ class TeamIntegrationsController extends Controller
             ] : null,
             'mattermost' => IntegrationProvider::Mattermost->isEnabled() ? ['url' => MattermostWebhookUrl::serverUrl()] : null,
             'webhookEvents' => IntegrationProvider::Webhook->isEnabled() ? WebhookEvent::options() : null,
+            'pollMinutes' => InboundReachability::pollIntervalMinutes(),
         ]);
     }
 

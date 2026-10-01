@@ -5,12 +5,17 @@ namespace App\Actions\Integrations;
 use App\Enums\IntegrationProvider;
 use App\Models\TeamIntegration;
 use App\Support\Integrations\GitHub\GitHubClient;
+use App\Support\Integrations\InboundModes;
 use App\Support\Integrations\JiraDataCenter\JiraDataCenterClient;
+use App\Support\Integrations\StatusSync;
 use Illuminate\Support\Arr;
 
 class PresentTeamIntegration
 {
-    public function __construct(private GitHubClient $gitHub) {}
+    public function __construct(
+        private GitHubClient $gitHub,
+        private InboundModes $inboundModes,
+    ) {}
 
     /**
      * Non-secret settings the integrations page may show, per provider.
@@ -20,10 +25,10 @@ class PresentTeamIntegration
     public const SettingKeys = [
         'slack' => ['teamName', 'channelName', 'configurationUrl'],
         'telegram' => ['chatId', 'chatTitle', 'chatType'],
-        'jira' => ['cloudId', 'siteName', 'siteUrl', 'sites', 'storyPointFields', 'numberFields', 'priorityMap'],
-        'linear' => ['organizationName', 'urlKey', 'priorityMap'],
-        'jira_dc' => ['serverTitle', 'version', 'baseUrl', 'authMethod', 'storyPointFields', 'numberFields', 'priorityMap'],
-        'github' => ['installationId', 'accountLogin', 'accountType', 'exportRepositoryId', 'priorityLabels'],
+        'jira' => ['cloudId', 'siteName', 'siteUrl', 'sites', 'storyPointFields', 'numberFields', 'priorityMap', 'treatCanceledAsDone', 'statusMapping'],
+        'linear' => ['organizationName', 'urlKey', 'priorityMap', 'treatCanceledAsDone', 'statusMapping'],
+        'jira_dc' => ['serverTitle', 'version', 'baseUrl', 'authMethod', 'storyPointFields', 'numberFields', 'priorityMap', 'treatCanceledAsDone', 'statusMapping'],
+        'github' => ['installationId', 'accountLogin', 'accountType', 'exportRepositoryId', 'priorityLabels', 'treatCanceledAsDone', 'statusMapping'],
         'msteams' => ['host', 'channelLabel'],
         'mattermost' => ['host', 'channelLabel'],
         'webhook' => ['host', 'channelLabel', 'secretCreatedAt', 'events', 'disabledReason'],
@@ -41,7 +46,13 @@ class PresentTeamIntegration
      *     connectedAt: string|null,
      *     lastCheckedAt: string|null,
      *     lastError: string|null,
-     *     webhook: array{consecutiveFailures: int, lastDeliverySucceededAt: string|null}|null
+     *     webhook: array{consecutiveFailures: int, lastDeliverySucceededAt: string|null}|null,
+     *     statusSync: bool,
+     *     inboundMode: string,
+     *     webhookStatus: ?string,
+     *     lastInboundAt: ?string,
+     *     lastPolledAt: ?string,
+     *     inboundHint: ?string
      * }
      */
     public function handle(TeamIntegration $integration): array
@@ -58,6 +69,12 @@ class PresentTeamIntegration
             'lastCheckedAt' => $integration->last_checked_at?->toIso8601String(),
             'lastError' => $integration->last_error,
             'webhook' => $this->webhookHealth($integration),
+            'statusSync' => StatusSync::isOn($integration),
+            'inboundMode' => $integration->inbound_mode->value,
+            'webhookStatus' => $integration->webhook_status?->value,
+            'lastInboundAt' => $integration->last_inbound_at?->toIso8601String(),
+            'lastPolledAt' => $integration->last_polled_at?->toIso8601String(),
+            'inboundHint' => $this->inboundModes->hint($integration),
         ];
     }
 

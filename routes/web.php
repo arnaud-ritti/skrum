@@ -34,6 +34,7 @@ use App\Http\Controllers\Integrations\IntegrationAccountsController;
 use App\Http\Controllers\Integrations\IntegrationAuthorizationsController;
 use App\Http\Controllers\Integrations\IntegrationCallbacksController;
 use App\Http\Controllers\Integrations\IntegrationPrioritiesController;
+use App\Http\Controllers\Integrations\IntegrationStatusesController;
 use App\Http\Controllers\Integrations\IntegrationTargetsController;
 use App\Http\Controllers\Integrations\IntegrationTestsController;
 use App\Http\Controllers\Integrations\IntegrationUrlsController;
@@ -255,6 +256,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 Route::get('teams/{team}/integrations/{integration}/priorities', [IntegrationPrioritiesController::class, 'index'])
                     ->whereUuid('integration')
                     ->name('teams.integrations.priorities.index');
+                Route::get('teams/{team}/integrations/{integration}/statuses', [IntegrationStatusesController::class, 'index'])
+                    ->whereUuid('integration')
+                    ->middleware('throttle:30,1,integrationStatuses')
+                    ->name('teams.integrations.statuses.index');
                 Route::get('teams/{team}/integrations/{integration}/targets', [IntegrationTargetsController::class, 'index'])
                     ->whereUuid('integration')
                     ->middleware('throttle:30,1')

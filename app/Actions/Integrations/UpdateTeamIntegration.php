@@ -24,6 +24,7 @@ class UpdateTeamIntegration
         private ListProviderPriorities $listPriorities,
         private ConnectUrlChannel $connectUrlChannel,
         private ConnectOutgoingWebhook $connectOutgoingWebhook,
+        private UpdateStatusSyncSettings $updateStatusSyncSettings,
     ) {}
 
     /**
@@ -31,7 +32,7 @@ class UpdateTeamIntegration
      */
     public function rules(TeamIntegration $integration): array
     {
-        return match ($integration->provider) {
+        $rules = match ($integration->provider) {
             IntegrationProvider::Jira => [
                 'cloud_id' => ['sometimes', 'required', 'string', Rule::in($this->ids($integration->setting('sites', []), 'cloudId'))],
                 'story_point_field_id' => ['sometimes', 'required', 'string', Rule::in($this->ids($integration->setting('numberFields', []), 'id'))],
@@ -55,6 +56,8 @@ class UpdateTeamIntegration
             IntegrationProvider::Webhook => $this->connectOutgoingWebhook->rules(isUpdate: true),
             default => [],
         };
+
+        return [...$rules, ...$this->updateStatusSyncSettings->rules($integration)];
     }
 
     /**
@@ -100,6 +103,8 @@ class UpdateTeamIntegration
 
             $integration->forceFill(['settings' => [...$integration->settings, 'priorityLabels' => $labels]])->save();
         }
+
+        $integration = $this->updateStatusSyncSettings->handle($integration, $validated);
 
         return $integration->refresh();
     }
