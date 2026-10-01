@@ -32,7 +32,7 @@
 ## Review Focus
 
 1. **A scene that refers to an element that is not in it** (an arrow bound to a deleted shape, a text whose container was erased): the copy must load, with the dangling reference dropped, never copied or pointed at a stranger. Pinned in Task 2 ("drops a reference to an element that is not in the scene").
-2. **An image whose stored file is gone** (pruned, disk fault) in a template or a duplicated board: creation succeeds and leaves that image out; it never answers 500 and never creates an image element without a file. Pinned in Task 2 ("leaves out an image whose stored file is gone instead of failing").
+2. **An image whose stored file is gone** (pruned, disk fault) in a template or a duplicated board: creation succeeds and leaves that image out; it never answers 500 and never creates an image element, a `WhiteboardFile` row or a `scene.files` entry without a stored file. Every disk has `'throw' => false` (`config/filesystems.php`), so `Storage::copy()` answers `false` instead of throwing — on a disk fault, or when a template is deleted between the `exists` check and the copy (the template is read outside any lock) — and its result must be checked. Pinned in Task 2 ("leaves out an image whose stored file is gone instead of failing", "leaves out an image whose copy fails") and Task 4 ("leaves an image out of the template when its copy fails").
 3. **A translated label longer than the English one**: it must still fit inside its shape in every locale, because the canvas does not re-measure text handed to it. Pinned in Task 3 ("keeps every label inside its shape in every locale").
 4. **A template name that differs only by case or surrounding spaces**, on save and on rename, and renaming a template to its own name: refused / accepted as a person expects, with the database index as last line. Pinned in Task 4 ("refuses a name already used…", "keeps names unique when renaming, but lets a template keep its own", "keeps the name unique in the database too").
 5. **The nightly prune running while a copy is in flight**: files are written before the transaction that creates their owner commits, so a folder with a recent file must survive even when no owner row is visible yet. Pinned in Task 4 ("prunes the folder of a template that is gone, once its files are a day old" and the edited prune test).
@@ -361,6 +361,25 @@ it('leaves out an image whose stored file is gone instead of failing', function 
         ->and($board->files()->count())->toBe(0);
 });
 
+it('leaves out an image whose copy fails', function () {
+    $disk = Storage::fake();
+
+    $source = Whiteboard::factory()->create();
+    $file = WhiteboardFile::factory()->create(['whiteboard_id' => $source->id]);
+    Storage::put($file->path, 'bytes');
+
+    Storage::set(config('filesystems.default'), Mockery::mock($disk)->shouldReceive('copy')->andReturn(false)->getMock());
+
+    [$board, $copies] = boardFromScene([
+        sceneElement(['id' => 'picture', 'type' => 'image', 'fileId' => $file->file_id, 'status' => 'saved', 'scale' => [1, 1]]),
+        sceneElement(['id' => 'box']),
+    ], [['fileId' => $file->file_id, 'path' => $file->path, 'mimeType' => $file->mime_type, 'size' => $file->size]]);
+
+    expect($copies)->toHaveCount(1)
+        ->and($copies[0]['type'])->toBe('rectangle')
+        ->and($board->files()->count())->toBe(0);
+});
+
 it('serves the copy in the order it was given, without touching an index', function () {
     [$board, $copies] = boardFromScene([
         sceneElement(['id' => 'back', 'index' => 'a1']),
@@ -650,7 +669,9 @@ class CopyWhiteboardScene
 
     /**
      * Only the images a live element shows are copied; one whose stored file
-     * is gone is left out, and so is the element that shows it.
+     * is gone or cannot be copied is left out, and so is the element that
+     * shows it. Disks do not throw, so the result of the copy is the only
+     * sign of a failure.
      *
      * @param  Scene  $scene
      * @return array<string, true>
@@ -678,7 +699,9 @@ class CopyWhiteboardScene
 
             $path = "{$board->storageDirectory()}/{$file['fileId']}";
 
-            Storage::copy($file['path'], $path);
+            if (! Storage::copy($file['path'], $path)) {
+                continue;
+            }
 
             $board->files()->create([
                 'file_id' => $file['fileId'],
@@ -2033,6 +2056,20 @@ it('saves the live scene of a board, with its images, as a workspace template', 
         ->and(json_encode($template->scene))->not->toContain($user->id);
 });
 
+it('leaves an image out of the template when its copy fails', function () {
+    [$board, $user, $file] = boardWorthSaving();
+
+    Storage::set(config('filesystems.default'), Mockery::mock(Storage::disk())->shouldReceive('copy')->andReturn(false)->getMock());
+
+    saveTemplate($this->actingAs($user), $board)->assertCreated();
+
+    $template = WhiteboardTemplate::query()->sole();
+
+    expect($template->scene['files'])->toBe([]);
+
+    Storage::assertMissing("whiteboard-templates/{$template->id}/{$file->file_id}");
+});
+
 it('refuses guests, outsiders and logged-out visitors', function () {
     [$board] = boardWorthSaving();
     $board->update(['guest_access_enabled' => true]);
@@ -2787,6 +2824,8 @@ class SaveWhiteboardTemplate
 
     /**
      * The template owns its images: the board may be changed or deleted.
+     * An image that cannot be copied is not listed, so a board created from
+     * the template leaves its element out.
      *
      * @param  list<SceneFile>  $files
      * @return list<SceneFile>
@@ -2802,7 +2841,9 @@ class SaveWhiteboardTemplate
 
             $path = "{$template->storageDirectory()}/{$file['fileId']}";
 
-            Storage::copy($file['path'], $path);
+            if (! Storage::copy($file['path'], $path)) {
+                continue;
+            }
 
             $copies[] = [...$file, 'path' => $path];
         }
@@ -3658,12 +3699,12 @@ export type WhiteboardGalleryItem = {
 export type WhiteboardTemplateSummary = { id: string; name: string; description: string | null; canManage: boolean };
 ```
 
-- [ ] **Step 1: `WhiteboardTemplatePreview`** — `({preview}: {preview: WhiteboardPreview})`. Renders `<svg viewBox="0 0 {width||1} {height||1}" preserveAspectRatio="xMidYMid meet" className="h-24 w-full" aria-hidden="true">`. Per shape, by `kind`: `rect` → `<rect>`; `ellipse` → `<ellipse cx cy rx ry>`; `diamond` → `<polygon>` through the four mid-points; `path` → `<polyline points fill="none">`; `text` → a `<rect>` of the same box with `fill="currentColor"` and `opacity={0.25}` (a bar standing for text). `fill={shape.fill ?? 'none'}`, `stroke={shape.stroke ?? 'none'}`, `strokeWidth={Math.max(width, height) / 200}`, `vectorEffect="non-scaling-stroke"` omitted. An empty preview (`shapes.length === 0`) renders the same empty SVG box. Colours are only ever hex strings or null (server-checked), and they are set as attributes, never as markup.
+- [ ] **Step 1: `WhiteboardTemplatePreview`** — `({preview}: {preview: WhiteboardPreview})`. Renders the SVG inside a wrapper `<div className="rounded-md border border-black/10 bg-white p-2">`: a fixed light surface in both themes, with no `dark:` variant. Stored colours are the same in both themes (spec §6.1) and the default stroke is `#1e1e1e`, so on the dialog's dark background frames, outlines and arrows would be invisible; the thumbnail therefore always shows the scene as the light canvas does (chosen over the canvas's dark filter, which would also shift the note colours). The SVG: `<svg viewBox="0 0 {width||1} {height||1}" preserveAspectRatio="xMidYMid meet" className="h-24 w-full" aria-hidden="true">`. Per shape, by `kind`: `rect` → `<rect>`; `ellipse` → `<ellipse cx cy rx ry>`; `diamond` → `<polygon>` through the four mid-points; `path` → `<polyline points fill="none">`; `text` → a `<rect>` of the same box with the fixed `fill="#ced4da"` (a grey bar standing for text; never `currentColor`, which is near-white in the dark theme and would vanish on the white surface). `fill={shape.fill ?? 'none'}`, `stroke={shape.stroke ?? 'none'}`, `strokeWidth={Math.max(width, height) / 200}`, `vectorEffect="non-scaling-stroke"` omitted. An empty preview (`shapes.length === 0`) renders the same empty SVG box on the same white surface. Colours are only ever hex strings or null (server-checked), and they are set as attributes, never as markup.
 
 - [ ] **Step 2: Gallery in `NewWhiteboardDialog`** — new prop `gallery?: WhiteboardGalleryItem[]`; `DialogContent` gets `className="max-h-[90dvh] overflow-y-auto sm:max-w-3xl"`. In `NewWhiteboardForm`:
   - `useForm<{title: string; template: string | null; workspace_template_id: string | null}>({title: '', template: 'blank', workspace_template_id: null})`.
   - `useEffect(() => { if (gallery === undefined) { router.reload({ only: ['whiteboardGallery'] }); } }, [gallery]);` While undefined, show six `Skeleton` tiles (`h-36`).
-  - Below the title field, a `<fieldset>` with legend `t('Template')` and a `role="radiogroup"` grid (`grid grid-cols-2 gap-3 sm:grid-cols-3`). Built-ins first; when workspace templates exist, a sub-heading `t('Workspace templates')` then their tiles. A tile is a `<button type="button" role="radio" aria-checked={selected}>` with the preview, the name (`font-medium`) and the description (`text-sm text-muted-foreground line-clamp-2`); selected tile: `ring-2 ring-primary`. Selecting sets `template = item.workspaceTemplateId ? null : item.key` and `workspace_template_id = item.workspaceTemplateId`.
+  - Below the title field, a `<fieldset>` with legend `t('Template')` and a `role="radiogroup"` grid (`grid grid-cols-2 gap-3 sm:grid-cols-3`). Built-ins first; when workspace templates exist, a sub-heading `t('Workspace templates')` then their tiles. A tile is a `<button type="button" role="radio" aria-checked={selected}>` with the preview (which brings its own white surface; the tile adds no background behind it), the name (`font-medium`) and the description (`text-sm text-muted-foreground line-clamp-2`); selected tile: `ring-2 ring-primary`. Selecting sets `template = item.workspaceTemplateId ? null : item.key` and `workspace_template_id = item.workspaceTemplateId`.
   - `<InputError message={form.errors.template ?? form.errors.workspace_template_id} />` under the grid. Submit unchanged (`form.submit(TeamWhiteboardsController.store(...))`).
 
 - [ ] **Step 3: `WhiteboardTemplatesDialog`** — `({workspaceSlug, templates}: {workspaceSlug: string; templates: WhiteboardTemplateSummary[]})`. Trigger: `<Button variant="outline">{t('Whiteboard templates')}</Button>`. Content: title, then `t('No whiteboard templates yet.')` plus the hint `t('Save a board as a template from its menu.')` when empty; otherwise a `<ul className="divide-y rounded-md border">` with name, description and, when `canManage`, "Edit" and "Delete" ghost buttons.
@@ -3692,7 +3733,7 @@ git commit -m "feat(whiteboard): template gallery, template management and board
 - B7.3 With the UI in French, a SWOT board shows "Forces / Faiblesses / Opportunités / Menaces".
 - B7.4 The templates dialog renames, edits the description and deletes a template for its creator and for an admin; another member sees no Edit/Delete; a duplicate name shows the error under the field.
 - B7.5 The trash button shows only for the facilitator and admins; confirming removes the row without a full reload; an open tab on that board shows "This board was deleted".
-- B7.6 Dialog and tiles are usable at 375 px width and in the dark theme.
+- B7.6 Dialog and tiles are usable at 375 px width and in the dark theme. In the dark theme every thumbnail sits on a white surface and shows its structure: Lean canvas shows nine outlined frames, Flowchart its shapes, arrows and legend, and a workspace template made of default-stroke shapes is not blank.
 
 ---
 
