@@ -7,8 +7,8 @@ import { channelKey } from '@/lib/realtime/whisper-transport';
 
 /**
  * Unmounted while the board's switch is off, so that incoming reactions are
- * dropped too. Below 730px the canvas moves its toolbar to the bottom of the
- * screen, and the bar sits above it.
+ * dropped too. The bar is a sibling of the canvas container; the rules that
+ * keep it and the canvas's own bottom controls apart are in app.css.
  */
 export function BoardReactions({ state }: { state: WhiteboardState }) {
     const { snapshot, presence, online } = state;
@@ -30,7 +30,7 @@ export function BoardReactions({ state }: { state: WhiteboardState }) {
                 null
             }
             originFor={avatarOrigin}
-            toolbarProps={{ className: 'max-[730px]:bottom-32' }}
+            toolbarProps={{ className: 'whiteboard-reactions' }}
         />
     );
 }

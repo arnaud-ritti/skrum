@@ -165,3 +165,36 @@
     ~ * {
     display: none !important;
 }
+
+/*
+ * The reactions bar (fixed, 16px from the bottom, 46px tall: 36px buttons,
+ * 8px of padding, 2px of border) and the canvas's bottom controls, sizes from
+ * Excalidraw 0.18.1. The bar follows the canvas container as a sibling.
+ *
+ * "Scroll back to content" sits at the bottom centre too (30px up, or 80px
+ * in the mobile layout): it moves above the bar, which ends 62px up.
+ *
+ * In the mobile layout (the library's own class, set below 730px of width or
+ * below 500px of height and 1000px of width) the canvas has a toolbar along
+ * the bottom: 14px of margin, the safe area, then at most 56px (8px of
+ * padding around buttons of at most 40px). The bar sits 8px above it, and
+ * the scroll-back button, placed from the top of that margin, 10px above the
+ * bar. The panel of shape actions opens over that area: the bar gives way.
+ */
+.whiteboard-canvas:has(~ .whiteboard-reactions) .scroll-back-to-content {
+    bottom: 72px !important;
+}
+
+.whiteboard-canvas:has(~ .whiteboard-reactions)
+    .excalidraw--mobile
+    .scroll-back-to-content {
+    bottom: 120px !important;
+}
+
+.whiteboard-canvas:has(.excalidraw--mobile) ~ .whiteboard-reactions {
+    bottom: calc(78px + env(safe-area-inset-bottom, 0px));
+}
+
+.whiteboard-canvas:has(.App-mobile-menu) ~ .whiteboard-reactions {
+    display: none;
+}

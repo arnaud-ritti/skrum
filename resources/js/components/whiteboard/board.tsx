@@ -172,7 +172,7 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
                         <StickyTool api={api} inToolbar />,
                         toolbarSlot,
                     )}
-                <div ref={canvas} className="min-h-0 flex-1">
+                <div ref={canvas} className="whiteboard-canvas min-h-0 flex-1">
                     <Excalidraw
                         excalidrawAPI={setApi}
                         initialData={{ elements: initialElements as never }}
