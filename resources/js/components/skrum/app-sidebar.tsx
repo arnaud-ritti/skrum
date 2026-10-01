@@ -1,0 +1,338 @@
+import type { InertiaLinkProps } from '@inertiajs/react';
+import { Link } from '@inertiajs/react';
+import {
+    Building2,
+    CalendarClock,
+    Check,
+    ChevronsUpDown,
+    LayoutDashboard,
+    LayoutTemplate,
+    ListChecks,
+    type LucideIcon,
+    PartyPopper,
+    Plus,
+    Settings,
+    ShieldCheck,
+    TrendingUp,
+    Users,
+} from 'lucide-react';
+import type { ReactNode } from 'react';
+import { SkrumLogo } from '@/components/skrum/skrum-logo';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+    Sidebar,
+    SidebarContent,
+    SidebarFooter,
+    SidebarGroup,
+    SidebarGroupLabel,
+    SidebarHeader,
+    SidebarMenu,
+    SidebarMenuBadge,
+    SidebarMenuButton,
+    SidebarMenuItem,
+} from '@/components/ui/sidebar';
+import { useTrans } from '@/hooks/use-trans';
+
+export type NavKey =
+    | 'dashboard'
+    | 'sessions'
+    | 'actions'
+    | 'mood'
+    | 'games'
+    | 'members'
+    | 'templates'
+    | 'teams'
+    | 'settings'
+    | 'admin';
+
+export type NavHref = NonNullable<InertiaLinkProps['href']>;
+
+export type AppSidebarProps = {
+    active?: NavKey;
+    team: {
+        id: string;
+        name: string;
+        initials: string;
+        membersCount: number;
+    } | null;
+    teams: { id: string; name: string; href: NavHref }[];
+    workspace: { id: string; name: string } | null;
+    workspaces: { id: string; name: string; href: NavHref }[];
+    newWorkspaceHref: NavHref;
+    homeHref: NavHref;
+    links: Partial<Record<NavKey, NavHref>>;
+    overdueActions?: number;
+    footer?: ReactNode;
+};
+
+type Entry = { key: NavKey; label: string; icon: LucideIcon };
+
+function NavEntries({
+    entries,
+    active,
+    links,
+    overdueActions = 0,
+}: {
+    entries: Entry[];
+    active?: NavKey;
+    links: AppSidebarProps['links'];
+    overdueActions?: number;
+}) {
+    const { t } = useTrans();
+
+    return (
+        <SidebarMenu>
+            {entries.map(({ key, label, icon: Icon }) => {
+                const href = links[key];
+
+                if (href === undefined) {
+                    return null;
+                }
+
+                const isActive = active === key;
+
+                return (
+                    <SidebarMenuItem key={key}>
+                        <SidebarMenuButton
+                            asChild
+                            isActive={isActive}
+                            tooltip={{ children: label }}
+                            className="data-[active=true]:font-semibold"
+                        >
+                            <Link
+                                href={href}
+                                prefetch
+                                aria-current={isActive ? 'page' : undefined}
+                            >
+                                <Icon
+                                    className={
+                                        isActive
+                                            ? 'text-skrum-primary-text'
+                                            : undefined
+                                    }
+                                />
+                                <span className="truncate">{label}</span>
+                            </Link>
+                        </SidebarMenuButton>
+                        {key === 'actions' && overdueActions > 0 && (
+                            <SidebarMenuBadge
+                                className="rounded-full bg-destructive px-1.5 text-destructive-foreground tabular-nums peer-hover/menu-button:text-destructive-foreground"
+                                aria-label={t(':count overdue', {
+                                    count: overdueActions,
+                                })}
+                            >
+                                {overdueActions > 99 ? '99+' : overdueActions}
+                            </SidebarMenuBadge>
+                        )}
+                    </SidebarMenuItem>
+                );
+            })}
+        </SidebarMenu>
+    );
+}
+
+function TeamSwitcher({
+    team,
+    teams,
+    workspace,
+    workspaces,
+    newWorkspaceHref,
+}: Pick<
+    AppSidebarProps,
+    'team' | 'teams' | 'workspace' | 'workspaces' | 'newWorkspaceHref'
+>) {
+    const { t } = useTrans();
+
+    return (
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <SidebarMenuButton size="lg" className="gap-2">
+                    <span
+                        aria-hidden
+                        className="flex size-8 shrink-0 items-center justify-center rounded-md bg-sidebar-primary text-xs font-semibold text-sidebar-primary-foreground"
+                    >
+                        {team?.initials ??
+                            workspace?.name.slice(0, 2).toUpperCase()}
+                    </span>
+                    <span className="grid min-w-0 flex-1 text-left">
+                        <span className="truncate text-sm font-semibold">
+                            {team?.name ??
+                                workspace?.name ??
+                                t('Select a workspace')}
+                        </span>
+                        {team !== null && workspace !== null && (
+                            <span className="truncate text-xs text-muted-foreground">
+                                {workspace.name} ·{' '}
+                                {t(':count members', {
+                                    count: team.membersCount,
+                                })}
+                            </span>
+                        )}
+                    </span>
+                    <ChevronsUpDown className="size-4 shrink-0" />
+                </SidebarMenuButton>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-64">
+                {teams.length > 0 && (
+                    <>
+                        <DropdownMenuLabel className="truncate">
+                            {t('Teams')}
+                        </DropdownMenuLabel>
+                        {teams.map((entry) => (
+                            <DropdownMenuItem key={entry.id} asChild>
+                                <Link href={entry.href}>
+                                    <span className="min-w-0 flex-1 truncate">
+                                        {entry.name}
+                                    </span>
+                                    {entry.id === team?.id && (
+                                        <Check className="size-4 shrink-0" />
+                                    )}
+                                </Link>
+                            </DropdownMenuItem>
+                        ))}
+                        <DropdownMenuSeparator />
+                    </>
+                )}
+                <DropdownMenuLabel className="truncate">
+                    {t('Workspaces')}
+                </DropdownMenuLabel>
+                {workspaces.map((entry) => (
+                    <DropdownMenuItem key={entry.id} asChild>
+                        <Link href={entry.href}>
+                            <span className="min-w-0 flex-1 truncate">
+                                {entry.name}
+                            </span>
+                            {entry.id === workspace?.id && (
+                                <Check className="size-4 shrink-0" />
+                            )}
+                        </Link>
+                    </DropdownMenuItem>
+                ))}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                    <Link href={newWorkspaceHref}>
+                        <Plus className="size-4 shrink-0" />
+                        <span className="truncate">{t('New workspace')}</span>
+                    </Link>
+                </DropdownMenuItem>
+            </DropdownMenuContent>
+        </DropdownMenu>
+    );
+}
+
+export function AppSidebar({
+    active,
+    team,
+    teams,
+    workspace,
+    workspaces,
+    newWorkspaceHref,
+    homeHref,
+    links,
+    overdueActions,
+    footer,
+}: AppSidebarProps) {
+    const { t } = useTrans();
+
+    const teamEntries: Entry[] = [
+        { key: 'dashboard', label: t('Dashboard'), icon: LayoutDashboard },
+        { key: 'sessions', label: t('Sessions'), icon: CalendarClock },
+        { key: 'actions', label: t('Actions'), icon: ListChecks },
+        { key: 'mood', label: t('Mood & ROTI'), icon: TrendingUp },
+        { key: 'games', label: t('Games'), icon: PartyPopper },
+        { key: 'members', label: t('Members'), icon: Users },
+    ];
+
+    const workspaceEntries: Entry[] = [
+        { key: 'templates', label: t('Templates'), icon: LayoutTemplate },
+        { key: 'teams', label: t('All teams'), icon: Building2 },
+    ];
+
+    const footerEntries: Entry[] = [
+        { key: 'settings', label: t('Team settings'), icon: Settings },
+        { key: 'admin', label: t('Administration'), icon: ShieldCheck },
+    ];
+
+    return (
+        <Sidebar collapsible="icon">
+            <SidebarHeader>
+                <SidebarMenu>
+                    <SidebarMenuItem>
+                        <SidebarMenuButton asChild>
+                            <Link href={homeHref} prefetch>
+                                <SkrumLogo
+                                    variant="symbol"
+                                    className="hidden size-6 group-data-[collapsible=icon]:block"
+                                />
+                                <SkrumLogo
+                                    variant="wordmark"
+                                    className="h-5 w-auto group-data-[collapsible=icon]:hidden"
+                                />
+                            </Link>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
+                        <TeamSwitcher
+                            team={team}
+                            teams={teams}
+                            workspace={workspace}
+                            workspaces={workspaces}
+                            newWorkspaceHref={newWorkspaceHref}
+                        />
+                    </SidebarMenuItem>
+                </SidebarMenu>
+            </SidebarHeader>
+
+            <SidebarContent>
+                <nav aria-label={t('Navigation')}>
+                    {team !== null && (
+                        <SidebarGroup>
+                            <SidebarGroupLabel>{t('Team')}</SidebarGroupLabel>
+                            <NavEntries
+                                entries={teamEntries}
+                                active={active}
+                                links={links}
+                                overdueActions={overdueActions}
+                            />
+                        </SidebarGroup>
+                    )}
+                    <SidebarGroup>
+                        <SidebarGroupLabel>{t('Workspace')}</SidebarGroupLabel>
+                        <NavEntries
+                            entries={
+                                team === null
+                                    ? [
+                                          ...teamEntries.filter(
+                                              (entry) =>
+                                                  entry.key === 'actions',
+                                          ),
+                                          ...workspaceEntries,
+                                      ]
+                                    : workspaceEntries
+                            }
+                            active={active}
+                            links={links}
+                            overdueActions={overdueActions}
+                        />
+                    </SidebarGroup>
+                </nav>
+            </SidebarContent>
+
+            <SidebarFooter>
+                <NavEntries
+                    entries={footerEntries}
+                    active={active}
+                    links={links}
+                />
+                {footer}
+            </SidebarFooter>
+        </Sidebar>
+    );
+}
