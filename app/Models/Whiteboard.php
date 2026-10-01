@@ -22,13 +22,17 @@ use Illuminate\Support\Facades\Storage;
  * @property string $guest_token
  * @property bool $cursors_enabled
  * @property bool $reactions_enabled
+ * @property bool $locked
+ * @property bool $follow_enabled
+ * @property Carbon|null $timer_ends_at
  * @property int $seq
  * @property int $purged_seq
+ * @property int $last_versioned_seq
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Team $team
  */
-#[Fillable(['title', 'facilitator_member_id', 'guest_access_enabled', 'guest_token', 'cursors_enabled', 'reactions_enabled', 'seq', 'purged_seq'])]
+#[Fillable(['title', 'facilitator_member_id', 'guest_access_enabled', 'guest_token', 'cursors_enabled', 'reactions_enabled', 'locked', 'follow_enabled', 'timer_ends_at', 'seq', 'purged_seq', 'last_versioned_seq'])]
 #[Hidden(['guest_token'])]
 class Whiteboard extends Model
 {
@@ -68,6 +72,12 @@ class Whiteboard extends Model
         return $this->hasMany(WhiteboardElement::class);
     }
 
+    /** @return HasMany<WhiteboardVersion, $this> */
+    public function versions(): HasMany
+    {
+        return $this->hasMany(WhiteboardVersion::class);
+    }
+
     /** @return HasMany<WhiteboardFile, $this> */
     public function files(): HasMany
     {
@@ -96,8 +106,12 @@ class Whiteboard extends Model
             'guest_access_enabled' => 'boolean',
             'cursors_enabled' => 'boolean',
             'reactions_enabled' => 'boolean',
+            'locked' => 'boolean',
+            'follow_enabled' => 'boolean',
+            'timer_ends_at' => 'datetime',
             'seq' => 'integer',
             'purged_seq' => 'integer',
+            'last_versioned_seq' => 'integer',
         ];
     }
 }

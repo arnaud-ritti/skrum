@@ -7,6 +7,7 @@ import type {
     ElementsChangedPayload,
     WhiteboardSnapshot,
 } from '@/lib/whiteboard/types';
+import { useServerOffset } from './use-countdown';
 import { useWhiteboardChannel } from './use-whiteboard-channel';
 
 const SessionExpiredStatuses = [401, 419];
@@ -29,19 +30,25 @@ export type WhiteboardState = {
     presence: WhisperChannel | null;
     connected: boolean;
     reconnecting: boolean;
+    /** Server clock minus this browser's, in milliseconds. */
+    serverOffset: number;
     refetch: () => Promise<void>;
     fail: (error: RetroRequestError) => void;
+    setTimer: (timerEndsAt: string | null) => void;
     listeners: { current: SceneListeners | null };
 };
 
 /**
- * Board settings, members and access. The scene itself lives in Excalidraw
- * and is kept in step by scene-sync, which registers itself in `listeners`.
+ * Board settings, members and access. The scene itself lives
+ * in Excalidraw and is kept in step by scene-sync, which registers itself in
+ * `listeners`.
  */
 export function useWhiteboard(initial: WhiteboardSnapshot): WhiteboardState {
     const [snapshot, setSnapshot] = useState<BoardMeta>(initial);
     const [status, setStatus] = useState<BoardStatus>('active');
     const [sessionExpired, setSessionExpired] = useState(false);
+    const initialOffset = useServerOffset(initial.serverTime);
+    const [measuredOffset, setMeasuredOffset] = useState<number | null>(null);
     const listeners = useRef<SceneListeners | null>(null);
     const latestRefetch = useRef(0);
     const boardId = initial.board.id;
@@ -58,6 +65,7 @@ export function useWhiteboard(initial: WhiteboardSnapshot): WhiteboardState {
 
     const refetch = useCallback(async () => {
         const request = ++latestRefetch.current;
+        const sentAt = Date.now();
 
         try {
             const fresh = await retroRequest<WhiteboardSnapshot>(
@@ -68,6 +76,10 @@ export function useWhiteboard(initial: WhiteboardSnapshot): WhiteboardState {
                 return;
             }
 
+            setMeasuredOffset(
+                new Date(fresh.serverTime).getTime() -
+                    (sentAt + Date.now()) / 2,
+            );
             setSnapshot({
                 board: fresh.board,
                 me: fresh.me,
@@ -84,6 +96,13 @@ export function useWhiteboard(initial: WhiteboardSnapshot): WhiteboardState {
         }
     }, [boardId, fail]);
 
+    const setTimer = useCallback((timerEndsAt: string | null) => {
+        setSnapshot((current) => ({
+            ...current,
+            board: { ...current.board, timerEndsAt },
+        }));
+    }, []);
+
     const channel = useWhiteboardChannel(boardId, status === 'active', {
         onEvent: ({ name, payload }) => {
             if (name === 'board.deleted') {
@@ -94,6 +113,14 @@ export function useWhiteboard(initial: WhiteboardSnapshot): WhiteboardState {
 
             if (name === 'board.changed') {
                 void refetch();
+
+                return;
+            }
+
+            if (name === 'timer.changed') {
+                setTimer(
+                    (payload as { timerEndsAt: string | null }).timerEndsAt,
+                );
 
                 return;
             }
@@ -114,8 +141,10 @@ export function useWhiteboard(initial: WhiteboardSnapshot): WhiteboardState {
         status,
         sessionExpired,
         ...channel,
+        serverOffset: measuredOffset ?? initialOffset,
         refetch,
         fail,
+        setTimer,
         listeners,
     };
 }

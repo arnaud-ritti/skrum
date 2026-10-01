@@ -67,6 +67,8 @@ it('deletes day-old images no live element uses and the folders of gone boards',
     }
 
     Storage::put('whiteboards/00000000-0000-0000-0000-000000000000/orphan', 'bytes');
+    touch(Storage::path('whiteboards/00000000-0000-0000-0000-000000000000/orphan'), now()->subDays(2)->getTimestamp());
+    Storage::put('whiteboards/00000000-0000-0000-0000-000000000009/being-copied', 'bytes');
 
     WhiteboardElement::factory()->create([
         'whiteboard_id' => $board->id,
@@ -90,6 +92,7 @@ it('deletes day-old images no live element uses and the folders of gone boards',
     Storage::assertMissing($unused->path);
     Storage::assertMissing($ofDeleted->path);
     Storage::assertMissing('whiteboards/00000000-0000-0000-0000-000000000000/orphan');
+    Storage::assertExists('whiteboards/00000000-0000-0000-0000-000000000009/being-copied');
 });
 
 it('leaves folders that are not a board alone', function () {

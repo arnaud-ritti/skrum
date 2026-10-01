@@ -60,3 +60,11 @@ it('clears the facilitator when their member row goes', function () {
 
     expect($board->fresh()->facilitator_member_id)->toBeNull();
 });
+
+it('gives a board safe facilitation defaults', function () {
+    $board = Whiteboard::factory()->create()->fresh();
+
+    expect($board->locked)->toBeFalse()
+        ->and($board->follow_enabled)->toBeFalse()
+        ->and($board->timer_ends_at)->toBeNull();
+});

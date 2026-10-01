@@ -198,3 +198,28 @@
 .whiteboard-canvas:has(.App-mobile-menu) ~ .whiteboard-reactions {
     display: none;
 }
+
+/*
+ * Only the facilitator may lock or unlock an element (spec §11.2). The
+ * context menu of Excalidraw 0.18.1 names its entries by action; the
+ * keyboard shortcut cannot be removed, and the server rejects what it does.
+ */
+.whiteboard-canvas[data-facilitator='false']
+    .context-menu
+    li[data-testid='toggleElementLock'],
+.whiteboard-canvas[data-facilitator='false']
+    .context-menu
+    li[data-testid='unlockAllElements'] {
+    display: none !important;
+}
+
+/*
+ * The preview of a version (spec §9) is a second, read-only canvas inside a
+ * dialog. Its menu button and its help button open panels of Excalidraw
+ * 0.18.1 that the dialog would cover or that link to the library's sites,
+ * and neither has a prop: both are hidden.
+ */
+.whiteboard-preview .main-menu-trigger,
+.whiteboard-preview .help-icon {
+    display: none !important;
+}

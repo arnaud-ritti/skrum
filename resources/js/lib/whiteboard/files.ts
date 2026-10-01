@@ -56,7 +56,15 @@ export async function uploadBoardFile(
     }
 
     if (AccessStatuses.includes(response.status)) {
-        throw new RetroRequestError(response.status, 'upload refused');
+        const payload = (await response.json().catch(() => null)) as {
+            errors?: Record<string, string[]>;
+        } | null;
+
+        throw new RetroRequestError(
+            response.status,
+            'upload refused',
+            payload?.errors ?? {},
+        );
     }
 
     throw new Error(`upload failed: ${response.status}`);

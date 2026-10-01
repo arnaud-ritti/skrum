@@ -8,6 +8,8 @@ export type SceneElement = Record<string, unknown> & {
     isDeleted: boolean;
 };
 
+export type TransferCandidate = { userId: string; name: string };
+
 export type WhiteboardSnapshot = {
     board: {
         id: string;
@@ -18,6 +20,9 @@ export type WhiteboardSnapshot = {
         guestUrl: string | null;
         cursorsEnabled: boolean;
         reactionsEnabled: boolean;
+        locked: boolean;
+        followEnabled: boolean;
+        timerEndsAt: string | null;
     };
     me: {
         id: string;
@@ -28,6 +33,7 @@ export type WhiteboardSnapshot = {
         isFacilitator: boolean;
         canTakeControl: boolean;
         canDelete: boolean;
+        transferCandidates: TransferCandidate[];
     };
     members: PresenceMember[];
     elements: SceneElement[];
@@ -54,4 +60,17 @@ export type ElementsChangedPayload = {
     seq: number;
     fromSeq: number;
     elements?: SceneElement[];
+};
+
+export type WhiteboardVersionSummary = {
+    id: string;
+    name: string | null;
+    createdAt: string;
+    createdByName: string | null;
+    automatic: boolean;
+};
+
+export type WhiteboardVersionScene = {
+    elements: SceneElement[];
+    files: { id: string; url: string; mimeType: string }[];
 };

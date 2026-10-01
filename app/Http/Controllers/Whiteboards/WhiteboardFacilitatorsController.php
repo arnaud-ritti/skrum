@@ -38,7 +38,7 @@ class WhiteboardFacilitatorsController extends Controller
 
             $newFacilitator = WhiteboardMember::query()->firstOrCreate(['whiteboard_id' => $locked->id, 'user_id' => $user->id]);
 
-            $locked->update(['facilitator_member_id' => $newFacilitator->id]);
+            $locked->update(['facilitator_member_id' => $newFacilitator->id, 'follow_enabled' => false]);
 
             (new WhiteboardChanged($locked->id))->sendToOthers();
         });

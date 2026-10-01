@@ -18,6 +18,39 @@ export type WhiteboardSummary = {
     title: string;
     updatedAt: string | null;
     facilitatorName: string | null;
+    canDelete: boolean;
+};
+
+export type WhiteboardPreviewShape = {
+    kind: 'rect' | 'ellipse' | 'diamond' | 'path' | 'text';
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    fill: string | null;
+    stroke: string | null;
+    points: [number, number][];
+};
+
+export type WhiteboardPreview = {
+    width: number;
+    height: number;
+    shapes: WhiteboardPreviewShape[];
+};
+
+export type WhiteboardGalleryItem = {
+    key: string;
+    workspaceTemplateId: string | null;
+    name: string;
+    description: string | null;
+    preview: WhiteboardPreview;
+};
+
+export type WhiteboardTemplateSummary = {
+    id: string;
+    name: string;
+    description: string | null;
+    canManage: boolean;
 };
 
 export type EstimatedTaskRow = {

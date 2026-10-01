@@ -2,6 +2,8 @@
 
 namespace App\Actions\Whiteboards;
 
+use App\Enums\WorkspaceRole;
+use App\Models\User;
 use App\Models\Whiteboard;
 use App\Models\WhiteboardElement;
 use App\Models\WhiteboardMember;
@@ -16,7 +18,10 @@ use App\Models\WhiteboardMember;
  *         guestAccessEnabled: bool,
  *         guestUrl: ?string,
  *         cursorsEnabled: bool,
- *         reactionsEnabled: bool
+ *         reactionsEnabled: bool,
+ *         locked: bool,
+ *         followEnabled: bool,
+ *         timerEndsAt: ?string
  *     },
  *     me: array{
  *         id: string,
@@ -26,7 +31,8 @@ use App\Models\WhiteboardMember;
  *         isGuest: bool,
  *         isFacilitator: bool,
  *         canTakeControl: bool,
- *         canDelete: bool
+ *         canDelete: bool,
+ *         transferCandidates: array<int, array{userId: string, name: string}>
  *     },
  *     members: array<int, array{id: string, name: string, avatarUrl: string, isGuest: bool}>,
  *     elements: array<int, array<string, mixed>>,
@@ -37,6 +43,8 @@ use App\Models\WhiteboardMember;
  */
 class BuildWhiteboardSnapshot
 {
+    public const TimerLingerMinutes = 5;
+
     public function __construct(
         private PresentWhiteboardElement $presentWhiteboardElement,
         private OrderWhiteboardElements $orderWhiteboardElements,
@@ -64,6 +72,9 @@ class BuildWhiteboardSnapshot
                 'guestUrl' => $isGuest ? null : route('whiteboards.join.show', $board->guest_token),
                 'cursorsEnabled' => $board->cursors_enabled,
                 'reactionsEnabled' => $board->reactions_enabled,
+                'locked' => $board->locked,
+                'followEnabled' => $board->follow_enabled,
+                'timerEndsAt' => $this->timerEndsAt($board),
             ],
             'me' => [
                 'id' => $viewer->id,
@@ -74,6 +85,7 @@ class BuildWhiteboardSnapshot
                 'isFacilitator' => $isFacilitator,
                 'canTakeControl' => ! $isGuest && ! $isFacilitator,
                 'canDelete' => $isFacilitator || $isManager,
+                'transferCandidates' => $isFacilitator && ! $isGuest ? $this->transferCandidates($board, $viewer) : [],
             ],
             'members' => $board->members
                 ->map(fn (WhiteboardMember $member): array => [
@@ -86,13 +98,50 @@ class BuildWhiteboardSnapshot
                 ->all(),
             'elements' => $this->orderWhiteboardElements
                 ->handle($board->elements()->where('is_deleted', false)->orderBy('seq')->get())
-                ->map(fn (WhiteboardElement $element): array => $this->presentWhiteboardElement->handle($element, $viewer))
+                ->map(fn (WhiteboardElement $element): array => $this->presentWhiteboardElement->handle($element))
                 ->all(),
             'seq' => $board->seq,
             'links' => [
                 'team' => $isGuest ? null : route('teams.show', [$board->team->workspace, $board->team], absolute: false),
             ],
-            'serverTime' => now()->toIso8601String(),
+            'serverTime' => now()->utc()->format('Y-m-d\TH:i:s.v\Z'),
         ];
+    }
+
+    /**
+     * @return array<int, array{userId: string, name: string}>
+     */
+    private function transferCandidates(Whiteboard $board, WhiteboardMember $viewer): array
+    {
+        $team = $board->team;
+
+        $managerIds = $team->workspace->members()
+            ->wherePivotIn('role', [WorkspaceRole::Owner->value, WorkspaceRole::Admin->value])
+            ->pluck('users.id');
+
+        return User::query()
+            ->where(fn ($query) => $query
+                ->whereIn('id', $team->members()->select('users.id'))
+                ->orWhereIn('id', $managerIds))
+            ->when($viewer->user_id !== null, fn ($query) => $query->whereKeyNot($viewer->user_id))
+            ->orderBy('name')
+            ->get(['id', 'name'])
+            ->map(fn (User $user): array => ['userId' => $user->id, 'name' => $user->name])
+            ->all();
+    }
+
+    /**
+     * A board outlives its sessions: a countdown nobody stopped must not
+     * read "Time's up!" for ever (spec §11.1).
+     */
+    private function timerEndsAt(Whiteboard $board): ?string
+    {
+        $endsAt = $board->timer_ends_at;
+
+        if ($endsAt === null || $endsAt->lt(now()->subMinutes(self::TimerLingerMinutes))) {
+            return null;
+        }
+
+        return $endsAt->toIso8601String();
     }
 }

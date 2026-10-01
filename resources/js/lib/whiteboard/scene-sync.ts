@@ -3,6 +3,7 @@ import WhiteboardSnapshotsController from '@/actions/App/Http/Controllers/Whiteb
 import { RetroRequestError, retroRequest } from '@/lib/retro/api';
 import {
     CaptureUpdateAction,
+    closeTextEditor,
     reconcileElements,
     type ExcalidrawImperativeAPI,
 } from './excalidraw';
@@ -31,10 +32,16 @@ export type SceneSyncDeps = {
     onFatal: (error: RetroRequestError) => void;
     onRejected: (reason: RejectReason) => void;
     onOffline: (offline: boolean) => void;
+    /** The board is locked for this member: unsent edits were dropped. */
+    onLocked: () => void;
 };
 
 export type SceneSync = {
-    handleChange(elements: readonly SceneElement[]): void;
+    /** `editingTextId` is the text element open in the canvas's editor. */
+    handleChange(
+        elements: readonly SceneElement[],
+        editingTextId: string | null,
+    ): void;
     handleRemote(payload: ElementsChangedPayload): void;
     resync(): Promise<void>;
     dispose(): void;
@@ -43,8 +50,23 @@ export type SceneSync = {
 const stamp = (element: SceneElement) =>
     `${element.version}:${element.versionNonce}`;
 
+const heightOf = (element: SceneElement) =>
+    typeof element.height === 'number' ? element.height : 0;
+
+type Seen = {
+    stamp: string;
+    height: number;
+    version: number;
+    versionNonce: number;
+};
+
 const isFatal = (error: unknown): error is RetroRequestError =>
     error instanceof RetroRequestError && FatalStatuses.includes(error.status);
+
+const isLocked = (error: unknown): error is RetroRequestError =>
+    error instanceof RetroRequestError &&
+    error.status === 403 &&
+    'locked' in error.errors;
 
 export function createSceneSync(deps: SceneSyncDeps): SceneSync {
     const { api, boardId } = deps;
@@ -52,6 +74,10 @@ export function createSceneSync(deps: SceneSyncDeps): SceneSync {
     const known = new Map<string, string>();
     const pending = new Map<string, SceneElement>();
     const files = new Set<string>();
+    /** Each element as the canvas last reported it or as we last set it. */
+    const seen = new Map<string, Seen>();
+    /** Off once the canvas has shown that it no longer answers to it. */
+    let keepsContainerHeights = true;
     let seq = deps.initial.seq;
     /** The highest seq any event or write response has announced. */
     let wantedSeq = seq;
@@ -64,6 +90,8 @@ export function createSceneSync(deps: SceneSyncDeps): SceneSync {
     let recoveryOwed = false;
     let recoveryFailures = 0;
     let recoveryTimer: ReturnType<typeof setTimeout> | null = null;
+    /** The next reload drops what the server does not hold (locked board). */
+    let discarding = false;
 
     /** Nothing may report the board in step while a reload is still owed. */
     const setOffline = (offline: boolean) =>
@@ -72,11 +100,114 @@ export function createSceneSync(deps: SceneSyncDeps): SceneSync {
     const scene = () =>
         api.getSceneElementsIncludingDeleted() as unknown as SceneElement[];
 
+    const see = (element: SceneElement) => {
+        const current = stamp(element);
+
+        if (seen.get(element.id)?.stamp === current) {
+            return;
+        }
+
+        seen.set(element.id, {
+            stamp: current,
+            height: heightOf(element),
+            version: element.version,
+            versionNonce: element.versionNonce,
+        });
+    };
+
     const setScene = (elements: SceneElement[]) => {
+        // Before the canvas has it: an open text editor reacts at once.
+        elements.forEach(see);
         api.updateScene({
             elements: elements as never,
             captureUpdate: CaptureUpdateAction.NEVER,
         });
+    };
+
+    /**
+     * Excalidraw 0.18.1 remembers the height a container had when its text
+     * was first edited in this browser (`originalContainerCache`, not
+     * exported). Whenever the text editor finds the container taller than
+     * that with room around the text, it shrinks the container onto the text
+     * (`updateWysiwygStyle`). Only a resize made here clears that memory, so
+     * a note that somebody else made taller collapses into a strip the
+     * moment its text is edited, or when it is resized from elsewhere during
+     * the edit. The editor rewrites its memory with the current height when
+     * the text's font is not the one it shows, which is the only handle the
+     * library leaves: the height is put back together with a font size one
+     * off, then the font size is put back. A container that gets shorter
+     * with its text (lines were deleted) is the library doing its job and is
+     * left alone.
+     */
+    const keepContainerHeight = (
+        elements: readonly SceneElement[],
+        textId: string,
+    ): boolean => {
+        if (!keepsContainerHeights) {
+            return false;
+        }
+
+        const text = elements.find((element) => element.id === textId);
+        const container = elements.find(
+            (element) => element.id === text?.containerId,
+        );
+
+        if (
+            !text ||
+            !container ||
+            container.isDeleted ||
+            container.type === 'arrow' ||
+            typeof text.fontSize !== 'number'
+        ) {
+            return false;
+        }
+
+        const before = seen.get(container.id);
+        const textBefore = seen.get(text.id);
+
+        if (!before || heightOf(container) >= before.height) {
+            return false;
+        }
+
+        if (textBefore && heightOf(text) < textBefore.height) {
+            return false;
+        }
+
+        const fontSize = text.fontSize;
+        // The shrink was the only change: the element is what it was.
+        const restored: SceneElement =
+            container.version === before.version + 1
+                ? {
+                      ...container,
+                      height: before.height,
+                      version: before.version,
+                      versionNonce: before.versionNonce,
+                  }
+                : { ...container, height: before.height };
+        const withFontSize = (size: number) =>
+            scene().map((element) =>
+                element.id === text.id
+                    ? { ...element, fontSize: size }
+                    : element,
+            );
+
+        setScene(
+            withFontSize(fontSize + 1).map((element) =>
+                element.id === container.id ? restored : element,
+            ),
+        );
+        setScene(withFontSize(fontSize));
+
+        const kept = scene().find((element) => element.id === container.id);
+
+        if (!kept || heightOf(kept) < before.height) {
+            keepsContainerHeights = false;
+            console.error(
+                'whiteboard: the text editor shrank a note and it could not be undone',
+            );
+        }
+
+        return true;
     };
 
     const loadFile = (element: SceneElement) => {
@@ -327,6 +458,14 @@ export function createSceneSync(deps: SceneSyncDeps): SceneSync {
         } catch (error) {
             failed = true;
 
+            if (isLocked(error)) {
+                failed = false;
+                discard();
+                deps.onLocked();
+
+                return;
+            }
+
             if (isFatal(error)) {
                 deps.onFatal(error);
 
@@ -350,12 +489,13 @@ export function createSceneSync(deps: SceneSyncDeps): SceneSync {
             WhiteboardSnapshotsController.show(boardId),
         );
         const alive = new Set(snapshot.elements.map((element) => element.id));
+        const dropsLocal = discarding;
+        const keepsLocal = (element: SceneElement) =>
+            !dropsLocal && (pending.has(element.id) || !known.has(element.id));
 
         setScene(
             scene().map((element) =>
-                alive.has(element.id) ||
-                pending.has(element.id) ||
-                !known.has(element.id)
+                alive.has(element.id) || keepsLocal(element)
                     ? element
                     : { ...element, isDeleted: true },
             ),
@@ -363,6 +503,10 @@ export function createSceneSync(deps: SceneSyncDeps): SceneSync {
         remember(scene().filter((element) => !alive.has(element.id)));
         force(snapshot.elements);
         seq = snapshot.seq;
+
+        if (dropsLocal) {
+            discarding = false;
+        }
     };
 
     /**
@@ -421,7 +565,22 @@ export function createSceneSync(deps: SceneSyncDeps): SceneSync {
             })
             .finally(() => {
                 recovering = null;
+
+                // A discard asked for while a reload was running.
+                if (discarding && !disposed && recoveryTimer === null) {
+                    recover();
+                }
             });
+    };
+
+    /** The board is locked for us: what we have not sent is dropped (spec §11.2). */
+    const discard = () => {
+        // What an open text editor holds is unsent too, and it would write
+        // it back over the reloaded scene at the next key.
+        closeTextEditor();
+        pending.clear();
+        discarding = true;
+        recover();
     };
 
     const fetchDelta = async () => {
@@ -467,7 +626,8 @@ export function createSceneSync(deps: SceneSyncDeps): SceneSync {
                     error instanceof RetroRequestError &&
                     error.status === 409
                 ) {
-                    await replaceScene().catch(() => setOffline(true));
+                    // Older than the purge mark: no delta can catch up.
+                    recover();
                 } else {
                     setOffline(true);
                 }
@@ -480,17 +640,33 @@ export function createSceneSync(deps: SceneSyncDeps): SceneSync {
     };
 
     remember(deps.initial.elements);
+    deps.initial.elements.forEach(see);
 
     return {
-        handleChange(elements) {
-            for (const element of elements) {
-                const seen = known.get(element.id);
+        handleChange(elements, editingTextId) {
+            if (
+                editingTextId !== null &&
+                keepContainerHeight(elements, editingTextId)
+            ) {
+                // The scene was put right; the canvas reports it again.
+                return;
+            }
 
-                if (seen === stamp(element)) {
+            for (const element of elements) {
+                see(element);
+
+                // Dropped with the rest when the reload lands.
+                if (discarding) {
                     continue;
                 }
 
-                if (seen === undefined && element.isDeleted) {
+                const held = known.get(element.id);
+
+                if (held === stamp(element)) {
+                    continue;
+                }
+
+                if (held === undefined && element.isDeleted) {
                     continue;
                 }
 

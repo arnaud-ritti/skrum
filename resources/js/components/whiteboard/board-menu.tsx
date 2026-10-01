@@ -2,6 +2,7 @@ import { router } from '@inertiajs/react';
 import { Menu } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { toast } from 'sonner';
+import WhiteboardDuplicatesController from '@/actions/App/Http/Controllers/Whiteboards/WhiteboardDuplicatesController';
 import WhiteboardFacilitatorsController from '@/actions/App/Http/Controllers/Whiteboards/WhiteboardFacilitatorsController';
 import WhiteboardGuestTokensController from '@/actions/App/Http/Controllers/Whiteboards/WhiteboardGuestTokensController';
 import WhiteboardSettingsController from '@/actions/App/Http/Controllers/Whiteboards/WhiteboardSettingsController';
@@ -22,6 +23,8 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
+import { HandOverDialog } from '@/components/whiteboard/hand-over-dialog';
+import { SaveTemplateDialog } from '@/components/whiteboard/save-template-dialog';
 import { useTrans } from '@/hooks/use-trans';
 import type { WhiteboardState } from '@/hooks/use-whiteboard';
 import { RetroRequestError, retroRequest } from '@/lib/retro/api';
@@ -41,6 +44,8 @@ export function BoardMenu({
     const { board, me, links } = state.snapshot;
     const [renaming, setRenaming] = useState(false);
     const [confirmingDelete, setConfirmingDelete] = useState(false);
+    const [savingTemplate, setSavingTemplate] = useState(false);
+    const [handingOver, setHandingOver] = useState(false);
 
     /** Resolves to whether the request went through; says why when it did not. */
     const attempt = async (request: Promise<unknown>): Promise<boolean> => {
@@ -84,6 +89,22 @@ export function BoardMenu({
 
         await navigator.clipboard.writeText(board.guestUrl);
         toast.success(t('Link copied.'));
+    };
+
+    const duplicate = async () => {
+        try {
+            const { url } = await retroRequest<{ url: string }>(
+                WhiteboardDuplicatesController.store(board.id),
+            );
+
+            router.visit(url);
+        } catch (error) {
+            toast.error(
+                error instanceof RetroRequestError && error.status > 0
+                    ? error.message
+                    : t('Something went wrong. Please try again.'),
+            );
+        }
     };
 
     const deleteBoard = async () => {
@@ -135,6 +156,18 @@ export function BoardMenu({
                             {t('Take control')}
                         </DropdownMenuItem>
                     )}
+                    {!me.isGuest && (
+                        <>
+                            <DropdownMenuItem onSelect={duplicate}>
+                                {t('Duplicate this board')}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                                onSelect={() => setSavingTemplate(true)}
+                            >
+                                {t('Save as template')}
+                            </DropdownMenuItem>
+                        </>
+                    )}
                     {me.isFacilitator && (
                         <>
                             <DropdownMenuSeparator />
@@ -142,6 +175,11 @@ export function BoardMenu({
                                 onSelect={() => setRenaming(true)}
                             >
                                 {t('Rename')}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                                onSelect={() => setHandingOver(true)}
+                            >
+                                {t('Hand over facilitation')}
                             </DropdownMenuItem>
                             <DropdownMenuCheckboxItem
                                 checked={board.cursorsEnabled}
@@ -221,6 +259,18 @@ export function BoardMenu({
                     )}
                 </DialogContent>
             </Dialog>
+
+            <SaveTemplateDialog
+                boardId={board.id}
+                open={savingTemplate}
+                onOpenChange={setSavingTemplate}
+            />
+
+            <HandOverDialog
+                state={state}
+                open={handingOver}
+                onOpenChange={setHandingOver}
+            />
 
             <Dialog open={confirmingDelete} onOpenChange={setConfirmingDelete}>
                 <DialogContent aria-describedby={undefined}>

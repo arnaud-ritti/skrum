@@ -267,6 +267,39 @@ it('refuses new elements on a full board but still accepts edits and deletions',
     ])->assertJsonPath('rejected', []);
 });
 
+it('brings a deleted element back when it is written live again', function () {
+    $board = Whiteboard::factory()->create();
+    [$user] = whiteboardMember($board);
+
+    writeElements($this->actingAs($user), $board, [sceneElement(['id' => 'box'])]);
+    writeElements($this->actingAs($user), $board, [sceneElement(['id' => 'box', 'version' => 2, 'isDeleted' => true])]);
+
+    writeElements($this->actingAs($user), $board, [sceneElement(['id' => 'box', 'version' => 3])])
+        ->assertOk()
+        ->assertJsonPath('rejected', []);
+
+    $stored = $board->elements()->sole();
+
+    expect($stored->is_deleted)->toBeFalse()
+        ->and($stored->version)->toBe(3);
+});
+
+it('refuses to bring a deleted element back on a full board', function () {
+    $board = Whiteboard::factory()->create();
+    [$user] = whiteboardMember($board);
+    WhiteboardElement::factory()->create(['whiteboard_id' => $board->id, 'element_id' => 'live']);
+    WhiteboardElement::factory()->create(['whiteboard_id' => $board->id, 'element_id' => 'gone', 'is_deleted' => true]);
+
+    $write = app(WriteWhiteboardElements::class);
+    $write->maxLiveElements = 1;
+
+    writeElements($this->actingAs($user), $board, [sceneElement(['id' => 'gone', 'version' => 2])])
+        ->assertJsonPath('rejected.0.id', 'gone')
+        ->assertJsonPath('rejected.0.reason', 'full');
+
+    expect($board->elements()->where('element_id', 'gone')->sole()->is_deleted)->toBeTrue();
+});
+
 it('validates the envelope', function (array $payload) {
     $board = Whiteboard::factory()->create();
     [$user] = whiteboardMember($board);
@@ -312,4 +345,43 @@ it('sends ids only when the payload is too big for one message', function () {
 it('throttles writes with the whiteboard limiter', function () {
     expect(Route::getRoutes()->getByName('whiteboards.elements.update')->gatherMiddleware())
         ->toContain('throttle:whiteboard-writes');
+});
+
+it('rejects a guest who deletes, moves or unlocks a locked element and hands back the stored copy', function (array $change) {
+    $board = Whiteboard::factory()->withGuestAccess()->create(['seq' => 1]);
+    whiteboardFacilitator($board);
+    $guest = whiteboardGuest($board);
+    $frame = sceneElement(['id' => 'frame', 'locked' => true, 'x' => 7]);
+    WhiteboardElement::factory()->create([
+        'whiteboard_id' => $board->id, 'element_id' => 'frame', 'version_nonce' => 100, 'data' => $frame,
+    ]);
+
+    writeElements($this->withCookies(whiteboardGuestCookie($guest))->withCredentials(), $board, [[...$frame, 'version' => 2, ...$change]])
+        ->assertOk()
+        ->assertJsonPath('seq', 1)
+        ->assertJsonPath('rejected.0.reason', 'locked')
+        ->assertJsonPath('rejected.0.element', $frame);
+
+    $stored = $board->elements()->sole();
+
+    expect($stored->data)->toEqual($frame)
+        ->and($stored->is_deleted)->toBeFalse();
+
+    Event::assertNotDispatched(WhiteboardElementsChanged::class);
+})->with([
+    'delete' => [['isDeleted' => true]],
+    'move' => [['x' => 500]],
+    'unlock' => [['locked' => false]],
+]);
+
+it('accepts a second write of an element whose id is 0', function () {
+    $board = Whiteboard::factory()->create();
+    [$user] = whiteboardMember($board);
+
+    putWhiteboardElements($this->actingAs($user), $board, [sceneElement(['id' => '0'])])->assertOk()->assertJsonPath('rejected', []);
+    putWhiteboardElements($this->actingAs($user), $board, [sceneElement(['id' => '0', 'version' => 2, 'x' => 5])])
+        ->assertOk()
+        ->assertJsonPath('rejected', []);
+
+    expect($board->elements()->sole()->data['x'])->toBe(5);
 });

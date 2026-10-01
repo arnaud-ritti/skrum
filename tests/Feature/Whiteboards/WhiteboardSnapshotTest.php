@@ -1,5 +1,7 @@
 <?php
 
+use App\Enums\WorkspaceRole;
+use App\Models\User;
 use App\Models\Whiteboard;
 use App\Models\WhiteboardElement;
 
@@ -17,6 +19,9 @@ it('describes the board, the viewer, the members and the live elements', functio
         ->assertJsonPath('board.guestUrl', route('whiteboards.join.show', $board->guest_token))
         ->assertJsonPath('board.cursorsEnabled', true)
         ->assertJsonPath('board.reactionsEnabled', true)
+        ->assertJsonPath('board.locked', false)
+        ->assertJsonPath('board.followEnabled', false)
+        ->assertJsonPath('board.timerEndsAt', null)
         ->assertJsonPath('me.id', $member->id)
         ->assertJsonPath('me.userId', $user->id)
         ->assertJsonPath('me.isFacilitator', true)
@@ -75,4 +80,36 @@ it('hides the guest link, the team link and the token from guests', function () 
         ->assertJsonPath('me.canTakeControl', false);
 
     expect($response->getContent())->not->toContain($board->guest_token);
+});
+
+it('gives the server time to the millisecond', function () {
+    $board = Whiteboard::factory()->create();
+    [$user] = whiteboardMember($board);
+
+    $serverTime = $this->actingAs($user)->getJson(route('whiteboards.snapshot.show', $board))->json('serverTime');
+
+    expect($serverTime)->toMatch('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/');
+});
+
+it('offers the facilitator the people who can take over, by name', function () {
+    $board = Whiteboard::factory()->withGuestAccess()->create();
+    [$user] = whiteboardFacilitator($board);
+    $zoe = teamMember($board->team);
+    $zoe->forceFill(['name' => 'Zoe'])->save();
+    $adam = workspaceManager($board->team->workspace);
+    $adam->forceFill(['name' => 'Adam'])->save();
+    $outsider = User::factory()->create(['name' => 'Olaf']);
+    $board->team->workspace->members()->attach($outsider, ['role' => WorkspaceRole::Member->value]);
+    whiteboardGuest($board);
+
+    $this->actingAs($user)
+        ->getJson(route('whiteboards.snapshot.show', $board))
+        ->assertJsonPath('me.transferCandidates', [
+            ['userId' => $adam->id, 'name' => 'Adam'],
+            ['userId' => $zoe->id, 'name' => 'Zoe'],
+        ]);
+
+    $this->actingAs($zoe)
+        ->getJson(route('whiteboards.snapshot.show', $board))
+        ->assertJsonPath('me.transferCandidates', []);
 });

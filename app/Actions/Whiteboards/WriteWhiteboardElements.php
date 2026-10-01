@@ -25,6 +25,7 @@ class WriteWhiteboardElements
         private SanitizeWhiteboardElement $sanitizeWhiteboardElement,
         private PresentWhiteboardElement $presentWhiteboardElement,
         private OrderWhiteboardElements $orderWhiteboardElements,
+        private ScheduleWhiteboardVersion $scheduleWhiteboardVersion,
     ) {}
 
     /**
@@ -35,6 +36,8 @@ class WriteWhiteboardElements
     {
         return DB::transaction(function () use ($board, $member, $rawElements): array {
             $locked = Whiteboard::query()->whereKey($board->id)->lockForUpdate()->firstOrFail();
+
+            WhiteboardGuard::notLocked($locked, $member);
 
             $fromSeq = $locked->seq;
             $seq = $fromSeq;
@@ -51,7 +54,7 @@ class WriteWhiteboardElements
                 if ($element === null) {
                     $id = $this->rawId($raw);
 
-                    $rejected[] = $this->rejection($id, 'invalid', $id === null ? null : $stored->get($id), $member);
+                    $rejected[] = $this->rejection($id, 'invalid', $id === null ? null : $stored->get($id));
 
                     continue;
                 }
@@ -65,7 +68,7 @@ class WriteWhiteboardElements
                 $reason = $this->refusal($existing, $element, $isFacilitator, $fileIds, $liveCount);
 
                 if ($reason !== null) {
-                    $rejected[] = $this->rejection($element['id'], $reason, $existing, $member);
+                    $rejected[] = $this->rejection($element['id'], $reason, $existing);
 
                     continue;
                 }
@@ -85,6 +88,8 @@ class WriteWhiteboardElements
 
             $locked->update(['seq' => $seq]);
 
+            $this->scheduleWhiteboardVersion->handle($locked, $fromSeq);
+
             (new WhiteboardElementsChanged($locked->id, $seq, $fromSeq, $this->broadcastable($accepted)))->sendToOthers();
 
             return ['seq' => $seq, 'fromSeq' => $fromSeq, 'rejected' => $rejected];
@@ -99,7 +104,7 @@ class WriteWhiteboardElements
     {
         $ids = collect($rawElements)
             ->map(fn (mixed $raw): ?string => $this->rawId($raw))
-            ->filter()
+            ->filter(fn (?string $id): bool => $id !== null)
             ->unique()
             ->values();
 
@@ -228,12 +233,12 @@ class WriteWhiteboardElements
     /**
      * @return Rejection
      */
-    private function rejection(?string $id, string $reason, ?WhiteboardElement $existing, WhiteboardMember $member): array
+    private function rejection(?string $id, string $reason, ?WhiteboardElement $existing): array
     {
         return [
             'id' => $id,
             'reason' => $reason,
-            'element' => $existing === null ? null : $this->presentWhiteboardElement->handle($existing, $member),
+            'element' => $existing === null ? null : $this->presentWhiteboardElement->handle($existing),
         ];
     }
 
@@ -245,7 +250,7 @@ class WriteWhiteboardElements
     {
         $elements = $this->orderWhiteboardElements
             ->handle(collect(array_values($accepted)))
-            ->map(fn (WhiteboardElement $element): array => $element->data)
+            ->map(fn (WhiteboardElement $element): array => $this->presentWhiteboardElement->handle($element))
             ->all();
 
         if (strlen((string) json_encode($elements)) > self::MaxBroadcastBytes) {
