@@ -26,6 +26,7 @@
         "socialiteproviders/openidconnect": "^1.0"
     },
     "require-dev": {
+        "driftingly/rector-laravel": "^2.6",
         "fakerphp/faker": "^1.24",
         "larastan/larastan": "^3.9",
         "laravel-lang/common": "^6.8",
@@ -38,7 +39,9 @@
         "nunomaduro/collision": "^8.9.3",
         "pestphp/pest": "^5.2",
         "pestphp/pest-plugin-drift": "^5.0",
-        "pestphp/pest-plugin-laravel": "^5.0"
+        "pestphp/pest-plugin-laravel": "^5.0",
+        "pestphp/pest-plugin-rector": "^5.0",
+        "rector/rector": "^2.6"
     },
     "autoload": {
         "psr-4": {
@@ -70,6 +73,12 @@
         ],
         "lint:check": [
             "pint --parallel --test"
+        ],
+        "rector": [
+            "rector process"
+        ],
+        "rector:check": [
+            "rector process --dry-run"
         ],
         "ci:check": [
             "Composer\\Config::disableProcessTimeout",
