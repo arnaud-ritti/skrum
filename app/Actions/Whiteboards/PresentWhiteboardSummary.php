@@ -2,20 +2,22 @@
 
 namespace App\Actions\Whiteboards;
 
+use App\Models\User;
 use App\Models\Whiteboard;
 
 class PresentWhiteboardSummary
 {
     /**
-     * @return array{id: string, title: string, updatedAt: ?string, facilitatorName: ?string}
+     * @return array{id: string, title: string, updatedAt: ?string, facilitatorName: ?string, canDelete: bool}
      */
-    public function handle(Whiteboard $board): array
+    public function handle(Whiteboard $board, User $viewer, bool $viewerManagesWorkspace): array
     {
         return [
             'id' => $board->id,
             'title' => $board->title,
             'updatedAt' => $board->updated_at?->toIso8601String(),
             'facilitatorName' => $board->facilitator?->displayName(),
+            'canDelete' => $viewerManagesWorkspace || $board->facilitator?->user_id === $viewer->id,
         ];
     }
 }
