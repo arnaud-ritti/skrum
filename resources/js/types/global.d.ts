@@ -1,7 +1,12 @@
 import type { NewApiToken } from '@/types/api-tokens';
 import type { Auth } from '@/types/auth';
 import type { FlashToast } from '@/types/ui';
-import type { CurrentWorkspace, WorkspaceSummary } from '@/types/workspaces';
+import type {
+    CurrentTeam,
+    CurrentWorkspace,
+    TeamSummary,
+    WorkspaceSummary,
+} from '@/types/workspaces';
 
 declare module 'react' {
     interface InputHTMLAttributes<T> {
@@ -20,6 +25,8 @@ declare module '@inertiajs/core' {
             translations: Record<string, string>;
             workspaces: WorkspaceSummary[];
             currentWorkspace: CurrentWorkspace | null;
+            teams: TeamSummary[];
+            currentTeam: CurrentTeam | null;
             notifications: { unreadCount: number } | null;
             actionItems: { overdueAssignedCount: number } | null;
             features: { mcp: boolean };

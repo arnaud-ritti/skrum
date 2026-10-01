@@ -1,0 +1,108 @@
+<?php
+
+use App\Enums\WorkspaceRole;
+use App\Models\Team;
+use App\Models\Workspace;
+use Inertia\Testing\AssertableInertia;
+
+it('shares the avatar URL of the signed-in user and keeps the user attributes', function () {
+    $workspace = Workspace::factory()->create();
+    $user = workspaceManager($workspace, WorkspaceRole::Member);
+
+    $this->actingAs($user)
+        ->get(route('workspaces.show', $workspace))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('auth.user.avatarUrl', $user->avatarUrl())
+            ->where('auth.user.email', $user->email)
+            ->missing('auth.user.password'));
+});
+
+it('shares no user and no team for a visitor', function () {
+    $this->get(route('login'))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('auth.user', null)
+            ->where('currentTeam', null)
+            ->where('teams', []));
+});
+
+it('shares no current team when the user has none in the workspace', function () {
+    $workspace = Workspace::factory()->create();
+    Team::factory()->for($workspace)->create();
+    $user = workspaceManager($workspace, WorkspaceRole::Member);
+
+    $this->actingAs($user)
+        ->get(route('workspaces.show', $workspace))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('currentTeam', null)
+            ->where('teams', []));
+});
+
+it('shares the team of the route, with its member count', function () {
+    $workspace = Workspace::factory()->create();
+    $user = workspaceManager($workspace, WorkspaceRole::Member);
+    $alpha = Team::factory()->for($workspace)->create(['name' => 'Alpha']);
+    $beta = Team::factory()->for($workspace)->create(['name' => 'Beta']);
+    $alpha->members()->attach($user);
+    $beta->members()->attach($user);
+
+    $this->actingAs($user)
+        ->get(route('teams.show', [$workspace, $beta]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('currentTeam.id', $beta->id)
+            ->where('currentTeam.name', 'Beta')
+            ->where('currentTeam.membersCount', 1)
+            ->has('teams', 2));
+});
+
+it('remembers the last visited team on pages without a team', function () {
+    $workspace = Workspace::factory()->create();
+    $user = workspaceManager($workspace, WorkspaceRole::Member);
+    $alpha = Team::factory()->for($workspace)->create(['name' => 'Alpha']);
+    $beta = Team::factory()->for($workspace)->create(['name' => 'Beta']);
+    $alpha->members()->attach($user);
+    $beta->members()->attach($user);
+
+    $this->actingAs($user)->get(route('teams.show', [$workspace, $beta]));
+
+    $this->actingAs($user)
+        ->get(route('workspaces.show', $workspace))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('currentTeam.id', $beta->id));
+});
+
+it('falls back to the first team by name', function () {
+    $workspace = Workspace::factory()->create();
+    $user = workspaceManager($workspace, WorkspaceRole::Member);
+    $beta = Team::factory()->for($workspace)->create(['name' => 'Beta']);
+    $alpha = Team::factory()->for($workspace)->create(['name' => 'Alpha']);
+    $alpha->members()->attach($user);
+    $beta->members()->attach($user);
+
+    $this->actingAs($user)
+        ->get(route('workspaces.show', $workspace))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('currentTeam.id', $alpha->id));
+});
+
+it('ignores a remembered team that is no longer visible', function () {
+    $workspace = Workspace::factory()->create();
+    $user = workspaceManager($workspace, WorkspaceRole::Member);
+    $alpha = Team::factory()->for($workspace)->create(['name' => 'Alpha']);
+    $gone = Team::factory()->for($workspace)->create(['name' => 'Gone']);
+    $alpha->members()->attach($user);
+
+    $this->actingAs($user)
+        ->withSession(['current_team_id' => $gone->id])
+        ->get(route('workspaces.show', $workspace))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('currentTeam.id', $alpha->id));
+});
+
+it('shows every team of the workspace to a manager who belongs to none', function () {
+    $workspace = Workspace::factory()->create();
+    $manager = workspaceManager($workspace);
+    Team::factory()->for($workspace)->count(2)->create();
+
+    $this->actingAs($manager)
+        ->get(route('workspaces.show', $workspace))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->has('teams', 2)
+            ->whereNot('currentTeam', null));
+});

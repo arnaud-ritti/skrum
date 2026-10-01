@@ -17,6 +17,10 @@ export type TeamSummary = {
     name: string;
 };
 
+export type CurrentTeam = TeamSummary & {
+    membersCount: number;
+};
+
 export type MemberSummary = {
     id: string;
     name: string;
