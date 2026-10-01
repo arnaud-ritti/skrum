@@ -12,16 +12,21 @@ A test is found by its identifier: `vendor/bin/pest tests/Browser/Walkthroughs -
 
 ## Summary
 
-| Walkthrough                           | Rows    | `auto` | `auto-substituted` | `residual` |
-| ------------------------------------- | ------- | ------ | ------------------ | ---------- |
-| Plan 4, retro core                    | 26      | 19     | 5                  | 2          |
-| Plan 10a, poker core                  | 16      | 13     | 3                  | 0          |
-| Plan 10b, poker additions             | 28      | 19     | 5                  | 4          |
-| Plan 6: polish pass                   | 15      | 7      | 6                  | 2          |
-| Plan 7: board engagement              | 21      | 12     | 6                  | 3          |
-| Plan 9a: action items core            | 9       | 9      | 0                  | 0          |
-| Plan 9b: action items scope additions | 13      | 11     | 2                  | 0          |
-| **Total**                             | **128** | **90** | **27**             | **11**     |
+| Walkthrough                           | Rows    | `auto`  | `auto-substituted` | `residual` |
+| ------------------------------------- | ------- | ------- | ------------------ | ---------- |
+| Plan 4, retro core                    | 26      | 19      | 5                  | 2          |
+| Plan 10a, poker core                  | 16      | 13      | 3                  | 0          |
+| Plan 10b, poker additions             | 28      | 19      | 5                  | 4          |
+| Plan 6: polish pass                   | 15      | 7       | 6                  | 2          |
+| Plan 7: board engagement              | 21      | 12      | 6                  | 3          |
+| Plan 9a: action items core            | 9       | 9       | 0                  | 0          |
+| Plan 9b: action items scope additions | 13      | 11      | 2                  | 0          |
+| Plan 8a: flow and templates           | 14      | 14      | 0                  | 0          |
+| Plan 8b: health check                 | 11      | 10      | 1                  | 0          |
+| Plan 8c: surveys                      | 10      | 10      | 0                  | 0          |
+| Plan 8d: results                      | 16      | 13      | 1                  | 2          |
+| Plan 8e: LLM features                 | 22      | 11      | 9                  | 2          |
+| **Total**                             | **201** | **148** | **38**             | **15**     |
 
 ## Plan 4: retro board core
 
@@ -200,6 +205,114 @@ Walkthrough: `docs/superpowers/plans/2026-10-01-plan-9b-action-items-scope-addit
 | P09b-07  | docs/superpowers/plans/2026-10-01-plan-9b-action-items-scope-additions.md:5235 | tests/Browser/Walkthroughs/Plan09bActionItemsAdditionsTest.php | auto-substituted |
 | P09b-08  | docs/superpowers/plans/2026-10-01-plan-9b-action-items-scope-additions.md:5236 | tests/Browser/Walkthroughs/Plan09bActionItemsAdditionsTest.php | auto             |
 
+## Plan 8a: flow and templates
+
+Walkthrough: `docs/superpowers/plans/2026-09-30-plan-8a-flow-and-templates.md, final walkthrough`.
+
+| Id       | Walkthrough step                                                     | Test file                                                  | Status |
+| -------- | -------------------------------------------------------------------- | ---------------------------------------------------------- | ------ |
+| P08a-01a | docs/superpowers/plans/2026-09-30-plan-8a-flow-and-templates.md:6295 | tests/Browser/Walkthroughs/Plan08aFlowAndTemplatesTest.php | auto   |
+| P08a-01b | docs/superpowers/plans/2026-09-30-plan-8a-flow-and-templates.md:6295 | tests/Browser/Walkthroughs/Plan08aFlowAndTemplatesTest.php | auto   |
+| P08a-02a | docs/superpowers/plans/2026-09-30-plan-8a-flow-and-templates.md:6296 | tests/Browser/Walkthroughs/Plan08aFlowAndTemplatesTest.php | auto   |
+| P08a-02b | docs/superpowers/plans/2026-09-30-plan-8a-flow-and-templates.md:6296 | tests/Browser/Walkthroughs/Plan08aFlowAndTemplatesTest.php | auto   |
+| P08a-03  | docs/superpowers/plans/2026-09-30-plan-8a-flow-and-templates.md:6297 | tests/Browser/Walkthroughs/Plan08aFlowAndTemplatesTest.php | auto   |
+| P08a-04a | docs/superpowers/plans/2026-09-30-plan-8a-flow-and-templates.md:6298 | tests/Browser/Walkthroughs/Plan08aFlowAndTemplatesTest.php | auto   |
+| P08a-04b | docs/superpowers/plans/2026-09-30-plan-8a-flow-and-templates.md:6298 | tests/Browser/Walkthroughs/Plan08aFlowAndTemplatesTest.php | auto   |
+| P08a-04c | docs/superpowers/plans/2026-09-30-plan-8a-flow-and-templates.md:6298 | tests/Browser/Walkthroughs/Plan08aFlowAndTemplatesTest.php | auto   |
+| P08a-05  | docs/superpowers/plans/2026-09-30-plan-8a-flow-and-templates.md:6299 | tests/Browser/Walkthroughs/Plan08aFlowAndTemplatesTest.php | auto   |
+| P08a-06  | docs/superpowers/plans/2026-09-30-plan-8a-flow-and-templates.md:6300 | tests/Browser/Walkthroughs/Plan08aFlowAndTemplatesTest.php | auto   |
+| P08a-07a | docs/superpowers/plans/2026-09-30-plan-8a-flow-and-templates.md:6301 | tests/Browser/Walkthroughs/Plan08aFlowAndTemplatesTest.php | auto   |
+| P08a-07b | docs/superpowers/plans/2026-09-30-plan-8a-flow-and-templates.md:6301 | tests/Browser/Walkthroughs/Plan08aFlowAndTemplatesTest.php | auto   |
+| P08a-07c | docs/superpowers/plans/2026-09-30-plan-8a-flow-and-templates.md:6301 | tests/Browser/Walkthroughs/Plan08aFlowAndTemplatesTest.php | auto   |
+| P08a-07d | docs/superpowers/plans/2026-09-30-plan-8a-flow-and-templates.md:6301 | tests/Browser/Walkthroughs/Plan08aFlowAndTemplatesTest.php | auto   |
+
+## Plan 8b: health check
+
+Walkthrough: `docs/superpowers/plans/2026-09-30-plan-8b-health-check.md, final walkthrough`.
+
+| Id       | Walkthrough step                                               | Test file                                             | Status           |
+| -------- | -------------------------------------------------------------- | ----------------------------------------------------- | ---------------- |
+| P08b-01a | docs/superpowers/plans/2026-09-30-plan-8b-health-check.md:3682 | tests/Browser/Walkthroughs/Plan08bHealthCheckTest.php | auto             |
+| P08b-01b | docs/superpowers/plans/2026-09-30-plan-8b-health-check.md:3682 | tests/Browser/Walkthroughs/Plan08bHealthCheckTest.php | auto             |
+| P08b-02  | docs/superpowers/plans/2026-09-30-plan-8b-health-check.md:3683 | tests/Browser/Walkthroughs/Plan08bHealthCheckTest.php | auto             |
+| P08b-03a | docs/superpowers/plans/2026-09-30-plan-8b-health-check.md:3684 | tests/Browser/Walkthroughs/Plan08bHealthCheckTest.php | auto-substituted |
+| P08b-03b | docs/superpowers/plans/2026-09-30-plan-8b-health-check.md:3684 | tests/Browser/Walkthroughs/Plan08bHealthCheckTest.php | auto             |
+| P08b-03c | docs/superpowers/plans/2026-09-30-plan-8b-health-check.md:3684 | tests/Browser/Walkthroughs/Plan08bHealthCheckTest.php | auto             |
+| P08b-04  | docs/superpowers/plans/2026-09-30-plan-8b-health-check.md:3685 | tests/Browser/Walkthroughs/Plan08bHealthCheckTest.php | auto             |
+| P08b-05a | docs/superpowers/plans/2026-09-30-plan-8b-health-check.md:3686 | tests/Browser/Walkthroughs/Plan08bHealthCheckTest.php | auto             |
+| P08b-05b | docs/superpowers/plans/2026-09-30-plan-8b-health-check.md:3686 | tests/Browser/Walkthroughs/Plan08bHealthCheckTest.php | auto             |
+| P08b-06  | docs/superpowers/plans/2026-09-30-plan-8b-health-check.md:3687 | tests/Browser/Walkthroughs/Plan08bHealthCheckTest.php | auto             |
+| P08b-07  | docs/superpowers/plans/2026-09-30-plan-8b-health-check.md:3688 | tests/Browser/Walkthroughs/Plan08bHealthCheckTest.php | auto             |
+
+## Plan 8c: surveys
+
+Walkthrough: `docs/superpowers/plans/2026-09-30-plan-8c-surveys.md, final walkthrough`.
+
+| Id       | Walkthrough step                                          | Test file                                         | Status |
+| -------- | --------------------------------------------------------- | ------------------------------------------------- | ------ |
+| P08c-01  | docs/superpowers/plans/2026-09-30-plan-8c-surveys.md:5728 | tests/Browser/Walkthroughs/Plan08cSurveysTest.php | auto   |
+| P08c-02a | docs/superpowers/plans/2026-09-30-plan-8c-surveys.md:5728 | tests/Browser/Walkthroughs/Plan08cSurveysTest.php | auto   |
+| P08c-02b | docs/superpowers/plans/2026-09-30-plan-8c-surveys.md:5728 | tests/Browser/Walkthroughs/Plan08cSurveysTest.php | auto   |
+| P08c-02c | docs/superpowers/plans/2026-09-30-plan-8c-surveys.md:5728 | tests/Browser/Walkthroughs/Plan08cSurveysTest.php | auto   |
+| P08c-03  | docs/superpowers/plans/2026-09-30-plan-8c-surveys.md:5728 | tests/Browser/Walkthroughs/Plan08cSurveysTest.php | auto   |
+| P08c-04a | docs/superpowers/plans/2026-09-30-plan-8c-surveys.md:5728 | tests/Browser/Walkthroughs/Plan08cSurveysTest.php | auto   |
+| P08c-04b | docs/superpowers/plans/2026-09-30-plan-8c-surveys.md:5728 | tests/Browser/Walkthroughs/Plan08cSurveysTest.php | auto   |
+| P08c-05  | docs/superpowers/plans/2026-09-30-plan-8c-surveys.md:5728 | tests/Browser/Walkthroughs/Plan08cSurveysTest.php | auto   |
+| P08c-06  | docs/superpowers/plans/2026-09-30-plan-8c-surveys.md:5728 | tests/Browser/Walkthroughs/Plan08cSurveysTest.php | auto   |
+| P08c-07  | docs/superpowers/plans/2026-09-30-plan-8c-surveys.md:5728 | tests/Browser/Walkthroughs/Plan08cSurveysTest.php | auto   |
+
+## Plan 8d: results
+
+Walkthrough: `docs/superpowers/plans/2026-09-30-plan-8d-results.md, final walkthrough`.
+
+| Id       | Walkthrough step                                          | Test file                                         | Status           |
+| -------- | --------------------------------------------------------- | ------------------------------------------------- | ---------------- |
+| P08d-01a | docs/superpowers/plans/2026-09-30-plan-8d-results.md:3014 | tests/Browser/Walkthroughs/Plan08dResultsTest.php | auto             |
+| P08d-01b | docs/superpowers/plans/2026-09-30-plan-8d-results.md:3014 | tests/Browser/Walkthroughs/Plan08dResultsTest.php | auto             |
+| P08d-01c | docs/superpowers/plans/2026-09-30-plan-8d-results.md:3014 | tests/Browser/Walkthroughs/Plan08dResultsTest.php | auto             |
+| P08d-02a | docs/superpowers/plans/2026-09-30-plan-8d-results.md:3015 | tests/Browser/Walkthroughs/Plan08dResultsTest.php | auto             |
+| P08d-02b | docs/superpowers/plans/2026-09-30-plan-8d-results.md:3015 | tests/Browser/Walkthroughs/Plan08dResultsTest.php | auto             |
+| P08d-03  | docs/superpowers/plans/2026-09-30-plan-8d-results.md:3016 | tests/Browser/Walkthroughs/Plan08dResultsTest.php | auto             |
+| P08d-04a | docs/superpowers/plans/2026-09-30-plan-8d-results.md:3017 | tests/Browser/Walkthroughs/Plan08dResultsTest.php | auto             |
+| P08d-04b | docs/superpowers/plans/2026-09-30-plan-8d-results.md:3017 | tests/Browser/Walkthroughs/Plan08dResultsTest.php | auto             |
+| P08d-04c | docs/superpowers/plans/2026-09-30-plan-8d-results.md:3017 | tests/Browser/Walkthroughs/Plan08dResultsTest.php | auto             |
+| P08d-04d | docs/superpowers/plans/2026-09-30-plan-8d-results.md:3017 | tests/Browser/Walkthroughs/Plan08dResultsTest.php | auto             |
+| P08d-04e | docs/superpowers/plans/2026-09-30-plan-8d-results.md:3017 | tests/Browser/Walkthroughs/Plan08dResultsTest.php | auto             |
+| P08d-04v | docs/superpowers/plans/2026-09-30-plan-8d-results.md:3017 | (none)                                            | residual         |
+| P08d-05a | docs/superpowers/plans/2026-09-30-plan-8d-results.md:3018 | tests/Browser/Walkthroughs/Plan08dResultsTest.php | auto             |
+| P08d-05b | docs/superpowers/plans/2026-09-30-plan-8d-results.md:3018 | tests/Browser/Walkthroughs/Plan08dResultsTest.php | auto             |
+| P08d-06  | docs/superpowers/plans/2026-09-30-plan-8d-results.md:3019 | tests/Browser/Walkthroughs/Plan08dResultsTest.php | auto-substituted |
+| P08d-06v | docs/superpowers/plans/2026-09-30-plan-8d-results.md:3019 | (none)                                            | residual         |
+
+## Plan 8e: LLM features
+
+Walkthrough: `docs/superpowers/plans/2026-09-30-plan-8e-llm.md, final walkthrough`.
+
+| Id       | Walkthrough step                                      | Test file                                     | Status           |
+| -------- | ----------------------------------------------------- | --------------------------------------------- | ---------------- |
+| P08e-01a | docs/superpowers/plans/2026-09-30-plan-8e-llm.md:5507 | tests/Browser/Walkthroughs/Plan08eLlmTest.php | auto             |
+| P08e-01b | docs/superpowers/plans/2026-09-30-plan-8e-llm.md:5507 | tests/Browser/Walkthroughs/Plan08eLlmTest.php | auto             |
+| P08e-02a | docs/superpowers/plans/2026-09-30-plan-8e-llm.md:5508 | tests/Browser/Walkthroughs/Plan08eLlmTest.php | auto             |
+| P08e-02b | docs/superpowers/plans/2026-09-30-plan-8e-llm.md:5508 | tests/Browser/Walkthroughs/Plan08eLlmTest.php | auto             |
+| P08e-03a | docs/superpowers/plans/2026-09-30-plan-8e-llm.md:5509 | tests/Browser/Walkthroughs/Plan08eLlmTest.php | auto             |
+| P08e-03b | docs/superpowers/plans/2026-09-30-plan-8e-llm.md:5509 | tests/Browser/Walkthroughs/Plan08eLlmTest.php | auto             |
+| P08e-04a | docs/superpowers/plans/2026-09-30-plan-8e-llm.md:5513 | tests/Browser/Walkthroughs/Plan08eLlmTest.php | auto             |
+| P08e-04b | docs/superpowers/plans/2026-09-30-plan-8e-llm.md:5513 | tests/Browser/Walkthroughs/Plan08eLlmTest.php | auto             |
+| P08e-04c | docs/superpowers/plans/2026-09-30-plan-8e-llm.md:5513 | tests/Browser/Walkthroughs/Plan08eLlmTest.php | auto             |
+| P08e-05a | docs/superpowers/plans/2026-09-30-plan-8e-llm.md:5514 | tests/Browser/Walkthroughs/Plan08eLlmTest.php | auto-substituted |
+| P08e-05b | docs/superpowers/plans/2026-09-30-plan-8e-llm.md:5514 | tests/Browser/Walkthroughs/Plan08eLlmTest.php | auto-substituted |
+| P08e-06  | docs/superpowers/plans/2026-09-30-plan-8e-llm.md:5515 | tests/Browser/Walkthroughs/Plan08eLlmTest.php | auto-substituted |
+| P08e-07  | docs/superpowers/plans/2026-09-30-plan-8e-llm.md:5516 | tests/Browser/Walkthroughs/Plan08eLlmTest.php | auto-substituted |
+| P08e-07r | docs/superpowers/plans/2026-09-30-plan-8e-llm.md:5516 | (none)                                        | residual         |
+| P08e-08  | docs/superpowers/plans/2026-09-30-plan-8e-llm.md:5517 | tests/Browser/Walkthroughs/Plan08eLlmTest.php | auto-substituted |
+| P08e-09  | docs/superpowers/plans/2026-09-30-plan-8e-llm.md:5518 | tests/Browser/Walkthroughs/Plan08eLlmTest.php | auto-substituted |
+| P08e-10a | docs/superpowers/plans/2026-09-30-plan-8e-llm.md:5519 | tests/Browser/Walkthroughs/Plan08eLlmTest.php | auto             |
+| P08e-10b | docs/superpowers/plans/2026-09-30-plan-8e-llm.md:5519 | tests/Browser/Walkthroughs/Plan08eLlmTest.php | auto-substituted |
+| P08e-10c | docs/superpowers/plans/2026-09-30-plan-8e-llm.md:5519 | tests/Browser/Walkthroughs/Plan08eLlmTest.php | auto             |
+| P08e-11a | docs/superpowers/plans/2026-09-30-plan-8e-llm.md:5520 | tests/Browser/Walkthroughs/Plan08eLlmTest.php | auto-substituted |
+| P08e-11b | docs/superpowers/plans/2026-09-30-plan-8e-llm.md:5520 | tests/Browser/Walkthroughs/Plan08eLlmTest.php | auto-substituted |
+| P08e-11r | docs/superpowers/plans/2026-09-30-plan-8e-llm.md:5511 | (none)                                        | residual         |
+
 ## Notes
 
 Where a walkthrough's wording and today's interface differ, the test follows the feature's spec.
@@ -262,6 +375,44 @@ Where a walkthrough's wording and today's interface differ, the test follows the
 - P09a-01a to P09a-05: the form of the action items panel is scoped with `[data-test="retro-action-items-panel"]`.
 - P09b-05, P09b-07: the save-on-blur of the due date field is triggered by clicking neutral page text after `fill()`, not by Tab: in Chromium Tab moves between the segments of a date input and the field keeps its focus.
 - P09b-03, P09b-04: Task 6 added `data-realtime` to the workspace "Action items" page (`resources/js/pages/action-items/index.tsx`) so that the tests can wait for the subscription; it is the only product change of plan 16b besides the drag preview fix.
+- **P08a-02a** — the walkthrough expects "the Warm-up question (same question in both browsers) and the timer". Since the games spec was built, the Icebreaker phase shows the game panel instead (flow extras spec §2.5). The test asserts the icebreaker game stage, the same game name ("Draw & Guess") in both browsers, and the shared timer.
+- **P08a-02b** — the walkthrough adds the column during Icebreaker and through one form. Today the columns are not rendered during Icebreaker and the add-column form has no description field. The test adds the column in Writing and sets its description through the column menu's "Edit description".
+- **P08a-03** — "Previous → Icebreaker: the other browser's cards are hidden again". The board is not shown during Icebreaker, so the test asserts the cards are hidden again in Writing after a return from Grouping, absent from the whole document in Icebreaker, and still hidden when Writing is entered again.
+- **P08a-04a / P08a-04b** — the settings dialog disables the Icebreaker checkbox while the retro is in Icebreaker, so the message "Move to another phase before turning this phase off." cannot be produced by a current dialog. P08a-04a asserts the disabled checkbox; P08a-04b produces the server's message with a dialog opened before the retro was moved to Icebreaker through the model (no broadcast), as P04-13 does for a refused vote.
+- **P08a-05** — run with two data sets (2 and 9 top-level cards, each with one grouped card) to cover both "cards + 3" and "max 10".
+- **P08a-07b** — "reorder/remove columns": the test starts from "Start, Stop, Continue", moves the first column down and removes the third; the category is changed from "Essentials" to "Team & mood" in the select.
+- **P08a-07c / P08a-07d** — the template and, for P08a-07d, the retro created from it are arranged with factories so that each test stands alone.
+- **P08b-01a** — the statements are reordered with the keyboard, but not through `dragWithKeyboard()`: on the team page the list sits low on a page that scrolls, the keyboard sensor scrolls the window, and the drop sent right after the arrow landed on the starting row. The test waits on the dnd-kit live region ("Moved Interaction to position 2.") between the arrow and the drop.
+- **P08b-03a** — the `health.answered` frame is not inspected (browser test spec §3.6); the test asserts absence in the other participant's page and reads the snapshot endpoint from the page. "Enable guest access" is arranged with the factory state; the guest link dialog is covered by P04-10.
+- **P08b-05b / P08b-06** — "server answers 423 if forced" and the 403 in Writing are produced by changing the retro through the model without a broadcast and clicking a still-enabled score button.
+- **P08b-07** — the health check is toggled off and on in Writing, because the settings dialog disables that checkbox during the Health check phase; "change the team statements" is an Owner adding a custom statement on the team page.
+- P08c (all rows): the walkthrough is one paragraph on line 5728; its checks are split into ten tests. It asks for "two browsers, one as a guest"; the tests open the facilitator or a member next to a guest, whichever the check needs.
+- P08c-01: the walkthrough does not name the kinds in the interface; today's dialog calls them "Single choice", "Multiple choice" and "Free text" under "Answer type".
+- P08c-02b: beyond the walkthrough, the test asserts that a multiple choice survey's percentages are computed per respondent (100% and 50% for two respondents), as the feature spec §5.4 requires.
+- P08c-02c, P08c-05: "hidden" is asserted on the visible text and on the document's HTML (the Inertia page data), so the redaction is checked as server-side.
+- P08c-03: the test also reopens the survey and asserts that the results hide again for someone who has not answered (feature spec §5.1); the walkthrough only closes.
+- P08c-04a: "avatars" are asserted as `<img alt="{name}">` under the option; the names shown on hover (a tooltip) are not asserted. "Text authors" are asserted as the name inside the answer's row.
+- P08c-07: "answering refused" is asserted as the interface shows it: on a closed survey the option buttons and checkboxes are disabled and the free text field is absent. The server's 422 for a forced request stays covered by `tests/Feature/Retros/SurveyAnswersTest.php`.
+- P08d-01a: the group is arranged with factories instead of being formed by a drag in the test; dragging one card onto another is covered by `[P04-03]`.
+- P08d-01b: "Drag the only grouped card out" is done with the card's Ungroup button: a grouped card has no drag handle for the keyboard sensor, and `[P04-03]` ungroups the same way. Both paths end in the same lifecycle rule (feature spec §7.2, "when the last grouped card leaves a lead, its name is cleared").
+- P08d-01c: the group is dragged upwards onto the group above it (ArrowUp), with `dragWithKeyboard()` as `[P04-03]` does. Dragged downwards onto the group below, the keyboard drop lands on the column and does not group; open defect for the user, see "Defects found".
+- P08d-02b: the group name is rendered in upper case by CSS in presentation mode; the test reads the element's text content ("Pipeline"), not the displayed capitals.
+- P08d-03: the walkthrough says "Lock the board"; today's control is the "Close for editing" checkbox of the settings dialog, and the badge reads "Board closed for editing".
+- P08d-04a to P08d-04e: step 4 is one sentence listing every section of the Results view; it is split into five tests. Health answers, surveys, votes, ratings and the earlier retros of the team are arranged with factories (`FreezeHealthStatements`, `ManageTeamHealthStatements::archive()` for the statement change), because collecting them through the interface would need three completed retros.
+- P08d-04b: the walkthrough says "the guest sees the same without the trend"; the test also asserts that the title of another retro of the team is absent from the guest's document.
+- P08d-05a: "within about a second" is asserted without a clock: the assertion on the other page waits for the refetch, which the client starts one second after the broadcast.
+- P08d-06: the operating system setting is emulated with the Playwright context option `reducedMotion` on a guest's context, opened by hand with `visit()` because `signIn()` and `joinAsGuest()` take no context options. The only motion in the Results view is the width transition of the ROTI bars; the survey bars, the radar and the trend have none in either mode, which the test also asserts.
+- P08e-01a to P08e-03b: the walkthrough says "`SKRUM_LLM_*` empty". The tests set `services.llm` to nulls in the test process, and `[P08e-01a]` also runs with a provider and a key but no model, because `Llm::isConfigured()` requires all three (feature spec §9).
+- P08e-03a, P08e-03b: the tests put a sentiment, a category, a theme and a suggestion in the database before opening the page, so that "nothing is shown" is checked against existing data and not against an empty board. `[P08e-03b]` then configures a provider and reloads, to prove that the same page shows them.
+- P08e-04b, P08e-04c: the walkthrough's item 1 names only the creation dialog. The settings switch and its lock once the retro is completed come from the feature spec (§6.3, acceptance criterion 9) and are tested under the same item.
+- P08e-05a: "nothing appears on the board until Save" is asserted on the facilitator's page and on a guest's page, and by the absence of a `surveys` row.
+- P08e-06: "ghost names appear only in the guest's browser" is asserted by the absence of the suggested names in the facilitator's page (substitution for looking at a second screen); the request body is checked to hold the card contents and no name or id.
+- P08e-07: the provider's reply is faked; the job is run with the `database` queue and `$this->workQueue()` so that "Generating the summary…" is visible first. "Sends no personal data or hidden content" is asserted on the faked request: no participant name, email, participant id or card UUID, no card comment; the full redaction list stays covered by `tests/Feature/Retros/SummaryInputTest.php`.
+- P08e-08: "it links to a new action item showing 'Theme: …'" is asserted in the Results view, where the promoted suggestion is a link to `#action-item-<id>` and the item carries the badge "Theme: Release pain".
+- P08e-10b: the second retro is arranged with a factory (`ai_summary_enabled = false`); creating it through the dialog with the switch off is `[P08e-10a]`.
+- P08e-11a: not a numbered walkthrough item. It covers the provider failing (HTTP 500 three times, feature spec §6.3 and §14) and the Retry the walkthrough's item 8 ends with, using time travel between the job's attempts.
+- P08e-11b: "Stop the queue worker, complete a retro, wait 10 minutes" is done by leaving the job in the `database` queue, travelling 11 minutes and reloading the page. Nothing in the product marks the row as failed: `Retro::effectiveSummaryStatus()` reads a pending request older than 10 minutes as failed when the snapshot is built, so the database still says `pending` and the page changes only on reload. The walkthrough's alternative ("set `summary_requested_at` back with tinker") is not used.
+- P08e-07, P08e-09: the theme name also appears in the suggestion's "Theme: …" line, so the tests match the heading with `p:text-is("…")` instead of a text assertion.
 
 ## Defects found
 
