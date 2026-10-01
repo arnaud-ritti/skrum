@@ -22,6 +22,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Credentials are read only through credential()/readableCredentials(), so
@@ -108,6 +109,24 @@ class TeamIntegration extends Model
     public function setting(string $key, mixed $default = null): mixed
     {
         return data_get($this->settings, $key, $default);
+    }
+
+    /**
+     * Merges settings under a row lock, so concurrent writers (token
+     * refresh, exports, sync bookkeeping) never overwrite each other.
+     *
+     * @param  array<string, mixed>  $changes
+     */
+    public function mergeSettings(array $changes): static
+    {
+        return DB::transaction(function () use ($changes): static {
+            $locked = static::query()->whereKey($this->id)->lockForUpdate()->firstOrFail();
+            $locked->forceFill(['settings' => [...$locked->settings, ...$changes]])->save();
+
+            $this->setRawAttributes($locked->getAttributes(), true);
+
+            return $this;
+        });
     }
 
     public function site(): ?string

@@ -30,6 +30,12 @@ interface JiraApi
     public function put(TeamIntegration $integration, string $path, array $body = []): array;
 
     /**
+     * @param  array<string, mixed>  $body
+     * @return array<array-key, mixed>
+     */
+    public function delete(TeamIntegration $integration, string $path, array $body = []): array;
+
+    /**
      * `rest/api/3/{resource}` on Cloud, `rest/api/2/{resource}` on Data Center.
      */
     public function apiPath(string $resource): string;

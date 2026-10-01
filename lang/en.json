@@ -1466,5 +1466,6 @@
     "Turn on status sync for :provider first.": "Turn on status sync for :provider first.",
     "This issue belongs to another :provider site.": "This issue belongs to another :provider site.",
     "Guests cannot sync action items.": "Guests cannot sync action items.",
-    "Invalid signature.": "Invalid signature."
+    "Invalid signature.": "Invalid signature.",
+    "This skrum instance can't receive webhooks; it checks :provider regularly instead.": "This skrum instance can't receive webhooks; it checks :provider regularly instead."
 }

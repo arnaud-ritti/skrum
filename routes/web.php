@@ -55,6 +55,7 @@ use App\Http\Controllers\Integrations\RetroResultsEmailsController;
 use App\Http\Controllers\Integrations\RetroSharesController;
 use App\Http\Controllers\Integrations\TeamIntegrationsController;
 use App\Http\Controllers\Integrations\TelegramConnectCodesController;
+use App\Http\Controllers\Integrations\TrackerWebhooksController;
 use App\Http\Controllers\Integrations\WebhookDeliveriesController;
 use App\Http\Controllers\Integrations\WebhookSecretsController;
 use App\Http\Controllers\Integrations\WorkspaceActionItemExportPreviewsController;
@@ -265,6 +266,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     ->whereUuid('integration')
                     ->middleware('throttle:10,1')
                     ->name('teams.integrations.test.store');
+                Route::get('teams/{team}/integrations/{integration}/webhook', [TrackerWebhooksController::class, 'show'])
+                    ->whereUuid('integration')
+                    ->middleware('throttle:10,1,trackerWebhookDetails')
+                    ->name('teams.integrations.trackerWebhook.show');
+                Route::post('teams/{team}/integrations/{integration}/webhook', [TrackerWebhooksController::class, 'store'])
+                    ->whereUuid('integration')
+                    ->middleware('throttle:10,1,trackerWebhooks')
+                    ->name('teams.integrations.trackerWebhook.store');
                 Route::post('teams/{team}/integrations/{integration}/secret', [WebhookSecretsController::class, 'store'])
                     ->whereUuid('integration')
                     ->middleware('throttle:10,1,webhookSecrets')

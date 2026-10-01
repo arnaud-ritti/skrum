@@ -8,6 +8,7 @@ use App\Support\Integrations\GitHub\GitHubClient;
 use App\Support\Integrations\Linear\LinearClient;
 use App\Support\Integrations\Slack\SlackClient;
 use App\Support\Integrations\Telegram\TelegramClient;
+use App\Support\Integrations\TrackerWebhooks;
 
 /**
  * Atlassian offers no revocation endpoint: the admin removes the app under
@@ -20,6 +21,7 @@ class DisconnectIntegration
         private TelegramClient $telegram,
         private LinearClient $linear,
         private GitHubClient $gitHub,
+        private TrackerWebhooks $trackerWebhooks,
     ) {}
 
     public function handle(TeamIntegration $integration): void
@@ -29,7 +31,8 @@ class DisconnectIntegration
             IntegrationProvider::Telegram => fn () => $this->leaveChatUnlessShared($integration),
             IntegrationProvider::Linear => fn () => $this->linear->revoke($integration),
             IntegrationProvider::GitHub => fn () => $this->gitHub->forgetRepositories((string) $integration->setting('installationId')),
-            IntegrationProvider::Jira, IntegrationProvider::JiraDataCenter, IntegrationProvider::MicrosoftTeams, IntegrationProvider::Mattermost, IntegrationProvider::Webhook => fn () => null,
+            IntegrationProvider::Jira, IntegrationProvider::JiraDataCenter => fn () => $this->trackerWebhooks->removeQuietly($integration, TrackerWebhooks::ids($integration)),
+            IntegrationProvider::MicrosoftTeams, IntegrationProvider::Mattermost, IntegrationProvider::Webhook => fn () => null,
         };
 
         $revoke();

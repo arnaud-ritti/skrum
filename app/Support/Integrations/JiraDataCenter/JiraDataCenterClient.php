@@ -107,6 +107,11 @@ class JiraDataCenterClient implements JiraApi, RefreshesTokens
         return $this->request($integration, 'PUT', $path, $body);
     }
 
+    public function delete(TeamIntegration $integration, string $path, array $body = []): array
+    {
+        return $this->request($integration, 'DELETE', $path, $body);
+    }
+
     public function apiPath(string $resource): string
     {
         return 'rest/api/2/'.ltrim($resource, '/');

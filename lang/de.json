@@ -1712,5 +1712,6 @@
     "Turn on status sync for :provider first.": "Aktiviere zuerst die Statussynchronisierung für :provider.",
     "This issue belongs to another :provider site.": "Dieses Issue gehört zu einer anderen :provider-Site.",
     "Guests cannot sync action items.": "Gäste können keine Aktionen synchronisieren.",
-    "Invalid signature.": "Ungültige Signatur."
+    "Invalid signature.": "Ungültige Signatur.",
+    "This skrum instance can't receive webhooks; it checks :provider regularly instead.": "Diese skrum-Instanz kann keine Webhooks empfangen; sie fragt :provider stattdessen regelmäßig ab."
 }

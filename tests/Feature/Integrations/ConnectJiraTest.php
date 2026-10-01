@@ -84,8 +84,8 @@ it('asks for read or read-and-write access', function (string $access, string $s
     expect($query['scope'])->toBe($scope)
         ->and(session('integrations.oauth.access'))->toBe($access);
 })->with([
-    'read' => ['read', 'offline_access read:jira-work read:board-scope:jira-software read:sprint:jira-software'],
-    'write' => ['write', 'offline_access read:jira-work read:board-scope:jira-software read:sprint:jira-software write:jira-work read:jira-user'],
+    'read' => ['read', 'offline_access read:jira-work read:board-scope:jira-software read:sprint:jira-software manage:jira-webhook'],
+    'write' => ['write', 'offline_access read:jira-work read:board-scope:jira-software read:sprint:jira-software manage:jira-webhook write:jira-work read:jira-user'],
 ]);
 
 it('connects a single Jira site and detects its story points fields', function () {

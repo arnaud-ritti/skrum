@@ -2,12 +2,14 @@
 
 namespace App\Console\Commands;
 
+use App\Enums\IntegrationInboundMode;
 use App\Enums\IntegrationProvider;
 use App\Enums\IntegrationStatus;
 use App\Jobs\Integrations\ReadTrackedIssues;
 use App\Models\TeamIntegration;
 use App\Support\Integrations\InboundModes;
 use App\Support\Integrations\IntegrationPolls;
+use App\Support\Integrations\TrackerWebhooks;
 use Illuminate\Console\Command;
 use Illuminate\Queue\Events\UniqueJobSkipped;
 use Illuminate\Support\Facades\Event;
@@ -18,7 +20,7 @@ class PollIntegrationsCommand extends Command
 
     protected $description = 'Queue a read of every synced tracker integration that is due';
 
-    public function handle(InboundModes $inboundModes): int
+    public function handle(InboundModes $inboundModes, TrackerWebhooks $trackerWebhooks): int
     {
         $trackers = array_map(
             fn (IntegrationProvider $provider): string => $provider->value,
@@ -38,8 +40,13 @@ class PollIntegrationsCommand extends Command
             ->whereIn('provider', $trackers)
             ->where('settings->statusSync', true)
             ->lazyById()
-            ->each(function (TeamIntegration $integration) use ($inboundModes, &$queued, &$skipped): void {
+            ->each(function (TeamIntegration $integration) use ($inboundModes, $trackerWebhooks, &$queued, &$skipped): void {
+                $previousMode = $integration->inbound_mode;
                 $inboundModes->refresh($integration);
+
+                if ($previousMode !== IntegrationInboundMode::Webhook && $integration->inbound_mode === IntegrationInboundMode::Webhook) {
+                    $trackerWebhooks->registerIfProjectsChanged($integration);
+                }
 
                 if (! IntegrationPolls::isDue($integration)) {
                     return;

@@ -14,6 +14,7 @@ use App\Support\Integrations\IntegrationErrors;
 use App\Support\Integrations\IntegrationPolls;
 use App\Support\Integrations\StatusSync;
 use App\Support\Integrations\Trackers\Trackers;
+use App\Support\Integrations\TrackerWebhooks;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -75,7 +76,7 @@ class ReadTrackedIssues implements ShouldBeUnique, ShouldQueue
         return now()->addMinutes(self::RetryMinutes);
     }
 
-    public function handle(Trackers $trackers, TrackedIssues $trackedIssues, ApplyIssueChanges $applyIssueChanges): void
+    public function handle(Trackers $trackers, TrackedIssues $trackedIssues, ApplyIssueChanges $applyIssueChanges, TrackerWebhooks $trackerWebhooks): void
     {
         $integration = TeamIntegration::query()->find($this->integrationId);
 
@@ -110,6 +111,8 @@ class ReadTrackedIssues implements ShouldBeUnique, ShouldQueue
         }
 
         $integration->forceFill(['last_polled_at' => now(), 'poll_cursor' => $startedAt])->save();
+
+        $trackerWebhooks->registerIfProjectsChanged($integration);
     }
 
     /**
