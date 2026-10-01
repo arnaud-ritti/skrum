@@ -437,3 +437,20 @@ it('sends the guest suffix untranslated whatever the locale', function () {
 
     expect(pushedWebhookEvents()->sole()->data['actionItem']['assignee'])->toBe(['name' => 'Gus (guest)']);
 });
+
+it('keeps the message of an automatic event for its delivery log', function () {
+    [$retro, , $participant] = webhookEventRetro();
+    subscribedWebhook($retro->team, ['action_item.created']);
+
+    app(CreateActionItem::class)->handle($retro->team, $retro, ActionItemActor::forParticipant($participant), ['content' => 'Fix the deploy']);
+
+    $job = pushedWebhookEvents()->sole();
+    $delivery = IntegrationDelivery::query()->sole();
+
+    expect($delivery->payload->message)->toBe([
+        'id' => $delivery->id,
+        'event' => 'action_item.created',
+        'occurredAt' => $job->occurredAt,
+        'data' => $job->data,
+    ]);
+});

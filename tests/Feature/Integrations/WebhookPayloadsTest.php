@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\Integrations\StoreWebhookPayload;
 use App\Enums\IntegrationDeliveryChannel;
 use App\Enums\IntegrationDeliveryKind;
 use App\Models\IntegrationDelivery;
@@ -91,4 +92,21 @@ it('makes a payload for a webhook delivery from its factory', function () {
 
     expect($payload->delivery->channel)->toBe(IntegrationDeliveryChannel::Webhook)
         ->and($payload->message['id'])->toBe($payload->integration_delivery_id);
+});
+
+it('keeps no content for a message too large to store', function () {
+    $delivery = webhookPayloadDelivery();
+    $message = [...webhookPayloadMessage($delivery), 'data' => ['notes' => str_repeat('a', 260 * 1024)]];
+
+    app(StoreWebhookPayload::class)->handle($delivery, $message);
+
+    expect($delivery->payload()->exists())->toBeFalse();
+});
+
+it('keeps a message that fits', function () {
+    $delivery = webhookPayloadDelivery();
+
+    app(StoreWebhookPayload::class)->handle($delivery, webhookPayloadMessage($delivery));
+
+    expect($delivery->payload->message)->toBe(webhookPayloadMessage($delivery));
 });

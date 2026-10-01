@@ -422,3 +422,23 @@ it('disables the webhook on the 10th failed share in a row', function () {
         ->and($integration->setting('disabledReason'))->toBe(WebhookHealth::FailuresReason)
         ->and($integration->consecutive_failures)->toBe(10);
 });
+
+it('keeps the message of a webhook share for its delivery log', function () {
+    [$retro, $facilitator] = webhookSharingRetro();
+
+    $this->actingAs($facilitator)
+        ->postJson(route('retros.shares.store', $retro), ['channel' => 'webhook', 'kind' => 'link'])
+        ->assertAccepted();
+
+    $delivery = IntegrationDelivery::query()->sole();
+    $message = $delivery->payload->message;
+
+    expect($message)->toBe([
+        'id' => $delivery->id,
+        'event' => 'retro.link',
+        'occurredAt' => $message['occurredAt'],
+        'data' => ['title' => 'Sprint 42', 'url' => route('retros.show', $retro), 'sharedBy' => 'Fran Facilitator'],
+    ]);
+    Queue::assertPushed(DeliverToWebhook::class, fn (DeliverToWebhook $job) => $job->occurredAt === $message['occurredAt']
+        && $job->data === $message['data']);
+});

@@ -19,10 +19,13 @@ use App\Models\User;
 use App\Support\Integrations\Exceptions\NotConnected;
 use App\Support\Integrations\Messages\ShareContent;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 class QueueShare
 {
+    public function __construct(private StoreWebhookPayload $storeWebhookPayload) {}
+
     public function requireIntegration(Team $team, IntegrationProvider $provider): TeamIntegration
     {
         $integration = $provider->isEnabled() ? $team->integration($provider) : null;
@@ -49,28 +52,44 @@ class QueueShare
         $integration = $this->requireIntegration($team, $provider);
         $locale = app()->getLocale();
 
+        $occurredAt = now()->toIso8601ZuluString();
+
         $event = $provider === IntegrationProvider::Webhook ? $this->webhookEvent($kind) : null;
+        $webhookData = $provider === IntegrationProvider::Webhook ? $content->toWebhook() : [];
 
         $makeJob = match ($provider) {
             IntegrationProvider::Slack => fn (string $id) => new DeliverToSlack($id, $content->toSlack(), $locale),
             IntegrationProvider::Telegram => fn (string $id) => new DeliverToTelegram($id, $content->toTelegram(), $locale),
             IntegrationProvider::MicrosoftTeams => fn (string $id) => new DeliverToMicrosoftTeams($id, $content->toMicrosoftTeams(), $locale),
             IntegrationProvider::Mattermost => fn (string $id) => new DeliverToMattermost($id, $content->toMattermost(), $locale),
-            IntegrationProvider::Webhook => fn (string $id) => new DeliverToWebhook($id, (string) $event, now()->toIso8601ZuluString(), $content->toWebhook(), $locale),
+            IntegrationProvider::Webhook => fn (string $id) => new DeliverToWebhook($id, (string) $event, $occurredAt, $webhookData, $locale),
             default => throw new InvalidArgumentException("{$provider->value} is not a share channel."),
         };
 
-        $delivery = IntegrationDelivery::query()->create([
-            'team_id' => $team->id,
-            'channel' => $channel,
-            'kind' => $kind,
-            'team_integration_id' => $integration->id,
-            'event' => $event,
-            'subject_type' => $subject->getMorphClass(),
-            'subject_id' => $subject->getKey(),
-            'requested_by_user_id' => $requester->id,
-            'status' => IntegrationDeliveryStatus::Queued,
-        ]);
+        $delivery = DB::transaction(function () use ($team, $channel, $kind, $integration, $event, $subject, $requester, $occurredAt, $webhookData): IntegrationDelivery {
+            $delivery = IntegrationDelivery::query()->create([
+                'team_id' => $team->id,
+                'channel' => $channel,
+                'kind' => $kind,
+                'team_integration_id' => $integration->id,
+                'event' => $event,
+                'subject_type' => $subject->getMorphClass(),
+                'subject_id' => $subject->getKey(),
+                'requested_by_user_id' => $requester->id,
+                'status' => IntegrationDeliveryStatus::Queued,
+            ]);
+
+            if ($event !== null) {
+                $this->storeWebhookPayload->handle($delivery, [
+                    'id' => $delivery->id,
+                    'event' => $event,
+                    'occurredAt' => $occurredAt,
+                    'data' => $webhookData,
+                ]);
+            }
+
+            return $delivery;
+        });
 
         $job = $makeJob($delivery->id);
 
