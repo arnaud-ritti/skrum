@@ -12,18 +12,34 @@ trait CapturesVisuals
 
     private const string OverflowScript = <<<'JS_WRAP'
     () => {
-        const clips = (element) => {
+        const overflows = (element, box) => {
             for (let node = element; node && node !== document.documentElement; node = node.parentElement) {
                 if (node.hasAttribute('data-overflow-ok')) {
-                    return true;
+                    return false;
                 }
     
-                if (node !== element && getComputedStyle(node).overflowX !== 'visible') {
-                    return true;
+                if (node === element) {
+                    continue;
+                }
+    
+                const style = getComputedStyle(node);
+    
+                if (style.overflowX === 'auto' || style.overflowX === 'scroll') {
+                    return false;
+                }
+    
+                if (style.overflowX === 'clip' || style.overflowX === 'hidden') {
+                    if (style.textOverflow === 'ellipsis') {
+                        return false;
+                    }
+    
+                    const clip = node.getBoundingClientRect();
+    
+                    return box.right > clip.right + 1 || box.left < clip.left - 1;
                 }
             }
     
-            return false;
+            return true;
         };
         const describe = (element) => element.tagName.toLowerCase()
             + (element.id ? `#${element.id}` : '')
@@ -38,7 +54,7 @@ trait CapturesVisuals
                 continue;
             }
     
-            if ((box.right > width + 1 || box.left < -1) && !clips(element)) {
+            if ((box.right > width + 1 || box.left < -1) && overflows(element, box)) {
                 offenders.push(describe(element));
             }
         }
@@ -59,7 +75,11 @@ trait CapturesVisuals
     JS_WRAP;
 
     private const string SettleScript = <<<'JS'
-        () => document.fonts.ready.then(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve(true)))))
+        () => document.fonts.ready
+            .then(() => Promise.allSettled(document.getAnimations()
+                .filter((animation) => Number.isFinite(animation.effect?.getComputedTiming().endTime))
+                .map((animation) => animation.finished)))
+            .then(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve(true)))))
         JS;
 
     /**
@@ -97,7 +117,12 @@ trait CapturesVisuals
 
                     expect($this->overflowingElements($page))->toBe([], "Horizontal overflow in {$label}");
 
-                    $page->screenshot(fullPage: true, filename: "../../visual/__screenshots__/{$label}");
+                    $page->screenshot(fullPage: true, filename: "{$label}.candidate");
+
+                    CaptureFile::replaceWhenPictureDiffers(
+                        base_path("tests/Browser/Screenshots/{$label}.candidate"),
+                        base_path("tests/visual/__screenshots__/{$label}.png"),
+                    );
                 }
             }
         }
