@@ -5,6 +5,8 @@ use App\Models\User;
 use App\Models\Whiteboard;
 use App\Models\WhiteboardFile;
 use App\Models\WhiteboardVersion;
+use Illuminate\Database\Events\QueryExecuted;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 
@@ -25,6 +27,12 @@ it('lists the versions of a board, newest first, without their scenes', function
         'scene' => ['elements' => [sceneElement(['id' => 'kept'])], 'fileIds' => []],
     ]);
     WhiteboardVersion::factory()->named('Elsewhere')->create();
+    $versionQueries = [];
+    DB::listen(function (QueryExecuted $query) use (&$versionQueries): void {
+        if (str_contains($query->sql, 'from "whiteboard_versions"')) {
+            $versionQueries[] = $query->sql;
+        }
+    });
 
     $this->actingAs($user)
         ->getJson(route('whiteboards.versions.index', $board))
@@ -33,6 +41,11 @@ it('lists the versions of a board, newest first, without their scenes', function
             ['id' => $named->id, 'name' => 'Kick-off', 'createdAt' => now()->toIso8601String(), 'createdByName' => $user->name, 'automatic' => false],
             ['id' => $automatic->id, 'name' => null, 'createdAt' => now()->subHour()->toIso8601String(), 'createdByName' => null, 'automatic' => true],
         ]);
+
+    expect($versionQueries)->toHaveCount(1)
+        ->and($versionQueries[0])->not->toContain('*')
+        ->not->toContain('"scene"')
+        ->not->toContain('"private_element_ids"');
 });
 
 it('saves a named version of the live scene for any member', function () {

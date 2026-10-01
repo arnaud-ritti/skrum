@@ -28,6 +28,7 @@ class WhiteboardVersionsController extends Controller
 
         return response()->json(
             $board->versions()
+                ->select(['id', 'whiteboard_id', 'name', 'seq', 'created_by_member_id', 'created_at'])
                 ->with('createdBy.user')
                 ->orderByDesc('created_at')
                 ->orderByDesc('seq')
