@@ -26,6 +26,12 @@ Schedule::command('skrum:telegram-poll')
     ->runInBackground()
     ->onOneServer();
 
+Schedule::command('skrum:poll-integrations')
+    ->everyMinute()
+    ->withoutOverlapping(5)
+    ->runInBackground()
+    ->onOneServer();
+
 Schedule::command('skrum:check-integrations')
     ->daily()
     ->onOneServer();

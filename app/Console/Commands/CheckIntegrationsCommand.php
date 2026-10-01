@@ -5,9 +5,11 @@ namespace App\Console\Commands;
 use App\Actions\Integrations\CheckIntegration;
 use App\Enums\IntegrationProvider;
 use App\Enums\IntegrationStatus;
+use App\Jobs\Integrations\ReadTrackedIssues;
 use App\Models\TeamIntegration;
 use App\Support\Integrations\Exceptions\IntegrationException;
 use App\Support\Integrations\Exceptions\ReconnectRequired;
+use App\Support\Integrations\StatusSync;
 use Illuminate\Console\Command;
 
 class CheckIntegrationsCommand extends Command
@@ -31,6 +33,11 @@ class CheckIntegrationsCommand extends Command
 
                 try {
                     $checkIntegration->handle($integration);
+
+                    if (StatusSync::isOn($integration)) {
+                        ReadTrackedIssues::dispatch($integration->id, true);
+                    }
+
                     $counts['ok']++;
                 } catch (ReconnectRequired) {
                     $counts['reconnect']++;

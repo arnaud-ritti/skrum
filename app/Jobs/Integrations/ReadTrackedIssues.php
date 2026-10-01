@@ -1,0 +1,138 @@
+<?php
+
+namespace App\Jobs\Integrations;
+
+use App\Actions\Integrations\ApplyIssueChanges;
+use App\Actions\Integrations\TrackedIssues;
+use App\Enums\IntegrationInboundMode;
+use App\Enums\IntegrationWebhookStatus;
+use App\Models\TeamIntegration;
+use App\Support\Integrations\Exceptions\RateLimited;
+use App\Support\Integrations\Exceptions\ReconnectRequired;
+use App\Support\Integrations\IntegrationPolls;
+use App\Support\Integrations\StatusSync;
+use App\Support\Integrations\Trackers\Trackers;
+use Carbon\CarbonImmutable;
+use DateTimeInterface;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Queue\Middleware\WithoutOverlapping;
+
+/**
+ * Spec 8 §5.4: an incremental poll (issues updated since the cursor minus
+ * two minutes), or a full read of every tracked issue that also detects
+ * deletions — daily, and when sync is turned on (the source then wins).
+ * Reads of one connection never overlap; a failed poll waits for the next
+ * run.
+ */
+class ReadTrackedIssues implements ShouldBeUnique, ShouldQueue
+{
+    use Queueable;
+
+    public const SilentWebhookHours = 24;
+
+    public int $maxExceptions = 1;
+
+    public int $uniqueFor = 900;
+
+    public int $timeout = 300;
+
+    public function __construct(public string $integrationId, public bool $full = false, public bool $initial = false) {}
+
+    /**
+     * The first read after sync is turned on lets the source win, so a
+     * pending daily full read must never swallow it.
+     */
+    public function uniqueId(): string
+    {
+        $kind = match (true) {
+            $this->initial => 'initial',
+            $this->full => 'full',
+            default => 'changes',
+        };
+
+        return "{$this->integrationId}:{$kind}";
+    }
+
+    /** @return array<int, object> */
+    public function middleware(): array
+    {
+        return [(new WithoutOverlapping("tracked-issues:{$this->integrationId}"))->releaseAfter(30)->expireAfter(600)];
+    }
+
+    public function retryUntil(): DateTimeInterface
+    {
+        return now()->addMinutes(15);
+    }
+
+    public function handle(Trackers $trackers, TrackedIssues $trackedIssues, ApplyIssueChanges $applyIssueChanges): void
+    {
+        $integration = TeamIntegration::query()->find($this->integrationId);
+
+        if ($integration === null || ! $integration->provider->isEnabled() || ! $integration->isActive() || ! StatusSync::isOn($integration)) {
+            return;
+        }
+
+        $startedAt = now();
+        $ids = $trackedIssues->ids($integration);
+
+        try {
+            if ($ids !== []) {
+                $this->read($integration, $ids, $trackers, $applyIssueChanges);
+            }
+        } catch (RateLimited $exception) {
+            IntegrationPolls::pause($integration->id, $exception->retryAfter);
+
+            return;
+        } catch (ReconnectRequired) {
+            return;
+        }
+
+        $integration->forceFill(['last_polled_at' => now(), 'poll_cursor' => $startedAt])->save();
+    }
+
+    /**
+     * @param  array<int, string>  $ids
+     */
+    private function read(TeamIntegration $integration, array $ids, Trackers $trackers, ApplyIssueChanges $applyIssueChanges): void
+    {
+        if ($this->full) {
+            $issues = $trackers->for($integration->provider)->issues($integration, $ids);
+            $applyIssueChanges->handle($integration, $ids, $issues, complete: true, sourceWins: $this->initial);
+
+            return;
+        }
+
+        $cursor = $integration->poll_cursor ?? now()->subMinutes(IntegrationPolls::intervalMinutes($integration));
+        $since = CarbonImmutable::instance($cursor)->subMinutes(IntegrationPolls::CursorOverlapMinutes);
+        $issues = $trackers->syncing($integration->provider)->changedIssues($integration, $ids, $since);
+
+        $applyIssueChanges->handle($integration, array_map('strval', array_keys($issues)), $issues, complete: false);
+
+        $this->watchWebhooks($integration, $issues !== []);
+    }
+
+    /**
+     * Spec 8 §5.3: source changes while nothing arrived for a day mean the
+     * webhook does not reach skrum; the connection then polls at the
+     * polling interval until an event arrives again.
+     */
+    private function watchWebhooks(TeamIntegration $integration, bool $foundChanges): void
+    {
+        $watched = $integration->inbound_mode === IntegrationInboundMode::Webhook
+            && in_array($integration->webhook_status, [IntegrationWebhookStatus::Pending, IntegrationWebhookStatus::Active], true);
+
+        if (! $foundChanges || ! $watched) {
+            return;
+        }
+
+        $quietSince = $integration->last_inbound_at ?? StatusSync::webhookWatchedSince($integration);
+
+        if ($quietSince !== null && $quietSince->gt(now()->subHours(self::SilentWebhookHours))) {
+            return;
+        }
+
+        $integration->forceFill(['webhook_status' => IntegrationWebhookStatus::Failing])->save();
+    }
+}
