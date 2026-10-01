@@ -3,11 +3,11 @@
 namespace App\Jobs\Integrations;
 
 use App\Enums\IntegrationProvider;
+use App\Exceptions\Integrations\NotConnected;
+use App\Exceptions\Integrations\WebhookContentMissing;
+use App\Exceptions\Integrations\WebhookDisabled;
 use App\Models\IntegrationDelivery;
 use App\Models\TeamIntegration;
-use App\Support\Integrations\Exceptions\NotConnected;
-use App\Support\Integrations\Exceptions\WebhookContentMissing;
-use App\Support\Integrations\Exceptions\WebhookDisabled;
 use App\Support\Integrations\Webhook\WebhookClient;
 use App\Support\Integrations\Webhook\WebhookHealth;
 use App\Support\Integrations\Webhook\WebhookMessage;

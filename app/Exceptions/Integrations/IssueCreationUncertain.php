@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Support\Integrations\Exceptions;
+namespace App\Exceptions\Integrations;
 
 /**
  * The create request left skrum but no answer came back: the issue may

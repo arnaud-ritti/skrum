@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Support\Integrations\Exceptions;
+namespace App\Exceptions\Integrations;
 
 /**
  * A Jira connection made before assignee mapping existed lacks the

@@ -3,8 +3,8 @@
 namespace App\Actions\Integrations;
 
 use App\Enums\IntegrationProvider;
+use App\Exceptions\Integrations\AssigneeMappingUnavailable;
 use App\Models\TeamIntegration;
-use App\Support\Integrations\Exceptions\AssigneeMappingUnavailable;
 
 class IntegrationMappingGuard
 {

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Mcp\Prompts;
+namespace App\Exceptions\Mcp;
 
 use RuntimeException;
 

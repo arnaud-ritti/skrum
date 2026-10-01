@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Support\Integrations\Exceptions;
+namespace App\Exceptions\Integrations;
 
 class NotConnected extends IntegrationException
 {

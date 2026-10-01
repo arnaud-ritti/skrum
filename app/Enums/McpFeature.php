@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Mcp;
+namespace App\Enums;
 
+use App\Mcp\McpTrackers;
 use App\Support\Llm\Llm;
 
 enum McpFeature

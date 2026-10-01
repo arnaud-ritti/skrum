@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Support\Integrations\Inbound;
+namespace App\Exceptions\Integrations;
 
 use App\Models\TeamIntegration;
 use RuntimeException;

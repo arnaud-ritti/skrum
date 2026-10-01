@@ -2,8 +2,8 @@
 
 namespace App\Actions\Integrations;
 
+use App\Exceptions\Integrations\IntegrationException;
 use App\Models\TeamIntegration;
-use App\Support\Integrations\Exceptions\IntegrationException;
 use App\Support\Integrations\Jira\JiraApis;
 use Illuminate\Support\Str;
 

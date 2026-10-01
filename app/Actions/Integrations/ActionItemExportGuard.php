@@ -5,11 +5,11 @@ namespace App\Actions\Integrations;
 use App\Actions\ActionItems\ActionItemActor;
 use App\Actions\ActionItems\ActionItemPermissions;
 use App\Enums\IntegrationProvider;
+use App\Exceptions\Integrations\NotConnected;
 use App\Models\ActionItem;
 use App\Models\Team;
 use App\Models\TeamIntegration;
 use App\Models\User;
-use App\Support\Integrations\Exceptions\NotConnected;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Validation\Rule;
 

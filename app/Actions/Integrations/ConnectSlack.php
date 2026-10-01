@@ -5,10 +5,10 @@ namespace App\Actions\Integrations;
 use App\Enums\IntegrationAccess;
 use App\Enums\IntegrationProvider;
 use App\Enums\IntegrationStatus;
+use App\Exceptions\Integrations\ConnectionRefused;
 use App\Models\Team;
 use App\Models\TeamIntegration;
 use App\Models\User;
-use App\Support\Integrations\Exceptions\ConnectionRefused;
 use App\Support\Integrations\Slack\SlackClient;
 
 class ConnectSlack implements OAuthConnector

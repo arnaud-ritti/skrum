@@ -4,8 +4,9 @@ namespace App\Support\Integrations\Trackers;
 
 use App\Enums\ExternalIssueState;
 use App\Enums\IntegrationProvider;
+use App\Exceptions\Integrations\EstimateRejected;
+use App\Exceptions\Integrations\ProviderRejected;
 use App\Models\TeamIntegration;
-use App\Support\Integrations\Exceptions\ProviderRejected;
 use App\Support\Integrations\GitHub\EstimateBlock;
 use App\Support\Integrations\GitHub\GitHubClient;
 use App\Support\Integrations\Jira\AdfToMarkdown;

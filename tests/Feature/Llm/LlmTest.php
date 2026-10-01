@@ -1,10 +1,10 @@
 <?php
 
 use App\Actions\Retros\BuildBoardSnapshot;
+use App\Exceptions\Llm\LlmUnavailable;
 use App\Models\Retro;
 use App\Support\Llm\Llm;
 use App\Support\Llm\LlmJson;
-use App\Support\Llm\LlmUnavailable;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 

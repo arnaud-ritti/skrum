@@ -3,8 +3,8 @@
 namespace App\Actions\Integrations;
 
 use App\Enums\IntegrationProvider;
+use App\Exceptions\Integrations\ReconnectRequired;
 use App\Models\TeamIntegration;
-use App\Support\Integrations\Exceptions\ReconnectRequired;
 use App\Support\Integrations\GitHub\GitHubClient;
 use App\Support\Integrations\IntegrationTokens;
 use App\Support\Integrations\Jira\JiraClient;

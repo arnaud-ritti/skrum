@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Support\Integrations\Trackers;
+namespace App\Exceptions\Integrations;
 
 use RuntimeException;
 

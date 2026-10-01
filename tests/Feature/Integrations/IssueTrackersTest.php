@@ -1,8 +1,8 @@
 <?php
 
 use App\Enums\IntegrationProvider;
+use App\Exceptions\Integrations\ProviderRejected;
 use App\Models\TeamIntegration;
-use App\Support\Integrations\Exceptions\ProviderRejected;
 use App\Support\Integrations\Trackers\GitHubTracker;
 use App\Support\Integrations\Trackers\JiraDataCenterTracker;
 use App\Support\Integrations\Trackers\JiraTracker;

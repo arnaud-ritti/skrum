@@ -2,7 +2,7 @@
 
 namespace App\Support\Integrations\Telegram;
 
-use App\Support\Integrations\Exceptions\IntegrationException;
+use App\Exceptions\Integrations\IntegrationException;
 use Illuminate\Support\Facades\Cache;
 
 class TelegramBot

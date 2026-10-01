@@ -2,9 +2,9 @@
 
 namespace App\Jobs\Integrations;
 
+use App\Exceptions\Integrations\WebhookContentMissing;
 use App\Models\IntegrationDelivery;
 use App\Models\IntegrationDeliveryPayload;
-use App\Support\Integrations\Exceptions\WebhookContentMissing;
 use App\Support\Integrations\Webhook\WebhookMessage;
 use Illuminate\Contracts\Encryption\DecryptException;
 

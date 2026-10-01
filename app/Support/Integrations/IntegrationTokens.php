@@ -3,9 +3,9 @@
 namespace App\Support\Integrations;
 
 use App\Enums\IntegrationProvider;
+use App\Exceptions\Integrations\ProviderUnavailable;
+use App\Exceptions\Integrations\ReconnectRequired;
 use App\Models\TeamIntegration;
-use App\Support\Integrations\Exceptions\ProviderUnavailable;
-use App\Support\Integrations\Exceptions\ReconnectRequired;
 use App\Support\Integrations\Jira\JiraClient;
 use App\Support\Integrations\JiraDataCenter\JiraDataCenterClient;
 use App\Support\Integrations\Linear\LinearClient;

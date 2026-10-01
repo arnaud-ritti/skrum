@@ -2,6 +2,7 @@
 
 namespace App\Support\Llm;
 
+use App\Exceptions\Llm\LlmUnavailable;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;

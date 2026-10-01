@@ -4,7 +4,7 @@ namespace App\Console\Commands;
 
 use App\Actions\Integrations\PollTelegramUpdates;
 use App\Enums\IntegrationProvider;
-use App\Support\Integrations\Exceptions\IntegrationException;
+use App\Exceptions\Integrations\IntegrationException;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;

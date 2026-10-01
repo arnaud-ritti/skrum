@@ -3,9 +3,9 @@
 use App\Enums\ExternalIssueState;
 use App\Enums\ExternalStatusCategory;
 use App\Enums\IntegrationProvider;
+use App\Exceptions\Integrations\ProviderRejected;
+use App\Exceptions\Integrations\RateLimited;
 use App\Models\TeamIntegration;
-use App\Support\Integrations\Exceptions\ProviderRejected;
-use App\Support\Integrations\Exceptions\RateLimited;
 use App\Support\Integrations\Trackers\DoneMapping;
 use App\Support\Integrations\Trackers\IssueStatus;
 use App\Support\Integrations\Trackers\Trackers;

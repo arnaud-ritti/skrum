@@ -3,9 +3,9 @@
 namespace App\Support\Integrations\MicrosoftTeams;
 
 use App\Enums\IntegrationProvider;
+use App\Exceptions\Integrations\ReconnectRequired;
 use App\Models\TeamIntegration;
 use App\Rules\MicrosoftTeamsWebhookUrl;
-use App\Support\Integrations\Exceptions\ReconnectRequired;
 use App\Support\Integrations\ProviderHttp;
 
 class MicrosoftTeamsClient

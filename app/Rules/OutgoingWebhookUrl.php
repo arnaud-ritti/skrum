@@ -2,7 +2,7 @@
 
 namespace App\Rules;
 
-use App\Support\Integrations\Exceptions\UnsafeWebhookUrl;
+use App\Exceptions\Integrations\UnsafeWebhookUrl;
 use App\Support\Integrations\Webhook\SafeWebhookUrl;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;

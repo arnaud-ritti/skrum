@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Support\Llm;
+namespace App\Exceptions\Llm;
 
 use RuntimeException;
 

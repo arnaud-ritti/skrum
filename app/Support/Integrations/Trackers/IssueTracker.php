@@ -2,6 +2,7 @@
 
 namespace App\Support\Integrations\Trackers;
 
+use App\Exceptions\Integrations\EstimateRejected;
 use App\Models\TeamIntegration;
 
 /**

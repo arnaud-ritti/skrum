@@ -1,9 +1,9 @@
 <?php
 
 use App\Enums\IntegrationProvider;
+use App\Exceptions\Integrations\UnresolvableWebhookHost;
+use App\Exceptions\Integrations\UnsafeWebhookUrl;
 use App\Rules\OutgoingWebhookUrl;
-use App\Support\Integrations\Exceptions\UnresolvableWebhookHost;
-use App\Support\Integrations\Exceptions\UnsafeWebhookUrl;
 use App\Support\Integrations\HostResolver;
 use App\Support\Integrations\Webhook\SafeWebhookUrl;
 use App\Support\Integrations\Webhook\WebhookTarget;

@@ -4,10 +4,10 @@ namespace App\Support\Integrations;
 
 use App\Enums\IntegrationProvider;
 use App\Enums\SsoProvider;
+use App\Exceptions\Integrations\ProviderRejected;
 use App\Models\SocialAccount;
 use App\Models\TeamIntegration;
 use App\Models\User;
-use App\Support\Integrations\Exceptions\ProviderRejected;
 use App\Support\Integrations\GitHub\GitHubClient;
 use App\Support\Integrations\Jira\JiraClient;
 use App\Support\Integrations\JiraDataCenter\JiraDataCenterClient;

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Support\Integrations\Exceptions;
+namespace App\Exceptions\Integrations;
 
 use App\Enums\IntegrationProvider;
 use App\Support\Integrations\IntegrationErrors;

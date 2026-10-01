@@ -2,11 +2,11 @@
 
 use App\Enums\IntegrationProvider;
 use App\Enums\IntegrationStatus;
+use App\Exceptions\Integrations\IntegrationException;
+use App\Exceptions\Integrations\RateLimited;
+use App\Exceptions\Integrations\ReconnectRequired;
+use App\Exceptions\Integrations\TelegramConflict;
 use App\Models\TeamIntegration;
-use App\Support\Integrations\Exceptions\IntegrationException;
-use App\Support\Integrations\Exceptions\RateLimited;
-use App\Support\Integrations\Exceptions\ReconnectRequired;
-use App\Support\Integrations\Exceptions\TelegramConflict;
 use App\Support\Integrations\Telegram\TelegramBot;
 use App\Support\Integrations\Telegram\TelegramClient;
 use Illuminate\Http\Client\Request;

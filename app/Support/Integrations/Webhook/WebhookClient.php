@@ -3,15 +3,15 @@
 namespace App\Support\Integrations\Webhook;
 
 use App\Enums\IntegrationProvider;
+use App\Exceptions\Integrations\ProviderRejected;
+use App\Exceptions\Integrations\ProviderUnavailable;
+use App\Exceptions\Integrations\RateLimited;
+use App\Exceptions\Integrations\ReconnectRequired;
+use App\Exceptions\Integrations\UnresolvableWebhookHost;
+use App\Exceptions\Integrations\UnsafeWebhookUrl;
+use App\Exceptions\Integrations\WebhookGone;
 use App\Models\IntegrationDelivery;
 use App\Models\TeamIntegration;
-use App\Support\Integrations\Exceptions\ProviderRejected;
-use App\Support\Integrations\Exceptions\ProviderUnavailable;
-use App\Support\Integrations\Exceptions\RateLimited;
-use App\Support\Integrations\Exceptions\ReconnectRequired;
-use App\Support\Integrations\Exceptions\UnresolvableWebhookHost;
-use App\Support\Integrations\Exceptions\UnsafeWebhookUrl;
-use App\Support\Integrations\Exceptions\WebhookGone;
 use App\Support\Integrations\ProviderHttp;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;

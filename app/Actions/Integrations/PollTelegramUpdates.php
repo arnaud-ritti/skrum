@@ -2,7 +2,7 @@
 
 namespace App\Actions\Integrations;
 
-use App\Support\Integrations\Exceptions\TelegramConflict;
+use App\Exceptions\Integrations\TelegramConflict;
 use App\Support\Integrations\Telegram\TelegramBot;
 use App\Support\Integrations\Telegram\TelegramClient;
 use Illuminate\Support\Facades\Cache;

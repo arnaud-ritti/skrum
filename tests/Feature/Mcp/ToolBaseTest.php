@@ -1,10 +1,10 @@
 <?php
 
 use App\Enums\IntegrationProvider;
+use App\Enums\McpFeature;
 use App\Enums\McpScope;
 use App\Enums\RetroPhase;
 use App\Mcp\McpContext;
-use App\Mcp\McpFeature;
 use App\Mcp\Presenters\McpBoard;
 use App\Mcp\Servers\SkrumServer;
 use App\Mcp\Tools\Retro\ListTeams;

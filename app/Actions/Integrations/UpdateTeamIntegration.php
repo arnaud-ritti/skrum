@@ -4,9 +4,9 @@ namespace App\Actions\Integrations;
 
 use App\Enums\IntegrationProvider;
 use App\Enums\IntegrationStatus;
+use App\Exceptions\Integrations\ReconnectRequired;
 use App\Models\TeamIntegration;
 use App\Models\User;
-use App\Support\Integrations\Exceptions\ReconnectRequired;
 use App\Support\Integrations\Linear\LinearPriority;
 use Closure;
 use Illuminate\Validation\Rule;

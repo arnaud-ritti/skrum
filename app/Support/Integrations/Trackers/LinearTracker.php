@@ -4,9 +4,10 @@ namespace App\Support\Integrations\Trackers;
 
 use App\Enums\ExternalIssueState;
 use App\Enums\PokerDeck;
+use App\Exceptions\Integrations\EstimateRejected;
+use App\Exceptions\Integrations\ProviderRejected;
+use App\Exceptions\Integrations\StatusPushRejected;
 use App\Models\TeamIntegration;
-use App\Support\Integrations\Exceptions\ProviderRejected;
-use App\Support\Integrations\Exceptions\StatusPushRejected;
 use App\Support\Integrations\Jira\AdfToMarkdown;
 use App\Support\Integrations\Linear\LinearClient;
 use Carbon\CarbonImmutable;

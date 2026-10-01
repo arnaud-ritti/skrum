@@ -2,6 +2,8 @@
 
 namespace App\Support\Llm;
 
+use App\Exceptions\Llm\LlmUnavailable;
+
 class Llm
 {
     public const TimeoutSeconds = 60;

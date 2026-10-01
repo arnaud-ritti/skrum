@@ -4,9 +4,9 @@ namespace App\Actions\Integrations;
 
 use App\Enums\IntegrationProvider;
 use App\Enums\IntegrationStatus;
+use App\Exceptions\Integrations\NotConnected;
 use App\Models\Team;
 use App\Models\TeamIntegration;
-use App\Support\Integrations\Exceptions\NotConnected;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class ResolvePokerTracker

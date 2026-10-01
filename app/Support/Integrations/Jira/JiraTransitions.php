@@ -4,8 +4,8 @@ namespace App\Support\Integrations\Jira;
 
 use App\Enums\ExternalIssueState;
 use App\Enums\IntegrationProvider;
+use App\Exceptions\Integrations\StatusPushRejected;
 use App\Models\TeamIntegration;
-use App\Support\Integrations\Exceptions\StatusPushRejected;
 use App\Support\Integrations\Trackers\DoneMapping;
 
 /**

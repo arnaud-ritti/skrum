@@ -3,12 +3,12 @@
 use App\Enums\IntegrationInboundMode;
 use App\Enums\IntegrationProvider;
 use App\Enums\IntegrationWebhookStatus;
+use App\Exceptions\Integrations\ProviderRejected;
 use App\Jobs\Integrations\RegisterTrackerWebhooks;
 use App\Jobs\Integrations\RemoveTrackerWebhooks;
 use App\Models\ActionItem;
 use App\Models\ActionItemExternalLink;
 use App\Models\TeamIntegration;
-use App\Support\Integrations\Exceptions\ProviderRejected;
 use App\Support\Integrations\InboundModes;
 use App\Support\Integrations\JiraDataCenter\JiraDataCenterServer;
 use App\Support\Integrations\TrackerWebhooks;

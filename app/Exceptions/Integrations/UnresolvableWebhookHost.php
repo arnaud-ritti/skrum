@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Support\Integrations\Exceptions;
+namespace App\Exceptions\Integrations;
 
 /**
  * The host gave no address: a missing record at save time, but just as

@@ -3,8 +3,8 @@
 namespace App\Support\Integrations\Trackers;
 
 use App\Enums\ExternalIssueState;
+use App\Exceptions\Integrations\StatusPushRejected;
 use App\Models\TeamIntegration;
-use App\Support\Integrations\Exceptions\StatusPushRejected;
 use Carbon\CarbonImmutable;
 
 /**

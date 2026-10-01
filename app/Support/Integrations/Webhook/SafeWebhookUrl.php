@@ -2,8 +2,8 @@
 
 namespace App\Support\Integrations\Webhook;
 
-use App\Support\Integrations\Exceptions\UnresolvableWebhookHost;
-use App\Support\Integrations\Exceptions\UnsafeWebhookUrl;
+use App\Exceptions\Integrations\UnresolvableWebhookHost;
+use App\Exceptions\Integrations\UnsafeWebhookUrl;
 use App\Support\Integrations\HostResolver;
 use App\Support\Integrations\PublicAddress;
 use GuzzleHttp\Psr7\Exception\MalformedUriException;

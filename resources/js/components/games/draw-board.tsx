@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import GameDrawingOpsController from '@/actions/App/Http/Controllers/Games/GameDrawingOpsController';
 import GameDrawingsController from '@/actions/App/Http/Controllers/Games/GameDrawingsController';
+import GameLastDrawingOpsController from '@/actions/App/Http/Controllers/Games/GameLastDrawingOpsController';
 import { useSecretWord } from '@/hooks/use-secret-word';
 import { useStrokeWhispers } from '@/hooks/use-stroke-whispers';
 import { useTrans } from '@/hooks/use-trans';
@@ -155,7 +156,7 @@ export function DrawBoard({ round }: { round: GameRound }) {
         enqueue(async () => {
             const undone = await ctx.run(
                 retroRequest<GameDrawingCount>(
-                    GameDrawingOpsController.destroyLast({
+                    GameLastDrawingOpsController.destroy({
                         room: roomId,
                         round: round.id,
                     }),

@@ -3,8 +3,8 @@
 namespace App\Support\Integrations\GitHub;
 
 use App\Enums\IntegrationProvider;
+use App\Exceptions\Integrations\ProviderRejected;
 use App\Support\Integrations\Base64Url;
-use App\Support\Integrations\Exceptions\ProviderRejected;
 
 /**
  * The GitHub App's own identity (spec 8 §4.2): an RS256 JWT signed with

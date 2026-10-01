@@ -3,6 +3,7 @@
 namespace App\Mcp\Prompts;
 
 use App\Enums\McpScope;
+use App\Exceptions\Mcp\PromptToolFailed;
 use App\Mcp\McpContext;
 use App\Mcp\McpGrant;
 use Illuminate\Support\Facades\Log;

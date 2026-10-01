@@ -3,8 +3,8 @@
 namespace App\Support\Integrations;
 
 use App\Enums\IntegrationProvider;
-use App\Support\Integrations\Exceptions\ProviderRejected;
-use App\Support\Integrations\Exceptions\ReconnectRequired;
+use App\Exceptions\Integrations\ProviderRejected;
+use App\Exceptions\Integrations\ReconnectRequired;
 use Illuminate\Http\Client\Response;
 
 class OAuthTokens

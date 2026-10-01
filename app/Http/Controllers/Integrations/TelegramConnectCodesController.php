@@ -3,10 +3,10 @@
 namespace App\Http\Controllers\Integrations;
 
 use App\Enums\IntegrationProvider;
+use App\Exceptions\Integrations\ProviderUnavailable;
 use App\Http\Controllers\Controller;
 use App\Models\Team;
 use App\Models\Workspace;
-use App\Support\Integrations\Exceptions\ProviderUnavailable;
 use App\Support\Integrations\Telegram\TelegramBot;
 use App\Support\Integrations\Telegram\TelegramConnectCodes;
 use Illuminate\Http\JsonResponse;

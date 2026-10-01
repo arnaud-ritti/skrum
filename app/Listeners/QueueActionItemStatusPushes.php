@@ -7,9 +7,9 @@ use App\Actions\Integrations\LinkStatusSync;
 use App\Enums\ActionItemEventOrigin;
 use App\Events\ActionItems\ActionItemCompleted;
 use App\Events\ActionItems\ActionItemReopened;
+use App\Exceptions\Integrations\ReadOnlyConnection;
 use App\Jobs\Integrations\PushActionItemState;
 use App\Models\ActionItem;
-use App\Support\Integrations\Exceptions\ReadOnlyConnection;
 use Throwable;
 
 /**

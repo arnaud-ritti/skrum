@@ -2,13 +2,13 @@
 
 use App\Enums\IntegrationProvider;
 use App\Enums\IntegrationStatus;
+use App\Exceptions\Integrations\ProviderRejected;
+use App\Exceptions\Integrations\ProviderUnavailable;
+use App\Exceptions\Integrations\RateLimited;
+use App\Exceptions\Integrations\ReconnectRequired;
 use App\Models\TeamIntegration;
 use App\Rules\MattermostWebhookUrl;
 use App\Rules\MicrosoftTeamsWebhookUrl;
-use App\Support\Integrations\Exceptions\ProviderRejected;
-use App\Support\Integrations\Exceptions\ProviderUnavailable;
-use App\Support\Integrations\Exceptions\RateLimited;
-use App\Support\Integrations\Exceptions\ReconnectRequired;
 use App\Support\Integrations\IntegrationErrors;
 use App\Support\Integrations\Mattermost\MattermostClient;
 use App\Support\Integrations\MicrosoftTeams\MicrosoftTeamsClient;

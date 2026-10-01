@@ -4,8 +4,8 @@ namespace App\Support\Integrations\Jira;
 
 use App\Enums\IntegrationAccess;
 use App\Enums\IntegrationProvider;
+use App\Exceptions\Integrations\NotConnected;
 use App\Models\TeamIntegration;
-use App\Support\Integrations\Exceptions\NotConnected;
 use App\Support\Integrations\IntegrationTokens;
 use App\Support\Integrations\OAuthTokens;
 use App\Support\Integrations\ProviderHttp;

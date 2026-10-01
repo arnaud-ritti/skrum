@@ -2,6 +2,8 @@
 
 namespace App\Support\Llm;
 
+use App\Exceptions\Llm\LlmUnavailable;
+
 interface LlmClient
 {
     /**

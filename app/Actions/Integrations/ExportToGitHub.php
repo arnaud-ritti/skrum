@@ -4,12 +4,12 @@ namespace App\Actions\Integrations;
 
 use App\Enums\ExportWarningCode;
 use App\Enums\IntegrationProvider;
+use App\Exceptions\Integrations\IntegrationException;
+use App\Exceptions\Integrations\IssueCreationUncertain;
+use App\Exceptions\Integrations\ProviderRejected;
+use App\Exceptions\Integrations\ProviderUnavailable;
 use App\Models\ActionItem;
 use App\Models\TeamIntegration;
-use App\Support\Integrations\Exceptions\IntegrationException;
-use App\Support\Integrations\Exceptions\IssueCreationUncertain;
-use App\Support\Integrations\Exceptions\ProviderRejected;
-use App\Support\Integrations\Exceptions\ProviderUnavailable;
 use App\Support\Integrations\GitHub\GitHubClient;
 use App\Support\Integrations\GitHub\GitHubMarkdown;
 use App\Support\Integrations\IntegrationUserAccounts;

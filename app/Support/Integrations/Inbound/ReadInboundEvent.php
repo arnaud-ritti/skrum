@@ -3,6 +3,7 @@
 namespace App\Support\Integrations\Inbound;
 
 use App\Enums\IntegrationProvider;
+use App\Exceptions\Integrations\InboundSignatureInvalid;
 use App\Models\TeamIntegration;
 use Illuminate\Http\Request;
 
