@@ -16,6 +16,7 @@ import type {
     IntegrationProviderCard,
     IntegrationScope,
     MattermostServerInfo,
+    StatusSyncPageProps,
     TeamSummary,
     TelegramBotInfo,
     WebhookEventOption,
@@ -29,7 +30,7 @@ type Props = {
     telegram: TelegramBotInfo | null;
     mattermost: MattermostServerInfo | null;
     webhookEvents: WebhookEventOption[] | null;
-};
+} & StatusSyncPageProps;
 
 export default function TeamIntegrations({
     workspace,

@@ -13,6 +13,7 @@ export function TaskSourceChip({ external }: { external: PokerTaskExternal }) {
         >
             {external.statusCategory === 'done' && (
                 <CircleCheck
+                    role="img"
                     className="size-3 text-emerald-600"
                     aria-label={t('Done in :source', {
                         source: TrackerLabels[external.source],

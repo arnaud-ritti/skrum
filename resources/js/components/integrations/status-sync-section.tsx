@@ -2,13 +2,22 @@ import { router, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import TeamIntegrationsController from '@/actions/App/Http/Controllers/Integrations/TeamIntegrationsController';
+import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { useTrans } from '@/hooks/use-trans';
 import { integrationErrorMessage } from '@/lib/integrations';
 import { retroRequest } from '@/lib/retro/api';
 import type {
     IntegrationProviderCard,
     IntegrationScope,
+    StatusSyncPageProps,
     TeamIntegration,
 } from '@/types';
 import { JiraDataCenterWebhookPanel } from './jira-data-center-webhook-panel';
@@ -25,10 +34,9 @@ type Props = {
  */
 export function StatusSyncSection({ scope, card, connection }: Props) {
     const { t } = useTrans();
-    const { locale } = usePage().props;
-    const { pollMinutes } = usePage<{ pollMinutes?: number }>().props;
+    const { locale, pollMinutes } = usePage<StatusSyncPageProps>().props;
     const [busy, setBusy] = useState(false);
-    const minutes = pollMinutes ?? 5;
+    const [confirmingOn, setConfirmingOn] = useState(false);
     const treatsCanceled =
         connection.provider === 'linear' || connection.provider === 'github';
     const mapsStatuses =
@@ -70,15 +78,25 @@ export function StatusSyncSection({ scope, card, connection }: Props) {
         ) {
             return t(
                 "Webhooks aren't reaching skrum; checking every :n minutes.",
-                { n: minutes },
+                { n: pollMinutes },
             );
         }
 
-        if (connection.inboundMode === 'webhook') {
+        if (
+            connection.inboundMode === 'webhook' &&
+            connection.webhookStatus === 'active'
+        ) {
             return t('Live updates (webhooks)');
         }
 
-        return t('Checking every :n minutes.', { n: minutes });
+        if (
+            connection.inboundMode === 'webhook' &&
+            connection.webhookStatus === 'pending'
+        ) {
+            return t('Setting up live updates…');
+        }
+
+        return t('Checking every :n minutes.', { n: pollMinutes });
     };
 
     return (
@@ -96,17 +114,58 @@ export function StatusSyncSection({ scope, card, connection }: Props) {
                 <Checkbox
                     checked={connection.statusSync}
                     disabled={busy}
-                    onCheckedChange={(checked) =>
+                    onCheckedChange={(checked) => {
+                        if (checked === true) {
+                            setConfirmingOn(true);
+
+                            return;
+                        }
+
                         void save(
-                            { status_sync: checked === true },
-                            checked === true
-                                ? t('Status sync is on.')
-                                : t('Status sync is off.'),
-                        )
-                    }
+                            { status_sync: false },
+                            t('Status sync is off.'),
+                        );
+                    }}
                 />
                 {t('Sync status')}
             </label>
+            <Dialog open={confirmingOn} onOpenChange={setConfirmingOn}>
+                <DialogContent>
+                    <DialogTitle>
+                        {t('Turn on status sync with :provider?', {
+                            provider: card.label,
+                        })}
+                    </DialogTitle>
+                    <DialogDescription>
+                        {t(
+                            'The first sync takes the state of every linked :provider issue: existing action items may be completed or reopened to match. After that, the most recent change wins.',
+                            { provider: card.label },
+                        )}
+                    </DialogDescription>
+                    <DialogFooter className="gap-2">
+                        <Button
+                            type="button"
+                            variant="secondary"
+                            onClick={() => setConfirmingOn(false)}
+                        >
+                            {t('Cancel')}
+                        </Button>
+                        <Button
+                            type="button"
+                            disabled={busy}
+                            onClick={() => {
+                                setConfirmingOn(false);
+                                void save(
+                                    { status_sync: true },
+                                    t('Status sync is on.'),
+                                );
+                            }}
+                        >
+                            {t('Turn on status sync')}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
             {connection.statusSync && (
                 <>
                     <p className="text-sm text-muted-foreground">

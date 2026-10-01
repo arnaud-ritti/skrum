@@ -1512,5 +1512,11 @@
     "Done in :source": "Done in :source",
     "Changed in :source to :value": "Changed in :source to :value",
     "Keep skrum estimate": "Keep skrum estimate",
-    "Use :source estimate": "Use :source estimate"
+    "Use :source estimate": "Use :source estimate",
+    "Setting up live updates…": "Setting up live updates…",
+    "Turn on status sync with :provider?": "Turn on status sync with :provider?",
+    "The first sync takes the state of every linked :provider issue: existing action items may be completed or reopened to match. After that, the most recent change wins.": "The first sync takes the state of every linked :provider issue: existing action items may be completed or reopened to match. After that, the most recent change wins.",
+    "Turn on status sync": "Turn on status sync",
+    "At least one status must count as done.": "At least one status must count as done.",
+    "Unknown status (:id)": "Unknown status (:id)"
 }

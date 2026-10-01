@@ -59,9 +59,9 @@ function ExternalLinkChip({
             case 'pending':
                 return t('Sync pending');
             case 'failed':
-                return t('Sync failed: :error', {
-                    error: link.syncError ?? '',
-                });
+                return link.syncError === null
+                    ? t('Sync failed')
+                    : t('Sync failed: :error', { error: link.syncError });
             case 'missing':
                 return t('Not found in :source', { source });
         }

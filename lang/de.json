@@ -1735,7 +1735,7 @@
     "Checking every :n minutes.": "Prüfung alle :n Minuten.",
     "Last sync: :time": "Letzte Synchronisierung: :time",
     "Reconnect :provider to receive live updates.": "Verbinde :provider neu, um Live-Aktualisierungen zu erhalten.",
-    "Treat canceled as done": "Abgebrochene als erledigt behandeln",
+    "Treat canceled as done": "Abgebrochene Vorgänge als erledigt behandeln",
     "Status sync setting saved.": "Synchronisierungseinstellung gespeichert.",
     "Status mapping": "Statuszuordnung",
     "Automatic uses the done statuses of each workflow. Choose other statuses per project or team if yours differ.": "Automatisch nutzt die Erledigt-Status jedes Workflows. Wähle andere Status pro Projekt oder Team, wenn deine abweichen.",
@@ -1744,8 +1744,8 @@
     "Automatic": "Automatisch",
     "Edit mapping": "Zuordnung bearbeiten",
     "Counts as done": "Zählt als erledigt",
-    "Complete to": "Erledigen nach",
-    "Reopen to": "Wieder öffnen nach",
+    "Complete to": "Status beim Erledigen",
+    "Reopen to": "Status beim Wiederöffnen",
     "skrum now waits for the first event.": "skrum wartet jetzt auf das erste Ereignis.",
     "Only a Jira administrator can register the webhook. Ask one to add it in Jira (System → WebHooks) with these details.": "Nur ein Jira-Administrator kann den Webhook registrieren. Bitte eine Person mit diesem Recht, ihn in Jira (System → WebHooks) mit diesen Angaben anzulegen.",
     "Show webhook details": "Webhook-Angaben anzeigen",
@@ -1758,5 +1758,11 @@
     "Done in :source": "In :source erledigt",
     "Changed in :source to :value": "In :source auf :value geändert",
     "Keep skrum estimate": "skrum-Schätzung behalten",
-    "Use :source estimate": ":source-Schätzung übernehmen"
+    "Use :source estimate": ":source-Schätzung übernehmen",
+    "Setting up live updates…": "Live-Aktualisierungen werden eingerichtet…",
+    "Turn on status sync with :provider?": "Statussynchronisierung mit :provider aktivieren?",
+    "The first sync takes the state of every linked :provider issue: existing action items may be completed or reopened to match. After that, the most recent change wins.": "Die erste Synchronisierung übernimmt den Status jedes verknüpften :provider-Issues: Bestehende Aktionspunkte können dadurch erledigt oder wieder geöffnet werden. Danach gilt die jeweils neueste Änderung.",
+    "Turn on status sync": "Statussynchronisierung aktivieren",
+    "At least one status must count as done.": "Mindestens ein Status muss als erledigt zählen.",
+    "Unknown status (:id)": "Unbekannter Status (:id)"
 }

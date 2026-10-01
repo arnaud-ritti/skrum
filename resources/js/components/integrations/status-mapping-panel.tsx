@@ -33,6 +33,7 @@ export function StatusMappingPanel({ scope, connection }: Props) {
     const { t } = useTrans();
     const [containers, setContainers] = useState<string[] | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [attempt, setAttempt] = useState(0);
     const { workspace, team } = scope;
     const integration = connection.id;
 
@@ -66,7 +67,12 @@ export function StatusMappingPanel({ scope, connection }: Props) {
         return () => {
             cancelled = true;
         };
-    }, [workspace, team, integration, t]);
+    }, [workspace, team, integration, t, attempt]);
+
+    const retry = () => {
+        setError(null);
+        setAttempt((previous) => previous + 1);
+    };
 
     return (
         <div className="space-y-2">
@@ -79,7 +85,12 @@ export function StatusMappingPanel({ scope, connection }: Props) {
                 </p>
             </div>
             {error !== null && (
-                <p className="text-sm text-destructive">{error}</p>
+                <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-sm text-destructive">{error}</p>
+                    <Button size="sm" variant="outline" onClick={retry}>
+                        {t('Try again')}
+                    </Button>
+                </div>
             )}
             {containers === null && error === null && <Spinner />}
             {containers !== null && containers.length === 0 && (
@@ -132,7 +143,13 @@ function ContainerMapping({
     const doneStatuses = (statuses ?? []).filter(
         (status) => status.category === 'done',
     );
-    const doneIds = jira?.doneStatusIds ?? null;
+    const allDoneIds = doneStatuses.map((status) => status.id);
+    const savedDoneIds = jira?.doneStatusIds ?? null;
+    const checkedDoneIds =
+        savedDoneIds === null
+            ? allDoneIds
+            : allDoneIds.filter((id) => savedDoneIds.includes(id));
+    const lastDoneChecked = checkedDoneIds.length === 1;
 
     const load = async () => {
         setBusy(true);
@@ -172,41 +189,63 @@ function ContainerMapping({
     };
 
     const toggleDone = (id: string, checked: boolean) => {
-        const all = doneStatuses.map((status) => status.id);
-        const base = doneIds ?? all;
-        const next = checked
-            ? [...new Set([...base, id])]
-            : base.filter((doneId) => doneId !== id);
+        const next = allDoneIds.filter((doneId) =>
+            doneId === id ? checked : checkedDoneIds.includes(doneId),
+        );
+
+        if (next.length === 0) {
+            return;
+        }
+
+        const countsEveryDoneStatus = allDoneIds.every((doneId) =>
+            next.includes(doneId),
+        );
 
         void save({
-            done_status_ids: next.length === all.length ? null : next,
+            done_status_ids: countsEveryDoneStatus ? null : next,
         });
     };
 
-    const targetSelect = (key: string, label: string) => (
-        <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">{label}</p>
-            <Select
-                value={(current[key] as string | null) ?? Automatic}
-                disabled={busy}
-                onValueChange={(value) =>
-                    void save({ [key]: value === Automatic ? null : value })
-                }
-            >
-                <SelectTrigger className="w-full" aria-label={label}>
-                    <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value={Automatic}>{t('Automatic')}</SelectItem>
-                    {(statuses ?? []).map((status) => (
-                        <SelectItem key={status.id} value={status.id}>
-                            {status.name}
+    const targetSelect = (key: string, label: string) => {
+        const value = (current[key] as string | null) ?? Automatic;
+        const isUnknown =
+            value !== Automatic &&
+            !(statuses ?? []).some((status) => status.id === value);
+
+        return (
+            <div className="space-y-1">
+                <p className="text-xs text-muted-foreground">{label}</p>
+                <Select
+                    value={value}
+                    disabled={busy}
+                    onValueChange={(selected) =>
+                        void save({
+                            [key]: selected === Automatic ? null : selected,
+                        })
+                    }
+                >
+                    <SelectTrigger className="w-full" aria-label={label}>
+                        <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value={Automatic}>
+                            {t('Automatic')}
                         </SelectItem>
-                    ))}
-                </SelectContent>
-            </Select>
-        </div>
-    );
+                        {isUnknown && (
+                            <SelectItem value={value}>
+                                {t('Unknown status (:id)', { id: value })}
+                            </SelectItem>
+                        )}
+                        {(statuses ?? []).map((status) => (
+                            <SelectItem key={status.id} value={status.id}>
+                                {status.name}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
+        );
+    };
 
     return (
         <div className="space-y-2 rounded-md border p-3">
@@ -236,11 +275,16 @@ function ContainerMapping({
                                     className="flex items-center gap-2 text-sm"
                                 >
                                     <Checkbox
-                                        checked={
-                                            doneIds === null ||
-                                            doneIds.includes(status.id)
+                                        checked={checkedDoneIds.includes(
+                                            status.id,
+                                        )}
+                                        disabled={
+                                            busy ||
+                                            (lastDoneChecked &&
+                                                checkedDoneIds.includes(
+                                                    status.id,
+                                                ))
                                         }
-                                        disabled={busy}
                                         onCheckedChange={(checked) =>
                                             toggleDone(
                                                 status.id,
@@ -251,6 +295,13 @@ function ContainerMapping({
                                     {status.name}
                                 </label>
                             ))}
+                            {lastDoneChecked && (
+                                <p className="text-xs text-muted-foreground">
+                                    {t(
+                                        'At least one status must count as done.',
+                                    )}
+                                </p>
+                            )}
                         </div>
                     )}
                     <div className="grid gap-2 sm:grid-cols-2">

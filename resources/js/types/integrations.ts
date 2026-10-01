@@ -210,6 +210,11 @@ export type TrackerStatus = {
     category: 'todo' | 'in_progress' | 'done';
 };
 
+export type StatusSyncPageProps = {
+    /** How often trackers are polled when webhooks can't be used. */
+    pollMinutes: number;
+};
+
 export type TrackerWebhookDetails = {
     url: string;
     secret: string;

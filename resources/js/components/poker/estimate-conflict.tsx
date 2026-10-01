@@ -72,11 +72,6 @@ export function EstimateConflict({ task, conflict, source }: Props) {
                         size="sm"
                         variant="outline"
                         disabled={busy || conflict.matchingCard === null}
-                        title={
-                            conflict.matchingCard === null
-                                ? notInDeck
-                                : undefined
-                        }
                         onClick={() => void resolve('useSource')}
                     >
                         {t('Use :source estimate', { source })}
