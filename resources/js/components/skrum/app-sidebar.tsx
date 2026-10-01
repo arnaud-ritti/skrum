@@ -276,7 +276,7 @@ export function AppSidebar({
                             <Link href={homeHref} prefetch>
                                 <SkrumLogo
                                     variant="symbol"
-                                    className="hidden size-6 group-data-[collapsible=icon]:block"
+                                    className="size-6!"
                                 />
                                 <SkrumLogo
                                     variant="wordmark"

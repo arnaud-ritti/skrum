@@ -58,6 +58,17 @@ describe('AppSidebar', () => {
         ]);
     });
 
+    it('shows the symbol and the wordmark in the brand link', () => {
+        const { container } = renderSidebar();
+
+        const brandLink = container.querySelector('a[href="/dashboard"]');
+
+        expect(brandLink?.querySelector('[data-part="symbol"]')).not.toBeNull();
+        expect(
+            brandLink?.querySelector('[data-part="wordmark"]'),
+        ).not.toBeNull();
+    });
+
     it('marks the active entry', () => {
         renderSidebar({ active: 'actions' });
 
