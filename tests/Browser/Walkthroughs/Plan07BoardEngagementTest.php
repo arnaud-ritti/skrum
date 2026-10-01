@@ -101,6 +101,11 @@ function plan07Chip(Card $card, string $emoji, int $count): string
     return "#card-{$card->id} button[aria-label=\"{$emoji}, {$count} {$noun}\"]";
 }
 
+function plan07IsNativelyDisabled(string $selector): string
+{
+    return 'document.querySelector('.json_encode($selector).').disabled';
+}
+
 function plan07OpenSettings(mixed $page): mixed
 {
     return $page->click('[aria-label="Facilitator menu"]')
@@ -644,7 +649,7 @@ it('[P07-08a] closes the board for editing in every phase while the facilitator 
     $bobPage->assertSeeIn($current, 'Grouping')
         ->assertSee('Board closed for editing')
         ->assertAttribute("@retro-card-handle-{$slow->id}", 'aria-disabled', 'true')
-        ->assertDisabled(plan07Chip($slow, '👍', 1))
+        ->assertScript(plan07IsNativelyDisabled(plan07Chip($slow, '👍', 1)), true)
         ->assertNotPresent("#card-{$slow->id} [aria-label=\"Add a reaction\"]")
         ->assertAriaAttribute("#card-{$slow->id} button[aria-label=\"Comments (1)\"]", 'expanded', 'false')
         ->script("() => document.querySelector('#card-{$slow->id} button[aria-label=\"Comments (1)\"]').click()");
@@ -714,7 +719,7 @@ it('[P07-08b] answers an edit from a page that missed the lock with the "closed 
     $page->click(plan07Chip($card, '👍', 1))
         ->assertSee('The board is closed for editing.')
         ->assertSee('Board closed for editing')
-        ->assertDisabled(plan07Chip($card, '👍', 1))
+        ->assertScript(plan07IsNativelyDisabled(plan07Chip($card, '👍', 1)), true)
         ->assertNotPresent("#card-{$card->id} [aria-label=\"Add a reaction\"]");
 
     expect(CardReaction::query()->where('card_id', $card->id)->count())->toBe(1);
