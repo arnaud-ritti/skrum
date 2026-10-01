@@ -42,6 +42,7 @@ use App\Http\Controllers\Integrations\IntegrationUserMappingsController;
 use App\Http\Controllers\Integrations\IntegrationUserMatchesController;
 use App\Http\Controllers\Integrations\JiraDataCenterTokensController;
 use App\Http\Controllers\Integrations\JiraFieldDetectionsController;
+use App\Http\Controllers\Integrations\PokerEstimateConflictsController;
 use App\Http\Controllers\Integrations\PokerImportContainersController;
 use App\Http\Controllers\Integrations\PokerImportIterationsController;
 use App\Http\Controllers\Integrations\PokerImportPreviewsController;
@@ -446,6 +447,7 @@ Route::prefix('poker/{game}')
         Route::get('tasks/{task}/rounds', [PokerRoundsController::class, 'index'])->name('poker.tasks.rounds.index')->whereUuid('task');
         Route::put('tasks/{task}/estimate', [PokerTaskEstimatesController::class, 'update'])->name('poker.tasks.estimate.update')->whereUuid('task');
         Route::post('tasks/{task}/sync', [PokerTaskSyncsController::class, 'store'])->name('poker.tasks.sync.store')->whereUuid('task');
+        Route::post('tasks/{task}/estimate-conflict', [PokerEstimateConflictsController::class, 'store'])->name('poker.tasks.estimate-conflict.store')->whereUuid('task');
         Route::patch('settings', [PokerSettingsController::class, 'update'])->name('poker.settings.update');
         Route::get('saved-decks', [PokerSavedDecksController::class, 'index'])->name('poker.saved-decks.index');
         Route::put('status', [PokerStatusesController::class, 'update'])->name('poker.status.update');

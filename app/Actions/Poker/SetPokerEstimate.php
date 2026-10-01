@@ -21,6 +21,30 @@ class SetPokerEstimate
 
     public function handle(PokerGame $locked, PokerTask $task, ?string $value): PokerTask
     {
+        if ($value !== null) {
+            $this->ensureEstimable($locked, $task, $value);
+        }
+
+        return $this->apply($locked, $task, $value, writeBack: true);
+    }
+
+    /**
+     * "Use :source estimate" (spec 8 §5.8): the same deck check and
+     * broadcasts as the facilitator's pick, without a revealed round — the
+     * task already has an estimate — and no write-back: the source already
+     * holds this value (spec 8 §5.9).
+     */
+    public function fromSource(PokerGame $locked, PokerTask $task, string $card): PokerTask
+    {
+        if (! in_array($card, $locked->cards, true) || PokerDeck::isSpecial($card)) {
+            throw ValidationException::withMessages(['value' => __('Choose a card from the deck.')]);
+        }
+
+        return $this->apply($locked, $task, $card, writeBack: false);
+    }
+
+    private function apply(PokerGame $locked, PokerTask $task, ?string $value, bool $writeBack): PokerTask
+    {
         $previous = $task->estimate;
 
         if ($value === null) {
@@ -31,19 +55,15 @@ class SetPokerEstimate
             ]);
         }
 
-        if ($value !== null) {
-            $this->ensureEstimable($locked, $task, $value);
-
-            if ($value !== $previous) {
-                $task->update([
-                    'estimate' => $value,
-                    'estimate_numeric' => PokerDeck::numericValue($value),
-                    'estimated_at' => now(),
-                ]);
-            }
+        if ($value !== null && $value !== $previous) {
+            $task->update([
+                'estimate' => $value,
+                'estimate_numeric' => PokerDeck::numericValue($value),
+                'estimated_at' => now(),
+            ]);
         }
 
-        if ($task->estimate !== $previous) {
+        if ($writeBack && $task->estimate !== $previous) {
             $this->requestEstimateSync->afterEstimateChange($locked, $task);
         }
 

@@ -3,11 +3,14 @@
 namespace App\Actions\Integrations;
 
 use App\Enums\IntegrationAccess;
+use App\Enums\IntegrationInboundMode;
 use App\Enums\IntegrationProvider;
 use App\Enums\IntegrationStatus;
+use App\Enums\PokerDeck;
 use App\Models\PokerGame;
 use App\Models\PokerTask;
 use App\Models\TeamIntegration;
+use App\Support\Integrations\StatusSync;
 use App\Support\Integrations\Trackers\JiraIssueTracker;
 
 /**
@@ -185,5 +188,81 @@ class PokerTaskSync
         }
 
         return $task->synced_at !== null ? self::Synced : null;
+    }
+
+    public function syncMode(PokerTask $task): string
+    {
+        $integration = $task->external_source === null ? null : $this->integration($task->external_source);
+
+        if ($integration === null || ! StatusSync::isOn($integration) || $integration->site() !== $task->external_site) {
+            return IntegrationInboundMode::Off->value;
+        }
+
+        return $integration->inbound_mode->value;
+    }
+
+    /**
+     * Spec 8 §5.8: the source estimate changed after the last write-back
+     * (or after the import) and differs from skrum's. Nothing is flagged
+     * while a write-back is on its way or cannot happen.
+     *
+     * @return array{sourceEstimate: string, matchingCard: ?string}|null
+     */
+    public function estimateConflict(PokerTask $task): ?array
+    {
+        $provider = IntegrationProvider::tryFrom((string) $task->external_source);
+
+        if ($provider === null || $task->estimate === null || $task->external_estimate === null) {
+            return null;
+        }
+
+        if (self::sameEstimate($provider, $task->estimate, $task->external_estimate)) {
+            return null;
+        }
+
+        if (in_array($this->state($task), [self::Pending, self::Unsupported], true)) {
+            return null;
+        }
+
+        $baseline = $task->synced_at ?? $task->created_at;
+
+        if ($task->external_updated_at === null || ($baseline !== null && $task->external_updated_at->lte($baseline))) {
+            return null;
+        }
+
+        return [
+            'sourceEstimate' => $task->external_estimate,
+            'matchingCard' => self::matchingCard($this->game, $provider, $task->external_estimate),
+        ];
+    }
+
+    /**
+     * The deck card holding the source's value: the same number for Jira
+     * and Linear, the same label (case-sensitive) for GitHub.
+     */
+    public static function matchingCard(PokerGame $game, IntegrationProvider $provider, string $sourceEstimate): ?string
+    {
+        foreach ($game->cards as $card) {
+            if (! PokerDeck::isSpecial($card) && self::sameEstimate($provider, $card, $sourceEstimate)) {
+                return $card;
+            }
+        }
+
+        return null;
+    }
+
+    private static function sameEstimate(IntegrationProvider $provider, string $skrum, string $source): bool
+    {
+        if ($skrum === $source) {
+            return true;
+        }
+
+        if (self::writesAnyDeck($provider)) {
+            return false;
+        }
+
+        $number = PokerDeck::numericValue($skrum);
+
+        return $number !== null && $number === PokerDeck::numericValue($source);
     }
 }

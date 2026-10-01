@@ -1715,5 +1715,7 @@
     "Invalid signature.": "Ungültige Signatur.",
     "This skrum instance can't receive webhooks; it checks :provider regularly instead.": "Diese skrum-Instanz kann keine Webhooks empfangen; sie fragt :provider stattdessen regelmäßig ab.",
     "Reconnect :provider so skrum can register its webhook.": "Verbinden Sie :provider erneut, damit skrum seinen Webhook registrieren kann.",
-    "This webhook was registered by hand in :provider; skrum leaves it as it is.": "Dieser Webhook wurde in :provider von Hand registriert; skrum lässt ihn unverändert."
+    "This webhook was registered by hand in :provider; skrum leaves it as it is.": "Dieser Webhook wurde in :provider von Hand registriert; skrum lässt ihn unverändert.",
+    "This estimate is already in sync.": "Diese Schätzung ist bereits synchronisiert.",
+    ":value is not in this deck.": ":value ist nicht in diesem Deck."
 }

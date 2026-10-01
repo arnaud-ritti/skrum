@@ -17,6 +17,11 @@ use Illuminate\Support\Facades\Cache;
  *     syncState?: ?string,
  *     syncError?: ?string,
  *     unsupportedReason?: ?string,
+ *     status?: ?string,
+ *     statusCategory?: ?string,
+ *     missing?: bool,
+ *     estimateConflict?: array{sourceEstimate: string, matchingCard: ?string}|null,
+ *     syncMode?: string,
  *     isManaged: true
  * }
  * @phpstan-type Task array{
@@ -89,6 +94,11 @@ class PresentPokerTask
             'syncState' => $state,
             'syncError' => $state === PokerTaskSync::Failed ? $task->sync_error : null,
             'unsupportedReason' => $state === PokerTaskSync::Unsupported ? $sync->unsupportedReason($task) : null,
+            'status' => $task->external_status_name,
+            'statusCategory' => $task->external_status_category?->value,
+            'missing' => $task->external_missing_at !== null,
+            'estimateConflict' => $sync->estimateConflict($task),
+            'syncMode' => $sync->syncMode($task),
             'isManaged' => true,
         ];
     }
