@@ -91,7 +91,7 @@ Acceptance criteria for every requirement are in §16.
 `GET /whiteboards/{board}` renders the Inertia page; `GET snapshot` returns the same data as JSON:
 
 ```
-{board: {id, title, teamId, locked, privateWriting, followEnabled, cursorsEnabled,
+{board: {id, title, teamId, locked, privateWriting, followEnabled, cursorsEnabled, reactionsEnabled,
          timerEndsAt, facilitatorMemberId, guestAccessEnabled, guestUrl?},
  me: {id, userId, name, avatarUrl, isGuest, isFacilitator, canTakeControl, canDelete},
  members: [{id, name, avatarUrl, isGuest}],
@@ -118,10 +118,11 @@ One class, `BuildWhiteboardSnapshot`, builds it for the viewer. All redaction li
 - A client applies changes with `reconcileElements` then `updateScene`. It tracks the last applied `seq`; a `fromSeq` that does not match it, a resubscription or a reconnect triggers `GET elements?since=` (coalesced). It also remembers the highest `seq` announced by an event or a write response: when a fetch ends below it (the change was committed while the fetch was in flight) it fetches again, and stops when a fetch brings nothing new. A fetch is also made once when the canvas becomes ready, for events that arrived before it.
 - Restoring on the client keeps the server's `index`, `version` and `versionNonce` (§6.2). Two exceptions are written back so that every client agrees: an element without an index and two elements with the same index get a new index from the first client that sees them. An element the canvas cannot restore is left out and logged to the console; the rest of the board loads.
 
-### 6.4 Drafts and cursors
+### 6.4 Drafts, cursors and reactions
 
-- **Drafts:** while a drag, resize or stroke is in progress the client whispers `draft` (`{elements}`, throttled 50 ms, at most 4 KB, dropped when larger) so others see movement before pointer-up. Drafts are never persisted and never touch sticky notes while private writing is on. A draft is discarded after 2 s without an update or when the committed element arrives.
+- **Drafts:** not built. Intermediate states of a drag or stroke already travel in the 300 ms write batches (measured in the plan 17a walkthrough on a local stack: 11 writes during drags took 39–114 ms, median 56 ms, and one drag moved an element from version 5 to 49).
 - **Cursors:** `onPointerUpdate` → whisper `cursor` with scene coordinates (throttled 40 ms) → Excalidraw's `collaborators` map renders them with the member's name and a colour hashed from the member id. The existing `live-cursors` layer is not used on the canvas because it knows nothing about pan and zoom. The sender id is the presence id stamped by Reverb; receivers drop whispers from ids outside the presence roster. The "Hide my cursor" preference (`skrum.hideMyCursor`) and the board's `cursors_enabled` switch apply. Cursors are hidden while a voting session is open (§11.4).
+- **Flying reactions:** same transport, identity and abuse rules as the board-engagement spec §3 and poker §4 ("Live cursors and flying reactions"), on `presence-whiteboard.{boardId}`: whisper `reaction`, sender = the presence id stamped by Reverb, receivers drop senders outside the roster, anything that is not a single emoji, and anything above the per-sender bucket (burst 5, 2/s). A bar with the six quick emoji and the picker sits bottom-centre above the canvas; reactions rise from the sender's avatar in the presence strip. Members and guests may react. Nothing is persisted. The board's `reactions_enabled` switch (facilitator, on by default) hides the bar and drops incoming reactions for everyone. Reuses `resources/js/components/realtime/flying-reactions.tsx` and the emoji picker; no new dependency.
 
 ### 6.5 Images
 
@@ -147,7 +148,7 @@ One class, `BuildWhiteboardSnapshot`, builds it for the viewer. All redaction li
 
 ## 7. Data model
 
-- **whiteboards**: `id` (UUID), `team_id` (cascade), `title` (string 120), `facilitator_member_id` (nullable FK → whiteboard_members, `nullOnDelete`), `guest_access_enabled` (bool, default `false`), `guest_token` (unique string 40), `locked` (bool, default `false`), `private_writing` (bool, default `false`), `follow_enabled` (bool, default `false`), `cursors_enabled` (bool, default `true`), `timer_ends_at` (nullable timestamp), `seq` (unsigned bigint, default 0), `purged_seq` (unsigned bigint, default 0 — the highest `seq` among purged tombstones; `GET elements?since=` answers 409 below it), `last_versioned_seq` (unsigned bigint, default 0), timestamps. Each plan's migration adds the columns its features need (17a: all but `locked`, `private_writing`, `follow_enabled`, `timer_ends_at`, `last_versioned_seq`). Index (`team_id`, `updated_at`).
+- **whiteboards**: `id` (UUID), `team_id` (cascade), `title` (string 120), `facilitator_member_id` (nullable FK → whiteboard_members, `nullOnDelete`), `guest_access_enabled` (bool, default `false`), `guest_token` (unique string 40), `locked` (bool, default `false`), `private_writing` (bool, default `false`), `follow_enabled` (bool, default `false`), `cursors_enabled` (bool, default `true`), `reactions_enabled` (bool, default `true`), `timer_ends_at` (nullable timestamp), `seq` (unsigned bigint, default 0), `purged_seq` (unsigned bigint, default 0 — the highest `seq` among purged tombstones; `GET elements?since=` answers 409 below it), `last_versioned_seq` (unsigned bigint, default 0), timestamps. Each plan's migration adds the columns its features need (17a: all but `locked`, `private_writing`, `follow_enabled`, `timer_ends_at`, `last_versioned_seq`). Index (`team_id`, `updated_at`).
 - **whiteboard_members**: `id`, `whiteboard_id` (cascade), `user_id` (nullable, `nullOnDelete`), `guest_name` (nullable string 50), `guest_secret_hash` (nullable string 64), timestamps. Unique (`whiteboard_id`, `user_id`). Uses `HasGuestIdentity`; cookie `GuestCookie::name('whiteboard', $id)`.
 - **whiteboard_elements**: `whiteboard_id` (cascade), `element_id` (string 40, the client-generated Excalidraw id), `type` (string 20), `data` (json, the full element), `version` (unsigned int), `version_nonce` (unsigned bigint), `author_member_id` (nullable FK, `nullOnDelete`), `is_sticky` (bool), `is_private` (bool, default `false`), `is_deleted` (bool, default `false`), `seq` (unsigned bigint), timestamps. `id` (UUID) primary key, because Eloquent has no composite keys; unique (`whiteboard_id`, `element_id`). Index (`whiteboard_id`, `seq`).
 - **whiteboard_files**: `id` (UUID), `whiteboard_id` (cascade), `file_id` (string 64, Excalidraw's id), `path`, `mime_type` (string 40), `size` (unsigned int), `uploaded_by_member_id` (nullable FK), timestamps. Unique (`whiteboard_id`, `file_id`).
@@ -250,7 +251,7 @@ Board-scoped, prefix `whiteboards/{board}` (`whereUuid`, middleware `ResolveWhit
 | PUT | `elements` | `{elements}` | member | `{seq, fromSeq, rejected}`, `elements.changed` |
 | POST | `files` | multipart `file`, `file_id` | member | `{id, url, mimeType}` |
 | GET | `files/{fileId}` | — | member | the image |
-| PATCH | `settings` | `{title?, guestAccessEnabled?, locked?, privateWriting?, followEnabled?, cursorsEnabled?}` | facilitator | 204, `board.changed` |
+| PATCH | `settings` | `{title?, guestAccessEnabled?, locked?, privateWriting?, followEnabled?, cursorsEnabled?, reactionsEnabled?}` | facilitator | 204, `board.changed` |
 | PUT | `timer` | `{seconds}` | facilitator | `{timerEndsAt}`, `timer.changed` |
 | POST | `guest-token` | — | facilitator | `{guestUrl}`, `board.changed` |
 | PUT | `facilitator` | `{userId}` | facilitator; or a team member with `userId` = self | 204, `board.changed` |
@@ -282,7 +283,7 @@ Channel `presence-whiteboard.{boardId}`; `BroadcastAuthorizationsController` gai
 | `board.changed` | `{}` | refetch the snapshot |
 | `board.deleted` | `{}` | show "This board was deleted" with a link to the team |
 
-Whispers (client events, presence members only, never persisted): `cursor`, `draft`, `viewport`.
+Whispers (client events, presence members only, never persisted): `cursor`, `reaction`, `viewport`.
 
 ## 13. UI and error handling
 
@@ -386,8 +387,6 @@ Lagging:
 ## 18. Open questions
 
 None blocking.
-
-- **Engineering, during 17a:** whether drafts (§6.4) are worth their complexity once committed writes are measured; if latency is already under 300 ms, drafts are cut and this spec updated.
 - **Product, after 17d:** order of the follow-up specs (canvas comments, retro attachment, MCP tools, import).
 
 ## Decisions (2026-10-01)
