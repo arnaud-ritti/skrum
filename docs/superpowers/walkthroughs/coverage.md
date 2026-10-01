@@ -12,25 +12,35 @@ A test is found by its identifier: `vendor/bin/pest tests/Browser/Walkthroughs -
 
 ## Summary
 
-| Walkthrough                           | Rows    | `auto`  | `auto-substituted` | `residual` |
-| ------------------------------------- | ------- | ------- | ------------------ | ---------- |
-| Plan 4, retro core                    | 26      | 19      | 5                  | 2          |
-| Plan 10a, poker core                  | 16      | 13      | 3                  | 0          |
-| Plan 10b, poker additions             | 28      | 19      | 5                  | 4          |
-| Plan 6: polish pass                   | 15      | 7       | 6                  | 2          |
-| Plan 7: board engagement              | 21      | 12      | 6                  | 3          |
-| Plan 9a: action items core            | 9       | 9       | 0                  | 0          |
-| Plan 9b: action items scope additions | 13      | 11      | 2                  | 0          |
-| Plan 8a: flow and templates           | 14      | 14      | 0                  | 0          |
-| Plan 8b: health check                 | 11      | 10      | 1                  | 0          |
-| Plan 8c: surveys                      | 10      | 10      | 0                  | 0          |
-| Plan 8d: results                      | 16      | 13      | 1                  | 2          |
-| Plan 8e: LLM features                 | 22      | 9       | 11                 | 2          |
-| Plan 13a: games foundation            | 11      | 5       | 5                  | 1          |
-| Plan 13b: Draw & Guess and Decoded    | 21      | 11      | 8                  | 2          |
-| Plan 13c: Sprint in one GIF           | 8       | 0       | 7                  | 1          |
-| Plan 13d: icebreaker, scores, invites | 26      | 16      | 7                  | 3          |
-| **Total**                             | **267** | **178** | **67**             | **22**     |
+| Walkthrough                                    | Rows    | `auto`  | `auto-substituted` | `residual` |
+| ---------------------------------------------- | ------- | ------- | ------------------ | ---------- |
+| Plan 4, retro core                             | 26      | 19      | 5                  | 2          |
+| Plan 10a, poker core                           | 16      | 13      | 3                  | 0          |
+| Plan 10b, poker additions                      | 28      | 19      | 5                  | 4          |
+| Plan 6: polish pass                            | 15      | 7       | 6                  | 2          |
+| Plan 7: board engagement                       | 21      | 12      | 6                  | 3          |
+| Plan 9a: action items core                     | 9       | 9       | 0                  | 0          |
+| Plan 9b: action items scope additions          | 13      | 11      | 2                  | 0          |
+| Plan 8a: flow and templates                    | 14      | 14      | 0                  | 0          |
+| Plan 8b: health check                          | 11      | 10      | 1                  | 0          |
+| Plan 8c: surveys                               | 10      | 10      | 0                  | 0          |
+| Plan 8d: results                               | 16      | 13      | 1                  | 2          |
+| Plan 8e: LLM features                          | 22      | 9       | 11                 | 2          |
+| Plan 13a: games foundation                     | 11      | 5       | 5                  | 1          |
+| Plan 13b: Draw & Guess and Decoded             | 21      | 11      | 8                  | 2          |
+| Plan 13c: Sprint in one GIF                    | 8       | 0       | 7                  | 1          |
+| Plan 13d: icebreaker, scores, invites          | 26      | 16      | 7                  | 3          |
+| Plan 12a: integrations foundation              | 15      | 2       | 7                  | 6          |
+| Plan 12b: sharing                              | 13      | 2       | 6                  | 5          |
+| Plan 14a: Microsoft Teams and Mattermost       | 9       | 0       | 7                  | 2          |
+| Plan 12c: poker trackers                       | 16      | 3       | 10                 | 3          |
+| Plan 12d: action item export                   | 11      | 0       | 8                  | 3          |
+| Plan 14b: outgoing webhooks                    | 13      | 1       | 11                 | 1          |
+| Plan 15: webhook redelivery                    | 6       | 2       | 3                  | 1          |
+| Plan 11b: MCP (API tokens page)                | 21      | 4       | 3                  | 14         |
+| Plan 14c: Jira Data Center and GitHub trackers | 18      | 0       | 15                 | 3          |
+| Plan 14d: status sync                          | 25      | 0       | 24                 | 1          |
+| **Total**                                      | **414** | **192** | **161**            | **61**     |
 
 ## Plan 4: retro board core
 
@@ -411,6 +421,223 @@ Walkthrough: `docs/superpowers/plans/2026-10-06-plan-13d-games-icebreaker-scores
 | P13d-12f | docs/superpowers/plans/2026-10-06-plan-13d-games-icebreaker-scores-invites.md:4453 | tests/Browser/Walkthroughs/Plan13dIcebreakerScoresInvitesTest.php                           | auto             |
 | P13d-12e | docs/superpowers/plans/2026-10-06-plan-13d-games-icebreaker-scores-invites.md:4454 | tests/Browser/Walkthroughs/Plan13dIcebreakerScoresInvitesTest.php                           | auto-substituted |
 
+## Plan 12a: integrations foundation
+
+Walkthrough: `docs/superpowers/plans/2026-10-05-plan-12a-integrations-foundation.md, final walkthrough`.
+
+| Id       | Walkthrough step                                                           | Test file                                                        | Status           |
+| -------- | -------------------------------------------------------------------------- | ---------------------------------------------------------------- | ---------------- |
+| P12a-01a | docs/superpowers/plans/2026-10-05-plan-12a-integrations-foundation.md:8360 | tests/Browser/Walkthroughs/Plan12aIntegrationsFoundationTest.php | auto-substituted |
+| P12a-01b | docs/superpowers/plans/2026-10-05-plan-12a-integrations-foundation.md:8360 | tests/Browser/Walkthroughs/Plan12aIntegrationsFoundationTest.php | auto             |
+| P12a-01c | docs/superpowers/plans/2026-10-05-plan-12a-integrations-foundation.md:8360 | tests/Browser/Walkthroughs/Plan12aIntegrationsFoundationTest.php | auto             |
+| P12a-02a | docs/superpowers/plans/2026-10-05-plan-12a-integrations-foundation.md:8361 | tests/Browser/Walkthroughs/Plan12aIntegrationsFoundationTest.php | auto-substituted |
+| P12a-02b | docs/superpowers/plans/2026-10-05-plan-12a-integrations-foundation.md:8361 | (none)                                                           | residual         |
+| P12a-03a | docs/superpowers/plans/2026-10-05-plan-12a-integrations-foundation.md:8362 | tests/Browser/Walkthroughs/Plan12aIntegrationsFoundationTest.php | auto-substituted |
+| P12a-03b | docs/superpowers/plans/2026-10-05-plan-12a-integrations-foundation.md:8362 | (none)                                                           | residual         |
+| P12a-04a | docs/superpowers/plans/2026-10-05-plan-12a-integrations-foundation.md:8363 | tests/Browser/Walkthroughs/Plan12aIntegrationsFoundationTest.php | auto-substituted |
+| P12a-04b | docs/superpowers/plans/2026-10-05-plan-12a-integrations-foundation.md:8363 | (none)                                                           | residual         |
+| P12a-05a | docs/superpowers/plans/2026-10-05-plan-12a-integrations-foundation.md:8364 | tests/Browser/Walkthroughs/Plan12aIntegrationsFoundationTest.php | auto-substituted |
+| P12a-05b | docs/superpowers/plans/2026-10-05-plan-12a-integrations-foundation.md:8364 | (none)                                                           | residual         |
+| P12a-06a | docs/superpowers/plans/2026-10-05-plan-12a-integrations-foundation.md:8365 | tests/Browser/Walkthroughs/Plan12aIntegrationsFoundationTest.php | auto-substituted |
+| P12a-06b | docs/superpowers/plans/2026-10-05-plan-12a-integrations-foundation.md:8365 | (none)                                                           | residual         |
+| P12a-07a | docs/superpowers/plans/2026-10-05-plan-12a-integrations-foundation.md:8366 | tests/Browser/Walkthroughs/Plan12aIntegrationsFoundationTest.php | auto-substituted |
+| P12a-07b | docs/superpowers/plans/2026-10-05-plan-12a-integrations-foundation.md:8366 | (none)                                                           | residual         |
+
+## Plan 12b: sharing
+
+Walkthrough: `docs/superpowers/plans/2026-10-05-plan-12b-integrations-sharing.md, final walkthrough`.
+
+| Id       | Walkthrough step                                                        | Test file                                                     | Status           |
+| -------- | ----------------------------------------------------------------------- | ------------------------------------------------------------- | ---------------- |
+| P12b-01a | docs/superpowers/plans/2026-10-05-plan-12b-integrations-sharing.md:4799 | tests/Browser/Walkthroughs/Plan12bIntegrationsSharingTest.php | auto-substituted |
+| P12b-01b | docs/superpowers/plans/2026-10-05-plan-12b-integrations-sharing.md:4799 | tests/Browser/Walkthroughs/Plan12bIntegrationsSharingTest.php | auto             |
+| P12b-01c | docs/superpowers/plans/2026-10-05-plan-12b-integrations-sharing.md:4789 | tests/Browser/Walkthroughs/Plan12bIntegrationsSharingTest.php | auto             |
+| P12b-01d | docs/superpowers/plans/2026-10-05-plan-12b-integrations-sharing.md:4799 | (none)                                                        | residual         |
+| P12b-02a | docs/superpowers/plans/2026-10-05-plan-12b-integrations-sharing.md:4800 | tests/Browser/Walkthroughs/Plan12bIntegrationsSharingTest.php | auto-substituted |
+| P12b-02b | docs/superpowers/plans/2026-10-05-plan-12b-integrations-sharing.md:4800 | (none)                                                        | residual         |
+| P12b-03a | docs/superpowers/plans/2026-10-05-plan-12b-integrations-sharing.md:4801 | tests/Browser/Walkthroughs/Plan12bIntegrationsSharingTest.php | auto-substituted |
+| P12b-03b | docs/superpowers/plans/2026-10-05-plan-12b-integrations-sharing.md:4801 | (none)                                                        | residual         |
+| P12b-04a | docs/superpowers/plans/2026-10-05-plan-12b-integrations-sharing.md:4802 | tests/Browser/Walkthroughs/Plan12bIntegrationsSharingTest.php | auto-substituted |
+| P12b-04b | docs/superpowers/plans/2026-10-05-plan-12b-integrations-sharing.md:4802 | (none)                                                        | residual         |
+| P12b-05  | docs/superpowers/plans/2026-10-05-plan-12b-integrations-sharing.md:4803 | tests/Browser/Walkthroughs/Plan12bIntegrationsSharingTest.php | auto-substituted |
+| P12b-06a | docs/superpowers/plans/2026-10-05-plan-12b-integrations-sharing.md:4804 | tests/Browser/Walkthroughs/Plan12bIntegrationsSharingTest.php | auto-substituted |
+| P12b-06b | docs/superpowers/plans/2026-10-05-plan-12b-integrations-sharing.md:4804 | (none)                                                        | residual         |
+
+## Plan 14a: Microsoft Teams and Mattermost
+
+Walkthrough: `docs/superpowers/plans/2026-10-07-plan-14a-integrations-extended-foundation.md, final walkthrough`.
+
+| Id       | Walkthrough step                                                                    | Test file                                                 | Status           |
+| -------- | ----------------------------------------------------------------------------------- | --------------------------------------------------------- | ---------------- |
+| P14a-01a | docs/superpowers/plans/2026-10-07-plan-14a-integrations-extended-foundation.md:4142 | tests/Browser/Walkthroughs/Plan14aTeamsMattermostTest.php | auto-substituted |
+| P14a-01b | docs/superpowers/plans/2026-10-07-plan-14a-integrations-extended-foundation.md:4142 | tests/Browser/Walkthroughs/Plan14aTeamsMattermostTest.php | auto-substituted |
+| P14a-02  | docs/superpowers/plans/2026-10-07-plan-14a-integrations-extended-foundation.md:4142 | tests/Browser/Walkthroughs/Plan14aTeamsMattermostTest.php | auto-substituted |
+| P14a-03a | docs/superpowers/plans/2026-10-07-plan-14a-integrations-extended-foundation.md:4142 | tests/Browser/Walkthroughs/Plan14aTeamsMattermostTest.php | auto-substituted |
+| P14a-03b | docs/superpowers/plans/2026-10-07-plan-14a-integrations-extended-foundation.md:4142 | tests/Browser/Walkthroughs/Plan14aTeamsMattermostTest.php | auto-substituted |
+| P14a-04a | docs/superpowers/plans/2026-10-07-plan-14a-integrations-extended-foundation.md:4142 | tests/Browser/Walkthroughs/Plan14aTeamsMattermostTest.php | auto-substituted |
+| P14a-04b | docs/superpowers/plans/2026-10-07-plan-14a-integrations-extended-foundation.md:4142 | (none)                                                    | residual         |
+| P14a-05a | docs/superpowers/plans/2026-10-07-plan-14a-integrations-extended-foundation.md:4142 | tests/Browser/Walkthroughs/Plan14aTeamsMattermostTest.php | auto-substituted |
+| P14a-05b | docs/superpowers/plans/2026-10-07-plan-14a-integrations-extended-foundation.md:4142 | (none)                                                    | residual         |
+
+## Plan 12c: poker trackers
+
+Walkthrough: `docs/superpowers/plans/2026-10-05-plan-12c-integrations-poker-trackers.md, final walkthrough`.
+
+| Id       | Walkthrough step                                                               | Test file                                               | Status           |
+| -------- | ------------------------------------------------------------------------------ | ------------------------------------------------------- | ---------------- |
+| P12c-01  | docs/superpowers/plans/2026-10-05-plan-12c-integrations-poker-trackers.md:6235 | tests/Browser/Walkthroughs/Plan12cPokerTrackersTest.php | auto-substituted |
+| P12c-02a | docs/superpowers/plans/2026-10-05-plan-12c-integrations-poker-trackers.md:6236 | tests/Browser/Walkthroughs/Plan12cPokerTrackersTest.php | auto-substituted |
+| P12c-02b | docs/superpowers/plans/2026-10-05-plan-12c-integrations-poker-trackers.md:6236 | tests/Browser/Walkthroughs/Plan12cPokerTrackersTest.php | auto-substituted |
+| P12c-03a | docs/superpowers/plans/2026-10-05-plan-12c-integrations-poker-trackers.md:6237 | tests/Browser/Walkthroughs/Plan12cPokerTrackersTest.php | auto-substituted |
+| P12c-03b | docs/superpowers/plans/2026-10-05-plan-12c-integrations-poker-trackers.md:6237 | tests/Browser/Walkthroughs/Plan12cPokerTrackersTest.php | auto-substituted |
+| P12c-03c | docs/superpowers/plans/2026-10-05-plan-12c-integrations-poker-trackers.md:6237 | tests/Browser/Walkthroughs/Plan12cPokerTrackersTest.php | auto             |
+| P12c-04  | docs/superpowers/plans/2026-10-05-plan-12c-integrations-poker-trackers.md:6238 | tests/Browser/Walkthroughs/Plan12cPokerTrackersTest.php | auto-substituted |
+| P12c-04r | docs/superpowers/plans/2026-10-05-plan-12c-integrations-poker-trackers.md:6238 | (none)                                                  | residual         |
+| P12c-05a | docs/superpowers/plans/2026-10-05-plan-12c-integrations-poker-trackers.md:6239 | tests/Browser/Walkthroughs/Plan12cPokerTrackersTest.php | auto-substituted |
+| P12c-05b | docs/superpowers/plans/2026-10-05-plan-12c-integrations-poker-trackers.md:6239 | tests/Browser/Walkthroughs/Plan12cPokerTrackersTest.php | auto-substituted |
+| P12c-06  | docs/superpowers/plans/2026-10-05-plan-12c-integrations-poker-trackers.md:6240 | tests/Browser/Walkthroughs/Plan12cPokerTrackersTest.php | auto             |
+| P12c-07a | docs/superpowers/plans/2026-10-05-plan-12c-integrations-poker-trackers.md:6241 | tests/Browser/Walkthroughs/Plan12cPokerTrackersTest.php | auto-substituted |
+| P12c-07b | docs/superpowers/plans/2026-10-05-plan-12c-integrations-poker-trackers.md:6241 | tests/Browser/Walkthroughs/Plan12cPokerTrackersTest.php | auto-substituted |
+| P12c-07r | docs/superpowers/plans/2026-10-05-plan-12c-integrations-poker-trackers.md:6241 | (none)                                                  | residual         |
+| P12c-08  | docs/superpowers/plans/2026-10-05-plan-12c-integrations-poker-trackers.md:6242 | tests/Browser/Walkthroughs/Plan12cPokerTrackersTest.php | auto             |
+| P12c-09  | docs/superpowers/plans/2026-10-05-plan-12c-integrations-poker-trackers.md:6243 | (none)                                                  | residual         |
+
+## Plan 12d: action item export
+
+Walkthrough: `docs/superpowers/plans/2026-10-05-plan-12d-integrations-action-item-export.md, final walkthrough`.
+
+| Id       | Walkthrough step                                                                   | Test file                                                  | Status           |
+| -------- | ---------------------------------------------------------------------------------- | ---------------------------------------------------------- | ---------------- |
+| P12d-01  | docs/superpowers/plans/2026-10-05-plan-12d-integrations-action-item-export.md:6431 | tests/Browser/Walkthroughs/Plan12dActionItemExportTest.php | auto-substituted |
+| P12d-01r | docs/superpowers/plans/2026-10-05-plan-12d-integrations-action-item-export.md:6431 | (none)                                                     | residual         |
+| P12d-02a | docs/superpowers/plans/2026-10-05-plan-12d-integrations-action-item-export.md:6432 | tests/Browser/Walkthroughs/Plan12dActionItemExportTest.php | auto-substituted |
+| P12d-02b | docs/superpowers/plans/2026-10-05-plan-12d-integrations-action-item-export.md:6432 | tests/Browser/Walkthroughs/Plan12dActionItemExportTest.php | auto-substituted |
+| P12d-03  | docs/superpowers/plans/2026-10-05-plan-12d-integrations-action-item-export.md:6433 | tests/Browser/Walkthroughs/Plan12dActionItemExportTest.php | auto-substituted |
+| P12d-03r | docs/superpowers/plans/2026-10-05-plan-12d-integrations-action-item-export.md:6433 | (none)                                                     | residual         |
+| P12d-04  | docs/superpowers/plans/2026-10-05-plan-12d-integrations-action-item-export.md:6434 | tests/Browser/Walkthroughs/Plan12dActionItemExportTest.php | auto-substituted |
+| P12d-05  | docs/superpowers/plans/2026-10-05-plan-12d-integrations-action-item-export.md:6435 | tests/Browser/Walkthroughs/Plan12dActionItemExportTest.php | auto-substituted |
+| P12d-06  | docs/superpowers/plans/2026-10-05-plan-12d-integrations-action-item-export.md:6436 | tests/Browser/Walkthroughs/Plan12dActionItemExportTest.php | auto-substituted |
+| P12d-07  | docs/superpowers/plans/2026-10-05-plan-12d-integrations-action-item-export.md:6437 | tests/Browser/Walkthroughs/Plan12dActionItemExportTest.php | auto-substituted |
+| P12d-07r | docs/superpowers/plans/2026-10-05-plan-12d-integrations-action-item-export.md:6437 | (none)                                                     | residual         |
+
+## Plan 14b: outgoing webhooks
+
+Walkthrough: `docs/superpowers/plans/2026-10-07-plan-14b-integrations-extended-webhooks.md, final walkthrough`.
+
+| Id       | Walkthrough step                                                                  | Test file                                                  | Status           |
+| -------- | --------------------------------------------------------------------------------- | ---------------------------------------------------------- | ---------------- |
+| P14b-01  | docs/superpowers/plans/2026-10-07-plan-14b-integrations-extended-webhooks.md:4840 | tests/Browser/Walkthroughs/Plan14bOutgoingWebhooksTest.php | auto-substituted |
+| P14b-01r | docs/superpowers/plans/2026-10-07-plan-14b-integrations-extended-webhooks.md:4840 | (none)                                                     | residual         |
+| P14b-02a | docs/superpowers/plans/2026-10-07-plan-14b-integrations-extended-webhooks.md:4841 | tests/Browser/Walkthroughs/Plan14bOutgoingWebhooksTest.php | auto-substituted |
+| P14b-02b | docs/superpowers/plans/2026-10-07-plan-14b-integrations-extended-webhooks.md:4841 | tests/Browser/Walkthroughs/Plan14bOutgoingWebhooksTest.php | auto-substituted |
+| P14b-02c | docs/superpowers/plans/2026-10-07-plan-14b-integrations-extended-webhooks.md:4841 | tests/Browser/Walkthroughs/Plan14bOutgoingWebhooksTest.php | auto-substituted |
+| P14b-03a | docs/superpowers/plans/2026-10-07-plan-14b-integrations-extended-webhooks.md:4842 | tests/Browser/Walkthroughs/Plan14bOutgoingWebhooksTest.php | auto             |
+| P14b-03b | docs/superpowers/plans/2026-10-07-plan-14b-integrations-extended-webhooks.md:4842 | tests/Browser/Walkthroughs/Plan14bOutgoingWebhooksTest.php | auto-substituted |
+| P14b-03c | docs/superpowers/plans/2026-10-07-plan-14b-integrations-extended-webhooks.md:4842 | tests/Browser/Walkthroughs/Plan14bOutgoingWebhooksTest.php | auto-substituted |
+| P14b-03d | docs/superpowers/plans/2026-10-07-plan-14b-integrations-extended-webhooks.md:4842 | tests/Browser/Walkthroughs/Plan14bOutgoingWebhooksTest.php | auto-substituted |
+| P14b-04a | docs/superpowers/plans/2026-10-07-plan-14b-integrations-extended-webhooks.md:4843 | tests/Browser/Walkthroughs/Plan14bOutgoingWebhooksTest.php | auto-substituted |
+| P14b-04b | docs/superpowers/plans/2026-10-07-plan-14b-integrations-extended-webhooks.md:4843 | tests/Browser/Walkthroughs/Plan14bOutgoingWebhooksTest.php | auto-substituted |
+| P14b-05  | docs/superpowers/plans/2026-10-07-plan-14b-integrations-extended-webhooks.md:4844 | tests/Browser/Walkthroughs/Plan14bOutgoingWebhooksTest.php | auto-substituted |
+| P14b-06  | docs/superpowers/plans/2026-10-07-plan-14b-integrations-extended-webhooks.md:4845 | tests/Browser/Walkthroughs/Plan14bOutgoingWebhooksTest.php | auto-substituted |
+
+## Plan 15: webhook redelivery
+
+Walkthrough: `docs/superpowers/plans/2026-10-08-plan-15-webhook-redelivery.md, final walkthrough`.
+
+| Id      | Walkthrough step                                                     | Test file                                                  | Status           |
+| ------- | -------------------------------------------------------------------- | ---------------------------------------------------------- | ---------------- |
+| P15-01  | docs/superpowers/plans/2026-10-08-plan-15-webhook-redelivery.md:2505 | tests/Browser/Walkthroughs/Plan15WebhookRedeliveryTest.php | auto-substituted |
+| P15-01r | docs/superpowers/plans/2026-10-08-plan-15-webhook-redelivery.md:2505 | (none)                                                     | residual         |
+| P15-02  | docs/superpowers/plans/2026-10-08-plan-15-webhook-redelivery.md:2505 | tests/Browser/Walkthroughs/Plan15WebhookRedeliveryTest.php | auto-substituted |
+| P15-03  | docs/superpowers/plans/2026-10-08-plan-15-webhook-redelivery.md:2505 | tests/Browser/Walkthroughs/Plan15WebhookRedeliveryTest.php | auto-substituted |
+| P15-04  | docs/superpowers/plans/2026-10-08-plan-15-webhook-redelivery.md:2505 | tests/Browser/Walkthroughs/Plan15WebhookRedeliveryTest.php | auto             |
+| P15-05  | docs/superpowers/plans/2026-10-08-plan-15-webhook-redelivery.md:2505 | tests/Browser/Walkthroughs/Plan15WebhookRedeliveryTest.php | auto             |
+
+## Plan 11b: MCP (API tokens page)
+
+Walkthrough: `docs/superpowers/plans/2026-10-03-plan-11b-mcp-writes-poker-prompts.md, final walkthrough`.
+
+| Id       | Walkthrough step                                                            | Test file                                           | Status           |
+| -------- | --------------------------------------------------------------------------- | --------------------------------------------------- | ---------------- |
+| P11b-01  | docs/superpowers/plans/2026-10-03-plan-11b-mcp-writes-poker-prompts.md:4522 | tests/Browser/Walkthroughs/Plan11bApiTokensTest.php | auto             |
+| P11b-02  | docs/superpowers/plans/2026-10-03-plan-11b-mcp-writes-poker-prompts.md:4523 | tests/Browser/Walkthroughs/Plan11bApiTokensTest.php | auto             |
+| P11b-03a | docs/superpowers/plans/2026-10-03-plan-11b-mcp-writes-poker-prompts.md:4524 | (none)                                              | residual         |
+| P11b-03b | docs/superpowers/plans/2026-10-03-plan-11b-mcp-writes-poker-prompts.md:4524 | tests/Browser/Walkthroughs/Plan11bApiTokensTest.php | auto-substituted |
+| P11b-04  | docs/superpowers/plans/2026-10-03-plan-11b-mcp-writes-poker-prompts.md:4525 | (none)                                              | residual         |
+| P11b-05  | docs/superpowers/plans/2026-10-03-plan-11b-mcp-writes-poker-prompts.md:4526 | (none)                                              | residual         |
+| P11b-06  | docs/superpowers/plans/2026-10-03-plan-11b-mcp-writes-poker-prompts.md:4527 | (none)                                              | residual         |
+| P11b-07  | docs/superpowers/plans/2026-10-03-plan-11b-mcp-writes-poker-prompts.md:4528 | (none)                                              | residual         |
+| P11b-08  | docs/superpowers/plans/2026-10-03-plan-11b-mcp-writes-poker-prompts.md:4529 | (none)                                              | residual         |
+| P11b-09  | docs/superpowers/plans/2026-10-03-plan-11b-mcp-writes-poker-prompts.md:4530 | (none)                                              | residual         |
+| P11b-10  | docs/superpowers/plans/2026-10-03-plan-11b-mcp-writes-poker-prompts.md:4531 | (none)                                              | residual         |
+| P11b-11  | docs/superpowers/plans/2026-10-03-plan-11b-mcp-writes-poker-prompts.md:4532 | (none)                                              | residual         |
+| P11b-12  | docs/superpowers/plans/2026-10-03-plan-11b-mcp-writes-poker-prompts.md:4533 | (none)                                              | residual         |
+| P11b-13  | docs/superpowers/plans/2026-10-03-plan-11b-mcp-writes-poker-prompts.md:4534 | (none)                                              | residual         |
+| P11b-14  | docs/superpowers/plans/2026-10-03-plan-11b-mcp-writes-poker-prompts.md:4535 | (none)                                              | residual         |
+| P11b-15a | docs/superpowers/plans/2026-10-03-plan-11b-mcp-writes-poker-prompts.md:4536 | tests/Browser/Walkthroughs/Plan11bApiTokensTest.php | auto             |
+| P11b-15b | docs/superpowers/plans/2026-10-03-plan-11b-mcp-writes-poker-prompts.md:4536 | (none)                                              | residual         |
+| P11b-16  | docs/superpowers/plans/2026-10-03-plan-11b-mcp-writes-poker-prompts.md:4537 | tests/Browser/Walkthroughs/Plan11bApiTokensTest.php | auto-substituted |
+| P11b-17  | docs/superpowers/plans/2026-10-03-plan-11b-mcp-writes-poker-prompts.md:4538 | tests/Browser/Walkthroughs/Plan11bApiTokensTest.php | auto-substituted |
+| P11b-18a | docs/superpowers/plans/2026-10-03-plan-11b-mcp-writes-poker-prompts.md:4539 | tests/Browser/Walkthroughs/Plan11bApiTokensTest.php | auto             |
+| P11b-18b | docs/superpowers/plans/2026-10-03-plan-11b-mcp-writes-poker-prompts.md:4539 | (none)                                              | residual         |
+
+## Plan 14c: Jira Data Center and GitHub trackers
+
+Walkthrough: `docs/superpowers/plans/2026-10-07-plan-14c-integrations-extended-trackers.md, final walkthrough`.
+
+| Id       | Walkthrough step                                                                  | Test file                                          | Status           |
+| -------- | --------------------------------------------------------------------------------- | -------------------------------------------------- | ---------------- |
+| P14c-01  | docs/superpowers/plans/2026-10-07-plan-14c-integrations-extended-trackers.md:6860 | tests/Browser/Walkthroughs/Plan14cTrackersTest.php | auto-substituted |
+| P14c-01b | docs/superpowers/plans/2026-10-07-plan-14c-integrations-extended-trackers.md:6860 | (none)                                             | residual         |
+| P14c-02  | docs/superpowers/plans/2026-10-07-plan-14c-integrations-extended-trackers.md:6860 | tests/Browser/Walkthroughs/Plan14cTrackersTest.php | auto-substituted |
+| P14c-03  | docs/superpowers/plans/2026-10-07-plan-14c-integrations-extended-trackers.md:6860 | tests/Browser/Walkthroughs/Plan14cTrackersTest.php | auto-substituted |
+| P14c-04  | docs/superpowers/plans/2026-10-07-plan-14c-integrations-extended-trackers.md:6860 | tests/Browser/Walkthroughs/Plan14cTrackersTest.php | auto-substituted |
+| P14c-05a | docs/superpowers/plans/2026-10-07-plan-14c-integrations-extended-trackers.md:6860 | tests/Browser/Walkthroughs/Plan14cTrackersTest.php | auto-substituted |
+| P14c-05b | docs/superpowers/plans/2026-10-07-plan-14c-integrations-extended-trackers.md:6860 | tests/Browser/Walkthroughs/Plan14cTrackersTest.php | auto-substituted |
+| P14c-05c | docs/superpowers/plans/2026-10-07-plan-14c-integrations-extended-trackers.md:6860 | tests/Browser/Walkthroughs/Plan14cTrackersTest.php | auto-substituted |
+| P14c-06  | docs/superpowers/plans/2026-10-07-plan-14c-integrations-extended-trackers.md:6860 | tests/Browser/Walkthroughs/Plan14cTrackersTest.php | auto-substituted |
+| P14c-07  | docs/superpowers/plans/2026-10-07-plan-14c-integrations-extended-trackers.md:6860 | tests/Browser/Walkthroughs/Plan14cTrackersTest.php | auto-substituted |
+| P14c-07b | docs/superpowers/plans/2026-10-07-plan-14c-integrations-extended-trackers.md:6860 | (none)                                             | residual         |
+| P14c-08  | docs/superpowers/plans/2026-10-07-plan-14c-integrations-extended-trackers.md:6860 | tests/Browser/Walkthroughs/Plan14cTrackersTest.php | auto-substituted |
+| P14c-09a | docs/superpowers/plans/2026-10-07-plan-14c-integrations-extended-trackers.md:6860 | tests/Browser/Walkthroughs/Plan14cTrackersTest.php | auto-substituted |
+| P14c-09b | docs/superpowers/plans/2026-10-07-plan-14c-integrations-extended-trackers.md:6860 | tests/Browser/Walkthroughs/Plan14cTrackersTest.php | auto-substituted |
+| P14c-10  | docs/superpowers/plans/2026-10-07-plan-14c-integrations-extended-trackers.md:6860 | tests/Browser/Walkthroughs/Plan14cTrackersTest.php | auto-substituted |
+| P14c-11  | docs/superpowers/plans/2026-10-07-plan-14c-integrations-extended-trackers.md:6860 | (none)                                             | residual         |
+| P14c-12  | docs/superpowers/plans/2026-10-07-plan-14c-integrations-extended-trackers.md:6860 | tests/Browser/Walkthroughs/Plan14cTrackersTest.php | auto-substituted |
+| P14c-13  | docs/superpowers/plans/2026-10-07-plan-14c-integrations-extended-trackers.md:6860 | tests/Browser/Walkthroughs/Plan14cTrackersTest.php | auto-substituted |
+
+## Plan 14d: status sync
+
+Walkthrough: `docs/superpowers/plans/2026-10-07-plan-14d-integrations-extended-status-sync.md, final walkthrough`.
+
+| Id       | Walkthrough step                                                                     | Test file                                            | Status           |
+| -------- | ------------------------------------------------------------------------------------ | ---------------------------------------------------- | ---------------- |
+| P14d-01a | docs/superpowers/plans/2026-10-07-plan-14d-integrations-extended-status-sync.md:8524 | tests/Browser/Walkthroughs/Plan14dStatusSyncTest.php | auto-substituted |
+| P14d-01b | docs/superpowers/plans/2026-10-07-plan-14d-integrations-extended-status-sync.md:8524 | tests/Browser/Walkthroughs/Plan14dStatusSyncTest.php | auto-substituted |
+| P14d-02  | docs/superpowers/plans/2026-10-07-plan-14d-integrations-extended-status-sync.md:8524 | tests/Browser/Walkthroughs/Plan14dStatusSyncTest.php | auto-substituted |
+| P14d-03a | docs/superpowers/plans/2026-10-07-plan-14d-integrations-extended-status-sync.md:8524 | tests/Browser/Walkthroughs/Plan14dStatusSyncTest.php | auto-substituted |
+| P14d-03b | docs/superpowers/plans/2026-10-07-plan-14d-integrations-extended-status-sync.md:8524 | tests/Browser/Walkthroughs/Plan14dStatusSyncTest.php | auto-substituted |
+| P14d-04a | docs/superpowers/plans/2026-10-07-plan-14d-integrations-extended-status-sync.md:8524 | tests/Browser/Walkthroughs/Plan14dStatusSyncTest.php | auto-substituted |
+| P14d-04b | docs/superpowers/plans/2026-10-07-plan-14d-integrations-extended-status-sync.md:8524 | tests/Browser/Walkthroughs/Plan14dStatusSyncTest.php | auto-substituted |
+| P14d-05a | docs/superpowers/plans/2026-10-07-plan-14d-integrations-extended-status-sync.md:8524 | tests/Browser/Walkthroughs/Plan14dStatusSyncTest.php | auto-substituted |
+| P14d-05b | docs/superpowers/plans/2026-10-07-plan-14d-integrations-extended-status-sync.md:8524 | tests/Browser/Walkthroughs/Plan14dStatusSyncTest.php | auto-substituted |
+| P14d-06  | docs/superpowers/plans/2026-10-07-plan-14d-integrations-extended-status-sync.md:8524 | tests/Browser/Walkthroughs/Plan14dStatusSyncTest.php | auto-substituted |
+| P14d-07a | docs/superpowers/plans/2026-10-07-plan-14d-integrations-extended-status-sync.md:8524 | tests/Browser/Walkthroughs/Plan14dStatusSyncTest.php | auto-substituted |
+| P14d-07b | docs/superpowers/plans/2026-10-07-plan-14d-integrations-extended-status-sync.md:8524 | tests/Browser/Walkthroughs/Plan14dStatusSyncTest.php | auto-substituted |
+| P14d-07c | docs/superpowers/plans/2026-10-07-plan-14d-integrations-extended-status-sync.md:8524 | tests/Browser/Walkthroughs/Plan14dStatusSyncTest.php | auto-substituted |
+| P14d-08a | docs/superpowers/plans/2026-10-07-plan-14d-integrations-extended-status-sync.md:8524 | tests/Browser/Walkthroughs/Plan14dStatusSyncTest.php | auto-substituted |
+| P14d-08b | docs/superpowers/plans/2026-10-07-plan-14d-integrations-extended-status-sync.md:8524 | tests/Browser/Walkthroughs/Plan14dStatusSyncTest.php | auto-substituted |
+| P14d-09a | docs/superpowers/plans/2026-10-07-plan-14d-integrations-extended-status-sync.md:8524 | tests/Browser/Walkthroughs/Plan14dStatusSyncTest.php | auto-substituted |
+| P14d-09b | docs/superpowers/plans/2026-10-07-plan-14d-integrations-extended-status-sync.md:8524 | tests/Browser/Walkthroughs/Plan14dStatusSyncTest.php | auto-substituted |
+| P14d-10a | docs/superpowers/plans/2026-10-07-plan-14d-integrations-extended-status-sync.md:8524 | tests/Browser/Walkthroughs/Plan14dStatusSyncTest.php | auto-substituted |
+| P14d-10b | docs/superpowers/plans/2026-10-07-plan-14d-integrations-extended-status-sync.md:8524 | tests/Browser/Walkthroughs/Plan14dStatusSyncTest.php | auto-substituted |
+| P14d-10c | docs/superpowers/plans/2026-10-07-plan-14d-integrations-extended-status-sync.md:8524 | tests/Browser/Walkthroughs/Plan14dStatusSyncTest.php | auto-substituted |
+| P14d-10d | docs/superpowers/plans/2026-10-07-plan-14d-integrations-extended-status-sync.md:8524 | tests/Browser/Walkthroughs/Plan14dStatusSyncTest.php | auto-substituted |
+| P14d-11a | docs/superpowers/plans/2026-10-07-plan-14d-integrations-extended-status-sync.md:8524 | tests/Browser/Walkthroughs/Plan14dStatusSyncTest.php | auto-substituted |
+| P14d-11b | docs/superpowers/plans/2026-10-07-plan-14d-integrations-extended-status-sync.md:8524 | tests/Browser/Walkthroughs/Plan14dStatusSyncTest.php | auto-substituted |
+| P14d-12  | docs/superpowers/plans/2026-10-07-plan-14d-integrations-extended-status-sync.md:8524 | tests/Browser/Walkthroughs/Plan14dStatusSyncTest.php | auto-substituted |
+| P14d-13  | docs/superpowers/plans/2026-10-07-plan-14d-integrations-extended-status-sync.md:8524 | (none)                                               | residual         |
+
 ## Notes
 
 Where a walkthrough's wording and today's interface differ, the test follows the feature's spec.
@@ -546,6 +773,68 @@ Where a walkthrough's wording and today's interface differ, the test follows the
 - P13b-05c: not a walkthrough sentence of its own. It is the regression test of the defect that `[P13b-05a]` exposed (a cleared stroke shown again to a viewer whose room snapshot was refreshed after the stroke); see "Defects found". The defect lasted three seconds (the life of the live preview), so the test detects it only if it reaches its last assertion within 3 seconds of the stroke; on a machine slow enough to take longer, it would pass with the defect present.
 - P13d-12f: not a walkthrough sentence of its own. When Slack is the team's only share channel and it needs a reconnect, the delivery line "Slack: failed — Reconnect Slack in the team settings." has to stay visible (games spec §3.1 and §6); see "Defects found". The test runs on a team room and on a room open by link: on the latter the "Include the guest link" checkbox is there before the failure and absent once no channel is left, while the failed line is shown.
 - P13d-09a, P13d-09b, P13d-10a, P13d-10b: the team leaderboard's points are asserted in the `span.font-semibold` of the person's row, because a row also holds the rank and `assertSeeIn()` matches substrings.
+- P12a-01a to P12a-07a: the walkthrough asks for real developer apps in `.env`. The tests enable providers with `enableIntegrations()` and answer every provider call with `Http::fake()`; connected integrations are arranged with `TeamIntegrationFactory` states, because an OAuth redirect cannot be followed against a fake.
+- P12a-01b, P12a-01c: the walkthrough only says "only configured providers appear". The tests add the two boundaries the feature spec names (integrations spec §16, criteria 1 and 2): a team member has no link and gets 403, and with no provider configured the link is absent and the page answers 404.
+- P12a-03a: "add the bot to a group, send the shown command" becomes: read the command from the card, serve it as the answer of `getUpdates`, run `skrum:telegram-poll --timeout=0`. The page's own 5-second poll then shows "Connected".
+- P12a-04a, P12a-05a: the trackers are arranged with read access. The walkthrough connects Linear "read and write"; with write access the card also loads people and priorities from the provider, which belongs to the plan 12d walkthrough. "Test the connection" behaves the same for both access levels.
+- P12a-06a: "the Slack card shows 'Reconnect required' with the error": the error shown is the provider's code, `token_revoked`.
+- P12b-01a to P12b-06a: "a queue worker running" becomes the `database` queue plus `$this->workQueue()` after each share, so the test sees both "Sending to …" and "Sent to …".
+- P12b-01a: the walkthrough's "the dialog shows 'Sent to Slack · …'": the test asserts the prefix "Sent to Slack"; the relative time after the dot depends on the browser's clock.
+- P12b-01c: not a walkthrough step; it automates Step 3 of the plan 12b verification ("confirm in the running app with every integration variable unset that the board header has no 'Share' button, the Results view has no share menu and the poker game menu has no 'Share…' item").
+- P12b-03a: "a summary still generating" needs a configured LLM for the dialog to mention the summary at all; the test sets the configuration and a pending summary, and no LLM call is made.
+- P12b-04a: "each participant receives the mail in their own language, guests receive nothing" is asserted on the faked notifications (recipient set and locale), not on rendered mail. The test adds a third send after travelling 11 minutes to show the cooldown ends.
+- P12b-06a: the walkthrough posts "again" after archiving; the test posts once to a channel that answers 410. Telegram stays connected in the test: with Slack as the only channel, the share section and its failed line disappear as soon as the connection needs reconnecting (`post-link-section.tsx` returns nothing when no channel is left).
+- P14a-01a, P14a-01b: connecting Teams and Mattermost is driven in the browser, because it is a pasted URL and not an OAuth round trip. Both tests add the refusal of a foreign URL (extended integrations spec §4.3, §4.4) and assert that the stored URL is absent from the page source.
+- P14a-03b: the invite is posted from a standalone Hangman room opened by its host; the sentence names the game and the room, never the players.
+- P14a-04a: "names shown as a count, action items named, `@channel` in a card rendered literally" is asserted on the payloads: Teams receives the plain word (a Teams mention needs an entity that skrum never sends), Mattermost receives `@` followed by a zero-width space.
+- P14a-05a: "break the Teams URL (delete the workflow)" becomes a 404 from the workflow host. The test continues with "Replace URL" to show the recovery, which the walkthrough does not mention.
+- P12c-01: the walkthrough connects Jira and Linear by hand; the test starts from connections arranged with `TeamIntegrationFactory` and asserts what follows from them (the Import button and both sources in the dialog). The connection itself is covered by the plan 12a rows.
+- P12c-02a: the walkthrough's `PROJ-n` "chips" are asserted as the key inside each task row, and the source link as the `href` of the key in the current task's detail.
+- P12c-03c: "open a task" is done by the facilitator choosing it as the current task, which is the only way the product shows a task's detail.
+- P12c-04: "queue worker running" is replaced by the `database` queue and one `$this->workQueue()`; "Jira shows 5 story points" is asserted as the `PUT` skrum sends (`customfield_10016` = 5) and is otherwise the residual row P12c-04r. A second member's page is added to prove the badge changes for the other players too.
+- P12c-05a: the walkthrough says "set 1 instead"; the test sets 8, because the text of the option "1" is contained in "13" and "100" of the Modified Fibonacci deck and cannot be addressed without a hook. The rule under test is the same.
+- P12c-05b: the walkthrough only names the Retry button. The feature spec (integrations design, estimate write-back) says the facilitator's retry can also force an estimate that is already synced, so the test clicks "Retry" on a failed task and then "Sync again", and asserts two writes. The failed state is arranged with the factory.
+- P12c-07a and P12c-07b: the product shows two toasts, ":count tasks refreshed." and ":count tasks were not found in Jira."; English has no singular form, so the test asserts "1 tasks were not found in Jira." where the walkthrough says "the toast says one task was not found".
+- P12c-08: "no import button" also covers the "More task actions" menu, which a guest does not get either. A team member's page is asserted next to the guest's so that the absence is meaningful.
+- P12d-01: the People panel never shows the text "Matching…". The product shows a spinner in the disabled "Match by email" button while the job runs; the test asserts the disabled button, then the badges.
+- P12d-02a: the walkthrough resets "a third" member; the test arranges that member's email match with the factory so that the menu offers "Reset".
+- P12d-03: the walkthrough's `PROJ-n ↗` is asserted as the link with the issue URL and the key as text; the arrow is an icon. The exporter is the item's author; the second browser is the facilitator.
+- P12d-05: "the Jira entry is gone from its menu" is asserted as the menu button being replaced by the single button "Export to Linear", which is what the product renders when one tracker is left. The forced request is sent twice in a row, not in parallel: the suite's server handles one request at a time, so a true race cannot be produced; the lock that makes a parallel double submit safe stays covered by `ActionItemExportTest` ("creates one issue for a double submit").
+- P12d-07: the walkthrough revokes first and exports afterwards. With a revoked token the product already fails when the export dialog loads its teams, so the test lets the dialog load, then switches the fake to the revoked answer and clicks Export, which is the request that answers 409 in the walkthrough. The status code is not visible in the interface; the test asserts its message.
+- P14b-01, P14b-06: "send Test" is checked with `Http::assertSent`-style inspection of the recorded request; the test message is not written to the delivery log, so no log row is asserted for it.
+- P14b-01: the test also submits `https://127.0.0.1/skrum` first and expects "This URL points to a private or invalid address."; this is not a walkthrough bullet, it proves that the URL safety check is not switched off by the faked DNS resolver.
+- P14b-02a to P14b-02c: the walkthrough's bullet names three shares; each is one test. The board link and the room invite are sent without the guest link.
+- P14b-03b: the three action item events are driven from the retro board's action items panel (Discussing), not from the workspace action items page.
+- P14b-04a, P15-02: after its last try on a 5xx answer the delivery's error is "Webhook did not respond. Try again later." (`ProviderUnavailable::userMessage()`); "The receiver answered 500." is the internal detail and is shown only for 4xx answers.
+- P14b-04a: "watch the retries" is checked after the first and the second try (the log shows Queued with 1 then 2 attempts), then after the seventh; the waits are travelled, not waited.
+- P14b-04b: nine earlier consecutive failures are arranged with the factory; the tenth is a board link shared through the interface (four tries). The walkthrough's "10 failures" are not driven one by one.
+- P14b-05: the 410 answer is received by an `action_item.completed` delivery. The interface shows "The receiver asked skrum to stop." under the status "Reconnect required".
+- P14b-06: "see the old one fail verification" is asserted on the request sent after the rotation: its signature verifies with the new secret and not with the old one.
+- P15-02: "stop the receiver" is replaced by a receiver answering 503.
+- P15-03: the failed delivery is arranged with the factory; the redelivery is checked for the same `X-Skrum-Delivery`, `X-Skrum-Redelivery: true`, and the log row "Redelivery".
+- P15-05: not a walkthrough item. It covers the refusals of the redelivery spec §4.3 ("still being sent", "Turn the webhook back on before redelivering.", "content is no longer kept"). The interface hides Redeliver in these states, so each case changes the state after the log was loaded. The throttle of redeliveries is not covered here; it is covered by `tests/Feature/Integrations/WebhookRedeliveryTest.php`.
+- P11b-01: the server URL is the test server's (`http://127.0.0.1:<port>/mcp`), not `http://localhost/mcp`; the test asserts that it ends with `/mcp`.
+- P11b-01, P11b-02: the walkthrough says that "Create token" asks for the password. Today the page itself is behind the password confirmation (`routes/settings.php`), so the password is asked when the page is opened, once, and "Create token" opens the dialog directly.
+- P11b-03b, P11b-16, P11b-17: the client's call is one request sent from the test process with `postMcp()` (a bearer token, no session).
+- P11b-17: the configuration value `skrum.mcp.enabled` is set in the test instead of `SKRUM_MCP_ENABLED` plus a restart. The page answers with Laravel's default 404 page ("Not Found").
+- P11b-18a: three strings of the page and three of its dialogs are checked per language; the revoke dialog is not opened in each language.
+- P14c-05a: the walkthrough says "replace the connection with a personal access token". A connection made with OAuth offers no token dialog (`jira-data-center-integration.tsx` shows "Replace token" only for a token connection), so the test pastes the token from the not-connected card. The feature spec (§4.1) only requires that an OAuth connection replaces a stored token, not the reverse.
+- P14c-05c: "exported issue created as the token owner" is asserted as: the export's calls carry `Authorization: Bearer {personal access token}` and none carries an OAuth token. Who Jira then records as the reporter is Jira's behaviour.
+- P14c-06** and **P14c-13: "revoke the token in Jira" and "uninstall the app" are the faked answers 401 on `GET /rest/api/2/myself` and 404 on `GET /app/installations/4242`, found with "Test the connection".
+- P14c-09a, P14c-09b, P14c-10: "see one block in the issue body" is asserted on the body of the single `PATCH /repos/acme/api/issues/7` request, with exactly one `<!-- skrum:estimate -->` marker and the surrounding text unchanged.
+- P14c-11: the walkthrough expects to clear an estimate; today's interface cannot. Residual, with the feature test named in the residual entry.
+- P14d-01a: after the switch the card says "Checking every 5 minutes." until the registration job has run, then "Setting up live updates…" until the first verified event, then "Live updates (webhooks)". The walkthrough does not describe these three states; the test asserts all three.
+- P14d-01b: "reconnect first so the webhook scope is granted" is asserted from the other side: a connection without the scope shows "Reconnect Jira to receive live updates." and polls. The reconnection itself is part of residual `P14d-13`.
+- P14d-02, P14d-05a, P14d-07b, P14d-08b, P14d-11b: the walkthrough says the item completes "with 'Completed in Jira'". On an open board the item is completed at once, but "Completed in :source" appears only after the page is loaded again, because broadcast payloads carry no `completedVia`. The tests assert the live completion, then reload and assert the label.
+- P14d-02: "within seconds" is not timed; the test waits for the change with the suite's 20-second assertion timeout after running the queued job itself.
+- P14d-05a, P14d-05b: the walkthrough says "complete in skrum and close in Jira within the same minute to see the newer change win". Both changes lead to the same state, so nothing would conflict. The tests use opposite changes: reopened in skrum then closed in Jira 20 seconds later (Jira wins), and completed in skrum while Jira reports the issue open with a change in the same second (tie, skrum wins, one push, no loop on the echo). The unpushed skrum change is arranged with the factory.
+- P14d-08b: "close as not planned" completes the item because "Treat canceled as done" is on by default for GitHub; the case with the option off is covered for Linear by `P14d-07c`.
+- P14d-09b: the brief for this plan expected a 403 on the registration call for a non-administrator; the code asks `GET /rest/api/2/mypermissions?permissions=ADMINISTER` and does not attempt the registration when `havePermission` is false. The test fakes that answer and asserts that no registration was posted.
+- P14d-10a: the walkthrough says the task shows "In progress in Jira"; the interface shows the tracker's own status name, "In Progress in Jira" for a Jira status named "In Progress".
+- P14d-11a: the walkthrough's "cards say 'Checking every 5 minutes.'" is asserted on the GitHub card, where the test also turns the switch on with webhooks off and checks that the webhook route answers 404.
+- P14d-12: the uninstallation reaches skrum as GitHub's `installation` `deleted` webhook, confirmed by a faked 404 of `GET /app/installations/4242`; the card is reloaded to show it (the integrations page has no realtime channel).
+- P11b-03b, P11b-16: the test process's request to `/mcp` leaves `auth.defaults.guard` on `sanctum` for the rest of the test, because the browser requests are served by the same application instance; the file's `p11bPostMcp()` restores the web guard after each call. This is an artefact of the one-process harness, not a product defect.
+- P12c-03b: the import button reads "Import 1 tasks" for a single selected issue; the test asserts today's text (open, see Defects found).
 
 ## Defects found
 
@@ -588,6 +877,18 @@ Add one line per defect: identifier, what was wrong, the commit that fixed it.
     - Impact: a host who wants to cut a voting window short has to finish the round first and then start the next one; this costs one click and loses nothing.
     - Candidate fix: render `StartRoundControls` (or a "Next round" button) in the voting state of the Sprint panel for the host. Small in code, but it changes the host's controls during voting, which is why it is left for the user.
     - Test: `[P13c-06]` takes the stale-page route and asserts today's behaviour; it keeps passing when a button is added, and the new control needs its own test.
+- `[P14d-02]` (plan 14d, step 2), open, for the user: on an open board the label "Completed in :source" of an action item that its tracker completed appears only after the page is loaded again. The item itself completes live. `PresentActionItem` gives `completedVia: null` to payloads presented without a viewer, which is what a broadcast carries, because the value is hidden from guests and the broadcast goes to the presence channel guests are on. Not fixed: sending it live means sending it on the members-only channel, a design decision.
+    - Impact: a member watching the board sees the item complete without knowing that its tracker did it, until they reload; the plan 14d walkthrough expects the label at once.
+    - Candidate fix: include `completedVia` in the payload of the members-only action item event, or refetch the item on the members-only channel when it completes. Small to medium: one presenter and one event, with a check that no guest receives the value.
+    - Test: `[P14d-02]`, `[P14d-05a]`, `[P14d-07b]`, `[P14d-08b]` and `[P14d-11b]` assert the live completion, then reload and assert the label; none asserts that the label is absent before the reload, so they keep passing when the defect is fixed.
+- `[P14c-11]` (plan 14c, step 11), open, for the user: no interface control clears a poker estimate; the facilitator toolbar only offers the cards of the deck. Clearing exists on `PUT /poker/{game}/tasks/{task}/estimate` with `value: null` only. Not fixed: adding a control is a design decision. The row is residual.
+    - Impact: a facilitator who saved a wrong estimate on a task imported from GitHub can replace it but cannot remove it, so the block written to the issue body stays.
+    - Candidate fix: a "Clear estimate" item on the task's menu that sends `value: null`. Small in code, but it adds a control to the facilitator's menu, which is why it is left for the user.
+    - Test: none; the removal of the block is covered by the feature test "removes the block when the estimate is cleared" in `tests/Feature/Integrations/GitHubTrackerTest.php`.
+- `[P12c-03b]` (plan 12c, step 3), open, for the user: the import button reads "Import 1 tasks" when a single issue is selected, because English has no singular form for the label (the toast "1 tasks were not found in Jira." has the same shape). Not fixed: the copy is a product decision.
+    - Impact: cosmetic; a facilitator who selects one issue reads an ungrammatical button.
+    - Candidate fix: a pluralised translation key for the count in the import dialog and the two toasts. Small.
+    - Test: `[P12c-03b]` and `[P12c-07b]` assert today's texts and will fail when the copy changes and must be updated then.
 
 ## Verification of plan 16a
 
