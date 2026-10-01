@@ -9,6 +9,9 @@ use App\Models\Retro;
 use App\Models\SavedPokerDeck;
 use App\Models\Team;
 use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Tests\TestCase;
 
 function p10bRenamed(User $user, string $name): User
 {
@@ -62,6 +65,13 @@ function p10bOpenSettings(mixed $page): mixed
         ->assertSee('Settings…')
         ->click('Settings…')
         ->assertSee('Game settings');
+}
+
+function p10bWorkQueueOutsideAnyRequest(TestCase $test): void
+{
+    app()->instance('request', Request::create('/'));
+
+    $test->artisan('queue:work', ['--once' => true])->assertSuccessful();
 }
 
 it('[P10b-01] saves a team deck, rejects a duplicate name and hides edit and delete from other members', function () {
@@ -561,4 +571,289 @@ it('[P10b-16] shows the scope additions in French after a guest switches languag
         ->assertSee('Révélation automatique')
         ->assertSee('Vous observez — passez en mode Jouer pour voter')
         ->assertPresent('section[aria-label="Observateurs"]');
+});
+
+it('[P10b-04] shows named cursors between rounds and lets a player hide theirs', function () {
+    ['game' => $game, 'ada' => $ada, 'bob' => $bob] = p10bTable();
+
+    $a = $this->awaitRealtime($this->signIn($ada, "/poker/{$game->id}"));
+    $b = $this->awaitRealtime($this->signIn($bob, "/poker/{$game->id}"));
+
+    foreach ([$a, $b] as $page) {
+        $page->assertPresent('[role="group"][aria-label="2 online"]')
+            ->assertPresent('.lc-overlay')
+            ->assertSee('Add the first task');
+    }
+
+    $a->hover('Add the first task')->hover('main button:has-text("Add task")');
+    $b->assertSeeIn('.lc-overlay', 'Ada');
+
+    $b->hover('Add the first task')->hover('main button:has-text("Add task")');
+    $a->assertSeeIn('.lc-overlay', 'Bob');
+
+    $a->click('[aria-label="Hide my cursor"]')
+        ->assertAriaAttribute('[aria-label="Show my cursor"]', 'pressed', 'true');
+    $b->assertNotPresent('.lc-cursor');
+
+    $a->hover('Add the first task')
+        ->hover('main button:has-text("Add task")')
+        ->click('[aria-label="Send a reaction 🎉"]');
+    $b->assertSeeIn('.lr-overlay', 'Ada')
+        ->assertNotPresent('.lc-cursor');
+
+    $a->click('[aria-label="Show my cursor"]')
+        ->assertAriaAttribute('[aria-label="Hide my cursor"]', 'pressed', 'false')
+        ->hover('Add the first task')
+        ->hover('main button:has-text("Add task")');
+    $b->assertSeeIn('.lc-overlay', 'Ada');
+});
+
+it('[P10b-05] hides every cursor while a round is open and keeps reactions flying', function () {
+    ['game' => $game, 'ada' => $ada, 'bob' => $bob] = p10bTable();
+    PokerTask::factory()->create(['poker_game_id' => $game->id, 'title' => 'Checkout flow']);
+
+    $a = $this->awaitRealtime($this->signIn($ada, "/poker/{$game->id}"));
+    $b = $this->awaitRealtime($this->signIn($bob, "/poker/{$game->id}"));
+    $c = $this->awaitRealtime(p10bJoinAsSpectator($game, 'Casey'));
+
+    foreach ([$a, $b, $c] as $page) {
+        $page->assertPresent('[role="group"][aria-label="3 online"]')
+            ->assertPresent('.lc-overlay');
+    }
+
+    $a->hover('Pick a task to start voting');
+    $b->assertSeeIn('.lc-overlay', 'Ada');
+
+    $a->click('Checkout flow');
+
+    foreach ([$a, $b, $c] as $page) {
+        $page->assertPresent('[role="img"][aria-label="Ada: Not voted yet"]')
+            ->assertNotPresent('.lc-overlay')
+            ->assertNotPresent('[aria-label="Hide my cursor"]')
+            ->assertPresent('[role="toolbar"][aria-label="Reactions"]');
+    }
+
+    $a->click('[aria-label="Send a reaction 🎉"]');
+    $b->assertSeeIn('.lr-overlay', 'Ada');
+
+    $b->click('[aria-label="Send a reaction 👏"]');
+    $c->assertSeeIn('.lr-overlay', 'Bob');
+
+    $c->click('[aria-label="Send a reaction 👍"]');
+    $a->assertSeeIn('.lr-overlay', 'Casey');
+});
+
+it('[P10b-06] reveals by itself when the last online player votes, without waiting for a spectator', function () {
+    ['game' => $game, 'ada' => $ada, 'bob' => $bob] = p10bTable();
+    $round = openPokerRound($game);
+
+    $a = $this->awaitRealtime($this->signIn($ada, "/poker/{$game->id}"));
+    $b = $this->awaitRealtime($this->signIn($bob, "/poker/{$game->id}"));
+    $c = $this->awaitRealtime(p10bJoinAsSpectator($game, 'Casey'));
+
+    foreach ([$a, $b, $c] as $page) {
+        $page->assertPresent('[role="group"][aria-label="3 online"]')
+            ->assertPresent('[role="toolbar"][aria-label="Reactions"]')
+            ->assertNotPresent('.lc-overlay');
+    }
+
+    p10bOpenSettings($a)
+        ->click('#poker-auto-reveal')
+        ->assertAriaAttribute('#poker-auto-reveal', 'checked', 'true')
+        ->click('Save');
+
+    foreach ([$a, $b, $c] as $page) {
+        $page->assertSee('Auto-reveal');
+    }
+
+    $a->assertEnabled('button[aria-label="Play 5"]')
+        ->click('button[aria-label="Play 5"]');
+
+    $b->assertPresent('[role="img"][aria-label="Ada: Voted"]')
+        ->click('button[aria-label="Play 8"]');
+
+    foreach ([$a, $b, $c] as $page) {
+        $page->assertSee('Revealed automatically — everyone voted')
+            ->assertPresent('[role="img"][aria-label="Ada: 5"]')
+            ->assertPresent('[role="img"][aria-label="Bob: 8"]')
+            ->assertPresent('.lc-overlay');
+    }
+
+    expect($round->fresh()->reveal_reason)->toBe(PokerRevealReason::EveryoneVoted)
+        ->and($round->votes()->count())->toBe(2);
+});
+
+it('[P10b-07] reveals by itself when the only player who has not voted leaves the game', function () {
+    ['game' => $game, 'ada' => $ada, 'bob' => $bob] = p10bTable(['auto_reveal' => true]);
+    $round = openPokerRound($game);
+
+    $a = $this->awaitRealtime($this->signIn($ada, "/poker/{$game->id}"));
+    $b = $this->awaitRealtime($this->signIn($bob, "/poker/{$game->id}"));
+    $c = $this->awaitRealtime(p10bJoinAsSpectator($game, 'Casey'));
+
+    foreach ([$a, $b, $c] as $page) {
+        $page->assertPresent('[role="group"][aria-label="3 online"]');
+    }
+
+    $a->assertEnabled('button[aria-label="Play 5"]')
+        ->click('button[aria-label="Play 5"]');
+
+    $b->assertPresent('[role="img"][aria-label="Ada: Voted"]');
+
+    expect($round->fresh()->revealed_at)->toBeNull();
+
+    $b->click('[aria-label="Back to the team"]')
+        ->assertPathBeginsWith('/w/');
+
+    foreach ([$a, $c] as $page) {
+        $page->assertSee('Revealed automatically — everyone voted')
+            ->assertPresent('[role="img"][aria-label="Ada: 5"]');
+    }
+
+    expect($round->fresh()->reveal_reason)->toBe(PokerRevealReason::EveryoneVoted);
+
+    $b->navigate("/poker/{$game->id}")
+        ->assertSee('Revealed automatically — everyone voted');
+});
+
+it('[P10b-08a] counts a round timer down for everyone and reveals at zero when auto-reveal is on', function () {
+    config(['queue.default' => 'database']);
+
+    ['game' => $game, 'ada' => $ada, 'bob' => $bob] = p10bTable(['auto_reveal' => true]);
+    $round = openPokerRound($game);
+
+    $a = $this->awaitRealtime($this->signIn($ada, "/poker/{$game->id}"));
+    $b = $this->awaitRealtime($this->signIn($bob, "/poker/{$game->id}"));
+
+    foreach ([$a, $b] as $page) {
+        $page->assertPresent('[role="group"][aria-label="2 online"]')
+            ->assertNotPresent('[role="timer"]');
+    }
+
+    $a->click('[aria-label="Timer"]')
+        ->assertSee('30 s')
+        ->click('30 s');
+
+    foreach ([$a, $b] as $page) {
+        $page->assertSeeIn('[role="timer"]', '0:');
+    }
+
+    $b->click('button[aria-label="Play 8"]');
+    $a->assertPresent('[role="img"][aria-label="Bob: Voted"]');
+
+    expect(DB::table('jobs')->count())->toBe(1)
+        ->and($round->fresh()->revealed_at)->toBeNull();
+
+    $this->travel(31)->seconds();
+    p10bWorkQueueOutsideAnyRequest($this);
+
+    foreach ([$a, $b] as $page) {
+        $page->assertSee("Revealed automatically — time's up")
+            ->assertPresent('[role="img"][aria-label="Bob: 8"]')
+            ->assertNotPresent('[role="timer"]');
+    }
+
+    expect($round->fresh()->reveal_reason)->toBe(PokerRevealReason::Timer);
+});
+
+it('[P10b-08b] only shows "Time\'s up!" at zero when auto-reveal is off and leaves the round open until "Show votes"', function () {
+    config(['queue.default' => 'database']);
+
+    ['game' => $game, 'ada' => $ada, 'bob' => $bob] = p10bTable();
+    $round = openPokerRound($game);
+
+    $a = $this->awaitRealtime($this->signIn($ada, "/poker/{$game->id}"));
+    $b = $this->awaitRealtime($this->signIn($bob, "/poker/{$game->id}"));
+
+    foreach ([$a, $b] as $page) {
+        $page->assertPresent('[role="group"][aria-label="2 online"]');
+    }
+
+    $a->click('[aria-label="Timer"]')
+        ->assertSee('30 s')
+        ->click('30 s');
+
+    foreach ([$a, $b] as $page) {
+        $page->assertSeeIn('[role="timer"]', '0:');
+    }
+
+    $b->click('button[aria-label="Play 8"]');
+    $a->assertPresent('[role="img"][aria-label="Bob: Voted"]');
+
+    expect(DB::table('jobs')->count())->toBe(1);
+
+    $this->travel(31)->seconds();
+    p10bWorkQueueOutsideAnyRequest($this);
+
+    expect(DB::table('jobs')->count())->toBe(0)
+        ->and($round->fresh()->revealed_at)->toBeNull();
+
+    $this->awaitRealtime($a->navigate("/poker/{$game->id}"));
+    $this->awaitRealtime($b->navigate("/poker/{$game->id}"));
+
+    foreach ([$a, $b] as $page) {
+        $page->assertSeeIn('[role="timer"]', "Time's up!")
+            ->assertPresent('[role="img"][aria-label="Bob: Voted"]')
+            ->assertDontSee('Revealed automatically');
+    }
+
+    $a->assertSee('Show votes')
+        ->click('Show votes');
+
+    foreach ([$a, $b] as $page) {
+        $page->assertPresent('[role="img"][aria-label="Bob: 8"]')
+            ->assertDontSee('Revealed automatically');
+    }
+
+    expect($round->fresh()->reveal_reason)->toBe(PokerRevealReason::Manual);
+});
+
+it('[P10b-09] does not reveal at the original zero of a timer that was stopped', function () {
+    config(['queue.default' => 'database']);
+
+    ['game' => $game, 'ada' => $ada, 'bob' => $bob] = p10bTable(['auto_reveal' => true]);
+    $round = openPokerRound($game);
+
+    $a = $this->awaitRealtime($this->signIn($ada, "/poker/{$game->id}"));
+    $b = $this->awaitRealtime($this->signIn($bob, "/poker/{$game->id}"));
+
+    foreach ([$a, $b] as $page) {
+        $page->assertPresent('[role="group"][aria-label="2 online"]');
+    }
+
+    $a->click('[aria-label="Timer"]')
+        ->assertSee('30 s')
+        ->click('30 s');
+
+    foreach ([$a, $b] as $page) {
+        $page->assertSeeIn('[role="timer"]', '0:');
+    }
+
+    $b->click('button[aria-label="Play 8"]');
+
+    $a->assertPresent('[role="img"][aria-label="Bob: Voted"]')
+        ->assertNotPresent('[role="menu"]')
+        ->click('[aria-label="Timer"]')
+        ->assertSee('Stop timer')
+        ->click('Stop timer');
+
+    foreach ([$a, $b] as $page) {
+        $page->assertNotPresent('[role="timer"]');
+    }
+
+    expect(DB::table('jobs')->count())->toBe(1)
+        ->and($round->fresh()->timer_ends_at)->toBeNull();
+
+    $this->travel(31)->seconds();
+    p10bWorkQueueOutsideAnyRequest($this);
+
+    expect(DB::table('jobs')->count())->toBe(0)
+        ->and($round->fresh()->revealed_at)->toBeNull();
+
+    $a->assertSee('Show votes')
+        ->assertPresent('[role="img"][aria-label="Bob: Voted"]')
+        ->assertDontSee('Revealed automatically');
+
+    $b->assertEnabled('button[aria-label="Play 8"]')
+        ->assertDontSee('Revealed automatically');
 });
