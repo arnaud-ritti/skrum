@@ -123,6 +123,9 @@ The plugin cannot inspect websocket frames, cut the network or control the brows
 | A link copied to the clipboard | Reads the link from the dialog's input. |
 | A third-party call | `Http::fake()` with the provider's response; asserts what skrum shows and what it sent. |
 | An email | `Mail::fake()` or `Notification::fake()`; asserts recipient and locale. |
+| A layout at a given screen width | Sets the viewport and asserts structural facts with scripts (scroll widths, element order). The visual judgement stays residual. |
+| Dark mode | Asserts that the `dark` class is applied and kept. Legibility stays residual. |
+| A participant closing their tab | The participant leaves the page through the interface, which is the same presence-leave on the server. |
 
 ### 3.7 Changes to product code
 
