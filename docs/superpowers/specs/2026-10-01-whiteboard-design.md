@@ -73,7 +73,7 @@ Acceptance criteria for every requirement are in §16.
 
 ### Dependencies
 
-- **New:** `@excalidraw/excalidraw` (MIT), approved 2026-10-01. Loaded only on the whiteboard page as a lazy chunk. The exact version is pinned by the first task of plan 17a, a spike that proves React 19 support and the API surface this spec relies on: `excalidrawAPI.updateScene`, `onChange`, `onPointerUpdate`, `onScrollChange`, `reconcileElements`, `restoreElements`, `viewModeEnabled`, `renderTopRightUI`, `UIOptions`, `langCode`, `theme`, element `customData`, element `locked`, `exportToBlob`, `exportToSvg`. If the spike disproves one of them, this spec is updated before any other task.
+- **New:** `@excalidraw/excalidraw` (MIT), approved 2026-10-01. Loaded only on the whiteboard page as a lazy chunk. Pinned to `0.18.1` (React 19 listed in its peer dependencies). The spike of plan 17a confirmed the API listed here: `excalidrawAPI.updateScene`, `onChange`, `onPointerUpdate`, `onScrollChange`, `reconcileElements`, `restoreElements`, `viewModeEnabled`, `renderTopRightUI`, `UIOptions`, `langCode`, `theme`, element `customData`, element `locked`, `exportToBlob`, `exportToSvg`. Differences found: `UIOptions` has no key that hides the library button (only `canvasActions.loadScene: false` hides "Open"), so the library trigger (`.default-sidebar-trigger`) is hidden with CSS; the `line` element has no `polygon` key in 0.18.1; `reconcileElements(localElements, remoteElements, localAppState)` takes ordered elements and returns the reconciled array; `updateScene` takes `collaborators` as `Map<SocketId, Collaborator>`.
 - **Builds on:** guest identity (`app/Concerns/HasGuestIdentity.php`, `app/Actions/Retros/GuestCookie.php`), player resolution (`app/Http/Middleware/ResolvePokerPlayer.php` as the model), channel auth (`app/Http/Controllers/BroadcastAuthorizationsController.php`), broadcast base (`app/Events/Poker/PokerBroadcastEvent.php` as the model), whisper transport (`resources/js/lib/realtime/whisper-transport.ts`), timer UI (`resources/js/components/retro/timer-control.tsx`, `timer-display.tsx`), team policy (`app/Policies/TeamPolicy.php`), the queue worker.
 - Reverb's message limit is 10 000 bytes (`config/reverb.php`, `max_message_size`); the 8 KB broadcast rule of §6.3 is derived from it.
 
@@ -382,7 +382,6 @@ Lagging:
 
 None blocking.
 
-- **Engineering, resolved by the 17a spike:** the Excalidraw version to pin and whether every API listed in §5 exists in it.
 - **Engineering, during 17a:** whether drafts (§6.4) are worth their complexity once committed writes are measured; if latency is already under 300 ms, drafts are cut and this spec updated.
 - **Product, after 17d:** order of the follow-up specs (canvas comments, retro attachment, MCP tools, import).
 
