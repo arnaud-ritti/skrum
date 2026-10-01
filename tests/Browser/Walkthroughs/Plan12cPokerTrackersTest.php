@@ -4,10 +4,12 @@ use App\Enums\IntegrationProvider;
 use App\Enums\PokerDeck;
 use App\Models\PokerGame;
 use App\Models\PokerPlayer;
+use App\Models\PokerRound;
 use App\Models\PokerTask;
 use App\Models\TeamIntegration;
 use App\Models\User;
 use Illuminate\Http\Client\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 
 /**
@@ -120,6 +122,16 @@ function p12cLinearTask(PokerGame $game, string $id, string $key, string $title,
         'external_url' => "https://linear.app/acme/issue/{$key}",
         ...$attributes,
     ], IntegrationProvider::Linear);
+}
+
+function p12cRevealedRound(PokerGame $game, PokerTask $task, PokerPlayer $first, PokerPlayer $second, string $value): void
+{
+    $round = PokerRound::factory()->revealed()->create(['poker_task_id' => $task->id]);
+
+    pokerVote($round, $first, $value);
+    pokerVote($round, $second, $value);
+
+    $game->forceFill(['current_task_id' => $task->id])->save();
 }
 
 function p12cTaskTitlesScript(): string
@@ -373,4 +385,213 @@ it('[P12c-08] shows a guest the key chips only, without import, assignee or sync
         'url' => 'https://acme.atlassian.net/browse/PROJ-1',
         'isManaged' => true,
     ]);
+});
+
+it('[P12c-04] writes a saved estimate back to Jira and shows it pending, then synced', function () {
+    config(['queue.default' => 'database']);
+    [$game, $ada, $adaPlayer, $bob, $bobPlayer] = p12cTable([IntegrationProvider::Jira]);
+    p12cFakeJira([]);
+    $task = p12cJiraTask($game, '10001', 'PROJ-1', 'Checkout page');
+    p12cRevealedRound($game, $task, $adaPlayer, $bobPlayer, '5');
+
+    $facilitator = $this->awaitRealtime($this->signIn($ada, "/poker/{$game->id}"));
+    $member = $this->awaitRealtime($this->signIn($bob, "/poker/{$game->id}"));
+
+    $facilitator->assertVisible('[aria-label="Estimate"]')
+        ->assertSeeIn('[aria-label="Estimate"]', '5')
+        ->click('Save estimate')
+        ->assertSee('Estimate: 5')
+        ->assertSee('Sync pending');
+
+    $member->assertSee('Estimate: 5')
+        ->assertSee('Sync pending');
+
+    Http::assertNothingSent();
+
+    expect(DB::table('jobs')->count())->toBe(1)
+        ->and($task->refresh()->needs_sync)->toBeTrue();
+
+    $this->workQueue();
+
+    $facilitator->assertSee('Synced to Jira')
+        ->assertDontSee('Sync pending')
+        ->assertSee('Sync again');
+
+    $member->assertSee('Synced to Jira')
+        ->assertDontSee('Sync pending');
+
+    Http::assertSent(fn (Request $request): bool => $request->method() === 'PUT'
+        && str_ends_with($request->url(), '/rest/api/3/issue/10001')
+        && $request->data() == ['fields' => ['customfield_10016' => 5.0]]);
+
+    expect($task->refresh()->needs_sync)->toBeFalse()
+        ->and($task->synced_at)->not->toBeNull()
+        ->and($task->sync_error)->toBeNull();
+});
+
+it('[P12c-05a] shows a failed sync for a half point on a Linear task and syncs a whole number', function () {
+    config(['queue.default' => 'database']);
+    [$game, $ada, $adaPlayer, , $bobPlayer] = p12cTable([IntegrationProvider::Linear], PokerDeck::ModifiedFibonacci);
+    p12cFakeLinear([]);
+    $task = p12cLinearTask($game, 'lin-1', 'ENG-1', 'Login form');
+    p12cRevealedRound($game, $task, $adaPlayer, $bobPlayer, '½');
+
+    $page = $this->awaitRealtime($this->signIn($ada, "/poker/{$game->id}"));
+
+    $page->assertVisible('[aria-label="Estimate"]')
+        ->assertSeeIn('[aria-label="Estimate"]', '½')
+        ->click('Save estimate')
+        ->assertSee('Estimate: ½')
+        ->assertSee('Sync pending');
+
+    $this->workQueue();
+
+    $page->assertSee('Sync failed')
+        ->assertSee('Linear only accepts whole-number estimates.')
+        ->assertVisible('section[aria-labelledby^="poker-task-"] button:has-text("Retry")');
+
+    Http::assertNotSent(fn (Request $request): bool => str_contains((string) $request['query'], 'issueUpdate('));
+
+    expect($task->refresh()->sync_error)->toBe('Linear only accepts whole-number estimates.')
+        ->and($task->needs_sync)->toBeTrue();
+
+    $page->click('[aria-label="Estimate"]')
+        ->click('[role="option"]:has-text("8")')
+        ->assertSeeIn('[aria-label="Estimate"]', '8')
+        ->click('Save estimate')
+        ->assertSee('Estimate: 8')
+        ->assertSee('Sync pending');
+
+    $this->workQueue();
+
+    $page->assertSee('Synced to Linear')
+        ->assertDontSee('Sync failed')
+        ->assertDontSee('Linear only accepts whole-number estimates.');
+
+    Http::assertSent(fn (Request $request): bool => str_contains((string) $request['query'], 'issueUpdate(')
+        && data_get($request->data(), 'variables.id') === 'lin-1'
+        && data_get($request->data(), 'variables.estimate') === 8);
+
+    expect($task->refresh()->needs_sync)->toBeFalse()
+        ->and($task->sync_error)->toBeNull();
+});
+
+it('[P12c-05b] retries a failed write-back and can force a synced estimate again', function () {
+    config(['queue.default' => 'database']);
+    [$game, $ada] = p12cTable([IntegrationProvider::Jira]);
+    p12cFakeJira([]);
+    $task = p12cJiraTask($game, '10001', 'PROJ-1', 'Checkout page', [
+        'estimate' => '5',
+        'estimate_numeric' => 5,
+        'estimated_at' => now(),
+        'needs_sync' => true,
+        'sync_error' => 'Jira is not responding. Try again later.',
+    ]);
+    openPokerRound($game, $task);
+
+    $page = $this->awaitRealtime($this->signIn($ada, "/poker/{$game->id}"));
+
+    $page->assertSee('Sync failed')
+        ->assertSee('Jira is not responding. Try again later.')
+        ->click('Retry')
+        ->assertSee('Sync requested.')
+        ->assertSee('Sync pending')
+        ->assertDontSee('Jira is not responding. Try again later.');
+
+    $this->workQueue();
+
+    $page->assertSee('Synced to Jira')
+        ->assertSee('Sync again')
+        ->click('Sync again')
+        ->assertSee('Sync pending');
+
+    $this->workQueue();
+
+    $page->assertSee('Synced to Jira')
+        ->assertDontSee('Sync pending');
+
+    expect(Http::recorded(fn (Request $request): bool => $request->method() === 'PUT'
+        && $request->data() == ['fields' => ['customfield_10016' => 5.0]]))->toHaveCount(2)
+        ->and($task->refresh()->needs_sync)->toBeFalse();
+});
+
+it('[P12c-06] does not write a T-shirt estimate to Jira and says why', function () {
+    config(['queue.default' => 'database']);
+    [$game, $ada, $adaPlayer, , $bobPlayer] = p12cTable([IntegrationProvider::Jira], PokerDeck::Tshirt);
+    p12cFakeJira([]);
+    $task = p12cJiraTask($game, '10001', 'PROJ-1', 'Checkout page');
+    p12cRevealedRound($game, $task, $adaPlayer, $bobPlayer, 'M');
+
+    $page = $this->awaitRealtime($this->signIn($ada, "/poker/{$game->id}"));
+
+    $page->assertVisible('[aria-label="Estimate"]')
+        ->assertSeeIn('[aria-label="Estimate"]', 'M')
+        ->click('Save estimate')
+        ->assertSee('Estimate: M')
+        ->assertSee("Not synced: T-shirt estimates can't be written to Jira.")
+        ->assertDontSee('Sync pending')
+        ->assertNotPresent('section[aria-labelledby^="poker-task-"] button:has-text("Retry")');
+
+    Http::assertNothingSent();
+
+    expect(DB::table('jobs')->count())->toBe(0)
+        ->and($task->refresh()->estimate)->toBe('M')
+        ->and($task->needs_sync)->toBeFalse();
+});
+
+it('[P12c-07a] takes a title changed in Jira when the tasks are refreshed', function () {
+    [$game, $ada, , $bob] = p12cTable([IntegrationProvider::Jira]);
+    p12cFakeJira([
+        jiraTrackerIssue('10001', 'PROJ-1', ['summary' => 'Checkout page, second version']),
+        jiraTrackerIssue('10002', 'PROJ-2', ['summary' => 'Payment retries']),
+    ]);
+    $renamed = p12cJiraTask($game, '10001', 'PROJ-1', 'Checkout page');
+    p12cJiraTask($game, '10002', 'PROJ-2', 'Payment retries');
+
+    $facilitator = $this->awaitRealtime($this->signIn($ada, "/poker/{$game->id}"));
+    $member = $this->awaitRealtime($this->signIn($bob, "/poker/{$game->id}"));
+
+    $facilitator->assertScript(p12cTaskTitlesScript(), 'Checkout page / Payment retries')
+        ->assertVisible('[aria-label="More task actions"]')
+        ->click('[aria-label="More task actions"]')
+        ->assertSee('Refresh from Jira')
+        ->click('Refresh from Jira')
+        ->assertSee('2 tasks refreshed.')
+        ->assertScript(p12cTaskTitlesScript(), 'Checkout page, second version / Payment retries')
+        ->assertDontSee('were not found in Jira');
+
+    $member->assertScript(p12cTaskTitlesScript(), 'Checkout page, second version / Payment retries');
+
+    Http::assertSent(fn (Request $request): bool => str_ends_with($request->url(), '/rest/api/3/search/jql')
+        && str_starts_with((string) $request['jql'], 'id in (')
+        && str_contains((string) $request['jql'], '10001')
+        && str_contains((string) $request['jql'], '10002'));
+
+    expect($renamed->refresh()->title)->toBe('Checkout page, second version');
+});
+
+it('[P12c-07b] says that a task was not found when its issue was deleted in Jira', function () {
+    [$game, $ada] = p12cTable([IntegrationProvider::Jira]);
+    p12cFakeJira([
+        jiraTrackerIssue('10001', 'PROJ-1', ['summary' => 'Checkout page']),
+    ]);
+    p12cJiraTask($game, '10001', 'PROJ-1', 'Checkout page');
+    $deleted = p12cJiraTask($game, '10002', 'PROJ-2', 'Payment retries');
+    openPokerRound($game, $deleted);
+
+    $page = $this->awaitRealtime($this->signIn($ada, "/poker/{$game->id}"));
+
+    $page->assertDontSee('Not found in Jira')
+        ->assertVisible('[aria-label="More task actions"]')
+        ->click('[aria-label="More task actions"]')
+        ->assertSee('Refresh from Jira')
+        ->click('Refresh from Jira')
+        ->assertSee('1 tasks refreshed.')
+        ->assertSee('1 tasks were not found in Jira.')
+        ->assertSeeIn('section[aria-labelledby^="poker-task-"]', 'Not found in Jira')
+        ->assertCount('@poker-task-row', 2)
+        ->assertScript(p12cTaskTitlesScript(), 'Checkout page / Payment retries');
+
+    expect($deleted->refresh()->external_missing_at)->not->toBeNull()
+        ->and($deleted->title)->toBe('Payment retries');
 });
