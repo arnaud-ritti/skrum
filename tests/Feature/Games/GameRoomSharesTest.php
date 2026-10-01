@@ -149,7 +149,7 @@ it('has no invite for icebreaker rooms', function () {
         ->assertNotFound();
     $this->actingAs($facilitator)
         ->getJson(route('games.snapshot.show', $room))
-        ->assertJsonPath('share', ['slack' => false, 'telegram' => false])
+        ->assertJsonPath('share', ['slack' => false, 'telegram' => false, 'msteams' => false, 'mattermost' => false, 'webhook' => false])
         ->assertJsonPath('deliveries', []);
 });
 
@@ -220,12 +220,12 @@ it('shows the invite state to managers only', function () {
 
     $this->actingAs($host)
         ->getJson(route('games.snapshot.show', $room))
-        ->assertJsonPath('share', ['slack' => true, 'telegram' => true])
+        ->assertJsonPath('share', ['slack' => true, 'telegram' => true, 'msteams' => false, 'mattermost' => false, 'webhook' => false])
         ->assertJsonPath('deliveries.0.status', 'failed')
         ->assertJsonPath('room.teamName', 'Platform');
     $this->actingAs($member)
         ->getJson(route('games.snapshot.show', $room))
-        ->assertJsonPath('share', ['slack' => false, 'telegram' => false])
+        ->assertJsonPath('share', ['slack' => false, 'telegram' => false, 'msteams' => false, 'mattermost' => false, 'webhook' => false])
         ->assertJsonPath('deliveries', []);
 });
 

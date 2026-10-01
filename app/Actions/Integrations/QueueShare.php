@@ -7,6 +7,8 @@ use App\Enums\IntegrationDeliveryChannel;
 use App\Enums\IntegrationDeliveryKind;
 use App\Enums\IntegrationDeliveryStatus;
 use App\Enums\IntegrationProvider;
+use App\Jobs\Integrations\DeliverToMattermost;
+use App\Jobs\Integrations\DeliverToMicrosoftTeams;
 use App\Jobs\Integrations\DeliverToSlack;
 use App\Jobs\Integrations\DeliverToTelegram;
 use App\Models\IntegrationDelivery;
@@ -60,6 +62,8 @@ class QueueShare
         $job = match ($provider) {
             IntegrationProvider::Slack => new DeliverToSlack($delivery->id, $content->toSlack(), $locale),
             IntegrationProvider::Telegram => new DeliverToTelegram($delivery->id, $content->toTelegram(), $locale),
+            IntegrationProvider::MicrosoftTeams => new DeliverToMicrosoftTeams($delivery->id, $content->toMicrosoftTeams(), $locale),
+            IntegrationProvider::Mattermost => new DeliverToMattermost($delivery->id, $content->toMattermost(), $locale),
             default => throw new InvalidArgumentException("{$provider->value} is not a share channel."),
         };
 

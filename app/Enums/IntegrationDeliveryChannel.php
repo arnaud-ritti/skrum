@@ -16,7 +16,7 @@ enum IntegrationDeliveryChannel: string
      */
     public static function shareChannels(): array
     {
-        return [self::Slack, self::Telegram];
+        return [self::Slack, self::Telegram, self::MicrosoftTeams, self::Mattermost, self::Webhook];
     }
 
     public function provider(): ?IntegrationProvider
