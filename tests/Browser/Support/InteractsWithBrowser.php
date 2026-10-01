@@ -41,13 +41,16 @@ trait InteractsWithBrowser
         return $page;
     }
 
-    /** Runs $jobs queued jobs, each outside any browser request, so a broadcast made by the job reaches every open page. */
+    /**
+     * Runs $jobs queued jobs, each outside any browser request, so a broadcast made by the job reaches every open page.
+     * A job that fails does not fail the helper (it is released or marked as failed, as a worker would do): callers assert the outcome.
+     */
     protected function workQueue(int $jobs = 1): void
     {
         for ($job = 0; $job < $jobs; $job++) {
-            $this->app->instance('request', Request::create('/'));
+            $this->app->instance('request', Request::create(url('/')));
 
-            $this->artisan('queue:work', ['--once' => true])->assertSuccessful();
+            $this->artisan('queue:work', ['--once' => true, '--sleep' => 0])->assertSuccessful();
         }
     }
 

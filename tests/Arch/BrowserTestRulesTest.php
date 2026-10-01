@@ -17,6 +17,9 @@ function forbiddenBrowserTestCalls(string $directory): array
         'withCookie()' => '/\bwithCookies?\s*\(/i',
         'withUnencryptedCookie()' => '/\bwithUnencryptedCookies?\s*\(/i',
         'Event::fake() without arguments' => '/\bEvent\s*::\s*fake\s*\(\s*\)/i',
+        'Event::fake([]) with an empty list' => '/\bEvent\s*::\s*fake\s*\(\s*(?:\[\s*\]|array\s*\(\s*\))\s*,?\s*\)/i',
+        'Event::fakeExcept()' => '/\bEvent\s*::\s*fakeExcept\s*\(/i',
+        'Event::fakeFor()' => '/\bEvent\s*::\s*fakeFor\s*\(/i',
     ];
     $offences = [];
     $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($directory, FilesystemIterator::SKIP_DOTS));
@@ -61,6 +64,11 @@ dataset('forbiddenBrowserTestForms', [
     'withUnencryptedCookies' => ['$this->withUnencryptedCookies(["guest" => "1|secret"]);', 'withUnencryptedCookie()'],
     'Event::fake' => ['Event::fake();', 'Event::fake() without arguments'],
     'Event::fake split over two lines' => ["Event::fake(\n);", 'Event::fake() without arguments'],
+    'Event::fake with an empty list' => ['Event::fake([]);', 'Event::fake([]) with an empty list'],
+    'Event::fake with a spaced empty list' => ['Event::fake( [ ] );', 'Event::fake([]) with an empty list'],
+    'Event::fake with array()' => ['Event::fake(array());', 'Event::fake([]) with an empty list'],
+    'Event::fakeExcept' => ['Event::fakeExcept([CardCreated::class]);', 'Event::fakeExcept()'],
+    'Event::fakeFor' => ['Event::fakeFor(fn () => null);', 'Event::fakeFor()'],
 ]);
 
 it('reports a forbidden call in a browser test', function (string $code, string $call) {
