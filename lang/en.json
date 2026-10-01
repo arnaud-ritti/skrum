@@ -1518,5 +1518,9 @@
     "The first sync takes the state of every linked :provider issue: existing action items may be completed or reopened to match. After that, the most recent change wins.": "The first sync takes the state of every linked :provider issue: existing action items may be completed or reopened to match. After that, the most recent change wins.",
     "Turn on status sync": "Turn on status sync",
     "At least one status must count as done.": "At least one status must count as done.",
-    "Unknown status (:id)": "Unknown status (:id)"
+    "Unknown status (:id)": "Unknown status (:id)",
+    "This delivery's content is no longer kept.": "This delivery's content is no longer kept.",
+    "This delivery is still being sent.": "This delivery is still being sent.",
+    "Turn the webhook back on before redelivering.": "Turn the webhook back on before redelivering.",
+    "This delivery is already being redelivered.": "This delivery is already being redelivered."
 }

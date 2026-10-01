@@ -1764,5 +1764,9 @@
     "The first sync takes the state of every linked :provider issue: existing action items may be completed or reopened to match. After that, the most recent change wins.": "La première synchronisation reprend l’état de chaque ticket :provider lié : des actions existantes peuvent être terminées ou rouvertes en conséquence. Ensuite, la modification la plus récente l’emporte.",
     "Turn on status sync": "Activer la synchronisation des statuts",
     "At least one status must count as done.": "Au moins un statut doit compter comme terminé.",
-    "Unknown status (:id)": "Statut inconnu (:id)"
+    "Unknown status (:id)": "Statut inconnu (:id)",
+    "This delivery's content is no longer kept.": "Le contenu de cet envoi n'est plus conservé.",
+    "This delivery is still being sent.": "Cet envoi est encore en cours.",
+    "Turn the webhook back on before redelivering.": "Réactivez le webhook avant de renvoyer.",
+    "This delivery is already being redelivered.": "Cet envoi est déjà en cours de renvoi."
 }
