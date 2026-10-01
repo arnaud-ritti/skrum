@@ -24,6 +24,7 @@ use App\Models\WhiteboardMember;
  *         reactionsEnabled: bool,
  *         locked: bool,
  *         followEnabled: bool,
+ *         privateWriting: bool,
  *         timerEndsAt: ?string
  *     },
  *     me: array{
@@ -80,6 +81,7 @@ class BuildWhiteboardSnapshot
                 'reactionsEnabled' => $board->reactions_enabled,
                 'locked' => $board->locked,
                 'followEnabled' => $board->follow_enabled,
+                'privateWriting' => $board->private_writing,
                 'timerEndsAt' => $this->timerEndsAt($board),
             ],
             'me' => [

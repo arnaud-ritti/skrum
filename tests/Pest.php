@@ -1602,3 +1602,116 @@ function sceneElement(array $overrides = []): array
         ...$overrides,
     ];
 }
+
+/**
+ * A sticky note and its bound text, as the canvas writes them.
+ *
+ * @return array{0: array<string, mixed>, 1: array<string, mixed>}
+ */
+function stickyWithText(string $id, string $text): array
+{
+    return [
+        sceneElement([
+            'id' => $id,
+            'index' => 'a1',
+            'backgroundColor' => '#fff3bf',
+            'customData' => ['skrum' => ['kind' => 'sticky']],
+            'boundElements' => [['id' => "{$id}-text", 'type' => 'text']],
+        ]),
+        sceneElement([
+            'id' => "{$id}-text",
+            'type' => 'text',
+            'index' => 'a2',
+            'text' => $text,
+            'originalText' => $text,
+            'containerId' => $id,
+        ]),
+    ];
+}
+
+/**
+ * Stores an element row as the write path would have.
+ *
+ * @param  array<string, mixed>  $data
+ */
+function storeWhiteboardElement(Whiteboard $board, array $data, int $seq, ?WhiteboardMember $author = null, bool $private = false): WhiteboardElement
+{
+    return WhiteboardElement::factory()->create([
+        'whiteboard_id' => $board->id,
+        'element_id' => $data['id'],
+        'type' => $data['type'],
+        'data' => $data,
+        'version' => $data['version'],
+        'version_nonce' => $data['versionNonce'],
+        'author_member_id' => $author?->id,
+        'is_sticky' => isset($data['customData']),
+        'is_private' => $private,
+        'is_deleted' => $data['isDeleted'],
+        'seq' => $seq,
+    ]);
+}
+
+/**
+ * @param  array<int, mixed>  $elements
+ */
+function putWhiteboardElements(mixed $test, Whiteboard $board, array $elements): TestResponse
+{
+    return $test->putJson(route('whiteboards.elements.update', $board), ['elements' => $elements]);
+}
+
+/**
+ * The test case acting as a user, or as a guest through their cookie.
+ */
+function whiteboardViewer(mixed $test, User|WhiteboardMember $viewer): mixed
+{
+    if ($viewer instanceof User) {
+        return $test->actingAs($viewer);
+    }
+
+    app('auth')->forgetGuards();
+
+    return $test->withCookies(whiteboardGuestCookie($viewer))->withCredentials();
+}
+
+/**
+ * Whether a payload (array, JSON or HTML) contains a text that must not leave the server.
+ */
+function whiteboardPayloadExposes(mixed $payload, string $secret): bool
+{
+    $text = is_string($payload)
+        ? $payload
+        : (string) json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+    return str_contains($text, $secret);
+}
+
+/**
+ * A board in private writing: a facilitator, an author who wrote one private
+ * note ("note" and its text "note-text", seq 1 and 2), another member, a guest.
+ *
+ * @return array{board: Whiteboard, facilitator: User, author: User, authorMember: WhiteboardMember, other: User, otherMember: WhiteboardMember, guest: WhiteboardMember, secret: string}
+ */
+function privateWritingBoard(): array
+{
+    $board = Whiteboard::factory()->withGuestAccess()->privateWriting()->create(['seq' => 2]);
+    [$facilitator] = whiteboardFacilitator($board);
+    [$author, $authorMember] = whiteboardMember($board);
+    [$other, $otherMember] = whiteboardMember($board);
+    $guest = whiteboardGuest($board);
+    $secret = 'Secret idea 7391';
+    [$note, $text] = stickyWithText('note', $secret);
+
+    storeWhiteboardElement($board, $note, 1, $authorMember, private: true);
+    storeWhiteboardElement($board, $text, 2, $authorMember, private: true);
+
+    return [
+        'board' => $board,
+        'facilitator' => $facilitator,
+        'author' => $author,
+        'authorMember' => $authorMember,
+        'other' => $other,
+        'otherMember' => $otherMember,
+        'guest' => $guest,
+        'secret' => $secret,
+    ];
+}
