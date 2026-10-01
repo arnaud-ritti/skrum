@@ -12,45 +12,6 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Tests\Browser\Support\ReverbServer;
 
-const P17aPng = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
-
-function p17aRenamed(User $user, string $name): User
-{
-    $user->forceFill(['name' => $name, 'locale' => 'en'])->save();
-
-    return $user;
-}
-
-/**
- * @param  array<string, mixed>  $attributes
- * @return array{
- *     board: Whiteboard,
- *     fran: User,
- *     franMember: WhiteboardMember
- * }
- */
-function p17aBoard(array $attributes = []): array
-{
-    $board = Whiteboard::factory()->withGuestAccess()->create(['title' => 'Sprint board', ...$attributes]);
-    [$fran, $franMember] = whiteboardFacilitator($board);
-
-    return [
-        'board' => $board,
-        'fran' => p17aRenamed($fran, 'Fran Facilitator'),
-        'franMember' => $franMember,
-    ];
-}
-
-function p17aBoardPath(Whiteboard $board): string
-{
-    return "/whiteboards/{$board->id}";
-}
-
-function p17aJoinPath(Whiteboard $board): string
-{
-    return "/whiteboards/join/{$board->fresh()->guest_token}";
-}
-
 function p17aGuestMember(Whiteboard $board): WhiteboardMember
 {
     return WhiteboardMember::query()->where('whiteboard_id', $board->id)->whereNull('user_id')->sole();
@@ -66,54 +27,9 @@ function p17aDeltaFetched(): string
     return "performance.getEntriesByType('resource').some((entry) => entry.name.includes('/elements?since=') && entry.responseEnd > 0)";
 }
 
-function p17aBlockBoardRequests(mixed $page): void
-{
-    $page->script(<<<'JS'
-        () => {
-            const open = XMLHttpRequest.prototype.open;
-            const send = XMLHttpRequest.prototype.send;
-
-            window.p17aBlocked = { active: true, refused: 0 };
-
-            XMLHttpRequest.prototype.open = function (method, url, ...rest) {
-                this.p17aPath = new URL(String(url), window.location.href).pathname;
-
-                return open.call(this, method, url, ...rest);
-            };
-
-            XMLHttpRequest.prototype.send = function (body) {
-                if (window.p17aBlocked.active && this.p17aPath.startsWith('/whiteboards/')) {
-                    window.p17aBlocked.refused += 1;
-                    setTimeout(() => this.dispatchEvent(new ProgressEvent('error')), 0);
-
-                    return undefined;
-                }
-
-                return send.call(this, body);
-            };
-
-            return true;
-        }
-        JS);
-}
-
-function p17aUnblockBoardRequests(mixed $page): void
-{
-    $page->script('() => { window.p17aBlocked.active = false; return true; }');
-}
-
-function p17aOpenBoardMenu(mixed $page): mixed
-{
-    $page->assertNotPresent('[role="menu"]')
-        ->click('[aria-label="Board menu"]')
-        ->assertPresent('[role="menu"]');
-
-    return $page;
-}
-
 it('[P17a-01] creates a whiteboard from the team page, lands on it as its facilitator and finds it listed on the team page', function () {
     $team = Team::factory()->create();
-    $fran = p17aRenamed(teamMember($team), 'Fran Facilitator');
+    $fran = renamedWhiteboardUser(teamMember($team), 'Fran Facilitator');
     $teamPath = route('teams.show', [$team->workspace, $team], false);
 
     $page = $this->signIn($fran, $teamPath);
@@ -131,7 +47,7 @@ it('[P17a-01] creates a whiteboard from the team page, lands on it as its facili
     $this->awaitRealtime($page);
     $this->awaitWhiteboardElements($page, 0);
 
-    $page->assertPathIs(p17aBoardPath($board))
+    $page->assertPathIs($this->whiteboardPath($board))
         ->assertSeeIn('header > h1', 'Sprint planning board')
         ->assertPresent('[role="toolbar"][aria-label="Facilitation tools"]')
         ->assertPresent('header img[data-presence-id][alt="Fran Facilitator"]');
@@ -153,10 +69,10 @@ it('[P17a-01] creates a whiteboard from the team page, lands on it as its facili
 });
 
 it('[P17a-02a] shows a guest who joined through the guest link the sticky note a member adds, without a reload', function () {
-    ['board' => $board, 'fran' => $fran, 'franMember' => $franMember] = p17aBoard();
+    ['board' => $board, 'fran' => $fran, 'franMember' => $franMember] = whiteboardWithFacilitator();
 
-    $franPage = $this->awaitRealtime($this->signIn($fran, p17aBoardPath($board)));
-    $guestPage = $this->awaitRealtime($this->joinAsGuest(p17aJoinPath($board), 'Guest Gia'));
+    $franPage = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)));
+    $guestPage = $this->awaitRealtime($this->joinAsGuest($this->whiteboardJoinPath($board), 'Guest Gia'));
 
     foreach ([$franPage, $guestPage] as $page) {
         $page->assertPresent('[role="group"][aria-label="2 online"]')
@@ -166,7 +82,7 @@ it('[P17a-02a] shows a guest who joined through the guest link the sticky note a
         $this->awaitWhiteboardElements($page, 0);
     }
 
-    $guestPage->assertPathIs(p17aBoardPath($board))
+    $guestPage->assertPathIs($this->whiteboardPath($board))
         ->assertNotPresent('a[aria-label="Back to the team"]')
         ->assertNotPresent('[role="toolbar"][aria-label="Facilitation tools"]');
 
@@ -190,10 +106,10 @@ it('[P17a-02a] shows a guest who joined through the guest link the sticky note a
 });
 
 it('[P17a-04] keeps the scene over a reload of both pages and writes nothing while loading', function () {
-    ['board' => $board, 'fran' => $fran] = p17aBoard();
+    ['board' => $board, 'fran' => $fran] = whiteboardWithFacilitator();
 
-    $franPage = $this->awaitRealtime($this->signIn($fran, p17aBoardPath($board)));
-    $guestPage = $this->awaitRealtime($this->joinAsGuest(p17aJoinPath($board), 'Guest Gia'));
+    $franPage = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)));
+    $guestPage = $this->awaitRealtime($this->joinAsGuest($this->whiteboardJoinPath($board), 'Guest Gia'));
 
     $this->addWhiteboardSticky($franPage, 'Yellow');
     $this->awaitWhiteboardElements($guestPage, 1);
@@ -206,13 +122,13 @@ it('[P17a-04] keeps the scene over a reload of both pages and writes nothing whi
     $stamp = $this->whiteboardSceneStamp($board);
 
     foreach ([$franPage, $guestPage] as $page) {
-        $page->navigate(p17aBoardPath($board));
+        $page->navigate($this->whiteboardPath($board));
 
         $this->awaitRealtime($page);
         $this->awaitResync($page);
 
         $page->assertScript(p17aDeltaFetched(), true);
-        $page->script('() => new Promise((resolve) => setTimeout(() => resolve(true), 800))');
+        $this->settleWhiteboard($page);
 
         $page->assertScript(p17aElementWrites(), 0)
             ->assertAttribute('[data-scene]', 'data-scene', $stamp)
@@ -225,10 +141,10 @@ it('[P17a-04] keeps the scene over a reload of both pages and writes nothing whi
 });
 
 it('[P17a-02b] shows the guest a shape, a connector and a freehand stroke the member draws on the canvas', function () {
-    ['board' => $board, 'fran' => $fran] = p17aBoard();
+    ['board' => $board, 'fran' => $fran] = whiteboardWithFacilitator();
 
-    $franPage = $this->awaitRealtime($this->signIn($fran, p17aBoardPath($board)));
-    $guestPage = $this->awaitRealtime($this->joinAsGuest(p17aJoinPath($board), 'Guest Gia'));
+    $franPage = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)));
+    $guestPage = $this->awaitRealtime($this->joinAsGuest($this->whiteboardJoinPath($board), 'Guest Gia'));
 
     $this->awaitWhiteboardElements($guestPage, 0);
 
@@ -254,10 +170,10 @@ it('[P17a-02b] shows the guest a shape, a connector and a freehand stroke the me
 it('[P17a-02c] shows the guest an image element whose file the board holds, and the guest page downloads the file', function () {
     Storage::fake();
 
-    ['board' => $board, 'fran' => $fran] = p17aBoard();
+    ['board' => $board, 'fran' => $fran] = whiteboardWithFacilitator();
     $fileId = 'p17aImage0001';
     $path = "{$board->storageDirectory()}/{$fileId}";
-    $bytes = base64_decode(P17aPng);
+    $bytes = base64_decode(WhiteboardPng);
 
     Storage::put($path, $bytes);
     WhiteboardFile::factory()->create([
@@ -268,8 +184,8 @@ it('[P17a-02c] shows the guest an image element whose file the board holds, and 
         'size' => strlen($bytes),
     ]);
 
-    $franPage = $this->awaitRealtime($this->signIn($fran, p17aBoardPath($board)));
-    $guestPage = $this->awaitRealtime($this->joinAsGuest(p17aJoinPath($board), 'Guest Gia'));
+    $franPage = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)));
+    $guestPage = $this->awaitRealtime($this->joinAsGuest($this->whiteboardJoinPath($board), 'Guest Gia'));
 
     $this->awaitWhiteboardElements($guestPage, 0);
 
@@ -302,10 +218,10 @@ it('[P17a-02c] shows the guest an image element whose file the board holds, and 
 });
 
 it('[P17a-03a] ends with the same position on both pages after the member and the guest drag the same note', function () {
-    ['board' => $board, 'fran' => $fran] = p17aBoard();
+    ['board' => $board, 'fran' => $fran] = whiteboardWithFacilitator();
 
-    $franPage = $this->awaitRealtime($this->signIn($fran, p17aBoardPath($board)));
-    $guestPage = $this->awaitRealtime($this->joinAsGuest(p17aJoinPath($board), 'Guest Gia'));
+    $franPage = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)));
+    $guestPage = $this->awaitRealtime($this->joinAsGuest($this->whiteboardJoinPath($board), 'Guest Gia'));
 
     $note = $this->addWhiteboardElement($franPage, $board, [
         'x' => 600,
@@ -342,7 +258,7 @@ it('[P17a-03a] ends with the same position on both pages after the member and th
         ->and(WhiteboardElement::query()->where('whiteboard_id', $board->id)->count())->toBe(1);
 
     foreach ([$franPage, $guestPage] as $page) {
-        $page->navigate(p17aBoardPath($board));
+        $page->navigate($this->whiteboardPath($board));
 
         $this->awaitRealtime($page);
 
@@ -351,10 +267,10 @@ it('[P17a-03a] ends with the same position on both pages after the member and th
 });
 
 it('[P17a-03b] keeps one copy when both write the same note at the same version, and hands the late writer the copy that won', function () {
-    ['board' => $board, 'fran' => $fran] = p17aBoard();
+    ['board' => $board, 'fran' => $fran] = whiteboardWithFacilitator();
 
-    $franPage = $this->awaitRealtime($this->signIn($fran, p17aBoardPath($board)));
-    $guestPage = $this->awaitRealtime($this->joinAsGuest(p17aJoinPath($board), 'Guest Gia'));
+    $franPage = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)));
+    $guestPage = $this->awaitRealtime($this->joinAsGuest($this->whiteboardJoinPath($board), 'Guest Gia'));
 
     $note = $this->addWhiteboardElement($franPage, $board, ['x' => 600, 'y' => 300]);
 
@@ -390,18 +306,18 @@ it('[P17a-03b] keeps one copy when both write the same note at the same version,
 });
 
 it('[P17a-05a] replays the edit a member made while the board could not be reached, and brings the guest\'s edit to the member meanwhile', function () {
-    ['board' => $board, 'fran' => $fran] = p17aBoard();
+    ['board' => $board, 'fran' => $fran] = whiteboardWithFacilitator();
 
-    $franPage = $this->awaitRealtime($this->signIn($fran, p17aBoardPath($board)));
-    $guestPage = $this->awaitRealtime($this->joinAsGuest(p17aJoinPath($board), 'Guest Gia'));
+    $franPage = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)));
+    $guestPage = $this->awaitRealtime($this->joinAsGuest($this->whiteboardJoinPath($board), 'Guest Gia'));
 
     $this->awaitResync($franPage);
-    p17aBlockBoardRequests($franPage);
+    $this->blockWhiteboardRequests($franPage);
 
     $this->addWhiteboardSticky($franPage, 'Yellow');
 
     $franPage->assertSee('Reconnecting…')
-        ->assertScript('window.p17aBlocked.refused >= 1', true);
+        ->assertScript('window.whiteboardBlocked.refused >= 1', true);
 
     $this->awaitWhiteboardElements($franPage, 1);
 
@@ -414,7 +330,7 @@ it('[P17a-05a] replays the edit a member made while the board could not be reach
 
     expect(WhiteboardElement::query()->where('whiteboard_id', $board->id)->pluck('element_id')->all())->toBe([$diamond['id']]);
 
-    p17aUnblockBoardRequests($franPage);
+    $this->unblockWhiteboardRequests($franPage);
 
     $this->awaitWhiteboardElements($guestPage, 2);
 
@@ -429,14 +345,14 @@ it('[P17a-05a] replays the edit a member made while the board could not be reach
 });
 
 it('[P17a-06a] ends the guest\'s access and invalidates the guest link when the facilitator turns guest access off', function () {
-    ['board' => $board, 'fran' => $fran] = p17aBoard();
-    $joinPath = p17aJoinPath($board);
+    ['board' => $board, 'fran' => $fran] = whiteboardWithFacilitator();
+    $joinPath = $this->whiteboardJoinPath($board);
     $guestSwitch = '[role="menuitemcheckbox"]:has-text("Allow guests to join with a link")';
 
-    $franPage = $this->awaitRealtime($this->signIn($fran, p17aBoardPath($board)));
+    $franPage = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)));
     $guestPage = $this->awaitRealtime($this->joinAsGuest($joinPath, 'Guest Gia'));
 
-    p17aOpenBoardMenu($franPage)
+    $this->openWhiteboardMenu($franPage)
         ->assertAriaAttribute($guestSwitch, 'checked', 'true')
         ->assertPresent('[role="menuitem"]:has-text("Replace the guest link")')
         ->assertPresent('[role="menuitem"]:has-text("Copy the guest link")')
@@ -448,7 +364,7 @@ it('[P17a-06a] ends the guest\'s access and invalidates the guest link when the 
     expect($board->fresh()->guest_access_enabled)->toBeFalse()
         ->and(fn () => $this->whiteboardSnapshot($guestPage, $board))->toThrow(RuntimeException::class, 'HTTP 403');
 
-    p17aOpenBoardMenu($franPage)
+    $this->openWhiteboardMenu($franPage)
         ->assertAriaAttribute($guestSwitch, 'checked', 'false')
         ->assertNotPresent('[role="menuitem"]:has-text("Replace the guest link")')
         ->assertNotPresent('[role="menuitem"]:has-text("Copy the guest link")');
@@ -462,11 +378,11 @@ it('[P17a-06a] ends the guest\'s access and invalidates the guest link when the 
 });
 
 it('[P17a-06b] refuses the board, its snapshot and a write to a signed-in user who is not in the team, with 403', function () {
-    ['board' => $board] = p17aBoard(['guest_access_enabled' => false]);
-    $oscar = p17aRenamed(User::factory()->create(), 'Oscar Outsider');
+    ['board' => $board] = whiteboardWithFacilitator(['guest_access_enabled' => false]);
+    $oscar = renamedWhiteboardUser(User::factory()->create(), 'Oscar Outsider');
     $board->team->workspace->members()->attach($oscar, ['role' => WorkspaceRole::Member->value]);
 
-    $page = $this->signIn($oscar, p17aBoardPath($board));
+    $page = $this->signIn($oscar, $this->whiteboardPath($board));
 
     $page->assertSee('403')
         ->assertNotPresent('[data-realtime]')
@@ -482,26 +398,26 @@ it('[P17a-06b] refuses the board, its snapshot and a write to a signed-in user w
 });
 
 it('[P17a-07a] ends the guest\'s session when the facilitator replaces the guest link, kills the old link and lets a guest in with the new one', function () {
-    ['board' => $board, 'fran' => $fran] = p17aBoard();
-    $oldJoinPath = p17aJoinPath($board);
+    ['board' => $board, 'fran' => $fran] = whiteboardWithFacilitator();
+    $oldJoinPath = $this->whiteboardJoinPath($board);
 
-    $franPage = $this->awaitRealtime($this->signIn($fran, p17aBoardPath($board)));
+    $franPage = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)));
     $guestPage = $this->awaitRealtime($this->joinAsGuest($oldJoinPath, 'Guest Gia'));
 
-    p17aOpenBoardMenu($franPage)
+    $this->openWhiteboardMenu($franPage)
         ->click('[role="menuitem"]:has-text("Replace the guest link")');
 
     $guestPage->assertSee('Your access to this board has ended.')
         ->assertNotPresent('[data-realtime]');
 
-    $newJoinPath = p17aJoinPath($board);
+    $newJoinPath = $this->whiteboardJoinPath($board);
 
     expect($newJoinPath)->not->toBe($oldJoinPath)
         ->and(p17aGuestMember($board)->guest_secret_hash)->toBeNull()
         ->and(fn () => $this->whiteboardSnapshot($guestPage, $board))->toThrow(RuntimeException::class, 'HTTP 403')
         ->and((string) $this->whiteboardSnapshot($franPage, $board)['board']['guestUrl'])->toEndWith($newJoinPath);
 
-    $guestPage->navigate(p17aBoardPath($board))
+    $guestPage->navigate($this->whiteboardPath($board))
         ->assertSee('Your session has ended.')
         ->assertSee('Guests: ask the facilitator for the guest link.');
 
@@ -511,15 +427,15 @@ it('[P17a-07a] ends the guest\'s session when the facilitator replaces the guest
 
     $newGuestPage = $this->awaitRealtime($this->joinAsGuest($newJoinPath, 'Guest Gil'));
 
-    $newGuestPage->assertPathIs(p17aBoardPath($board))
+    $newGuestPage->assertPathIs($this->whiteboardPath($board))
         ->assertPresent('header img[data-presence-id][alt="Guest Gil"]');
 });
 
 it('[P17a-07b] shows the session-ended state on the next action of a guest whose link was replaced behind an open page', function () {
-    ['board' => $board, 'fran' => $fran] = p17aBoard();
+    ['board' => $board, 'fran' => $fran] = whiteboardWithFacilitator();
 
-    $franPage = $this->awaitRealtime($this->signIn($fran, p17aBoardPath($board)));
-    $guestPage = $this->awaitRealtime($this->joinAsGuest(p17aJoinPath($board), 'Guest Gia'));
+    $franPage = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)));
+    $guestPage = $this->awaitRealtime($this->joinAsGuest($this->whiteboardJoinPath($board), 'Guest Gia'));
 
     $this->awaitResync($guestPage);
 
@@ -540,12 +456,12 @@ it('[P17a-07b] shows the session-ended state on the next action of a guest whose
 });
 
 it('[P17a-08a] stores nothing forged: the author is the requester, unknown data and unsafe links are dropped, and invalid elements are refused next to a valid one', function () {
-    ['board' => $board, 'fran' => $fran, 'franMember' => $franMember] = p17aBoard();
+    ['board' => $board, 'fran' => $fran, 'franMember' => $franMember] = whiteboardWithFacilitator();
     [$mia, $miaMember] = whiteboardMember($board);
-    p17aRenamed($mia, 'Mia Member');
+    renamedWhiteboardUser($mia, 'Mia Member');
 
-    $franPage = $this->awaitRealtime($this->signIn($fran, p17aBoardPath($board)));
-    $miaPage = $this->awaitRealtime($this->signIn($mia, p17aBoardPath($board)));
+    $franPage = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)));
+    $miaPage = $this->awaitRealtime($this->signIn($mia, $this->whiteboardPath($board)));
 
     $answer = $this->writeWhiteboardElements($miaPage, $board, [
         sceneElement([
@@ -586,9 +502,9 @@ it('[P17a-08a] stores nothing forged: the author is the requester, unknown data 
 });
 
 it('[P17a-09] shows no Library button, no link group in the canvas menu and no outbound link in the help dialog', function () {
-    ['board' => $board, 'fran' => $fran] = p17aBoard();
+    ['board' => $board, 'fran' => $fran] = whiteboardWithFacilitator();
 
-    $page = $this->awaitRealtime($this->signIn($fran, p17aBoardPath($board)));
+    $page = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)));
 
     $page->assertPresent('.whiteboard-canvas [data-testid="main-menu-trigger"]')
         ->assertScript("Array.from(document.querySelectorAll('.excalidraw .default-sidebar-trigger')).every((trigger) => getComputedStyle(trigger).display == 'none')", true)
@@ -606,12 +522,12 @@ it('[P17a-09] shows no Library button, no link group in the canvas menu and no o
 });
 
 it('[P17a-10] shows the reactions bar at the bottom centre to the member and the guest, and flies the guest\'s reactions on the member\'s page with the guest\'s name', function () {
-    ['board' => $board, 'fran' => $fran] = p17aBoard();
+    ['board' => $board, 'fran' => $fran] = whiteboardWithFacilitator();
     $bar = '.whiteboard-reactions[role="toolbar"][aria-label="Reactions"]';
     $placed = "(() => { const box = document.querySelector('.whiteboard-reactions').getBoundingClientRect(); return Math.abs(box.left + box.width / 2 - window.innerWidth / 2) < 2 && window.innerHeight - box.bottom > 0 && window.innerHeight - box.bottom < 40; })()";
 
-    $franPage = $this->awaitRealtime($this->signIn($fran, p17aBoardPath($board)));
-    $guestPage = $this->awaitRealtime($this->joinAsGuest(p17aJoinPath($board), 'Guest Gia'));
+    $franPage = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)));
+    $guestPage = $this->awaitRealtime($this->joinAsGuest($this->whiteboardJoinPath($board), 'Guest Gia'));
 
     foreach ([$franPage, $guestPage] as $page) {
         $page->assertPresent('[role="group"][aria-label="2 online"]')
@@ -631,11 +547,11 @@ it('[P17a-10] shows the reactions bar at the bottom centre to the member and the
 });
 
 it('[P17a-11] refuses a new note on a full board, says so and takes the note off the canvas', function () {
-    ['board' => $board, 'fran' => $fran] = p17aBoard();
+    ['board' => $board, 'fran' => $fran] = whiteboardWithFacilitator();
 
     resolve(WriteWhiteboardElements::class)->maxLiveElements = 1;
 
-    $page = $this->awaitRealtime($this->signIn($fran, p17aBoardPath($board)));
+    $page = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)));
 
     $this->addWhiteboardSticky($page, 'Yellow');
     $this->awaitWhiteboardStored($page, $board, 1);
@@ -655,10 +571,10 @@ it('[P17a-11] refuses a new note on a full board, says so and takes the note off
 });
 
 it('[P17a-05b] shows the reconnecting banner while Reverb is down, still exchanges edits by polling, and clears the banner when Reverb is back', function () {
-    ['board' => $board, 'fran' => $fran] = p17aBoard();
+    ['board' => $board, 'fran' => $fran] = whiteboardWithFacilitator();
 
-    $franPage = $this->awaitRealtime($this->signIn($fran, p17aBoardPath($board)));
-    $guestPage = $this->awaitRealtime($this->joinAsGuest(p17aJoinPath($board), 'Guest Gia'));
+    $franPage = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)));
+    $guestPage = $this->awaitRealtime($this->joinAsGuest($this->whiteboardJoinPath($board), 'Guest Gia'));
 
     foreach ([$franPage, $guestPage] as $page) {
         $page->assertDontSee('Reconnecting…');

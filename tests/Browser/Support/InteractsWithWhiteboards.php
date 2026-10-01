@@ -26,8 +26,46 @@ trait InteractsWithWhiteboards
     }
 
     /**
-     * Sends the write from inside the page, without X-Socket-ID, so the page that sends it receives the broadcast as well.
+     * Sends the request from inside the page with its session cookie and the XSRF token, without X-Socket-ID,
+     * so the page that sends it receives the broadcast as well.
      *
+     * @param  array<string, mixed>  $body
+     * @return array{
+     *     status: int,
+     *     body: array<string, mixed>
+     * }
+     */
+    protected function sendFromPage(mixed $page, string $method, string $path, array $body = []): array
+    {
+        $request = json_encode([
+            'method' => $method,
+            'path' => $path,
+            'body' => $body === [] ? '{}' : json_encode($body, JSON_THROW_ON_ERROR),
+        ], JSON_THROW_ON_ERROR);
+
+        $answer = json_decode((string) $page->script(<<<JS
+            async () => {
+                const request = {$request};
+                const cookie = document.cookie.split('; ').find((entry) => entry.startsWith('XSRF-TOKEN='));
+                const response = await fetch(request.path, {
+                    method: request.method,
+                    credentials: 'same-origin',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-XSRF-TOKEN': decodeURIComponent(cookie.slice('XSRF-TOKEN='.length)),
+                    },
+                    body: request.body,
+                });
+
+                return JSON.stringify({ status: response.status, body: await response.text() });
+            }
+            JS), true, flags: JSON_THROW_ON_ERROR);
+
+        return ['status' => $answer['status'], 'body' => json_decode((string) $answer['body'], true) ?? []];
+    }
+
+    /**
      * @param  array<int, mixed>  $elements
      * @return array{
      *     status: int,
@@ -36,28 +74,82 @@ trait InteractsWithWhiteboards
      */
     protected function writeWhiteboardElements(mixed $page, Whiteboard $board, array $elements): array
     {
-        $path = json_encode("/whiteboards/{$board->id}/elements", JSON_THROW_ON_ERROR);
-        $body = json_encode(json_encode(['elements' => $elements], JSON_THROW_ON_ERROR), JSON_THROW_ON_ERROR);
+        return $this->sendFromPage($page, 'PUT', "/whiteboards/{$board->id}/elements", ['elements' => $elements]);
+    }
 
-        $answer = json_decode((string) $page->script(<<<JS
-            async () => {
-                const cookie = document.cookie.split('; ').find((entry) => entry.startsWith('XSRF-TOKEN='));
-                const response = await fetch({$path}, {
-                    method: 'PUT',
-                    credentials: 'same-origin',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json',
-                        'X-XSRF-TOKEN': decodeURIComponent(cookie.slice('XSRF-TOKEN='.length)),
-                    },
-                    body: {$body},
-                });
+    protected function whiteboardPath(Whiteboard $board): string
+    {
+        return "/whiteboards/{$board->id}";
+    }
 
-                return JSON.stringify({ status: response.status, body: await response.text() });
+    protected function whiteboardJoinPath(Whiteboard $board): string
+    {
+        return "/whiteboards/join/{$board->fresh()->guest_token}";
+    }
+
+    protected function openWhiteboardMenu(mixed $page, string $label = 'Board menu'): mixed
+    {
+        $page->assertNotPresent('[role="menu"]')
+            ->click("[aria-label=\"{$label}\"]")
+            ->assertPresent('[role="menu"]');
+
+        return $page;
+    }
+
+    /**
+     * Makes every XHR to a whiteboard path that ends with the suffix fail as a network error, so the board shows
+     * "Reconnecting…" and keeps its edits; fetch() is unaffected. The count of refused requests is
+     * window.whiteboardBlocked.refused.
+     */
+    protected function blockWhiteboardRequests(mixed $page, string $suffix = ''): void
+    {
+        $suffix = json_encode($suffix, JSON_THROW_ON_ERROR);
+
+        $page->script(<<<JS
+            () => {
+                const open = XMLHttpRequest.prototype.open;
+                const send = XMLHttpRequest.prototype.send;
+
+                window.whiteboardBlocked = { active: true, refused: 0 };
+
+                XMLHttpRequest.prototype.open = function (method, url, ...rest) {
+                    this.whiteboardPath = new URL(String(url), window.location.href).pathname;
+
+                    return open.call(this, method, url, ...rest);
+                };
+
+                XMLHttpRequest.prototype.send = function (body) {
+                    if (window.whiteboardBlocked.active && this.whiteboardPath.startsWith('/whiteboards/') && this.whiteboardPath.endsWith({$suffix})) {
+                        window.whiteboardBlocked.refused += 1;
+                        setTimeout(() => this.dispatchEvent(new ProgressEvent('error')), 0);
+
+                        return undefined;
+                    }
+
+                    return send.call(this, body);
+                };
+
+                return true;
             }
-            JS), true, flags: JSON_THROW_ON_ERROR);
+            JS);
+    }
 
-        return ['status' => $answer['status'], 'body' => json_decode((string) $answer['body'], true) ?? []];
+    protected function unblockWhiteboardRequests(mixed $page): void
+    {
+        $page->script('() => { window.whiteboardBlocked.active = false; return true; }');
+    }
+
+    /**
+     * A window for proving that nothing is written: long enough for the writes it rules out to have happened.
+     * The windows depend on FlushDelayMs (300, resources/js/lib/whiteboard/scene-sync.ts), the delay before a
+     * changed scene is sent, and on RepeatEveryMs (2000, resources/js/hooks/use-whiteboard-follow.ts), the
+     * interval of the follower's repeated view whispers: 800 outlasts a flush, 2400 outlasts a repeat.
+     */
+    protected function settleWhiteboard(mixed $page, int $milliseconds = 800): void
+    {
+        for ($waited = 0; $waited < $milliseconds; $waited += 400) {
+            $page->script('() => new Promise((resolve) => setTimeout(() => resolve(true), 400))');
+        }
     }
 
     /**
@@ -218,6 +310,35 @@ trait InteractsWithWhiteboards
         $this->selectWhiteboardTool($page, $tool);
 
         return $this->dragOnWhiteboard($page, $from, $to);
+    }
+
+    /**
+     * @param  array{0: int|float, 1: int|float}  $at
+     */
+    protected function doubleClickOnWhiteboard(mixed $page, array $at): mixed
+    {
+        $point = json_encode($at, JSON_THROW_ON_ERROR);
+
+        $page->script(<<<JS
+            () => {
+                const point = {$point};
+                const canvas = document.querySelector('.whiteboard-canvas canvas.excalidraw__canvas.interactive');
+                const box = canvas.getBoundingClientRect();
+
+                canvas.dispatchEvent(new MouseEvent('dblclick', {
+                    bubbles: true,
+                    cancelable: true,
+                    composed: true,
+                    detail: 2,
+                    clientX: box.left + point[0],
+                    clientY: box.top + point[1],
+                }));
+
+                return true;
+            }
+            JS);
+
+        return $page;
     }
 
     /**

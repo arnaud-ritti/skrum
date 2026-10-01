@@ -1,87 +1,59 @@
 <?php
 
-use App\Models\User;
-use App\Models\Whiteboard;
 use App\Models\WhiteboardElement;
-use App\Models\WhiteboardMember;
 
-function p17dRenamed(User $user, string $name): User
-{
-    $user->forceFill(['name' => $name, 'locale' => 'en'])->save();
+it('[P17d-00c] types a note into a sticky note by double-click, stores the text on the server and shows it to a second participant', function () {
+    ['board' => $board, 'fran' => $fran] = whiteboardWithFacilitator();
+    $editor = '.whiteboard-canvas textarea.excalidraw-wysiwyg';
 
-    return $user;
-}
+    $franPage = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)));
+    $guestPage = $this->awaitRealtime($this->joinAsGuest($this->whiteboardJoinPath($board), 'Guest Gia'));
 
-/**
- * @param  array<string, mixed>  $attributes
- * @return array{
- *     board: Whiteboard,
- *     fran: User,
- *     franMember: WhiteboardMember
- * }
- */
-function p17dBoard(array $attributes = []): array
-{
-    $board = Whiteboard::factory()->withGuestAccess()->create(['title' => 'Sprint board', ...$attributes]);
-    [$fran, $franMember] = whiteboardFacilitator($board);
+    $this->awaitWhiteboardElements($franPage, 0);
+    $this->awaitWhiteboardElements($guestPage, 0);
 
-    return [
-        'board' => $board,
-        'fran' => p17dRenamed($fran, 'Fran Facilitator'),
-        'franMember' => $franMember,
-    ];
-}
+    $this->addWhiteboardSticky($franPage, 'Yellow');
 
-function p17dBoardPath(Whiteboard $board): string
-{
-    return "/whiteboards/{$board->id}";
-}
+    $this->awaitWhiteboardStored($franPage, $board, 1);
+    $this->awaitWhiteboardElements($guestPage, 1);
 
-function p17dJoinPath(Whiteboard $board): string
-{
-    return "/whiteboards/join/{$board->fresh()->guest_token}";
-}
+    $sticky = WhiteboardElement::query()->where('whiteboard_id', $board->id)->sole();
 
-/**
- * @param  array<string, mixed>  $settings
- * @return array{
- *     status: int,
- *     body: array<string, mixed>
- * }
- */
-function p17dPatchSettings(mixed $page, Whiteboard $board, array $settings): array
-{
-    $path = json_encode("/whiteboards/{$board->id}/settings", JSON_THROW_ON_ERROR);
-    $body = json_encode(json_encode($settings, JSON_THROW_ON_ERROR), JSON_THROW_ON_ERROR);
+    $this->doubleClickOnWhiteboard($franPage, [
+        $sticky->data['x'] + ($sticky->data['width'] / 2),
+        $sticky->data['y'] + ($sticky->data['height'] / 2),
+    ]);
 
-    $answer = json_decode((string) $page->script(<<<JS
-        async () => {
-            const cookie = document.cookie.split('; ').find((entry) => entry.startsWith('XSRF-TOKEN='));
-            const response = await fetch({$path}, {
-                method: 'PATCH',
-                credentials: 'same-origin',
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json',
-                    'X-XSRF-TOKEN': decodeURIComponent(cookie.slice('XSRF-TOKEN='.length)),
-                },
-                body: {$body},
-            });
+    $franPage->assertPresent($editor)
+        ->fill($editor, 'Public note');
 
-            return JSON.stringify({ status: response.status, body: await response.text() });
-        }
-        JS), true, flags: JSON_THROW_ON_ERROR);
+    $this->awaitWhiteboardStored($franPage, $board, 2);
 
-    return ['status' => $answer['status'], 'body' => json_decode((string) $answer['body'], true) ?? []];
-}
+    $this->dragOnWhiteboard($franPage, [1100, 650], [1100, 650]);
+
+    $franPage->assertNotPresent($editor);
+
+    $this->awaitWhiteboardElements($guestPage, 2);
+    $this->awaitWhiteboardScene($franPage, $board);
+    $this->awaitWhiteboardScene($guestPage, $board);
+
+    $text = WhiteboardElement::query()->where('whiteboard_id', $board->id)->where('type', 'text')->sole();
+    $received = collect($this->whiteboardElements($guestPage, $board))->firstWhere('type', 'text');
+
+    expect($text->data['text'])->toBe('Public note')
+        ->and($text->data['containerId'])->toBe($sticky->element_id)
+        ->and($text->is_deleted)->toBeFalse()
+        ->and($received['text'])->toBe('Public note')
+        ->and($received['containerId'])->toBe($sticky->element_id);
+});
 
 it('[P17d-00g] locks and unlocks the board from the top bar, and another member cannot write while it is locked', function () {
-    ['board' => $board, 'fran' => $fran] = p17dBoard();
+    ['board' => $board, 'fran' => $fran] = whiteboardWithFacilitator();
     [$mia] = whiteboardMember($board);
-    p17dRenamed($mia, 'Mia Member');
+    renamedWhiteboardUser($mia, 'Mia Member');
 
-    $franPage = $this->awaitRealtime($this->signIn($fran, p17dBoardPath($board)));
-    $miaPage = $this->awaitRealtime($this->signIn($mia, p17dBoardPath($board)));
+    $franPage = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)));
+    $miaPage = $this->awaitRealtime($this->signIn($mia, $this->whiteboardPath($board)));
 
     $this->awaitWhiteboardElements($miaPage, 0);
 
@@ -125,14 +97,14 @@ it('[P17d-00g] locks and unlocks the board from the top bar, and another member 
 });
 
 it('[P17d-07a] refuses a change of the settings sent by a guest with 403 and changes nothing', function () {
-    ['board' => $board] = p17dBoard();
+    ['board' => $board] = whiteboardWithFacilitator();
 
-    $guestPage = $this->awaitRealtime($this->joinAsGuest(p17dJoinPath($board), 'Guest Gia'));
+    $guestPage = $this->awaitRealtime($this->joinAsGuest($this->whiteboardJoinPath($board), 'Guest Gia'));
 
     $guestPage->assertNotPresent('[role="toolbar"][aria-label="Facilitation tools"]')
         ->assertNotPresent('button[aria-label="Lock the board"]');
 
-    $answer = p17dPatchSettings($guestPage, $board, [
+    $answer = $this->sendFromPage($guestPage, 'PATCH', "/whiteboards/{$board->id}/settings", [
         'title' => 'Taken over',
         'locked' => true,
         'guest_access_enabled' => false,

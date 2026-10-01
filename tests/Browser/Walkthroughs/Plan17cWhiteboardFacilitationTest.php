@@ -1,9 +1,7 @@
 <?php
 
-use App\Models\User;
 use App\Models\Whiteboard;
 use App\Models\WhiteboardElement;
-use App\Models\WhiteboardMember;
 
 const P17cTools = '[role="toolbar"][aria-label="Facilitation tools"]';
 const P17cLockedNotice = 'div[role="status"]:has-text("This board is locked.")';
@@ -20,109 +18,19 @@ const P17cZoomLabel = '.whiteboard-canvas .reset-zoom-button';
 const P17cZoomIn = '.whiteboard-canvas .zoom-in-button';
 const P17cZoomOut = '.whiteboard-canvas .zoom-out-button';
 
-function p17cRenamed(User $user, string $name): User
-{
-    $user->forceFill(['name' => $name, 'locale' => 'en'])->save();
-
-    return $user;
-}
-
-/**
- * @param  array<string, mixed>  $attributes
- * @return array{
- *     board: Whiteboard,
- *     fran: User,
- *     franMember: WhiteboardMember
- * }
- */
-function p17cBoard(array $attributes = []): array
-{
-    $board = Whiteboard::factory()->withGuestAccess()->create(['title' => 'Sprint board', ...$attributes]);
-    [$fran, $franMember] = whiteboardFacilitator($board);
-
-    return [
-        'board' => $board,
-        'fran' => p17cRenamed($fran, 'Fran Facilitator'),
-        'franMember' => $franMember,
-    ];
-}
-
-function p17cBoardPath(Whiteboard $board): string
-{
-    return "/whiteboards/{$board->id}";
-}
-
-function p17cJoinPath(Whiteboard $board): string
-{
-    return "/whiteboards/join/{$board->fresh()->guest_token}";
-}
-
-/**
- * @param  array<string, mixed>  $body
- * @return array{
- *     status: int,
- *     body: array<string, mixed>
- * }
- */
-function p17cSend(mixed $page, string $method, string $path, array $body): array
-{
-    $request = json_encode([
-        'method' => $method,
-        'path' => $path,
-        'body' => json_encode($body, JSON_THROW_ON_ERROR),
-    ], JSON_THROW_ON_ERROR);
-
-    $answer = json_decode((string) $page->script(<<<JS
-        async () => {
-            const request = {$request};
-            const cookie = document.cookie.split('; ').find((entry) => entry.startsWith('XSRF-TOKEN='));
-            const response = await fetch(request.path, {
-                method: request.method,
-                credentials: 'same-origin',
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json',
-                    'X-XSRF-TOKEN': decodeURIComponent(cookie.slice('XSRF-TOKEN='.length)),
-                },
-                body: request.body,
-            });
-
-            return JSON.stringify({ status: response.status, body: await response.text() });
-        }
-        JS), true, flags: JSON_THROW_ON_ERROR);
-
-    return ['status' => $answer['status'], 'body' => json_decode((string) $answer['body'], true) ?? []];
-}
-
-function p17cPause(mixed $page, int $milliseconds): void
-{
-    for ($waited = 0; $waited < $milliseconds; $waited += 400) {
-        $page->script('() => new Promise((resolve) => setTimeout(() => resolve(true), 400))');
-    }
-}
-
 function p17cTimerSeconds(mixed $page): int
 {
     return (int) $page->script('() => { const [minutes, seconds] = document.querySelector(\'[role="timer"]\').textContent.trim().split(":").map(Number); return minutes * 60 + seconds; }');
 }
 
-function p17cOpenBoardMenu(mixed $page): mixed
-{
-    $page->assertNotPresent('[role="menu"]')
-        ->click('[aria-label="Board menu"]')
-        ->assertPresent('[role="menu"]');
-
-    return $page;
-}
-
 it('[P17c-01a] shows the timer, lock and follow buttons to the facilitator only, and refuses the timer, the lock and follow-me to a member and to a guest', function () {
-    ['board' => $board, 'fran' => $fran] = p17cBoard();
+    ['board' => $board, 'fran' => $fran] = whiteboardWithFacilitator();
     [$mia] = whiteboardMember($board);
-    p17cRenamed($mia, 'Mia Member');
+    renamedWhiteboardUser($mia, 'Mia Member');
 
-    $franPage = $this->awaitRealtime($this->signIn($fran, p17cBoardPath($board)));
-    $miaPage = $this->awaitRealtime($this->signIn($mia, p17cBoardPath($board)));
-    $guestPage = $this->awaitRealtime($this->joinAsGuest(p17cJoinPath($board), 'Guest Gia'));
+    $franPage = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)));
+    $miaPage = $this->awaitRealtime($this->signIn($mia, $this->whiteboardPath($board)));
+    $guestPage = $this->awaitRealtime($this->joinAsGuest($this->whiteboardJoinPath($board), 'Guest Gia'));
 
     $franPage->assertPresent(P17cTools.' [aria-label="Timer"]')
         ->assertPresent(P17cTools.' [aria-label="Lock the board"][aria-pressed="false"]')
@@ -136,9 +44,9 @@ it('[P17c-01a] shows the timer, lock and follow buttons to the facilitator only,
             ->assertNotPresent('[aria-label="Lock the board"]')
             ->assertNotPresent('[aria-label="Bring everyone to me"]');
 
-        $timer = p17cSend($page, 'PUT', "/whiteboards/{$board->id}/timer", ['seconds' => 60]);
-        $lock = p17cSend($page, 'PATCH', "/whiteboards/{$board->id}/settings", ['locked' => true]);
-        $follow = p17cSend($page, 'PATCH', "/whiteboards/{$board->id}/settings", ['follow_enabled' => true]);
+        $timer = $this->sendFromPage($page, 'PUT', "/whiteboards/{$board->id}/timer", ['seconds' => 60]);
+        $lock = $this->sendFromPage($page, 'PATCH', "/whiteboards/{$board->id}/settings", ['locked' => true]);
+        $follow = $this->sendFromPage($page, 'PATCH', "/whiteboards/{$board->id}/settings", ['follow_enabled' => true]);
 
         expect($timer['status'])->toBe(403)
             ->and($timer['body']['message'])->toBe('Only the facilitator can do this.')
@@ -160,11 +68,11 @@ it('[P17c-01a] shows the timer, lock and follow buttons to the facilitator only,
 });
 
 it('[P17c-01b] shows the facilitator and a guest the same countdown and the same end time, and removes it for both on Stop timer', function () {
-    ['board' => $board, 'fran' => $fran] = p17cBoard();
+    ['board' => $board, 'fran' => $fran] = whiteboardWithFacilitator();
     $stop = '[role="menuitem"]:has-text("Stop timer")';
 
-    $franPage = $this->awaitRealtime($this->signIn($fran, p17cBoardPath($board)));
-    $guestPage = $this->awaitRealtime($this->joinAsGuest(p17cJoinPath($board), 'Guest Gia'));
+    $franPage = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)));
+    $guestPage = $this->awaitRealtime($this->joinAsGuest($this->whiteboardJoinPath($board), 'Guest Gia'));
 
     $franPage->click('[aria-label="Timer"]')
         ->assertPresent('[role="menu"]')
@@ -203,12 +111,12 @@ it('[P17c-01b] shows the facilitator and a guest the same countdown and the same
 });
 
 it('[P17c-01c] shows the time-up notice in the top bar and as a toast to the facilitator and to a guest when the countdown reaches zero', function () {
-    ['board' => $board, 'fran' => $fran] = p17cBoard();
+    ['board' => $board, 'fran' => $fran] = whiteboardWithFacilitator();
 
-    $franPage = $this->awaitRealtime($this->signIn($fran, p17cBoardPath($board)));
-    $guestPage = $this->awaitRealtime($this->joinAsGuest(p17cJoinPath($board), 'Guest Gia'));
+    $franPage = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)));
+    $guestPage = $this->awaitRealtime($this->joinAsGuest($this->whiteboardJoinPath($board), 'Guest Gia'));
 
-    $started = p17cSend($franPage, 'PUT', "/whiteboards/{$board->id}/timer", ['seconds' => 10]);
+    $started = $this->sendFromPage($franPage, 'PUT', "/whiteboards/{$board->id}/timer", ['seconds' => 10]);
 
     expect($started['status'])->toBe(200)
         ->and($started['body']['timerEndsAt'])->toBe($board->fresh()->timer_ends_at->toIso8601String());
@@ -229,9 +137,9 @@ it('[P17c-01c] shows the time-up notice in the top bar and as a toast to the fac
 });
 
 it('[P17c-01d] shows the remaining time to a guest who opens the board mid-countdown, and no timer once it ended more than five minutes ago', function () {
-    ['board' => $board] = p17cBoard(['timer_ends_at' => now()->addSeconds(90)]);
+    ['board' => $board] = whiteboardWithFacilitator(['timer_ends_at' => now()->addSeconds(90)]);
 
-    $guestPage = $this->awaitRealtime($this->joinAsGuest(p17cJoinPath($board), 'Guest Gia'));
+    $guestPage = $this->awaitRealtime($this->joinAsGuest($this->whiteboardJoinPath($board), 'Guest Gia'));
 
     $guestPage->assertPresent('[role="timer"]');
 
@@ -239,7 +147,7 @@ it('[P17c-01d] shows the remaining time to a guest who opens the board mid-count
 
     Whiteboard::query()->whereKey($board->id)->update(['timer_ends_at' => now()->subMinute()]);
 
-    $this->awaitRealtime($guestPage->navigate(p17cBoardPath($board)));
+    $this->awaitRealtime($guestPage->navigate($this->whiteboardPath($board)));
 
     $guestPage->assertSeeIn('[role="timer"]', "Time's up!")
         ->assertNotPresent('[data-sonner-toast]');
@@ -248,7 +156,7 @@ it('[P17c-01d] shows the remaining time to a guest who opens the board mid-count
 
     Whiteboard::query()->whereKey($board->id)->update(['timer_ends_at' => now()->subMinutes(6)]);
 
-    $this->awaitRealtime($guestPage->navigate(p17cBoardPath($board)));
+    $this->awaitRealtime($guestPage->navigate($this->whiteboardPath($board)));
 
     $guestPage->assertSeeIn('header > h1', 'Sprint board')
         ->assertNotPresent('[role="timer"]');
@@ -258,12 +166,12 @@ it('[P17c-01d] shows the remaining time to a guest who opens the board mid-count
 });
 
 it('[P17c-02a] puts a guest in view mode on a locked board, refuses the guest\'s writes with 403 and errors.locked, lets the facilitator edit, and gives the tools back on unlock', function () {
-    ['board' => $board, 'fran' => $fran] = p17cBoard();
+    ['board' => $board, 'fran' => $fran] = whiteboardWithFacilitator();
     $shapesTool = '.whiteboard-canvas [data-testid="toolbar-rectangle"]';
     $stickyTool = 'button[aria-label="Sticky note"]';
 
-    $franPage = $this->awaitRealtime($this->signIn($fran, p17cBoardPath($board)));
-    $guestPage = $this->awaitRealtime($this->joinAsGuest(p17cJoinPath($board), 'Guest Gia'));
+    $franPage = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)));
+    $guestPage = $this->awaitRealtime($this->joinAsGuest($this->whiteboardJoinPath($board), 'Guest Gia'));
 
     $shape = $this->addWhiteboardElement($franPage, $board, ['x' => 300, 'y' => 300]);
 
@@ -338,10 +246,10 @@ it('[P17c-02a] puts a guest in view mode on a locked board, refuses the guest\'s
 });
 
 it('[P17c-02b] drops the note a guest adds on a board that was locked behind the open page, says the board is locked and keeps the guest on the board', function () {
-    ['board' => $board, 'fran' => $fran] = p17cBoard();
+    ['board' => $board, 'fran' => $fran] = whiteboardWithFacilitator();
 
-    $franPage = $this->awaitRealtime($this->signIn($fran, p17cBoardPath($board)));
-    $guestPage = $this->awaitRealtime($this->joinAsGuest(p17cJoinPath($board), 'Guest Gia'));
+    $franPage = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)));
+    $guestPage = $this->awaitRealtime($this->joinAsGuest($this->whiteboardJoinPath($board), 'Guest Gia'));
 
     $this->awaitWhiteboardElements($guestPage, 0);
     $this->awaitResync($guestPage);
@@ -370,11 +278,11 @@ it('[P17c-02b] drops the note a guest adds on a board that was locked behind the
 });
 
 it('[P17c-02c] closes the text a guest is typing when the facilitator locks the board, and stores nothing more of it during the lock or after the unlock', function () {
-    ['board' => $board, 'fran' => $fran] = p17cBoard();
+    ['board' => $board, 'fran' => $fran] = whiteboardWithFacilitator();
     $editor = '.whiteboard-canvas textarea.excalidraw-wysiwyg';
 
-    $franPage = $this->awaitRealtime($this->signIn($fran, p17cBoardPath($board)));
-    $guestPage = $this->awaitRealtime($this->joinAsGuest(p17cJoinPath($board), 'Guest Gia'));
+    $franPage = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)));
+    $guestPage = $this->awaitRealtime($this->joinAsGuest($this->whiteboardJoinPath($board), 'Guest Gia'));
 
     $this->awaitWhiteboardElements($guestPage, 0);
 
@@ -403,7 +311,7 @@ it('[P17c-02c] closes the text a guest is typing when the facilitator locks the 
         ->assertDontSee('Your access to this board has ended.');
 
     $this->awaitWhiteboardScene($guestPage, $board);
-    p17cPause($guestPage, 800);
+    $this->settleWhiteboard($guestPage, 800);
 
     $duringLock = WhiteboardElement::query()->where('whiteboard_id', $board->id)->sole();
 
@@ -417,7 +325,7 @@ it('[P17c-02c] closes the text a guest is typing when the facilitator locks the 
     $guestPage->assertPresent('button[aria-label="Sticky note"]')
         ->assertNotPresent($editor);
 
-    p17cPause($guestPage, 800);
+    $this->settleWhiteboard($guestPage, 800);
 
     $this->awaitWhiteboardScene($guestPage, $board);
     $this->awaitWhiteboardScene($franPage, $board);
@@ -427,15 +335,15 @@ it('[P17c-02c] closes the text a guest is typing when the facilitator locks the 
 });
 
 it('[P17c-02d] keeps the View mode entry of the canvas menu on an unlocked board, and shows Unlock all elements to the facilitator only', function () {
-    ['board' => $board, 'fran' => $fran] = p17cBoard();
+    ['board' => $board, 'fran' => $fran] = whiteboardWithFacilitator();
     [$mia] = whiteboardMember($board);
-    p17cRenamed($mia, 'Mia Member');
+    renamedWhiteboardUser($mia, 'Mia Member');
     $viewMode = '.whiteboard-canvas .context-menu li[data-testid="viewMode"]';
     $unlockAll = '.whiteboard-canvas .context-menu li[data-testid="unlockAllElements"]';
     $unlockAllDisplay = "getComputedStyle(document.querySelector('{$unlockAll}')).display";
 
-    $franPage = $this->awaitRealtime($this->signIn($fran, p17cBoardPath($board)));
-    $miaPage = $this->awaitRealtime($this->signIn($mia, p17cBoardPath($board)));
+    $franPage = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)));
+    $miaPage = $this->awaitRealtime($this->signIn($mia, $this->whiteboardPath($board)));
 
     $this->addWhiteboardElement($franPage, $board, ['x' => 60, 'y' => 60, 'width' => 120, 'height' => 80, 'locked' => true]);
 
@@ -458,10 +366,10 @@ it('[P17c-02d] keeps the View mode entry of the canvas menu on an unlocked board
 });
 
 it('[P17c-03a] rejects a guest\'s move, unlock and deletion of a shape the facilitator locked, hands back the stored copy, and accepts them once the facilitator unlocked it', function () {
-    ['board' => $board, 'fran' => $fran] = p17cBoard();
+    ['board' => $board, 'fran' => $fran] = whiteboardWithFacilitator();
 
-    $franPage = $this->awaitRealtime($this->signIn($fran, p17cBoardPath($board)));
-    $guestPage = $this->awaitRealtime($this->joinAsGuest(p17cJoinPath($board), 'Guest Gia'));
+    $franPage = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)));
+    $guestPage = $this->awaitRealtime($this->joinAsGuest($this->whiteboardJoinPath($board), 'Guest Gia'));
 
     $shape = $this->addWhiteboardElement($franPage, $board, ['x' => 250, 'y' => 300, 'locked' => true]);
 
@@ -515,13 +423,13 @@ it('[P17c-03a] rejects a guest\'s move, unlock and deletion of a shape the facil
 });
 
 it('[P17c-03b] lets the facilitator lock a shape from the canvas menu, hides the lock entry from a guest, and puts the shape back when the guest deletes it', function () {
-    ['board' => $board, 'fran' => $fran] = p17cBoard();
+    ['board' => $board, 'fran' => $fran] = whiteboardWithFacilitator();
     $lockEntry = '.whiteboard-canvas .context-menu li[data-testid="toggleElementLock"]';
     $lockEntryDisplay = "getComputedStyle(document.querySelector('{$lockEntry}')).display";
     $versions = "document.querySelector('[data-scene]').dataset.scene.split(':')[1]";
 
-    $franPage = $this->awaitRealtime($this->signIn($fran, p17cBoardPath($board)));
-    $guestPage = $this->awaitRealtime($this->joinAsGuest(p17cJoinPath($board), 'Guest Gia'));
+    $franPage = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)));
+    $guestPage = $this->awaitRealtime($this->joinAsGuest($this->whiteboardJoinPath($board), 'Guest Gia'));
 
     $shape = $this->addWhiteboardElement($franPage, $board, [
         'x' => 500,
@@ -581,10 +489,10 @@ it('[P17c-03b] lets the facilitator lock a shape from the canvas menu, hides the
 });
 
 it('[P17c-04a] brings a guest to the facilitator\'s zoom, pauses the guest who zooms without moving the facilitator, and resumes at the facilitator\'s current view', function () {
-    ['board' => $board, 'fran' => $fran] = p17cBoard();
+    ['board' => $board, 'fran' => $fran] = whiteboardWithFacilitator();
 
-    $franPage = $this->awaitRealtime($this->signIn($fran, p17cBoardPath($board)));
-    $guestPage = $this->awaitRealtime($this->joinAsGuest(p17cJoinPath($board), 'Guest Gia'));
+    $franPage = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)));
+    $guestPage = $this->awaitRealtime($this->joinAsGuest($this->whiteboardJoinPath($board), 'Guest Gia'));
 
     foreach ([$franPage, $guestPage] as $page) {
         $page->assertPresent('[role="group"][aria-label="2 online"]')
@@ -607,7 +515,7 @@ it('[P17c-04a] brings a guest to the facilitator\'s zoom, pauses the guest who z
 
     $guestPage->assertSeeIn(P17cZoomLabel, '110%');
 
-    p17cPause($guestPage, 2400);
+    $this->settleWhiteboard($guestPage, 2400);
 
     $guestPage->assertPresent(P17cFollowingNotice)
         ->assertNotPresent(P17cPausedNotice)
@@ -619,7 +527,7 @@ it('[P17c-04a] brings a guest to the facilitator\'s zoom, pauses the guest who z
         ->assertPresent(P17cResume)
         ->assertNotPresent(P17cFollowingNotice);
 
-    p17cPause($franPage, 800);
+    $this->settleWhiteboard($franPage, 800);
 
     $franPage->assertSeeIn(P17cZoomLabel, '110%')
         ->assertPresent(P17cLeadingNotice)
@@ -628,7 +536,7 @@ it('[P17c-04a] brings a guest to the facilitator\'s zoom, pauses the guest who z
     $franPage->click(P17cZoomIn)
         ->assertSeeIn(P17cZoomLabel, '120%');
 
-    p17cPause($guestPage, 2400);
+    $this->settleWhiteboard($guestPage, 2400);
 
     $guestPage->assertSeeIn(P17cZoomLabel, '100%')
         ->assertPresent(P17cPausedNotice);
@@ -642,9 +550,9 @@ it('[P17c-04a] brings a guest to the facilitator\'s zoom, pauses the guest who z
 });
 
 it('[P17c-04b] brings a guest who joins while follow-me is on to the facilitator\'s view, and frees everyone when it is switched off', function () {
-    ['board' => $board, 'fran' => $fran] = p17cBoard(['follow_enabled' => true]);
+    ['board' => $board, 'fran' => $fran] = whiteboardWithFacilitator(['follow_enabled' => true]);
 
-    $franPage = $this->awaitRealtime($this->signIn($fran, p17cBoardPath($board)));
+    $franPage = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)));
 
     $franPage->assertPresent(P17cLeadingNotice)
         ->assertAriaAttribute(P17cFollowSwitch, 'pressed', 'true')
@@ -653,7 +561,7 @@ it('[P17c-04b] brings a guest who joins while follow-me is on to the facilitator
         ->click(P17cZoomIn)
         ->assertSeeIn(P17cZoomLabel, '120%');
 
-    $guestPage = $this->awaitRealtime($this->joinAsGuest(p17cJoinPath($board), 'Guest Gia'));
+    $guestPage = $this->awaitRealtime($this->joinAsGuest($this->whiteboardJoinPath($board), 'Guest Gia'));
 
     $guestPage->assertPresent(P17cFollowingNotice)
         ->assertSeeIn(P17cZoomLabel, '120%')
@@ -668,7 +576,7 @@ it('[P17c-04b] brings a guest who joins while follow-me is on to the facilitator
     $guestPage->click(P17cZoomOut)
         ->assertSeeIn(P17cZoomLabel, '110%');
 
-    p17cPause($guestPage, 800);
+    $this->settleWhiteboard($guestPage, 800);
 
     $guestPage->assertNotPresent('div[role="status"]')
         ->assertSeeIn(P17cZoomLabel, '110%');
@@ -680,10 +588,10 @@ it('[P17c-04b] brings a guest who joins while follow-me is on to the facilitator
 });
 
 it('[P17c-04c] lets a guest in view mode on a locked board follow the facilitator, pause by zooming and resume', function () {
-    ['board' => $board, 'fran' => $fran] = p17cBoard(['locked' => true, 'follow_enabled' => true]);
+    ['board' => $board, 'fran' => $fran] = whiteboardWithFacilitator(['locked' => true, 'follow_enabled' => true]);
 
-    $franPage = $this->awaitRealtime($this->signIn($fran, p17cBoardPath($board)));
-    $guestPage = $this->awaitRealtime($this->joinAsGuest(p17cJoinPath($board), 'Guest Gia'));
+    $franPage = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)));
+    $guestPage = $this->awaitRealtime($this->joinAsGuest($this->whiteboardJoinPath($board), 'Guest Gia'));
 
     $guestPage->assertPresent(P17cViewMode)
         ->assertPresent(P17cLockedNotice)
@@ -709,11 +617,11 @@ it('[P17c-04c] lets a guest in view mode on a locked board follow the facilitato
 });
 
 it('[P17c-04d] zooms a follower with a narrower window out until the facilitator\'s view fits in it', function () {
-    ['board' => $board, 'fran' => $fran] = p17cBoard(['follow_enabled' => true]);
+    ['board' => $board, 'fran' => $fran] = whiteboardWithFacilitator(['follow_enabled' => true]);
     $size = '() => { const box = document.querySelector(".whiteboard-canvas").getBoundingClientRect(); return JSON.stringify([box.width, box.height]); }';
 
-    $franPage = $this->awaitRealtime($this->signIn($fran, p17cBoardPath($board)));
-    $guestPage = $this->awaitRealtime($this->joinAsGuest(p17cJoinPath($board), 'Guest Gia'));
+    $franPage = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)));
+    $guestPage = $this->awaitRealtime($this->joinAsGuest($this->whiteboardJoinPath($board), 'Guest Gia'));
 
     $guestPage->assertPresent(P17cFollowingNotice)
         ->assertSeeIn(P17cZoomLabel, '100%');
@@ -735,15 +643,15 @@ it('[P17c-04d] zooms a follower with a narrower window out until the facilitator
 });
 
 it('[P17c-05a] lists the team members and the workspace admins in the hand-over dialog, hands facilitation over without a reload, switches follow-me off at each change, and lets the former facilitator take control back', function () {
-    ['board' => $board, 'fran' => $fran, 'franMember' => $franMember] = p17cBoard();
+    ['board' => $board, 'fran' => $fran, 'franMember' => $franMember] = whiteboardWithFacilitator();
     [$max, $maxMember] = whiteboardMember($board);
-    p17cRenamed($max, 'Max Member');
-    p17cRenamed(workspaceManager($board->team->workspace), 'Ada Admin');
+    renamedWhiteboardUser($max, 'Max Member');
+    renamedWhiteboardUser(workspaceManager($board->team->workspace), 'Ada Admin');
     $handOver = '[role="dialog"] button:text-is("Hand over")';
 
-    $franPage = $this->awaitRealtime($this->signIn($fran, p17cBoardPath($board)));
-    $maxPage = $this->awaitRealtime($this->signIn($max, p17cBoardPath($board)));
-    $guestPage = $this->awaitRealtime($this->joinAsGuest(p17cJoinPath($board), 'Guest Gia'));
+    $franPage = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)));
+    $maxPage = $this->awaitRealtime($this->signIn($max, $this->whiteboardPath($board)));
+    $guestPage = $this->awaitRealtime($this->joinAsGuest($this->whiteboardJoinPath($board), 'Guest Gia'));
 
     $franPage->assertPresent('[role="group"][aria-label="3 online"]')
         ->click(P17cFollowSwitch)
@@ -752,7 +660,7 @@ it('[P17c-05a] lists the team members and the workspace admins in the hand-over 
     $maxPage->assertPresent(P17cFollowingNotice)
         ->assertNotPresent(P17cTools);
 
-    p17cOpenBoardMenu($franPage)
+    $this->openWhiteboardMenu($franPage)
         ->assertNotPresent('[role="menuitem"]:has-text("Take control")')
         ->click('[role="menuitem"]:has-text("Hand over facilitation")')
         ->assertPresent('[role="dialog"] #whiteboard-new-facilitator')
@@ -791,7 +699,7 @@ it('[P17c-05a] lists the team members and the workspace admins in the hand-over 
     $franPage->assertPresent(P17cFollowingNotice);
     $guestPage->assertPresent(P17cFollowingNotice);
 
-    p17cOpenBoardMenu($franPage)
+    $this->openWhiteboardMenu($franPage)
         ->assertNotPresent('[role="menuitem"]:has-text("Hand over facilitation")')
         ->click('[role="menuitem"]:has-text("Take control")')
         ->assertNotPresent('[role="menu"]')
@@ -813,12 +721,12 @@ it('[P17c-05a] lists the team members and the workspace admins in the hand-over 
 });
 
 it('[P17c-05b] says that no one else can facilitate when the facilitator is alone in the team, and never offers or allows facilitation to a guest', function () {
-    ['board' => $board, 'fran' => $fran, 'franMember' => $franMember] = p17cBoard();
+    ['board' => $board, 'fran' => $fran, 'franMember' => $franMember] = whiteboardWithFacilitator();
 
-    $franPage = $this->awaitRealtime($this->signIn($fran, p17cBoardPath($board)));
-    $guestPage = $this->awaitRealtime($this->joinAsGuest(p17cJoinPath($board), 'Guest Gia'));
+    $franPage = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)));
+    $guestPage = $this->awaitRealtime($this->joinAsGuest($this->whiteboardJoinPath($board), 'Guest Gia'));
 
-    p17cOpenBoardMenu($franPage)
+    $this->openWhiteboardMenu($franPage)
         ->click('[role="menuitem"]:has-text("Hand over facilitation")')
         ->assertSeeIn('[role="dialog"]', 'No one else can facilitate this board yet.')
         ->assertNotPresent('[role="dialog"] #whiteboard-new-facilitator')
@@ -827,13 +735,13 @@ it('[P17c-05b] says that no one else can facilitate when the facilitator is alon
         ->assertNotPresent('[role="dialog"]')
         ->assertPresent(P17cTools);
 
-    p17cOpenBoardMenu($guestPage)
+    $this->openWhiteboardMenu($guestPage)
         ->assertPresent('[role="menuitemcheckbox"]:has-text("Hide my cursor")')
         ->assertCount('[role="menu"] [role="menuitem"]', 0)
         ->assertDontSeeIn('[role="menu"]', 'Take control')
         ->assertDontSeeIn('[role="menu"]', 'Hand over facilitation');
 
-    $attempt = p17cSend($guestPage, 'PUT', "/whiteboards/{$board->id}/facilitator", ['user_id' => $fran->id]);
+    $attempt = $this->sendFromPage($guestPage, 'PUT', "/whiteboards/{$board->id}/facilitator", ['user_id' => $fran->id]);
 
     expect($attempt['status'])->toBe(403)
         ->and($attempt['body']['message'])->toBe('Only the facilitator can do this.')
@@ -842,11 +750,11 @@ it('[P17c-05b] says that no one else can facilitate when the facilitator is alon
 });
 
 it('[P17c-06] flies reactions both ways on a locked board with the sender\'s name, and removes the bar for everyone when the facilitator switches reactions off', function () {
-    ['board' => $board, 'fran' => $fran] = p17cBoard(['locked' => true]);
+    ['board' => $board, 'fran' => $fran] = whiteboardWithFacilitator(['locked' => true]);
     $bar = '.whiteboard-reactions[role="toolbar"][aria-label="Reactions"]';
 
-    $franPage = $this->awaitRealtime($this->signIn($fran, p17cBoardPath($board)));
-    $guestPage = $this->awaitRealtime($this->joinAsGuest(p17cJoinPath($board), 'Guest Gia'));
+    $franPage = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)));
+    $guestPage = $this->awaitRealtime($this->joinAsGuest($this->whiteboardJoinPath($board), 'Guest Gia'));
 
     foreach ([$franPage, $guestPage] as $page) {
         $page->assertPresent('[role="group"][aria-label="2 online"]')
@@ -865,7 +773,7 @@ it('[P17c-06] flies reactions both ways on a locked board with the sender\'s nam
     $guestPage->assertSeeIn('.lr-overlay', '🎉')
         ->assertSeeIn('.lr-overlay', 'Fran Facilitator');
 
-    p17cOpenBoardMenu($franPage)
+    $this->openWhiteboardMenu($franPage)
         ->assertAriaAttribute('[role="menuitemcheckbox"]:has-text("Show flying reactions")', 'checked', 'true')
         ->click('[role="menuitemcheckbox"]:has-text("Show flying reactions")');
 
@@ -879,11 +787,11 @@ it('[P17c-06] flies reactions both ways on a locked board with the sender\'s nam
 });
 
 it('[P17c-07] names no canvas library and shows no outbound link on a board with the timer, the lock and follow-me in use', function () {
-    ['board' => $board, 'fran' => $fran] = p17cBoard(['locked' => true, 'follow_enabled' => true, 'timer_ends_at' => now()->addMinutes(5)]);
+    ['board' => $board, 'fran' => $fran] = whiteboardWithFacilitator(['locked' => true, 'follow_enabled' => true, 'timer_ends_at' => now()->addMinutes(5)]);
     $scan = '() => { const words = [document.body.innerText, ...Array.from(document.querySelectorAll("[aria-label], [title]")).flatMap((node) => [node.getAttribute("aria-label") ?? "", node.getAttribute("title") ?? ""])].join("\n").toLowerCase(); const links = Array.from(document.querySelectorAll("a[href]")).filter((link) => link.getClientRects().length > 0 && new URL(link.href, location.href).origin !== location.origin).length; return JSON.stringify({ named: words.includes("excalidraw"), links }); }';
 
-    $franPage = $this->awaitRealtime($this->signIn($fran, p17cBoardPath($board)));
-    $guestPage = $this->awaitRealtime($this->joinAsGuest(p17cJoinPath($board), 'Guest Gia'));
+    $franPage = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)));
+    $guestPage = $this->awaitRealtime($this->joinAsGuest($this->whiteboardJoinPath($board), 'Guest Gia'));
 
     $franPage->assertPresent(P17cLeadingNotice)
         ->assertPresent('[role="timer"]')
@@ -899,9 +807,9 @@ it('[P17c-07] names no canvas library and shows no outbound link on a board with
 });
 
 it('[P17c-08] duplicates a locked board with a running timer and follow-me into a copy that has none of them, and keeps a locked shape locked', function () {
-    ['board' => $board, 'fran' => $fran] = p17cBoard(['locked' => true, 'follow_enabled' => true, 'timer_ends_at' => now()->addMinutes(5)]);
+    ['board' => $board, 'fran' => $fran] = whiteboardWithFacilitator(['locked' => true, 'follow_enabled' => true, 'timer_ends_at' => now()->addMinutes(5)]);
 
-    $page = $this->awaitRealtime($this->signIn($fran, p17cBoardPath($board)));
+    $page = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)));
 
     $shape = $this->addWhiteboardElement($page, $board, ['x' => 300, 'y' => 300, 'locked' => true]);
 
@@ -911,7 +819,7 @@ it('[P17c-08] duplicates a locked board with a running timer and follow-me into 
         ->assertAriaAttribute('[aria-label="Unlock the board"]', 'pressed', 'true')
         ->assertAriaAttribute(P17cFollowSwitch, 'pressed', 'true');
 
-    p17cOpenBoardMenu($page)
+    $this->openWhiteboardMenu($page)
         ->click('[role="menuitem"]:has-text("Duplicate this board")')
         ->assertSeeIn('header > h1', 'Sprint board (copy)');
 
@@ -920,7 +828,7 @@ it('[P17c-08] duplicates a locked board with a running timer and follow-me into 
     $this->awaitRealtime($page);
     $this->awaitWhiteboardElements($page, 1);
 
-    $page->assertPathIs(p17cBoardPath($copy))
+    $page->assertPathIs($this->whiteboardPath($copy))
         ->assertNotPresent('[role="timer"]')
         ->assertNotPresent('div[role="status"]')
         ->assertAriaAttribute('[aria-label="Lock the board"]', 'pressed', 'false')
