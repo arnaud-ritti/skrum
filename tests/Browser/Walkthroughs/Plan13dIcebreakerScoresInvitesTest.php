@@ -684,6 +684,34 @@ it('[P13d-12d] turns the delivery line to "Slack: failed — Reconnect Slack in 
         ->and(IntegrationDelivery::query()->sole()->status)->toBe(IntegrationDeliveryStatus::Failed);
 });
 
+it('[P13d-12f] keeps "Invite" and the failed delivery line when Slack was the only share channel', function () {
+    config(['queue.default' => 'database']);
+    enableIntegrations(IntegrationProvider::Slack);
+    Http::fake(['hooks.slack.com/*' => Http::response('channel_is_archived', 404)]);
+    ['room' => $room, 'ada' => $ada] = p13dRoom();
+    $slack = TeamIntegration::factory()->slack()->create(['team_id' => $room->team_id]);
+
+    $a = $this->awaitRealtime($this->signIn($ada, "/games/{$room->id}"));
+
+    p13dOpenInvite($a)
+        ->click('Post link to Slack')
+        ->assertSee('Sending to Slack…');
+
+    $this->workQueue();
+
+    $a->assertSee('Slack: failed — Reconnect Slack in the team settings.')
+        ->assertSee('Invite to the room')
+        ->assertNotPresent('[role="dialog"] button:has-text("Post link to Slack")');
+
+    expect($slack->fresh()->status)->toBe(IntegrationStatus::ReconnectRequired);
+
+    $a->navigate("/games/{$room->id}");
+
+    p13dOpenInvite($a)
+        ->assertSee('Slack: failed — Reconnect Slack in the team settings.')
+        ->assertNotPresent('[role="dialog"] button:has-text("Post link to Slack")');
+});
+
 it('[P13d-12e] offers Microsoft Teams, Mattermost and the webhook when the team connected them, and posts to each', function () {
     config(['queue.default' => 'database']);
     enableIntegrations(IntegrationProvider::MicrosoftTeams, IntegrationProvider::Mattermost, IntegrationProvider::Webhook);

@@ -10,7 +10,8 @@ export function RoomInviteButton() {
     const { snapshot, sessionExpired } = useRoom();
     const { t } = useTrans();
     const [open, setOpen] = useState(false);
-    const canInvite = hasShareChannel(snapshot.share);
+    const canInvite =
+        hasShareChannel(snapshot.share) || snapshot.deliveries.length > 0;
 
     if (!canInvite) {
         return null;
