@@ -1794,5 +1794,20 @@
     "Whiteboards": "Pizarras",
     "New whiteboard": "Nueva pizarra",
     "No whiteboards yet.": "Aún no hay pizarras.",
-    "Facilitated by :name": "Facilitado por :name"
+    "Facilitated by :name": "Facilitado por :name",
+    "This board was deleted.": "Esta pizarra fue eliminada.",
+    "Your access to this board has ended.": "Tu acceso a esta pizarra ha terminado.",
+    "The canvas could not be loaded.": "No se pudo cargar el lienzo.",
+    "Board menu": "Menú de la pizarra",
+    "Allow guests to join with a link": "Permitir que los invitados se unan con un enlace",
+    "Replace the guest link": "Reemplazar el enlace de invitado",
+    "Copy the guest link": "Copiar el enlace de invitado",
+    "Link copied.": "Enlace copiado.",
+    "Delete this board": "Eliminar esta pizarra",
+    "Delete this board?": "¿Eliminar esta pizarra?",
+    "Everything on it is removed for everyone.": "Todo su contenido se elimina para todos.",
+    "This element could not be saved.": "No se pudo guardar este elemento.",
+    "Only the facilitator can change a locked element.": "Solo el facilitador puede modificar un elemento bloqueado.",
+    "This image could not be added.": "No se pudo añadir esta imagen.",
+    "This board is full.": "Esta pizarra está llena."
 }

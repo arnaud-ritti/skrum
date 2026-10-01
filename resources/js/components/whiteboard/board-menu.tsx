@@ -1,0 +1,246 @@
+import { router } from '@inertiajs/react';
+import { Menu } from 'lucide-react';
+import { useState, type FormEvent } from 'react';
+import { toast } from 'sonner';
+import WhiteboardFacilitatorsController from '@/actions/App/Http/Controllers/Whiteboards/WhiteboardFacilitatorsController';
+import WhiteboardGuestTokensController from '@/actions/App/Http/Controllers/Whiteboards/WhiteboardGuestTokensController';
+import WhiteboardSettingsController from '@/actions/App/Http/Controllers/Whiteboards/WhiteboardSettingsController';
+import WhiteboardsController from '@/actions/App/Http/Controllers/Whiteboards/WhiteboardsController';
+import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogFooter,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import {
+    DropdownMenu,
+    DropdownMenuCheckboxItem,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import { useTrans } from '@/hooks/use-trans';
+import type { WhiteboardState } from '@/hooks/use-whiteboard';
+import { RetroRequestError, retroRequest } from '@/lib/retro/api';
+
+type Props = {
+    state: WhiteboardState;
+    hideMyCursor: boolean;
+    onHideMyCursorChange: (hidden: boolean) => void;
+};
+
+export function BoardMenu({
+    state,
+    hideMyCursor,
+    onHideMyCursorChange,
+}: Props) {
+    const { t } = useTrans();
+    const { board, me, links } = state.snapshot;
+    const [renaming, setRenaming] = useState(false);
+    const [confirmingDelete, setConfirmingDelete] = useState(false);
+
+    const run = async (request: Promise<unknown>) => {
+        try {
+            await request;
+            await state.refetch();
+        } catch (error) {
+            if (error instanceof RetroRequestError) {
+                toast.error(error.message);
+            }
+        }
+    };
+
+    const updateSettings = (settings: Record<string, unknown>) =>
+        run(
+            retroRequest(
+                WhiteboardSettingsController.update(board.id),
+                settings,
+            ),
+        );
+
+    const copyGuestLink = async () => {
+        if (!board.guestUrl) {
+            return;
+        }
+
+        await navigator.clipboard.writeText(board.guestUrl);
+        toast.success(t('Link copied.'));
+    };
+
+    const deleteBoard = async () => {
+        await run(retroRequest(WhiteboardsController.destroy(board.id)));
+
+        if (links.team) {
+            router.visit(links.team);
+        }
+    };
+
+    return (
+        <>
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button
+                        size="icon"
+                        variant="outline"
+                        aria-label={t('Board menu')}
+                    >
+                        <Menu className="size-4" />
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    <DropdownMenuCheckboxItem
+                        checked={hideMyCursor}
+                        onCheckedChange={onHideMyCursorChange}
+                    >
+                        {t('Hide my cursor')}
+                    </DropdownMenuCheckboxItem>
+                    {me.canTakeControl && me.userId && (
+                        <DropdownMenuItem
+                            onSelect={() =>
+                                run(
+                                    retroRequest(
+                                        WhiteboardFacilitatorsController.update(
+                                            board.id,
+                                        ),
+                                        { user_id: me.userId },
+                                    ),
+                                )
+                            }
+                        >
+                            {t('Take control')}
+                        </DropdownMenuItem>
+                    )}
+                    {me.isFacilitator && (
+                        <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                                onSelect={() => setRenaming(true)}
+                            >
+                                {t('Rename')}
+                            </DropdownMenuItem>
+                            <DropdownMenuCheckboxItem
+                                checked={board.cursorsEnabled}
+                                onCheckedChange={(checked) =>
+                                    updateSettings({ cursors_enabled: checked })
+                                }
+                            >
+                                {t('Show live cursors')}
+                            </DropdownMenuCheckboxItem>
+                            <DropdownMenuCheckboxItem
+                                checked={board.guestAccessEnabled}
+                                onCheckedChange={(checked) =>
+                                    updateSettings({
+                                        guest_access_enabled: checked,
+                                    })
+                                }
+                            >
+                                {t('Allow guests to join with a link')}
+                            </DropdownMenuCheckboxItem>
+                            {board.guestAccessEnabled && (
+                                <DropdownMenuItem
+                                    onSelect={() =>
+                                        run(
+                                            retroRequest(
+                                                WhiteboardGuestTokensController.store(
+                                                    board.id,
+                                                ),
+                                            ),
+                                        )
+                                    }
+                                >
+                                    {t('Replace the guest link')}
+                                </DropdownMenuItem>
+                            )}
+                        </>
+                    )}
+                    {!me.isGuest && board.guestAccessEnabled && (
+                        <DropdownMenuItem onSelect={copyGuestLink}>
+                            {t('Copy the guest link')}
+                        </DropdownMenuItem>
+                    )}
+                    {me.canDelete && (
+                        <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                                variant="destructive"
+                                onSelect={() => setConfirmingDelete(true)}
+                            >
+                                {t('Delete this board')}
+                            </DropdownMenuItem>
+                        </>
+                    )}
+                </DropdownMenuContent>
+            </DropdownMenu>
+
+            <Dialog open={renaming} onOpenChange={setRenaming}>
+                <DialogContent aria-describedby={undefined}>
+                    {renaming && (
+                        <RenameForm
+                            title={board.title}
+                            onSubmit={async (title) => {
+                                await updateSettings({ title });
+                                setRenaming(false);
+                            }}
+                        />
+                    )}
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={confirmingDelete} onOpenChange={setConfirmingDelete}>
+                <DialogContent aria-describedby={undefined}>
+                    <DialogTitle>{t('Delete this board?')}</DialogTitle>
+                    <p className="text-sm text-muted-foreground">
+                        {t('Everything on it is removed for everyone.')}
+                    </p>
+                    <DialogFooter>
+                        <Button
+                            variant="outline"
+                            onClick={() => setConfirmingDelete(false)}
+                        >
+                            {t('Cancel')}
+                        </Button>
+                        <Button variant="destructive" onClick={deleteBoard}>
+                            {t('Delete this board')}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        </>
+    );
+}
+
+function RenameForm({
+    title,
+    onSubmit,
+}: {
+    title: string;
+    onSubmit: (title: string) => Promise<void>;
+}) {
+    const { t } = useTrans();
+    const [value, setValue] = useState(title);
+
+    const submit = (event: FormEvent) => {
+        event.preventDefault();
+        void onSubmit(value);
+    };
+
+    return (
+        <form onSubmit={submit} className="space-y-4">
+            <DialogTitle>{t('Rename')}</DialogTitle>
+            <Input
+                required
+                maxLength={120}
+                autoFocus
+                value={value}
+                onChange={(event) => setValue(event.target.value)}
+                aria-label={t('Title')}
+            />
+            <DialogFooter>
+                <Button>{t('Save')}</Button>
+            </DialogFooter>
+        </form>
+    );
+}

@@ -1,0 +1,172 @@
+import { usePage } from '@inertiajs/react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { toast } from 'sonner';
+import { ConnectionBanner } from '@/components/retro/connection-banner';
+import { SessionExpiredBanner } from '@/components/retro/session-expired-banner';
+import { useLocalPreference } from '@/hooks/use-local-preference';
+import { useTrans } from '@/hooks/use-trans';
+import { useWhiteboard } from '@/hooks/use-whiteboard';
+import {
+    Excalidraw,
+    restoreElements,
+    type ExcalidrawImperativeAPI,
+} from '@/lib/whiteboard/excalidraw';
+import { createSceneSync, type SceneSync } from '@/lib/whiteboard/scene-sync';
+import type {
+    RejectReason,
+    SceneElement,
+    WhiteboardSnapshot,
+} from '@/lib/whiteboard/types';
+import { BoardGone } from './board-gone';
+import { BoardMenu } from './board-menu';
+import { TopBar } from './top-bar';
+
+const HideMyCursorKey = 'skrum.hideMyCursor';
+const PollMs = 5000;
+
+const ExcalidrawLocales: Record<string, string> = {
+    en: 'en',
+    fr: 'fr-FR',
+    de: 'de-DE',
+    es: 'es-ES',
+};
+
+function subscribeToTheme(onChange: () => void) {
+    const observer = new MutationObserver(onChange);
+
+    observer.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['class'],
+    });
+
+    return () => observer.disconnect();
+}
+
+const isDark = () => document.documentElement.classList.contains('dark');
+
+export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
+    const { t } = useTrans();
+    const { locale } = usePage().props;
+    const state = useWhiteboard(snapshot);
+    const [api, setApi] = useState<ExcalidrawImperativeAPI | null>(null);
+    const [offline, setOffline] = useState(false);
+    const [hideMyCursor, setHideMyCursor] = useLocalPreference(
+        HideMyCursorKey,
+        false,
+    );
+    const sync = useRef<SceneSync | null>(null);
+    const initial = useRef(snapshot);
+    const dark = useSyncExternalStore(subscribeToTheme, isDark, () => false);
+    const boardId = snapshot.board.id;
+    const { fail, listeners } = state;
+
+    const rejectionMessages = useRef<Record<RejectReason, string>>({
+        invalid: '',
+        stale: '',
+        locked: '',
+        file: '',
+        full: '',
+    });
+
+    rejectionMessages.current = {
+        invalid: t('This element could not be saved.'),
+        stale: '',
+        locked: t('Only the facilitator can change a locked element.'),
+        file: t('This image could not be added.'),
+        full: t('This board is full.'),
+    };
+
+    useEffect(() => {
+        if (!api) {
+            return;
+        }
+
+        const created = createSceneSync({
+            boardId,
+            api,
+            initial: initial.current,
+            onFatal: fail,
+            onRejected: (reason) =>
+                toast.error(rejectionMessages.current[reason], { id: reason }),
+            onOffline: setOffline,
+        });
+
+        sync.current = created;
+        listeners.current = {
+            onElementsChanged: (payload) => created.handleRemote(payload),
+            onResync: () => void created.resync(),
+            onLeaving: () => {},
+        };
+
+        return () => {
+            created.dispose();
+            sync.current = null;
+            listeners.current = null;
+        };
+    }, [api, boardId, fail, listeners]);
+
+    useEffect(() => {
+        if (state.connected || state.status !== 'active') {
+            return;
+        }
+
+        const poll = setInterval(() => void sync.current?.resync(), PollMs);
+
+        return () => clearInterval(poll);
+    }, [state.connected, state.status]);
+
+    if (state.status !== 'active') {
+        return (
+            <BoardGone
+                reason={state.status}
+                teamUrl={state.snapshot.links.team}
+            />
+        );
+    }
+
+    return (
+        <div className="flex h-dvh flex-col">
+            {state.sessionExpired && <SessionExpiredBanner />}
+            <div
+                className="flex min-h-0 flex-1 flex-col"
+                inert={state.sessionExpired}
+            >
+                <TopBar state={state}>
+                    <BoardMenu
+                        state={state}
+                        hideMyCursor={hideMyCursor}
+                        onHideMyCursorChange={setHideMyCursor}
+                    />
+                </TopBar>
+                <ConnectionBanner
+                    reconnecting={state.reconnecting || offline}
+                />
+                <div className="min-h-0 flex-1">
+                    <Excalidraw
+                        excalidrawAPI={setApi}
+                        initialData={{
+                            elements: restoreElements(
+                                snapshot.elements as never,
+                                null,
+                            ),
+                        }}
+                        onChange={(elements) =>
+                            sync.current?.handleChange(
+                                elements as unknown as SceneElement[],
+                            )
+                        }
+                        langCode={ExcalidrawLocales[locale as string] ?? 'en'}
+                        theme={dark ? 'dark' : 'light'}
+                        UIOptions={{
+                            canvasActions: {
+                                loadScene: false,
+                                saveToActiveFile: false,
+                                toggleTheme: false,
+                            },
+                        }}
+                    />
+                </div>
+            </div>
+        </div>
+    );
+}

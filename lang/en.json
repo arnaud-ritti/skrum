@@ -1550,5 +1550,20 @@
     "Whiteboards": "Whiteboards",
     "New whiteboard": "New whiteboard",
     "No whiteboards yet.": "No whiteboards yet.",
-    "Facilitated by :name": "Facilitated by :name"
+    "Facilitated by :name": "Facilitated by :name",
+    "This board was deleted.": "This board was deleted.",
+    "Your access to this board has ended.": "Your access to this board has ended.",
+    "The canvas could not be loaded.": "The canvas could not be loaded.",
+    "Board menu": "Board menu",
+    "Allow guests to join with a link": "Allow guests to join with a link",
+    "Replace the guest link": "Replace the guest link",
+    "Copy the guest link": "Copy the guest link",
+    "Link copied.": "Link copied.",
+    "Delete this board": "Delete this board",
+    "Delete this board?": "Delete this board?",
+    "Everything on it is removed for everyone.": "Everything on it is removed for everyone.",
+    "This element could not be saved.": "This element could not be saved.",
+    "Only the facilitator can change a locked element.": "Only the facilitator can change a locked element.",
+    "This image could not be added.": "This image could not be added.",
+    "This board is full.": "This board is full."
 }

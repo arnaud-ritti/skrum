@@ -141,3 +141,8 @@
         @apply bg-background text-foreground;
     }
 }
+
+/* Excalidraw 0.18.1 has no UIOptions key for the library button. */
+.excalidraw .default-sidebar-trigger {
+    display: none;
+}
