@@ -129,7 +129,9 @@ Where a walkthrough's wording and today's interface differ, the test follows the
 
 ## Defects found
 
-None recorded yet. Add one line per defect: identifier, what was wrong, the commit that fixed it.
+Add one line per defect: identifier, what was wrong, the commit that fixed it.
+
+- `[P06-08a]` (polish pass PB1): the drag preview of a retro card was always 256 px wide (the `w-64` fallback) instead of as wide as the card (262 px in the default layout). `board.tsx` read `event.active.rect.current.initial` in `onDragStart`, which dnd-kit 6.3.1 only fills in a later layout effect, so the width was always undefined. Fixed in the commit `fix(retro): give the drag preview the width of the dragged card` by measuring the card element when the drag starts.
 
 ## Verification of plan 16a
 

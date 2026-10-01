@@ -286,13 +286,20 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
                                         accessibility={dragAccessibility}
                                         collisionDetection={closestCenter}
                                         onDragStart={(event) => {
-                                            setActiveCardId(
+                                            const cardId =
                                                 parseDndId(event.active.id)
-                                                    ?.id ?? null,
-                                            );
+                                                    ?.id ?? null;
+                                            const cardElement =
+                                                cardId === null
+                                                    ? null
+                                                    : document.getElementById(
+                                                          `card-${cardId}`,
+                                                      );
+
+                                            setActiveCardId(cardId);
                                             setActiveCardWidth(
-                                                event.active.rect.current
-                                                    .initial?.width,
+                                                cardElement?.getBoundingClientRect()
+                                                    .width,
                                             );
                                         }}
                                         onDragCancel={() =>
