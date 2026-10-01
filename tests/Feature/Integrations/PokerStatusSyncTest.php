@@ -4,10 +4,12 @@ use App\Enums\ExternalStatusCategory;
 use App\Enums\IntegrationInboundMode;
 use App\Enums\IntegrationProvider;
 use App\Enums\PokerDeck;
+use App\Events\Poker\PokerTaskSaved;
 use App\Jobs\SyncTaskEstimate;
 use App\Mcp\Presenters\McpPokerGame;
 use App\Models\PokerTask;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 
@@ -98,6 +100,7 @@ it('does not flag equal, pending, older or unestimated values', function (array 
 ]);
 
 it('keeps the skrum estimate by writing it again', function () {
+    Event::fake([PokerTaskSaved::class]);
     $table = trackerTable();
     $task = conflictingTask($table);
 
@@ -109,9 +112,11 @@ it('keeps the skrum estimate by writing it again', function () {
 
     expect($task->fresh()->needs_sync)->toBeTrue();
     Queue::assertPushed(SyncTaskEstimate::class, fn (SyncTaskEstimate $job) => $job->taskId === $task->id);
+    Event::assertDispatched(PokerTaskSaved::class, fn (PokerTaskSaved $event) => $event->task['id'] === $task->id && $event->task['estimate'] === '5');
 });
 
 it('uses the source estimate without a new round', function () {
+    Event::fake([PokerTaskSaved::class]);
     $table = trackerTable();
     $task = conflictingTask($table);
 
@@ -125,6 +130,70 @@ it('uses the source estimate without a new round', function () {
         ->estimate->toBe('8')
         ->needs_sync->toBeFalse();
     Queue::assertNotPushed(SyncTaskEstimate::class);
+    Event::assertDispatched(PokerTaskSaved::class, fn (PokerTaskSaved $event) => $event->task['id'] === $task->id && $event->task['estimate'] === '8');
+});
+
+it('clears a failed write-back when using the source estimate', function () {
+    $table = trackerTable();
+    $task = conflictingTask($table, attributes: ['needs_sync' => true, 'sync_error' => 'Boom']);
+
+    $this->actingAs($table['facilitator'])
+        ->postJson(conflictRoute($table, $task), ['resolution' => 'useSource'])
+        ->assertOk()
+        ->assertJsonPath('external.syncState', 'synced')
+        ->assertJsonPath('external.syncError', null)
+        ->assertJsonPath('external.estimateConflict', null);
+
+    expect($task->fresh())
+        ->needs_sync->toBeFalse()
+        ->sync_error->toBeNull()
+        ->synced_at->toEqual(now());
+    Queue::assertNotPushed(SyncTaskEstimate::class);
+});
+
+it('does not flag an accepted source estimate again after a later failed write-back', function () {
+    $table = trackerTable();
+    $task = conflictingTask($table);
+
+    $this->actingAs($table['facilitator'])
+        ->postJson(conflictRoute($table, $task), ['resolution' => 'useSource'])
+        ->assertOk();
+
+    $this->travel(5)->minutes();
+    $task->fresh()->forceFill(['estimate' => '13', 'estimate_numeric' => 13, 'needs_sync' => true, 'sync_error' => 'Boom'])->save();
+
+    $this->getJson(route('poker.snapshot.show', $table['game']))
+        ->assertOk()
+        ->assertJsonPath('tasks.0.external.syncState', 'failed')
+        ->assertJsonPath('tasks.0.external.estimateConflict', null);
+});
+
+it('answers 404 for a task of another game', function () {
+    $table = trackerTable();
+    $other = trackerTable();
+    $task = conflictingTask($other);
+
+    $this->actingAs($table['facilitator'])
+        ->postJson(route('poker.tasks.estimate-conflict.store', [$table['game'], $task]), ['resolution' => 'useSource'])
+        ->assertNotFound();
+
+    expect($task->fresh()->estimate)->toBe('5');
+});
+
+it('neither flags nor resolves conflicts in an ended game', function () {
+    $table = trackerTable();
+    $task = conflictingTask($table);
+    $table['game']->forceFill(['ended_at' => now(), 'current_task_id' => null])->save();
+
+    $this->actingAs($table['facilitator'])->getJson(route('poker.snapshot.show', $table['game']))
+        ->assertOk()
+        ->assertJsonPath('tasks.0.external.estimateConflict', null);
+
+    $this->postJson(conflictRoute($table, $task), ['resolution' => 'useSource'])
+        ->assertForbidden()
+        ->assertJsonPath('message', 'This game has ended.');
+
+    expect($task->fresh()->estimate)->toBe('5');
 });
 
 it('refuses a source estimate that is not in the deck', function () {

@@ -204,7 +204,8 @@ class PokerTaskSync
     /**
      * Spec 8 §5.8: the source estimate changed after the last write-back
      * (or after the import) and differs from skrum's. Nothing is flagged
-     * while a write-back is on its way or cannot happen.
+     * while a write-back is on its way or cannot happen, nor in an ended
+     * game, where the facilitator can no longer act on it.
      *
      * @return array{sourceEstimate: string, matchingCard: ?string}|null
      */
@@ -213,6 +214,10 @@ class PokerTaskSync
         $provider = IntegrationProvider::tryFrom((string) $task->external_source);
 
         if ($provider === null || $task->estimate === null || $task->external_estimate === null) {
+            return null;
+        }
+
+        if ($this->game->isEnded()) {
             return null;
         }
 

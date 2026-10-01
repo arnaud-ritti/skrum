@@ -37,6 +37,6 @@ class PokerEstimateConflictsController extends Controller
 
         $resolved->loadCount('rounds');
 
-        return response()->json($presentPokerTask->handle($resolved, PokerTaskSync::for($game->fresh() ?? $game)));
+        return response()->json($presentPokerTask->handle($resolved, PokerTaskSync::for($game)));
     }
 }

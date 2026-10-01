@@ -32,13 +32,14 @@ class SetPokerEstimate
      * "Use :source estimate" (spec 8 §5.8): the same deck check and
      * broadcasts as the facilitator's pick, without a revealed round — the
      * task already has an estimate — and no write-back: the source already
-     * holds this value (spec 8 §5.9).
+     * holds this value (spec 8 §5.9), so the task counts as synced now,
+     * which also keeps the accepted change from being flagged again.
      */
     public function fromSource(PokerGame $locked, PokerTask $task, string $card): PokerTask
     {
-        if (! in_array($card, $locked->cards, true) || PokerDeck::isSpecial($card)) {
-            throw ValidationException::withMessages(['value' => __('Choose a card from the deck.')]);
-        }
+        $this->ensureInDeck($locked, $card);
+
+        $task->forceFill(['needs_sync' => false, 'sync_error' => null, 'synced_at' => now()])->save();
 
         return $this->apply($locked, $task, $card, writeBack: false);
     }
@@ -78,11 +79,16 @@ class SetPokerEstimate
         return $task;
     }
 
-    private function ensureEstimable(PokerGame $locked, PokerTask $task, string $value): void
+    private function ensureInDeck(PokerGame $locked, string $value): void
     {
         if (! in_array($value, $locked->cards, true) || PokerDeck::isSpecial($value)) {
             throw ValidationException::withMessages(['value' => __('Choose a card from the deck.')]);
         }
+    }
+
+    private function ensureEstimable(PokerGame $locked, PokerTask $task, string $value): void
+    {
+        $this->ensureInDeck($locked, $value);
 
         $latestRound = $task->latestRound()->with('votes')->first();
 

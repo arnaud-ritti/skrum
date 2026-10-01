@@ -3,9 +3,7 @@
 namespace App\Actions\Integrations;
 
 use App\Actions\Poker\PokerGuard;
-use App\Actions\Poker\PresentPokerTask;
 use App\Actions\Poker\SetPokerEstimate;
-use App\Events\Poker\PokerTaskSaved;
 use App\Models\PokerGame;
 use App\Models\PokerPlayer;
 use App\Models\PokerTask;
@@ -24,7 +22,6 @@ class ResolvePokerEstimateConflict
     public function __construct(
         private RequestEstimateSync $requestEstimateSync,
         private SetPokerEstimate $setPokerEstimate,
-        private PresentPokerTask $presentPokerTask,
     ) {}
 
     public function handle(PokerGame $locked, PokerTask $task, PokerPlayer $player, string $resolution): PokerTask
@@ -38,10 +35,7 @@ class ResolvePokerEstimateConflict
         }
 
         if ($resolution === self::KeepSkrum) {
-            $this->requestEstimateSync->retry($locked, $task, $player);
-
-            $task->loadCount('rounds');
-            (new PokerTaskSaved($locked->id, $this->presentPokerTask->handle($task)))->sendToOthers();
+            $this->requestEstimateSync->retryAndBroadcast($locked, $task, $player);
 
             return $task;
         }

@@ -5,9 +5,7 @@ namespace App\Mcp\Tools\Poker;
 use App\Actions\Integrations\PokerTaskSync;
 use App\Actions\Integrations\RequestEstimateSync;
 use App\Actions\Integrations\ResolvePokerTracker;
-use App\Actions\Poker\PresentPokerTask;
 use App\Enums\McpScope;
-use App\Events\Poker\PokerTaskSaved;
 use App\Mcp\McpContext;
 use App\Mcp\McpFeature;
 use App\Mcp\Tools\SkrumTool;
@@ -35,7 +33,6 @@ class SyncTask extends SkrumTool
         private McpContext $context,
         private ResolvePokerTracker $resolvePokerTracker,
         private RequestEstimateSync $requestEstimateSync,
-        private PresentPokerTask $presentPokerTask,
     ) {}
 
     public function schema(JsonSchema $schema): array
@@ -75,11 +72,7 @@ class SyncTask extends SkrumTool
             $locked = PokerGame::query()->whereKey($game->id)->lockForUpdate()->firstOrFail();
             $lockedTask = PokerTask::query()->where('poker_game_id', $locked->id)->whereKey($task->id)->firstOrFail();
 
-            $this->requestEstimateSync->retry($locked, $lockedTask, $player);
-
-            $lockedTask->loadCount('rounds');
-
-            (new PokerTaskSaved($locked->id, $this->presentPokerTask->handle($lockedTask)))->sendToOthers();
+            $this->requestEstimateSync->retryAndBroadcast($locked, $lockedTask, $player);
         });
 
         return Response::structured(['syncState' => PokerTaskSync::Pending]);

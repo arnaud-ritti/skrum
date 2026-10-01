@@ -3,6 +3,8 @@
 namespace App\Actions\Integrations;
 
 use App\Actions\Poker\PokerGuard;
+use App\Actions\Poker\PresentPokerTask;
+use App\Events\Poker\PokerTaskSaved;
 use App\Jobs\SyncTaskEstimate;
 use App\Models\PokerGame;
 use App\Models\PokerPlayer;
@@ -11,6 +13,8 @@ use Illuminate\Validation\ValidationException;
 
 class RequestEstimateSync
 {
+    public function __construct(private PresentPokerTask $presentPokerTask) {}
+
     /**
      * Spec 6 §6.5: every saved or cleared estimate of an imported task is
      * written back when the connection allows it; otherwise the task shows
@@ -52,6 +56,19 @@ class RequestEstimateSync
         }
 
         $this->queue($task);
+    }
+
+    /**
+     * The retry as the facilitator triggers it, announced to the other
+     * players so their task shows the pending write-back.
+     */
+    public function retryAndBroadcast(PokerGame $game, PokerTask $task, PokerPlayer $player): void
+    {
+        $this->retry($game, $task, $player);
+
+        $task->loadCount('rounds');
+
+        (new PokerTaskSaved($game->id, $this->presentPokerTask->handle($task)))->sendToOthers();
     }
 
     private function queue(PokerTask $task): void
