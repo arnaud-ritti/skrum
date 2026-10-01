@@ -1,4 +1,5 @@
 import WhiteboardFilesController from '@/actions/App/Http/Controllers/Whiteboards/WhiteboardFilesController';
+import { RetroRequestError } from '@/lib/retro/api';
 
 function xsrfToken(): string {
     const match = document.cookie.match(/(?:^|; )XSRF-TOKEN=([^;]+)/);
@@ -18,7 +19,16 @@ function toDataUrl(blob: Blob): Promise<string> {
 
 export class FileRefusedError extends Error {}
 
-/** Resolves when the server holds the file; throws FileRefusedError on a 4xx. */
+/** The server will never take this image: too large, not an image, over quota. */
+const RefusedStatuses = [413, 415, 422];
+/** The session or the access to the board ended; scene-sync treats these as fatal. */
+const AccessStatuses = [401, 403, 404, 419];
+
+/**
+ * Resolves when the server holds the file. Throws FileRefusedError when the
+ * image itself is refused, a RetroRequestError when access ended, and a plain
+ * error on anything worth retrying (429, 5xx, network).
+ */
 export async function uploadBoardFile(
     boardId: string,
     fileId: string,
@@ -41,8 +51,12 @@ export async function uploadBoardFile(
         return;
     }
 
-    if (response.status >= 400 && response.status < 500) {
+    if (RefusedStatuses.includes(response.status)) {
         throw new FileRefusedError(String(response.status));
+    }
+
+    if (AccessStatuses.includes(response.status)) {
+        throw new RetroRequestError(response.status, 'upload refused');
     }
 
     throw new Error(`upload failed: ${response.status}`);

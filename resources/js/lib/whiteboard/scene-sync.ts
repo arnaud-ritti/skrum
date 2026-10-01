@@ -4,10 +4,10 @@ import { RetroRequestError, retroRequest } from '@/lib/retro/api';
 import {
     CaptureUpdateAction,
     reconcileElements,
-    restoreElements,
     type ExcalidrawImperativeAPI,
 } from './excalidraw';
 import { FileRefusedError, downloadBoardFile, uploadBoardFile } from './files';
+import { inIndexOrder, restoreScene } from './restore';
 import type {
     ElementsChangedPayload,
     ElementsDelta,
@@ -51,6 +51,8 @@ export function createSceneSync(deps: SceneSyncDeps): SceneSync {
     const pending = new Map<string, SceneElement>();
     const files = new Set<string>();
     let seq = deps.initial.seq;
+    /** The highest seq any event or write response has announced. */
+    let wantedSeq = seq;
     let timer: ReturnType<typeof setTimeout> | null = null;
     let flushing = false;
     let disposed = false;
@@ -110,36 +112,63 @@ export function createSceneSync(deps: SceneSyncDeps): SceneSync {
             return;
         }
 
-        const remote = restoreElements(elements as never, null);
+        const remote = restoreScene(elements);
+        const merge = () =>
+            setScene(
+                reconcileElements(
+                    scene() as never,
+                    remote as never,
+                    api.getAppState(),
+                ) as unknown as SceneElement[],
+            );
 
-        setScene(
-            reconcileElements(
-                scene() as never,
-                remote as never,
-                api.getAppState(),
-            ) as unknown as SceneElement[],
-        );
+        try {
+            merge();
+        } catch {
+            // Excalidraw's development build checks the indices at most once
+            // a minute and throws on a flaw it otherwise repairs; the second
+            // attempt gets the repair.
+            try {
+                merge();
+            } catch (error) {
+                console.error(
+                    'whiteboard: a remote change was left out',
+                    error,
+                );
+            }
+        }
+
         remember(elements);
     };
 
     /** Replace local copies whatever their version: the server refused ours. */
     const force = (elements: SceneElement[]) => {
-        const byId = new Map(elements.map((element) => [element.id, element]));
-        const merged = scene().map((element) => {
-            const forced = byId.get(element.id);
-
-            byId.delete(element.id);
-
-            return forced ?? element;
-        });
+        const forced = new Map(
+            restoreScene(elements).map((element) => [element.id, element]),
+        );
+        const local = new Map(scene().map((element) => [element.id, element]));
 
         setScene(
-            restoreElements(
-                [...merged, ...byId.values()] as never,
-                null,
-            ) as unknown as SceneElement[],
+            inIndexOrder([
+                ...[...local.values()].map(
+                    (element) => forced.get(element.id) ?? element,
+                ),
+                ...[...forced.values()].filter(
+                    (element) => !local.has(element.id),
+                ),
+            ]),
         );
         remember(elements);
+
+        for (const element of elements) {
+            const kept = local.get(element.id);
+
+            // A server copy the canvas cannot show leaves ours in place;
+            // sending ours again would only be refused again.
+            if (kept && !forced.has(element.id)) {
+                known.set(element.id, stamp(kept));
+            }
+        }
     };
 
     const dropLocally = (id: string) => {
@@ -244,6 +273,7 @@ export function createSceneSync(deps: SceneSyncDeps): SceneSync {
 
         flushing = true;
 
+        let failed = false;
         const batch = [...pending.values()].slice(0, MaxBatch);
 
         for (const element of batch) {
@@ -264,6 +294,7 @@ export function createSceneSync(deps: SceneSyncDeps): SceneSync {
                 }
 
                 settle(response);
+                wantedSeq = Math.max(wantedSeq, response.seq);
 
                 if (response.fromSeq === seq) {
                     seq = response.seq;
@@ -274,6 +305,8 @@ export function createSceneSync(deps: SceneSyncDeps): SceneSync {
 
             deps.onOffline(false);
         } catch (error) {
+            failed = true;
+
             if (isFatal(error)) {
                 deps.onFatal(error);
 
@@ -286,7 +319,7 @@ export function createSceneSync(deps: SceneSyncDeps): SceneSync {
             flushing = false;
 
             if (pending.size > 0) {
-                schedule(RetryDelayMs);
+                schedule(failed ? RetryDelayMs : FlushDelayMs);
             }
         }
     };
@@ -312,17 +345,33 @@ export function createSceneSync(deps: SceneSyncDeps): SceneSync {
         seq = snapshot.seq;
     };
 
+    const fetchDelta = async () => {
+        const delta = await retroRequest<ElementsDelta>(
+            WhiteboardElementsController.index(boardId, {
+                query: { since: seq },
+            }),
+        );
+
+        applyRemote(delta.elements);
+        seq = Math.max(seq, delta.seq);
+    };
+
+    /**
+     * A change announced while a fetch was in flight may have been committed
+     * after the server read the delta, so fetch again until the announced seq
+     * is reached. A fetch that brings nothing new ends the loop; the next
+     * event or poll takes over.
+     */
     const resync = (): Promise<void> => {
         resyncing ??= (async () => {
             try {
-                const delta = await retroRequest<ElementsDelta>(
-                    WhiteboardElementsController.index(boardId, {
-                        query: { since: seq },
-                    }),
-                );
+                let before: number;
 
-                applyRemote(delta.elements);
-                seq = Math.max(seq, delta.seq);
+                do {
+                    before = seq;
+                    await fetchDelta();
+                } while (!disposed && seq < wantedSeq && seq > before);
+
                 deps.onOffline(false);
             } catch (error) {
                 if (isFatal(error)) {
@@ -366,6 +415,8 @@ export function createSceneSync(deps: SceneSyncDeps): SceneSync {
             }
         },
         handleRemote(payload) {
+            wantedSeq = Math.max(wantedSeq, payload.seq);
+
             if (payload.seq <= seq) {
                 return;
             }

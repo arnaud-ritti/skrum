@@ -9,9 +9,9 @@ import { useWhiteboard } from '@/hooks/use-whiteboard';
 import { useWhiteboardCursors } from '@/hooks/use-whiteboard-cursors';
 import {
     Excalidraw,
-    restoreElements,
     type ExcalidrawImperativeAPI,
 } from '@/lib/whiteboard/excalidraw';
+import { restoreScene } from '@/lib/whiteboard/restore';
 import { createSceneSync, type SceneSync } from '@/lib/whiteboard/scene-sync';
 import type {
     RejectReason,
@@ -58,6 +58,9 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
     );
     const sync = useRef<SceneSync | null>(null);
     const initial = useRef(snapshot);
+    const [initialElements] = useState(() =>
+        restoreScene(initial.current.elements),
+    );
     const cursors = useWhiteboardCursors({
         api,
         presence: state.presence,
@@ -110,6 +113,8 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
             onResync: () => void created.resync(),
             onLeaving: (member) => forgetCursor.current(member.id),
         };
+        // Events that came in before the canvas was ready had no listener.
+        void created.resync();
 
         return () => {
             created.dispose();
@@ -158,12 +163,7 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
                 <div className="min-h-0 flex-1">
                     <Excalidraw
                         excalidrawAPI={setApi}
-                        initialData={{
-                            elements: restoreElements(
-                                snapshot.elements as never,
-                                null,
-                            ),
-                        }}
+                        initialData={{ elements: initialElements as never }}
                         onChange={(elements) =>
                             sync.current?.handleChange(
                                 elements as unknown as SceneElement[],

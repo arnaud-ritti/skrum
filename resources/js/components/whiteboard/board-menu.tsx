@@ -42,15 +42,31 @@ export function BoardMenu({
     const [renaming, setRenaming] = useState(false);
     const [confirmingDelete, setConfirmingDelete] = useState(false);
 
-    const run = async (request: Promise<unknown>) => {
+    /** Resolves to whether the request went through; says why when it did not. */
+    const attempt = async (request: Promise<unknown>): Promise<boolean> => {
         try {
             await request;
-            await state.refetch();
+
+            return true;
         } catch (error) {
-            if (error instanceof RetroRequestError) {
-                toast.error(error.message);
-            }
+            toast.error(
+                error instanceof RetroRequestError && error.status > 0
+                    ? error.message
+                    : t('Something went wrong. Please try again.'),
+            );
+
+            return false;
         }
+    };
+
+    const run = async (request: Promise<unknown>): Promise<boolean> => {
+        if (!(await attempt(request))) {
+            return false;
+        }
+
+        await state.refetch();
+
+        return true;
     };
 
     const updateSettings = (settings: Record<string, unknown>) =>
@@ -71,7 +87,13 @@ export function BoardMenu({
     };
 
     const deleteBoard = async () => {
-        await run(retroRequest(WhiteboardsController.destroy(board.id)));
+        const deleted = await attempt(
+            retroRequest(WhiteboardsController.destroy(board.id)),
+        );
+
+        if (!deleted) {
+            return;
+        }
 
         if (links.team) {
             router.visit(links.team);
@@ -181,8 +203,9 @@ export function BoardMenu({
                         <RenameForm
                             title={board.title}
                             onSubmit={async (title) => {
-                                await updateSettings({ title });
-                                setRenaming(false);
+                                if (await updateSettings({ title })) {
+                                    setRenaming(false);
+                                }
                             }}
                         />
                     )}

@@ -5,6 +5,7 @@ import {
     lazy,
     useState,
     type ComponentType,
+    type ErrorInfo,
     type ReactNode,
 } from 'react';
 import { Button } from '@/components/ui/button';
@@ -26,6 +27,14 @@ class ChunkBoundary extends Component<
 
     static getDerivedStateFromError() {
         return { failed: true };
+    }
+
+    componentDidCatch(error: Error, info: ErrorInfo) {
+        console.error(
+            'whiteboard: the canvas failed',
+            error,
+            info.componentStack,
+        );
     }
 
     render() {
