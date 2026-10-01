@@ -13,6 +13,7 @@ class WebhookTarget
         public string $host,
         public int $port,
         public string $address,
+        public ?string $urlHost = null,
     ) {}
 
     public function pinnedResolve(): ?string
@@ -23,6 +24,8 @@ class WebhookTarget
 
         $address = str_contains($this->address, ':') ? "[{$this->address}]" : $this->address;
 
-        return "{$this->host}:{$this->port}:{$address}";
+        $pinnedHost = $this->urlHost ?? $this->host;
+
+        return "{$pinnedHost}:{$this->port}:{$address}";
     }
 }

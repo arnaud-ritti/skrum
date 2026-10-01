@@ -39,7 +39,7 @@ class SafeWebhookUrl
             throw new UnsafeWebhookUrl;
         }
 
-        [$host, $port] = $hostAndPort;
+        [$host, $port, $urlHost] = $hostAndPort;
         $addresses = filter_var($host, FILTER_VALIDATE_IP) !== false ? [$host] : $this->resolver->addresses($host);
 
         if ($addresses === []) {
@@ -54,11 +54,34 @@ class SafeWebhookUrl
             }
         }
 
-        return new WebhookTarget($url, $host, $port, $addresses[0]);
+        return new WebhookTarget($url, $host, $port, self::preferredAddress($addresses), $urlHost);
     }
 
     /**
-     * @return array{0: string, 1: int}|null
+     * @param  array<int, string>  $addresses
+     */
+    private static function preferredAddress(array $addresses): string
+    {
+        foreach ($addresses as $address) {
+            if (filter_var($address, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false) {
+                return $address;
+            }
+        }
+
+        return $addresses[0];
+    }
+
+    /**
+     * Hosts such as `2130706433`, `0x7f.1` or `127.1` are IPv4 addresses to
+     * curl but not to PHP, and curl ignores the pin for them.
+     */
+    private static function endsInNumber(string $host): bool
+    {
+        return preg_match('/(^|\.)(0x[0-9a-f]*|[0-9]+)$/', $host) === 1;
+    }
+
+    /**
+     * @return array{0: string, 1: int, 2: string}|null
      */
     private static function hostAndPort(string $url): ?array
     {
@@ -82,9 +105,14 @@ class SafeWebhookUrl
             return null;
         }
 
-        $host = strtolower(trim((string) ($parts['host'] ?? ''), '[]'));
+        $urlHost = strtolower(trim((string) ($parts['host'] ?? ''), '[]'));
+        $host = rtrim($urlHost, '.');
 
-        if ($host === '') {
+        if ($host === '' || str_contains($host, '..')) {
+            return null;
+        }
+
+        if (filter_var($host, FILTER_VALIDATE_IP) === false && self::endsInNumber($host)) {
             return null;
         }
 
@@ -94,7 +122,7 @@ class SafeWebhookUrl
             return null;
         }
 
-        return [$host, $port];
+        return [$host, $port, $urlHost];
     }
 
     /**

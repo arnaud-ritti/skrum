@@ -63,7 +63,53 @@ it('refuses private, reserved and invalid endpoints', function (string $url, arr
     'unique local v6' => ['https://hooks.example.com/skrum', ['fc00::1']],
     'link-local v6' => ['https://hooks.example.com/skrum', ['fe80::1']],
     'one private record among public ones' => ['https://hooks.example.com/skrum', ['93.184.216.34', '10.0.0.1']],
+    'bracketed loopback v6' => ['https://[::1]/skrum', ['93.184.216.34']],
+    'bracketed mapped loopback' => ['https://[::ffff:127.0.0.1]/skrum', ['93.184.216.34']],
+    'empty user info' => ['https://@hooks.example.com/skrum', ['93.184.216.34']],
+    'port 0' => ['https://hooks.example.com:0/skrum', ['93.184.216.34']],
+    'port 65536' => ['https://hooks.example.com:65536/skrum', ['93.184.216.34']],
+    'too long' => ['https://hooks.example.com/'.str_repeat('a', 2048), ['93.184.216.34']],
+    'zone id' => ['https://[fe80::1%25eth0]/skrum', ['93.184.216.34']],
+    'decimal ipv4' => ['https://2130706433/skrum', ['93.184.216.34']],
+    'hex ipv4' => ['https://0x7f000001/skrum', ['93.184.216.34']],
+    'dotted hex ipv4' => ['https://0x7f.1/skrum', ['93.184.216.34']],
+    'octal ipv4' => ['https://017700000001/skrum', ['93.184.216.34']],
+    'short ipv4' => ['https://127.1/skrum', ['93.184.216.34']],
+    'numeric last label' => ['https://hooks.example.123/skrum', ['93.184.216.34']],
+    'numeric host with dot' => ['https://2130706433./skrum', ['93.184.216.34']],
+    'dotted literal loopback with dot' => ['https://127.0.0.1./skrum', ['93.184.216.34']],
 ]);
+
+it('accepts boundary ports, an upper-case scheme and a numeric-looking label that is not last', function (string $url, int $port) {
+    outgoingWebhookResolves();
+
+    expect(app(SafeWebhookUrl::class)->resolve($url)->port)->toBe($port);
+})->with([
+    'port 65535' => ['https://hooks.example.com:65535/skrum', 65535],
+    'port 1024' => ['https://hooks.example.com:1024/skrum', 1024],
+    'upper-case scheme' => ['HTTPS://hooks.example.com/skrum', 443],
+    'numeric label first' => ['https://123.example.com/skrum', 443],
+    'hex-like but not hex prefix' => ['https://hooks.example.0xyz/skrum', 443],
+]);
+
+it('strips a trailing dot from the host but pins the host as curl sees it', function () {
+    outgoingWebhookResolves();
+
+    $target = app(SafeWebhookUrl::class)->resolve('https://hooks.example.com./skrum');
+
+    expect($target->host)->toBe('hooks.example.com')
+        ->and($target->pinnedResolve())->toBe('hooks.example.com.:443:93.184.216.34');
+
+    $plain = app(SafeWebhookUrl::class)->resolve('https://hooks.example.com/skrum');
+
+    expect($plain->pinnedResolve())->toBe('hooks.example.com:443:93.184.216.34');
+});
+
+it('pins an IPv4 address when the host has both families', function () {
+    outgoingWebhookResolves(['2606:2800:220:1:248:1893:25c8:1946', '93.184.216.34']);
+
+    expect(app(SafeWebhookUrl::class)->resolve('https://hooks.example.com/skrum')->address)->toBe('93.184.216.34');
+});
 
 it('refuses IP literals without resolving them', function () {
     $this->mock(HostResolver::class, fn (MockInterface $mock) => $mock->shouldNotReceive('addresses'));
