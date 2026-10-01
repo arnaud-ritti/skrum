@@ -1522,5 +1522,22 @@
     "This delivery's content is no longer kept.": "This delivery's content is no longer kept.",
     "This delivery is still being sent.": "This delivery is still being sent.",
     "Turn the webhook back on before redelivering.": "Turn the webhook back on before redelivering.",
-    "This delivery is already being redelivered.": "This delivery is already being redelivered."
+    "This delivery is already being redelivered.": "This delivery is already being redelivered.",
+    "View": "View",
+    "Redeliver": "Redeliver",
+    "Redelivery": "Redelivery",
+    "Request": "Request",
+    "Headers": "Headers",
+    "Body": "Body",
+    "Body copied.": "Body copied.",
+    "No response body.": "No response body.",
+    "Not sent yet.": "Not sent yet.",
+    "Content no longer kept": "Content no longer kept",
+    "Content not kept": "Content not kept",
+    "Send this delivery again to :host?": "Send this delivery again to :host?",
+    "Delivery queued again.": "Delivery queued again.",
+    "Delivery details": "Delivery details",
+    "Could not load this delivery.": "Could not load this delivery.",
+    "Status: :status": "Status: :status",
+    "Actions": "Actions"
 }

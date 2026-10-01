@@ -1768,5 +1768,20 @@
     "This delivery's content is no longer kept.": "El contenido de este envío ya no se conserva.",
     "This delivery is still being sent.": "Este envío todavía se está enviando.",
     "Turn the webhook back on before redelivering.": "Vuelve a activar el webhook antes de reenviar.",
-    "This delivery is already being redelivered.": "Este envío ya se está reenviando."
+    "This delivery is already being redelivered.": "Este envío ya se está reenviando.",
+    "Redeliver": "Reenviar",
+    "Redelivery": "Reenvío",
+    "Request": "Solicitud",
+    "Headers": "Encabezados",
+    "Body": "Cuerpo",
+    "Body copied.": "Cuerpo copiado.",
+    "No response body.": "Sin cuerpo de respuesta.",
+    "Not sent yet.": "Aún no enviado.",
+    "Content no longer kept": "Contenido ya no conservado",
+    "Content not kept": "Contenido no conservado",
+    "Send this delivery again to :host?": "¿Reenviar este envío a :host?",
+    "Delivery queued again.": "Envío puesto de nuevo en cola.",
+    "Delivery details": "Detalles del envío",
+    "Could not load this delivery.": "No se pudo cargar este envío.",
+    "Status: :status": "Estado: :status"
 }
