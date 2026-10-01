@@ -5821,3 +5821,7 @@ The draft of this plan was written at `e0524df`, before plan 17b was finished an
 **Added after the prototype, by review, and not run:** the note's half of the text freeze in Task 4 (`rebindsWordsOfTarget`, `boundTextIds`, their call, the tests "refuses both halves when the words of a note under vote are cleared", "refuses both halves of the first words typed into an empty note under vote" and "still lets an arrow be attached to a note under vote", Review Focus 6, spec §11.4). The fact behind it was read in the library (`handleSubmit` rewrites the container's `boundElements`), not observed in a browser; B7.5 now replays it.
 
 **Not verified, because only a browser can** (each is a browser check): the overlay's stacking between the drawing and the canvas's controls (B7.2); that the canvas leaves view mode when the prop goes back to `undefined` and abandons an unfinished text edit when view mode starts (B5.3, B5.5); that the canvas reports back exactly the scroll and zoom it was given (B6.1); the height of the canvas inside the new row (B5.1, B7.2); that the lock entries of the context menu are inside `.whiteboard-canvas` (B5.6).
+
+## Corrections
+
+- Task 4: the text half of the freeze was keyed on the incoming type only, so a write reusing the id of a note's text with another type erased the words under vote; `isWordsOfTarget` now also looks at the stored type and `changesWordsOfTarget` refuses a change of type (spec §11.4; test "rejects a text of a note under vote rewritten as another type").

@@ -73,6 +73,29 @@ it('rejects a change of the words of a note under vote and hands back the stored
     'the text taken off the note' => [['containerId' => null]],
 ]);
 
+it('rejects a text of a note under vote rewritten as another type', function () {
+    [$board, $user, , , $words] = boardUnderVote();
+
+    writeDuringVote($this->actingAs($user), $board, [sceneElement(['id' => 'note-text', 'type' => 'rectangle', 'version' => 2])])
+        ->assertOk()
+        ->assertJsonPath('seq', 1)
+        ->assertJsonPath('fromSeq', 1)
+        ->assertJsonCount(1, 'rejected')
+        ->assertJsonPath('rejected.0.id', 'note-text')
+        ->assertJsonPath('rejected.0.reason', 'voting')
+        ->assertJsonPath('rejected.0.element', $words);
+
+    $stored = $board->elements()->where('element_id', 'note-text')->sole();
+
+    expect($stored->type)->toBe('text')
+        ->and($stored->data)->toEqual($words)
+        ->and($stored->version)->toBe(1)
+        ->and(WhiteboardVote::query()->count())->toBe(3);
+
+    Event::assertNotDispatched(WhiteboardElementsChanged::class);
+    Event::assertNotDispatched(WhiteboardVoteChanged::class);
+});
+
 it('rejects a new text and a re-bound text on a note under vote', function () {
     [$board, $user] = boardUnderVote();
     $loose = sceneElement(['id' => 'loose', 'type' => 'text', 'text' => 'Loose', 'originalText' => 'Loose']);

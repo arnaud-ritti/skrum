@@ -196,7 +196,7 @@ class WriteWhiteboardElements
      */
     private function isWordsOfTarget(?WhiteboardElement $existing, array $element, array $targetsBefore): bool
     {
-        if ($element['type'] !== 'text') {
+        if ($element['type'] !== 'text' && $existing?->type !== 'text') {
             return false;
         }
 
@@ -229,6 +229,10 @@ class WriteWhiteboardElements
         }
 
         if ($existing === null) {
+            return true;
+        }
+
+        if ($existing->type !== $element['type']) {
             return true;
         }
 
