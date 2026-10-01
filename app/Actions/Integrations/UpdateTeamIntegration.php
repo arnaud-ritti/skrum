@@ -22,6 +22,7 @@ class UpdateTeamIntegration
         private SaveTeamIntegration $saveTeamIntegration,
         private DetectJiraStoryPointFields $detectStoryPointFields,
         private ListProviderPriorities $listPriorities,
+        private ConnectUrlChannel $connectUrlChannel,
     ) {}
 
     /**
@@ -40,6 +41,7 @@ class UpdateTeamIntegration
                 'priority_map' => ['sometimes', 'array:high,medium,low'],
                 'priority_map.*' => ['required', Rule::in([...array_map('strval', LinearPriority::Scale), self::DefaultPriority])],
             ],
+            IntegrationProvider::MicrosoftTeams, IntegrationProvider::Mattermost => $this->connectUrlChannel->rules($integration->provider, isUpdate: true),
             default => [],
         };
     }
@@ -49,6 +51,10 @@ class UpdateTeamIntegration
      */
     public function handle(TeamIntegration $integration, User $user, array $validated): TeamIntegration
     {
+        if (in_array($integration->provider, [IntegrationProvider::MicrosoftTeams, IntegrationProvider::Mattermost], true)) {
+            return $this->connectUrlChannel->update($integration, $user, $validated)->refresh();
+        }
+
         if (is_string($validated['cloud_id'] ?? null)) {
             $integration = $this->chooseJiraSite($integration, $user, $validated['cloud_id']);
         }

@@ -9,6 +9,8 @@ use App\Support\Integrations\Exceptions\ReconnectRequired;
 use App\Support\Integrations\IntegrationTokens;
 use App\Support\Integrations\Jira\JiraClient;
 use App\Support\Integrations\Linear\LinearClient;
+use App\Support\Integrations\Mattermost\MattermostClient;
+use App\Support\Integrations\MicrosoftTeams\MicrosoftTeamsClient;
 use App\Support\Integrations\Slack\SlackClient;
 use App\Support\Integrations\Telegram\TelegramClient;
 
@@ -19,6 +21,8 @@ class CheckIntegration
         private TelegramClient $telegram,
         private JiraClient $jira,
         private LinearClient $linear,
+        private MicrosoftTeamsClient $teams,
+        private MattermostClient $mattermost,
         private IntegrationTokens $tokens,
     ) {}
 
@@ -29,7 +33,9 @@ class CheckIntegration
             IntegrationProvider::Telegram => fn () => $this->telegram->getChat($integration),
             IntegrationProvider::Jira => fn () => $this->checkJiraSite($integration),
             IntegrationProvider::Linear => fn () => $this->linear->query($integration, 'query { viewer { id } }'),
-            IntegrationProvider::JiraDataCenter, IntegrationProvider::GitHub, IntegrationProvider::MicrosoftTeams, IntegrationProvider::Mattermost, IntegrationProvider::Webhook => throw new NotConnected($integration->provider),
+            IntegrationProvider::MicrosoftTeams => fn () => $this->teams->ensureUsableUrl($integration),
+            IntegrationProvider::Mattermost => fn () => $this->mattermost->ensureUsableUrl($integration),
+            IntegrationProvider::JiraDataCenter, IntegrationProvider::GitHub, IntegrationProvider::Webhook => throw new NotConnected($integration->provider),
         };
 
         $check();

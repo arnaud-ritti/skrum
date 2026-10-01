@@ -10,6 +10,10 @@ use App\Models\Team;
 use App\Models\TeamIntegration;
 use App\Models\Workspace;
 use App\Support\Integrations\Exceptions\NotConnected;
+use App\Support\Integrations\Mattermost\MattermostClient;
+use App\Support\Integrations\Messages\MattermostText;
+use App\Support\Integrations\Messages\MicrosoftTeamsText;
+use App\Support\Integrations\MicrosoftTeams\MicrosoftTeamsClient;
 use App\Support\Integrations\Slack\SlackClient;
 use App\Support\Integrations\Telegram\TelegramClient;
 use Illuminate\Http\JsonResponse;
@@ -23,6 +27,8 @@ class IntegrationTestsController extends Controller
         TeamIntegration $integration,
         SlackClient $slack,
         TelegramClient $telegram,
+        MicrosoftTeamsClient $teams,
+        MattermostClient $mattermost,
         CheckIntegration $checkIntegration,
         PresentTeamIntegration $presentTeamIntegration,
     ): JsonResponse {
@@ -36,7 +42,9 @@ class IntegrationTestsController extends Controller
             IntegrationProvider::Slack => fn () => $slack->postMessage($integration, ['text' => $message]),
             IntegrationProvider::Telegram => fn () => $telegram->sendMessageTo($integration, e($message)),
             IntegrationProvider::Jira, IntegrationProvider::Linear => fn () => $checkIntegration->handle($integration),
-            IntegrationProvider::JiraDataCenter, IntegrationProvider::GitHub, IntegrationProvider::MicrosoftTeams, IntegrationProvider::Mattermost, IntegrationProvider::Webhook => throw new NotConnected($integration->provider),
+            IntegrationProvider::MicrosoftTeams => fn () => $teams->postMessage($integration, MicrosoftTeamsText::message([MicrosoftTeamsText::block($message)])),
+            IntegrationProvider::Mattermost => fn () => $mattermost->postMessage($integration, MattermostText::escape($message)),
+            IntegrationProvider::JiraDataCenter, IntegrationProvider::GitHub, IntegrationProvider::Webhook => throw new NotConnected($integration->provider),
         };
 
         $test();

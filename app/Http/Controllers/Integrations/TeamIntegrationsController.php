@@ -10,6 +10,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Team;
 use App\Models\TeamIntegration;
 use App\Models\Workspace;
+use App\Rules\MattermostWebhookUrl;
 use App\Support\Integrations\Telegram\TelegramBot;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -47,6 +48,7 @@ class TeamIntegrationsController extends Controller
                 'botUsername' => $telegramBot->username(),
                 'conflict' => $telegramBot->hasConflict(),
             ] : null,
+            'mattermost' => IntegrationProvider::Mattermost->isEnabled() ? ['url' => MattermostWebhookUrl::serverUrl()] : null,
         ]);
     }
 

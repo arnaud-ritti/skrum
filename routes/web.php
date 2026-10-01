@@ -36,6 +36,7 @@ use App\Http\Controllers\Integrations\IntegrationCallbacksController;
 use App\Http\Controllers\Integrations\IntegrationPrioritiesController;
 use App\Http\Controllers\Integrations\IntegrationTargetsController;
 use App\Http\Controllers\Integrations\IntegrationTestsController;
+use App\Http\Controllers\Integrations\IntegrationUrlsController;
 use App\Http\Controllers\Integrations\IntegrationUserMappingsController;
 use App\Http\Controllers\Integrations\IntegrationUserMatchesController;
 use App\Http\Controllers\Integrations\JiraFieldDetectionsController;
@@ -209,6 +210,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 Route::post('teams/{team}/integrations/telegram/code', [TelegramConnectCodesController::class, 'store'])
                     ->middleware([EnsureIntegrationProviderEnabled::class.':telegram', 'throttle:10,1'])
                     ->name('teams.integrations.telegramCode.store');
+                Route::post('teams/{team}/integrations/{provider}', [IntegrationUrlsController::class, 'store'])
+                    ->whereIn('provider', ['msteams', 'mattermost'])
+                    ->middleware('throttle:10,1,integrationUrls')
+                    ->name('teams.integrations.urls.store');
                 Route::patch('teams/{team}/integrations/{integration}', [TeamIntegrationsController::class, 'update'])
                     ->whereUuid('integration')
                     ->name('teams.integrations.update');
