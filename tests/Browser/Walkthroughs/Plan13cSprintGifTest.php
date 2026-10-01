@@ -477,7 +477,7 @@ it('[P13c-06] closes a round in its voting window with its points when the host 
         $page->assertPresent('[role="group"][aria-label="2 online"]');
     }
 
-    $a->assertSee('Ready to play?');
+    $this->awaitResync($a)->assertSee('Ready to play?');
 
     $round = activeGifRound($room, ['revealed_at' => now()->startOfSecond()]);
     $adaAnswer = p13cAnswer($round, $adaPlayer, 'partyone');
