@@ -1453,5 +1453,6 @@
     "Assignee: not mapped yet — skrum will use :name's GitHub sign-in": "Assignee: not mapped yet — skrum will use :name's GitHub sign-in",
     "No priority label": "No priority label",
     "Priority label: :label": "Priority label: :label",
-    "Written to the issue description.": "Written to the issue description."
+    "Written to the issue description.": "Written to the issue description.",
+    "This repository isn't available to the GitHub App.": "This repository isn't available to the GitHub App."
 }

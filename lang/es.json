@@ -1699,5 +1699,6 @@
     "Assignee: not mapped yet — skrum will use :name's GitHub sign-in": "Responsable: aún sin asociar — skrum usará el inicio de sesión con GitHub de :name",
     "No priority label": "Sin etiqueta de prioridad",
     "Priority label: :label": "Etiqueta de prioridad: :label",
-    "Written to the issue description.": "Escrito en la descripción de la incidencia."
+    "Written to the issue description.": "Escrito en la descripción de la incidencia.",
+    "This repository isn't available to the GitHub App.": "Este repositorio no está disponible para la aplicación de GitHub."
 }

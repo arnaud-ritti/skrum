@@ -44,6 +44,8 @@ class ExportActionItem
         $this->tokens->prepare($integration);
 
         try {
+            $this->checkTarget($integration, $target);
+
             /** @var array{0: ActionItem, 1: ExportOutcome} $result */
             $result = DB::transaction(fn (): array => $this->export($item, $user, $integration, $target));
         } catch (ReconnectRequired $exception) {
@@ -101,6 +103,18 @@ class ExportActionItem
         $this->rememberTarget($integration, $target);
 
         return [$locked->loadForPresentation(), $outcome];
+    }
+
+    /**
+     * Slow target checks run before the item lock is taken.
+     *
+     * @param  array<string, mixed>  $target
+     */
+    private function checkTarget(TeamIntegration $integration, array $target): void
+    {
+        if ($integration->provider === IntegrationProvider::GitHub) {
+            $this->exportToGitHub->repositoryName($integration, $this->targetId($target, 'repository_id'));
+        }
     }
 
     private function ensureNotExported(ActionItem $item, TeamIntegration $integration): void

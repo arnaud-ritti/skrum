@@ -1699,5 +1699,6 @@
     "Assignee: not mapped yet — skrum will use :name's GitHub sign-in": "Responsable : pas encore associé — skrum utilisera la connexion GitHub de :name",
     "No priority label": "Aucun libellé de priorité",
     "Priority label: :label": "Libellé de priorité : :label",
-    "Written to the issue description.": "Écrit dans la description du ticket."
+    "Written to the issue description.": "Écrit dans la description du ticket.",
+    "This repository isn't available to the GitHub App.": "Ce dépôt n'est pas accessible à l'application GitHub."
 }

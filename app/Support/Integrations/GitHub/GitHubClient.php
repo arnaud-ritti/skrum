@@ -45,6 +45,8 @@ class GitHubClient
 
     private const MaxRetryAfterSeconds = 3600;
 
+    private const RepositoriesCacheMinutes = 5;
+
     private const IdPattern = '/^\d{1,20}\z/';
 
     private const LoginPattern = '/^[A-Za-z0-9-]{1,39}\z/';
@@ -192,13 +194,13 @@ class GitHubClient
     public function repositoryName(TeamIntegration $integration, string $repositoryId): string
     {
         if (preg_match(self::IdPattern, $repositoryId) !== 1) {
-            throw new ProviderRejected(self::Provider, 'invalid_repository', 404);
+            throw new ProviderRejected(self::Provider, self::unavailableRepositoryMessage(), 404);
         }
 
         $fullName = self::safeFullName($this->get($integration, "repositories/{$repositoryId}")['full_name'] ?? null);
 
         if ($fullName === null) {
-            throw new ProviderRejected(self::Provider, 'invalid_repository', 404);
+            throw new ProviderRejected(self::Provider, self::unavailableRepositoryMessage(), 404);
         }
 
         return $fullName;
@@ -230,6 +232,27 @@ class GitHubClient
         }
 
         return $repositories;
+    }
+
+    /**
+     * The installation's repositories, cached for a few minutes per
+     * installation so export targets and exports share one listing.
+     *
+     * @return array<int, array{id: string, name: string}>
+     */
+    public function cachedRepositories(TeamIntegration $integration): array
+    {
+        /** @var array<int, array{id: string, name: string}> */
+        return Cache::remember(
+            'github-repositories:'.$this->installationId($integration),
+            now()->addMinutes(self::RepositoriesCacheMinutes),
+            fn (): array => $this->repositories($integration),
+        );
+    }
+
+    public static function unavailableRepositoryMessage(): string
+    {
+        return __("This repository isn't available to the GitHub App.");
     }
 
     public function forgetInstallationToken(string $installationId): void

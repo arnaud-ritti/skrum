@@ -8,10 +8,13 @@ use App\Events\ActionItems\TeamActionItemSaved;
 use App\Events\Retros\ActionItemExternalLinksChanged;
 use App\Events\Retros\ActionItemSaved;
 use App\Events\Retros\CarriedActionItemSaved;
+use App\Models\ActionItem;
 use App\Models\ActionItemExternalLink;
 use App\Models\IntegrationUserMapping;
 use App\Models\SocialAccount;
 use App\Models\TeamIntegration;
+use App\Support\Integrations\Exceptions\ProviderRejected;
+use App\Support\Integrations\GitHub\GitHubClient;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
@@ -232,8 +235,129 @@ it('refuses a repository the installation cannot access', function () {
 
     $this->actingAs($author)
         ->postJson(route('retros.action-items.exports.store', [$retro, $item]), ['source' => 'github', 'repository_id' => '7777'])
-        ->assertStatus(422);
+        ->assertStatus(422)
+        ->assertJsonPath('message', "This repository isn't available to the GitHub App.");
 
     expect(ActionItemExternalLink::query()->count())->toBe(0);
     Http::assertNotSent(fn (Request $request) => $request->method() === 'POST' && str_contains($request->url(), '/issues'));
+});
+
+it('names an unknown repository in words', function () {
+    fakeGitHubTrackerApi(['api.github.com/repositories/9001' => Http::response(['full_name' => '../evil'])]);
+    $integration = TeamIntegration::factory()->gitHub()->create();
+
+    expect(fn () => app(GitHubClient::class)->repositoryName($integration, '9001'))
+        ->toThrow(ProviderRejected::class, "This repository isn't available to the GitHub App.");
+});
+
+it('lists the installation repositories once for two exports', function () {
+    fakeGitHubExport();
+    [$retro, $item, $author] = exportBoardItem();
+    $second = ActionItem::factory()->create(['retro_id' => $retro->id, 'created_by_participant_id' => $item->created_by_participant_id, 'content' => 'Second']);
+    TeamIntegration::factory()->gitHub()->create(['team_id' => $retro->team_id]);
+
+    foreach ([$item, $second] as $exported) {
+        $this->actingAs($author)
+            ->postJson(route('retros.action-items.exports.store', [$retro, $exported]), ['source' => 'github', 'repository_id' => '9001'])
+            ->assertCreated();
+    }
+
+    expect(collect(Http::recorded())->filter(fn (array $pair): bool => str_contains($pair[0]->url(), 'installation/repositories')))->toHaveCount(1);
+});
+
+it('retries without the assignee GitHub refuses', function () {
+    fakeGitHubExport([
+        'api.github.com/repos/acme/api/issues' => Http::sequence()
+            ->push(['message' => 'Validation Failed', 'errors' => [['field' => 'assignees', 'code' => 'invalid']]], 422)
+            ->push(['number' => 12, 'html_url' => 'https://github.com/acme/api/issues/12', 'assignees' => []], 201),
+    ]);
+    [$retro, $item, $author] = exportBoardItem();
+    $integration = TeamIntegration::factory()->gitHub()->create(['team_id' => $retro->team_id]);
+    $assignee = teamMember($retro->team);
+    IntegrationUserMapping::factory()->manual()->create(['team_integration_id' => $integration->id, 'user_id' => $assignee->id, 'external_account_id' => '583231']);
+    $item->update(['assignee_user_id' => $assignee->id]);
+
+    $response = $this->actingAs($author)
+        ->postJson(route('retros.action-items.exports.store', [$retro, $item]), ['source' => 'github', 'repository_id' => '9001'])
+        ->assertCreated();
+
+    $posts = collect(Http::recorded())
+        ->map(fn (array $pair): Request => $pair[0])
+        ->filter(fn (Request $request): bool => $request->method() === 'POST' && str_ends_with($request->url(), '/repos/acme/api/issues'))
+        ->values();
+
+    expect(array_column($response->json('warnings'), 'code'))->toBe(['assigneeRejected'])
+        ->and($posts)->toHaveCount(2)
+        ->and($posts[0]->data()['assignees'])->toBe(['octocat'])
+        ->and($posts[1]->data())->not->toHaveKey('assignees');
+});
+
+it('warns that a timed out GitHub issue may exist', function () {
+    fakeGitHubExport(['api.github.com/repos/acme/api/issues' => Http::failedConnection('cURL error 28: Operation timed out')]);
+    [$retro, $item, $author] = exportBoardItem();
+    TeamIntegration::factory()->gitHub()->create(['team_id' => $retro->team_id]);
+
+    $this->actingAs($author)
+        ->postJson(route('retros.action-items.exports.store', [$retro, $item]), ['source' => 'github', 'repository_id' => '9001'])
+        ->assertStatus(502)
+        ->assertJsonPath('message', 'The issue may have been created. Check GitHub before trying again.');
+
+    expect(ActionItemExternalLink::query()->count())->toBe(0);
+});
+
+it('finds organization members past the first page', function () {
+    fakeGitHubTrackerApi([
+        'api.github.com/orgs/acme/members*' => fn (Request $request) => ($request->data()['page'] ?? '1') === '1'
+            ? Http::response([['id' => 2, 'login' => 'hubot', 'type' => 'User']], 200, ['Link' => '<https://api.github.com/organizations/1/members?page=2>; rel="next"'])
+            : Http::response([['id' => 583231, 'login' => 'octocat', 'type' => 'User']]),
+    ]);
+    $integration = TeamIntegration::factory()->gitHub()->create();
+    $team = $integration->team;
+
+    $this->actingAs(integrationAdmin($team))
+        ->getJson(route('teams.integrations.accounts.index', [$team->workspace, $team, $integration, 'q' => 'oct']))
+        ->assertOk()
+        ->assertExactJson([['accountId' => '583231', 'displayName' => 'octocat']]);
+});
+
+it('searches the export repository collaborators of a personal installation', function () {
+    fakeGitHubTrackerApi([
+        'api.github.com/repos/acme/api/collaborators*' => Http::response([
+            ['id' => 583231, 'login' => 'octocat', 'type' => 'User'],
+            ['id' => 3, 'login' => 'octobot', 'type' => 'Bot'],
+        ]),
+    ]);
+    $integration = TeamIntegration::factory()->gitHub()->create();
+    $integration->forceFill(['settings' => [...$integration->settings, 'accountType' => 'User', 'accountLogin' => 'octocat', 'exportRepositoryId' => '9001']])->save();
+    $team = $integration->team;
+
+    $this->actingAs(integrationAdmin($team))
+        ->getJson(route('teams.integrations.accounts.index', [$team->workspace, $team, $integration, 'q' => 'octo']))
+        ->assertOk()
+        ->assertExactJson([['accountId' => '583231', 'displayName' => 'octocat']]);
+    Http::assertNotSent(fn (Request $request) => str_contains($request->url(), '/orgs/'));
+});
+
+it('drops sign-in mappings whose GitHub account is gone or no longer linked', function () {
+    fakeGitHubExport([
+        'api.github.com/user/404404' => Http::response(['message' => 'Not Found'], 404),
+        'api.github.com/user/777' => Http::response(['id' => 777, 'login' => 'newcat', 'type' => 'User']),
+    ]);
+    $integration = TeamIntegration::factory()->gitHub()->create();
+    $deleted = teamMember($integration->team);
+    $unlinked = teamMember($integration->team);
+    $relinked = teamMember($integration->team);
+    SocialAccount::factory()->create(['user_id' => $deleted->id, 'provider' => 'github', 'provider_user_id' => '404404']);
+    SocialAccount::factory()->create(['user_id' => $relinked->id, 'provider' => 'github', 'provider_user_id' => '777']);
+    $sso = ['team_integration_id' => $integration->id, 'matched_by' => IntegrationUserMatch::Sso];
+    IntegrationUserMapping::factory()->create([...$sso, 'user_id' => $deleted->id, 'external_account_id' => '404404']);
+    IntegrationUserMapping::factory()->create([...$sso, 'user_id' => $unlinked->id, 'external_account_id' => '583231']);
+    IntegrationUserMapping::factory()->create([...$sso, 'user_id' => $relinked->id, 'external_account_id' => '583231']);
+
+    app(MatchIntegrationUserAccounts::class)->handle($integration);
+
+    expect($integration->accountFor($deleted))->toBeNull()
+        ->and($integration->accountFor($unlinked))->toBeNull()
+        ->and($integration->accountFor($relinked)?->external_account_id)->toBe('777')
+        ->and($integration->accountFor($relinked)?->external_display_name)->toBe('newcat');
 });

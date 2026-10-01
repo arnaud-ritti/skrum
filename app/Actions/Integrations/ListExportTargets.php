@@ -166,7 +166,7 @@ class ListExportTargets
     private function gitHubTargets(TeamIntegration $integration, ?string $query): array
     {
         $needle = Str::lower(trim((string) $query));
-        $all = $this->gitHub->repositories($integration);
+        $all = $this->gitHub->cachedRepositories($integration);
         $listed = array_slice(array_values(array_filter(
             $all,
             fn (array $repository): bool => $needle === '' || str_contains(Str::lower($repository['name']), $needle),

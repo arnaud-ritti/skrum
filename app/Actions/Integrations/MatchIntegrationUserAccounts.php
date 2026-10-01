@@ -4,7 +4,9 @@ namespace App\Actions\Integrations;
 
 use App\Enums\IntegrationProvider;
 use App\Enums\IntegrationUserMatch;
+use App\Enums\SsoProvider;
 use App\Models\IntegrationUserMapping;
+use App\Models\SocialAccount;
 use App\Models\TeamIntegration;
 use App\Models\User;
 use App\Support\Integrations\ExternalAccount;
@@ -47,6 +49,12 @@ class MatchIntegrationUserAccounts
 
         foreach ($mappings as $mapping) {
             $accountId = (string) $mapping->external_account_id;
+
+            if ($mapping->matched_by === IntegrationUserMatch::Sso && ! $this->isSignInLinked($mapping->user_id, $accountId)) {
+                $this->unchanged($integration, $mapping)->delete();
+
+                continue;
+            }
             $account = $known === null ? $this->accounts->find($integration, $accountId) : $known->get($accountId);
             $usable = $account !== null && $account->active;
             $unchanged = $this->unchanged($integration, $mapping);
@@ -63,6 +71,19 @@ class MatchIntegrationUserAccounts
                 'checked_at' => now(),
             ]);
         }
+    }
+
+    /**
+     * A sign-in match lasts only while the member still signs in with that
+     * GitHub account.
+     */
+    private function isSignInLinked(string $userId, string $accountId): bool
+    {
+        return SocialAccount::query()
+            ->where('user_id', $userId)
+            ->where('provider', SsoProvider::GitHub->value)
+            ->where('provider_user_id', $accountId)
+            ->exists();
     }
 
     /**

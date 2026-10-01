@@ -29,6 +29,10 @@ class IntegrationUserAccounts
 
     private const LinearMaxPages = 40;
 
+    private const GitHubPageSize = 100;
+
+    private const GitHubMaxPages = 10;
+
     private const JiraAccountType = 'atlassian';
 
     private const LinearUserFields = 'id name displayName email active';
@@ -175,7 +179,8 @@ class IntegrationUserAccounts
 
     /**
      * Organization members, or the export repository's collaborators for an
-     * installation on a personal account; filtered here by login.
+     * installation on a personal account; filtered here by login, page by
+     * page until enough accounts are found.
      *
      * @return array<int, ExternalAccount>
      */
@@ -184,18 +189,41 @@ class IntegrationUserAccounts
         $login = $integration->setting('accountLogin');
         $repositoryId = $integration->setting('exportRepositoryId');
 
-        $users = match (true) {
-            $integration->setting('accountType') === 'Organization' && GitHubClient::isLogin($login) => $this->gitHub->get($integration, "orgs/{$login}/members", ['per_page' => 100]),
-            is_string($repositoryId) => $this->gitHub->get($integration, 'repos/'.$this->gitHub->repositoryName($integration, $repositoryId).'/collaborators', ['per_page' => 100]),
-            default => [],
+        $path = match (true) {
+            $integration->setting('accountType') === 'Organization' && GitHubClient::isLogin($login) => "orgs/{$login}/members",
+            is_string($repositoryId) => 'repos/'.$this->gitHub->repositoryName($integration, $repositoryId).'/collaborators',
+            default => null,
         };
 
-        $found = array_values(array_filter(
-            array_map(fn (mixed $user): ?ExternalAccount => $this->gitHubAccount($user), $users),
-            fn (?ExternalAccount $account): bool => $account !== null && $account->active && str_contains(Str::lower($account->displayName), $needle),
-        ));
+        if ($path === null) {
+            return [];
+        }
 
-        return array_slice($found, 0, self::SearchLimit);
+        $found = [];
+
+        for ($page = 1; $page <= self::GitHubMaxPages; $page++) {
+            $response = $this->gitHub->response($integration, 'GET', $path, ['per_page' => self::GitHubPageSize, 'page' => $page]);
+
+            foreach ((array) $response->json() as $user) {
+                $account = $this->gitHubAccount($user);
+
+                if ($account === null || ! $account->active || ! str_contains(Str::lower($account->displayName), $needle)) {
+                    continue;
+                }
+
+                $found[] = $account;
+
+                if (count($found) === self::SearchLimit) {
+                    return $found;
+                }
+            }
+
+            if (! GitHubClient::hasNextPage($response)) {
+                break;
+            }
+        }
+
+        return $found;
     }
 
     /**

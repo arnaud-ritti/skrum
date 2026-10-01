@@ -10,8 +10,8 @@ use App\Support\Integrations\Exceptions\IntegrationException;
 use App\Support\Integrations\Exceptions\IssueCreationUncertain;
 use App\Support\Integrations\Exceptions\ProviderRejected;
 use App\Support\Integrations\Exceptions\ProviderUnavailable;
-use App\Support\Integrations\GitHub\EstimateBlock;
 use App\Support\Integrations\GitHub\GitHubClient;
+use App\Support\Integrations\GitHub\GitHubMarkdown;
 use App\Support\Integrations\IntegrationUserAccounts;
 use Illuminate\Support\Str;
 
@@ -19,9 +19,9 @@ use Illuminate\Support\Str;
  * Spec 8 §4.2 export: a Markdown body as Linear's plus the due date, the
  * mapped account's current login, and the priority's label when the
  * repository has it. GitHub silently drops assignees without access, so the
- * response is compared. Everything but the skrum link is escaped, so the
- * item and the retro title can neither mention anyone nor add links,
- * images or HTML.
+ * response is compared. The item and the retro title are escaped with
+ * GitHubMarkdown, so they cannot mention anyone, reference issues or add
+ * Markdown links, images or HTML (bare URLs are still autolinked).
  */
 class ExportToGitHub
 {
@@ -38,7 +38,7 @@ class ExportToGitHub
      */
     public function create(TeamIntegration $integration, ActionItem $item, IssueDraft $draft, ExportAssignee $assignee, array $target): ExportOutcome
     {
-        $fullName = $this->accessibleRepository($integration, $target['repository_id']);
+        $fullName = $this->repositoryName($integration, $target['repository_id']);
         $priority = $this->priority($integration, $item, $fullName);
         $login = $assignee->accountId === null ? null : $this->login($integration, $assignee->accountId);
 
@@ -85,23 +85,25 @@ class ExportToGitHub
 
     /**
      * Only a repository of the installation is written to; a public
-     * repository GitHub would also return by id is refused.
+     * repository GitHub would also return by id is refused. The listing is
+     * cached briefly, so calling this before the export transaction keeps
+     * the slow read outside the item lock.
      */
-    private function accessibleRepository(TeamIntegration $integration, string $repositoryId): string
+    public function repositoryName(TeamIntegration $integration, string $repositoryId): string
     {
-        foreach ($this->client->repositories($integration) as $repository) {
+        foreach ($this->client->cachedRepositories($integration) as $repository) {
             if ($repository['id'] === $repositoryId) {
                 return $repository['name'];
             }
         }
 
-        throw new ProviderRejected(IntegrationProvider::GitHub, 'invalid_repository', 404);
+        throw new ProviderRejected(IntegrationProvider::GitHub, GitHubClient::unavailableRepositoryMessage(), 404);
     }
 
     private function body(IssueDraft $draft): string
     {
-        $lines = array_map(fn (string $line): string => EstimateBlock::escape($line), $draft->lines);
-        $body = implode("\n\n", $lines)."\n\n".EstimateBlock::escape($draft->origin)." {$draft->link}";
+        $lines = array_map(fn (string $line): string => GitHubMarkdown::escape($line), $draft->lines);
+        $body = implode("\n\n", $lines)."\n\n".GitHubMarkdown::escape($draft->origin)." {$draft->link}";
 
         return $draft->dueOn === null ? $body : $body."\n\n".__('Due: :date', ['date' => $draft->dueOn]);
     }

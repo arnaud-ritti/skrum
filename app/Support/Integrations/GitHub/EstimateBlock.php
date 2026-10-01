@@ -33,8 +33,6 @@ class EstimateBlock
 
     private const ValuePattern = '~\A[^\n]*\n[ \t]*\*\*Estimate:\*\*([^\n]*?)[ \t]*\r?(?:\n|\z)~';
 
-    private const Specials = '\\\\*_\[\]()#<>~|`&';
-
     public static function value(?string $body): ?string
     {
         $blocks = self::blocks((string) $body);
@@ -43,8 +41,7 @@ class EstimateBlock
             return null;
         }
 
-        $unescaped = (string) preg_replace('/\\\\(['.self::Specials.'])/', '$1', trim($match[1]));
-        $value = str_replace("@\u{200B}", '@', $unescaped);
+        $value = GitHubMarkdown::unescape(trim($match[1]));
 
         return $value === '' ? null : $value;
     }
@@ -110,9 +107,7 @@ class EstimateBlock
 
     public static function escape(string $label): string
     {
-        $escaped = (string) preg_replace('/(['.self::Specials.'])/', '\\\\$1', $label);
-
-        return str_replace('@', "@\u{200B}", $escaped);
+        return GitHubMarkdown::escape($label);
     }
 
     /**
