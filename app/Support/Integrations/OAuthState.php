@@ -5,6 +5,7 @@ namespace App\Support\Integrations;
 use App\Enums\IntegrationAccess;
 use App\Enums\IntegrationProvider;
 use App\Models\Team;
+use App\Support\Integrations\GitHub\GitHubAppJwt;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use LogicException;
@@ -87,6 +88,6 @@ class OAuthState
 
     public static function challenge(string $verifier): string
     {
-        return rtrim(strtr(base64_encode(hash('sha256', $verifier, true)), '+/', '-_'), '=');
+        return GitHubAppJwt::base64Url(hash('sha256', $verifier, true));
     }
 }

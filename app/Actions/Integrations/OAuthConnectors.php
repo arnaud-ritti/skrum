@@ -14,6 +14,7 @@ class OAuthConnectors
             IntegrationProvider::Jira => app(ConnectJira::class),
             IntegrationProvider::Linear => app(ConnectLinear::class),
             IntegrationProvider::JiraDataCenter => app(ConnectJiraDataCenter::class),
+            IntegrationProvider::GitHub => app(ConnectGitHub::class),
             default => throw new InvalidArgumentException("{$provider->label()} does not connect through OAuth."),
         };
     }

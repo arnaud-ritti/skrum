@@ -186,7 +186,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('integrations.jiraDataCenter.callback');
 
     Route::get('integrations/{provider}/callback', [IntegrationCallbacksController::class, 'show'])
-        ->whereIn('provider', ['slack', 'jira', 'linear'])
+        ->whereIn('provider', ['slack', 'jira', 'linear', 'github'])
         ->middleware(EnsureIntegrationProviderEnabled::class)
         ->name('integrations.callback');
 
@@ -213,7 +213,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::middleware(EnsureIntegrationProviderEnabled::class)->group(function () {
                 Route::get('teams/{team}/integrations', [TeamIntegrationsController::class, 'index'])->name('teams.integrations.index');
                 Route::get('teams/{team}/integrations/{provider}/connect', [IntegrationAuthorizationsController::class, 'create'])
-                    ->whereIn('provider', ['slack', 'jira', 'linear', 'jira_dc'])
+                    ->whereIn('provider', ['slack', 'jira', 'linear', 'jira_dc', 'github'])
                     ->name('teams.integrations.connect');
                 Route::post('teams/{team}/integrations/telegram/code', [TelegramConnectCodesController::class, 'store'])
                     ->middleware([EnsureIntegrationProviderEnabled::class.':telegram', 'throttle:10,1'])

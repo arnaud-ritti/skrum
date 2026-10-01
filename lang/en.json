@@ -1401,5 +1401,8 @@
     "Personal access tokens are turned off on this skrum instance. Connect with OAuth.": "Personal access tokens are turned off on this skrum instance. Connect with OAuth.",
     "The Jira personal access token was revoked or has expired. Paste a new one.": "The Jira personal access token was revoked or has expired. Paste a new one.",
     "Jira didn't accept this token.": "Jira didn't accept this token.",
-    "Personal access tokens need Jira 8.14 or later.": "Personal access tokens need Jira 8.14 or later."
+    "Personal access tokens need Jira 8.14 or later.": "Personal access tokens need Jira 8.14 or later.",
+    "This GitHub installation isn't available to your account.": "This GitHub installation isn't available to your account.",
+    "The GitHub App was uninstalled from :account.": "The GitHub App was uninstalled from :account.",
+    "The GitHub App is suspended on :account.": "The GitHub App is suspended on :account."
 }

@@ -1226,6 +1226,11 @@ function gitHubTestPrivateKey(): string
     return $pem = $exported;
 }
 
+function fakeGitHubInstallationToken(string $token = 'ghs_installation_token'): void
+{
+    Http::fake(['api.github.com/app/installations/*/access_tokens' => Http::response(['token' => $token, 'expires_at' => now()->addHour()->toIso8601String()], 201)]);
+}
+
 function jiraDataCenterUrl(string $path): string
 {
     return 'jira.example.com/'.ltrim($path, '/');

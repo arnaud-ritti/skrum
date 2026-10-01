@@ -9,7 +9,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Team;
 use App\Models\TeamIntegration;
 use App\Models\Workspace;
-use App\Support\Integrations\Exceptions\NotConnected;
 use App\Support\Integrations\Mattermost\MattermostClient;
 use App\Support\Integrations\Messages\MattermostText;
 use App\Support\Integrations\Messages\MicrosoftTeamsText;
@@ -46,10 +45,9 @@ class IntegrationTestsController extends Controller
         $test = match ($integration->provider) {
             IntegrationProvider::Slack => fn () => $slack->postMessage($integration, ['text' => $message]),
             IntegrationProvider::Telegram => fn () => $telegram->sendMessageTo($integration, e($message)),
-            IntegrationProvider::Jira, IntegrationProvider::Linear, IntegrationProvider::JiraDataCenter => fn () => $checkIntegration->handle($integration),
+            IntegrationProvider::Jira, IntegrationProvider::Linear, IntegrationProvider::JiraDataCenter, IntegrationProvider::GitHub => fn () => $checkIntegration->handle($integration),
             IntegrationProvider::MicrosoftTeams => fn () => $teams->postMessage($integration, MicrosoftTeamsText::message([MicrosoftTeamsText::block($message)])),
             IntegrationProvider::Mattermost => fn () => $mattermost->postMessage($integration, MattermostText::escape($message)),
-            IntegrationProvider::GitHub => throw new NotConnected($integration->provider),
             IntegrationProvider::Webhook => fn () => $webhooks->send($integration, WebhookMessage::test()),
         };
 
