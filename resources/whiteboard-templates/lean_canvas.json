@@ -1,0 +1,15 @@
+{
+    "elements": [
+        {"id": "problem-note", "type": "rectangle", "x": 50, "y": 40, "width": 200, "height": 200, "strokeColor": "transparent", "backgroundColor": "#ffc9c9", "strokeWidth": 1, "frameId": "problem", "customData": {"skrum": {"kind": "sticky"}}},
+        {"id": "problem-note-text", "type": "text", "fontSize": 16, "containerId": "problem-note", "text": "problem_note"},
+        {"id": "problem", "type": "frame", "x": 0, "y": 0, "width": 300, "height": 640, "name": "problem", "locked": true},
+        {"id": "solution", "type": "frame", "x": 340, "y": 0, "width": 300, "height": 290, "name": "solution", "locked": true},
+        {"id": "key-metrics", "type": "frame", "x": 340, "y": 350, "width": 300, "height": 290, "name": "key_metrics", "locked": true},
+        {"id": "value-proposition", "type": "frame", "x": 680, "y": 0, "width": 300, "height": 640, "name": "value_proposition", "locked": true},
+        {"id": "unfair-advantage", "type": "frame", "x": 1020, "y": 0, "width": 300, "height": 290, "name": "unfair_advantage", "locked": true},
+        {"id": "channels", "type": "frame", "x": 1020, "y": 350, "width": 300, "height": 290, "name": "channels", "locked": true},
+        {"id": "customer-segments", "type": "frame", "x": 1360, "y": 0, "width": 300, "height": 640, "name": "customer_segments", "locked": true},
+        {"id": "cost-structure", "type": "frame", "x": 0, "y": 700, "width": 810, "height": 280, "name": "cost_structure", "locked": true},
+        {"id": "revenue-streams", "type": "frame", "x": 850, "y": 700, "width": 810, "height": 280, "name": "revenue_streams", "locked": true}
+    ]
+}
