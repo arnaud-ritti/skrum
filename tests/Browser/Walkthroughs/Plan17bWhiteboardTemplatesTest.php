@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\Whiteboards\CreateWhiteboard;
+use App\Actions\Whiteboards\DuplicateWhiteboard;
 use App\Actions\Whiteboards\SaveWhiteboardTemplate;
 use App\Models\Team;
 use App\Models\User;
@@ -249,6 +250,101 @@ function p17bFileDownload(Whiteboard $board): string
     $path = "/whiteboards/{$board->id}/files/".P17bFileId;
 
     return "() => fetch('{$path}').then((response) => response.blob().then((blob) => response.status + ' ' + blob.type + ' ' + blob.size))";
+}
+
+function p17bJoinPath(Whiteboard $board): string
+{
+    return "/whiteboards/join/{$board->fresh()->guest_token}";
+}
+
+function p17bRecordDownloads(mixed $page): void
+{
+    $page->script(<<<'JS'
+        () => {
+            const create = URL.createObjectURL.bind(URL);
+            const click = HTMLAnchorElement.prototype.click;
+
+            window.p17bDownloads = { names: [], blobs: [] };
+
+            URL.createObjectURL = (blob) => {
+                window.p17bDownloads.blobs.push(blob);
+
+                return create(blob);
+            };
+
+            window.showSaveFilePicker = (options) => {
+                window.p17bDownloads.names.push(options?.suggestedName ?? '');
+
+                return Promise.reject(new DOMException('The user aborted a request.', 'AbortError'));
+            };
+
+            HTMLAnchorElement.prototype.click = function () {
+                if (this.hasAttribute('download')) {
+                    window.p17bDownloads.names.push(this.download);
+
+                    return undefined;
+                }
+
+                return click.call(this);
+            };
+
+            return true;
+        }
+        JS);
+}
+
+/**
+ * @param  array<int, array<string, mixed>>  $elements
+ * @return array<int, string>
+ */
+function p17bShapes(array $elements): array
+{
+    return collect($elements)
+        ->map(fn (array $element): string => "{$element['type']}:{$element['x']}:{$element['y']}:{$element['width']}:{$element['height']}")
+        ->sort()
+        ->values()
+        ->all();
+}
+
+function p17bBlockSnapshots(mixed $page): void
+{
+    $page->script(<<<'JS'
+        () => {
+            const open = XMLHttpRequest.prototype.open;
+            const send = XMLHttpRequest.prototype.send;
+
+            window.p17bBlocked = { active: true, refused: 0 };
+
+            XMLHttpRequest.prototype.open = function (method, url, ...rest) {
+                this.p17bPath = new URL(String(url), window.location.href).pathname;
+
+                return open.call(this, method, url, ...rest);
+            };
+
+            XMLHttpRequest.prototype.send = function (body) {
+                if (window.p17bBlocked.active && this.p17bPath.endsWith('/snapshot')) {
+                    window.p17bBlocked.refused += 1;
+                    setTimeout(() => this.dispatchEvent(new ProgressEvent('error')), 0);
+
+                    return undefined;
+                }
+
+                return send.call(this, body);
+            };
+
+            return true;
+        }
+        JS);
+}
+
+function p17bUnblockSnapshots(mixed $page): void
+{
+    $page->script('() => { window.p17bBlocked.active = false; return true; }');
+}
+
+function p17bSnapshotRequests(): string
+{
+    return "performance.getEntriesByType('resource').filter((entry) => new URL(entry.name).pathname.endsWith('/snapshot') && entry.initiatorType === 'xmlhttprequest' && entry.responseEnd > 0).length";
 }
 
 it('[P17b-01a] offers eight built-in templates with Blank first and selected, each with a thumbnail, a name and a description, and lists a workspace template apart', function () {
@@ -825,4 +921,426 @@ it('[P17b-15] still opens a board created from a template, with its elements and
         ->assertPresent('[role="dialog"] [role="radiogroup"]')
         ->assertCount('[role="dialog"] [role="radiogroup"]', 1)
         ->assertDontSee('Workspace templates');
+});
+
+it('[P17b-16] lists Duplicate this board and Save as template in a member\'s board menu and neither in a guest\'s', function () {
+    ['board' => $board, 'fran' => $fran] = p17bBoard(['guest_access_enabled' => true]);
+
+    $franPage = $this->awaitRealtime($this->signIn($fran, p17bBoardPath($board)));
+    $guestPage = $this->awaitRealtime($this->joinAsGuest(p17bJoinPath($board), 'Guest Gia'));
+
+    p17bOpenBoardMenu($franPage)
+        ->assertPresent('[role="menu"] [role="menuitem"]:has-text("Duplicate this board")')
+        ->assertPresent('[role="menu"] [role="menuitem"]:has-text("Save as template")');
+
+    p17bOpenBoardMenu($guestPage)
+        ->assertPresent('[role="menu"] [role="menuitemcheckbox"]:has-text("Hide my cursor")')
+        ->assertCount('[role="menu"] [role="menuitemcheckbox"]', 1)
+        ->assertCount('[role="menu"] [role="menuitem"]', 0)
+        ->assertDontSeeIn('[role="menu"]', 'Duplicate this board')
+        ->assertDontSeeIn('[role="menu"]', 'Save as template');
+
+    expect($this->whiteboardSnapshot($guestPage, $board)['me']['isGuest'])->toBeTrue();
+});
+
+it('[P17b-17] refuses a guest who posts a template or a duplicate of the board, with 403, and creates nothing', function () {
+    ['board' => $board, 'fran' => $fran] = p17bBoard(['guest_access_enabled' => true]);
+
+    $this->awaitRealtime($this->signIn($fran, p17bBoardPath($board)));
+    $guestPage = $this->awaitRealtime($this->joinAsGuest(p17bJoinPath($board), 'Guest Gia'));
+
+    $template = p17bSend($guestPage, 'POST', "/whiteboards/{$board->id}/template", ['name' => 'x']);
+    $duplicate = p17bSend($guestPage, 'POST', "/whiteboards/{$board->id}/duplicate");
+
+    expect($template['status'])->toBe(403)
+        ->and($template['body']['message'])->toBe('Guests cannot do this.')
+        ->and($duplicate['status'])->toBe(403)
+        ->and($duplicate['body']['message'])->toBe('Guests cannot do this.')
+        ->and(WhiteboardTemplate::query()->count())->toBe(0)
+        ->and(Whiteboard::query()->count())->toBe(1);
+
+    $guestPage->assertPresent('[data-realtime="connected"]');
+});
+
+it('[P17b-18] sends a guest who opens the team page to the login page, and answers 401 to the guest\'s requests on templates and on the team\'s boards', function () {
+    ['board' => $board, 'team' => $team, 'fran' => $fran] = p17bBoard(['guest_access_enabled' => true]);
+    $template = WhiteboardTemplate::factory()->create(['workspace_id' => $team->workspace_id, 'name' => 'Kick-off', 'created_by_user_id' => $fran->id]);
+    $templatePath = Str::before(p17bTeamPath($team), '/teams/')."/whiteboard-templates/{$template->id}";
+
+    $guestPage = $this->awaitRealtime($this->joinAsGuest(p17bJoinPath($board), 'Guest Gia'));
+
+    $update = p17bSend($guestPage, 'PATCH', $templatePath, ['name' => 'Taken over']);
+    $delete = p17bSend($guestPage, 'DELETE', $templatePath);
+    $create = p17bSend($guestPage, 'POST', p17bTeamPath($team).'/whiteboards', ['title' => 'Guest board', 'workspace_template_id' => $template->id]);
+
+    expect($update['status'])->toBe(401)
+        ->and($delete['status'])->toBe(401)
+        ->and($create['status'])->toBe(401)
+        ->and($template->fresh()->name)->toBe('Kick-off')
+        ->and(Whiteboard::query()->count())->toBe(1);
+
+    $guestPage->navigate(p17bTeamPath($team))
+        ->assertPathIs('/login')
+        ->assertDontSee('Kick-off')
+        ->assertDontSee('Whiteboard templates')
+        ->assertDontSee('New whiteboard');
+});
+
+it('[P17b-19] offers PNG, SVG and the clipboard in the image export, and asks to save files named after the board title', function () {
+    Storage::fake();
+
+    ['board' => $board, 'fran' => $fran, 'franMember' => $franMember] = p17bBoard(['title' => 'Export board']);
+    p17bScene($board, $franMember);
+
+    $page = $this->awaitRealtime($this->signIn($fran, p17bBoardPath($board)));
+
+    $this->awaitWhiteboardElements($page, 4);
+    p17bRecordDownloads($page);
+
+    $page->click('.whiteboard-canvas [data-testid="main-menu-trigger"]')
+        ->click('[data-testid="dropdown-menu"] [data-testid="image-export-button"]')
+        ->assertPresent('.ImageExportModal')
+        ->assertPresent('.ImageExportModal__preview__canvas canvas')
+        ->assertCount('.ImageExportModal__settings__buttons button', 3)
+        ->assertPresent('.ImageExportModal button[aria-label="Copy PNG to clipboard"]')
+        ->click('.ImageExportModal button[aria-label="Export to PNG"]')
+        ->assertScript("window.p17bDownloads.names.includes('Export board.png')", true)
+        ->click('.ImageExportModal button[aria-label="Export to SVG"]')
+        ->assertScript("window.p17bDownloads.names.includes('Export board.svg')", true);
+});
+
+it('[P17b-20] downloads the board data as a file named after the board title, which holds the elements and the image of the board', function () {
+    Storage::fake();
+
+    ['board' => $board, 'fran' => $fran, 'franMember' => $franMember] = p17bBoard(['title' => 'Export board']);
+    p17bScene($board, $franMember);
+    $holdsImage = "(async () => { document.querySelector('.ExportDialog--json button').click(); const blob = window.p17bDownloads.blobs.at(-1); const scene = JSON.parse(await blob.text()); return Object.keys(scene.files ?? {}).includes('".P17bFileId."'); })()";
+
+    $page = $this->awaitRealtime($this->signIn($fran, p17bBoardPath($board)));
+
+    $this->awaitWhiteboardElements($page, 4);
+    p17bRecordDownloads($page);
+
+    $page->click('.whiteboard-canvas [data-testid="main-menu-trigger"]')
+        ->click('[data-testid="dropdown-menu"] [data-testid="json-export-button"]')
+        ->assertPresent('.ExportDialog--json')
+        ->assertSeeIn('.ExportDialog--json', 'Download everything on the board as a data file.')
+        ->assertCount('.ExportDialog--json button', 1)
+        ->assertNotPresent('.ExportDialog--json .Card')
+        ->click('.ExportDialog--json button:text-is("Download board data")')
+        ->assertScript("window.p17bDownloads.names.includes('Export board.whiteboard.json')", true)
+        ->assertScript($holdsImage, true);
+
+    $exported = json_decode((string) $page->script(<<<'SCRIPT'
+        async () => {
+            const blob = window.p17bDownloads.blobs.at(-1);
+            const scene = JSON.parse(await blob.text());
+
+            return JSON.stringify({
+                type: blob.type,
+                source: scene.source,
+                origin: window.location.origin,
+                ids: scene.elements.filter((element) => !element.isDeleted).map((element) => element.id).sort(),
+                names: window.p17bDownloads.names,
+            });
+        }
+        SCRIPT), true, flags: JSON_THROW_ON_ERROR);
+
+    expect($exported['type'])->toBe('application/json')
+        ->and($exported['source'])->toBe($exported['origin'])
+        ->and($exported['ids'])->toBe(['p17bArrow', 'p17bImage', 'p17bShape', 'p17bSticky'])
+        ->and(collect($exported['names'])->filter(fn (string $name): bool => str_ends_with($name, '.excalidraw'))->all())->toBeEmpty();
+});
+
+it('[P17b-22] shows no library name and no outbound link in the canvas menu and in the two export dialogs', function () {
+    ['board' => $board, 'fran' => $fran, 'franMember' => $franMember] = p17bBoard(['title' => 'Export board']);
+    p17bStored($board, $franMember, ['id' => 'p17bOnly', 'x' => 300, 'y' => 200], 1);
+    $links = fn (string $scope): string => "Array.from(document.querySelectorAll('{$scope} a[href]')).filter((link) => link.getClientRects().length > 0).length";
+
+    $page = $this->awaitRealtime($this->signIn($fran, p17bBoardPath($board)));
+
+    $this->awaitWhiteboardElements($page, 1);
+
+    $page->click('.whiteboard-canvas [data-testid="main-menu-trigger"]')
+        ->assertPresent('[data-testid="dropdown-menu"] [data-testid="json-export-button"]')
+        ->assertNotPresent('[data-testid="dropdown-menu"] a[href]')
+        ->assertDontSeeIn('[data-testid="dropdown-menu"]', 'Excalidraw')
+        ->click('[data-testid="dropdown-menu"] [data-testid="image-export-button"]')
+        ->assertPresent('.ImageExportModal')
+        ->assertScript($links('.ImageExportModal'), 0)
+        ->assertDontSeeIn('.ImageExportModal', 'Excalidraw')
+        ->keys('.ImageExportModal button[aria-label="Export to PNG"]', 'Escape')
+        ->assertNotPresent('.ImageExportModal')
+        ->click('.whiteboard-canvas [data-testid="main-menu-trigger"]')
+        ->click('[data-testid="dropdown-menu"] [data-testid="json-export-button"]')
+        ->assertPresent('.ExportDialog--json')
+        ->assertScript($links('.excalidraw-modal-container'), 0)
+        ->assertDontSeeIn('.excalidraw-modal-container', 'Excalidraw')
+        ->assertDontSee('Excalidraw');
+});
+
+it('[P17b-23] duplicates a board from its menu and lands on the copy, with the same elements and image, the member as facilitator and the default settings', function () {
+    Storage::fake();
+
+    ['board' => $source, 'fran' => $fran, 'franMember' => $franMember] = p17bBoard(['guest_access_enabled' => true, 'cursors_enabled' => false]);
+    p17bScene($source, $franMember);
+
+    $page = $this->awaitRealtime($this->signIn($fran, p17bBoardPath($source)));
+
+    $this->awaitWhiteboardElements($page, 4);
+
+    $sourceShapes = p17bShapes($this->whiteboardElements($page, $source));
+
+    p17bOpenBoardMenu($page)
+        ->click('[role="menuitem"]:has-text("Duplicate this board")')
+        ->assertPathIsNot(p17bBoardPath($source))
+        ->assertSeeIn('header > h1', 'Sprint board (copy)');
+
+    $copy = Whiteboard::query()->whereKeyNot($source->id)->sole();
+
+    $page->assertPathIs(p17bBoardPath($copy));
+
+    $this->awaitRealtime($page);
+    $this->awaitWhiteboardElements($page, 4);
+
+    $snapshot = $this->whiteboardSnapshot($page, $copy);
+    $rows = WhiteboardElement::query()->where('whiteboard_id', $copy->id)->get();
+
+    expect($snapshot['board']['title'])->toBe('Sprint board (copy)')
+        ->and($snapshot['me']['isFacilitator'])->toBeTrue()
+        ->and($snapshot['me']['name'])->toBe('Fran Facilitator')
+        ->and($snapshot['board']['guestAccessEnabled'])->toBeFalse()
+        ->and($snapshot['board']['cursorsEnabled'])->toBeTrue()
+        ->and($snapshot['board']['reactionsEnabled'])->toBeTrue()
+        ->and(p17bShapes($snapshot['elements']))->toBe($sourceShapes)
+        ->and($rows->pluck('version')->unique()->all())->toBe([1])
+        ->and($rows->pluck('element_id')->intersect(['p17bSticky', 'p17bShape', 'p17bArrow', 'p17bImage'])->all())->toBeEmpty()
+        ->and($copy->team_id)->toBe($source->team_id)
+        ->and($copy->guest_token)->not->toBe($source->guest_token)
+        ->and($page->script(p17bFileDownload($copy)))->toBe('200 image/png '.strlen(base64_decode(P17bPng)))
+        ->and(WhiteboardFile::query()->where('whiteboard_id', $copy->id)->sole()->path)->toBe("whiteboards/{$copy->id}/".P17bFileId);
+});
+
+it('[P17b-24] makes a second member the facilitator of the copy she duplicates, while the source keeps its facilitator and its page shows nothing of it', function () {
+    Storage::fake();
+
+    ['board' => $source, 'fran' => $fran, 'franMember' => $franMember] = p17bBoard();
+    p17bScene($source, $franMember);
+    [$mia] = whiteboardMember($source);
+    p17bRenamed($mia, 'Mia Member');
+
+    $franPage = $this->awaitRealtime($this->signIn($fran, p17bBoardPath($source)));
+    $miaPage = $this->awaitRealtime($this->signIn($mia, p17bBoardPath($source)));
+
+    $this->awaitWhiteboardElements($franPage, 4);
+    $this->awaitWhiteboardElements($miaPage, 4);
+    $this->awaitWhiteboardScene($franPage, $source);
+
+    $seq = $source->fresh()->seq;
+
+    p17bOpenBoardMenu($miaPage)
+        ->click('[role="menuitem"]:has-text("Duplicate this board")')
+        ->assertPathIsNot(p17bBoardPath($source))
+        ->assertSeeIn('header > h1', 'Sprint board (copy)');
+
+    $copy = Whiteboard::query()->whereKeyNot($source->id)->sole();
+
+    $this->awaitRealtime($miaPage);
+
+    expect($this->whiteboardSnapshot($miaPage, $copy)['me']['isFacilitator'])->toBeTrue()
+        ->and($copy->facilitator->user_id)->toBe($mia->id)
+        ->and($source->fresh()->facilitator_member_id)->toBe($franMember->id)
+        ->and($source->fresh()->seq)->toBe($seq);
+
+    $this->addWhiteboardElement($franPage, $source, ['type' => 'ellipse', 'x' => 900, 'y' => 500]);
+    $this->awaitWhiteboardElements($franPage, 5);
+
+    $franSnapshot = $this->whiteboardSnapshot($franPage, $source);
+
+    $franPage->assertSeeIn('header > h1', 'Sprint board')
+        ->assertDontSee('(copy)')
+        ->assertNotPresent('[data-sonner-toast]')
+        ->assertPresent('[role="toolbar"][aria-label="Facilitation tools"]');
+
+    expect($franSnapshot['me']['isFacilitator'])->toBeTrue()
+        ->and($franSnapshot['board']['facilitatorMemberId'])->toBe($franMember->id)
+        ->and($copy->elements()->count())->toBe(4);
+});
+
+it('[P17b-25] leaves the original unchanged when the copy is edited, after a reload of the original too', function () {
+    Storage::fake();
+
+    ['board' => $source, 'fran' => $fran, 'franMember' => $franMember] = p17bBoard();
+    p17bScene($source, $franMember);
+    $copy = resolve(DuplicateWhiteboard::class)->handle($source, $fran);
+    $copySticky = WhiteboardElement::query()->where('whiteboard_id', $copy->id)->where('is_sticky', true)->sole();
+    $sourceBefore = WhiteboardElement::query()->where('whiteboard_id', $source->id)->orderBy('seq')->get()->map(fn (WhiteboardElement $element): array => $element->data)->all();
+
+    $page = $this->awaitRealtime($this->signIn($fran, p17bBoardPath($copy)));
+
+    $this->awaitWhiteboardElements($page, 4);
+
+    $removal = $this->writeWhiteboardElements($page, $copy, [
+        [...$copySticky->data, 'version' => $copySticky->version + 1, 'versionNonce' => 9004, 'isDeleted' => true],
+    ]);
+
+    expect($removal['status'])->toBe(200)
+        ->and($removal['body']['rejected'])->toBeArray()->toBeEmpty();
+
+    $this->awaitWhiteboardElements($page, 3);
+    $this->awaitWhiteboardScene($page, $copy);
+
+    $page->navigate(p17bBoardPath($source));
+
+    $this->awaitRealtime($page);
+    $this->awaitWhiteboardElements($page, 4);
+
+    $page->assertSeeIn('header > h1', 'Sprint board')
+        ->assertDontSee('(copy)');
+
+    expect(p17bShapes($this->whiteboardElements($page, $source)))->toBe(p17bShapes($sourceBefore))
+        ->and(collect($this->whiteboardElements($page, $source))->pluck('id')->sort()->values()->all())->toBe(['p17bArrow', 'p17bImage', 'p17bShape', 'p17bSticky'])
+        ->and(WhiteboardElement::query()->where('whiteboard_id', $copy->id)->where('is_deleted', false)->count())->toBe(3);
+});
+
+it('[P17b-26] ends the title of a copy with the French word when the member who duplicates uses French', function () {
+    ['board' => $source, 'fran' => $fran, 'franMember' => $franMember] = p17bBoard(['title' => 'Carte du sprint']);
+    p17bStored($source, $franMember, ['id' => 'p17bOnly', 'x' => 300, 'y' => 200], 1);
+    p17bRenamed($fran, 'Fran Facilitator', 'fr');
+
+    $page = $this->awaitRealtime($this->signIn($fran, p17bBoardPath($source)));
+
+    p17bOpenBoardMenu($page, 'Menu du tableau')
+        ->click('[role="menuitem"]:has-text("Dupliquer ce tableau")')
+        ->assertPathIsNot(p17bBoardPath($source))
+        ->assertSeeIn('header > h1', 'Carte du sprint (copie)');
+
+    $copy = Whiteboard::query()->whereKeyNot($source->id)->sole();
+
+    expect($copy->title)->toBe('Carte du sprint (copie)')
+        ->and($copy->elements()->count())->toBe(1);
+});
+
+it('[P17b-27] shows the trash button to each member only on the boards she facilitates, and to a workspace admin on every board', function () {
+    ['board' => $franBoard, 'team' => $team, 'fran' => $fran] = p17bBoard(['title' => 'Fran board']);
+    $miaBoard = Whiteboard::factory()->create(['team_id' => $team->id, 'title' => 'Mia board']);
+    [$mia] = whiteboardFacilitator($miaBoard);
+    p17bRenamed($mia, 'Mia Member');
+    $ada = p17bRenamed(workspaceManager($team->workspace), 'Ada Admin');
+    $franTrash = 'button[aria-label="Delete Fran board"]';
+    $miaTrash = 'button[aria-label="Delete Mia board"]';
+
+    $franPage = $this->signIn($fran, p17bTeamPath($team));
+
+    $franPage->assertSeeIn("a[href=\"/whiteboards/{$franBoard->id}\"]", 'Facilitated by Fran Facilitator')
+        ->assertSeeIn("a[href=\"/whiteboards/{$miaBoard->id}\"]", 'Facilitated by Mia Member')
+        ->assertPresent($franTrash)
+        ->assertNotPresent($miaTrash);
+
+    $miaPage = $this->signIn($mia, p17bTeamPath($team));
+
+    $miaPage->assertPresent("a[href=\"/whiteboards/{$franBoard->id}\"]")
+        ->assertPresent($miaTrash)
+        ->assertNotPresent($franTrash);
+
+    $adaPage = $this->signIn($ada, p17bTeamPath($team));
+
+    $adaPage->assertPresent("a[href=\"/whiteboards/{$franBoard->id}\"]")
+        ->assertPresent($franTrash)
+        ->assertPresent($miaTrash);
+});
+
+it('[P17b-28] removes a board from the list without a page load when its facilitator deletes it, and tells an open tab on that board that it was deleted', function () {
+    ['board' => $board, 'team' => $team, 'fran' => $fran, 'franMember' => $franMember] = p17bBoard();
+    p17bStored($board, $franMember, ['id' => 'p17bOnly', 'x' => 300, 'y' => 200], 1);
+    $kept = Whiteboard::factory()->create(['team_id' => $team->id, 'title' => 'Kept board']);
+
+    $boardPage = $this->awaitRealtime($this->signIn($fran, p17bBoardPath($board)));
+    $teamPage = $this->signIn($fran, p17bTeamPath($team));
+
+    $teamPage->assertPresent("a[href=\"/whiteboards/{$board->id}\"]");
+    $teamPage->script('() => { window.p17bSamePage = true; return true; }');
+
+    $teamPage->click('button[aria-label="Delete Sprint board"]')
+        ->assertSeeIn('[role="dialog"]', 'Delete this board?')
+        ->assertSeeIn('[role="dialog"]', 'Everything on it is removed for everyone.')
+        ->click('[role="dialog"] button:text-is("Delete this board")')
+        ->assertNotPresent("a[href=\"/whiteboards/{$board->id}\"]")
+        ->assertNotPresent('[role="dialog"]')
+        ->assertPresent("a[href=\"/whiteboards/{$kept->id}\"]")
+        ->assertScript('window.p17bSamePage === true', true);
+
+    $boardPage->assertSee('This board was deleted.')
+        ->assertNotPresent('[data-realtime]')
+        ->assertNotPresent('.whiteboard-canvas');
+
+    expect(Whiteboard::query()->whereKey($board->id)->exists())->toBeFalse()
+        ->and(WhiteboardElement::query()->where('whiteboard_id', $board->id)->count())->toBe(0)
+        ->and(Whiteboard::query()->whereKey($kept->id)->exists())->toBeTrue();
+});
+
+it('[P17b-29] reloads the scene from the snapshot when the delta it asks for is older than the purge mark, without losing anything and without the reconnecting banner', function () {
+    ['board' => $board, 'fran' => $fran, 'franMember' => $franMember] = p17bBoard();
+    p17bStored($board, $franMember, ['id' => 'p17bFirst', 'index' => 'a0', 'x' => 300, 'y' => 200], 1);
+    $refused = "performance.getEntriesByType('resource').some((entry) => entry.name.includes('/elements?since=1') && entry.responseStatus === 409)";
+
+    $page = $this->awaitRealtime($this->signIn($fran, p17bBoardPath($board)));
+
+    $this->awaitResync($page);
+    $this->awaitWhiteboardElements($page, 1);
+
+    $page->assertScript("performance.getEntriesByType('resource').some((entry) => entry.name.includes('/elements?since=') && entry.responseEnd > 0)", true);
+
+    $snapshotsBefore = (int) $page->script('() => '.p17bSnapshotRequests());
+
+    p17bStored($board, $franMember, ['id' => 'p17bBehind', 'index' => 'a1', 'x' => 600, 'y' => 200, 'versionNonce' => 201], 2);
+    Whiteboard::query()->whereKey($board->id)->update(['purged_seq' => 2]);
+
+    $this->addWhiteboardElement($page, $board, ['x' => 900, 'y' => 200]);
+
+    $this->awaitWhiteboardElements($page, 3);
+    $this->awaitWhiteboardScene($page, $board);
+
+    $page->assertScript($refused, true)
+        ->assertDontSee('Reconnecting…')
+        ->assertPresent('[data-realtime="connected"]');
+
+    expect((int) $page->script('() => '.p17bSnapshotRequests()))->toBeGreaterThan($snapshotsBefore)
+        ->and(collect($this->whiteboardElements($page, $board))->pluck('id')->all())->toContain('p17bFirst', 'p17bBehind')
+        ->and($board->fresh()->seq)->toBe(3);
+});
+
+it('[P17b-30a] keeps the reconnecting banner while the snapshot cannot be fetched, tries again, and clears the banner once the snapshot arrives', function () {
+    ['board' => $board, 'fran' => $fran, 'franMember' => $franMember] = p17bBoard();
+    p17bStored($board, $franMember, ['id' => 'p17bFirst', 'index' => 'a0', 'x' => 300, 'y' => 200], 1);
+
+    $page = $this->awaitRealtime($this->signIn($fran, p17bBoardPath($board)));
+
+    $this->awaitResync($page);
+    $this->awaitWhiteboardElements($page, 1);
+
+    $page->assertScript("performance.getEntriesByType('resource').some((entry) => entry.name.includes('/elements?since=') && entry.responseEnd > 0)", true)
+        ->assertDontSee('Reconnecting…');
+
+    p17bBlockSnapshots($page);
+    p17bStored($board, $franMember, ['id' => 'p17bBehind', 'index' => 'a1', 'x' => 600, 'y' => 200, 'versionNonce' => 201], 2);
+    Whiteboard::query()->whereKey($board->id)->update(['purged_seq' => 2]);
+
+    $this->addWhiteboardElement($page, $board, ['x' => 900, 'y' => 200]);
+
+    $page->assertScript('window.p17bBlocked.refused >= 1', true)
+        ->assertSee('Reconnecting…')
+        ->assertScript('window.p17bBlocked.refused >= 2', true)
+        ->assertSee('Reconnecting…')
+        ->assertAttribute('[data-scene]', 'data-scene', '1:1:100');
+
+    p17bUnblockSnapshots($page);
+
+    $this->awaitWhiteboardElements($page, 3);
+
+    $page->assertDontSee('Reconnecting…');
+
+    $this->awaitWhiteboardScene($page, $board);
+
+    expect(collect($this->whiteboardElements($page, $board))->pluck('id')->all())->toContain('p17bFirst', 'p17bBehind');
 });
