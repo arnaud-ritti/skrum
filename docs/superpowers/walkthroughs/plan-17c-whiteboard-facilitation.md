@@ -4,7 +4,29 @@ Run on 2026-10-01 in Chrome against the local Sail stack, at commit e6ab183, on 
 
 ## Result
 
-Date: 2026-10-01. Commit under test: e6ab183. All seven criteria of spec §16 "Facilitation" were observed to hold. Three defects were found around them, none on a server rule. No console error on the board page in any tab.
+Date: 2026-10-01. Commit under test: 1666178 (re-check after the fixes of the three defects of the first run). The three defects are fixed; B5.5, B7.5 and B7.8 are now ticked. No new defect. No console error on the board page in the tabs of A and B (console reading started after the pages had loaded).
+
+The re-check ran on a second fresh board "Walkthrough 17c" (`01a0f7a6-0e17-723b-8bd8-f7e1029527d5`), same accounts and origins as the first run. Only the three lines and what the fix could have touched were replayed; every other tick of this file dates from the first run at e6ab183.
+
+1. **B5.5, fixed.** B typed "unsent words" in a text (stored version 16, seq 1), A locked the board with the top-bar button. Two seconds later `textarea.excalidraw-wysiwyg` was gone from B's page, the focus was on the canvas container in view mode, and the toast "This board is locked." and the status row showed. B then typed " MORE" and "X": no editor, nothing stored (version 16, seq 1). A unlocked, B pressed Escape: B's tools came back and the snapshot was still "unsent words", version 16, seq 1.
+2. **B7.5, fixed.** Vote open over three notes. B resized "Alpha" by its corner (200 × 200 → 227 × 227, rectangle `8a54946b…` version 5, seq 11). A double-clicked it, typed " ff", pressed Escape: toast "Notes cannot be edited while a vote is open.", words back to "Alpha", and in `GET snapshot` the rectangle was still 227 × 227 at version 5, the text at version 8, seq 11; same picture in A and B. A second refused edit by A on that note after dragging it (click away instead of Escape) also left it at 227 × 227. The rest of the line was replayed too: B's refused edit of "Beta", B emptying "Beta" and clicking away (words back, toast), B dragging it (rectangle and words both moved by 40, 30), B typing in the wordless note (words gone, toast, note still draggable), A dragging "Alpha" with its words; after the close B's double-click on "Alpha" opened the existing words and stored "Alpha ok" on the same text element, the note still 227 high. Not replayed in this pass: recolouring a note under vote, and A dragging the note B had emptied (A dragged "Alpha" instead).
+3. **B7.8, fixed.** Vote closed, results panel open in A and B ("1. Beta 2 votes, 2. Alpha 1 vote"). A selected "Beta" and pressed Delete: A's "Show on the board" button of "Beta" had `disabled` true 50 ms after the key and at 1.2, 2.2 and 3.2 s, without reopening the panel; B's was disabled too; "Alpha" stayed enabled in both and still centred its note. A then undid the deletion: the "Beta" button was enabled again in A and in B.
+
+Limits of the re-check:
+
+- The Chrome window was in the background (`document.visibilityState` "hidden"), as in the first run: toasts do not expire, so "This board is locked." was still on B's screen long after the unlock.
+- The sticky notes were given their words by a double-click; nothing was scripted through the endpoints except reading `GET snapshot`, enabling guest access (`PATCH settings`) and reading the guest link.
+- Two tabs of the first tab group (B's first board tab and an empty one) fell out of the tools' reach when the group's first tab was closed, and could not be closed by the tools; B's second half of the run was done in a new tab with the same guest session.
+
+Seen in passing during the re-check:
+
+- B's text "unsent words" was drawn as "unsent word" on B's own canvas after the lock closed the editor (stored width 106, too narrow for the words) until B opened and closed it again after the unlock (width 130, version 17). The stored words were right throughout. Not seen in the first run, where the editor stayed open; not judged a defect of the line.
+- After clicking a colour of the sticky tool the keyboard focus stays on that button: Enter adds another note instead of opening the new note's text.
+- Left on the Demo Team: a second board "Walkthrough 17c".
+
+### First run (commit e6ab183)
+
+All seven criteria of spec §16 "Facilitation" were observed to hold. Three defects were found around them, none on a server rule; all three are fixed at 1666178 (see above). No console error on the board page in any tab.
 
 Defects:
 
@@ -12,7 +34,7 @@ Defects:
 2. **B7.5 — a refused text edit can collapse the note.** With a vote open, B had resized the note "Alpha" (200 → 227 wide, stored version 7). A then double-clicked it, typed " ff" and pressed Escape. Expected: the text snaps back and nothing else changes. Observed: the toast showed and the text stayed "Alpha" (version 9), but the note rectangle was stored at height 35 (version 8, was 227), so the note became a thin strip with its words below it, in A, in B and in `GET snapshot`. The same refused edit by B on the note before it was resized did not do this.
 3. **B7.8 — the entry of a deleted note stays enabled for the person who deleted it.** A deleted the note "Beta" with the results panel open. Observed: B's panel disabled the entry's "Show on the board" button; A's panel kept it enabled five seconds later (clicking it did nothing). It was disabled in A once the panel was opened again from the board menu.
 
-Limits of this run:
+Limits of the first run:
 
 - The Chrome window driven by the tools was in the background (`document.visibilityState` "hidden"): timers are throttled to one second and toasts do not expire. The timings below were taken in that state.
 - 375 px could not be reached: Chrome's window does not go under 500 px. The narrow checks were made at 500 px.
@@ -55,7 +77,7 @@ Run `vendor/bin/sail artisan migrate --no-interaction` and `npm run build`. Acco
 
 - [x] **B5.3** A locks: B's canvas loses its shapes toolbar and the sticky tool (in the toolbar and in the top bar), a drag pans, the status row says "This board is locked."; B can still pan, zoom and send a reaction. A can still draw and B sees it. Unlock: B's tools come back without a reload. — B's ❤️ arrived on A with "Guest Gia"; A moved the shape instead of drawing a new one and B saw it
 - [x] **B5.4** From B's console on a locked board, `fetch` a `PUT /whiteboards/<id>/elements` with one element and the XSRF header: 403, body `errors.locked`; the page stays on the board (no "Your access to this board has ended") and the element is not in `GET snapshot`.
-- [ ] **B5.5** B starts typing in a text, A locks while B types: B's unsent text disappears, B sees the toast "This board is locked." and stays on the board in view mode, and A's canvas never shows the text. — **defect 1.** Toast, view mode and staying on the board were observed, and nothing typed during the lock was stored while it lasted; but the editor stayed open on B and what B typed during the lock was stored after the unlock. Also: what B types before the lock is sent while typing (it was already stored), so "A's canvas never shows the text" can only be about the characters typed after the lock
+- [x] **B5.5** B starts typing in a text, A locks while B types: B's unsent text disappears, B sees the toast "This board is locked." and stays on the board in view mode, and A's canvas never shows the text. — re-check at 1666178: the editor closes on the lock, what B types afterwards goes nowhere and nothing is stored after the unlock (see Result). First run at e6ab183, **defect 1**, since fixed: toast, view mode and staying on the board were observed, and nothing typed during the lock was stored while it lasted; but the editor stayed open on B and what B typed during the lock was stored after the unlock. Also: what B types before the lock is sent while typing (it was already stored), so "A's canvas never shows the text" can only be about the characters typed after the lock
 - [x] **B5.8** The canvas's own "View mode" entry (context menu on the empty canvas) is still there on an unlocked board.
 
 
@@ -98,7 +120,7 @@ The secrecy invariant itself is proved by `WhiteboardVotingSecrecyTest` over eve
 
 - [x] **C6.1** Setup: the vote of section 5 holds votes from A and B. Action: A closes it. Expected: A and B show the same counts on the notes and the same ranked list. — "1. Alpha 2 votes, 2. Beta 2 votes" and a badge "2" on each, in both
 
-- [ ] **B7.8** A closes the vote: in A and B the controls become count badges with the same numbers, and the results panel opens beside the canvas (the canvas shrinks; nothing is covered) with the same ranked list. "Show on the board" centres the note. A deleted note's entry has its button disabled. — **defect 3**: disabled in B, still enabled in A, who deleted the note. Everything else on the line was observed ("Show on the board" centred the note; the animation is slow in a background tab)
+- [x] **B7.8** A closes the vote: in A and B the controls become count badges with the same numbers, and the results panel opens beside the canvas (the canvas shrinks; nothing is covered) with the same ranked list. "Show on the board" centres the note. A deleted note's entry has its button disabled. — re-check at 1666178: disabled in A within 50 ms of the delete and in B, enabled again in both after A's undo; "Show on the board" still centres a note; controls becoming badges and the panel opening were seen again. First run at e6ab183, **defect 3**, since fixed: disabled in B, still enabled in A, who deleted the note. Everything else on the line was observed ("Show on the board" centred the note; the animation is slow in a background tab)
 - [x] **B7.9** A hides the results: badges and panel disappear for both. The board menu's "Vote results" shows them again under "Previous votes" for A and for a member; a guest has no such entry and no history. — "for a member" observed with A after handing facilitation over (menu entry present, `votingHistory` of one session); the guest's menu has "Hide my cursor" only and its `votingHistory` is empty
 - [x] **B7.11** Dark theme and 375 px width: controls, badges, status row and panel are legible; the panel takes the board area and closes. — the whole run was in the dark theme; width 500 px, not 375 px: the status row wraps on two lines, the panel takes the board area, its cross closes it and a "Vote results" button brings it back
 
@@ -107,7 +129,7 @@ The secrecy invariant itself is proved by `WhiteboardVotingSecrecyTest` over eve
 
 - [x] **S7.1** Setup: an open vote with a sticky in scope. Action: B sends a `PUT elements` by `fetch` with the sticky's bound text element, its `version` raised by one and its `text` and `originalText` changed. Expected: the response is HTTP 200 (not a 4xx) with `seq` equal to `fromSeq`, `rejected.length === 1`, `rejected[0].id` the id of that text element, `rejected[0].reason === 'voting'` and `rejected[0].element` the stored element with its old `text`, as `WhiteboardVotingWritesTest` pins; the text element is unchanged (same `text`, `originalText` and `version`) in `GET snapshot`. — 200, seq 21 = fromSeq 21, one rejected, `voting`, stored text "Alpha", version 7 before and after
 
-- [ ] **B7.5** B double-clicks an in-scope note and types: the text snaps back and the toast "Notes cannot be edited while a vote is open." shows; B can still drag, recolour and resize it, and A sees those. A (facilitator) is refused the same way. Then B double-clicks an in-scope note, deletes all its words and clicks away: the words come back with the same toast; B and then A drag that note and its words move with it in both browsers; after the vote is closed a double-click on it edits the existing words (no second text appears on the note). B double-clicks an in-scope note that has no words and types: the words disappear with the toast, and the note can still be dragged. — **defect 2**: A's refused edit of the note B had resized collapsed the note. Every other part of the line was observed as written
+- [x] **B7.5** B double-clicks an in-scope note and types: the text snaps back and the toast "Notes cannot be edited while a vote is open." shows; B can still drag, recolour and resize it, and A sees those. A (facilitator) is refused the same way. Then B double-clicks an in-scope note, deletes all its words and clicks away: the words come back with the same toast; B and then A drag that note and its words move with it in both browsers; after the vote is closed a double-click on it edits the existing words (no second text appears on the note). B double-clicks an in-scope note that has no words and types: the words disappear with the toast, and the note can still be dragged. — re-check at 1666178: A's refused edit of the note B had resized leaves the note at 227 × 227, version unchanged (see Result); recolouring and A's drag of the emptied note were not replayed in the re-check. First run at e6ab183, **defect 2**, since fixed: A's refused edit of the note B had resized collapsed the note. Every other part of the line was observed as written
 - [x] **B7.6** A deletes a note B voted for: B's "Votes left" goes back up within about 2 s without a reload. — 0 → 1 in both tabs of B without a reload, read 4 s after the delete; the delay itself was not measured
 
 
