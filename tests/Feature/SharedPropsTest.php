@@ -2,7 +2,9 @@
 
 use App\Enums\WorkspaceRole;
 use App\Models\Team;
+use App\Models\User;
 use App\Models\Workspace;
+use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia;
 
 it('shares the avatar URL of the signed-in user and keeps the user attributes', function () {
@@ -44,13 +46,14 @@ it('shares the team of the route, with its member count', function () {
     $beta = Team::factory()->for($workspace)->create(['name' => 'Beta']);
     $alpha->members()->attach($user);
     $beta->members()->attach($user);
+    $beta->members()->attach(User::factory()->count(2)->create());
 
     $this->actingAs($user)
         ->get(route('teams.show', [$workspace, $beta]))
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('currentTeam.id', $beta->id)
             ->where('currentTeam.name', 'Beta')
-            ->where('currentTeam.membersCount', 1)
+            ->where('currentTeam.membersCount', 3)
             ->has('teams', 2));
 });
 
@@ -105,4 +108,44 @@ it('shows every team of the workspace to a manager who belongs to none', functio
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->has('teams', 2)
             ->whereNot('currentTeam', null));
+});
+
+it('ignores a remembered team that belongs to another workspace', function () {
+    $workspace = Workspace::factory()->create();
+    $user = workspaceManager($workspace, WorkspaceRole::Member);
+    $alpha = Team::factory()->for($workspace)->create(['name' => 'Alpha']);
+    $alpha->members()->attach($user);
+    $foreign = Team::factory()->create(['name' => 'Aardvark']);
+
+    $this->actingAs($user)
+        ->withSession(['current_team_id' => $foreign->id])
+        ->get(route('workspaces.show', $workspace))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('currentTeam.id', $alpha->id));
+});
+
+it('does not resolve a team of another workspace through the route', function () {
+    $workspace = Workspace::factory()->create();
+    $user = workspaceManager($workspace, WorkspaceRole::Member);
+    $foreign = Team::factory()->create();
+
+    $this->actingAs($user)
+        ->get(route('teams.show', [$workspace, $foreign]))
+        ->assertNotFound();
+});
+
+it('queries the visible teams once for both shared props', function () {
+    $workspace = Workspace::factory()->create();
+    $user = workspaceManager($workspace, WorkspaceRole::Member);
+    $user->forceFill(['current_workspace_id' => $workspace->id])->save();
+    $team = Team::factory()->for($workspace)->create();
+    $team->members()->attach($user);
+
+    DB::enableQueryLog();
+    $this->actingAs($user)->get(route('profile.edit'));
+    $teamQueries = collect(DB::getQueryLog())
+        ->filter(fn (array $query) => str_starts_with($query['query'], 'select * from "teams"'))
+        ->count();
+    DB::disableQueryLog();
+
+    expect($teamQueries)->toBe(1);
 });

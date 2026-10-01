@@ -5,10 +5,9 @@ namespace App\Http\Middleware;
 use App\Actions\ActionItems\ActionItemQuery;
 use App\Models\ActionItem;
 use App\Models\Team;
-use App\Models\User;
 use App\Models\Workspace;
+use App\Support\CurrentTeamResolver;
 use Illuminate\Http\Request;
-use Illuminate\Support\Collection;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -41,6 +40,8 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $teamResolver = new CurrentTeamResolver($request);
+
         return [
             ...parent::share($request),
             'name' => config('app.name'),
@@ -60,10 +61,10 @@ class HandleInertiaRequests extends Middleware
                 ->map(fn (Workspace $workspace) => $workspace->only(['id', 'name', 'slug']))
                 ->all() ?? [],
             'currentWorkspace' => fn (): ?array => $this->currentWorkspace($request),
-            'teams' => fn (): array => $this->visibleTeams($request)
+            'teams' => fn (): array => $teamResolver->visibleTeams()
                 ->map(fn (Team $team): array => $team->only(['id', 'name']))
                 ->all(),
-            'currentTeam' => fn (): ?array => $this->currentTeam($request),
+            'currentTeam' => fn (): ?array => $this->currentTeam($teamResolver),
             'notifications' => fn (): ?array => $request->user() === null
                 ? null
                 : ['unreadCount' => $request->user()->unreadNotifications()->count()],
@@ -85,41 +86,6 @@ class HandleInertiaRequests extends Middleware
         return [...$user->toArray(), 'avatarUrl' => $user->avatarUrl()];
     }
 
-    private function workspaceInScope(Request $request, User $user): ?Workspace
-    {
-        $workspace = $request->route('workspace');
-
-        if (! $workspace instanceof Workspace) {
-            $workspace = $user->currentWorkspace;
-        }
-
-        if ($workspace === null || ! $user->belongsToWorkspace($workspace)) {
-            return null;
-        }
-
-        return $workspace;
-    }
-
-    /**
-     * @return Collection<int, Team>
-     */
-    private function visibleTeams(Request $request): Collection
-    {
-        $user = $request->user();
-
-        if ($user === null) {
-            return collect();
-        }
-
-        $workspace = $this->workspaceInScope($request, $user);
-
-        if ($workspace === null) {
-            return collect();
-        }
-
-        return $workspace->teamsVisibleTo($user)->sortBy('name')->values();
-    }
-
     /**
      * @return array{
      *     id: string,
@@ -127,17 +93,9 @@ class HandleInertiaRequests extends Middleware
      *     membersCount: int
      * }|null
      */
-    private function currentTeam(Request $request): ?array
+    private function currentTeam(CurrentTeamResolver $resolver): ?array
     {
-        $teams = $this->visibleTeams($request);
-        $routeTeam = $request->route('team');
-
-        if ($routeTeam instanceof Team && $request->hasSession() && $teams->contains('id', $routeTeam->id)) {
-            $request->session()->put('current_team_id', $routeTeam->id);
-        }
-
-        $rememberedId = $request->hasSession() ? $request->session()->get('current_team_id') : null;
-        $team = $teams->firstWhere('id', $rememberedId) ?? $teams->first();
+        $team = $resolver->currentTeam();
 
         if ($team === null) {
             return null;
