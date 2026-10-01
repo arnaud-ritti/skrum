@@ -4,7 +4,9 @@ use App\Enums\ColumnColor;
 use App\Enums\RetroPhase;
 use App\Enums\TemplateCategory;
 use App\Enums\WorkspaceRole;
+use App\Models\Card;
 use App\Models\Column;
+use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\Team;
 use App\Models\User;
@@ -69,6 +71,71 @@ function p08aPhaseOrder(): string
 function p08aColumnTitles(): string
 {
     return "[...document.querySelectorAll('[data-test^=\"retro-column-\"] h2')].map((title) => title.textContent).join(' | ')";
+}
+
+/**
+ * @param  array<string, mixed>  $attributes
+ * @return array{
+ *     0: Retro,
+ *     1: array<int, Column>,
+ *     2: User,
+ *     3: User,
+ *     4: Participant,
+ *     5: Participant
+ * }
+ */
+function p08aBoard(RetroPhase $phase = RetroPhase::Writing, array $attributes = []): array
+{
+    $retro = Retro::factory()
+        ->inPhase($phase)
+        ->withIcebreaker()
+        ->withGuestAccess()
+        ->create(['title' => 'Sprint 14', ...$attributes]);
+
+    $columns = [];
+
+    foreach (['Start', 'Stop', 'Continue'] as $position => $title) {
+        $columns[] = Column::factory()->create([
+            'retro_id' => $retro->id,
+            'title' => $title,
+            'position' => $position,
+        ]);
+    }
+
+    [$alice, $aliceParticipant] = retroFacilitator($retro);
+    [$bob, $bobParticipant] = retroMember($retro);
+
+    $alice->update(['name' => 'Alice Martin', 'locale' => 'en']);
+    $bob->update(['name' => 'Bob Stone', 'locale' => 'en']);
+
+    return [$retro->fresh(), $columns, $alice, $bob, $aliceParticipant, $bobParticipant];
+}
+
+function p08aCard(Retro $retro, Column $column, Participant $author, string $content, int $position = 0): Card
+{
+    return Card::factory()->create([
+        'retro_id' => $retro->id,
+        'column_id' => $column->id,
+        'participant_id' => $author->id,
+        'content' => $content,
+        'position' => $position,
+    ]);
+}
+
+function p08aColumn(Column $column): string
+{
+    return "[data-test=\"retro-column-{$column->id}\"]";
+}
+
+function p08aOpenSettings(mixed $page): mixed
+{
+    $page->click('[aria-label="Facilitator menu"]')
+        ->assertSee('Settings…')
+        ->click('Settings…')
+        ->assertSeeIn('[role="dialog"]', 'Retrospective settings')
+        ->assertNotPresent('[role="menu"]');
+
+    return $page;
 }
 
 it('[P08a-01a] prefills the title and filters the template catalogue by search and by category', function () {
@@ -341,4 +408,288 @@ it('[P08a-07d] keeps the columns of a retro when its workspace template is delet
         ->and($retro->fresh()->workspace_template_id)->toBeNull()
         ->and($retro->fresh()->template)->toBe('workspace')
         ->and($retro->columns()->count())->toBe(2);
+});
+
+it('[P08a-02a] shows the Icebreaker phase with its game and the shared timer to the facilitator and a guest', function () {
+    [$retro, , $alice] = p08aBoard(RetroPhase::Icebreaker);
+    config(['queue.default' => 'database']);
+    $stage = 'section[aria-label="Icebreaker game"]';
+    $isCountingDown = "/^(1:00|0:[3-5]\\d)$/.test(document.querySelector('[role=\"timer\"]').innerText.trim())";
+
+    $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
+    $carolPage = $this->awaitRealtime($this->joinAsGuest("/join/{$retro->guest_token}", 'Carol Guest'));
+
+    foreach ([$alicePage, $carolPage] as $page) {
+        $page->assertSeeIn('[aria-current="step"]', 'Icebreaker')
+            ->assertScript(p08aPhaseOrder(), 'Icebreaker > Writing > Grouping > Voting > Discussing > Completed')
+            ->assertPresent($stage)
+            ->assertNotPresent('[data-test^="retro-column-"]')
+            ->assertNotPresent('[role="timer"]');
+    }
+
+    $alicePage->assertSeeIn('[aria-label="Game"]', 'Draw & Guess')
+        ->assertPresent('header button:has-text("Next")')
+        ->assertNotPresent('header button:has-text("Previous")');
+    $carolPage->assertSeeIn($stage, 'Draw & Guess')
+        ->assertNotPresent('[aria-label="Game"]')
+        ->assertNotPresent('header button:has-text("Next")');
+
+    $alicePage->click('[aria-label="Timer"]')
+        ->assertPresent('[role="menu"]')
+        ->click('[role="menuitem"]:has-text("1 min")')
+        ->assertNotPresent('[role="menu"]');
+
+    foreach ([$alicePage, $carolPage] as $page) {
+        $page->assertPresent('[role="timer"]')->assertScript($isCountingDown, true);
+    }
+
+    expect($retro->fresh()->timer_ends_at)->not->toBeNull()
+        ->and($retro->fresh()->phase)->toBe(RetroPhase::Icebreaker);
+});
+
+it('[P08a-02b] shows a column and its description added by the facilitator to a guest', function () {
+    [$retro, , $alice] = p08aBoard();
+    $columns = '[data-test^="retro-column-"]';
+
+    $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
+    $carolPage = $this->awaitRealtime($this->joinAsGuest("/join/{$retro->guest_token}", 'Carol Guest'));
+
+    $carolPage->assertCount($columns, 3)
+        ->assertNotPresent('input[aria-label="Column title"]');
+
+    $alicePage->assertVisible('input[aria-label="Column title"]')
+        ->fill('input[aria-label="Column title"]', 'Kudos')
+        ->click('button:has-text("Add column")')
+        ->assertCount($columns, 4);
+
+    $column = Column::query()->where('retro_id', $retro->id)->where('title', 'Kudos')->firstOrFail();
+    $kudos = p08aColumn($column);
+
+    $carolPage->assertCount($columns, 4)
+        ->assertSeeIn("{$kudos} h2", 'Kudos');
+
+    $alicePage->click("{$kudos} [aria-label=\"Column menu\"]")
+        ->assertPresent('[role="menu"]')
+        ->click('[role="menuitem"]:has-text("Edit description")')
+        ->assertSeeIn('[role="dialog"]', 'Column description')
+        ->fill('[role="dialog"] textarea', 'Thank a teammate for something specific')
+        ->click('[role="dialog"] button:has-text("Save")')
+        ->assertNotPresent('[role="dialog"]')
+        ->assertSeeIn($kudos, 'Thank a teammate for something specific');
+
+    $carolPage->assertSeeIn($kudos, 'Thank a teammate for something specific')
+        ->assertNotPresent('[aria-label="Column menu"]');
+
+    expect($column->fresh()->description)->toBe('Thank a teammate for something specific')
+        ->and($column->fresh()->position)->toBe(3);
+});
+
+it('[P08a-03] hides the cards of others again each time the retro moves back to Writing or to Icebreaker', function () {
+    [$retro, $columns, $alice] = p08aBoard(RetroPhase::Icebreaker);
+    $start = p08aColumn($columns[0]);
+    $composer = "{$start} textarea";
+    $add = "{$start} form button:not([type=\"button\"])";
+    $next = 'header button:has-text("Next")';
+    $previous = 'header button:has-text("Previous")';
+    $current = '[aria-current="step"]';
+    $stage = 'section[aria-label="Icebreaker game"]';
+    $aliceCard = 'Ship smaller pull requests';
+    $carolCard = 'Keep the demo on Fridays';
+    $inDocument = fn (string $text): string => "document.documentElement.outerHTML.includes(\"{$text}\")";
+
+    $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
+    $carolPage = $this->awaitRealtime($this->joinAsGuest("/join/{$retro->guest_token}", 'Carol Guest'));
+
+    $alicePage->assertPresent($stage)
+        ->click($next)
+        ->assertSeeIn($current, 'Writing');
+    $carolPage->assertSeeIn($current, 'Writing')
+        ->assertCount('[aria-label="Add a card…"]', 3);
+
+    $alicePage->fill($composer, $aliceCard)
+        ->click($add)
+        ->assertSee($aliceCard);
+    $carolPage->assertSee('Hidden until writing ends')
+        ->fill($composer, $carolCard)
+        ->click($add)
+        ->assertSee($carolCard)
+        ->assertDontSee($aliceCard);
+    $alicePage->assertCount('article[id^="card-"]', 2)
+        ->assertSee('Hidden until writing ends')
+        ->assertDontSee($carolCard);
+
+    $alicePage->click($next)
+        ->assertSeeIn($current, 'Grouping')
+        ->assertSee($carolCard);
+    $carolPage->assertSeeIn($current, 'Grouping')
+        ->assertSee($aliceCard)
+        ->assertDontSee('Hidden until writing ends');
+
+    $alicePage->click($previous)
+        ->assertSeeIn($current, 'Writing')
+        ->assertSee('Hidden until writing ends')
+        ->assertSee($aliceCard)
+        ->assertDontSee($carolCard)
+        ->assertScript($inDocument($carolCard), false);
+    $carolPage->assertSeeIn($current, 'Writing')
+        ->assertSee('Hidden until writing ends')
+        ->assertSee($carolCard)
+        ->assertDontSee($aliceCard)
+        ->assertScript($inDocument($aliceCard), false);
+
+    $alicePage->click($previous)
+        ->assertSeeIn($current, 'Icebreaker')
+        ->assertPresent($stage)
+        ->assertNotPresent('[data-test^="retro-column-"]')
+        ->assertScript($inDocument($carolCard), false);
+    $carolPage->assertSeeIn($current, 'Icebreaker')
+        ->assertPresent($stage)
+        ->assertNotPresent('[data-test^="retro-column-"]')
+        ->assertScript($inDocument($aliceCard), false);
+
+    $alicePage->click($next)
+        ->assertSeeIn($current, 'Writing')
+        ->assertSee($aliceCard)
+        ->assertSee('Hidden until writing ends')
+        ->assertDontSee($carolCard);
+    $carolPage->assertSeeIn($current, 'Writing')
+        ->assertSee($carolCard)
+        ->assertSee('Hidden until writing ends')
+        ->assertDontSee($aliceCard);
+
+    expect($retro->cards()->count())->toBe(2)
+        ->and($retro->fresh()->phase)->toBe(RetroPhase::Writing);
+});
+
+it('[P08a-04a] does not let the facilitator turn the Icebreaker off while the retro is in it', function () {
+    [$retro, , $alice] = p08aBoard(RetroPhase::Icebreaker);
+
+    $page = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
+
+    p08aOpenSettings($page)
+        ->assertAttribute('#retro-icebreaker', 'aria-checked', 'true')
+        ->assertDisabled('#retro-icebreaker')
+        ->assertEnabled('#retro-health-check');
+
+    expect($retro->fresh()->icebreaker_enabled)->toBeTrue();
+});
+
+it('[P08a-04b] shows the refusal of the server when the Icebreaker is turned off in its own phase', function () {
+    [$retro, , $alice] = p08aBoard();
+
+    $page = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
+
+    p08aOpenSettings($page)
+        ->assertEnabled('#retro-icebreaker')
+        ->click('#retro-icebreaker')
+        ->assertAttribute('#retro-icebreaker', 'aria-checked', 'false');
+
+    $retro->update(['phase' => RetroPhase::Icebreaker]);
+
+    $page->click('[role="dialog"] button[type="submit"]')
+        ->assertSeeIn('[role="dialog"]', 'Move to another phase before turning this phase off.');
+
+    expect($retro->fresh()->icebreaker_enabled)->toBeTrue();
+});
+
+it('[P08a-04c] drops the Icebreaker step for everyone when it is turned off during Writing', function () {
+    [$retro, , $alice, $bob] = p08aBoard();
+    $stepper = 'header ol[aria-label="Phases"]';
+
+    $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
+    $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
+
+    $bobPage->assertScript(p08aPhaseOrder(), 'Icebreaker > Writing > Grouping > Voting > Discussing > Completed');
+    $alicePage->assertPresent('header button:has-text("Previous")');
+
+    p08aOpenSettings($alicePage)
+        ->click('#retro-icebreaker')
+        ->assertAttribute('#retro-icebreaker', 'aria-checked', 'false')
+        ->click('[role="dialog"] button[type="submit"]')
+        ->assertNotPresent('[role="dialog"]')
+        ->assertScript(p08aPhaseOrder(), 'Writing > Grouping > Voting > Discussing > Completed')
+        ->assertNotPresent('header button:has-text("Previous")');
+
+    $bobPage->assertScript(p08aPhaseOrder(), 'Writing > Grouping > Voting > Discussing > Completed')
+        ->assertDontSeeIn($stepper, 'Icebreaker')
+        ->assertSeeIn('[aria-current="step"]', 'Writing');
+
+    expect($retro->fresh()->icebreaker_enabled)->toBeFalse()
+        ->and($retro->fresh()->phase)->toBe(RetroPhase::Writing);
+});
+
+it('[P08a-05] sets the automatic vote limit to the number of top-level cards plus three, at most ten', function (int $topLevelCards, int $limit) {
+    [$retro, $columns, $alice, $bob, $aliceParticipant] = p08aBoard(RetroPhase::Grouping, [
+        'votes_per_participant' => null,
+    ]);
+    $cards = [];
+
+    foreach (range(1, $topLevelCards) as $position) {
+        $cards[] = p08aCard($retro, $columns[0], $aliceParticipant, "Topic {$position}", $position);
+    }
+
+    Card::factory()->create([
+        'retro_id' => $retro->id,
+        'column_id' => $columns[0]->id,
+        'participant_id' => $aliceParticipant->id,
+        'parent_card_id' => $cards[0]->id,
+        'content' => 'Grouped under the first topic',
+    ]);
+    $total = $limit * 2;
+
+    $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
+    $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
+
+    p08aOpenSettings($alicePage)
+        ->assertAttribute('#retro-votes-auto', 'aria-checked', 'true')
+        ->assertEnabled('#retro-votes-auto')
+        ->assertSeeIn('[role="dialog"]', 'Automatic: number of cards plus 3, at most 10.')
+        ->click('[role="dialog"] button:has-text("Cancel")')
+        ->assertNotPresent('[role="dialog"]');
+
+    $alicePage->click('header button:has-text("Next")')
+        ->assertSeeIn('[aria-current="step"]', 'Voting')
+        ->assertSee("Votes left: {$limit}")
+        ->assertSee("0 of {$total} votes cast");
+    $bobPage->assertSeeIn('[aria-current="step"]', 'Voting')
+        ->assertSee("Votes left: {$limit}")
+        ->assertSee("0 of {$total} votes cast");
+
+    p08aOpenSettings($alicePage)
+        ->assertAttribute('#retro-votes-auto', 'aria-checked', 'true')
+        ->assertDisabled('#retro-votes-auto');
+
+    expect($retro->fresh()->votes_per_participant)->toBeNull()
+        ->and($retro->fresh()->voteLimit())->toBe($limit);
+})->with([
+    'two top-level cards' => [2, 5],
+    'nine top-level cards' => [9, 10],
+]);
+
+it('[P08a-06] edits the description of a column that has cards and keeps Rename disabled', function () {
+    [$retro, $columns, $alice, $bob, , $bobParticipant] = p08aBoard();
+    p08aCard($retro, $columns[0], $bobParticipant, 'Pair on reviews');
+    $start = p08aColumn($columns[0]);
+
+    $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
+    $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
+
+    $alicePage->click("{$start} [aria-label=\"Column menu\"]")
+        ->assertPresent('[role="menu"]')
+        ->assertAttribute('[role="menuitem"]:has-text("Rename")', 'aria-disabled', 'true')
+        ->assertAttribute('[role="menuitem"]:has-text("Delete column")', 'aria-disabled', 'true')
+        ->assertSeeIn('[role="menu"]', 'Only empty columns can be renamed, recoloured or deleted.')
+        ->click('[role="menuitem"]:has-text("Edit description")')
+        ->assertSeeIn('[role="dialog"]', 'Column description')
+        ->fill('[role="dialog"] textarea', 'What we should begin doing next sprint')
+        ->click('[role="dialog"] button:has-text("Save")')
+        ->assertNotPresent('[role="dialog"]')
+        ->assertSeeIn($start, 'What we should begin doing next sprint');
+
+    $bobPage->assertSeeIn($start, 'What we should begin doing next sprint')
+        ->assertSeeIn("{$start} h2", 'Start')
+        ->assertNotPresent('[aria-label="Column menu"]');
+
+    expect($columns[0]->fresh()->description)->toBe('What we should begin doing next sprint')
+        ->and($columns[0]->fresh()->title)->toBe('Start');
 });
