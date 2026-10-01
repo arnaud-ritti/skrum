@@ -25,7 +25,6 @@ class WriteWhiteboardElements
         private SanitizeWhiteboardElement $sanitizeWhiteboardElement,
         private PresentWhiteboardElement $presentWhiteboardElement,
         private OrderWhiteboardElements $orderWhiteboardElements,
-        private ScheduleWhiteboardVersion $scheduleWhiteboardVersion,
     ) {}
 
     /**
@@ -87,8 +86,6 @@ class WriteWhiteboardElements
             }
 
             $locked->update(['seq' => $seq]);
-
-            $this->scheduleWhiteboardVersion->handle($locked, $fromSeq);
 
             (new WhiteboardElementsChanged($locked->id, $seq, $fromSeq, $this->broadcastable($accepted)))->sendToOthers();
 

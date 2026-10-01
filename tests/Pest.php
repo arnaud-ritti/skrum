@@ -38,7 +38,6 @@ use App\Models\TeamIntegration;
 use App\Models\User;
 use App\Models\Vote;
 use App\Models\Whiteboard;
-use App\Models\WhiteboardElement;
 use App\Models\WhiteboardMember;
 use App\Models\Workspace;
 use App\Support\Games\GameRules;
@@ -1539,70 +1538,9 @@ function sceneElement(array $overrides = []): array
 }
 
 /**
- * A sticky note and its bound text, as the canvas writes them.
- *
- * @return array{0: array<string, mixed>, 1: array<string, mixed>}
- */
-function stickyWithText(string $id, string $text): array
-{
-    return [
-        sceneElement([
-            'id' => $id,
-            'index' => 'a1',
-            'backgroundColor' => '#fff3bf',
-            'customData' => ['skrum' => ['kind' => 'sticky']],
-            'boundElements' => [['id' => "{$id}-text", 'type' => 'text']],
-        ]),
-        sceneElement([
-            'id' => "{$id}-text",
-            'type' => 'text',
-            'index' => 'a2',
-            'text' => $text,
-            'originalText' => $text,
-            'containerId' => $id,
-        ]),
-    ];
-}
-
-/**
- * Stores an element row as the write path would have.
- *
- * @param  array<string, mixed>  $data
- */
-function storeWhiteboardElement(Whiteboard $board, array $data, int $seq, ?WhiteboardMember $author = null): WhiteboardElement
-{
-    return WhiteboardElement::factory()->create([
-        'whiteboard_id' => $board->id,
-        'element_id' => $data['id'],
-        'type' => $data['type'],
-        'data' => $data,
-        'version' => $data['version'],
-        'version_nonce' => $data['versionNonce'],
-        'author_member_id' => $author?->id,
-        'is_sticky' => isset($data['customData']),
-        'is_deleted' => $data['isDeleted'],
-        'seq' => $seq,
-    ]);
-}
-
-/**
  * @param  array<int, mixed>  $elements
  */
 function putWhiteboardElements(mixed $test, Whiteboard $board, array $elements): TestResponse
 {
     return $test->putJson(route('whiteboards.elements.update', $board), ['elements' => $elements]);
-}
-
-/**
- * The test case acting as a user, or as a guest through their cookie.
- */
-function whiteboardViewer(mixed $test, User|WhiteboardMember $viewer): mixed
-{
-    if ($viewer instanceof User) {
-        return $test->actingAs($viewer);
-    }
-
-    app('auth')->forgetGuards();
-
-    return $test->withCookies(whiteboardGuestCookie($viewer))->withCredentials();
 }

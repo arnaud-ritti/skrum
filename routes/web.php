@@ -145,9 +145,6 @@ use App\Http\Controllers\Whiteboards\WhiteboardSettingsController;
 use App\Http\Controllers\Whiteboards\WhiteboardSnapshotsController;
 use App\Http\Controllers\Whiteboards\WhiteboardTemplatesController;
 use App\Http\Controllers\Whiteboards\WhiteboardTimersController;
-use App\Http\Controllers\Whiteboards\WhiteboardVersionCopiesController;
-use App\Http\Controllers\Whiteboards\WhiteboardVersionRestoresController;
-use App\Http\Controllers\Whiteboards\WhiteboardVersionsController;
 use App\Http\Controllers\WorkspaceActionItemCommentsController;
 use App\Http\Controllers\WorkspaceActionItemsController;
 use App\Http\Controllers\WorkspaceActionItemSubtasksController;
@@ -513,13 +510,6 @@ Route::prefix('whiteboards/{board}')
         Route::get('files/{fileId}', [WhiteboardFilesController::class, 'show'])->name('whiteboards.files.show')->where('fileId', '[A-Za-z0-9_-]{1,64}');
         Route::post('template', [WhiteboardTemplatesController::class, 'store'])->name('whiteboards.template.store');
         Route::post('duplicate', [WhiteboardDuplicatesController::class, 'store'])->name('whiteboards.duplicate.store');
-        Route::get('versions', [WhiteboardVersionsController::class, 'index'])->name('whiteboards.versions.index');
-        Route::post('versions', [WhiteboardVersionsController::class, 'store'])->name('whiteboards.versions.store');
-        Route::get('versions/{version}', [WhiteboardVersionsController::class, 'show'])->name('whiteboards.versions.show')->whereUuid('version');
-        Route::patch('versions/{version}', [WhiteboardVersionsController::class, 'update'])->name('whiteboards.versions.update')->whereUuid('version');
-        Route::delete('versions/{version}', [WhiteboardVersionsController::class, 'destroy'])->name('whiteboards.versions.destroy')->whereUuid('version');
-        Route::post('versions/{version}/restore', [WhiteboardVersionRestoresController::class, 'store'])->name('whiteboards.versions.restore.store')->whereUuid('version');
-        Route::post('versions/{version}/copy', [WhiteboardVersionCopiesController::class, 'store'])->name('whiteboards.versions.copy.store')->whereUuid('version');
     });
 
 Route::get('play/{guestToken}', [GameJoinsController::class, 'show'])->name('games.join.show');

@@ -3,7 +3,7 @@
 Date: 2026-10-01
 Status: Design approved in conversation, awaiting spec review
 Parent spec: `docs/superpowers/specs/2026-09-29-retro-board-core-design.md` (tenancy, roles, guests, realtime, redaction, i18n and packaging rules apply unless this spec says otherwise). Room pattern: `docs/superpowers/specs/2026-09-29-planning-poker-design.md` (parallel player table, guard, snapshot builder, presence channel).
-Plans: 17a–17d (§15).
+Plans: 17a–17c (§15; the features of a fourth plan, 17d, were all removed).
 
 ## 1. Problem statement
 
@@ -14,7 +14,7 @@ Teams using skrum leave it whenever a session needs free-form space: a brainstor
 1. A team runs a template-based workshop end to end inside skrum, with a member and a guest in two browsers, without a reload.
 2. A change made by one participant is visible to the others in under 1 second on a local network.
 3. A facilitator can keep a session on track: a shared countdown, a board lock, element locks and bringing everyone to their view. Every one of these rules is enforced on the server and pinned by feature tests.
-4. A board survives reloads, reconnects and mistakes: the exact scene is restored on load, and an earlier version can be brought back.
+4. A board survives reloads and reconnects: the exact scene is restored on load.
 5. The feature adds one dependency (`@excalidraw/excalidraw`) and no new service to the Docker image.
 
 ## 3. Non-goals
@@ -22,10 +22,11 @@ Teams using skrum leave it whenever a session needs free-form space: a brainstor
 - **Comments on the canvas.** Separate interaction model (threads, notifications); a later spec.
 - **Attaching a whiteboard to a retro.** v1 boards are standalone; linking needs changes to the retro flow.
 - **Importing `.excalidraw` files, Excalidraw libraries, or inserting a template into an existing board.** Import needs its own validation and id-remapping rules; templates apply at creation only.
-- **Global undo, per-element change log, time scrubbing.** Own undo/redo is local; shared recovery goes through versions (§9).
+- **Global undo, per-element change log, time scrubbing.** Own undo/redo is the canvas's and is local to each participant; nothing brings a board back to an earlier state for everyone.
 - **Per-board roles (viewer, commenter), following an arbitrary member, MCP tools, integrations, webhooks, LLM features.** Each is a follow-up once the core is used.
 - **Character-level merging of concurrent text edits.** Two people editing the same element at once: the later version wins (§6).
 - **Dot voting and private writing.** Voting on sticky notes, and notes kept from the other participants while people write: built in plans 17c/17d and removed on 2026-10-01 at the product owner's request. Requirements R8 and R9 and §11.4–11.5 of earlier revisions of this spec described them.
+- **Version history.** Automatic and named versions of a board, their preview, restoring one and copying one to a new board: built in plan 17d and removed on 2026-10-01 at the product owner's request. Requirement R10 and §9 of earlier revisions of this spec described it.
 
 ## 4. User stories
 
@@ -35,7 +36,6 @@ Facilitator (team member who created the board or took control):
 - As a facilitator, I want to invite people outside the workspace with a link so that stakeholders can take part without an account.
 - As a facilitator, I want to bring everyone to my view, lock the board or lock the template's structure so that the session stays on track.
 - As a facilitator, I want to start a shared countdown so that every activity is time-boxed.
-- As a facilitator, I want to restore an earlier version so that an accidental mass deletion is not fatal.
 - As a facilitator, I want to save a board as a workspace template so that the team can repeat a format it designed.
 
 Team member:
@@ -63,15 +63,14 @@ Priorities: **P0** the feature cannot ship without it; **P1** part of this spec,
 | R5 | Template gallery: 8 built-in templates | P0 | §10 |
 | R6 | Workspace templates saved from a board; export PNG, SVG, `.whiteboard.json` | P1 | §10 |
 | R7 | Timer, board lock, element lock, follow-me | P1 | §11.1–11.3 |
-| R10 | Version history: auto and named snapshots, preview, restore, copy to new board | P1 | §9 |
 | R11 | Canvas comments, retro attachment, import, MCP tools | P2 | Element ids are stable and server-owned, files are stored per board, and all mutations go through actions in `app/Actions/Whiteboards/`, so these can be added without a migration of existing data |
 
-Acceptance criteria for every requirement are in §16. R8 and R9 are not in use: the features they named were removed (§3), and the other numbers were kept.
+Acceptance criteria for every requirement are in §16. R8, R9 and R10 are not in use: the features they named were removed (§3), and the other numbers were kept.
 
 ### Dependencies
 
 - **New:** `@excalidraw/excalidraw` (MIT), approved 2026-10-01. Loaded only on the whiteboard page as a lazy chunk. Pinned to `0.18.1` (React 19 listed in its peer dependencies). The spike of plan 17a confirmed the API listed here: `excalidrawAPI.updateScene`, `onChange`, `onPointerUpdate`, `onScrollChange`, `reconcileElements`, `restoreElements`, `viewModeEnabled`, `renderTopRightUI`, `UIOptions`, `langCode`, `theme`, element `customData`, element `locked`, `exportToBlob`, `exportToSvg`. Differences found: `UIOptions` has no key that hides the library button (only `canvasActions.loadScene: false` hides "Open"), so the library trigger (`.default-sidebar-trigger`) is hidden with CSS; the `line` element has no `polygon` key in 0.18.1; `reconcileElements(localElements, remoteElements, localAppState)` takes ordered elements and returns the reconciled array; `updateScene` takes `collaborators` as `Map<SocketId, Collaborator>`.
-- **Builds on:** guest identity (`app/Concerns/HasGuestIdentity.php`, `app/Actions/Retros/GuestCookie.php`), player resolution (`app/Http/Middleware/ResolvePokerPlayer.php` as the model), channel auth (`app/Http/Controllers/BroadcastAuthorizationsController.php`), broadcast base (`app/Events/Poker/PokerBroadcastEvent.php` as the model), whisper transport (`resources/js/lib/realtime/whisper-transport.ts`), timer UI (`resources/js/components/retro/timer-control.tsx`, `timer-display.tsx`), team policy (`app/Policies/TeamPolicy.php`), the queue worker.
+- **Builds on:** guest identity (`app/Concerns/HasGuestIdentity.php`, `app/Actions/Retros/GuestCookie.php`), player resolution (`app/Http/Middleware/ResolvePokerPlayer.php` as the model), channel auth (`app/Http/Controllers/BroadcastAuthorizationsController.php`), broadcast base (`app/Events/Poker/PokerBroadcastEvent.php` as the model), whisper transport (`resources/js/lib/realtime/whisper-transport.ts`), timer UI (`resources/js/components/retro/timer-control.tsx`, `timer-display.tsx`), team policy (`app/Policies/TeamPolicy.php`).
 - Reverb's message limit is 10 000 bytes (`config/reverb.php`, `max_message_size`); the 8 KB broadcast rule of §6.3 is derived from it.
 
 ## 6. Canvas and sync
@@ -127,7 +126,7 @@ One class, `BuildWhiteboardSnapshot`, builds it for the viewer (`me`, and `guest
 - `POST files` (multipart) stores an image before the element that uses it is written. An image element whose file id is unknown for the board is rejected. Excalidraw adds an image to the scene before it has computed its file id; the client does not send an image element until the id is set.
 - Allowed: PNG, JPEG, WebP, GIF, detected from content. SVG upload is refused (script risk). At most 5 MB per file and 100 MB per board (422 beyond).
 - Files are served by `GET files/{fileId}` (Excalidraw's file id, so a client derives the URL from an image element without a lookup) to members of the board only, with `Content-Disposition: inline`, the stored MIME type and `X-Content-Type-Options: nosniff`.
-- A file is deleted when no live element or version (§9) of its board references it; a daily command cleans up. A template (§10) keeps its own copy of every image under `whiteboard-templates/{templateId}/`, deleted with the template, so it never keeps a board's file alive. The same command removes the folder of a board or template that no longer exists, once every file in it is more than 24 hours old (a copy writes its files before the transaction that creates their owner commits).
+- A file is deleted when no live element of its board references it; a daily command cleans up. A template (§10) keeps its own copy of every image under `whiteboard-templates/{templateId}/`, deleted with the template, so it never keeps a board's file alive. The same command removes the folder of a board or template that no longer exists, once every file in it is more than 24 hours old (a copy writes its files before the transaction that creates their owner commits).
 
 ### 6.6 Validation and limits
 
@@ -146,11 +145,10 @@ One class, `BuildWhiteboardSnapshot`, builds it for the viewer (`me`, and `guest
 
 ## 7. Data model
 
-- **whiteboards**: `id` (UUID), `team_id` (cascade), `title` (string 120), `facilitator_member_id` (nullable FK → whiteboard_members, `nullOnDelete`), `guest_access_enabled` (bool, default `false`), `guest_token` (unique string 40), `locked` (bool, default `false`), `follow_enabled` (bool, default `false`), `cursors_enabled` (bool, default `true`), `reactions_enabled` (bool, default `true`), `timer_ends_at` (nullable timestamp), `seq` (unsigned bigint, default 0), `purged_seq` (unsigned bigint, default 0 — the highest `seq` among purged tombstones; `GET elements?since=` answers 409 below it), `last_versioned_seq` (unsigned bigint, default 0), timestamps. Each plan's migration adds the columns its features need (17a: all but `locked`, `follow_enabled`, `timer_ends_at`, `last_versioned_seq`). Index (`team_id`, `updated_at`).
+- **whiteboards**: `id` (UUID), `team_id` (cascade), `title` (string 120), `facilitator_member_id` (nullable FK → whiteboard_members, `nullOnDelete`), `guest_access_enabled` (bool, default `false`), `guest_token` (unique string 40), `locked` (bool, default `false`), `follow_enabled` (bool, default `false`), `cursors_enabled` (bool, default `true`), `reactions_enabled` (bool, default `true`), `timer_ends_at` (nullable timestamp), `seq` (unsigned bigint, default 0), `purged_seq` (unsigned bigint, default 0 — the highest `seq` among purged tombstones; `GET elements?since=` answers 409 below it), timestamps. Each plan's migration adds the columns its features need (17a: all but `locked`, `follow_enabled`, `timer_ends_at`). Index (`team_id`, `updated_at`).
 - **whiteboard_members**: `id`, `whiteboard_id` (cascade), `user_id` (nullable, `nullOnDelete`), `guest_name` (nullable string 50), `guest_secret_hash` (nullable string 64), timestamps. Unique (`whiteboard_id`, `user_id`). Uses `HasGuestIdentity`; cookie `GuestCookie::name('whiteboard', $id)`.
 - **whiteboard_elements**: `whiteboard_id` (cascade), `element_id` (string 40, the client-generated Excalidraw id), `type` (string 20), `data` (json, the full element), `version` (unsigned int), `version_nonce` (unsigned bigint), `author_member_id` (nullable FK, `nullOnDelete`), `is_sticky` (bool), `is_deleted` (bool, default `false`), `seq` (unsigned bigint), timestamps. `id` (UUID) primary key, because Eloquent has no composite keys; unique (`whiteboard_id`, `element_id`). Index (`whiteboard_id`, `seq`).
 - **whiteboard_files**: `id` (UUID), `whiteboard_id` (cascade), `file_id` (string 64, Excalidraw's id), `path`, `mime_type` (string 40), `size` (unsigned int), `uploaded_by_member_id` (nullable FK), timestamps. Unique (`whiteboard_id`, `file_id`).
-- **whiteboard_versions**: `id` (UUID), `whiteboard_id` (cascade), `name` (nullable string 80; null = automatic), `scene` (json: `{elements, fileIds}` — the live elements in canvas order, and the ids of the images they show, which is what the image prune of §6.5 reads), `seq` (unsigned bigint), `created_by_member_id` (nullable FK; null = automatic), `created_at`. Index (`whiteboard_id`, `created_at`).
 - **whiteboard_templates**: `id` (UUID), `workspace_id` (cascade), `name` (string 80), `description` (nullable string 300), `scene` (json: `{elements, files: [{fileId, path, mimeType, size}]}`, the live elements in canvas order as stored, without authors), `preview` (json: `{width, height, shapes}`, a text-free outline of the scene computed at save for the gallery thumbnail), `created_by_user_id` (nullable FK → users, `nullOnDelete`), timestamps. Unique (`workspace_id`, `lower(name)`). Template images are copied to a template-owned directory and referenced from `scene.files`.
 
 Models get factories.
@@ -159,25 +157,17 @@ Models get factories.
 
 - **Create:** any user who can view the team (`TeamPolicy::createWhiteboard` = `view`). The creator becomes a member and the facilitator.
 - **Enter** `/whiteboards/{board}` (middleware `ResolveWhiteboardMember`): a user who can view the team joins as themselves (member row created on first visit); otherwise a guest with a valid cookie while `guest_access_enabled`. Anyone else: logged out → login, or the "session ended" page when guest access is on; logged-in non-member → 403.
-- **Guests** join at `/whiteboards/join/{guestToken}` with a display name (1–50), `throttle:10,1`. Regenerating the token revokes old links and signs out every guest; their elements stay. Guests edit the canvas. Guests never facilitate, never see version history, never save or see workspace templates, never see team or workspace pages.
-- **Facilitator-only:** title and settings, guest access and link, board lock, element lock, timer, follow-me, restore, rename or delete versions, delete the board.
+- **Guests** join at `/whiteboards/join/{guestToken}` with a display name (1–50), `throttle:10,1`. Regenerating the token revokes old links and signs out every guest; their elements stay. Guests edit the canvas. Guests never facilitate, never save or see workspace templates, never see team or workspace pages.
+- **Facilitator-only:** title and settings, guest access and link, board lock, element lock, timer, follow-me, delete the board.
 - **Transfer and take over:** the facilitator hands over to any team member; any non-guest member may take control at any time (same rule and reason as poker §3). A change of facilitator switches follow-me off (the new facilitator has not chosen to lead everyone's view); the board lock and the timer stay as they are.
 - **Delete the board:** the facilitator or a workspace Owner/Admin.
 - **Duplicate:** any non-guest member.
 
 A `WhiteboardGuard` mirrors `PokerGuard`: `facilitator`, `notGuest`, `notLocked`, `canDelete`.
 
-## 9. Version history
+## 9. (removed)
 
-- **Automatic versions:** a queued job, dispatched with a 5-minute delay by the first write after the last version, stores the live scene when `seq` is greater than `last_versioned_seq`. Kept: the last 50 automatic versions. At most one automatic version is stored every 5 minutes: a job that finds a younger one does nothing (the write that followed that version queued its own job). "Write" means any change of `seq`: an element write or a restore. A board made from a template, a duplicate or a version starts with `last_versioned_seq = seq`, so its first edit is the first write. A daily command queues the version of a board that has changes no version holds and has been idle for an hour (its job was lost).
-- **Named versions:** any non-guest member saves one (`name` 1–80). At most 100 per board (422 "This board already has 100 saved versions."). The facilitator renames and deletes versions, automatic ones included; naming an automatic version makes it a named one (it leaves the rotation of 50 and counts in the 100, so the cap applies).
-- **List and preview:** any non-guest member opens the history panel and previews a version in a read-only canvas.
-- **Restore** (facilitator): first stores the current scene as a named version "Before restore · {date}" (never refused by the cap of 100; `{date}` is a date in the facilitator's language without a clock time, since the server does not know the viewer's time zone and the panel shows each version's own time in the viewer's), then writes every element of the chosen version with a version number above the current one and tombstones every live element absent from it, all in one transaction. Clients receive it as an `elements.changed` without the elements (`{seq, fromSeq}`, §6.3) and fetch the delta.
-  - An element whose row carries the same `version` and `versionNonce` as in the version is left alone: nothing changed since.
-  - An element whose row no longer exists (its tombstone was purged), or is a tombstone already at the highest version number, comes back under a fresh id with the references to it rewritten: a browser left open may still hold the old tombstone at a higher version and would otherwise delete the element again.
-  - A live element at the highest version number can be neither rewritten nor tombstoned and is left as it is; the rest of the board is restored.
-  - An image whose file the board no longer stores is left out, as in the copy path of §10.
-- **Copy to a new board:** any non-guest member, from any version; the new board belongs to the same team and the requester facilitates it. It goes through the copy path of §10 and is titled like a duplicate.
+This section described version history, removed on 2026-10-01 (§3). The number is kept so that the references to the other sections stay valid.
 
 ## 10. Templates and export
 
@@ -236,12 +226,6 @@ Board-scoped, prefix `whiteboards/{board}` (`whereUuid`, middleware `ResolveWhit
 | DELETE | `/` | — | facilitator, workspace Owner/Admin | 204, `board.deleted` |
 | POST | `duplicate` | — | non-guest member | 201 `{url}` |
 | POST | `template` | `{name, description?}` | non-guest member | 201 `{id, name}` |
-| GET | `versions` | — | non-guest member | `[{id, name, createdAt, createdByName, automatic}]` |
-| POST | `versions` | `{name}` | non-guest member | 201 `{id, name, createdAt, createdByName, automatic}` |
-| GET | `versions/{version}` | — | non-guest member | `{elements, files: [{id, url, mimeType}]}` (the images the board still stores) |
-| PATCH / DELETE | `versions/{version}` | `{name}` / — | facilitator | 204 |
-| POST | `versions/{version}/restore` | — | facilitator | 204, `elements.changed`, `board.changed` |
-| POST | `versions/{version}/copy` | — | non-guest member | 201 `{url}` |
 
 Join: `GET` and `POST /whiteboards/join/{guestToken}` (`{name}`), same behaviour as the poker join; an invalid or disabled link shows "This link is no longer valid".
 
@@ -261,7 +245,7 @@ Whispers (client events, presence members only, never persisted): `cursor`, `rea
 ## 13. UI and error handling
 
 - **Team page:** a "Whiteboards" section beside retros and poker games: list, "New whiteboard" dialog with the template gallery, manage workspace templates.
-- **Board page** `resources/js/pages/whiteboards/show.tsx`, components in `resources/js/components/whiteboard/`: full-bleed canvas (lazy chunk with a skeleton while loading); top bar (title, presence strip, share, history, settings); sticky tool and colour palette; facilitator bar (timer, lock, follow) in the top bar, for the facilitator only; a status row between the top bar and the canvas that says what everyone needs to know (board locked, following or "Following paused · Resume"); history panel, a sheet opened by a button of the top bar that guests do not have, whose preview is a read-only canvas in a dialog without the canvas's menu and help buttons. None of these covers the canvas's own controls, the shapes toolbar or the reactions bar. Excalidraw's menu loses "Live collaboration", the library and "Open". No library branding and no outbound link to the library's sites is shown anywhere in the board UI: the main menu is rendered by skrum with neutral entries only (export, save as image, find on canvas, help, clear canvas, canvas background), the welcome screen is not rendered, AI entries are off, and the help dialog's link header, the "Mermaid to Excalidraw" entry, the library tab of the search panel and the "Browse libraries" link are hidden. What a prop or a style cannot remove stays: the `type` field inside the scene file and the links in the error shown by Brave when it blocks text measuring. Theme and locale follow skrum's; skrum strings are added to `lang/*.json` for the four shipped locales.
+- **Board page** `resources/js/pages/whiteboards/show.tsx`, components in `resources/js/components/whiteboard/`: full-bleed canvas (lazy chunk with a skeleton while loading); top bar (title, presence strip, share, settings); sticky tool and colour palette; facilitator bar (timer, lock, follow) in the top bar, for the facilitator only; a status row between the top bar and the canvas that says what everyone needs to know (board locked, following or "Following paused · Resume"). None of these covers the canvas's own controls, the shapes toolbar or the reactions bar. Excalidraw's menu loses "Live collaboration", the library and "Open". No library branding and no outbound link to the library's sites is shown anywhere in the board UI: the main menu is rendered by skrum with neutral entries only (export, save as image, find on canvas, help, clear canvas, canvas background), the welcome screen is not rendered, AI entries are off, and the help dialog's link header, the "Mermaid to Excalidraw" entry, the library tab of the search panel and the "Browse libraries" link are hidden. What a prop or a style cannot remove stays: the `type` field inside the scene file and the links in the error shown by Brave when it blocks text measuring. Theme and locale follow skrum's; skrum strings are added to `lang/*.json` for the four shipped locales.
 - **Join page** `resources/js/pages/whiteboards/join.tsx`.
 - **Errors:** 401, 403 and session-ended follow the parent spec. A rejected element converges silently except for limit reasons and for `locked`, which show a toast with the reason. A refused upload (413, 415, 422) shows a toast and removes the placeholder element; a 401, 403, 404 or 419 on an upload is handled like the same status on an element write, and any other failure is retried with the batch. A board-menu action that fails says so in a toast and leaves the page and the dialog as they were. A failed canvas chunk shows an error state with "Retry" and logs the cause to the console. Connection loss follows §6.7.
 
@@ -274,21 +258,19 @@ Pest feature tests, with factories, cover:
 - Delta fetch; broadcast payload shape, the 8 KB switch to the form without elements.
 - Files: types, sizes, quota, unknown file id, access by a non-member.
 - Lock: board and element, both directions.
-- Versions: automatic cadence and retention, named cap, restore (including the "Before restore" version), copy, guest refusal.
 - Templates: every built-in scene loads and passes §6.6 validation; id remapping keeps bindings; workspace template rules.
 
 The two-browser flows of §16 run as browser tests when the plan 16 harness is merged; until then they are written as a walkthrough in `docs/superpowers/walkthroughs/`. The repo has no JavaScript unit runner, so client logic stays thin and is exercised by the browser tests.
 
 ## 15. Phasing
 
-One spec, four plans, each shippable:
+One spec, three plans, each shippable (a fourth, 17d, built features that were all removed):
 
 - **17a — Core (P0):** dependency spike, tables, access and guest join, canvas, sync, files, cursors, team page list, Blank template.
 - **17b — Templates:** the seven other built-in templates, gallery, workspace templates, duplicate, export.
 - **17c — Facilitation:** timer, lock, follow-me.
-- **17d — History:** version history.
 
-Plans 17c and 17d also built dot voting and private writing; both were removed on 2026-10-01 (§3), after 17d and before the branch was merged.
+Plans 17c and 17d also built dot voting and private writing; both were removed on 2026-10-01 (§3), after 17d and before the branch was merged. Plan 17d built version history as well, removed on the same day after the merge into the local, unpushed main (§3).
 
 No hard deadline. 17a starts after the plan 16 arch refactors if those are in progress, to avoid conflicts in shared files (`BroadcastAuthorizationsController`, `GuestCookie`).
 
@@ -320,12 +302,6 @@ Facilitation (R7)
 - [ ] Given a locked element, when a non-facilitator moves or unlocks it, then the write is rejected and their canvas returns to the server copy.
 - [ ] Given follow-me is on, when the facilitator pans, then followers' views follow; a follower who pans sees "Following paused" and "Resume" re-attaches them.
 
-Version history (R10)
-
-- [ ] Given edits over more than 5 minutes, then automatic versions exist, at most one per 5 minutes, and never more than 50.
-- [ ] Given a version, when the facilitator restores it, then every connected browser shows that scene and a "Before restore" version exists that restores the prior state.
-- [ ] A guest gets 403 on every version endpoint.
-
 Quality
 
 - [ ] The suite, phpstan, type-check and lint are green; Pint has been run.
@@ -333,13 +309,13 @@ Quality
 
 ## 17. Success metrics
 
-skrum is self-hosted and has no product analytics; the numbers below come from database counts an installation's admin can read. Evaluate 30 days after 17d ships.
+skrum is self-hosted and has no product analytics; the numbers below come from database counts an installation's admin can read. Evaluate 30 days after 17c ships.
 
 Leading:
 
 - **Adoption:** share of active teams (a retro in the last 30 days) with at least one whiteboard. Success 30 %, stretch 50 %.
 - **Template use:** share of boards created from a non-blank template. Success 50 %.
-- **Facilitation use:** share of boards on which a countdown was started (`timer_ends_at` set) or a version was saved by name. Success 25 %.
+- **Facilitation use:** share of boards on which a countdown was started (`timer_ends_at` set). Success 25 %.
 - **Sync health:** share of element writes rejected as stale. Below 2 %.
 
 Lagging:
@@ -350,7 +326,7 @@ Lagging:
 ## 18. Open questions
 
 None blocking.
-- **Product, after 17d:** order of the follow-up specs (canvas comments, retro attachment, MCP tools, import).
+- **Product, after 17c:** order of the follow-up specs (canvas comments, retro attachment, MCP tools, import).
 
 ## Decisions made while planning 17c (facilitation)
 
@@ -367,5 +343,6 @@ None blocking.
 4. Access mirrors retros and poker: team members, optional guest link, one facilitator.
 5. Templates: eight built-in plus workspace templates saved from a board.
 6. Sync: server-authoritative elements, last write wins per element; peer relay and Yjs rejected because locks and the server's validation could not be enforced.
-7. Version history: automatic and named snapshots with restore; own undo stays local; no global undo.
-8. Removal, decided by the product owner on 2026-10-01: dot voting and private writing leave the product entirely (code, tables and columns, UI, strings, tests). They had been built in plans 17c and 17d on a branch that was neither merged nor released, so its migrations were edited instead of adding migrations that drop. Version history, timer, lock, follow-me and everything else stay as specified. An element is now the same payload for every viewer.
+7. Own undo stays local; no global undo. (Version history, decided here at first, was removed: decision 9.)
+8. Removal, decided by the product owner on 2026-10-01: dot voting and private writing leave the product entirely (code, tables and columns, UI, strings, tests). They had been built in plans 17c and 17d on a branch that was neither merged nor released, so its migrations were edited instead of adding migrations that drop. Timer, lock, follow-me and everything else stay as specified. An element is now the same payload for every viewer.
+9. Removal, decided by the product owner on 2026-10-01: version history leaves the product entirely (automatic and named versions, preview, restore and its "Before restore" version, copy to a new board; the `whiteboard_versions` table and `whiteboards.last_versioned_seq`, the queued job and its daily re-queue, endpoints, history panel, strings, tests). It had been built in plan 17d and merged into a main branch that was not pushed, so its migration was removed instead of adding one that drops. The image prune of §6.5 now keeps only the files a live element shows. The shared copy path of §10 stays: templates and duplicate use it. Nothing replaces version history: the canvas's own undo/redo is the only way back, and only for one's own changes in the open page.
