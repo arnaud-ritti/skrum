@@ -144,6 +144,15 @@ it('rewrites the board from a version and stores the state it replaces first', f
         ->assertJsonPath('elements.*.id', ['same', 'moved', 'gone', $reborn->element_id, 'label']);
 });
 
+it('names the version stored before a restore with the date and no clock time', function () {
+    $this->travelTo('2026-10-12 15:28:00');
+    [$board, $facilitator, $version] = boardWithHistory();
+
+    restoreVersion($this->actingAs($facilitator), $board, $version)->assertNoContent();
+
+    expect($board->versions()->whereKeyNot($version->id)->sole()->name)->toBe('Before restore · October 12, 2026');
+});
+
 it('can be undone by restoring the version stored before the restore', function () {
     [$board, $facilitator, $version] = boardWithHistory();
     $before = liveWhiteboardScene($board);

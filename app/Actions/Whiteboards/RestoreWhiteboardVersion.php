@@ -71,7 +71,7 @@ class RestoreWhiteboardVersion
 
     private function safetyName(): string
     {
-        return __('Before restore · :date', ['date' => now()->settings(['locale' => app()->getLocale()])->isoFormat('LL LT')]);
+        return __('Before restore · :date', ['date' => now()->settings(['locale' => app()->getLocale()])->isoFormat('LL')]);
     }
 
     /**

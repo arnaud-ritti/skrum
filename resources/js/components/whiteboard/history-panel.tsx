@@ -77,6 +77,7 @@ function History({ state, onRestored }: Pick<Props, 'state' | 'onRestored'>) {
         null,
     );
     const [asked, setAsked] = useState<Asked | null>(null);
+    const [confirming, setConfirming] = useState(false);
     const dates = new Intl.DateTimeFormat(locale, {
         dateStyle: 'medium',
         timeStyle: 'short',
@@ -149,6 +150,12 @@ function History({ state, onRestored }: Pick<Props, 'state' | 'onRestored'>) {
     };
 
     const restore = async (version: WhiteboardVersionSummary) => {
+        if (confirming) {
+            return;
+        }
+
+        setConfirming(true);
+
         const done = await request(
             retroRequest(
                 WhiteboardVersionRestoresController.store({
@@ -157,6 +164,8 @@ function History({ state, onRestored }: Pick<Props, 'state' | 'onRestored'>) {
                 }),
             ),
         );
+
+        setConfirming(false);
 
         if (done === undefined) {
             return;
@@ -169,6 +178,12 @@ function History({ state, onRestored }: Pick<Props, 'state' | 'onRestored'>) {
     };
 
     const remove = async (version: WhiteboardVersionSummary) => {
+        if (confirming) {
+            return;
+        }
+
+        setConfirming(true);
+
         const done = await request(
             retroRequest(
                 WhiteboardVersionsController.destroy({
@@ -177,6 +192,8 @@ function History({ state, onRestored }: Pick<Props, 'state' | 'onRestored'>) {
                 }),
             ),
         );
+
+        setConfirming(false);
 
         if (done === undefined) {
             return;
@@ -344,6 +361,7 @@ function History({ state, onRestored }: Pick<Props, 'state' | 'onRestored'>) {
                             {t('Cancel')}
                         </Button>
                         <Button
+                            disabled={confirming}
                             onClick={() => asked && void restore(asked.version)}
                         >
                             {t('Restore')}
@@ -367,6 +385,7 @@ function History({ state, onRestored }: Pick<Props, 'state' | 'onRestored'>) {
                         </Button>
                         <Button
                             variant="destructive"
+                            disabled={confirming}
                             onClick={() => asked && void remove(asked.version)}
                         >
                             {t('Delete')}
