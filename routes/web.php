@@ -4,6 +4,7 @@ use App\Actions\Auth\SignupGate;
 use App\Http\Controllers\AvatarsController;
 use App\Http\Controllers\BroadcastAuthorizationsController;
 use App\Http\Controllers\CurrentWorkspaceController;
+use App\Http\Controllers\DesignSystemPagesController;
 use App\Http\Controllers\EmojiDataController;
 use App\Http\Controllers\GameJoinsController;
 use App\Http\Controllers\Games\GameAnswersController;
@@ -168,6 +169,8 @@ Route::get('/', fn () => Inertia::render('welcome', [
 ]))->name('home');
 
 Route::get('invitations/{token}', [InvitationLinksController::class, 'show'])->name('invitations.show');
+
+Route::get('dev/design-system/{section?}', [DesignSystemPagesController::class, 'show'])->name('dev.designSystem.show');
 
 Route::get('avatars/{seed}.svg', [AvatarsController::class, 'show'])->where('seed', '[a-f0-9]{32}')->name('avatars.show');
 Route::get('emoji-data/{version}/{locale}/{file}', [EmojiDataController::class, 'show'])
