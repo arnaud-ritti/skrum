@@ -131,10 +131,10 @@ it('[P09a-01a] creates action items with each priority, a due date chip and an o
     foreach ([$alicePage, $bobPage] as $page) {
         $page->assertSeeIn("{$highCard} [aria-label=\"Priority\"]", 'High')
             ->assertScript(p09aCardShows($high, "Due {$dueSoonLabel}"), true)
-            ->assertNotPresent("{$highCard} [data-slot=\"badge\"].bg-destructive")
+            ->assertNotPresent("{$highCard} [data-slot=\"badge\"].bg-skrum-destructive-soft")
             ->assertSeeIn("{$lowCard} [aria-label=\"Priority\"]", 'Low')
             ->assertScript(p09aCardShows($low, "Overdue · {$pastDueLabel}"), true)
-            ->assertPresent("{$lowCard} [data-slot=\"badge\"].bg-destructive")
+            ->assertPresent("{$lowCard} [data-slot=\"badge\"].bg-skrum-destructive-soft")
             ->assertSeeIn("{$mediumCard} [aria-label=\"Priority\"]", 'Medium')
             ->assertScript(p09aCardShows($medium, 'Alice Martin'), true);
     }
@@ -369,7 +369,7 @@ it('[P09a-03c] lists priority, due date, overdue badge, assignee, status and the
     $bobPage->assertSee('Retrospective completed on')
         ->assertPresent("{$openCard} svg.text-red-600")
         ->assertScript(p09aCardShows($open, "Overdue · {$pastDueLabel}"), true)
-        ->assertPresent("{$openCard} [data-slot=\"badge\"].bg-destructive")
+        ->assertPresent("{$openCard} [data-slot=\"badge\"].bg-skrum-destructive-soft")
         ->assertScript(p09aCardShows($open, 'Bob Stone'), true)
         ->assertScript(p09aCardShows($open, 'Theme: Delivery'), true)
         ->assertNotPresent("{$openCard} [aria-label=\"Done\"]")
