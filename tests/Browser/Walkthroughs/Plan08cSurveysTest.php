@@ -105,7 +105,7 @@ function p08cAwaitShowVoters(mixed $page, string $question): mixed
     return $page;
 }
 
-it('[P08c-01]creates a single choice, a multiple choice and a free text survey that a guest sees without reloading', function () {
+it('[P08c-01] creates a single choice, a multiple choice and a free text survey that a guest sees without reloading', function () {
     [$retro, $alice] = p08cBoard();
     $single = p08cCard('How was the sprint?');
     $multiple = p08cCard('Which practices helped?');
