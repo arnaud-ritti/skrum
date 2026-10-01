@@ -198,7 +198,7 @@ Every rule here is enforced on the server; the client only reflects it.
 
 ### 11.1 Timer
 
-`PUT timer` with `{seconds: 10–3600 | null}` stores `timer_ends_at = now + seconds` (null clears) and broadcasts `timer.changed`. Clients render the countdown locally, show "Time's up" and play the soft sound at zero. The timer triggers nothing else.
+`PUT timer` with `{seconds: 10–3600 | null}` stores `timer_ends_at = now + seconds` (null clears) and broadcasts `timer.changed`. Clients render the countdown locally, show "Time's up" and play the soft sound at zero. The timer triggers nothing else. A board outlives its sessions, so a countdown nobody stopped is not shown for ever: the snapshot gives `timerEndsAt: null` once the timer ended more than five minutes ago (the column keeps its value; a browser that stays on the page keeps "Time's up" until its next snapshot).
 
 ### 11.2 Lock
 
@@ -403,6 +403,8 @@ None blocking.
 5. A refused write on a locked board is a 403 with `errors.locked`, which the client treats as "discard and reload", not as a lost access (§11.2).
 6. A change of facilitator switches follow-me off (§8).
 7. The snapshot gains `me.transferCandidates` and `votingHistory`; `serverTime` has millisecond precision (§6.2).
+8. The snapshot stops reporting a timer five minutes after its end (§11.1). Added when the plan was reconciled with the code; not asked for by the user, to be confirmed or removed at review.
+9. The results panel and the canvas share a row that keeps the class the reactions bar is placed against; the panel never covers the canvas (§13).
 
 ## Decisions (2026-10-01)
 

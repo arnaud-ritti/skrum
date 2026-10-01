@@ -12,7 +12,7 @@
 
 **Not in this plan:** private writing and version history (17d). The hook points 17d needs are named in Task 4 ("Hooks for plan 17d") and not built.
 
-**How this plan was checked — read this.** It was written in a worktree without `vendor/` or `node_modules/`: **nothing in it was run.** Every name it relies on was read in the repository at commit `e0524df` or in the library's files, and the file is cited next to the claim. Test code is complete; implementation is given as signatures, algorithm and the snippets that are not obvious. A test that fails for a reason other than the missing feature is a defect of this plan: fix the smallest thing that makes the specified behaviour true and report it. Where plan and spec disagree, the spec wins.
+**How this plan was checked — read this.** A draft was written before plan 17b was finished, without running anything. It was then reconciled at commit `322c88b`: the whole plan was built once in the tree as a prototype and removed again. **Backend (Tasks 1–4):** every test below was run, seen failing for the stated reason where the behaviour is new, and passing with the implementation described; the complete suite (4 072 tests), Pint and PHPStan were green on the prototype. **Frontend (Tasks 5–7):** every listing was type-checked, linted and bundled at each task's end state; none of it has run in a browser, and what only a browser can show is in each task's "browser checks". Appendix B lists what the reconciliation changed. A test that fails for a reason other than the missing feature is still a defect of this plan: fix the smallest thing that makes the specified behaviour true and report it. Where plan and spec disagree, the spec wins.
 
 ## Global Constraints
 
@@ -26,10 +26,11 @@
 - Nothing this plan adds may cover the canvas's own controls, the shapes toolbar or the reactions bar (bottom centre).
 - PHP: early returns, no `else`, braces always, typed everything, no comment that restates code. `vendor/bin/pint --dirty --format agent` and `vendor/bin/phpstan analyse --memory-limit=1G <touched php files>` before each commit.
 - Frontend: URLs only through Wayfinder (`@/actions/...`); `npm run build` (generates the actions), then `npm run types:check` (one known error in `resources/js/components/manage-passkeys.tsx` is not yours) and `npx vp check <files you touched>`. Leave `public/build` fresh.
-- Tests: `DB_HOST=127.0.0.1 php artisan test --compact <paths>`. After the migration also run `vendor/bin/sail artisan migrate --no-interaction`. Guest-cookie requests use `->withCookies(whiteboardGuestCookie($guest))->withCredentials()`.
+- Tests: `DB_HOST=127.0.0.1 php artisan test --compact <paths>`. Never run two test commands at the same time: every run rebuilds the one test database, and the other run then fails on missing tables. After the migration also run `vendor/bin/sail artisan migrate --no-interaction`. Guest-cookie requests use `->withCookies(whiteboardGuestCookie($guest))->withCredentials()`.
 - Test helper functions are global across the suite: do not reuse a name that exists (`writeElements`, `storedElement`, `saveTemplate`, `boardWorthSaving`, `boardFromScene`, `uploadBoardFile`, `whiteboardChannelRequest`, and everything in `tests/Pest.php`).
 - Git: `git add` explicit paths only; never stage `.junie/mcp/mcp.json`; every commit ends with the trailer of `.superpowers/sdd/whiteboard-rules.md`.
-- Limits from the spec: timer 10–3600 seconds; votes per member 1–20; result text 200 characters; history 10 sessions; `viewport` whisper throttled 100 ms and repeated every 2 s.
+- Limits from the spec: timer 10–3600 seconds, no longer reported five minutes after its end; votes per member 1–20; result text 200 characters; history 10 sessions; `viewport` whisper throttled 100 ms and repeated every 2 s.
+- The element with the class `whiteboard-canvas` must stay a sibling of the reactions bar: rules of the board block of `resources/css/app.css` place the bar with `.whiteboard-canvas … ~ .whiteboard-reactions`.
 
 ## Review Focus
 
@@ -109,7 +110,7 @@ A note is **in scope** of a session when `WhiteboardVoteSession::isTarget($eleme
   - Columns `whiteboards.locked` (bool, false), `follow_enabled` (bool, false), `timer_ends_at` (nullable timestamp), cast on `Whiteboard` as `bool`, `bool`, `datetime`; `Whiteboard::voteSessions(): HasMany<WhiteboardVoteSession>`.
   - `WhiteboardVoteSession` with `votes_per_member: int`, `frame_element_id: ?string`, `allow_multiple: bool`, `element_ids: list<string>`, `opened_by_member_id: ?string`, `closed_at: ?Carbon`, `dismissed_at: ?Carbon`, `results: ?list<VoteResult>`; `votes(): HasMany<WhiteboardVote>`, `whiteboard(): BelongsTo`, `isOpen(): bool`, `isTarget(?WhiteboardElement $element): bool`. Factory state `closed(array $results = [])`.
   - `WhiteboardVote` with `whiteboard_vote_session_id`, `whiteboard_member_id`, `element_id`, `count: int`.
-  - Snapshot: `board.locked: bool`, `board.followEnabled: bool`, `board.timerEndsAt: ?string` (ISO 8601, seconds), `serverTime` as `Y-m-d\TH:i:s.v\Z`.
+  - Snapshot: `board.locked: bool`, `board.followEnabled: bool`, `board.timerEndsAt: ?string` (ISO 8601, seconds; null once the timer ended more than `BuildWhiteboardSnapshot::TimerLingerMinutes` = 5 minutes ago), `serverTime` as `Y-m-d\TH:i:s.v\Z`.
   - `PATCH settings` accepts `locked`, `follow_enabled` (booleans).
   - `PUT whiteboards/{board}/timer` (`whiteboards.timer.update`) → `{timerEndsAt: ?string}`; event `WhiteboardTimerChanged(string $boardId, public ?string $timerEndsAt)`, `timer.changed`, payload `{timerEndsAt}`.
   - Test helpers in `tests/Pest.php`: `whiteboardSticky(Whiteboard $board, string $id, string $text = 'Idea', array $overrides = []): array{0: WhiteboardElement, 1: WhiteboardElement}` (the note, then its text `"{$id}-text"`), `openWhiteboardVote(Whiteboard $board, array $attributes = []): WhiteboardVoteSession`, `castWhiteboardVote(WhiteboardVoteSession $session, WhiteboardMember $member, string $elementId, int $count = 1): WhiteboardVote`.
@@ -369,6 +370,25 @@ it('refuses a request that does not say how long', function () {
     expect($board->fresh()->timer_ends_at)->not->toBeNull();
 });
 
+it('stops showing a countdown five minutes after it ended', function () {
+    $board = Whiteboard::factory()->create(['timer_ends_at' => now()->addMinute()]);
+    [$user] = whiteboardMember($board);
+
+    $this->travel(5)->minutes();
+
+    $this->actingAs($user)
+        ->getJson(route('whiteboards.snapshot.show', $board))
+        ->assertJsonPath('board.timerEndsAt', '2026-10-11T10:01:00+00:00');
+
+    $this->travel(61)->seconds();
+
+    $this->actingAs($user)
+        ->getJson(route('whiteboards.snapshot.show', $board))
+        ->assertJsonPath('board.timerEndsAt', null);
+
+    expect($board->fresh()->timer_ends_at)->not->toBeNull();
+});
+
 it('broadcasts the end time and starts nothing else', function () {
     Queue::fake();
 
@@ -468,7 +488,7 @@ it('carries the end time in the timer event', function () {
 - [ ] **Step 3: Run them and see them fail**
 
 Run: `DB_HOST=127.0.0.1 php artisan test --compact tests/Feature/Whiteboards/WhiteboardVoteModelTest.php tests/Feature/Whiteboards/WhiteboardTimerTest.php tests/Feature/Whiteboards/WhiteboardSnapshotTest.php tests/Feature/Whiteboards/WhiteboardSettingsTest.php tests/Feature/Whiteboards/WhiteboardEventsTest.php`
-Expected: FAIL — `Class "App\Models\WhiteboardVoteSession" not found`, `Route [whiteboards.timer.update] not defined`, `board.locked` missing from the snapshot.
+Expected: FAIL — `Class "App\Models\WhiteboardVoteSession" not found` (from the helpers), `Route [whiteboards.timer.update] not defined`, `board.locked` missing from the snapshot (`null` is not `false`), `serverTime` without milliseconds, `Class "App\Events\Whiteboards\WhiteboardTimerChanged" not found`.
 
 - [ ] **Step 4: Migration**
 
@@ -568,7 +588,28 @@ public function voteSessions(): HasMany
 
 - [ ] **Step 6: Snapshot, settings, timer**
 
-`BuildWhiteboardSnapshot`: in `board`, after `reactionsEnabled`, add `'locked' => $board->locked`, `'followEnabled' => $board->follow_enabled`, `'timerEndsAt' => $board->timer_ends_at?->toIso8601String()`; replace `serverTime` by `now()->utc()->format('Y-m-d\TH:i:s.v\Z')`; extend the `Snapshot` PHPStan type (`locked: bool, followEnabled: bool, timerEndsAt: ?string`).
+`BuildWhiteboardSnapshot`: in `board`, after `reactionsEnabled`, add `'locked' => $board->locked`, `'followEnabled' => $board->follow_enabled`, `'timerEndsAt' => $this->timerEndsAt($board)`; replace `serverTime` by `now()->utc()->format('Y-m-d\TH:i:s.v\Z')`; extend the `board` part of the `Snapshot` PHPStan type (`locked: bool, followEnabled: bool, timerEndsAt: ?string`); and add:
+
+```php
+public const TimerLingerMinutes = 5;
+
+/**
+ * A board outlives its sessions: a countdown nobody stopped must not
+ * read "Time's up!" for ever (spec §11.1).
+ */
+private function timerEndsAt(Whiteboard $board): ?string
+{
+    $endsAt = $board->timer_ends_at;
+
+    if ($endsAt === null || $endsAt->lt(now()->subMinutes(self::TimerLingerMinutes))) {
+        return null;
+    }
+
+    return $endsAt->toIso8601String();
+}
+```
+
+The column is not cleared by a read; only the snapshot stops reporting it.
 
 `WhiteboardSettingsController::update`: add `'locked' => ['sometimes', 'boolean']` and `'follow_enabled' => ['sometimes', 'boolean']` to the rules. Nothing else changes: the method already re-checks the facilitator under the lock and broadcasts `board.changed`.
 
@@ -954,7 +995,7 @@ private function transferCandidates(Whiteboard $board, WhiteboardMember $viewer)
 
 Extend the `Snapshot` PHPStan type (`transferCandidates: array<int, array{userId: string, name: string}>`).
 
-- [ ] **Step 7: Translation key**
+- [ ] **Step 7: Translation key** (append to each `lang/*.json`; `en.json` with value = key)
 
 | Key (English) | French | German | Spanish |
 |---|---|---|---|
@@ -1019,8 +1060,10 @@ Facts checked: `SendsToOthers::sendToOthers()` is `DB::afterCommit(fn () => resc
 ```php
 <?php
 
+use App\Enums\WorkspaceRole;
 use App\Events\Whiteboards\WhiteboardChanged;
 use App\Events\Whiteboards\WhiteboardVoteChanged;
+use App\Models\User;
 use App\Models\Whiteboard;
 use App\Models\WhiteboardElement;
 use App\Models\WhiteboardVote;
@@ -1334,6 +1377,26 @@ it('does not find the vote of another board', function () {
     $this->actingAs($user)->getJson(route('whiteboards.voteSessions.show', [$board, $theirs]))->assertNotFound();
 
     expect($theirs->fresh()->isOpen())->toBeTrue();
+});
+
+it('refuses people outside the team on every facilitation endpoint', function () {
+    $board = Whiteboard::factory()->create();
+    whiteboardSticky($board, 'note');
+    $session = openWhiteboardVote($board);
+    $outsider = User::factory()->create();
+    $board->team->workspace->members()->attach($outsider, ['role' => WorkspaceRole::Member->value]);
+
+    $this->actingAs($outsider)->putJson(route('whiteboards.timer.update', $board), ['seconds' => 60])->assertForbidden();
+    openVoteRequest($this->actingAs($outsider), $board)->assertForbidden();
+    voteRequest($this->actingAs($outsider), $board, $session, 'note', 1)->assertForbidden();
+    closeVoteRequest($this->actingAs($outsider), $board, $session)->assertForbidden();
+    $this->actingAs($outsider)->postJson(route('whiteboards.voteSessions.dismiss.store', [$board, $session]))->assertForbidden();
+    $this->actingAs($outsider)->getJson(route('whiteboards.voteSessions.show', [$board, $session]))->assertForbidden();
+
+    expect(WhiteboardVote::query()->count())->toBe(0)
+        ->and(WhiteboardVoteSession::query()->count())->toBe(1)
+        ->and($session->fresh()->isOpen())->toBeTrue()
+        ->and($board->fresh()->timer_ends_at)->toBeNull();
 });
 
 it('validates the count', function (array $body) {
@@ -1900,104 +1963,140 @@ public static function noOpenVoteSession(Whiteboard $board): void
 
 - [ ] **Step 4: The presenter**
 
-`app/Actions/Whiteboards/PresentWhiteboardVoting.php` (`php artisan make:class Actions/Whiteboards/PresentWhiteboardVoting --no-interaction`). Class docblock: "The only place voting state is turned into a payload. While a session is open a viewer gets their own votes and nothing about anyone else's (spec §11.4); the facilitator is a viewer like any other." Define the five PHPStan types of "Shared shapes" and `public const HistoryLength = 10;`.
+`app/Actions/Whiteboards/PresentWhiteboardVoting.php` (`php artisan make:class Actions/Whiteboards/PresentWhiteboardVoting --no-interaction`), the whole file as it passed the tests and PHPStan:
 
 ```php
-public function currentSession(Whiteboard $board): ?WhiteboardVoteSession
-{
-    return $board->voteSessions()->whereNull('closed_at')->first()
-        ?? $board->voteSessions()->whereNull('dismissed_at')->orderByDesc('closed_at')->orderByDesc('id')->first();
-}
+<?php
+
+namespace App\Actions\Whiteboards;
+
+use App\Models\Whiteboard;
+use App\Models\WhiteboardMember;
+use App\Models\WhiteboardVote;
+use App\Models\WhiteboardVoteSession;
+use Illuminate\Support\Collection;
 
 /**
- * @return Voting|null
+ * The only place voting state is turned into a payload. While a session is
+ * open a viewer gets their own votes and nothing about anyone else's (spec
+ * §11.4); the facilitator is a viewer like any other.
+ *
+ * @phpstan-type VoteCount array{elementId: string, count: int}
+ * @phpstan-type VoteResult array{elementId: string, text: string, count: int}
+ * @phpstan-type Tally array{myVotes: list<VoteCount>, remaining: int, finishedCount: int}
+ * @phpstan-type Voting array{
+ *     id: string,
+ *     open: bool,
+ *     votesPerMember: int,
+ *     allowMultiple: bool,
+ *     frameElementId: ?string,
+ *     elementIds: list<string>,
+ *     myVotes: list<VoteCount>,
+ *     remaining: int,
+ *     finishedCount: ?int,
+ *     results: ?list<VoteResult>
+ * }
+ * @phpstan-type PastVote array{id: string, closedAt: string, results: list<VoteResult>}
  */
-public function current(Whiteboard $board, WhiteboardMember $viewer): ?array
+class PresentWhiteboardVoting
 {
-    $session = $this->currentSession($board);
+    public const HistoryLength = 10;
 
-    if ($session === null) {
-        return null;
+    public function currentSession(Whiteboard $board): ?WhiteboardVoteSession
+    {
+        return $board->voteSessions()->whereNull('closed_at')->first()
+            ?? $board->voteSessions()->whereNull('dismissed_at')->orderByDesc('closed_at')->orderByDesc('id')->first();
     }
 
-    return $this->session($session, $viewer);
-}
+    /**
+     * @return Voting|null
+     */
+    public function current(Whiteboard $board, WhiteboardMember $viewer): ?array
+    {
+        $session = $this->currentSession($board);
 
-/**
- * @return Voting
- */
-public function session(WhiteboardVoteSession $session, WhiteboardMember $viewer): array
-{
-    $settings = [
-        'id' => $session->id,
-        'open' => $session->isOpen(),
-        'votesPerMember' => $session->votes_per_member,
-        'allowMultiple' => $session->allow_multiple,
-        'frameElementId' => $session->frame_element_id,
-    ];
+        if ($session === null) {
+            return null;
+        }
 
-    if (! $session->isOpen()) {
-        return [...$settings, 'elementIds' => [], 'myVotes' => [], 'remaining' => 0, 'finishedCount' => null, 'results' => $session->results ?? []];
+        return $this->session($session, $viewer);
     }
 
-    return [...$settings, 'elementIds' => $session->element_ids, ...$this->tally($session, $viewer), 'results' => null];
-}
-
-/**
- * @return Tally
- */
-public function tally(WhiteboardVoteSession $session, WhiteboardMember $member): array
-{
-    $mine = $session->votes()->where('whiteboard_member_id', $member->id)->orderBy('element_id')->get();
-
-    return [
-        'myVotes' => $mine
-            ->map(fn (WhiteboardVote $vote): array => ['elementId' => $vote->element_id, 'count' => $vote->count])
-            ->values()
-            ->all(),
-        'remaining' => max(0, $session->votes_per_member - (int) $mine->sum('count')),
-        'finishedCount' => $this->finishedCount($session),
-    ];
-}
-
-public function finishedCount(WhiteboardVoteSession $session): int
-{
-    return $session->votes()
-        ->get(['whiteboard_member_id', 'count'])
-        ->groupBy('whiteboard_member_id')
-        ->filter(fn (Collection $votes): bool => (int) $votes->sum('count') >= $session->votes_per_member)
-        ->count();
-}
-
-/**
- * @return list<PastVote>
- */
-public function history(Whiteboard $board, WhiteboardMember $viewer): array
-{
-    if ($viewer->isGuest()) {
-        return [];
-    }
-
-    $current = $this->currentSession($board);
-
-    return array_values($board->voteSessions()
-        ->whereNotNull('closed_at')
-        ->when($current !== null, fn ($query) => $query->whereKeyNot($current->id))
-        ->orderByDesc('closed_at')
-        ->orderByDesc('id')
-        ->get()
-        ->filter(fn (WhiteboardVoteSession $session): bool => ($session->results ?? []) !== [])
-        ->take(self::HistoryLength)
-        ->map(fn (WhiteboardVoteSession $session): array => [
+    /**
+     * @return Voting
+     */
+    public function session(WhiteboardVoteSession $session, WhiteboardMember $viewer): array
+    {
+        $settings = [
             'id' => $session->id,
-            'closedAt' => $session->closed_at->toIso8601String(),
-            'results' => $session->results,
-        ])
-        ->all());
+            'open' => $session->isOpen(),
+            'votesPerMember' => $session->votes_per_member,
+            'allowMultiple' => $session->allow_multiple,
+            'frameElementId' => $session->frame_element_id,
+        ];
+
+        if (! $session->isOpen()) {
+            return [...$settings, 'elementIds' => [], 'myVotes' => [], 'remaining' => 0, 'finishedCount' => null, 'results' => $session->results ?? []];
+        }
+
+        return [...$settings, 'elementIds' => $session->element_ids, ...$this->tally($session, $viewer), 'results' => null];
+    }
+
+    /**
+     * @return Tally
+     */
+    public function tally(WhiteboardVoteSession $session, WhiteboardMember $member): array
+    {
+        $mine = $session->votes()->where('whiteboard_member_id', $member->id)->orderBy('element_id')->get();
+
+        return [
+            'myVotes' => array_values($mine
+                ->map(fn (WhiteboardVote $vote): array => ['elementId' => $vote->element_id, 'count' => $vote->count])
+                ->all()),
+            'remaining' => max(0, $session->votes_per_member - (int) $mine->sum('count')),
+            'finishedCount' => $this->finishedCount($session),
+        ];
+    }
+
+    public function finishedCount(WhiteboardVoteSession $session): int
+    {
+        return $session->votes()
+            ->get(['whiteboard_member_id', 'count'])
+            ->groupBy('whiteboard_member_id')
+            ->filter(fn (Collection $votes): bool => (int) $votes->sum('count') >= $session->votes_per_member)
+            ->count();
+    }
+
+    /**
+     * @return list<PastVote>
+     */
+    public function history(Whiteboard $board, WhiteboardMember $viewer): array
+    {
+        if ($viewer->isGuest()) {
+            return [];
+        }
+
+        $current = $this->currentSession($board);
+
+        return array_values($board->voteSessions()
+            ->whereNotNull('closed_at')
+            ->when($current !== null, fn ($query) => $query->whereKeyNot($current->id))
+            ->orderByDesc('closed_at')
+            ->orderByDesc('id')
+            ->get()
+            ->filter(fn (WhiteboardVoteSession $session): bool => ($session->results ?? []) !== [])
+            ->take(self::HistoryLength)
+            ->map(fn (WhiteboardVoteSession $session): array => [
+                'id' => $session->id,
+                'closedAt' => $session->closed_at->toIso8601String(),
+                'results' => $session->results,
+            ])
+            ->all());
+    }
 }
 ```
 
-(`Illuminate\Support\Collection` for the type in `finishedCount`.) The key order of `session()` and `tally()` is the order the tests compare with `toBe`: do not reorder. A closed session carries no `myVotes`: the rows no longer exist.
+The key order of `session()` and `tally()` is the order the tests compare with `toBe`: do not reorder. `myVotes` goes through `array_values()` because PHPStan does not accept a collection's `all()` as a list. A closed session carries no `myVotes`: the rows no longer exist.
 
 - [ ] **Step 5: Open**
 
@@ -2029,14 +2128,14 @@ Opening does not touch any element and does not bump `seq`.
 
 - [ ] **Step 6: Vote**
 
-`CastWhiteboardVote::handle(...)` (constructor: `private PresentWhiteboardVoting $presentWhiteboardVoting`), in one `DB::transaction`:
+`CastWhiteboardVote::handle(...)` (constructor: `private PresentWhiteboardVoting $presentWhiteboardVoting`; class docblock `@phpstan-import-type Tally from PresentWhiteboardVoting`, method docblock `@return Tally`), in one `DB::transaction`:
 
 1. Lock the board row as above. The board lock serialises every vote of a board, so the budget check cannot race.
 2. `$open = $locked->voteSessions()->whereKey($session->id)->firstOrFail();` then `WhiteboardGuard::openVoteSession($open);` — the session is read again under the lock: a vote queued behind "close" is refused.
 3. `$count > 1 && ! $open->allow_multiple` → `ValidationException::withMessages(['count' => __('Only one vote per note is allowed.')])`.
 4. `$element = $locked->elements()->where('element_id', $elementId)->first();` — `! $open->isTarget($element)` → `ValidationException::withMessages(['votes' => __('This note is not part of the vote.')])`. This holds for `count` 0 too.
 5. Budget: `$elsewhere = (int) $open->votes()->where('whiteboard_member_id', $member->id)->where('element_id', '!=', $elementId)->sum('count');` — `$elsewhere + $count > $open->votes_per_member` → `ValidationException::withMessages(['votes' => __('You have no votes left.')])`.
-6. `$current = $open->votes()->where('whiteboard_member_id', $member->id)->where('element_id', $elementId)->first();` When `($current?->count ?? 0) === $count`, return `$this->presentWhiteboardVoting->tally($open, $member)` without writing or broadcasting (a retry).
+6. `$current = $open->votes()->where('whiteboard_member_id', $member->id)->where('element_id', $elementId)->first();` When `($current->count ?? 0) === $count` (written with `->`: PHPStan refuses `?->` on the left of `??`, rule `nullsafe.neverNull`), return `$this->presentWhiteboardVoting->tally($open, $member)` without writing or broadcasting (a retry).
 7. Otherwise: `$count === 0` → `$current?->delete()`; else `$open->votes()->updateOrCreate(['whiteboard_member_id' => $member->id, 'element_id' => $elementId], ['count' => $count])`. Then `(new WhiteboardVoteChanged($locked->id, $open->id, $this->presentWhiteboardVoting->finishedCount($open)))->sendToOthers();` and return the tally.
 
 The voter is `$member`, resolved by the middleware; nothing in the body names a member. A vote never touches `whiteboards.seq` or `updated_at`. Write steps 6–7 with early returns, not a ternary with side effects.
@@ -2150,9 +2249,9 @@ Route::post('vote-sessions/{voteSession}/close', [WhiteboardVoteClosuresControll
 Route::post('vote-sessions/{voteSession}/dismiss', [WhiteboardVoteDismissalsController::class, 'store'])->name('whiteboards.voteSessions.dismiss.store')->whereUuid('voteSession');
 ```
 
-`BuildWhiteboardSnapshot`: inject `PresentWhiteboardVoting`; after `seq` add `'voting' => $this->presentWhiteboardVoting->current($board, $viewer)` and `'votingHistory' => $this->presentWhiteboardVoting->history($board, $viewer)`; import the `Voting` and `PastVote` types into the `Snapshot` type.
+`BuildWhiteboardSnapshot`: inject `private PresentWhiteboardVoting $presentWhiteboardVoting`; after `seq` add `'voting' => $this->presentWhiteboardVoting->current($board, $viewer)` and `'votingHistory' => $this->presentWhiteboardVoting->history($board, $viewer)`; in the class docblock add `@phpstan-import-type Voting from PresentWhiteboardVoting` and `@phpstan-import-type PastVote from PresentWhiteboardVoting` above `@phpstan-type Snapshot` (with an empty ` *` line between the imports and the type, as Pint wants), and in the type, after `seq: int,`, the lines `voting: ?Voting,` and `votingHistory: list<PastVote>,`.
 
-- [ ] **Step 9: Translation keys**
+- [ ] **Step 9: Translation keys** (append to each `lang/*.json`; `en.json` with value = key)
 
 | Key (English) | French | German | Spanish |
 |---|---|---|---|
@@ -2163,7 +2262,8 @@ Route::post('vote-sessions/{voteSession}/dismiss', [WhiteboardVoteDismissalsCont
 | Only one vote per note is allowed. | Un seul vote par post-it est autorisé. | Pro Haftnotiz ist nur eine Stimme erlaubt. | Solo se permite un voto por nota. |
 | This note is not part of the vote. | Ce post-it ne fait pas partie du vote. | Diese Haftnotiz gehört nicht zur Abstimmung. | Esta nota no forma parte de la votación. |
 | Close the vote first. | Clôturez d'abord le vote. | Schließen Sie zuerst die Abstimmung. | Cierra primero la votación. |
-| You have no votes left. | exists | exists | exists |
+
+Already in the four files (do not add again): `You have no votes left.`
 
 - [ ] **Step 10: Run the tests**
 
@@ -2682,6 +2782,223 @@ private function storedElements(Whiteboard $board, array $rawElements, bool $wit
 
 Imports: `App\Events\Whiteboards\WhiteboardVoteChanged`, `App\Models\WhiteboardVoteSession`. Keep the rest of the class as it is (`refusal`, `isStale`, `touchesLock`, `liveDelta`, `save`, `rejection`, `broadcastable`).
 
+The snippets above, put together, are this change to the file as it stands after Task 2 (it passed every test of this plan, Pint and PHPStan):
+
+```diff
+--- a/app/Actions/Whiteboards/WriteWhiteboardElements.php
++++ b/app/Actions/Whiteboards/WriteWhiteboardElements.php
+@@ -3,9 +3,11 @@
+ namespace App\Actions\Whiteboards;
+ 
+ use App\Events\Whiteboards\WhiteboardElementsChanged;
++use App\Events\Whiteboards\WhiteboardVoteChanged;
+ use App\Models\Whiteboard;
+ use App\Models\WhiteboardElement;
+ use App\Models\WhiteboardMember;
++use App\Models\WhiteboardVoteSession;
+ use Illuminate\Support\Collection;
+ use Illuminate\Support\Facades\DB;
+ 
+@@ -25,6 +27,7 @@
+         private SanitizeWhiteboardElement $sanitizeWhiteboardElement,
+         private PresentWhiteboardElement $presentWhiteboardElement,
+         private OrderWhiteboardElements $orderWhiteboardElements,
++        private PresentWhiteboardVoting $presentWhiteboardVoting,
+     ) {}
+ 
+     /**
+@@ -41,13 +44,20 @@
+             $fromSeq = $locked->seq;
+             $seq = $fromSeq;
+             $isFacilitator = $locked->isFacilitator($member);
+-            $stored = $this->storedElements($locked, $rawElements);
++            $session = $locked->voteSessions()->whereNull('closed_at')->first();
++            $stored = $this->storedElements($locked, $rawElements, $session !== null);
++            $targetsBefore = $this->targets($session, $stored);
++            $refunded = 0;
+             $fileIds = $locked->files()->pluck('file_id')->flip();
+             $liveCount = $locked->elements()->where('is_deleted', false)->count();
+             $accepted = [];
+             $rejected = [];
+ 
+-            foreach ($rawElements as $raw) {
++            $queue = array_map(fn (mixed $raw): array => [$raw, true], array_values($rawElements));
++
++            while ($queue !== []) {
++                [$raw, $mayDefer] = array_shift($queue);
++
+                 $element = $this->sanitizeWhiteboardElement->handle($raw);
+ 
+                 if ($element === null) {
+@@ -64,8 +74,18 @@
+                     continue;
+                 }
+ 
++                if ($mayDefer && $this->isWordsOfTarget($existing, $element, $targetsBefore)) {
++                    $queue[] = [$raw, false];
++
++                    continue;
++                }
++
+                 $reason = $this->refusal($existing, $element, $isFacilitator, $fileIds, $liveCount);
+ 
++                if ($reason === null && ! $mayDefer && $session !== null && $this->changesWordsOfTarget($session, $stored, $targetsBefore, $existing, $element)) {
++                    $reason = 'voting';
++                }
++
+                 if ($reason !== null) {
+                     $rejected[] = $this->rejection($element['id'], $reason, $existing, $member);
+ 
+@@ -79,6 +99,10 @@
+ 
+                 $stored->put($element['id'], $saved);
+                 $accepted[$element['id']] = $saved;
++
++                if ($session !== null && isset($targetsBefore[$element['id']]) && ! $session->isTarget($saved)) {
++                    $refunded += $session->votes()->where('element_id', $element['id'])->delete();
++                }
+             }
+ 
+             if ($seq === $fromSeq) {
+@@ -89,6 +113,10 @@
+ 
+             (new WhiteboardElementsChanged($locked->id, $seq, $fromSeq, $this->broadcastable($accepted)))->sendToOthers();
+ 
++            if ($session !== null && $refunded > 0) {
++                (new WhiteboardVoteChanged($locked->id, $session->id, $this->presentWhiteboardVoting->finishedCount($session)))->sendToAll();
++            }
++
+             return ['seq' => $seq, 'fromSeq' => $fromSeq, 'rejected' => $rejected];
+         });
+     }
+@@ -97,17 +125,122 @@
+      * @param  array<int, mixed>  $rawElements
+      * @return Collection<string, WhiteboardElement>
+      */
+-    private function storedElements(Whiteboard $board, array $rawElements): Collection
++    private function storedElements(Whiteboard $board, array $rawElements, bool $withContainers): Collection
+     {
+         $ids = collect($rawElements)
+             ->map(fn (mixed $raw): ?string => $this->rawId($raw))
+-            ->filter()
++            ->filter(fn (?string $id): bool => $id !== null)
+             ->unique()
+             ->values();
+ 
+-        return $board->elements()->whereIn('element_id', $ids)->get()->keyBy('element_id');
++        $stored = $board->elements()->whereIn('element_id', $ids)->get()->keyBy('element_id');
++
++        if (! $withContainers) {
++            return $stored;
++        }
++
++        $containerIds = collect($rawElements)
++            ->map(fn (mixed $raw): mixed => is_array($raw) ? ($raw['containerId'] ?? null) : null)
++            ->merge($stored->map(fn (WhiteboardElement $element): mixed => $element->data['containerId'] ?? null)->values())
++            ->filter(fn (mixed $id): bool => is_string($id) && preg_match(SanitizeWhiteboardElement::IdPattern, $id) === 1 && ! $stored->has($id))
++            ->unique()
++            ->values();
++
++        if ($containerIds->isEmpty()) {
++            return $stored;
++        }
++
++        return $stored->union($board->elements()->whereIn('element_id', $containerIds)->get()->keyBy('element_id'));
+     }
+ 
++    /**
++     * @param  Collection<string, WhiteboardElement>  $stored
++     * @return array<int|string, true>
++     */
++    private function targets(?WhiteboardVoteSession $session, Collection $stored): array
++    {
++        if ($session === null) {
++            return [];
++        }
++
++        $targets = [];
++
++        foreach ($stored as $element) {
++            if ($session->isTarget($element)) {
++                $targets[$element->element_id] = true;
++            }
++        }
++
++        return $targets;
++    }
++
++    /**
++     * @param  array<string, mixed>  $element
++     * @return list<string>
++     */
++    private function containerIds(?WhiteboardElement $existing, array $element): array
++    {
++        return array_values(array_unique(array_filter(
++            [$element['containerId'] ?? null, $existing?->data['containerId'] ?? null],
++            fn (mixed $id): bool => is_string($id),
++        )));
++    }
++
++    /**
++     * @param  array<string, mixed>  $element
++     * @param  array<int|string, true>  $targetsBefore
++     */
++    private function isWordsOfTarget(?WhiteboardElement $existing, array $element, array $targetsBefore): bool
++    {
++        if ($element['type'] !== 'text') {
++            return false;
++        }
++
++        foreach ($this->containerIds($existing, $element) as $containerId) {
++            if (isset($targetsBefore[$containerId])) {
++                return true;
++            }
++        }
++
++        return false;
++    }
++
++    /**
++     * @param  Collection<string, WhiteboardElement>  $stored
++     * @param  array<int|string, true>  $targetsBefore
++     * @param  array<string, mixed>  $element
++     */
++    private function changesWordsOfTarget(WhiteboardVoteSession $session, Collection $stored, array $targetsBefore, ?WhiteboardElement $existing, array $element): bool
++    {
++        $underVote = false;
++
++        foreach ($this->containerIds($existing, $element) as $containerId) {
++            if (isset($targetsBefore[$containerId]) && $session->isTarget($stored->get($containerId))) {
++                $underVote = true;
++            }
++        }
++
++        if (! $underVote) {
++            return false;
++        }
++
++        if ($existing === null) {
++            return true;
++        }
++
++        $before = $existing->data;
++
++        return $this->letters($before['text'] ?? null) !== $this->letters($element['text'] ?? null)
++            || $this->letters($before['originalText'] ?? $before['text'] ?? null) !== $this->letters($element['originalText'] ?? $element['text'] ?? null)
++            || ($before['containerId'] ?? null) !== ($element['containerId'] ?? null)
++            || $existing->is_deleted !== $element['isDeleted'];
++    }
++
++    private function letters(mixed $text): string
++    {
++        return (string) preg_replace('/\s+/u', '', is_string($text) ? $text : '');
++    }
++
+     private function rawId(mixed $raw): ?string
+     {
+         if (! is_array($raw)) {
+```
+
 - [ ] **Step 4: Run the tests**
 
 Run: `DB_HOST=127.0.0.1 php artisan test --compact tests/Feature/Whiteboards`
@@ -2710,133 +3027,389 @@ git commit -m "feat(whiteboard): freeze the words of notes under vote and refund
 
 ### Task 5: Board state, countdown, lock and hand-over in the browser
 
-No test runner: this task is checked by the gates and by the browser checks below. The code is a proposal, not run; every library name was read in `node_modules/@excalidraw/excalidraw/dist/types/excalidraw/types.d.ts` and every behaviour in `dist/dev/index.js`, as cited.
+No test runner on the client: this task is checked by the gates and, after the plan, by the browser checks at its end. Every listing below was built in the tree at this task's end state, type-checked (`npm run types:check`), linted and formatted (`npx vp check`), and bundled (`npm run build`). None of it has run in a browser. Diffs are against the files as they are before this task; apply them by hand and let `npx vp check --fix` settle the formatting.
 
 **Files:**
 - Create: `resources/js/hooks/use-whiteboard-request.ts`, `resources/js/components/whiteboard/facilitator-bar.tsx`, `resources/js/components/whiteboard/status-bar.tsx`, `resources/js/components/whiteboard/hand-over-dialog.tsx`
 - Modify: `resources/js/lib/whiteboard/types.ts`, `resources/js/lib/whiteboard/scene-sync.ts`, `resources/js/lib/whiteboard/files.ts`, `resources/js/hooks/use-whiteboard-channel.ts`, `resources/js/hooks/use-whiteboard.ts`, `resources/js/components/whiteboard/board.tsx`, `resources/js/components/whiteboard/board-menu.tsx`, `resources/js/components/whiteboard/top-bar.tsx`, `resources/css/app.css`, `lang/{en,fr,de,es}.json`
 
 **Interfaces:**
-- Consumes: the snapshot of Tasks 1–3; Wayfinder (after `npm run build`) `WhiteboardTimersController.update(boardId)` → `{timerEndsAt}`, `WhiteboardSettingsController.update(boardId)`, `WhiteboardFacilitatorsController.update(boardId)`, `WhiteboardVoteSessionsController.show({board, voteSession})` → `WhiteboardVoting`; events `timer.changed` `{timerEndsAt}`, `vote.changed` `{sessionId, finishedCount}`; the 403 with `errors.locked`; `TimerDisplay({endsAt, offset})` of `resources/js/components/retro/timer-display.tsx` (it shows the countdown, then "Time's up!", toasts and plays the sound once); `useServerOffset(serverTime)` of `resources/js/hooks/use-countdown.ts`; `retroRequest`, `RetroRequestError` (`status`, `message`, `errors`).
+- Consumes: the snapshot of Tasks 1–3 (`board.locked`, `board.followEnabled`, `board.timerEndsAt`, `me.transferCandidates`, `voting`, `votingHistory`, `serverTime` with milliseconds); Wayfinder actions generated by `npm run build` — `WhiteboardTimersController.update(boardId)` → `{timerEndsAt}`, `WhiteboardSettingsController.update(boardId)`, `WhiteboardFacilitatorsController.update(boardId)`, `WhiteboardVoteSessionsController.show({ board, voteSession })` → `WhiteboardVoting` (parameter names read in the generated `resources/js/actions/App/Http/Controllers/Whiteboards/WhiteboardVoteSessionsController.ts`); events `timer.changed` `{timerEndsAt}` and `vote.changed` `{sessionId, finishedCount}`; the 403 with `errors.locked` of Task 2; `TimerDisplay({ endsAt, offset })` of `resources/js/components/retro/timer-display.tsx` (countdown, then "Time's up!", one toast and one sound); `useServerOffset(serverTime)` of `resources/js/hooks/use-countdown.ts`; `retroRequest`, `RetroRequestError(status, message, errors)` of `resources/js/lib/retro/api.ts`.
 - Produces (used by Tasks 6 and 7):
-  - Types in `resources/js/lib/whiteboard/types.ts`:
-
-```ts
-export type VoteCount = { elementId: string; count: number };
-export type VoteResult = { elementId: string; text: string; count: number };
-export type VoteTally = { myVotes: VoteCount[]; remaining: number; finishedCount: number };
-export type WhiteboardVoting = {
-    id: string;
-    open: boolean;
-    votesPerMember: number;
-    allowMultiple: boolean;
-    frameElementId: string | null;
-    elementIds: string[];
-    myVotes: VoteCount[];
-    remaining: number;
-    finishedCount: number | null;
-    results: VoteResult[] | null;
-};
-export type PastVote = { id: string; closedAt: string; results: VoteResult[] };
-export type TransferCandidate = { userId: string; name: string };
-```
-
-    `WhiteboardSnapshot['board']` gains `locked: boolean; followEnabled: boolean; timerEndsAt: string | null`; `me` gains `transferCandidates: TransferCandidate[]`; the snapshot gains `voting: WhiteboardVoting | null; votingHistory: PastVote[]`; `RejectReason` gains `'voting'`.
+  - Types `VoteCount`, `VoteResult`, `VoteTally`, `WhiteboardVoting`, `PastVote`, `TransferCandidate` in `resources/js/lib/whiteboard/types.ts`; `WhiteboardSnapshot` gains `board.locked`, `board.followEnabled`, `board.timerEndsAt`, `me.transferCandidates`, `voting`, `votingHistory`; `RejectReason` gains `'voting'`.
   - `WhiteboardState` (from `useWhiteboard`) gains `serverOffset: number`, `setTimer(timerEndsAt: string | null): void`, `applyTally(sessionId: string, tally: VoteTally): void`; `state.snapshot` gains `voting` and `votingHistory`.
-  - `useWhiteboardRequest(): <T>(request: Promise<T>) => Promise<T | undefined>` — resolves to the response, or to `undefined` after a toast saying why it failed.
-  - `FacilitatorBar({ state }: { state: WhiteboardState })`, `StatusBar({ children }: { children: ReactNode })` (renders nothing when it has no child).
+  - `useWhiteboardRequest(): <T>(request: Promise<T>) => Promise<T | undefined>` — the response (`null` for a 204), or `undefined` after a toast that says why it failed. Callers test `=== undefined`.
+  - `FacilitatorBar({ state }: { state: WhiteboardState })`; `StatusBar({ children }: { children: ReactNode })`, which renders nothing when it has no child; `HandOverDialog({ state, open, onOpenChange })`.
   - `SceneSyncDeps.onLocked: () => void`.
-  - On the canvas wrapper: class `relative` and the attribute `data-facilitator="true|false"`.
+  - On the canvas wrapper (`.whiteboard-canvas`): class `relative` and the attribute `data-facilitator="true|false"`.
 
-Facts checked: the canvas takes `viewModeEnabled?: boolean` (`types.d.ts:436`); while the prop is `undefined` the user's own "View mode" toggle exists (`predicate: typeof appProps.viewModeEnabled === "undefined"`, `index.js:21591`), and a change of the prop is copied into the state with `!!` (`index.js:30485`), so `true` → `undefined` leaves view mode; in view mode the shapes toolbar is not rendered (`index.js:21182`), "Clear canvas" is hidden (`index.js:5792`) and a drag pans; the context menu is an inline `<ul class="context-menu">` whose items are `<li data-testid="{action name}">` (`index.js:14104–14131`), the lock actions being `toggleElementLock` and `unlockAllElements` (`index.js:9135`, `9190`); `scene-sync.ts` treats 401, 403, 404 and 419 as fatal (`FatalStatuses`), and `files.ts` throws `RetroRequestError(status, 'upload refused')` for them without reading the body; `use-whiteboard.ts` sends every event that is not `board.*` to `onElementsChanged`, so new events must be routed by name.
+Facts checked in `node_modules/@excalidraw/excalidraw/dist` (0.18.1): the canvas takes `viewModeEnabled?: boolean` (`types/excalidraw/types.d.ts:436`); while the prop is `undefined` the user's own "View mode" toggle exists (`typeof appProps.viewModeEnabled === "undefined"`, `dev/index.js:21592`), and a change of the prop is copied into the state with `!!` (`dev/index.js:30486`), so `true` → `undefined` leaves view mode; the context menu is `<ul class="context-menu">` whose items carry `data-testid="{action name}"` (`dev/index.js:14104`, `14131`), the lock actions being `toggleElementLock` (`dev/index.js:9135`) and `unlockAllElements` (`dev/index.js:9188`). In the repository: `scene-sync.ts` treats 401, 403, 404 and 419 as fatal (`FatalStatuses`); `files.ts` throws `RetroRequestError(status, 'upload refused')` for them without reading the body; `use-whiteboard.ts` sends every event that is not `board.*` to `onElementsChanged`, so the two new events are routed by name before that; `use-whiteboard-toolbar-slot.ts` returns `null` while the shapes toolbar is absent, which is the case in view mode, so the sticky tool would fall back to the top bar unless it is told not to.
 
-- [ ] **Step 1: Types** — edit `resources/js/lib/whiteboard/types.ts` as listed under "Produces".
+- [ ] **Step 1: Types** (`resources/js/lib/whiteboard/types.ts`)
 
-- [ ] **Step 2: Channel and board state**
-
-`use-whiteboard-channel.ts`: add `'timer.changed'` and `'vote.changed'` to `WhiteboardEvents`.
-
-`use-whiteboard.ts`:
-- `BoardMeta = Pick<WhiteboardSnapshot, 'board' | 'me' | 'members' | 'links' | 'voting' | 'votingHistory'>`.
-- Clock offset: `const initialOffset = useServerOffset(initial.serverTime); const [measuredOffset, setMeasuredOffset] = useState<number | null>(null);` and expose `serverOffset: measuredOffset ?? initialOffset`. The initial value is late by the time the page took to load; every `refetch` measures again around the request (the channel's first `here` triggers one moments after the page opens):
-
-```ts
-const sentAt = Date.now();
-const epoch = voteEpoch.current;
-const fresh = await retroRequest<WhiteboardSnapshot>(WhiteboardSnapshotsController.show(boardId));
-
-if (request !== latestRefetch.current) {
-    return;
-}
-
-setMeasuredOffset(new Date(fresh.serverTime).getTime() - (sentAt + Date.now()) / 2);
-setSnapshot((current) => ({
-    board: fresh.board,
-    me: fresh.me,
-    members: fresh.members,
-    links: fresh.links,
-    // A vote answered while this snapshot travelled is newer than it.
-    voting:
-        epoch !== voteEpoch.current &&
-        fresh.voting?.open &&
-        current.voting?.open &&
-        current.voting.id === fresh.voting.id
-            ? current.voting
-            : fresh.voting,
-    votingHistory: fresh.votingHistory,
-}));
+```diff
+diff --git a/resources/js/lib/whiteboard/types.ts b/resources/js/lib/whiteboard/types.ts
+index efbbb77..6083f53 100644
+--- a/resources/js/lib/whiteboard/types.ts
++++ b/resources/js/lib/whiteboard/types.ts
+@@ -8,6 +8,33 @@ export type SceneElement = Record<string, unknown> & {
+     isDeleted: boolean;
+ };
+ 
++export type VoteCount = { elementId: string; count: number };
++
++export type VoteResult = { elementId: string; text: string; count: number };
++
++export type VoteTally = {
++    myVotes: VoteCount[];
++    remaining: number;
++    finishedCount: number;
++};
++
++export type WhiteboardVoting = {
++    id: string;
++    open: boolean;
++    votesPerMember: number;
++    allowMultiple: boolean;
++    frameElementId: string | null;
++    elementIds: string[];
++    myVotes: VoteCount[];
++    remaining: number;
++    finishedCount: number | null;
++    results: VoteResult[] | null;
++};
++
++export type PastVote = { id: string; closedAt: string; results: VoteResult[] };
++
++export type TransferCandidate = { userId: string; name: string };
++
+ export type WhiteboardSnapshot = {
+     board: {
+         id: string;
+@@ -18,6 +45,9 @@ export type WhiteboardSnapshot = {
+         guestUrl: string | null;
+         cursorsEnabled: boolean;
+         reactionsEnabled: boolean;
++        locked: boolean;
++        followEnabled: boolean;
++        timerEndsAt: string | null;
+     };
+     me: {
+         id: string;
+@@ -28,15 +58,24 @@ export type WhiteboardSnapshot = {
+         isFacilitator: boolean;
+         canTakeControl: boolean;
+         canDelete: boolean;
++        transferCandidates: TransferCandidate[];
+     };
+     members: PresenceMember[];
+     elements: SceneElement[];
+     seq: number;
++    voting: WhiteboardVoting | null;
++    votingHistory: PastVote[];
+     links: { team: string | null };
+     serverTime: string;
+ };
+ 
+-export type RejectReason = 'invalid' | 'stale' | 'locked' | 'file' | 'full';
++export type RejectReason =
++    | 'invalid'
++    | 'stale'
++    | 'locked'
++    | 'file'
++    | 'full'
++    | 'voting';
+ 
+ export type WriteResponse = {
+     seq: number;
 ```
 
-- `const voteEpoch = useRef(0);` and `const tallyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);` with an effect that clears the timer on unmount.
-- `setTimer`: `setSnapshot((current) => ({ ...current, board: { ...current.board, timerEndsAt } }))`.
-- `applyTally(sessionId, tally)`: `voteEpoch.current += 1`, then, when `current.voting?.id === sessionId && current.voting.open`, `voting: { ...current.voting, ...tally }`.
-- Events, by name, in `onEvent`:
+- [ ] **Step 2: Channel events and board state**
 
-```ts
-if (name === 'timer.changed') {
-    setTimer((payload as { timerEndsAt: string | null }).timerEndsAt);
+`resources/js/hooks/use-whiteboard-channel.ts`:
 
-    return;
-}
-
-if (name === 'vote.changed') {
-    onVoteChanged(payload as { sessionId: string; finishedCount: number });
-
-    return;
-}
-
-if (name === 'elements.changed') {
-    listeners.current?.onElementsChanged(payload as ElementsChangedPayload);
-}
+```diff
+diff --git a/resources/js/hooks/use-whiteboard-channel.ts b/resources/js/hooks/use-whiteboard-channel.ts
+index 9308b07..49ab0be 100644
+--- a/resources/js/hooks/use-whiteboard-channel.ts
++++ b/resources/js/hooks/use-whiteboard-channel.ts
+@@ -6,6 +6,8 @@ import { useSafeConnectionStatus } from './use-retro-channel';
+ 
+ export const WhiteboardEvents = [
+     'elements.changed',
++    'timer.changed',
++    'vote.changed',
+     'board.changed',
+     'board.deleted',
+ ] as const;
 ```
 
-- `onVoteChanged({ sessionId, finishedCount })`: set `finishedCount` on the open session with that id; then, unless one is already scheduled, schedule in 1 500 ms one fetch of the viewer's own state — the event does not say who voted (spec §12):
+`resources/js/hooks/use-whiteboard.ts` becomes (run `npm run build` first if `@/actions/.../WhiteboardVoteSessionsController` is missing: Wayfinder generates it):
 
 ```ts
-const fetchTally = async (sessionId: string) => {
-    const epoch = voteEpoch.current;
+import { useCallback, useEffect, useRef, useState } from 'react';
+import WhiteboardSnapshotsController from '@/actions/App/Http/Controllers/Whiteboards/WhiteboardSnapshotsController';
+import WhiteboardVoteSessionsController from '@/actions/App/Http/Controllers/Whiteboards/WhiteboardVoteSessionsController';
+import type { WhisperChannel } from '@/lib/realtime/whisper-transport';
+import { RetroRequestError, retroRequest } from '@/lib/retro/api';
+import type { PresenceMember } from '@/lib/retro/types';
+import type {
+    ElementsChangedPayload,
+    VoteTally,
+    WhiteboardSnapshot,
+    WhiteboardVoting,
+} from '@/lib/whiteboard/types';
+import { useServerOffset } from './use-countdown';
+import { useWhiteboardChannel } from './use-whiteboard-channel';
 
-    try {
-        const fresh = await retroRequest<WhiteboardVoting>(
-            WhiteboardVoteSessionsController.show({ board: boardId, voteSession: sessionId }),
-        );
+const SessionExpiredStatuses = [401, 419];
+/** One fetch of the viewer's own votes covers every vote event of this window. */
+const TallyCoalesceMs = 1500;
 
-        if (epoch !== voteEpoch.current) {
+export type BoardStatus = 'active' | 'ended' | 'deleted';
+
+type BoardMeta = Pick<
+    WhiteboardSnapshot,
+    'board' | 'me' | 'members' | 'links' | 'voting' | 'votingHistory'
+>;
+
+export type SceneListeners = {
+    onElementsChanged: (payload: ElementsChangedPayload) => void;
+    onResync: () => void;
+    onLeaving: (member: PresenceMember) => void;
+};
+
+export type WhiteboardState = {
+    snapshot: BoardMeta;
+    status: BoardStatus;
+    sessionExpired: boolean;
+    online: PresenceMember[];
+    presence: WhisperChannel | null;
+    connected: boolean;
+    reconnecting: boolean;
+    /** Server clock minus this browser's, in milliseconds. */
+    serverOffset: number;
+    refetch: () => Promise<void>;
+    fail: (error: RetroRequestError) => void;
+    setTimer: (timerEndsAt: string | null) => void;
+    applyTally: (sessionId: string, tally: VoteTally) => void;
+    listeners: { current: SceneListeners | null };
+};
+
+/**
+ * Board settings, members, voting state and access. The scene itself lives
+ * in Excalidraw and is kept in step by scene-sync, which registers itself in
+ * `listeners`.
+ */
+export function useWhiteboard(initial: WhiteboardSnapshot): WhiteboardState {
+    const [snapshot, setSnapshot] = useState<BoardMeta>(initial);
+    const [status, setStatus] = useState<BoardStatus>('active');
+    const [sessionExpired, setSessionExpired] = useState(false);
+    const initialOffset = useServerOffset(initial.serverTime);
+    const [measuredOffset, setMeasuredOffset] = useState<number | null>(null);
+    const listeners = useRef<SceneListeners | null>(null);
+    const latestRefetch = useRef(0);
+    /** Bumped by every answer to a vote of this tab: older fetches are stale. */
+    const voteEpoch = useRef(0);
+    const tallyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const boardId = initial.board.id;
+
+    useEffect(
+        () => () => {
+            if (tallyTimer.current !== null) {
+                clearTimeout(tallyTimer.current);
+            }
+        },
+        [],
+    );
+
+    const fail = useCallback((error: RetroRequestError) => {
+        if (SessionExpiredStatuses.includes(error.status)) {
+            setSessionExpired(true);
+
             return;
         }
 
-        setSnapshot((current) => (current.voting?.id === fresh.id ? { ...current, voting: fresh } : current));
-    } catch {
-        // The next event or board.changed catches up.
-    }
-};
+        setStatus(error.status === 404 ? 'deleted' : 'ended');
+    }, []);
+
+    const refetch = useCallback(async () => {
+        const request = ++latestRefetch.current;
+        const sentAt = Date.now();
+        const epoch = voteEpoch.current;
+
+        try {
+            const fresh = await retroRequest<WhiteboardSnapshot>(
+                WhiteboardSnapshotsController.show(boardId),
+            );
+
+            if (request !== latestRefetch.current) {
+                return;
+            }
+
+            setMeasuredOffset(
+                new Date(fresh.serverTime).getTime() -
+                    (sentAt + Date.now()) / 2,
+            );
+            setSnapshot((current) => ({
+                board: fresh.board,
+                me: fresh.me,
+                members: fresh.members,
+                links: fresh.links,
+                // A vote answered while this snapshot travelled is newer than it.
+                voting:
+                    epoch !== voteEpoch.current &&
+                    fresh.voting?.open &&
+                    current.voting?.open &&
+                    current.voting.id === fresh.voting.id
+                        ? current.voting
+                        : fresh.voting,
+                votingHistory: fresh.votingHistory,
+            }));
+        } catch (error) {
+            if (
+                error instanceof RetroRequestError &&
+                [401, 403, 404, 419].includes(error.status)
+            ) {
+                fail(error);
+            }
+        }
+    }, [boardId, fail]);
+
+    const setTimer = useCallback((timerEndsAt: string | null) => {
+        setSnapshot((current) => ({
+            ...current,
+            board: { ...current.board, timerEndsAt },
+        }));
+    }, []);
+
+    const applyTally = useCallback((sessionId: string, tally: VoteTally) => {
+        voteEpoch.current += 1;
+        setSnapshot((current) =>
+            current.voting?.id === sessionId && current.voting.open
+                ? { ...current, voting: { ...current.voting, ...tally } }
+                : current,
+        );
+    }, []);
+
+    /** The event does not say who voted: each client asks for its own tally. */
+    const fetchTally = async (sessionId: string) => {
+        const epoch = voteEpoch.current;
+
+        try {
+            const fresh = await retroRequest<WhiteboardVoting>(
+                WhiteboardVoteSessionsController.show({
+                    board: boardId,
+                    voteSession: sessionId,
+                }),
+            );
+
+            if (epoch !== voteEpoch.current) {
+                return;
+            }
+
+            setSnapshot((current) =>
+                current.voting?.id === fresh.id
+                    ? { ...current, voting: fresh }
+                    : current,
+            );
+        } catch {
+            // The next vote event or board.changed catches up.
+        }
+    };
+
+    const onVoteChanged = (sessionId: string, finishedCount: number) => {
+        setSnapshot((current) =>
+            current.voting?.id === sessionId && current.voting.open
+                ? { ...current, voting: { ...current.voting, finishedCount } }
+                : current,
+        );
+
+        if (tallyTimer.current !== null) {
+            return;
+        }
+
+        tallyTimer.current = setTimeout(() => {
+            tallyTimer.current = null;
+            void fetchTally(sessionId);
+        }, TallyCoalesceMs);
+    };
+
+    const channel = useWhiteboardChannel(boardId, status === 'active', {
+        onEvent: ({ name, payload }) => {
+            if (name === 'board.deleted') {
+                setStatus('deleted');
+
+                return;
+            }
+
+            if (name === 'board.changed') {
+                void refetch();
+
+                return;
+            }
+
+            if (name === 'timer.changed') {
+                setTimer(
+                    (payload as { timerEndsAt: string | null }).timerEndsAt,
+                );
+
+                return;
+            }
+
+            if (name === 'vote.changed') {
+                const { sessionId, finishedCount } = payload as {
+                    sessionId: string;
+                    finishedCount: number;
+                };
+
+                onVoteChanged(sessionId, finishedCount);
+
+                return;
+            }
+
+            listeners.current?.onElementsChanged(
+                payload as ElementsChangedPayload,
+            );
+        },
+        onResync: () => {
+            void refetch();
+            listeners.current?.onResync();
+        },
+        onLeaving: (member) => listeners.current?.onLeaving(member),
+    });
+
+    return {
+        snapshot,
+        status,
+        sessionExpired,
+        ...channel,
+        serverOffset: measuredOffset ?? initialOffset,
+        refetch,
+        fail,
+        setTimer,
+        applyTally,
+        listeners,
+    };
+}
 ```
 
-- Return `serverOffset`, `setTimer`, `applyTally` with the rest.
+What it does that is not obvious:
+- **Clock offset.** `useServerOffset(initial.serverTime)` is late by the time the page took to load. Every `refetch` measures again around its request (`sentAt`, then the midpoint), and the channel's first `here` triggers a refetch moments after the page opens. `TimerDisplay` gets `serverOffset`.
+- **Votes.** `vote.changed` never says who voted (spec §12). The handler shows the new `finishedCount` at once and schedules one fetch of the viewer's own session state 1 500 ms later; events arriving meanwhile join that fetch. `voteEpoch` grows with every answer to a vote cast in this tab: a fetch or a snapshot that started before such an answer is older than it and must not replace it.
 
-- [ ] **Step 3: `useWhiteboardRequest`**
+- [ ] **Step 3: `resources/js/hooks/use-whiteboard-request.ts`**
 
 ```ts
+import { useCallback } from 'react';
+import { toast } from 'sonner';
+import { useTrans } from '@/hooks/use-trans';
+import { RetroRequestError } from '@/lib/retro/api';
+
+/**
+ * Runs a request and says why it failed. Resolves to the response (null for
+ * a 204), or to undefined after the toast.
+ */
 export function useWhiteboardRequest() {
     const { t } = useTrans();
 
@@ -2859,77 +3432,164 @@ export function useWhiteboardRequest() {
 }
 ```
 
-A 204 resolves to `null`, a failure to `undefined`: callers test `=== undefined`. `board-menu.tsx` keeps its own `attempt` and `run`.
+`board-menu.tsx` keeps its own `attempt` and `run`.
 
-- [ ] **Step 4: The locked refusal in the sync** (`scene-sync.ts`, `files.ts`)
+- [ ] **Step 4: The locked refusal in the sync**
 
-`files.ts`: for `AccessStatuses`, read the body so that `errors` survives:
+`resources/js/lib/whiteboard/files.ts` — the body of an access refusal is read so that `errors` survives:
 
-```ts
-if (AccessStatuses.includes(response.status)) {
-    const payload = (await response.json().catch(() => null)) as { errors?: Record<string, string[]> } | null;
-
-    throw new RetroRequestError(response.status, 'upload refused', payload?.errors ?? {});
-}
+```diff
+diff --git a/resources/js/lib/whiteboard/files.ts b/resources/js/lib/whiteboard/files.ts
+index 8ab185a..ceee864 100644
+--- a/resources/js/lib/whiteboard/files.ts
++++ b/resources/js/lib/whiteboard/files.ts
+@@ -56,7 +56,15 @@ export async function uploadBoardFile(
+     }
+ 
+     if (AccessStatuses.includes(response.status)) {
+-        throw new RetroRequestError(response.status, 'upload refused');
++        const payload = (await response.json().catch(() => null)) as {
++            errors?: Record<string, string[]>;
++        } | null;
++
++        throw new RetroRequestError(
++            response.status,
++            'upload refused',
++            payload?.errors ?? {},
++        );
+     }
+ 
+     throw new Error(`upload failed: ${response.status}`);
 ```
 
-`scene-sync.ts`: add `onLocked: () => void` to `SceneSyncDeps`, and
+`resources/js/lib/whiteboard/scene-sync.ts`:
 
-```ts
-const isLocked = (error: unknown): error is RetroRequestError =>
-    error instanceof RetroRequestError && error.status === 403 && 'locked' in error.errors;
+```diff
+diff --git a/resources/js/lib/whiteboard/scene-sync.ts b/resources/js/lib/whiteboard/scene-sync.ts
+index b68b231..d7514cb 100644
+--- a/resources/js/lib/whiteboard/scene-sync.ts
++++ b/resources/js/lib/whiteboard/scene-sync.ts
+@@ -31,6 +31,8 @@ export type SceneSyncDeps = {
+     onFatal: (error: RetroRequestError) => void;
+     onRejected: (reason: RejectReason) => void;
+     onOffline: (offline: boolean) => void;
++    /** The board is locked for this member: unsent edits were dropped. */
++    onLocked: () => void;
+ };
+ 
+ export type SceneSync = {
+@@ -46,6 +48,11 @@ const stamp = (element: SceneElement) =>
+ const isFatal = (error: unknown): error is RetroRequestError =>
+     error instanceof RetroRequestError && FatalStatuses.includes(error.status);
+ 
++const isLocked = (error: unknown): error is RetroRequestError =>
++    error instanceof RetroRequestError &&
++    error.status === 403 &&
++    'locked' in error.errors;
++
+ export function createSceneSync(deps: SceneSyncDeps): SceneSync {
+     const { api, boardId } = deps;
+     /** What the server is known to hold, per element. */
+@@ -64,6 +71,8 @@ export function createSceneSync(deps: SceneSyncDeps): SceneSync {
+     let recoveryOwed = false;
+     let recoveryFailures = 0;
+     let recoveryTimer: ReturnType<typeof setTimeout> | null = null;
++    /** The next reload drops what the server does not hold (locked board). */
++    let discarding = false;
+ 
+     /** Nothing may report the board in step while a reload is still owed. */
+     const setOffline = (offline: boolean) =>
+@@ -327,6 +336,14 @@ export function createSceneSync(deps: SceneSyncDeps): SceneSync {
+         } catch (error) {
+             failed = true;
+ 
++            if (isLocked(error)) {
++                failed = false;
++                discard();
++                deps.onLocked();
++
++                return;
++            }
++
+             if (isFatal(error)) {
+                 deps.onFatal(error);
+ 
+@@ -350,12 +367,13 @@ export function createSceneSync(deps: SceneSyncDeps): SceneSync {
+             WhiteboardSnapshotsController.show(boardId),
+         );
+         const alive = new Set(snapshot.elements.map((element) => element.id));
++        const dropsLocal = discarding;
++        const keepsLocal = (element: SceneElement) =>
++            !dropsLocal && (pending.has(element.id) || !known.has(element.id));
+ 
+         setScene(
+             scene().map((element) =>
+-                alive.has(element.id) ||
+-                pending.has(element.id) ||
+-                !known.has(element.id)
++                alive.has(element.id) || keepsLocal(element)
+                     ? element
+                     : { ...element, isDeleted: true },
+             ),
+@@ -363,6 +381,10 @@ export function createSceneSync(deps: SceneSyncDeps): SceneSync {
+         remember(scene().filter((element) => !alive.has(element.id)));
+         force(snapshot.elements);
+         seq = snapshot.seq;
++
++        if (dropsLocal) {
++            discarding = false;
++        }
+     };
+ 
+     /**
+@@ -421,9 +443,21 @@ export function createSceneSync(deps: SceneSyncDeps): SceneSync {
+             })
+             .finally(() => {
+                 recovering = null;
++
++                // A discard asked for while a reload was running.
++                if (discarding && !disposed && recoveryTimer === null) {
++                    recover();
++                }
+             });
+     };
+ 
++    /** The board is locked for us: what we have not sent is dropped (spec §11.2). */
++    const discard = () => {
++        pending.clear();
++        discarding = true;
++        recover();
++    };
++
+     const fetchDelta = async () => {
+         const delta = await retroRequest<ElementsDelta>(
+             WhiteboardElementsController.index(boardId, {
 ```
 
-A closure flag `let discarding = false;` and
+Why each part:
+- `isLocked` is tested **before** `isFatal`: 403 is in `FatalStatuses`, and falling through would show "Your access to this board has ended".
+- The refused batch was already taken out of `pending` and is not requeued; `discard()` drops the rest and asks for a reload of the scene.
+- In `replaceScene`, local elements the server does not hold are normally kept (they may be unsent work). While `discarding`, they are tombstoned locally; the two lines that follow (`remember(...)`, `force(snapshot.elements)`) stamp those tombstones as known, so they are never sent, and put the server's copy over every local one.
+- The flag is read once per reload (`dropsLocal`) and cleared by the reload that used it. A discard asked for while a reload is already running is honoured by the `finally` branch, which starts another one.
 
-```ts
-/** The board is locked for us: what we have not sent is dropped (spec §11.2). */
-const discard = () => {
-    pending.clear();
-    discarding = true;
-    recover();
-};
-```
+- [ ] **Step 5: `StatusBar` and `FacilitatorBar`**
 
-In `replaceScene`, the local elements the server does not hold are kept only when nothing is being discarded:
-
-```ts
-const keepsLocal = (element: SceneElement) =>
-    !discarding && (pending.has(element.id) || !known.has(element.id));
-
-setScene(
-    scene().map((element) =>
-        alive.has(element.id) || keepsLocal(element) ? element : { ...element, isDeleted: true },
-    ),
-);
-```
-
-(the two lines after it, `remember(...)` and `force(snapshot.elements)`, stay: they stamp the local tombstones as known, so they are never sent, and put the server's copy over every local one). In the success branch of `recover()`, next to `recoveryOwed = false`, add `discarding = false;`. In the `catch` of `flush`, **before** `isFatal`:
-
-```ts
-if (isLocked(error)) {
-    failed = false;
-    discard();
-    deps.onLocked();
-
-    return;
-}
-```
-
-The batch was already taken out of `pending` and is not requeued. `isLocked` must come first: 403 is in `FatalStatuses`, and falling through would show "Your access to this board has ended".
-
-- [ ] **Step 5: `FacilitatorBar` and `StatusBar`**
-
-`status-bar.tsx`:
+`resources/js/components/whiteboard/status-bar.tsx`:
 
 ```tsx
+import { Children, type ReactNode } from 'react';
+
+/** What everyone on the board needs to know right now; nothing when calm. */
 export function StatusBar({ children }: { children: ReactNode }) {
     if (Children.toArray(children).length === 0) {
         return null;
     }
 
     return (
-        <div role="status" className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b bg-muted/40 px-4 py-1.5 text-sm">
+        <div
+            role="status"
+            className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b bg-muted/40 px-4 py-1.5 text-sm"
+        >
             {children}
         </div>
     );
@@ -2938,33 +3598,467 @@ export function StatusBar({ children }: { children: ReactNode }) {
 
 It is a row in the page flow between the top bar and the canvas, so it covers nothing; the canvas resizes itself.
 
-`facilitator-bar.tsx`: `<div role="toolbar" aria-label={t('Facilitation tools')} className="flex items-center gap-1">` holding, in this task:
-- **Timer:** a copy of `resources/js/components/retro/timer-control.tsx` (same `DropdownMenu`, `AlarmClock` trigger with `aria-label={t('Timer')}`, items `t(':count min', { count })` for 1, 3, 5 and 10 minutes, a separator, `t('Stop timer')` disabled while `board.timerEndsAt === null`). An item runs `const response = await request(retroRequest<{ timerEndsAt: string | null }>(WhiteboardTimersController.update(board.id), { seconds }))` and, when it is not `undefined`, `state.setTimer(response.timerEndsAt)`.
-- **Lock:** `<Button size="sm" variant={board.locked ? 'default' : 'outline'} aria-pressed={board.locked} aria-label={t(board.locked ? 'Unlock the board' : 'Lock the board')} title={…same…}>` with `Lock` / `LockOpen` from `lucide-react`; on click `request(retroRequest(WhiteboardSettingsController.update(board.id), { locked: !board.locked }))`, then `state.refetch()` when it went through.
-
-- [ ] **Step 6: `board.tsx`**
-
-- `const { board, me } = state.snapshot; const viewOnly = board.locked && !me.isFacilitator;`
-- `rejectionMessages`: add `voting: ''` to the initial value and `voting: t('Notes cannot be edited while a vote is open.')` to the assignment.
-- `createSceneSync({ …, onLocked })` with `onLocked: () => { toast.error(lockedMessage.current, { id: 'locked' }); void refetch(); }`, where `lockedMessage` is a ref refreshed on each render with `t('This board is locked.')` (as `rejectionMessages` is) and `refetch` is `state.refetch` (stable, added to the effect's dependencies). The refetch makes the client learn the lock even when it missed `board.changed`.
-- Top bar children, in this order: `<TimerDisplay endsAt={board.timerEndsAt} offset={state.serverOffset} />`, `{me.isFacilitator && <FacilitatorBar state={state} />}`, the sticky tool fallback now `{api && !toolbarSlot && !viewOnly && <StickyTool api={api} />}`, `<BoardMenu … />`. In `top-bar.tsx` the header becomes `flex flex-wrap items-center gap-x-3 gap-y-2 border-b px-4 py-2` so that the tools wrap under the title on a narrow screen.
-- After `<ConnectionBanner />`:
+`resources/js/components/whiteboard/facilitator-bar.tsx` (timer and lock; Task 6 adds follow-me, Task 7 the vote):
 
 ```tsx
-<StatusBar>
-    {viewOnly && (
-        <span className="flex items-center gap-1.5">
-            <Lock className="size-4" aria-hidden="true" />
-            {t('This board is locked.')}
-        </span>
-    )}
-</StatusBar>
+import { AlarmClock, Lock, LockOpen } from 'lucide-react';
+import { useState } from 'react';
+import WhiteboardSettingsController from '@/actions/App/Http/Controllers/Whiteboards/WhiteboardSettingsController';
+import WhiteboardTimersController from '@/actions/App/Http/Controllers/Whiteboards/WhiteboardTimersController';
+import { Button } from '@/components/ui/button';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { useTrans } from '@/hooks/use-trans';
+import type { WhiteboardState } from '@/hooks/use-whiteboard';
+import { useWhiteboardRequest } from '@/hooks/use-whiteboard-request';
+import { retroRequest } from '@/lib/retro/api';
+
+const Minutes = [1, 3, 5, 10];
+
+/** The facilitator's tools; follow-me and the vote join them in later tasks. */
+export function FacilitatorBar({ state }: { state: WhiteboardState }) {
+    const { t } = useTrans();
+    const request = useWhiteboardRequest();
+    const [busy, setBusy] = useState(false);
+    const { board } = state.snapshot;
+
+    const setTimer = async (seconds: number | null) => {
+        setBusy(true);
+
+        const response = await request(
+            retroRequest<{ timerEndsAt: string | null }>(
+                WhiteboardTimersController.update(board.id),
+                { seconds },
+            ),
+        );
+
+        setBusy(false);
+
+        if (response !== undefined) {
+            state.setTimer(response.timerEndsAt);
+        }
+    };
+
+    const updateSettings = async (settings: Record<string, boolean>) => {
+        const done = await request(
+            retroRequest(
+                WhiteboardSettingsController.update(board.id),
+                settings,
+            ),
+        );
+
+        if (done !== undefined) {
+            await state.refetch();
+        }
+    };
+
+    return (
+        <div
+            role="toolbar"
+            aria-label={t('Facilitation tools')}
+            className="flex items-center gap-1"
+        >
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button size="sm" variant="outline" aria-label={t('Timer')}>
+                        <AlarmClock className="size-4" />
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    {Minutes.map((minutes) => (
+                        <DropdownMenuItem
+                            key={minutes}
+                            disabled={busy}
+                            onSelect={() => void setTimer(minutes * 60)}
+                        >
+                            {t(':count min', { count: minutes })}
+                        </DropdownMenuItem>
+                    ))}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                        disabled={busy || board.timerEndsAt === null}
+                        onSelect={() => void setTimer(null)}
+                    >
+                        {t('Stop timer')}
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+            <Button
+                size="sm"
+                variant={board.locked ? 'default' : 'outline'}
+                aria-pressed={board.locked}
+                aria-label={t(
+                    board.locked ? 'Unlock the board' : 'Lock the board',
+                )}
+                title={t(board.locked ? 'Unlock the board' : 'Lock the board')}
+                onClick={() => void updateSettings({ locked: !board.locked })}
+            >
+                {board.locked ? (
+                    <Lock className="size-4" />
+                ) : (
+                    <LockOpen className="size-4" />
+                )}
+            </Button>
+        </div>
+    );
+}
 ```
 
-- Canvas wrapper: `<div ref={canvas} className="whiteboard-canvas relative min-h-0 flex-1" data-facilitator={me.isFacilitator}>`.
-- `<Excalidraw viewModeEnabled={viewOnly ? true : undefined} … />`. Not `false`: that would remove the user's own view-mode toggle on an unlocked board.
+The timer menu is the retro one (`resources/js/components/retro/timer-control.tsx`) with the board's endpoint. "Stop timer" is disabled when the snapshot shows no timer, which includes one that ended more than five minutes ago (Task 1).
 
-- [ ] **Step 7: Lock entries of the context menu** — in the board block of `resources/css/app.css`:
+- [ ] **Step 6: Hand-over dialog and board menu**
+
+`resources/js/components/whiteboard/hand-over-dialog.tsx` (the structure of `resources/js/components/poker/transfer-dialog.tsx`; the form is mounted only while open, so the choice resets; a failure leaves the dialog open, spec §13):
+
+```tsx
+import { useState } from 'react';
+import WhiteboardFacilitatorsController from '@/actions/App/Http/Controllers/Whiteboards/WhiteboardFacilitatorsController';
+import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogFooter,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import { useTrans } from '@/hooks/use-trans';
+import type { WhiteboardState } from '@/hooks/use-whiteboard';
+import { useWhiteboardRequest } from '@/hooks/use-whiteboard-request';
+import { retroRequest } from '@/lib/retro/api';
+
+type Props = {
+    state: WhiteboardState;
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+};
+
+export function HandOverDialog({ state, open, onOpenChange }: Props) {
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent aria-describedby={undefined}>
+                {open && (
+                    <HandOverForm
+                        state={state}
+                        onClose={() => onOpenChange(false)}
+                    />
+                )}
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+function HandOverForm({
+    state,
+    onClose,
+}: {
+    state: WhiteboardState;
+    onClose: () => void;
+}) {
+    const { t } = useTrans();
+    const request = useWhiteboardRequest();
+    const [userId, setUserId] = useState('');
+    const [busy, setBusy] = useState(false);
+    const { board, me } = state.snapshot;
+    const candidates = me.transferCandidates;
+
+    const handOver = async () => {
+        setBusy(true);
+
+        const done = await request(
+            retroRequest(WhiteboardFacilitatorsController.update(board.id), {
+                user_id: userId,
+            }),
+        );
+
+        setBusy(false);
+
+        if (done === undefined) {
+            return;
+        }
+
+        await state.refetch();
+        onClose();
+    };
+
+    return (
+        <>
+            <DialogTitle>{t('Hand over facilitation')}</DialogTitle>
+
+            {candidates.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                    {t('No one else can facilitate this board yet.')}
+                </p>
+            ) : (
+                <div className="grid gap-2">
+                    <Label htmlFor="whiteboard-new-facilitator">
+                        {t('New facilitator')}
+                    </Label>
+                    <Select value={userId} onValueChange={setUserId}>
+                        <SelectTrigger id="whiteboard-new-facilitator">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {candidates.map((candidate) => (
+                                <SelectItem
+                                    key={candidate.userId}
+                                    value={candidate.userId}
+                                >
+                                    {candidate.name}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+            )}
+
+            <DialogFooter className="gap-2">
+                <Button type="button" variant="secondary" onClick={onClose}>
+                    {t('Cancel')}
+                </Button>
+                {candidates.length > 0 && (
+                    <Button
+                        disabled={busy || userId === ''}
+                        onClick={() => void handOver()}
+                    >
+                        {t('Hand over')}
+                    </Button>
+                )}
+            </DialogFooter>
+        </>
+    );
+}
+```
+
+`resources/js/components/whiteboard/board-menu.tsx` — "Hand over facilitation" in the facilitator block, after "Rename"; "Take control", "Duplicate this board" and "Save as template" stay as they are:
+
+```diff
+--- a/resources/js/components/whiteboard/board-menu.tsx
++++ b/resources/js/components/whiteboard/board-menu.tsx
+@@ -23,6 +23,7 @@
+     DropdownMenuTrigger,
+ } from '@/components/ui/dropdown-menu';
+ import { Input } from '@/components/ui/input';
++import { HandOverDialog } from '@/components/whiteboard/hand-over-dialog';
+ import { SaveTemplateDialog } from '@/components/whiteboard/save-template-dialog';
+ import { useTrans } from '@/hooks/use-trans';
+ import type { WhiteboardState } from '@/hooks/use-whiteboard';
+@@ -44,6 +45,7 @@
+     const [renaming, setRenaming] = useState(false);
+     const [confirmingDelete, setConfirmingDelete] = useState(false);
+     const [savingTemplate, setSavingTemplate] = useState(false);
++    const [handingOver, setHandingOver] = useState(false);
+ 
+     /** Resolves to whether the request went through; says why when it did not. */
+     const attempt = async (request: Promise<unknown>): Promise<boolean> => {
+@@ -174,6 +176,11 @@
+                             >
+                                 {t('Rename')}
+                             </DropdownMenuItem>
++                            <DropdownMenuItem
++                                onSelect={() => setHandingOver(true)}
++                            >
++                                {t('Hand over facilitation')}
++                            </DropdownMenuItem>
+                             <DropdownMenuCheckboxItem
+                                 checked={board.cursorsEnabled}
+                                 onCheckedChange={(checked) =>
+@@ -259,6 +266,12 @@
+                 onOpenChange={setSavingTemplate}
+             />
+ 
++            <HandOverDialog
++                state={state}
++                open={handingOver}
++                onOpenChange={setHandingOver}
++            />
++
+             <Dialog open={confirmingDelete} onOpenChange={setConfirmingDelete}>
+                 <DialogContent aria-describedby={undefined}>
+                     <DialogTitle>{t('Delete this board?')}</DialogTitle>
+```
+
+- [ ] **Step 7: `board.tsx` and `top-bar.tsx`**
+
+```diff
+--- a/resources/js/components/whiteboard/board.tsx
++++ b/resources/js/components/whiteboard/board.tsx
+@@ -1,9 +1,11 @@
+ import { usePage } from '@inertiajs/react';
++import { Lock } from 'lucide-react';
+ import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+ import { createPortal } from 'react-dom';
+ import { toast } from 'sonner';
+ import { ConnectionBanner } from '@/components/retro/connection-banner';
+ import { SessionExpiredBanner } from '@/components/retro/session-expired-banner';
++import { TimerDisplay } from '@/components/retro/timer-display';
+ import { useLocalPreference } from '@/hooks/use-local-preference';
+ import { useTrans } from '@/hooks/use-trans';
+ import { useWhiteboard } from '@/hooks/use-whiteboard';
+@@ -24,6 +26,8 @@
+ import { BoardGone } from './board-gone';
+ import { BoardMenu } from './board-menu';
+ import { BoardReactions } from './board-reactions';
++import { FacilitatorBar } from './facilitator-bar';
++import { StatusBar } from './status-bar';
+ import { StickyTool } from './sticky-tool';
+ import { TopBar } from './top-bar';
+ 
+@@ -54,6 +58,8 @@
+     const { t } = useTrans();
+     const { locale } = usePage().props;
+     const state = useWhiteboard(snapshot);
++    const { board, me } = state.snapshot;
++    const viewOnly = board.locked && !me.isFacilitator;
+     const [api, setApi] = useState<ExcalidrawImperativeAPI | null>(null);
+     const [offline, setOffline] = useState(false);
+     const [hideMyCursor, setHideMyCursor] = useLocalPreference(
+@@ -72,7 +78,7 @@
+         presence: state.presence,
+         online: state.online,
+         meId: state.snapshot.me.id,
+-        enabled: state.snapshot.board.cursorsEnabled,
++        enabled: board.cursorsEnabled,
+         hidden: hideMyCursor,
+     });
+     const forgetCursor = useRef(cursors.forget);
+@@ -80,7 +86,7 @@
+     forgetCursor.current = cursors.forget;
+     const dark = useSyncExternalStore(subscribeToTheme, isDark, () => false);
+     const boardId = snapshot.board.id;
+-    const { fail, listeners } = state;
++    const { fail, listeners, refetch } = state;
+ 
+     const rejectionMessages = useRef<Record<RejectReason, string>>({
+         invalid: '',
+@@ -88,14 +94,19 @@
+         locked: '',
+         file: '',
+         full: '',
++        voting: '',
+     });
++    const lockedMessage = useRef('');
+ 
++    lockedMessage.current = t('This board is locked.');
++
+     rejectionMessages.current = {
+         invalid: t('This element could not be saved.'),
+         stale: '',
+         locked: t('Only the facilitator can change a locked element.'),
+         file: t('This image could not be added.'),
+         full: t('This board is full.'),
++        voting: t('Notes cannot be edited while a vote is open.'),
+     };
+ 
+     useEffect(() => {
+@@ -111,6 +122,11 @@
+             onRejected: (reason) =>
+                 toast.error(rejectionMessages.current[reason], { id: reason }),
+             onOffline: setOffline,
++            onLocked: () => {
++                toast.error(lockedMessage.current, { id: 'locked' });
++                // The lock may have been missed with its board.changed.
++                void refetch();
++            },
+         });
+ 
+         sync.current = created;
+@@ -127,7 +143,7 @@
+             sync.current = null;
+             listeners.current = null;
+         };
+-    }, [api, boardId, fail, listeners]);
++    }, [api, boardId, fail, listeners, refetch]);
+ 
+     useEffect(() => {
+         if (state.connected || state.status !== 'active') {
+@@ -156,7 +172,14 @@
+                 inert={state.sessionExpired}
+             >
+                 <TopBar state={state}>
+-                    {api && !toolbarSlot && <StickyTool api={api} />}
++                    <TimerDisplay
++                        endsAt={board.timerEndsAt}
++                        offset={state.serverOffset}
++                    />
++                    {me.isFacilitator && <FacilitatorBar state={state} />}
++                    {api && !toolbarSlot && !viewOnly && (
++                        <StickyTool api={api} />
++                    )}
+                     <BoardMenu
+                         state={state}
+                         hideMyCursor={hideMyCursor}
+@@ -166,17 +189,30 @@
+                 <ConnectionBanner
+                     reconnecting={state.reconnecting || offline}
+                 />
++                <StatusBar>
++                    {viewOnly && (
++                        <span className="flex items-center gap-1.5">
++                            <Lock className="size-4" aria-hidden="true" />
++                            {t('This board is locked.')}
++                        </span>
++                    )}
++                </StatusBar>
+                 {api &&
+                     toolbarSlot &&
+                     createPortal(
+                         <StickyTool api={api} inToolbar />,
+                         toolbarSlot,
+                     )}
+-                <div ref={canvas} className="whiteboard-canvas min-h-0 flex-1">
++                <div
++                    ref={canvas}
++                    className="whiteboard-canvas relative min-h-0 flex-1"
++                    data-facilitator={me.isFacilitator}
++                >
+                     <Excalidraw
++                        viewModeEnabled={viewOnly ? true : undefined}
+                         excalidrawAPI={setApi}
+                         initialData={{ elements: initialElements as never }}
+-                        name={state.snapshot.board.title}
++                        name={board.title}
+                         onChange={(elements) =>
+                             sync.current?.handleChange(
+                                 elements as unknown as SceneElement[],
+```
+
+Points to keep when applying it:
+- `viewModeEnabled={viewOnly ? true : undefined}`, not `false`: `false` would remove the user's own view-mode toggle on an unlocked board.
+- The sticky tool's fallback in the top bar is not shown to someone who is view-only.
+- `onLocked` refetches the snapshot: the client learns the lock even when it missed `board.changed`. `lockedMessage` is a ref refreshed on each render, as `rejectionMessages` is, so the effect does not restart when the locale's strings change.
+- The class `whiteboard-canvas` stays on a **sibling of the reactions bar**: four rules of `resources/css/app.css` (`.whiteboard-canvas:has(~ .whiteboard-reactions) …`, `.whiteboard-canvas:has(.excalidraw--mobile) ~ .whiteboard-reactions`) rely on it.
+
+`resources/js/components/whiteboard/top-bar.tsx` — the tools wrap under the title on a narrow screen:
+
+```diff
+diff --git a/resources/js/components/whiteboard/top-bar.tsx b/resources/js/components/whiteboard/top-bar.tsx
+index aea395a..4886f62 100644
+--- a/resources/js/components/whiteboard/top-bar.tsx
++++ b/resources/js/components/whiteboard/top-bar.tsx
+@@ -17,7 +17,7 @@ export function TopBar({
+     const { board, links } = state.snapshot;
+ 
+     return (
+-        <header className="flex items-center gap-3 border-b px-4 py-2">
++        <header className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b px-4 py-2">
+             {links.team && (
+                 <Button asChild size="icon" variant="ghost">
+                     <Link href={links.team} aria-label={t('Back to the team')}>
+```
+
+- [ ] **Step 8: Lock entries of the context menu** — append to the board block of `resources/css/app.css`:
 
 ```css
 /*
@@ -2972,19 +4066,17 @@ It is a row in the page flow between the top bar and the canvas, so it covers no
  * context menu of Excalidraw 0.18.1 names its entries by action; the
  * keyboard shortcut cannot be removed, and the server rejects what it does.
  */
-.whiteboard-canvas[data-facilitator='false'] .context-menu li[data-testid='toggleElementLock'],
-.whiteboard-canvas[data-facilitator='false'] .context-menu li[data-testid='unlockAllElements'] {
+.whiteboard-canvas[data-facilitator='false']
+    .context-menu
+    li[data-testid='toggleElementLock'],
+.whiteboard-canvas[data-facilitator='false']
+    .context-menu
+    li[data-testid='unlockAllElements'] {
     display: none !important;
 }
 ```
 
-- [ ] **Step 8: Hand-over dialog**
-
-`hand-over-dialog.tsx` — `HandOverDialog({ state, open, onOpenChange }: { state: WhiteboardState; open: boolean; onOpenChange: (open: boolean) => void })`, the structure of `resources/js/components/poker/transfer-dialog.tsx`: title `t('Hand over facilitation')`; when `state.snapshot.me.transferCandidates` is empty the sentence `t('No one else can facilitate this board yet.')` and only "Cancel"; otherwise a `Label` `t('New facilitator')` (`htmlFor="whiteboard-new-facilitator"`) and a `Select` of the candidates (value `userId`, text `name`), footer `t('Cancel')` and `t('Hand over')` (disabled while busy or nothing chosen). Submit: `const done = await request(retroRequest(WhiteboardFacilitatorsController.update(board.id), { user_id: userId }))`; when not `undefined`, `await state.refetch()` and close. A failure leaves the dialog open (spec §13). Mount the body only while `open`, so the choice resets.
-
-`board-menu.tsx`: in the facilitator block, after "Rename", `<DropdownMenuItem onSelect={() => setHandingOver(true)}>{t('Hand over facilitation')}</DropdownMenuItem>`, with `const [handingOver, setHandingOver] = useState(false)` and `<HandOverDialog state={state} open={handingOver} onOpenChange={setHandingOver} />` beside the other dialogs. "Take control" stays as it is for the others.
-
-- [ ] **Step 9: Translation keys**
+- [ ] **Step 9: Translation keys** (append to each `lang/*.json`; `en.json` with value = key)
 
 | Key (English) | French | German | Spanish |
 |---|---|---|---|
@@ -2993,47 +4085,65 @@ It is a row in the page flow between the top bar and the canvas, so it covers no
 | Unlock the board | Déverrouiller le tableau | Board entsperren | Desbloquear la pizarra |
 | Notes cannot be edited while a vote is open. | Les post-it ne peuvent pas être modifiés pendant un vote. | Haftnotizen können während einer Abstimmung nicht bearbeitet werden. | Las notas no se pueden editar mientras hay una votación abierta. |
 | No one else can facilitate this board yet. | Personne d'autre ne peut encore animer ce tableau. | Noch kann niemand sonst dieses Board moderieren. | Nadie más puede facilitar esta pizarra todavía. |
-| This board is locked. | exists (Task 2) | exists | exists |
-| Timer, :count min, Stop timer, Time's up!, Hand over facilitation, New facilitator, Hand over, Cancel, Something went wrong. Please try again. | exist | exist | exist |
+
+Already in the four files (checked with `grep` at reconciliation; do not add again): `This board is locked.` (Task 2), `Timer`, `:count min`, `Stop timer`, `Time's up!`, `Hand over facilitation`, `New facilitator`, `Hand over`, `Cancel`, `Something went wrong. Please try again.`, `Only the facilitator can change a locked element.`
 
 - [ ] **Step 10: Gates and commit**
 
-Run: `npm run build && npm run types:check && npx vp check resources/js/lib/whiteboard resources/js/hooks/use-whiteboard.ts resources/js/hooks/use-whiteboard-channel.ts resources/js/hooks/use-whiteboard-request.ts resources/js/components/whiteboard && DB_HOST=127.0.0.1 php artisan test --compact tests/Feature/TranslationKeysTest.php`
-Expected: no error in these files; test PASS.
+Run: `npm run build && npm run types:check && npx vp check resources/js/lib/whiteboard resources/js/hooks/use-whiteboard.ts resources/js/hooks/use-whiteboard-channel.ts resources/js/hooks/use-whiteboard-request.ts resources/js/components/whiteboard resources/css/app.css && DB_HOST=127.0.0.1 php artisan test --compact tests/Feature/TranslationKeysTest.php`
+Expected: `types:check` shows only the known `manage-passkeys.tsx` error; no `vp check` failure; test PASS.
 
 ```bash
 git add resources/js/lib/whiteboard/types.ts resources/js/lib/whiteboard/scene-sync.ts resources/js/lib/whiteboard/files.ts resources/js/hooks/use-whiteboard.ts resources/js/hooks/use-whiteboard-channel.ts resources/js/hooks/use-whiteboard-request.ts resources/js/components/whiteboard/facilitator-bar.tsx resources/js/components/whiteboard/status-bar.tsx resources/js/components/whiteboard/hand-over-dialog.tsx resources/js/components/whiteboard/board.tsx resources/js/components/whiteboard/board-menu.tsx resources/js/components/whiteboard/top-bar.tsx resources/css/app.css lang/en.json lang/fr.json lang/de.json lang/es.json
 git commit -m "feat(whiteboard): countdown, board lock and hand-over on the board page"
 ```
 
-**Browser checks:**
-- B5.1 Facilitator: the top bar shows a timer button and a lock button; a member and a guest see neither. Nothing new lies over the canvas, its shapes toolbar, its bottom controls or the reactions bar, at 1280 px and at 375 px.
-- B5.2 Facilitator starts "1 min": within a second every browser shows the same countdown in the top bar (compare A and B: at most one second apart); at zero each shows "Time's up!", a toast, and plays the sound. "Stop timer" removes it everywhere. A browser that opens the board mid-countdown shows the right remaining time.
-- B5.3 Facilitator locks: B's canvas loses its shapes toolbar and the sticky tool, a drag pans, the status row says "This board is locked."; B can still pan, zoom and send a reaction. A can still draw and B sees it. Unlock: B's tools come back without a reload.
-- B5.4 From B's console on a locked board, `fetch` a `PUT /whiteboards/<id>/elements` with one element and the XSRF header: 403, body `errors.locked`; the page stays on the board (no "Your access to this board has ended"), shows the toast "This board is locked.", and the element is not in `GET snapshot`.
-- B5.5 B starts typing in a text, A locks while B types: B's unsent text disappears, B stays on the board in view mode, and A's canvas never shows it.
-- B5.6 A locks a shape (context menu). B right-clicks it and the canvas: no "Lock" / "Unlock" / "Unlock all elements" entry; B drags the shape: it returns to its place and the toast "Only the facilitator can change a locked element." shows. A still sees the entries.
-- B5.7 Board menu of A: "Hand over facilitation" lists the other team members by name; choosing one makes them facilitator in both browsers without a reload (their top bar gains the tools, A's loses them). With nobody else in the team the dialog says "No one else can facilitate this board yet.". A guest never appears in the list.
+**Browser checks** (for the walkthrough after the plan; A = facilitator, B = guest or second member):
+- B5.1 Facilitator: the top bar shows a timer button and a lock button; a member and a guest see neither. Nothing new lies over the canvas, its shapes toolbar, its bottom controls or the reactions bar, at 1280 px and at 375 px; the canvas still fills the area under the bars.
+- B5.2 A starts "1 min": within a second every browser shows the same countdown in the top bar (A and B at most one second apart); at zero each shows "Time's up!", a toast, and plays the sound. "Stop timer" removes it everywhere. A browser that opens the board mid-countdown shows the right remaining time.
+- B5.3 A locks: B's canvas loses its shapes toolbar and the sticky tool (in the toolbar and in the top bar), a drag pans, the status row says "This board is locked."; B can still pan, zoom and send a reaction. A can still draw and B sees it. Unlock: B's tools come back without a reload.
+- B5.4 From B's console on a locked board, `fetch` a `PUT /whiteboards/<id>/elements` with one element and the XSRF header: 403, body `errors.locked`; the page stays on the board (no "Your access to this board has ended") and the element is not in `GET snapshot`.
+- B5.5 B starts typing in a text, A locks while B types: B's unsent text disappears, B sees the toast "This board is locked." and stays on the board in view mode, and A's canvas never shows the text.
+- B5.6 A locks a shape (context menu). B right-clicks it and the empty canvas: no "Lock" / "Unlock" / "Unlock all elements" entry; B drags the shape: it returns to its place and the toast "Only the facilitator can change a locked element." shows. A still sees the entries.
+- B5.7 Board menu of A: "Hand over facilitation" lists the other team members and the workspace's owners and admins by name, never a guest; choosing one makes them facilitator (A's top bar loses the tools without a reload, the snapshot's `facilitatorMemberId` changes); A then takes control back from the menu. With nobody else to choose the dialog says "No one else can facilitate this board yet.".
 - B5.8 The canvas's own "View mode" entry (context menu on the empty canvas) is still there on an unlocked board.
 
 ---
 
 ### Task 6: Follow-me
 
-Proposal, not run. Names checked: `ExcalidrawImperativeAPI.onScrollChange(callback): UnsubscribeCallback` and `getAppState()` (`types.d.ts:616–634`), `AppState` fields `scrollX`, `scrollY`, `zoom: {value}`, `width`, `height` (`types.d.ts:245–312`); `updateScene({ appState })` only calls `setState(appState)` when no `elements` are given (`dist/dev/index.js:25932–25966`); the visible scene rectangle is `[-scrollX, -scrollY, -scrollX + width / zoom, -scrollY + height / zoom]` (`getVisibleSceneBounds`, `chunk-4FTI6OG3.js:10591`); zoom is clamped to 0.1–30 (`MIN_ZOOM`, `MAX_ZOOM`, `chunk-4FTI6OG3.js:291–292`); the canvas reports every change of scroll or zoom, whoever caused it, through `onScrollChange` (`componentDidUpdate`, `index.js:30442`); `whisperTransport(channel, event, accept)` stamps nothing itself: the sender id comes from Reverb (`resources/js/lib/realtime/whisper-transport.ts`).
+The listings were type-checked, linted and bundled at this task's end state; follow-me has never run in a browser, and it has no server rule a feature test could pin (whispers never reach the server): its proof is the browser checks.
+
+Names checked in `node_modules/@excalidraw/excalidraw/dist` (0.18.1): `ExcalidrawImperativeAPI.onScrollChange(callback: (scrollX, scrollY, zoom: Zoom) => void): UnsubscribeCallback` and `getAppState()` (`types/excalidraw/types.d.ts:634`, `612`); `AppState` fields `scrollX`, `scrollY`, `zoom: {value}`, `width`, `height` (`types.d.ts:245–310`); `updateScene({ appState })` takes `Pick<AppState, K>` (`types/excalidraw/components/App.d.ts:370`), and `Zoom['value']` is a branded number, hence the one cast in `apply`; the visible scene rectangle is `[-scrollX, -scrollY, -scrollX + width / zoom, -scrollY + height / zoom]` (`getVisibleSceneBounds`, `dev/chunk-4FTI6OG3.js:10591`); zoom is clamped to 0.1–30 (`MIN_ZOOM`, `MAX_ZOOM`, `dev/chunk-4FTI6OG3.js:291–292`). In the repository: `whisperTransport(channel, event, accept)` hands `accept` the sender id stamped by Reverb (`resources/js/lib/realtime/whisper-transport.ts`).
 
 **Files:**
 - Create: `resources/js/hooks/use-whiteboard-follow.ts`
 - Modify: `resources/js/components/whiteboard/facilitator-bar.tsx`, `resources/js/components/whiteboard/board.tsx`, `lang/{en,fr,de,es}.json`
 
 **Interfaces:**
-- Consumes: `state.snapshot.board.followEnabled`, `board.facilitatorMemberId`, `me.isFacilitator`, `state.presence` (a `WhisperChannel`), `WhiteboardSettingsController.update(boardId)` with `{follow_enabled}`, `StatusBar`, `useWhiteboardRequest`.
+- Consumes: `state.snapshot.board.followEnabled`, `board.facilitatorMemberId`, `me.isFacilitator`, `state.presence` (a `WhisperChannel | null`), `WhiteboardSettingsController.update(boardId)` with `{follow_enabled}`, `StatusBar`, `FacilitatorBar` and its `updateSettings` (Task 5).
 - Produces: `useWhiteboardFollow({ api, presence, enabled, leading, facilitatorId }): { following: boolean; paused: boolean; resume(): void }`. Whisper `viewport`: `{x, y, width, height}` in scene coordinates.
 
-- [ ] **Step 1: The hook**
+- [ ] **Step 1: `resources/js/hooks/use-whiteboard-follow.ts`**
 
 ```ts
+import { useEffect, useRef, useState } from 'react';
+import {
+    whisperTransport,
+    type WhisperChannel,
+} from '@/lib/realtime/whisper-transport';
+import type { ExcalidrawImperativeAPI } from '@/lib/whiteboard/excalidraw';
+
+const SendEveryMs = 100;
+const RepeatEveryMs = 2000;
+/** The canvas's own zoom limits (MIN_ZOOM, MAX_ZOOM in Excalidraw 0.18.1). */
+const MinZoom = 0.1;
+const MaxZoom = 30;
+
+/** What the facilitator sees, in scene coordinates. */
 type Viewport = { x: number; y: number; width: number; height: number };
+
+type Applied = { scrollX: number; scrollY: number; zoom: number };
 
 type Options = {
     api: ExcalidrawImperativeAPI | null;
@@ -3045,108 +4155,278 @@ type Options = {
     facilitatorId: string | null;
 };
 
-const SendEveryMs = 100;
-const RepeatEveryMs = 2000;
-const MinZoom = 0.1;
-const MaxZoom = 30;
-```
-
-`isViewport(raw)`: an object whose `x`, `y`, `width`, `height` are finite numbers, `width > 0`, `height > 0`.
-
-**Leading** (effect on `[api, presence, enabled, leading]`, active when all four hold): `const transport = whisperTransport(presence, 'viewport', () => false);`
-
-```ts
-const send = () => {
-    const { scrollX, scrollY, zoom, width, height } = api.getAppState();
-
-    transport.send({ x: -scrollX, y: -scrollY, width: width / zoom.value, height: height / zoom.value });
-};
-```
-
-Send once at once; on `api.onScrollChange` send at most every 100 ms with a trailing send (a timer that is set only when none is pending); `setInterval(send, RepeatEveryMs)` for late joiners and for a resized window. Cleanup: unsubscribe, clear the timer and the interval.
-
-**Following** (effect on `[api, presence, enabled, leading, facilitatorId]`, active when `api && presence && enabled && !leading && facilitatorId`): refs `last` (the last viewport received), `applied` (`{scrollX, scrollY, zoom}` last set by us), `pausedRef`; state `paused`.
-
-```ts
-const transport = whisperTransport(
-    presence,
-    'viewport',
-    (senderId, raw) => senderId === facilitatorId && isViewport(raw),
-);
-
-const apply = (viewport: Viewport) => {
-    const { width, height } = api.getAppState();
-
-    if (width <= 0 || height <= 0) {
-        return;
+function isViewport(raw: unknown): raw is Viewport {
+    if (typeof raw !== 'object' || raw === null) {
+        return false;
     }
 
-    const zoom = Math.min(MaxZoom, Math.max(MinZoom, Math.min(width / viewport.width, height / viewport.height)));
-    const scrollX = width / 2 / zoom - (viewport.x + viewport.width / 2);
-    const scrollY = height / 2 / zoom - (viewport.y + viewport.height / 2);
+    const { x, y, width, height } = raw as Record<string, unknown>;
 
-    applied.current = { scrollX, scrollY, zoom };
-    api.updateScene({ appState: { scrollX, scrollY, zoom: { value: zoom } } } as never);
-};
+    return (
+        [x, y, width, height].every(
+            (value) => typeof value === 'number' && Number.isFinite(value),
+        ) &&
+        (width as number) > 0 &&
+        (height as number) > 0
+    );
+}
 
-const stopListening = transport.onMessage((raw) => {
-    last.current = raw as Viewport;
-
-    if (!pausedRef.current) {
-        apply(last.current);
-    }
-});
-
-const stopWatching = api.onScrollChange((scrollX, scrollY, zoom) => {
-    const ours = applied.current;
-
-    if (ours && ours.scrollX === scrollX && ours.scrollY === scrollY && ours.zoom === zoom.value) {
-        return;
-    }
-
-    pausedRef.current = true;
-    setPaused(true);
-});
-```
-
-The comparison is exact on purpose: the canvas reports back the very numbers `updateScene` was given, so anything else is the person panning or zooming. The whole rectangle is fitted and centred, so a follower with another window shape sees at least what the facilitator sees. Cleanup: both unsubscribes, `last.current = null`, `applied.current = null`, `pausedRef.current = false`, `setPaused(false)` — switching follow-me off frees everyone and forgets the pause.
-
-`resume()`: `pausedRef.current = false; setPaused(false);` then `apply(last.current)` when there is one (it is defined inside the effect: keep it in a ref the returned `resume` calls). Return `{ following: enabled && !leading, paused: enabled && !leading && paused, resume }`.
-
-Nothing is persisted and nothing goes through the server: a receiver's only protection is the sender id (spec §11.3), which is why `accept` compares it with `facilitatorId` from the snapshot and why Task 2 switches follow-me off when the facilitator changes.
-
-- [ ] **Step 2: Wire it**
-
-`board.tsx`:
-
-```tsx
-const follow = useWhiteboardFollow({
+export function useWhiteboardFollow({
     api,
-    presence: state.presence,
-    enabled: board.followEnabled,
-    leading: me.isFacilitator,
-    facilitatorId: board.facilitatorMemberId,
-});
+    presence,
+    enabled,
+    leading,
+    facilitatorId,
+}: Options) {
+    const [paused, setPaused] = useState(false);
+    const resumeRef = useRef<() => void>(() => {});
+
+    useEffect(() => {
+        if (!api || !presence || !enabled || !leading) {
+            return;
+        }
+
+        const transport = whisperTransport(presence, 'viewport', () => false);
+        let pending: ReturnType<typeof setTimeout> | null = null;
+        let lastSent = 0;
+
+        const send = () => {
+            const { scrollX, scrollY, zoom, width, height } = api.getAppState();
+
+            lastSent = Date.now();
+            transport.send({
+                x: -scrollX,
+                y: -scrollY,
+                width: width / zoom.value,
+                height: height / zoom.value,
+            });
+        };
+
+        const stopWatching = api.onScrollChange(() => {
+            if (pending !== null) {
+                return;
+            }
+
+            pending = setTimeout(
+                () => {
+                    pending = null;
+                    send();
+                },
+                Math.max(0, SendEveryMs - (Date.now() - lastSent)),
+            );
+        });
+        // Late joiners and a resized window get the view without a pan.
+        const repeat = setInterval(send, RepeatEveryMs);
+
+        send();
+
+        return () => {
+            stopWatching();
+            clearInterval(repeat);
+
+            if (pending !== null) {
+                clearTimeout(pending);
+            }
+        };
+    }, [api, presence, enabled, leading]);
+
+    useEffect(() => {
+        if (!api || !presence || !enabled || leading || !facilitatorId) {
+            return;
+        }
+
+        let last: Viewport | null = null;
+        let applied: Applied | null = null;
+        let isPaused = false;
+
+        const transport = whisperTransport(
+            presence,
+            'viewport',
+            (senderId, raw) => senderId === facilitatorId && isViewport(raw),
+        );
+
+        /** Fits the whole rectangle, centred, whatever this window's shape. */
+        const apply = (viewport: Viewport) => {
+            const { width, height } = api.getAppState();
+
+            if (width <= 0 || height <= 0) {
+                return;
+            }
+
+            const zoom = Math.min(
+                MaxZoom,
+                Math.max(
+                    MinZoom,
+                    Math.min(width / viewport.width, height / viewport.height),
+                ),
+            );
+            const scrollX =
+                width / 2 / zoom - (viewport.x + viewport.width / 2);
+            const scrollY =
+                height / 2 / zoom - (viewport.y + viewport.height / 2);
+
+            applied = { scrollX, scrollY, zoom };
+            api.updateScene({
+                appState: { scrollX, scrollY, zoom: { value: zoom } } as never,
+            });
+        };
+
+        const stopListening = transport.onMessage((raw) => {
+            last = raw as Viewport;
+
+            if (!isPaused) {
+                apply(last);
+            }
+        });
+
+        // The canvas reports every change of view, ours included; one that
+        // is not the view we just set is the person panning or zooming.
+        const stopWatching = api.onScrollChange((scrollX, scrollY, zoom) => {
+            // Before the first view arrives there is nothing to leave.
+            if (!applied) {
+                return;
+            }
+
+            if (
+                applied.scrollX === scrollX &&
+                applied.scrollY === scrollY &&
+                applied.zoom === zoom.value
+            ) {
+                return;
+            }
+
+            isPaused = true;
+            setPaused(true);
+        });
+
+        resumeRef.current = () => {
+            isPaused = false;
+            setPaused(false);
+
+            if (last) {
+                apply(last);
+            }
+        };
+
+        return () => {
+            stopListening();
+            stopWatching();
+            resumeRef.current = () => {};
+            setPaused(false);
+        };
+    }, [api, presence, enabled, leading, facilitatorId]);
+
+    const following = enabled && !leading;
+
+    return {
+        following,
+        paused: following && paused,
+        resume: () => resumeRef.current(),
+    };
+}
 ```
 
-and inside `<StatusBar>`, after the lock notice:
+How it works:
+- **Leading** (the facilitator's client while the switch is on): sends the visible rectangle at once, then at most every 100 ms after a change of view (one trailing send, never a queue), and every 2 s for late joiners and for a resized window. Its own `accept` refuses everything: a leader never follows.
+- **Following**: accepts `viewport` only from the presence id equal to `facilitatorMemberId` and only when the four numbers are finite and the rectangle is not empty (spec §11.3). The whole rectangle is fitted and centred, so a follower with another window shape sees at least what the facilitator sees.
+- **Pause**: the canvas reports every change of view through `onScrollChange`, the ones this hook makes included. A reported view that is not exactly the one just applied is the person panning or zooming: following pauses. Before the first view has arrived nothing can pause (the canvas also moves on its own while it opens). `resume()` applies the last view received.
+- Switching follow-me off, or a change of facilitator (which switches it off on the server, Task 2), runs the cleanup: everyone is free and the pause is forgotten.
+- Known limit, accepted: a facilitator with the board open in two tabs leads from both, and followers get both views in turn.
 
-```tsx
-{board.followEnabled && me.isFacilitator && <span>{t('Everyone follows your view.')}</span>}
-{follow.following && !follow.paused && <span>{t('Following the facilitator')}</span>}
-{follow.paused && (
-    <span className="flex items-center gap-2">
-        {t('Following paused')}
-        <Button size="sm" variant="outline" onClick={follow.resume}>
-            {t('Resume')}
-        </Button>
-    </span>
-)}
+- [ ] **Step 2: The button** (`resources/js/components/whiteboard/facilitator-bar.tsx`)
+
+```diff
+--- a/resources/js/components/whiteboard/facilitator-bar.tsx
++++ b/resources/js/components/whiteboard/facilitator-bar.tsx
+@@ -1,4 +1,4 @@
+-import { AlarmClock, Lock, LockOpen } from 'lucide-react';
++import { AlarmClock, Lock, LockOpen, Presentation } from 'lucide-react';
+ import { useState } from 'react';
+ import WhiteboardSettingsController from '@/actions/App/Http/Controllers/Whiteboards/WhiteboardSettingsController';
+ import WhiteboardTimersController from '@/actions/App/Http/Controllers/Whiteboards/WhiteboardTimersController';
+@@ -101,6 +101,20 @@
+                     <LockOpen className="size-4" />
+                 )}
+             </Button>
++            <Button
++                size="sm"
++                variant={board.followEnabled ? 'default' : 'outline'}
++                aria-pressed={board.followEnabled}
++                aria-label={t('Bring everyone to me')}
++                title={t('Bring everyone to me')}
++                onClick={() =>
++                    void updateSettings({
++                        follow_enabled: !board.followEnabled,
++                    })
++                }
++            >
++                <Presentation className="size-4" />
++            </Button>
+         </div>
+     );
+ }
 ```
 
-`facilitator-bar.tsx`: a third control, `<Button size="sm" variant={board.followEnabled ? 'default' : 'outline'} aria-pressed={board.followEnabled} aria-label={t('Bring everyone to me')} title={t('Bring everyone to me')}>` with the `Presentation` icon; on click the settings request with `{ follow_enabled: !board.followEnabled }`, then `state.refetch()`.
+- [ ] **Step 3: Wire it** (`resources/js/components/whiteboard/board.tsx`)
 
-- [ ] **Step 3: Translation keys**
+```diff
+--- a/resources/js/components/whiteboard/board.tsx
++++ b/resources/js/components/whiteboard/board.tsx
+@@ -6,10 +6,12 @@
+ import { ConnectionBanner } from '@/components/retro/connection-banner';
+ import { SessionExpiredBanner } from '@/components/retro/session-expired-banner';
+ import { TimerDisplay } from '@/components/retro/timer-display';
++import { Button } from '@/components/ui/button';
+ import { useLocalPreference } from '@/hooks/use-local-preference';
+ import { useTrans } from '@/hooks/use-trans';
+ import { useWhiteboard } from '@/hooks/use-whiteboard';
+ import { useWhiteboardCursors } from '@/hooks/use-whiteboard-cursors';
++import { useWhiteboardFollow } from '@/hooks/use-whiteboard-follow';
+ import { useWhiteboardToolbarSlot } from '@/hooks/use-whiteboard-toolbar-slot';
+ import {
+     Excalidraw,
+@@ -81,6 +83,13 @@
+         enabled: board.cursorsEnabled,
+         hidden: hideMyCursor,
+     });
++    const follow = useWhiteboardFollow({
++        api,
++        presence: state.presence,
++        enabled: board.followEnabled,
++        leading: me.isFacilitator,
++        facilitatorId: board.facilitatorMemberId,
++    });
+     const forgetCursor = useRef(cursors.forget);
+ 
+     forgetCursor.current = cursors.forget;
+@@ -196,6 +205,24 @@
+                             {t('This board is locked.')}
+                         </span>
+                     )}
++                    {board.followEnabled && me.isFacilitator && (
++                        <span>{t('Everyone follows your view.')}</span>
++                    )}
++                    {follow.following && !follow.paused && (
++                        <span>{t('Following the facilitator')}</span>
++                    )}
++                    {follow.paused && (
++                        <span className="flex items-center gap-2">
++                            {t('Following paused')}
++                            <Button
++                                size="sm"
++                                variant="outline"
++                                onClick={follow.resume}
++                            >
++                                {t('Resume')}
++                            </Button>
++                        </span>
++                    )}
+                 </StatusBar>
+                 {api &&
+                     toolbarSlot &&
+```
+
+- [ ] **Step 4: Translation keys** (append to each `lang/*.json`; `en.json` with value = key)
 
 | Key (English) | French | German | Spanish |
 |---|---|---|---|
@@ -3156,10 +4436,10 @@ and inside `<StatusBar>`, after the lock notice:
 | Following paused | Suivi en pause | Folgen pausiert | Seguimiento en pausa |
 | Resume | Reprendre | Fortsetzen | Reanudar |
 
-- [ ] **Step 4: Gates and commit**
+- [ ] **Step 5: Gates and commit**
 
-Run: `npm run build && npm run types:check && npx vp check resources/js/hooks/use-whiteboard-follow.ts resources/js/components/whiteboard/facilitator-bar.tsx resources/js/components/whiteboard/board.tsx && DB_HOST=127.0.0.1 php artisan test --compact tests/Feature/TranslationKeysTest.php`
-Expected: no error in these files; test PASS.
+Run: `npm run build && npm run types:check && npx vp check resources/js/hooks/use-whiteboard-follow.ts resources/js/components/whiteboard && DB_HOST=127.0.0.1 php artisan test --compact tests/Feature/TranslationKeysTest.php`
+Expected: only the known `manage-passkeys.tsx` type error; no `vp check` failure; test PASS.
 
 ```bash
 git add resources/js/hooks/use-whiteboard-follow.ts resources/js/components/whiteboard/facilitator-bar.tsx resources/js/components/whiteboard/board.tsx lang/en.json lang/fr.json lang/de.json lang/es.json
@@ -3167,35 +4447,60 @@ git commit -m "feat(whiteboard): bring everyone to the facilitator's view"
 ```
 
 **Browser checks:**
-- B6.1 A switches "Bring everyone to me" on: A's status row says "Everyone follows your view.", B's says "Following the facilitator", and B's view shows what A sees.
-- B6.2 A pans and zooms: B's view follows within about a second, and what A sees is inside B's window when the two windows have different shapes (resize B narrower).
+- B6.1 A switches "Bring everyone to me" on: A's status row says "Everyone follows your view.", B's says "Following the facilitator", and B's view shows what A sees. B does not pause on its own: after ten seconds without touching B, its row still says "Following the facilitator". (If it pauses by itself, the canvas does not report back exactly the numbers it was given: compare with a tolerance of 1e-6 in `use-whiteboard-follow.ts` and say so.)
+- B6.2 A pans and zooms: B's view follows within about a second, and what A sees is inside B's window when the two windows have different shapes.
 - B6.3 B pans (or zooms): B's row says "Following paused" with "Resume"; A keeps moving and B's view stays. "Resume" brings B back to A's current view at once.
-- B6.4 A browser that opens the board while follow-me is on is brought to A's view within 2 s.
+- B6.4 A browser that opens the board while follow-me is on is brought to A's view within about 2 s.
 - B6.5 A switches it off: both rows lose the notice and B's view is free. A member takes control while it is on: it goes off (snapshot `followEnabled` false) and nobody is pulled to the new facilitator.
 - B6.6 On a locked board B (view mode) still follows, pauses by dragging, and resumes.
-- B6.7 From B's console, whisper a `viewport` on the presence channel (`window.Echo` is not exposed: check instead that B's own pan never moves A, and that with A not facilitating no view moves).
+- B6.7 Only the facilitator leads: with follow-me on, B's own pans and zooms never move A's view.
 
 ---
 
 ### Task 7: Voting in the browser — open, vote, badges, results
 
-Proposal, not run. Names checked: `ExcalidrawImperativeAPI.onChange(callback)`, `getSceneElements()` (non-deleted, ordered), `scrollToContent(target, opts)` where a string target is an element id and `fitToContent` defaults to `true` for it (`dist/dev/index.js:25770–25796`); a point of the scene is at `(sceneX + scrollX) * zoom + offsetLeft` in the window (`sceneCoordsToViewportCoords`, `chunk-4FTI6OG3.js:1329`), so inside the canvas wrapper it is `(sceneX + scrollX) * zoom`; the canvas layers are `--zIndex-canvas: 1`, `--zIndex-interactiveCanvas: 2`, its controls `--zIndex-layerUI: 4` (`dist/dev/index.css:5546–5551`), and `.excalidraw` (`position: relative; overflow: hidden`, no `z-index`) makes no stacking context of its own, so a sibling at `z-index: 3` lies above the drawing and under the controls; the reactions bar is `fixed … z-40` outside the wrapper (`resources/js/components/realtime/flying-reactions.tsx:111`); a frame is `{type: 'frame', name: string | null}` and every element may carry `customData` (`element/types.d.ts:71`, `140`).
+The listings were type-checked, linted and bundled at this task's end state (the end state of the plan); they have never run in a browser.
+
+Names checked in `node_modules/@excalidraw/excalidraw/dist` (0.18.1): `ExcalidrawImperativeAPI.onChange(callback)` and `getSceneElements()` (non-deleted, ordered; `types/excalidraw/types.d.ts:631`, `611`); `scrollToContent(target?: string | ExcalidrawElement | readonly ExcalidrawElement[], opts?: {fitToContent?, animate?, …})` where a string is an element id (`types/excalidraw/components/App.d.ts:335`); a point of the scene is at `(sceneX + scrollX) * zoom + offsetLeft` in the window (`sceneCoordsToViewportCoords`, `dev/chunk-4FTI6OG3.js:1329`), so inside the element that holds the canvas it is `(sceneX + scrollX) * zoom`; the canvas layers are `--zIndex-canvas: 1`, `--zIndex-interactiveCanvas: 2`, its interface `--zIndex-layerUI: 4` (`dev/index.css:5546–5551`), and `.layer-ui__wrapper` has `pointer-events: none` (`dev/index.css:5030`), so a sibling at `z-index: 3` lies above the drawing, under the canvas's controls, and still takes clicks where no control is; a frame is `{type: 'frame', name: string | null}`. In the repository: the reactions bar is `fixed bottom-4 left-1/2 z-40` (`resources/js/components/realtime/flying-reactions.tsx:111`) and is placed against the canvas by sibling selectors on `.whiteboard-canvas` (`resources/css/app.css`, board block); `useWhiteboardToolbarSlot(canvas, …)` searches inside the element that carries `ref={canvas}`.
 
 **Files:**
 - Create: `resources/js/hooks/use-whiteboard-overlay.ts`, `resources/js/components/whiteboard/vote-dialog.tsx`, `resources/js/components/whiteboard/vote-overlay.tsx`, `resources/js/components/whiteboard/results-panel.tsx`
 - Modify: `resources/js/components/whiteboard/facilitator-bar.tsx`, `resources/js/components/whiteboard/board.tsx`, `resources/js/components/whiteboard/board-menu.tsx`, `lang/{en,fr,de,es}.json`
 
 **Interfaces:**
-- Consumes: `state.snapshot.voting`, `votingHistory`, `state.applyTally`, `state.refetch`, `state.online`; Wayfinder `WhiteboardVoteSessionsController.store(boardId)` (`{votes_per_member, frame_element_id, allow_multiple}` → `{id}`), `WhiteboardVotesController.update({board, voteSession, elementId})` (`{count}` → `VoteTally`), `WhiteboardVoteClosuresController.store({board, voteSession})`, `WhiteboardVoteDismissalsController.store({board, voteSession})`; `useWhiteboardCursors({ …, enabled })`; `StatusBar`, `FacilitatorBar`, `useWhiteboardRequest`.
-- Produces: nothing for later tasks.
+- Consumes: `state.snapshot.voting`, `votingHistory`, `state.applyTally`, `state.refetch`, `state.online` (Task 5); Wayfinder `WhiteboardVoteSessionsController.store(boardId)` (`{votes_per_member, frame_element_id, allow_multiple}` → `{id}`), `WhiteboardVotesController.update({ board, voteSession, elementId })` (`{count}` → `VoteTally`), `WhiteboardVoteClosuresController.store({ board, voteSession })`, `WhiteboardVoteDismissalsController.store({ board, voteSession })`; `useWhiteboardCursors({ …, enabled })`; `StatusBar`, `FacilitatorBar`, `useWhiteboardRequest`.
+- Produces: nothing for later tasks. `FacilitatorBar` now takes `{ state, api }`; `BoardMenu` takes `onShowResults: () => void`.
 
-- [ ] **Step 1: Where things are** (`use-whiteboard-overlay.ts`)
+- [ ] **Step 1: Where things are** — `resources/js/hooks/use-whiteboard-overlay.ts`
 
 ```ts
-export type CanvasView = { scrollX: number; scrollY: number; zoom: number };
-export type NoteBox = { id: string; x: number; y: number; width: number; height: number };
+import { useEffect, useState } from 'react';
+import type { ExcalidrawImperativeAPI } from '@/lib/whiteboard/excalidraw';
 
-export function useCanvasView(api: ExcalidrawImperativeAPI | null): CanvasView | null {
+export type CanvasView = { scrollX: number; scrollY: number; zoom: number };
+
+export type NoteBox = {
+    id: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+};
+
+type CanvasElement = {
+    id: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    isDeleted: boolean;
+    customData?: Record<string, unknown>;
+};
+
+/** Scroll and zoom of the canvas, for anything drawn above it. */
+export function useCanvasView(
+    api: ExcalidrawImperativeAPI | null,
+): CanvasView | null {
     const [view, setView] = useState<CanvasView | null>(null);
 
     useEffect(() => {
@@ -3214,131 +4519,938 @@ export function useCanvasView(api: ExcalidrawImperativeAPI | null): CanvasView |
 
     return view;
 }
+
+const isSticky = (element: CanvasElement) =>
+    (element.customData?.skrum as { kind?: unknown } | undefined)?.kind ===
+    'sticky';
+
+/**
+ * Where the given sticky notes are, in scene coordinates. `ids` must keep
+ * its identity between renders (useMemo), or the subscription restarts.
+ */
+export function useNoteBoxes(
+    api: ExcalidrawImperativeAPI | null,
+    ids: readonly string[] | null,
+): NoteBox[] {
+    const [boxes, setBoxes] = useState<NoteBox[]>([]);
+
+    useEffect(() => {
+        if (!api || ids === null) {
+            setBoxes([]);
+
+            return;
+        }
+
+        const wanted = new Set(ids);
+        let signature = '';
+
+        const read = (elements: readonly CanvasElement[]) => {
+            const next = elements
+                .filter(
+                    (element) =>
+                        wanted.has(element.id) &&
+                        !element.isDeleted &&
+                        isSticky(element),
+                )
+                .map(({ id, x, y, width, height }) => ({
+                    id,
+                    x,
+                    y,
+                    width,
+                    height,
+                }));
+            const nextSignature = next
+                .map((box) => Object.values(box).join(':'))
+                .join('|');
+
+            // onChange also fires on every selection and pointer state.
+            if (nextSignature === signature) {
+                return;
+            }
+
+            signature = nextSignature;
+            setBoxes(next);
+        };
+
+        read(api.getSceneElements());
+
+        return api.onChange((elements) => read(elements));
+    }, [api, ids]);
+
+    return boxes;
+}
 ```
 
-`useNoteBoxes(api, ids: readonly string[] | null): NoteBox[]` — the same pattern with `api.onChange((elements) => read(elements))` and a first `read(api.getSceneElements())`. `read` keeps the elements whose id is in `ids`, that are not deleted and whose `customData?.skrum?.kind === 'sticky'`, maps them to `{id, x, y, width, height}`, and calls `setBoxes` only when the string `id:x:y:width:height|…` differs from the last one: `onChange` fires on every selection and pointer state. With `ids === null` it sets `[]` and subscribes to nothing. The caller must pass a memoised `ids` (`useMemo`), or the effect restarts on every render.
-
-- [ ] **Step 2: `VoteOverlay`**
-
-`VoteOverlay({ api, voting, onVote }: { api: ExcalidrawImperativeAPI; voting: WhiteboardVoting; onVote: (elementId: string, count: number) => void })`, rendered inside the canvas wrapper, after `<Excalidraw>`:
+- [ ] **Step 2: `resources/js/components/whiteboard/vote-overlay.tsx`**
 
 ```tsx
-<div className="pointer-events-none absolute inset-0 z-[3] overflow-hidden">
-    {boxes.map((box) => (
-        <div
-            key={box.id}
-            className="absolute top-0 left-0 -translate-x-full -translate-y-1/2"
-            style={{
-                left: (box.x + box.width + view.scrollX) * view.zoom,
-                top: (box.y + view.scrollY) * view.zoom,
-            }}
-        >
-            {/* the control or the badge */}
+import { Minus, Plus } from 'lucide-react';
+import { useMemo } from 'react';
+import { useTrans } from '@/hooks/use-trans';
+import { useCanvasView, useNoteBoxes } from '@/hooks/use-whiteboard-overlay';
+import type { ExcalidrawImperativeAPI } from '@/lib/whiteboard/excalidraw';
+import type { WhiteboardVoting } from '@/lib/whiteboard/types';
+import { cn } from '@/lib/utils';
+
+type Props = {
+    api: ExcalidrawImperativeAPI;
+    voting: WhiteboardVoting;
+    onVote: (elementId: string, count: number) => void;
+};
+
+const controlButton =
+    'flex size-6 items-center justify-center rounded-full hover:bg-accent disabled:opacity-40';
+
+/**
+ * Vote controls while the vote is open, count badges once it is closed,
+ * anchored to the top-right corner of each note. Sits above the drawing and
+ * under the canvas's own controls (z-index 3, between Excalidraw's canvases
+ * at 1–2 and its interface at 4).
+ */
+export function VoteOverlay({ api, voting, onVote }: Props) {
+    const { t } = useTrans();
+    const view = useCanvasView(api);
+    const ids = useMemo(
+        () =>
+            voting.open
+                ? voting.elementIds
+                : (voting.results ?? []).map((result) => result.elementId),
+        [voting.open, voting.elementIds, voting.results],
+    );
+    const boxes = useNoteBoxes(api, ids);
+
+    if (!view) {
+        return null;
+    }
+
+    const mine = new Map(
+        voting.myVotes.map((vote) => [vote.elementId, vote.count]),
+    );
+    const totals = new Map(
+        (voting.results ?? []).map((result) => [
+            result.elementId,
+            result.count,
+        ]),
+    );
+
+    return (
+        <div className="pointer-events-none absolute inset-0 z-[3] overflow-hidden">
+            {boxes.map((box) => {
+                const count = mine.get(box.id) ?? 0;
+                const total = totals.get(box.id) ?? 0;
+
+                return (
+                    <div
+                        key={box.id}
+                        className="absolute -translate-x-full -translate-y-1/2"
+                        style={{
+                            left:
+                                (box.x + box.width + view.scrollX) * view.zoom,
+                            top: (box.y + view.scrollY) * view.zoom,
+                        }}
+                    >
+                        {!voting.open && (
+                            <span
+                                className="rounded-full bg-primary px-2 py-0.5 text-xs font-medium text-primary-foreground shadow-sm"
+                                aria-label={t(
+                                    total === 1
+                                        ? ':count vote'
+                                        : ':count votes',
+                                    { count: total },
+                                )}
+                            >
+                                {total}
+                            </span>
+                        )}
+                        {voting.open && voting.allowMultiple && (
+                            <span className="pointer-events-auto flex items-center gap-0.5 rounded-full border bg-background p-0.5 text-xs shadow-sm">
+                                <button
+                                    type="button"
+                                    className={controlButton}
+                                    aria-label={t('Remove a vote')}
+                                    disabled={count === 0}
+                                    onClick={() => onVote(box.id, count - 1)}
+                                >
+                                    <Minus className="size-3" />
+                                </button>
+                                <span
+                                    className="min-w-4 text-center font-medium"
+                                    aria-label={t('Your votes: :count', {
+                                        count,
+                                    })}
+                                >
+                                    {count}
+                                </span>
+                                <button
+                                    type="button"
+                                    className={controlButton}
+                                    aria-label={t('Add a vote')}
+                                    disabled={voting.remaining === 0}
+                                    onClick={() => onVote(box.id, count + 1)}
+                                >
+                                    <Plus className="size-3" />
+                                </button>
+                            </span>
+                        )}
+                        {voting.open && !voting.allowMultiple && (
+                            <button
+                                type="button"
+                                className={cn(
+                                    'pointer-events-auto flex size-6 items-center justify-center rounded-full border bg-background text-xs font-medium shadow-sm disabled:opacity-40',
+                                    count === 1 &&
+                                        'border-primary bg-primary text-primary-foreground',
+                                )}
+                                aria-pressed={count === 1}
+                                aria-label={t('Vote for this note')}
+                                disabled={count === 0 && voting.remaining === 0}
+                                onClick={() =>
+                                    onVote(box.id, count === 1 ? 0 : 1)
+                                }
+                            >
+                                {count === 1 ? (
+                                    '1'
+                                ) : (
+                                    <Plus className="size-3" />
+                                )}
+                            </button>
+                        )}
+                    </div>
+                );
+            })}
         </div>
-    ))}
-</div>
-```
-
-`ids` is `voting.elementIds` while open and `voting.results.map((result) => result.elementId)` once closed. The anchor is the note's top-right corner in its unrotated box; a rotated note keeps its control at that corner (accepted). The controls keep their size at every zoom. Nothing is rendered until `view` is known.
-
-- **Open** (`pointer-events-auto` on the control only): the viewer's own count for the note is `voting.myVotes.find(…)?.count ?? 0`.
-  - `allowMultiple`: a pill `−  n  +` — two icon buttons (`Minus`, `Plus`, `aria-label={t('Remove a vote')}` / `t('Add a vote')`) around the count (`aria-label={t('Your votes: :count', { count })}`); `−` disabled at 0, `+` disabled when `voting.remaining === 0`; they call `onVote(id, count - 1)` / `onVote(id, count + 1)`.
-  - otherwise: one round toggle button, `aria-pressed={count === 1}`, `aria-label={t('Vote for this note')}`, filled when pressed, disabled when `count === 0 && voting.remaining === 0`; it calls `onVote(id, count === 1 ? 0 : 1)`.
-  - Style: `rounded-full border bg-background shadow-sm`, buttons `size-6`; the only thing shown is the viewer's own count.
-- **Closed**: for each result whose note is still on the canvas, a badge (`rounded-full bg-primary px-2 py-0.5 text-xs font-medium text-primary-foreground`) with the count and `aria-label` `t(':count vote', { count })` for 1, `t(':count votes', { count })` otherwise. No pointer events.
-
-- [ ] **Step 3: `VoteDialog`** (facilitator opens a vote)
-
-`VoteDialog({ state, api, open, onOpenChange })`. Fields: `t('Votes per participant')` — `Input type="number" min={1} max={20}`, default 3; `t('Notes to vote on')` — a `Select` with `t('All sticky notes')` (value `''` is not allowed by the Select: use `'all'`) and one entry per frame read from `api.getSceneElements()` when the dialog opens, labelled `t('Notes in :name', { name: frame.name ?? t('Frame :number', { number: position + 1 }) })`; a `Checkbox` `t('Allow several votes on one note')`. Footer `t('Cancel')` / `t('Start a vote')` (disabled while busy). Submit:
-
-```ts
-try {
-    await retroRequest<{ id: string }>(WhiteboardVoteSessionsController.store(board.id), {
-        votes_per_member: votesPerMember,
-        frame_element_id: scope === 'all' ? null : scope,
-        allow_multiple: allowMultiple,
-    });
-    await state.refetch();
-    onOpenChange(false);
-} catch (error) {
-    setError(
-        error instanceof RetroRequestError && error.status > 0
-            ? error.message
-            : t('Something went wrong. Please try again.'),
     );
 }
 ```
 
-The message of a 422 ("A vote is already open.", "There are no sticky notes to vote on.") is shown inside the dialog with `InputError`, and the dialog stays open with what was chosen. Mount the form only while `open`. A frame just drawn may not have reached the server yet (300 ms batch): the server then answers "Choose a frame of this board." and a second try works.
+While the vote is open the only number shown on a note is the viewer's own count. Once closed, each note that received votes carries the total, the same for everyone; a note deleted since has no badge. The anchor is the note's top-right corner in its unrotated box (a rotated note keeps its control there: accepted). The controls keep their size at every zoom.
 
-- [ ] **Step 4: `ResultsPanel`**
-
-`ResultsPanel({ state, api, onClose })`, an `<aside>` placed **beside** the canvas, never over it: wrap the canvas wrapper and the panel in `<div className="flex min-h-0 flex-1">`; the canvas wrapper keeps `min-h-0 flex-1` and gains `min-w-0`; the panel is `w-80 shrink-0 overflow-y-auto border-l bg-background p-4 max-md:absolute max-md:inset-0 max-md:z-50 max-md:w-auto` (on a phone it takes the board area, with its close button). Content:
-- Header: `<h2>{t('Vote results')}</h2>`, a close button (`X`, `aria-label={t('Close')}`), and for the facilitator, when `voting` is closed, a button `t('Hide the results')` → `request(retroRequest(WhiteboardVoteDismissalsController.store({ board: board.id, voteSession: voting.id })))` then `state.refetch()`.
-- The current results (when `voting && !voting.open`): an `<ol>`; each entry shows its rank, the text (`result.text === '' ? t('Empty note') : result.text`, `whitespace-pre-wrap break-words`), the count (`t(':count vote', …)` / `t(':count votes', …)`) and a button `t('Show on the board')` (`LocateFixed`) that calls `api.scrollToContent(result.elementId, { fitToContent: false, animate: true })` (and `onClose()` below `md`). The button is disabled, with `title={t('This note is no longer on the board.')}`, when no live element has that id (`api.getSceneElements().some(…)`, read when the panel renders). An empty list shows `t('No votes were cast.')`.
-- `state.snapshot.votingHistory` (non-guests only receive any): a heading `t('Previous votes')` and, per past vote, its date (`new Date(closedAt).toLocaleString()`) and the same list without the hide button.
-
-Results never name a voter: the payload holds none.
-
-- [ ] **Step 5: Wire it** (`board.tsx`, `facilitator-bar.tsx`, `board-menu.tsx`)
-
-`board.tsx`:
-- `const { voting, votingHistory } = state.snapshot; const votingOpen = voting?.open ?? false;`
-- Cursors: `enabled: board.cursorsEnabled && !votingOpen` in `useWhiteboardCursors` — with the transport gone the hook neither sends nor draws, and clears the pointers it had (spec §11.4). This is the one rule of this plan the server cannot enforce: whispers never pass through it.
-- Voting: 
-
-```ts
-const vote = async (elementId: string, count: number) => {
-    if (!voting) {
-        return;
-    }
-
-    const tally = await request(
-        retroRequest<VoteTally>(
-            WhiteboardVotesController.update({ board: board.id, voteSession: voting.id, elementId }),
-            { count },
-        ),
-    );
-
-    if (tally === undefined) {
-        void state.refetch();
-
-        return;
-    }
-
-    state.applyTally(voting.id, tally);
-};
-```
-
-- `{api && voting && <VoteOverlay api={api} voting={voting} onVote={(elementId, count) => void vote(elementId, count)} />}` inside the canvas wrapper, after `<Excalidraw>`.
-- Results panel: `const [panel, setPanel] = useState<boolean | null>(null);` and `const showsPanel = panel ?? (voting !== null && !voting.open);` — it opens by itself when a vote closes, and a person's own choice wins afterwards; reset `panel` to `null` when `voting?.id` changes (key the state on it). Render `{api && showsPanel && <ResultsPanel state={state} api={api} onClose={() => setPanel(false)} />}` beside the canvas.
-- Status row, after the follow notices:
+- [ ] **Step 3: `resources/js/components/whiteboard/vote-dialog.tsx`** (the facilitator opens a vote)
 
 ```tsx
-{voting?.open && (
-    <span>
-        {t('Votes left: :count', { count: voting.remaining })}
-        {' · '}
-        {t(':count of :total finished voting', { count: voting.finishedCount ?? 0, total: state.online.length })}
-        {' · '}
-        {t('Cursors are hidden while the vote is open.')}
-    </span>
-)}
-{voting && !voting.open && !showsPanel && (
-    <Button size="sm" variant="outline" onClick={() => setPanel(true)}>
-        {t('Vote results')}
-    </Button>
-)}
+import { useId, useState, type FormEvent } from 'react';
+import WhiteboardVoteSessionsController from '@/actions/App/Http/Controllers/Whiteboards/WhiteboardVoteSessionsController';
+import InputError from '@/components/input-error';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+    Dialog,
+    DialogContent,
+    DialogFooter,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import { useTrans } from '@/hooks/use-trans';
+import type { WhiteboardState } from '@/hooks/use-whiteboard';
+import { RetroRequestError, retroRequest } from '@/lib/retro/api';
+import type { ExcalidrawImperativeAPI } from '@/lib/whiteboard/excalidraw';
+
+type Props = {
+    state: WhiteboardState;
+    api: ExcalidrawImperativeAPI;
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+};
+
+const AllNotes = 'all';
+
+export function VoteDialog({ state, api, open, onOpenChange }: Props) {
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent aria-describedby={undefined}>
+                {open && (
+                    <VoteForm
+                        state={state}
+                        api={api}
+                        onClose={() => onOpenChange(false)}
+                    />
+                )}
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+function VoteForm({
+    state,
+    api,
+    onClose,
+}: {
+    state: WhiteboardState;
+    api: ExcalidrawImperativeAPI;
+    onClose: () => void;
+}) {
+    const { t } = useTrans();
+    const budgetId = useId();
+    const scopeId = useId();
+    const multipleId = useId();
+    const [votesPerMember, setVotesPerMember] = useState(3);
+    const [scope, setScope] = useState(AllNotes);
+    const [allowMultiple, setAllowMultiple] = useState(false);
+    const [error, setError] = useState<string>();
+    const [busy, setBusy] = useState(false);
+    const [frames] = useState(() =>
+        api
+            .getSceneElements()
+            .filter((element) => element.type === 'frame')
+            .map((frame, position) => ({
+                id: frame.id,
+                name:
+                    frame.name ?? t('Frame :number', { number: position + 1 }),
+            })),
+    );
+
+    const start = async () => {
+        setBusy(true);
+        setError(undefined);
+
+        try {
+            await retroRequest<{ id: string }>(
+                WhiteboardVoteSessionsController.store(state.snapshot.board.id),
+                {
+                    votes_per_member: votesPerMember,
+                    frame_element_id: scope === AllNotes ? null : scope,
+                    allow_multiple: allowMultiple,
+                },
+            );
+            await state.refetch();
+            onClose();
+        } catch (caught) {
+            setError(
+                caught instanceof RetroRequestError && caught.status > 0
+                    ? caught.message
+                    : t('Something went wrong. Please try again.'),
+            );
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    const submit = (event: FormEvent) => {
+        event.preventDefault();
+        void start();
+    };
+
+    return (
+        <form onSubmit={submit} className="space-y-4">
+            <DialogTitle>{t('Start a vote')}</DialogTitle>
+            <div className="space-y-2">
+                <Label htmlFor={budgetId}>{t('Votes per participant')}</Label>
+                <Input
+                    id={budgetId}
+                    type="number"
+                    required
+                    min={1}
+                    max={20}
+                    value={votesPerMember}
+                    onChange={(event) =>
+                        setVotesPerMember(Number(event.target.value))
+                    }
+                />
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor={scopeId}>{t('Notes to vote on')}</Label>
+                <Select value={scope} onValueChange={setScope}>
+                    <SelectTrigger id={scopeId}>
+                        <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value={AllNotes}>
+                            {t('All sticky notes')}
+                        </SelectItem>
+                        {frames.map((frame) => (
+                            <SelectItem key={frame.id} value={frame.id}>
+                                {t('Notes in :name', { name: frame.name })}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
+            <div className="flex items-center gap-2">
+                <Checkbox
+                    id={multipleId}
+                    checked={allowMultiple}
+                    onCheckedChange={(checked) =>
+                        setAllowMultiple(checked === true)
+                    }
+                />
+                <Label htmlFor={multipleId}>
+                    {t('Allow several votes on one note')}
+                </Label>
+            </div>
+            <InputError message={error} />
+            <DialogFooter>
+                <Button type="button" variant="outline" onClick={onClose}>
+                    {t('Cancel')}
+                </Button>
+                <Button disabled={busy}>{t('Start a vote')}</Button>
+            </DialogFooter>
+        </form>
+    );
+}
 ```
 
-`facilitator-bar.tsx` (it now takes `api: ExcalidrawImperativeAPI | null` too): a fourth control with the `Vote` icon —
-- no vote, or results already dismissed: `aria-label={t('Start a vote')}`, opens `VoteDialog` (disabled while `api` is null);
-- vote open: a text button `t('Close the vote')` → `request(retroRequest(WhiteboardVoteClosuresController.store({ board: board.id, voteSession: voting.id })))` then `state.refetch()`;
-- vote closed and shown: `aria-label={t('Start a vote')}` again (opening a new vote puts the old results away, spec §11.4).
+The message of a 422 ("A vote is already open.", "There are no sticky notes to vote on.", "Choose a frame of this board.") is shown inside the dialog, which stays open with what was chosen. A frame drawn a moment ago may not have reached the server yet (300 ms batch): the server then answers "Choose a frame of this board." and a second try works.
 
-`board-menu.tsx`: for `!me.isGuest`, when `votingHistory.length > 0 || voting !== null`, an item `t('Vote results')` that opens the panel (new prop `onShowResults: () => void`, passed from `board.tsx` as `() => setPanel(true)`).
+- [ ] **Step 4: `resources/js/components/whiteboard/results-panel.tsx`**
 
-- [ ] **Step 6: Translation keys**
+```tsx
+import { LocateFixed, X } from 'lucide-react';
+import WhiteboardVoteDismissalsController from '@/actions/App/Http/Controllers/Whiteboards/WhiteboardVoteDismissalsController';
+import { Button } from '@/components/ui/button';
+import { useTrans } from '@/hooks/use-trans';
+import type { WhiteboardState } from '@/hooks/use-whiteboard';
+import { useWhiteboardRequest } from '@/hooks/use-whiteboard-request';
+import { retroRequest } from '@/lib/retro/api';
+import type { ExcalidrawImperativeAPI } from '@/lib/whiteboard/excalidraw';
+import type { VoteResult } from '@/lib/whiteboard/types';
+
+type Props = {
+    state: WhiteboardState;
+    api: ExcalidrawImperativeAPI;
+    onClose: () => void;
+};
+
+/** Beside the canvas, never over it; results never name a voter. */
+export function ResultsPanel({ state, api, onClose }: Props) {
+    const { t } = useTrans();
+    const request = useWhiteboardRequest();
+    const { board, me, voting, votingHistory } = state.snapshot;
+    const closed = voting !== null && !voting.open ? voting : null;
+    const onBoard = new Set(
+        api.getSceneElements().map((element) => element.id),
+    );
+
+    const show = (elementId: string) => {
+        api.scrollToContent(elementId, { fitToContent: false, animate: true });
+
+        if (window.matchMedia('(max-width: 767px)').matches) {
+            onClose();
+        }
+    };
+
+    const hide = async (sessionId: string) => {
+        const done = await request(
+            retroRequest(
+                WhiteboardVoteDismissalsController.store({
+                    board: board.id,
+                    voteSession: sessionId,
+                }),
+            ),
+        );
+
+        if (done !== undefined) {
+            await state.refetch();
+        }
+    };
+
+    const list = (results: VoteResult[]) => (
+        <ol className="space-y-2">
+            {results.map((result, position) => (
+                <li
+                    key={result.elementId}
+                    className="flex items-start gap-2 rounded-md border p-2 text-sm"
+                >
+                    <span className="font-mono text-muted-foreground">
+                        {position + 1}.
+                    </span>
+                    <span className="min-w-0 flex-1 break-words whitespace-pre-wrap">
+                        {result.text === '' ? t('Empty note') : result.text}
+                    </span>
+                    <span className="shrink-0 font-medium">
+                        {t(
+                            result.count === 1 ? ':count vote' : ':count votes',
+                            {
+                                count: result.count,
+                            },
+                        )}
+                    </span>
+                    <Button
+                        size="icon"
+                        variant="ghost"
+                        className="size-6 shrink-0"
+                        aria-label={t('Show on the board')}
+                        title={
+                            onBoard.has(result.elementId)
+                                ? t('Show on the board')
+                                : t('This note is no longer on the board.')
+                        }
+                        disabled={!onBoard.has(result.elementId)}
+                        onClick={() => show(result.elementId)}
+                    >
+                        <LocateFixed className="size-4" />
+                    </Button>
+                </li>
+            ))}
+        </ol>
+    );
+
+    return (
+        <aside
+            aria-label={t('Vote results')}
+            className="w-80 shrink-0 space-y-4 overflow-y-auto border-l bg-background p-4 pb-20 max-md:absolute max-md:inset-0 max-md:z-50 max-md:w-auto"
+        >
+            <div className="flex items-center gap-2">
+                <h2 className="flex-1 font-medium">{t('Vote results')}</h2>
+                <Button
+                    size="icon"
+                    variant="ghost"
+                    aria-label={t('Close')}
+                    onClick={onClose}
+                >
+                    <X className="size-4" />
+                </Button>
+            </div>
+            {closed && (
+                <section className="space-y-2">
+                    {(closed.results ?? []).length === 0 ? (
+                        <p className="text-sm text-muted-foreground">
+                            {t('No votes were cast.')}
+                        </p>
+                    ) : (
+                        list(closed.results ?? [])
+                    )}
+                    {me.isFacilitator && (
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => void hide(closed.id)}
+                        >
+                            {t('Hide the results')}
+                        </Button>
+                    )}
+                </section>
+            )}
+            {votingHistory.length > 0 && (
+                <section className="space-y-3">
+                    <h3 className="text-sm font-medium text-muted-foreground">
+                        {t('Previous votes')}
+                    </h3>
+                    {votingHistory.map((past) => (
+                        <div key={past.id} className="space-y-2">
+                            <p className="text-xs text-muted-foreground">
+                                {new Date(past.closedAt).toLocaleString()}
+                            </p>
+                            {list(past.results)}
+                        </div>
+                    ))}
+                </section>
+            )}
+        </aside>
+    );
+}
+```
+
+The panel sits **beside** the canvas, which shrinks; on a phone it takes the board area and has its close button. Its bottom padding keeps the last entry clear of the reactions bar on a narrow window.
+
+- [ ] **Step 5: The vote button** (`resources/js/components/whiteboard/facilitator-bar.tsx`)
+
+```diff
+--- a/resources/js/components/whiteboard/facilitator-bar.tsx
++++ b/resources/js/components/whiteboard/facilitator-bar.tsx
+@@ -1,7 +1,8 @@
+-import { AlarmClock, Lock, LockOpen, Presentation } from 'lucide-react';
++import { AlarmClock, Lock, LockOpen, Presentation, Vote } from 'lucide-react';
+ import { useState } from 'react';
+ import WhiteboardSettingsController from '@/actions/App/Http/Controllers/Whiteboards/WhiteboardSettingsController';
+ import WhiteboardTimersController from '@/actions/App/Http/Controllers/Whiteboards/WhiteboardTimersController';
++import WhiteboardVoteClosuresController from '@/actions/App/Http/Controllers/Whiteboards/WhiteboardVoteClosuresController';
+ import { Button } from '@/components/ui/button';
+ import {
+     DropdownMenu,
+@@ -14,15 +15,20 @@
+ import type { WhiteboardState } from '@/hooks/use-whiteboard';
+ import { useWhiteboardRequest } from '@/hooks/use-whiteboard-request';
+ import { retroRequest } from '@/lib/retro/api';
++import type { ExcalidrawImperativeAPI } from '@/lib/whiteboard/excalidraw';
++import { VoteDialog } from './vote-dialog';
+ 
+ const Minutes = [1, 3, 5, 10];
+ 
+-/** The facilitator's tools; follow-me and the vote join them in later tasks. */
+-export function FacilitatorBar({ state }: { state: WhiteboardState }) {
++type Props = { state: WhiteboardState; api: ExcalidrawImperativeAPI | null };
++
++/** Timer, board lock, follow-me and vote: the facilitator's tools. */
++export function FacilitatorBar({ state, api }: Props) {
+     const { t } = useTrans();
+     const request = useWhiteboardRequest();
+     const [busy, setBusy] = useState(false);
+-    const { board } = state.snapshot;
++    const [startingVote, setStartingVote] = useState(false);
++    const { board, voting } = state.snapshot;
+ 
+     const setTimer = async (seconds: number | null) => {
+         setBusy(true);
+@@ -54,6 +60,21 @@
+         }
+     };
+ 
++    const closeVote = async (sessionId: string) => {
++        const done = await request(
++            retroRequest(
++                WhiteboardVoteClosuresController.store({
++                    board: board.id,
++                    voteSession: sessionId,
++                }),
++            ),
++        );
++
++        if (done !== undefined) {
++            await state.refetch();
++        }
++    };
++
+     return (
+         <div
+             role="toolbar"
+@@ -115,6 +136,30 @@
+             >
+                 <Presentation className="size-4" />
+             </Button>
++            {voting?.open ? (
++                <Button size="sm" onClick={() => void closeVote(voting.id)}>
++                    {t('Close the vote')}
++                </Button>
++            ) : (
++                <Button
++                    size="sm"
++                    variant="outline"
++                    aria-label={t('Start a vote')}
++                    title={t('Start a vote')}
++                    disabled={api === null}
++                    onClick={() => setStartingVote(true)}
++                >
++                    <Vote className="size-4" />
++                </Button>
++            )}
++            {api && (
++                <VoteDialog
++                    state={state}
++                    api={api}
++                    open={startingVote}
++                    onOpenChange={setStartingVote}
++                />
++            )}
+         </div>
+     );
+ }
+```
+
+"Start a vote" is offered again once a vote is closed: opening a new one puts the old results away (spec §11.4).
+
+- [ ] **Step 6: Wire it** (`resources/js/components/whiteboard/board.tsx`, `board-menu.tsx`)
+
+```diff
+--- a/resources/js/components/whiteboard/board.tsx
++++ b/resources/js/components/whiteboard/board.tsx
+@@ -3,6 +3,7 @@
+ import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+ import { createPortal } from 'react-dom';
+ import { toast } from 'sonner';
++import WhiteboardVotesController from '@/actions/App/Http/Controllers/Whiteboards/WhiteboardVotesController';
+ import { ConnectionBanner } from '@/components/retro/connection-banner';
+ import { SessionExpiredBanner } from '@/components/retro/session-expired-banner';
+ import { TimerDisplay } from '@/components/retro/timer-display';
+@@ -12,7 +13,9 @@
+ import { useWhiteboard } from '@/hooks/use-whiteboard';
+ import { useWhiteboardCursors } from '@/hooks/use-whiteboard-cursors';
+ import { useWhiteboardFollow } from '@/hooks/use-whiteboard-follow';
++import { useWhiteboardRequest } from '@/hooks/use-whiteboard-request';
+ import { useWhiteboardToolbarSlot } from '@/hooks/use-whiteboard-toolbar-slot';
++import { retroRequest } from '@/lib/retro/api';
+ import {
+     Excalidraw,
+     MainMenu,
+@@ -23,15 +26,18 @@
+ import type {
+     RejectReason,
+     SceneElement,
++    VoteTally,
+     WhiteboardSnapshot,
+ } from '@/lib/whiteboard/types';
+ import { BoardGone } from './board-gone';
+ import { BoardMenu } from './board-menu';
+ import { BoardReactions } from './board-reactions';
+ import { FacilitatorBar } from './facilitator-bar';
++import { ResultsPanel } from './results-panel';
+ import { StatusBar } from './status-bar';
+ import { StickyTool } from './sticky-tool';
+ import { TopBar } from './top-bar';
++import { VoteOverlay } from './vote-overlay';
+ 
+ const HideMyCursorKey = 'skrum.hideMyCursor';
+ const PollMs = 5000;
+@@ -60,8 +66,21 @@
+     const { t } = useTrans();
+     const { locale } = usePage().props;
+     const state = useWhiteboard(snapshot);
+-    const { board, me } = state.snapshot;
++    const request = useWhiteboardRequest();
++    const { board, me, voting } = state.snapshot;
+     const viewOnly = board.locked && !me.isFacilitator;
++    const votingOpen = voting?.open ?? false;
++    /** A person's own choice; null follows the vote (open once it closes). */
++    const [panel, setPanel] = useState<{
++        votingId: string | null;
++        open: boolean;
++    } | null>(null);
++    const showsPanel =
++        panel !== null && panel.votingId === (voting?.id ?? null)
++            ? panel.open
++            : voting !== null && !voting.open;
++    const choosePanel = (open: boolean) =>
++        setPanel({ votingId: voting?.id ?? null, open });
+     const [api, setApi] = useState<ExcalidrawImperativeAPI | null>(null);
+     const [offline, setOffline] = useState(false);
+     const [hideMyCursor, setHideMyCursor] = useLocalPreference(
+@@ -80,7 +99,8 @@
+         presence: state.presence,
+         online: state.online,
+         meId: state.snapshot.me.id,
+-        enabled: board.cursorsEnabled,
++        // A named pointer over a note would disclose a vote (spec §11.4).
++        enabled: board.cursorsEnabled && !votingOpen,
+         hidden: hideMyCursor,
+     });
+     const follow = useWhiteboardFollow({
+@@ -163,7 +183,32 @@
+ 
+         return () => clearInterval(poll);
+     }, [state.connected, state.status]);
++
++    const vote = async (elementId: string, count: number) => {
++        if (!voting) {
++            return;
++        }
++
++        const tally = await request(
++            retroRequest<VoteTally>(
++                WhiteboardVotesController.update({
++                    board: board.id,
++                    voteSession: voting.id,
++                    elementId,
++                }),
++                { count },
++            ),
++        );
++
++        if (tally === undefined) {
++            void state.refetch();
+ 
++            return;
++        }
++
++        state.applyTally(voting.id, tally);
++    };
++
+     if (state.status !== 'active') {
+         return (
+             <BoardGone
+@@ -185,7 +230,9 @@
+                         endsAt={board.timerEndsAt}
+                         offset={state.serverOffset}
+                     />
+-                    {me.isFacilitator && <FacilitatorBar state={state} />}
++                    {me.isFacilitator && (
++                        <FacilitatorBar state={state} api={api} />
++                    )}
+                     {api && !toolbarSlot && !viewOnly && (
+                         <StickyTool api={api} />
+                     )}
+@@ -193,6 +240,7 @@
+                         state={state}
+                         hideMyCursor={hideMyCursor}
+                         onHideMyCursorChange={setHideMyCursor}
++                        onShowResults={() => choosePanel(true)}
+                     />
+                 </TopBar>
+                 <ConnectionBanner
+@@ -223,6 +271,29 @@
+                             </Button>
+                         </span>
+                     )}
++                    {voting?.open && (
++                        <span>
++                            {t('Votes left: :count', {
++                                count: voting.remaining,
++                            })}
++                            {' · '}
++                            {t(':count of :total finished voting', {
++                                count: voting.finishedCount ?? 0,
++                                total: state.online.length,
++                            })}
++                            {board.cursorsEnabled &&
++                                ` · ${t('Cursors are hidden while the vote is open.')}`}
++                        </span>
++                    )}
++                    {voting && !voting.open && !showsPanel && (
++                        <Button
++                            size="sm"
++                            variant="outline"
++                            onClick={() => choosePanel(true)}
++                        >
++                            {t('Vote results')}
++                        </Button>
++                    )}
+                 </StatusBar>
+                 {api &&
+                     toolbarSlot &&
+@@ -231,43 +302,65 @@
+                         toolbarSlot,
+                     )}
+                 <div
+-                    ref={canvas}
+-                    className="whiteboard-canvas relative min-h-0 flex-1"
++                    className="whiteboard-canvas relative flex min-h-0 flex-1"
+                     data-facilitator={me.isFacilitator}
+                 >
+-                    <Excalidraw
+-                        viewModeEnabled={viewOnly ? true : undefined}
+-                        excalidrawAPI={setApi}
+-                        initialData={{ elements: initialElements as never }}
+-                        name={board.title}
+-                        onChange={(elements) =>
+-                            sync.current?.handleChange(
+-                                elements as unknown as SceneElement[],
+-                            )
+-                        }
+-                        onPointerUpdate={cursors.onPointerUpdate}
+-                        langCode={ExcalidrawLocales[locale as string] ?? 'en'}
+-                        theme={dark ? 'dark' : 'light'}
+-                        aiEnabled={false}
+-                        UIOptions={{
+-                            canvasActions: {
+-                                loadScene: false,
+-                                saveToActiveFile: false,
+-                                toggleTheme: false,
+-                            },
+-                        }}
++                    <div
++                        ref={canvas}
++                        className="relative min-h-0 min-w-0 flex-1"
+                     >
+-                        {/* The default menu ends with links to the library's own sites. */}
+-                        <MainMenu>
+-                            <MainMenu.DefaultItems.Export />
+-                            <MainMenu.DefaultItems.SaveAsImage />
+-                            <MainMenu.DefaultItems.SearchMenu />
+-                            <MainMenu.DefaultItems.Help />
+-                            <MainMenu.DefaultItems.ClearCanvas />
+-                            <MainMenu.Separator />
+-                            <MainMenu.DefaultItems.ChangeCanvasBackground />
+-                        </MainMenu>
+-                    </Excalidraw>
++                        <Excalidraw
++                            viewModeEnabled={viewOnly ? true : undefined}
++                            excalidrawAPI={setApi}
++                            initialData={{ elements: initialElements as never }}
++                            name={board.title}
++                            onChange={(elements) =>
++                                sync.current?.handleChange(
++                                    elements as unknown as SceneElement[],
++                                )
++                            }
++                            onPointerUpdate={cursors.onPointerUpdate}
++                            langCode={
++                                ExcalidrawLocales[locale as string] ?? 'en'
++                            }
++                            theme={dark ? 'dark' : 'light'}
++                            aiEnabled={false}
++                            UIOptions={{
++                                canvasActions: {
++                                    loadScene: false,
++                                    saveToActiveFile: false,
++                                    toggleTheme: false,
++                                },
++                            }}
++                        >
++                            {/* The default menu ends with links to the library's own sites. */}
++                            <MainMenu>
++                                <MainMenu.DefaultItems.Export />
++                                <MainMenu.DefaultItems.SaveAsImage />
++                                <MainMenu.DefaultItems.SearchMenu />
++                                <MainMenu.DefaultItems.Help />
++                                <MainMenu.DefaultItems.ClearCanvas />
++                                <MainMenu.Separator />
++                                <MainMenu.DefaultItems.ChangeCanvasBackground />
++                            </MainMenu>
++                        </Excalidraw>
++                        {api && voting && (
++                            <VoteOverlay
++                                api={api}
++                                voting={voting}
++                                onVote={(elementId, count) =>
++                                    void vote(elementId, count)
++                                }
++                            />
++                        )}
++                    </div>
++                    {api && showsPanel && (
++                        <ResultsPanel
++                            state={state}
++                            api={api}
++                            onClose={() => choosePanel(false)}
++                        />
++                    )}
+                 </div>
+                 <BoardReactions state={state} />
+             </div>
+```
+
+Points to keep when applying it:
+- **Cursors**: `enabled: board.cursorsEnabled && !votingOpen`. With the transport gone the hook neither sends nor draws and clears the pointers it had (spec §11.4). This is the one rule of this plan the server cannot enforce: whispers never pass through it.
+- **Layout**: the outer row keeps the class `whiteboard-canvas` and `data-facilitator` (the reactions bar must stay its sibling, see Task 5), and is `relative flex`; the inner element carries `ref={canvas}`, is `relative min-w-0 flex-1`, and holds the canvas and the overlay; the panel is the row's second child.
+- **Panel**: it opens by itself when a vote is closed and not dismissed; a person's own choice (close, or reopen from the status row or the menu) wins for that vote only, because the choice is stored with the vote's id.
+- A vote that fails says why in a toast and refetches the snapshot, so the controls show the truth again.
+
+```diff
+--- a/resources/js/components/whiteboard/board-menu.tsx
++++ b/resources/js/components/whiteboard/board-menu.tsx
+@@ -33,15 +33,19 @@
+     state: WhiteboardState;
+     hideMyCursor: boolean;
+     onHideMyCursorChange: (hidden: boolean) => void;
++    onShowResults: () => void;
+ };
+ 
+ export function BoardMenu({
+     state,
+     hideMyCursor,
+     onHideMyCursorChange,
++    onShowResults,
+ }: Props) {
+     const { t } = useTrans();
+-    const { board, me, links } = state.snapshot;
++    const { board, me, links, voting, votingHistory } = state.snapshot;
++    const hasResults =
++        votingHistory.length > 0 || (voting !== null && !voting.open);
+     const [renaming, setRenaming] = useState(false);
+     const [confirmingDelete, setConfirmingDelete] = useState(false);
+     const [savingTemplate, setSavingTemplate] = useState(false);
+@@ -166,6 +170,11 @@
+                             >
+                                 {t('Save as template')}
+                             </DropdownMenuItem>
++                            {hasResults && (
++                                <DropdownMenuItem onSelect={onShowResults}>
++                                    {t('Vote results')}
++                                </DropdownMenuItem>
++                            )}
+                         </>
+                     )}
+                     {me.isFacilitator && (
+```
+
+Guests receive an empty `votingHistory`, so for them the entry exists only while closed results are on the board.
+
+- [ ] **Step 7: Translation keys** (append to each `lang/*.json`; `en.json` with value = key)
 
 | Key (English) | French | German | Spanish |
 |---|---|---|---|
@@ -3359,12 +5471,13 @@ const vote = async (elementId: string, count: number) => {
 | This note is no longer on the board. | Ce post-it n'est plus sur le tableau. | Diese Haftnotiz ist nicht mehr auf dem Board. | Esta nota ya no está en la pizarra. |
 | Empty note | Post-it vide | Leere Haftnotiz | Nota vacía |
 | No votes were cast. | Aucun vote n'a été exprimé. | Es wurden keine Stimmen abgegeben. | No se emitió ningún voto. |
-| Votes per participant, Add a vote, Remove a vote, Your votes: :count, Votes left: :count, :count vote, :count votes, Close, Cancel, Something went wrong. Please try again. | exist | exist | exist |
 
-- [ ] **Step 7: Gates and commit**
+Already in the four files (checked with `grep` at reconciliation; do not add again): `Votes per participant`, `Add a vote`, `Remove a vote`, `Your votes: :count`, `Votes left: :count`, `:count vote`, `:count votes`, `Close`, `Cancel`, `Something went wrong. Please try again.`
+
+- [ ] **Step 8: Gates and commit**
 
 Run: `npm run build && npm run types:check && npx vp check resources/js/hooks/use-whiteboard-overlay.ts resources/js/components/whiteboard && DB_HOST=127.0.0.1 php artisan test --compact tests/Feature/TranslationKeysTest.php`
-Expected: no error in these files; test PASS.
+Expected: only the known `manage-passkeys.tsx` type error; no `vp check` failure; test PASS.
 
 ```bash
 git add resources/js/hooks/use-whiteboard-overlay.ts resources/js/components/whiteboard/vote-dialog.tsx resources/js/components/whiteboard/vote-overlay.tsx resources/js/components/whiteboard/results-panel.tsx resources/js/components/whiteboard/facilitator-bar.tsx resources/js/components/whiteboard/board.tsx resources/js/components/whiteboard/board-menu.tsx lang/en.json lang/fr.json lang/de.json lang/es.json
@@ -3372,10 +5485,10 @@ git commit -m "feat(whiteboard): dot voting on the board, with badges and a resu
 ```
 
 **Browser checks:**
-- B7.1 Facilitator: the vote button opens a dialog (votes per participant, scope, several votes per note). A board without notes answers "There are no sticky notes to vote on." inside the dialog. With a frame on the board the scope lists "Notes in <frame name>".
-- B7.2 Vote open: every in-scope note has a vote control at its top-right corner in A and B; a note added afterwards has none. The controls stay on their notes while panning, zooming, and while a note is dragged; a control that scrolls under the shapes toolbar passes **behind** it, and none lies over the canvas's bottom controls or the reactions bar.
-- B7.3 B votes: B's control shows B's count, the status row counts down "Votes left", A's page shows nothing of B's vote (no count on the note, no change but "x of y finished voting" when B spends the last one). At a budget of zero the "+" / toggle of other notes is disabled; forcing it (`fetch` the PUT with a higher count) answers 422 and shows "You have no votes left.".
-- B7.4 While the vote is open no remote cursor is drawn in A or B even with "Show live cursors" on; they come back when it closes.
+- B7.1 Facilitator: the vote button opens a dialog (votes per participant, scope, several votes per note). A board without notes answers "There are no sticky notes to vote on." inside the dialog, which stays open. With a frame on the board the scope lists "Notes in <frame name>" (or "Notes in Frame 1" for a frame without a name).
+- B7.2 Vote open: every in-scope note has a vote control at its top-right corner in A and B; a note added afterwards has none. The controls stay on their notes while panning, zooming, and while a note is dragged; a control that scrolls under the shapes toolbar passes **behind** it, and none lies over the canvas's bottom controls or the reactions bar. The canvas still fills its area and the reactions bar sits where it did before this plan. (If a control covers a canvas control, do not raise the canvas controls: clip the overlay to the drawing area and say so.)
+- B7.3 B votes: B's control shows B's count, the status row counts down "Votes left", A's page shows nothing of B's vote (no count on the note, no change but "x of y finished voting" when B spends the last one). At a budget of zero the "+" or the toggle of other notes is disabled; forcing it (`fetch` the PUT with a higher count) answers 422 "You have no votes left.".
+- B7.4 While the vote is open no remote cursor is drawn in A or B even with "Show live cursors" on, and the status row says so; they come back when it closes.
 - B7.5 B double-clicks an in-scope note and types: the text snaps back and the toast "Notes cannot be edited while a vote is open." shows; B can still drag, recolour and resize it, and A sees those. A (facilitator) is refused the same way.
 - B7.6 A deletes a note B voted for: B's "Votes left" goes back up within about 2 s without a reload.
 - B7.7 A second tab of B on the same board shows B's votes within about 2 s of a vote cast in the first tab.
@@ -3399,32 +5512,36 @@ git commit -m "feat(whiteboard): dot voting on the board, with badges and a resu
 
 - [ ] **Step 1: Write the walkthrough file**
 
-Title `# Plan 17c — whiteboard facilitation: walkthrough`, a "Before starting" paragraph (`vendor/bin/sail artisan migrate --no-interaction`, `npm run build`; accounts, origins and the rules for tabs from `.superpowers/sdd/whiteboard-rules.md`: member A "Fran Facilitator" on `http://localhost`, guest B on `http://127.0.0.1`, `member@skrum.test` on `127.0.0.1` when a second member is needed), then one section per acceptance criterion of spec §16 "Facilitation (R7–R8)", in this order, each with an unticked `- [ ]` line per check written as **Setup → Action → Expected**:
+Title `# Plan 17c — whiteboard facilitation: walkthrough`. Then a "Before starting" section: `vendor/bin/sail artisan migrate --no-interaction`, `npm run build`; accounts, origins and the rules for tabs from `.superpowers/sdd/whiteboard-rules.md` — member A "Fran Facilitator" on `http://localhost`, guest B on `http://127.0.0.1` (guest access enabled on the board, token read with `docker exec skrum-pgsql-1 psql -U sail -d skrum -At -c "select guest_token from whiteboards where id='<board id>'"`), and `member@skrum.test` on `127.0.0.1` for the lines that say "second member" (one account per origin: finish with the guest first). Say in that section that **a guest is enough for every criterion** (a guest is a non-facilitator, votes, is locked out and follows), so that the walkthrough does not depend on a second login; only B7.9's "for a member" and B6.5's take-over need the second member, and each such line says how to check the same thing through `GET snapshot` when that login cannot be made. Never trigger a native dialog; when a canvas input cannot be driven after two attempts, check the same thing through the board's JSON endpoints and say so on the line.
+
+Then one section per acceptance criterion of spec §16 "Facilitation (R7–R8)", in this order, each with an unticked `- [ ]` line per check written as **Setup → Action → Expected**, and the browser checks of Tasks 5–7 copied in full under the section named here (each as its own unticked line, with its id):
 
 1. **Given the facilitator starts a 60-second timer, then every browser shows the same countdown and "Time's up" at zero.** Setup: A facilitates, B is on the board. Action: A starts "1 min". Expected: both show the same remaining time (read the `role="timer"` text in both within the same second), both show "Time's up!" at zero; `GET snapshot` gives the same `timerEndsAt` to both. Include B5.1, B5.2.
 2. **Given the board is locked, when a non-facilitator writes an element, then the server answers 403 and the element is unchanged; the facilitator can still edit.** Setup: one shape on the board. Action: A locks; B tries to draw, then sends a `PUT elements` by `fetch`; A moves the shape. Expected: B is in view mode; the `fetch` answers 403 with `errors.locked`; the shape in `GET snapshot` is unchanged by B and changed by A. Include B5.3, B5.4, B5.5, B5.8.
-3. **Given a locked element, when a non-facilitator moves or unlocks it, then the write is rejected and their canvas returns to the server copy.** Setup: A locks one shape on an unlocked board. Action: B drags it; B sends a `PUT elements` with `locked: false`. Expected: the shape is back in place on B's canvas; the response's `rejected[0].reason` is `locked` and carries the stored copy; no lock entry in B's context menu. Include B5.6.
-4. **Given follow-me is on, when the facilitator pans, then followers' views follow; a follower who pans sees "Following paused" and "Resume" re-attaches them.** Include B6.1–B6.6.
-5. **Given an open voting session, then no payload received by any member contains another member's votes or any total (feature tests), and a member cannot exceed their budget.** Setup: A opens a vote with 3 votes; B votes twice. Action: in A's tab read `GET snapshot` and `GET vote-sessions/<id>` by `fetch`, and watch A's page. Expected: A's `voting.myVotes` is empty, there is no total and no other member's vote anywhere in the two bodies; B's fourth vote answers 422. State that the invariant itself is proved by `WhiteboardVotingSecrecyTest`, not by this replay. Include B7.1–B7.4, B7.7, B7.10.
+3. **Given a locked element, when a non-facilitator moves or unlocks it, then the write is rejected and their canvas returns to the server copy.** Setup: A locks one shape on an unlocked board. Action: B drags it; B sends a `PUT elements` with `locked: false` and a higher version. Expected: the shape is back in place on B's canvas; the response's `rejected[0].reason` is `locked` and carries the stored copy; no lock entry in B's context menu. Include B5.6.
+4. **Given follow-me is on, when the facilitator pans, then followers' views follow; a follower who pans sees "Following paused" and "Resume" re-attaches them.** Setup: a board with content spread over more than one screen. Include B6.1–B6.7. For B6.5's take-over without a second login: check instead that `PUT facilitator` by the second member is pinned by `WhiteboardFacilitationTest` and that after A hands over and takes control back, `followEnabled` is false in `GET snapshot`.
+5. **Given an open voting session, then no payload received by any member contains another member's votes or any total (feature tests), and a member cannot exceed their budget.** Setup: A opens a vote with 3 votes; B votes twice. Action: in A's tab read `GET snapshot` and `GET vote-sessions/<id>` by `fetch`, and watch A's page. Expected: A's `voting.myVotes` is empty, there is no total and no other member's vote anywhere in the two bodies; B's fourth vote answers 422. State on the section's first line that the invariant itself is proved by `WhiteboardVotingSecrecyTest`, not by this replay. Include B7.1–B7.4, B7.7, B7.10.
 6. **Given a closed session, then every member sees the same counts on notes and the same ranked list.** Include B7.8, B7.9, B7.11.
 7. **Given an open session, when a sticky in scope has its text changed, then the write is rejected.** Include B7.5, B7.6.
 
-Then a section **"Around the criteria"** with B5.7 (hand-over dialog), B6.7, B7.12, and a check that the reactions bar, the shapes toolbar and the canvas's bottom controls are never covered by the status row, the overlay or the panel (screenshots at 1280 px and 375 px, vote open and vote closed).
+Then a section **"Around the criteria"** with B5.7 (hand-over dialog; A hands over to a listed member and takes control back, which needs no second browser), B7.12, a check that a timer left running disappears from the top bar of a browser that opens the board more than five minutes after its end (set `timer_ends_at` in the past with `docker exec … psql … "update whiteboards set timer_ends_at = now() - interval '6 minutes' where id = '<id>'"` and reload), and a check that the reactions bar, the shapes toolbar and the canvas's bottom controls are never covered by the status row, the overlay or the panel (screenshots at 1280 px and 375 px, vote open and vote closed).
+
+Then **"Regression of 17a and 17b basics"**: a new board from a template still opens, a sticky note added by A reaches B within a second, a reload keeps the scene with no write-back, "Duplicate this board" and "Save as template" still work from the menu, and the copy has no vote, no lock and no timer.
 
 End with **"Feature tests that pin these criteria"**: `WhiteboardTimerTest`, `WhiteboardLockTest`, `WhiteboardElementWritesTest` (element lock), `WhiteboardFacilitationTest`, `WhiteboardVotingTest`, `WhiteboardVotingSecrecyTest`, `WhiteboardVotingWritesTest`, `WhiteboardVoteModelTest`, and a note that follow-me has no server rule to test (whispers never reach the server) and that "blocked while private writing is on" arrives with 17d.
 
-- [ ] **Step 2: Full gates**
+- [ ] **Step 2: Full gates** (one command at a time: two test runs at once share one database and break each other)
 
 ```bash
 vendor/bin/pint --dirty --format agent
+vendor/bin/phpstan analyse --memory-limit=1G app/Models app/Events/Whiteboards app/Http/Controllers/Whiteboards app/Actions/Whiteboards database/factories/WhiteboardVoteSessionFactory.php database/factories/WhiteboardVoteFactory.php
 DB_HOST=127.0.0.1 php -d memory_limit=-1 vendor/bin/pest --compact
-composer lint
 npm run build && npm run types:check
-npx vp check resources/js/lib/whiteboard resources/js/components/whiteboard resources/js/hooks/use-whiteboard.ts resources/js/hooks/use-whiteboard-channel.ts resources/js/hooks/use-whiteboard-request.ts resources/js/hooks/use-whiteboard-follow.ts resources/js/hooks/use-whiteboard-overlay.ts
+npx vp check resources/js/lib/whiteboard resources/js/components/whiteboard resources/js/hooks/use-whiteboard.ts resources/js/hooks/use-whiteboard-channel.ts resources/js/hooks/use-whiteboard-request.ts resources/js/hooks/use-whiteboard-follow.ts resources/js/hooks/use-whiteboard-overlay.ts resources/css/app.css
 vendor/bin/sail artisan migrate --no-interaction
 ```
 
-Expected: the suite passes; PHPStan and Pint clean; `types:check` shows only the known `manage-passkeys.tsx` error; no `vp check` failure in the listed files. Also confirm that `git diff <commit before Task 1> -- package.json composer.json` is empty (no new dependency) and that `grep -rn "excalidraw" resources/js --include=*.tsx --include=*.ts -il` lists no file outside `resources/js/lib/whiteboard/`, `resources/js/components/whiteboard/` and the whiteboard hooks.
+Expected: the suite passes; PHPStan and Pint clean; `types:check` shows only the known `manage-passkeys.tsx` error; no `vp check` failure in the listed files. Also confirm that `git diff 322c88b -- package.json composer.json` is empty (no new dependency) and that `grep -rl "@excalidraw/excalidraw" resources/js` lists only `resources/js/lib/whiteboard/excalidraw.ts`.
 
 - [ ] **Step 3: Check the spec against what was built**
 
@@ -3441,22 +5558,65 @@ git commit -m "docs(whiteboard): walkthrough for the timer, the lock, follow-me 
 
 (Add any fixed file by its explicit path to the same or a separate commit.)
 
+**Translation keys added by this task:** none.
+
 ---
 
-## Assumptions to reconcile
+## Appendix A — Translation keys
 
-Written at commit `e0524df` (plan 17b Tasks 1–7 merged, Tasks 8–9 in progress), in a worktree that could not run anything. Check each before executing:
+Every key this plan adds, with the task that adds it. `en.json` holds each key with itself as value. Keys are appended at the end of each file (the files are not sorted).
 
-1. **Nothing here was run.** PHP snippets and every test are unexecuted. Expect small corrections (a key order compared with `toBe`, a factory default, a PHPStan generic); the behaviour stated in the spec and in each test's name is what counts.
-2. **Plan 17b Task 8 (board UI)** was uncommitted: `board-menu.tsx` will already hold "Duplicate this board" and "Save as template" with a `SaveTemplateDialog`, and `board.tsx` a `name` prop on the canvas. Tasks 5 and 7 add to these files; place the new menu items next to what is there (hand-over in the facilitator block, "Vote results" with the member entries) and keep 17b's.
-3. **Plan 17b Task 9 (acceptance)** may have changed files this plan edits (`WhiteboardGuard`, `scene-sync.ts`, `lang/*.json`, a migration). Re-read them; if a whiteboard migration dated `2026_10_11` or later exists, date this plan's after it.
-4. **`lang/*.json`** were being edited: run the `grep` for each key before adding it; the tables say which keys this plan believes exist.
-5. **Routes used by tests of other features:** `whiteboards.duplicate.store` and `whiteboards.template.store` (17b) are called by Tasks 2 and 4; their controllers are assumed unchanged (`WhiteboardGuard::notGuest`, 201).
-6. **`WriteWhiteboardElements`** is assumed as at `e0524df` (local variables `$locked`, `$stored`, `$saved`, `$accepted`, `$rejected`, `$liveCount`, methods `refusal`, `isSameWrite`, `rejection`, `storedElements`, `rawId`, `save`). If 17b's review changed it, apply Task 4's rule to the new shape rather than its snippets.
-7. **The scoped binding** of `{voteSession}` relies on the relation name `voteSessions`; Wayfinder then names the parameters `board`, `voteSession`, `elementId`. Check the generated `resources/js/actions/App/Http/Controllers/Whiteboards/WhiteboardVotesController.ts` after the first `npm run build`.
-8. **Test helper names** added here (`whiteboardSticky`, `openWhiteboardVote`, `castWhiteboardVote`, `lockedBoard`, `lockedBoardEdit`, `openVoteRequest`, `voteRequest`, `closeVoteRequest`, `votingRoom`, `openVotingFor`, `boardUnderVote`, `writeDuringVote`) must not exist yet: `grep -rn "^function " tests`.
-9. **Canvas stacking.** The overlay at `z-index: 3` under the canvas controls rests on the reading of the library's stylesheet cited in Task 7; B7.2 is the proof. If a control ends up covered, do not raise the canvas controls: clip the overlay to the drawing area instead (inset it by the toolbar's height) and say so.
-10. **View mode.** That the canvas leaves view mode when the prop goes from `true` to `undefined`, and that an unfinished text edit is abandoned when view mode starts, were read in the bundle, not seen: B5.3 and B5.5 are the proof.
-11. **Follow-me's pause** relies on the canvas reporting back exactly the scroll and zoom it was given. If B6.1 shows followers pausing on their own, compare with a small tolerance (1e-6) instead of `===`.
-12. **`Log::listen`** in the secrecy test assumes the test log channel dispatches `MessageLogged`; if the channel is `null` in `phpunit.xml`, the assertion still holds (nothing is logged) but proves less: then spy on `Log` instead.
-13. **Second member account.** The walkthrough needs `member@skrum.test` on `127.0.0.1` for the hand-over check; the rules file says it exists in `DemoSeeder`.
+| Task | Key (English) | French | German | Spanish |
+|---|---|---|---|---|
+| 2 | This board is locked. | Ce tableau est verrouillé. | Dieses Board ist gesperrt. | Esta pizarra está bloqueada. |
+| 3 | A vote is already open. | Un vote est déjà en cours. | Es läuft bereits eine Abstimmung. | Ya hay una votación abierta. |
+| 3 | This vote is closed. | Ce vote est clos. | Diese Abstimmung ist geschlossen. | Esta votación está cerrada. |
+| 3 | Choose a frame of this board. | Choisissez un cadre de ce tableau. | Wählen Sie einen Rahmen dieses Boards. | Elige un marco de esta pizarra. |
+| 3 | There are no sticky notes to vote on. | Il n'y a aucun post-it sur lequel voter. | Es gibt keine Haftnotizen, über die abgestimmt werden kann. | No hay notas adhesivas sobre las que votar. |
+| 3 | Only one vote per note is allowed. | Un seul vote par post-it est autorisé. | Pro Haftnotiz ist nur eine Stimme erlaubt. | Solo se permite un voto por nota. |
+| 3 | This note is not part of the vote. | Ce post-it ne fait pas partie du vote. | Diese Haftnotiz gehört nicht zur Abstimmung. | Esta nota no forma parte de la votación. |
+| 3 | Close the vote first. | Clôturez d'abord le vote. | Schließen Sie zuerst die Abstimmung. | Cierra primero la votación. |
+| 5 | Facilitation tools | Outils d'animation | Moderationswerkzeuge | Herramientas de facilitación |
+| 5 | Lock the board | Verrouiller le tableau | Board sperren | Bloquear la pizarra |
+| 5 | Unlock the board | Déverrouiller le tableau | Board entsperren | Desbloquear la pizarra |
+| 5 | Notes cannot be edited while a vote is open. | Les post-it ne peuvent pas être modifiés pendant un vote. | Haftnotizen können während einer Abstimmung nicht bearbeitet werden. | Las notas no se pueden editar mientras hay una votación abierta. |
+| 5 | No one else can facilitate this board yet. | Personne d'autre ne peut encore animer ce tableau. | Noch kann niemand sonst dieses Board moderieren. | Nadie más puede facilitar esta pizarra todavía. |
+| 6 | Bring everyone to me | Amener tout le monde à ma vue | Alle zu meiner Ansicht holen | Traer a todos a mi vista |
+| 6 | Everyone follows your view. | Tout le monde suit votre vue. | Alle folgen Ihrer Ansicht. | Todos siguen tu vista. |
+| 6 | Following the facilitator | Vous suivez l'animateur | Sie folgen dem Moderator | Siguiendo al facilitador |
+| 6 | Following paused | Suivi en pause | Folgen pausiert | Seguimiento en pausa |
+| 6 | Resume | Reprendre | Fortsetzen | Reanudar |
+| 7 | Start a vote | Lancer un vote | Abstimmung starten | Iniciar una votación |
+| 7 | Close the vote | Clôturer le vote | Abstimmung schließen | Cerrar la votación |
+| 7 | Notes to vote on | Post-it soumis au vote | Haftnotizen zur Abstimmung | Notas sometidas a votación |
+| 7 | All sticky notes | Tous les post-it | Alle Haftnotizen | Todas las notas adhesivas |
+| 7 | Notes in :name | Post-it dans :name | Haftnotizen in :name | Notas en :name |
+| 7 | Frame :number | Cadre :number | Rahmen :number | Marco :number |
+| 7 | Allow several votes on one note | Autoriser plusieurs votes sur un même post-it | Mehrere Stimmen pro Haftnotiz erlauben | Permitir varios votos en una misma nota |
+| 7 | Vote for this note | Voter pour ce post-it | Für diese Haftnotiz stimmen | Votar por esta nota |
+| 7 | :count of :total finished voting | :count sur :total ont terminé de voter | :count von :total haben fertig abgestimmt | :count de :total han terminado de votar |
+| 7 | Cursors are hidden while the vote is open. | Les curseurs sont masqués pendant le vote. | Cursor sind während der Abstimmung ausgeblendet. | Los cursores están ocultos durante la votación. |
+| 7 | Vote results | Résultats du vote | Abstimmungsergebnisse | Resultados de la votación |
+| 7 | Hide the results | Masquer les résultats | Ergebnisse ausblenden | Ocultar los resultados |
+| 7 | Previous votes | Votes précédents | Frühere Abstimmungen | Votaciones anteriores |
+| 7 | Show on the board | Afficher sur le tableau | Auf dem Board anzeigen | Mostrar en la pizarra |
+| 7 | This note is no longer on the board. | Ce post-it n'est plus sur le tableau. | Diese Haftnotiz ist nicht mehr auf dem Board. | Esta nota ya no está en la pizarra. |
+| 7 | Empty note | Post-it vide | Leere Haftnotiz | Nota vacía |
+| 7 | No votes were cast. | Aucun vote n'a été exprimé. | Es wurden keine Stimmen abgegeben. | No se emitió ningún voto. |
+
+## Appendix B — What was reconciled, and what only a browser can show
+
+The draft of this plan was written at `e0524df`, before plan 17b was finished and without being run. It was reconciled at `322c88b` by building the whole plan once in the tree and removing it again.
+
+**Run and green on the prototype:** all tests of Tasks 1–4 (seen failing first for the reasons the tasks state, the id `"0"` defect of `WriteWhiteboardElements::storedElements()` included); `tests/Feature/Whiteboards` together with `UuidPrimaryKeysTest` and `TranslationKeysTest`; the complete suite; Pint; PHPStan on the paths of Task 8; `npm run build`, `npm run types:check` and `npx vp check` at the end states of Tasks 5, 6 and 7. The log secrecy test was checked to fail when a vote is logged.
+
+**Corrected against the draft:**
+1. Two PHPStan errors in code the draft gave: `tally()` must return a list (`array_values`), and `$current?->count ?? 0` is refused (`nullsafe.neverNull`).
+2. The results panel must not wrap the element that carries the class `whiteboard-canvas` away from the reactions bar: four CSS rules of plan 17a place the bar with sibling selectors. The class now sits on the row that holds the canvas and the panel.
+3. Follow-me: nothing can pause before the first view has been applied (the canvas moves on its own while it opens); a discard asked for while the scene is already being reloaded is no longer lost.
+4. The countdown: a board outlives its sessions, so the snapshot stops reporting a timer five minutes after its end (spec §11.1, decision 8), and the "cursors are hidden" notice is shown only when cursors are otherwise on.
+5. Test added from the draft's last revision: people outside the team are refused on every facilitation endpoint.
+6. Frontend tasks now carry complete, type-checked listings instead of descriptions.
+7. Names confirmed, not changed: Wayfinder parameters `board`, `voteSession`, `elementId`; the migration date `2026_10_11_100000` (the latest whiteboard migration is still `2026_10_10_100000`); none of the helper names this plan adds existed.
+
+**Not verified, because only a browser can** (each is a browser check): the overlay's stacking between the drawing and the canvas's controls (B7.2); that the canvas leaves view mode when the prop goes back to `undefined` and abandons an unfinished text edit when view mode starts (B5.3, B5.5); that the canvas reports back exactly the scroll and zoom it was given (B6.1); the height of the canvas inside the new row (B5.1, B7.2); that the lock entries of the context menu are inside `.whiteboard-canvas` (B5.6).
