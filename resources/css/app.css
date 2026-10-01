@@ -146,3 +146,20 @@
 .excalidraw .default-sidebar-trigger {
     display: none;
 }
+
+/*
+ * Nor for what names the library or links to its sites: the help dialog's
+ * header (documentation, blog, issues, YouTube), the tabs of the search
+ * panel (the other tab is the element library, whose "Browse libraries" and
+ * publish dialog link out), and everything after the laser pointer in the
+ * extra tools (the "Generate" heading and "Mermaid to Excalidraw").
+ */
+.excalidraw .HelpDialog__header,
+.excalidraw .default-sidebar .sidebar-triggers,
+.excalidraw .library-menu-browse-button,
+.excalidraw
+    .App-toolbar__extra-tools-dropdown
+    [data-testid='toolbar-laser']
+    ~ * {
+    display: none;
+}

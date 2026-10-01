@@ -9,6 +9,7 @@ import { useWhiteboard } from '@/hooks/use-whiteboard';
 import { useWhiteboardCursors } from '@/hooks/use-whiteboard-cursors';
 import {
     Excalidraw,
+    MainMenu,
     type ExcalidrawImperativeAPI,
 } from '@/lib/whiteboard/excalidraw';
 import { restoreScene } from '@/lib/whiteboard/restore';
@@ -172,6 +173,7 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
                         onPointerUpdate={cursors.onPointerUpdate}
                         langCode={ExcalidrawLocales[locale as string] ?? 'en'}
                         theme={dark ? 'dark' : 'light'}
+                        aiEnabled={false}
                         UIOptions={{
                             canvasActions: {
                                 loadScene: false,
@@ -179,7 +181,18 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
                                 toggleTheme: false,
                             },
                         }}
-                    />
+                    >
+                        {/* The default menu ends with links to the library's own sites. */}
+                        <MainMenu>
+                            <MainMenu.DefaultItems.Export />
+                            <MainMenu.DefaultItems.SaveAsImage />
+                            <MainMenu.DefaultItems.SearchMenu />
+                            <MainMenu.DefaultItems.Help />
+                            <MainMenu.DefaultItems.ClearCanvas />
+                            <MainMenu.Separator />
+                            <MainMenu.DefaultItems.ChangeCanvasBackground />
+                        </MainMenu>
+                    </Excalidraw>
                 </div>
             </div>
         </div>

@@ -6,6 +6,7 @@ import type { ComponentProps } from 'react';
 export {
     CaptureUpdateAction,
     Excalidraw,
+    MainMenu,
     reconcileElements,
     restoreElements,
 } from '@excalidraw/excalidraw';
