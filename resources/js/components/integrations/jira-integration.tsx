@@ -24,6 +24,7 @@ import { IntegrationCard } from './integration-card';
 import { IntegrationDetails } from './integration-details';
 import { PeoplePanel } from './people-panel';
 import { PrioritiesPanel } from './priorities-panel';
+import { StatusSyncSection } from './status-sync-section';
 import { StoryPointsField } from './story-points-field';
 
 type Props = {
@@ -218,6 +219,13 @@ function ConnectedJira({
                                 />
                             </>
                         )}
+                    {connection.status === 'active' && (
+                        <StatusSyncSection
+                            scope={scope}
+                            card={card}
+                            connection={connection}
+                        />
+                    )}
                 </>
             )}
         </IntegrationCard>

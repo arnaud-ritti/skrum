@@ -11,6 +11,7 @@ import {
     type PokerTaskExternal,
 } from '@/lib/poker/types';
 import { retroRequest } from '@/lib/retro/api';
+import { EstimateConflict } from './estimate-conflict';
 import { useGame } from './game-context';
 
 type Props = { task: PokerTask; external: PokerTaskExternal };
@@ -76,6 +77,24 @@ export function TaskSourceDetails({ task, external }: Props) {
                     </span>
                 )}
                 <SyncBadge external={external} source={source} />
+                {external.statusCategory === 'done' && (
+                    <Badge variant="secondary">
+                        {t('Done in :source', { source })}
+                    </Badge>
+                )}
+                {external.statusCategory !== 'done' && external.status && (
+                    <Badge variant="outline">
+                        {t(':status in :source', {
+                            status: external.status,
+                            source,
+                        })}
+                    </Badge>
+                )}
+                {external.missing && (
+                    <Badge variant="destructive">
+                        {t('Not found in :source', { source })}
+                    </Badge>
+                )}
                 {canSync && (
                     <Button
                         size="sm"
@@ -90,6 +109,13 @@ export function TaskSourceDetails({ task, external }: Props) {
                     </Button>
                 )}
             </div>
+            {external.estimateConflict && (
+                <EstimateConflict
+                    task={task}
+                    conflict={external.estimateConflict}
+                    source={source}
+                />
+            )}
             {external.syncState === 'failed' && external.syncError && (
                 <p className="text-destructive">{external.syncError}</p>
             )}

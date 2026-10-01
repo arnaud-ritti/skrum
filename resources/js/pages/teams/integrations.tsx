@@ -6,6 +6,7 @@ import { JiraDataCenterIntegration } from '@/components/integrations/jira-data-c
 import { JiraIntegration } from '@/components/integrations/jira-integration';
 import { LinearIntegration } from '@/components/integrations/linear-integration';
 import { SlackIntegration } from '@/components/integrations/slack-integration';
+import { StatusSyncSection } from '@/components/integrations/status-sync-section';
 import { UrlChannelIntegration } from '@/components/integrations/url-channel-integration';
 import { WebhookIntegration } from '@/components/integrations/webhook-integration';
 import { TelegramIntegration } from '@/components/integrations/telegram-integration';
@@ -122,6 +123,15 @@ export default function TeamIntegrations({
                                     key={card.provider}
                                     card={card}
                                     scope={scope}
+                                    statusSection={
+                                        card.connection && (
+                                            <StatusSyncSection
+                                                scope={scope}
+                                                card={card}
+                                                connection={card.connection}
+                                            />
+                                        )
+                                    }
                                 />
                             );
                         case 'github':
@@ -130,6 +140,15 @@ export default function TeamIntegrations({
                                     key={card.provider}
                                     card={card}
                                     scope={scope}
+                                    statusSection={
+                                        card.connection && (
+                                            <StatusSyncSection
+                                                scope={scope}
+                                                card={card}
+                                                connection={card.connection}
+                                            />
+                                        )
+                                    }
                                 />
                             );
                         default:

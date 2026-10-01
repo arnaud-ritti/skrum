@@ -156,6 +156,10 @@ function replaceActionItem(
                   isMine: incoming.isMine || item.isMine,
                   commentsRevision: item.commentsRevision,
                   externalLinks: incoming.externalLinks ?? item.externalLinks,
+                  completedVia:
+                      incoming.completedAt === null
+                          ? null
+                          : (incoming.completedVia ?? item.completedVia),
               }
             : item,
     );

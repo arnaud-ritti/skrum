@@ -34,6 +34,11 @@ export type PokerSyncState = 'synced' | 'pending' | 'failed' | 'unsupported';
  * Guests and broadcasts only get source, key, url and isManaged; the other
  * fields come with the snapshot of a non-guest player.
  */
+export type PokerEstimateConflict = {
+    sourceEstimate: string;
+    matchingCard: string | null;
+};
+
 export type PokerTaskExternal = {
     source: PokerTrackerSource;
     key: string;
@@ -45,6 +50,11 @@ export type PokerTaskExternal = {
     syncState?: PokerSyncState | null;
     syncError?: string | null;
     unsupportedReason?: string | null;
+    status?: string | null;
+    statusCategory?: 'todo' | 'in_progress' | 'done' | null;
+    missing?: boolean;
+    estimateConflict?: PokerEstimateConflict | null;
+    syncMode?: 'webhook' | 'polling' | 'off';
 };
 
 export type PokerTrackerConnection = { connected: boolean; canWrite: boolean };

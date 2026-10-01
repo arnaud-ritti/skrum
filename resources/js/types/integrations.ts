@@ -55,6 +55,8 @@ export type IntegrationSettings = {
     exportRepositoryId?: string;
     exportRepositoryName?: string | null;
     priorityLabels?: Partial<Record<PriorityLevel, string | null>>;
+    treatCanceledAsDone?: boolean;
+    statusMapping?: StatusMapping;
 };
 
 export type TeamIntegration = {
@@ -69,6 +71,12 @@ export type TeamIntegration = {
     lastCheckedAt: string | null;
     lastError: string | null;
     webhook: WebhookHealth | null;
+    statusSync: boolean;
+    inboundMode: InboundMode;
+    webhookStatus: WebhookStatus | null;
+    lastInboundAt: string | null;
+    lastPolledAt: string | null;
+    inboundHint: 'reconnect' | 'manual' | null;
 };
 
 export type IntegrationProviderCard = {
@@ -176,6 +184,39 @@ export type IntegrationPriorityMap = Partial<
     Record<PriorityLevel, JiraPriorityChoice | number | null>
 >;
 
+export type InboundMode = 'webhook' | 'polling' | 'off';
+
+export type WebhookStatus = 'pending' | 'active' | 'failing';
+
+export type JiraStatusMapping = {
+    doneStatusIds: string[] | null;
+    completeStatusId: string | null;
+    reopenStatusId: string | null;
+};
+
+export type LinearStatusMapping = {
+    completeStateId: string | null;
+    reopenStateId: string | null;
+};
+
+export type StatusMapping = {
+    projects?: Record<string, JiraStatusMapping>;
+    teams?: Record<string, LinearStatusMapping>;
+};
+
+export type TrackerStatus = {
+    id: string;
+    name: string;
+    category: 'todo' | 'in_progress' | 'done';
+};
+
+export type TrackerWebhookDetails = {
+    url: string;
+    secret: string;
+    events: string[];
+    jql: string | null;
+};
+
 export type ProviderPriority = { id: string | number; name: string };
 
 export type ExternalAccount = { accountId: string; displayName: string };
@@ -197,10 +238,23 @@ export type UserMappingRow = {
 
 export type UserMappings = { members: UserMappingRow[]; matching: boolean };
 
+export type ExternalLinkSyncState =
+    | 'off'
+    | 'synced'
+    | 'pending'
+    | 'failed'
+    | 'missing';
+
 export type ExternalLink = {
+    id: string;
     source: TrackerProviderKey;
     key: string;
     url: string;
+    state: 'open' | 'done' | null;
+    statusName: string | null;
+    syncState: ExternalLinkSyncState;
+    syncError: string | null;
+    lastSyncedAt: string | null;
 };
 
 export type ExportSource = {

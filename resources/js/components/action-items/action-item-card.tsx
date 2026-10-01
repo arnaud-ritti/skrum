@@ -1,5 +1,6 @@
 import { MessageSquare, Pencil, Trash2 } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
+import { toast } from 'sonner';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -13,8 +14,10 @@ import {
     canManageActionItem,
     type ActionItemViewer,
 } from '@/lib/action-items/permissions';
+import { TrackerLabels } from '@/lib/poker/types';
 import { retroRequest } from '@/lib/retro/api';
 import type { ActionItem } from '@/lib/retro/types';
+import type { ExternalLink } from '@/types';
 import { ActionItemComments } from './action-item-comments';
 import { AssigneeSelect, type AssigneeGroup } from './assignee-select';
 import { DueDateChip } from './due-date-chip';
@@ -123,6 +126,19 @@ export function ActionItemCard({
             }
         } finally {
             setBusy(false);
+        }
+    };
+
+    const retrySync = async (link: ExternalLink) => {
+        const response = await run(
+            retroRequest<{ actionItem: ActionItem }>(
+                endpoints.syncLink(item.id, link.id),
+            ),
+        );
+
+        if (response) {
+            onSaved(response.actionItem);
+            toast.success(t('Sync requested.'));
         }
     };
 
@@ -239,7 +255,17 @@ export function ActionItemCard({
                                 {t('Theme: :name', { name: item.themeName })}
                             </Badge>
                         )}
-                        <ExternalLinkChips links={item.externalLinks} />
+                        <ExternalLinkChips
+                            links={item.externalLinks}
+                            onRetry={manages ? retrySync : undefined}
+                        />
+                        {completed && item.completedVia && (
+                            <span>
+                                {t('Completed in :source', {
+                                    source: TrackerLabels[item.completedVia],
+                                })}
+                            </span>
+                        )}
                         {meta}
                     </div>
                 </div>
