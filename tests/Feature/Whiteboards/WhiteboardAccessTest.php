@@ -58,6 +58,16 @@ it('refuses guests once guest access is off or the secret is wrong', function ()
         ->assertForbidden();
 });
 
+it('never treats a cookie for a user-linked member as a guest', function () {
+    $board = Whiteboard::factory()->withGuestAccess()->create();
+    [, $member] = whiteboardMember($board);
+    $member->update(['guest_secret_hash' => hash('sha256', 'secret')]);
+
+    $this->withCookies(whiteboardGuestCookie($member))->withCredentials()
+        ->getJson(route('whiteboards.snapshot.show', $board))
+        ->assertForbidden();
+});
+
 it('sends logged-out visitors to login', function () {
     $this->get(route('whiteboards.show', Whiteboard::factory()->create()))->assertRedirect(route('login'));
 });
