@@ -26,6 +26,7 @@ use App\Models\TeamIntegration;
 use App\Models\User;
 use App\Support\Integrations\Exceptions\ProviderUnavailable;
 use App\Support\Integrations\Webhook\WebhookHealth;
+use Illuminate\Contracts\Bus\Dispatcher;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Exceptions;
@@ -386,6 +387,19 @@ it('keeps the action and later listeners alive when building an event fails', fu
         ->and(IntegrationDelivery::query()->count())->toBe(0);
     Queue::assertNotPushed(DeliverWebhookEvent::class);
     Exceptions::assertReported(fn (RuntimeException $exception) => $exception->getMessage() === 'boom');
+});
+
+it('marks the delivery failed when queuing the event fails', function () {
+    Exceptions::fake();
+    [$retro, , $participant] = webhookEventRetro();
+    subscribedWebhook($retro->team, ['action_item.created']);
+    $this->mock(Dispatcher::class, fn ($mock) => $mock->shouldReceive('dispatch')->andThrow(new RuntimeException('queue down')));
+
+    $item = app(CreateActionItem::class)->handle($retro->team, $retro, ActionItemActor::forParticipant($participant), ['content' => 'Fix the deploy']);
+
+    expect($item->exists)->toBeTrue()
+        ->and(IntegrationDelivery::query()->sole()->status)->toBe(IntegrationDeliveryStatus::Failed);
+    Exceptions::assertReported(fn (RuntimeException $exception) => $exception->getMessage() === 'queue down');
 });
 
 it('sends nothing to the webhook of another team', function () {

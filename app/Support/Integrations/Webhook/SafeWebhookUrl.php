@@ -108,7 +108,7 @@ class SafeWebhookUrl
             return null;
         }
 
-        if (preg_match('/^[a-z][a-z0-9+.-]*:\/\/[^\/?#]*(\]|[^:\]]):(?!\d+(?:[\/?#]|$))/i', $url) === 1) {
+        if (self::hasMalformedPort($url)) {
             return null;
         }
 
@@ -140,6 +140,35 @@ class SafeWebhookUrl
         }
 
         return [$host, $port, $urlHost];
+    }
+
+    private static function hasMalformedPort(string $url): bool
+    {
+        if (preg_match('~^[a-z][a-z0-9+.-]*://([^/?#]*)~i', $url, $matches) !== 1) {
+            return true;
+        }
+
+        $authority = $matches[1];
+
+        if (str_starts_with($authority, '[')) {
+            $closingBracket = strpos($authority, ']');
+
+            if ($closingBracket === false) {
+                return true;
+            }
+
+            $portPart = substr($authority, $closingBracket + 1);
+
+            return $portPart !== '' && preg_match('/^:\d+$/', $portPart) !== 1;
+        }
+
+        $colon = strrpos($authority, ':');
+
+        if ($colon === false) {
+            return false;
+        }
+
+        return preg_match('/^\d+$/', substr($authority, $colon + 1)) !== 1;
     }
 
     /**

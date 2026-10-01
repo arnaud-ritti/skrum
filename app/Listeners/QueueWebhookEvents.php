@@ -76,6 +76,8 @@ class QueueWebhookEvents
             return;
         }
 
+        $delivery = null;
+
         try {
             $data = $buildData();
 
@@ -94,6 +96,8 @@ class QueueWebhookEvents
             dispatch(new DeliverWebhookEvent($delivery->id, $event->value, now()->toIso8601ZuluString(), $data, app()->getLocale()))->afterCommit();
         } catch (Throwable $exception) {
             report($exception);
+
+            $delivery?->markFailed(__('The message could not be delivered.'));
         }
     }
 

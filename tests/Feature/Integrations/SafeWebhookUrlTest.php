@@ -38,6 +38,8 @@ it('accepts public endpoints', function (string $url, array $addresses, string $
     'high port' => ['https://hooks.example.com:8443/skrum', ['93.184.216.34'], 'hooks.example.com', 8443],
     'upper-case host' => ['https://Hooks.Example.com/skrum', ['93.184.216.34'], 'hooks.example.com', 443],
     'public v6' => ['https://hooks.example.com/skrum', ['2606:2800:220:1:248:1893:25c8:1946'], 'hooks.example.com', 443],
+    'bracketed public v6 literal' => ['https://[2606:2800::1]/skrum', ['2606:2800::1'], '2606:2800::1', 443],
+    'bracketed public v6 literal with a port' => ['https://[2606:2800::1]:8443/skrum', ['2606:2800::1'], '2606:2800::1', 8443],
 ]);
 
 it('refuses private, reserved and invalid endpoints', function (string $url, array $addresses) {
@@ -54,6 +56,8 @@ it('refuses private, reserved and invalid endpoints', function (string $url, arr
     'unresolvable' => ['https://nowhere.example.com/skrum', []],
     'signed port' => ['https://hooks.example.com:+443/skrum', ['93.184.216.34']],
     'port followed by a dot' => ['https://hooks.example.com:443./skrum', ['93.184.216.34']],
+    'bracketed v6 with a signed port' => ['https://[2606:2800::1]:+443/skrum', ['93.184.216.34']],
+    'unclosed bracket' => ['https://[2606:2800::1/skrum', ['93.184.216.34']],
     'ip literal with a trailing dot' => ['https://93.184.216.34./skrum', ['93.184.216.34']],
     'loopback' => ['https://hooks.example.com/skrum', ['127.0.0.1']],
     'rfc 1918 (10/8)' => ['https://hooks.example.com/skrum', ['10.1.2.3']],
