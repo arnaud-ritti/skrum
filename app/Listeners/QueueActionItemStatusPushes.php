@@ -9,6 +9,7 @@ use App\Events\ActionItems\ActionItemCompleted;
 use App\Events\ActionItems\ActionItemReopened;
 use App\Jobs\Integrations\PushActionItemState;
 use App\Models\ActionItem;
+use App\Support\Integrations\Exceptions\ReadOnlyConnection;
 use Throwable;
 
 /**
@@ -64,7 +65,7 @@ class QueueActionItemStatusPushes
             }
 
             if (! $integration->canWrite()) {
-                $link->forceFill(['sync_error' => __('This :provider connection is read-only.', ['provider' => $integration->provider->label()])])->save();
+                $link->forceFill(['sync_error' => (new ReadOnlyConnection($integration->provider))->userMessage()])->save();
                 $refused = true;
 
                 continue;

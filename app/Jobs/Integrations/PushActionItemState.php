@@ -12,10 +12,14 @@ use App\Models\TeamIntegration;
 use App\Support\Integrations\Exceptions\IntegrationException;
 use App\Support\Integrations\Exceptions\ProviderUnavailable;
 use App\Support\Integrations\Exceptions\RateLimited;
+use App\Support\Integrations\Exceptions\ReadOnlyConnection;
+use App\Support\Integrations\Exceptions\ReconnectRequired;
+use App\Support\Integrations\Exceptions\StatusPushRejected;
 use App\Support\Integrations\IntegrationErrors;
 use App\Support\Integrations\Trackers\DoneMapping;
 use App\Support\Integrations\Trackers\TrackerIssue;
 use App\Support\Integrations\Trackers\Trackers;
+use Carbon\CarbonImmutable;
 use DateTimeInterface;
 use Illuminate\Contracts\Queue\ShouldBeUniqueUntilProcessing;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -29,7 +33,9 @@ use Throwable;
  * §5.6). It reads the item when it runs, so quick toggles coalesce and the
  * last state wins; pushes of one link never overlap. Waiting for another
  * push or a rate limit releases the job: the five tries are counted as
- * exceptions within an hour, as for estimate write-backs.
+ * exceptions within an hour, as for estimate write-backs. Write failures
+ * other than the §5.2 reasons read as a failed write plus the provider's
+ * detail (§11).
  */
 class PushActionItemState implements ShouldBeUniqueUntilProcessing, ShouldQueue
 {
@@ -42,7 +48,12 @@ class PushActionItemState implements ShouldBeUniqueUntilProcessing, ShouldQueue
     /** @var array<int, int> */
     public array $backoff = [10, 30, 120, 600];
 
-    public function __construct(public string $linkId) {}
+    public string $requestedAt;
+
+    public function __construct(public string $linkId)
+    {
+        $this->requestedAt = now()->toIso8601String();
+    }
 
     public function uniqueId(): string
     {
@@ -75,10 +86,8 @@ class PushActionItemState implements ShouldBeUniqueUntilProcessing, ShouldQueue
             return;
         }
 
-        $label = ['provider' => $integration->provider->label()];
-
         if ($integration->status === IntegrationStatus::ReconnectRequired) {
-            $this->recordFailure(__('Reconnect :provider in the team settings.', $label));
+            $this->recordFailure((new ReconnectRequired($integration->provider))->userMessage());
             $this->announce($broadcast, $item);
 
             return;
@@ -89,7 +98,7 @@ class PushActionItemState implements ShouldBeUniqueUntilProcessing, ShouldQueue
         }
 
         if (! $integration->canWrite()) {
-            $this->recordFailure(__('This :provider connection is read-only.', $label));
+            $this->recordFailure((new ReadOnlyConnection($integration->provider))->userMessage());
             $this->announce($broadcast, $item);
 
             return;
@@ -106,7 +115,7 @@ class PushActionItemState implements ShouldBeUniqueUntilProcessing, ShouldQueue
         } catch (ProviderUnavailable $exception) {
             throw $exception;
         } catch (IntegrationException $exception) {
-            $this->recordFailure($exception->userMessage());
+            $this->recordFailure(self::failureMessage($exception));
             $this->announce($broadcast, $item);
 
             return;
@@ -116,10 +125,20 @@ class PushActionItemState implements ShouldBeUniqueUntilProcessing, ShouldQueue
         $this->announce($broadcast, $item);
     }
 
+    /**
+     * A job that fails after a newer push of the same link succeeded is
+     * stale: its error would hide that success.
+     */
     public function failed(?Throwable $exception): void
     {
+        $lastPushedAt = ActionItemExternalLink::query()->whereKey($this->linkId)->value('last_pushed_at');
+
+        if ($lastPushedAt !== null && CarbonImmutable::parse($lastPushedAt)->isAfter(CarbonImmutable::parse($this->requestedAt))) {
+            return;
+        }
+
         $this->recordFailure($exception instanceof IntegrationException
-            ? $exception->userMessage()
+            ? self::failureMessage($exception)
             : __('The status could not be written. Try again.'));
 
         $item = ActionItemExternalLink::query()->find($this->linkId)?->actionItem;
@@ -155,6 +174,18 @@ class PushActionItemState implements ShouldBeUniqueUntilProcessing, ShouldQueue
                 'missing_at' => null,
             ])->save();
         });
+    }
+
+    private static function failureMessage(IntegrationException $exception): string
+    {
+        if ($exception instanceof StatusPushRejected || $exception instanceof ReconnectRequired || $exception instanceof ReadOnlyConnection) {
+            return $exception->userMessage();
+        }
+
+        $message = __('The status could not be written. Try again.');
+        $detail = $exception->detail();
+
+        return $detail === null ? $message : "{$message} ({$detail})";
     }
 
     private function recordFailure(string $message): void

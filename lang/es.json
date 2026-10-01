@@ -1710,5 +1710,6 @@
     "Linear did not accept this status change.": "Linear no aceptó este cambio de estado.",
     "The status could not be written. Try again.": "No se pudo escribir el estado. Inténtalo de nuevo.",
     "Turn on status sync for :provider first.": "Activa primero la sincronización de estados para :provider.",
-    "This issue belongs to another :provider site.": "Esta incidencia pertenece a otro sitio de :provider."
+    "This issue belongs to another :provider site.": "Esta incidencia pertenece a otro sitio de :provider.",
+    "Guests cannot sync action items.": "Los invitados no pueden sincronizar acciones."
 }

@@ -6,8 +6,8 @@ use App\Actions\ActionItems\ActionItemActor;
 use App\Jobs\Integrations\PushActionItemState;
 use App\Models\ActionItem;
 use App\Models\ActionItemExternalLink;
-use App\Support\Integrations\Exceptions\NotConnected;
 use App\Support\Integrations\StatusSync;
+use Illuminate\Auth\Access\AuthorizationException;
 
 /**
  * Spec 8 §5.6: the managers' "Retry", which is also how a conflict is
@@ -19,17 +19,14 @@ class RequestActionItemPush
 
     public function handle(ActionItem $item, ActionItemExternalLink $link, ActionItemActor $actor): ActionItem
     {
+        if ($actor->user === null) {
+            throw new AuthorizationException(__('Guests cannot sync action items.'));
+        }
+
         $this->guard->authorize($item, $actor);
 
-        $provider = $link->source;
-
-        abort_unless($provider->isEnabled(), 404);
-
-        $integration = $item->team->integration($provider) ?? throw new NotConnected($provider);
-
-        $integration->ensureWritable();
-
-        $label = ['provider' => $provider->label()];
+        $integration = $this->guard->integration($item->team, $link->source->value);
+        $label = ['provider' => $link->source->label()];
 
         if (! StatusSync::isOn($integration)) {
             abort(409, __('Turn on status sync for :provider first.', $label));
