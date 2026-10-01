@@ -1,5 +1,5 @@
 import { usePage } from '@inertiajs/react';
-import { History, Lock } from 'lucide-react';
+import { Lock } from 'lucide-react';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { toast } from 'sonner';
@@ -37,7 +37,6 @@ import { BoardMenu } from './board-menu';
 import { BoardReactions } from './board-reactions';
 import { SceneExport } from './scene-export';
 import { FacilitatorBar } from './facilitator-bar';
-import { HistoryPanel } from './history-panel';
 import { StatusBar } from './status-bar';
 import { StickyTool } from './sticky-tool';
 import { TopBar } from './top-bar';
@@ -57,7 +56,6 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
         HideMyCursorKey,
         false,
     );
-    const [historyOpen, setHistoryOpen] = useState(false);
     const sync = useRef<SceneSync | null>(null);
     const canvas = useRef<HTMLDivElement | null>(null);
     const toolbarSlot = useWhiteboardToolbarSlot(canvas, api !== null);
@@ -189,17 +187,6 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
                     {api && !toolbarSlot && !viewOnly && (
                         <StickyTool api={api} />
                     )}
-                    {!me.isGuest && (
-                        <Button
-                            size="icon"
-                            variant="outline"
-                            aria-label={t('Version history')}
-                            title={t('Version history')}
-                            onClick={() => setHistoryOpen(true)}
-                        >
-                            <History className="size-4" />
-                        </Button>
-                    )}
                     <BoardMenu
                         state={state}
                         hideMyCursor={hideMyCursor}
@@ -298,17 +285,6 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
                     </Excalidraw>
                 </div>
                 <BoardReactions state={state} />
-                {!me.isGuest && (
-                    <HistoryPanel
-                        state={state}
-                        open={historyOpen}
-                        onOpenChange={setHistoryOpen}
-                        onRestored={() => {
-                            void sync.current?.resync();
-                            void state.refetch();
-                        }}
-                    />
-                )}
             </div>
         </div>
     );
