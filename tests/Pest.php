@@ -1235,3 +1235,8 @@ function jiraDataCenterUrl(string $path): string
 {
     return 'jira.example.com/'.ltrim($path, '/');
 }
+
+function renderedEstimateBlock(string $value): string
+{
+    return "<!-- skrum:estimate -->\n**Estimate:** {$value}\n<!-- /skrum:estimate -->";
+}
