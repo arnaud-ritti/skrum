@@ -403,6 +403,8 @@ it('[P06-08a] shows the drag preview outside the scrolling board and as wide as 
         ->assertScript("Math.abs({$preview}.getBoundingClientRect().width - document.getElementById('card-{$card->id}').getBoundingClientRect().width) < 1", true)
         ->assertScript("(() => { const box = {$preview}.getBoundingClientRect(); return box.left >= 0 && box.right <= window.innerWidth && box.top >= 0; })()", true);
 
+    $page->script('() => new Promise((resolve) => setTimeout(() => resolve(true), 0))');
+
     $page->keys($handle, 'Escape')
         ->assertAttributeMissing($handle, 'aria-pressed')
         ->assertScript("{$preview} === null", true);
