@@ -332,6 +332,7 @@ function TaskRow({
                 transform: CSS.Transform.toString(transform),
                 transition,
             }}
+            data-test="poker-task-row"
             data-dragging={isDragging}
             aria-current={isCurrent ? 'true' : undefined}
             className={cn(
