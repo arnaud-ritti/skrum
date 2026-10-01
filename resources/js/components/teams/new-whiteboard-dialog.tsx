@@ -165,7 +165,8 @@ function NewWhiteboardForm({ workspaceSlug, teamId, gallery }: Props) {
                 )}
                 <InputError
                     message={
-                        form.errors.template ?? form.errors.workspace_template_id
+                        form.errors.template ??
+                        form.errors.workspace_template_id
                     }
                 />
             </fieldset>
