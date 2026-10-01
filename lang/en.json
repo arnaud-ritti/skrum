@@ -1344,5 +1344,11 @@
     "Connection saved.": "Connection saved.",
     "Post board links, game invites and results to a Mattermost channel through an incoming webhook.": "Post board links, game invites and results to a Mattermost channel through an incoming webhook.",
     "This URL points to a private or invalid address.": "This URL points to a private or invalid address.",
-    "This webhook URL points to a private or invalid address.": "This webhook URL points to a private or invalid address."
+    "This webhook URL points to a private or invalid address.": "This webhook URL points to a private or invalid address.",
+    "The receiver asked skrum to stop.": "The receiver asked skrum to stop.",
+    "The receiver answered :status.": "The receiver answered :status.",
+    "Could not reach :host.": "Could not reach :host.",
+    "Webhook disabled.": "Webhook disabled.",
+    "Disabled after 10 failed deliveries in a row.": "Disabled after 10 failed deliveries in a row.",
+    "This webhook URL is no longer allowed. Paste a new one.": "This webhook URL is no longer allowed. Paste a new one."
 }

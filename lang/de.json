@@ -1590,5 +1590,11 @@
     "Connection saved.": "Verbindung gespeichert.",
     "Post board links, game invites and results to a Mattermost channel through an incoming webhook.": "Teile Board-Links, Spieleinladungen und Ergebnisse über einen eingehenden Webhook in einem Mattermost-Kanal.",
     "This URL points to a private or invalid address.": "Diese URL verweist auf eine private oder ungültige Adresse.",
-    "This webhook URL points to a private or invalid address.": "Diese Webhook-URL verweist auf eine private oder ungültige Adresse."
+    "This webhook URL points to a private or invalid address.": "Diese Webhook-URL verweist auf eine private oder ungültige Adresse.",
+    "The receiver asked skrum to stop.": "Der Empfänger hat skrum gebeten aufzuhören.",
+    "The receiver answered :status.": "Der Empfänger hat mit :status geantwortet.",
+    "Could not reach :host.": ":host war nicht erreichbar.",
+    "Webhook disabled.": "Webhook deaktiviert.",
+    "Disabled after 10 failed deliveries in a row.": "Nach 10 fehlgeschlagenen Zustellungen in Folge deaktiviert.",
+    "This webhook URL is no longer allowed. Paste a new one.": "Diese Webhook-URL ist nicht mehr erlaubt. Füge eine neue ein."
 }

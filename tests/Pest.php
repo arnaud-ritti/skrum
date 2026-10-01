@@ -38,6 +38,7 @@ use App\Support\Games\GameRulesRegistry;
 use App\Support\Integrations\HostResolver;
 use App\Support\Integrations\OAuthState;
 use Carbon\CarbonInterface;
+use Database\Factories\TeamIntegrationFactory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request as HttpRequest;
 use Illuminate\Support\Facades\Http;
@@ -681,6 +682,14 @@ function outgoingWebhookResolves(array $addresses = ['93.184.216.34']): void
             return $this->fixed;
         }
     });
+}
+
+function outgoingWebhookSignatureIsValid(HttpRequest $request, string $secret = TeamIntegrationFactory::WebhookSecret): bool
+{
+    $timestamp = $request->header('X-Skrum-Timestamp')[0] ?? '';
+    $expected = 'sha256='.hash_hmac('sha256', "{$timestamp}.{$request->body()}", $secret);
+
+    return hash_equals($expected, $request->header('X-Skrum-Signature')[0] ?? '');
 }
 
 /**
