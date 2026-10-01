@@ -1843,5 +1843,22 @@
     "Everyone follows your view.": "Alle folgen Ihrer Ansicht.",
     "Following the facilitator": "Sie folgen dem Moderator",
     "Following paused": "Folgen pausiert",
-    "Resume": "Fortsetzen"
+    "Resume": "Fortsetzen",
+    "Start a vote": "Abstimmung starten",
+    "Close the vote": "Abstimmung schließen",
+    "Notes to vote on": "Haftnotizen zur Abstimmung",
+    "All sticky notes": "Alle Haftnotizen",
+    "Notes in :name": "Haftnotizen in :name",
+    "Frame :number": "Rahmen :number",
+    "Allow several votes on one note": "Mehrere Stimmen pro Haftnotiz erlauben",
+    "Vote for this note": "Für diese Haftnotiz stimmen",
+    ":count of :total finished voting": ":count von :total haben fertig abgestimmt",
+    "Cursors are hidden while the vote is open.": "Cursor sind während der Abstimmung ausgeblendet.",
+    "Vote results": "Abstimmungsergebnisse",
+    "Hide the results": "Ergebnisse ausblenden",
+    "Previous votes": "Frühere Abstimmungen",
+    "Show on the board": "Auf dem Board anzeigen",
+    "This note is no longer on the board.": "Diese Haftnotiz ist nicht mehr auf dem Board.",
+    "Empty note": "Leere Haftnotiz",
+    "No votes were cast.": "Es wurden keine Stimmen abgegeben."
 }

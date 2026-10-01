@@ -1843,5 +1843,22 @@
     "Everyone follows your view.": "Todos siguen tu vista.",
     "Following the facilitator": "Siguiendo al facilitador",
     "Following paused": "Seguimiento en pausa",
-    "Resume": "Reanudar"
+    "Resume": "Reanudar",
+    "Start a vote": "Iniciar una votación",
+    "Close the vote": "Cerrar la votación",
+    "Notes to vote on": "Notas sometidas a votación",
+    "All sticky notes": "Todas las notas adhesivas",
+    "Notes in :name": "Notas en :name",
+    "Frame :number": "Marco :number",
+    "Allow several votes on one note": "Permitir varios votos en una misma nota",
+    "Vote for this note": "Votar por esta nota",
+    ":count of :total finished voting": ":count de :total han terminado de votar",
+    "Cursors are hidden while the vote is open.": "Los cursores están ocultos durante la votación.",
+    "Vote results": "Resultados de la votación",
+    "Hide the results": "Ocultar los resultados",
+    "Previous votes": "Votaciones anteriores",
+    "Show on the board": "Mostrar en la pizarra",
+    "This note is no longer on the board.": "Esta nota ya no está en la pizarra.",
+    "Empty note": "Nota vacía",
+    "No votes were cast.": "No se emitió ningún voto."
 }

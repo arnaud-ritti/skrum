@@ -3,6 +3,7 @@ import { Lock } from 'lucide-react';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { toast } from 'sonner';
+import WhiteboardVotesController from '@/actions/App/Http/Controllers/Whiteboards/WhiteboardVotesController';
 import { ConnectionBanner } from '@/components/retro/connection-banner';
 import { SessionExpiredBanner } from '@/components/retro/session-expired-banner';
 import { TimerDisplay } from '@/components/retro/timer-display';
@@ -12,7 +13,9 @@ import { useTrans } from '@/hooks/use-trans';
 import { useWhiteboard } from '@/hooks/use-whiteboard';
 import { useWhiteboardCursors } from '@/hooks/use-whiteboard-cursors';
 import { useWhiteboardFollow } from '@/hooks/use-whiteboard-follow';
+import { useWhiteboardRequest } from '@/hooks/use-whiteboard-request';
 import { useWhiteboardToolbarSlot } from '@/hooks/use-whiteboard-toolbar-slot';
+import { retroRequest } from '@/lib/retro/api';
 import {
     Excalidraw,
     MainMenu,
@@ -23,15 +26,18 @@ import { createSceneSync, type SceneSync } from '@/lib/whiteboard/scene-sync';
 import type {
     RejectReason,
     SceneElement,
+    VoteTally,
     WhiteboardSnapshot,
 } from '@/lib/whiteboard/types';
 import { BoardGone } from './board-gone';
 import { BoardMenu } from './board-menu';
 import { BoardReactions } from './board-reactions';
 import { FacilitatorBar } from './facilitator-bar';
+import { ResultsPanel } from './results-panel';
 import { StatusBar } from './status-bar';
 import { StickyTool } from './sticky-tool';
 import { TopBar } from './top-bar';
+import { VoteOverlay } from './vote-overlay';
 
 const HideMyCursorKey = 'skrum.hideMyCursor';
 const PollMs = 5000;
@@ -60,8 +66,21 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
     const { t } = useTrans();
     const { locale } = usePage().props;
     const state = useWhiteboard(snapshot);
-    const { board, me } = state.snapshot;
+    const request = useWhiteboardRequest();
+    const { board, me, voting } = state.snapshot;
     const viewOnly = board.locked && !me.isFacilitator;
+    const votingOpen = voting?.open ?? false;
+    /** A person's own choice; null follows the vote (open once it closes). */
+    const [panel, setPanel] = useState<{
+        votingId: string | null;
+        open: boolean;
+    } | null>(null);
+    const showsPanel =
+        panel !== null && panel.votingId === (voting?.id ?? null)
+            ? panel.open
+            : voting !== null && !voting.open;
+    const choosePanel = (open: boolean) =>
+        setPanel({ votingId: voting?.id ?? null, open });
     const [api, setApi] = useState<ExcalidrawImperativeAPI | null>(null);
     const [offline, setOffline] = useState(false);
     const [hideMyCursor, setHideMyCursor] = useLocalPreference(
@@ -80,7 +99,8 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
         presence: state.presence,
         online: state.online,
         meId: state.snapshot.me.id,
-        enabled: board.cursorsEnabled,
+        // A named pointer over a note would disclose a vote (spec §11.4).
+        enabled: board.cursorsEnabled && !votingOpen,
         hidden: hideMyCursor,
     });
     const follow = useWhiteboardFollow({
@@ -164,6 +184,31 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
         return () => clearInterval(poll);
     }, [state.connected, state.status]);
 
+    const vote = async (elementId: string, count: number) => {
+        if (!voting) {
+            return;
+        }
+
+        const tally = await request(
+            retroRequest<VoteTally>(
+                WhiteboardVotesController.update({
+                    board: board.id,
+                    voteSession: voting.id,
+                    elementId,
+                }),
+                { count },
+            ),
+        );
+
+        if (tally === undefined) {
+            void state.refetch();
+
+            return;
+        }
+
+        state.applyTally(voting.id, tally);
+    };
+
     if (state.status !== 'active') {
         return (
             <BoardGone
@@ -185,7 +230,9 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
                         endsAt={board.timerEndsAt}
                         offset={state.serverOffset}
                     />
-                    {me.isFacilitator && <FacilitatorBar state={state} />}
+                    {me.isFacilitator && (
+                        <FacilitatorBar state={state} api={api} />
+                    )}
                     {api && !toolbarSlot && !viewOnly && (
                         <StickyTool api={api} />
                     )}
@@ -193,6 +240,7 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
                         state={state}
                         hideMyCursor={hideMyCursor}
                         onHideMyCursorChange={setHideMyCursor}
+                        onShowResults={() => choosePanel(true)}
                     />
                 </TopBar>
                 <ConnectionBanner
@@ -223,6 +271,29 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
                             </Button>
                         </span>
                     )}
+                    {voting?.open && (
+                        <span>
+                            {t('Votes left: :count', {
+                                count: voting.remaining,
+                            })}
+                            {' · '}
+                            {t(':count of :total finished voting', {
+                                count: voting.finishedCount ?? 0,
+                                total: state.online.length,
+                            })}
+                            {board.cursorsEnabled &&
+                                ` · ${t('Cursors are hidden while the vote is open.')}`}
+                        </span>
+                    )}
+                    {voting && !voting.open && !showsPanel && (
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => choosePanel(true)}
+                        >
+                            {t('Vote results')}
+                        </Button>
+                    )}
                 </StatusBar>
                 {api &&
                     toolbarSlot &&
@@ -231,43 +302,65 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
                         toolbarSlot,
                     )}
                 <div
-                    ref={canvas}
-                    className="whiteboard-canvas relative min-h-0 flex-1"
+                    className="whiteboard-canvas relative flex min-h-0 flex-1"
                     data-facilitator={me.isFacilitator}
                 >
-                    <Excalidraw
-                        viewModeEnabled={viewOnly ? true : undefined}
-                        excalidrawAPI={setApi}
-                        initialData={{ elements: initialElements as never }}
-                        name={board.title}
-                        onChange={(elements) =>
-                            sync.current?.handleChange(
-                                elements as unknown as SceneElement[],
-                            )
-                        }
-                        onPointerUpdate={cursors.onPointerUpdate}
-                        langCode={ExcalidrawLocales[locale as string] ?? 'en'}
-                        theme={dark ? 'dark' : 'light'}
-                        aiEnabled={false}
-                        UIOptions={{
-                            canvasActions: {
-                                loadScene: false,
-                                saveToActiveFile: false,
-                                toggleTheme: false,
-                            },
-                        }}
+                    <div
+                        ref={canvas}
+                        className="relative min-h-0 min-w-0 flex-1"
                     >
-                        {/* The default menu ends with links to the library's own sites. */}
-                        <MainMenu>
-                            <MainMenu.DefaultItems.Export />
-                            <MainMenu.DefaultItems.SaveAsImage />
-                            <MainMenu.DefaultItems.SearchMenu />
-                            <MainMenu.DefaultItems.Help />
-                            <MainMenu.DefaultItems.ClearCanvas />
-                            <MainMenu.Separator />
-                            <MainMenu.DefaultItems.ChangeCanvasBackground />
-                        </MainMenu>
-                    </Excalidraw>
+                        <Excalidraw
+                            viewModeEnabled={viewOnly ? true : undefined}
+                            excalidrawAPI={setApi}
+                            initialData={{ elements: initialElements as never }}
+                            name={board.title}
+                            onChange={(elements) =>
+                                sync.current?.handleChange(
+                                    elements as unknown as SceneElement[],
+                                )
+                            }
+                            onPointerUpdate={cursors.onPointerUpdate}
+                            langCode={
+                                ExcalidrawLocales[locale as string] ?? 'en'
+                            }
+                            theme={dark ? 'dark' : 'light'}
+                            aiEnabled={false}
+                            UIOptions={{
+                                canvasActions: {
+                                    loadScene: false,
+                                    saveToActiveFile: false,
+                                    toggleTheme: false,
+                                },
+                            }}
+                        >
+                            {/* The default menu ends with links to the library's own sites. */}
+                            <MainMenu>
+                                <MainMenu.DefaultItems.Export />
+                                <MainMenu.DefaultItems.SaveAsImage />
+                                <MainMenu.DefaultItems.SearchMenu />
+                                <MainMenu.DefaultItems.Help />
+                                <MainMenu.DefaultItems.ClearCanvas />
+                                <MainMenu.Separator />
+                                <MainMenu.DefaultItems.ChangeCanvasBackground />
+                            </MainMenu>
+                        </Excalidraw>
+                        {api && voting && (
+                            <VoteOverlay
+                                api={api}
+                                voting={voting}
+                                onVote={(elementId, count) =>
+                                    void vote(elementId, count)
+                                }
+                            />
+                        )}
+                    </div>
+                    {api && showsPanel && (
+                        <ResultsPanel
+                            state={state}
+                            api={api}
+                            onClose={() => choosePanel(false)}
+                        />
+                    )}
                 </div>
                 <BoardReactions state={state} />
             </div>

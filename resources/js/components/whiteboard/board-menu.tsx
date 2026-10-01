@@ -33,15 +33,19 @@ type Props = {
     state: WhiteboardState;
     hideMyCursor: boolean;
     onHideMyCursorChange: (hidden: boolean) => void;
+    onShowResults: () => void;
 };
 
 export function BoardMenu({
     state,
     hideMyCursor,
     onHideMyCursorChange,
+    onShowResults,
 }: Props) {
     const { t } = useTrans();
-    const { board, me, links } = state.snapshot;
+    const { board, me, links, voting, votingHistory } = state.snapshot;
+    const hasResults =
+        votingHistory.length > 0 || (voting !== null && !voting.open);
     const [renaming, setRenaming] = useState(false);
     const [confirmingDelete, setConfirmingDelete] = useState(false);
     const [savingTemplate, setSavingTemplate] = useState(false);
@@ -166,6 +170,11 @@ export function BoardMenu({
                             >
                                 {t('Save as template')}
                             </DropdownMenuItem>
+                            {hasResults && (
+                                <DropdownMenuItem onSelect={onShowResults}>
+                                    {t('Vote results')}
+                                </DropdownMenuItem>
+                            )}
                         </>
                     )}
                     {me.isFacilitator && (

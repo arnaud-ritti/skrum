@@ -1599,5 +1599,22 @@
     "Everyone follows your view.": "Everyone follows your view.",
     "Following the facilitator": "Following the facilitator",
     "Following paused": "Following paused",
-    "Resume": "Resume"
+    "Resume": "Resume",
+    "Start a vote": "Start a vote",
+    "Close the vote": "Close the vote",
+    "Notes to vote on": "Notes to vote on",
+    "All sticky notes": "All sticky notes",
+    "Notes in :name": "Notes in :name",
+    "Frame :number": "Frame :number",
+    "Allow several votes on one note": "Allow several votes on one note",
+    "Vote for this note": "Vote for this note",
+    ":count of :total finished voting": ":count of :total finished voting",
+    "Cursors are hidden while the vote is open.": "Cursors are hidden while the vote is open.",
+    "Vote results": "Vote results",
+    "Hide the results": "Hide the results",
+    "Previous votes": "Previous votes",
+    "Show on the board": "Show on the board",
+    "This note is no longer on the board.": "This note is no longer on the board.",
+    "Empty note": "Empty note",
+    "No votes were cast.": "No votes were cast."
 }

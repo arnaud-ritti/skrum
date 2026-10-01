@@ -1843,5 +1843,22 @@
     "Everyone follows your view.": "Tout le monde suit votre vue.",
     "Following the facilitator": "Vous suivez l'animateur",
     "Following paused": "Suivi en pause",
-    "Resume": "Reprendre"
+    "Resume": "Reprendre",
+    "Start a vote": "Lancer un vote",
+    "Close the vote": "Clôturer le vote",
+    "Notes to vote on": "Post-it soumis au vote",
+    "All sticky notes": "Tous les post-it",
+    "Notes in :name": "Post-it dans :name",
+    "Frame :number": "Cadre :number",
+    "Allow several votes on one note": "Autoriser plusieurs votes sur un même post-it",
+    "Vote for this note": "Voter pour ce post-it",
+    ":count of :total finished voting": ":count sur :total ont terminé de voter",
+    "Cursors are hidden while the vote is open.": "Les curseurs sont masqués pendant le vote.",
+    "Vote results": "Résultats du vote",
+    "Hide the results": "Masquer les résultats",
+    "Previous votes": "Votes précédents",
+    "Show on the board": "Afficher sur le tableau",
+    "This note is no longer on the board.": "Ce post-it n'est plus sur le tableau.",
+    "Empty note": "Post-it vide",
+    "No votes were cast.": "Aucun vote n'a été exprimé."
 }
