@@ -9,7 +9,6 @@ import {
 } from 'lucide-react';
 import type { NavHref, NavKey } from '@/components/skrum/app-sidebar';
 import { useTrans } from '@/hooks/use-trans';
-import { cn } from '@/lib/utils';
 
 const itemClass =
     'flex min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 px-1 text-xs font-medium text-muted-foreground aria-[current=page]:text-skrum-primary-text';
@@ -56,7 +55,7 @@ export function MobileTabBar({
                     </Link>
                 );
             })}
-            <button type="button" onClick={onMore} className={cn(itemClass)}>
+            <button type="button" onClick={onMore} className={itemClass}>
                 <Ellipsis className="size-5" />
                 <span className="max-w-full truncate">{t('More')}</span>
             </button>

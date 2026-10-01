@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import {
     AppSidebar,
@@ -76,13 +76,20 @@ describe('AppSidebar', () => {
     it('shows the overdue badge with an accessible name', () => {
         renderSidebar({ overdueActions: 3 });
 
-        expect(screen.getByLabelText('3 overdue')).toBeTruthy();
+        expect(screen.getByText('3 overdue')).toBeTruthy();
+    });
+
+    it('caps the visible overdue count and keeps the full count for screen readers', () => {
+        renderSidebar({ overdueActions: 120 });
+
+        expect(screen.getByText('99+')).toBeTruthy();
+        expect(screen.getByText('120 overdue')).toBeTruthy();
     });
 
     it('hides the badge when nothing is overdue', () => {
         renderSidebar({ overdueActions: 0 });
 
-        expect(screen.queryByLabelText('0 overdue')).toBeNull();
+        expect(screen.queryByText('0 overdue')).toBeNull();
     });
 
     it('renders no entry without a link', () => {
@@ -106,6 +113,18 @@ describe('AppSidebar', () => {
 
         expect(screen.queryByText('Team')).toBeNull();
         expect(screen.getByRole('link', { name: 'All teams' })).toBeTruthy();
+    });
+
+    it('puts the settings link in its own labelled navigation landmark', () => {
+        renderSidebar({ links: { ...base.links, settings: '/t1/settings' } });
+
+        const settingsNav = screen.getByRole('navigation', {
+            name: 'Settings',
+        });
+
+        expect(
+            within(settingsNav).getByRole('link', { name: 'Team settings' }),
+        ).toBeTruthy();
     });
 
     it('is a labelled navigation landmark', () => {

@@ -122,13 +122,17 @@ function NavEntries({
                             </Link>
                         </SidebarMenuButton>
                         {key === 'actions' && overdueActions > 0 && (
-                            <SidebarMenuBadge
-                                className="rounded-full bg-destructive px-1.5 text-destructive-foreground tabular-nums peer-hover/menu-button:text-destructive-foreground"
-                                aria-label={t(':count overdue', {
-                                    count: overdueActions,
-                                })}
-                            >
-                                {overdueActions > 99 ? '99+' : overdueActions}
+                            <SidebarMenuBadge className="rounded-full bg-destructive px-1.5 text-destructive-foreground tabular-nums peer-hover/menu-button:text-destructive-foreground">
+                                <span aria-hidden>
+                                    {overdueActions > 99
+                                        ? '99+'
+                                        : overdueActions}
+                                </span>
+                                <span className="sr-only">
+                                    {t(':count overdue', {
+                                        count: overdueActions,
+                                    })}
+                                </span>
                             </SidebarMenuBadge>
                         )}
                     </SidebarMenuItem>
@@ -326,11 +330,13 @@ export function AppSidebar({
             </SidebarContent>
 
             <SidebarFooter>
-                <NavEntries
-                    entries={footerEntries}
-                    active={active}
-                    links={links}
-                />
+                <nav aria-label={t('Settings')}>
+                    <NavEntries
+                        entries={footerEntries}
+                        active={active}
+                        links={links}
+                    />
+                </nav>
                 {footer}
             </SidebarFooter>
         </Sidebar>
