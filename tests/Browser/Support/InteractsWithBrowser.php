@@ -43,6 +43,19 @@ trait InteractsWithBrowser
     }
 
     /**
+     * A live page (retro board, poker game, game room) refetches its snapshot about 250 ms after its presence subscription.
+     * A test that changes the database behind an open page calls this first, so that this refetch cannot bring the change to the page.
+     * It is true once the page has received a snapshot since its last load, whatever caused it.
+     */
+    protected function awaitResync(mixed $page): mixed
+    {
+        $page->assertScript("performance.getEntriesByType('resource').some((entry) => entry.name.includes('/snapshot') && entry.responseEnd > 0)", true);
+        $page->script('() => new Promise((resolve) => setTimeout(() => resolve(true), 0))');
+
+        return $page;
+    }
+
+    /**
      * Fetches a same-origin path from inside the page, so the request carries that context's session or guest cookie
      * and the answer is what the server sends to that viewer now (a scan of the document only proves what the page rendered).
      *

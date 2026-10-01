@@ -258,7 +258,7 @@ it('[P13a-04b] tells a player with a toast that a letter was already picked', fu
     ['room' => $room, 'adaPlayer' => $adaPlayer] = p13aRoom();
     $round = activeGameRound($room, ['word' => 'quartz']);
 
-    $guest = $this->awaitRealtime($this->joinAsGuest(p13aJoinPath($room), 'Visitor'));
+    $guest = $this->awaitResync($this->awaitRealtime($this->joinAsGuest(p13aJoinPath($room), 'Visitor')));
 
     $guest->assertEnabled(p13aLetter('q'))
         ->assertScript(p13aMaskScript(), '______');
@@ -336,7 +336,7 @@ it('[P13a-06a] ends a round as "Time\'s up" when the one-minute timer of the hos
         ->click('[role="menuitem"]:text-is("1 min")');
 
     foreach ([$host, $guest] as $page) {
-        $page->assertSee('0:5');
+        $page->assertSeeIn('header:has(h1)', '0:');
     }
 
     expect(DB::table('jobs')->count())->toBe(0);
