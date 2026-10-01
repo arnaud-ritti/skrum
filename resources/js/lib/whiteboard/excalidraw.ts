@@ -67,3 +67,18 @@ export const ToolbarDom = {
         'ToolIcon ToolIcon_type_button ToolIcon_size_medium ToolIcon_type_button--show',
     iconClass: 'ToolIcon__icon',
 } as const;
+
+/**
+ * The text editor of Excalidraw 0.18.1 is a textarea it manages outside
+ * React (`textWysiwyg`). It stays open, focused and writing into the scene
+ * when the canvas goes to view mode, and nothing in the API closes it.
+ * Escape is the one way out it always listens to; as it closes it writes
+ * what it holds into its element and selects it.
+ */
+export function closeTextEditor(): void {
+    document
+        .querySelector('.excalidraw textarea.excalidraw-wysiwyg')
+        ?.dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'Escape', cancelable: true }),
+        );
+}

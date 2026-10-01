@@ -19,6 +19,7 @@ import { retroRequest } from '@/lib/retro/api';
 import {
     Excalidraw,
     MainMenu,
+    closeTextEditor,
     type ExcalidrawImperativeAPI,
 } from '@/lib/whiteboard/excalidraw';
 import { restoreScene } from '@/lib/whiteboard/restore';
@@ -175,6 +176,18 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
     }, [api, boardId, fail, listeners, refetch]);
 
     useEffect(() => {
+        if (!api || !viewOnly) {
+            return;
+        }
+
+        // Outside React's commit: closing the editor flushes canvas state.
+        queueMicrotask(() => {
+            closeTextEditor();
+            api.updateScene({ appState: { selectedElementIds: {} } });
+        });
+    }, [api, viewOnly]);
+
+    useEffect(() => {
         if (state.connected || state.status !== 'active') {
             return;
         }
@@ -314,9 +327,10 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
                             excalidrawAPI={setApi}
                             initialData={{ elements: initialElements as never }}
                             name={board.title}
-                            onChange={(elements) =>
+                            onChange={(elements, appState) =>
                                 sync.current?.handleChange(
                                     elements as unknown as SceneElement[],
+                                    appState.editingTextElement?.id ?? null,
                                 )
                             }
                             onPointerUpdate={cursors.onPointerUpdate}

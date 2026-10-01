@@ -103,3 +103,43 @@ export function useNoteBoxes(
 
     return boxes;
 }
+
+const idsOnBoard = (
+    api: ExcalidrawImperativeAPI,
+    ids: readonly string[],
+): string[] => {
+    const wanted = new Set(ids);
+
+    return api
+        .getSceneElements()
+        .filter((element) => wanted.has(element.id))
+        .map((element) => element.id);
+};
+
+/**
+ * Which of the given elements are on the canvas now. `ids` must keep its
+ * identity between renders (useMemo), or the subscription restarts.
+ */
+export function useElementsOnBoard(
+    api: ExcalidrawImperativeAPI,
+    ids: readonly string[],
+): ReadonlySet<string> {
+    const [onBoard, setOnBoard] = useState(() => idsOnBoard(api, ids));
+
+    useEffect(() => {
+        const read = () => {
+            const next = idsOnBoard(api, ids);
+
+            // onChange also fires on every selection and pointer state.
+            setOnBoard((current) =>
+                current.join('|') === next.join('|') ? current : next,
+            );
+        };
+
+        read();
+
+        return api.onChange(read);
+    }, [api, ids]);
+
+    return new Set(onBoard);
+}

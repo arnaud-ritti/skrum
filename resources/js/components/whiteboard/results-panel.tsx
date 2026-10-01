@@ -1,8 +1,10 @@
 import { LocateFixed, X } from 'lucide-react';
+import { useMemo } from 'react';
 import WhiteboardVoteDismissalsController from '@/actions/App/Http/Controllers/Whiteboards/WhiteboardVoteDismissalsController';
 import { Button } from '@/components/ui/button';
 import { useTrans } from '@/hooks/use-trans';
 import type { WhiteboardState } from '@/hooks/use-whiteboard';
+import { useElementsOnBoard } from '@/hooks/use-whiteboard-overlay';
 import { useWhiteboardRequest } from '@/hooks/use-whiteboard-request';
 import { retroRequest } from '@/lib/retro/api';
 import type { ExcalidrawImperativeAPI } from '@/lib/whiteboard/excalidraw';
@@ -20,9 +22,17 @@ export function ResultsPanel({ state, api, onClose }: Props) {
     const request = useWhiteboardRequest();
     const { board, me, voting, votingHistory } = state.snapshot;
     const closed = voting !== null && !voting.open ? voting : null;
-    const onBoard = new Set(
-        api.getSceneElements().map((element) => element.id),
+    const listed = useMemo(
+        () =>
+            [
+                ...(voting?.results ?? []),
+                ...votingHistory.flatMap((past) => past.results),
+            ].map((result) => result.elementId),
+        [voting?.results, votingHistory],
     );
+    // Read from the canvas as it changes: a note deleted here re-renders
+    // nothing else in this panel.
+    const onBoard = useElementsOnBoard(api, listed);
 
     const show = (elementId: string) => {
         api.scrollToContent(elementId, { fitToContent: false, animate: true });
