@@ -1,0 +1,296 @@
+<!-- @dsCard group="Écrans · Desktop" width=1440 height=2820 subtitle="Sondage — a) création (éditeur de questions + réglages) · b) réponse participant (une question à la fois) · c) résultats agrégés" -->
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><title>ScreenSurvey</title>
+<style>
+  body { background: var(--skrum-canvas); }
+  .sv-cap { height: 2.5rem; display: flex; align-items: center; gap: var(--space-2); padding: 0 var(--space-6); font-size: 0.75rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted-foreground); }
+  .sv-cap b { color: var(--foreground); }
+  .sv-shell { display: flex; height: 100%; }
+  .sv-body { flex: 1; min-height: 0; display: flex; }
+  .sv-scroll { flex: 1; min-width: 0; overflow: hidden; padding: var(--space-6) var(--space-8); display: flex; flex-direction: column; gap: var(--space-3); background: var(--skrum-canvas); }
+  .sv-panel { width: 21.25rem; flex: none; border-left: 1px solid var(--border); background: var(--card); padding: var(--space-5); display: flex; flex-direction: column; gap: var(--space-5); overflow: hidden; }
+  .sv-q { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-xl); box-shadow: var(--shadow-card); }
+  .sv-q.is-selected { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary), var(--shadow-raised); }
+  .sv-q-row { display: flex; align-items: center; gap: var(--space-3); padding: 0.75rem 0.875rem; }
+  .sv-q-n { width: 1.5rem; height: 1.5rem; border-radius: var(--radius-sm); background: var(--muted); color: var(--muted-foreground); display: grid; place-items: center; font-size: 0.75rem; font-weight: 700; flex: none; }
+  .sv-q.is-selected .sv-q-n { background: var(--primary); color: var(--primary-foreground); }
+  .sv-grip { color: var(--muted-foreground); }
+  .sv-q-t { font-weight: 600; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sv-q-b { padding: 0 0.875rem 0.875rem 3.25rem; display: flex; flex-direction: column; gap: var(--space-3); }
+  .sv-typechip { display: inline-flex; align-items: center; gap: 0.375rem; height: 2rem; padding: 0 0.75rem; border-radius: var(--radius-md); border: 1px solid var(--border); background: var(--card); font-size: 0.8125rem; font-weight: 600; }
+  .sv-typechip .lucide { color: var(--skrum-primary-text); }
+  .sv-add { display: flex; align-items: center; gap: var(--space-2); padding: 0.625rem 0.75rem; border-radius: var(--radius-xl); border: 1.5px dashed var(--input); flex-wrap: wrap; }
+  .sv-set { display: flex; flex-direction: column; gap: var(--space-3); }
+  .sv-set-row { display: flex; align-items: flex-start; gap: var(--space-3); }
+  .sv-set-row .sk-switch, .sv-set-row .sk-radio { margin-top: 2px; }
+  .sv-choice { display: flex; gap: var(--space-3); align-items: flex-start; padding: 0.625rem 0.75rem; border-radius: var(--radius); border: 1px solid var(--border); }
+  .sv-choice.is-on { border-color: var(--primary); background: var(--skrum-primary-soft); }
+  .sv-choice .sk-radio { margin-top: 0.1875rem; }
+  /* participant */
+  .sv-pp { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0 0 var(--space-12); gap: var(--space-6); background: var(--skrum-canvas); }
+  .sv-steps { display: flex; gap: 0.375rem; }
+  .sv-steps i { width: 1.75rem; height: 0.375rem; border-radius: 999px; background: var(--border); display: block; }
+  .sv-steps i.is-done { background: var(--primary); }
+  .sv-steps i.is-current { background: color-mix(in oklch, var(--primary) 45%, var(--border)); }
+  .sv-pcard { width: 47.5rem; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-2xl); box-shadow: var(--shadow-raised); padding: var(--space-10); display: flex; flex-direction: column; gap: var(--space-6); }
+  .sv-qtitle { font-family: var(--font-display); font-size: 1.875rem; line-height: 2.375rem; font-weight: 650; letter-spacing: -.02em; margin: 0; }
+  /* results */
+  .sv-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-4); }
+  .sv-rc { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-xl); box-shadow: var(--shadow-card); padding: var(--space-5); display: flex; flex-direction: column; gap: var(--space-4); min-width: 0; }
+  .sv-rc-h { display: flex; flex-direction: column; gap: 2px; }
+  .sv-vbars { display: flex; align-items: flex-end; gap: var(--space-3); height: 7.5rem; padding-bottom: 1.375rem; border-bottom: 1px solid var(--border); }
+  .sv-vbar { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 0.25rem; height: 100%; position: relative; font-size: 0.75rem; font-weight: 700; }
+  .sv-vbar b { width: 100%; max-width: 2.75rem; border-radius: 0.375rem 0.375rem 2px 2px; background: var(--chart-1); display: block; }
+  .sv-vbar small { position: absolute; bottom: -1.375rem; font-size: 0.75rem; font-weight: 600; color: var(--muted-foreground); }
+  .sv-nps { display: flex; height: 1.75rem; border-radius: var(--radius-md); overflow: hidden; gap: 2px; }
+  .sv-nps span { display: grid; place-items: center; font-size: 0.75rem; font-weight: 700; }
+  .sv-nps .d { background: var(--destructive); color: var(--destructive-foreground); }
+  .sv-nps .p { background: var(--muted); color: var(--muted-foreground); box-shadow: inset 0 0 0 1px var(--border); }
+  .sv-nps .pr { background: var(--skrum-success); color: var(--skrum-success-foreground); }
+  .sv-nps-leg { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-2); }
+  .sv-nps-leg > div { display: flex; flex-direction: column; gap: 2px; font-size: 0.75rem; color: var(--muted-foreground); }
+  .sv-nps-leg b { font-size: 1rem; color: var(--foreground); }
+  .sv-mini { display: flex; align-items: flex-end; gap: 0.1875rem; height: 2.25rem; }
+  .sv-mini i { flex: 1; border-radius: 2px 2px 0 0; display: block; background: var(--border); min-height: 2px; }
+  .sv-mini i.d { background: color-mix(in oklch, var(--destructive) 70%, var(--card)); }
+  .sv-mini i.pr { background: color-mix(in oklch, var(--skrum-success) 80%, var(--card)); }
+  .sv-mini i.p { background: var(--muted-foreground); opacity: .5; }
+  .sv-cloud { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-3); }
+  .sv-ans { border-radius: var(--radius); padding: 0.625rem 0.75rem; background: var(--c); border: 1px solid var(--c-b); font-size: 0.8125rem; line-height: 1.25rem; color: var(--foreground); }
+  .sv-kw { display: inline-flex; align-items: center; gap: 0.375rem; height: 1.625rem; padding: 0 0.625rem; border-radius: 999px; background: var(--muted); font-size: 0.75rem; font-weight: 600; }
+  .sv-kw b { color: var(--skrum-primary-text); }
+</style>
+</head>
+<body>
+
+<!-- ======================= A. CRÉATION ======================= -->
+<div class="sv-cap"><b>a</b> Création — éditeur de questions</div>
+<div class="sk-desktop">
+  <div class="sv-shell">
+    <!--SB--><nav class="sk-sidebar" aria-label="Navigation">
+  <div class="sk-brand"><svg viewBox="0 0 64 64" width="24" height="24" aria-hidden="true"><path d="M14 0 H50 A14 14 0 0 1 64 14 V46 L46 64 H14 A14 14 0 0 1 0 50 V14 A14 14 0 0 1 14 0 Z" style="fill:var(--primary)"/><path d="M64 46 L50 46 A4 4 0 0 0 46 50 L46 64 Z" style="fill:color-mix(in oklch, var(--primary) 70%, var(--foreground))"/><path d="M19 27 L19 38 C19 45 24 49.5 30 49.5 C36 49.5 41 45 41 38 L41 27" fill="none" style="stroke:var(--primary-foreground)" stroke-width="7" stroke-linecap="round"/><circle cx="21.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/><circle cx="38.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/></svg><span class="sk-brand-word">skrüm</span></div>
+  <button class="sk-team sk-team-switch" aria-haspopup="menu" aria-label="Changer d'équipe ou d'espace"><span class="sk-team-mark">A</span><span class="sk-team-txt"><span class="sk-team-name">Atlas</span><span class="sk-team-sub">Nordlys · 11 membres</span></span><i data-lucide="chevrons-up-down" class="sk-ico-sm"></i></button>
+  <div class="sk-nav-group">Équipe</div>
+  <a class="sk-nav-item"><i data-lucide="layout-dashboard"></i><span>Tableau de bord</span></a>
+  <a class="sk-nav-item is-on" aria-current="page"><i data-lucide="calendar-clock"></i><span>Sessions</span></a>
+  <a class="sk-nav-item"><i data-lucide="list-checks"></i><span>Actions</span><span class="sk-badge sk-badge--destructive sk-badge--pill">2 en retard</span></a>
+  <a class="sk-nav-item"><i data-lucide="trending-up"></i><span>Moral & ROTI</span></a>
+  <a class="sk-nav-item"><i data-lucide="party-popper"></i><span>Jeux</span></a>
+  <a class="sk-nav-item"><i data-lucide="users"></i><span>Membres</span></a>
+  <div class="sk-nav-group">Espace de travail</div>
+  <a class="sk-nav-item"><i data-lucide="layout-template"></i><span>Modèles</span></a>
+  <a class="sk-nav-item"><i data-lucide="building-2"></i><span>Toutes les équipes</span></a>
+  <span class="sk-grow"></span>
+  <a class="sk-nav-item"><i data-lucide="settings"></i><span>Paramètres de l'équipe</span></a>
+  <a class="sk-nav-item"><i data-lucide="shield-check"></i><span>Administration</span></a>
+  <button class="sk-team sk-user" aria-haspopup="menu"><span class="sk-avatar sk-p1">AR</span><span class="sk-team-txt"><span class="sk-team-name">Arnaud Ritti</span><span class="sk-team-sub">Facilitateur · Admin</span></span><i data-lucide="chevrons-up-down" class="sk-ico-sm"></i></button>
+  </nav><!--/SB-->
+    <div class="sk-main">
+      <header class="sk-topbar">
+        <nav class="sk-crumbs"><span>Atlas</span><i data-lucide="chevron-right"></i><span>Sondages</span><i data-lucide="chevron-right"></i><span class="is-current">Pulse d'équipe — sprint 42</span></nav>
+        <span class="sk-badge sk-badge--muted">Brouillon</span>
+        <span class="sk-grow"></span>
+        <span class="sk-xs sk-muted sk-row sk-gap-1"><i data-lucide="check" class="sk-ico-sm"></i>Enregistré il y a 4 s</span>
+        <button class="sk-btn sk-btn--outline"><i data-lucide="eye"></i>Aperçu</button>
+        <button class="sk-btn"><i data-lucide="send"></i>Publier</button>
+      </header>
+      <div class="sv-body">
+        <div class="sv-scroll">
+          <div class="sk-col sk-gap-1" style="margin-bottom:var(--space-2)">
+            <h1 class="sk-h2">Pulse d'équipe — sprint 42</h1>
+            <p class="sk-p sk-muted">5 questions · environ 2 minutes · envoyé à la fin de la rétro du 2 octobre</p>
+          </div>
+
+          <section class="sv-q is-selected" aria-label="Question 1, en édition">
+            <div class="sv-q-row">
+              <i data-lucide="grip-vertical" class="sv-grip"></i><span class="sv-q-n">1</span>
+              <div class="sk-select" style="width:13.125rem"><span class="sk-row sk-gap-2"><i data-lucide="gauge" style="color:var(--skrum-primary-text)"></i>Échelle 1 – 5</span><i data-lucide="chevron-down"></i></div>
+              <span class="sk-grow"></span>
+              <label class="sk-row sk-gap-2 sk-sm"><span class="sk-switch is-on"></span>Obligatoire</label>
+              <button class="sk-btn sk-btn--ghost sk-btn--icon sk-btn--sm" aria-label="Dupliquer"><i data-lucide="copy"></i></button>
+              <button class="sk-btn sk-btn--ghost sk-btn--icon sk-btn--sm" aria-label="Supprimer"><i data-lucide="trash-2"></i></button>
+            </div>
+            <div class="sv-q-b">
+              <div class="sk-input is-focus" style="height:2.5rem;font-size:0.9375rem;font-weight:600">Comment évalues-tu la charge de travail de ce sprint ?</div>
+              <div class="sk-grid" style="grid-template-columns:1fr 1fr;gap:var(--space-3)">
+                <div class="sk-field"><label class="sk-xs">Libellé du 1</label><div class="sk-input">Intenable</div></div>
+                <div class="sk-field"><label class="sk-xs">Libellé du 5</label><div class="sk-input">Très confortable</div></div>
+              </div>
+              <div class="sk-scale" aria-hidden="true"><span class="sk-scale-opt">1</span><span class="sk-scale-opt">2</span><span class="sk-scale-opt">3</span><span class="sk-scale-opt">4</span><span class="sk-scale-opt">5</span></div>
+            </div>
+          </section>
+
+          <section class="sv-q"><div class="sv-q-row"><i data-lucide="grip-vertical" class="sv-grip"></i><span class="sv-q-n">2</span><span class="sv-q-t">Recommanderais-tu l'équipe Atlas à un·e ami·e développeur·se ?</span><span class="sk-badge sk-badge--outline"><i data-lucide="chart-bar"></i>NPS 0 – 10</span><span class="sk-badge sk-badge--muted">Obligatoire</span></div></section>
+          <section class="sv-q"><div class="sv-q-row"><i data-lucide="grip-vertical" class="sv-grip"></i><span class="sv-q-n">3</span><span class="sv-q-t">Quel rituel garder absolument ?</span><span class="sk-xs sk-muted">4 options</span><span class="sk-badge sk-badge--outline"><i data-lucide="circle-dot"></i>Choix unique</span></div></section>
+          <section class="sv-q"><div class="sv-q-row"><i data-lucide="grip-vertical" class="sv-grip"></i><span class="sv-q-n">4</span><span class="sv-q-t">Qu'est-ce qui t'a freiné ce sprint ?</span><span class="sk-xs sk-muted">5 options · « Autre » activé</span><span class="sk-badge sk-badge--outline"><i data-lucide="square-check"></i>Choix multiple</span></div></section>
+          <section class="sv-q"><div class="sv-q-row"><i data-lucide="grip-vertical" class="sv-grip"></i><span class="sv-q-n">5</span><span class="sv-q-t">Un mot pour l'équipe ?</span><span class="sk-xs sk-muted">280 car. max</span><span class="sk-badge sk-badge--outline"><i data-lucide="text-cursor-input"></i>Texte libre</span></div></section>
+
+          <div class="sv-add">
+            <span class="sk-sm sk-strong sk-row sk-gap-2" style="color:var(--muted-foreground);margin-right:var(--space-2)"><i data-lucide="plus"></i>Ajouter</span>
+            <span class="sv-typechip"><i data-lucide="gauge"></i>Échelle 1 – 5</span>
+            <span class="sv-typechip"><i data-lucide="chart-bar"></i>NPS</span>
+            <span class="sv-typechip"><i data-lucide="circle-dot"></i>Choix unique</span>
+            <span class="sv-typechip"><i data-lucide="square-check"></i>Choix multiple</span>
+            <span class="sv-typechip"><i data-lucide="text-cursor-input"></i>Texte libre</span>
+          </div>
+          <div class="sk-alert sk-alert--info" style="margin-top:var(--space-2)"><i data-lucide="info"></i><span class="sk-sm">Sondage anonyme : un résultat n'est affiché qu'à partir de 3 réponses, et les réponses libres sont mélangées avant affichage.</span></div>
+        </div>
+
+        <aside class="sv-panel" aria-label="Réglages du sondage">
+          <div class="sk-between"><h2 class="sk-h4">Réglages</h2><i data-lucide="settings-2" class="sk-muted"></i></div>
+          <div class="sv-set">
+            <span class="sk-lbl">Anonymat</span>
+            <div class="sv-choice is-on"><span class="sk-radio is-on"></span><span><span class="sk-strong sk-sm sk-row sk-gap-1"><i data-lucide="venetian-mask" class="sk-ico-sm"></i>Anonyme</span><span class="sk-help">Personne, pas même toi, ne voit qui a répondu quoi.</span></span></div>
+            <div class="sv-choice"><span class="sk-radio"></span><span><span class="sk-strong sk-sm">Nominatif</span><span class="sk-help" style="display:block">Les noms apparaissent dans les résultats.</span></span></div>
+            <div class="sv-choice"><span class="sk-radio"></span><span><span class="sk-strong sk-sm">Au choix du participant</span></span></div>
+          </div>
+          <hr class="sk-sep">
+          <div class="sv-set">
+            <div class="sv-set-row"><span class="sk-switch is-on"></span><span class="sk-grow"><span class="sk-sm sk-strong">Une question à la fois</span><span class="sk-help" style="display:block">Recommandé sur mobile.</span></span></div>
+            <div class="sv-set-row"><span class="sk-switch is-on"></span><span class="sk-grow"><span class="sk-sm sk-strong">Montrer les résultats après réponse</span></span></div>
+            <div class="sv-set-row"><span class="sk-switch"></span><span class="sk-grow"><span class="sk-sm sk-strong">Autoriser les invités sans compte</span></span></div>
+          </div>
+          <hr class="sk-sep">
+          <div class="sk-field"><label class="sk-sm">Clôture</label><div class="sk-select"><span>Vendredi 3 oct. · 18:00</span><i data-lucide="calendar"></i></div><span class="sk-help">Ou dès que 11/11 membres ont répondu.</span></div>
+          <div class="sk-field"><label class="sk-sm">Seuil d'affichage</label><div class="sk-select"><span>Masquer si moins de 3 réponses</span><i data-lucide="chevron-down"></i></div></div>
+        </aside>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ======================= B. RÉPONSE ======================= -->
+<div class="sv-cap"><b>b</b> Réponse participant — une question à la fois</div>
+<div class="sk-desktop">
+  <header class="sk-topbar" style="padding:0 var(--space-6)">
+    <svg viewBox="0 0 64 64" width="28" height="28" aria-label="Skrüm"><path d="M14 0 H50 A14 14 0 0 1 64 14 V46 L46 64 H14 A14 14 0 0 1 0 50 V14 A14 14 0 0 1 14 0 Z" style="fill:var(--primary)"/><path d="M64 46 L50 46 A4 4 0 0 0 46 50 L46 64 Z" style="fill:color-mix(in oklch, var(--primary) 70%, var(--foreground))"/><path d="M19 27 L19 38 C19 45 24 49.5 30 49.5 C36 49.5 41 45 41 38 L41 27" fill="none" style="stroke:var(--primary-foreground)" stroke-width="7" stroke-linecap="round"/><circle cx="21.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/><circle cx="38.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/></svg>
+    <span class="sk-strong">Pulse d'équipe — sprint 42</span><span class="sk-muted sk-sm">· Atlas</span>
+    <span class="sk-grow"></span>
+    <span class="sk-badge sk-badge--secondary sk-badge--pill"><i data-lucide="venetian-mask"></i>Réponses anonymes</span>
+    <span class="sk-avatar sk-avatar--guest sk-avatar--sm" aria-label="Invité"><i data-lucide="user" class="sk-ico-sm"></i></span>
+  </header>
+  <div class="sv-pp">
+    <div class="sk-col" style="width:47.5rem;gap:var(--space-2)">
+      <div class="sk-between"><span class="sk-sm sk-strong">Question 2 sur 5</span><span class="sk-xs sk-muted">~ 1 min restante</span></div>
+      <div class="sv-steps" aria-hidden="true"><i class="is-done"></i><i class="is-current"></i><i></i><i></i><i></i></div>
+    </div>
+    <section class="sv-pcard" aria-labelledby="q2">
+      <div class="sk-col sk-gap-2">
+        <span class="sk-badge sk-badge--soft" style="align-self:flex-start"><i data-lucide="chart-bar"></i>NPS</span>
+        <h2 class="sv-qtitle" id="q2">Recommanderais-tu l'équipe Atlas à un·e ami·e développeur·se ?</h2>
+      </div>
+      <div class="sk-col sk-gap-2">
+        <div class="sk-scale sk-nps" role="radiogroup" aria-label="Note de 0 à 10">
+          <span class="sk-scale-opt">0</span><span class="sk-scale-opt">1</span><span class="sk-scale-opt">2</span><span class="sk-scale-opt">3</span><span class="sk-scale-opt">4</span><span class="sk-scale-opt">5</span><span class="sk-scale-opt">6</span><span class="sk-scale-opt">7</span><span class="sk-scale-opt is-on">8</span><span class="sk-scale-opt">9</span><span class="sk-scale-opt">10</span>
+        </div>
+        <div class="sk-between sk-xs sk-muted"><span>0 · Pas du tout probable</span><span>10 · Extrêmement probable</span></div>
+      </div>
+      <div class="sk-field"><label>Pourquoi cette note ? <span class="sk-muted" style="font-weight:500">(facultatif)</span></label><div class="sk-textarea" style="min-height:4.75rem">Super ambiance, mais les mises en prod du vendredi me stressent encore.</div></div>
+      <div class="sk-between">
+        <button class="sk-btn sk-btn--ghost"><i data-lucide="arrow-left"></i>Précédent</button>
+        <span class="sk-xs sk-muted sk-row sk-gap-1"><span class="sk-kbd">0</span>–<span class="sk-kbd">9</span> pour noter · <span class="sk-kbd">↵</span> pour valider</span>
+        <button class="sk-btn sk-btn--lg">Suivant<i data-lucide="arrow-right"></i></button>
+      </div>
+    </section>
+    <p class="sk-p sk-sm sk-muted sk-row sk-gap-2"><i data-lucide="lock" class="sk-ico-sm"></i>Ni le facilitateur ni l'équipe ne peuvent relier cette réponse à toi.</p>
+  </div>
+</div>
+
+<!-- ======================= C. RÉSULTATS ======================= -->
+<div class="sv-cap"><b>c</b> Résultats agrégés</div>
+<div class="sk-desktop">
+  <div class="sv-shell">
+    <!--SB--><nav class="sk-sidebar" aria-label="Navigation">
+  <div class="sk-brand"><svg viewBox="0 0 64 64" width="24" height="24" aria-hidden="true"><path d="M14 0 H50 A14 14 0 0 1 64 14 V46 L46 64 H14 A14 14 0 0 1 0 50 V14 A14 14 0 0 1 14 0 Z" style="fill:var(--primary)"/><path d="M64 46 L50 46 A4 4 0 0 0 46 50 L46 64 Z" style="fill:color-mix(in oklch, var(--primary) 70%, var(--foreground))"/><path d="M19 27 L19 38 C19 45 24 49.5 30 49.5 C36 49.5 41 45 41 38 L41 27" fill="none" style="stroke:var(--primary-foreground)" stroke-width="7" stroke-linecap="round"/><circle cx="21.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/><circle cx="38.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/></svg><span class="sk-brand-word">skrüm</span></div>
+  <button class="sk-team sk-team-switch" aria-haspopup="menu" aria-label="Changer d'équipe ou d'espace"><span class="sk-team-mark">A</span><span class="sk-team-txt"><span class="sk-team-name">Atlas</span><span class="sk-team-sub">Nordlys · 11 membres</span></span><i data-lucide="chevrons-up-down" class="sk-ico-sm"></i></button>
+  <div class="sk-nav-group">Équipe</div>
+  <a class="sk-nav-item"><i data-lucide="layout-dashboard"></i><span>Tableau de bord</span></a>
+  <a class="sk-nav-item is-on" aria-current="page"><i data-lucide="calendar-clock"></i><span>Sessions</span></a>
+  <a class="sk-nav-item"><i data-lucide="list-checks"></i><span>Actions</span><span class="sk-badge sk-badge--destructive sk-badge--pill">2 en retard</span></a>
+  <a class="sk-nav-item"><i data-lucide="trending-up"></i><span>Moral & ROTI</span></a>
+  <a class="sk-nav-item"><i data-lucide="party-popper"></i><span>Jeux</span></a>
+  <a class="sk-nav-item"><i data-lucide="users"></i><span>Membres</span></a>
+  <div class="sk-nav-group">Espace de travail</div>
+  <a class="sk-nav-item"><i data-lucide="layout-template"></i><span>Modèles</span></a>
+  <a class="sk-nav-item"><i data-lucide="building-2"></i><span>Toutes les équipes</span></a>
+  <span class="sk-grow"></span>
+  <a class="sk-nav-item"><i data-lucide="settings"></i><span>Paramètres de l'équipe</span></a>
+  <a class="sk-nav-item"><i data-lucide="shield-check"></i><span>Administration</span></a>
+  <button class="sk-team sk-user" aria-haspopup="menu"><span class="sk-avatar sk-p1">AR</span><span class="sk-team-txt"><span class="sk-team-name">Arnaud Ritti</span><span class="sk-team-sub">Facilitateur · Admin</span></span><i data-lucide="chevrons-up-down" class="sk-ico-sm"></i></button>
+  </nav><!--/SB-->
+    <div class="sk-main">
+      <header class="sk-topbar">
+        <nav class="sk-crumbs"><span>Atlas</span><i data-lucide="chevron-right"></i><span>Sondages</span><i data-lucide="chevron-right"></i><span class="is-current">Pulse d'équipe — sprint 42</span></nav>
+        <span class="sk-badge sk-badge--success"><i data-lucide="check"></i>Clôturé</span>
+        <span class="sk-grow"></span>
+        <button class="sk-btn sk-btn--outline"><i data-lucide="file-down"></i>Exporter CSV</button>
+        <button class="sk-btn"><i data-lucide="share-2"></i>Partager à l'équipe</button>
+      </header>
+      <div class="sv-scroll" style="gap:var(--space-4)">
+        <div class="sk-between">
+          <div class="sk-col sk-gap-1"><h1 class="sk-h2">Résultats</h1><span class="sk-sm sk-muted">9 réponses sur 11 membres · anonyme · clôturé le 3 oct. à 18:00</span></div>
+          <div class="sk-tabs"><span class="sk-tab is-on">Synthèse</span><span class="sk-tab">Réponses libres</span><span class="sk-tab">Comparer au sprint 41</span></div>
+        </div>
+        <div class="sv-grid">
+          <section class="sv-rc">
+            <div class="sv-rc-h"><span class="sk-xs sk-muted sk-strong">Q1 · Échelle 1 – 5</span><h3 class="sk-h4">Charge de travail du sprint</h3></div>
+            <div class="sk-row sk-gap-6"><div class="sk-stat"><span class="sk-stat-v">3,8</span><span class="sk-stat-l">moyenne / 5</span></div><div class="sk-stat"><span class="sk-stat-v">4</span><span class="sk-stat-l">réponse la plus fréquente</span></div></div>
+            <div class="sv-vbars" role="img" aria-label="1 : 0, 2 : 1, 3 : 2, 4 : 4, 5 : 2">
+              <div class="sv-vbar"><span>0</span><b style="height:2px;background:var(--border)"></b><small>1</small></div>
+              <div class="sv-vbar"><span>1</span><b style="height:1.125rem"></b><small>2</small></div>
+              <div class="sv-vbar"><span>2</span><b style="height:2.25rem"></b><small>3</small></div>
+              <div class="sv-vbar"><span>4</span><b style="height:4.5rem"></b><small>4</small></div>
+              <div class="sv-vbar"><span>2</span><b style="height:2.25rem"></b><small>5</small></div>
+            </div>
+            <div class="sk-between sk-xs sk-muted" style="margin-top:0.25rem"><span>Intenable</span><span>Très confortable</span></div>
+          </section>
+
+          <section class="sv-rc">
+            <div class="sv-rc-h"><span class="sk-xs sk-muted sk-strong">Q2 · NPS</span><h3 class="sk-h4">Recommanderais-tu l'équipe ?</h3></div>
+            <div class="sk-row sk-gap-3" style="align-items:flex-end"><div class="sk-stat"><span class="sk-stat-v">+22</span><span class="sk-stat-l">score NPS</span></div><span class="sk-badge sk-badge--success" style="margin-bottom:0.25rem"><i data-lucide="trending-up"></i>+11 vs sprint 41</span></div>
+            <div class="sv-nps" role="img" aria-label="2 détracteurs, 3 passifs, 4 promoteurs"><span class="d" style="flex:2">22 %</span><span class="p" style="flex:3">33 %</span><span class="pr" style="flex:4">44 %</span></div>
+            <div class="sv-nps-leg"><div><b>2</b>Détracteurs · 0–6</div><div><b>3</b>Passifs · 7–8</div><div><b>4</b>Promoteurs · 9–10</div></div>
+            <div class="sk-col sk-gap-1"><div class="sv-mini" aria-hidden="true"><i class="d" style="height:2px"></i><i class="d" style="height:2px"></i><i class="d" style="height:2px"></i><i class="d" style="height:2px"></i><i class="d" style="height:2px"></i><i class="d" style="height:0.75rem"></i><i class="d" style="height:0.75rem"></i><i class="p" style="height:1.5rem"></i><i class="p" style="height:0.75rem"></i><i class="pr" style="height:1.5rem"></i><i class="pr" style="height:1.5rem"></i></div><div class="sk-between sk-xs sk-muted"><span>0</span><span>Répartition des notes</span><span>10</span></div></div>
+          </section>
+
+          <section class="sv-rc">
+            <div class="sv-rc-h"><span class="sk-xs sk-muted sk-strong">Q3 · Choix unique</span><h3 class="sk-h4">Quel rituel garder absolument ?</h3></div>
+            <div class="sk-col sk-gap-4">
+              <div class="sk-result"><div class="sk-between sk-sm"><span class="sk-strong">Rétrospective</span><span class="sk-tnum">5 · 56 %</span></div><div class="sk-result-bar"><span style="width:56%"></span></div></div>
+              <div class="sk-result"><div class="sk-between sk-sm"><span>Daily</span><span class="sk-tnum sk-muted">2 · 22 %</span></div><div class="sk-result-bar"><span style="width:22%;background:var(--chart-2)"></span></div></div>
+              <div class="sk-result"><div class="sk-between sk-sm"><span>Planning poker</span><span class="sk-tnum sk-muted">1 · 11 %</span></div><div class="sk-result-bar"><span style="width:11%;background:var(--chart-2)"></span></div></div>
+              <div class="sk-result"><div class="sk-between sk-sm"><span>Revue de sprint</span><span class="sk-tnum sk-muted">1 · 11 %</span></div><div class="sk-result-bar"><span style="width:11%;background:var(--chart-2)"></span></div></div>
+            </div>
+          </section>
+
+          <section class="sv-rc">
+            <div class="sv-rc-h"><span class="sk-xs sk-muted sk-strong">Q4 · Choix multiple</span><h3 class="sk-h4">Qu'est-ce qui t'a freiné ?</h3><span class="sk-xs sk-muted">% des 9 répondants · plusieurs choix possibles</span></div>
+            <div class="sk-col sk-gap-4">
+              <div class="sk-result"><div class="sk-between sk-sm"><span class="sk-strong">Trop de réunions</span><span class="sk-tnum">6 · 67 %</span></div><div class="sk-result-bar"><span style="width:67%;background:var(--chart-3)"></span></div></div>
+              <div class="sk-result"><div class="sk-between sk-sm"><span>Dépendance équipe Paiement</span><span class="sk-tnum sk-muted">5 · 56 %</span></div><div class="sk-result-bar"><span style="width:56%;background:var(--chart-3)"></span></div></div>
+              <div class="sk-result"><div class="sk-between sk-sm"><span>Environnement de recette</span><span class="sk-tnum sk-muted">4 · 44 %</span></div><div class="sk-result-bar"><span style="width:44%;background:var(--chart-3)"></span></div></div>
+              <div class="sk-result"><div class="sk-between sk-sm"><span>Specs floues</span><span class="sk-tnum sk-muted">3 · 33 %</span></div><div class="sk-result-bar"><span style="width:33%;background:var(--chart-3)"></span></div></div>
+            </div>
+          </section>
+
+          <section class="sv-rc" style="grid-column:span 2">
+            <div class="sk-between"><div class="sv-rc-h"><span class="sk-xs sk-muted sk-strong">Q5 · Texte libre · 7 réponses</span><h3 class="sk-h4">Un mot pour l'équipe ?</h3></div><button class="sk-btn sk-btn--outline sk-btn--sm"><i data-lucide="sticky-note"></i>Envoyer au whiteboard</button></div>
+            <div class="sk-row sk-gap-2"><span class="sv-kw">entraide <b>×3</b></span><span class="sv-kw">réunions <b>×2</b></span><span class="sv-kw">mises en prod <b>×2</b></span><span class="sv-kw">Postgres <b>×1</b></span></div>
+            <div class="sv-cloud">
+              <p class="sv-ans sk-c-moss sk-p">Merci Malik pour l'entraide sur la migration Postgres.</p>
+              <p class="sv-ans sk-c-sky sk-p">Moins de réunions le lundi, pitié.</p>
+              <p class="sv-ans sk-c-sun sk-p">Belle entraide cette fois, on a enfin tenu l'objectif.</p>
+              <p class="sv-ans sk-c-apricot sk-p">Les mises en prod du vendredi me stressent.</p>
+              <p class="sv-ans sk-c-lagoon sk-p">Le pair-programming du jeudi, à garder !</p>
+              <p class="sv-ans sk-c-plum sk-p">Trop de réunions, pas assez de focus.</p>
+            </div>
+            <button class="sk-btn sk-btn--link sk-sm" style="align-self:flex-start">Voir les 7 réponses</button>
+          </section>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

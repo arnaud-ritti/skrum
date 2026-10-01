@@ -1,0 +1,70 @@
+<!-- @dsCard group="shadcn · Formulaires" height=430 subtitle="Checkbox + RadioGroup + Switch — off, on, mixte, focus, désactivé, avec libellé et description" -->
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><title>Checkbox</title>
+<style>
+  .cb-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 17.5rem), 1fr)); gap: var(--space-8); align-items: start; }
+  .cb-choice { display: flex; gap: var(--space-2); align-items: flex-start; font-size: 0.875rem; line-height: 1.25rem; }
+  .cb-choice > .sk-check, .cb-choice > .sk-radio { margin-top: 2px; }
+  .cb-choice.is-disabled { opacity: .5; }
+  .cb-desc { display: block; font-size: 0.8125rem; color: var(--muted-foreground); }
+  .cb-strong { font-weight: 600; }
+  .cb-nest { padding-left: var(--space-6); display: flex; flex-direction: column; gap: var(--space-2); }
+  .cb-focus { outline: 2px solid var(--ring); outline-offset: 2px; }
+  .cb-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-3) 0; border-bottom: 1px solid var(--border); }
+  .cb-row:last-child { border-bottom: 0; }
+  .cb-switch-dis { opacity: .5; }
+  .cb-radio-card { display: flex; gap: var(--space-3); align-items: flex-start; padding: var(--space-3); border: 1px solid var(--input); border-radius: var(--radius); background: var(--card); }
+  .cb-radio-card.is-on { border-color: var(--primary); background: var(--skrum-primary-soft); box-shadow: inset 0 0 0 1px var(--primary); }
+  .cb-radio-card > .sk-radio { margin-top: 2px; }
+</style></head>
+<body>
+<div class="sk-pad">
+  <div class="cb-grid">
+    <div class="sk-col">
+      <div class="sk-state">Checkbox</div>
+      <label class="cb-choice"><span class="sk-check" role="checkbox" aria-checked="false"></span>Masquer les cartes pendant l'écriture</label>
+      <label class="cb-choice"><span class="sk-check is-on" role="checkbox" aria-checked="true"></span>Autoriser les participants anonymes</label>
+      <label class="cb-choice"><span class="sk-check is-on cb-focus" role="checkbox" aria-checked="true"></span>Focus clavier</label>
+      <label class="cb-choice is-disabled"><span class="sk-check" role="checkbox" aria-disabled="true"></span>Exporter vers Jira (non configuré)</label>
+      <label class="cb-choice is-disabled"><span class="sk-check is-on" role="checkbox" aria-disabled="true"></span>Désactivé coché</label>
+      <div class="sk-sep"></div>
+      <div class="sk-state" style="margin:0">Mixte (parent)</div>
+      <label class="cb-choice"><span class="sk-check is-mixed" role="checkbox" aria-checked="mixed"></span><span class="cb-strong">Actions du sprint 42 · 2/3</span></label>
+      <div class="cb-nest">
+        <label class="cb-choice"><span class="sk-check is-on"></span>Isoler les données E2E</label>
+        <label class="cb-choice"><span class="sk-check is-on"></span>Revue de code avant 16 h</label>
+        <label class="cb-choice"><span class="sk-check"></span>Point hebdo avec le PO</label>
+      </div>
+    </div>
+
+    <div class="sk-col">
+      <div class="sk-state">RadioGroup</div>
+      <div class="sk-col sk-gap-2" role="radiogroup" aria-label="Visibilité des votes">
+        <label class="cb-choice"><span class="sk-radio is-on" role="radio" aria-checked="true"></span><span>Votes secrets<span class="cb-desc">Révélés par le facilitateur.</span></span></label>
+        <label class="cb-choice"><span class="sk-radio" role="radio"></span><span>Votes visibles<span class="cb-desc">Chacun voit les votes en direct.</span></span></label>
+        <label class="cb-choice"><span class="sk-radio cb-focus" role="radio"></span><span>Focus clavier</span></label>
+        <label class="cb-choice is-disabled"><span class="sk-radio" role="radio" aria-disabled="true"></span><span>Pondérés (bientôt)</span></label>
+      </div>
+      <div class="sk-sep"></div>
+      <div class="sk-state" style="margin:0">Radio en cartes</div>
+      <div class="sk-col sk-gap-2" role="radiogroup">
+        <label class="cb-radio-card is-on"><span class="sk-radio is-on"></span><span><span class="cb-strong">3 votes</span> par participant<span class="cb-desc">Recommandé jusqu'à 10 personnes.</span></span></label>
+        <label class="cb-radio-card"><span class="sk-radio"></span><span><span class="cb-strong">5 votes</span> par participant</span></label>
+      </div>
+    </div>
+
+    <div class="sk-col">
+      <div class="sk-state">Switch</div>
+      <div class="sk-card" style="padding:0 var(--space-4)">
+        <div class="cb-row"><span><span class="cb-strong">Timer par phase</span><span class="cb-desc">Sonnerie discrète à la fin.</span></span><span class="sk-switch is-on" role="switch" aria-checked="true"></span></div>
+        <div class="cb-row"><span><span class="cb-strong">Réactions emoji</span><span class="cb-desc">Sur les cartes révélées.</span></span><span class="sk-switch" role="switch" aria-checked="false"></span></div>
+        <div class="cb-row"><span><span class="cb-strong">Focus clavier</span><span class="cb-desc">Atteint via Tab.</span></span><span class="sk-switch is-on cb-focus" role="switch" aria-checked="true"></span></div>
+        <div class="cb-row cb-switch-dis"><span><span class="cb-strong">SSO obligatoire</span><span class="cb-desc">Réservé à l'admin d'instance.</span></span><span class="sk-switch" role="switch" aria-disabled="true"></span></div>
+        <div class="cb-row cb-switch-dis"><span><span class="cb-strong">Chiffrement au repos</span><span class="cb-desc">Imposé par l'instance.</span></span><span class="sk-switch is-on" role="switch" aria-disabled="true"></span></div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

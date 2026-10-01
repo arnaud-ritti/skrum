@@ -1,0 +1,60 @@
+<!-- @dsCard group="shadcn · Formulaires" height=484 subtitle="Slider + Progress — valeurs, plage, focus, désactivé ; progress déterminé avec libellé, succès, indéterminé" -->
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><title>Slider</title>
+<style>
+  .sd-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 17.5rem), 1fr)); gap: var(--space-10); align-items: start; }
+  .sd-val { font-family: var(--font-mono); font-size: 0.8125rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .sd-thumb-focus { outline: 2px solid var(--ring); outline-offset: 2px; }
+  .sd-dis { opacity: .5; }
+  .sd-ticks { display: flex; justify-content: space-between; font-size: 0.6875rem; line-height: 1rem; color: var(--muted-foreground); margin-top: 0.25rem; font-variant-numeric: tabular-nums; }
+  .sd-range { position: absolute; left: 0; top: 0.4375rem; height: 0.375rem; background: var(--primary); border-radius: 999px; }
+  .sd-bubble { position: absolute; top: -1.875rem; transform: translateX(-50%); background: var(--foreground); color: var(--background); font-size: 0.75rem; font-weight: 600; line-height: 1rem; padding: 0.1875rem 0.4375rem; border-radius: var(--radius-sm); white-space: nowrap; }
+  .sd-indet { position: relative; }
+  .sd-indet > span { width: 38%; position: absolute; left: 0; top: 0; animation: sd-slide 1.4s var(--ease-standard) infinite; }
+  .sd-success > span { background: var(--skrum-success); }
+  @keyframes sd-slide { 0% { left: -38%; } 100% { left: 100%; } }
+  @media (prefers-reduced-motion: reduce) { .sd-indet > span { animation: none; left: 31%; } }
+</style></head>
+<body>
+<div class="sk-pad sd-grid">
+  <div class="sk-col sk-gap-6">
+    <div><div class="sk-state">Slider · valeur simple</div>
+      <div class="sk-field"><div class="sk-between"><span class="sk-lbl">Votes par participant</span><span class="sd-val">3</span></div>
+        <div class="sk-slider" role="slider" aria-valuemin="1" aria-valuemax="10" aria-valuenow="3"><div class="sk-slider-track"><div class="sk-slider-range" style="width:22%"></div></div><div class="sk-slider-thumb" style="left:22%"></div></div>
+        <div class="sd-ticks"><span>1</span><span>10</span></div></div></div>
+    <div><div class="sk-state">Focus clavier · bulle de valeur</div>
+      <div class="sk-field"><div class="sk-between"><span class="sk-lbl">Durée de la phase Écriture</span><span class="sd-val">8 min</span></div>
+        <div class="sk-slider" style="margin-top:var(--space-6)"><div class="sk-slider-track"><div class="sk-slider-range" style="width:50%"></div></div><div class="sk-slider-thumb sd-thumb-focus" style="left:50%"></div><span class="sd-bubble" style="left:50%">8 min</span></div>
+        <div class="sd-ticks"><span>2 min</span><span>15 min</span></div></div></div>
+    <div><div class="sk-state">Plage (deux curseurs)</div>
+      <div class="sk-field"><div class="sk-between"><span class="sk-lbl">Taille d'équipe visée</span><span class="sd-val">4 – 9</span></div>
+        <div class="sk-slider"><div class="sk-slider-track"></div><div class="sd-range" style="left:20%;width:50%"></div><div class="sk-slider-thumb" style="left:20%"></div><div class="sk-slider-thumb" style="left:70%"></div></div></div></div>
+    <div class="sd-dis"><div class="sk-state">Désactivé</div>
+      <div class="sk-field"><div class="sk-between"><span class="sk-lbl">Limite de caractères</span><span class="sd-val">280</span></div>
+        <div class="sk-slider" aria-disabled="true"><div class="sk-slider-track"><div class="sk-slider-range" style="width:56%"></div></div><div class="sk-slider-thumb" style="left:56%;box-shadow:none"></div></div></div></div>
+  </div>
+
+  <div class="sk-col sk-gap-6">
+    <div><div class="sk-state">Progress · avec libellé</div>
+      <div class="sk-field"><div class="sk-between"><span class="sk-lbl">Participants ayant voté</span><span class="sd-val">7 / 9</span></div>
+        <div class="sk-progress" role="progressbar" aria-valuenow="78" aria-valuemin="0" aria-valuemax="100"><span style="width:78%"></span></div>
+        <span class="sk-help">Plus que Yuki et Bastien.</span></div></div>
+    <div><div class="sk-state">Progress · valeurs</div>
+      <div class="sk-col sk-gap-2">
+        <div class="sk-row sk-gap-2" style="flex-wrap:nowrap"><div class="sk-progress sk-grow"><span style="width:0%"></span></div><span class="sd-val" style="width:2.5rem;text-align:right">0 %</span></div>
+        <div class="sk-row sk-gap-2" style="flex-wrap:nowrap"><div class="sk-progress sk-grow"><span style="width:35%"></span></div><span class="sd-val" style="width:2.5rem;text-align:right">35 %</span></div>
+        <div class="sk-row sk-gap-2" style="flex-wrap:nowrap"><div class="sk-progress sk-grow sd-success"><span style="width:100%"></span></div><span class="sd-val" style="width:2.5rem;text-align:right">100 %</span></div>
+      </div></div>
+    <div><div class="sk-state">Progress · actions de la rétro</div>
+      <div class="sk-card sk-card-b sk-col sk-gap-2">
+        <div class="sk-between"><span class="sk-strong">Actions sprint 41</span><span class="sk-badge sk-badge--success"><i data-lucide="circle-check"></i>4 / 6 faites</span></div>
+        <div class="sk-progress sd-success"><span style="width:66%"></span></div>
+      </div></div>
+    <div><div class="sk-state">Progress · indéterminé</div>
+      <div class="sk-field"><div class="sk-row sk-gap-2"><span class="sk-trema" style="color:var(--skrum-primary-text)"><i></i><i></i></span><span class="sk-lbl">Export vers Jira en cours…</span></div>
+        <div class="sk-progress sd-indet" role="progressbar" aria-busy="true" aria-label="Export en cours"><span></span></div></div></div>
+  </div>
+</div>
+</body>
+</html>

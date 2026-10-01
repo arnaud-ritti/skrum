@@ -1,0 +1,233 @@
+<!-- @dsCard group="Écrans · Mobile" width=1440 height=972 subtitle="Board rétro — Écriture (colonnes en onglets, cartes des autres masquées, + flottant, FacilitatorBar compacte) · Vote (budget, grands boutons) · Actions (Drawer d'ajout ouvert)" -->
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><title>MobileRetro</title>
+<style>
+/* mobile helpers (local, tokens only) */
+.m-app{flex:1;min-height:0;display:flex;flex-direction:column;position:relative}
+.m-bar{height:3.25rem;flex:none;display:flex;align-items:center;gap:var(--space-1);padding:0 var(--space-2)}
+.m-bar-t{flex:1;min-width:0;display:flex;flex-direction:column;padding:0 var(--space-1)}
+.m-bar-t b{font-size:1rem;line-height:1.25rem;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.m-bar-t small{font-size:0.75rem;line-height:1rem;color:var(--muted-foreground);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.m-body{flex:1;min-height:0;overflow:hidden;padding:var(--space-2) var(--space-4) var(--space-4);display:flex;flex-direction:column;gap:var(--space-4)}
+.m-foot{flex:none;padding:var(--space-3) var(--space-4) 1.875rem;border-top:1px solid var(--border);background:var(--background);display:flex;gap:var(--space-2)}
+.m-foot > .sk-btn{flex:1}
+.m-sec{font-size:0.75rem;line-height:1rem;font-weight:650;letter-spacing:.06em;text-transform:uppercase;color:var(--muted-foreground);display:flex;align-items:center;gap:var(--space-2)}
+.m-sec .sk-grow + *{letter-spacing:0;text-transform:none}
+.m-chips{display:flex;gap:var(--space-2);overflow:hidden;margin:0 calc(-1 * var(--space-4));padding:0.25rem var(--space-4)}
+.m-chip{position:relative;flex:none;height:2.25rem;padding:0 0.875rem;border-radius:var(--radius-full);border:1px solid var(--input);background:var(--card);display:inline-flex;align-items:center;gap:0.375rem;font-size:0.875rem;font-weight:600;color:var(--foreground);white-space:nowrap}
+.m-chip::before{content:"";position:absolute;inset:-0.25rem 0}
+.m-chip .n{font-size:0.75rem;font-weight:700;color:var(--muted-foreground)}
+.m-chip.is-on{background:var(--foreground);border-color:var(--foreground);color:var(--background)}
+.m-chip.is-on .n{color:inherit;opacity:.75}
+.m-tabnav{flex:none;display:flex;border-top:1px solid var(--border);background:var(--card);padding:0.25rem var(--space-2) 1.625rem}
+.m-tabnav a{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:3.125rem;font-size:0.6875rem;line-height:0.875rem;font-weight:600;color:var(--muted-foreground);text-decoration:none}
+.m-tabnav a .lucide{width:1.375rem;height:1.375rem}
+.m-tabnav a.is-on{color:var(--skrum-primary-text)}
+.m-list{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-xl);overflow:hidden}
+.m-li{min-height:3.25rem;display:flex;align-items:center;gap:var(--space-3);padding:var(--space-2) var(--space-4);font-size:0.9375rem;line-height:1.25rem}
+.m-li + .m-li{border-top:1px solid var(--border)}
+.m-li > .lucide:last-child{color:var(--muted-foreground)}
+.m-li-v{font-size:0.875rem;color:var(--muted-foreground);white-space:nowrap}
+.m-ico{width:2rem;height:2rem;border-radius:var(--radius-md);display:grid;place-items:center;flex:none;background:var(--c,var(--muted));color:var(--c-t,var(--foreground));border:1px solid var(--c-b,transparent)}
+.m-fab{position:absolute;right:var(--space-4);width:3.5rem;height:3.5rem;border-radius:var(--radius-full);background:var(--primary);color:var(--primary-foreground);display:grid;place-items:center;box-shadow:var(--shadow-raised);z-index:3}
+.m-fab .lucide{width:1.5rem;height:1.5rem}
+
+.m-drawer{position:absolute;left:0;right:0;bottom:0;z-index:5;border-left:0;border-right:0;padding-bottom:1.875rem}
+.sk-phone-status .lucide{width:1rem;height:1rem}
+.sk-phone-home{z-index:9}
+.m-foot.is-col{flex-direction:column}.m-foot.is-col > .sk-btn{flex:none}
+.sk-stack > .sk-avatar--sm + .sk-avatar{margin-left:-0.3125rem}
+
+.rhead{flex:none;display:flex;flex-direction:column;gap:var(--space-2);padding:0 0 var(--space-2);border-bottom:1px solid var(--border);background:var(--background)}
+.rhead .sk-phases{align-self:center;box-shadow:none}
+.rhead .sk-phase{height:1.75rem}
+.ctabs{display:flex;gap:var(--space-2);overflow:hidden;padding:2px var(--space-4) 0}
+.ctab{position:relative;flex:none;height:2.75rem;padding:0 0.75rem;border-radius:var(--radius);display:inline-flex;align-items:center;gap:0.5rem;font-size:0.875rem;font-weight:650;color:var(--muted-foreground);border:1px solid transparent;white-space:nowrap}
+.ctab .sk-column-swatch{width:0.625rem;height:0.625rem}
+.ctab.is-on{background:var(--c);border-color:var(--c-b);color:var(--foreground)}
+.ctab .sk-column-count{line-height:1.125rem;font-size:0.6875rem}
+.swipe{display:flex;justify-content:center;gap:0.3125rem}
+.swipe i{width:0.375rem;height:0.375rem;border-radius:50%;background:var(--border)}
+.swipe i.is-on{width:1.125rem;border-radius:999px;background:var(--c-b)}
+.colbody{flex:1;min-height:0;overflow:hidden;padding:var(--space-3) var(--space-4) var(--space-4);display:flex;flex-direction:column;gap:var(--space-3);background:color-mix(in oklch, var(--c) 30%, var(--skrum-canvas))}
+.colbody .sk-rcard{font-size:0.9375rem}
+.m-fbar{flex:none;margin:0 var(--space-3) 1.625rem;display:flex;border-radius:var(--radius-xl);gap:var(--space-1);padding:0.375rem}
+.m-fbar .sk-timer{height:2.75rem}
+.m-fbar .sk-btn{height:2.75rem}
+.vstep{display:inline-flex;align-items:center;border-radius:var(--radius-full);border:1px solid var(--border);background:var(--card);overflow:hidden}
+.vstep span{width:2.75rem;height:2.75rem;display:grid;place-items:center;color:var(--foreground)}
+.vstep b{min-width:1.75rem;text-align:center;font-size:1rem;font-variant-numeric:tabular-nums}
+.vstep.is-mine{border-color:var(--primary);background:var(--skrum-primary-soft)}
+.vstep.is-mine b{color:var(--skrum-primary-text)}
+.vstep span.is-disabled{color:var(--muted-foreground);opacity:.5}
+.budget{display:flex;align-items:center;gap:var(--space-3);margin:0 var(--space-4);padding:0 var(--space-4);height:3rem;border-radius:var(--radius-xl);background:var(--card);border:1px solid var(--border);box-shadow:var(--shadow-card);font-size:0.875rem;font-weight:600}
+.budget .sk-vdot{width:0.875rem;height:0.875rem}
+.disc{display:flex;gap:var(--space-3);align-items:center;padding:var(--space-3);border-radius:var(--radius);background:var(--c);border:1px solid var(--c-b)}
+.disc .n{min-width:2.25rem;height:2.25rem;border-radius:var(--radius-md);display:grid;place-items:center;background:var(--card);font-weight:700;color:var(--c-t);font-size:0.875rem;flex:none}
+.pick{display:flex;gap:var(--space-2);overflow:hidden;margin:0 calc(-1 * var(--space-5));padding:2px var(--space-5)}
+.pick .m-chip{padding-left:0.25rem;height:2.5rem}
+.pick .m-chip .sk-avatar{width:1.875rem;height:1.875rem;font-size:0.6875rem}
+.seg3{display:flex;gap:var(--space-2)}
+.seg3 span{flex:1;height:2.75rem;border-radius:var(--radius);border:1px solid var(--input);background:var(--card);display:flex;align-items:center;justify-content:center;gap:0.375rem;font-weight:600;font-size:0.875rem}
+.seg3 span.is-on{border-color:var(--primary);background:var(--skrum-primary-soft);color:var(--skrum-primary-text);box-shadow:inset 0 0 0 1px var(--primary)}
+</style></head>
+<body class="sk-canvas">
+<div class="sk-phones">
+
+  <!-- 1. Écriture -->
+  <div>
+    <div class="sk-phone">
+      <div class="sk-phone-status"><span>9:41</span><span class="sk-row sk-gap-1"><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></span></div>
+      <div class="m-app sk-c-coral">
+        <div class="rhead">
+          <div class="m-bar">
+            <a class="sk-btn sk-btn--ghost sk-btn--icon sk-btn--lg" aria-label="Quitter"><i data-lucide="chevron-left" class="sk-ico-lg"></i></a>
+            <span class="m-bar-t"><b>Rétro · Sprint 42</b><small>Atlas · 7 en ligne</small></span>
+            <span class="sk-stack"><span class="sk-avatar sk-avatar--sm sk-p2 is-typing" style="--typing:var(--skrum-presence-2)">TM</span><span class="sk-avatar sk-avatar--sm sk-p9">IB</span><span class="sk-avatar sk-avatar--sm sk-stack-more">+4</span></span>
+            <a class="sk-btn sk-btn--ghost sk-btn--icon sk-btn--lg" aria-label="Plus"><i data-lucide="ellipsis" class="sk-ico-lg"></i></a>
+          </div>
+          <nav class="sk-phases is-compact" aria-label="Phases de la rétro"><span class="sk-phase is-done"><span class="sk-phase-n"><i data-lucide="check"></i></span><span class="sk-phase-l">Icebreaker</span></span><span class="sk-phase-link"></span><span class="sk-phase is-current" aria-current="step"><span class="sk-phase-n">2</span><span class="sk-phase-l">Écriture</span></span><span class="sk-phase-link"></span><span class="sk-phase"><span class="sk-phase-n">3</span><span class="sk-phase-l">Regroupement</span></span><span class="sk-phase-link"></span><span class="sk-phase"><span class="sk-phase-n">4</span><span class="sk-phase-l">Vote</span></span><span class="sk-phase-link"></span><span class="sk-phase"><span class="sk-phase-n">5</span><span class="sk-phase-l">Discussion</span></span><span class="sk-phase-link"></span><span class="sk-phase"><span class="sk-phase-n">6</span><span class="sk-phase-l">Actions</span></span><span class="sk-phase-link"></span><span class="sk-phase"><span class="sk-phase-n">7</span><span class="sk-phase-l">ROTI</span></span></nav>
+          <div class="ctabs" role="tablist">
+            <span class="ctab sk-c-moss" role="tab"><span class="sk-column-swatch"></span>Bien passé<span class="sk-column-count">6</span></span>
+            <span class="ctab sk-c-coral is-on" role="tab" aria-selected="true"><span class="sk-column-swatch"></span>À améliorer<span class="sk-column-count">4</span></span>
+            <span class="ctab sk-c-sky" role="tab"><span class="sk-column-swatch"></span>Idées<span class="sk-column-count">2</span></span>
+          </div>
+          <div class="swipe" aria-hidden="true"><i></i><i class="is-on"></i><i></i><i></i></div>
+        </div>
+        <div class="colbody">
+          <div class="sk-row sk-xs" style="color:var(--c-t);font-weight:600;gap:0.375rem"><i data-lucide="eye-off" class="sk-ico-sm"></i>Les cartes des autres restent masquées jusqu'à la révélation</div>
+          <article class="sk-rcard sk-c-coral">
+            <p class="sk-rcard-text">Les tests E2E cassent une fois sur trois en CI, on relance à l'aveugle.</p>
+            <div class="sk-rcard-foot"><span class="sk-rcard-author"><span class="sk-avatar sk-avatar--xs sk-p4">CR</span>Vous</span><span class="sk-grow"></span><a class="sk-btn sk-btn--ghost sk-btn--icon" style="width:2.75rem;height:2.75rem;margin:-0.625rem -0.5rem -0.625rem 0" aria-label="Modifier"><i data-lucide="pencil"></i></a></div>
+          </article>
+          <article class="sk-rcard sk-c-coral is-masked">
+            <p class="sk-rcard-text">Texte masqué pour les autres participants.</p>
+            <div class="sk-rcard-foot"><span class="sk-mask-note"><i data-lucide="eye-off" class="sk-ico-sm"></i>Carte d'un participant</span></div>
+          </article>
+          <article class="sk-rcard sk-c-coral is-masked">
+            <p class="sk-rcard-text">Texte masqué court.</p>
+            <div class="sk-rcard-foot"><span class="sk-mask-note"><i data-lucide="eye-off" class="sk-ico-sm"></i>Carte d'un participant</span></div>
+          </article>
+          <div class="sk-typing" style="padding-left:var(--space-1)"><span class="sk-avatar sk-avatar--xs sk-p2">TM</span>Théo écrit<span class="sk-trema" style="color:var(--skrum-presence-2)"><i></i><i></i></span></div>
+        </div>
+        <a class="m-fab" style="bottom:6.5rem" aria-label="Ajouter une carte dans À améliorer"><i data-lucide="plus"></i></a>
+        <div style="background:color-mix(in oklch, var(--c) 30%, var(--skrum-canvas))">
+          <div class="sk-fbar m-fbar" aria-label="Barre de facilitation">
+            <span class="sk-fbar-role" style="height:2.75rem;padding:0 0.625rem" aria-label="Vous facilitez"><i data-lucide="crown"></i></span>
+            <span class="sk-timer" style="--p:.62"><span class="sk-timer-ring"></span>04:12</span>
+            <a class="sk-btn sk-grow"><i data-lucide="eye"></i>Révéler</a>
+            <a class="sk-btn sk-btn--outline sk-btn--icon" style="width:2.75rem" aria-label="Phase suivante"><i data-lucide="skip-forward"></i></a>
+          </div>
+        </div>
+      </div>
+      <div class="sk-phone-home"></div>
+    </div>
+    <div class="sk-phone-cap">Écriture — onglets de colonnes, + flottant</div>
+  </div>
+
+  <!-- 2. Vote -->
+  <div>
+    <div class="sk-phone">
+      <div class="sk-phone-status"><span>9:41</span><span class="sk-row sk-gap-1"><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></span></div>
+      <div class="m-app sk-c-moss">
+        <div class="rhead">
+          <div class="m-bar">
+            <a class="sk-btn sk-btn--ghost sk-btn--icon sk-btn--lg" aria-label="Quitter"><i data-lucide="chevron-left" class="sk-ico-lg"></i></a>
+            <span class="m-bar-t"><b>Rétro · Sprint 42</b><small>Vote · 02:40 restantes</small></span>
+            <span class="sk-avatar sk-avatar--sm sk-p7">YU</span>
+            <a class="sk-btn sk-btn--ghost sk-btn--icon sk-btn--lg" aria-label="Plus"><i data-lucide="ellipsis" class="sk-ico-lg"></i></a>
+          </div>
+          <div class="budget" role="status">
+            <span>Vos votes</span>
+            <span class="sk-votes"><span class="sk-vdot is-on"></span><span class="sk-vdot is-on"></span><span class="sk-vdot is-on"></span><span class="sk-vdot"></span><span class="sk-vdot"></span></span>
+            <span class="sk-grow"></span><span class="sk-muted">2 restants</span>
+          </div>
+          <div class="ctabs" role="tablist">
+            <span class="ctab sk-c-moss is-on" role="tab" aria-selected="true"><span class="sk-column-swatch"></span>Bien passé<span class="sk-column-count">6</span></span>
+            <span class="ctab sk-c-coral" role="tab"><span class="sk-column-swatch"></span>À améliorer<span class="sk-column-count">5</span></span>
+            <span class="ctab sk-c-sky" role="tab"><span class="sk-column-swatch"></span>Idées<span class="sk-column-count">3</span></span>
+          </div>
+          <div class="swipe" aria-hidden="true"><i class="is-on"></i><i></i><i></i><i></i></div>
+        </div>
+        <div class="colbody">
+          <article class="sk-rcard sk-c-moss">
+            <p class="sk-rcard-text">La démo client s'est super bien passée, le nouvel onboarding a convaincu.</p>
+            <div class="sk-rcard-foot"><span class="sk-rcard-author"><span class="sk-avatar sk-avatar--xs sk-p4">CR</span>Camille</span><span class="sk-grow"></span>
+              <span class="vstep is-mine" aria-label="Vos votes : 2"><span aria-label="Retirer un vote"><i data-lucide="minus"></i></span><b>2</b><span aria-label="Ajouter un vote"><i data-lucide="plus"></i></span></span></div>
+          </article>
+          <div class="sk-group sk-c-moss">
+            <div class="sk-group-h"><i data-lucide="layers" class="sk-ico-sm" style="color:var(--c-t)"></i><span class="sk-group-t">Entraide</span><span class="sk-xs sk-muted">3 cartes</span></div>
+            <p class="sk-p sk-sm">Pair-programming du jeudi · Revues rapides d'Inès · Aide de Malik sur Postgres</p>
+            <div class="sk-rcard-foot"><span class="sk-grow"></span><span class="vstep is-mine"><span><i data-lucide="minus"></i></span><b>1</b><span><i data-lucide="plus"></i></span></span></div>
+          </div>
+          <article class="sk-rcard sk-c-moss">
+            <p class="sk-rcard-text">Le nouveau pipeline de déploiement Kapsule tourne en 6 min.</p>
+            <div class="sk-rcard-foot"><span class="sk-anon"><i data-lucide="venetian-mask"></i>Anonyme</span><span class="sk-grow"></span>
+              <span class="vstep"><span class="is-disabled"><i data-lucide="minus"></i></span><b>0</b><span><i data-lucide="plus"></i></span></span></div>
+          </article>
+        </div>
+        <div class="m-foot is-col" style="background:color-mix(in oklch, var(--c) 30%, var(--skrum-canvas))">
+          <span class="sk-xs sk-muted" style="text-align:center"><i data-lucide="eye-off" class="sk-ico-sm" style="vertical-align:-2px"></i> Totaux masqués jusqu'à la fin du vote</span>
+          <a class="sk-btn sk-btn--lg sk-btn--secondary sk-btn--block"><i data-lucide="check"></i>J'ai terminé de voter</a>
+        </div>
+      </div>
+      <div class="sk-phone-home"></div>
+    </div>
+    <div class="sk-phone-cap">Vote — budget + grands boutons ±</div>
+  </div>
+
+  <!-- 3. Actions + Drawer -->
+  <div>
+    <div class="sk-phone">
+      <div class="sk-phone-status"><span>9:41</span><span class="sk-row sk-gap-1"><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></span></div>
+      <div class="m-app">
+        <div class="rhead">
+          <div class="m-bar">
+            <a class="sk-btn sk-btn--ghost sk-btn--icon sk-btn--lg" aria-label="Quitter"><i data-lucide="chevron-left" class="sk-ico-lg"></i></a>
+            <span class="m-bar-t"><b>Rétro · Sprint 42</b><small>Actions · 5/5</small></span>
+            <span class="sk-timer" style="height:2rem;font-size:0.875rem;--p:.4"><span class="sk-timer-ring"></span>06:00</span>
+          </div>
+        </div>
+        <div class="m-body" style="padding-top:var(--space-4);gap:var(--space-3)">
+          <div class="m-sec">Sujets les plus votés</div>
+          <div class="disc sk-c-coral"><span class="n">9</span><span class="sk-grow" style="font-weight:600">Tests E2E instables en CI</span><span class="sk-badge sk-badge--muted">0 action</span></div>
+          <div class="disc sk-c-coral"><span class="n">7</span><span class="sk-grow" style="font-weight:600">Revue de code trop tardive</span><span class="sk-badge sk-badge--success">1 action</span></div>
+          <div class="disc sk-c-sky"><span class="n">5</span><span class="sk-grow" style="font-weight:600">Timeboxer le daily</span><span class="sk-badge sk-badge--success">1 action</span></div>
+        </div>
+        <div class="sk-overlay" style="z-index:4;top:-2.75rem"></div>
+        <div class="sk-drawer m-drawer" role="dialog" aria-label="Nouvelle action">
+          <div class="sk-drawer-grip"></div>
+          <div class="sk-between"><h2 class="sk-h3">Nouvelle action</h2><a class="sk-btn sk-btn--ghost sk-btn--icon sk-btn--lg" style="margin-right:-0.625rem" aria-label="Fermer"><i data-lucide="x" class="sk-ico-lg"></i></a></div>
+          <div class="sk-xs sk-muted" style="margin-top:-0.75rem">Depuis « Tests E2E instables en CI » · 9 votes</div>
+          <div class="sk-textarea is-focus" style="min-height:4.5rem;font-size:1rem">Mettre en quarantaine les tests flaky et suivre leur taux d'échec</div>
+          <div class="sk-field"><label>Responsable</label>
+            <div class="pick">
+              <span class="m-chip is-on"><span class="sk-avatar sk-p2">TM</span>Théo</span>
+              <span class="m-chip"><span class="sk-avatar sk-p9">IB</span>Inès</span>
+              <span class="m-chip"><span class="sk-avatar sk-p6">MK</span>Malik</span>
+              <span class="m-chip"><span class="sk-avatar sk-p11">SO</span>Sofia</span>
+            </div>
+          </div>
+          <div class="sk-field"><label>Priorité</label>
+            <div class="seg3"><span>Basse</span><span>Moyenne</span><span class="is-on">Haute</span></div>
+          </div>
+          <div class="sk-between" style="min-height:2.75rem">
+            <span class="sk-col" style="gap:0"><span class="sk-lbl">Échéance</span><span class="sk-sm sk-muted">Fin du sprint 43 · 17 oct.</span></span>
+            <a class="sk-btn sk-btn--outline" style="height:2.75rem"><i data-lucide="calendar"></i>Changer</a>
+          </div>
+          <div class="sk-between" style="min-height:2.75rem">
+            <span class="sk-col" style="gap:0"><span class="sk-lbl">Créer un ticket Jira</span><span class="sk-sm sk-muted">Projet ATLAS · Tâche</span></span>
+            <span class="sk-switch is-on" role="switch" aria-checked="true"></span>
+          </div>
+          <a class="sk-btn sk-btn--lg sk-btn--block"><i data-lucide="plus"></i>Ajouter l'action</a>
+        </div>
+      </div>
+      <div class="sk-phone-home"></div>
+    </div>
+    <div class="sk-phone-cap">Actions — Drawer d'ajout ouvert</div>
+  </div>
+
+</div>
+</body>
+</html>

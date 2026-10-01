@@ -1,0 +1,64 @@
+<!-- @dsCard group="shadcn · Overlays" height=640 subtitle="Sheet latérale droite « Détails de l'action » — overlay, en-tête, champs, carte d'origine, historique, pied collant" -->
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><title>Sheet</title>
+<style>
+  .sh-stage { position: relative; height: 40rem; overflow: hidden; }
+  .sh-bg { position: absolute; inset: 0; padding: var(--space-6) var(--space-8); display: flex; flex-direction: column; gap: var(--space-3); }
+  .sh-panel { position: absolute; top: 0; right: 0; bottom: 0; }
+  .sh-panel .sk-sheet { width: 26.25rem; padding: 0; gap: 0; border-radius: var(--radius-xl) 0 0 var(--radius-xl); }
+  .sh-h { padding: var(--space-5) var(--space-6) var(--space-4); display: flex; flex-direction: column; gap: var(--space-2); border-bottom: 1px solid var(--border); position: relative; }
+  .sh-b { padding: var(--space-5) var(--space-6); display: flex; flex-direction: column; gap: var(--space-4); flex: 1; overflow: hidden; }
+  .sh-f { padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border); display: flex; gap: var(--space-2); background: var(--popover); }
+  .sh-props { display: grid; grid-template-columns: 6.875rem 1fr; gap: var(--space-2) var(--space-3); align-items: center; font-size: 0.875rem; }
+  .sh-props dt { color: var(--muted-foreground); font-size: 0.8125rem; display: flex; align-items: center; gap: 0.375rem; }
+  .sh-props dd { margin: 0; display: flex; align-items: center; gap: var(--space-2); min-height: 2rem; }
+  .sh-origin { padding: var(--space-3); }
+  .sh-log { display: flex; flex-direction: column; gap: var(--space-2); font-size: 0.8125rem; line-height: 1.25rem; color: var(--muted-foreground); }
+  .sh-log > div { display: flex; gap: var(--space-2); align-items: flex-start; }
+  .sh-log b { color: var(--foreground); font-weight: 600; }
+</style></head>
+<body>
+<div class="sh-stage sk-canvas">
+  <div class="sh-bg">
+    <div class="sk-h3">Actions de l'équipe Atlas</div>
+    <div class="sk-action"><span class="sk-check"></span><div class="sk-grow"><div class="sk-action-t">Isoler les jeux de données E2E par worker</div></div></div>
+    <div class="sk-action"><span class="sk-check"></span><div class="sk-grow"><div class="sk-action-t">Revue de code avant 16 h</div></div></div>
+    <div class="sk-action"><span class="sk-check is-on"></span><div class="sk-grow"><div class="sk-action-t">Clarifier le périmètre avec le PO</div></div></div>
+  </div>
+  <div class="sk-overlay"></div>
+  <aside class="sh-panel" role="dialog" aria-modal="true" aria-labelledby="sht">
+    <div class="sk-sheet">
+      <div class="sh-h">
+        <div class="sk-row sk-gap-2"><span class="sk-ticket"><i data-lucide="link-2" class="sk-ico-sm"></i>ATLAS-1287</span><span class="sk-badge sk-badge--warning">En cours</span></div>
+        <h2 id="sht" class="sk-dialog-t" style="padding-right:2rem">Isoler les jeux de données E2E par worker</h2>
+        <p class="sk-card-d">Créée pendant la Rétro sprint 42 · il y a 3 jours</p>
+        <button class="sk-btn sk-btn--ghost sk-btn--icon sk-btn--sm sk-dialog-close" aria-label="Fermer"><i data-lucide="x"></i></button>
+      </div>
+      <div class="sh-b">
+        <dl class="sh-props" style="margin:0">
+          <dt><i data-lucide="user-round" class="sk-ico-sm"></i>Responsable</dt>
+          <dd><button class="sk-select" style="height:2rem"><span class="sk-row sk-gap-2"><span class="sk-avatar sk-avatar--xs sk-p6">NK</span>Nadia K.</span><i data-lucide="chevrons-up-down"></i></button></dd>
+          <dt><i data-lucide="calendar-clock" class="sk-ico-sm"></i>Échéance</dt>
+          <dd><span class="sk-due is-late">3 oct. · en retard de 2 j</span></dd>
+          <dt><i data-lucide="flag" class="sk-ico-sm"></i>Priorité</dt>
+          <dd><span class="sk-prio sk-prio--high"><span class="bars"><i></i><i></i><i></i></span>Haute</span></dd>
+          <dt><i data-lucide="users" class="sk-ico-sm"></i>Suivie par</dt>
+          <dd><span class="sk-stack"><span class="sk-avatar sk-p2">TM</span><span class="sk-avatar sk-p9">IB</span><span class="sk-avatar sk-p1">AR</span></span></dd>
+        </dl>
+        <div class="sk-sep"></div>
+        <div class="sk-col sk-gap-2"><span class="sk-lbl">Carte d'origine</span>
+          <article class="sk-rcard sk-c-lagoon sh-origin"><p class="sk-rcard-text">Les tests E2E cassent une fois sur trois en CI.</p>
+            <div class="sk-rcard-foot"><span class="sk-anon"><i data-lucide="venetian-mask"></i>Anonyme</span><span class="sk-grow"></span><button class="sk-vote-btn"><i data-lucide="thumbs-up" class="sk-ico-sm"></i>9</button></div></article></div>
+        <div class="sk-col sk-gap-2"><span class="sk-lbl">Historique</span>
+          <div class="sh-log">
+            <div><span class="sk-avatar sk-avatar--xs sk-p6">NK</span><span><b>Nadia</b> a passé le statut à « En cours » · hier</span></div>
+            <div><span class="sk-avatar sk-avatar--xs sk-p1">AR</span><span><b>Arnaud</b> a lié ATLAS-1287 · il y a 3 j</span></div>
+          </div></div>
+      </div>
+      <div class="sh-f"><button class="sk-btn"><i data-lucide="check"></i>Marquer comme faite</button><button class="sk-btn sk-btn--outline">Reporter</button><span class="sk-grow"></span><button class="sk-btn sk-btn--ghost sk-btn--icon" aria-label="Plus d'actions"><i data-lucide="ellipsis"></i></button></div>
+    </div>
+  </aside>
+</div>
+</body>
+</html>

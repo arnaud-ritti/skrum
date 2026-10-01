@@ -1,0 +1,71 @@
+<!-- @dsCard group="shadcn · Overlays" height=584 subtitle="Dialog — confirmation destructive · formulaire « Nouvelle rétro » (avec focus et erreur), sur overlay" -->
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><title>Dialog</title>
+<style>
+  .dg-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); padding: var(--space-4); }
+  .dg-stage { position: relative; height: 33rem; border-radius: var(--radius-xl); overflow: hidden; border: 1px solid var(--border); }
+  .dg-bg { position: absolute; inset: 0; padding: var(--space-4); display: flex; gap: var(--space-3); }
+  .dg-bg .sk-column { width: 12.5rem; }
+  .dg-center { position: absolute; inset: 0; display: grid; place-items: center; padding: var(--space-4); }
+  .dg-icon { width: 2.5rem; height: 2.5rem; border-radius: 50%; display: grid; place-items: center; background: var(--skrum-destructive-soft); color: var(--skrum-destructive-text); }
+  .dg-d { font-size: 0.875rem; line-height: 1.375rem; color: var(--muted-foreground); margin: 0; }
+  .dg-list { margin: 0; padding: var(--space-3); border-radius: var(--radius); background: var(--muted); font-size: 0.8125rem; line-height: 1.25rem; display: flex; flex-direction: column; gap: 0.25rem; }
+  .dg-list span { display: flex; gap: 0.5rem; align-items: center; }
+  .dg-seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-2); }
+  .dg-seg .sk-opt { padding: 0.5rem 0.625rem; font-size: 0.8125rem; gap: 0.5rem; }
+  .dg-caret { display: inline-block; width: 1px; height: 1.125rem; background: var(--foreground); vertical-align: -0.25rem; }
+</style></head>
+<body>
+<div class="dg-wrap">
+  <div>
+  <div class="sk-state">Confirmation destructive</div>
+  <div class="dg-stage sk-dotgrid">
+    <div class="dg-bg">
+      <div class="sk-column sk-c-moss"><div class="sk-column-h"><span class="sk-column-swatch"></span><span class="sk-column-t">Bien passé</span></div><div class="sk-rcard"><p class="sk-rcard-text">La démo client.</p></div><div class="sk-rcard"><p class="sk-rcard-text">Pair-programming du jeudi.</p></div></div>
+      <div class="sk-column sk-c-coral"><div class="sk-column-h"><span class="sk-column-swatch"></span><span class="sk-column-t">À améliorer</span></div><div class="sk-rcard"><p class="sk-rcard-text">Tests E2E instables.</p></div></div>
+    </div>
+    <div class="sk-overlay"></div>
+    <div class="dg-center">
+      <div class="sk-dialog" role="alertdialog" aria-modal="true" aria-labelledby="d1t" aria-describedby="d1d" style="width:25rem">
+        <div class="dg-icon"><i data-lucide="trash-2" class="sk-ico-lg"></i></div>
+        <div class="sk-col sk-gap-2">
+          <h2 id="d1t" class="sk-dialog-t">Supprimer « Rétro sprint 42 » ?</h2>
+          <p id="d1d" class="dg-d">La session et tout son contenu seront définitivement supprimés pour les 9 participants. Cette action est irréversible.</p>
+        </div>
+        <div class="dg-list"><span><i data-lucide="sticky-note" class="sk-ico-sm"></i>38 cartes et 12 groupes</span><span><i data-lucide="list-checks" class="sk-ico-sm"></i>6 actions (dont 2 liées à Jira)</span></div>
+        <div class="sk-dialog-f"><button class="sk-btn sk-btn--outline is-focus">Annuler</button><button class="sk-btn sk-btn--destructive"><i data-lucide="trash-2"></i>Supprimer</button></div>
+      </div>
+    </div>
+  </div>
+  </div>
+
+  <div>
+  <div class="sk-state">Formulaire « Nouvelle rétro »</div>
+  <div class="dg-stage sk-canvas">
+    <div class="dg-bg" style="flex-direction:column">
+      <div class="sk-card sk-card-b" style="height:4.5rem"></div><div class="sk-card sk-card-b" style="height:4.5rem"></div><div class="sk-card sk-card-b" style="height:4.5rem"></div>
+    </div>
+    <div class="sk-overlay"></div>
+    <div class="dg-center">
+      <div class="sk-dialog" role="dialog" aria-modal="true" aria-labelledby="d2t" style="width:26.25rem">
+        <div class="sk-col sk-gap-1"><h2 id="d2t" class="sk-dialog-t">Nouvelle rétro</h2><p class="dg-d" style="font-size:0.8125rem;line-height:1.25rem">Équipe Atlas · le lien d'invitation est créé automatiquement.</p></div>
+        <button class="sk-btn sk-btn--ghost sk-btn--icon sk-btn--sm sk-dialog-close" aria-label="Fermer"><i data-lucide="x"></i></button>
+        <div class="sk-field"><label>Nom</label><div class="sk-input is-focus"><span>Rétro sprint 43<span class="dg-caret"></span></span></div></div>
+        <div class="sk-field"><span class="sk-lbl">Modèle</span>
+          <div class="dg-seg" role="radiogroup">
+            <label class="sk-opt is-on"><span class="sk-radio is-on"></span>Start/Stop</label>
+            <label class="sk-opt"><span class="sk-radio"></span>4L</label>
+            <label class="sk-opt"><span class="sk-radio"></span>Speedboat</label>
+          </div></div>
+        <div class="sk-field"><label>Date de fin des votes</label><div class="sk-input is-invalid"><i data-lucide="calendar" class="sk-ico-sm" style="color:var(--muted-foreground)"></i>12/09/2026</div>
+          <span class="sk-error-msg"><i data-lucide="circle-alert" class="sk-ico-sm"></i>La date doit être dans le futur.</span></div>
+        <label class="sk-choice"><span class="sk-check is-on"></span>Cartes anonymes par défaut</label>
+        <div class="sk-dialog-f"><button class="sk-btn sk-btn--ghost">Annuler</button><button class="sk-btn">Créer la rétro</button></div>
+      </div>
+    </div>
+  </div>
+  </div>
+</div>
+</body>
+</html>

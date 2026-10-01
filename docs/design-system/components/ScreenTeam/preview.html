@@ -1,0 +1,248 @@
+<!-- @dsCard group="Écrans · Desktop" width=1440 height=2768 subtitle="Page équipe « Atlas » designée, EN puis FR : en-tête (membres, Open action items, Games), 4 tuiles de création, rétros (SessionCard + phase), parties de poker actives, whiteboards, health check (6 énoncés intégrés), membres" -->
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><title>ScreenTeam</title>
+<style>
+  body { background: var(--skrum-canvas); }
+  .scr-cap { height: 3rem; display: flex; align-items: center; gap: var(--space-2); padding: 0 var(--space-6); font-size: 0.75rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted-foreground); white-space: nowrap; }
+  .scr-cap b { color: var(--foreground); }
+  .scr-cap .sk-badge { letter-spacing: 0; text-transform: none; }
+  .scr-long { height: auto; }
+  a.sk-card { text-decoration: none; color: inherit; }
+  .scr-shell { display: flex; flex: 1; min-height: 0; }
+  .scr-logo { display: flex; align-items: center; gap: var(--space-2); padding: 0.25rem 0.5rem 0.75rem; }
+  .scr-word { font-family: var(--font-display); font-weight: 700; letter-spacing: -.03em; font-size: 1.25rem; }
+  .sk-sidebar .sk-nav-item > span:not(.sk-badge), .scr-subitem > span:last-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .scr-ws { border: 1px solid var(--sidebar-border); background: var(--card); width: 100%; text-align: left; cursor: pointer; }
+  .scr-ws.is-open { box-shadow: 0 0 0 2px var(--ring); }
+  .scr-sub { display: flex; flex-direction: column; gap: 2px; margin: 0 0 0.25rem 1.0625rem; padding-left: 0.625rem; border-left: 1px solid var(--sidebar-border); }
+  .scr-subitem { display: flex; align-items: center; gap: 0.5rem; height: 1.875rem; padding: 0 0.5rem; border-radius: var(--radius-md); font-size: 0.8125rem; color: var(--sidebar-foreground); min-width: 0; }
+  .scr-subitem.is-on { background: var(--sidebar-accent); color: var(--sidebar-accent-foreground); font-weight: 600; }
+  .scr-tmark { width: 1.125rem; height: 1.125rem; border-radius: var(--radius-xs); display: grid; place-items: center; font-size: 0.625rem; font-weight: 700; background: var(--c); color: var(--c-t); border: 1px solid var(--c-b); flex: none; }
+  .scr-top { padding: 0 var(--space-10); }
+  .scr-top .sk-crumbs { white-space: nowrap; min-width: 0; }
+  .scr-search { width: 16.25rem; white-space: nowrap; }
+  .scr-page { padding: var(--space-8) var(--space-10) var(--space-12); display: flex; flex-direction: column; gap: var(--space-8); width: 100%; max-width: var(--container-max); min-width: 0; }
+  .scr-sec { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; }
+  .scr-sec-h { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2) var(--space-4); flex-wrap: wrap; }
+  .scr-sec-h > * { min-width: 0; }
+  .scr-sec-t { display: flex; align-items: center; gap: var(--space-2); font-size: 1rem; line-height: 1.5rem; font-weight: 650; margin: 0; white-space: nowrap; }
+  .scr-sec-t .lucide { color: var(--muted-foreground); }
+  .sk-btn, .sk-tab, .sk-menu-item { min-width: 0; }
+  .sk-btn > span, .sk-tab > span { overflow: hidden; text-overflow: ellipsis; }
+  .scr-nw { white-space: nowrap; }
+  .scr-ell { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+
+  .tm-head { display: flex; align-items: center; gap: var(--space-5); flex-wrap: wrap; }
+  .tm-mark { width: 3.5rem; height: 3.5rem; border-radius: var(--radius-xl); background: var(--skrum-col-coral); color: var(--skrum-col-coral-text); border: 1px solid var(--skrum-col-coral-border); display: grid; place-items: center; font-family: var(--font-display); font-weight: 700; font-size: 1.5rem; flex: none; }
+  .tm-id { flex: 1 1 18rem; min-width: 0; display: flex; flex-direction: column; gap: 0.25rem; }
+  .tm-meta { display: flex; align-items: center; gap: var(--space-2) var(--space-4); flex-wrap: wrap; font-size: 0.8125rem; color: var(--muted-foreground); }
+  .tm-meta > span { display: inline-flex; align-items: center; gap: 0.375rem; white-space: nowrap; }
+  .tm-acts { display: flex; gap: var(--space-2); flex-wrap: wrap; justify-content: flex-end; }
+  .tm-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr)); gap: var(--space-4); }
+  .tm-tile { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-4); text-decoration: none; color: inherit; min-width: 0; transition: box-shadow var(--duration-fast) var(--ease-standard); }
+  .tm-tile.is-hover { box-shadow: var(--shadow-raised); border-color: var(--input); }
+  .tm-tile-ico { width: 2.5rem; height: 2.5rem; border-radius: var(--radius); display: grid; place-items: center; background: var(--c); color: var(--c-t); border: 1px solid var(--c-b); flex: none; }
+  .tm-tile-txt { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+  .tm-tile-plus { color: var(--muted-foreground); flex: none; }
+  .tm-grid { display: grid; grid-template-columns: minmax(0, 1fr) 22.5rem; gap: var(--space-8); align-items: start; }
+  .tm-main, .tm-aside { display: flex; flex-direction: column; gap: var(--space-8); min-width: 0; }
+  .tm-sessions { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr)); gap: var(--space-3); }
+  .tm-go { font-size: 0.75rem; font-weight: 600; color: var(--skrum-primary-text); white-space: nowrap; display: inline-flex; align-items: center; gap: 0.25rem; }
+  .tm-games td, .tm-games th { padding: 0.625rem 1rem; }
+  .tm-games td { white-space: nowrap; }
+  .tm-games td:first-child { white-space: normal; width: 100%; }
+  .tm-gname { display: flex; align-items: center; gap: var(--space-3); min-width: 0; }
+  .tm-gico { width: 1.75rem; height: 1.75rem; border-radius: var(--radius-md); display: grid; place-items: center; background: var(--c); color: var(--c-t); flex: none; }
+  .tm-num { font-variant-numeric: tabular-nums; }
+  .tm-boards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 13.5rem), 1fr)); gap: var(--space-3); }
+  .tm-board { overflow: hidden; display: flex; flex-direction: column; text-decoration: none; color: inherit; }
+  .tm-thumb { height: 6.5rem; position: relative; border-bottom: 1px solid var(--border); overflow: hidden; }
+  .tm-thumb .sk-sticky { width: 3.25rem; height: 2.625rem; padding: 0; box-shadow: none; }
+  .tm-shape { position: absolute; border: 1.5px solid var(--foreground); border-radius: var(--radius-sm); opacity: .55; }
+  .tm-arrow { position: absolute; height: 1.5px; background: var(--foreground); opacity: .45; transform-origin: left center; }
+  .tm-board-b { padding: var(--space-3) var(--space-4); display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .tm-hc { display: flex; flex-direction: column; }
+  .tm-hc-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.125rem var(--space-3); padding: 0.625rem 0; border-bottom: 1px solid var(--border); align-items: center; }
+  .tm-hc-row:last-child { border-bottom: 0; padding-bottom: 0; }
+  .tm-hc-row:first-child { padding-top: 0; }
+  .tm-hc-s { grid-column: 1 / -1; font-size: 0.75rem; line-height: 1rem; color: var(--muted-foreground); }
+  .tm-member { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--space-3); align-items: center; padding: 0.5rem 0; }
+  .tm-member + .tm-member { border-top: 1px solid var(--border); }
+  .tm-note { display: flex; gap: var(--space-2); align-items: flex-start; font-size: 0.75rem; line-height: 1rem; color: var(--muted-foreground); padding: 0.5rem 0.625rem; border-radius: var(--radius-md); background: var(--muted); }
+  .tm-note .lucide { width: 0.875rem; height: 0.875rem; margin-top: 1px; }
+</style>
+</head>
+<body>
+<div class="scr-cap"><b>a</b><span class="sk-badge sk-badge--outline">EN</span>Team page — designed (replaces the raw list)</div>
+<div class="sk-desktop scr-long">
+ <div class="scr-shell">
+  <nav class="sk-sidebar" aria-label="Navigation">
+  <div class="sk-brand"><svg viewBox="0 0 64 64" width="24" height="24" aria-hidden="true"><path d="M14 0 H50 A14 14 0 0 1 64 14 V46 L46 64 H14 A14 14 0 0 1 0 50 V14 A14 14 0 0 1 14 0 Z" style="fill:var(--primary)"/><path d="M64 46 L50 46 A4 4 0 0 0 46 50 L46 64 Z" style="fill:color-mix(in oklch, var(--primary) 70%, var(--foreground))"/><path d="M19 27 L19 38 C19 45 24 49.5 30 49.5 C36 49.5 41 45 41 38 L41 27" fill="none" style="stroke:var(--primary-foreground)" stroke-width="7" stroke-linecap="round"/><circle cx="21.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/><circle cx="38.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/></svg><span class="sk-brand-word">skrüm</span></div>
+  <button class="sk-team sk-team-switch" aria-haspopup="menu" aria-label="Switch team or workspace"><span class="sk-team-mark">A</span><span class="sk-team-txt"><span class="sk-team-name">Atlas</span><span class="sk-team-sub">Nordlys · 11 members</span></span><i data-lucide="chevrons-up-down" class="sk-ico-sm"></i></button>
+  <div class="sk-nav-group">Team</div>
+  <a class="sk-nav-item"><i data-lucide="layout-dashboard"></i><span>Dashboard</span></a>
+  <a class="sk-nav-item is-on" aria-current="page"><i data-lucide="calendar-clock"></i><span>Sessions</span></a>
+  <a class="sk-nav-item"><i data-lucide="list-checks"></i><span>Actions</span><span class="sk-badge sk-badge--destructive sk-badge--pill">2 overdue</span></a>
+  <a class="sk-nav-item"><i data-lucide="trending-up"></i><span>Mood & ROTI</span></a>
+  <a class="sk-nav-item"><i data-lucide="party-popper"></i><span>Games</span></a>
+  <a class="sk-nav-item"><i data-lucide="users"></i><span>Members</span></a>
+  <div class="sk-nav-group">Workspace</div>
+  <a class="sk-nav-item"><i data-lucide="layout-template"></i><span>Templates</span></a>
+  <a class="sk-nav-item"><i data-lucide="building-2"></i><span>All teams</span></a>
+  <span class="sk-grow"></span>
+  <a class="sk-nav-item"><i data-lucide="settings"></i><span>Team settings</span></a>
+  <a class="sk-nav-item"><i data-lucide="shield-check"></i><span>Administration</span></a>
+  <button class="sk-team sk-user" aria-haspopup="menu"><span class="sk-avatar sk-p1">AR</span><span class="sk-team-txt"><span class="sk-team-name">Arnaud Ritti</span><span class="sk-team-sub">Facilitator · Admin</span></span><i data-lucide="chevrons-up-down" class="sk-ico-sm"></i></button>
+  </nav>
+  <main class="sk-main">
+    <header class="sk-topbar scr-top">
+      <nav class="sk-crumbs" aria-label="Breadcrumb"><span>Nordlys</span><i data-lucide="chevron-right"></i><span>Teams</span><i data-lucide="chevron-right"></i><span class="is-current">Atlas</span></nav>
+      <span class="sk-grow"></span>
+      <div class="sk-input scr-search"><i data-lucide="search" class="sk-ico-sm" style="color:var(--muted-foreground)"></i><span class="sk-placeholder sk-grow scr-ell">Search…</span><span class="sk-kbd">⌘K</span></div>
+      <button class="sk-btn sk-btn--ghost sk-btn--icon" aria-label="Notifications"><i data-lucide="bell"></i></button>
+    </header>
+    <div class="scr-page">
+      <header class="tm-head">
+        <span class="tm-mark" aria-hidden="true">A</span>
+        <div class="tm-id">
+          <h1 class="sk-h1">Atlas</h1>
+          <div class="tm-meta"><span class="sk-stack"><span class="sk-avatar sk-avatar--xs sk-p1">AR</span><span class="sk-avatar sk-avatar--xs sk-p4">CR</span><span class="sk-avatar sk-avatar--xs sk-p2">TM</span><span class="sk-avatar sk-avatar--xs sk-p9">IB</span></span><span>9 members</span><span><i data-lucide="building-2" class="sk-ico-sm"></i>Nordlys workspace</span><span><i data-lucide="calendar-days" class="sk-ico-sm"></i>Next retro Thu 2 Oct, 2 pm</span></div>
+        </div>
+        <div class="tm-acts">
+          <button class="sk-btn sk-btn--outline"><i data-lucide="list-checks"></i><span>Open action items</span><span class="sk-badge sk-badge--soft sk-badge--pill">7</span></button>
+          <button class="sk-btn sk-btn--outline"><i data-lucide="gamepad-2"></i><span>Games</span></button>
+          <button class="sk-btn sk-btn--outline sk-btn--icon" aria-label="Team settings"><i data-lucide="settings"></i></button>
+        </div>
+      </header>
+
+      <div class="tm-tiles">
+        <a class="sk-card tm-tile is-hover"><span class="tm-tile-ico sk-c-coral"><i data-lucide="layers" class="sk-ico-lg"></i></span><span class="tm-tile-txt"><span class="sk-strong">New retrospective</span><span class="sk-xs sk-muted scr-ell">4L, Start/Stop/Continue…</span></span><i data-lucide="plus" class="tm-tile-plus"></i></a>
+        <a class="sk-card tm-tile"><span class="tm-tile-ico sk-c-iris"><i data-lucide="spade" class="sk-ico-lg"></i></span><span class="tm-tile-txt"><span class="sk-strong">New poker game</span><span class="sk-xs sk-muted scr-ell">Fibonacci, T-shirt, custom</span></span><i data-lucide="plus" class="tm-tile-plus"></i></a>
+        <a class="sk-card tm-tile"><span class="tm-tile-ico sk-c-lagoon"><i data-lucide="pen-tool" class="sk-ico-lg"></i></span><span class="tm-tile-txt"><span class="sk-strong">New whiteboard</span><span class="sk-xs sk-muted scr-ell">Free canvas, live cursors</span></span><i data-lucide="plus" class="tm-tile-plus"></i></a>
+        <a class="sk-card tm-tile"><span class="tm-tile-ico sk-c-sun"><i data-lucide="chart-column" class="sk-ico-lg"></i></span><span class="tm-tile-txt"><span class="sk-strong">New survey</span><span class="sk-xs sk-muted scr-ell">ROTI, NPS, multiple choice</span></span><i data-lucide="plus" class="tm-tile-plus"></i></a>
+      </div>
+
+      <div class="tm-grid">
+        <div class="tm-main">
+          <section class="scr-sec" aria-labelledby="tm-retro-en">
+            <div class="scr-sec-h"><h2 class="scr-sec-t" id="tm-retro-en"><i data-lucide="layers"></i>Retrospectives<span class="sk-badge sk-badge--muted sk-badge--pill">14</span></h2><div class="sk-row sk-gap-2"><a class="sk-btn sk-btn--link sk-sm">View all</a><button class="sk-btn sk-btn--sm sk-btn--outline"><i data-lucide="plus"></i><span>New retrospective</span></button></div></div>
+            <div class="tm-sessions"><a class="sk-card sk-session" href="#"><div class="sk-session-h"><span class="sk-session-kind sk-c-coral"><i data-lucide="layers"></i></span><div class="sk-session-txt"><div class="sk-session-t">Sprint 42 retrospective</div><div class="sk-session-sub">4L · started 10 min ago</div></div><span class="sk-badge sk-badge--info sk-badge--pill"><span class="sk-dot"></span>Writing</span></div><div class="sk-session-meta"><span><i data-lucide="users" class="sk-ico-sm"></i>8<span class="sk-session-unit">&nbsp;joined</span></span><span><i data-lucide="sticky-note" class="sk-ico-sm"></i>23<span class="sk-session-unit">&nbsp;cards</span></span></div><div class="sk-session-foot"><span class="sk-stack"><span class="sk-avatar sk-avatar--sm sk-p4">CR</span><span class="sk-avatar sk-avatar--sm sk-p2">TM</span><span class="sk-avatar sk-avatar--sm sk-p9">IB</span><span class="sk-avatar sk-avatar--sm sk-stack-more">+5</span></span><span class="tm-go">Join<i data-lucide="arrow-right" class="sk-ico-sm"></i></span></div></a><a class="sk-card sk-session" href="#"><div class="sk-session-h"><span class="sk-session-kind sk-c-plum"><i data-lucide="layers"></i></span><div class="sk-session-txt"><div class="sk-session-t">Q3 release post-mortem</div><div class="sk-session-sub">Mad / Sad / Glad · yesterday</div></div><span class="sk-badge sk-badge--warning sk-badge--pill">Voting</span></div><div class="sk-session-meta"><span><i data-lucide="users" class="sk-ico-sm"></i>7<span class="sk-session-unit">&nbsp;joined</span></span><span><i data-lucide="sticky-note" class="sk-ico-sm"></i>31<span class="sk-session-unit">&nbsp;cards</span></span><span><i data-lucide="layers" class="sk-ico-sm"></i>6<span class="sk-session-unit">&nbsp;groups</span></span></div><div class="sk-session-foot"><span class="sk-xs sk-muted">Facilitated by Camille R</span><span class="tm-go">Resume<i data-lucide="arrow-right" class="sk-ico-sm"></i></span></div></a><a class="sk-card sk-session" href="#"><div class="sk-session-h"><span class="sk-session-kind sk-c-coral"><i data-lucide="layers"></i></span><div class="sk-session-txt"><div class="sk-session-t">Sprint 41 retrospective</div><div class="sk-session-sub">Start / Stop / Continue · 18 Sep</div></div><span class="sk-badge sk-badge--muted sk-badge--pill">Closed</span></div><div class="sk-session-meta"><span><i data-lucide="users" class="sk-ico-sm"></i>9</span><span><i data-lucide="sticky-note" class="sk-ico-sm"></i>38<span class="sk-session-unit">&nbsp;cards</span></span><span><i data-lucide="list-checks" class="sk-ico-sm"></i>6<span class="sk-session-unit">&nbsp;action items</span></span></div><div class="sk-session-foot"><span class="sk-xs sk-muted">ROTI 4,1 / 5</span><span class="tm-go">Summary<i data-lucide="arrow-right" class="sk-ico-sm"></i></span></div></a><a class="sk-card sk-session" href="#"><div class="sk-session-h"><span class="sk-session-kind sk-c-coral"><i data-lucide="layers"></i></span><div class="sk-session-txt"><div class="sk-session-t">Sprint 40 retrospective</div><div class="sk-session-sub">Sailboat · 4 Sep</div></div><span class="sk-badge sk-badge--muted sk-badge--pill">Closed</span></div><div class="sk-session-meta"><span><i data-lucide="users" class="sk-ico-sm"></i>8</span><span><i data-lucide="sticky-note" class="sk-ico-sm"></i>27<span class="sk-session-unit">&nbsp;cards</span></span><span><i data-lucide="list-checks" class="sk-ico-sm"></i>4<span class="sk-session-unit">&nbsp;action items</span></span></div><div class="sk-session-foot"><span class="sk-xs sk-muted">ROTI 3,8 / 5</span><span class="tm-go">Summary<i data-lucide="arrow-right" class="sk-ico-sm"></i></span></div></a></div>
+          </section>
+
+          <section class="scr-sec" aria-labelledby="tm-poker-en">
+            <div class="scr-sec-h"><h2 class="scr-sec-t" id="tm-poker-en"><i data-lucide="spade"></i>Planning poker</h2><div class="sk-row sk-gap-2"><a class="sk-btn sk-btn--ghost sk-btn--sm"><i data-lucide="history"></i><span>Estimation history</span></a><a class="sk-btn sk-btn--ghost sk-btn--sm"><i data-lucide="library"></i><span>Saved decks</span></a><button class="sk-btn sk-btn--sm sk-btn--outline"><i data-lucide="plus"></i><span>New game</span></button></div></div>
+            <div class="sk-card"><div class="sk-state" style="margin:0;padding:var(--space-3) var(--space-4) 0">Active games · 3</div>
+              <table class="sk-table tm-games"><thead><tr><th>Game</th><th>Deck</th><th>Points</th><th>Last activity</th><th><span class="sk-sr">Action</span></th></tr></thead><tbody><tr><td><span class="tm-gname"><span class="tm-gico sk-c-iris"><i data-lucide="spade" class="sk-ico-sm"></i></span><span class="sk-col" style="gap:0;min-width:0"><span class="sk-strong">Sprint 43 refinement</span><span class="sk-xs sk-muted tm-num">6 tasks · 3 estimated · <span style="color:var(--skrum-success-text);font-weight:600">4 in the room</span></span></span></span></td><td><span class="sk-badge sk-badge--outline">Fibonacci</span></td><td class="sk-sm sk-strong tm-num">16 pts</td><td class="sk-sm sk-muted">12 min ago</td><td style="text-align:right"><button class="sk-btn sk-btn--sm ">Join</button></td></tr><tr><td><span class="tm-gname"><span class="tm-gico sk-c-iris"><i data-lucide="spade" class="sk-ico-sm"></i></span><span class="sk-col" style="gap:0;min-width:0"><span class="sk-strong">Billing epic sizing</span><span class="sk-xs sk-muted tm-num">9 tasks · 2 estimated</span></span></span></td><td><span class="sk-badge sk-badge--outline">T-shirt</span></td><td class="sk-sm sk-strong tm-num">—</td><td class="sk-sm sk-muted">2 h ago</td><td style="text-align:right"><button class="sk-btn sk-btn--sm sk-btn--outline">Open</button></td></tr><tr><td><span class="tm-gname"><span class="tm-gico sk-c-iris"><i data-lucide="spade" class="sk-ico-sm"></i></span><span class="sk-col" style="gap:0;min-width:0"><span class="sk-strong">Mobile app spikes</span><span class="sk-xs sk-muted tm-num">4 tasks · 4 estimated</span></span></span></td><td><span class="sk-badge sk-badge--outline">Hours (custom)</span></td><td class="sk-sm sk-strong tm-num">26 pts</td><td class="sk-sm sk-muted">yesterday</td><td style="text-align:right"><button class="sk-btn sk-btn--sm sk-btn--outline">Open</button></td></tr></tbody></table>
+            </div>
+          </section>
+
+          <section class="scr-sec" aria-labelledby="tm-wb-en">
+            <div class="scr-sec-h"><h2 class="scr-sec-t" id="tm-wb-en"><i data-lucide="pen-tool"></i>Whiteboards<span class="sk-badge sk-badge--muted sk-badge--pill">3</span></h2><button class="sk-btn sk-btn--sm sk-btn--outline"><i data-lucide="plus"></i><span>New whiteboard</span></button></div>
+            <div class="tm-boards"><a class="sk-card tm-board" href="#"><div class="tm-thumb sk-dotgrid"><span class="sk-sticky sk-c-sun" style="left:1rem;top:1rem"></span><span class="sk-sticky sk-c-sky" style="left:4.75rem;top:1.5rem"></span><span class="sk-sticky sk-c-moss" style="left:8.5rem;top:0.875rem"></span><span class="tm-arrow" style="left:4.25rem;top:4.75rem;width:4rem;transform:rotate(-12deg)"></span><span class="tm-shape" style="left:9rem;top:4rem;width:3.5rem;height:1.75rem"></span></div><div class="tm-board-b"><span class="sk-strong sk-sm scr-ell">Invite flow — user journey</span><span class="sk-xs sk-muted scr-ell">Facilitated by Inès B · 24 Sep</span></div></a><a class="sk-card tm-board" href="#"><div class="tm-thumb sk-dotgrid"><span class="tm-shape" style="left:1rem;top:1rem;width:4rem;height:2rem"></span><span class="tm-arrow" style="left:5rem;top:2rem;width:2.5rem"></span><span class="tm-shape" style="left:7.5rem;top:1rem;width:4rem;height:2rem;border-radius:999px"></span><span class="tm-arrow" style="left:9.5rem;top:3rem;width:2rem;transform:rotate(90deg)"></span><span class="sk-sticky sk-c-coral" style="left:8rem;top:3.5rem"></span></div><div class="tm-board-b"><span class="sk-strong sk-sm scr-ell">Realtime architecture</span><span class="sk-xs sk-muted scr-ell">Facilitated by Malik K · 17 Sep</span></div></a><a class="sk-card tm-board" href="#"><div class="tm-thumb sk-dotgrid"><span class="sk-sticky sk-c-plum" style="left:1.25rem;top:1.25rem"></span><span class="sk-sticky sk-c-plum" style="left:2rem;top:2.25rem"></span><span class="sk-sticky sk-c-apricot" style="left:6rem;top:1.25rem"></span><span class="sk-sticky sk-c-lagoon" style="left:10rem;top:2rem"></span></div><div class="tm-board-b"><span class="sk-strong sk-sm scr-ell">Q4 roadmap brainstorm</span><span class="sk-xs sk-muted scr-ell">Facilitated by Camille R · 9 Sep</span></div></a></div>
+          </section>
+        </div>
+
+        <aside class="tm-aside">
+          <section class="sk-card" aria-labelledby="tm-hc-en">
+            <div class="sk-card-h"><div class="sk-between"><h2 class="sk-card-t" id="tm-hc-en">Health check</h2><a class="sk-btn sk-btn--link sk-sm"><span>Manage</span></a></div><p class="sk-card-d">6 statements asked at the end of each retro, scored 1–5.</p></div>
+            <div class="sk-card-b sk-col sk-gap-3"><div class="tm-hc"><div class="tm-hc-row"><span class="sk-sm sk-strong scr-ell">Interaction</span><span class="sk-badge sk-badge--muted">Built-in</span><span class="tm-hc-s">Interaction with colleagues was productive</span></div><div class="tm-hc-row"><span class="sk-sm sk-strong scr-ell">Clear tasks</span><span class="sk-badge sk-badge--muted">Built-in</span><span class="tm-hc-s">Tasks assigned to me were clear</span></div><div class="tm-hc-row"><span class="sk-sm sk-strong scr-ell">Manager support</span><span class="sk-badge sk-badge--muted">Built-in</span><span class="tm-hc-s">My manager was understanding and supportive</span></div><div class="tm-hc-row"><span class="sk-sm sk-strong scr-ell">Vision</span><span class="sk-badge sk-badge--muted">Built-in</span><span class="tm-hc-s">The vision and goals are clear to me</span></div><div class="tm-hc-row"><span class="sk-sm sk-strong scr-ell">Processes</span><span class="sk-badge sk-badge--muted">Built-in</span><span class="tm-hc-s">Our processes let me work without blockers</span></div><div class="tm-hc-row"><span class="sk-sm sk-strong scr-ell">Motivation</span><span class="sk-badge sk-badge--muted">Built-in</span><span class="tm-hc-s">I felt motivated in my work</span></div></div>
+              <div class="tm-note"><i data-lucide="info"></i><span>Changes apply to retros that have not collected answers yet.</span></div></div>
+          </section>
+          <section class="sk-card" aria-labelledby="tm-mem-en">
+            <div class="sk-card-h"><div class="sk-between"><h2 class="sk-card-t" id="tm-mem-en">Members <span class="sk-badge sk-badge--muted sk-badge--pill">9</span></h2><button class="sk-btn sk-btn--ghost sk-btn--sm"><i data-lucide="user-plus"></i><span>Invite</span></button></div></div>
+            <div class="sk-card-b" style="padding-top:var(--space-2)"><div class="tm-member"><span class="sk-avatar sk-p1">AR</span><span class="sk-col" style="gap:0;min-width:0"><span class="sk-sm sk-strong scr-ell">Arnaud Ritti</span><span class="sk-xs sk-muted scr-ell">arnaud@nordlys.io</span></span><span class="sk-badge sk-badge--soft">Facilitator</span></div><div class="tm-member"><span class="sk-avatar sk-p4">CR</span><span class="sk-col" style="gap:0;min-width:0"><span class="sk-sm sk-strong scr-ell">Camille Roux</span><span class="sk-xs sk-muted scr-ell">camille.roux@nordlys.io</span></span><span class="sk-badge sk-badge--soft">Facilitator</span></div><div class="tm-member"><span class="sk-avatar sk-p2">TM</span><span class="sk-col" style="gap:0;min-width:0"><span class="sk-sm sk-strong scr-ell">Théo Martin</span><span class="sk-xs sk-muted scr-ell">theo.martin@nordlys.io</span></span></div><div class="tm-member"><span class="sk-avatar sk-p9">IB</span><span class="sk-col" style="gap:0;min-width:0"><span class="sk-sm sk-strong scr-ell">Inès Benali</span><span class="sk-xs sk-muted scr-ell">ines.benali@nordlys.io</span></span></div><div class="tm-member"><span class="sk-avatar sk-p6">MK</span><span class="sk-col" style="gap:0;min-width:0"><span class="sk-sm sk-strong scr-ell">Malik Kone</span><span class="sk-xs sk-muted scr-ell">malik.kone@nordlys.io</span></span></div><div class="tm-member"><span class="sk-avatar sk-p5">SL</span><span class="sk-col" style="gap:0;min-width:0"><span class="sk-sm sk-strong scr-ell">Sofia Lindqvist</span><span class="sk-xs sk-muted scr-ell">sofia.l@nordlys.io</span></span></div><a class="sk-btn sk-btn--link sk-sm" style="margin-top:var(--space-2)">Show 3 more</a></div>
+          </section>
+        </aside>
+      </div>
+    </div>
+  </main>
+ </div>
+</div>
+<div class="scr-cap"><b>b</b><span class="sk-badge sk-badge--soft">FR · +30 %</span>Page équipe — version designée (remplace la liste brute)</div>
+<div class="sk-desktop scr-long">
+ <div class="scr-shell">
+  <nav class="sk-sidebar" aria-label="Navigation">
+  <div class="sk-brand"><svg viewBox="0 0 64 64" width="24" height="24" aria-hidden="true"><path d="M14 0 H50 A14 14 0 0 1 64 14 V46 L46 64 H14 A14 14 0 0 1 0 50 V14 A14 14 0 0 1 14 0 Z" style="fill:var(--primary)"/><path d="M64 46 L50 46 A4 4 0 0 0 46 50 L46 64 Z" style="fill:color-mix(in oklch, var(--primary) 70%, var(--foreground))"/><path d="M19 27 L19 38 C19 45 24 49.5 30 49.5 C36 49.5 41 45 41 38 L41 27" fill="none" style="stroke:var(--primary-foreground)" stroke-width="7" stroke-linecap="round"/><circle cx="21.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/><circle cx="38.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/></svg><span class="sk-brand-word">skrüm</span></div>
+  <button class="sk-team sk-team-switch" aria-haspopup="menu" aria-label="Changer d'équipe ou d'espace"><span class="sk-team-mark">A</span><span class="sk-team-txt"><span class="sk-team-name">Atlas</span><span class="sk-team-sub">Nordlys · 11 membres</span></span><i data-lucide="chevrons-up-down" class="sk-ico-sm"></i></button>
+  <div class="sk-nav-group">Équipe</div>
+  <a class="sk-nav-item"><i data-lucide="layout-dashboard"></i><span>Tableau de bord</span></a>
+  <a class="sk-nav-item is-on" aria-current="page"><i data-lucide="calendar-clock"></i><span>Sessions</span></a>
+  <a class="sk-nav-item"><i data-lucide="list-checks"></i><span>Actions</span><span class="sk-badge sk-badge--destructive sk-badge--pill">2 en retard</span></a>
+  <a class="sk-nav-item"><i data-lucide="trending-up"></i><span>Moral & ROTI</span></a>
+  <a class="sk-nav-item"><i data-lucide="party-popper"></i><span>Jeux</span></a>
+  <a class="sk-nav-item"><i data-lucide="users"></i><span>Membres</span></a>
+  <div class="sk-nav-group">Espace de travail</div>
+  <a class="sk-nav-item"><i data-lucide="layout-template"></i><span>Modèles</span></a>
+  <a class="sk-nav-item"><i data-lucide="building-2"></i><span>Toutes les équipes</span></a>
+  <span class="sk-grow"></span>
+  <a class="sk-nav-item"><i data-lucide="settings"></i><span>Paramètres de l'équipe</span></a>
+  <a class="sk-nav-item"><i data-lucide="shield-check"></i><span>Administration</span></a>
+  <button class="sk-team sk-user" aria-haspopup="menu"><span class="sk-avatar sk-p1">AR</span><span class="sk-team-txt"><span class="sk-team-name">Arnaud Ritti</span><span class="sk-team-sub">Facilitateur · Admin</span></span><i data-lucide="chevrons-up-down" class="sk-ico-sm"></i></button>
+  </nav>
+  <main class="sk-main">
+    <header class="sk-topbar scr-top">
+      <nav class="sk-crumbs" aria-label="Fil d'Ariane"><span>Nordlys</span><i data-lucide="chevron-right"></i><span>Équipes</span><i data-lucide="chevron-right"></i><span class="is-current">Atlas</span></nav>
+      <span class="sk-grow"></span>
+      <div class="sk-input scr-search"><i data-lucide="search" class="sk-ico-sm" style="color:var(--muted-foreground)"></i><span class="sk-placeholder sk-grow scr-ell">Rechercher…</span><span class="sk-kbd">⌘K</span></div>
+      <button class="sk-btn sk-btn--ghost sk-btn--icon" aria-label="Notifications"><i data-lucide="bell"></i></button>
+    </header>
+    <div class="scr-page">
+      <header class="tm-head">
+        <span class="tm-mark" aria-hidden="true">A</span>
+        <div class="tm-id">
+          <h1 class="sk-h1">Atlas</h1>
+          <div class="tm-meta"><span class="sk-stack"><span class="sk-avatar sk-avatar--xs sk-p1">AR</span><span class="sk-avatar sk-avatar--xs sk-p4">CR</span><span class="sk-avatar sk-avatar--xs sk-p2">TM</span><span class="sk-avatar sk-avatar--xs sk-p9">IB</span></span><span>9 membres</span><span><i data-lucide="building-2" class="sk-ico-sm"></i>Espace de travail Nordlys</span><span><i data-lucide="calendar-days" class="sk-ico-sm"></i>Prochaine rétro jeu. 2 oct. à 14 h</span></div>
+        </div>
+        <div class="tm-acts">
+          <button class="sk-btn sk-btn--outline"><i data-lucide="list-checks"></i><span>Actions ouvertes</span><span class="sk-badge sk-badge--soft sk-badge--pill">7</span></button>
+          <button class="sk-btn sk-btn--outline"><i data-lucide="gamepad-2"></i><span>Jeux d'équipe</span></button>
+          <button class="sk-btn sk-btn--outline sk-btn--icon" aria-label="Paramètres de l'équipe"><i data-lucide="settings"></i></button>
+        </div>
+      </header>
+
+      <div class="tm-tiles">
+        <a class="sk-card tm-tile is-hover"><span class="tm-tile-ico sk-c-coral"><i data-lucide="layers" class="sk-ico-lg"></i></span><span class="tm-tile-txt"><span class="sk-strong">Nouvelle rétrospective</span><span class="sk-xs sk-muted scr-ell">4L, Start/Stop/Continue…</span></span><i data-lucide="plus" class="tm-tile-plus"></i></a>
+        <a class="sk-card tm-tile"><span class="tm-tile-ico sk-c-iris"><i data-lucide="spade" class="sk-ico-lg"></i></span><span class="tm-tile-txt"><span class="sk-strong">Nouvelle partie de poker</span><span class="sk-xs sk-muted scr-ell">Fibonacci, T-shirt, perso</span></span><i data-lucide="plus" class="tm-tile-plus"></i></a>
+        <a class="sk-card tm-tile"><span class="tm-tile-ico sk-c-lagoon"><i data-lucide="pen-tool" class="sk-ico-lg"></i></span><span class="tm-tile-txt"><span class="sk-strong">Nouveau tableau blanc</span><span class="sk-xs sk-muted scr-ell">Canevas libre, curseurs live</span></span><i data-lucide="plus" class="tm-tile-plus"></i></a>
+        <a class="sk-card tm-tile"><span class="tm-tile-ico sk-c-sun"><i data-lucide="chart-column" class="sk-ico-lg"></i></span><span class="tm-tile-txt"><span class="sk-strong">Nouveau sondage</span><span class="sk-xs sk-muted scr-ell">ROTI, NPS, choix multiples</span></span><i data-lucide="plus" class="tm-tile-plus"></i></a>
+      </div>
+
+      <div class="tm-grid">
+        <div class="tm-main">
+          <section class="scr-sec" aria-labelledby="tm-retro-fr">
+            <div class="scr-sec-h"><h2 class="scr-sec-t" id="tm-retro-fr"><i data-lucide="layers"></i>Rétrospectives<span class="sk-badge sk-badge--muted sk-badge--pill">14</span></h2><div class="sk-row sk-gap-2"><a class="sk-btn sk-btn--link sk-sm">Tout afficher</a><button class="sk-btn sk-btn--sm sk-btn--outline"><i data-lucide="plus"></i><span>Nouvelle rétrospective</span></button></div></div>
+            <div class="tm-sessions"><a class="sk-card sk-session" href="#"><div class="sk-session-h"><span class="sk-session-kind sk-c-coral"><i data-lucide="layers"></i></span><div class="sk-session-txt"><div class="sk-session-t">Rétrospective du sprint 42</div><div class="sk-session-sub">4L · commencée il y a 10 min</div></div><span class="sk-badge sk-badge--info sk-badge--pill"><span class="sk-dot"></span>Écriture</span></div><div class="sk-session-meta"><span><i data-lucide="users" class="sk-ico-sm"></i>8<span class="sk-session-unit">&nbsp;connectés</span></span><span><i data-lucide="sticky-note" class="sk-ico-sm"></i>23<span class="sk-session-unit">&nbsp;cartes</span></span></div><div class="sk-session-foot"><span class="sk-stack"><span class="sk-avatar sk-avatar--sm sk-p4">CR</span><span class="sk-avatar sk-avatar--sm sk-p2">TM</span><span class="sk-avatar sk-avatar--sm sk-p9">IB</span><span class="sk-avatar sk-avatar--sm sk-stack-more">+5</span></span><span class="tm-go">Rejoindre<i data-lucide="arrow-right" class="sk-ico-sm"></i></span></div></a><a class="sk-card sk-session" href="#"><div class="sk-session-h"><span class="sk-session-kind sk-c-plum"><i data-lucide="layers"></i></span><div class="sk-session-txt"><div class="sk-session-t">Post-mortem de la release T3</div><div class="sk-session-sub">Mad / Sad / Glad · hier</div></div><span class="sk-badge sk-badge--warning sk-badge--pill">Vote</span></div><div class="sk-session-meta"><span><i data-lucide="users" class="sk-ico-sm"></i>7<span class="sk-session-unit">&nbsp;connectés</span></span><span><i data-lucide="sticky-note" class="sk-ico-sm"></i>31<span class="sk-session-unit">&nbsp;cartes</span></span><span><i data-lucide="layers" class="sk-ico-sm"></i>6<span class="sk-session-unit">&nbsp;groupes</span></span></div><div class="sk-session-foot"><span class="sk-xs sk-muted">Animée par Camille R</span><span class="tm-go">Reprendre<i data-lucide="arrow-right" class="sk-ico-sm"></i></span></div></a><a class="sk-card sk-session" href="#"><div class="sk-session-h"><span class="sk-session-kind sk-c-coral"><i data-lucide="layers"></i></span><div class="sk-session-txt"><div class="sk-session-t">Rétrospective du sprint 41</div><div class="sk-session-sub">Start / Stop / Continue · 18 sept.</div></div><span class="sk-badge sk-badge--muted sk-badge--pill">Terminée</span></div><div class="sk-session-meta"><span><i data-lucide="users" class="sk-ico-sm"></i>9</span><span><i data-lucide="sticky-note" class="sk-ico-sm"></i>38<span class="sk-session-unit">&nbsp;cartes</span></span><span><i data-lucide="list-checks" class="sk-ico-sm"></i>6<span class="sk-session-unit">&nbsp;actions</span></span></div><div class="sk-session-foot"><span class="sk-xs sk-muted">ROTI 4,1 / 5</span><span class="tm-go">Synthèse<i data-lucide="arrow-right" class="sk-ico-sm"></i></span></div></a><a class="sk-card sk-session" href="#"><div class="sk-session-h"><span class="sk-session-kind sk-c-coral"><i data-lucide="layers"></i></span><div class="sk-session-txt"><div class="sk-session-t">Rétrospective du sprint 40</div><div class="sk-session-sub">Voilier · 4 sept.</div></div><span class="sk-badge sk-badge--muted sk-badge--pill">Terminée</span></div><div class="sk-session-meta"><span><i data-lucide="users" class="sk-ico-sm"></i>8</span><span><i data-lucide="sticky-note" class="sk-ico-sm"></i>27<span class="sk-session-unit">&nbsp;cartes</span></span><span><i data-lucide="list-checks" class="sk-ico-sm"></i>4<span class="sk-session-unit">&nbsp;actions</span></span></div><div class="sk-session-foot"><span class="sk-xs sk-muted">ROTI 3,8 / 5</span><span class="tm-go">Synthèse<i data-lucide="arrow-right" class="sk-ico-sm"></i></span></div></a></div>
+          </section>
+
+          <section class="scr-sec" aria-labelledby="tm-poker-fr">
+            <div class="scr-sec-h"><h2 class="scr-sec-t" id="tm-poker-fr"><i data-lucide="spade"></i>Planning poker</h2><div class="sk-row sk-gap-2"><a class="sk-btn sk-btn--ghost sk-btn--sm"><i data-lucide="history"></i><span>Historique des estimations</span></a><a class="sk-btn sk-btn--ghost sk-btn--sm"><i data-lucide="library"></i><span>Decks enregistrés</span></a><button class="sk-btn sk-btn--sm sk-btn--outline"><i data-lucide="plus"></i><span>Nouvelle partie</span></button></div></div>
+            <div class="sk-card"><div class="sk-state" style="margin:0;padding:var(--space-3) var(--space-4) 0">Parties en cours · 3</div>
+              <table class="sk-table tm-games"><thead><tr><th>Partie</th><th>Deck</th><th>Points</th><th>Dernière activité</th><th><span class="sk-sr">Action</span></th></tr></thead><tbody><tr><td><span class="tm-gname"><span class="tm-gico sk-c-iris"><i data-lucide="spade" class="sk-ico-sm"></i></span><span class="sk-col" style="gap:0;min-width:0"><span class="sk-strong">Affinage du sprint 43</span><span class="sk-xs sk-muted tm-num">6 tâches · 3 estimées · <span style="color:var(--skrum-success-text);font-weight:600">4 dans la salle</span></span></span></span></td><td><span class="sk-badge sk-badge--outline">Fibonacci</span></td><td class="sk-sm sk-strong tm-num">16 pts</td><td class="sk-sm sk-muted">il y a 12 min</td><td style="text-align:right"><button class="sk-btn sk-btn--sm ">Rejoindre</button></td></tr><tr><td><span class="tm-gname"><span class="tm-gico sk-c-iris"><i data-lucide="spade" class="sk-ico-sm"></i></span><span class="sk-col" style="gap:0;min-width:0"><span class="sk-strong">Chiffrage de l'epic Facturation</span><span class="sk-xs sk-muted tm-num">9 tâches · 2 estimées</span></span></span></td><td><span class="sk-badge sk-badge--outline">T-shirt</span></td><td class="sk-sm sk-strong tm-num">—</td><td class="sk-sm sk-muted">il y a 2 h</td><td style="text-align:right"><button class="sk-btn sk-btn--sm sk-btn--outline">Ouvrir</button></td></tr><tr><td><span class="tm-gname"><span class="tm-gico sk-c-iris"><i data-lucide="spade" class="sk-ico-sm"></i></span><span class="sk-col" style="gap:0;min-width:0"><span class="sk-strong">Spikes de l'appli mobile</span><span class="sk-xs sk-muted tm-num">4 tâches · 4 estimées</span></span></span></td><td><span class="sk-badge sk-badge--outline">Heures (perso)</span></td><td class="sk-sm sk-strong tm-num">26 pts</td><td class="sk-sm sk-muted">hier</td><td style="text-align:right"><button class="sk-btn sk-btn--sm sk-btn--outline">Ouvrir</button></td></tr></tbody></table>
+            </div>
+          </section>
+
+          <section class="scr-sec" aria-labelledby="tm-wb-fr">
+            <div class="scr-sec-h"><h2 class="scr-sec-t" id="tm-wb-fr"><i data-lucide="pen-tool"></i>Tableaux blancs<span class="sk-badge sk-badge--muted sk-badge--pill">3</span></h2><button class="sk-btn sk-btn--sm sk-btn--outline"><i data-lucide="plus"></i><span>Nouveau tableau blanc</span></button></div>
+            <div class="tm-boards"><a class="sk-card tm-board" href="#"><div class="tm-thumb sk-dotgrid"><span class="sk-sticky sk-c-sun" style="left:1rem;top:1rem"></span><span class="sk-sticky sk-c-sky" style="left:4.75rem;top:1.5rem"></span><span class="sk-sticky sk-c-moss" style="left:8.5rem;top:0.875rem"></span><span class="tm-arrow" style="left:4.25rem;top:4.75rem;width:4rem;transform:rotate(-12deg)"></span><span class="tm-shape" style="left:9rem;top:4rem;width:3.5rem;height:1.75rem"></span></div><div class="tm-board-b"><span class="sk-strong sk-sm scr-ell">Parcours d'invitation — user journey</span><span class="sk-xs sk-muted scr-ell">Animé par Inès B · 24 sept.</span></div></a><a class="sk-card tm-board" href="#"><div class="tm-thumb sk-dotgrid"><span class="tm-shape" style="left:1rem;top:1rem;width:4rem;height:2rem"></span><span class="tm-arrow" style="left:5rem;top:2rem;width:2.5rem"></span><span class="tm-shape" style="left:7.5rem;top:1rem;width:4rem;height:2rem;border-radius:999px"></span><span class="tm-arrow" style="left:9.5rem;top:3rem;width:2rem;transform:rotate(90deg)"></span><span class="sk-sticky sk-c-coral" style="left:8rem;top:3.5rem"></span></div><div class="tm-board-b"><span class="sk-strong sk-sm scr-ell">Architecture temps réel</span><span class="sk-xs sk-muted scr-ell">Animé par Malik K · 17 sept.</span></div></a><a class="sk-card tm-board" href="#"><div class="tm-thumb sk-dotgrid"><span class="sk-sticky sk-c-plum" style="left:1.25rem;top:1.25rem"></span><span class="sk-sticky sk-c-plum" style="left:2rem;top:2.25rem"></span><span class="sk-sticky sk-c-apricot" style="left:6rem;top:1.25rem"></span><span class="sk-sticky sk-c-lagoon" style="left:10rem;top:2rem"></span></div><div class="tm-board-b"><span class="sk-strong sk-sm scr-ell">Brainstorm de la feuille de route T4</span><span class="sk-xs sk-muted scr-ell">Animé par Camille R · 9 sept.</span></div></a></div>
+          </section>
+        </div>
+
+        <aside class="tm-aside">
+          <section class="sk-card" aria-labelledby="tm-hc-fr">
+            <div class="sk-card-h"><div class="sk-between"><h2 class="sk-card-t" id="tm-hc-fr">Health check</h2><a class="sk-btn sk-btn--link sk-sm"><span>Gérer</span></a></div><p class="sk-card-d">6 énoncés posés en fin de rétro, notés de 1 à 5.</p></div>
+            <div class="sk-card-b sk-col sk-gap-3"><div class="tm-hc"><div class="tm-hc-row"><span class="sk-sm sk-strong scr-ell">Interactions</span><span class="sk-badge sk-badge--muted">Intégré</span><span class="tm-hc-s">Les échanges avec mes collègues ont été productifs</span></div><div class="tm-hc-row"><span class="sk-sm sk-strong scr-ell">Tâches claires</span><span class="sk-badge sk-badge--muted">Intégré</span><span class="tm-hc-s">Les tâches qui m'ont été confiées étaient claires</span></div><div class="tm-hc-row"><span class="sk-sm sk-strong scr-ell">Soutien du manager</span><span class="sk-badge sk-badge--muted">Intégré</span><span class="tm-hc-s">Mon manager s'est montré compréhensif et m'a soutenu·e</span></div><div class="tm-hc-row"><span class="sk-sm sk-strong scr-ell">Vision</span><span class="sk-badge sk-badge--muted">Intégré</span><span class="tm-hc-s">La vision et les objectifs sont clairs pour moi</span></div><div class="tm-hc-row"><span class="sk-sm sk-strong scr-ell">Processus</span><span class="sk-badge sk-badge--muted">Intégré</span><span class="tm-hc-s">Nos processus me permettent de travailler sans blocage</span></div><div class="tm-hc-row"><span class="sk-sm sk-strong scr-ell">Motivation</span><span class="sk-badge sk-badge--muted">Intégré</span><span class="tm-hc-s">Je me suis senti·e motivé·e dans mon travail</span></div></div>
+              <div class="tm-note"><i data-lucide="info"></i><span>Les modifications s'appliquent aux rétros qui n'ont pas encore recueilli de réponses.</span></div></div>
+          </section>
+          <section class="sk-card" aria-labelledby="tm-mem-fr">
+            <div class="sk-card-h"><div class="sk-between"><h2 class="sk-card-t" id="tm-mem-fr">Membres <span class="sk-badge sk-badge--muted sk-badge--pill">9</span></h2><button class="sk-btn sk-btn--ghost sk-btn--sm"><i data-lucide="user-plus"></i><span>Inviter</span></button></div></div>
+            <div class="sk-card-b" style="padding-top:var(--space-2)"><div class="tm-member"><span class="sk-avatar sk-p1">AR</span><span class="sk-col" style="gap:0;min-width:0"><span class="sk-sm sk-strong scr-ell">Arnaud Ritti</span><span class="sk-xs sk-muted scr-ell">arnaud@nordlys.io</span></span><span class="sk-badge sk-badge--soft">Facilitateur</span></div><div class="tm-member"><span class="sk-avatar sk-p4">CR</span><span class="sk-col" style="gap:0;min-width:0"><span class="sk-sm sk-strong scr-ell">Camille Roux</span><span class="sk-xs sk-muted scr-ell">camille.roux@nordlys.io</span></span><span class="sk-badge sk-badge--soft">Facilitatrice</span></div><div class="tm-member"><span class="sk-avatar sk-p2">TM</span><span class="sk-col" style="gap:0;min-width:0"><span class="sk-sm sk-strong scr-ell">Théo Martin</span><span class="sk-xs sk-muted scr-ell">theo.martin@nordlys.io</span></span></div><div class="tm-member"><span class="sk-avatar sk-p9">IB</span><span class="sk-col" style="gap:0;min-width:0"><span class="sk-sm sk-strong scr-ell">Inès Benali</span><span class="sk-xs sk-muted scr-ell">ines.benali@nordlys.io</span></span></div><div class="tm-member"><span class="sk-avatar sk-p6">MK</span><span class="sk-col" style="gap:0;min-width:0"><span class="sk-sm sk-strong scr-ell">Malik Kone</span><span class="sk-xs sk-muted scr-ell">malik.kone@nordlys.io</span></span></div><div class="tm-member"><span class="sk-avatar sk-p5">SL</span><span class="sk-col" style="gap:0;min-width:0"><span class="sk-sm sk-strong scr-ell">Sofia Lindqvist</span><span class="sk-xs sk-muted scr-ell">sofia.l@nordlys.io</span></span></div><a class="sk-btn sk-btn--link sk-sm" style="margin-top:var(--space-2)">Afficher les 3 autres</a></div>
+          </section>
+        </aside>
+      </div>
+    </div>
+  </main>
+ </div>
+</div>
+</body>
+</html>

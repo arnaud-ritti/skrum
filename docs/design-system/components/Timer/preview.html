@@ -1,0 +1,43 @@
+<!-- @dsCard group="Skrüm · Facilitation" height=270 subtitle="normal · moins d'une minute · terminé · en pause · grand format (+ contrôles facilitateur)" -->
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><title>Timer</title>
+<style>
+  .tm-grid { display: grid; grid-template-columns: repeat(4, max-content); gap: var(--space-6) var(--space-10); align-items: start; }
+  .tm-paused { color: var(--muted-foreground); }
+  .tm-paused .sk-timer-ring { background: conic-gradient(var(--muted-foreground) calc(var(--p) * 1turn), color-mix(in oklch, var(--foreground) 12%, transparent) 0); }
+  .tm-big { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3); border-radius: var(--radius-xl); background: var(--card); border: 1px solid var(--border); box-shadow: var(--shadow-card); width: max-content; }
+  .tm-cap { font-size: 0.75rem; color: var(--muted-foreground); margin-top: var(--space-2); }
+</style>
+</head>
+<body>
+<div class="sk-pad sk-col sk-gap-8">
+  <div class="tm-grid">
+    <div><div class="sk-state">Normal</div>
+      <div class="sk-timer" role="timer" aria-label="4 minutes 32 restantes" style="--p:.76"><span class="sk-timer-ring"></span>04:32</div>
+      <div class="tm-cap">Écriture · 6 min</div></div>
+    <div><div class="sk-state">Moins d'une minute</div>
+      <div class="sk-timer is-low" role="timer" aria-label="48 secondes restantes" style="--p:.13"><span class="sk-timer-ring"></span>00:48</div>
+      <div class="tm-cap">annonce SR à 60 s et 10 s</div></div>
+    <div><div class="sk-state">Terminé</div>
+      <div class="sk-timer is-done" role="timer" aria-label="Temps écoulé"><i data-lucide="alarm-clock" class="sk-ico-sm"></i>00:00</div>
+      <div class="tm-cap">vibre 2× puis reste fixe</div></div>
+    <div><div class="sk-state">En pause</div>
+      <div class="sk-timer tm-paused" role="timer" aria-label="En pause, 2 minutes 10 restantes" style="--p:.36"><i data-lucide="pause" class="sk-ico-sm"></i>02:10</div>
+      <div class="tm-cap">chiffres atténués</div></div>
+  </div>
+
+  <div class="sk-row sk-gap-8" style="align-items:flex-start">
+    <div><div class="sk-state">Grand format · facilitateur</div>
+      <div class="tm-big">
+        <div class="sk-timer sk-timer--lg" role="timer" aria-label="7 minutes 05 restantes" style="--p:.59"><span class="sk-timer-ring"></span>07:05</div>
+        <button class="sk-btn sk-btn--outline sk-btn--icon" aria-label="Mettre en pause"><i data-lucide="pause"></i></button>
+        <button class="sk-btn sk-btn--ghost sk-btn--sm">+1 min</button>
+        <button class="sk-btn sk-btn--ghost sk-btn--icon" aria-label="Réinitialiser"><i data-lucide="timer-reset"></i></button>
+      </div></div>
+    <div><div class="sk-state">Grand format · moins d'une minute</div>
+      <div class="sk-timer sk-timer--lg is-low" role="timer" aria-label="32 secondes restantes" style="--p:.09"><span class="sk-timer-ring"></span>00:32</div></div>
+  </div>
+</div>
+</body>
+</html>

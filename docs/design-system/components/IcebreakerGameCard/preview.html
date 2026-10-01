@@ -1,0 +1,62 @@
+<!-- @dsCard group="Skrüm · Icebreaker" height=340 subtitle="Pendu · Dessin à deviner · Devine l'emoji · Deux vérités un mensonge — sélectionné, survol, durée, nb de joueurs, indisponible" -->
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><title>IcebreakerGameCard</title>
+<style>
+  .ig-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-4); align-items: start; }
+  .ig-card { position: relative; cursor: pointer; text-align: left; padding: 0; font: inherit; color: inherit; width: 100%; transition: box-shadow var(--duration-fast) var(--ease-standard), transform var(--duration-fast) var(--ease-standard); }
+  .ig-card.is-hover { box-shadow: var(--shadow-raised); transform: translateY(-2px); }
+  .ig-card.is-selected { box-shadow: 0 0 0 2px var(--primary), var(--shadow-raised); border-color: var(--primary); }
+  .ig-card.is-disabled { opacity: .55; cursor: not-allowed; }
+  .ig-check { position: absolute; top: var(--space-2); right: var(--space-2); width: 1.5rem; height: 1.5rem; border-radius: 50%; background: var(--primary); color: var(--primary-foreground); display: grid; place-items: center; box-shadow: 0 0 0 2px var(--card); z-index: 1; }
+  .ig-check .lucide { width: 0.875rem; height: 0.875rem; stroke-width: 3; }
+  .ig-t { font-size: 0.9375rem; font-weight: 650; line-height: 1.375rem; margin: 0; }
+  .ig-d { font-size: 0.8125rem; line-height: 1.125rem; color: var(--muted-foreground); margin: 0; }
+  .ig-meta { display: flex; gap: var(--space-3); font-size: 0.75rem; font-weight: 600; color: var(--muted-foreground); margin-top: var(--space-1); }
+  .ig-meta span { display: inline-flex; align-items: center; gap: 0.25rem; }
+  .ig-letters { display: flex; gap: 0.375rem; }
+  .ig-letters .sk-letter { width: 1.375rem; height: 1.875rem; font-size: 1.125rem; border-bottom-color: var(--c-t); color: var(--foreground); }
+  .ig-emoji { font-size: 1.75rem; letter-spacing: 0.375rem; }
+  .ig-tv { display: flex; gap: 0.375rem; }
+  .ig-tv span { width: 1.875rem; height: 2.25rem; border-radius: 0.375rem; display: grid; place-items: center; font-weight: 700; font-size: 0.875rem; background: var(--card); border: 1px solid var(--c-b); color: var(--c-t); }
+  .ig-tv span.is-lie { background: var(--c-t); color: var(--c); border-color: var(--c-t); transform: rotate(6deg); }
+  .ig-draw { width: 7.5rem; height: 3.75rem; }
+  .ig-draw path { fill: none; stroke: var(--c-t); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+  .ig-art-ico { position: absolute; left: var(--space-3); bottom: var(--space-2); width: 1.25rem !important; height: 1.25rem !important; opacity: .8; }
+</style>
+</head>
+<body>
+<div class="sk-pad">
+  <div class="ig-grid" role="radiogroup" aria-label="Choisir un icebreaker">
+    <div><div class="sk-state">Défaut</div>
+      <button class="sk-game ig-card" role="radio" aria-checked="false">
+        <div class="sk-game-art sk-c-sun"><div class="ig-letters"><span class="sk-letter">S</span><span class="sk-letter"></span><span class="sk-letter">R</span><span class="sk-letter"></span><span class="sk-letter">N</span><span class="sk-letter">T</span></div><i data-lucide="whole-word" class="ig-art-ico"></i></div>
+        <div class="sk-game-b"><p class="ig-t">Pendu</p><p class="ig-d">Devinez le mot de l'équipe, lettre par lettre.</p>
+          <div class="ig-meta"><span><i data-lucide="clock" class="sk-ico-sm"></i>5 min</span><span><i data-lucide="users" class="sk-ico-sm"></i>2-30</span></div></div>
+      </button></div>
+
+    <div><div class="sk-state">Sélectionné</div>
+      <button class="sk-game ig-card is-selected" role="radio" aria-checked="true">
+        <span class="ig-check"><i data-lucide="check"></i></span>
+        <div class="sk-game-art sk-c-sky"><svg class="ig-draw" viewBox="0 0 120 60" aria-hidden="true"><path d="M10 48 C 22 10, 40 10, 48 34 S 72 58, 84 26 S 104 8, 112 20"/><path d="M60 50 l6 -6 l6 6 l-6 6 z"/></svg><i data-lucide="brush" class="ig-art-ico"></i></div>
+        <div class="sk-game-b"><p class="ig-t">Dessin à deviner</p><p class="ig-d">Un dessine, les autres devinent en 60 s.</p>
+          <div class="ig-meta"><span><i data-lucide="clock" class="sk-ico-sm"></i>10 min</span><span><i data-lucide="users" class="sk-ico-sm"></i>3-12</span></div></div>
+      </button></div>
+
+    <div><div class="sk-state">Survol</div>
+      <button class="sk-game ig-card is-hover" role="radio" aria-checked="false">
+        <div class="sk-game-art sk-c-apricot"><span class="ig-emoji" aria-label="Pizza, drapeau italien, avion">🍕🇮🇹✈️</span><i data-lucide="smile" class="ig-art-ico"></i></div>
+        <div class="sk-game-b"><p class="ig-t">Devine l'emoji</p><p class="ig-d">Film, lieu ou projet caché en 3 emojis.</p>
+          <div class="ig-meta"><span><i data-lucide="clock" class="sk-ico-sm"></i>5 min</span><span><i data-lucide="users" class="sk-ico-sm"></i>2-30</span></div></div>
+      </button></div>
+
+    <div><div class="sk-state">Indisponible (min. 3 joueurs)</div>
+      <button class="sk-game ig-card is-disabled" role="radio" aria-checked="false" aria-disabled="true">
+        <div class="sk-game-art sk-c-plum"><div class="ig-tv"><span>V</span><span class="is-lie">M</span><span>V</span></div><i data-lucide="message-circle" class="ig-art-ico"></i></div>
+        <div class="sk-game-b"><p class="ig-t">Deux vérités, un mensonge</p><p class="ig-d">Trois affirmations : trouvez l'intruse.</p>
+          <div class="ig-meta"><span><i data-lucide="clock" class="sk-ico-sm"></i>15 min</span><span><i data-lucide="users" class="sk-ico-sm"></i>3-15</span></div></div>
+      </button></div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,264 @@
+<!-- @dsCard group="Écrans · Desktop" width=1440 height=4000 subtitle="Paramètres utilisateur, EN puis FR, scroll long : sous-nav Profile/Security/Appearance/Notifications/API tokens, profil + couleur de présence, Delete account, thème en cartes radio avec aperçu, langue, animations réduites, switches par événement, jetons (scopes, affichage unique + copie)" -->
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><title>ScreenUserSettings</title>
+<style>
+  body { background: var(--skrum-canvas); }
+  .scr-cap { height: 3rem; display: flex; align-items: center; gap: var(--space-2); padding: 0 var(--space-6); font-size: 0.75rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted-foreground); white-space: nowrap; }
+  .scr-cap b { color: var(--foreground); }
+  .scr-cap .sk-badge { letter-spacing: 0; text-transform: none; }
+  .scr-long { height: auto; }
+  a.sk-card { text-decoration: none; color: inherit; }
+  .scr-shell { display: flex; flex: 1; min-height: 0; }
+  .scr-logo { display: flex; align-items: center; gap: var(--space-2); padding: 0.25rem 0.5rem 0.75rem; }
+  .scr-word { font-family: var(--font-display); font-weight: 700; letter-spacing: -.03em; font-size: 1.25rem; }
+  .sk-sidebar .sk-nav-item > span:not(.sk-badge), .scr-subitem > span:last-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .scr-ws { border: 1px solid var(--sidebar-border); background: var(--card); width: 100%; text-align: left; cursor: pointer; }
+  .scr-ws.is-open { box-shadow: 0 0 0 2px var(--ring); }
+  .scr-sub { display: flex; flex-direction: column; gap: 2px; margin: 0 0 0.25rem 1.0625rem; padding-left: 0.625rem; border-left: 1px solid var(--sidebar-border); }
+  .scr-subitem { display: flex; align-items: center; gap: 0.5rem; height: 1.875rem; padding: 0 0.5rem; border-radius: var(--radius-md); font-size: 0.8125rem; color: var(--sidebar-foreground); min-width: 0; }
+  .scr-subitem.is-on { background: var(--sidebar-accent); color: var(--sidebar-accent-foreground); font-weight: 600; }
+  .scr-tmark { width: 1.125rem; height: 1.125rem; border-radius: var(--radius-xs); display: grid; place-items: center; font-size: 0.625rem; font-weight: 700; background: var(--c); color: var(--c-t); border: 1px solid var(--c-b); flex: none; }
+  .scr-top { padding: 0 var(--space-10); }
+  .scr-top .sk-crumbs { white-space: nowrap; min-width: 0; }
+  .scr-search { width: 16.25rem; white-space: nowrap; }
+  .scr-page { padding: var(--space-8) var(--space-10) var(--space-12); display: flex; flex-direction: column; gap: var(--space-8); width: 100%; max-width: var(--container-max); min-width: 0; }
+  .scr-sec { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; }
+  .scr-sec-h { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2) var(--space-4); flex-wrap: wrap; }
+  .scr-sec-h > * { min-width: 0; }
+  .scr-sec-t { display: flex; align-items: center; gap: var(--space-2); font-size: 1rem; line-height: 1.5rem; font-weight: 650; margin: 0; white-space: nowrap; }
+  .scr-sec-t .lucide { color: var(--muted-foreground); }
+  .sk-btn, .sk-tab, .sk-menu-item { min-width: 0; }
+  .sk-btn > span, .sk-tab > span { overflow: hidden; text-overflow: ellipsis; }
+  .scr-nw { white-space: nowrap; }
+  .scr-ell { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+
+  .us-layout { display: grid; grid-template-columns: 13.5rem minmax(0, 1fr); gap: var(--space-10); align-items: start; }
+  .us-nav { display: flex; flex-direction: column; gap: 2px; position: sticky; top: var(--space-6); }
+  .us-nav .sk-nav-item { color: var(--foreground); white-space: nowrap; }
+  .us-nav .sk-nav-item.is-on { background: var(--accent); color: var(--accent-foreground); }
+  .us-nav .sk-nav-item.is-on .lucide { color: var(--skrum-primary-text); }
+  .us-col { display: flex; flex-direction: column; gap: var(--space-10); min-width: 0; max-width: 50rem; }
+  .us-group { display: flex; flex-direction: column; gap: var(--space-4); }
+  .us-group-h { display: flex; flex-direction: column; gap: 0.125rem; }
+  .us-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-xl); box-shadow: var(--shadow-card); min-width: 0; }
+  .us-card-b { padding: var(--space-5); display: flex; flex-direction: column; gap: var(--space-5); }
+  .us-card-f { padding: var(--space-3) var(--space-5); border-top: 1px solid var(--border); background: color-mix(in oklch, var(--muted) 50%, var(--card)); border-radius: 0 0 var(--radius-xl) var(--radius-xl); display: flex; align-items: center; justify-content: flex-end; gap: var(--space-3); flex-wrap: wrap; }
+  .us-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); gap: var(--space-4); }
+  .us-avatar { display: flex; gap: var(--space-5); align-items: flex-start; flex-wrap: wrap; }
+  .us-swatches { display: flex; gap: 0.375rem; flex-wrap: wrap; }
+  .us-sw { width: 1.5rem; height: 1.5rem; border-radius: 50%; border: 0; padding: 0; }
+  .us-sw.is-on { box-shadow: 0 0 0 2px var(--card), 0 0 0 0.25rem var(--foreground); }
+  .us-danger { border-color: color-mix(in oklch, var(--destructive) 40%, var(--border)); }
+  .us-danger-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--space-4); align-items: center; }
+  .us-danger-ico { width: 2.5rem; height: 2.5rem; border-radius: 50%; display: grid; place-items: center; background: var(--skrum-destructive-soft); color: var(--skrum-destructive-text); }
+  .us-themes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-3); }
+  .us-theme { border: 1px solid var(--input); border-radius: var(--radius-xl); padding: var(--space-2); display: flex; flex-direction: column; gap: var(--space-2); background: var(--card); }
+  .us-theme.is-on { border-color: var(--primary); box-shadow: inset 0 0 0 1px var(--primary); }
+  .us-theme-l { display: flex; align-items: center; gap: var(--space-2); padding: 0 0.25rem 0.125rem; font-size: 0.875rem; font-weight: 600; white-space: nowrap; }
+  .us-mini { height: 5.5rem; border-radius: var(--radius); overflow: hidden; display: flex; border: 1px solid var(--border); }
+  .us-mini > div { flex: 1; display: flex; background: var(--background); color: var(--foreground); min-width: 0; }
+  .us-mini-sb { width: 28%; background: var(--sidebar); border-right: 1px solid var(--sidebar-border); padding: 0.375rem; display: flex; flex-direction: column; gap: 0.25rem; }
+  .us-mini-sb i { display: block; height: 0.3125rem; border-radius: 999px; background: var(--muted-foreground); opacity: .35; }
+  .us-mini-sb i:first-child { background: var(--primary); opacity: 1; width: 60%; }
+  .us-mini-main { flex: 1; padding: 0.4375rem; display: flex; gap: 0.25rem; }
+  .us-mini-col { flex: 1; border-radius: 0.25rem; background: color-mix(in oklch, var(--c) 45%, var(--skrum-canvas)); border: 1px solid color-mix(in oklch, var(--c-b) 50%, transparent); padding: 0.1875rem; display: flex; flex-direction: column; gap: 0.1875rem; }
+  .us-mini-col b { display: block; height: 0.625rem; border-radius: 0.125rem; background: var(--c); border: 1px solid var(--c-b); }
+  .us-seg { display: inline-flex; gap: 2px; padding: 0.1875rem; border-radius: var(--radius); background: var(--muted); }
+  .us-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; }
+  .us-row > :first-child { flex: 1 1 18rem; min-width: 0; }
+  .us-notif td, .us-notif th { padding: 0.75rem 1.25rem; }
+  .us-notif th:not(:first-child), .us-notif td:not(:first-child) { text-align: center; width: 6.5rem; }
+  .us-notif .sk-switch { display: inline-block; vertical-align: middle; }
+  .us-scopes { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr)); gap: var(--space-2) var(--space-4); }
+  .us-scope { display: flex; align-items: flex-start; gap: var(--space-2); font-size: 0.8125rem; line-height: 1.25rem; }
+  .us-scope .sk-check { margin-top: 2px; }
+  .us-code { font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 500; padding: 0 0.375rem; line-height: 1.125rem; border-radius: var(--radius-xs); background: var(--muted); border: 1px solid var(--border); white-space: nowrap; }
+  .us-once { border: 1px solid color-mix(in oklch, var(--skrum-success-text) 35%, var(--border)); background: var(--skrum-success-soft); border-radius: var(--radius); padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-3); }
+  .us-token { display: flex; gap: var(--space-2); align-items: center; }
+  .us-token .sk-input { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--card); flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; }
+  .us-tokens td, .us-tokens th { padding: 0.625rem 1.25rem; }
+  .us-tokens td { font-size: 0.8125rem; }
+  .us-tokens td:first-child { width: 100%; }
+  .us-tokens td:not(:first-child) { white-space: nowrap; }
+  tr.is-revoked td { color: var(--muted-foreground); }
+  tr.is-revoked .us-tname { text-decoration: line-through; }
+</style>
+</head>
+<body>
+<div class="scr-cap"><b>a</b><span class="sk-badge sk-badge--outline">EN</span>User settings — long scroll: Profile, Delete account, Appearance, Notifications, API tokens</div>
+<div class="sk-desktop scr-long">
+ <div class="scr-shell">
+  <nav class="sk-sidebar" aria-label="Navigation">
+  <div class="sk-brand"><svg viewBox="0 0 64 64" width="24" height="24" aria-hidden="true"><path d="M14 0 H50 A14 14 0 0 1 64 14 V46 L46 64 H14 A14 14 0 0 1 0 50 V14 A14 14 0 0 1 14 0 Z" style="fill:var(--primary)"/><path d="M64 46 L50 46 A4 4 0 0 0 46 50 L46 64 Z" style="fill:color-mix(in oklch, var(--primary) 70%, var(--foreground))"/><path d="M19 27 L19 38 C19 45 24 49.5 30 49.5 C36 49.5 41 45 41 38 L41 27" fill="none" style="stroke:var(--primary-foreground)" stroke-width="7" stroke-linecap="round"/><circle cx="21.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/><circle cx="38.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/></svg><span class="sk-brand-word">skrüm</span></div>
+  <button class="sk-team sk-team-switch" aria-haspopup="menu" aria-label="Switch team or workspace"><span class="sk-team-mark">A</span><span class="sk-team-txt"><span class="sk-team-name">Atlas</span><span class="sk-team-sub">Nordlys · 11 members</span></span><i data-lucide="chevrons-up-down" class="sk-ico-sm"></i></button>
+  <div class="sk-nav-group">Team</div>
+  <a class="sk-nav-item"><i data-lucide="layout-dashboard"></i><span>Dashboard</span></a>
+  <a class="sk-nav-item"><i data-lucide="calendar-clock"></i><span>Sessions</span></a>
+  <a class="sk-nav-item"><i data-lucide="list-checks"></i><span>Actions</span><span class="sk-badge sk-badge--destructive sk-badge--pill">2 overdue</span></a>
+  <a class="sk-nav-item"><i data-lucide="trending-up"></i><span>Mood & ROTI</span></a>
+  <a class="sk-nav-item"><i data-lucide="party-popper"></i><span>Games</span></a>
+  <a class="sk-nav-item"><i data-lucide="users"></i><span>Members</span></a>
+  <div class="sk-nav-group">Workspace</div>
+  <a class="sk-nav-item"><i data-lucide="layout-template"></i><span>Templates</span></a>
+  <a class="sk-nav-item"><i data-lucide="building-2"></i><span>All teams</span></a>
+  <span class="sk-grow"></span>
+  <a class="sk-nav-item"><i data-lucide="settings"></i><span>Team settings</span></a>
+  <a class="sk-nav-item"><i data-lucide="shield-check"></i><span>Administration</span></a>
+  <button class="sk-team sk-user" aria-haspopup="menu"><span class="sk-avatar sk-p1">AR</span><span class="sk-team-txt"><span class="sk-team-name">Arnaud Ritti</span><span class="sk-team-sub">Facilitator · Admin</span></span><i data-lucide="chevrons-up-down" class="sk-ico-sm"></i></button>
+  </nav>
+  <main class="sk-main">
+    <header class="sk-topbar scr-top">
+      <nav class="sk-crumbs" aria-label="Breadcrumb"><span>Arnaud Ritti</span><i data-lucide="chevron-right"></i><span class="is-current">Settings</span></nav>
+      <span class="sk-grow"></span>
+      <div class="sk-input scr-search"><i data-lucide="search" class="sk-ico-sm" style="color:var(--muted-foreground)"></i><span class="sk-placeholder sk-grow scr-ell">Search…</span><span class="sk-kbd">⌘K</span></div>
+      <button class="sk-btn sk-btn--ghost sk-btn--icon" aria-label="Notifications"><i data-lucide="bell"></i></button>
+    </header>
+    <div class="scr-page">
+      <div class="sk-col" style="gap:0.25rem"><h1 class="sk-h1">Settings</h1><span class="sk-muted">Your account, applied in every workspace</span></div>
+      <div class="us-layout">
+        <nav class="us-nav" aria-label="Settings sections">
+          <a class="sk-nav-item is-on" aria-current="page"><i data-lucide="user"></i><span>Profile</span></a>
+          <a class="sk-nav-item"><i data-lucide="shield"></i><span>Security</span></a>
+          <a class="sk-nav-item"><i data-lucide="palette"></i><span>Appearance</span></a>
+          <a class="sk-nav-item"><i data-lucide="bell"></i><span>Notifications</span></a>
+          <a class="sk-nav-item"><i data-lucide="key-round"></i><span>API tokens</span></a>
+        </nav>
+        <div class="us-col">
+          <section class="us-group" aria-labelledby="us-p-en">
+            <div class="us-group-h"><h2 class="sk-h3" id="us-p-en">Profile</h2><span class="sk-sm sk-muted">How teammates see you in sessions and on cards.</span></div>
+            <div class="us-card"><div class="us-card-b">
+              <div class="us-avatar"><span class="sk-avatar sk-avatar--xl sk-p1">AR</span><div class="sk-col sk-gap-2" style="flex:1 1 20rem;min-width:0"><span class="sk-lbl">Avatar & presence colour</span><div class="us-swatches" role="radiogroup"><button class="us-sw sk-p1 is-on" aria-label="Presence colour 1"></button><button class="us-sw sk-p2" aria-label="Presence colour 2"></button><button class="us-sw sk-p3" aria-label="Presence colour 3"></button><button class="us-sw sk-p4" aria-label="Presence colour 4"></button><button class="us-sw sk-p5" aria-label="Presence colour 5"></button><button class="us-sw sk-p6" aria-label="Presence colour 6"></button><button class="us-sw sk-p7" aria-label="Presence colour 7"></button><button class="us-sw sk-p8" aria-label="Presence colour 8"></button><button class="us-sw sk-p9" aria-label="Presence colour 9"></button><button class="us-sw sk-p10" aria-label="Presence colour 10"></button><button class="us-sw sk-p11" aria-label="Presence colour 11"></button><button class="us-sw sk-p12" aria-label="Presence colour 12"></button></div><span class="sk-help">Used for your avatar, live cursor and card lock.</span><div class="sk-row sk-gap-2"><button class="sk-btn sk-btn--outline sk-btn--sm"><i data-lucide="upload"></i><span>Upload photo</span></button><button class="sk-btn sk-btn--ghost sk-btn--sm"><span>Use initials</span></button></div></div></div>
+              <div class="us-2"><div class="sk-field"><label>Name</label><div class="sk-input">Arnaud Ritti</div></div><div class="sk-field"><label>Email</label><div class="sk-input"><span class="sk-grow scr-ell">arnaud@nordlys.io</span><span class="sk-badge sk-badge--success sk-badge--pill"><i data-lucide="check"></i>Verified</span></div></div></div>
+            </div><div class="us-card-f"><span class="sk-xs sk-muted sk-grow">Changing your email sends a confirmation link.</span><button class="sk-btn sk-btn--sm"><span>Save</span></button></div></div>
+            <div class="us-card us-danger"><div class="us-card-b"><div class="us-danger-row"><span class="us-danger-ico"><i data-lucide="triangle-alert" class="sk-ico-lg"></i></span><div class="sk-col" style="gap:0.125rem;min-width:0"><span class="sk-strong">Delete account</span><span class="sk-sm sk-muted">Permanently removes your profile and tokens. Cards you wrote stay, shown as "Former member".</span></div><button class="sk-btn sk-btn--destructive sk-btn--sm"><i data-lucide="trash-2"></i><span>Delete account</span></button></div></div></div>
+          </section>
+
+          <section class="us-group" aria-labelledby="us-a-en">
+            <div class="us-group-h"><h2 class="sk-h3" id="us-a-en">Appearance</h2><span class="sk-sm sk-muted">Stored on this account, synced across devices.</span></div>
+            <div class="us-card"><div class="us-card-b">
+              <div class="sk-col sk-gap-2"><span class="sk-lbl">Theme</span>
+                <div class="us-themes" role="radiogroup">
+                  <label class="us-theme is-on"><div class="us-mini"><div data-theme="light"><div class="us-mini-sb"><i></i><i></i><i></i><i></i></div><div class="us-mini-main"><div class="us-mini-col sk-c-moss"><b></b><b></b></div><div class="us-mini-col sk-c-coral"><b></b></div><div class="us-mini-col sk-c-sky"><b></b><b></b></div></div></div><div data-theme="dark"><div class="us-mini-sb"><i></i><i></i><i></i><i></i></div><div class="us-mini-main"><div class="us-mini-col sk-c-moss"><b></b><b></b></div><div class="us-mini-col sk-c-coral"><b></b></div><div class="us-mini-col sk-c-sky"><b></b><b></b></div></div></div></div><span class="us-theme-l"><span class="sk-radio is-on"></span><i data-lucide="monitor" class="sk-ico-sm"></i>System</span></label>
+                  <label class="us-theme"><div class="us-mini"><div data-theme="light"><div class="us-mini-sb"><i></i><i></i><i></i><i></i></div><div class="us-mini-main"><div class="us-mini-col sk-c-moss"><b></b><b></b></div><div class="us-mini-col sk-c-coral"><b></b></div><div class="us-mini-col sk-c-sky"><b></b><b></b></div></div></div></div><span class="us-theme-l"><span class="sk-radio"></span><i data-lucide="sun" class="sk-ico-sm"></i>Light</span></label>
+                  <label class="us-theme"><div class="us-mini"><div data-theme="dark"><div class="us-mini-sb"><i></i><i></i><i></i><i></i></div><div class="us-mini-main"><div class="us-mini-col sk-c-moss"><b></b><b></b></div><div class="us-mini-col sk-c-coral"><b></b></div><div class="us-mini-col sk-c-sky"><b></b><b></b></div></div></div></div><span class="us-theme-l"><span class="sk-radio"></span><i data-lucide="moon" class="sk-ico-sm"></i>Dark</span></label>
+                </div></div>
+              <div class="sk-sep"></div>
+              <div class="us-row"><div class="sk-col" style="gap:0"><span class="sk-lbl">Language</span><span class="sk-help">Interface language. Guests follow their browser.</span></div><div class="us-seg sk-tabs" role="radiogroup"><button class="sk-tab is-on"><span>English</span></button><button class="sk-tab"><span>Français</span></button></div></div>
+              <div class="sk-sep"></div>
+              <div class="us-row"><div class="sk-col" style="gap:0"><span class="sk-lbl">Reduce animations</span><span class="sk-help">Replaces card flips, confetti and drag tilts with simple fades. On by default when your system asks for it.</span></div><span class="sk-switch" role="switch" aria-checked="false"></span></div>
+            </div></div>
+          </section>
+
+          <section class="us-group" aria-labelledby="us-n-en">
+            <div class="us-group-h"><h2 class="sk-h3" id="us-n-en">Notifications</h2><span class="sk-sm sk-muted">Choose what reaches you, and where.</span></div>
+            <div class="us-card"><table class="sk-table us-notif"><thead><tr><th>Event</th><th>In-app</th><th>Email</th></tr></thead><tbody><tr><td class="sk-sm">An action item is assigned to me</td><td><span class="sk-switch is-on" role="switch" aria-checked="true"></span></td><td><span class="sk-switch is-on" role="switch" aria-checked="true"></span></td></tr><tr><td class="sk-sm">One of my action items is due tomorrow</td><td><span class="sk-switch is-on" role="switch" aria-checked="true"></span></td><td><span class="sk-switch is-on" role="switch" aria-checked="true"></span></td></tr><tr><td class="sk-sm">A retro I'm invited to starts</td><td><span class="sk-switch is-on" role="switch" aria-checked="true"></span></td><td><span class="sk-switch" role="switch" aria-checked="false"></span></td></tr><tr><td class="sk-sm">Someone mentions me on a card</td><td><span class="sk-switch is-on" role="switch" aria-checked="true"></span></td><td><span class="sk-switch" role="switch" aria-checked="false"></span></td></tr><tr><td class="sk-sm">A poker estimate is saved on my task</td><td><span class="sk-switch" role="switch" aria-checked="false"></span></td><td><span class="sk-switch" role="switch" aria-checked="false"></span></td></tr><tr><td class="sk-sm">Weekly digest of open action items (Monday 9 am)</td><td><span class="sk-switch" role="switch" aria-checked="false"></span></td><td><span class="sk-switch is-on" role="switch" aria-checked="true"></span></td></tr></tbody></table></div>
+          </section>
+
+          <section class="us-group" aria-labelledby="us-t-en">
+            <div class="us-group-h"><h2 class="sk-h3" id="us-t-en">API tokens</h2><span class="sk-sm sk-muted">Personal tokens for the Skrüm REST API and MCP server. They act as you.</span></div>
+            <div class="us-card"><div class="us-card-b">
+              <div class="us-2"><div class="sk-field"><label>Token name</label><div class="sk-input">Claude Desktop (MCP)</div></div><div class="sk-field"><label>Expiration</label><div class="sk-select"><span>90 days</span><i data-lucide="chevron-down" class="sk-ico-sm"></i></div></div></div>
+              <div class="sk-col sk-gap-2"><span class="sk-lbl">Scopes</span><div class="us-scopes"><label class="us-scope"><span class="sk-check is-on"></span><span class="sk-col" style="gap:0;min-width:0"><span class="us-code" style="align-self:flex-start">retros:read</span><span class="sk-muted">Read retros and cards</span></span></label><label class="us-scope"><span class="sk-check"></span><span class="sk-col" style="gap:0;min-width:0"><span class="us-code" style="align-self:flex-start">retros:write</span><span class="sk-muted">Create retros, add cards</span></span></label><label class="us-scope"><span class="sk-check is-on"></span><span class="sk-col" style="gap:0;min-width:0"><span class="us-code" style="align-self:flex-start">actions:read</span><span class="sk-muted">Read action items</span></span></label><label class="us-scope"><span class="sk-check is-on"></span><span class="sk-col" style="gap:0;min-width:0"><span class="us-code" style="align-self:flex-start">actions:write</span><span class="sk-muted">Update action items</span></span></label><label class="us-scope"><span class="sk-check"></span><span class="sk-col" style="gap:0;min-width:0"><span class="us-code" style="align-self:flex-start">poker:read</span><span class="sk-muted">Read games and estimates</span></span></label><label class="us-scope"><span class="sk-check is-on"></span><span class="sk-col" style="gap:0;min-width:0"><span class="us-code" style="align-self:flex-start">mcp</span><span class="sk-muted">Use the MCP server</span></span></label></div></div>
+              <div class="us-once" role="status">
+                <div class="sk-row sk-gap-2" style="color:var(--skrum-success-text)"><i data-lucide="circle-check"></i><span class="sk-strong">Token created — copy it now, you won’t see it again.</span></div>
+                <div class="us-token"><div class="sk-input">skr_pat_7Hq2vN9xLk4mR8tW3yBc5dF1gJ6pZs0a</div><button class="sk-btn sk-btn--outline sk-btn--sm"><i data-lucide="check"></i><span>Copied</span></button></div>
+              </div>
+            </div><div class="us-card-f"><button class="sk-btn sk-btn--sm"><i data-lucide="plus"></i><span>Create token</span></button></div></div>
+            <div class="us-card"><table class="sk-table us-tokens"><thead><tr><th>Token</th><th>Last used</th><th>Expires</th><th><span class="sk-sr">Actions</span></th></tr></thead><tbody><tr><td><div class="sk-col" style="gap:0.25rem"><span class="sk-strong us-tname">Claude Desktop (MCP) <span class="sk-badge sk-badge--success sk-badge--pill">New</span></span><span class="sk-row" style="gap:0.25rem"><span class="us-code">mcp</span> <span class="us-code">actions:write</span></span></div></td><td>just now</td><td>in 90 days</td><td style="text-align:right"><button class="sk-btn sk-btn--ghost sk-btn--sm" style="color:var(--skrum-destructive-text)"><span>Revoke</span></button></td></tr><tr><td><div class="sk-col" style="gap:0.25rem"><span class="sk-strong us-tname">Jira sync</span><span class="sk-row" style="gap:0.25rem"><span class="us-code">actions:read</span> <span class="us-code">actions:write</span></span></div></td><td>2 h ago</td><td>12 Jan 2027</td><td style="text-align:right"><button class="sk-btn sk-btn--ghost sk-btn--sm" style="color:var(--skrum-destructive-text)"><span>Revoke</span></button></td></tr><tr><td><div class="sk-col" style="gap:0.25rem"><span class="sk-strong us-tname">Grafana dashboard</span><span class="sk-row" style="gap:0.25rem"><span class="us-code">retros:read</span></span></div></td><td>3 days ago</td><td>Never</td><td style="text-align:right"><button class="sk-btn sk-btn--ghost sk-btn--sm" style="color:var(--skrum-destructive-text)"><span>Revoke</span></button></td></tr><tr class="is-revoked"><td><div class="sk-col" style="gap:0.25rem"><span class="sk-strong us-tname">Old CI script</span><span class="sk-row" style="gap:0.25rem"><span class="us-code">retros:write</span></span></div></td><td>2 months ago</td><td>Revoked 1 Sep</td><td style="text-align:right"><span class="sk-xs sk-muted">—</span></td></tr></tbody></table></div>
+          </section>
+        </div>
+      </div>
+    </div>
+  </main>
+ </div>
+</div>
+<div class="scr-cap"><b>b</b><span class="sk-badge sk-badge--soft">FR · +30 %</span>Paramètres utilisateur — scroll long : Profil, Suppression du compte, Apparence, Notifications, Jetons d’API</div>
+<div class="sk-desktop scr-long">
+ <div class="scr-shell">
+  <nav class="sk-sidebar" aria-label="Navigation">
+  <div class="sk-brand"><svg viewBox="0 0 64 64" width="24" height="24" aria-hidden="true"><path d="M14 0 H50 A14 14 0 0 1 64 14 V46 L46 64 H14 A14 14 0 0 1 0 50 V14 A14 14 0 0 1 14 0 Z" style="fill:var(--primary)"/><path d="M64 46 L50 46 A4 4 0 0 0 46 50 L46 64 Z" style="fill:color-mix(in oklch, var(--primary) 70%, var(--foreground))"/><path d="M19 27 L19 38 C19 45 24 49.5 30 49.5 C36 49.5 41 45 41 38 L41 27" fill="none" style="stroke:var(--primary-foreground)" stroke-width="7" stroke-linecap="round"/><circle cx="21.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/><circle cx="38.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/></svg><span class="sk-brand-word">skrüm</span></div>
+  <button class="sk-team sk-team-switch" aria-haspopup="menu" aria-label="Changer d'équipe ou d'espace"><span class="sk-team-mark">A</span><span class="sk-team-txt"><span class="sk-team-name">Atlas</span><span class="sk-team-sub">Nordlys · 11 membres</span></span><i data-lucide="chevrons-up-down" class="sk-ico-sm"></i></button>
+  <div class="sk-nav-group">Équipe</div>
+  <a class="sk-nav-item"><i data-lucide="layout-dashboard"></i><span>Tableau de bord</span></a>
+  <a class="sk-nav-item"><i data-lucide="calendar-clock"></i><span>Sessions</span></a>
+  <a class="sk-nav-item"><i data-lucide="list-checks"></i><span>Actions</span><span class="sk-badge sk-badge--destructive sk-badge--pill">2 en retard</span></a>
+  <a class="sk-nav-item"><i data-lucide="trending-up"></i><span>Moral & ROTI</span></a>
+  <a class="sk-nav-item"><i data-lucide="party-popper"></i><span>Jeux</span></a>
+  <a class="sk-nav-item"><i data-lucide="users"></i><span>Membres</span></a>
+  <div class="sk-nav-group">Espace de travail</div>
+  <a class="sk-nav-item"><i data-lucide="layout-template"></i><span>Modèles</span></a>
+  <a class="sk-nav-item"><i data-lucide="building-2"></i><span>Toutes les équipes</span></a>
+  <span class="sk-grow"></span>
+  <a class="sk-nav-item"><i data-lucide="settings"></i><span>Paramètres de l'équipe</span></a>
+  <a class="sk-nav-item"><i data-lucide="shield-check"></i><span>Administration</span></a>
+  <button class="sk-team sk-user" aria-haspopup="menu"><span class="sk-avatar sk-p1">AR</span><span class="sk-team-txt"><span class="sk-team-name">Arnaud Ritti</span><span class="sk-team-sub">Facilitateur · Admin</span></span><i data-lucide="chevrons-up-down" class="sk-ico-sm"></i></button>
+  </nav>
+  <main class="sk-main">
+    <header class="sk-topbar scr-top">
+      <nav class="sk-crumbs" aria-label="Fil d'Ariane"><span>Arnaud Ritti</span><i data-lucide="chevron-right"></i><span class="is-current">Paramètres</span></nav>
+      <span class="sk-grow"></span>
+      <div class="sk-input scr-search"><i data-lucide="search" class="sk-ico-sm" style="color:var(--muted-foreground)"></i><span class="sk-placeholder sk-grow scr-ell">Rechercher…</span><span class="sk-kbd">⌘K</span></div>
+      <button class="sk-btn sk-btn--ghost sk-btn--icon" aria-label="Notifications"><i data-lucide="bell"></i></button>
+    </header>
+    <div class="scr-page">
+      <div class="sk-col" style="gap:0.25rem"><h1 class="sk-h1">Paramètres</h1><span class="sk-muted">Votre compte, appliqué dans tous vos espaces de travail</span></div>
+      <div class="us-layout">
+        <nav class="us-nav" aria-label="Sections des paramètres">
+          <a class="sk-nav-item is-on" aria-current="page"><i data-lucide="user"></i><span>Profil</span></a>
+          <a class="sk-nav-item"><i data-lucide="shield"></i><span>Sécurité</span></a>
+          <a class="sk-nav-item"><i data-lucide="palette"></i><span>Apparence</span></a>
+          <a class="sk-nav-item"><i data-lucide="bell"></i><span>Notifications</span></a>
+          <a class="sk-nav-item"><i data-lucide="key-round"></i><span>Jetons d'API</span></a>
+        </nav>
+        <div class="us-col">
+          <section class="us-group" aria-labelledby="us-p-fr">
+            <div class="us-group-h"><h2 class="sk-h3" id="us-p-fr">Profil</h2><span class="sk-sm sk-muted">Comment vos coéquipiers vous voient dans les sessions et sur les cartes.</span></div>
+            <div class="us-card"><div class="us-card-b">
+              <div class="us-avatar"><span class="sk-avatar sk-avatar--xl sk-p1">AR</span><div class="sk-col sk-gap-2" style="flex:1 1 20rem;min-width:0"><span class="sk-lbl">Avatar et couleur de présence</span><div class="us-swatches" role="radiogroup"><button class="us-sw sk-p1 is-on" aria-label="Couleur de présence 1"></button><button class="us-sw sk-p2" aria-label="Couleur de présence 2"></button><button class="us-sw sk-p3" aria-label="Couleur de présence 3"></button><button class="us-sw sk-p4" aria-label="Couleur de présence 4"></button><button class="us-sw sk-p5" aria-label="Couleur de présence 5"></button><button class="us-sw sk-p6" aria-label="Couleur de présence 6"></button><button class="us-sw sk-p7" aria-label="Couleur de présence 7"></button><button class="us-sw sk-p8" aria-label="Couleur de présence 8"></button><button class="us-sw sk-p9" aria-label="Couleur de présence 9"></button><button class="us-sw sk-p10" aria-label="Couleur de présence 10"></button><button class="us-sw sk-p11" aria-label="Couleur de présence 11"></button><button class="us-sw sk-p12" aria-label="Couleur de présence 12"></button></div><span class="sk-help">Utilisée pour votre avatar, votre curseur en direct et le verrou de carte.</span><div class="sk-row sk-gap-2"><button class="sk-btn sk-btn--outline sk-btn--sm"><i data-lucide="upload"></i><span>Téléverser une photo</span></button><button class="sk-btn sk-btn--ghost sk-btn--sm"><span>Utiliser les initiales</span></button></div></div></div>
+              <div class="us-2"><div class="sk-field"><label>Nom</label><div class="sk-input">Arnaud Ritti</div></div><div class="sk-field"><label>E-mail</label><div class="sk-input"><span class="sk-grow scr-ell">arnaud@nordlys.io</span><span class="sk-badge sk-badge--success sk-badge--pill"><i data-lucide="check"></i>Vérifié</span></div></div></div>
+            </div><div class="us-card-f"><span class="sk-xs sk-muted sk-grow">Modifier votre e-mail envoie un lien de confirmation.</span><button class="sk-btn sk-btn--sm"><span>Enregistrer</span></button></div></div>
+            <div class="us-card us-danger"><div class="us-card-b"><div class="us-danger-row"><span class="us-danger-ico"><i data-lucide="triangle-alert" class="sk-ico-lg"></i></span><div class="sk-col" style="gap:0.125rem;min-width:0"><span class="sk-strong">Supprimer le compte</span><span class="sk-sm sk-muted">Supprime définitivement votre profil et vos jetons. Vos cartes restent, affichées comme « Ancien membre ».</span></div><button class="sk-btn sk-btn--destructive sk-btn--sm"><i data-lucide="trash-2"></i><span>Supprimer le compte</span></button></div></div></div>
+          </section>
+
+          <section class="us-group" aria-labelledby="us-a-fr">
+            <div class="us-group-h"><h2 class="sk-h3" id="us-a-fr">Apparence</h2><span class="sk-sm sk-muted">Enregistrée sur ce compte, synchronisée entre vos appareils.</span></div>
+            <div class="us-card"><div class="us-card-b">
+              <div class="sk-col sk-gap-2"><span class="sk-lbl">Thème</span>
+                <div class="us-themes" role="radiogroup">
+                  <label class="us-theme is-on"><div class="us-mini"><div data-theme="light"><div class="us-mini-sb"><i></i><i></i><i></i><i></i></div><div class="us-mini-main"><div class="us-mini-col sk-c-moss"><b></b><b></b></div><div class="us-mini-col sk-c-coral"><b></b></div><div class="us-mini-col sk-c-sky"><b></b><b></b></div></div></div><div data-theme="dark"><div class="us-mini-sb"><i></i><i></i><i></i><i></i></div><div class="us-mini-main"><div class="us-mini-col sk-c-moss"><b></b><b></b></div><div class="us-mini-col sk-c-coral"><b></b></div><div class="us-mini-col sk-c-sky"><b></b><b></b></div></div></div></div><span class="us-theme-l"><span class="sk-radio is-on"></span><i data-lucide="monitor" class="sk-ico-sm"></i>Système</span></label>
+                  <label class="us-theme"><div class="us-mini"><div data-theme="light"><div class="us-mini-sb"><i></i><i></i><i></i><i></i></div><div class="us-mini-main"><div class="us-mini-col sk-c-moss"><b></b><b></b></div><div class="us-mini-col sk-c-coral"><b></b></div><div class="us-mini-col sk-c-sky"><b></b><b></b></div></div></div></div><span class="us-theme-l"><span class="sk-radio"></span><i data-lucide="sun" class="sk-ico-sm"></i>Clair</span></label>
+                  <label class="us-theme"><div class="us-mini"><div data-theme="dark"><div class="us-mini-sb"><i></i><i></i><i></i><i></i></div><div class="us-mini-main"><div class="us-mini-col sk-c-moss"><b></b><b></b></div><div class="us-mini-col sk-c-coral"><b></b></div><div class="us-mini-col sk-c-sky"><b></b><b></b></div></div></div></div><span class="us-theme-l"><span class="sk-radio"></span><i data-lucide="moon" class="sk-ico-sm"></i>Sombre</span></label>
+                </div></div>
+              <div class="sk-sep"></div>
+              <div class="us-row"><div class="sk-col" style="gap:0"><span class="sk-lbl">Langue</span><span class="sk-help">Langue de l'interface. Les invités suivent leur navigateur.</span></div><div class="us-seg sk-tabs" role="radiogroup"><button class="sk-tab"><span>English</span></button><button class="sk-tab is-on"><span>Français</span></button></div></div>
+              <div class="sk-sep"></div>
+              <div class="us-row"><div class="sk-col" style="gap:0"><span class="sk-lbl">Réduire les animations</span><span class="sk-help">Remplace les retournements de cartes, confettis et inclinaisons par de simples fondus. Activé d'office si votre système le demande.</span></div><span class="sk-switch" role="switch" aria-checked="false"></span></div>
+            </div></div>
+          </section>
+
+          <section class="us-group" aria-labelledby="us-n-fr">
+            <div class="us-group-h"><h2 class="sk-h3" id="us-n-fr">Notifications</h2><span class="sk-sm sk-muted">Choisissez ce qui vous parvient, et par quel canal.</span></div>
+            <div class="us-card"><table class="sk-table us-notif"><thead><tr><th>Événement</th><th>Dans l’app</th><th>E-mail</th></tr></thead><tbody><tr><td class="sk-sm">Une action m'est assignée</td><td><span class="sk-switch is-on" role="switch" aria-checked="true"></span></td><td><span class="sk-switch is-on" role="switch" aria-checked="true"></span></td></tr><tr><td class="sk-sm">Une de mes actions arrive à échéance demain</td><td><span class="sk-switch is-on" role="switch" aria-checked="true"></span></td><td><span class="sk-switch is-on" role="switch" aria-checked="true"></span></td></tr><tr><td class="sk-sm">Une rétro à laquelle je suis invité·e commence</td><td><span class="sk-switch is-on" role="switch" aria-checked="true"></span></td><td><span class="sk-switch" role="switch" aria-checked="false"></span></td></tr><tr><td class="sk-sm">Quelqu'un me mentionne sur une carte</td><td><span class="sk-switch is-on" role="switch" aria-checked="true"></span></td><td><span class="sk-switch" role="switch" aria-checked="false"></span></td></tr><tr><td class="sk-sm">Une estimation est enregistrée sur ma tâche</td><td><span class="sk-switch" role="switch" aria-checked="false"></span></td><td><span class="sk-switch" role="switch" aria-checked="false"></span></td></tr><tr><td class="sk-sm">Récapitulatif hebdo des actions ouvertes (lundi 9 h)</td><td><span class="sk-switch" role="switch" aria-checked="false"></span></td><td><span class="sk-switch is-on" role="switch" aria-checked="true"></span></td></tr></tbody></table></div>
+          </section>
+
+          <section class="us-group" aria-labelledby="us-t-fr">
+            <div class="us-group-h"><h2 class="sk-h3" id="us-t-fr">Jetons d'API</h2><span class="sk-sm sk-muted">Jetons personnels pour l’API REST et le serveur MCP de Skrüm. Ils agissent en votre nom.</span></div>
+            <div class="us-card"><div class="us-card-b">
+              <div class="us-2"><div class="sk-field"><label>Nom du jeton</label><div class="sk-input">Claude Desktop (MCP)</div></div><div class="sk-field"><label>Expiration</label><div class="sk-select"><span>90 jours</span><i data-lucide="chevron-down" class="sk-ico-sm"></i></div></div></div>
+              <div class="sk-col sk-gap-2"><span class="sk-lbl">Portées</span><div class="us-scopes"><label class="us-scope"><span class="sk-check is-on"></span><span class="sk-col" style="gap:0;min-width:0"><span class="us-code" style="align-self:flex-start">retros:read</span><span class="sk-muted">Lire les rétros et les cartes</span></span></label><label class="us-scope"><span class="sk-check"></span><span class="sk-col" style="gap:0;min-width:0"><span class="us-code" style="align-self:flex-start">retros:write</span><span class="sk-muted">Créer des rétros, ajouter des cartes</span></span></label><label class="us-scope"><span class="sk-check is-on"></span><span class="sk-col" style="gap:0;min-width:0"><span class="us-code" style="align-self:flex-start">actions:read</span><span class="sk-muted">Lire les actions</span></span></label><label class="us-scope"><span class="sk-check is-on"></span><span class="sk-col" style="gap:0;min-width:0"><span class="us-code" style="align-self:flex-start">actions:write</span><span class="sk-muted">Modifier les actions</span></span></label><label class="us-scope"><span class="sk-check"></span><span class="sk-col" style="gap:0;min-width:0"><span class="us-code" style="align-self:flex-start">poker:read</span><span class="sk-muted">Lire les parties et estimations</span></span></label><label class="us-scope"><span class="sk-check is-on"></span><span class="sk-col" style="gap:0;min-width:0"><span class="us-code" style="align-self:flex-start">mcp</span><span class="sk-muted">Utiliser le serveur MCP</span></span></label></div></div>
+              <div class="us-once" role="status">
+                <div class="sk-row sk-gap-2" style="color:var(--skrum-success-text)"><i data-lucide="circle-check"></i><span class="sk-strong">Jeton créé : copiez-le maintenant, il ne sera plus affiché.</span></div>
+                <div class="us-token"><div class="sk-input">skr_pat_7Hq2vN9xLk4mR8tW3yBc5dF1gJ6pZs0a</div><button class="sk-btn sk-btn--outline sk-btn--sm"><i data-lucide="check"></i><span>Copié</span></button></div>
+              </div>
+            </div><div class="us-card-f"><button class="sk-btn sk-btn--sm"><i data-lucide="plus"></i><span>Créer le jeton</span></button></div></div>
+            <div class="us-card"><table class="sk-table us-tokens"><thead><tr><th>Jeton</th><th>Dernière utilisation</th><th>Expiration</th><th><span class="sk-sr">Actions</span></th></tr></thead><tbody><tr><td><div class="sk-col" style="gap:0.25rem"><span class="sk-strong us-tname">Claude Desktop (MCP) <span class="sk-badge sk-badge--success sk-badge--pill">Nouveau</span></span><span class="sk-row" style="gap:0.25rem"><span class="us-code">mcp</span> <span class="us-code">actions:write</span></span></div></td><td>à l'instant</td><td>dans 90 jours</td><td style="text-align:right"><button class="sk-btn sk-btn--ghost sk-btn--sm" style="color:var(--skrum-destructive-text)"><span>Révoquer</span></button></td></tr><tr><td><div class="sk-col" style="gap:0.25rem"><span class="sk-strong us-tname">Jira sync</span><span class="sk-row" style="gap:0.25rem"><span class="us-code">actions:read</span> <span class="us-code">actions:write</span></span></div></td><td>il y a 2 h</td><td>12 janv. 2027</td><td style="text-align:right"><button class="sk-btn sk-btn--ghost sk-btn--sm" style="color:var(--skrum-destructive-text)"><span>Révoquer</span></button></td></tr><tr><td><div class="sk-col" style="gap:0.25rem"><span class="sk-strong us-tname">Tableau Grafana</span><span class="sk-row" style="gap:0.25rem"><span class="us-code">retros:read</span></span></div></td><td>il y a 3 jours</td><td>Jamais</td><td style="text-align:right"><button class="sk-btn sk-btn--ghost sk-btn--sm" style="color:var(--skrum-destructive-text)"><span>Révoquer</span></button></td></tr><tr class="is-revoked"><td><div class="sk-col" style="gap:0.25rem"><span class="sk-strong us-tname">Ancien script CI</span><span class="sk-row" style="gap:0.25rem"><span class="us-code">retros:write</span></span></div></td><td>il y a 2 mois</td><td>Révoqué le 1er sept.</td><td style="text-align:right"><span class="sk-xs sk-muted">—</span></td></tr></tbody></table></div>
+          </section>
+        </div>
+      </div>
+    </div>
+  </main>
+ </div>
+</div>
+</body>
+</html>

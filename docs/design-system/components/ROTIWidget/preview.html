@@ -1,0 +1,78 @@
+<!-- @dsCard group="Skrüm · Mesure" height=515 subtitle="vote 1 à 5 avec libellés · sélection · envoyé · résultat agrégé (moyenne + distribution)" -->
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><title>ROTIWidget</title>
+<style>
+  .ro-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 17.5rem), 1fr)); gap: var(--space-6); align-items: start; }
+  .ro-card { padding: var(--space-5); display: flex; flex-direction: column; gap: var(--space-4); }
+  .ro-opt { cursor: pointer; font-family: inherit; }
+  .ro-opt.is-hover:not(.is-on) { background: var(--accent); }
+  .ro-q { margin: 0; font-size: 0.9375rem; font-weight: 650; line-height: 1.375rem; }
+  .ro-sent { display: flex; align-items: center; gap: var(--space-3); padding: 0.625rem 0.75rem; border-radius: var(--radius); background: var(--skrum-success-soft); color: var(--skrum-success-text); font-size: 0.8125rem; font-weight: 600; }
+  .ro-avg { display: flex; align-items: center; gap: var(--space-4); }
+  .ro-avg-v { font-family: var(--font-display); font-size: 2.75rem; line-height: 3rem; font-weight: 700; letter-spacing: -.025em; }
+  .ro-avg-v small { font-size: 1.125rem; color: var(--muted-foreground); font-weight: 600; letter-spacing: 0; }
+  .ro-stack { display: flex; height: 0.875rem; border-radius: var(--radius-full); overflow: hidden; gap: 2px; }
+  .ro-stack span { display: block; }
+  .ro-rows { display: flex; flex-direction: column; gap: 0.375rem; }
+  .ro-row { display: grid; grid-template-columns: 1.75rem 7.5rem 1fr 1.5rem; align-items: center; gap: var(--space-3); font-size: 0.8125rem; }
+  .ro-row .sk-roti-n { width: 1.5rem; height: 1.5rem; font-size: 0.8125rem; }
+  .ro-row .bar { height: 0.625rem; border-radius: var(--radius-full); background: var(--muted); overflow: hidden; }
+  .ro-row .bar span { display: block; height: 100%; border-radius: inherit; }
+  .ro-row b { text-align: right; font-variant-numeric: tabular-nums; }
+  .ro-wait .sk-stack > .sk-avatar + .sk-avatar { margin-left: -0.25rem; }
+  .ro-wait { display: flex; align-items: center; gap: var(--space-3); font-size: 0.8125rem; color: var(--muted-foreground); }
+</style>
+</head>
+<body class="sk-canvas">
+<div class="sk-pad">
+  <div class="ro-grid">
+    <div class="sk-col sk-gap-6">
+      <div><div class="sk-state">Vote · aucune sélection (survol sur 3)</div>
+        <div class="sk-card ro-card">
+          <p class="ro-q" id="roti1">Ce temps passé ensemble valait-il le coup ?</p>
+          <div class="sk-roti" role="radiogroup" aria-labelledby="roti1">
+            <button class="sk-roti-opt ro-opt" role="radio" aria-checked="false"><span class="sk-roti-n sk-r1">1</span>Perte de temps</button>
+            <button class="sk-roti-opt ro-opt" role="radio" aria-checked="false"><span class="sk-roti-n sk-r2">2</span>Peu utile</button>
+            <button class="sk-roti-opt ro-opt is-hover" role="radio" aria-checked="false"><span class="sk-roti-n sk-r3">3</span>Correct</button>
+            <button class="sk-roti-opt ro-opt" role="radio" aria-checked="false"><span class="sk-roti-n sk-r4">4</span>Utile</button>
+            <button class="sk-roti-opt ro-opt" role="radio" aria-checked="false"><span class="sk-roti-n sk-r5">5</span>Excellent</button>
+          </div>
+        </div></div>
+      <div><div class="sk-state">Sélection · envoyée</div>
+        <div class="sk-card ro-card">
+          <p class="ro-q">Ce temps passé ensemble valait-il le coup ?</p>
+          <div class="sk-roti" role="radiogroup" aria-label="ROTI">
+            <button class="sk-roti-opt ro-opt" role="radio" aria-checked="false"><span class="sk-roti-n sk-r1">1</span>Perte de temps</button>
+            <button class="sk-roti-opt ro-opt" role="radio" aria-checked="false"><span class="sk-roti-n sk-r2">2</span>Peu utile</button>
+            <button class="sk-roti-opt ro-opt" role="radio" aria-checked="false"><span class="sk-roti-n sk-r3">3</span>Correct</button>
+            <button class="sk-roti-opt ro-opt is-on" role="radio" aria-checked="true"><span class="sk-roti-n sk-r4">4</span>Utile</button>
+            <button class="sk-roti-opt ro-opt" role="radio" aria-checked="false"><span class="sk-roti-n sk-r5">5</span>Excellent</button>
+          </div>
+          <div class="ro-sent" role="status"><i data-lucide="circle-check"></i>Vote enregistré · modifiable jusqu'à la clôture</div>
+        </div></div>
+    </div>
+
+    <div><div class="sk-state">Résultat agrégé · 11 votes</div>
+      <div class="sk-card ro-card">
+        <div class="sk-between">
+          <div class="ro-avg"><span class="ro-avg-v">3,8<small> / 5</small></span><span class="sk-col sk-gap-1"><span class="sk-strong">ROTI moyen</span><span class="sk-xs sk-muted">Rétro sprint 42 · équipe Atlas</span></span></div>
+          <span class="sk-badge sk-badge--success sk-badge--pill"><i data-lucide="trending-up"></i>+0,4 vs S41</span>
+        </div>
+        <div class="ro-stack" role="img" aria-label="Répartition : 0 fois 1, 1 fois 2, 3 fois 3, 4 fois 4, 3 fois 5">
+          <span class="sk-r2" style="flex:1"></span><span class="sk-r3" style="flex:3"></span><span class="sk-r4" style="flex:4"></span><span class="sk-r5" style="flex:3"></span>
+        </div>
+        <div class="ro-rows">
+          <div class="ro-row"><span class="sk-roti-n sk-r5">5</span><span>Excellent</span><span class="bar"><span class="sk-r5" style="width:27%"></span></span><b>3</b></div>
+          <div class="ro-row"><span class="sk-roti-n sk-r4">4</span><span class="sk-strong">Utile</span><span class="bar"><span class="sk-r4" style="width:36%"></span></span><b>4</b></div>
+          <div class="ro-row"><span class="sk-roti-n sk-r3">3</span><span>Correct</span><span class="bar"><span class="sk-r3" style="width:27%"></span></span><b>3</b></div>
+          <div class="ro-row"><span class="sk-roti-n sk-r2">2</span><span>Peu utile</span><span class="bar"><span class="sk-r2" style="width:9%"></span></span><b>1</b></div>
+          <div class="ro-row"><span class="sk-roti-n sk-r1">1</span><span>Perte de temps</span><span class="bar"><span class="sk-r1" style="width:0%"></span></span><b>0</b></div>
+        </div>
+        <div class="sk-sep"></div>
+        <div class="ro-wait"><span class="sk-stack"><span class="sk-avatar sk-avatar--sm sk-p6">HG</span><span class="sk-avatar sk-avatar--sm sk-avatar--guest"><i data-lucide="user-round" class="sk-ico-sm"></i></span></span>2 participants n'ont pas voté<span class="sk-grow"></span><button class="sk-btn sk-btn--outline sk-btn--sm">Clôturer le ROTI</button></div>
+      </div></div>
+  </div>
+</div>
+</body>
+</html>

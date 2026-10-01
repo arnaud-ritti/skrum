@@ -1,0 +1,59 @@
+<!-- @dsCard group="Skrüm · Temps réel" height=475 subtitle="curseurs colorés nommés sur board sk-dotgrid · curseur en drag · réglage « masquer les curseurs »" -->
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><title>LiveCursor</title>
+<style>
+  .lc-wrap { display: grid; grid-template-columns: 1fr 16.25rem; gap: var(--space-5); align-items: start; }
+  .lc-board { position: relative; height: 25rem; border-radius: var(--radius-xl); border: 1px solid var(--border); overflow: hidden; }
+  .lc-board .sk-sticky { width: 10.625rem; }
+  .lc-set { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-3) var(--space-4); font-size: 0.875rem; }
+  .lc-set + .lc-set { border-top: 1px solid var(--border); }
+  .lc-set small { display: block; font-size: 0.75rem; line-height: 1rem; color: var(--muted-foreground); }
+  .lc-mini { position: relative; height: 8.125rem; border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; }
+  .lc-mini .sk-sticky { width: 6.875rem; font-size: 0.75rem; line-height: 1rem; padding: 0.5rem; }
+  .lc-hidden-note { position: absolute; left: var(--space-2); bottom: var(--space-2); }
+  .lc-drag { transform: rotate(-3deg); box-shadow: var(--shadow-drag) !important; }
+</style>
+</head>
+<body>
+<div class="sk-pad">
+  <div class="lc-wrap">
+    <div>
+      <div class="sk-state">Board partagé · 4 curseurs</div>
+      <div class="lc-board sk-dotgrid" aria-label="Whiteboard partagé">
+        <div class="sk-sticky sk-c-sun" style="left:2.5rem;top:2.5rem">Parcours d'onboarding : trop d'étapes</div>
+        <div class="sk-sticky sk-c-sky" style="left:15.625rem;top:4.375rem">Idée : SSO dès l'inscription</div>
+        <div class="sk-sticky sk-c-moss" style="left:5.625rem;top:12.5rem">Les invités rejoignent en 1 clic</div>
+        <div class="sk-sticky sk-c-coral lc-drag" style="left:22.5rem;top:13.75rem">Emails de relance à revoir</div>
+
+        <div class="sk-cursor" style="left:12.5rem;top:9.375rem;--cur:var(--skrum-presence-4);--cur-fg:var(--skrum-presence-4-foreground)"><svg viewBox="0 0 18 18"><path d="M2 1.5 L2 15 L5.8 11.4 L8.4 17 L10.9 15.9 L8.4 10.4 L13.8 10.4 Z"/></svg><span class="sk-cursor-tag">Camille</span></div>
+        <div class="sk-cursor" style="left:29.375rem;top:2.5rem;--cur:var(--skrum-presence-2);--cur-fg:var(--skrum-presence-2-foreground)"><svg viewBox="0 0 18 18"><path d="M2 1.5 L2 15 L5.8 11.4 L8.4 17 L10.9 15.9 L8.4 10.4 L13.8 10.4 Z"/></svg><span class="sk-cursor-tag">Théo</span></div>
+        <div class="sk-cursor" style="left:30rem;top:15.3125rem;--cur:var(--skrum-presence-9);--cur-fg:var(--skrum-presence-9-foreground)"><svg viewBox="0 0 18 18"><path d="M2 1.5 L2 15 L5.8 11.4 L8.4 17 L10.9 15.9 L8.4 10.4 L13.8 10.4 Z"/></svg><span class="sk-cursor-tag">Inès · déplace</span></div>
+        <div class="sk-cursor" style="left:18.75rem;top:20rem;--cur:var(--skrum-presence-11);--cur-fg:var(--skrum-presence-11-foreground)"><svg viewBox="0 0 18 18"><path d="M2 1.5 L2 15 L5.8 11.4 L8.4 17 L10.9 15.9 L8.4 10.4 L13.8 10.4 Z"/></svg><span class="sk-cursor-tag">Loutre pensive</span></div>
+      </div>
+    </div>
+
+    <div class="sk-col sk-gap-4">
+      <div>
+        <div class="sk-state">Réglage</div>
+        <div class="sk-card">
+          <div class="lc-set"><span>Afficher les curseurs<small>Ceux des autres participants</small></span><span class="sk-switch is-on" role="switch" aria-checked="true" aria-label="Afficher les curseurs"></span></div>
+          <div class="lc-set"><span>Partager mon curseur<small>Visible des autres</small></span><span class="sk-switch is-on" role="switch" aria-checked="true" aria-label="Partager mon curseur"></span></div>
+        </div>
+      </div>
+      <div>
+        <div class="sk-state">Curseurs masqués</div>
+        <div class="sk-card" style="margin-bottom:var(--space-3)">
+          <div class="lc-set"><span>Afficher les curseurs</span><span class="sk-switch" role="switch" aria-checked="false" aria-label="Afficher les curseurs"></span></div>
+        </div>
+        <div class="lc-mini sk-dotgrid">
+          <div class="sk-sticky sk-c-sun" style="left:0.875rem;top:0.875rem">Trop d'étapes</div>
+          <div class="sk-sticky sk-c-sky" style="left:7.5rem;top:2.75rem">SSO dès l'inscription</div>
+          <span class="sk-badge sk-badge--muted sk-badge--pill lc-hidden-note"><i data-lucide="mouse-pointer-2"></i>4 curseurs masqués</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

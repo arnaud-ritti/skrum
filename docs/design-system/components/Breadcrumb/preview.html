@@ -1,0 +1,57 @@
+<!-- @dsCard group="shadcn · Navigation" height=346 subtitle="Breadcrumb — simple, avec icône, ellipse repliée + menu, lien survolé / focus, dans une topbar, mobile tronqué" -->
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><title>Breadcrumb</title>
+<style>
+  .bc a { color: var(--muted-foreground); text-decoration: none; display: inline-flex; align-items: center; gap: 0.375rem; border-radius: var(--radius-xs); }
+  .bc a.is-hover { color: var(--foreground); text-decoration: underline; text-underline-offset: 0.1875rem; }
+  .bc a.is-focus { outline: 2px solid var(--ring); outline-offset: 2px; color: var(--foreground); }
+  .bc ol { list-style: none; margin: 0; padding: 0; display: flex; align-items: center; gap: 0.375rem; flex-wrap: wrap; }
+  .bc li { display: inline-flex; align-items: center; gap: 0.375rem; }
+  .bc-ell { width: 1.5rem; height: 1.5rem; display: grid; place-items: center; border-radius: var(--radius-sm); background: var(--accent); color: var(--foreground); }
+  .bc-trunc { max-width: 9.375rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block; }
+  .bc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-6) var(--space-8); }
+</style></head>
+<body>
+<div class="sk-pad sk-col sk-gap-6">
+  <div class="bc-grid">
+    <div><div class="sk-state">Simple</div>
+      <nav class="sk-crumbs bc" aria-label="Fil d'Ariane"><ol>
+        <li><a href="#">Atlas</a></li><li aria-hidden="true"><i data-lucide="chevron-right"></i></li>
+        <li><a href="#">Rétros</a></li><li aria-hidden="true"><i data-lucide="chevron-right"></i></li>
+        <li><span class="is-current" aria-current="page">Rétro sprint 42</span></li></ol></nav></div>
+    <div><div class="sk-state">Avec icône · lien survolé · focus</div>
+      <nav class="sk-crumbs bc" aria-label="Fil d'Ariane"><ol>
+        <li><a href="#" class="is-focus"><i data-lucide="house"></i><span class="sk-sr">Accueil</span></a></li><li aria-hidden="true"><i data-lucide="chevron-right"></i></li>
+        <li><a href="#" class="is-hover">Paramètres</a></li><li aria-hidden="true"><i data-lucide="chevron-right"></i></li>
+        <li><span class="is-current" aria-current="page">Intégrations</span></li></ol></nav></div>
+  </div>
+  <div class="bc-grid">
+    <div><div class="sk-state">Ellipse repliée + menu</div>
+      <nav class="sk-crumbs bc" aria-label="Fil d'Ariane"><ol>
+        <li><a href="#">Atlas</a></li><li aria-hidden="true"><i data-lucide="chevron-right"></i></li>
+        <li><button class="bc-ell" aria-label="Afficher le chemin complet" aria-expanded="true" style="border:0"><i data-lucide="ellipsis"></i></button></li><li aria-hidden="true"><i data-lucide="chevron-right"></i></li>
+        <li><a href="#">Q4 2026</a></li><li aria-hidden="true"><i data-lucide="chevron-right"></i></li>
+        <li><span class="is-current" aria-current="page">Atelier réorganisation</span></li></ol></nav>
+      <div class="sk-menu" style="margin:0.375rem 0 0 2.75rem;width:12.5rem;min-width:0">
+        <div class="sk-menu-item is-on">Whiteboards</div><div class="sk-menu-item">Ateliers</div>
+      </div></div>
+    <div class="sk-col sk-gap-6">
+      <div><div class="sk-state">Séparateur « / »</div>
+        <nav class="sk-crumbs bc" aria-label="Fil d'Ariane"><ol>
+          <li><a href="#">Instance</a></li><li aria-hidden="true">/</li><li><a href="#">SSO</a></li><li aria-hidden="true">/</li><li><span class="is-current" aria-current="page">Okta</span></li></ol></nav></div>
+      <div><div class="sk-state">Mobile · tronqué</div>
+        <nav class="sk-crumbs bc" aria-label="Fil d'Ariane" style="width:20rem"><ol style="flex-wrap:nowrap">
+          <li><a href="#"><i data-lucide="chevron-left"></i>Rétros</a></li><li aria-hidden="true">/</li>
+          <li style="min-width:0"><span class="is-current bc-trunc" aria-current="page" title="Rétro sprint 42 — fin de release 3.8">Rétro sprint 42 — fin de release 3.8</span></li></ol></nav></div>
+    </div>
+  </div>
+  <div><div class="sk-state">Dans une topbar</div>
+    <div class="sk-topbar sk-card" style="border-radius:var(--radius);height:3.25rem">
+      <button class="sk-btn sk-btn--ghost sk-btn--icon sk-btn--sm" aria-label="Replier la barre latérale"><i data-lucide="panel-left"></i></button><span class="sk-vsep" style="margin:0.75rem 0"></span>
+      <nav class="sk-crumbs bc" aria-label="Fil d'Ariane"><ol><li><a href="#">Atlas</a></li><li aria-hidden="true"><i data-lucide="chevron-right"></i></li><li><a href="#">Poker</a></li><li aria-hidden="true"><i data-lucide="chevron-right"></i></li><li><span class="is-current" aria-current="page">Sprint 43 · estimation</span></li></ol></nav>
+      <span class="sk-grow"></span><span class="sk-conn is-ok"><span class="sk-dot"></span>Connecté</span>
+    </div></div>
+</div>
+</body>
+</html>

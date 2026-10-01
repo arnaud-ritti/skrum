@@ -1,0 +1,283 @@
+<!-- @dsCard group="Écrans · Desktop" width=1440 height=4000 subtitle="Workspace, EN puis FR : sélecteur ouvert (liste, check, New workspace), équipes en cards (membres, activité), New team, Leave workspace discret + confirmation destructive · Templates partagés (rétro, poker, état vide whiteboard)" -->
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><title>ScreenWorkspace</title>
+<style>
+  body { background: var(--skrum-canvas); }
+  .scr-cap { height: 3rem; display: flex; align-items: center; gap: var(--space-2); padding: 0 var(--space-6); font-size: 0.75rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted-foreground); white-space: nowrap; }
+  .scr-cap b { color: var(--foreground); }
+  .scr-cap .sk-badge { letter-spacing: 0; text-transform: none; }
+  .scr-long { height: auto; }
+  a.sk-card { text-decoration: none; color: inherit; }
+  .scr-shell { display: flex; flex: 1; min-height: 0; }
+  .scr-logo { display: flex; align-items: center; gap: var(--space-2); padding: 0.25rem 0.5rem 0.75rem; }
+  .scr-word { font-family: var(--font-display); font-weight: 700; letter-spacing: -.03em; font-size: 1.25rem; }
+  .sk-sidebar .sk-nav-item > span:not(.sk-badge), .scr-subitem > span:last-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .scr-ws { border: 1px solid var(--sidebar-border); background: var(--card); width: 100%; text-align: left; cursor: pointer; }
+  .scr-ws.is-open { box-shadow: 0 0 0 2px var(--ring); }
+  .scr-sub { display: flex; flex-direction: column; gap: 2px; margin: 0 0 0.25rem 1.0625rem; padding-left: 0.625rem; border-left: 1px solid var(--sidebar-border); }
+  .scr-subitem { display: flex; align-items: center; gap: 0.5rem; height: 1.875rem; padding: 0 0.5rem; border-radius: var(--radius-md); font-size: 0.8125rem; color: var(--sidebar-foreground); min-width: 0; }
+  .scr-subitem.is-on { background: var(--sidebar-accent); color: var(--sidebar-accent-foreground); font-weight: 600; }
+  .scr-tmark { width: 1.125rem; height: 1.125rem; border-radius: var(--radius-xs); display: grid; place-items: center; font-size: 0.625rem; font-weight: 700; background: var(--c); color: var(--c-t); border: 1px solid var(--c-b); flex: none; }
+  .scr-top { padding: 0 var(--space-10); }
+  .scr-top .sk-crumbs { white-space: nowrap; min-width: 0; }
+  .scr-search { width: 16.25rem; white-space: nowrap; }
+  .scr-page { padding: var(--space-8) var(--space-10) var(--space-12); display: flex; flex-direction: column; gap: var(--space-8); width: 100%; max-width: var(--container-max); min-width: 0; }
+  .scr-sec { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; }
+  .scr-sec-h { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2) var(--space-4); flex-wrap: wrap; }
+  .scr-sec-h > * { min-width: 0; }
+  .scr-sec-t { display: flex; align-items: center; gap: var(--space-2); font-size: 1rem; line-height: 1.5rem; font-weight: 650; margin: 0; white-space: nowrap; }
+  .scr-sec-t .lucide { color: var(--muted-foreground); }
+  .sk-btn, .sk-tab, .sk-menu-item { min-width: 0; }
+  .sk-btn > span, .sk-tab > span { overflow: hidden; text-overflow: ellipsis; }
+  .scr-nw { white-space: nowrap; }
+  .scr-ell { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+
+  .ws-shell { position: relative; }
+  .ws-menu { position: absolute; left: var(--space-3); top: 6.25rem; z-index: var(--z-overlay); width: 17.5rem; max-width: none; }
+  .ws-menu .sk-menu-item { height: 2.75rem; }
+  .ws-mark { width: 1.75rem; height: 1.75rem; border-radius: var(--radius-md); display: grid; place-items: center; font-weight: 700; font-size: 0.75rem; flex: none; background: var(--c, var(--sidebar-primary)); color: var(--c-t, var(--sidebar-primary-foreground)); border: 1px solid var(--c-b, transparent); }
+  .ws-menu .sk-menu-item .lucide.ws-check { color: var(--skrum-primary-text); }
+  .ws-head { display: flex; align-items: center; gap: var(--space-5); flex-wrap: wrap; }
+  .ws-bigmark { width: 3.5rem; height: 3.5rem; border-radius: var(--radius-xl); background: var(--sidebar-primary); color: var(--sidebar-primary-foreground); display: grid; place-items: center; font-family: var(--font-display); font-weight: 700; font-size: 1.5rem; flex: none; }
+  .ws-teams { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 15.5rem), 1fr)); gap: var(--space-4); }
+  .ws-team { display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-5); }
+  .ws-team-h { display: flex; gap: var(--space-3); align-items: center; min-width: 0; }
+  .ws-team-mark { width: 2.5rem; height: 2.5rem; border-radius: var(--radius); display: grid; place-items: center; background: var(--c); color: var(--c-t); border: 1px solid var(--c-b); font-family: var(--font-display); font-weight: 700; font-size: 1.125rem; flex: none; }
+  .ws-act { display: flex; flex-direction: column; gap: 0.375rem; font-size: 0.8125rem; color: var(--muted-foreground); }
+  .ws-act > span { display: flex; align-items: center; gap: var(--space-2); min-width: 0; }
+  .ws-act .lucide { flex: none; }
+  .ws-team-f { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); border-top: 1px solid var(--border); padding-top: var(--space-3); margin-top: auto; flex-wrap: wrap; }
+  .ws-newteam { border: 1.5px dashed var(--input); border-radius: var(--radius-xl); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-2); padding: var(--space-6); color: var(--muted-foreground); text-align: center; min-height: 12rem; }
+  .ws-live { color: var(--skrum-success-text); font-weight: 600; }
+  .ws-leave { border-top: 1px solid var(--border); padding-top: var(--space-6); display: flex; flex-direction: column; gap: var(--space-4); }
+  .ws-leave-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3) var(--space-6); flex-wrap: wrap; }
+  .ws-confirm { border: 1px solid color-mix(in oklch, var(--destructive) 45%, var(--border)); border-radius: var(--radius-xl); background: var(--card); padding: var(--space-5); display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-4); max-width: 42rem; box-shadow: var(--shadow-card); }
+  .ws-confirm-ico { width: 2.25rem; height: 2.25rem; border-radius: 50%; display: grid; place-items: center; background: var(--skrum-destructive-soft); color: var(--skrum-destructive-text); }
+  .ws-confirm ul { margin: 0; padding-left: 1.125rem; font-size: 0.8125rem; color: var(--muted-foreground); line-height: 1.25rem; }
+  .ws-ghost-danger { color: var(--skrum-destructive-text); }
+  /* templates */
+  .tp-filter { display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap; }
+  .tp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 16.5rem), 1fr)); gap: var(--space-4); }
+  .tp-card { display: flex; flex-direction: column; overflow: hidden; }
+  .tp-prev { height: 6.5rem; padding: var(--space-3); display: flex; gap: 0.375rem; background: var(--skrum-canvas); border-bottom: 1px solid var(--border); }
+  .tp-col { flex: 1; min-width: 0; border-radius: var(--radius-sm); background: color-mix(in oklch, var(--c) 45%, var(--skrum-canvas)); border: 1px solid color-mix(in oklch, var(--c-b) 60%, transparent); padding: 0.3125rem; display: flex; flex-direction: column; gap: 0.25rem; }
+  .tp-col b { font-size: 0.625rem; line-height: 0.875rem; font-weight: 700; color: var(--c-t); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tp-col i { display: block; height: 0.75rem; border-radius: 0.1875rem; background: var(--c); border: 1px solid var(--c-b); }
+  .tp-deckprev { height: 6.5rem; padding: var(--space-3); display: flex; align-items: center; justify-content: center; gap: 0.25rem; flex-wrap: wrap; align-content: center; background: var(--skrum-canvas); border-bottom: 1px solid var(--border); }
+  .tp-v { min-width: 1.5rem; height: 2rem; padding: 0 0.25rem; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--card); display: grid; place-items: center; font-family: var(--font-display); font-weight: 700; font-size: 0.75rem; box-shadow: var(--shadow-card); }
+  .tp-v.is-special { background: var(--muted); color: var(--muted-foreground); }
+  .tp-b { padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-3); flex: 1; }
+  .tp-f { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); margin-top: auto; }
+  .tp-author { display: flex; align-items: center; gap: 0.375rem; font-size: 0.75rem; color: var(--muted-foreground); min-width: 0; }
+  .tp-empty { border: 1.5px dashed var(--input); border-radius: var(--radius-xl); background: color-mix(in oklch, var(--card) 50%, transparent); }
+  .tp-empty-art { width: 4.5rem; height: 3.5rem; border-radius: var(--radius); background: var(--skrum-col-lagoon); border: 1px solid var(--skrum-col-lagoon-border); color: var(--skrum-col-lagoon-text); display: grid; place-items: center; }
+</style>
+</head>
+<body>
+<div class="scr-cap"><b>a</b><span class="sk-badge sk-badge--outline">EN</span>Workspace — switcher open, teams, leave workspace</div>
+<div class="sk-desktop scr-long ws-shell">
+ <div class="scr-shell">
+  <nav class="sk-sidebar" aria-label="Navigation">
+  <div class="sk-brand"><svg viewBox="0 0 64 64" width="24" height="24" aria-hidden="true"><path d="M14 0 H50 A14 14 0 0 1 64 14 V46 L46 64 H14 A14 14 0 0 1 0 50 V14 A14 14 0 0 1 14 0 Z" style="fill:var(--primary)"/><path d="M64 46 L50 46 A4 4 0 0 0 46 50 L46 64 Z" style="fill:color-mix(in oklch, var(--primary) 70%, var(--foreground))"/><path d="M19 27 L19 38 C19 45 24 49.5 30 49.5 C36 49.5 41 45 41 38 L41 27" fill="none" style="stroke:var(--primary-foreground)" stroke-width="7" stroke-linecap="round"/><circle cx="21.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/><circle cx="38.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/></svg><span class="sk-brand-word">skrüm</span></div>
+  <button class="sk-team sk-team-switch" aria-haspopup="menu" aria-label="Switch team or workspace"><span class="sk-team-mark">A</span><span class="sk-team-txt"><span class="sk-team-name">Atlas</span><span class="sk-team-sub">Nordlys · 11 members</span></span><i data-lucide="chevrons-up-down" class="sk-ico-sm"></i></button>
+  <div class="sk-nav-group">Team</div>
+  <a class="sk-nav-item"><i data-lucide="layout-dashboard"></i><span>Dashboard</span></a>
+  <a class="sk-nav-item"><i data-lucide="calendar-clock"></i><span>Sessions</span></a>
+  <a class="sk-nav-item"><i data-lucide="list-checks"></i><span>Actions</span><span class="sk-badge sk-badge--destructive sk-badge--pill">2 overdue</span></a>
+  <a class="sk-nav-item"><i data-lucide="trending-up"></i><span>Mood & ROTI</span></a>
+  <a class="sk-nav-item"><i data-lucide="party-popper"></i><span>Games</span></a>
+  <a class="sk-nav-item"><i data-lucide="users"></i><span>Members</span></a>
+  <div class="sk-nav-group">Workspace</div>
+  <a class="sk-nav-item"><i data-lucide="layout-template"></i><span>Templates</span></a>
+  <a class="sk-nav-item is-on" aria-current="page"><i data-lucide="building-2"></i><span>All teams</span></a>
+  <span class="sk-grow"></span>
+  <a class="sk-nav-item"><i data-lucide="settings"></i><span>Team settings</span></a>
+  <a class="sk-nav-item"><i data-lucide="shield-check"></i><span>Administration</span></a>
+  <button class="sk-team sk-user" aria-haspopup="menu"><span class="sk-avatar sk-p1">AR</span><span class="sk-team-txt"><span class="sk-team-name">Arnaud Ritti</span><span class="sk-team-sub">Facilitator · Admin</span></span><i data-lucide="chevrons-up-down" class="sk-ico-sm"></i></button>
+  </nav>
+  <main class="sk-main">
+    <header class="sk-topbar scr-top">
+      <nav class="sk-crumbs" aria-label="Breadcrumb"><span>Nordlys</span><i data-lucide="chevron-right"></i><span class="is-current">Workspace</span></nav>
+      <span class="sk-grow"></span>
+      <div class="sk-input scr-search"><i data-lucide="search" class="sk-ico-sm" style="color:var(--muted-foreground)"></i><span class="sk-placeholder sk-grow scr-ell">Search…</span><span class="sk-kbd">⌘K</span></div>
+      <button class="sk-btn sk-btn--ghost sk-btn--icon" aria-label="Notifications"><i data-lucide="bell"></i></button>
+    </header>
+    <div class="scr-page">
+      <header class="ws-head">
+        <span class="ws-bigmark" aria-hidden="true">N</span>
+        <div class="sk-col sk-grow" style="gap:0.25rem;min-width:16rem"><h1 class="sk-h1">Nordlys</h1><span class="sk-sm sk-muted">3 teams · 24 members · you're an admin</span></div>
+        <div class="sk-row sk-gap-2"><button class="sk-btn sk-btn--outline"><i data-lucide="user-plus"></i><span>Invite people</span></button><button class="sk-btn"><i data-lucide="plus"></i><span>New team</span></button></div>
+      </header>
+      <section class="scr-sec">
+        <div class="scr-sec-h"><h2 class="scr-sec-t"><i data-lucide="users"></i>Teams<span class="sk-badge sk-badge--muted sk-badge--pill">3</span></h2><a class="sk-btn sk-btn--link sk-sm">Manage templates</a></div>
+        <div class="ws-teams"><a class="sk-card ws-team" href="#"><div class="ws-team-h"><span class="ws-team-mark sk-c-coral">A</span><span class="sk-col" style="gap:0;min-width:0"><span class="sk-h4 scr-ell">Atlas</span><span class="sk-xs sk-muted scr-ell">Product squad · retro app</span></span></div><div class="ws-act"><span><i data-lucide="circle-dot" class="sk-ico-sm"></i><span class="scr-ell"><span class="ws-live">Retro live now</span> · Sprint 42</span></span><span><i data-lucide="spade" class="sk-ico-sm"></i><span class="scr-ell">3 active poker games</span></span><span><i data-lucide="list-checks" class="sk-ico-sm"></i><span class="scr-ell">7 open action items · 2 late</span></span></div><div class="ws-team-f"><span class="sk-row sk-gap-2" style="flex-wrap:nowrap"><span class="sk-stack"><span class="sk-avatar sk-avatar--sm sk-p1">AR</span><span class="sk-avatar sk-avatar--sm sk-p4">CR</span><span class="sk-avatar sk-avatar--sm sk-p2">TM</span><span class="sk-avatar sk-avatar--sm sk-stack-more">+6</span></span><span class="sk-xs sk-muted scr-nw">9 members</span></span><span class="sk-xs sk-strong scr-nw" style="color:var(--skrum-primary-text)">Open →</span></div></a><a class="sk-card ws-team" href="#"><div class="ws-team-h"><span class="ws-team-mark sk-c-lagoon">B</span><span class="sk-col" style="gap:0;min-width:0"><span class="sk-h4 scr-ell">Borealis</span><span class="sk-xs sk-muted scr-ell">Platform & infrastructure</span></span></div><div class="ws-act"><span><i data-lucide="layers" class="sk-ico-sm"></i><span class="scr-ell">Last retro 3 days ago</span></span><span><i data-lucide="spade" class="sk-ico-sm"></i><span class="scr-ell">No active game</span></span><span><i data-lucide="list-checks" class="sk-ico-sm"></i><span class="scr-ell">4 open action items</span></span></div><div class="ws-team-f"><span class="sk-row sk-gap-2" style="flex-wrap:nowrap"><span class="sk-stack"><span class="sk-avatar sk-avatar--sm sk-p3">BL</span><span class="sk-avatar sk-avatar--sm sk-p10">HP</span><span class="sk-avatar sk-avatar--sm sk-p11">YT</span><span class="sk-avatar sk-avatar--sm sk-stack-more">+5</span></span><span class="sk-xs sk-muted scr-nw">8 members</span></span><span class="sk-xs sk-strong scr-nw" style="color:var(--skrum-primary-text)">Open →</span></div></a><a class="sk-card ws-team" href="#"><div class="ws-team-h"><span class="ws-team-mark sk-c-iris">C</span><span class="sk-col" style="gap:0;min-width:0"><span class="sk-h4 scr-ell">Comet</span><span class="sk-xs sk-muted scr-ell">Mobile app</span></span></div><div class="ws-act"><span><i data-lucide="layers" class="sk-ico-sm"></i><span class="scr-ell">Last retro 2 weeks ago</span></span><span><i data-lucide="pen-tool" class="sk-ico-sm"></i><span class="scr-ell">1 whiteboard edited today</span></span><span><i data-lucide="list-checks" class="sk-ico-sm"></i><span class="scr-ell">No open action items</span></span></div><div class="ws-team-f"><span class="sk-row sk-gap-2" style="flex-wrap:nowrap"><span class="sk-stack"><span class="sk-avatar sk-avatar--sm sk-p12">LG</span><span class="sk-avatar sk-avatar--sm sk-p5">SL</span><span class="sk-avatar sk-avatar--sm sk-p7">NK</span><span class="sk-avatar sk-avatar--sm sk-stack-more">+4</span></span><span class="sk-xs sk-muted scr-nw">7 members</span></span><span class="sk-xs sk-strong scr-nw" style="color:var(--skrum-primary-text)">Open →</span></div></a><div class="ws-newteam"><i data-lucide="plus" class="sk-ico-lg"></i><span class="sk-strong" style="color:var(--foreground)">New team</span><span class="sk-xs">Teams share this workspace templates</span></div></div>
+      </section>
+      <section class="ws-leave" aria-labelledby="ws-leave-en">
+        <div class="ws-leave-row"><div class="sk-col" style="gap:0.125rem;min-width:0;flex:1 1 20rem"><h2 class="sk-sm sk-strong" style="margin:0" id="ws-leave-en">Leave workspace</h2><span class="sk-xs sk-muted">You'll lose access to its teams, sessions and templates. Your action items stay assigned until someone reassigns them.</span></div><button class="sk-btn sk-btn--ghost sk-btn--sm ws-ghost-danger is-hover"><i data-lucide="door-open"></i><span>Leave workspace…</span></button></div>
+        <div class="ws-confirm" role="alertdialog" aria-labelledby="ws-c-en">
+          <span class="ws-confirm-ico"><i data-lucide="triangle-alert"></i></span>
+          <div class="sk-col sk-gap-3" style="min-width:0">
+            <div class="sk-col" style="gap:0.25rem"><span class="sk-strong" id="ws-c-en">Leave Nordlys?</span>
+            <ul><li>You leave Atlas, Borealis and Comet.</li><li>You're one of 2 admins — Camille R stays admin.</li><li>An admin can invite you again later.</li></ul></div>
+            <div class="sk-field"><label>Type <span class="sk-mono">Nordlys</span> to confirm</label><div class="sk-input is-focus" style="max-width:20rem">Nordlys</div></div>
+            <div class="sk-row sk-gap-2"><button class="sk-btn sk-btn--destructive sk-btn--sm"><i data-lucide="door-open"></i><span>Leave Nordlys</span></button><button class="sk-btn sk-btn--ghost sk-btn--sm">Cancel</button></div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+ </div>
+ <div class="sk-menu ws-menu" role="menu" aria-label="Workspaces">
+      <div class="sk-menu-label">Workspaces</div>
+      <div class="sk-menu-item is-on" role="menuitemradio" aria-checked="true"><span class="ws-mark">N</span><span class="sk-col sk-grow" style="gap:0;min-width:0"><span class="sk-strong scr-ell">Nordlys</span><span class="sk-xs sk-muted scr-ell">3 teams · Admin</span></span><i data-lucide="check" class="ws-check"></i></div>
+      <div class="sk-menu-item" role="menuitemradio" aria-checked="false"><span class="ws-mark sk-c-moss">K</span><span class="sk-col sk-grow" style="gap:0;min-width:0"><span class="scr-ell">Kestrel Labs</span><span class="sk-xs sk-muted scr-ell">1 team · Member</span></span><span class="sk-shortcut">⌘2</span></div>
+      <div class="sk-menu-item" role="menuitemradio" aria-checked="false"><span class="ws-mark sk-c-apricot">M</span><span class="sk-col sk-grow" style="gap:0;min-width:0"><span class="scr-ell">Atelier Mistral</span><span class="sk-xs sk-muted scr-ell">2 teams · Member</span></span><span class="sk-shortcut">⌘3</span></div>
+      <div class="sk-menu-sep"></div>
+      <div class="sk-menu-item" role="menuitem"><i data-lucide="plus"></i><span>New workspace</span></div>
+    </div>
+</div>
+<div class="scr-cap"><b>b</b><span class="sk-badge sk-badge--soft">FR · +30 %</span>Espace de travail — sélecteur ouvert, équipes, quitter l’espace</div>
+<div class="sk-desktop scr-long ws-shell">
+ <div class="scr-shell">
+  <nav class="sk-sidebar" aria-label="Navigation">
+  <div class="sk-brand"><svg viewBox="0 0 64 64" width="24" height="24" aria-hidden="true"><path d="M14 0 H50 A14 14 0 0 1 64 14 V46 L46 64 H14 A14 14 0 0 1 0 50 V14 A14 14 0 0 1 14 0 Z" style="fill:var(--primary)"/><path d="M64 46 L50 46 A4 4 0 0 0 46 50 L46 64 Z" style="fill:color-mix(in oklch, var(--primary) 70%, var(--foreground))"/><path d="M19 27 L19 38 C19 45 24 49.5 30 49.5 C36 49.5 41 45 41 38 L41 27" fill="none" style="stroke:var(--primary-foreground)" stroke-width="7" stroke-linecap="round"/><circle cx="21.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/><circle cx="38.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/></svg><span class="sk-brand-word">skrüm</span></div>
+  <button class="sk-team sk-team-switch" aria-haspopup="menu" aria-label="Changer d'équipe ou d'espace"><span class="sk-team-mark">A</span><span class="sk-team-txt"><span class="sk-team-name">Atlas</span><span class="sk-team-sub">Nordlys · 11 membres</span></span><i data-lucide="chevrons-up-down" class="sk-ico-sm"></i></button>
+  <div class="sk-nav-group">Équipe</div>
+  <a class="sk-nav-item"><i data-lucide="layout-dashboard"></i><span>Tableau de bord</span></a>
+  <a class="sk-nav-item"><i data-lucide="calendar-clock"></i><span>Sessions</span></a>
+  <a class="sk-nav-item"><i data-lucide="list-checks"></i><span>Actions</span><span class="sk-badge sk-badge--destructive sk-badge--pill">2 en retard</span></a>
+  <a class="sk-nav-item"><i data-lucide="trending-up"></i><span>Moral & ROTI</span></a>
+  <a class="sk-nav-item"><i data-lucide="party-popper"></i><span>Jeux</span></a>
+  <a class="sk-nav-item"><i data-lucide="users"></i><span>Membres</span></a>
+  <div class="sk-nav-group">Espace de travail</div>
+  <a class="sk-nav-item"><i data-lucide="layout-template"></i><span>Modèles</span></a>
+  <a class="sk-nav-item is-on" aria-current="page"><i data-lucide="building-2"></i><span>Toutes les équipes</span></a>
+  <span class="sk-grow"></span>
+  <a class="sk-nav-item"><i data-lucide="settings"></i><span>Paramètres de l'équipe</span></a>
+  <a class="sk-nav-item"><i data-lucide="shield-check"></i><span>Administration</span></a>
+  <button class="sk-team sk-user" aria-haspopup="menu"><span class="sk-avatar sk-p1">AR</span><span class="sk-team-txt"><span class="sk-team-name">Arnaud Ritti</span><span class="sk-team-sub">Facilitateur · Admin</span></span><i data-lucide="chevrons-up-down" class="sk-ico-sm"></i></button>
+  </nav>
+  <main class="sk-main">
+    <header class="sk-topbar scr-top">
+      <nav class="sk-crumbs" aria-label="Fil d'Ariane"><span>Nordlys</span><i data-lucide="chevron-right"></i><span class="is-current">Espace de travail</span></nav>
+      <span class="sk-grow"></span>
+      <div class="sk-input scr-search"><i data-lucide="search" class="sk-ico-sm" style="color:var(--muted-foreground)"></i><span class="sk-placeholder sk-grow scr-ell">Rechercher…</span><span class="sk-kbd">⌘K</span></div>
+      <button class="sk-btn sk-btn--ghost sk-btn--icon" aria-label="Notifications"><i data-lucide="bell"></i></button>
+    </header>
+    <div class="scr-page">
+      <header class="ws-head">
+        <span class="ws-bigmark" aria-hidden="true">N</span>
+        <div class="sk-col sk-grow" style="gap:0.25rem;min-width:16rem"><h1 class="sk-h1">Nordlys</h1><span class="sk-sm sk-muted">3 équipes · 24 membres · vous êtes administrateur</span></div>
+        <div class="sk-row sk-gap-2"><button class="sk-btn sk-btn--outline"><i data-lucide="user-plus"></i><span>Inviter des personnes</span></button><button class="sk-btn"><i data-lucide="plus"></i><span>Nouvelle équipe</span></button></div>
+      </header>
+      <section class="scr-sec">
+        <div class="scr-sec-h"><h2 class="scr-sec-t"><i data-lucide="users"></i>Équipes<span class="sk-badge sk-badge--muted sk-badge--pill">3</span></h2><a class="sk-btn sk-btn--link sk-sm">Gérer les modèles</a></div>
+        <div class="ws-teams"><a class="sk-card ws-team" href="#"><div class="ws-team-h"><span class="ws-team-mark sk-c-coral">A</span><span class="sk-col" style="gap:0;min-width:0"><span class="sk-h4 scr-ell">Atlas</span><span class="sk-xs sk-muted scr-ell">Squad produit · appli de rétro</span></span></div><div class="ws-act"><span><i data-lucide="circle-dot" class="sk-ico-sm"></i><span class="scr-ell"><span class="ws-live">Rétro en cours</span> · Sprint 42</span></span><span><i data-lucide="spade" class="sk-ico-sm"></i><span class="scr-ell">3 parties de poker en cours</span></span><span><i data-lucide="list-checks" class="sk-ico-sm"></i><span class="scr-ell">7 actions ouvertes · 2 en retard</span></span></div><div class="ws-team-f"><span class="sk-row sk-gap-2" style="flex-wrap:nowrap"><span class="sk-stack"><span class="sk-avatar sk-avatar--sm sk-p1">AR</span><span class="sk-avatar sk-avatar--sm sk-p4">CR</span><span class="sk-avatar sk-avatar--sm sk-p2">TM</span><span class="sk-avatar sk-avatar--sm sk-stack-more">+6</span></span><span class="sk-xs sk-muted scr-nw">9 membres</span></span><span class="sk-xs sk-strong scr-nw" style="color:var(--skrum-primary-text)">Ouvrir →</span></div></a><a class="sk-card ws-team" href="#"><div class="ws-team-h"><span class="ws-team-mark sk-c-lagoon">B</span><span class="sk-col" style="gap:0;min-width:0"><span class="sk-h4 scr-ell">Borealis</span><span class="sk-xs sk-muted scr-ell">Plateforme et infrastructure</span></span></div><div class="ws-act"><span><i data-lucide="layers" class="sk-ico-sm"></i><span class="scr-ell">Dernière rétro il y a 3 jours</span></span><span><i data-lucide="spade" class="sk-ico-sm"></i><span class="scr-ell">Aucune partie en cours</span></span><span><i data-lucide="list-checks" class="sk-ico-sm"></i><span class="scr-ell">4 actions ouvertes</span></span></div><div class="ws-team-f"><span class="sk-row sk-gap-2" style="flex-wrap:nowrap"><span class="sk-stack"><span class="sk-avatar sk-avatar--sm sk-p3">BL</span><span class="sk-avatar sk-avatar--sm sk-p10">HP</span><span class="sk-avatar sk-avatar--sm sk-p11">YT</span><span class="sk-avatar sk-avatar--sm sk-stack-more">+5</span></span><span class="sk-xs sk-muted scr-nw">8 membres</span></span><span class="sk-xs sk-strong scr-nw" style="color:var(--skrum-primary-text)">Ouvrir →</span></div></a><a class="sk-card ws-team" href="#"><div class="ws-team-h"><span class="ws-team-mark sk-c-iris">C</span><span class="sk-col" style="gap:0;min-width:0"><span class="sk-h4 scr-ell">Comète</span><span class="sk-xs sk-muted scr-ell">Application mobile</span></span></div><div class="ws-act"><span><i data-lucide="layers" class="sk-ico-sm"></i><span class="scr-ell">Dernière rétro il y a 2 semaines</span></span><span><i data-lucide="pen-tool" class="sk-ico-sm"></i><span class="scr-ell">1 tableau blanc modifié aujourd'hui</span></span><span><i data-lucide="list-checks" class="sk-ico-sm"></i><span class="scr-ell">Aucune action ouverte</span></span></div><div class="ws-team-f"><span class="sk-row sk-gap-2" style="flex-wrap:nowrap"><span class="sk-stack"><span class="sk-avatar sk-avatar--sm sk-p12">LG</span><span class="sk-avatar sk-avatar--sm sk-p5">SL</span><span class="sk-avatar sk-avatar--sm sk-p7">NK</span><span class="sk-avatar sk-avatar--sm sk-stack-more">+4</span></span><span class="sk-xs sk-muted scr-nw">7 membres</span></span><span class="sk-xs sk-strong scr-nw" style="color:var(--skrum-primary-text)">Ouvrir →</span></div></a><div class="ws-newteam"><i data-lucide="plus" class="sk-ico-lg"></i><span class="sk-strong" style="color:var(--foreground)">Nouvelle équipe</span><span class="sk-xs">Les équipes partagent les modèles de cet espace</span></div></div>
+      </section>
+      <section class="ws-leave" aria-labelledby="ws-leave-fr">
+        <div class="ws-leave-row"><div class="sk-col" style="gap:0.125rem;min-width:0;flex:1 1 20rem"><h2 class="sk-sm sk-strong" style="margin:0" id="ws-leave-fr">Quitter l'espace de travail</h2><span class="sk-xs sk-muted">Vous perdrez l'accès à ses équipes, sessions et modèles. Vos actions restent assignées jusqu'à leur réattribution.</span></div><button class="sk-btn sk-btn--ghost sk-btn--sm ws-ghost-danger is-hover"><i data-lucide="door-open"></i><span>Quitter l'espace…</span></button></div>
+        <div class="ws-confirm" role="alertdialog" aria-labelledby="ws-c-fr">
+          <span class="ws-confirm-ico"><i data-lucide="triangle-alert"></i></span>
+          <div class="sk-col sk-gap-3" style="min-width:0">
+            <div class="sk-col" style="gap:0.25rem"><span class="sk-strong" id="ws-c-fr">Quitter Nordlys ?</span>
+            <ul><li>Vous quittez Atlas, Borealis et Comète.</li><li>Vous êtes l'un des 2 admins — Camille R reste administratrice.</li><li>Un admin pourra vous réinviter plus tard.</li></ul></div>
+            <div class="sk-field"><label>Saisissez <span class="sk-mono">Nordlys</span> pour confirmer</label><div class="sk-input is-focus" style="max-width:20rem">Nordlys</div></div>
+            <div class="sk-row sk-gap-2"><button class="sk-btn sk-btn--destructive sk-btn--sm"><i data-lucide="door-open"></i><span>Quitter Nordlys</span></button><button class="sk-btn sk-btn--ghost sk-btn--sm">Annuler</button></div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+ </div>
+ <div class="sk-menu ws-menu" role="menu" aria-label="Espaces de travail">
+      <div class="sk-menu-label">Espaces de travail</div>
+      <div class="sk-menu-item is-on" role="menuitemradio" aria-checked="true"><span class="ws-mark">N</span><span class="sk-col sk-grow" style="gap:0;min-width:0"><span class="sk-strong scr-ell">Nordlys</span><span class="sk-xs sk-muted scr-ell">3 équipes · Admin</span></span><i data-lucide="check" class="ws-check"></i></div>
+      <div class="sk-menu-item" role="menuitemradio" aria-checked="false"><span class="ws-mark sk-c-moss">K</span><span class="sk-col sk-grow" style="gap:0;min-width:0"><span class="scr-ell">Kestrel Labs</span><span class="sk-xs sk-muted scr-ell">1 équipe · Membre</span></span><span class="sk-shortcut">⌘2</span></div>
+      <div class="sk-menu-item" role="menuitemradio" aria-checked="false"><span class="ws-mark sk-c-apricot">M</span><span class="sk-col sk-grow" style="gap:0;min-width:0"><span class="scr-ell">Atelier Mistral</span><span class="sk-xs sk-muted scr-ell">2 équipes · Membre</span></span><span class="sk-shortcut">⌘3</span></div>
+      <div class="sk-menu-sep"></div>
+      <div class="sk-menu-item" role="menuitem"><i data-lucide="plus"></i><span>Nouvel espace de travail</span></div>
+    </div>
+</div>
+<div class="scr-cap"><b>c</b><span class="sk-badge sk-badge--outline">EN</span>Workspace templates — retro, poker, whiteboard (empty state)</div>
+<div class="sk-desktop scr-long">
+ <div class="scr-shell">
+  <nav class="sk-sidebar" aria-label="Navigation">
+  <div class="sk-brand"><svg viewBox="0 0 64 64" width="24" height="24" aria-hidden="true"><path d="M14 0 H50 A14 14 0 0 1 64 14 V46 L46 64 H14 A14 14 0 0 1 0 50 V14 A14 14 0 0 1 14 0 Z" style="fill:var(--primary)"/><path d="M64 46 L50 46 A4 4 0 0 0 46 50 L46 64 Z" style="fill:color-mix(in oklch, var(--primary) 70%, var(--foreground))"/><path d="M19 27 L19 38 C19 45 24 49.5 30 49.5 C36 49.5 41 45 41 38 L41 27" fill="none" style="stroke:var(--primary-foreground)" stroke-width="7" stroke-linecap="round"/><circle cx="21.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/><circle cx="38.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/></svg><span class="sk-brand-word">skrüm</span></div>
+  <button class="sk-team sk-team-switch" aria-haspopup="menu" aria-label="Switch team or workspace"><span class="sk-team-mark">A</span><span class="sk-team-txt"><span class="sk-team-name">Atlas</span><span class="sk-team-sub">Nordlys · 11 members</span></span><i data-lucide="chevrons-up-down" class="sk-ico-sm"></i></button>
+  <div class="sk-nav-group">Team</div>
+  <a class="sk-nav-item"><i data-lucide="layout-dashboard"></i><span>Dashboard</span></a>
+  <a class="sk-nav-item"><i data-lucide="calendar-clock"></i><span>Sessions</span></a>
+  <a class="sk-nav-item"><i data-lucide="list-checks"></i><span>Actions</span><span class="sk-badge sk-badge--destructive sk-badge--pill">2 overdue</span></a>
+  <a class="sk-nav-item"><i data-lucide="trending-up"></i><span>Mood & ROTI</span></a>
+  <a class="sk-nav-item"><i data-lucide="party-popper"></i><span>Games</span></a>
+  <a class="sk-nav-item"><i data-lucide="users"></i><span>Members</span></a>
+  <div class="sk-nav-group">Workspace</div>
+  <a class="sk-nav-item is-on" aria-current="page"><i data-lucide="layout-template"></i><span>Templates</span></a>
+  <a class="sk-nav-item"><i data-lucide="building-2"></i><span>All teams</span></a>
+  <span class="sk-grow"></span>
+  <a class="sk-nav-item"><i data-lucide="settings"></i><span>Team settings</span></a>
+  <a class="sk-nav-item"><i data-lucide="shield-check"></i><span>Administration</span></a>
+  <button class="sk-team sk-user" aria-haspopup="menu"><span class="sk-avatar sk-p1">AR</span><span class="sk-team-txt"><span class="sk-team-name">Arnaud Ritti</span><span class="sk-team-sub">Facilitator · Admin</span></span><i data-lucide="chevrons-up-down" class="sk-ico-sm"></i></button>
+  </nav>
+  <main class="sk-main">
+    <header class="sk-topbar scr-top">
+      <nav class="sk-crumbs" aria-label="Breadcrumb"><span>Nordlys</span><i data-lucide="chevron-right"></i><span class="is-current">Templates</span></nav>
+      <span class="sk-grow"></span>
+      <div class="sk-input scr-search"><i data-lucide="search" class="sk-ico-sm" style="color:var(--muted-foreground)"></i><span class="sk-placeholder sk-grow scr-ell">Search…</span><span class="sk-kbd">⌘K</span></div>
+      <button class="sk-btn sk-btn--ghost sk-btn--icon" aria-label="Notifications"><i data-lucide="bell"></i></button>
+    </header>
+    <div class="scr-page">
+      <div class="sk-between" style="align-items:flex-end"><div class="sk-col" style="gap:0.25rem"><h1 class="sk-h1">Templates</h1><span class="sk-muted">Templates shared by every team of this workspace</span></div><button class="sk-btn"><i data-lucide="plus"></i><span>New template</span></button></div>
+      <div class="tp-filter"><div class="sk-tabs" role="tablist"><button class="sk-tab is-on" role="tab"><span>All</span></button><button class="sk-tab" role="tab"><i data-lucide="layers" class="sk-ico-sm"></i><span>Retro · 4</span></button><button class="sk-tab" role="tab"><i data-lucide="spade" class="sk-ico-sm"></i><span>Poker · 2</span></button><button class="sk-tab" role="tab"><i data-lucide="pen-tool" class="sk-ico-sm"></i><span>Whiteboard · 0</span></button></div><span class="sk-grow"></span><div class="sk-input-group" style="width:16rem"><i data-lucide="search" class="sk-ico-sm"></i><div class="sk-input"><span class="sk-placeholder scr-ell">Search templates…</span></div></div></div>
+      <section class="scr-sec"><div class="scr-sec-h"><h2 class="scr-sec-t"><i data-lucide="layers"></i>Retrospective</h2><span class="sk-xs sk-muted">Columns and colours are copied into the new retro</span></div><div class="tp-grid"><div class="sk-card tp-card"><div class="tp-prev" aria-hidden="true"><div class="tp-col sk-c-moss"><b>Liked</b><i></i><i></i></div><div class="tp-col sk-c-sky"><b>Learned</b><i></i><i></i></div><div class="tp-col sk-c-coral"><b>Lacked</b><i></i><i></i></div><div class="tp-col sk-c-sun"><b>Longed for</b><i></i><i></i></div></div><div class="tp-b"><div class="sk-col" style="gap:0"><span class="sk-strong scr-ell">4L</span><span class="sk-xs sk-muted">4 columns · used 12×</span></div><div class="tp-f"><span class="tp-author"><span class="sk-avatar sk-avatar--xs sk-p4">CR</span><span class="scr-ell">By Camille R</span></span><button class="sk-btn sk-btn--outline sk-btn--sm"><span>Use</span></button></div></div></div><div class="sk-card tp-card"><div class="tp-prev" aria-hidden="true"><div class="tp-col sk-c-moss"><b>Start</b><i></i><i></i></div><div class="tp-col sk-c-coral"><b>Stop</b><i></i><i></i></div><div class="tp-col sk-c-sky"><b>Continue</b><i></i><i></i></div></div><div class="tp-b"><div class="sk-col" style="gap:0"><span class="sk-strong scr-ell">Start / Stop / Continue</span><span class="sk-xs sk-muted">3 columns · used 9×</span></div><div class="tp-f"><span class="tp-author"><span class="sk-avatar sk-avatar--xs sk-p1">AR</span><span class="scr-ell">By Arnaud R</span></span><button class="sk-btn sk-btn--outline sk-btn--sm"><span>Use</span></button></div></div></div><div class="sk-card tp-card"><div class="tp-prev" aria-hidden="true"><div class="tp-col sk-c-coral"><b>Mad</b><i></i><i></i></div><div class="tp-col sk-c-iris"><b>Sad</b><i></i><i></i></div><div class="tp-col sk-c-sun"><b>Glad</b><i></i><i></i></div></div><div class="tp-b"><div class="sk-col" style="gap:0"><span class="sk-strong scr-ell">Mad / Sad / Glad</span><span class="sk-xs sk-muted">3 columns · used 4×</span></div><div class="tp-f"><span class="tp-author"><span class="sk-avatar sk-avatar--xs sk-p6">MK</span><span class="scr-ell">By Malik K</span></span><button class="sk-btn sk-btn--outline sk-btn--sm"><span>Use</span></button></div></div></div><div class="sk-card tp-card"><div class="tp-prev" aria-hidden="true"><div class="tp-col sk-c-lagoon"><b>Wind</b><i></i><i></i></div><div class="tp-col sk-c-apricot"><b>Anchors</b><i></i><i></i></div><div class="tp-col sk-c-plum"><b>Rocks</b><i></i><i></i></div><div class="tp-col sk-c-moss"><b>Island</b><i></i><i></i></div></div><div class="tp-b"><div class="sk-col" style="gap:0"><span class="sk-strong scr-ell">Sailboat</span><span class="sk-xs sk-muted">4 columns · used 2×</span></div><div class="tp-f"><span class="tp-author"><span class="sk-avatar sk-avatar--xs sk-p10">HP</span><span class="scr-ell">By Hugo P</span></span><button class="sk-btn sk-btn--outline sk-btn--sm"><span>Use</span></button></div></div></div></div></section>
+      <section class="scr-sec"><div class="scr-sec-h"><h2 class="scr-sec-t"><i data-lucide="spade"></i>Planning poker</h2><span class="sk-xs sk-muted">Deck, timer and reveal settings</span></div><div class="tp-grid"><div class="sk-card tp-card"><div class="tp-deckprev" aria-hidden="true"><span class="tp-v">0</span><span class="tp-v">1</span><span class="tp-v">2</span><span class="tp-v">3</span><span class="tp-v">5</span><span class="tp-v">8</span><span class="tp-v">13</span><span class="tp-v">21</span><span class="tp-v is-special">?</span><span class="tp-v is-special">☕</span></div><div class="tp-b"><div class="sk-col" style="gap:0"><span class="sk-strong scr-ell">Fibonacci + coffee</span><span class="sk-xs sk-muted">Default deck, 5 min timer</span></div><div class="tp-f"><span class="tp-author"><span class="sk-avatar sk-avatar--xs sk-p4">CR</span><span class="scr-ell">By Camille R</span></span><button class="sk-btn sk-btn--outline sk-btn--sm"><span>Use</span></button></div></div></div><div class="sk-card tp-card"><div class="tp-deckprev" aria-hidden="true"><span class="tp-v">XS</span><span class="tp-v">S</span><span class="tp-v">M</span><span class="tp-v">L</span><span class="tp-v">XL</span><span class="tp-v is-special">?</span></div><div class="tp-b"><div class="sk-col" style="gap:0"><span class="sk-strong scr-ell">T-shirt sizing</span><span class="sk-xs sk-muted">Auto-reveal when all voted</span></div><div class="tp-f"><span class="tp-author"><span class="sk-avatar sk-avatar--xs sk-p3">BL</span><span class="scr-ell">By Bastien L</span></span><button class="sk-btn sk-btn--outline sk-btn--sm"><span>Use</span></button></div></div></div></div></section>
+      <section class="scr-sec"><div class="scr-sec-h"><h2 class="scr-sec-t"><i data-lucide="pen-tool"></i>Whiteboard</h2></div>
+        <div class="tp-empty"><div class="sk-empty"><span class="tp-empty-art"><i data-lucide="pen-tool" class="sk-ico-lg"></i></span><p class="sk-empty-t">No whiteboard templates yet.</p><p class="sk-empty-d">Save any whiteboard as a template from its menu — every team of Nordlys will be able to start from it.</p><button class="sk-btn sk-btn--outline sk-btn--sm"><i data-lucide="plus"></i><span>New whiteboard template</span></button></div></div>
+      </section>
+    </div>
+  </main>
+ </div>
+</div>
+<div class="scr-cap"><b>d</b><span class="sk-badge sk-badge--soft">FR · +30 %</span>Modèles de l’espace — rétro, poker, tableau blanc (état vide)</div>
+<div class="sk-desktop scr-long">
+ <div class="scr-shell">
+  <nav class="sk-sidebar" aria-label="Navigation">
+  <div class="sk-brand"><svg viewBox="0 0 64 64" width="24" height="24" aria-hidden="true"><path d="M14 0 H50 A14 14 0 0 1 64 14 V46 L46 64 H14 A14 14 0 0 1 0 50 V14 A14 14 0 0 1 14 0 Z" style="fill:var(--primary)"/><path d="M64 46 L50 46 A4 4 0 0 0 46 50 L46 64 Z" style="fill:color-mix(in oklch, var(--primary) 70%, var(--foreground))"/><path d="M19 27 L19 38 C19 45 24 49.5 30 49.5 C36 49.5 41 45 41 38 L41 27" fill="none" style="stroke:var(--primary-foreground)" stroke-width="7" stroke-linecap="round"/><circle cx="21.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/><circle cx="38.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/></svg><span class="sk-brand-word">skrüm</span></div>
+  <button class="sk-team sk-team-switch" aria-haspopup="menu" aria-label="Changer d'équipe ou d'espace"><span class="sk-team-mark">A</span><span class="sk-team-txt"><span class="sk-team-name">Atlas</span><span class="sk-team-sub">Nordlys · 11 membres</span></span><i data-lucide="chevrons-up-down" class="sk-ico-sm"></i></button>
+  <div class="sk-nav-group">Équipe</div>
+  <a class="sk-nav-item"><i data-lucide="layout-dashboard"></i><span>Tableau de bord</span></a>
+  <a class="sk-nav-item"><i data-lucide="calendar-clock"></i><span>Sessions</span></a>
+  <a class="sk-nav-item"><i data-lucide="list-checks"></i><span>Actions</span><span class="sk-badge sk-badge--destructive sk-badge--pill">2 en retard</span></a>
+  <a class="sk-nav-item"><i data-lucide="trending-up"></i><span>Moral & ROTI</span></a>
+  <a class="sk-nav-item"><i data-lucide="party-popper"></i><span>Jeux</span></a>
+  <a class="sk-nav-item"><i data-lucide="users"></i><span>Membres</span></a>
+  <div class="sk-nav-group">Espace de travail</div>
+  <a class="sk-nav-item is-on" aria-current="page"><i data-lucide="layout-template"></i><span>Modèles</span></a>
+  <a class="sk-nav-item"><i data-lucide="building-2"></i><span>Toutes les équipes</span></a>
+  <span class="sk-grow"></span>
+  <a class="sk-nav-item"><i data-lucide="settings"></i><span>Paramètres de l'équipe</span></a>
+  <a class="sk-nav-item"><i data-lucide="shield-check"></i><span>Administration</span></a>
+  <button class="sk-team sk-user" aria-haspopup="menu"><span class="sk-avatar sk-p1">AR</span><span class="sk-team-txt"><span class="sk-team-name">Arnaud Ritti</span><span class="sk-team-sub">Facilitateur · Admin</span></span><i data-lucide="chevrons-up-down" class="sk-ico-sm"></i></button>
+  </nav>
+  <main class="sk-main">
+    <header class="sk-topbar scr-top">
+      <nav class="sk-crumbs" aria-label="Fil d'Ariane"><span>Nordlys</span><i data-lucide="chevron-right"></i><span class="is-current">Modèles</span></nav>
+      <span class="sk-grow"></span>
+      <div class="sk-input scr-search"><i data-lucide="search" class="sk-ico-sm" style="color:var(--muted-foreground)"></i><span class="sk-placeholder sk-grow scr-ell">Rechercher…</span><span class="sk-kbd">⌘K</span></div>
+      <button class="sk-btn sk-btn--ghost sk-btn--icon" aria-label="Notifications"><i data-lucide="bell"></i></button>
+    </header>
+    <div class="scr-page">
+      <div class="sk-between" style="align-items:flex-end"><div class="sk-col" style="gap:0.25rem"><h1 class="sk-h1">Modèles</h1><span class="sk-muted">Modèles partagés par toutes les équipes de cet espace de travail</span></div><button class="sk-btn"><i data-lucide="plus"></i><span>Nouveau modèle</span></button></div>
+      <div class="tp-filter"><div class="sk-tabs" role="tablist"><button class="sk-tab is-on" role="tab"><span>Tous</span></button><button class="sk-tab" role="tab"><i data-lucide="layers" class="sk-ico-sm"></i><span>Rétro · 4</span></button><button class="sk-tab" role="tab"><i data-lucide="spade" class="sk-ico-sm"></i><span>Poker · 2</span></button><button class="sk-tab" role="tab"><i data-lucide="pen-tool" class="sk-ico-sm"></i><span>Tableau blanc · 0</span></button></div><span class="sk-grow"></span><div class="sk-input-group" style="width:16rem"><i data-lucide="search" class="sk-ico-sm"></i><div class="sk-input"><span class="sk-placeholder scr-ell">Rechercher un modèle…</span></div></div></div>
+      <section class="scr-sec"><div class="scr-sec-h"><h2 class="scr-sec-t"><i data-lucide="layers"></i>Rétrospective</h2><span class="sk-xs sk-muted">Colonnes et couleurs sont copiées dans la nouvelle rétro</span></div><div class="tp-grid"><div class="sk-card tp-card"><div class="tp-prev" aria-hidden="true"><div class="tp-col sk-c-moss"><b>Aimé</b><i></i><i></i></div><div class="tp-col sk-c-sky"><b>Appris</b><i></i><i></i></div><div class="tp-col sk-c-coral"><b>Manqué</b><i></i><i></i></div><div class="tp-col sk-c-sun"><b>Souhaité</b><i></i><i></i></div></div><div class="tp-b"><div class="sk-col" style="gap:0"><span class="sk-strong scr-ell">4L</span><span class="sk-xs sk-muted">4 colonnes · utilisé 12×</span></div><div class="tp-f"><span class="tp-author"><span class="sk-avatar sk-avatar--xs sk-p4">CR</span><span class="scr-ell">Par Camille R</span></span><button class="sk-btn sk-btn--outline sk-btn--sm"><span>Utiliser</span></button></div></div></div><div class="sk-card tp-card"><div class="tp-prev" aria-hidden="true"><div class="tp-col sk-c-moss"><b>Start</b><i></i><i></i></div><div class="tp-col sk-c-coral"><b>Stop</b><i></i><i></i></div><div class="tp-col sk-c-sky"><b>Continue</b><i></i><i></i></div></div><div class="tp-b"><div class="sk-col" style="gap:0"><span class="sk-strong scr-ell">Start / Stop / Continue</span><span class="sk-xs sk-muted">3 colonnes · utilisé 9×</span></div><div class="tp-f"><span class="tp-author"><span class="sk-avatar sk-avatar--xs sk-p1">AR</span><span class="scr-ell">Par Arnaud R</span></span><button class="sk-btn sk-btn--outline sk-btn--sm"><span>Utiliser</span></button></div></div></div><div class="sk-card tp-card"><div class="tp-prev" aria-hidden="true"><div class="tp-col sk-c-coral"><b>Mad</b><i></i><i></i></div><div class="tp-col sk-c-iris"><b>Sad</b><i></i><i></i></div><div class="tp-col sk-c-sun"><b>Glad</b><i></i><i></i></div></div><div class="tp-b"><div class="sk-col" style="gap:0"><span class="sk-strong scr-ell">Mad / Sad / Glad</span><span class="sk-xs sk-muted">3 colonnes · utilisé 4×</span></div><div class="tp-f"><span class="tp-author"><span class="sk-avatar sk-avatar--xs sk-p6">MK</span><span class="scr-ell">Par Malik K</span></span><button class="sk-btn sk-btn--outline sk-btn--sm"><span>Utiliser</span></button></div></div></div><div class="sk-card tp-card"><div class="tp-prev" aria-hidden="true"><div class="tp-col sk-c-lagoon"><b>Vent</b><i></i><i></i></div><div class="tp-col sk-c-apricot"><b>Ancres</b><i></i><i></i></div><div class="tp-col sk-c-plum"><b>Récifs</b><i></i><i></i></div><div class="tp-col sk-c-moss"><b>Île</b><i></i><i></i></div></div><div class="tp-b"><div class="sk-col" style="gap:0"><span class="sk-strong scr-ell">Voilier</span><span class="sk-xs sk-muted">4 colonnes · utilisé 2×</span></div><div class="tp-f"><span class="tp-author"><span class="sk-avatar sk-avatar--xs sk-p10">HP</span><span class="scr-ell">Par Hugo P</span></span><button class="sk-btn sk-btn--outline sk-btn--sm"><span>Utiliser</span></button></div></div></div></div></section>
+      <section class="scr-sec"><div class="scr-sec-h"><h2 class="scr-sec-t"><i data-lucide="spade"></i>Planning poker</h2><span class="sk-xs sk-muted">Deck, minuteur et règles de révélation</span></div><div class="tp-grid"><div class="sk-card tp-card"><div class="tp-deckprev" aria-hidden="true"><span class="tp-v">0</span><span class="tp-v">1</span><span class="tp-v">2</span><span class="tp-v">3</span><span class="tp-v">5</span><span class="tp-v">8</span><span class="tp-v">13</span><span class="tp-v">21</span><span class="tp-v is-special">?</span><span class="tp-v is-special">☕</span></div><div class="tp-b"><div class="sk-col" style="gap:0"><span class="sk-strong scr-ell">Fibonacci + café</span><span class="sk-xs sk-muted">Deck par défaut, minuteur 5 min</span></div><div class="tp-f"><span class="tp-author"><span class="sk-avatar sk-avatar--xs sk-p4">CR</span><span class="scr-ell">Par Camille R</span></span><button class="sk-btn sk-btn--outline sk-btn--sm"><span>Utiliser</span></button></div></div></div><div class="sk-card tp-card"><div class="tp-deckprev" aria-hidden="true"><span class="tp-v">XS</span><span class="tp-v">S</span><span class="tp-v">M</span><span class="tp-v">L</span><span class="tp-v">XL</span><span class="tp-v is-special">?</span></div><div class="tp-b"><div class="sk-col" style="gap:0"><span class="sk-strong scr-ell">Tailles T-shirt</span><span class="sk-xs sk-muted">Révélation auto quand tous ont voté</span></div><div class="tp-f"><span class="tp-author"><span class="sk-avatar sk-avatar--xs sk-p3">BL</span><span class="scr-ell">Par Bastien L</span></span><button class="sk-btn sk-btn--outline sk-btn--sm"><span>Utiliser</span></button></div></div></div></div></section>
+      <section class="scr-sec"><div class="scr-sec-h"><h2 class="scr-sec-t"><i data-lucide="pen-tool"></i>Tableau blanc</h2></div>
+        <div class="tp-empty"><div class="sk-empty"><span class="tp-empty-art"><i data-lucide="pen-tool" class="sk-ico-lg"></i></span><p class="sk-empty-t">Aucun modèle de tableau blanc pour le moment.</p><p class="sk-empty-d">Enregistrez un tableau blanc comme modèle depuis son menu : toutes les équipes de Nordlys pourront partir de celui-ci.</p><button class="sk-btn sk-btn--outline sk-btn--sm"><i data-lucide="plus"></i><span>Nouveau modèle de tableau blanc</span></button></div></div>
+      </section>
+    </div>
+  </main>
+ </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,51 @@
+<!-- @dsCard group="shadcn · Affichage" height=458 subtitle="Skeleton — chargement d'un board rétro (colonnes + cartes) et d'une liste de sessions ; pulsation, respect de reduced-motion" -->
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><title>Skeleton</title>
+<style>
+  .sk2-grid { display: grid; grid-template-columns: 1.55fr 1fr; gap: var(--space-6); }
+  .sk2-board { display: flex; gap: var(--space-3); padding: var(--space-4); border-radius: var(--radius-xl); border: 1px solid var(--border); height: 23.75rem; overflow: hidden; }
+  .sk2-col { flex: 1; min-width: 0; background: color-mix(in oklch, var(--muted) 70%, var(--skrum-canvas)); border-radius: var(--radius-xl); padding: var(--space-3); display: flex; flex-direction: column; gap: var(--space-3); }
+  .sk2-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--space-3); display: flex; flex-direction: column; gap: 0.5rem; }
+  .sk2-col > .sk-row .sk-skel, .sk2-col > .sk-skel { background: color-mix(in oklch, var(--foreground) 9%, var(--muted)); }
+  .sk2-line { height: 0.625rem; border-radius: 999px; }
+  .sk2-row { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--border); }
+  .sk2-row:last-child { border-bottom: 0; }
+  .sk2-loader { display: flex; align-items: center; gap: var(--space-2); font-size: 0.8125rem; color: var(--muted-foreground); }
+</style></head>
+<body>
+<div class="sk-pad sk2-grid">
+  <div>
+    <div class="sk-between" style="margin-bottom:var(--space-2);height:1.375rem"><div class="sk-state" style="margin:0">Board rétro</div><span class="sk2-loader" role="status"><span class="sk-trema" style="color:var(--skrum-primary-text)"><i></i><i></i></span>Connexion à la session…</span></div>
+    <div class="sk2-board" aria-busy="true" aria-label="Chargement du board">
+      <div class="sk2-col">
+        <div class="sk-row sk-gap-2"><span class="sk-skel" style="width:0.625rem;height:0.625rem;border-radius:0.1875rem"></span><span class="sk-skel sk2-line" style="width:55%"></span></div>
+        <div class="sk2-card"><span class="sk-skel sk2-line" style="width:92%"></span><span class="sk-skel sk2-line" style="width:70%"></span><div class="sk-row sk-gap-2" style="margin-top:0.25rem"><span class="sk-skel" style="width:1.25rem;height:1.25rem;border-radius:50%"></span><span class="sk-skel sk2-line" style="width:3.75rem;height:0.5rem"></span></div></div>
+        <div class="sk2-card"><span class="sk-skel sk2-line" style="width:80%"></span><div class="sk-row sk-gap-2" style="margin-top:0.25rem"><span class="sk-skel" style="width:1.25rem;height:1.25rem;border-radius:50%"></span><span class="sk-skel sk2-line" style="width:3rem;height:0.5rem"></span></div></div>
+        <div class="sk2-card"><span class="sk-skel sk2-line" style="width:95%"></span><span class="sk-skel sk2-line" style="width:88%"></span><span class="sk-skel sk2-line" style="width:40%"></span></div>
+      </div>
+      <div class="sk2-col">
+        <div class="sk-row sk-gap-2"><span class="sk-skel" style="width:0.625rem;height:0.625rem;border-radius:0.1875rem"></span><span class="sk-skel sk2-line" style="width:45%"></span></div>
+        <div class="sk2-card"><span class="sk-skel sk2-line" style="width:85%"></span><span class="sk-skel sk2-line" style="width:50%"></span><div class="sk-row sk-gap-2" style="margin-top:0.25rem"><span class="sk-skel" style="width:1.25rem;height:1.25rem;border-radius:50%"></span><span class="sk-skel sk2-line" style="width:3.5rem;height:0.5rem"></span></div></div>
+        <div class="sk2-card"><span class="sk-skel sk2-line" style="width:90%"></span><span class="sk-skel sk2-line" style="width:65%"></span></div>
+      </div>
+      <div class="sk2-col">
+        <div class="sk-row sk-gap-2"><span class="sk-skel" style="width:0.625rem;height:0.625rem;border-radius:0.1875rem"></span><span class="sk-skel sk2-line" style="width:35%"></span></div>
+        <div class="sk2-card"><span class="sk-skel sk2-line" style="width:75%"></span><div class="sk-row sk-gap-2" style="margin-top:0.25rem"><span class="sk-skel" style="width:1.25rem;height:1.25rem;border-radius:50%"></span><span class="sk-skel sk2-line" style="width:3.25rem;height:0.5rem"></span></div></div>
+        <div class="sk-skel" style="height:2.5rem;border-radius:var(--radius);opacity:.6"></div>
+      </div>
+    </div>
+  </div>
+  <div>
+    <div class="sk-between" style="margin-bottom:var(--space-2);height:1.375rem"><div class="sk-state" style="margin:0">Liste de sessions</div></div>
+    <div class="sk-card" aria-busy="true" aria-label="Chargement des sessions">
+      <div class="sk2-row"><span class="sk-skel" style="width:2rem;height:2rem;border-radius:var(--radius-md)"></span><div class="sk-grow sk-col sk-gap-2"><span class="sk-skel sk2-line" style="width:60%"></span><span class="sk-skel sk2-line" style="width:35%;height:0.5rem"></span></div><span class="sk-skel" style="width:4rem;height:1.375rem;border-radius:999px"></span></div>
+      <div class="sk2-row"><span class="sk-skel" style="width:2rem;height:2rem;border-radius:var(--radius-md)"></span><div class="sk-grow sk-col sk-gap-2"><span class="sk-skel sk2-line" style="width:72%"></span><span class="sk-skel sk2-line" style="width:30%;height:0.5rem"></span></div><span class="sk-skel" style="width:3.5rem;height:1.375rem;border-radius:999px"></span></div>
+      <div class="sk2-row"><span class="sk-skel" style="width:2rem;height:2rem;border-radius:var(--radius-md)"></span><div class="sk-grow sk-col sk-gap-2"><span class="sk-skel sk2-line" style="width:50%"></span><span class="sk-skel sk2-line" style="width:40%;height:0.5rem"></span></div><span class="sk-skel" style="width:4rem;height:1.375rem;border-radius:999px"></span></div>
+      <div class="sk2-row"><span class="sk-skel" style="width:2rem;height:2rem;border-radius:var(--radius-md)"></span><div class="sk-grow sk-col sk-gap-2"><span class="sk-skel sk2-line" style="width:66%"></span><span class="sk-skel sk2-line" style="width:28%;height:0.5rem"></span></div><span class="sk-skel" style="width:3.75rem;height:1.375rem;border-radius:999px"></span></div>
+      <div class="sk2-row"><span class="sk-skel" style="width:2rem;height:2rem;border-radius:var(--radius-md)"></span><div class="sk-grow sk-col sk-gap-2"><span class="sk-skel sk2-line" style="width:58%"></span><span class="sk-skel sk2-line" style="width:36%;height:0.5rem"></span></div><span class="sk-skel" style="width:4rem;height:1.375rem;border-radius:999px"></span></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

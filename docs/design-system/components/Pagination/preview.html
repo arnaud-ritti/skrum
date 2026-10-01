@@ -1,0 +1,106 @@
+<!-- @dsCard group="shadcn · Navigation" height=1671 subtitle="EN + FR · numérotée (actif, survol, focus, ellipses, bords désactivés) · compacte « Page 3 sur 7 » · compteur « 21–40 sur 128 » + taille de page (Select fermé / ouvert) · « Charger plus » repos, chargement, fin" -->
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><title>Pagination</title>
+<style>
+  .pg-wrap-all { display: flex; flex-direction: column; gap: var(--space-10); }
+  .pg-lang { display: flex; flex-direction: column; gap: var(--space-5); }
+  .pg-lang-h { display: flex; align-items: center; gap: var(--space-2); }
+  .pg-stack { display: flex; flex-direction: column; gap: var(--space-6); }
+  .pg-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 17.5rem), 1fr)); gap: var(--space-6); align-items: start; }
+  .pg-cell { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+  .pg-cell > .sk-state { margin-bottom: 0; }
+  .pg-mt { margin-top: var(--space-3); }
+
+  /* Numbered */
+  .pg-wrap { container: pg / inline-size; }
+  .pg { list-style: none; margin: 0; padding: 0; display: flex; align-items: center; gap: var(--space-1); flex-wrap: wrap; }
+  .pg-link { min-width: 2.25rem; height: 2.25rem; padding: 0 var(--space-2); display: inline-flex; align-items: center; justify-content: center; gap: var(--space-1); border-radius: var(--radius-md); border: 1px solid transparent; font-size: 0.875rem; font-weight: 500; font-variant-numeric: tabular-nums; color: var(--foreground); text-decoration: none; white-space: nowrap; transition: background var(--duration-fast) var(--ease-standard); }
+  .pg-link:hover, .pg-link.is-hover { background: var(--accent); }
+  .pg-link.is-active { border-color: var(--input); background: var(--card); font-weight: 700; box-shadow: var(--shadow-card); }
+  .pg-link.is-focus { outline: 2px solid var(--ring); outline-offset: 2px; }
+  .pg-link.is-disabled { opacity: .5; pointer-events: none; }
+  .pg-edge { padding: 0 var(--space-3) 0 var(--space-2); font-weight: 600; }
+  .pg-edge--next { padding: 0 var(--space-2) 0 var(--space-3); }
+  .pg-ell { width: 2.25rem; height: 2.25rem; display: grid; place-items: center; color: var(--muted-foreground); }
+  @container pg (max-width: 28rem) {
+    .pg-lbl { display: none; }
+    .pg-edge, .pg-edge--next { padding: 0; width: 2.25rem; }
+  }
+  @container pg (max-width: 20rem) {
+    .pg-opt { display: none; }
+  }
+
+  /* Compact */
+  .pg-compact { display: flex; align-items: center; gap: var(--space-1); }
+  .pg-cnt { flex: 1; text-align: center; font-size: 0.8125rem; font-weight: 600; white-space: nowrap; padding: 0 var(--space-2); font-variant-numeric: tabular-nums; }
+
+  /* Counter bar */
+  .pg-foot { padding: var(--space-3) var(--space-4); }
+  .pg-bar { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+  .pg-count { font-size: 0.8125rem; color: var(--muted-foreground); white-space: nowrap; font-variant-numeric: tabular-nums; margin-right: auto; }
+  .pg-count b { color: var(--foreground); font-weight: 650; }
+  .pg-size { display: flex; align-items: center; gap: var(--space-2); }
+  .pg-size-l { font-size: 0.8125rem; color: var(--muted-foreground); white-space: nowrap; }
+  .pg-size-s { width: 4.5rem; position: relative; }
+  .pg-menu { position: absolute; bottom: calc(100% + var(--space-1)); left: 0; min-width: 0; width: 100%; z-index: 2; }
+  .pg-foot--open { margin-top: 9.5rem; }
+  .pg-grid--bar + .pg-grid--bar .pg-cell { max-width: 30rem; }
+  .pg-grid--bar { grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr)); }
+  .pg-busy { color: var(--muted-foreground); cursor: progress; }
+  .pg-mi { justify-content: space-between; font-variant-numeric: tabular-nums; }
+  .pg-tick { color: var(--foreground) !important; }
+  .pg-mini { display: flex; gap: var(--space-1); }
+
+  /* Load more */
+  .pg-list { overflow: hidden; }
+  .pg-row { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--border); }
+  .pg-row-t { flex: 1; min-width: 0; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pg-row-w { white-space: nowrap; }
+  .pg-loadbar { display: flex; justify-content: center; padding: var(--space-3); }
+  .pg-loadbar--alone { padding: var(--space-1) 0 0; }
+  .pg-loadbar .sk-badge { height: 1.125rem; padding: 0 0.3125rem; }
+  .pg-end { display: flex; align-items: center; justify-content: center; gap: var(--space-1-5); font-size: 0.8125rem; color: var(--muted-foreground); padding-top: var(--space-1); text-align: center; }
+</style></head>
+<body>
+<div class="sk-pad pg-wrap-all">
+<section class="pg-lang" lang="en"><div class="pg-lang-h"><span class="sk-badge sk-badge--outline">EN</span><span class="sk-h4">English</span></div>
+<div class="pg-stack">
+  <div class="pg-cell"><div class="sk-state">Numbered · page 3 of 7 · hover 4 · focus “Next”</div><nav class="pg-wrap" aria-label="Pagination"><ul class="pg"><li><a class="pg-link pg-edge" href="#" aria-label="Previous"><i data-lucide="chevron-left"></i><span class="pg-lbl">Previous</span></a></li><li class=""><a class="pg-link" href="#"  aria-label="Go to page 1">1</a></li><li class="pg-opt"><a class="pg-link" href="#"  aria-label="Go to page 2">2</a></li><li class=""><a class="pg-link is-active" href="#" aria-current="page" aria-label="Go to page 3">3</a></li><li class="pg-opt"><a class="pg-link is-hover" href="#"  aria-label="Go to page 4">4</a></li><li class="pg-opt"><a class="pg-link" href="#"  aria-label="Go to page 5">5</a></li><li class="pg-opt"><span class="pg-ell" aria-label="More pages"><i data-lucide="ellipsis"></i></span></li><li class=""><a class="pg-link" href="#"  aria-label="Go to page 7">7</a></li><li><a class="pg-link pg-edge pg-edge--next is-focus" href="#" aria-label="Next"><span class="pg-lbl">Next</span><i data-lucide="chevron-right"></i></a></li></ul></nav></div>
+  <div class="pg-grid">
+    <div class="pg-cell"><div class="sk-state">First page · Previous disabled</div><nav class="pg-wrap" aria-label="Pagination"><ul class="pg"><li><a class="pg-link pg-edge is-disabled"  aria-disabled="true" aria-label="Previous"><i data-lucide="chevron-left"></i><span class="pg-lbl">Previous</span></a></li><li class=""><a class="pg-link is-active" href="#" aria-current="page" aria-label="Go to page 1">1</a></li><li class="pg-opt"><a class="pg-link" href="#"  aria-label="Go to page 2">2</a></li><li class="pg-opt"><a class="pg-link" href="#"  aria-label="Go to page 3">3</a></li><li class="pg-opt"><a class="pg-link" href="#"  aria-label="Go to page 4">4</a></li><li class="pg-opt"><a class="pg-link" href="#"  aria-label="Go to page 5">5</a></li><li class="pg-opt"><span class="pg-ell" aria-label="More pages"><i data-lucide="ellipsis"></i></span></li><li class=""><a class="pg-link" href="#"  aria-label="Go to page 7">7</a></li><li><a class="pg-link pg-edge pg-edge--next" href="#" aria-label="Next"><span class="pg-lbl">Next</span><i data-lucide="chevron-right"></i></a></li></ul></nav></div>
+    <div class="pg-cell"><div class="sk-state">Last page · Next disabled</div><nav class="pg-wrap" aria-label="Pagination"><ul class="pg"><li><a class="pg-link pg-edge" href="#" aria-label="Previous"><i data-lucide="chevron-left"></i><span class="pg-lbl">Previous</span></a></li><li class=""><a class="pg-link" href="#"  aria-label="Go to page 1">1</a></li><li class="pg-opt"><span class="pg-ell" aria-label="More pages"><i data-lucide="ellipsis"></i></span></li><li class="pg-opt"><a class="pg-link" href="#"  aria-label="Go to page 3">3</a></li><li class="pg-opt"><a class="pg-link" href="#"  aria-label="Go to page 4">4</a></li><li class="pg-opt"><a class="pg-link" href="#"  aria-label="Go to page 5">5</a></li><li class="pg-opt"><a class="pg-link" href="#"  aria-label="Go to page 6">6</a></li><li class=""><a class="pg-link is-active" href="#" aria-current="page" aria-label="Go to page 7">7</a></li><li><a class="pg-link pg-edge pg-edge--next is-disabled"  aria-disabled="true" aria-label="Next"><span class="pg-lbl">Next</span><i data-lucide="chevron-right"></i></a></li></ul></nav></div>
+  </div>
+  <div class="pg-grid pg-grid--bar">
+    <div class="pg-cell"><div class="sk-state">Counter + page size</div><div class="sk-card pg-foot"><div class="pg-bar"><span class="pg-count" aria-live="polite"><b>21–40</b> of 128</span><div class="pg-size"><span class="pg-size-l">Rows per page</span><div class="pg-size-s"><button class="sk-select" aria-expanded="false" style="height:2rem"><span>20</span><i data-lucide="chevron-down"></i></button></div></div><div class="pg-mini"><button class="sk-btn sk-btn--outline sk-btn--icon sk-btn--sm" aria-label="Previous"><i data-lucide="chevron-left"></i></button><button class="sk-btn sk-btn--outline sk-btn--icon sk-btn--sm" aria-label="Next"><i data-lucide="chevron-right"></i></button></div></div></div><div class="sk-state pg-mt">Compact (mobile, cards)</div><div class="pg-compact"><button class="sk-btn sk-btn--outline sk-btn--icon sk-btn--sm" aria-label="First page"><i data-lucide="chevrons-left"></i></button><button class="sk-btn sk-btn--outline sk-btn--icon sk-btn--sm" aria-label="Previous"><i data-lucide="chevron-left"></i></button><span class="pg-cnt" aria-live="polite">Page 3 of 7</span><button class="sk-btn sk-btn--outline sk-btn--icon sk-btn--sm" aria-label="Next"><i data-lucide="chevron-right"></i></button><button class="sk-btn sk-btn--outline sk-btn--icon sk-btn--sm" aria-label="Last page"><i data-lucide="chevrons-right"></i></button></div></div>
+    <div class="pg-cell"><div class="sk-state">Page size · open</div><div class="sk-card pg-foot pg-foot--open"><div class="pg-bar"><span class="pg-count" aria-live="polite"><b>21–40</b> of 128</span><div class="pg-size"><span class="pg-size-l">Rows per page</span><div class="pg-size-s"><button class="sk-select is-focus" aria-expanded="true" style="height:2rem"><span>20</span><i data-lucide="chevron-down"></i></button><div class="sk-menu pg-menu" role="listbox"><div class="sk-menu-item pg-mi" role="option">10</div><div class="sk-menu-item pg-mi" role="option" aria-selected="true">20<i data-lucide="check" class="pg-tick"></i></div><div class="sk-menu-item pg-mi is-on" role="option">50</div><div class="sk-menu-item pg-mi" role="option">100</div></div></div></div><div class="pg-mini"><button class="sk-btn sk-btn--outline sk-btn--icon sk-btn--sm" aria-label="Previous"><i data-lucide="chevron-left"></i></button><button class="sk-btn sk-btn--outline sk-btn--icon sk-btn--sm" aria-label="Next"><i data-lucide="chevron-right"></i></button></div></div></div></div>
+  </div>
+  <div class="pg-grid pg-grid--bar">
+    <div class="pg-cell"><div class="sk-state">“Load more” · idle, loading, end</div><div class="sk-card pg-list" role="feed" aria-busy="false"><div class="pg-row"><span class="sk-check"></span><span class="pg-row-t">Isolate E2E data per worker</span><span class="sk-xs sk-muted pg-row-w">Nadia K.</span></div><div class="pg-row"><span class="sk-check"></span><span class="pg-row-t">Code review before 4 pm</span><span class="sk-xs sk-muted pg-row-w">Théo M.</span></div><div class="pg-row"><span class="sk-check"></span><span class="pg-row-t">Weekly sync with the PO</span><span class="sk-xs sk-muted pg-row-w">Léa H.</span></div>
+      <div class="pg-loadbar"><button class="sk-btn sk-btn--outline sk-btn--sm">Load more<span class="sk-badge sk-badge--muted">20 more</span></button></div></div>
+    <div class="pg-loadbar pg-loadbar--alone"><button class="sk-btn sk-btn--outline sk-btn--sm pg-busy" aria-busy="true"><span class="sk-trema" aria-hidden="true"><i></i><i></i></span>Loading…</button></div>
+    <div class="pg-end"><i data-lucide="check-check" class="sk-ico-sm"></i>You’re all caught up · 128 action items</div></div>
+  </div>
+</div></section>
+<hr class="sk-sep">
+<section class="pg-lang" lang="fr"><div class="pg-lang-h"><span class="sk-badge sk-badge--outline">FR</span><span class="sk-h4">Français</span></div>
+<div class="pg-stack">
+  <div class="pg-cell"><div class="sk-state">Numérotée · page 3 sur 7 · survol 4 · focus « Suivant »</div><nav class="pg-wrap" aria-label="Pagination"><ul class="pg"><li><a class="pg-link pg-edge" href="#" aria-label="Précédent"><i data-lucide="chevron-left"></i><span class="pg-lbl">Précédent</span></a></li><li class=""><a class="pg-link" href="#"  aria-label="Aller à la page 1">1</a></li><li class="pg-opt"><a class="pg-link" href="#"  aria-label="Aller à la page 2">2</a></li><li class=""><a class="pg-link is-active" href="#" aria-current="page" aria-label="Aller à la page 3">3</a></li><li class="pg-opt"><a class="pg-link is-hover" href="#"  aria-label="Aller à la page 4">4</a></li><li class="pg-opt"><a class="pg-link" href="#"  aria-label="Aller à la page 5">5</a></li><li class="pg-opt"><span class="pg-ell" aria-label="Autres pages"><i data-lucide="ellipsis"></i></span></li><li class=""><a class="pg-link" href="#"  aria-label="Aller à la page 7">7</a></li><li><a class="pg-link pg-edge pg-edge--next is-focus" href="#" aria-label="Suivant"><span class="pg-lbl">Suivant</span><i data-lucide="chevron-right"></i></a></li></ul></nav></div>
+  <div class="pg-grid">
+    <div class="pg-cell"><div class="sk-state">Première page · Précédent désactivé</div><nav class="pg-wrap" aria-label="Pagination"><ul class="pg"><li><a class="pg-link pg-edge is-disabled"  aria-disabled="true" aria-label="Précédent"><i data-lucide="chevron-left"></i><span class="pg-lbl">Précédent</span></a></li><li class=""><a class="pg-link is-active" href="#" aria-current="page" aria-label="Aller à la page 1">1</a></li><li class="pg-opt"><a class="pg-link" href="#"  aria-label="Aller à la page 2">2</a></li><li class="pg-opt"><a class="pg-link" href="#"  aria-label="Aller à la page 3">3</a></li><li class="pg-opt"><a class="pg-link" href="#"  aria-label="Aller à la page 4">4</a></li><li class="pg-opt"><a class="pg-link" href="#"  aria-label="Aller à la page 5">5</a></li><li class="pg-opt"><span class="pg-ell" aria-label="Autres pages"><i data-lucide="ellipsis"></i></span></li><li class=""><a class="pg-link" href="#"  aria-label="Aller à la page 7">7</a></li><li><a class="pg-link pg-edge pg-edge--next" href="#" aria-label="Suivant"><span class="pg-lbl">Suivant</span><i data-lucide="chevron-right"></i></a></li></ul></nav></div>
+    <div class="pg-cell"><div class="sk-state">Dernière page · Suivant désactivé</div><nav class="pg-wrap" aria-label="Pagination"><ul class="pg"><li><a class="pg-link pg-edge" href="#" aria-label="Précédent"><i data-lucide="chevron-left"></i><span class="pg-lbl">Précédent</span></a></li><li class=""><a class="pg-link" href="#"  aria-label="Aller à la page 1">1</a></li><li class="pg-opt"><span class="pg-ell" aria-label="Autres pages"><i data-lucide="ellipsis"></i></span></li><li class="pg-opt"><a class="pg-link" href="#"  aria-label="Aller à la page 3">3</a></li><li class="pg-opt"><a class="pg-link" href="#"  aria-label="Aller à la page 4">4</a></li><li class="pg-opt"><a class="pg-link" href="#"  aria-label="Aller à la page 5">5</a></li><li class="pg-opt"><a class="pg-link" href="#"  aria-label="Aller à la page 6">6</a></li><li class=""><a class="pg-link is-active" href="#" aria-current="page" aria-label="Aller à la page 7">7</a></li><li><a class="pg-link pg-edge pg-edge--next is-disabled"  aria-disabled="true" aria-label="Suivant"><span class="pg-lbl">Suivant</span><i data-lucide="chevron-right"></i></a></li></ul></nav></div>
+  </div>
+  <div class="pg-grid pg-grid--bar">
+    <div class="pg-cell"><div class="sk-state">Compteur + taille de page</div><div class="sk-card pg-foot"><div class="pg-bar"><span class="pg-count" aria-live="polite"><b>21–40</b> sur 128</span><div class="pg-size"><span class="pg-size-l">Lignes par page</span><div class="pg-size-s"><button class="sk-select" aria-expanded="false" style="height:2rem"><span>20</span><i data-lucide="chevron-down"></i></button></div></div><div class="pg-mini"><button class="sk-btn sk-btn--outline sk-btn--icon sk-btn--sm" aria-label="Précédent"><i data-lucide="chevron-left"></i></button><button class="sk-btn sk-btn--outline sk-btn--icon sk-btn--sm" aria-label="Suivant"><i data-lucide="chevron-right"></i></button></div></div></div><div class="sk-state pg-mt">Compacte (mobile, cartes)</div><div class="pg-compact"><button class="sk-btn sk-btn--outline sk-btn--icon sk-btn--sm" aria-label="Première page"><i data-lucide="chevrons-left"></i></button><button class="sk-btn sk-btn--outline sk-btn--icon sk-btn--sm" aria-label="Précédent"><i data-lucide="chevron-left"></i></button><span class="pg-cnt" aria-live="polite">Page 3 sur 7</span><button class="sk-btn sk-btn--outline sk-btn--icon sk-btn--sm" aria-label="Suivant"><i data-lucide="chevron-right"></i></button><button class="sk-btn sk-btn--outline sk-btn--icon sk-btn--sm" aria-label="Dernière page"><i data-lucide="chevrons-right"></i></button></div></div>
+    <div class="pg-cell"><div class="sk-state">Taille de page · ouverte</div><div class="sk-card pg-foot pg-foot--open"><div class="pg-bar"><span class="pg-count" aria-live="polite"><b>21–40</b> sur 128</span><div class="pg-size"><span class="pg-size-l">Lignes par page</span><div class="pg-size-s"><button class="sk-select is-focus" aria-expanded="true" style="height:2rem"><span>20</span><i data-lucide="chevron-down"></i></button><div class="sk-menu pg-menu" role="listbox"><div class="sk-menu-item pg-mi" role="option">10</div><div class="sk-menu-item pg-mi" role="option" aria-selected="true">20<i data-lucide="check" class="pg-tick"></i></div><div class="sk-menu-item pg-mi is-on" role="option">50</div><div class="sk-menu-item pg-mi" role="option">100</div></div></div></div><div class="pg-mini"><button class="sk-btn sk-btn--outline sk-btn--icon sk-btn--sm" aria-label="Précédent"><i data-lucide="chevron-left"></i></button><button class="sk-btn sk-btn--outline sk-btn--icon sk-btn--sm" aria-label="Suivant"><i data-lucide="chevron-right"></i></button></div></div></div></div>
+  </div>
+  <div class="pg-grid pg-grid--bar">
+    <div class="pg-cell"><div class="sk-state">« Charger plus » · repos, chargement, fin</div><div class="sk-card pg-list" role="feed" aria-busy="false"><div class="pg-row"><span class="sk-check"></span><span class="pg-row-t">Isoler les données E2E par worker</span><span class="sk-xs sk-muted pg-row-w">Nadia K.</span></div><div class="pg-row"><span class="sk-check"></span><span class="pg-row-t">Revue de code avant 16 h</span><span class="sk-xs sk-muted pg-row-w">Théo M.</span></div><div class="pg-row"><span class="sk-check"></span><span class="pg-row-t">Point hebdo avec le PO</span><span class="sk-xs sk-muted pg-row-w">Léa H.</span></div>
+      <div class="pg-loadbar"><button class="sk-btn sk-btn--outline sk-btn--sm">Charger plus<span class="sk-badge sk-badge--muted">20 de plus</span></button></div></div>
+    <div class="pg-loadbar pg-loadbar--alone"><button class="sk-btn sk-btn--outline sk-btn--sm pg-busy" aria-busy="true"><span class="sk-trema" aria-hidden="true"><i></i><i></i></span>Chargement…</button></div>
+    <div class="pg-end"><i data-lucide="check-check" class="sk-ico-sm"></i>Vous avez tout vu · 128 actions</div></div>
+  </div>
+</div></section>
+</div>
+</body>
+</html>

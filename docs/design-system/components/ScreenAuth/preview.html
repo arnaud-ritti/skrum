@@ -1,0 +1,88 @@
+<!-- @dsCard group="Écrans · Desktop" width=1440 height=1600 subtitle="Authentification : connexion (SSO OIDC, Google, GitHub, e-mail + mot de passe, lien magique) + variantes inscription et « lien magique envoyé »" -->
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><title>ScreenAuth</title>
+<style>
+  .scr-wrap { display: flex; flex-direction: column; gap: var(--space-6); background: var(--skrum-canvas); padding-bottom: var(--space-10); }
+  .scr-split { display: grid; grid-template-columns: 1fr 1fr; flex: 1; min-height: 0; }
+  .scr-formpane { display: flex; flex-direction: column; padding: var(--space-8) var(--space-12); }
+  .scr-form { width: 23.75rem; margin: auto; display: flex; flex-direction: column; gap: var(--space-4); }
+  .scr-word { font-family: var(--font-display); font-weight: 700; letter-spacing: -.03em; font-size: 1.375rem; }
+  .scr-2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2); }
+  .scr-or { display: flex; align-items: center; gap: var(--space-3); }
+  .scr-g { font-family: var(--font-display); font-weight: 800; font-size: 1rem; width: 1rem; text-align: center; }
+  .scr-brandpane { background: var(--secondary); color: var(--secondary-foreground); display: flex; padding: var(--space-6); }
+  .scr-bp-in { flex: 1; border-radius: var(--radius-2xl); background-color: color-mix(in oklch, var(--card) 35%, transparent); background-image: radial-gradient(color-mix(in oklch, var(--secondary-foreground) 16%, transparent) 1.2px, transparent 1.3px); background-size: 1.25rem 1.25rem; border: 1px solid color-mix(in oklch, var(--secondary-foreground) 14%, transparent); padding: var(--space-12); display: flex; flex-direction: column; gap: var(--space-5); justify-content: center; }
+  .scr-promise { margin: 0; font-family: var(--font-display); font-size: 2.75rem; line-height: 3rem; font-weight: 700; letter-spacing: -.025em; max-width: 32.5rem; color: var(--foreground); }
+  .scr-bp-sub { font-size: 1rem; line-height: 1.625rem; max-width: 28.75rem; color: var(--foreground); opacity: .8; }
+  .scr-notes { display: flex; flex-direction: column; gap: var(--space-3); width: 21.25rem; margin-top: var(--space-4); }
+  .scr-foot { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--muted-foreground); }
+  .scr-label { padding: 0 var(--space-10); }
+  .scr-variants { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-6); padding: 0 var(--space-10); }
+  .scr-vcard { padding: var(--space-8); display: flex; flex-direction: column; gap: var(--space-4); }
+  .scr-mailart { width: 4rem; height: 4rem; border-radius: var(--radius-xl); background: var(--skrum-primary-soft); color: var(--skrum-primary-text); display: grid; place-items: center; }
+  .scr-mailart .lucide { width: 1.875rem; height: 1.875rem; }
+</style></head>
+<body>
+<div class="scr-wrap">
+<div class="sk-desktop" style="height:53.75rem">
+  <div class="scr-split">
+    <section class="scr-formpane">
+      <div class="sk-row sk-gap-2"><svg viewBox="0 0 64 64" width="28" height="28" aria-label="Skrüm"><path d="M14 0 H50 A14 14 0 0 1 64 14 V46 L46 64 H14 A14 14 0 0 1 0 50 V14 A14 14 0 0 1 14 0 Z" style="fill:var(--primary)"/><path d="M64 46 L50 46 A4 4 0 0 0 46 50 L46 64 Z" style="fill:color-mix(in oklch, var(--primary) 70%, var(--foreground))"/><path d="M19 27 L19 38 C19 45 24 49.5 30 49.5 C36 49.5 41 45 41 38 L41 27" fill="none" style="stroke:var(--primary-foreground)" stroke-width="7" stroke-linecap="round"/><circle cx="21.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/><circle cx="38.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/></svg><span class="scr-word">skrüm</span></div>
+      <div class="scr-form">
+        <div class="sk-col" style="gap:0.25rem"><h1 class="sk-h2">Bon retour parmi nous</h1><p class="sk-p sk-muted">Connectez-vous pour retrouver les sessions et les actions de vos équipes.</p></div>
+        <button class="sk-btn sk-btn--outline sk-btn--lg sk-btn--block"><i data-lucide="key-round"></i>Continuer avec SSO (OIDC)</button>
+          <div class="scr-2"><button class="sk-btn sk-btn--outline sk-btn--block"><span class="scr-g" aria-hidden="true">G</span>Google</button><button class="sk-btn sk-btn--outline sk-btn--block"><i data-lucide="github"></i>GitHub</button></div>
+        <div class="scr-or"><span class="sk-sep sk-grow"></span><span class="sk-xs sk-muted">ou avec votre e-mail</span><span class="sk-sep sk-grow"></span></div>
+        <div class="sk-field"><label>E-mail professionnel</label><div class="sk-input is-focus">arnaud@nordlys.fr|</div></div>
+        <div class="sk-field"><div class="sk-between"><label class="sk-lbl">Mot de passe</label><a class="sk-link sk-sm">Mot de passe oublié ?</a></div><div class="sk-input"><span class="sk-grow" style="letter-spacing:.2em">••••••••••</span><i data-lucide="eye" class="sk-ico-sm" style="color:var(--muted-foreground)"></i></div></div>
+        <label class="sk-choice"><span class="sk-check is-on"></span>Rester connecté 30 jours</label>
+        <button class="sk-btn sk-btn--lg sk-btn--block">Se connecter</button>
+        <button class="sk-btn sk-btn--ghost sk-btn--block"><i data-lucide="wand-sparkles"></i>Recevoir un lien magique à la place</button>
+        <p class="sk-p sk-sm sk-muted" style="text-align:center">Pas encore de compte ? <a class="sk-link">Créer un compte</a></p>
+      </div>
+      <div class="scr-foot"><span>Instance skrum.nordlys.fr · v1.8.2</span><span>Confidentialité · Conditions</span></div>
+    </section>
+    <aside class="scr-brandpane">
+      <div class="scr-bp-in">
+        <span class="sk-badge sk-badge--outline sk-badge--pill" style="align-self:flex-start;background:var(--card)"><i data-lucide="git-branch"></i>Open source · auto-hébergeable</span>
+        <p class="scr-promise">Les réunions se terminent, les actions restent.</p>
+        <p class="sk-p scr-bp-sub">Rétros, planning poker, whiteboard et sondages pour les équipes qui veulent que leurs rituels servent à quelque chose.</p>
+        <div class="scr-notes" aria-hidden="true">
+          <article class="sk-rcard sk-c-moss" style="transform:rotate(-2.5deg)"><p class="sk-rcard-text">La démo client s'est super bien passée.</p><div class="sk-rcard-foot"><span class="sk-rcard-author"><span class="sk-avatar sk-avatar--xs sk-p4">CR</span>Camille</span><span class="sk-grow"></span><span class="sk-vote-btn"><i data-lucide="thumbs-up" class="sk-ico-sm"></i>4</span></div></article>
+          <article class="sk-rcard sk-c-coral" style="transform:rotate(1.5deg) translate(1.75rem, -0.375rem)"><p class="sk-rcard-text">Les tests E2E cassent une fois sur trois.</p><div class="sk-rcard-foot"><span class="sk-anon"><i data-lucide="venetian-mask"></i>Anonyme</span><span class="sk-grow"></span><span class="sk-vote-btn is-mine"><i data-lucide="thumbs-up" class="sk-ico-sm"></i>9</span></div></article>
+          <div class="sk-action" style="transform:rotate(-1deg) translate(0.5rem, -0.25rem);box-shadow:var(--shadow-raised)"><span class="sk-check is-on"></span><div class="sk-grow"><div class="sk-action-t">Quarantaine des tests instables</div><div class="sk-action-meta"><span><span class="sk-avatar sk-avatar--xs sk-p8">LD</span>Lucas D</span><span class="sk-ticket">ATLAS-1302</span></div></div></div>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+<div class="sk-state scr-label" style="margin:0">Variantes</div>
+<div class="scr-variants">
+  <section class="sk-card scr-vcard">
+    <div class="sk-state" style="margin:0">Inscription</div>
+    <div class="sk-col" style="gap:0.25rem"><h2 class="sk-h3">Créer votre espace</h2><p class="sk-p sk-muted sk-sm">Gratuit jusqu'à 10 participants par session. Aucune carte bancaire.</p></div>
+    <button class="sk-btn sk-btn--outline sk-btn--block"><i data-lucide="key-round"></i>Continuer avec SSO (OIDC)</button>
+    <div class="scr-2"><button class="sk-btn sk-btn--outline sk-btn--block"><span class="scr-g" aria-hidden="true">G</span>Google</button><button class="sk-btn sk-btn--outline sk-btn--block"><i data-lucide="github"></i>GitHub</button></div>
+    <div class="scr-or"><span class="sk-sep sk-grow"></span><span class="sk-xs sk-muted">ou avec votre e-mail</span><span class="sk-sep sk-grow"></span></div>
+    <div class="scr-2"><div class="sk-field"><label>Prénom et nom</label><div class="sk-input">Sofia Laurent</div></div><div class="sk-field"><label>Nom de l'équipe</label><div class="sk-input">Atlas</div></div></div>
+    <div class="sk-field"><label>E-mail professionnel</label><div class="sk-input is-invalid">sofia@nordlys</div><span class="sk-error-msg"><i data-lucide="circle-alert" class="sk-ico-sm"></i>Cette adresse semble incomplète (ex. sofia@nordlys.fr).</span></div>
+    <div class="sk-field"><label>Mot de passe</label><div class="sk-input"><span class="sk-placeholder">12 caractères minimum</span></div></div>
+    <button class="sk-btn sk-btn--block">Créer mon compte</button>
+    <p class="sk-p sk-xs sk-muted">En créant un compte, vous acceptez les conditions d'utilisation. Déjà inscrit ? <a class="sk-link">Se connecter</a></p>
+  </section>
+  <section class="sk-card scr-vcard" style="align-items:center;text-align:center;justify-content:center">
+    <div class="sk-state" style="margin:0;align-self:flex-start">Lien magique envoyé</div>
+    <span class="sk-grow"></span>
+    <span class="scr-mailart"><i data-lucide="mail-check"></i></span>
+    <h2 class="sk-h3">Vérifiez votre boîte mail</h2>
+    <p class="sk-p sk-muted" style="max-width:23.75rem">Nous avons envoyé un lien de connexion à <strong style="color:var(--foreground)">arnaud@nordlys.fr</strong>. Il est valable 15 minutes et ne fonctionne qu'une fois.</p>
+    <div class="sk-row sk-gap-2" style="justify-content:center"><button class="sk-btn sk-btn--outline"><i data-lucide="mail"></i>Ouvrir ma messagerie</button><button class="sk-btn sk-btn--ghost is-disabled" disabled><i data-lucide="refresh-cw"></i>Renvoyer dans 0:42</button></div>
+    <div class="sk-alert sk-alert--info" style="text-align:left;max-width:26.25rem"><i data-lucide="info"></i><span class="sk-sm">Rien reçu ? Vérifiez les indésirables. Sur une instance auto-hébergée, l'envoi dépend du SMTP configuré par votre admin.</span></div>
+    <a class="sk-link sk-sm">Utiliser une autre adresse</a>
+    <span class="sk-grow"></span>
+  </section>
+</div>
+</div>
+</body>
+</html>

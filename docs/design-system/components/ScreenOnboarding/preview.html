@@ -1,0 +1,293 @@
+<!-- @dsCard group="Écrans · Desktop" width=1440 height=4000 subtitle="Onboarding premier lancement, EN puis FR : stepper 4 étapes (espace, équipe nom + couleur, invitations e-mails + lien, premier rituel), sans sidebar · écran « Accepter l'invitation » (SSO, inscription, refuser) + variantes connecté·e, expirée, refusée" -->
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><title>ScreenOnboarding</title>
+<style>
+  .scr-cap { height: 3rem; display: flex; align-items: center; gap: var(--space-2); padding: 0 var(--space-6); font-size: 0.75rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted-foreground); white-space: nowrap; }
+  .scr-cap b { color: var(--foreground); }
+  .scr-cap .sk-badge { letter-spacing: 0; text-transform: none; }
+
+  body { background: var(--skrum-canvas); }
+  .ob-frame { height: auto; }
+  .ob-head { height: 4rem; flex: none; display: flex; align-items: center; gap: var(--space-4); padding: 0 var(--space-10); border-bottom: 1px solid var(--border); background: var(--background); }
+  .ob-brand { display: inline-flex; align-items: center; gap: var(--space-2); }
+  .ob-word { font-family: var(--font-display); font-weight: 700; letter-spacing: -.03em; font-size: 1.25rem; }
+  .ob-prog { border-radius: 0; height: 0.1875rem; box-shadow: none; background: transparent; }
+  .ob-prog > span { border-radius: 0 999px 999px 0; }
+  .ob-split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); flex: 1; min-height: 44rem; }
+  .ob-form { padding: var(--space-12) var(--space-16) var(--space-10) var(--space-24); display: flex; flex-direction: column; gap: var(--space-5); max-width: 45rem; }
+  .ob-over { font-size: 0.6875rem; line-height: 1rem; font-weight: 650; letter-spacing: .08em; text-transform: uppercase; color: var(--skrum-primary-text); }
+  .ob-lead { font-size: 1rem; line-height: 1.625rem; max-width: 32rem; }
+  .ob-caret { width: 1.5px; height: 1.125rem; background: var(--foreground); display: inline-block; margin-left: -0.375rem; }
+  .ob-sws { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+  .ob-sw { width: 2.25rem; height: 2.25rem; border-radius: var(--radius-md); background: var(--c); border: 1.5px solid var(--c-b); padding: 0; display: grid; place-items: center; color: var(--c-t); cursor: pointer; }
+  .ob-sw.is-on { box-shadow: 0 0 0 2px var(--background), 0 0 0 0.25rem var(--foreground); }
+  .ob-sw .lucide { stroke-width: 3; }
+  .ob-url { display: flex; align-items: center; gap: 0; padding: var(--space-1) var(--space-1) var(--space-1) var(--space-3); border-radius: var(--radius-md); border: 1px solid var(--input); background: var(--muted); min-width: 0; }
+  .ob-url .sk-btn { margin-left: var(--space-2); }
+  .ob-ell { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .ob-actions { display: flex; align-items: center; gap: var(--space-2); margin-top: var(--space-3); flex-wrap: wrap; }
+  .sk-btn { min-width: 0; }
+  .sk-btn > span { overflow: hidden; text-overflow: ellipsis; }
+  .ob-preview { border-left: 1px solid var(--border); display: flex; align-items: center; justify-content: center; padding: var(--space-12); }
+  .ob-prev-in { width: 24rem; max-width: 100%; display: flex; flex-direction: column; gap: var(--space-4); }
+  .ob-switch { background: var(--card); box-shadow: var(--shadow-raised); width: 16rem; }
+  .ob-mark { width: 1.875rem; height: 1.875rem; border-radius: var(--radius-md); background: var(--c); color: var(--c-t); border: 1px solid var(--c-b); display: grid; place-items: center; font-weight: 700; font-size: 0.8125rem; flex: none; }
+  .ob-mark--lg { width: 2.5rem; height: 2.5rem; font-size: 1rem; }
+  .ob-mark--xl { width: 1.75rem; height: 1.75rem; font-size: 0.75rem; border-radius: var(--radius); box-shadow: 0 0 0 2px var(--card); }
+  .ob-mini { overflow: hidden; }
+  .ob-mini-h { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-4); border-bottom: 1px solid var(--border); }
+  .ob-mini-b { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-4); }
+  .ob-ghost { display: flex; flex-direction: column; gap: var(--space-1-5); padding: var(--space-3); border-radius: var(--radius); border: 1px dashed var(--input); }
+  .ob-ghost .sk-skel { display: block; animation: none; }
+  .ob-next { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-4); border-radius: var(--radius-xl); background: color-mix(in oklch, var(--card) 80%, transparent); border: 1px solid var(--border); }
+  .ob-next-i { display: flex; align-items: center; gap: var(--space-3); }
+  .se-n { width: 1.5rem; height: 1.5rem; border-radius: 50%; display: grid; place-items: center; font-size: 0.75rem; font-weight: 700; background: var(--muted); color: var(--muted-foreground); flex: none; }
+  /* other steps */
+  .ob-other { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-8) var(--space-10) var(--space-10); background: var(--skrum-canvas); border-top: 1px solid var(--border); }
+  .ob-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-6); align-items: stretch; }
+  .ob-step { padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-4); }
+  .ob-step-h { display: flex; align-items: center; gap: var(--space-3); }
+  .ob-step-f { display: flex; justify-content: flex-end; align-items: center; gap: var(--space-2); margin-top: auto; padding-top: var(--space-2); flex-wrap: wrap; }
+  .ob-dots { display: inline-flex; gap: var(--space-1); }
+  .ob-dots i { width: 1rem; height: 0.25rem; border-radius: 999px; background: var(--border); display: block; }
+  .ob-dots i.is-done { background: var(--skrum-success); }
+  .ob-dots i.is-on { background: var(--primary); }
+  .ob-drop { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3); border-radius: var(--radius); border: 1.5px dashed var(--input); flex-wrap: wrap; }
+  .ob-wslogo { width: 2.5rem; height: 2.5rem; border-radius: var(--radius); display: grid; place-items: center; background: var(--secondary); color: var(--secondary-foreground); font-family: var(--font-display); font-weight: 800; font-size: 1.125rem; }
+  .ob-chips { display: flex; flex-wrap: wrap; gap: var(--space-1-5); padding: var(--space-1-5); border-radius: var(--radius-md); border: 1px solid var(--input); background: var(--card); min-height: 2.25rem; }
+  .ob-chips.is-invalid { border-color: var(--destructive); }
+  .ob-chip { display: inline-flex; align-items: center; gap: var(--space-1); height: 1.5rem; padding: 0 0.25rem 0 0.5rem; border-radius: var(--radius-sm); background: var(--muted); font-size: 0.8125rem; max-width: 100%; }
+  .ob-chip .lucide { color: var(--muted-foreground); }
+  .ob-chip.is-bad { background: var(--skrum-destructive-soft); color: var(--skrum-destructive-text); box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--skrum-destructive-text) 35%, transparent); }
+  .ob-chip.is-bad .lucide { color: inherit; }
+  .ob-chip-in { display: inline-flex; align-items: center; height: 1.5rem; padding-left: 0.5rem; }
+  .ob-rits { display: grid; gap: var(--space-2); }
+  .ob-rit { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-3); border-radius: var(--radius); border: 1px solid var(--input); background: var(--card); }
+  .ob-rit.is-on { border-color: var(--primary); background: var(--skrum-primary-soft); box-shadow: inset 0 0 0 1px var(--primary); }
+  .ob-rit-i { width: 2rem; height: 2rem; border-radius: var(--radius-md); display: grid; place-items: center; background: var(--c); color: var(--c-t); border: 1px solid var(--c-b); flex: none; }
+  /* accept invitation */
+  .ob-accept { background: var(--skrum-canvas); }
+  .ob-head--plain { background: transparent; border-bottom: 0; }
+  .ob-acc { display: flex; justify-content: center; align-items: flex-start; gap: var(--space-12); padding: var(--space-4) var(--space-10) var(--space-12); }
+  .ob-inv { width: 30rem; padding: var(--space-8); display: flex; flex-direction: column; gap: var(--space-4); box-shadow: var(--shadow-raised); }
+  .ob-inv-who { display: flex; flex-direction: column; align-items: center; text-align: center; gap: var(--space-3); }
+  .ob-pair { position: relative; display: inline-flex; }
+  .ob-pair .ob-mark { position: absolute; right: -0.875rem; bottom: -0.25rem; }
+  .ob-inv-t { font-size: 1.125rem; line-height: 1.625rem; text-wrap: balance; }
+  .ob-inv-t b { font-weight: 650; }
+  .ob-inv-meta { display: inline-flex; align-items: center; gap: var(--space-2); font-size: 0.75rem; color: var(--muted-foreground); flex-wrap: wrap; justify-content: center; }
+  .ob-quote { margin: 0; padding: var(--space-2) var(--space-4); border-radius: var(--radius); background: var(--muted); }
+  .ob-quote blockquote { margin: 0; font-size: 0.8125rem; line-height: 1.25rem; font-style: italic; }
+  .ob-2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2); }
+  .ob-or { display: flex; align-items: center; gap: var(--space-3); }
+  .ob-g { font-family: var(--font-display); font-weight: 800; font-size: 1rem; width: 1rem; text-align: center; }
+  .ob-decline { display: flex; align-items: center; gap: var(--space-2) var(--space-3); flex-wrap: wrap; justify-content: center; text-align: center; }
+  .ob-danger { color: var(--skrum-destructive-text); }
+  .ob-vars { width: 22rem; display: flex; flex-direction: column; gap: var(--space-5); padding-top: var(--space-2); }
+  .ob-var { padding: var(--space-5); display: flex; flex-direction: column; gap: var(--space-3); }
+  .ob-vico { width: 2.25rem; height: 2.25rem; border-radius: 50%; display: grid; place-items: center; background: var(--muted); color: var(--muted-foreground); }
+  .ob-vico--warn { background: var(--skrum-warning-soft); color: var(--skrum-warning-text); }
+</style>
+</head>
+<body>
+<div class="scr-cap"><b>a</b><span class="sk-badge sk-badge--outline">EN</span>First launch — onboarding, step 2 of 4 (no sidebar until the team exists)</div>
+<div class="sk-desktop ob-frame" lang="en">
+  <header class="ob-head">
+    <span class="ob-brand"><svg viewBox="0 0 64 64" width="26" height="26" aria-label="Skrüm"><path d="M14 0 H50 A14 14 0 0 1 64 14 V46 L46 64 H14 A14 14 0 0 1 0 50 V14 A14 14 0 0 1 14 0 Z" style="fill:var(--primary)"/><path d="M64 46 L50 46 A4 4 0 0 0 46 50 L46 64 Z" style="fill:color-mix(in oklch, var(--primary) 70%, var(--foreground))"/><path d="M19 27 L19 38 C19 45 24 49.5 30 49.5 C36 49.5 41 45 41 38 L41 27" fill="none" style="stroke:var(--primary-foreground)" stroke-width="7" stroke-linecap="round"/><circle cx="21.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/><circle cx="38.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/></svg><span class="ob-word">skrüm</span></span>
+    <span class="sk-grow"></span>
+    <div class="sk-phases" role="list"><span class="sk-phase is-done"><span class="sk-phase-n"><i data-lucide="check" style="width:0.6875rem;height:0.6875rem"></i></span><span class="sk-phase-l">Workspace</span></span><span class="sk-phase-link"></span><span class="sk-phase is-current" aria-current="step"><span class="sk-phase-n">2</span><span class="sk-phase-l">Team</span></span><span class="sk-phase-link"></span><span class="sk-phase "><span class="sk-phase-n">3</span><span class="sk-phase-l">Invite</span></span><span class="sk-phase-link"></span><span class="sk-phase "><span class="sk-phase-n">4</span><span class="sk-phase-l">First ritual</span></span></div>
+    <span class="sk-grow"></span>
+    <span class="sk-row sk-gap-2" style="flex-wrap:nowrap"><span class="sk-avatar sk-avatar--sm sk-p1">AR</span><button class="sk-btn sk-btn--ghost sk-btn--sm"><i data-lucide="log-out"></i><span>Log out</span></button></span>
+  </header>
+  <div class="sk-progress ob-prog" role="progressbar" aria-valuenow="2" aria-valuemin="0" aria-valuemax="4"><span style="width:37.5%"></span></div>
+  <div class="ob-split">
+    <section class="ob-form">
+      <div class="sk-col" style="gap:var(--space-2)"><span class="ob-over">Step 2 of 4</span><h1 class="sk-h1">Create your first team</h1><p class="sk-p sk-muted ob-lead">A team is the people who run their rituals together. You can add more teams to Nordlys later.</p></div>
+      <div class="sk-field"><label>Team name</label><div class="sk-input is-focus">Atlas<i class="ob-caret"></i></div><span class="sk-help">Shown in the sidebar, on invitations and in session links.</span></div>
+      <div class="sk-field"><span class="sk-lbl">Team colour</span><div class="ob-sws" role="radiogroup"><button class="ob-sw sk-c-moss" role="radio" aria-checked="false" aria-label="Moss"></button><button class="ob-sw sk-c-coral" role="radio" aria-checked="false" aria-label="Coral"></button><button class="ob-sw sk-c-sun" role="radio" aria-checked="false" aria-label="Sun"></button><button class="ob-sw sk-c-plum" role="radio" aria-checked="false" aria-label="Plum"></button><button class="ob-sw sk-c-sky" role="radio" aria-checked="false" aria-label="Sky"></button><button class="ob-sw sk-c-lagoon is-on" role="radio" aria-checked="true" aria-label="Lagoon"><i data-lucide="check"></i></button><button class="ob-sw sk-c-iris" role="radio" aria-checked="false" aria-label="Iris"></button><button class="ob-sw sk-c-apricot" role="radio" aria-checked="false" aria-label="Apricot"></button></div><span class="sk-help">Lagoon</span></div>
+      <div class="sk-field"><span class="sk-lbl">Team link</span><div class="ob-url"><span class="sk-mono sk-muted">skrum.nordlys.fr/t/</span><span class="sk-mono sk-strong sk-grow">atlas</span><button class="sk-btn sk-btn--ghost sk-btn--sm"><i data-lucide="square-pen"></i><span>Edit</span></button></div></div>
+      <div class="sk-field"><label>Description <span class="sk-muted" style="font-weight:500">· optional</span></label><div class="sk-input"><span class="sk-placeholder ob-ell">Mobile app squad — sprints of 2 weeks</span></div></div>
+      <div class="ob-actions"><button class="sk-btn sk-btn--ghost"><i data-lucide="arrow-left"></i><span>Back</span></button><span class="sk-grow"></span><button class="sk-btn sk-btn--ghost"><span>Skip for now</span></button><button class="sk-btn sk-btn--lg"><span>Continue</span><i data-lucide="arrow-right"></i></button></div>
+      <span class="sk-xs sk-muted">Everything can be changed later in Team settings.</span>
+    </section>
+    <aside class="ob-preview sk-dotgrid">
+      <div class="ob-prev-in">
+        <span class="sk-state" style="margin:0">Preview</span>
+        <div class="ob-switch sk-team sk-team-switch"><span class="ob-mark sk-c-lagoon">A</span><span class="sk-team-txt"><span class="sk-team-name">Atlas</span><span class="sk-team-sub">Nordlys · 1 member</span></span><i data-lucide="chevrons-up-down" class="sk-ico-sm"></i></div>
+        <div class="sk-card ob-mini">
+          <div class="ob-mini-h"><span class="ob-mark ob-mark--lg sk-c-lagoon">A</span><span class="sk-col" style="gap:0;min-width:0"><span class="sk-h4">Atlas</span><span class="sk-xs sk-muted">skrum.nordlys.fr/t/atlas</span></span></div>
+          <div class="ob-mini-b">
+            <div class="ob-ghost"><span class="sk-skel" style="width:60%;height:0.625rem"></span><span class="sk-skel" style="width:40%;height:0.5rem"></span></div>
+            <div class="ob-ghost"><span class="sk-skel" style="width:50%;height:0.625rem"></span><span class="sk-skel" style="width:70%;height:0.5rem"></span></div>
+            <span class="sk-xs sk-muted" style="text-align:center">No sessions yet</span>
+          </div>
+        </div>
+        <div class="ob-next"><span class="sk-lbl">Coming next</span>
+          <div class="ob-next-i"><span class="se-n">3</span><span class="sk-sm">Invite your teammates by email or link</span></div>
+          <div class="ob-next-i"><span class="se-n">4</span><span class="sk-sm">Pick a first ritual — a retro takes 2 minutes to set up</span></div>
+        </div>
+      </div>
+    </aside>
+  </div>
+<div class="ob-other">
+  <span class="sk-state" style="margin:0">Other steps</span>
+  <div class="ob-grid">
+    <section class="sk-card ob-step"><div class="ob-step-h"><span class="ob-dots" aria-hidden="true"><i class="is-on"></i><i class=""></i><i class=""></i><i class=""></i></span><span class="ob-over">Step 1 · Workspace</span></div>
+      <h2 class="sk-h3">Name your workspace</h2><p class="sk-p sk-sm sk-muted">The workspace groups your teams, templates and members.</p>
+      <div class="sk-field"><label>Workspace name</label><div class="sk-input">Nordlys</div></div>
+      <div class="sk-field"><span class="sk-lbl">Logo <span class="sk-muted" style="font-weight:500">· optional</span></span><div class="ob-drop"><span class="ob-wslogo">N</span><button class="sk-btn sk-btn--outline sk-btn--sm"><i data-lucide="upload"></i><span>Upload</span></button><span class="sk-xs sk-muted">PNG, SVG · 128 px</span></div></div>
+      <div class="sk-field"><label>Default language</label><div class="sk-select"><span>English</span><i data-lucide="chevron-down" class="sk-ico-sm"></i></div></div>
+      <div class="ob-step-f"><button class="sk-btn sk-btn--sm"><span>Continue</span><i data-lucide="arrow-right"></i></button></div>
+    </section>
+    <section class="sk-card ob-step"><div class="ob-step-h"><span class="ob-dots" aria-hidden="true"><i class="is-done"></i><i class="is-done"></i><i class="is-on"></i><i class=""></i></span><span class="ob-over">Step 3 · Invite</span></div>
+      <h2 class="sk-h3">Invite your teammates</h2><p class="sk-p sk-sm sk-muted">They join Atlas as members. Facilitators can be set later.</p>
+      <div class="sk-field"><label>Emails</label><div class="ob-chips is-invalid"><span class="ob-chip">camille@nordlys.io<i data-lucide="x" class="sk-ico-sm"></i></span><span class="ob-chip">theo@nordlys.io<i data-lucide="x" class="sk-ico-sm"></i></span><span class="ob-chip">ines@nordlys.io<i data-lucide="x" class="sk-ico-sm"></i></span><span class="ob-chip is-bad">malik@nordlys<i data-lucide="x" class="sk-ico-sm"></i></span><span class="ob-chip-in"><i class="ob-caret"></i></span></div><span class="sk-error-msg"><i data-lucide="circle-alert" class="sk-ico-sm"></i>“malik@nordlys” looks incomplete.</span></div>
+      <div class="sk-field"><label>Role</label><div class="sk-select"><span>Member</span><i data-lucide="chevron-down" class="sk-ico-sm"></i></div></div>
+      <div class="sk-field"><span class="sk-lbl">Or share this link</span><div class="ob-url"><span class="sk-mono ob-ell sk-grow">skrum.nordlys.fr/join/8fK2-qT7w</span><button class="sk-btn sk-btn--outline sk-btn--sm"><i data-lucide="copy"></i><span>Copy</span></button></div><span class="sk-help">Expires in 7 days · up to 20 people</span></div>
+      <div class="ob-step-f"><button class="sk-btn sk-btn--ghost sk-btn--sm"><span>Skip</span></button><button class="sk-btn sk-btn--sm"><i data-lucide="send"></i><span>Send 3 invitations</span></button></div>
+    </section>
+    <section class="sk-card ob-step"><div class="ob-step-h"><span class="ob-dots" aria-hidden="true"><i class="is-done"></i><i class="is-done"></i><i class="is-done"></i><i class="is-on"></i></span><span class="ob-over">Step 4 · First ritual</span></div>
+      <h2 class="sk-h3">What do you want to start with?</h2>
+      <div class="ob-rits" role="radiogroup"><label class="ob-rit sk-c-moss is-on"><span class="ob-rit-i"><i data-lucide="sticky-note"></i></span><span class="sk-col" style="gap:0;min-width:0;flex:1"><span class="sk-strong ob-ell">Retrospective</span><span class="sk-xs sk-muted">Writing → vote → actions</span></span><span class="sk-radio is-on"></span></label><label class="ob-rit sk-c-sky"><span class="ob-rit-i"><i data-lucide="spade"></i></span><span class="sk-col" style="gap:0;min-width:0;flex:1"><span class="sk-strong ob-ell">Planning poker</span><span class="sk-xs sk-muted">Estimate the sprint 43 backlog</span></span><span class="sk-radio"></span></label><label class="ob-rit sk-c-sun"><span class="ob-rit-i"><i data-lucide="pen-tool"></i></span><span class="sk-col" style="gap:0;min-width:0;flex:1"><span class="sk-strong ob-ell">Whiteboard</span><span class="sk-xs sk-muted">A free canvas, Excalidraw</span></span><span class="sk-radio"></span></label><label class="ob-rit sk-c-plum"><span class="ob-rit-i"><i data-lucide="dices"></i></span><span class="sk-col" style="gap:0;min-width:0;flex:1"><span class="sk-strong ob-ell">Icebreaker</span><span class="sk-xs sk-muted">5 minutes to warm up</span></span><span class="sk-radio"></span></label></div>
+      <div class="sk-field"><label>When <span class="sk-muted" style="font-weight:500">· optional</span></label><div class="sk-select"><span><i data-lucide="calendar" class="sk-ico-sm" style="vertical-align:-0.125rem;margin-right:0.375rem;color:var(--muted-foreground)"></i>Thursday 2 October, 2:00 pm</span><i data-lucide="chevron-down" class="sk-ico-sm"></i></div></div>
+      <div class="ob-step-f"><button class="sk-btn sk-btn--ghost sk-btn--sm"><span>Go to the dashboard instead</span></button><button class="sk-btn sk-btn--sm"><span>Create the retro</span><i data-lucide="arrow-right"></i></button></div>
+    </section>
+  </div>
+</div>
+</div>
+<div class="scr-cap"><b>b</b><span class="sk-badge sk-badge--outline">EN</span>Accept an invitation — invited by Camille to the Atlas team in the Nordlys workspace</div>
+<div class="sk-desktop ob-frame ob-accept" lang="en">
+  <header class="ob-head ob-head--plain"><span class="ob-brand"><svg viewBox="0 0 64 64" width="26" height="26" aria-label="Skrüm"><path d="M14 0 H50 A14 14 0 0 1 64 14 V46 L46 64 H14 A14 14 0 0 1 0 50 V14 A14 14 0 0 1 14 0 Z" style="fill:var(--primary)"/><path d="M64 46 L50 46 A4 4 0 0 0 46 50 L46 64 Z" style="fill:color-mix(in oklch, var(--primary) 70%, var(--foreground))"/><path d="M19 27 L19 38 C19 45 24 49.5 30 49.5 C36 49.5 41 45 41 38 L41 27" fill="none" style="stroke:var(--primary-foreground)" stroke-width="7" stroke-linecap="round"/><circle cx="21.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/><circle cx="38.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/></svg><span class="ob-word">skrüm</span></span><span class="sk-grow"></span><span class="sk-xs sk-muted">skrum.nordlys.fr · Nordlys</span></header>
+  <div class="ob-acc">
+    <section class="sk-card ob-inv">
+      <div class="ob-inv-who"><span class="ob-pair"><span class="sk-avatar sk-avatar--xl sk-p4">CR</span><span class="ob-mark ob-mark--xl sk-c-lagoon">A</span></span>
+        <p class="sk-p ob-inv-t"><b>Camille Roux</b> invited you to join the <b>Atlas</b> team in the <b>Nordlys</b> workspace</p>
+        <span class="ob-inv-meta"><span class="sk-stack"><span class="sk-avatar sk-avatar--sm sk-p2">TM</span><span class="sk-avatar sk-avatar--sm sk-p3">IL</span><span class="sk-avatar sk-avatar--sm sk-p6">MS</span><span class="sk-avatar sk-avatar--sm sk-stack-more">+7</span></span>11 members · you join as Member</span>
+        <figure class="ob-quote"><blockquote>“Retro for sprint 42 on Thursday at 2 pm, see you there.”</blockquote></figure>
+      </div>
+      <div class="sk-sep"></div>
+      <button class="sk-btn sk-btn--outline sk-btn--block"><i data-lucide="key-round"></i><span>Continue with SSO (OIDC)</span></button>
+      <div class="ob-2"><button class="sk-btn sk-btn--outline sk-btn--block"><span class="ob-g" aria-hidden="true">G</span><span>Google</span></button><button class="sk-btn sk-btn--outline sk-btn--block"><i data-lucide="github"></i><span>GitHub</span></button></div>
+      <div class="ob-or"><span class="sk-sep sk-grow"></span><span class="sk-xs sk-muted">or with your email</span><span class="sk-sep sk-grow"></span></div>
+      <div class="sk-field"><label>Email</label><div class="sk-input is-disabled"><span class="sk-grow">nadia@nordlys.io</span><i data-lucide="lock" class="sk-ico-sm" style="color:var(--muted-foreground)"></i></div><span class="sk-help">The invitation was sent to this address.</span></div>
+      <div class="sk-field"><label>Create a password</label><div class="sk-input"><span class="sk-placeholder sk-grow">At least 12 characters</span><i data-lucide="eye" class="sk-ico-sm" style="color:var(--muted-foreground)"></i></div></div>
+      <button class="sk-btn sk-btn--lg sk-btn--block"><span>Create my account and join Atlas</span></button>
+      <p class="sk-p sk-sm sk-muted" style="text-align:center">Already have an account? <a class="sk-link">Sign in</a></p>
+      <div class="sk-sep"></div>
+      <div class="ob-decline"><button class="sk-btn sk-btn--ghost sk-btn--sm ob-danger"><i data-lucide="x"></i><span>Decline invitation</span></button><span class="sk-xs sk-muted">Camille will be notified. The link stops working.</span></div>
+    </section>
+    <div class="ob-vars">
+      <div><div class="sk-state">Variant · already signed in</div>
+        <section class="sk-card ob-var"><div class="sk-row sk-gap-2" style="flex-wrap:nowrap"><span class="sk-avatar sk-avatar--lg sk-p5">NB</span><span class="sk-col" style="gap:0;min-width:0"><span class="sk-strong">Join Atlas as Nadia Benali?</span><span class="sk-xs sk-muted">nadia@nordlys.io · already in 2 teams of Nordlys</span></span></div>
+          <div class="sk-row sk-gap-2"><button class="sk-btn sk-btn--sm"><span>Join Atlas</span></button><button class="sk-btn sk-btn--ghost sk-btn--sm"><span>Decline</span></button></div>
+          <span class="sk-xs sk-muted">Not you? <a class="sk-link">Switch account</a></span></section></div>
+      <div><div class="sk-state">Variant · expired link</div>
+        <section class="sk-card ob-var"><span class="ob-vico ob-vico--warn"><i data-lucide="clock"></i></span><span class="sk-strong">This invitation has expired</span><span class="sk-sm sk-muted">It was valid until 24 September. Ask Camille for a new link; nothing else to do.</span>
+          <button class="sk-btn sk-btn--outline sk-btn--sm" style="align-self:flex-start"><i data-lucide="send"></i><span>Ask for a new invitation</span></button></section></div>
+      <div><div class="sk-state">Variant · declined</div>
+        <section class="sk-card ob-var"><span class="ob-vico"><i data-lucide="circle-check"></i></span><span class="sk-strong">Invitation declined</span><span class="sk-sm sk-muted">Camille has been notified. You can close this page.</span></section></div>
+    </div>
+  </div>
+</div>
+<div class="scr-cap"><b>c</b><span class="sk-badge sk-badge--soft">FR · +30 %</span>Premier lancement — onboarding, étape 2 sur 4 (pas de sidebar tant que l'équipe n'existe pas)</div>
+<div class="sk-desktop ob-frame" lang="fr">
+  <header class="ob-head">
+    <span class="ob-brand"><svg viewBox="0 0 64 64" width="26" height="26" aria-label="Skrüm"><path d="M14 0 H50 A14 14 0 0 1 64 14 V46 L46 64 H14 A14 14 0 0 1 0 50 V14 A14 14 0 0 1 14 0 Z" style="fill:var(--primary)"/><path d="M64 46 L50 46 A4 4 0 0 0 46 50 L46 64 Z" style="fill:color-mix(in oklch, var(--primary) 70%, var(--foreground))"/><path d="M19 27 L19 38 C19 45 24 49.5 30 49.5 C36 49.5 41 45 41 38 L41 27" fill="none" style="stroke:var(--primary-foreground)" stroke-width="7" stroke-linecap="round"/><circle cx="21.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/><circle cx="38.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/></svg><span class="ob-word">skrüm</span></span>
+    <span class="sk-grow"></span>
+    <div class="sk-phases" role="list"><span class="sk-phase is-done"><span class="sk-phase-n"><i data-lucide="check" style="width:0.6875rem;height:0.6875rem"></i></span><span class="sk-phase-l">Espace de travail</span></span><span class="sk-phase-link"></span><span class="sk-phase is-current" aria-current="step"><span class="sk-phase-n">2</span><span class="sk-phase-l">Équipe</span></span><span class="sk-phase-link"></span><span class="sk-phase "><span class="sk-phase-n">3</span><span class="sk-phase-l">Invitations</span></span><span class="sk-phase-link"></span><span class="sk-phase "><span class="sk-phase-n">4</span><span class="sk-phase-l">Premier rituel</span></span></div>
+    <span class="sk-grow"></span>
+    <span class="sk-row sk-gap-2" style="flex-wrap:nowrap"><span class="sk-avatar sk-avatar--sm sk-p1">AR</span><button class="sk-btn sk-btn--ghost sk-btn--sm"><i data-lucide="log-out"></i><span>Se déconnecter</span></button></span>
+  </header>
+  <div class="sk-progress ob-prog" role="progressbar" aria-valuenow="2" aria-valuemin="0" aria-valuemax="4"><span style="width:37.5%"></span></div>
+  <div class="ob-split">
+    <section class="ob-form">
+      <div class="sk-col" style="gap:var(--space-2)"><span class="ob-over">Étape 2 sur 4</span><h1 class="sk-h1">Créez votre première équipe</h1><p class="sk-p sk-muted ob-lead">Une équipe, ce sont les personnes qui font leurs rituels ensemble. Vous pourrez ajouter d'autres équipes à Nordlys plus tard.</p></div>
+      <div class="sk-field"><label>Nom de l'équipe</label><div class="sk-input is-focus">Atlas<i class="ob-caret"></i></div><span class="sk-help">Affiché dans la sidebar, sur les invitations et dans les liens de session.</span></div>
+      <div class="sk-field"><span class="sk-lbl">Couleur de l'équipe</span><div class="ob-sws" role="radiogroup"><button class="ob-sw sk-c-moss" role="radio" aria-checked="false" aria-label="Mousse"></button><button class="ob-sw sk-c-coral" role="radio" aria-checked="false" aria-label="Corail"></button><button class="ob-sw sk-c-sun" role="radio" aria-checked="false" aria-label="Soleil"></button><button class="ob-sw sk-c-plum" role="radio" aria-checked="false" aria-label="Prune"></button><button class="ob-sw sk-c-sky" role="radio" aria-checked="false" aria-label="Ciel"></button><button class="ob-sw sk-c-lagoon is-on" role="radio" aria-checked="true" aria-label="Lagon"><i data-lucide="check"></i></button><button class="ob-sw sk-c-iris" role="radio" aria-checked="false" aria-label="Iris"></button><button class="ob-sw sk-c-apricot" role="radio" aria-checked="false" aria-label="Abricot"></button></div><span class="sk-help">Lagon</span></div>
+      <div class="sk-field"><span class="sk-lbl">Lien de l'équipe</span><div class="ob-url"><span class="sk-mono sk-muted">skrum.nordlys.fr/t/</span><span class="sk-mono sk-strong sk-grow">atlas</span><button class="sk-btn sk-btn--ghost sk-btn--sm"><i data-lucide="square-pen"></i><span>Modifier</span></button></div></div>
+      <div class="sk-field"><label>Description <span class="sk-muted" style="font-weight:500">· facultatif</span></label><div class="sk-input"><span class="sk-placeholder ob-ell">Squad app mobile — sprints de 2 semaines</span></div></div>
+      <div class="ob-actions"><button class="sk-btn sk-btn--ghost"><i data-lucide="arrow-left"></i><span>Retour</span></button><span class="sk-grow"></span><button class="sk-btn sk-btn--ghost"><span>Passer pour l'instant</span></button><button class="sk-btn sk-btn--lg"><span>Continuer</span><i data-lucide="arrow-right"></i></button></div>
+      <span class="sk-xs sk-muted">Tout reste modifiable dans Paramètres de l'équipe.</span>
+    </section>
+    <aside class="ob-preview sk-dotgrid">
+      <div class="ob-prev-in">
+        <span class="sk-state" style="margin:0">Aperçu</span>
+        <div class="ob-switch sk-team sk-team-switch"><span class="ob-mark sk-c-lagoon">A</span><span class="sk-team-txt"><span class="sk-team-name">Atlas</span><span class="sk-team-sub">Nordlys · 1 membre</span></span><i data-lucide="chevrons-up-down" class="sk-ico-sm"></i></div>
+        <div class="sk-card ob-mini">
+          <div class="ob-mini-h"><span class="ob-mark ob-mark--lg sk-c-lagoon">A</span><span class="sk-col" style="gap:0;min-width:0"><span class="sk-h4">Atlas</span><span class="sk-xs sk-muted">skrum.nordlys.fr/t/atlas</span></span></div>
+          <div class="ob-mini-b">
+            <div class="ob-ghost"><span class="sk-skel" style="width:60%;height:0.625rem"></span><span class="sk-skel" style="width:40%;height:0.5rem"></span></div>
+            <div class="ob-ghost"><span class="sk-skel" style="width:50%;height:0.625rem"></span><span class="sk-skel" style="width:70%;height:0.5rem"></span></div>
+            <span class="sk-xs sk-muted" style="text-align:center">Aucune session pour le moment</span>
+          </div>
+        </div>
+        <div class="ob-next"><span class="sk-lbl">Ensuite</span>
+          <div class="ob-next-i"><span class="se-n">3</span><span class="sk-sm">Invitez vos coéquipiers par e-mail ou par lien</span></div>
+          <div class="ob-next-i"><span class="se-n">4</span><span class="sk-sm">Choisissez un premier rituel — une rétro se prépare en 2 minutes</span></div>
+        </div>
+      </div>
+    </aside>
+  </div>
+<div class="ob-other">
+  <span class="sk-state" style="margin:0">Autres étapes</span>
+  <div class="ob-grid">
+    <section class="sk-card ob-step"><div class="ob-step-h"><span class="ob-dots" aria-hidden="true"><i class="is-on"></i><i class=""></i><i class=""></i><i class=""></i></span><span class="ob-over">Étape 1 · Espace de travail</span></div>
+      <h2 class="sk-h3">Nommez votre espace de travail</h2><p class="sk-p sk-sm sk-muted">L'espace regroupe vos équipes, vos modèles et vos membres.</p>
+      <div class="sk-field"><label>Nom de l'espace</label><div class="sk-input">Nordlys</div></div>
+      <div class="sk-field"><span class="sk-lbl">Logo <span class="sk-muted" style="font-weight:500">· facultatif</span></span><div class="ob-drop"><span class="ob-wslogo">N</span><button class="sk-btn sk-btn--outline sk-btn--sm"><i data-lucide="upload"></i><span>Téléverser</span></button><span class="sk-xs sk-muted">PNG, SVG · 128 px</span></div></div>
+      <div class="sk-field"><label>Langue par défaut</label><div class="sk-select"><span>Français</span><i data-lucide="chevron-down" class="sk-ico-sm"></i></div></div>
+      <div class="ob-step-f"><button class="sk-btn sk-btn--sm"><span>Continuer</span><i data-lucide="arrow-right"></i></button></div>
+    </section>
+    <section class="sk-card ob-step"><div class="ob-step-h"><span class="ob-dots" aria-hidden="true"><i class="is-done"></i><i class="is-done"></i><i class="is-on"></i><i class=""></i></span><span class="ob-over">Étape 3 · Invitations</span></div>
+      <h2 class="sk-h3">Invitez vos coéquipiers</h2><p class="sk-p sk-sm sk-muted">Ils rejoignent Atlas comme membres. Les facilitateurs se règlent ensuite.</p>
+      <div class="sk-field"><label>E-mails</label><div class="ob-chips is-invalid"><span class="ob-chip">camille@nordlys.io<i data-lucide="x" class="sk-ico-sm"></i></span><span class="ob-chip">theo@nordlys.io<i data-lucide="x" class="sk-ico-sm"></i></span><span class="ob-chip">ines@nordlys.io<i data-lucide="x" class="sk-ico-sm"></i></span><span class="ob-chip is-bad">malik@nordlys<i data-lucide="x" class="sk-ico-sm"></i></span><span class="ob-chip-in"><i class="ob-caret"></i></span></div><span class="sk-error-msg"><i data-lucide="circle-alert" class="sk-ico-sm"></i>« malik@nordlys » semble incomplète.</span></div>
+      <div class="sk-field"><label>Rôle</label><div class="sk-select"><span>Membre</span><i data-lucide="chevron-down" class="sk-ico-sm"></i></div></div>
+      <div class="sk-field"><span class="sk-lbl">Ou partagez ce lien</span><div class="ob-url"><span class="sk-mono ob-ell sk-grow">skrum.nordlys.fr/join/8fK2-qT7w</span><button class="sk-btn sk-btn--outline sk-btn--sm"><i data-lucide="copy"></i><span>Copier</span></button></div><span class="sk-help">Expire dans 7 jours · jusqu'à 20 personnes</span></div>
+      <div class="ob-step-f"><button class="sk-btn sk-btn--ghost sk-btn--sm"><span>Passer</span></button><button class="sk-btn sk-btn--sm"><i data-lucide="send"></i><span>Envoyer 3 invitations</span></button></div>
+    </section>
+    <section class="sk-card ob-step"><div class="ob-step-h"><span class="ob-dots" aria-hidden="true"><i class="is-done"></i><i class="is-done"></i><i class="is-done"></i><i class="is-on"></i></span><span class="ob-over">Étape 4 · Premier rituel</span></div>
+      <h2 class="sk-h3">Par quoi voulez-vous commencer ?</h2>
+      <div class="ob-rits" role="radiogroup"><label class="ob-rit sk-c-moss is-on"><span class="ob-rit-i"><i data-lucide="sticky-note"></i></span><span class="sk-col" style="gap:0;min-width:0;flex:1"><span class="sk-strong ob-ell">Rétrospective</span><span class="sk-xs sk-muted">Écriture → vote → actions</span></span><span class="sk-radio is-on"></span></label><label class="ob-rit sk-c-sky"><span class="ob-rit-i"><i data-lucide="spade"></i></span><span class="sk-col" style="gap:0;min-width:0;flex:1"><span class="sk-strong ob-ell">Planning poker</span><span class="sk-xs sk-muted">Estimer le backlog du sprint 43</span></span><span class="sk-radio"></span></label><label class="ob-rit sk-c-sun"><span class="ob-rit-i"><i data-lucide="pen-tool"></i></span><span class="sk-col" style="gap:0;min-width:0;flex:1"><span class="sk-strong ob-ell">Whiteboard</span><span class="sk-xs sk-muted">Une toile libre, Excalidraw</span></span><span class="sk-radio"></span></label><label class="ob-rit sk-c-plum"><span class="ob-rit-i"><i data-lucide="dices"></i></span><span class="sk-col" style="gap:0;min-width:0;flex:1"><span class="sk-strong ob-ell">Icebreaker</span><span class="sk-xs sk-muted">5 minutes pour se lancer</span></span><span class="sk-radio"></span></label></div>
+      <div class="sk-field"><label>Quand <span class="sk-muted" style="font-weight:500">· facultatif</span></label><div class="sk-select"><span><i data-lucide="calendar" class="sk-ico-sm" style="vertical-align:-0.125rem;margin-right:0.375rem;color:var(--muted-foreground)"></i>Jeudi 2 octobre, 14 h</span><i data-lucide="chevron-down" class="sk-ico-sm"></i></div></div>
+      <div class="ob-step-f"><button class="sk-btn sk-btn--ghost sk-btn--sm"><span>Aller au tableau de bord</span></button><button class="sk-btn sk-btn--sm"><span>Créer la rétro</span><i data-lucide="arrow-right"></i></button></div>
+    </section>
+  </div>
+</div>
+</div>
+<div class="scr-cap"><b>d</b><span class="sk-badge sk-badge--soft">FR · +30 %</span>Accepter une invitation — invité par Camille à rejoindre l'équipe Atlas de l'espace Nordlys</div>
+<div class="sk-desktop ob-frame ob-accept" lang="fr">
+  <header class="ob-head ob-head--plain"><span class="ob-brand"><svg viewBox="0 0 64 64" width="26" height="26" aria-label="Skrüm"><path d="M14 0 H50 A14 14 0 0 1 64 14 V46 L46 64 H14 A14 14 0 0 1 0 50 V14 A14 14 0 0 1 14 0 Z" style="fill:var(--primary)"/><path d="M64 46 L50 46 A4 4 0 0 0 46 50 L46 64 Z" style="fill:color-mix(in oklch, var(--primary) 70%, var(--foreground))"/><path d="M19 27 L19 38 C19 45 24 49.5 30 49.5 C36 49.5 41 45 41 38 L41 27" fill="none" style="stroke:var(--primary-foreground)" stroke-width="7" stroke-linecap="round"/><circle cx="21.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/><circle cx="38.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/></svg><span class="ob-word">skrüm</span></span><span class="sk-grow"></span><span class="sk-xs sk-muted">skrum.nordlys.fr · Nordlys</span></header>
+  <div class="ob-acc">
+    <section class="sk-card ob-inv">
+      <div class="ob-inv-who"><span class="ob-pair"><span class="sk-avatar sk-avatar--xl sk-p4">CR</span><span class="ob-mark ob-mark--xl sk-c-lagoon">A</span></span>
+        <p class="sk-p ob-inv-t"><b>Camille Roux</b> vous invite à rejoindre l'équipe <b>Atlas</b> de l'espace <b>Nordlys</b></p>
+        <span class="ob-inv-meta"><span class="sk-stack"><span class="sk-avatar sk-avatar--sm sk-p2">TM</span><span class="sk-avatar sk-avatar--sm sk-p3">IL</span><span class="sk-avatar sk-avatar--sm sk-p6">MS</span><span class="sk-avatar sk-avatar--sm sk-stack-more">+7</span></span>11 membres · vous rejoignez en tant que Membre</span>
+        <figure class="ob-quote"><blockquote>« Rétro du sprint 42 jeudi à 14 h, on vous attend. »</blockquote></figure>
+      </div>
+      <div class="sk-sep"></div>
+      <button class="sk-btn sk-btn--outline sk-btn--block"><i data-lucide="key-round"></i><span>Continuer avec SSO (OIDC)</span></button>
+      <div class="ob-2"><button class="sk-btn sk-btn--outline sk-btn--block"><span class="ob-g" aria-hidden="true">G</span><span>Google</span></button><button class="sk-btn sk-btn--outline sk-btn--block"><i data-lucide="github"></i><span>GitHub</span></button></div>
+      <div class="ob-or"><span class="sk-sep sk-grow"></span><span class="sk-xs sk-muted">ou avec votre e-mail</span><span class="sk-sep sk-grow"></span></div>
+      <div class="sk-field"><label>E-mail</label><div class="sk-input is-disabled"><span class="sk-grow">nadia@nordlys.io</span><i data-lucide="lock" class="sk-ico-sm" style="color:var(--muted-foreground)"></i></div><span class="sk-help">L'invitation a été envoyée à cette adresse.</span></div>
+      <div class="sk-field"><label>Créez un mot de passe</label><div class="sk-input"><span class="sk-placeholder sk-grow">12 caractères minimum</span><i data-lucide="eye" class="sk-ico-sm" style="color:var(--muted-foreground)"></i></div></div>
+      <button class="sk-btn sk-btn--lg sk-btn--block"><span>Créer mon compte et rejoindre Atlas</span></button>
+      <p class="sk-p sk-sm sk-muted" style="text-align:center">Déjà un compte ? <a class="sk-link">Se connecter</a></p>
+      <div class="sk-sep"></div>
+      <div class="ob-decline"><button class="sk-btn sk-btn--ghost sk-btn--sm ob-danger"><i data-lucide="x"></i><span>Refuser l'invitation</span></button><span class="sk-xs sk-muted">Camille sera prévenue. Le lien cessera de fonctionner.</span></div>
+    </section>
+    <div class="ob-vars">
+      <div><div class="sk-state">Variante · déjà connecté·e</div>
+        <section class="sk-card ob-var"><div class="sk-row sk-gap-2" style="flex-wrap:nowrap"><span class="sk-avatar sk-avatar--lg sk-p5">NB</span><span class="sk-col" style="gap:0;min-width:0"><span class="sk-strong">Rejoindre Atlas en tant que Nadia Benali ?</span><span class="sk-xs sk-muted">nadia@nordlys.io · déjà dans 2 équipes de Nordlys</span></span></div>
+          <div class="sk-row sk-gap-2"><button class="sk-btn sk-btn--sm"><span>Rejoindre Atlas</span></button><button class="sk-btn sk-btn--ghost sk-btn--sm"><span>Refuser</span></button></div>
+          <span class="sk-xs sk-muted">Ce n'est pas vous ? <a class="sk-link">Changer de compte</a></span></section></div>
+      <div><div class="sk-state">Variante · lien expiré</div>
+        <section class="sk-card ob-var"><span class="ob-vico ob-vico--warn"><i data-lucide="clock"></i></span><span class="sk-strong">Cette invitation a expiré</span><span class="sk-sm sk-muted">Elle était valable jusqu'au 24 septembre. Demandez un nouveau lien à Camille, rien d'autre à faire.</span>
+          <button class="sk-btn sk-btn--outline sk-btn--sm" style="align-self:flex-start"><i data-lucide="send"></i><span>Demander une nouvelle invitation</span></button></section></div>
+      <div><div class="sk-state">Variante · refusée</div>
+        <section class="sk-card ob-var"><span class="ob-vico"><i data-lucide="circle-check"></i></span><span class="sk-strong">Invitation refusée</span><span class="sk-sm sk-muted">Camille a été prévenue. Vous pouvez fermer cette page.</span></section></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

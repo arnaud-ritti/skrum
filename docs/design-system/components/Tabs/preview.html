@@ -1,0 +1,64 @@
+<!-- @dsCard group="shadcn · Navigation" height=388 subtitle="Tabs pill + ligne — actif, survol, focus, désactivé, compteur, avec icônes, panneau associé" -->
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><title>Tabs</title>
+<style>
+  .tb-hover { color: var(--foreground); }
+  .sk-tabs--line .tb-focus { outline-offset: -2px; border-radius: var(--radius-sm); padding: 0 0.375rem; margin: 0 -0.25rem; }
+  .tb-line-hover { color: var(--foreground); box-shadow: inset 0 -2px 0 var(--border); }
+  .tb-focus { outline: 2px solid var(--ring); outline-offset: 2px; }
+  .tb-dis { opacity: .5; }
+  .tb-count { font-size: 0.6875rem; font-weight: 700; line-height: 1.125rem; padding: 0 0.375rem; border-radius: 999px; background: var(--muted); color: var(--muted-foreground); font-variant-numeric: tabular-nums; }
+  .sk-tab.is-on .tb-count { background: var(--skrum-primary-soft); color: var(--skrum-primary-text); }
+  .tb-panel { padding-top: var(--space-4); display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-3); }
+  .tb-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-8); }
+</style></head>
+<body>
+<div class="sk-pad sk-col sk-gap-8">
+  <div class="tb-grid">
+    <div><div class="sk-state">Pill · actif / survol / désactivé</div>
+      <div class="sk-tabs" role="tablist" aria-label="Vue du board">
+        <button class="sk-tab is-on" role="tab" aria-selected="true">Tableau</button>
+        <button class="sk-tab tb-hover" role="tab">Groupes</button>
+        <button class="sk-tab" role="tab">Actions</button>
+        <button class="sk-tab tb-dis" role="tab" aria-disabled="true">Export</button>
+      </div></div>
+    <div><div class="sk-state">Pill · icônes · focus clavier</div>
+      <div class="sk-tabs" role="tablist" aria-label="Mode">
+        <button class="sk-tab" role="tab"><i data-lucide="sun" class="sk-ico-sm"></i>Clair</button>
+        <button class="sk-tab is-on tb-focus" role="tab" aria-selected="true"><i data-lucide="moon" class="sk-ico-sm"></i>Sombre</button>
+        <button class="sk-tab" role="tab"><i data-lucide="monitor" class="sk-ico-sm"></i>Système</button>
+      </div></div>
+  </div>
+
+  <div class="tb-grid">
+    <div><div class="sk-state">Pill pleine largeur (mobile)</div>
+      <div class="sk-tabs" role="tablist" style="display:grid;grid-template-columns:repeat(3,1fr)">
+        <button class="sk-tab is-on" role="tab" style="justify-content:center">Écrire</button>
+        <button class="sk-tab" role="tab" style="justify-content:center">Voter</button>
+        <button class="sk-tab" role="tab" style="justify-content:center">Discuter</button>
+      </div></div>
+    <div><div class="sk-state">Ligne · focus + survol</div>
+      <div class="sk-tabs sk-tabs--line" role="tablist" style="display:flex">
+        <button class="sk-tab tb-focus" role="tab">Général</button>
+        <button class="sk-tab is-on" role="tab" aria-selected="true">Membres</button>
+        <button class="sk-tab tb-line-hover" role="tab">Intégrations</button>
+        <button class="sk-tab tb-dis" role="tab" aria-disabled="true">Facturation</button>
+      </div></div>
+  </div>
+
+  <div><div class="sk-state">Ligne · compteurs + panneau</div>
+    <div class="sk-tabs sk-tabs--line" role="tablist" aria-label="Actions" style="display:flex">
+      <button class="sk-tab is-on" role="tab" aria-selected="true" aria-controls="p1">À faire<span class="tb-count">6</span></button>
+      <button class="sk-tab" role="tab">En retard<span class="tb-count">2</span></button>
+      <button class="sk-tab" role="tab">Faites<span class="tb-count">14</span></button>
+      <button class="sk-tab" role="tab">Toutes</button>
+    </div>
+    <div id="p1" class="tb-panel" role="tabpanel">
+      <div class="sk-action"><span class="sk-check"></span><div class="sk-grow"><div class="sk-action-t">Isoler les données E2E</div><div class="sk-action-meta"><span>Nadia K.</span><span class="sk-due is-late">3 oct.</span></div></div></div>
+      <div class="sk-action"><span class="sk-check"></span><div class="sk-grow"><div class="sk-action-t">Revue de code avant 16 h</div><div class="sk-action-meta"><span>Théo M.</span><span>10 oct.</span></div></div></div>
+      <div class="sk-action"><span class="sk-check"></span><div class="sk-grow"><div class="sk-action-t">Point hebdo avec le PO</div><div class="sk-action-meta"><span>Léa H.</span><span>12 oct.</span></div></div></div>
+    </div></div>
+</div>
+</body>
+</html>

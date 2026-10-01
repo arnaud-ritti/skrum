@@ -1,0 +1,185 @@
+<!-- @dsCard group="Écrans · Desktop" width=1440 height=900 subtitle="Salle d'icebreaker — choix du jeu + partie de pendu en cours (mot à trous, clavier, joueurs, tour de parole, timer)" -->
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><title>ScreenIcebreaker</title>
+<style>
+  .ib { flex: 1; min-height: 0; display: grid; grid-template-columns: 21.25rem 1fr 20rem; }
+  .ib-side { background: var(--card); border-right: 1px solid var(--border); padding: var(--space-5); display: flex; flex-direction: column; gap: var(--space-4); overflow: hidden; }
+  .ib-right { background: var(--card); border-left: 1px solid var(--border); padding: var(--space-5); display: flex; flex-direction: column; gap: var(--space-5); overflow: hidden; }
+  .ib-games { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
+  .ib-games .sk-game-art { height: 4rem; }
+  .ib-games .sk-game-art .lucide { width: 1.75rem; height: 1.75rem; }
+  .ib-games .sk-game-b { padding: 0.625rem 0.75rem 0.75rem; gap: 2px; }
+  .ib-games .sk-game.is-on { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary), var(--shadow-raised); }
+  .ib-gt { font-size: 0.875rem; font-weight: 650; line-height: 1.25rem; }
+  .ib-gm { font-size: 0.75rem; line-height: 1rem; color: var(--muted-foreground); display: flex; align-items: center; gap: 0.25rem; }
+  .ib-live { position: absolute; top: 0.5rem; left: 0.5rem; }
+  .ib-stage { position: relative; background: var(--skrum-canvas); padding: var(--space-6) var(--space-8) 7.5rem; display: flex; flex-direction: column; align-items: center; gap: var(--space-5); overflow: hidden; }
+  .ib-word { display: flex; gap: 0.625rem; }
+  .ib-word .sk-letter { width: 2.75rem; height: 3.5rem; font-size: 2rem; }
+  .ib-word .sk-letter.is-empty { color: transparent; }
+  .ib-kb { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; }
+  .ib-kb-row { display: flex; gap: 0.375rem; }
+  .ib-kb .sk-key { width: 2.875rem; height: 3rem; font-size: 1rem; }
+  .ib-kb .sk-key.is-hover { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary), var(--shadow-card); }
+  .ib-turn { display: flex; align-items: center; gap: var(--space-3); padding: 0.625rem 1rem 0.625rem 0.625rem; border-radius: 999px; background: var(--skrum-primary-soft); color: var(--skrum-primary-text); font-weight: 650; }
+  .ib-hang { stroke: var(--foreground); stroke-width: 4; stroke-linecap: round; fill: none; }
+  .ib-hang-part { stroke: var(--skrum-destructive-text); stroke-width: 4; stroke-linecap: round; fill: none; }
+  .ib-hang-left { stroke: var(--border); stroke-width: 3; stroke-dasharray: 4 6; stroke-linecap: round; fill: none; }
+  .ib-player { display: flex; align-items: center; gap: var(--space-3); padding: 0.5rem 0.625rem; border-radius: var(--radius); }
+  .ib-player.is-turn { background: var(--skrum-primary-soft); box-shadow: inset 0 0 0 1px var(--primary); }
+  .ib-rank { width: 1.125rem; font-size: 0.75rem; font-weight: 700; color: var(--muted-foreground); text-align: center; }
+  .ib-pts { font-family: var(--font-mono); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .ib-order { display: flex; align-items: center; gap: 0.375rem; flex-wrap: wrap; }
+  .ib-order .lucide { width: 0.75rem; height: 0.75rem; color: var(--muted-foreground); }
+  .ib-order .sk-avatar.is-now { box-shadow: 0 0 0 2px var(--card), 0 0 0 0.25rem var(--primary); }
+  .ib-order .sk-avatar.is-past { opacity: .45; }
+  .ib-feed { display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.8125rem; line-height: 1.125rem; }
+  .ib-feed > div { display: flex; gap: 0.5rem; align-items: flex-start; }
+  .ib-feed .lucide { margin-top: 1px; }
+</style>
+</head>
+<body>
+<div class="sk-desktop" style="flex-direction:row">
+  <nav class="sk-sidebar is-collapsed" aria-label="Navigation">
+  <div class="sk-brand"><svg viewBox="0 0 64 64" width="24" height="24" aria-hidden="true"><path d="M14 0 H50 A14 14 0 0 1 64 14 V46 L46 64 H14 A14 14 0 0 1 0 50 V14 A14 14 0 0 1 14 0 Z" style="fill:var(--primary)"/><path d="M64 46 L50 46 A4 4 0 0 0 46 50 L46 64 Z" style="fill:color-mix(in oklch, var(--primary) 70%, var(--foreground))"/><path d="M19 27 L19 38 C19 45 24 49.5 30 49.5 C36 49.5 41 45 41 38 L41 27" fill="none" style="stroke:var(--primary-foreground)" stroke-width="7" stroke-linecap="round"/><circle cx="21.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/><circle cx="38.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/></svg><span class="sk-brand-word">skrüm</span></div>
+  <button class="sk-team sk-team-switch" aria-haspopup="menu" aria-label="Changer d'équipe ou d'espace"><span class="sk-team-mark">A</span><span class="sk-team-txt"><span class="sk-team-name">Atlas</span><span class="sk-team-sub">Nordlys · 11 membres</span></span><i data-lucide="chevrons-up-down" class="sk-ico-sm"></i></button>
+  <a class="sk-nav-item" aria-label="Tableau de bord"><i data-lucide="layout-dashboard"></i><span>Tableau de bord</span></a>
+  <a class="sk-nav-item" aria-label="Sessions"><i data-lucide="calendar-clock"></i><span>Sessions</span></a>
+  <a class="sk-nav-item" aria-label="Actions"><i data-lucide="list-checks"></i><span>Actions</span><b class="sk-nav-dot" aria-hidden="true"></b></a>
+  <a class="sk-nav-item" aria-label="Moral & ROTI"><i data-lucide="trending-up"></i><span>Moral & ROTI</span></a>
+  <a class="sk-nav-item is-on" aria-current="page" aria-label="Jeux"><i data-lucide="party-popper"></i><span>Jeux</span></a>
+  <a class="sk-nav-item" aria-label="Membres"><i data-lucide="users"></i><span>Membres</span></a>
+  <hr class="sk-nav-sep">
+  <a class="sk-nav-item" aria-label="Modèles"><i data-lucide="layout-template"></i><span>Modèles</span></a>
+  <a class="sk-nav-item" aria-label="Toutes les équipes"><i data-lucide="building-2"></i><span>Toutes les équipes</span></a>
+  <span class="sk-grow"></span>
+  <a class="sk-nav-item" aria-label="Paramètres de l'équipe"><i data-lucide="settings"></i><span>Paramètres de l'équipe</span></a>
+  <a class="sk-nav-item" aria-label="Administration"><i data-lucide="shield-check"></i><span>Administration</span></a>
+  <button class="sk-team sk-user" aria-haspopup="menu"><span class="sk-avatar sk-p1">AR</span><span class="sk-team-txt"><span class="sk-team-name">Arnaud Ritti</span><span class="sk-team-sub">Facilitateur · Admin</span></span><i data-lucide="chevrons-up-down" class="sk-ico-sm"></i></button>
+  </nav>
+  <main class="sk-main" style="min-height:0">
+  <header class="sk-topbar">
+    <button class="sk-btn sk-btn--ghost sk-btn--icon" aria-label="Retour à la rétro"><i data-lucide="arrow-left"></i></button>
+    <nav class="sk-crumbs"><span>Atlas</span><i data-lucide="chevron-right"></i><span>Rétro sprint 42</span><i data-lucide="chevron-right"></i><span class="is-current">Icebreaker</span></nav>
+    <span class="sk-badge sk-badge--soft sk-badge--pill"><i data-lucide="dice-5"></i>Échauffement · 10 min</span>
+    <span class="sk-grow"></span>
+    <span class="sk-timer" style="--p:.62" aria-label="Temps restant pour l'icebreaker : 6 minutes 12"><span class="sk-timer-ring"></span>06:12</span>
+    <div class="sk-stack" aria-label="6 joueurs">
+      <span class="sk-avatar sk-p4">CR</span><span class="sk-avatar sk-p2">TM</span><span class="sk-avatar sk-p1">AR</span><span class="sk-avatar sk-p9">IB</span><span class="sk-avatar sk-p7">MK</span><span class="sk-avatar sk-avatar--guest">YU</span>
+    </div>
+    <span class="sk-vsep" style="margin:0.75rem 0"></span>
+    <button class="sk-btn sk-btn--outline">Passer à la rétro<i data-lucide="arrow-right"></i></button>
+  </header>
+
+  <div class="ib">
+    <!-- game picker -->
+    <aside class="ib-side" aria-label="Choix du jeu">
+      <div class="sk-col sk-gap-1"><h2 class="sk-h4">Choisir un jeu</h2><p class="sk-p sk-sm sk-muted">Le facilitateur lance, tout le monde joue.</p></div>
+      <div class="ib-games">
+        <article class="sk-game sk-c-coral is-on"><div class="sk-game-art"><i data-lucide="whole-word"></i></div><div class="sk-game-b"><span class="ib-gt">Le pendu</span><span class="ib-gm"><i data-lucide="clock" class="sk-ico-sm"></i>5–10 min</span><span class="sk-badge sk-badge--pill" style="align-self:flex-start;height:1.25rem;padding:0 0.4375rem;font-size:0.6875rem;margin-top:0.25rem"><span class="sk-dot"></span>En cours</span></div></article>
+        <article class="sk-game sk-c-plum"><div class="sk-game-art"><i data-lucide="venetian-mask"></i></div><div class="sk-game-b"><span class="ib-gt">2 vérités, 1 mensonge</span><span class="ib-gm"><i data-lucide="clock" class="sk-ico-sm"></i>10 min</span></div></article>
+        <article class="sk-game sk-c-sky"><div class="sk-game-art"><i data-lucide="cloud-sun"></i></div><div class="sk-game-b"><span class="ib-gt">Météo de l'humeur</span><span class="ib-gm"><i data-lucide="clock" class="sk-ico-sm"></i>3 min · anonyme</span></div></article>
+        <article class="sk-game sk-c-moss"><div class="sk-game-art"><i data-lucide="user-round-search"></i></div><div class="sk-game-b"><span class="ib-gt">Devine qui ?</span><span class="ib-gm"><i data-lucide="clock" class="sk-ico-sm"></i>8 min</span></div></article>
+        <article class="sk-game sk-c-sun"><div class="sk-game-art"><i data-lucide="smile"></i></div><div class="sk-game-b"><span class="ib-gt">Sprint en emojis</span><span class="ib-gm"><i data-lucide="clock" class="sk-ico-sm"></i>5 min</span></div></article>
+        <article class="sk-game sk-c-lagoon"><div class="sk-game-art"><i data-lucide="message-circle-question"></i></div><div class="sk-game-b"><span class="ib-gt">Question express</span><span class="ib-gm"><i data-lucide="clock" class="sk-ico-sm"></i>2 min / pers.</span></div></article>
+      </div>
+      <span class="sk-grow"></span>
+      <div class="sk-card" style="padding:var(--space-4)">
+        <div class="sk-col sk-gap-2">
+          <span class="sk-lbl sk-sm">Réglages de la partie</span>
+          <div class="sk-between sk-sm"><span>Thème des mots</span><span class="sk-select" style="width:9.375rem;height:2rem;font-size:0.8125rem"><span>Outils d'équipe</span><i data-lucide="chevron-down"></i></span></div>
+          <div class="sk-between sk-sm"><span>Temps par tour</span><span class="sk-select" style="width:9.375rem;height:2rem;font-size:0.8125rem"><span>30 s</span><i data-lucide="chevron-down"></i></span></div>
+          <div class="sk-between sk-sm"><span>Invités autorisés</span><span class="sk-switch is-on"></span></div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- game stage -->
+    <main class="ib-stage" aria-label="Partie de pendu">
+      <div class="sk-between" style="width:100%">
+        <div class="sk-col sk-gap-1"><span class="sk-state" style="margin:0">Manche 2 sur 3 · Thème : outils d'équipe</span><h1 class="sk-h2" style="font-family:var(--font-display)">Le pendu</h1></div>
+        <div class="sk-row sk-gap-2"><span class="sk-sm sk-muted">Tour d'Arnaud</span><span class="sk-timer sk-timer--lg" style="--p:.6" aria-label="18 secondes pour ce tour"><span class="sk-timer-ring"></span>0:18</span></div>
+      </div>
+
+      <svg viewBox="0 0 200 170" width="200" height="170" role="img" aria-label="3 erreurs sur 6">
+        <path class="ib-hang" d="M20 160 H120 M50 160 V14 H130 V34 M50 44 L80 14"/>
+        <circle class="ib-hang-part" cx="130" cy="50" r="16"/>
+        <path class="ib-hang-part" d="M130 66 V110"/>
+        <path class="ib-hang-part" d="M130 78 L108 98"/>
+        <path class="ib-hang-left" d="M130 78 L152 98 M130 110 L112 138 M130 110 L148 138"/>
+      </svg>
+      <div class="sk-row sk-gap-2" style="margin-top:-0.75rem"><span class="sk-badge sk-badge--destructive sk-badge--pill">3 / 6 erreurs</span><span class="sk-xs sk-muted">Ratées : A, S, R</span></div>
+
+      <div class="ib-word" aria-label="Mot : 11 lettres, _ E _ L O _ E _ E N T">
+        <span class="sk-letter is-empty">D</span><span class="sk-letter">E</span><span class="sk-letter is-empty">P</span><span class="sk-letter">L</span><span class="sk-letter">O</span><span class="sk-letter is-empty">I</span><span class="sk-letter">E</span><span class="sk-letter is-empty">M</span><span class="sk-letter">E</span><span class="sk-letter">N</span><span class="sk-letter">T</span>
+      </div>
+
+      <div class="ib-turn"><span class="sk-avatar sk-avatar--sm sk-p1">AR</span>À toi de jouer, Arnaud — choisis une lettre</div>
+
+      <div class="ib-kb" role="group" aria-label="Clavier">
+        <div class="ib-kb-row"><span class="sk-key is-miss">A</span><span class="sk-key">Z</span><span class="sk-key is-hit">E</span><span class="sk-key is-miss">R</span><span class="sk-key is-hit">T</span><span class="sk-key">Y</span><span class="sk-key">U</span><span class="sk-key is-hover">I</span><span class="sk-key is-hit">O</span><span class="sk-key">P</span></div>
+        <div class="ib-kb-row"><span class="sk-key">Q</span><span class="sk-key is-miss">S</span><span class="sk-key">D</span><span class="sk-key">F</span><span class="sk-key">G</span><span class="sk-key">H</span><span class="sk-key">J</span><span class="sk-key">K</span><span class="sk-key is-hit">L</span><span class="sk-key">M</span></div>
+        <div class="ib-kb-row"><span class="sk-key">W</span><span class="sk-key">X</span><span class="sk-key">C</span><span class="sk-key">V</span><span class="sk-key">B</span><span class="sk-key is-hit">N</span></div>
+      </div>
+      <div class="sk-row sk-gap-2" style="width:28.75rem">
+        <div class="sk-input sk-grow"><span class="sk-placeholder">Tenter le mot entier (+50 pts, −1 vie si raté)</span></div>
+        <button class="sk-btn sk-btn--secondary">Proposer</button>
+      </div>
+      <div class="sk-rbar-dock">
+        <div class="sk-rbar-fly" aria-hidden="true"><span>😂</span><span>👏</span><span>😂</span></div>
+        <div class="sk-rbar" role="toolbar" aria-label="Réactions">
+          <button class="sk-rbar-e" aria-label="J'aime (1)"><span>👍</span></button>
+          <button class="sk-rbar-e" aria-label="Cœur (2)"><span>❤️</span></button>
+          <button class="sk-rbar-e is-pressed" aria-label="Applaudir (3)"><span>👏</span></button>
+          <button class="sk-rbar-e" aria-label="Fête (4)"><span>🎉</span></button>
+          <button class="sk-rbar-e" aria-label="Hmm (5)"><span>🤔</span></button>
+          <button class="sk-rbar-e" aria-label="Je n'aime pas (6)"><span>👎</span></button>
+          <span class="sk-rbar-sep"></span>
+          <button class="sk-rbar-e sk-rbar-add" aria-label="Autre réaction"><i data-lucide="smile-plus" class="sk-ico-lg"></i></button>
+        </div>
+      </div>
+    </main>
+
+    <!-- players -->
+    <aside class="ib-right" aria-label="Joueurs et scores">
+      <div class="sk-col sk-gap-2">
+        <div class="sk-between"><h2 class="sk-h4">Scores</h2><span class="sk-xs sk-muted">6 joueurs</span></div>
+        <div class="sk-col" style="gap:2px">
+          <div class="ib-player"><span class="ib-rank"><i data-lucide="crown" class="sk-ico-sm" style="color:var(--skrum-warning-text)"></i></span><span class="sk-avatar sk-avatar--sm sk-p4">CR</span><span class="sk-grow sk-sm sk-strong">Camille</span><span class="ib-pts">60</span></div>
+          <div class="ib-player"><span class="ib-rank">2</span><span class="sk-avatar sk-avatar--sm sk-p9">IB</span><span class="sk-grow sk-sm sk-strong">Inès</span><span class="ib-pts">40</span></div>
+          <div class="ib-player is-turn"><span class="ib-rank">3</span><span class="sk-avatar sk-avatar--sm sk-p1">AR</span><span class="sk-grow sk-sm sk-strong">Arnaud <span class="sk-muted" style="font-weight:500">(toi)</span></span><span class="ib-pts">30</span></div>
+          <div class="ib-player"><span class="ib-rank">4</span><span class="sk-avatar sk-avatar--sm sk-p2">TM</span><span class="sk-grow sk-sm sk-strong">Théo</span><span class="ib-pts">20</span></div>
+          <div class="ib-player"><span class="ib-rank">5</span><span class="sk-avatar sk-avatar--sm sk-p7">MK</span><span class="sk-grow sk-sm sk-strong">Malik</span><span class="ib-pts">10</span></div>
+          <div class="ib-player"><span class="ib-rank">6</span><span class="sk-avatar sk-avatar--sm sk-avatar--guest">YU</span><span class="sk-grow sk-sm sk-strong">Yuki <span class="sk-badge sk-badge--muted" style="height:1.125rem;padding:0 0.375rem;font-size:0.6875rem">invitée</span></span><span class="ib-pts">0</span></div>
+        </div>
+      </div>
+      <hr class="sk-sep">
+      <div class="sk-col sk-gap-2">
+        <span class="sk-lbl sk-sm">Tour de parole</span>
+        <div class="ib-order" aria-label="Ordre : Camille, Théo, Arnaud (en cours), Inès, Malik, Yuki">
+          <span class="sk-avatar sk-avatar--sm sk-p4 is-past">CR</span><i data-lucide="chevron-right"></i>
+          <span class="sk-avatar sk-avatar--sm sk-p2 is-past">TM</span><i data-lucide="chevron-right"></i>
+          <span class="sk-avatar sk-avatar--sm sk-p1 is-now">AR</span><i data-lucide="chevron-right"></i>
+          <span class="sk-avatar sk-avatar--sm sk-p9">IB</span><i data-lucide="chevron-right"></i>
+          <span class="sk-avatar sk-avatar--sm sk-p7">MK</span><i data-lucide="chevron-right"></i>
+          <span class="sk-avatar sk-avatar--sm sk-avatar--guest">YU</span>
+        </div>
+        <span class="sk-xs sk-muted">Ensuite : Inès · 30 s par tour</span>
+      </div>
+      <hr class="sk-sep">
+      <div class="sk-col sk-gap-2">
+        <span class="sk-lbl sk-sm">Derniers coups</span>
+        <div class="ib-feed">
+          <div><i data-lucide="x" class="sk-ico-sm" style="color:var(--skrum-destructive-text)"></i><span><b>Théo</b> propose R — raté</span></div>
+          <div><i data-lucide="check" class="sk-ico-sm" style="color:var(--skrum-success-text)"></i><span><b>Camille</b> trouve E ×3 · +30</span></div>
+          <div><i data-lucide="check" class="sk-ico-sm" style="color:var(--skrum-success-text)"></i><span><b>Malik</b> trouve N · +10</span></div>
+          <div><i data-lucide="x" class="sk-ico-sm" style="color:var(--skrum-destructive-text)"></i><span><b>Inès</b> propose S — raté</span></div>
+        </div>
+      </div>
+    </aside>
+  </div>
+  </main>
+</div>
+</body>
+</html>

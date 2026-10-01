@@ -1,0 +1,180 @@
+<!-- @dsCard group="Écrans · Mobile" width=1440 height=972 subtitle="Landing (hero + modules) · Connexion (SSO + lien magique) · Rejoindre en invité (pseudo + couleur)" -->
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><title>MobileAccess</title>
+<style>
+/* mobile helpers (local, tokens only) */
+.m-app{flex:1;min-height:0;display:flex;flex-direction:column;position:relative}
+.m-bar{height:3.25rem;flex:none;display:flex;align-items:center;gap:var(--space-1);padding:0 var(--space-2)}
+.m-bar-t{flex:1;min-width:0;display:flex;flex-direction:column;padding:0 var(--space-1)}
+.m-bar-t b{font-size:1rem;line-height:1.25rem;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.m-bar-t small{font-size:0.75rem;line-height:1rem;color:var(--muted-foreground);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.m-body{flex:1;min-height:0;overflow:hidden;padding:var(--space-2) var(--space-4) var(--space-4);display:flex;flex-direction:column;gap:var(--space-4)}
+.m-foot{flex:none;padding:var(--space-3) var(--space-4) 1.875rem;border-top:1px solid var(--border);background:var(--background);display:flex;gap:var(--space-2)}
+.m-foot > .sk-btn{flex:1}
+.m-sec{font-size:0.75rem;line-height:1rem;font-weight:650;letter-spacing:.06em;text-transform:uppercase;color:var(--muted-foreground);display:flex;align-items:center;gap:var(--space-2)}
+.m-sec .sk-grow + *{letter-spacing:0;text-transform:none}
+.m-chips{display:flex;gap:var(--space-2);overflow:hidden;margin:0 calc(-1 * var(--space-4));padding:0.25rem var(--space-4)}
+.m-chip{position:relative;flex:none;height:2.25rem;padding:0 0.875rem;border-radius:var(--radius-full);border:1px solid var(--input);background:var(--card);display:inline-flex;align-items:center;gap:0.375rem;font-size:0.875rem;font-weight:600;color:var(--foreground);white-space:nowrap}
+.m-chip::before{content:"";position:absolute;inset:-0.25rem 0}
+.m-chip .n{font-size:0.75rem;font-weight:700;color:var(--muted-foreground)}
+.m-chip.is-on{background:var(--foreground);border-color:var(--foreground);color:var(--background)}
+.m-chip.is-on .n{color:inherit;opacity:.75}
+.m-tabnav{flex:none;display:flex;border-top:1px solid var(--border);background:var(--card);padding:0.25rem var(--space-2) 1.625rem}
+.m-tabnav a{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:3.125rem;font-size:0.6875rem;line-height:0.875rem;font-weight:600;color:var(--muted-foreground);text-decoration:none}
+.m-tabnav a .lucide{width:1.375rem;height:1.375rem}
+.m-tabnav a.is-on{color:var(--skrum-primary-text)}
+.m-list{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-xl);overflow:hidden}
+.m-li{min-height:3.25rem;display:flex;align-items:center;gap:var(--space-3);padding:var(--space-2) var(--space-4);font-size:0.9375rem;line-height:1.25rem}
+.m-li + .m-li{border-top:1px solid var(--border)}
+.m-li > .lucide:last-child{color:var(--muted-foreground)}
+.m-li-v{font-size:0.875rem;color:var(--muted-foreground);white-space:nowrap}
+.m-ico{width:2rem;height:2rem;border-radius:var(--radius-md);display:grid;place-items:center;flex:none;background:var(--c,var(--muted));color:var(--c-t,var(--foreground));border:1px solid var(--c-b,transparent)}
+.m-fab{position:absolute;right:var(--space-4);width:3.5rem;height:3.5rem;border-radius:var(--radius-full);background:var(--primary);color:var(--primary-foreground);display:grid;place-items:center;box-shadow:var(--shadow-raised);z-index:3}
+.m-fab .lucide{width:1.5rem;height:1.5rem}
+
+.m-drawer{position:absolute;left:0;right:0;bottom:0;z-index:5;border-left:0;border-right:0;padding-bottom:1.875rem}
+.sk-phone-status .lucide{width:1rem;height:1rem}
+.sk-phone-home{z-index:9}
+.m-foot.is-col{flex-direction:column}.m-foot.is-col > .sk-btn{flex:none}
+.sk-stack > .sk-avatar--sm + .sk-avatar{margin-left:-0.3125rem}
+
+.wm{font-family:var(--font-display);font-weight:700;letter-spacing:-.03em;font-size:1.375rem}
+.hero-t{font-family:var(--font-display);font-size:2.125rem;line-height:2.375rem;font-weight:700;letter-spacing:-.025em;margin:0}
+.hero-t em{font-style:normal;color:var(--skrum-primary-text)}
+.mini-board{position:relative;height:6rem;margin:0 calc(-1 * var(--space-4));overflow:hidden}
+.mini-board .sk-rcard{position:absolute;width:10.5rem;font-size:0.8125rem;line-height:1.125rem;padding:0.625rem;gap:0.375rem}
+.mod{display:flex;align-items:center;gap:var(--space-3);min-height:3.5rem;padding:var(--space-2) 0}
+.mod + .mod{border-top:1px solid var(--border)}
+.mod b{display:block;font-size:0.9375rem;line-height:1.25rem;font-weight:650}
+.mod span.d{display:block;font-size:0.8125rem;line-height:1.125rem;color:var(--muted-foreground)}
+.or{display:flex;align-items:center;gap:var(--space-3);font-size:0.75rem;font-weight:600;color:var(--muted-foreground)}
+.or::before,.or::after{content:"";flex:1;height:1px;background:var(--border)}
+.m-input{height:3rem;font-size:1rem}
+.seg{display:flex;padding:0.1875rem;border-radius:var(--radius);background:var(--muted)}
+.seg span{flex:1;height:2.375rem;display:grid;place-items:center;border-radius:var(--radius-md);font-size:0.875rem;font-weight:600;color:var(--muted-foreground)}
+.seg span.is-on{background:var(--card);color:var(--foreground);box-shadow:var(--shadow-card)}
+.swatches{display:grid;grid-template-columns:repeat(6,1fr);gap:var(--space-2)}
+.sw{height:3rem;border-radius:var(--radius);display:grid;place-items:center;position:relative}
+.sw.is-on{box-shadow:0 0 0 2px var(--background),0 0 0 0.25rem var(--foreground)}
+.invite{display:flex;gap:var(--space-3);align-items:center;padding:var(--space-3) var(--space-4);border-radius:var(--radius-xl);background:var(--card);border:1px solid var(--border)}
+.me-preview{display:flex;flex-direction:column;align-items:center;gap:var(--space-2);padding-top:var(--space-2)}
+.me-preview .sk-avatar{width:4.5rem;height:4.5rem;font-size:1.625rem}
+</style></head>
+<body class="sk-canvas">
+<div class="sk-phones">
+
+  <!-- 1. Landing -->
+  <div>
+    <div class="sk-phone">
+      <div class="sk-phone-status"><span>9:41</span><span class="sk-row sk-gap-1"><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></span></div>
+      <div class="m-app">
+        <div class="m-bar" style="padding:0 var(--space-2) 0 var(--space-4)">
+          <span class="sk-row sk-gap-2"><svg viewBox="0 0 64 64" width="28" height="28" aria-label="Skrüm"><path d="M14 0 H50 A14 14 0 0 1 64 14 V46 L46 64 H14 A14 14 0 0 1 0 50 V14 A14 14 0 0 1 14 0 Z" style="fill:var(--primary)"/><path d="M64 46 L50 46 A4 4 0 0 0 46 50 L46 64 Z" style="fill:color-mix(in oklch, var(--primary) 70%, var(--foreground))"/><path d="M19 27 L19 38 C19 45 24 49.5 30 49.5 C36 49.5 41 45 41 38 L41 27" fill="none" style="stroke:var(--primary-foreground)" stroke-width="7" stroke-linecap="round"/><circle cx="21.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/><circle cx="38.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/></svg><span class="wm">skrüm</span></span>
+          <span class="sk-grow"></span>
+          <a class="sk-btn sk-btn--ghost" style="height:2.75rem">Se connecter</a>
+        </div>
+        <div class="m-body" style="gap:var(--space-5);padding-top:var(--space-4)">
+          <div class="sk-col" style="gap:var(--space-3)">
+            <span class="sk-badge sk-badge--secondary sk-badge--pill" style="align-self:flex-start"><i data-lucide="github"></i>Open source · auto-hébergeable</span>
+            <h1 class="hero-t">Les réunions se terminent, <em>les actions restent.</em></h1>
+            <p class="sk-p sk-muted" style="font-size:0.9375rem">Rétros, planning poker, whiteboard et sondages pour votre équipe — sans compte pour les invités.</p>
+          </div>
+          <div class="sk-col sk-gap-2">
+            <a class="sk-btn sk-btn--lg sk-btn--block">Lancer une rétro gratuite<i data-lucide="arrow-right"></i></a>
+            <a class="sk-btn sk-btn--lg sk-btn--outline sk-btn--block"><i data-lucide="qr-code"></i>Rejoindre avec un code</a>
+          </div>
+          <div class="mini-board" aria-hidden="true">
+            <article class="sk-rcard sk-c-moss" style="left:1rem;top:0.5rem;transform:rotate(-2deg)"><p class="sk-rcard-text">Démo client réussie</p><span class="sk-votes"><span class="sk-vdot is-on"></span><span class="sk-vdot is-on"></span><span class="sk-vdot is-on"></span></span></article>
+            <article class="sk-rcard sk-c-coral" style="left:12.25rem;top:0.875rem;transform:rotate(1.5deg)"><p class="sk-rcard-text">Tests E2E instables</p><span class="sk-votes"><span class="sk-vdot is-on"></span><span class="sk-vdot is-on"></span></span></article>
+          </div>
+          <div>
+            <div class="m-sec" style="margin-bottom:var(--space-1)">Tous vos rituels</div>
+            <div class="mod"><span class="m-ico sk-c-coral"><i data-lucide="sticky-note"></i></span><span class="sk-grow"><b>Rétrospectives</b><span class="d">Cartes masquées, votes, actions suivies</span></span></div>
+            <div class="mod"><span class="m-ico sk-c-iris"><i data-lucide="spade"></i></span><span class="sk-grow"><b>Planning poker</b><span class="d">Estimation liée à Jira, révélation synchro</span></span></div>
+            <div class="mod"><span class="m-ico sk-c-lagoon"><i data-lucide="pen-line"></i></span><span class="sk-grow"><b>Whiteboard</b><span class="d">Post-its et schémas en temps réel</span></span></div>
+            <div class="mod"><span class="m-ico sk-c-sun"><i data-lucide="puzzle"></i></span><span class="sk-grow"><b>Icebreakers &amp; sondages</b><span class="d">Pendu, ROTI, baromètre d'équipe</span></span></div>
+          </div>
+        </div>
+      </div>
+      <div class="sk-phone-home"></div>
+    </div>
+    <div class="sk-phone-cap">Landing — hero + modules</div>
+  </div>
+
+  <!-- 2. Auth -->
+  <div>
+    <div class="sk-phone">
+      <div class="sk-phone-status"><span>9:41</span><span class="sk-row sk-gap-1"><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></span></div>
+      <div class="m-app">
+        <div class="m-bar"><a class="sk-btn sk-btn--ghost sk-btn--icon sk-btn--lg" aria-label="Retour"><i data-lucide="chevron-left" class="sk-ico-lg"></i></a></div>
+        <div class="m-body" style="gap:var(--space-5);padding-top:var(--space-2);padding-bottom:2.25rem">
+          <div class="sk-col" style="align-items:center;text-align:center;gap:var(--space-3)">
+            <svg viewBox="0 0 64 64" width="56" height="56" aria-hidden="true"><path d="M14 0 H50 A14 14 0 0 1 64 14 V46 L46 64 H14 A14 14 0 0 1 0 50 V14 A14 14 0 0 1 14 0 Z" style="fill:var(--primary)"/><path d="M64 46 L50 46 A4 4 0 0 0 46 50 L46 64 Z" style="fill:color-mix(in oklch, var(--primary) 70%, var(--foreground))"/><path d="M19 27 L19 38 C19 45 24 49.5 30 49.5 C36 49.5 41 45 41 38 L41 27" fill="none" style="stroke:var(--primary-foreground)" stroke-width="7" stroke-linecap="round"/><circle cx="21.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/><circle cx="38.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/></svg>
+            <div><h1 class="sk-h2">Content de vous revoir</h1><p class="sk-p sk-muted sk-sm">skrum.atlas-dev.fr · instance de l'équipe Atlas</p></div>
+          </div>
+          <a class="sk-btn sk-btn--lg sk-btn--outline sk-btn--block"><i data-lucide="building-2"></i>Continuer avec le SSO Atlas</a>
+          <div class="or">ou par e-mail</div>
+          <div class="seg" role="tablist"><span class="is-on" role="tab">Lien magique</span><span role="tab">Mot de passe</span></div>
+          <div class="sk-field">
+            <label>Adresse e-mail</label>
+            <div class="sk-input m-input is-focus">camille.roux@atlas-dev.fr</div>
+            <span class="sk-help">On vous envoie un lien de connexion valable 15 minutes.</span>
+          </div>
+          <a class="sk-btn sk-btn--lg sk-btn--block"><i data-lucide="wand-sparkles"></i>Recevoir le lien magique</a>
+          <div class="sk-alert sk-alert--success" style="align-items:center"><i data-lucide="mail-check"></i><span class="sk-sm">Lien envoyé il y a 12 s. Ouvrez-le sur ce téléphone.</span></div>
+          <span class="sk-grow"></span>
+          <p class="sk-p sk-sm sk-muted" style="text-align:center">Pas encore de compte ? <a class="sk-link">Créer un espace</a></p>
+        </div>
+      </div>
+      <div class="sk-phone-home"></div>
+    </div>
+    <div class="sk-phone-cap">Connexion — SSO + lien magique</div>
+  </div>
+
+  <!-- 3. Guest join -->
+  <div>
+    <div class="sk-phone">
+      <div class="sk-phone-status"><span>9:41</span><span class="sk-row sk-gap-1"><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></span></div>
+      <div class="m-app">
+        <div class="m-body" style="padding-top:var(--space-3);gap:var(--space-5)">
+          <div class="invite">
+            <span class="sk-avatar sk-avatar--lg sk-p4">CR</span>
+            <span class="sk-grow"><b style="display:block;font-size:0.9375rem;line-height:1.25rem">Rétro · Sprint 42</b><span class="sk-sm sk-muted">Camille vous invite · Atlas</span></span>
+            <span class="sk-badge sk-badge--success sk-badge--pill"><span class="sk-dot"></span>En cours</span>
+          </div>
+          <div class="me-preview">
+            <span class="sk-avatar sk-p7 is-typing">YU</span>
+            <h1 class="sk-h3" style="margin-top:var(--space-2)">Comment vous appeler ?</h1>
+            <p class="sk-p sk-sm sk-muted" style="text-align:center">Pas besoin de compte. Votre pseudo n'apparaît que si vous signez vos cartes.</p>
+          </div>
+          <div class="sk-field">
+            <label>Pseudo</label>
+            <div class="sk-input m-input is-focus">Yuki<span style="width:1.5px;height:1.375rem;background:var(--foreground)"></span></div>
+          </div>
+          <div class="sk-field">
+            <label>Couleur d'avatar</label>
+            <div class="swatches" role="radiogroup">
+              <span class="sw sk-p1"></span><span class="sw sk-p2"></span><span class="sw sk-p3"></span><span class="sw sk-p4" title="Prise par Camille"><i data-lucide="user" class="sk-ico-sm"></i></span><span class="sw sk-p5"></span><span class="sw sk-p6"></span>
+              <span class="sw sk-p7 is-on" role="radio" aria-checked="true"><i data-lucide="check" class="sk-ico-lg"></i></span><span class="sw sk-p8"></span><span class="sw sk-p9" title="Prise par Inès"><i data-lucide="user" class="sk-ico-sm"></i></span><span class="sw sk-p10"></span><span class="sw sk-p11"></span><span class="sw sk-p12"></span>
+            </div>
+            <span class="sk-help"><i data-lucide="user" class="sk-ico-sm" style="vertical-align:-2px"></i> déjà prise par un participant</span>
+          </div>
+          <div class="sk-row sk-sm sk-muted" style="gap:var(--space-2)">
+            <span class="sk-stack"><span class="sk-avatar sk-avatar--sm sk-p4">CR</span><span class="sk-avatar sk-avatar--sm sk-p2">TM</span><span class="sk-avatar sk-avatar--sm sk-p9">IB</span><span class="sk-avatar sk-avatar--sm sk-stack-more">+4</span></span>
+            7 personnes déjà dans la salle
+          </div>
+        </div>
+        <div class="m-foot is-col" style="border-top:0">
+          <a class="sk-btn sk-btn--lg sk-btn--block">Rejoindre la rétro<i data-lucide="arrow-right"></i></a>
+          <span class="sk-xs sk-muted" style="text-align:center">Déjà un compte ? <a class="sk-link">Se connecter</a></span>
+        </div>
+      </div>
+      <div class="sk-phone-home"></div>
+    </div>
+    <div class="sk-phone-cap">Rejoindre en invité — pseudo + couleur</div>
+  </div>
+
+</div>
+</body>
+</html>

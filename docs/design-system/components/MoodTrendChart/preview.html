@@ -1,0 +1,96 @@
+<!-- @dsCard group="Skrüm · Mesure" height=495 subtitle="ROTI moyen sprint après sprint (S35 → S42) · bande de dispersion · annotation · survol figé sur S41 · SVG inline" -->
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><title>MoodTrendChart</title>
+<style>
+  .mt-card { padding: var(--space-5); display: flex; flex-direction: column; gap: var(--space-4); }
+  .mt-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-4); }
+  .mt-kpi { display: flex; align-items: baseline; gap: var(--space-2); }
+  .mt-kpi-v { font-family: var(--font-display); font-size: 2.125rem; line-height: 2.5rem; font-weight: 700; letter-spacing: -.02em; }
+  .mt-plot { position: relative; width: 100%; }
+  .mt-plot > svg { width: 100%; height: auto; }
+  .mt-plot svg { display: block; overflow: visible; }
+  .mt-band { fill: color-mix(in oklch, var(--chart-1) 16%, transparent); }
+  .mt-line { fill: none; stroke: var(--chart-1); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+  .mt-pt { fill: var(--chart-1); stroke: var(--card); stroke-width: 2; }
+  .mt-pt-last { fill: var(--chart-1); stroke: var(--card); stroke-width: 3; }
+  .mt-ref { stroke: var(--muted-foreground); stroke-width: 1; stroke-dasharray: 3 4; }
+  .mt-ref-t { fill: var(--muted-foreground); font-size: 0.6875rem; font-family: var(--font-sans); font-weight: 600; }
+  .mt-ann-l { stroke: var(--foreground); stroke-width: 1; }
+  .mt-ann-t { fill: var(--foreground); font-size: 0.75rem; font-family: var(--font-sans); font-weight: 600; }
+  .mt-ann-s { fill: var(--muted-foreground); font-size: 0.6875rem; font-family: var(--font-sans); }
+  .mt-cross { stroke: var(--foreground); stroke-width: 1; opacity: .35; }
+  .mt-yn { font-size: 0.6875rem; font-weight: 700; font-family: var(--font-display); fill: var(--skrum-roti-foreground); }
+  .mt-r1 { fill: var(--skrum-roti-1); } .mt-r2 { fill: var(--skrum-roti-2); } .mt-r3 { fill: var(--skrum-roti-3); } .mt-r4 { fill: var(--skrum-roti-4); } .mt-r5 { fill: var(--skrum-roti-5); }
+  .mt-x-cur { fill: var(--foreground) !important; font-weight: 700; }
+  .mt-tip { position: absolute; left: min(64.2%, calc(100% - 11rem)); top: 51.7%; background: var(--popover); color: var(--popover-foreground); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-popover); padding: 0.5rem 0.75rem; font-size: 0.75rem; line-height: 1.125rem; min-width: 9.375rem; }
+  .mt-tip b { font-size: 0.8125rem; }
+  .mt-tip-row { display: flex; justify-content: space-between; gap: var(--space-3); color: var(--muted-foreground); }
+  .mt-tip-row span:last-child { color: var(--foreground); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .mt-legend i.band { width: 0.875rem; height: 0.625rem; border-radius: 0.1875rem; background: color-mix(in oklch, var(--chart-1) 16%, transparent); display: inline-block; }
+  .mt-legend i.ln { width: 0.875rem; height: 2px; border-radius: 1px; background: var(--chart-1); display: inline-block; }
+  .mt-legend i.ref { width: 0.875rem; border-top: 1px dashed var(--muted-foreground); display: inline-block; }
+</style>
+</head>
+<body>
+<div class="sk-pad">
+  <div class="sk-card mt-card">
+    <div class="mt-head">
+      <div class="sk-col sk-gap-1">
+        <span class="sk-card-t">ROTI moyen par sprint · équipe Atlas</span>
+        <span class="sk-card-d">8 derniers sprints · 9 à 12 votants par rétro</span>
+      </div>
+      <div class="sk-row sk-gap-3">
+        <div class="mt-kpi"><span class="mt-kpi-v">3,8</span><span class="sk-sm sk-muted">S42</span></div>
+        <span class="sk-badge sk-badge--success sk-badge--pill"><i data-lucide="trending-up"></i>+0,7 depuis S35</span>
+        <div class="sk-tabs" role="tablist" aria-label="Période"><span class="sk-tab" role="tab">4 sprints</span><span class="sk-tab is-on" role="tab" aria-selected="true">8 sprints</span><span class="sk-tab" role="tab">Tout</span></div>
+      </div>
+    </div>
+
+    <div class="mt-plot">
+      <svg class="sk-chart" viewBox="0 0 860 290" width="860" height="290" role="img" aria-labelledby="mt-t mt-d">
+        <title id="mt-t">ROTI moyen par sprint, de S35 à S42</title>
+        <desc id="mt-d">S35 3,1 ; S36 3,4 ; S37 2,6 ; S38 3,0 ; S39 3,5 ; S40 3,7 ; S41 3,4 ; S42 3,8. Bande : dispersion des votes, du 1er au 3e quartile.</desc>
+        <!-- grid 1..5 -->
+        <line class="grid" x1="48" x2="850" y1="260" y2="260"/>
+        <line class="grid" x1="48" x2="850" y1="205" y2="205"/>
+        <line class="grid" x1="48" x2="850" y1="95" y2="95"/>
+        <line class="grid" x1="48" x2="850" y1="40" y2="40"/>
+        <line class="mt-ref" x1="48" x2="850" y1="150" y2="150"/>
+        <text class="mt-ref-t" x="850" y="144" text-anchor="end">3 · correct</text>
+        <!-- y axis = ROTI pastilles -->
+        <circle class="mt-r5" cx="22" cy="40" r="10"/><text class="mt-yn" x="22" y="44" text-anchor="middle">5</text>
+        <circle class="mt-r4" cx="22" cy="95" r="10"/><text class="mt-yn" x="22" y="99" text-anchor="middle">4</text>
+        <circle class="mt-r3" cx="22" cy="150" r="10"/><text class="mt-yn" x="22" y="154" text-anchor="middle">3</text>
+        <circle class="mt-r2" cx="22" cy="205" r="10"/><text class="mt-yn" x="22" y="209" text-anchor="middle">2</text>
+        <circle class="mt-r1" cx="22" cy="260" r="10"/><text class="mt-yn" x="22" y="264" text-anchor="middle">1</text>
+        <!-- dispersion band -->
+        <path class="mt-band" d="M80 106.0 L186 89.5 L292 128.0 L398 111.5 L504 89.5 L610 78.5 L716 89.5 L822 73.0 L822 133.5 L716 172.0 L610 139.0 L504 155.5 L398 188.5 L292 216.0 L186 166.5 L80 183.0 Z"/>
+        <!-- hover crosshair (figé sur S41) -->
+        <line class="mt-cross" x1="716" x2="716" y1="30" y2="262"/>
+        <!-- line -->
+        <path class="mt-line" d="M80 144.5 L186 128.0 L292 172.0 L398 150.0 L504 122.5 L610 111.5 L716 128.0 L822 106.0"/>
+        <circle class="mt-pt" cx="80" cy="144.5" r="4"/><circle class="mt-pt" cx="186" cy="128" r="4"/><circle class="mt-pt" cx="292" cy="172" r="4"/><circle class="mt-pt" cx="398" cy="150" r="4"/><circle class="mt-pt" cx="504" cy="122.5" r="4"/><circle class="mt-pt" cx="610" cy="111.5" r="4"/><circle class="mt-pt" cx="716" cy="128" r="6"/><circle class="mt-pt-last" cx="822" cy="106" r="5"/>
+        <!-- annotation -->
+        <line class="mt-ann-l" x1="292" x2="292" y1="180" y2="232"/>
+        <text class="mt-ann-t" x="300" y="236">Mise en prod du 12 juin difficile</text>
+        <text class="mt-ann-s" x="300" y="251">3 actions créées, toutes faites en S38</text>
+        <!-- x axis -->
+        <text class="axis" x="80" y="284" text-anchor="middle">S35</text><text class="axis" x="186" y="284" text-anchor="middle">S36</text><text class="axis" x="292" y="284" text-anchor="middle">S37</text><text class="axis" x="398" y="284" text-anchor="middle">S38</text><text class="axis" x="504" y="284" text-anchor="middle">S39</text><text class="axis" x="610" y="284" text-anchor="middle">S40</text><text class="axis mt-x-cur" x="716" y="284" text-anchor="middle">S41</text><text class="axis" x="822" y="284" text-anchor="middle">S42</text>
+      </svg>
+      <div class="mt-tip" role="tooltip">
+        <b>Sprint 41</b>
+        <div class="mt-tip-row"><span>ROTI moyen</span><span>3,4</span></div>
+        <div class="mt-tip-row"><span>Dispersion</span><span>2,6 – 4,1</span></div>
+        <div class="mt-tip-row"><span>Votants</span><span>11</span></div>
+      </div>
+    </div>
+
+    <div class="sk-between">
+      <div class="sk-legend mt-legend"><span><i class="ln"></i>ROTI moyen</span><span><i class="band"></i>Dispersion (Q1–Q3)</span><span><i class="ref"></i>Seuil « correct »</span></div>
+      <button class="sk-btn sk-btn--ghost sk-btn--sm"><i data-lucide="table-2"></i>Voir en tableau</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>

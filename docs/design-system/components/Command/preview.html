@@ -1,0 +1,44 @@
+<!-- @dsCard group="shadcn · Navigation" height=570 subtitle="Command (⌘K) — saisie, groupes Actions · Sessions récentes · Aller à, item actif, raccourcis, footer clavier" -->
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><title>Command</title>
+<style>
+  .cm-stage { position: relative; height: 35.625rem; overflow: hidden; }
+  .cm-center { position: absolute; inset: 0; display: flex; justify-content: center; align-items: flex-start; padding-top: 2.5rem; }
+  .cm-group { font-size: 0.75rem; font-weight: 600; color: var(--muted-foreground); padding: 0.5rem 0.5rem 0.25rem; }
+  .cm-item { height: 2.25rem; }
+  .cm-item .cm-meta { font-size: 0.75rem; color: var(--muted-foreground); display: flex; align-items: center; gap: var(--space-2); }
+  .cm-ico { width: 1.5rem; height: 1.5rem; border-radius: var(--radius-sm); display: grid; place-items: center; background: var(--muted); flex: none; }
+  .cm-ico .lucide { width: 0.875rem; height: 0.875rem; }
+  .sk-menu-item.is-on .cm-ico { background: var(--card); }
+  .cm-foot-k { display: inline-flex; align-items: center; gap: 0.375rem; }
+  .cm-caret { display: inline-block; width: 1px; height: 1.25rem; background: var(--foreground); vertical-align: -0.25rem; }
+  .cm-hl { font-weight: 700; }
+  .cm-bg { position: absolute; inset: 0; padding: var(--space-6) var(--space-8); display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-4); align-content: start; }
+</style></head>
+<body>
+<div class="cm-stage sk-canvas">
+  <div class="cm-bg"><div class="sk-card" style="height:7.5rem"></div><div class="sk-card" style="height:7.5rem"></div><div class="sk-card" style="height:7.5rem"></div><div class="sk-card" style="height:7.5rem"></div><div class="sk-card" style="height:7.5rem"></div></div>
+  <div class="sk-overlay"></div>
+  <div class="cm-center">
+    <div class="sk-command" role="dialog" aria-label="Palette de commandes">
+      <div class="sk-command-in"><i data-lucide="search"></i><span class="sk-grow">ré<span class="cm-caret"></span></span><span class="sk-kbd">Esc</span></div>
+      <div class="sk-command-list" role="listbox">
+        <div class="cm-group">Actions</div>
+        <div class="sk-menu-item cm-item is-on" role="option" aria-selected="true"><span class="cm-ico"><i data-lucide="plus"></i></span><span class="sk-grow">Nouvelle <span class="cm-hl">ré</span>tro</span><span class="cm-meta"><span class="sk-kbd">⌘</span><span class="sk-kbd">N</span></span></div>
+        <div class="sk-menu-item cm-item" role="option"><span class="cm-ico"><i data-lucide="spade"></i></span><span class="sk-grow">Nouvelle session de poker</span><span class="cm-meta"><span class="sk-kbd">⌘</span><span class="sk-kbd">P</span></span></div>
+        <div class="sk-menu-item cm-item" role="option"><span class="cm-ico"><i data-lucide="user-plus"></i></span><span class="sk-grow">Inviter dans l'équipe Atlas</span></div>
+        <div class="cm-group">Sessions récentes</div>
+        <div class="sk-menu-item cm-item" role="option"><span class="cm-ico"><i data-lucide="sticky-note"></i></span><span class="sk-grow"><span class="cm-hl">Ré</span>tro sprint 42</span><span class="cm-meta">Atlas · il y a 2 j</span></div>
+        <div class="sk-menu-item cm-item" role="option"><span class="cm-ico"><i data-lucide="sticky-note"></i></span><span class="sk-grow"><span class="cm-hl">Ré</span>tro sprint 41</span><span class="cm-meta">Atlas · 16 sept.</span></div>
+        <div class="sk-menu-item cm-item" role="option"><span class="cm-ico"><i data-lucide="presentation"></i></span><span class="sk-grow">Atelier <span class="cm-hl">ré</span>organisation Q4</span><span class="cm-meta">Whiteboard · 9 sept.</span></div>
+        <div class="cm-group">Aller à</div>
+        <div class="sk-menu-item cm-item" role="option"><span class="cm-ico"><i data-lucide="list-checks"></i></span><span class="sk-grow">Actions de <span class="cm-hl">ré</span>tro</span><span class="cm-meta"><span class="sk-kbd">G</span><span class="sk-kbd">A</span></span></div>
+        <div class="sk-menu-item cm-item" role="option"><span class="cm-ico"><i data-lucide="settings"></i></span><span class="sk-grow">Paramètres › <span class="cm-hl">Ré</span>glages de l'instance</span><span class="cm-meta"><span class="sk-kbd">G</span><span class="sk-kbd">S</span></span></div>
+      </div>
+      <div class="sk-command-foot"><span class="cm-foot-k"><span class="sk-kbd">↑</span><span class="sk-kbd">↓</span>naviguer</span><span class="cm-foot-k"><span class="sk-kbd">↵</span>ouvrir</span><span class="cm-foot-k"><span class="sk-kbd">Esc</span>fermer</span><span class="sk-grow"></span><span>8 résultats</span></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

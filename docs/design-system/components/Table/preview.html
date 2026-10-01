@@ -1,0 +1,82 @@
+<!-- @dsCard group="shadcn · Affichage" height=469 subtitle="Table d'actions — barre de sélection, en-têtes triables (tri actif), ligne survolée, lignes sélectionnées avec checkbox, badges de statut, pagination" -->
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><title>Table</title>
+<style>
+  .tt-wrap { overflow: hidden; }
+  .tt-bar { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--border); }
+  .tt-sel { display: flex; align-items: center; gap: var(--space-2); padding: 0.375rem 0.375rem 0.375rem 0.75rem; border-radius: var(--radius-md); background: var(--skrum-primary-soft); color: var(--skrum-primary-text); font-size: 0.8125rem; font-weight: 600; }
+  .sk-table th:first-child, .sk-table td:first-child { width: 2.75rem; padding-left: var(--space-4); }
+  .sk-table th:last-child, .sk-table td:last-child { width: 2.75rem; padding-right: var(--space-3); }
+  .tt-sort { display: inline-flex; align-items: center; gap: 0.25rem; background: none; border: 0; padding: 0; font: inherit; color: inherit; cursor: pointer; }
+  .tt-sort .lucide { width: 0.75rem; height: 0.75rem; opacity: .6; }
+  .tt-sort.is-on { color: var(--foreground); }
+  .tt-sort.is-on .lucide { opacity: 1; }
+  .tt-t { font-weight: 600; }
+  .tt-src { font-size: 0.75rem; color: var(--muted-foreground); }
+  .tt-who { display: inline-flex; align-items: center; gap: 0.5rem; }
+  .tt-foot { display: flex; align-items: center; justify-content: space-between; padding: var(--space-3) var(--space-4); border-top: 1px solid var(--border); font-size: 0.8125rem; color: var(--muted-foreground); }
+</style></head>
+<body>
+<div class="sk-pad">
+  <div class="sk-card tt-wrap">
+    <div class="tt-bar">
+      <div class="sk-input-group" style="width:16.25rem"><i data-lucide="search"></i><input class="sk-input" placeholder="Filtrer les actions…" style="height:2rem"></div>
+      <button class="sk-btn sk-btn--outline sk-btn--sm"><i data-lucide="filter"></i>Statut<span class="sk-badge sk-badge--muted" style="height:1.125rem;padding:0 0.3125rem">2</span></button>
+      <span class="sk-grow"></span>
+      <div class="tt-sel" role="status">2 sélectionnées<button class="sk-btn sk-btn--ghost sk-btn--sm" style="height:1.625rem"><i data-lucide="check"></i>Marquer faites</button><button class="sk-btn sk-btn--ghost sk-btn--sm sk-btn--icon" style="height:1.625rem;width:1.625rem" aria-label="Désélectionner"><i data-lucide="x"></i></button></div>
+    </div>
+    <table class="sk-table">
+      <thead><tr>
+        <th><span class="sk-check is-mixed" role="checkbox" aria-checked="mixed" aria-label="Tout sélectionner"></span></th>
+        <th aria-sort="none"><button class="tt-sort">Action<i data-lucide="chevrons-up-down"></i></button></th>
+        <th>Responsable</th>
+        <th>Statut</th>
+        <th aria-sort="ascending"><button class="tt-sort is-on">Échéance<i data-lucide="arrow-up"></i></button></th>
+        <th>Priorité</th>
+        <th><span class="sk-sr">Menu</span></th>
+      </tr></thead>
+      <tbody>
+        <tr class="is-selected" aria-selected="true">
+          <td><span class="sk-check is-on" role="checkbox" aria-checked="true"></span></td>
+          <td><div class="tt-t">Isoler les données E2E par worker</div><div class="tt-src"><span class="sk-ticket" style="line-height:1rem">ATLAS-1287</span> · Rétro sprint 42</div></td>
+          <td><span class="tt-who"><span class="sk-avatar sk-avatar--sm sk-p6">NK</span>Nadia K.</span></td>
+          <td><span class="sk-badge sk-badge--warning">En cours</span></td>
+          <td><span class="sk-badge sk-badge--destructive"><i data-lucide="calendar-clock"></i>En retard · 3 oct.</span></td>
+          <td><span class="sk-prio sk-prio--high"><span class="bars"><i></i><i></i><i></i></span>Haute</span></td>
+          <td><button class="sk-btn sk-btn--ghost sk-btn--icon sk-btn--sm" aria-label="Actions"><i data-lucide="ellipsis"></i></button></td>
+        </tr>
+        <tr class="is-selected" aria-selected="true">
+          <td><span class="sk-check is-on" role="checkbox" aria-checked="true"></span></td>
+          <td><div class="tt-t">Revue de code avant 16 h</div><div class="tt-src">Rétro sprint 42</div></td>
+          <td><span class="tt-who"><span class="sk-avatar sk-avatar--sm sk-p2">TM</span>Théo M.</span></td>
+          <td><span class="sk-badge sk-badge--outline">À faire</span></td>
+          <td class="sk-sm">10 oct.</td>
+          <td><span class="sk-prio sk-prio--medium"><span class="bars"><i></i><i></i><i></i></span>Moyenne</span></td>
+          <td><button class="sk-btn sk-btn--ghost sk-btn--icon sk-btn--sm" aria-label="Actions"><i data-lucide="ellipsis"></i></button></td>
+        </tr>
+        <tr class="is-hover">
+          <td><span class="sk-check" role="checkbox" aria-checked="false"></span></td>
+          <td><div class="tt-t">Point hebdo avec le PO sur le périmètre</div><div class="tt-src">Rétro sprint 41</div></td>
+          <td><span class="tt-who"><span class="sk-avatar sk-avatar--sm sk-p11">LH</span>Léa H.</span></td>
+          <td><span class="sk-badge sk-badge--outline">À faire</span></td>
+          <td class="sk-sm">12 oct.</td>
+          <td><span class="sk-prio sk-prio--low"><span class="bars"><i></i><i></i><i></i></span>Basse</span></td>
+          <td><button class="sk-btn sk-btn--ghost sk-btn--icon sk-btn--sm is-hover" aria-label="Actions"><i data-lucide="ellipsis"></i></button></td>
+        </tr>
+        <tr>
+          <td><span class="sk-check" role="checkbox" aria-checked="false"></span></td>
+          <td><div class="tt-t" style="text-decoration:line-through;color:var(--muted-foreground)">Documenter la procédure de rollback</div><div class="tt-src"><span class="sk-ticket" style="line-height:1rem">ATLAS-1254</span> · Rétro sprint 40</div></td>
+          <td><span class="tt-who"><span class="sk-avatar sk-avatar--sm sk-avatar--guest"><i data-lucide="user-round" class="sk-ico-sm"></i></span>Bastien (invité)</span></td>
+          <td><span class="sk-badge sk-badge--success"><i data-lucide="check"></i>Faite</span></td>
+          <td class="sk-sm sk-muted">26 sept.</td>
+          <td><span class="sk-prio sk-prio--medium"><span class="bars"><i></i><i></i><i></i></span>Moyenne</span></td>
+          <td><button class="sk-btn sk-btn--ghost sk-btn--icon sk-btn--sm" aria-label="Actions"><i data-lucide="ellipsis"></i></button></td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="tt-foot"><span>2 sur 22 actions sélectionnées</span><span class="sk-row sk-gap-2">Page 1 / 6<button class="sk-btn sk-btn--outline sk-btn--sm sk-btn--icon is-disabled" disabled aria-label="Page précédente"><i data-lucide="chevron-left"></i></button><button class="sk-btn sk-btn--outline sk-btn--sm sk-btn--icon" aria-label="Page suivante"><i data-lucide="chevron-right"></i></button></span></div>
+  </div>
+</div>
+</body>
+</html>

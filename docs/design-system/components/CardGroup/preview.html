@@ -1,0 +1,71 @@
+<!-- @dsCard group="Skrüm · Rétro" height=460 subtitle="déplié (titre éditable + 3 cartes) · replié en pile · titre en édition" -->
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><title>CardGroup</title>
+<style>
+  .cg-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-6); align-items: start; }
+  .cg-count { font-size: 0.75rem; font-weight: 700; color: var(--c-t); background: var(--card); border: 1px solid var(--c-b); border-radius: var(--radius-full); padding: 0 0.5rem; line-height: 1.25rem; }
+  .cg-caret { color: var(--c-t); }
+  .cg-title-edit { cursor: text; }
+  .cg-title-edit:hover { background: color-mix(in oklch, var(--card) 70%, transparent); }
+  .cg-foot { display: flex; align-items: center; gap: var(--space-2); font-size: 0.75rem; color: var(--muted-foreground); padding: 2px 2px 0; }
+  .cg-foot .sk-stack > .sk-avatar + .sk-avatar { margin-left: -0.25rem; }
+  .cg-caret-inline { display: inline-block; width: 1.5px; height: 1rem; background: var(--foreground); vertical-align: -0.1875rem; margin-left: 1px; }
+</style>
+</head>
+<body class="sk-canvas">
+<div class="sk-pad">
+  <div class="cg-grid">
+    <div>
+      <div class="sk-state">Déplié · titre éditable</div>
+      <section class="sk-group sk-c-coral" aria-label="Groupe : Qualité des revues de code, 3 cartes">
+        <header class="sk-group-h">
+          <button class="sk-btn sk-btn--ghost sk-btn--icon sk-btn--sm cg-caret" aria-expanded="true" aria-label="Replier le groupe"><i data-lucide="chevron-down"></i></button>
+          <span class="sk-group-t cg-title-edit" title="Cliquer pour renommer">Qualité des revues de code</span>
+          <span class="cg-count">3</span>
+        </header>
+        <div class="sk-group-stack sk-col sk-gap-2">
+          <article class="sk-rcard sk-c-coral"><p class="sk-rcard-text">Revues de code trop tardives.</p><div class="sk-rcard-foot"><span class="sk-rcard-author"><span class="sk-avatar sk-avatar--xs sk-p9">IB</span>Inès B.</span></div></article>
+          <article class="sk-rcard sk-c-coral"><p class="sk-rcard-text">PR de 1 200 lignes impossibles à relire.</p><div class="sk-rcard-foot"><span class="sk-rcard-author"><span class="sk-avatar sk-avatar--xs sk-p5">LD</span>Lucas D.</span></div></article>
+          <article class="sk-rcard sk-c-coral"><p class="sk-rcard-text">Personne n'est assigné aux revues.</p><div class="sk-rcard-foot"><span class="sk-anon"><i data-lucide="venetian-mask"></i>Anonyme</span></div></article>
+        </div>
+        <div class="cg-foot"><i data-lucide="thumbs-up" class="sk-ico-sm"></i>11 votes au total</div>
+      </section>
+    </div>
+
+    <div>
+      <div class="sk-state">Replié en pile</div>
+      <section class="sk-group sk-c-sky is-collapsed" aria-label="Groupe replié : Outillage CI, 3 cartes">
+        <header class="sk-group-h">
+          <button class="sk-btn sk-btn--ghost sk-btn--icon sk-btn--sm cg-caret" aria-expanded="false" aria-label="Déplier le groupe"><i data-lucide="chevron-right"></i></button>
+          <span class="sk-group-t">Outillage CI</span>
+          <span class="cg-count">3</span>
+        </header>
+        <div class="sk-group-stack" style="isolation:isolate;margin-bottom:var(--space-3)">
+          <article class="sk-rcard sk-c-sky"><p class="sk-rcard-text">Les tests E2E cassent une fois sur trois.</p></article>
+          <article class="sk-rcard sk-c-sky"><p class="sk-rcard-text">&nbsp;</p></article>
+          <article class="sk-rcard sk-c-sky"><p class="sk-rcard-text">&nbsp;</p></article>
+        </div>
+        <div class="cg-foot"><span class="sk-stack"><span class="sk-avatar sk-avatar--xs sk-p3">YS</span><span class="sk-avatar sk-avatar--xs sk-p6">HG</span><span class="sk-avatar sk-avatar--xs sk-p11">NA</span></span>+ 2 cartes · 6 votes</div>
+      </section>
+    </div>
+
+    <div>
+      <div class="sk-state">Titre en édition</div>
+      <section class="sk-group sk-c-moss" aria-label="Groupe : renommage en cours">
+        <header class="sk-group-h">
+          <button class="sk-btn sk-btn--ghost sk-btn--icon sk-btn--sm cg-caret" aria-expanded="true" aria-label="Replier le groupe"><i data-lucide="chevron-down"></i></button>
+          <span class="sk-group-t is-editing" role="textbox" aria-label="Titre du groupe">Entraide dans l'équipe<span class="cg-caret-inline"></span></span>
+          <span class="cg-count">2</span>
+        </header>
+        <div class="sk-group-stack sk-col sk-gap-2">
+          <article class="sk-rcard sk-c-moss"><p class="sk-rcard-text">Pair-programming du jeudi très efficace.</p><div class="sk-rcard-foot"><span class="sk-rcard-author"><span class="sk-avatar sk-avatar--xs sk-p7">MK</span>Malik K.</span></div></article>
+          <article class="sk-rcard sk-c-moss"><p class="sk-rcard-text">Sofia a débloqué la migration en une heure.</p><div class="sk-rcard-foot"><span class="sk-rcard-author"><span class="sk-avatar sk-avatar--xs sk-p10">SL</span>Sofia L.</span></div></article>
+        </div>
+        <div class="cg-foot"><span class="sk-kbd">↵</span> valider · <span class="sk-kbd">Esc</span> annuler</div>
+      </section>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,99 @@
+<!-- @dsCard group="Skrüm · Facilitation" height=395 subtitle="phase 2 active · phase 4 active · compact · facilitateur (cliquable) vs participant (lecture seule)" -->
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><title>PhaseStepper</title>
+<style>
+  .ps-btn { border: 0; background: none; cursor: pointer; font-family: inherit; font-size: 0.8125rem; font-weight: 600; }
+  .ps-btn.sk-phase:not(.is-current):hover, .ps-btn.sk-phase.is-hover { background: var(--accent); color: var(--accent-foreground); }
+  .ps-ro .sk-phase { cursor: default; }
+  .ps-note { display: inline-flex; align-items: center; gap: 0.375rem; font-size: 0.75rem; color: var(--muted-foreground); }
+</style>
+</head>
+<body class="sk-canvas">
+<div class="sk-pad sk-col sk-gap-6">
+  <div>
+    <div class="sk-state">Phase 2 active · Écriture</div>
+    <nav aria-label="Phases de la rétro">
+      <ol class="sk-phases" style="margin:0;list-style:none;width:max-content">
+        <li class="sk-phase is-done"><span class="sk-phase-n"><i data-lucide="check" style="width:0.6875rem;height:0.6875rem"></i></span><span class="sk-phase-l">Icebreaker</span></li>
+        <li class="sk-phase-link"></li>
+        <li class="sk-phase is-current" aria-current="step"><span class="sk-phase-n">2</span><span class="sk-phase-l">Écriture</span></li>
+        <li class="sk-phase-link"></li>
+        <li class="sk-phase"><span class="sk-phase-n">3</span><span class="sk-phase-l">Regroupement</span></li>
+        <li class="sk-phase-link"></li>
+        <li class="sk-phase"><span class="sk-phase-n">4</span><span class="sk-phase-l">Vote</span></li>
+        <li class="sk-phase-link"></li>
+        <li class="sk-phase"><span class="sk-phase-n">5</span><span class="sk-phase-l">Discussion</span></li>
+        <li class="sk-phase-link"></li>
+        <li class="sk-phase"><span class="sk-phase-n">6</span><span class="sk-phase-l">Actions</span></li>
+        <li class="sk-phase-link"></li>
+        <li class="sk-phase"><span class="sk-phase-n">7</span><span class="sk-phase-l">ROTI</span></li>
+      </ol>
+    </nav>
+  </div>
+
+  <div>
+    <div class="sk-state">Phase 4 active · Vote — vue facilitateur (étapes cliquables, survol sur « Discussion »)</div>
+    <div class="sk-row">
+      <nav aria-label="Phases de la rétro" class="sk-phases">
+        <button class="ps-btn sk-phase is-done"><span class="sk-phase-n"><i data-lucide="check" style="width:0.6875rem;height:0.6875rem"></i></span><span class="sk-phase-l">Icebreaker</span></button>
+        <span class="sk-phase-link"></span>
+        <button class="ps-btn sk-phase is-done"><span class="sk-phase-n"><i data-lucide="check" style="width:0.6875rem;height:0.6875rem"></i></span><span class="sk-phase-l">Écriture</span></button>
+        <span class="sk-phase-link"></span>
+        <button class="ps-btn sk-phase is-done"><span class="sk-phase-n"><i data-lucide="check" style="width:0.6875rem;height:0.6875rem"></i></span><span class="sk-phase-l">Regroupement</span></button>
+        <span class="sk-phase-link"></span>
+        <button class="ps-btn sk-phase is-current" aria-current="step"><span class="sk-phase-n">4</span><span class="sk-phase-l">Vote</span></button>
+        <span class="sk-phase-link"></span>
+        <button class="ps-btn sk-phase is-hover"><span class="sk-phase-n">5</span><span class="sk-phase-l">Discussion</span></button>
+        <span class="sk-phase-link"></span>
+        <button class="ps-btn sk-phase"><span class="sk-phase-n">6</span><span class="sk-phase-l">Actions</span></button>
+        <span class="sk-phase-link"></span>
+        <button class="ps-btn sk-phase"><span class="sk-phase-n">7</span><span class="sk-phase-l">ROTI</span></button>
+      </nav>
+    </div>
+  </div>
+
+  <div class="sk-row sk-gap-8" style="align-items:flex-start">
+    <div>
+      <div class="sk-state">Compact · facilitateur</div>
+      <div class="sk-row sk-gap-2">
+        <nav aria-label="Phases de la rétro" class="sk-phases is-compact">
+          <button class="ps-btn sk-phase is-done" aria-label="Icebreaker, terminée"><span class="sk-phase-n"><i data-lucide="check" style="width:0.6875rem;height:0.6875rem"></i></span><span class="sk-phase-l">Icebreaker</span></button>
+          <button class="ps-btn sk-phase is-done" aria-label="Écriture, terminée"><span class="sk-phase-n"><i data-lucide="check" style="width:0.6875rem;height:0.6875rem"></i></span><span class="sk-phase-l">Écriture</span></button>
+          <button class="ps-btn sk-phase is-done" aria-label="Regroupement, terminée"><span class="sk-phase-n"><i data-lucide="check" style="width:0.6875rem;height:0.6875rem"></i></span><span class="sk-phase-l">Regroupement</span></button>
+          <button class="ps-btn sk-phase is-current" aria-current="step"><span class="sk-phase-n">4</span><span class="sk-phase-l">Vote</span></button>
+          <button class="ps-btn sk-phase" aria-label="Discussion"><span class="sk-phase-n">5</span><span class="sk-phase-l">Discussion</span></button>
+          <button class="ps-btn sk-phase" aria-label="Actions"><span class="sk-phase-n">6</span><span class="sk-phase-l">Actions</span></button>
+          <button class="ps-btn sk-phase" aria-label="ROTI"><span class="sk-phase-n">7</span><span class="sk-phase-l">ROTI</span></button>
+        </nav>
+        <button class="sk-btn sk-btn--sm">Phase suivante<i data-lucide="arrow-right"></i></button>
+      </div>
+    </div>
+    <div>
+      <div class="sk-state">Compact · participant (lecture seule)</div>
+      <div class="sk-col sk-gap-2">
+        <div role="group" aria-label="Phase 4 sur 7 : Vote" class="sk-phases is-compact ps-ro">
+          <span class="sk-phase is-done"><span class="sk-phase-n"><i data-lucide="check" style="width:0.6875rem;height:0.6875rem"></i></span><span class="sk-phase-l">Icebreaker</span></span>
+          <span class="sk-phase is-done"><span class="sk-phase-n"><i data-lucide="check" style="width:0.6875rem;height:0.6875rem"></i></span><span class="sk-phase-l">Écriture</span></span>
+          <span class="sk-phase is-done"><span class="sk-phase-n"><i data-lucide="check" style="width:0.6875rem;height:0.6875rem"></i></span><span class="sk-phase-l">Regroupement</span></span>
+          <span class="sk-phase is-current"><span class="sk-phase-n">4</span><span class="sk-phase-l">Vote</span></span>
+          <span class="sk-phase"><span class="sk-phase-n">5</span><span class="sk-phase-l">Discussion</span></span>
+          <span class="sk-phase"><span class="sk-phase-n">6</span><span class="sk-phase-l">Actions</span></span>
+          <span class="sk-phase"><span class="sk-phase-n">7</span><span class="sk-phase-l">ROTI</span></span>
+        </div>
+        <span class="ps-note"><i data-lucide="lock" class="sk-ico-sm"></i>Camille (facilitatrice) pilote les phases</span>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="sk-state">Mobile · participant</div>
+    <div class="sk-row sk-gap-2">
+      <span class="sk-badge sk-badge--soft sk-badge--pill">Phase 4/7</span>
+      <span class="sk-strong">Vote</span>
+      <span class="sk-progress" style="width:10rem"><span style="width:57%"></span></span>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,51 @@
+<!-- @dsCard group="Skrüm · Rétro" width=1160 height=520 subtitle="défaut · anonyme · masquée (écriture) · réactions + votes · éditée par un autre · sélectionnée · focus facilitateur · drag + fantôme" -->
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><title>RetroCard</title></head>
+<body class="sk-canvas">
+<div class="sk-pad" style="display:grid;grid-template-columns:repeat(4, 16.25rem);gap:1.75rem 1.25rem;align-items:start">
+  <div><div class="sk-state">Défaut</div>
+    <article class="sk-rcard sk-c-moss">
+      <p class="sk-rcard-text">La démo client s'est super bien passée, le nouveau parcours d'onboarding a convaincu.</p>
+      <div class="sk-rcard-foot"><span class="sk-rcard-author"><span class="sk-avatar sk-avatar--xs sk-p4">CR</span>Camille R.</span><span class="sk-grow"></span><button class="sk-vote-btn"><i data-lucide="thumbs-up" class="sk-ico-sm"></i><span class="sk-vote-count">3</span></button></div>
+    </article></div>
+  <div><div class="sk-state">Anonyme</div>
+    <article class="sk-rcard sk-c-coral">
+      <p class="sk-rcard-text">On découvre les changements de périmètre en plein milieu du sprint.</p>
+      <div class="sk-rcard-foot"><span class="sk-anon"><i data-lucide="venetian-mask"></i>Anonyme</span><span class="sk-grow"></span><button class="sk-vote-btn"><i data-lucide="thumbs-up" class="sk-ico-sm"></i><span class="sk-vote-count">0</span></button></div>
+    </article></div>
+  <div><div class="sk-state">Masquée · phase Écriture</div>
+    <article class="sk-rcard sk-c-sky is-masked" aria-label="Carte masquée jusqu'à la révélation">
+      <p class="sk-rcard-text">Texte masqué pour les autres participants jusqu'à la révélation.</p>
+      <div class="sk-rcard-foot"><span class="sk-mask-note"><i data-lucide="eye-off" class="sk-ico-sm"></i>Masquée jusqu'à la révélation</span></div>
+    </article></div>
+  <div><div class="sk-state">Réactions + mes votes</div>
+    <article class="sk-rcard sk-c-sun">
+      <p class="sk-rcard-text">Le pair-programming du jeudi a débloqué la migration Postgres.</p>
+      <div class="sk-reactions"><span class="sk-react is-mine">🎉 4</span><span class="sk-react">💡 2</span><span class="sk-react sk-react-add"><i data-lucide="smile-plus" class="sk-ico-sm"></i></span></div>
+      <div class="sk-rcard-foot"><span class="sk-rcard-author"><span class="sk-avatar sk-avatar--xs sk-p2">TM</span>Théo M.</span><span class="sk-grow"></span><span class="sk-votes" aria-label="2 de mes votes"><span class="sk-vdot is-on"></span><span class="sk-vdot is-on"></span></span><button class="sk-vote-btn is-mine"><i data-lucide="thumbs-up" class="sk-ico-sm"></i><span class="sk-vote-count">7</span></button></div>
+    </article></div>
+  <div><div class="sk-state">Éditée par quelqu'un d'autre</div>
+    <article class="sk-rcard sk-c-iris is-locked" style="--lock:var(--skrum-presence-9);--lock-fg:var(--skrum-presence-9-foreground)">
+      <span class="sk-lock-tag"><i data-lucide="pencil" class="sk-ico-sm"></i>Inès écrit</span>
+      <p class="sk-rcard-text">Les rétros précédentes n'ont pas eu de suivi des actions<span class="sk-trema" style="margin-left:0.375rem;color:var(--skrum-col-iris-text)"><i></i><i></i></span></p>
+      <div class="sk-rcard-foot"><span class="sk-rcard-author"><span class="sk-avatar sk-avatar--xs sk-p9">IB</span>Inès B.</span></div>
+    </article></div>
+  <div><div class="sk-state">En édition (moi)</div>
+    <article class="sk-rcard sk-c-apricot is-editing">
+      <p class="sk-rcard-text">Trop de réunions le lundi matin|</p>
+      <div class="sk-rcard-foot"><span class="sk-help sk-xs"><span class="sk-kbd">↵</span> publier · <span class="sk-kbd">Esc</span> annuler</span><span class="sk-grow"></span><span class="sk-xs sk-muted">28/280</span></div>
+    </article></div>
+  <div><div class="sk-state">Focus facilitateur</div>
+    <article class="sk-rcard sk-c-lagoon is-focused">
+      <p class="sk-rcard-text">Les tests E2E cassent une fois sur trois en CI.</p>
+      <div class="sk-rcard-foot"><span class="sk-badge sk-badge--info sk-badge--pill"><i data-lucide="crosshair"></i>Tout le monde regarde ici</span><span class="sk-grow"></span><button class="sk-vote-btn"><i data-lucide="thumbs-up" class="sk-ico-sm"></i>9</button></div>
+    </article></div>
+  <div><div class="sk-state">Drag + emplacement d'origine</div>
+    <div style="position:relative;height:9.375rem">
+      <article class="sk-rcard sk-c-plum is-ghost" style="position:absolute;inset:0 0 auto 0"><p class="sk-rcard-text">Revue de code trop tardive</p><div class="sk-rcard-foot"></div></article>
+      <article class="sk-rcard sk-c-plum is-dragging" style="position:absolute;top:2.125rem;left:1.125rem;right:-1.125rem"><p class="sk-rcard-text">Revue de code trop tardive</p><div class="sk-rcard-foot"><span class="sk-rcard-author"><span class="sk-avatar sk-avatar--xs sk-p1">AR</span>Arnaud</span></div></article>
+    </div></div>
+</div>
+</body>
+</html>

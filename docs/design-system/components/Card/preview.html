@@ -1,0 +1,65 @@
+<!-- @dsCard group="shadcn · Affichage" height=640 subtitle="Card — container queries (180 / 240 / 340 px) · (en-tête, contenu, pied), session récente (repos + survol + focus), stat (valeur, tendance, contexte)" -->
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><title>Card</title>
+<style>
+  .cd-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); gap: var(--space-5); align-items: start; }
+  .cd-session { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4); transition: box-shadow var(--duration-fast) var(--ease-standard); }
+  .cd-session.is-hover { box-shadow: var(--shadow-raised); border-color: color-mix(in oklch, var(--primary) 35%, var(--border)); }
+  .cd-session.is-focus { outline: 2px solid var(--ring); outline-offset: 2px; }
+  .cd-kind { width: 2rem; height: 2rem; border-radius: var(--radius-md); display: grid; place-items: center; background: var(--c); color: var(--c-t); border: 1px solid var(--c-b); flex: none; }
+  .cd-meta { display: flex; align-items: center; gap: var(--space-3); font-size: 0.75rem; color: var(--muted-foreground); }
+  .cd-meta > span { display: inline-flex; align-items: center; gap: 0.25rem; }
+  .cd-trend { display: inline-flex; align-items: center; gap: 2px; font-size: 0.75rem; font-weight: 700; }
+  .cd-trend.is-up { color: var(--skrum-success-text); }
+  .cd-trend.is-down { color: var(--skrum-destructive-text); }
+  .cd-cq { display: flex; gap: var(--space-5); align-items: flex-start; flex-wrap: wrap; }
+  .cd-cq-w { font-size: 0.75rem; color: var(--muted-foreground); margin-bottom: var(--space-2); }
+  .cd-spark { width: 100%; height: 2.25rem; display: block; }
+</style></head>
+<body>
+<div class="sk-pad cd-grid">
+  <div><div class="sk-state">Simple</div>
+    <div class="sk-card">
+      <div class="sk-card-h"><h3 class="sk-card-t">Inviter l'équipe</h3><p class="sk-card-d">Partagez ce lien : les invités rejoignent sans créer de compte.</p></div>
+      <div class="sk-card-b sk-col sk-gap-2">
+        <div class="sk-input-group"><i data-lucide="link-2"></i><input class="sk-input sk-mono" value="skrum.app/j/atlas-42" readonly style="font-size:0.8125rem"></div>
+        <label class="sk-choice"><span class="sk-switch is-on"></span>Autoriser les invités anonymes</label>
+      </div>
+      <div class="sk-card-f"><button class="sk-btn sk-btn--outline sk-btn--sm"><i data-lucide="copy"></i>Copier</button><button class="sk-btn sk-btn--sm"><i data-lucide="mail"></i>Envoyer par e-mail</button></div>
+    </div></div>
+
+  <div class="sk-col sk-gap-4">
+    <div><div class="sk-state">Session récente · repos</div>
+      <a class="sk-card sk-session" href="#"><div class="sk-session-h"><span class="sk-session-kind sk-c-apricot"><i data-lucide="sticky-note"></i></span><div class="sk-session-txt"><div class="sk-session-t">Rétro sprint 42</div><div class="sk-session-sub">Atlas · il y a 2 jours</div></div><span class="sk-badge sk-badge--muted sk-badge--pill">Terminée</span></div><div class="sk-session-meta"><span><i data-lucide="users" class="sk-ico-sm"></i>9</span><span><i data-lucide="sticky-note" class="sk-ico-sm"></i>38<span class="sk-session-unit">cartes</span></span><span><i data-lucide="list-checks" class="sk-ico-sm"></i>6<span class="sk-session-unit">actions</span></span></div></a></div>
+    <div><div class="sk-state">Session récente · survol + en direct</div>
+      <a class="sk-card sk-session is-hover" href="#"><div class="sk-session-h"><span class="sk-session-kind sk-c-iris"><i data-lucide="spade"></i></span><div class="sk-session-txt"><div class="sk-session-t">Poker · Sprint 43</div><div class="sk-session-sub">Atlas · 10:02</div></div><span class="sk-badge sk-badge--success sk-badge--pill"><span class="sk-dot"></span>En direct</span></div><div class="sk-session-foot"><span class="sk-stack"><span class="sk-avatar sk-avatar--sm sk-p2">TM</span><span class="sk-avatar sk-avatar--sm sk-p6">NK</span><span class="sk-avatar sk-avatar--sm sk-stack-more">+5</span></span><span class="sk-xs sk-strong" style="color:var(--skrum-primary-text)">Rejoindre →</span></div></a></div>
+  </div>
+
+  <div class="sk-col sk-gap-4">
+    <div><div class="sk-state">Stat</div>
+      <div class="sk-card sk-card-b sk-col sk-gap-2">
+        <div class="sk-between"><span class="sk-stat-l">Actions terminées · 90 j</span><i data-lucide="list-checks" class="sk-ico-sm" style="color:var(--muted-foreground)"></i></div>
+        <div class="sk-row sk-gap-2" style="align-items:baseline"><span class="sk-stat-v">73 %</span><span class="cd-trend is-up"><i data-lucide="arrow-up" class="sk-ico-sm"></i>8 pts</span></div>
+        <svg class="cd-spark" viewBox="0 0 200 36" preserveAspectRatio="none" aria-hidden="true"><polyline points="0,28 30,26 60,24 90,27 120,18 150,14 180,12 200,8" fill="none" style="stroke:var(--chart-1)" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg>
+        <span class="sk-xs sk-muted">44 sur 60 actions, 6 dernières rétros.</span>
+      </div></div>
+    <div><div class="sk-state">Stat · focus clavier</div>
+      <div class="sk-card sk-card-b sk-col sk-gap-2 cd-session is-focus" style="padding:var(--space-5)">
+        <span class="sk-stat-l">Actions en retard</span>
+        <div class="sk-row sk-gap-2" style="align-items:baseline"><span class="sk-stat-v">2</span><span class="cd-trend is-down"><i data-lucide="arrow-up" class="sk-ico-sm"></i>1 depuis lundi</span></div>
+      </div></div>
+  </div>
+</div>
+
+<div class="sk-pad" style="padding-top:0">
+  <div class="sk-state">Container queries · la même carte dans 3 largeurs de conteneur</div>
+  <div class="cd-cq">
+    <div><div class="cd-cq-w">180 px · icône masquée, unités masquées</div><div style="width:11.25rem"><a class="sk-card sk-session" href="#"><div class="sk-session-h"><span class="sk-session-kind sk-c-apricot"><i data-lucide="sticky-note"></i></span><div class="sk-session-txt"><div class="sk-session-t">Rétro sprint 42</div><div class="sk-session-sub">Atlas · il y a 2 jours</div></div><span class="sk-badge sk-badge--muted sk-badge--pill">Terminée</span></div><div class="sk-session-meta"><span><i data-lucide="users" class="sk-ico-sm"></i>9</span><span><i data-lucide="sticky-note" class="sk-ico-sm"></i>38<span class="sk-session-unit">cartes</span></span><span><i data-lucide="list-checks" class="sk-ico-sm"></i>6<span class="sk-session-unit">actions</span></span></div></a></div></div>
+    <div><div class="cd-cq-w">240 px · badge sous le titre</div><div style="width:15rem"><a class="sk-card sk-session" href="#"><div class="sk-session-h"><span class="sk-session-kind sk-c-apricot"><i data-lucide="sticky-note"></i></span><div class="sk-session-txt"><div class="sk-session-t">Rétro sprint 42</div><div class="sk-session-sub">Atlas · il y a 2 jours</div></div><span class="sk-badge sk-badge--muted sk-badge--pill">Terminée</span></div><div class="sk-session-meta"><span><i data-lucide="users" class="sk-ico-sm"></i>9</span><span><i data-lucide="sticky-note" class="sk-ico-sm"></i>38<span class="sk-session-unit">cartes</span></span><span><i data-lucide="list-checks" class="sk-ico-sm"></i>6<span class="sk-session-unit">actions</span></span></div></a></div></div>
+    <div><div class="cd-cq-w">≥ 300 px · badge à droite</div><div style="width:21.25rem"><a class="sk-card sk-session" href="#"><div class="sk-session-h"><span class="sk-session-kind sk-c-apricot"><i data-lucide="sticky-note"></i></span><div class="sk-session-txt"><div class="sk-session-t">Rétro sprint 42</div><div class="sk-session-sub">Atlas · il y a 2 jours</div></div><span class="sk-badge sk-badge--muted sk-badge--pill">Terminée</span></div><div class="sk-session-meta"><span><i data-lucide="users" class="sk-ico-sm"></i>9</span><span><i data-lucide="sticky-note" class="sk-ico-sm"></i>38<span class="sk-session-unit">cartes</span></span><span><i data-lucide="list-checks" class="sk-ico-sm"></i>6<span class="sk-session-unit">actions</span></span></div></a></div></div>
+    <div><div class="cd-cq-w">240 px · en direct</div><div style="width:15rem"><a class="sk-card sk-session" href="#"><div class="sk-session-h"><span class="sk-session-kind sk-c-iris"><i data-lucide="spade"></i></span><div class="sk-session-txt"><div class="sk-session-t">Poker · Sprint 43</div><div class="sk-session-sub">Atlas · 10:02</div></div><span class="sk-badge sk-badge--success sk-badge--pill"><span class="sk-dot"></span>En direct</span></div><div class="sk-session-foot"><span class="sk-stack"><span class="sk-avatar sk-avatar--sm sk-p2">TM</span><span class="sk-avatar sk-avatar--sm sk-p6">NK</span><span class="sk-avatar sk-avatar--sm sk-stack-more">+5</span></span><span class="sk-xs sk-strong" style="color:var(--skrum-primary-text)">Rejoindre →</span></div></a></div></div>
+  </div>
+</div>
+</body>
+</html>
