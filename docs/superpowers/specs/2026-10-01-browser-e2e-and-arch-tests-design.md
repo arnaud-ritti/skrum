@@ -210,7 +210,7 @@ The exact list, from running the presets and the rules against the code on 2026-
 
 - The browser suite is not a PHPUnit test suite in `phpunit.xml`, so `php artisan test` does not pick it up.
 - `.gitignore` gains `/tests/Browser/Screenshots`.
-- `phpunit.xml` sets `memory_limit` to 512M: the architecture tests load the whole `app/` tree and exhaust PHP's default 128M.
+- `phpunit.xml` sets `memory_limit` to 1G: the architecture tests load the whole `app/` tree; they exhaust PHP's default 128M on their own, and 512M once the `laravel` preset runs after the Unit and Feature suites in one process.
 - Locally the suite runs inside Sail, where the database host resolves; the Sail image already installs Playwright's system dependencies.
 
 ### 6.1 CI
