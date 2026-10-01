@@ -1331,5 +1331,14 @@
     "Webhook URL": "Webhook URL",
     "Channel label (optional)": "Channel label (optional)",
     "Shown on this page only, to remember where messages go.": "Shown on this page only, to remember where messages go.",
-    "Nothing is posted to :channel anymore. Delete the webhook in :provider if you no longer need it.": "Nothing is posted to :channel anymore. Delete the webhook in :provider if you no longer need it."
+    "Nothing is posted to :channel anymore. Delete the webhook in :provider if you no longer need it.": "Nothing is posted to :channel anymore. Delete the webhook in :provider if you no longer need it.",
+    "Post link to Microsoft Teams": "Post link to Microsoft Teams",
+    "Post link to Mattermost": "Post link to Mattermost",
+    "Send link to webhook": "Send link to webhook",
+    "Share to Microsoft Teams": "Share to Microsoft Teams",
+    "Share to Mattermost": "Share to Mattermost",
+    "Send to webhook": "Send to webhook",
+    "Share the results to Microsoft Teams": "Share the results to Microsoft Teams",
+    "Share the results to Mattermost": "Share the results to Mattermost",
+    "Send the results to the webhook": "Send the results to the webhook"
 }

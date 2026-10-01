@@ -74,7 +74,12 @@ export type TelegramConnectCode = {
     expiresAt: string;
 };
 
-export type ShareChannel = 'slack' | 'telegram';
+export type ShareChannel =
+    | 'slack'
+    | 'telegram'
+    | 'msteams'
+    | 'mattermost'
+    | 'webhook';
 
 export type DeliveryChannel = ShareChannel | 'email';
 

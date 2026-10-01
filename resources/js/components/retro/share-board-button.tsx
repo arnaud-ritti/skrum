@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { useTrans } from '@/hooks/use-trans';
+import { hasShareChannel } from '@/lib/integrations';
 import { useBoard } from './board-context';
 import { BoardPostLink } from './board-post-link';
 
@@ -12,10 +13,7 @@ export function ShareBoardButton() {
     const [open, setOpen] = useState(false);
     const { integrations, retro } = board;
 
-    if (
-        retro.phase === 'completed' ||
-        (!integrations.slack && !integrations.telegram)
-    ) {
+    if (retro.phase === 'completed' || !hasShareChannel(integrations)) {
         return null;
     }
 

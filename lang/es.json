@@ -1577,5 +1577,14 @@
     "Webhook URL": "URL del webhook",
     "Channel label (optional)": "Nombre del canal (opcional)",
     "Shown on this page only, to remember where messages go.": "Solo se muestra en esta página, para recordar adónde van los mensajes.",
-    "Nothing is posted to :channel anymore. Delete the webhook in :provider if you no longer need it.": "Ya no se publicará nada en :channel. Elimina el webhook en :provider si ya no lo necesitas."
+    "Nothing is posted to :channel anymore. Delete the webhook in :provider if you no longer need it.": "Ya no se publicará nada en :channel. Elimina el webhook en :provider si ya no lo necesitas.",
+    "Post link to Microsoft Teams": "Publicar el enlace en Microsoft Teams",
+    "Post link to Mattermost": "Publicar el enlace en Mattermost",
+    "Send link to webhook": "Enviar el enlace al webhook",
+    "Share to Microsoft Teams": "Compartir en Microsoft Teams",
+    "Share to Mattermost": "Compartir en Mattermost",
+    "Send to webhook": "Enviar al webhook",
+    "Share the results to Microsoft Teams": "Compartir los resultados en Microsoft Teams",
+    "Share the results to Mattermost": "Compartir los resultados en Mattermost",
+    "Send the results to the webhook": "Enviar los resultados al webhook"
 }

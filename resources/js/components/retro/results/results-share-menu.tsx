@@ -8,6 +8,11 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useTrans } from '@/hooks/use-trans';
+import {
+    hasShareChannel,
+    ShareChannels,
+    shareResultsLabel,
+} from '@/lib/integrations';
 import type { ShareChannel } from '@/types';
 import { useBoard } from '../board-context';
 import { EmailResultsDialog } from './email-results-dialog';
@@ -21,7 +26,7 @@ export function ResultsShareMenu() {
     const [open, setOpen] = useState<OpenDialog | null>(null);
     const { integrations } = board;
 
-    if (!integrations.slack && !integrations.telegram && !integrations.email) {
+    if (!hasShareChannel(integrations) && !integrations.email) {
         return null;
     }
 
@@ -46,24 +51,16 @@ export function ResultsShareMenu() {
                             {t('Send to email')}
                         </DropdownMenuItem>
                     )}
-                    {integrations.slack && (
+                    {ShareChannels.filter(
+                        (channel) => integrations[channel],
+                    ).map((channel) => (
                         <DropdownMenuItem
-                            onSelect={() =>
-                                setOpen({ kind: 'recap', channel: 'slack' })
-                            }
+                            key={channel}
+                            onSelect={() => setOpen({ kind: 'recap', channel })}
                         >
-                            {t('Share to Slack')}
+                            {shareResultsLabel(channel, t)}
                         </DropdownMenuItem>
-                    )}
-                    {integrations.telegram && (
-                        <DropdownMenuItem
-                            onSelect={() =>
-                                setOpen({ kind: 'recap', channel: 'telegram' })
-                            }
-                        >
-                            {t('Share to Telegram')}
-                        </DropdownMenuItem>
-                    )}
+                    ))}
                 </DropdownMenuContent>
             </DropdownMenu>
             <RecapShareDialog
