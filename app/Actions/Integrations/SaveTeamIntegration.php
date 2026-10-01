@@ -51,9 +51,9 @@ class SaveTeamIntegration
             $previousSite = $existing?->site();
             $site = self::siteOf($provider, $attributes['settings']);
             $siteChanged = $previousSite !== null && $site !== null && $site !== $previousSite;
-            $keptWebhookCredentials = $existing === null || $siteChanged
-                ? []
-                : Arr::only((array) $existing->readableCredentials(), self::WebhookCredentials);
+            $credentials = $provider->isTracker()
+                ? [...Arr::except($attributes['credentials'], self::WebhookCredentials), ...self::keptWebhookCredentials($existing, $siteChanged)]
+                : $attributes['credentials'];
 
             $integration = $existing ?? new TeamIntegration;
 
@@ -61,7 +61,7 @@ class SaveTeamIntegration
                 'team_id' => $team->id,
                 'provider' => $provider,
                 ...$attributes,
-                'credentials' => [...Arr::except($attributes['credentials'], self::WebhookCredentials), ...$keptWebhookCredentials],
+                'credentials' => $credentials,
                 'connected_by_user_id' => $user->id,
                 'last_error' => null,
                 'last_checked_at' => now(),
@@ -87,6 +87,21 @@ class SaveTeamIntegration
 
             return $integration;
         });
+    }
+
+    /**
+     * A tracker's inbound webhook URL token and signing secret belong to
+     * its site, never to the credentials a reconnect brings.
+     *
+     * @return array<string, mixed>
+     */
+    private static function keptWebhookCredentials(?TeamIntegration $existing, bool $siteChanged): array
+    {
+        if ($existing === null || $siteChanged) {
+            return [];
+        }
+
+        return Arr::only((array) $existing->readableCredentials(), self::WebhookCredentials);
     }
 
     /**
