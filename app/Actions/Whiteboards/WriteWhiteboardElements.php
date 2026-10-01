@@ -21,6 +21,14 @@ class WriteWhiteboardElements
 
     public const MaxBroadcastBytes = 8000;
 
+    private const IndexRepairKeys = ['index', 'version', 'versionNonce', 'updated'];
+
+    /**
+     * What a canvas holds differently for a masked text: it is empty, and
+     * restoring an empty text marks it deleted.
+     */
+    private const MaskedTextKeys = ['text', 'originalText', 'isDeleted'];
+
     public int $maxLiveElements = Whiteboard::MaxLiveElements;
 
     public function __construct(
@@ -28,6 +36,7 @@ class WriteWhiteboardElements
         private PresentWhiteboardElement $presentWhiteboardElement,
         private OrderWhiteboardElements $orderWhiteboardElements,
         private PresentWhiteboardVoting $presentWhiteboardVoting,
+        private KeepWhiteboardTextOutOfLogs $keepWhiteboardTextOutOfLogs,
     ) {}
 
     /**
@@ -36,7 +45,7 @@ class WriteWhiteboardElements
      */
     public function handle(Whiteboard $board, WhiteboardMember $member, array $rawElements): array
     {
-        return DB::transaction(function () use ($board, $member, $rawElements): array {
+        return $this->keepWhiteboardTextOutOfLogs->handle($board->id, fn (): array => DB::transaction(function () use ($board, $member, $rawElements): array {
             $locked = Whiteboard::query()->whereKey($board->id)->lockForUpdate()->firstOrFail();
 
             WhiteboardGuard::notLocked($locked, $member);
@@ -45,7 +54,7 @@ class WriteWhiteboardElements
             $seq = $fromSeq;
             $isFacilitator = $locked->isFacilitator($member);
             $session = $locked->voteSessions()->whereNull('closed_at')->first();
-            $stored = $this->storedElements($locked, $rawElements, $session !== null);
+            $stored = $this->storedElements($locked, $rawElements);
             $targetsBefore = $this->targets($session, $stored);
             $leftScope = 0;
             $fileIds = $locked->files()->pluck('file_id')->flip();
@@ -69,10 +78,14 @@ class WriteWhiteboardElements
                 }
 
                 $existing = $stored->get($element['id']);
+                $container = $this->container($element, $stored);
 
                 if ($this->isSameWrite($existing, $element)) {
                     continue;
                 }
+
+                $indexRepair = $this->indexRepairOfHidden($existing, $element, $member);
+                $element = $indexRepair ?? $element;
 
                 if ($mayDefer && $this->isWordsOfTarget($existing, $element, $targetsBefore)) {
                     $queue[] = [$raw, false];
@@ -80,7 +93,7 @@ class WriteWhiteboardElements
                     continue;
                 }
 
-                $reason = $this->refusal($existing, $element, $isFacilitator, $fileIds, $liveCount);
+                $reason = $this->refusal($existing, $container, $element, $member, $indexRepair !== null, $isFacilitator, $fileIds, $liveCount);
 
                 if ($reason === null && ! $mayDefer && $session !== null && $this->changesWordsOfTarget($session, $stored, $targetsBefore, $existing, $element)) {
                     $reason = 'voting';
@@ -99,7 +112,7 @@ class WriteWhiteboardElements
                 $liveCount += $this->liveDelta($existing, $element);
                 $seq++;
 
-                $saved = $this->save($locked, $member, $existing, $element, $seq);
+                $saved = $this->save($locked, $member, $existing, $element, $seq, $this->isPrivate($locked, $existing, $container, $element));
 
                 $stored->put($element['id'], $saved);
                 $accepted[$element['id']] = $saved;
@@ -124,14 +137,14 @@ class WriteWhiteboardElements
             }
 
             return ['seq' => $seq, 'fromSeq' => $fromSeq, 'rejected' => $rejected];
-        });
+        }));
     }
 
     /**
      * @param  array<int, mixed>  $rawElements
      * @return Collection<string, WhiteboardElement>
      */
-    private function storedElements(Whiteboard $board, array $rawElements, bool $withContainers): Collection
+    private function storedElements(Whiteboard $board, array $rawElements): Collection
     {
         $ids = collect($rawElements)
             ->map(fn (mixed $raw): ?string => $this->rawId($raw))
@@ -140,10 +153,6 @@ class WriteWhiteboardElements
             ->values();
 
         $stored = $board->elements()->whereIn('element_id', $ids)->get()->keyBy('element_id');
-
-        if (! $withContainers) {
-            return $stored;
-        }
 
         $containerIds = collect($rawElements)
             ->map(fn (mixed $raw): mixed => is_array($raw) ? ($raw['containerId'] ?? null) : null)
@@ -331,10 +340,14 @@ class WriteWhiteboardElements
      * @param  array<string, mixed>  $element
      * @param  Collection<string, int>  $fileIds
      */
-    private function refusal(?WhiteboardElement $existing, array $element, bool $isFacilitator, Collection $fileIds, int $liveCount): ?string
+    private function refusal(?WhiteboardElement $existing, ?WhiteboardElement $container, array $element, WhiteboardMember $member, bool $isIndexRepair, bool $isFacilitator, Collection $fileIds, int $liveCount): ?string
     {
         if ($this->isStale($existing, $element)) {
             return 'stale';
+        }
+
+        if (! $isIndexRepair && $this->touchesPrivate($existing, $container, $member)) {
+            return 'private';
         }
 
         if (! $isFacilitator && $this->touchesLock($existing, $element)) {
@@ -350,6 +363,112 @@ class WriteWhiteboardElements
         }
 
         return null;
+    }
+
+    /**
+     * The stored element a text is bound to; only a text keeps `containerId`
+     * through the sanitizer.
+     *
+     * @param  array<string, mixed>  $element
+     * @param  Collection<string, WhiteboardElement>  $stored
+     */
+    private function container(array $element, Collection $stored): ?WhiteboardElement
+    {
+        $containerId = $element['containerId'] ?? null;
+
+        return is_string($containerId) ? $stored->get($containerId) : null;
+    }
+
+    /**
+     * Only its author changes a private element, binds a text to it or
+     * detaches one, and a private note only takes text its author wrote:
+     * a masked copy can then never replace the real text (spec §11.5).
+     */
+    private function touchesPrivate(?WhiteboardElement $existing, ?WhiteboardElement $container, WhiteboardMember $member): bool
+    {
+        if ($existing?->is_private && $existing->author_member_id !== $member->id) {
+            return true;
+        }
+
+        if (! $container?->is_private) {
+            return false;
+        }
+
+        if ($container->author_member_id !== $member->id) {
+            return true;
+        }
+
+        return $existing !== null && $existing->author_member_id !== $member->id;
+    }
+
+    /**
+     * A canvas that holds two elements with the same index gives one of
+     * them a new index and a new version, whoever wrote it. From a member
+     * who is not the author of a hidden element the server takes that
+     * index and nothing else: its own data with the new index, version
+     * and nonce (spec §11.5). Null when the write is anything more.
+     *
+     * @param  array<string, mixed>  $element
+     * @return array<string, mixed>|null
+     */
+    private function indexRepairOfHidden(?WhiteboardElement $existing, array $element, WhiteboardMember $member): ?array
+    {
+        if (! $existing?->is_private || $existing->author_member_id === $member->id) {
+            return null;
+        }
+
+        if (! is_string($element['index'] ?? null) || $element['version'] > $existing->version + 1) {
+            return null;
+        }
+
+        if ($element['index'] === ($existing->data['index'] ?? null) && $element['version'] !== $existing->version) {
+            return null;
+        }
+
+        $isText = $existing->type === 'text';
+
+        if ($isText && (($element['text'] ?? '') !== '' || ($element['originalText'] ?? '') !== '')) {
+            return null;
+        }
+
+        $ignored = array_flip($isText ? [...self::IndexRepairKeys, ...self::MaskedTextKeys] : self::IndexRepairKeys);
+
+        // Loose on purpose: 10 and 10.0 are the same coordinate.
+        if (array_diff_key($element, $ignored) != array_diff_key($existing->data, $ignored)) {
+            return null;
+        }
+
+        return [...$existing->data, ...array_intersect_key($element, array_flip(self::IndexRepairKeys))];
+    }
+
+    /**
+     * A write gives privacy and never takes it away while private writing
+     * is on; only the reveal clears it. A new text whose container is not
+     * stored yet is private too: it may be the text of a note still on its
+     * way. Once the notes are revealed, a note deleted while it was hidden
+     * stays private until its author brings it back.
+     *
+     * @param  array<string, mixed>  $element
+     */
+    private function isPrivate(Whiteboard $board, ?WhiteboardElement $existing, ?WhiteboardElement $container, array $element): bool
+    {
+        if (! $board->private_writing) {
+            return (bool) $existing?->is_private && $element['isDeleted'];
+        }
+
+        if ($existing?->is_private || $container?->is_private) {
+            return true;
+        }
+
+        if ($existing !== null) {
+            return false;
+        }
+
+        if ($element['type'] === 'text') {
+            return ($element['containerId'] ?? null) !== null && $container === null;
+        }
+
+        return isset($element['customData']);
     }
 
     /**
@@ -393,7 +512,7 @@ class WriteWhiteboardElements
     /**
      * @param  array<string, mixed>  $element
      */
-    private function save(Whiteboard $board, WhiteboardMember $member, ?WhiteboardElement $existing, array $element, int $seq): WhiteboardElement
+    private function save(Whiteboard $board, WhiteboardMember $member, ?WhiteboardElement $existing, array $element, int $seq, bool $private): WhiteboardElement
     {
         $attributes = [
             'type' => $element['type'],
@@ -401,6 +520,7 @@ class WriteWhiteboardElements
             'version' => $element['version'],
             'version_nonce' => $element['versionNonce'],
             'is_sticky' => isset($element['customData']),
+            'is_private' => $private,
             'is_deleted' => $element['isDeleted'],
             'seq' => $seq,
         ];
@@ -436,6 +556,10 @@ class WriteWhiteboardElements
      */
     private function broadcastable(array $accepted): ?array
     {
+        if (array_any($accepted, fn (WhiteboardElement $element): bool => $element->is_private)) {
+            return null;
+        }
+
         $elements = $this->orderWhiteboardElements
             ->handle(collect(array_values($accepted)))
             ->map(fn (WhiteboardElement $element): array => $element->data)
