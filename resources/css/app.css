@@ -142,18 +142,20 @@
     }
 }
 
-/* Excalidraw 0.18.1 has no UIOptions key for the library button. */
-.excalidraw .default-sidebar-trigger {
-    display: none;
-}
-
 /*
- * Nor for what names the library or links to its sites: the help dialog's
- * header (documentation, blog, issues, YouTube), the tabs of the search
- * panel (the other tab is the element library, whose "Browse libraries" and
- * publish dialog link out), and everything after the laser pointer in the
- * extra tools (the "Generate" heading and "Mermaid to Excalidraw").
+ * Excalidraw 0.18.1 has no UIOptions key for the library button, nor for what
+ * names the library or links to its sites: the help dialog's header
+ * (documentation, blog, issues, YouTube), the tabs of the search panel (the
+ * other tab is the element library, whose "Browse libraries" and publish
+ * dialog link out), and everything after the laser pointer in the extra tools
+ * (the "Generate" heading and "Mermaid to Excalidraw").
+ *
+ * `!important` because the library's stylesheet sets `display` on the same
+ * elements with the same specificity and loads later, with the canvas chunk.
+ * A wrapper class of ours on the board could not outweigh it everywhere: the
+ * library renders its dialogs in a container appended to the body.
  */
+.excalidraw .default-sidebar-trigger,
 .excalidraw .HelpDialog__header,
 .excalidraw .default-sidebar .sidebar-triggers,
 .excalidraw .library-menu-browse-button,
@@ -161,5 +163,5 @@
     .App-toolbar__extra-tools-dropdown
     [data-testid='toolbar-laser']
     ~ * {
-    display: none;
+    display: none !important;
 }
