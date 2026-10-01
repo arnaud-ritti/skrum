@@ -15,7 +15,9 @@ class LatestDeliveries
 
     /**
      * The newest delivery of each channel, for the delivery lines. Rows are
-     * pruned after 90 days, so the scan stays small.
+     * pruned after 90 days, so the scan stays small. A webhook redelivery
+     * is an admin's repeat of an old message, not a new share, so it never
+     * takes over the line.
      *
      * @param  array<int, IntegrationDeliveryKind>  $kinds
      * @return array<int, Delivery>
@@ -24,6 +26,7 @@ class LatestDeliveries
     {
         return IntegrationDelivery::query()
             ->whereMorphedTo('subject', $subject)
+            ->whereNull('redelivery_of_id')
             ->whereIn('kind', array_map(fn (IntegrationDeliveryKind $kind): string => $kind->value, $kinds))
             ->with('requestedBy')
             ->orderByDesc('created_at')

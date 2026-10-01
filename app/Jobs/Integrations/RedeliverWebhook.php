@@ -11,6 +11,10 @@ use App\Support\Integrations\Webhook\WebhookMessage;
  * Sends a stored webhook message again (webhook redelivery spec §4.2).
  * Only the delivery id travels through the queue; the message is read
  * from the delivery's encrypted payload when the job runs.
+ *
+ * Not ShouldBeUnique: each redelivery row gets exactly one job, queued
+ * under the row lock of RequestWebhookRedelivery, and a duplicate run
+ * stops at the Queued check of DeliverToChannel.
  */
 class RedeliverWebhook extends DeliverToChannel
 {

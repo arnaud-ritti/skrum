@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\Integrations\LatestDeliveries;
 use App\Actions\Integrations\RequestWebhookRedelivery;
 use App\Enums\IntegrationDeliveryChannel;
 use App\Enums\IntegrationDeliveryKind;
@@ -10,6 +11,7 @@ use App\Jobs\Integrations\PushActionItemState;
 use App\Jobs\Integrations\RedeliverWebhook;
 use App\Models\IntegrationDelivery;
 use App\Models\IntegrationDeliveryPayload;
+use App\Models\Retro;
 use App\Models\Team;
 use App\Models\TeamIntegration;
 use App\Models\User;
@@ -97,6 +99,7 @@ it('redelivers the stored message with the same id, a fresh time and the current
 
         return $request->header('X-Skrum-Delivery')[0] === $delivery->id
             && $request->header('X-Skrum-Redelivery')[0] === 'true'
+            && $request->header('X-Skrum-Timestamp')[0] === (string) Carbon::parse('2026-10-08 09:00:00', 'UTC')->getTimestamp()
             && outgoingWebhookSignatureIsValid($request, 'rotated-secret')
             && $body['id'] === $delivery->id
             && $body['occurredAt'] === '2026-10-07T10:00:00Z'
@@ -312,4 +315,58 @@ it('throttles redeliveries per user', function () {
     $deliveries->take(10)->each(fn (IntegrationDelivery $delivery) => $this->actingAs($admin)->postJson($url($delivery))->assertAccepted());
 
     $this->actingAs($admin)->postJson($url($deliveries->last()))->assertTooManyRequests();
+});
+
+it('keeps the original share as the latest delivery of its subject after a redelivery', function () {
+    [$team, $admin, $integration, $delivery] = redeliverableWebhookDelivery();
+    $retro = Retro::factory()->create(['team_id' => $team->id]);
+    $delivery->forceFill(['kind' => IntegrationDeliveryKind::RetroLink, 'event' => null, 'created_at' => now()->subMinute()])->subject()->associate($retro)->save();
+
+    $redelivery = app(RequestWebhookRedelivery::class)->handle($integration, $delivery, $admin);
+
+    expect($redelivery->subject->is($retro))->toBeTrue()
+        ->and(array_column(app(LatestDeliveries::class)->handle($retro, [IntegrationDeliveryKind::RetroLink]), 'id'))->toBe([$delivery->id]);
+});
+
+it('points the redelivery of a redelivery to the first delivery', function () {
+    [, $admin, $integration, $delivery] = redeliverableWebhookDelivery();
+    $first = app(RequestWebhookRedelivery::class)->handle($integration, $delivery, $admin);
+    $first->forceFill(['status' => IntegrationDeliveryStatus::Sent])->save();
+
+    $second = app(RequestWebhookRedelivery::class)->handle($integration, $first, $admin);
+
+    expect($second->redelivery_of_id)->toBe($delivery->id)
+        ->and($second->payload->message['id'])->toBe($delivery->id);
+});
+
+it('refuses to redeliver a redelivery while the first delivery is being redelivered', function () {
+    [, $admin, $integration, $delivery] = redeliverableWebhookDelivery();
+    $first = app(RequestWebhookRedelivery::class)->handle($integration, $delivery, $admin);
+    $first->forceFill(['status' => IntegrationDeliveryStatus::Sent])->save();
+    app(RequestWebhookRedelivery::class)->handle($integration, $delivery, $admin);
+
+    expectRedeliveryRefused(fn () => app(RequestWebhookRedelivery::class)->handle($integration, $first, $admin), 'This delivery is already being redelivered.');
+
+    Queue::assertPushed(RedeliverWebhook::class, 2);
+});
+
+it('does not redeliver a delivery outside the webhook log of its team', function (string $case) {
+    [, $admin, $integration, $delivery] = redeliverableWebhookDelivery();
+
+    match ($case) {
+        'other team' => $delivery->forceFill(['team_id' => Team::factory()->create()->id])->save(),
+        'other channel' => $delivery->forceFill(['channel' => IntegrationDeliveryChannel::Slack])->save(),
+    };
+
+    expect(fn () => app(RequestWebhookRedelivery::class)->handle($integration, $delivery, $admin))
+        ->toThrow(fn (HttpException $exception) => expect($exception->getStatusCode())->toBe(404));
+
+    Queue::assertNotPushed(RedeliverWebhook::class);
+})->with(['other team', 'other channel']);
+
+it('refuses to redeliver through a webhook disabled since the page was loaded', function () {
+    [, $admin, $integration, $delivery] = redeliverableWebhookDelivery();
+    TeamIntegration::query()->findOrFail($integration->id)->markReconnectRequired('Disabled after 10 failed deliveries in a row.');
+
+    expectRedeliveryRefused(fn () => app(RequestWebhookRedelivery::class)->handle($integration, $delivery, $admin), 'Turn the webhook back on before redelivering.');
 });
