@@ -101,7 +101,7 @@ Acceptance criteria for every requirement are in §16. R8 and R9 are not in use:
 
 `elements` come in canvas order: by fractional `index` compared byte by byte (Excalidraw's own order, which a database collation does not give), then by id; elements without an index come last, by `seq`. `GET elements?since=` and the `elements` of `elements.changed` use the same order. Excalidraw repairs any other order by giving elements a new index and version, so the order is part of the contract: loading a board, fetching a delta or receiving a broadcast never changes an element's `index`, `version` or `versionNonce`, and never causes a write.
 
-One class, `BuildWhiteboardSnapshot`, builds it for the viewer (`me`, and `guestUrl`, which only the facilitator receives). `PresentWhiteboardElement` is the only serializer of elements; an element is the same for every viewer.
+One class, `BuildWhiteboardSnapshot`, builds it for the viewer (`me`, and `guestUrl`, which guests do not receive). `PresentWhiteboardElement` is the only serializer of elements; an element is the same for every viewer.
 
 ### 6.3 Write
 
