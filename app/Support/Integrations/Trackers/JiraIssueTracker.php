@@ -191,7 +191,13 @@ abstract class JiraIssueTracker implements IssueTracker, SyncsIssueStatus
 
         $this->api()->post($integration, $path, $body);
 
-        return $this->issueById($integration, $externalId) ?? $issue;
+        return $this->readBack($integration, $externalId) ?? $issue->withStatus(new IssueStatus(
+            id: (string) data_get($transition, 'to.id'),
+            name: TrackerIssue::shorten(data_get($transition, 'to.name'), TrackerIssue::AssigneeLength),
+            kind: (string) data_get($transition, 'to.statusCategory.key', 'undefined'),
+            container: $issue->issueStatus->container,
+            updatedAt: null,
+        ), TrackerIssue::shorten(data_get($transition, 'to.name'), TrackerIssue::AssigneeLength));
     }
 
     /**
@@ -202,6 +208,31 @@ abstract class JiraIssueTracker implements IssueTracker, SyncsIssueStatus
     private function issueById(TeamIntegration $integration, string $externalId): ?TrackerIssue
     {
         return $this->issues($integration, [$externalId])[$externalId] ?? null;
+    }
+
+    /**
+     * The issue right after a write, read by id: the JQL search lags behind
+     * writes on Jira Cloud, a single issue read does not.
+     *
+     * @param  string  $externalId  digits only
+     */
+    private function readBack(TeamIntegration $integration, string $externalId): ?TrackerIssue
+    {
+        try {
+            $raw = $this->api()->get($integration, $this->api()->apiPath("issue/{$externalId}"), [
+                'fields' => implode(',', $this->requestedFields($integration)),
+            ]);
+        } catch (ProviderRejected $exception) {
+            if (in_array($exception->httpStatus, [403, 404], true)) {
+                return null;
+            }
+
+            throw $exception;
+        }
+
+        $issue = $this->issue($integration, $raw);
+
+        return $issue?->issueStatus === null ? null : $issue;
     }
 
     /**

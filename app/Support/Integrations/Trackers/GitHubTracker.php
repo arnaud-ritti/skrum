@@ -285,11 +285,21 @@ class GitHubTracker implements IssueTracker, SyncsIssueStatus
             return $issue;
         }
 
-        $updated = $this->client->patch($integration, "repos/{$fullName}/issues/{$reference[1]}", $target === ExternalIssueState::Done
+        $change = $target === ExternalIssueState::Done
             ? ['state' => 'closed', 'state_reason' => 'completed']
-            : ['state' => 'open']);
+            : ['state' => 'open'];
 
-        return $this->issue($reference[0], $updated) ?? $issue;
+        try {
+            $updated = $this->client->patch($integration, "repos/{$fullName}/issues/{$reference[1]}", $change);
+        } catch (ProviderRejected $exception) {
+            if (in_array($exception->httpStatus, self::UnavailableStatuses, true)) {
+                return null;
+            }
+
+            throw $exception;
+        }
+
+        return $this->issue($reference[0], $updated) ?? $this->issue($reference[0], [...$raw, ...$change, 'updated_at' => null]);
     }
 
     /**

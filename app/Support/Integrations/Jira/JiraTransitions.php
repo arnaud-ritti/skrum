@@ -46,9 +46,10 @@ class JiraTransitions
     }
 
     /**
-     * Fields the transition screen requires: `resolution` is filled with
-     * "Done", else "Fixed", else the first allowed value; any other
-     * required field without a default stops the push.
+     * Fields the transition screen requires: when closing, `resolution` is
+     * filled with "Done", else "Fixed", else the first allowed value; any
+     * other required field without a default, or a resolution required to
+     * reopen, stops the push.
      *
      * @param  array<array-key, mixed>  $transition
      * @return array<string, mixed>
@@ -62,7 +63,7 @@ class JiraTransitions
                 continue;
             }
 
-            $resolution = $fieldId === 'resolution' ? self::resolution($field) : null;
+            $resolution = $fieldId === 'resolution' && $target === ExternalIssueState::Done ? self::resolution($field) : null;
 
             if ($resolution === null) {
                 throw new StatusPushRejected($provider, $target === ExternalIssueState::Done

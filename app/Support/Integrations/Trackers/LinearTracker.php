@@ -205,20 +205,25 @@ class LinearTracker implements IssueTracker, SyncsIssueStatus
             'query($id: String!) { issue(id: $id) { team { states(first: 100) { nodes { id name type position } } } } }',
             ['id' => $externalId],
         );
-        $stateId = $this->targetState($integration, $issue->issueStatus->container, self::states((array) data_get($data, 'issue.team.states.nodes', [])), $target)
+        $state = $this->targetState($integration, $issue->issueStatus->container, self::states((array) data_get($data, 'issue.team.states.nodes', [])), $target)
             ?? throw StatusPushRejected::unavailable($integration->provider, $issue->key, $target);
 
         $result = $this->client->query(
             $integration,
             'mutation($id: String!, $stateId: String!) { issueUpdate(id: $id, input: {stateId: $stateId}) { success } }',
-            ['id' => $externalId, 'stateId' => $stateId],
+            ['id' => $externalId, 'stateId' => $state['id']],
         );
 
         if (data_get($result, 'issueUpdate.success') !== true) {
             throw new StatusPushRejected($integration->provider, __('Linear did not accept this status change.'));
         }
 
-        return $this->issueById($integration, $externalId) ?? $issue;
+        $name = TrackerIssue::shorten($state['name'], TrackerIssue::AssigneeLength);
+
+        return $this->issueById($integration, $externalId) ?? $issue->withStatus(
+            new IssueStatus($state['id'], $name, $state['type'], $issue->issueStatus->container, null),
+            $name,
+        );
     }
 
     /**
@@ -237,19 +242,22 @@ class LinearTracker implements IssueTracker, SyncsIssueStatus
      * `backlog` state, in workflow order.
      *
      * @param  array<int, array{id: string, name: string, type: string, position: float}>  $states
+     * @return array{id: string, name: string, type: string, position: float}|null
      */
-    private function targetState(TeamIntegration $integration, ?string $team, array $states, ExternalIssueState $target): ?string
+    private function targetState(TeamIntegration $integration, ?string $team, array $states, ExternalIssueState $target): ?array
     {
         $configured = DoneMapping::configured($integration, $team, $target === ExternalIssueState::Done ? 'completeStateId' : 'reopenStateId');
 
-        if ($configured !== null && in_array($configured, array_column($states, 'id'), true)) {
-            return $configured;
+        foreach ($states as $state) {
+            if ($configured !== null && $state['id'] === $configured) {
+                return $state;
+            }
         }
 
         foreach ($target === ExternalIssueState::Done ? ['completed'] : ['unstarted', 'backlog'] as $type) {
             foreach ($states as $state) {
                 if ($state['type'] === $type) {
-                    return $state['id'];
+                    return $state;
                 }
             }
         }

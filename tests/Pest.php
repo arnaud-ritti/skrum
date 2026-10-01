@@ -1374,6 +1374,9 @@ function fakeJiraTransitions(array $before, array $after, array $transitions): v
         jiraApiUrl('rest/api/3/search/jql') => function () use (&$posted, $before, $after) {
             return Http::response(['issues' => [jiraTrackerIssue('10001', 'PROJ-1', $posted ? $after : $before)], 'isLast' => true]);
         },
+        jiraApiUrl('rest/api/3/issue/10001?*') => function () use (&$posted, $before, $after) {
+            return Http::response(jiraTrackerIssue('10001', 'PROJ-1', $posted ? $after : $before));
+        },
         jiraApiUrl('rest/api/3/issue/10001/transitions*') => function (HttpRequest $request) use (&$posted, $transitions) {
             if ($request->method() === 'POST') {
                 $posted = true;
