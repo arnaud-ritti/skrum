@@ -81,7 +81,7 @@ class BuildWebhookEventData
     {
         $item->loadMissing(['team.workspace', 'retro', 'author', 'assigneeUser', 'assigneeParticipant.user']);
         $retro = $item->retro;
-        $assignee = $this->buildRetroRecap->assignee($item);
+        $assignee = $this->buildRetroRecap->assignee($item, forMachines: true);
 
         return [
             'id' => $item->id,

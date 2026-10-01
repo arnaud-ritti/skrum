@@ -19,6 +19,7 @@ use App\Models\Team;
 use App\Models\TeamIntegration;
 use Closure;
 use Illuminate\Database\Eloquent\Model;
+use Throwable;
 
 /**
  * Queues the automatic events a team's generic webhook subscribed to.
@@ -75,21 +76,25 @@ class QueueWebhookEvents
             return;
         }
 
-        $data = $buildData();
+        try {
+            $data = $buildData();
 
-        $delivery = IntegrationDelivery::query()->create([
-            'team_id' => $team->id,
-            'channel' => IntegrationDeliveryChannel::Webhook,
-            'kind' => IntegrationDeliveryKind::Event,
-            'team_integration_id' => $integration->id,
-            'event' => $event->value,
-            'subject_type' => $subject->getMorphClass(),
-            'subject_id' => $subject->getKey(),
-            'requested_by_user_id' => null,
-            'status' => IntegrationDeliveryStatus::Queued,
-        ]);
+            $delivery = IntegrationDelivery::query()->create([
+                'team_id' => $team->id,
+                'channel' => IntegrationDeliveryChannel::Webhook,
+                'kind' => IntegrationDeliveryKind::Event,
+                'team_integration_id' => $integration->id,
+                'event' => $event->value,
+                'subject_type' => $subject->getMorphClass(),
+                'subject_id' => $subject->getKey(),
+                'requested_by_user_id' => null,
+                'status' => IntegrationDeliveryStatus::Queued,
+            ]);
 
-        dispatch(new DeliverWebhookEvent($delivery->id, $event->value, now()->toIso8601ZuluString(), $data, app()->getLocale()))->afterCommit();
+            dispatch(new DeliverWebhookEvent($delivery->id, $event->value, now()->toIso8601ZuluString(), $data, app()->getLocale()))->afterCommit();
+        } catch (Throwable $exception) {
+            report($exception);
+        }
     }
 
     private function subscribedWebhook(Team $team, WebhookEvent $event): ?TeamIntegration

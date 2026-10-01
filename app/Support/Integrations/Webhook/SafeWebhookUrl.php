@@ -2,9 +2,12 @@
 
 namespace App\Support\Integrations\Webhook;
 
+use App\Support\Integrations\Exceptions\UnresolvableWebhookHost;
 use App\Support\Integrations\Exceptions\UnsafeWebhookUrl;
 use App\Support\Integrations\HostResolver;
 use App\Support\Integrations\PublicAddress;
+use GuzzleHttp\Psr7\Exception\MalformedUriException;
+use GuzzleHttp\Psr7\Uri;
 
 /**
  * Spec 8 §4.5: checked on save and before every send. Every address the
@@ -43,7 +46,7 @@ class SafeWebhookUrl
         $addresses = filter_var($host, FILTER_VALIDATE_IP) !== false ? [$host] : $this->resolver->addresses($host);
 
         if ($addresses === []) {
-            throw new UnsafeWebhookUrl;
+            throw new UnresolvableWebhookHost;
         }
 
         if (! self::allowsPrivateNetworks()) {
@@ -105,8 +108,22 @@ class SafeWebhookUrl
             return null;
         }
 
+        if (preg_match('/^[a-z][a-z0-9+.-]*:\/\/[^\/?#]*(\]|[^:\]]):(?!\d+(?:[\/?#]|$))/i', $url) === 1) {
+            return null;
+        }
+
+        try {
+            new Uri($url);
+        } catch (MalformedUriException) {
+            return null;
+        }
+
         $urlHost = strtolower(trim((string) ($parts['host'] ?? ''), '[]'));
         $host = rtrim($urlHost, '.');
+
+        if (filter_var($host, FILTER_VALIDATE_IP) !== false && $urlHost !== $host) {
+            return null;
+        }
 
         if ($host === '' || str_contains($host, '..')) {
             return null;

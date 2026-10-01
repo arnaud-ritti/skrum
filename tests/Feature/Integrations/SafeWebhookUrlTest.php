@@ -2,6 +2,7 @@
 
 use App\Enums\IntegrationProvider;
 use App\Rules\OutgoingWebhookUrl;
+use App\Support\Integrations\Exceptions\UnresolvableWebhookHost;
 use App\Support\Integrations\Exceptions\UnsafeWebhookUrl;
 use App\Support\Integrations\HostResolver;
 use App\Support\Integrations\Webhook\SafeWebhookUrl;
@@ -51,6 +52,9 @@ it('refuses private, reserved and invalid endpoints', function (string $url, arr
     'port 1023' => ['https://hooks.example.com:1023/skrum', ['93.184.216.34']],
     'not a url' => ['hooks.example.com/skrum', ['93.184.216.34']],
     'unresolvable' => ['https://nowhere.example.com/skrum', []],
+    'signed port' => ['https://hooks.example.com:+443/skrum', ['93.184.216.34']],
+    'port followed by a dot' => ['https://hooks.example.com:443./skrum', ['93.184.216.34']],
+    'ip literal with a trailing dot' => ['https://93.184.216.34./skrum', ['93.184.216.34']],
     'loopback' => ['https://hooks.example.com/skrum', ['127.0.0.1']],
     'rfc 1918 (10/8)' => ['https://hooks.example.com/skrum', ['10.1.2.3']],
     'rfc 1918 (172.16/12)' => ['https://hooks.example.com/skrum', ['172.16.5.4']],
@@ -156,4 +160,11 @@ it('validates webhook URLs with a single message', function () {
     outgoingWebhookResolves();
 
     expect(Validator::make(['url' => 'https://hooks.example.com/x'], ['url' => [new OutgoingWebhookUrl]])->passes())->toBeTrue();
+});
+
+it('tells a host that gave no address apart from an unsafe one', function () {
+    outgoingWebhookResolves([]);
+
+    expect(fn () => app(SafeWebhookUrl::class)->resolve('https://nowhere.example.com/skrum'))
+        ->toThrow(UnresolvableWebhookHost::class);
 });

@@ -4,6 +4,7 @@ use App\Actions\ActionItems\ActionItemActor;
 use App\Actions\ActionItems\CreateActionItem;
 use App\Actions\ActionItems\ExternalSyncActor;
 use App\Actions\ActionItems\SetActionItemStatus;
+use App\Actions\Integrations\BuildWebhookEventData;
 use App\Actions\Retros\ChangeRetroPhase;
 use App\Enums\ActionItemStatus;
 use App\Enums\IntegrationDeliveryChannel;
@@ -27,6 +28,7 @@ use App\Support\Integrations\Exceptions\ProviderUnavailable;
 use App\Support\Integrations\Webhook\WebhookHealth;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Exceptions;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 
@@ -370,4 +372,54 @@ it('never sends automatic events to Slack, Telegram, Teams or Mattermost', funct
 
     Queue::assertPushed(DeliverWebhookEvent::class, 1);
     expect(IntegrationDelivery::query()->pluck('channel')->unique()->all())->toBe([IntegrationDeliveryChannel::Webhook]);
+});
+
+it('keeps the action and later listeners alive when building an event fails', function () {
+    Exceptions::fake();
+    [$retro, , $participant] = webhookEventRetro();
+    subscribedWebhook($retro->team, ['action_item.created']);
+    $this->mock(BuildWebhookEventData::class, fn ($mock) => $mock->shouldReceive('actionItemCreated')->andThrow(new RuntimeException('boom')));
+
+    $item = app(CreateActionItem::class)->handle($retro->team, $retro, ActionItemActor::forParticipant($participant), ['content' => 'Fix the deploy']);
+
+    expect($item->exists)->toBeTrue()
+        ->and(IntegrationDelivery::query()->count())->toBe(0);
+    Queue::assertNotPushed(DeliverWebhookEvent::class);
+    Exceptions::assertReported(fn (RuntimeException $exception) => $exception->getMessage() === 'boom');
+});
+
+it('sends nothing to the webhook of another team', function () {
+    [$retro, , $participant] = webhookEventRetro();
+    subscribedWebhook(Team::factory()->create());
+
+    app(CreateActionItem::class)->handle($retro->team, $retro, ActionItemActor::forParticipant($participant), ['content' => 'Fix the deploy']);
+
+    Queue::assertNotPushed(DeliverWebhookEvent::class);
+    expect(IntegrationDelivery::query()->count())->toBe(0);
+});
+
+it('tells an external reopen apart with completedVia', function () {
+    [$retro] = webhookEventRetro();
+    subscribedWebhook($retro->team, ['action_item.reopened']);
+    $item = ActionItem::factory()->completed()->create(['retro_id' => $retro->id]);
+
+    app(SetActionItemStatus::class)->handle($item, new ExternalSyncActor('jira', 'PROJ-12'), ActionItemStatus::Open);
+
+    $job = pushedWebhookEvents()->sole();
+
+    expect($job->event)->toBe('action_item.reopened')
+        ->and($job->data['origin'])->toBe('external')
+        ->and($job->data['completedVia'])->toBe(['source' => 'jira', 'key' => 'PROJ-12']);
+});
+
+it('sends the guest suffix untranslated whatever the locale', function () {
+    app()->setLocale('fr');
+    [$retro] = webhookEventRetro();
+    subscribedWebhook($retro->team, ['action_item.completed']);
+    $guest = Participant::factory()->guest()->create(['retro_id' => $retro->id, 'guest_name' => 'Gus']);
+    $assigned = ActionItem::factory()->assignedToGuest($guest)->create(['content' => 'Guest task']);
+
+    app(SetActionItemStatus::class)->handle($assigned, ActionItemActor::forParticipant($guest), ActionItemStatus::Completed);
+
+    expect(pushedWebhookEvents()->sole()->data['actionItem']['assignee'])->toBe(['name' => 'Gus (guest)']);
 });

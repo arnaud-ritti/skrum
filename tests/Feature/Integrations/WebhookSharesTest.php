@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\Integrations\BuildLinkShare;
+use App\Actions\Integrations\BuildRetroRecap;
 use App\Actions\Integrations\QueueShare;
 use App\Actions\Integrations\ShareOptions;
 use App\Enums\ActionItemPriority;
@@ -23,6 +24,7 @@ use App\Models\Team;
 use App\Models\TeamIntegration;
 use App\Models\User;
 use App\Support\Integrations\Exceptions\ProviderUnavailable;
+use App\Support\Integrations\Webhook\WebhookHealth;
 use Database\Factories\TeamIntegrationFactory;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Event;
@@ -368,4 +370,55 @@ it('refuses email as a share channel before creating a delivery', function () {
         ->toThrow(InvalidArgumentException::class);
 
     expect(IntegrationDelivery::query()->count())->toBe(0);
+});
+
+it('sends the guest suffix untranslated in a recap, whatever the locale', function () {
+    app()->setLocale('fr');
+    [$retro] = webhookSharingRetro(RetroPhase::Completed);
+    Participant::factory()->guest()->create(['retro_id' => $retro->id, 'guest_name' => 'Gus']);
+    ActionItem::factory()->assignedToGuest(Participant::factory()->guest()->create(['retro_id' => $retro->id, 'guest_name' => 'Gia']))->create(['retro_id' => $retro->id]);
+
+    $data = app(BuildRetroRecap::class)->content($retro)->toWebhook();
+
+    expect($data['participants']['names'])->toContain('Gus (guest)')
+        ->and($data['actionItems'][0]['assignee'])->toBe('Gia (guest)');
+});
+
+it('disables the webhook when a share gets a 410', function () {
+    Http::fake(['hooks.example.com/*' => Http::response('', 410)]);
+    [$room] = webhookSharingRoom();
+    $delivery = IntegrationDelivery::factory()->forSubject($room)->create([
+        'channel' => IntegrationDeliveryChannel::Webhook,
+        'kind' => IntegrationDeliveryKind::GameRoomLink,
+        'event' => 'game_room.link',
+    ]);
+
+    runOutgoingWebhookJob(new DeliverToWebhook($delivery->id, 'game_room.link', '2026-10-07T10:00:00Z', ['title' => 'Friday fun'], 'en'))
+        ->assertFailed();
+
+    $integration = TeamIntegration::query()->sole();
+
+    expect($integration->status)->toBe(IntegrationStatus::ReconnectRequired)
+        ->and($integration->setting('disabledReason'))->toBe(WebhookHealth::GoneReason)
+        ->and($delivery->fresh()->status)->toBe(IntegrationDeliveryStatus::Failed);
+});
+
+it('disables the webhook on the 10th failed share in a row', function () {
+    Http::fake(['hooks.example.com/*' => Http::response('', 404)]);
+    [$room] = webhookSharingRoom();
+    TeamIntegration::query()->update(['consecutive_failures' => 9, 'last_delivery_succeeded_at' => now()->subDays(2)]);
+    $delivery = IntegrationDelivery::factory()->forSubject($room)->create([
+        'channel' => IntegrationDeliveryChannel::Webhook,
+        'kind' => IntegrationDeliveryKind::GameRoomLink,
+        'event' => 'game_room.link',
+    ]);
+
+    runOutgoingWebhookJob(new DeliverToWebhook($delivery->id, 'game_room.link', '2026-10-07T10:00:00Z', ['title' => 'Friday fun'], 'en'))
+        ->assertFailed();
+
+    $integration = TeamIntegration::query()->sole();
+
+    expect($integration->status)->toBe(IntegrationStatus::ReconnectRequired)
+        ->and($integration->setting('disabledReason'))->toBe(WebhookHealth::FailuresReason)
+        ->and($integration->consecutive_failures)->toBe(10);
 });

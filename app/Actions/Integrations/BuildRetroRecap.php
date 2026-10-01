@@ -28,6 +28,8 @@ class BuildRetroRecap
 
     public const CardContentLimit = 300;
 
+    private const MachineGuestSuffix = '(guest)';
+
     public function __construct(private SummarizeRoti $summarizeRoti) {}
 
     public function handle(Retro $retro): RetroRecap
@@ -74,12 +76,10 @@ class BuildRetroRecap
     /**
      * @return array<int, string>
      */
-    private function participantNames(Retro $retro): array
+    private function participantNames(Retro $retro, bool $forMachines = false): array
     {
         return $retro->participants
-            ->map(fn (Participant $participant): string => $participant->isGuest()
-                ? __(':name (guest)', ['name' => $participant->displayName()])
-                : $participant->displayName())
+            ->map(fn (Participant $participant): string => $this->participantName($participant, $forMachines))
             ->sort(fn (string $first, string $second): int => strcasecmp($first, $second))
             ->values()
             ->all();
@@ -136,7 +136,10 @@ class BuildRetroRecap
             'title' => $recap->title,
             'url' => $recap->url,
             'completedAt' => ($retro->completed_at ?? now())->toIso8601ZuluString(),
-            'participants' => ['count' => $recap->participantCount, 'names' => $recap->participantNames],
+            'participants' => [
+                'count' => $recap->participantCount,
+                'names' => $retro->is_anonymous ? null : $this->participantNames($retro, forMachines: true),
+            ],
             'cardCount' => $recap->cardCount,
             'roti' => $recap->rotiAverage === null ? null : [
                 'average' => round($recap->rotiAverage, 1),
@@ -146,7 +149,7 @@ class BuildRetroRecap
             'actionItems' => $actionItems->take(self::ActionItemLimit)
                 ->map(fn (ActionItem $item): array => [
                     'content' => Str::squish($item->content),
-                    'assignee' => $this->assignee($item),
+                    'assignee' => $this->assignee($item, forMachines: true),
                     'dueOn' => $item->due_on?->toDateString(),
                     'priority' => $item->priority->value,
                     'isCompleted' => $item->isCompleted(),
@@ -159,7 +162,7 @@ class BuildRetroRecap
         ];
     }
 
-    public function assignee(ActionItem $item): ?string
+    public function assignee(ActionItem $item, bool $forMachines = false): ?string
     {
         if ($item->assigneeUser !== null) {
             return $item->assigneeUser->name;
@@ -171,9 +174,18 @@ class BuildRetroRecap
             return null;
         }
 
-        return $participant->isGuest()
-            ? __(':name (guest)', ['name' => $participant->displayName()])
-            : $participant->displayName();
+        return $this->participantName($participant, $forMachines);
+    }
+
+    private function participantName(Participant $participant, bool $forMachines): string
+    {
+        if (! $participant->isGuest()) {
+            return $participant->displayName();
+        }
+
+        return $forMachines
+            ? "{$participant->displayName()} ".self::MachineGuestSuffix
+            : __(':name (guest)', ['name' => $participant->displayName()]);
     }
 
     /**

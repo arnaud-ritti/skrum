@@ -11,8 +11,10 @@ use App\Models\TeamIntegration;
 use App\Models\User;
 use App\Rules\OutgoingWebhookUrl;
 use App\Support\Integrations\Exceptions\ReconnectRequired;
+use App\Support\Integrations\Webhook\SafeWebhookUrl;
 use App\Support\Integrations\Webhook\WebhookHealth;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 /**
  * A generic webhook: the URL and the signing secret are credentials; the
@@ -75,6 +77,10 @@ class ConnectOutgoingWebhook
      */
     public function update(TeamIntegration $integration, array $validated): TeamIntegration
     {
+        $newUrl = is_string($validated['url'] ?? null) ? $validated['url'] : null;
+
+        $this->ensureStoredUrlCanBeReenabled($integration, $newUrl, array_key_exists('enabled', $validated));
+
         $settings = $integration->settings;
 
         if (array_key_exists('channel_label', $validated)) {
@@ -85,11 +91,15 @@ class ConnectOutgoingWebhook
             $settings['events'] = WebhookEvent::normalize($validated['events']);
         }
 
-        $newUrl = is_string($validated['url'] ?? null) ? $validated['url'] : null;
-
         if ($newUrl !== null) {
+            $urlChanged = $newUrl !== $integration->credential('url');
+
             $integration->forceFill(['credentials' => [...$this->credentials($integration), 'url' => $newUrl]]);
             $settings['host'] = self::host($newUrl);
+
+            if ($urlChanged) {
+                $integration->forceFill(['consecutive_failures' => 0]);
+            }
         }
 
         $integration->forceFill(['settings' => $settings])->save();
@@ -101,6 +111,21 @@ class ConnectOutgoingWebhook
         }
 
         return $integration;
+    }
+
+    private function ensureStoredUrlCanBeReenabled(TeamIntegration $integration, ?string $newUrl, bool $isEnabling): void
+    {
+        if ($newUrl !== null || ! $isEnabling || $integration->isActive()) {
+            return;
+        }
+
+        $storedUrl = $integration->credential('url');
+
+        if (is_string($storedUrl) && SafeWebhookUrl::hasAllowedShape($storedUrl)) {
+            return;
+        }
+
+        throw ValidationException::withMessages(['enabled' => __('This webhook URL is no longer allowed. Paste a new one.')]);
     }
 
     public function rotateSecret(TeamIntegration $integration): string

@@ -214,6 +214,32 @@ it('re-activates a disabled webhook when its URL is replaced', function () {
         ->assertJsonMissingPath('settings.disabledReason');
 });
 
+it('refuses to re-enable a webhook whose stored URL is no longer allowed', function () {
+    [$team, $admin] = outgoingWebhookAdmin();
+    $integration = TeamIntegration::factory()->webhook()->reconnectRequired('This webhook URL is no longer allowed. Paste a new one.')->create(['team_id' => $team->id]);
+    $integration->forceFill(['credentials' => ['url' => 'http://hooks.example.com/in', 'webhookSecret' => TeamIntegrationFactory::WebhookSecret]])->save();
+
+    $this->actingAs($admin)
+        ->patchJson(route('teams.integrations.update', [$team->workspace, $team, $integration]), ['enabled' => true])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['enabled']);
+
+    expect($integration->fresh()->status)->toBe(IntegrationStatus::ReconnectRequired);
+});
+
+it('resets the failure count when the URL changes, even while active', function () {
+    [$team, $admin] = outgoingWebhookAdmin();
+    $integration = TeamIntegration::factory()->webhook()->create(['team_id' => $team->id]);
+    $integration->forceFill(['consecutive_failures' => 6])->save();
+
+    $this->actingAs($admin)
+        ->patchJson(route('teams.integrations.update', [$team->workspace, $team, $integration]), ['url' => 'https://other.example.com/in'])
+        ->assertOk()
+        ->assertJson(['status' => 'active', 'webhook' => ['consecutiveFailures' => 0]]);
+
+    expect($integration->fresh()->consecutive_failures)->toBe(0);
+});
+
 it('rotates the signing secret', function () {
     [$team, $admin] = outgoingWebhookAdmin();
     $integration = TeamIntegration::factory()->webhook()->create(['team_id' => $team->id]);

@@ -185,8 +185,41 @@ it('refuses an endpoint that became private without calling it', function () {
         ->toThrow(UnsafeWebhookUrl::class);
 
     Http::assertNothingSent();
-    expect($delivery->fresh()->attempts)->toBe(0)
+    expect($delivery->fresh()->attempts)->toBe(1)
+        ->and($delivery->fresh()->last_attempt_at)->not->toBeNull()
         ->and($integration->fresh()->status)->toBe(IntegrationStatus::Active);
+});
+
+it('retries instead of failing when the host cannot be resolved at send time', function () {
+    outgoingWebhookResolves([]);
+    $integration = TeamIntegration::factory()->webhook()->create();
+    $delivery = outgoingWebhookDelivery($integration);
+    $caught = null;
+
+    try {
+        app(WebhookClient::class)->send($integration, outgoingWebhookMessage($delivery->id), $delivery);
+    } catch (Throwable $thrown) {
+        $caught = $thrown;
+    }
+
+    Http::assertNothingSent();
+    expect($caught)->toBeInstanceOf(ProviderUnavailable::class)
+        ->and($caught->getMessage())->toBe('Could not reach hooks.example.com.')
+        ->and($integration->fresh()->consecutive_failures)->toBe(0)
+        ->and($integration->fresh()->status)->toBe(IntegrationStatus::Active);
+});
+
+it('records the attempt when the signing secret is missing', function () {
+    $integration = TeamIntegration::factory()->webhook()->create();
+    $integration->forceFill(['credentials' => ['url' => TeamIntegrationFactory::WebhookUrl]])->save();
+    $delivery = outgoingWebhookDelivery($integration);
+
+    expect(fn () => app(WebhookClient::class)->send($integration, outgoingWebhookMessage($delivery->id), $delivery))
+        ->toThrow(ReconnectRequired::class);
+
+    expect($delivery->fresh()->attempts)->toBe(1)
+        ->and($delivery->fresh()->last_attempt_at)->not->toBeNull()
+        ->and($delivery->fresh()->response_status)->toBeNull();
 });
 
 it('builds the test message', function () {

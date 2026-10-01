@@ -9,6 +9,7 @@ use App\Support\Integrations\Exceptions\ProviderRejected;
 use App\Support\Integrations\Exceptions\ProviderUnavailable;
 use App\Support\Integrations\Exceptions\RateLimited;
 use App\Support\Integrations\Exceptions\ReconnectRequired;
+use App\Support\Integrations\Exceptions\UnresolvableWebhookHost;
 use App\Support\Integrations\Exceptions\UnsafeWebhookUrl;
 use App\Support\Integrations\Exceptions\WebhookGone;
 use App\Support\Integrations\ProviderHttp;
@@ -46,12 +47,10 @@ class WebhookClient
     public function send(TeamIntegration $integration, WebhookMessage $message, ?IntegrationDelivery $delivery = null): void
     {
         $integration->withReconnectHandling(function () use ($integration, $message, $delivery): void {
-            $target = $this->safeWebhookUrl->resolve($this->url($integration));
-            $secret = $this->secret($integration);
             $response = null;
 
             try {
-                $response = $this->post($target, $message, $integration, $secret);
+                $response = $this->post($this->target($integration), $message, $integration, $this->secret($integration));
             } finally {
                 if ($delivery !== null) {
                     $this->recordAttempt($delivery, $response?->status());
@@ -87,6 +86,17 @@ class WebhookClient
                 throw new ReconnectRequired(IntegrationProvider::Webhook, __('This webhook URL is no longer allowed. Paste a new one.'));
             }
         });
+    }
+
+    private function target(TeamIntegration $integration): WebhookTarget
+    {
+        $url = $this->url($integration);
+
+        try {
+            return $this->safeWebhookUrl->resolve($url);
+        } catch (UnresolvableWebhookHost) {
+            throw new ProviderUnavailable(IntegrationProvider::Webhook, __('Could not reach :host.', ['host' => strtolower((string) parse_url($url, PHP_URL_HOST))]));
+        }
     }
 
     private function post(WebhookTarget $target, WebhookMessage $message, TeamIntegration $integration, string $secret): Response
