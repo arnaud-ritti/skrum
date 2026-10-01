@@ -104,6 +104,8 @@ class PresentTeamIntegration
             return null;
         }
 
-        return $this->gitHub->knownRepositoryName($installationId, $repositoryId);
+        $savedName = $integration->setting('exportRepositoryName');
+
+        return $this->gitHub->knownRepositoryName($installationId, $repositoryId) ?? (is_string($savedName) ? $savedName : null);
     }
 }

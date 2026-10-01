@@ -80,7 +80,8 @@ it('exports an action item to a GitHub repository', function () {
 
     expect($link->external_id)->toBe('9001/12')
         ->and($link->external_site)->toBe('4242')
-        ->and($integration->fresh()?->setting('exportRepositoryId'))->toBe('9001');
+        ->and($integration->fresh()?->setting('exportRepositoryId'))->toBe('9001')
+        ->and($integration->fresh()?->setting('exportRepositoryName'))->toBe('acme/api');
     Http::assertSent(fn (Request $request) => $request->url() === 'https://api.github.com/repos/acme/api/labels/priority%3A%20high');
 });
 

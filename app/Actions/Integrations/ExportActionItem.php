@@ -44,7 +44,7 @@ class ExportActionItem
         $this->tokens->prepare($integration);
 
         try {
-            $this->checkTarget($integration, $target);
+            $target = $this->checkTarget($integration, $target);
 
             /** @var array{0: ActionItem, 1: ExportOutcome} $result */
             $result = DB::transaction(fn (): array => $this->export($item, $user, $integration, $target));
@@ -109,12 +109,17 @@ class ExportActionItem
      * Slow target checks run before the item lock is taken.
      *
      * @param  array<string, mixed>  $target
+     * @return array<string, mixed>
      */
-    private function checkTarget(TeamIntegration $integration, array $target): void
+    private function checkTarget(TeamIntegration $integration, array $target): array
     {
-        if ($integration->provider === IntegrationProvider::GitHub) {
-            $this->exportToGitHub->repositoryName($integration, $this->targetId($target, 'repository_id'));
+        if ($integration->provider !== IntegrationProvider::GitHub) {
+            return $target;
         }
+
+        $repositoryName = $this->exportToGitHub->repositoryName($integration, $this->targetId($target, 'repository_id'));
+
+        return [...$target, 'repository_name' => $repositoryName];
     }
 
     private function ensureNotExported(ActionItem $item, TeamIntegration $integration): void
@@ -149,7 +154,7 @@ class ExportActionItem
     {
         $saved = match ($integration->provider) {
             IntegrationProvider::Jira, IntegrationProvider::JiraDataCenter => ['exportProjectId' => $target['project_id'], 'exportIssueTypeId' => $target['issue_type_id']],
-            IntegrationProvider::GitHub => ['exportRepositoryId' => $target['repository_id']],
+            IntegrationProvider::GitHub => ['exportRepositoryId' => $target['repository_id'], 'exportRepositoryName' => $target['repository_name'] ?? null],
             default => ['exportTeamId' => $target['team_id']],
         };
 

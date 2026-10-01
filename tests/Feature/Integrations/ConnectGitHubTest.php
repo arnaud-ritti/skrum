@@ -268,6 +268,17 @@ it('finds the installation on a later page of the person\'s installations', func
     Http::assertSent(fn (Request $request) => str_starts_with($request->url(), 'https://api.github.com/user/installations') && $request['page'] === 2);
 });
 
+it('shows the saved export repository name once the repository cache has expired', function () {
+    $team = Team::factory()->create();
+    $integration = TeamIntegration::factory()->gitHub()->create(['team_id' => $team->id]);
+    $integration->forceFill(['settings' => [...$integration->settings, 'exportRepositoryId' => '9001', 'exportRepositoryName' => 'acme/api']])->save();
+
+    $this->actingAs(integrationAdmin($team))
+        ->get(route('teams.integrations.index', [$team->workspace, $team]))
+        ->assertInertia(fn (Assert $page) => $page->where('providers.0.connection.settings.exportRepositoryName', 'acme/api'));
+    Http::assertNothingSent();
+});
+
 it('shows the export repository on the integrations page when the installation\'s repositories are known', function () {
     $team = Team::factory()->create();
     $integration = TeamIntegration::factory()->gitHub()->create(['team_id' => $team->id]);
