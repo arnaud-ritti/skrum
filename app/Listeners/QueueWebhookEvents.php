@@ -101,7 +101,7 @@ class QueueWebhookEvents
                     'status' => IntegrationDeliveryStatus::Queued,
                 ]);
 
-                $this->storeWebhookPayload->handle($delivery, [
+                $this->storeWebhookPayload->keepIfPossible($delivery, [
                     'id' => $delivery->id,
                     'event' => $event->value,
                     'occurredAt' => $occurredAt,

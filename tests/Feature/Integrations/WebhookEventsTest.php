@@ -19,6 +19,7 @@ use App\Jobs\Integrations\DeliverWebhookEvent;
 use App\Models\ActionItem;
 use App\Models\ActionItemComment;
 use App\Models\IntegrationDelivery;
+use App\Models\IntegrationDeliveryPayload;
 use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\Team;
@@ -29,6 +30,7 @@ use App\Support\Integrations\Webhook\WebhookHealth;
 use Illuminate\Contracts\Bus\Dispatcher;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Exceptions;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
@@ -453,4 +455,21 @@ it('keeps the message of an automatic event for its delivery log', function () {
         'occurredAt' => $job->occurredAt,
         'data' => $job->data,
     ]);
+});
+
+it('still sends an event whose message cannot be kept, without leaving a row nobody sends', function () {
+    Exceptions::fake();
+    [$retro, , $participant] = webhookEventRetro();
+    subscribedWebhook($retro->team, ['action_item.created']);
+    IntegrationDeliveryPayload::creating(fn () => DB::statement('select 1 / 0'));
+
+    $item = app(CreateActionItem::class)->handle($retro->team, $retro, ActionItemActor::forParticipant($participant), ['content' => 'Fix the deploy']);
+
+    $delivery = IntegrationDelivery::query()->sole();
+
+    expect($item->exists)->toBeTrue()
+        ->and($delivery->status)->toBe(IntegrationDeliveryStatus::Queued)
+        ->and($delivery->payload()->exists())->toBeFalse()
+        ->and(pushedWebhookEvents()->sole()->deliveryId)->toBe($delivery->id);
+    Exceptions::assertReported(fn (RuntimeException $exception) => $exception->getMessage() === "Could not keep the webhook message of delivery {$delivery->id} (QueryException).");
 });

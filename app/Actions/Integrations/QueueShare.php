@@ -80,7 +80,7 @@ class QueueShare
             ]);
 
             if ($event !== null) {
-                $this->storeWebhookPayload->handle($delivery, [
+                $this->storeWebhookPayload->keepIfPossible($delivery, [
                     'id' => $delivery->id,
                     'event' => $event,
                     'occurredAt' => $occurredAt,

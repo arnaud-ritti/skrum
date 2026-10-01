@@ -12,6 +12,7 @@ use App\Models\IntegrationDelivery;
 use App\Models\Team;
 use App\Models\TeamIntegration;
 use App\Models\Workspace;
+use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Gate;
 
@@ -60,6 +61,12 @@ class WebhookDeliveriesController extends Controller
 
         abort_if($found->payload === null, 404);
 
-        return response()->json($presentWebhookDeliveryPayload->handle($found));
+        try {
+            $presented = $presentWebhookDeliveryPayload->handle($found);
+        } catch (DecryptException) {
+            abort(404);
+        }
+
+        return response()->json($presented);
     }
 }

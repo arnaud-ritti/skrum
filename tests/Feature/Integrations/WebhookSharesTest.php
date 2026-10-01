@@ -17,6 +17,7 @@ use App\Jobs\Integrations\DeliverToWebhook;
 use App\Models\ActionItem;
 use App\Models\GameRoom;
 use App\Models\IntegrationDelivery;
+use App\Models\IntegrationDeliveryPayload;
 use App\Models\Participant;
 use App\Models\PokerGame;
 use App\Models\Retro;
@@ -24,10 +25,13 @@ use App\Models\Team;
 use App\Models\TeamIntegration;
 use App\Models\User;
 use App\Support\Integrations\Exceptions\ProviderUnavailable;
+use App\Support\Integrations\Messages\LinkShareContent;
 use App\Support\Integrations\Webhook\WebhookHealth;
 use Database\Factories\TeamIntegrationFactory;
 use Illuminate\Http\Client\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Exceptions;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 
@@ -441,4 +445,34 @@ it('keeps the message of a webhook share for its delivery log', function () {
     ]);
     Queue::assertPushed(DeliverToWebhook::class, fn (DeliverToWebhook $job) => $job->occurredAt === $message['occurredAt']
         && $job->data === $message['data']);
+});
+
+it('still queues a share whose message cannot be kept', function () {
+    Exceptions::fake();
+    [$retro, $facilitator] = webhookSharingRetro();
+    $content = new LinkShareContent('Open the board', 'Open', route('retros.show', $retro), ['title' => "Sprint \xB1\x31"]);
+
+    $delivery = app(QueueShare::class)->handle($retro, IntegrationDeliveryChannel::Webhook, IntegrationDeliveryKind::RetroLink, $facilitator, $content);
+
+    expect($delivery->fresh()->status)->toBe(IntegrationDeliveryStatus::Queued)
+        ->and($delivery->payload()->exists())->toBeFalse();
+    Queue::assertPushed(DeliverToWebhook::class, fn (DeliverToWebhook $job) => $job->deliveryId === $delivery->id);
+    Exceptions::assertReported(fn (RuntimeException $exception) => $exception->getMessage() === "Could not keep the webhook message of delivery {$delivery->id} (JsonException).");
+});
+
+it('still queues a share when the database refuses its content', function () {
+    Exceptions::fake();
+    [$retro, $facilitator] = webhookSharingRetro();
+    IntegrationDeliveryPayload::creating(fn () => DB::statement('select 1 / 0'));
+
+    $this->actingAs($facilitator)
+        ->postJson(route('retros.shares.store', $retro), ['channel' => 'webhook', 'kind' => 'link'])
+        ->assertAccepted();
+
+    $delivery = IntegrationDelivery::query()->sole();
+
+    expect($delivery->status)->toBe(IntegrationDeliveryStatus::Queued)
+        ->and($delivery->payload()->exists())->toBeFalse();
+    Queue::assertPushed(DeliverToWebhook::class, 1);
+    Exceptions::assertReported(fn (RuntimeException $exception) => $exception->getMessage() === "Could not keep the webhook message of delivery {$delivery->id} (QueryException).");
 });

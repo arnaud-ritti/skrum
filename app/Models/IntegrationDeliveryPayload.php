@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Database\Factories\IntegrationDeliveryPayloadFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -29,6 +30,7 @@ use Illuminate\Support\Carbon;
  * @property-read IntegrationDelivery $delivery
  */
 #[Fillable(['integration_delivery_id', 'message', 'request_headers', 'request_body', 'response_status', 'response_excerpt'])]
+#[Hidden(['message', 'request_headers', 'request_body', 'response_excerpt'])]
 class IntegrationDeliveryPayload extends Model
 {
     /** @use HasFactory<IntegrationDeliveryPayloadFactory> */

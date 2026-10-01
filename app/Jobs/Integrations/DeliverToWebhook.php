@@ -2,6 +2,7 @@
 
 namespace App\Jobs\Integrations;
 
+use App\Models\IntegrationDelivery;
 use App\Support\Integrations\Webhook\WebhookMessage;
 
 /**
@@ -25,7 +26,7 @@ class DeliverToWebhook extends DeliverToChannel
         parent::__construct($deliveryId, $locale);
     }
 
-    protected function message(): WebhookMessage
+    protected function message(IntegrationDelivery $delivery): WebhookMessage
     {
         return new WebhookMessage($this->deliveryId, $this->event, $this->occurredAt, $this->data);
     }

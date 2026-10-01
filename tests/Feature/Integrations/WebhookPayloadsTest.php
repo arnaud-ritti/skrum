@@ -7,6 +7,8 @@ use App\Models\IntegrationDelivery;
 use App\Models\IntegrationDeliveryPayload;
 use App\Models\TeamIntegration;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Exceptions;
+use Illuminate\Support\Facades\Schema;
 
 function webhookPayloadDelivery(array $attributes = []): IntegrationDelivery
 {
@@ -109,4 +111,66 @@ it('keeps a message that fits', function () {
     app(StoreWebhookPayload::class)->handle($delivery, webhookPayloadMessage($delivery));
 
     expect($delivery->payload->message)->toBe(webhookPayloadMessage($delivery));
+});
+
+it('indexes the link from a redelivery to its original', function () {
+    $indexedColumns = array_column(Schema::getIndexes('integration_deliveries'), 'columns');
+
+    expect($indexedColumns)->toContain(['redelivery_of_id']);
+});
+
+it('keeps a redelivery without its link once the original is deleted', function () {
+    $original = webhookPayloadDelivery();
+    $redelivery = webhookPayloadDelivery(['team_id' => $original->team_id, 'redelivery_of_id' => $original->id]);
+    $redelivery->payload()->create(['message' => webhookPayloadMessage($original)]);
+
+    $original->delete();
+
+    expect($redelivery->fresh()->redelivery_of_id)->toBeNull()
+        ->and($redelivery->payload()->exists())->toBeTrue();
+});
+
+it('keeps a message up to the 512 KB limit and nothing beyond it', function (int $extraBytes, bool $kept) {
+    $delivery = webhookPayloadDelivery();
+    $largestMessageBytes = (StoreWebhookPayload::MaxBytes - 4096) / 2;
+    $emptyMessage = [...webhookPayloadMessage($delivery), 'data' => ['notes' => '']];
+    $padding = $largestMessageBytes - strlen(json_encode($emptyMessage, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)) + $extraBytes;
+
+    app(StoreWebhookPayload::class)->handle($delivery, [...$emptyMessage, 'data' => ['notes' => str_repeat('a', $padding)]]);
+
+    expect($delivery->payload()->exists())->toBe($kept);
+})->with([
+    'exactly at the limit' => [0, true],
+    'one byte over' => [1, false],
+]);
+
+it('leaves the content out when a payload is turned into an array', function () {
+    $payload = IntegrationDeliveryPayload::factory()->create([
+        'request_headers' => ['X-Skrum-Event' => 'action_item.completed'],
+        'request_body' => '{"id":"x"}',
+        'response_status' => 500,
+        'response_excerpt' => 'Service Unavailable',
+    ]);
+
+    expect(array_keys($payload->fresh()->toArray()))->toBe(['id', 'integration_delivery_id', 'response_status', 'created_at', 'updated_at']);
+});
+
+it('keeps a message since the date it is given', function () {
+    $this->travelTo(now()->startOfSecond());
+    $delivery = webhookPayloadDelivery();
+
+    app(StoreWebhookPayload::class)->handle($delivery, webhookPayloadMessage($delivery), now()->subDays(29));
+
+    expect($delivery->payload->created_at->equalTo(now()->subDays(29)))->toBeTrue();
+});
+
+it('reports only the kind of failure when a message cannot be kept and carries on', function () {
+    Exceptions::fake();
+    $delivery = webhookPayloadDelivery();
+    $message = [...webhookPayloadMessage($delivery), 'data' => ['notes' => "Fix the deploy \xB1\x31"]];
+
+    app(StoreWebhookPayload::class)->keepIfPossible($delivery, $message);
+
+    expect($delivery->payload()->exists())->toBeFalse();
+    Exceptions::assertReported(fn (RuntimeException $exception) => $exception->getMessage() === "Could not keep the webhook message of delivery {$delivery->id} (JsonException).");
 });

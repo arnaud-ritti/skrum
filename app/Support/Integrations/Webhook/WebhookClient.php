@@ -220,7 +220,7 @@ class WebhookClient
 
         $signature = $request->headers['X-Skrum-Signature'];
 
-        return str_replace($signature, self::maskedSignature($signature), $excerpt);
+        return str_ireplace($signature, self::maskedSignature($signature), $excerpt);
     }
 
     /**

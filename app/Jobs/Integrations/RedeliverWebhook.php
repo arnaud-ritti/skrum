@@ -6,6 +6,7 @@ use App\Models\IntegrationDelivery;
 use App\Models\IntegrationDeliveryPayload;
 use App\Support\Integrations\Exceptions\WebhookContentMissing;
 use App\Support\Integrations\Webhook\WebhookMessage;
+use Illuminate\Contracts\Encryption\DecryptException;
 
 /**
  * Sends a stored webhook message again (webhook redelivery spec §4.2).
@@ -20,14 +21,27 @@ class RedeliverWebhook extends DeliverToChannel
 {
     use SendsToWebhook;
 
-    protected function message(): WebhookMessage
+    /**
+     * Content that cannot be decrypted any more (the key changed) is
+     * content that is no longer kept.
+     */
+    protected function message(IntegrationDelivery $delivery): WebhookMessage
     {
-        $payload = IntegrationDeliveryPayload::query()->where('integration_delivery_id', $this->deliveryId)->first();
+        $payload = $delivery->payload;
 
         if ($payload === null) {
             throw new WebhookContentMissing;
         }
 
+        try {
+            return $this->storedMessage($payload);
+        } catch (DecryptException) {
+            throw new WebhookContentMissing;
+        }
+    }
+
+    private function storedMessage(IntegrationDeliveryPayload $payload): WebhookMessage
+    {
         $message = $payload->message;
 
         return new WebhookMessage($message['id'], $message['event'], $message['occurredAt'], $message['data'], redelivery: true);

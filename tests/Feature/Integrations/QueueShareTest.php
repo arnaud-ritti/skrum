@@ -9,6 +9,7 @@ use App\Enums\IntegrationProvider;
 use App\Jobs\Integrations\DeliverToSlack;
 use App\Jobs\Integrations\DeliverToTelegram;
 use App\Models\IntegrationDelivery;
+use App\Models\IntegrationDeliveryPayload;
 use App\Models\Retro;
 use App\Models\TeamIntegration;
 use App\Models\User;
@@ -48,6 +49,16 @@ it('queues a Slack delivery for an active connection', function () {
         && $job->message === $content->toSlack()
         && $job->locale === 'fr');
     Queue::assertNotPushed(DeliverToTelegram::class);
+});
+
+it('keeps no content for a Slack share', function () {
+    $retro = Retro::factory()->create();
+    TeamIntegration::factory()->slack()->create(['team_id' => $retro->team_id]);
+
+    $delivery = app(QueueShare::class)->handle($retro, IntegrationDeliveryChannel::Slack, IntegrationDeliveryKind::RetroLink, User::factory()->create(), new LinkShareContent('a', 'b', 'https://skrum.test', ['title' => 'Sprint 42']));
+
+    expect($delivery->payload()->exists())->toBeFalse()
+        ->and(IntegrationDeliveryPayload::query()->count())->toBe(0);
 });
 
 it('queues Telegram deliveries with the HTML message', function () {

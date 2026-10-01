@@ -20,7 +20,7 @@ use Throwable;
  */
 trait SendsToWebhook
 {
-    abstract protected function message(): WebhookMessage;
+    abstract protected function message(IntegrationDelivery $delivery): WebhookMessage;
 
     protected function provider(): IntegrationProvider
     {
@@ -44,10 +44,9 @@ trait SendsToWebhook
 
     protected function send(TeamIntegration $integration): void
     {
-        $message = $this->message();
         $delivery = IntegrationDelivery::query()->with('payload')->findOrFail($this->deliveryId);
 
-        app(WebhookClient::class)->send($integration, $message, $delivery);
+        app(WebhookClient::class)->send($integration, $this->message($delivery), $delivery);
     }
 
     protected function afterFailure(IntegrationDelivery $delivery, ?Throwable $exception): void
