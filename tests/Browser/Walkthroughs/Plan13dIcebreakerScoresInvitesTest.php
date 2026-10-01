@@ -547,6 +547,7 @@ it('[P13d-10b] switches the team leaderboard between "Last 30 days" and "All tim
     $page = $this->signIn($ada, p13dTeamGamesPath($room));
 
     $page->assertSeeIn('[aria-label="Period"] [data-state="on"]', 'Last 30 days')
+        ->assertSeeIn("{$board} li:has-text(\"Ada\") span.font-semibold", '4')
         ->assertScript($names, 'Ada')
         ->assertDontSeeIn($board, 'Bob')
         ->click('All time')
