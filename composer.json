@@ -95,6 +95,10 @@
             "@types:check",
             "@php artisan test"
         ],
+        "test:arch": [
+            "@php artisan config:clear --ansi",
+            "pest --testsuite=Arch"
+        ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
             "@php artisan package:discover --ansi"
