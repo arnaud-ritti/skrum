@@ -80,6 +80,15 @@ class PokerTaskSync
         return $summary;
     }
 
+    /**
+     * GitHub keeps the card label as text, so every deck can be written
+     * (spec 8 §4.2); Jira and Linear hold numbers only.
+     */
+    public static function writesAnyDeck(IntegrationProvider $provider): bool
+    {
+        return $provider === IntegrationProvider::GitHub;
+    }
+
     public function unsupportedReason(PokerTask $task): ?string
     {
         $provider = IntegrationProvider::tryFrom((string) $task->external_source);
@@ -106,7 +115,7 @@ class PokerTaskSync
             return $accessReason;
         }
 
-        if (! $this->game->isNumeric()) {
+        if (! $this->game->isNumeric() && ! self::writesAnyDeck($provider)) {
             return __("T-shirt estimates can't be written to :source.", ['source' => $provider->label()]);
         }
 

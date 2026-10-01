@@ -86,7 +86,7 @@ abstract class JiraIssueTracker implements IssueTracker
         return $this->searchJql($integration, 'sprint = '.(int) $iterationId.' ORDER BY Rank ASC');
     }
 
-    public function search(TeamIntegration $integration, string $query): TrackerIssueList
+    public function search(TeamIntegration $integration, string $query, ?string $containerId = null): TrackerIssueList
     {
         return $this->searchJql($integration, $query);
     }

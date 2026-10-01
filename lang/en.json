@@ -1404,5 +1404,10 @@
     "Personal access tokens need Jira 8.14 or later.": "Personal access tokens need Jira 8.14 or later.",
     "This GitHub installation isn't available to your account.": "This GitHub installation isn't available to your account.",
     "The GitHub App was uninstalled from :account.": "The GitHub App was uninstalled from :account.",
-    "The GitHub App is suspended on :account.": "The GitHub App is suspended on :account."
+    "The GitHub App is suspended on :account.": "The GitHub App is suspended on :account.",
+    "Milestone :number": "Milestone :number",
+    "Choose a repository to search in.": "Choose a repository to search in.",
+    "This card is not an estimate.": "This card is not an estimate.",
+    "The issue description is too long to add the estimate.": "The issue description is too long to add the estimate.",
+    "The issue description kept changing. Try again.": "The issue description kept changing. Try again."
 }

@@ -1650,5 +1650,10 @@
     "Personal access tokens need Jira 8.14 or later.": "Les jetons d'accès personnels nécessitent Jira 8.14 ou ultérieur.",
     "This GitHub installation isn't available to your account.": "Cette installation GitHub n'est pas accessible à votre compte.",
     "The GitHub App was uninstalled from :account.": "L'application GitHub a été désinstallée de :account.",
-    "The GitHub App is suspended on :account.": "L'application GitHub est suspendue sur :account."
+    "The GitHub App is suspended on :account.": "L'application GitHub est suspendue sur :account.",
+    "Milestone :number": "Jalon :number",
+    "Choose a repository to search in.": "Choisissez un dépôt dans lequel chercher.",
+    "This card is not an estimate.": "Cette carte n'est pas une estimation.",
+    "The issue description is too long to add the estimate.": "La description du ticket est trop longue pour y ajouter l'estimation.",
+    "The issue description kept changing. Try again.": "La description du ticket n'a pas cessé de changer. Réessayez."
 }

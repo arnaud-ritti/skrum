@@ -26,6 +26,7 @@ class PokerImportPreviewsController extends Controller
             'mode' => ['required', Rule::in([PreviewPokerImport::ModeIteration, PreviewPokerImport::ModeQuery])],
             'iteration_id' => ['required_if:mode,iteration', 'nullable', 'string', 'max:100'],
             'query' => ['required_if:mode,query', 'nullable', 'string', 'max:1000'],
+            'container' => ['nullable', 'string', 'max:100'],
         ]);
 
         $integration = $resolvePokerTracker->handle($game->team, $source);
@@ -38,6 +39,7 @@ class PokerImportPreviewsController extends Controller
             $validated['mode'],
             $validated['iteration_id'] ?? null,
             $validated['query'] ?? null,
+            $validated['container'] ?? null,
         ));
     }
 }

@@ -81,7 +81,7 @@ class LinearTracker implements IssueTracker
         return $this->list((array) data_get($data, 'cycle.issues', []));
     }
 
-    public function search(TeamIntegration $integration, string $query): TrackerIssueList
+    public function search(TeamIntegration $integration, string $query, ?string $containerId = null): TrackerIssueList
     {
         $data = $this->client->query(
             $integration,

@@ -13,6 +13,7 @@ class Trackers
             IntegrationProvider::Jira => app(JiraTracker::class),
             IntegrationProvider::Linear => app(LinearTracker::class),
             IntegrationProvider::JiraDataCenter => app(JiraDataCenterTracker::class),
+            IntegrationProvider::GitHub => app(GitHubTracker::class),
             default => throw new InvalidArgumentException("{$provider->value} is not an issue tracker."),
         };
     }

@@ -1240,3 +1240,106 @@ function renderedEstimateBlock(string $value): string
 {
     return "<!-- skrum:estimate -->\n**Estimate:** {$value}\n<!-- /skrum:estimate -->";
 }
+
+/**
+ * @return array<string, mixed>
+ */
+function gitHubRepository(int $id, string $fullName): array
+{
+    return ['id' => $id, 'full_name' => $fullName, 'name' => explode('/', $fullName)[1]];
+}
+
+/**
+ * An issue as the GitHub REST API returns it, in `acme/api`.
+ *
+ * @param  array<string, mixed>  $overrides
+ * @return array<string, mixed>
+ */
+function gitHubIssue(int $number, array $overrides = []): array
+{
+    return [
+        'number' => $number,
+        'title' => "Issue {$number}",
+        'body' => "About issue {$number}",
+        'html_url' => "https://github.com/acme/api/issues/{$number}",
+        'repository_url' => 'https://api.github.com/repos/acme/api',
+        'state' => 'open',
+        'assignees' => [['login' => 'octocat', 'id' => 583231]],
+        ...$overrides,
+    ];
+}
+
+/**
+ * Fakes the GitHub endpoints poker uses for repository 9001 (`acme/api`).
+ * Routes given first win, including over a default with the same pattern.
+ *
+ * @param  array<string, mixed>  $routes
+ */
+function fakeGitHubTrackerApi(array $routes = []): void
+{
+    $defaults = [
+        'api.github.com/app/installations/*/access_tokens' => Http::response(['token' => 'ghs_installation_token', 'expires_at' => now()->addHour()->toIso8601String()], 201),
+        'api.github.com/installation/repositories*' => Http::response([
+            'total_count' => 2,
+            'repositories' => [gitHubRepository(9001, 'acme/api'), gitHubRepository(9002, 'acme/web')],
+        ]),
+        'api.github.com/repositories/9001' => Http::response(gitHubRepository(9001, 'acme/api')),
+        'api.github.com/repos/acme/api/milestones*' => Http::response([
+            ['number' => 3, 'title' => 'Sprint 3', 'due_on' => '2026-10-20T07:00:00Z'],
+            ['number' => 2, 'title' => 'Sprint 2', 'due_on' => '2026-10-10T07:00:00Z'],
+            ['number' => 4, 'title' => 'Someday', 'due_on' => null],
+            ['number' => 1, 'title' => 'Late', 'due_on' => '2026-09-01T07:00:00Z'],
+        ]),
+        'api.github.com/repos/acme/api/issues?*' => Http::response([
+            gitHubIssue(1),
+            gitHubIssue(5, ['pull_request' => ['url' => 'https://api.github.com/repos/acme/api/pulls/5']]),
+            gitHubIssue(2),
+        ]),
+        'api.github.com/search/issues*' => Http::response(['total_count' => 1, 'incomplete_results' => false, 'items' => [gitHubIssue(7)]]),
+        'api.github.com/repositories/9001/issues/*' => fn (HttpRequest $request) => Http::response(gitHubIssue((int) basename($request->url()))),
+        'api.github.com/graphql' => gitHubGraphqlIssues(),
+    ];
+
+    Http::fake([...$routes, ...array_diff_key($defaults, $routes)]);
+}
+
+/**
+ * Answers `GitHubTracker::issues()`'s batched GraphQL read from REST-shaped
+ * fixtures (`gitHubIssue()`); a number missing from `$issues` comes back
+ * null with a NOT_FOUND error, as GitHub answers for deleted issues and
+ * pull requests. Without `$issues`, every requested number exists.
+ *
+ * @param  array<int, array<string, mixed>>|null  $issues
+ */
+function gitHubGraphqlIssues(?array $issues = null): Closure
+{
+    return function (HttpRequest $request) use ($issues) {
+        preg_match_all('/\bi(\d+): issue\(number: \d+\)/', (string) $request['query'], $matches);
+        $repository = [];
+        $errors = [];
+
+        foreach ($matches[1] as $number) {
+            $raw = $issues === null ? gitHubIssue((int) $number) : ($issues[(int) $number] ?? null);
+
+            if ($raw === null) {
+                $repository["i{$number}"] = null;
+                $errors[] = ['type' => 'NOT_FOUND', 'path' => ['repository', "i{$number}"], 'message' => 'Could not resolve to an Issue.'];
+
+                continue;
+            }
+
+            $repository["i{$number}"] = [
+                'number' => $raw['number'],
+                'title' => $raw['title'],
+                'body' => $raw['body'],
+                'url' => $raw['html_url'],
+                'state' => strtoupper($raw['state']),
+                'stateReason' => isset($raw['state_reason']) ? strtoupper($raw['state_reason']) : null,
+                'updatedAt' => $raw['updated_at'] ?? '2026-10-07T09:00:00Z',
+                'assignees' => ['nodes' => array_map(fn (array $assignee): array => ['login' => $assignee['login']], $raw['assignees'])],
+            ];
+        }
+
+        return Http::response(['data' => ['repository' => $repository], ...($errors === [] ? [] : ['errors' => $errors])]);
+    };
+}

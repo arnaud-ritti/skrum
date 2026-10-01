@@ -43,12 +43,12 @@ class ImportPokerTasks
     /**
      * @return array{imported: int, skipped: int, truncated: bool}
      */
-    public function fromSource(PokerGame $game, PokerPlayer $player, TeamIntegration $integration, string $mode, ?string $iterationId, ?string $query): array
+    public function fromSource(PokerGame $game, PokerPlayer $player, TeamIntegration $integration, string $mode, ?string $iterationId, ?string $query, ?string $containerId = null): array
     {
         PokerGuard::notEnded($game);
         PokerGuard::canEditTasks($player);
 
-        $list = $this->previewPokerImport->fetch($integration, $mode, $iterationId, $query);
+        $list = $this->previewPokerImport->fetch($integration, $mode, $iterationId, $query, $containerId);
         $issues = [];
 
         foreach ($list->issues as $issue) {
