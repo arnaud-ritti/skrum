@@ -1852,7 +1852,6 @@
     "Frame :number": "Cadre :number",
     "Allow several votes on one note": "Autoriser plusieurs votes sur un même post-it",
     "Vote for this note": "Voter pour ce post-it",
-    ":count of :total finished voting": ":count sur :total ont terminé de voter",
     "Cursors are hidden while the vote is open.": "Les curseurs sont masqués pendant le vote.",
     "Vote results": "Résultats du vote",
     "Hide the results": "Masquer les résultats",
@@ -1881,5 +1880,6 @@
     "Restore this version?": "Restaurer cette version ?",
     "The board goes back to this version for everyone. The current state is saved first.": "Le tableau revient à cette version pour tout le monde. L'état actuel est d'abord enregistré.",
     "Version restored.": "Version restaurée.",
-    "Delete this version?": "Supprimer cette version ?"
+    "Delete this version?": "Supprimer cette version ?",
+    ":count finished voting · :online online": ":count ont terminé de voter · :online en ligne"
 }

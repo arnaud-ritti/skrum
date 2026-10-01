@@ -1608,7 +1608,6 @@
     "Frame :number": "Frame :number",
     "Allow several votes on one note": "Allow several votes on one note",
     "Vote for this note": "Vote for this note",
-    ":count of :total finished voting": ":count of :total finished voting",
     "Cursors are hidden while the vote is open.": "Cursors are hidden while the vote is open.",
     "Vote results": "Vote results",
     "Hide the results": "Hide the results",
@@ -1637,5 +1636,6 @@
     "Restore this version?": "Restore this version?",
     "The board goes back to this version for everyone. The current state is saved first.": "The board goes back to this version for everyone. The current state is saved first.",
     "Version restored.": "Version restored.",
-    "Delete this version?": "Delete this version?"
+    "Delete this version?": "Delete this version?",
+    ":count finished voting · :online online": ":count finished voting · :online online"
 }

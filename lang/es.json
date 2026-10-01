@@ -1852,7 +1852,6 @@
     "Frame :number": "Marco :number",
     "Allow several votes on one note": "Permitir varios votos en una misma nota",
     "Vote for this note": "Votar por esta nota",
-    ":count of :total finished voting": ":count de :total han terminado de votar",
     "Cursors are hidden while the vote is open.": "Los cursores están ocultos durante la votación.",
     "Vote results": "Resultados de la votación",
     "Hide the results": "Ocultar los resultados",
@@ -1881,5 +1880,6 @@
     "Restore this version?": "¿Restaurar esta versión?",
     "The board goes back to this version for everyone. The current state is saved first.": "La pizarra vuelve a esta versión para todos. Antes se guarda el estado actual.",
     "Version restored.": "Versión restaurada.",
-    "Delete this version?": "¿Eliminar esta versión?"
+    "Delete this version?": "¿Eliminar esta versión?",
+    ":count finished voting · :online online": ":count han terminado de votar · :online en línea"
 }

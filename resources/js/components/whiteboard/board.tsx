@@ -347,12 +347,9 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
                                 count: voting.remaining,
                             })}
                             {' · '}
-                            {t(':count of :total finished voting', {
+                            {t(':count finished voting · :online online', {
                                 count: voting.finishedCount ?? 0,
-                                total: Math.max(
-                                    state.online.length,
-                                    voting.finishedCount ?? 0,
-                                ),
+                                online: state.online.length,
                             })}
                             {board.cursorsEnabled &&
                                 ` · ${t('Cursors are hidden while the vote is open.')}`}

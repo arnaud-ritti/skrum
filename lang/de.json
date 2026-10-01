@@ -1852,7 +1852,6 @@
     "Frame :number": "Rahmen :number",
     "Allow several votes on one note": "Mehrere Stimmen pro Haftnotiz erlauben",
     "Vote for this note": "Für diese Haftnotiz stimmen",
-    ":count of :total finished voting": ":count von :total haben fertig abgestimmt",
     "Cursors are hidden while the vote is open.": "Cursor sind während der Abstimmung ausgeblendet.",
     "Vote results": "Abstimmungsergebnisse",
     "Hide the results": "Ergebnisse ausblenden",
@@ -1881,5 +1880,6 @@
     "Restore this version?": "Diese Version wiederherstellen?",
     "The board goes back to this version for everyone. The current state is saved first.": "Das Board kehrt für alle zu dieser Version zurück. Der aktuelle Stand wird vorher gespeichert.",
     "Version restored.": "Version wiederhergestellt.",
-    "Delete this version?": "Diese Version löschen?"
+    "Delete this version?": "Diese Version löschen?",
+    ":count finished voting · :online online": ":count haben fertig abgestimmt · :online online"
 }
