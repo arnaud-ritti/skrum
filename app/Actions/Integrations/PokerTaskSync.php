@@ -150,7 +150,7 @@ class PokerTaskSync
 
     private static function storyPointsReason(IntegrationProvider $provider, ?TeamIntegration $integration): ?string
     {
-        if ($integration !== null && $provider === IntegrationProvider::Jira && JiraTracker::storyPointFieldIds($integration) === []) {
+        if ($integration !== null && in_array($provider, [IntegrationProvider::Jira, IntegrationProvider::JiraDataCenter], true) && JiraTracker::storyPointFieldIds($integration) === []) {
             return __('No story points field found.');
         }
 

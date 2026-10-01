@@ -23,7 +23,7 @@ class JiraFieldDetectionsController extends Controller
     ): JsonResponse {
         Gate::authorize('manageIntegrations', $team);
 
-        abort_unless($integration->provider === IntegrationProvider::Jira, 404);
+        abort_unless(in_array($integration->provider, [IntegrationProvider::Jira, IntegrationProvider::JiraDataCenter], true), 404);
 
         $integration->ensureActive();
 
