@@ -8,9 +8,10 @@ Run `vendor/bin/sail artisan migrate --no-interaction` and `npm run build`. Acco
 
 - Member A: `http://localhost`, logged in as "Fran Facilitator" (`facilitator@skrum.test`, password constant of `database/seeders/DemoSeeder.php`). Team page: Demo Workspace → Demo Team.
 - Second member: `member@skrum.test`, logged in on `http://127.0.0.1` (separate cookie jar, same Chrome).
+- Workspace admin: `admin@skrum.test` ("Ada Admin", same password), owner of Demo Workspace and neither the creator of A's templates nor the facilitator of A's boards. She is not a member of Demo Team, but a workspace owner can open the team page (`TeamPolicy::view` through `canManage`). She logs in on `http://127.0.0.1` after the second member is logged out there: once for the admin line of section 2, once for the trash-button line of section 5; log her out before the second member or a guest uses that origin again.
 - Guest B: on `http://127.0.0.1` when no member is logged in there. Enable guest access on the board, read the token with `docker exec skrum-pgsql-1 psql -U sail -d skrum -At -c "select guest_token from whiteboards where id='<board id>'"`, open `http://127.0.0.1/whiteboards/join/<token>`.
 
-Only one account per origin: sections 2 and 3 both use `127.0.0.1`, so finish one before starting the other. Never trigger a native dialog; when a canvas input cannot be driven after two attempts, check the same thing through the board's JSON endpoints and say so on the line.
+Only one account per origin: the second member, the admin and guest B all use `127.0.0.1`, so finish with one before logging in the next, and finish section 2 before starting section 3. Never trigger a native dialog; when a canvas input cannot be driven after two attempts, check the same thing through the board's JSON endpoints and say so on the line.
 
 ## 1. Each of the eight built-in templates creates a board whose structure is locked and whose texts are in the creator's language
 
@@ -35,12 +36,12 @@ Setup: member A on a board holding a sticky note, a shape, an arrow bound to the
 - [ ] Action: the second member opens "New whiteboard", picks the workspace template and creates a board. Expected: the new board shows the same sticky note, shape, arrow (still bound to the shape: moving the shape moves the arrow end) and image.
 - [ ] B8.5 — Expected: the image of the source board is displayed on the board created from the template (not a broken-image placeholder), and on a duplicate of the source (section 5).
 - [ ] Action: `docker exec skrum-pgsql-1 psql -U sail -d skrum -At -c "select distinct author_member_id from whiteboard_elements where whiteboard_id = '<new>'"`. Expected: a single value, the member id of the new board's facilitator (the second member); none of A's ids.
-- [ ] Action: compare element ids of the source and the new board (`select id from whiteboard_elements where whiteboard_id in ('<source>', '<new>')`). Expected: no id is shared; every element of the new board has version 1.
+- [ ] Action: compare the canvas element ids of the source and the new board: `docker exec skrum-pgsql-1 psql -U sail -d skrum -At -c "select whiteboard_id, element_id, version from whiteboard_elements where whiteboard_id in ('<source>', '<new>') and not is_deleted"`. Expected: no `element_id` appears under both boards; every row of the new board has version 1.
 - [ ] Action: A edits the source board (moves the sticky, deletes the shape); the second member edits the new board. Expected: neither board shows the other's edits, after a reload too.
 - [ ] B7.4 — Action: A opens the templates dialog on the team page, renames the template and edits its description. Expected: the gallery shows the new name and description; the board already created from it is unchanged.
 - [ ] B7.4 — Action: A renames the template to the name of another template. Expected: the error shows under the name field and the name is unchanged.
 - [ ] B7.4 — Action: the second member (not the creator, not an admin) opens the templates dialog. Expected: no Edit and no Delete on A's template.
-- [ ] B7.4 — Action: a workspace admin who is not the creator opens the templates dialog. Expected: Edit and Delete are offered and work.
+- [ ] B7.4 — Action: log the second member out of `http://127.0.0.1`, log in there as the admin (`admin@skrum.test`), open Demo Team and the templates dialog, edit the description of A's template, then delete a second template saved by A for this line. Expected: Edit and Delete are offered to the admin on A's templates and both work. Log the admin out afterwards.
 - [ ] Action: A deletes the template ("Delete this template?" → confirm), then deletes the source board. Expected: the template leaves the gallery; the board created from it still opens with all its elements and its image.
 
 ## 3. A guest cannot list, use or save workspace templates
@@ -71,7 +72,7 @@ Setup: member A on a board with elements and an image; the second member on `htt
 - [ ] B8.2 — Action: the second member duplicates one of A's boards. Expected: the second member is facilitator of the copy; the source keeps A as facilitator and nobody on the source sees a notice.
 - [ ] B8.2 — Action: edit the copy, reload the original. Expected: the original is unchanged.
 - [ ] Action: with the UI in French, duplicate a board. Expected: the title ends with " (copie)".
-- [ ] B7.5 — Action: on the team page, look at the whiteboard list as A, then as the second member. Expected: the trash button shows on a row only for that board's facilitator and for workspace admins.
+- [ ] B7.5 — Action: on the team page, look at the whiteboard list as A, then as the second member, then as the admin (`admin@skrum.test`, logged in on `http://127.0.0.1` after the second member is logged out). Expected: A and the second member each see the trash button only on the rows of the boards they facilitate; the admin, who facilitates none, sees it on every row.
 - [ ] B7.5 — Action: A presses the trash button and confirms "Delete this board?". Expected: the row disappears without a full page reload.
 - [ ] B7.5 — Action: keep a second tab open on that board while deleting it. Expected: the open tab shows "This board was deleted".
 
