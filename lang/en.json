@@ -1316,5 +1316,9 @@
     "Include the guest link (anyone who can see the message can join)": "Include the guest link (anyone who can see the message can join)",
     "Posted guest links stop working if you regenerate the link.": "Posted guest links stop working if you regenerate the link.",
     "Only members of :team can join.": "Only members of :team can join.",
-    "Webhook": "Webhook"
+    "Webhook": "Webhook",
+    "Use the workflow URL from Microsoft Teams.": "Use the workflow URL from Microsoft Teams.",
+    "Use an incoming webhook of :url.": "Use an incoming webhook of :url.",
+    "The Teams workflow URL no longer works. Paste a new one.": "The Teams workflow URL no longer works. Paste a new one.",
+    "The Mattermost webhook no longer works. Paste a new one.": "The Mattermost webhook no longer works. Paste a new one."
 }

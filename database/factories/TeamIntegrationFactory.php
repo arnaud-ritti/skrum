@@ -16,6 +16,34 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class TeamIntegrationFactory extends Factory
 {
+    public const MicrosoftTeamsUrl = 'https://prod-12.westeurope.logic.azure.com:443/workflows/abc123/triggers/manual/paths/invoke?api-version=2016-06-01&sig=teams-signature';
+
+    public const MattermostUrl = 'https://chat.example.com/hooks/abcdefghijklmnopqrstuvwxyz';
+
+    public function microsoftTeams(): static
+    {
+        return $this->state(fn () => [
+            'provider' => IntegrationProvider::MicrosoftTeams,
+            'status' => IntegrationStatus::Active,
+            'access' => IntegrationAccess::Write,
+            'credentials' => ['url' => self::MicrosoftTeamsUrl],
+            'settings' => ['host' => 'prod-12.westeurope.logic.azure.com', 'channelLabel' => '#retros'],
+            'scopes' => [],
+        ]);
+    }
+
+    public function mattermost(): static
+    {
+        return $this->state(fn () => [
+            'provider' => IntegrationProvider::Mattermost,
+            'status' => IntegrationStatus::Active,
+            'access' => IntegrationAccess::Write,
+            'credentials' => ['url' => self::MattermostUrl],
+            'settings' => ['host' => 'chat.example.com', 'channelLabel' => 'town-square'],
+            'scopes' => [],
+        ]);
+    }
+
     public function definition(): array
     {
         return [

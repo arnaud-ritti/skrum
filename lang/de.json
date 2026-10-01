@@ -1562,5 +1562,9 @@
     "Include the guest link (anyone who can see the message can join)": "Gastlink einfügen (alle, die die Nachricht sehen, können beitreten)",
     "Posted guest links stop working if you regenerate the link.": "Gepostete Gastlinks funktionieren nicht mehr, wenn du den Link neu erzeugst.",
     "Only members of :team can join.": "Nur Mitglieder von :team können beitreten.",
-    "Webhook": "Webhook"
+    "Webhook": "Webhook",
+    "Use the workflow URL from Microsoft Teams.": "Verwende die Workflow-URL aus Microsoft Teams.",
+    "Use an incoming webhook of :url.": "Verwende einen eingehenden Webhook von :url.",
+    "The Teams workflow URL no longer works. Paste a new one.": "Die Teams-Workflow-URL funktioniert nicht mehr. Füge eine neue ein.",
+    "The Mattermost webhook no longer works. Paste a new one.": "Der Mattermost-Webhook funktioniert nicht mehr. Füge einen neuen ein."
 }

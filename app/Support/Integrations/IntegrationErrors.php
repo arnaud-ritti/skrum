@@ -13,6 +13,8 @@ class IntegrationErrors
      */
     private const Patterns = [
         '#https://hooks\.slack\.com/\S+#i' => 'https://hooks.slack.com/***',
+        '#(https://[^\s/"\']+\.(?:logic\.azure\.com|api\.powerplatform\.com)(?::\d+)?)/[^\s"\']*#i' => '$1/***',
+        '#(https?://[^\s"\']+?)/hooks/[A-Za-z0-9]+#i' => '$1/hooks/***',
         '#\bbot\d+:[A-Za-z0-9_-]+#' => 'bot***',
         '#\bxox[a-z]-[A-Za-z0-9-]+#i' => 'xox***',
         '#\bBearer\s+[^\s,;"\']+#i' => 'Bearer ***',
