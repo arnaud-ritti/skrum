@@ -6287,3 +6287,28 @@ Add each key to `lang/en.json` (value = key), `lang/fr.json`, `lang/de.json`, `l
 | 10 | Add a sticky note | Ajouter un post-it | Haftnotiz hinzufügen | Añadir una nota adhesiva |
 
 For every row marked "exists" or "check", run `grep -n '"<key>"' lang/fr.json` first; reuse the existing translation when the key is there. `tests/Feature/TranslationKeysTest.php` is the judge.
+
+## Corrections after the final review
+
+The final whole-branch review found defects in code this plan gave verbatim. The spec's stated behaviour won on every item; the code below replaces the plan's. Evidence and test output are in `.superpowers/sdd/2026-10-09-plan-17a-whiteboard-core/final-fix-report.md`.
+
+**Task 3 (snapshot) and Task 6 (delta, broadcast).** The plan returned elements `orderBy('seq')`. Excalidraw re-indexes any element whose fractional index is below its predecessor's and bumps its version, so a moved element jumped to the top for everyone on the next load. Replaced by `OrderWhiteboardElements`: fractional index compared byte by byte, then id; elements without an index last, by seq. Used by the snapshot, `GET elements?since=` and the broadcast payload.
+
+**Task 5 (sanitizer).** The plan whitelisted keys without checking their presence or shape, and accepted any `version >= 1`. A line without `points` made every client throw on restore, and a version above 2 147 483 647 turned the batch into a 500. Replaced by shape validation of every key Excalidraw dereferences (spec §6.6) and an upper bound on `version`.
+
+**Task 6 (writes).** The plan passed `null` as the stored copy of an `invalid` rejection, so the sender deleted locally an element everyone else kept. The rejection now carries the stored copy, as spec §6.3 says.
+
+**Task 6 (purge).** The plan updated `purged_seq` through the Eloquent builder, which moves `updated_at` and so reorders the team list every night. Replaced by a base-query update.
+
+**Task 7 (file prune).** The plan queried a board by every folder name under `whiteboards/`; a name that is not a UUID raises on PostgreSQL. Such folders are now skipped.
+
+**Task 9 (scene sync).**
+- The plan called `restoreElements` on server arrays as they came, and on the whole scene in `force`. Replaced by `lib/whiteboard/restore.ts`: elements are put in index order first, the server's version and nonce are kept (restoring an empty text bumps its version), one element that throws is dropped and logged instead of taking the board down, and `force` restores only the server copies it was given.
+- The plan coalesced delta fetches without remembering what events had announced, so a change committed during a fetch was never fetched. The sync now tracks the highest announced seq and fetches again until it is reached or a fetch brings nothing new; it also fetches once when it is created.
+- The plan armed the 2 s retry timer after every request. After a success the 300 ms flush delay is used.
+
+**Task 9 (uploads).** The plan threw `FileRefusedError` on every 4xx. Only 413, 415 and 422 mean the image is refused; 401, 403, 404 and 419 go down the fatal path of an element write, and the rest is retried.
+
+**Task 9 (board menu, page).** The plan's `run` swallowed every error, so a failed delete still navigated away and a failed rename still closed its dialog. `run` now reports success, and a failure that is not an HTTP error shows a generic toast. The canvas error boundary logs what it catches.
+
+**Added after the review, at the user's request.** No library branding or outbound library link is shown on the board (own main menu, AI entries off, three CSS rules; spec §13). The sticky note tool sits in the canvas shapes toolbar, with the top bar as fallback (spec §6.1).
