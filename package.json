@@ -4,6 +4,7 @@
     "type": "module",
     "scripts": {
         "build": "vp build",
+        "build:front": "vp build && vendor/bin/sail artisan wayfinder:generate --with-form",
         "build:ssr": "vp build && vp build --ssr",
         "dev": "vp dev",
         "check": "vp check",
