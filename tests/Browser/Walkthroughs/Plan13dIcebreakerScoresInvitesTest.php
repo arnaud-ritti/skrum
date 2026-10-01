@@ -1,7 +1,11 @@
 <?php
 
 use App\Enums\GameKind;
+use App\Enums\GameRoomAccess;
 use App\Enums\GameRoundOutcome;
+use App\Enums\IntegrationDeliveryStatus;
+use App\Enums\IntegrationProvider;
+use App\Enums\IntegrationStatus;
 use App\Enums\RetroPhase;
 use App\Models\Column;
 use App\Models\GameGifAnswer;
@@ -10,10 +14,14 @@ use App\Models\GamePlayer;
 use App\Models\GamePoint;
 use App\Models\GameRoom;
 use App\Models\GameRound;
+use App\Models\IntegrationDelivery;
 use App\Models\Retro;
 use App\Models\Team;
+use App\Models\TeamIntegration;
 use App\Models\User;
+use Illuminate\Http\Client\Request as HttpRequest;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 
 function p13dNamed(User $user, string $name): User
 {
@@ -70,6 +78,54 @@ function p13dIcebreakerPlayer(Retro $retro, GameRoom $room, string $name): GameP
     p13dNamed($user, $name);
 
     return GamePlayer::factory()->forParticipant($participant)->create(['game_room_id' => $room->id]);
+}
+
+/**
+ * @param  array<string, mixed>  $attributes
+ * @return array{
+ *     room: GameRoom,
+ *     ada: User,
+ *     adaPlayer: GamePlayer
+ * }
+ */
+function p13dRoom(array $attributes = []): array
+{
+    $room = GameRoom::factory()->create([
+        'name' => 'Friday fun',
+        'game' => GameKind::Hangman,
+        'team_id' => Team::factory()->create(['name' => 'Platform'])->id,
+        ...$attributes,
+    ]);
+    [$ada, $adaPlayer] = gameRoomHost($room);
+
+    return [
+        'room' => $room->fresh(),
+        'ada' => p13dNamed($ada, 'Ada'),
+        'adaPlayer' => $adaPlayer,
+    ];
+}
+
+/**
+ * @return array{0: User, 1: GamePlayer}
+ */
+function p13dMember(GameRoom $room, string $name): array
+{
+    [$user, $player] = gameRoomMember($room);
+
+    return [p13dNamed($user, $name), $player];
+}
+
+function p13dTeamGamesPath(GameRoom $room): string
+{
+    return route('teams.games.index', [$room->team->workspace, $room->team], false);
+}
+
+function p13dOpenInvite(mixed $page): mixed
+{
+    return $page->assertSee('Invite')
+        ->click('Invite')
+        ->assertSee('Invite to the room')
+        ->assertSee('Post a link');
 }
 
 it('[P13d-06a] creates a retro with the Icebreaker phase and Hangman, which opens on the game panel instead of the columns', function () {
@@ -339,4 +395,342 @@ it('[P13d-11b] labels GIF tiles "Anonymous GIF" in "Games we played" of an anony
         ->assertDontSeeIn("{$games} ol.space-y-2", 'by Ada')
         ->assertDontSeeIn("{$games} ol.space-y-2", 'by Bob')
         ->assertNotPresent("{$games} button:has-text(\"Replay\")");
+});
+
+it('[P13d-07] lets a visitor open the guest link of a link room, type a name and play', function () {
+    ['room' => $room, 'ada' => $ada] = p13dRoom(['access' => GameRoomAccess::Link]);
+    activeGameRound($room, ['word' => 'sprint']);
+    $letter = fn (string $letter): string => "[role=\"group\"][aria-label=\"Letters\"] button:has-text(\"{$letter}\")";
+
+    $a = $this->awaitRealtime($this->signIn($ada, "/games/{$room->id}"));
+
+    $c = visit(route('games.join.show', $room->guest_token, false));
+    $c->assertSee('Friday fun')
+        ->assertSee('You are invited to play Hangman. Choose the name other players will see.')
+        ->fill('#name', 'Casey')
+        ->click('Join')
+        ->assertPathIs("/games/{$room->id}");
+    $this->awaitRealtime($c);
+
+    foreach ([$a, $c] as $page) {
+        $page->assertPresent('[role="group"][aria-label="2 online"]')
+            ->assertPresent('[role="img"][aria-label="6 letters left to find"]')
+            ->assertSeeIn('section[aria-labelledby="game-players"]', 'Casey')
+            ->assertSeeIn('section[aria-labelledby="game-players"]', '(guest)');
+    }
+
+    $c->assertPresent('[aria-label="Language"]')
+        ->assertNotPresent('[aria-label="Room menu"]')
+        ->assertNotPresent('[aria-label="Game"]')
+        ->assertNotPresent('[aria-label="Back to the team"]')
+        ->click($letter('s'));
+
+    $a->assertPresent('[role="img"][aria-label="5 letters left to find"]')
+        ->assertSeeIn('ul[aria-label="Last letters"]', 'Casey picked S')
+        ->click($letter('p'));
+
+    $c->assertPresent('[role="img"][aria-label="4 letters left to find"]')
+        ->assertSeeIn('ul[aria-label="Last letters"]', 'Ada picked P');
+
+    $guest = GamePlayer::query()->where('game_room_id', $room->id)->where('guest_name', 'Casey')->sole();
+
+    expect($guest->user_id)->toBeNull();
+});
+
+it('[P13d-09a] shows "+n" per scorer on the end card and the scores in both browsers, with the guest scoring in the room only', function () {
+    ['room' => $room, 'ada' => $ada, 'adaPlayer' => $adaPlayer] = p13dRoom(['access' => GameRoomAccess::Link]);
+    $round = activeGameRound($room, [
+        'word' => 'sprint',
+        'picked_letters' => ['s', 'p', 'r', 'i', 'n'],
+        'picked_by' => array_fill(0, 5, $adaPlayer->id),
+        'revealed_positions' => [0, 1, 2, 3, 4],
+    ]);
+    $board = 'section[aria-labelledby="team-leaderboard"]';
+
+    $a = $this->awaitRealtime($this->signIn($ada, "/games/{$room->id}"));
+    $c = $this->awaitRealtime($this->joinAsGuest(route('games.join.show', $room->guest_token, false), 'Casey'));
+
+    foreach ([$a, $c] as $page) {
+        $page->assertPresent('[role="group"][aria-label="2 online"]')
+            ->assertPresent('[role="img"][aria-label="1 letters left to find"]');
+    }
+
+    $c->click('[role="group"][aria-label="Letters"] button:has-text("t")');
+
+    foreach ([$a, $c] as $page) {
+        $page->assertSee('Solved')
+            ->assertSee('Casey found it!')
+            ->assertSeeIn('ul[aria-label="Points of this round"]', '+6 Casey')
+            ->assertSeeIn('ul[aria-label="Points of this round"]', '+5 Ada')
+            ->click('[role="tab"]:has-text("Scores")')
+            ->assertPresent('[role="tabpanel"] li:has-text("Casey") [aria-label="6 points"]')
+            ->assertSeeIn('[role="tabpanel"] li:has-text("Casey")', '(guest)')
+            ->assertPresent('[role="tabpanel"] li:has-text("Ada") [aria-label="5 points"]');
+    }
+
+    expect($round->fresh()->outcome)->toBe(GameRoundOutcome::Solved)
+        ->and(GamePoint::query()->where('game_room_id', $room->id)->whereNull('user_id')->sole()->points)->toBe(6)
+        ->and(GamePoint::query()->where('player_id', $adaPlayer->id)->sole()->points)->toBe(5);
+
+    $a->navigate(p13dTeamGamesPath($room))
+        ->assertSeeIn("{$board} li:has-text(\"Ada\") span.font-semibold", '5')
+        ->assertCount("{$board} ol > li", 1)
+        ->assertDontSeeIn($board, 'Casey');
+
+    $c->navigate(p13dTeamGamesPath($room))
+        ->assertPathIs('/login');
+});
+
+it('[P13d-09b] empties the room leaderboard on "Reset scores" while the team leaderboard keeps the points', function () {
+    ['room' => $room, 'ada' => $ada, 'adaPlayer' => $adaPlayer] = p13dRoom();
+    [$bob, $bobPlayer] = p13dMember($room, 'Bob');
+    awardGamePoints($room, $adaPlayer, 7, true, ['created_at' => now()->subHour()]);
+    awardGamePoints($room, $bobPlayer, 4, false, ['created_at' => now()->subHour()]);
+    $board = 'section[aria-labelledby="team-leaderboard"]';
+
+    $a = $this->awaitRealtime($this->signIn($ada, "/games/{$room->id}"));
+    $b = $this->awaitRealtime($this->signIn($bob, "/games/{$room->id}"));
+
+    foreach ([$a, $b] as $page) {
+        $page->assertPresent('[role="group"][aria-label="2 online"]')
+            ->click('[role="tab"]:has-text("Scores")')
+            ->assertPresent('[role="tabpanel"] li:has-text("Ada") [aria-label="7 points"]')
+            ->assertPresent('[role="tabpanel"] li:has-text("Bob") [aria-label="4 points"]');
+    }
+
+    $b->assertDontSee('Reset scores');
+
+    $a->click('Reset scores')
+        ->assertSee('Scores in this room start again from zero. The team leaderboard keeps them.')
+        ->click('[role="dialog"] button:has-text("Reset scores")')
+        ->assertNotPresent('[role="dialog"]');
+
+    foreach ([$a, $b] as $page) {
+        $page->assertSeeIn('[role="tabpanel"]', 'No points yet.')
+            ->assertNotPresent('[role="tabpanel"] ol');
+    }
+
+    expect($room->fresh()->scores_reset_at)->not->toBeNull()
+        ->and(GamePoint::query()->where('game_room_id', $room->id)->count())->toBe(2);
+
+    $a->navigate(p13dTeamGamesPath($room))
+        ->assertSeeIn("{$board} li:has-text(\"Ada\") span.font-semibold", '7')
+        ->assertSeeIn("{$board} li:has-text(\"Bob\") span.font-semibold", '4')
+        ->assertCount("{$board} ol > li", 2);
+});
+
+it('[P13d-10a] shows a "2-week streak" badge to a member who scored in two consecutive weeks', function () {
+    ['room' => $room, 'ada' => $ada, 'adaPlayer' => $adaPlayer] = p13dRoom();
+    [, $bobPlayer] = p13dMember($room, 'Bob');
+    awardGamePoints($room, $adaPlayer, 5, true, ['created_at' => now()->subWeek()]);
+    awardGamePoints($room, $adaPlayer, 3, false, ['created_at' => now()]);
+    awardGamePoints($room, $bobPlayer, 2, false, ['created_at' => now()]);
+    $board = 'section[aria-labelledby="team-leaderboard"]';
+
+    $page = $this->signIn($ada, p13dTeamGamesPath($room));
+
+    $page->assertSee('Leaderboard')
+        ->assertSeeIn("{$board} li:has-text(\"Ada\")", '2-week streak')
+        ->assertSeeIn("{$board} li:has-text(\"Ada\") span.font-semibold", '8')
+        ->assertSeeIn("{$board} li:has-text(\"Bob\") span.font-semibold", '2')
+        ->assertDontSeeIn("{$board} li:has-text(\"Bob\")", 'streak');
+});
+
+it('[P13d-10b] switches the team leaderboard between "Last 30 days" and "All time"', function () {
+    ['room' => $room, 'ada' => $ada, 'adaPlayer' => $adaPlayer] = p13dRoom();
+    [, $bobPlayer] = p13dMember($room, 'Bob');
+    awardGamePoints($room, $adaPlayer, 4, false, ['created_at' => now()]);
+    awardGamePoints($room, $bobPlayer, 9, true, ['created_at' => now()->subDays(40)]);
+    $board = 'section[aria-labelledby="team-leaderboard"]';
+    $names = "[...document.querySelectorAll('section[aria-labelledby=\"team-leaderboard\"] ol > li span.font-medium')].map((name) => name.textContent).join(',')";
+
+    $page = $this->signIn($ada, p13dTeamGamesPath($room));
+
+    $page->assertSeeIn('[aria-label="Period"] [data-state="on"]', 'Last 30 days')
+        ->assertScript($names, 'Ada')
+        ->assertDontSeeIn($board, 'Bob')
+        ->click('All time')
+        ->assertSeeIn('[aria-label="Period"] [data-state="on"]', 'All time')
+        ->assertScript($names, 'Bob,Ada')
+        ->assertSeeIn("{$board} li:has-text(\"Bob\") span.font-semibold", '9')
+        ->click('Last 30 days')
+        ->assertSeeIn('[aria-label="Period"] [data-state="on"]', 'Last 30 days')
+        ->assertScript($names, 'Ada');
+});
+
+it('[P13d-12a] posts the room invite to Slack and to Telegram with a link that opens the room', function () {
+    config(['queue.default' => 'database']);
+    enableIntegrations(IntegrationProvider::Slack, IntegrationProvider::Telegram);
+    Http::fake([
+        'hooks.slack.com/*' => Http::response('ok'),
+        'api.telegram.org/*' => Http::response(['ok' => true, 'result' => ['message_id' => 1]]),
+    ]);
+    ['room' => $room, 'ada' => $ada] = p13dRoom();
+    [$bob] = p13dMember($room, 'Bob');
+    TeamIntegration::factory()->slack()->create(['team_id' => $room->team_id]);
+    TeamIntegration::factory()->telegram()->create(['team_id' => $room->team_id]);
+
+    $a = $this->awaitRealtime($this->signIn($ada, "/games/{$room->id}"));
+
+    p13dOpenInvite($a)
+        ->click('Post link to Slack')
+        ->assertSee('The message is on its way.')
+        ->assertSee('Sending to Slack…');
+
+    $this->workQueue();
+
+    $a->assertSee('Sent to Slack')
+        ->click('Post link to Telegram')
+        ->assertSee('Sending to Telegram…');
+
+    $this->workQueue();
+
+    $a->assertSee('Sent to Telegram')
+        ->assertSee('Sent to Slack');
+
+    Http::assertSent(fn (HttpRequest $request): bool => str_starts_with($request->url(), 'https://hooks.slack.com/')
+        && str_contains((string) $request['text'], 'Ada invites you to play Hangman in "Friday fun" (Platform)')
+        && str_ends_with((string) data_get($request->data(), 'blocks.1.elements.0.url'), "/games/{$room->id}"));
+
+    Http::assertSent(fn (HttpRequest $request): bool => str_contains($request->url(), 'api.telegram.org')
+        && str_contains($request->url(), '/sendMessage')
+        && str_contains((string) $request['text'], "/games/{$room->id}")
+        && ! str_contains((string) $request['text'], '/play/'));
+
+    expect(IntegrationDelivery::query()->where('status', IntegrationDeliveryStatus::Sent)->count())->toBe(2);
+
+    $b = $this->signIn($bob, "/games/{$room->id}");
+
+    $b->assertPathIs("/games/{$room->id}")
+        ->assertSeeIn('header > h1', 'Friday fun');
+});
+
+it('[P13d-12b] posts the guest join link of a link room when "Include the guest link" is ticked', function () {
+    config(['queue.default' => 'database']);
+    enableIntegrations(IntegrationProvider::Slack);
+    Http::fake(['hooks.slack.com/*' => Http::response('ok')]);
+    ['room' => $room, 'ada' => $ada] = p13dRoom(['access' => GameRoomAccess::Link]);
+    TeamIntegration::factory()->slack()->create(['team_id' => $room->team_id]);
+
+    $a = $this->awaitRealtime($this->signIn($ada, "/games/{$room->id}"));
+
+    p13dOpenInvite($a)
+        ->assertSee('Posted guest links stop working if you regenerate the link.')
+        ->assertAriaAttribute('[role="dialog"] button[role="checkbox"]', 'checked', 'false')
+        ->click('[role="dialog"] button[role="checkbox"]')
+        ->assertAriaAttribute('[role="dialog"] button[role="checkbox"]', 'checked', 'true')
+        ->click('Post link to Slack')
+        ->assertSee('Sending to Slack…');
+
+    $this->workQueue();
+
+    $a->assertSee('Sent to Slack');
+
+    Http::assertSent(fn (HttpRequest $request): bool => str_starts_with($request->url(), 'https://hooks.slack.com/')
+        && str_ends_with((string) data_get($request->data(), 'blocks.1.elements.0.url'), "/play/{$room->guest_token}"));
+
+    $visitor = visit("/play/{$room->guest_token}");
+
+    $visitor->assertPathIs("/play/{$room->guest_token}")
+        ->assertSee('Friday fun')
+        ->assertSee('You are invited to play Hangman. Choose the name other players will see.')
+        ->assertVisible('#name');
+});
+
+it('[P13d-12c] offers no guest link on a team room, says who can join, and shows "Invite" to room managers only', function () {
+    enableIntegrations(IntegrationProvider::Slack);
+    ['room' => $room, 'ada' => $ada] = p13dRoom();
+    [$bob] = p13dMember($room, 'Bob');
+    TeamIntegration::factory()->slack()->create(['team_id' => $room->team_id]);
+
+    $a = $this->awaitRealtime($this->signIn($ada, "/games/{$room->id}"));
+    $b = $this->awaitRealtime($this->signIn($bob, "/games/{$room->id}"));
+
+    $b->assertPresent('[role="group"][aria-label="2 online"]')
+        ->assertDontSee('Invite')
+        ->assertNotPresent('[aria-label="Copy guest link"]');
+
+    p13dOpenInvite($a)
+        ->assertSee('Only members of Platform can join.')
+        ->assertSee('Post link to Slack')
+        ->assertNotPresent('[role="dialog"] button[role="checkbox"]')
+        ->assertDontSee('Include the guest link');
+});
+
+it('[P13d-12d] turns the delivery line to "Slack: failed — Reconnect Slack in the team settings." when the Slack channel is gone', function () {
+    config(['queue.default' => 'database']);
+    enableIntegrations(IntegrationProvider::Slack, IntegrationProvider::Telegram);
+    Http::fake([
+        'hooks.slack.com/*' => Http::response('channel_is_archived', 404),
+        'api.telegram.org/*' => Http::response(['ok' => true, 'result' => ['message_id' => 1]]),
+    ]);
+    ['room' => $room, 'ada' => $ada] = p13dRoom();
+    $slack = TeamIntegration::factory()->slack()->create(['team_id' => $room->team_id]);
+    TeamIntegration::factory()->telegram()->create(['team_id' => $room->team_id]);
+
+    $a = $this->awaitRealtime($this->signIn($ada, "/games/{$room->id}"));
+
+    p13dOpenInvite($a)
+        ->click('Post link to Slack')
+        ->assertSee('Sending to Slack…');
+
+    $this->workQueue();
+
+    $a->assertSee('Slack: failed — Reconnect Slack in the team settings.')
+        ->assertDontSee('Post link to Slack')
+        ->assertSee('Post link to Telegram');
+
+    expect($slack->fresh()->status)->toBe(IntegrationStatus::ReconnectRequired)
+        ->and(IntegrationDelivery::query()->sole()->status)->toBe(IntegrationDeliveryStatus::Failed);
+});
+
+it('[P13d-12e] offers Microsoft Teams, Mattermost and the webhook when the team connected them, and posts to each', function () {
+    config(['queue.default' => 'database']);
+    enableIntegrations(IntegrationProvider::MicrosoftTeams, IntegrationProvider::Mattermost, IntegrationProvider::Webhook);
+    outgoingWebhookResolves();
+    Http::fake([
+        'prod-12.westeurope.logic.azure.com*' => Http::response('', 202),
+        'chat.example.com/*' => Http::response('ok'),
+        'hooks.example.com/*' => Http::response('', 202),
+    ]);
+    ['room' => $room, 'ada' => $ada] = p13dRoom();
+    TeamIntegration::factory()->microsoftTeams()->create(['team_id' => $room->team_id]);
+    TeamIntegration::factory()->mattermost()->create(['team_id' => $room->team_id]);
+    TeamIntegration::factory()->webhook()->create(['team_id' => $room->team_id]);
+
+    $a = $this->awaitRealtime($this->signIn($ada, "/games/{$room->id}"));
+
+    p13dOpenInvite($a)
+        ->assertDontSee('Post link to Slack')
+        ->assertDontSee('Post link to Telegram')
+        ->click('Post link to Microsoft Teams')
+        ->assertSee('Sending to Microsoft Teams…');
+
+    $this->workQueue();
+
+    $a->assertSee('Sent to Microsoft Teams')
+        ->click('Post link to Mattermost')
+        ->assertSee('Sending to Mattermost…');
+
+    $this->workQueue();
+
+    $a->assertSee('Sent to Mattermost')
+        ->click('Send link to webhook')
+        ->assertSee('Sending to Webhook…');
+
+    $this->workQueue();
+
+    $a->assertSee('Sent to Webhook');
+
+    Http::assertSent(fn (HttpRequest $request): bool => str_contains($request->url(), 'prod-12.westeurope.logic.azure.com')
+        && str_contains($request->body(), $room->id));
+
+    Http::assertSent(fn (HttpRequest $request): bool => str_starts_with($request->url(), 'https://chat.example.com/hooks/')
+        && str_contains((string) $request['text'], "/games/{$room->id}"));
+
+    Http::assertSent(fn (HttpRequest $request): bool => str_starts_with($request->url(), 'https://hooks.example.com/')
+        && $request->hasHeader('X-Skrum-Event', 'game_room.link')
+        && str_contains($request->body(), $room->id));
+
+    expect(IntegrationDelivery::query()->where('status', IntegrationDeliveryStatus::Sent)->count())->toBe(3);
 });
