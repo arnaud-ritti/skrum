@@ -62,7 +62,9 @@ class DoneMapping
 
         $ids = data_get($integration->settings, ['statusMapping', 'projects', $project, 'doneStatusIds']);
 
-        return is_array($ids) && $ids !== [] ? array_values(array_map('strval', $ids)) : null;
+        $ids = is_array($ids) ? array_values(array_map('strval', array_filter($ids, 'is_scalar'))) : [];
+
+        return $ids === [] ? null : $ids;
     }
 
     /**

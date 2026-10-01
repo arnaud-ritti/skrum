@@ -15,7 +15,7 @@ class LinearTracker implements IssueTracker, SyncsIssueStatus
 {
     private const IssueFields = 'id identifier title description url estimate updatedAt assignee { displayName } state { id name type } team { key }';
 
-    public const TeamKeyPattern = '/^[A-Z][A-Z0-9_]{0,49}\z/';
+    public const TeamKeyPattern = IssueStatus::ContainerKeyPattern;
 
     private const MaxTeams = 250;
 

@@ -19,6 +19,12 @@ class IssueStatus
 
     public const GitHubNotPlanned = 'not_planned';
 
+    /**
+     * Jira project keys and Linear team keys, the containers a status
+     * mapping is keyed by.
+     */
+    public const ContainerKeyPattern = '/^[A-Z][A-Z0-9_]{0,49}\z/';
+
     public function __construct(
         public string $id,
         public ?string $name,

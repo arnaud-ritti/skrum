@@ -244,7 +244,7 @@ class GitHubTracker implements IssueTracker, SyncsIssueStatus
         $issues = [];
 
         foreach ($numbersByRepository as $repositoryId => $numbers) {
-            foreach ($this->changedInRepository($integration, (string) $repositoryId, $since) as $raw) {
+            foreach ($this->changedOrTracked($integration, (string) $repositoryId, array_map('strval', array_keys($numbers)), $since) as $raw) {
                 if (! isset($numbers[(string) $raw['number']])) {
                     continue;
                 }
@@ -424,13 +424,39 @@ class GitHubTracker implements IssueTracker, SyncsIssueStatus
     }
 
     /**
-     * Issues (never pull requests) of the repository updated since `$since`,
-     * newest first and at most `ChangedPages` pages; items of any other
-     * repository are dropped.
+     * The changed issues of the repository; when more changed than the
+     * listing reads, the tracked issues themselves (`fetchMany()`), so no
+     * change is left behind the caller's cursor.
      *
+     * @param  array<int, string>  $numbers  digits only (`ReferencePattern`)
      * @return array<int, array<array-key, mixed>>
      */
-    private function changedInRepository(TeamIntegration $integration, string $repositoryId, CarbonImmutable $since): array
+    private function changedOrTracked(TeamIntegration $integration, string $repositoryId, array $numbers, CarbonImmutable $since): array
+    {
+        $changed = $this->changedInRepository($integration, $repositoryId, $since);
+
+        if ($changed !== null) {
+            return $changed;
+        }
+
+        $tracked = [];
+
+        foreach (array_chunk($numbers, self::IssueBatch) as $batch) {
+            array_push($tracked, ...$this->fetchMany($integration, $repositoryId, $batch));
+        }
+
+        return $tracked;
+    }
+
+    /**
+     * Issues (never pull requests) of the repository updated since `$since`,
+     * newest first; items of any other repository are dropped. A repository
+     * that is gone or has Issues turned off has none. Null when more than
+     * `ChangedPages` pages changed.
+     *
+     * @return array<int, array<array-key, mixed>>|null
+     */
+    private function changedInRepository(TeamIntegration $integration, string $repositoryId, CarbonImmutable $since): ?array
     {
         try {
             $fullName = $this->client->repositoryName($integration, $repositoryId);
@@ -445,14 +471,22 @@ class GitHubTracker implements IssueTracker, SyncsIssueStatus
         $changed = [];
 
         for ($page = 1; $page <= self::ChangedPages; $page++) {
-            $response = $this->client->response($integration, 'GET', "repos/{$fullName}/issues", [
-                'since' => $since->utc()->toIso8601ZuluString(),
-                'state' => 'all',
-                'sort' => 'updated',
-                'direction' => 'desc',
-                'per_page' => self::PreviewLimit,
-                'page' => $page,
-            ]);
+            try {
+                $response = $this->client->response($integration, 'GET', "repos/{$fullName}/issues", [
+                    'since' => $since->utc()->toIso8601ZuluString(),
+                    'state' => 'all',
+                    'sort' => 'updated',
+                    'direction' => 'desc',
+                    'per_page' => self::PreviewLimit,
+                    'page' => $page,
+                ]);
+            } catch (ProviderRejected $exception) {
+                if (in_array($exception->httpStatus, self::UnavailableStatuses, true)) {
+                    return [];
+                }
+
+                throw $exception;
+            }
 
             foreach ((array) $response->json() as $raw) {
                 if (! is_array($raw) || isset($raw['pull_request']) || ! is_int($raw['number'] ?? null)) {
@@ -465,11 +499,11 @@ class GitHubTracker implements IssueTracker, SyncsIssueStatus
             }
 
             if (! GitHubClient::hasNextPage($response)) {
-                break;
+                return $changed;
             }
         }
 
-        return $changed;
+        return null;
     }
 
     /**
@@ -490,7 +524,7 @@ class GitHubTracker implements IssueTracker, SyncsIssueStatus
 
         $kind = match (true) {
             $state === 'open' => IssueStatus::GitHubOpen,
-            $reason === 'not_planned' => IssueStatus::GitHubNotPlanned,
+            in_array($reason, ['not_planned', 'duplicate'], true) => IssueStatus::GitHubNotPlanned,
             default => IssueStatus::GitHubCompleted,
         };
 

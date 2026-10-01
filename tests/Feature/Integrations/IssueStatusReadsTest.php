@@ -4,6 +4,8 @@ use App\Enums\ExternalIssueState;
 use App\Enums\ExternalStatusCategory;
 use App\Enums\IntegrationProvider;
 use App\Models\TeamIntegration;
+use App\Support\Integrations\Exceptions\ProviderRejected;
+use App\Support\Integrations\Exceptions\RateLimited;
 use App\Support\Integrations\Trackers\DoneMapping;
 use App\Support\Integrations\Trackers\IssueStatus;
 use App\Support\Integrations\Trackers\Trackers;
@@ -136,22 +138,87 @@ it('asks Jira only for tracked issues updated since the cursor', function () {
         ->changedIssues($integration, ['10001', '10002'], CarbonImmutable::parse('2026-10-07 10:13:00'));
 
     expect(array_map('strval', array_keys($changed)))->toBe(['10002']);
-    Http::assertSent(fn (Request $request) => $request['jql'] === 'id in (10001,10002) AND updated >= "-17m"');
+    Http::assertSent(fn (Request $request) => $request['jql'] === 'id in (10001,10002) AND updated >= "-18m"');
 });
 
-it('reads Jira issues one by one when a deleted id makes the batch fail', function () {
+/**
+ * Answers Jira searches with the issues named in the JQL; a search naming
+ * one of `$rejectedIds` is refused with `$message`.
+ *
+ * @param  array<int, string>  $rejectedIds
+ */
+function fakeJiraSearchRejecting(array $rejectedIds, string $message, int $status = 400): void
+{
+    Http::fake([jiraApiUrl('rest/api/3/search/jql') => function (Request $request) use ($rejectedIds, $message, $status) {
+        preg_match('/id in \(([\d,]+)\)/', (string) $request['jql'], $match);
+        $ids = explode(',', $match[1]);
+
+        if (array_intersect($ids, $rejectedIds) !== []) {
+            return Http::response(['errorMessages' => [$message]], $status);
+        }
+
+        return Http::response(['issues' => array_map(fn (string $id) => jiraTrackerIssue($id, "PROJ-{$id}"), $ids), 'isLast' => true]);
+    }]);
+}
+
+it('retries a Jira search once without the deleted id the refusal names', function () {
     enableIntegrations(IntegrationProvider::Jira);
     $integration = TeamIntegration::factory()->jira()->create();
-    Http::fake([
-        jiraApiUrl('rest/api/3/search/jql') => Http::response(['errorMessages' => ["An issue with key '10009' does not exist for field 'id'."]], 400),
-        jiraApiUrl('rest/api/3/issue/10001*') => Http::response(jiraTrackerIssue('10001', 'PROJ-1')),
-        jiraApiUrl('rest/api/3/issue/10009*') => Http::response(['errorMessages' => ['Issue does not exist']], 404),
-    ]);
+    fakeJiraSearchRejecting(['10009'], "An issue with key '10009' does not exist for field 'id'.");
 
-    $issues = app(Trackers::class)->for(IntegrationProvider::Jira)->issues($integration, ['10001', '10009']);
+    $issues = app(Trackers::class)->for(IntegrationProvider::Jira)->issues($integration, ['10001', '10009', '10002']);
 
-    expect(array_map('strval', array_keys($issues)))->toBe(['10001']);
-    Http::assertSent(fn (Request $request) => str_contains($request->url(), '/rest/api/3/issue/10001?fields='));
+    expect(array_map('strval', array_keys($issues)))->toBe(['10001', '10002']);
+    Http::assertSentCount(2);
+    Http::assertSent(fn (Request $request) => $request['jql'] === 'id in (10001,10002)');
+});
+
+it('splits a refused Jira search in halves when the refusal names no id', function () {
+    enableIntegrations(IntegrationProvider::Jira);
+    $integration = TeamIntegration::factory()->jira()->create();
+    fakeJiraSearchRejecting(['10009'], 'The search could not be run.');
+
+    $issues = app(Trackers::class)->for(IntegrationProvider::Jira)->issues($integration, ['10001', '10002', '10003', '10009']);
+
+    expect(array_map('strval', array_keys($issues)))->toBe(['10001', '10002', '10003']);
+    Http::assertSentCount(5);
+    Http::assertNotSent(fn (Request $request) => str_contains($request->url(), '/rest/api/3/issue/'));
+});
+
+it('keeps the update filter when a refused incremental Jira search is retried', function () {
+    enableIntegrations(IntegrationProvider::Jira);
+    $integration = TeamIntegration::factory()->jira()->create();
+    fakeJiraSearchRejecting(['10009'], "An issue with key '10009' does not exist for field 'id'.");
+
+    app(Trackers::class)->syncing(IntegrationProvider::Jira)
+        ->changedIssues($integration, ['10001', '10009'], CarbonImmutable::parse('2026-10-07 10:13:00'));
+
+    Http::assertSent(fn (Request $request) => $request['jql'] === 'id in (10001) AND updated >= "-18m"');
+});
+
+it('rethrows Jira search refusals other than a bad query', function (int $status, string $exception) {
+    enableIntegrations(IntegrationProvider::Jira);
+    $integration = TeamIntegration::factory()->jira()->create();
+    fakeJiraSearchRejecting(['10009'], 'No.', $status);
+
+    expect(fn () => app(Trackers::class)->syncing(IntegrationProvider::Jira)
+        ->changedIssues($integration, ['10001', '10009'], CarbonImmutable::parse('2026-10-07 10:13:00')))
+        ->toThrow($exception);
+})->with([
+    'forbidden' => [403, ProviderRejected::class],
+    'rate limited' => [429, RateLimited::class],
+]);
+
+it('refuses status sync for a provider that is not an issue tracker', function () {
+    expect(fn () => app(Trackers::class)->syncing(IntegrationProvider::Slack))->toThrow(InvalidArgumentException::class);
+});
+
+it('ignores done status ids that are not scalar', function () {
+    $integration = TeamIntegration::factory()->make(['provider' => IntegrationProvider::Jira, 'settings' => [
+        'statusMapping' => ['projects' => ['PROJ' => ['doneStatusIds' => ['10002', ['nested'], 10003]]]],
+    ]]);
+
+    expect(DoneMapping::doneStatusIds($integration, 'PROJ'))->toBe(['10002', '10003']);
 });
 
 it('filters Linear issues by id and update time', function () {
@@ -211,6 +278,55 @@ it('drops changed GitHub items of another repository', function () {
         ->changedIssues($integration, ['9001/1'], CarbonImmutable::parse('2026-10-07 10:13:00'));
 
     expect($changed)->toBe([]);
+});
+
+it('reads closed GitHub duplicates as not planned', function () {
+    enableIntegrations(IntegrationProvider::GitHub);
+    $integration = TeamIntegration::factory()->gitHub()->create();
+    fakeGitHubTrackerApi([
+        'api.github.com/repos/acme/api/issues?*' => Http::response([
+            gitHubIssue(1, ['state' => 'closed', 'state_reason' => 'duplicate', 'updated_at' => '2026-10-07T10:20:00Z']),
+        ]),
+    ]);
+
+    $changed = app(Trackers::class)->syncing(IntegrationProvider::GitHub)
+        ->changedIssues($integration, ['9001/1'], CarbonImmutable::parse('2026-10-07 10:13:00'));
+
+    expect($changed['9001/1']->issueStatus?->kind)->toBe(IssueStatus::GitHubNotPlanned);
+});
+
+it('skips a GitHub repository whose issues are no longer available', function () {
+    enableIntegrations(IntegrationProvider::GitHub);
+    $integration = TeamIntegration::factory()->gitHub()->create();
+    fakeGitHubTrackerApi([
+        'api.github.com/repositories/9002' => Http::response(gitHubRepository(9002, 'acme/web')),
+        'api.github.com/repos/acme/web/issues?*' => Http::response(['message' => 'Issues are disabled for this repo'], 410),
+        'api.github.com/repos/acme/api/issues?*' => Http::response([gitHubIssue(1, ['updated_at' => '2026-10-07T10:20:00Z'])]),
+    ]);
+
+    $changed = app(Trackers::class)->syncing(IntegrationProvider::GitHub)
+        ->changedIssues($integration, ['9002/3', '9001/1'], CarbonImmutable::parse('2026-10-07 10:13:00'));
+
+    expect(array_keys($changed))->toBe(['9001/1']);
+});
+
+it('reads the tracked GitHub issues directly when the changed listing is too long', function () {
+    enableIntegrations(IntegrationProvider::GitHub);
+    $integration = TeamIntegration::factory()->gitHub()->create();
+    fakeGitHubTrackerApi([
+        'api.github.com/repos/acme/api/issues?*' => Http::response(
+            [gitHubIssue(2)],
+            200,
+            ['Link' => '<https://api.github.com/repos/acme/api/issues?page=99>; rel="next"'],
+        ),
+    ]);
+
+    $changed = app(Trackers::class)->syncing(IntegrationProvider::GitHub)
+        ->changedIssues($integration, ['9001/7'], CarbonImmutable::parse('2026-10-07 10:13:00'));
+
+    expect(array_keys($changed))->toBe(['9001/7']);
+    expect(Http::recorded(fn (Request $request) => str_contains($request->url(), '/repos/acme/api/issues?')))->toHaveCount(10);
+    Http::assertSent(fn (Request $request) => $request->url() === 'https://api.github.com/graphql');
 });
 
 it('lists the statuses of a Jira project and the states of a Linear team', function () {

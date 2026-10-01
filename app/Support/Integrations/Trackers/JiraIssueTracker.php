@@ -20,7 +20,7 @@ abstract class JiraIssueTracker implements IssueTracker, SyncsIssueStatus
 {
     private const BaseFields = ['summary', 'description', 'assignee', 'status', 'updated', 'project'];
 
-    public const ProjectKeyPattern = '/^[A-Z][A-Z0-9_]{0,49}\z/';
+    public const ProjectKeyPattern = IssueStatus::ContainerKeyPattern;
 
     private const IssueIdPattern = '/^[A-Za-z0-9_-]+$/';
 
@@ -272,9 +272,8 @@ abstract class JiraIssueTracker implements IssueTracker, SyncsIssueStatus
     }
 
     /**
-     * Jira refuses a whole `id in (…)` query when one of the ids no longer
-     * exists; that chunk is then read issue by issue, so deleted or hidden
-     * issues are simply absent.
+     * Any other refusal, a rate limit included, ends the whole read: the
+     * pollers keep their cursor and read every chunk again next time.
      *
      * @param  array<int, string>  $externalIds
      * @return array<string, TrackerIssue>
@@ -286,17 +285,7 @@ abstract class JiraIssueTracker implements IssueTracker, SyncsIssueStatus
         $issues = [];
 
         foreach (array_chunk($ids, self::PreviewLimit) as $chunk) {
-            try {
-                $found = $this->searchJql($integration, 'id in ('.implode(',', $chunk).')'.$updated)->issues;
-            } catch (ProviderRejected $exception) {
-                if ($exception->httpStatus !== 400) {
-                    throw $exception;
-                }
-
-                $found = $this->readOneByOne($integration, $chunk, $updatedSince);
-            }
-
-            foreach ($found as $issue) {
+            foreach ($this->searchIds($integration, $chunk, $updated, true) as $issue) {
                 $issues[$issue->externalId] = $issue;
             }
         }
@@ -305,46 +294,55 @@ abstract class JiraIssueTracker implements IssueTracker, SyncsIssueStatus
     }
 
     /**
+     * Jira refuses a whole `id in (…)` query (400) when one of the ids was
+     * deleted or is hidden. The search is retried once without the ids the
+     * refusal names; when it names none, or the retry is refused too, the
+     * ids are searched in halves. Refused single ids are absent. Every
+     * retry halves the ids or is followed by a halving, so a chunk of 100
+     * costs a few searches per bad id, never one call per issue.
+     *
      * @param  array<int, string>  $ids  digits only
      * @return array<int, TrackerIssue>
      */
-    private function readOneByOne(TeamIntegration $integration, array $ids, ?CarbonImmutable $updatedSince): array
+    private function searchIds(TeamIntegration $integration, array $ids, string $updated, bool $mayDropNamed): array
     {
-        $issues = [];
-
-        foreach ($ids as $id) {
-            try {
-                $raw = $this->api()->get($integration, $this->api()->apiPath("issue/{$id}"), [
-                    'fields' => implode(',', $this->requestedFields($integration)),
-                ]);
-            } catch (ProviderRejected $exception) {
-                if (in_array($exception->httpStatus, [403, 404], true)) {
-                    continue;
-                }
-
+        try {
+            return $this->searchJql($integration, 'id in ('.implode(',', $ids).')'.$updated)->issues;
+        } catch (ProviderRejected $exception) {
+            if ($exception->httpStatus !== 400) {
                 throw $exception;
             }
-
-            $issue = $this->issue($integration, $raw);
-            $updatedAt = $issue?->issueStatus?->updatedAt;
-
-            if ($issue === null || ($updatedSince !== null && ($updatedAt === null || $updatedAt->lt($updatedSince)))) {
-                continue;
-            }
-
-            $issues[] = $issue;
         }
 
-        return $issues;
+        if (count($ids) === 1) {
+            return [];
+        }
+
+        preg_match_all('/\b\d{1,20}\b/', (string) $exception->detail(), $matches);
+        $named = array_intersect($ids, $matches[0]);
+
+        if ($mayDropNamed && $named !== []) {
+            $rest = array_values(array_diff($ids, $named));
+
+            return $rest === [] ? [] : $this->searchIds($integration, $rest, $updated, false);
+        }
+
+        $half = intdiv(count($ids), 2);
+
+        return [
+            ...$this->searchIds($integration, array_slice($ids, 0, $half), $updated, true),
+            ...$this->searchIds($integration, array_slice($ids, $half), $updated, true),
+        ];
     }
 
     /**
      * Relative minutes keep the query independent of the Jira user's time
-     * zone; rounding up overlaps the previous read rather than missing one.
+     * zone; rounding up plus one minute covers the time until Jira runs the
+     * query, so reads overlap rather than miss a change.
      */
     private static function minutesSince(CarbonImmutable $since): int
     {
-        return max(1, (int) ceil($since->diffInSeconds(now()) / 60));
+        return max(1, (int) ceil($since->diffInSeconds(now()) / 60) + 1);
     }
 
     /**
