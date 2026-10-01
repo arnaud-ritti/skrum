@@ -1,0 +1,257 @@
+<?php
+
+use App\Actions\Integrations\ApplyIssueChanges;
+use App\Actions\Integrations\RefreshPokerTasks;
+use App\Enums\ActionItemEventOrigin;
+use App\Enums\ActionItemRecurrence;
+use App\Enums\ExternalIssueState;
+use App\Enums\ExternalStatusCategory;
+use App\Enums\RetroPhase;
+use App\Events\ActionItems\ActionItemCompleted;
+use App\Events\ActionItems\ActionItemReopened;
+use App\Events\Poker\PokerGameChanged;
+use App\Events\Poker\PokerTaskSaved;
+use App\Jobs\Integrations\PushActionItemState;
+use App\Models\ActionItem;
+use App\Models\ActionItemExternalLink;
+use App\Models\PokerTask;
+use App\Models\TeamIntegration;
+use App\Support\Integrations\Trackers\TrackerIssue;
+use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
+
+beforeEach(function () {
+    Http::preventStrayRequests();
+    Queue::fake();
+    $this->travelTo(CarbonImmutable::parse('2026-10-07 10:30:00'));
+});
+
+/**
+ * @param  array<int, TrackerIssue>  $issues
+ * @param  array<int, string>  $ids
+ */
+function applyStatusSyncIssues(TeamIntegration $integration, array $issues, array $ids = ['10001'], bool $complete = true, bool $sourceWins = false): void
+{
+    $keyed = [];
+
+    foreach ($issues as $issue) {
+        $keyed[$issue->externalId] = $issue;
+    }
+
+    app(ApplyIssueChanges::class)->handle($integration, $ids, $keyed, $complete, $sourceWins);
+}
+
+function syncedPokerTable(): array
+{
+    $table = trackerTable();
+    $table['integration']->forceFill(['settings' => [...$table['integration']->settings, 'statusSync' => true]])->save();
+
+    return $table;
+}
+
+it('completes the item as the system when the source is done', function () {
+    Event::fake([ActionItemCompleted::class]);
+    ['integration' => $integration, 'item' => $item, 'link' => $link] = statusSyncLink();
+
+    applyStatusSyncIssues($integration, [statusSyncIssue('10001', 'PROJ-1', 'done', '2026-10-07T10:20:00+00:00')]);
+
+    $item->refresh();
+    $link->refresh();
+    expect($item->completed_at)->not->toBeNull()
+        ->and($item->completed_via_source)->toBe('jira')
+        ->and($link->external_state)->toBe(ExternalIssueState::Done)
+        ->and($link->external_status_name)->toBe('Done')
+        ->and($link->external_updated_at?->toIso8601String())->toBe('2026-10-07T10:20:00+00:00')
+        ->and($link->last_synced_at?->toIso8601String())->toBe('2026-10-07T10:30:00+00:00');
+    Event::assertDispatched(ActionItemCompleted::class, fn (ActionItemCompleted $event) => $event->origin === ActionItemEventOrigin::External);
+    Queue::assertNotPushed(PushActionItemState::class);
+});
+
+it('completes an item on a locked board as the system and keeps recurrences', function () {
+    ['integration' => $integration, 'item' => $item, 'retro' => $retro] = statusSyncLink(item: [
+        'recurrence' => ActionItemRecurrence::Weekly,
+        'due_on' => '2026-10-10',
+    ]);
+    $retro->forceFill(['phase' => RetroPhase::Discussing, 'is_locked' => true])->save();
+
+    applyStatusSyncIssues($integration, [statusSyncIssue('10001', 'PROJ-1', 'done')]);
+
+    expect($item->fresh()->completed_at)->not->toBeNull()
+        ->and(ActionItem::query()->where('previous_occurrence_id', $item->id)->count())->toBe(1);
+});
+
+it('reopens the item when the source reopens', function () {
+    Event::fake([ActionItemReopened::class]);
+    ['integration' => $integration, 'item' => $item] = statusSyncLink(item: ['completed_at' => '2026-10-06 09:00:00']);
+
+    applyStatusSyncIssues($integration, [statusSyncIssue('10001', 'PROJ-1', 'new')]);
+
+    expect($item->fresh()->completed_at)->toBeNull()
+        ->and($item->fresh()->completed_via_source)->toBeNull();
+    Event::assertDispatched(ActionItemReopened::class, fn (ActionItemReopened $event) => $event->origin === ActionItemEventOrigin::External);
+});
+
+it('only records the read when both sides agree', function () {
+    Event::fake([ActionItemCompleted::class, ActionItemReopened::class]);
+    ['integration' => $integration, 'item' => $item, 'link' => $link] = statusSyncLink();
+
+    applyStatusSyncIssues($integration, [statusSyncIssue('10001', 'PROJ-1', 'indeterminate', overrides: ['status' => 'In Review'])]);
+
+    expect($item->fresh()->completed_at)->toBeNull()
+        ->and($link->fresh()->external_state)->toBe(ExternalIssueState::Open)
+        ->and($link->fresh()->external_status_name)->toBe('In Review');
+    Event::assertNotDispatched(ActionItemCompleted::class);
+    Event::assertNotDispatched(ActionItemReopened::class);
+});
+
+it('keeps a newer unpushed skrum change and pushes it', function () {
+    ['integration' => $integration, 'item' => $item, 'link' => $link] = statusSyncLink(
+        ['local_state_changed_at' => '2026-10-07 10:25:00'],
+        item: ['completed_at' => '2026-10-07 10:25:00'],
+    );
+
+    applyStatusSyncIssues($integration, [statusSyncIssue('10001', 'PROJ-1', 'new', '2026-10-07T10:20:00+00:00')]);
+
+    expect($item->fresh()->completed_at)->not->toBeNull()
+        ->and($link->fresh()->external_state)->toBe(ExternalIssueState::Open);
+    Queue::assertPushed(PushActionItemState::class, fn (PushActionItemState $job) => $job->linkId === $link->id);
+});
+
+it('lets a newer source change win', function () {
+    ['integration' => $integration, 'item' => $item] = statusSyncLink(
+        ['local_state_changed_at' => '2026-10-07 10:15:00'],
+        item: ['completed_at' => '2026-10-07 10:15:00'],
+    );
+
+    applyStatusSyncIssues($integration, [statusSyncIssue('10001', 'PROJ-1', 'new', '2026-10-07T10:20:00+00:00')]);
+
+    expect($item->fresh()->completed_at)->toBeNull();
+    Queue::assertNotPushed(PushActionItemState::class);
+});
+
+it('gives a tie to skrum', function () {
+    ['integration' => $integration, 'item' => $item] = statusSyncLink(
+        ['local_state_changed_at' => '2026-10-07 10:20:00'],
+        item: ['completed_at' => '2026-10-07 10:20:00'],
+    );
+
+    applyStatusSyncIssues($integration, [statusSyncIssue('10001', 'PROJ-1', 'new', '2026-10-07T10:20:00+00:00')]);
+
+    expect($item->fresh()->completed_at)->not->toBeNull();
+    Queue::assertPushed(PushActionItemState::class);
+});
+
+it('applies the source when the local change was already pushed', function () {
+    ['integration' => $integration, 'item' => $item] = statusSyncLink(
+        ['local_state_changed_at' => '2026-10-07 10:15:00', 'last_pushed_at' => '2026-10-07 10:16:00', 'last_pushed_state' => ExternalIssueState::Done],
+        item: ['completed_at' => '2026-10-07 10:15:00'],
+    );
+
+    applyStatusSyncIssues($integration, [statusSyncIssue('10001', 'PROJ-1', 'new', '2026-10-07T10:10:00+00:00')]);
+
+    expect($item->fresh()->completed_at)->toBeNull();
+});
+
+it('lets the source win on the first read', function () {
+    ['integration' => $integration, 'item' => $item] = statusSyncLink(
+        ['local_state_changed_at' => '2026-10-07 10:25:00'],
+        item: ['completed_at' => '2026-10-07 10:25:00'],
+    );
+
+    applyStatusSyncIssues($integration, [statusSyncIssue('10001', 'PROJ-1', 'new', '2026-10-07T10:20:00+00:00')], sourceWins: true);
+
+    expect($item->fresh()->completed_at)->toBeNull();
+    Queue::assertNotPushed(PushActionItemState::class);
+});
+
+it('marks missing issues only when every id was read, and clears the flag when they return', function () {
+    ['integration' => $integration, 'link' => $link] = statusSyncLink();
+
+    applyStatusSyncIssues($integration, [], complete: false);
+    expect($link->fresh()->missing_at)->toBeNull();
+
+    applyStatusSyncIssues($integration, []);
+    expect($link->fresh()->missing_at?->toIso8601String())->toBe('2026-10-07T10:30:00+00:00');
+
+    applyStatusSyncIssues($integration, [statusSyncIssue('10001', 'PROJ-1', 'new')]);
+    expect($link->fresh()->missing_at)->toBeNull();
+});
+
+it('ignores links of other teams, other sites and items completed long ago', function () {
+    ['integration' => $integration] = statusSyncLink();
+    ['link' => $otherTeam] = statusSyncLink();
+    ['link' => $otherSite, 'integration' => $other] = statusSyncLink(['external_site' => 'cloud-2']);
+    $old = ActionItemExternalLink::factory()->create([
+        'action_item_id' => ActionItem::factory()->create(['team_id' => $integration->team_id, 'completed_at' => now()->subDays(100)])->id,
+        'external_id' => '10001',
+    ]);
+
+    applyStatusSyncIssues($integration, [statusSyncIssue('10001', 'PROJ-1', 'done')]);
+
+    expect($otherTeam->fresh()->last_synced_at)->toBeNull()
+        ->and($otherSite->fresh()->last_synced_at)->toBeNull()
+        ->and($old->fresh()->last_synced_at)->toBeNull()
+        ->and($other->team_id)->not->toBe($integration->team_id);
+});
+
+it('refreshes imported tasks of running games with their status', function () {
+    Event::fake([PokerTaskSaved::class, PokerGameChanged::class]);
+    $table = syncedPokerTable();
+    $task = importedPokerTask($table['game']);
+
+    applyStatusSyncIssues($table['integration'], [statusSyncIssue($task->external_id, $task->external_key, 'indeterminate', '2026-10-07T10:05:00+00:00', [
+        'status' => 'In Review',
+        'title' => 'Renamed in Jira',
+        'estimate' => '8',
+        'url' => $task->external_url,
+    ])], [$task->external_id]);
+
+    $task->refresh();
+    expect($task->title)->toBe('Renamed in Jira')
+        ->and($task->external_estimate)->toBe('8')
+        ->and($task->external_status_name)->toBe('In Review')
+        ->and($task->external_status_category)->toBe(ExternalStatusCategory::InProgress)
+        ->and($task->external_updated_at?->toIso8601String())->toBe('2026-10-07T10:05:00+00:00')
+        ->and($task->external_missing_at)->toBeNull();
+    Event::assertDispatchedTimes(PokerTaskSaved::class, 1);
+    Event::assertNotDispatched(PokerGameChanged::class);
+});
+
+it('leaves ended games alone', function () {
+    $table = syncedPokerTable();
+    $task = importedPokerTask($table['game']);
+    $table['game']->forceFill(['ended_at' => now()->subHour()])->save();
+
+    applyStatusSyncIssues($table['integration'], [statusSyncIssue($task->external_id, $task->external_key, 'done', overrides: ['title' => 'Changed'])], [$task->external_id]);
+
+    expect($task->fresh()->title)->not->toBe('Changed')
+        ->and($task->fresh()->external_status_category)->toBeNull();
+});
+
+it('announces more than ten changed tasks as one game change', function () {
+    Event::fake([PokerTaskSaved::class, PokerGameChanged::class]);
+    $table = syncedPokerTable();
+    $tasks = collect(range(1, 11))->map(fn () => importedPokerTask($table['game']));
+
+    applyStatusSyncIssues(
+        $table['integration'],
+        $tasks->map(fn (PokerTask $task) => statusSyncIssue($task->external_id, $task->external_key, 'done'))->all(),
+        $tasks->pluck('external_id')->all(),
+    );
+
+    Event::assertDispatchedTimes(PokerGameChanged::class, 1);
+    Event::assertNotDispatched(PokerTaskSaved::class);
+});
+
+it('persists "Not found" when a manual refresh misses an issue', function () {
+    $table = trackerTable();
+    $task = importedPokerTask($table['game']);
+    fakeJiraTrackerApi([]);
+
+    $result = app(RefreshPokerTasks::class)->handle($table['game'], $table['facilitatorPlayer']);
+
+    expect($result)->toBe(['refreshed' => 0, 'missing' => 1])
+        ->and($task->fresh()->external_missing_at)->not->toBeNull();
+});

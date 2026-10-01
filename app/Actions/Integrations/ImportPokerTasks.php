@@ -9,6 +9,7 @@ use App\Models\PokerGame;
 use App\Models\PokerPlayer;
 use App\Models\PokerTask;
 use App\Models\TeamIntegration;
+use App\Support\Integrations\Trackers\DoneMapping;
 use App\Support\Integrations\Trackers\TrackerIssue;
 use App\Support\Integrations\Trackers\Trackers;
 use Illuminate\Support\Facades\DB;
@@ -110,6 +111,9 @@ class ImportPokerTasks
                     'external_assignee' => $issue->assignee,
                     'external_estimate' => $issue->estimate,
                     'external_refreshed_at' => now(),
+                    'external_status_name' => $issue->status,
+                    'external_status_category' => $issue->issueStatus === null ? null : DoneMapping::category($integration->provider, $issue->issueStatus->kind),
+                    'external_updated_at' => $issue->issueStatus?->updatedAt,
                 ])->save();
             }
 

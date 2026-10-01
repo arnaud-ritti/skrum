@@ -25,6 +25,7 @@ use Illuminate\Support\Carbon;
  * @property ActionItemPriority $priority
  * @property Carbon|null $due_on
  * @property Carbon|null $completed_at
+ * @property string|null $completed_via_source
  * @property string|null $assignee_user_id
  * @property string|null $assignee_participant_id
  * @property string|null $created_by_participant_id

@@ -32,7 +32,10 @@ class SetActionItemStatus
             return $locked->loadForPresentation();
         }
 
-        $locked->update(['completed_at' => $completing ? now() : null]);
+        $locked->forceFill([
+            'completed_at' => $completing ? now() : null,
+            'completed_via_source' => $completing && $actor instanceof ExternalSyncActor ? $actor->source : null,
+        ])->save();
 
         if ($completing) {
             $this->createNextOccurrence->handle($locked);
