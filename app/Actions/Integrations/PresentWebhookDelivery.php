@@ -3,6 +3,7 @@
 namespace App\Actions\Integrations;
 
 use App\Models\IntegrationDelivery;
+use LogicException;
 
 class PresentWebhookDelivery
 {
@@ -43,7 +44,7 @@ class PresentWebhookDelivery
         $exists = $delivery->getAttribute('payload_exists');
 
         if ($exists === null) {
-            return $delivery->payload()->exists();
+            throw new LogicException('Load the delivery with withExists(\'payload\') or loadExists(\'payload\') before presenting it.');
         }
 
         return (bool) $exists;

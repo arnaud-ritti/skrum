@@ -246,13 +246,45 @@ it('answers 404 for deliveries outside the team\'s webhook log', function () {
         ->postJson(route('teams.integrations.deliveries.redelivery.store', [$team->workspace, $team, $integration, $foreign->id]))
         ->assertNotFound();
 
+    $this->actingAs($admin)
+        ->postJson(route('teams.integrations.deliveries.redelivery.store', [$team->workspace, $team, $integration, $slack->id]))
+        ->assertNotFound();
+
     $delivery->payload()->delete();
 
     $this->actingAs($admin)->getJson($show($delivery->id))->assertNotFound();
+});
 
+it('answers 404 on both routes while the webhook provider is off', function () {
+    [$team, $admin, $integration, $delivery] = redeliverableWebhookDelivery();
     config(['services.outgoing_webhooks.enabled' => false]);
 
-    $this->actingAs($admin)->getJson($show($delivery->id))->assertNotFound();
+    $this->actingAs($admin)
+        ->getJson(route('teams.integrations.deliveries.show', [$team->workspace, $team, $integration, $delivery->id]))
+        ->assertNotFound();
+    $this->actingAs($admin)
+        ->postJson(route('teams.integrations.deliveries.redelivery.store', [$team->workspace, $team, $integration, $delivery->id]))
+        ->assertNotFound();
+
+    Queue::assertNotPushed(RedeliverWebhook::class);
+});
+
+it('refuses non-managers before looking the delivery up', function () {
+    [$team, , $integration, $delivery] = redeliverableWebhookDelivery();
+    [, , , $foreign] = redeliverableWebhookDelivery();
+    $delivery->payload()->delete();
+    $nonManagers = [teamMember($team), User::factory()->create()];
+
+    foreach ($nonManagers as $user) {
+        foreach ([$delivery->id, $foreign->id, '7b6e1c1e-0000-4000-8000-000000000000'] as $id) {
+            $this->actingAs($user)
+                ->getJson(route('teams.integrations.deliveries.show', [$team->workspace, $team, $integration, $id]))
+                ->assertForbidden();
+            $this->actingAs($user)
+                ->postJson(route('teams.integrations.deliveries.redelivery.store', [$team->workspace, $team, $integration, $id]))
+                ->assertForbidden();
+        }
+    }
 });
 
 it('redelivers through the endpoint and lists the redelivery', function () {
@@ -262,7 +294,7 @@ it('redelivers through the endpoint and lists the redelivery', function () {
     $response = $this->actingAs($admin)
         ->postJson(route('teams.integrations.deliveries.redelivery.store', [$team->workspace, $team, $integration, $delivery->id]))
         ->assertAccepted()
-        ->assertJson(['event' => 'action_item.completed', 'status' => 'queued', 'redeliveryOf' => $delivery->id, 'hasContent' => true]);
+        ->assertJson(['event' => 'action_item.completed', 'status' => 'queued', 'attempts' => 0, 'redeliveryOf' => $delivery->id, 'hasContent' => true]);
 
     $this->actingAs($admin)
         ->postJson(route('teams.integrations.deliveries.redelivery.store', [$team->workspace, $team, $integration, $delivery->id]))

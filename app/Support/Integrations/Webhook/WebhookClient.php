@@ -205,11 +205,22 @@ class WebhookClient
                 'request_headers' => $request === null ? null : $this->storedHeaders($request),
                 'request_body' => $request?->body,
                 'response_status' => $response?->status(),
-                'response_excerpt' => $response === null ? null : $excerpt->orBodyOf($response),
+                'response_excerpt' => $response === null ? null : $this->withoutFullSignature($excerpt->orBodyOf($response), $request),
             ])->save();
         } catch (Throwable $exception) {
             $this->reportStorageFailure('keep', $delivery, $exception);
         }
+    }
+
+    private function withoutFullSignature(?string $excerpt, ?WebhookRequest $request): ?string
+    {
+        if ($excerpt === null || $request === null) {
+            return $excerpt;
+        }
+
+        $signature = $request->headers['X-Skrum-Signature'];
+
+        return str_replace($signature, self::maskedSignature($signature), $excerpt);
     }
 
     /**

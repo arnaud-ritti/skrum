@@ -33,7 +33,10 @@ class WebhookRedeliveriesController extends Controller
 
         abort_unless($integration->provider === IntegrationProvider::Webhook, 404);
 
-        $redelivery = $requestWebhookRedelivery->handle($integration, $findWebhookDelivery->handle($team, $delivery), $request->user());
+        $original = $findWebhookDelivery->handle($team, $delivery);
+        $redelivery = $requestWebhookRedelivery->handle($integration, $original, $request->user());
+
+        $redelivery->refresh()->loadExists('payload');
 
         return response()->json($presentWebhookDelivery->handle($redelivery), 202);
     }

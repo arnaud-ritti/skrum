@@ -420,6 +420,21 @@ it('keeps what it sent and the start of the answer for a delivery with a stored 
         ->and((string) $payload->response_excerpt)->toBe(str_repeat('é', 1024));
 });
 
+it('masks the signature when the receiver echoes it back', function () {
+    Http::fake(['hooks.example.com/*' => fn (Request $request) => Http::response('you sent '.$request->header('X-Skrum-Signature')[0], 400)]);
+    $integration = TeamIntegration::factory()->webhook()->create();
+    $delivery = outgoingWebhookDeliveryWithPayload($integration);
+
+    expect(fn () => app(WebhookClient::class)->send($integration, outgoingWebhookMessage($delivery->id), $delivery))
+        ->toThrow(ProviderRejected::class);
+
+    $signature = Http::recorded()->first()[0]->header('X-Skrum-Signature')[0];
+    $excerpt = (string) $delivery->payload()->sole()->response_excerpt;
+
+    expect($excerpt)->toBe('you sent sha256=…'.substr($signature, -6))
+        ->and($excerpt)->not->toContain($signature);
+});
+
 it('stores nothing for a delivery without a stored message or for a test message', function () {
     Http::fake(['hooks.example.com/*' => Http::response('ok', 200)]);
     $integration = TeamIntegration::factory()->webhook()->create();
