@@ -116,7 +116,7 @@ class ReadTrackedIssues implements ShouldBeUnique, ShouldQueue
 
         StatusSync::finishInitialRead($integration, $pendingSince);
 
-        $trackerWebhooks->registerIfProjectsChanged($integration);
+        $trackerWebhooks->registerIfNeeded($integration);
     }
 
     /**

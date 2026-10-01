@@ -6,6 +6,7 @@ use App\Actions\Integrations\TrackedIssues;
 use App\Enums\IntegrationProvider;
 use App\Enums\IntegrationWebhookStatus;
 use App\Jobs\Integrations\RegisterTrackerWebhooks;
+use App\Jobs\Integrations\RemoveTrackerWebhooks;
 use App\Models\TeamIntegration;
 use App\Support\Integrations\Exceptions\IntegrationException;
 use App\Support\Integrations\Exceptions\ProviderRejected;
@@ -28,6 +29,9 @@ class TrackerWebhooks
 
     public const RefreshWithinDays = 7;
 
+    /** A rejected registration is retried after a day, or once the tracked projects change. */
+    public const RetryRejectedAfterHours = 24;
+
     private const LifetimeDays = 30;
 
     private const SecretLength = 40;
@@ -41,11 +45,16 @@ class TrackerWebhooks
     ) {}
 
     /**
+     * Keys are quoted: `OR`, `IN`, `IS` or `BY` are valid project keys but
+     * JQL reserved words.
+     *
      * @param  array<int, string>  $projectKeys  validated project keys
      */
     public static function jql(array $projectKeys): string
     {
-        return 'project in ('.implode(', ', $projectKeys).')';
+        $quotedKeys = implode(', ', array_map(fn (string $key): string => "\"{$key}\"", $projectKeys));
+
+        return "project in ({$quotedKeys})";
     }
 
     /**
@@ -89,10 +98,64 @@ class TrackerWebhooks
         return $integration->provider !== IntegrationProvider::Jira || $integration->hasScope(InboundModes::JiraWebhookScope);
     }
 
+    /**
+     * Whether the registered webhooks still cover the tracked projects and
+     * still deliver: a Jira Cloud webhook past its expiry is gone, and a
+     * failing one is replaced. A webhook registered by hand is left alone.
+     */
     public function isCurrent(TeamIntegration $integration): bool
     {
+        if ($this->isManuallyRegistered($integration)) {
+            return true;
+        }
+
+        $projects = $this->trackedIssues->containerKeys($integration);
+
+        if ((array) $integration->setting('webhookProjects', []) !== $projects) {
+            return false;
+        }
+
+        if ($projects === []) {
+            return true;
+        }
+
+        $expired = $integration->provider === IntegrationProvider::Jira
+            && $integration->webhook_expires_at !== null
+            && $integration->webhook_expires_at->isPast();
+
         return self::ids($integration) !== []
-            && (array) $integration->setting('webhookProjects', []) === $this->trackedIssues->containerKeys($integration);
+            && ! $expired
+            && $integration->webhook_status !== IntegrationWebhookStatus::Failing;
+    }
+
+    /**
+     * A Jira Data Center webhook an administrator registered by hand and
+     * confirmed: skrum never registers a second one next to it.
+     */
+    public function isManuallyRegistered(TeamIntegration $integration): bool
+    {
+        return $integration->setting('webhookManual') === true && $integration->webhook_status !== null;
+    }
+
+    /**
+     * Whether a recent rejection for the same projects says a new attempt
+     * would fail again.
+     */
+    public function isBackedOff(TeamIntegration $integration): bool
+    {
+        $failedAt = IssueStatus::time($integration->setting('webhookFailedAt'));
+
+        return $failedAt !== null
+            && $failedAt->gt(now()->subHours(self::RetryRejectedAfterHours))
+            && (array) $integration->setting('webhookFailedProjects', []) === $this->trackedIssues->containerKeys($integration);
+    }
+
+    public function recordRejection(TeamIntegration $integration): void
+    {
+        $integration->mergeSettings([
+            'webhookFailedAt' => now()->toIso8601String(),
+            'webhookFailedProjects' => $this->trackedIssues->containerKeys($integration),
+        ]);
     }
 
     public function expiresSoon(TeamIntegration $integration): bool
@@ -106,11 +169,11 @@ class TrackerWebhooks
     {
         $integration = $this->ensureSecrets($integration);
         $projects = $this->trackedIssues->containerKeys($integration);
-
-        $this->removeQuietly($integration, self::ids($integration));
+        $previousIds = self::ids($integration);
 
         if ($projects === []) {
             $this->saveRegistration($integration, [], []);
+            $this->removeOrRetryLater($integration, $previousIds);
 
             return;
         }
@@ -120,13 +183,16 @@ class TrackerWebhooks
             : $this->registerDataCenter($integration, $projects);
 
         if ($ids === null) {
+            $this->recordRejection($integration);
             $integration->mergeSettings(['webhookManual' => true, 'webhookIds' => [], 'webhookProjects' => []]);
             $this->inboundModes->refresh($integration);
+            $this->removeOrRetryLater($integration, $previousIds);
 
             return;
         }
 
         $this->saveRegistration($integration, $ids, $projects);
+        $this->removeOrRetryLater($integration, $previousIds);
     }
 
     public function refresh(TeamIntegration $integration): void
@@ -142,10 +208,14 @@ class TrackerWebhooks
 
         $integration->forceFill([
             'webhook_expires_at' => IssueStatus::time($response['expirationDate'] ?? null) ?? now()->addDays(self::LifetimeDays),
+            'webhook_status' => $integration->webhook_status === IntegrationWebhookStatus::Failing ? IntegrationWebhookStatus::Pending : $integration->webhook_status,
         ])->save();
     }
 
     /**
+     * A webhook already gone (404) counts as removed; any other failure is
+     * thrown after the remaining ids were tried.
+     *
      * @param  array<int, string>  $ids
      */
     public function remove(TeamIntegration $integration, array $ids): void
@@ -157,15 +227,27 @@ class TrackerWebhooks
         }
 
         $api = $this->jiraApis->for($integration);
+        $requests = $integration->provider === IntegrationProvider::Jira
+            ? [fn () => $api->delete($integration, $api->apiPath('webhook'), ['webhookIds' => array_map('intval', $ids)])]
+            : array_map(fn (string $id) => fn () => $api->delete($integration, "rest/webhooks/1.0/webhook/{$id}"), $ids);
+        $failure = null;
 
-        if ($integration->provider === IntegrationProvider::Jira) {
-            $api->delete($integration, $api->apiPath('webhook'), ['webhookIds' => array_map('intval', $ids)]);
-
-            return;
+        foreach ($requests as $request) {
+            try {
+                $request();
+            } catch (ProviderRejected $exception) {
+                if ($exception->httpStatus !== 404) {
+                    $failure = $exception;
+                }
+            } catch (ReconnectRequired $exception) {
+                throw $exception;
+            } catch (IntegrationException $exception) {
+                $failure = $exception;
+            }
         }
 
-        foreach ($ids as $id) {
-            $api->delete($integration, "rest/webhooks/1.0/webhook/{$id}");
+        if ($failure !== null) {
+            throw $failure;
         }
     }
 
@@ -181,13 +263,13 @@ class TrackerWebhooks
         }
     }
 
-    public function registerIfProjectsChanged(TeamIntegration $integration): void
+    /**
+     * Queues a registration when the projects changed or the webhook
+     * stopped delivering, unless the last attempt was rejected recently.
+     */
+    public function registerIfNeeded(TeamIntegration $integration): void
     {
-        if (! $this->canRegister($integration) || $integration->setting('webhookManual') === true) {
-            return;
-        }
-
-        if ((array) $integration->setting('webhookProjects', []) === $this->trackedIssues->containerKeys($integration)) {
+        if (! $this->canRegister($integration) || $this->isCurrent($integration) || $this->isBackedOff($integration)) {
             return;
         }
 
@@ -221,6 +303,22 @@ class TrackerWebhooks
         ])->save();
 
         return $this->inboundModes->refresh($integration);
+    }
+
+    /**
+     * @param  array<int, string>  $ids
+     */
+    private function removeOrRetryLater(TeamIntegration $integration, array $ids): void
+    {
+        if ($ids === []) {
+            return;
+        }
+
+        try {
+            $this->remove($integration, $ids);
+        } catch (IntegrationException) {
+            RemoveTrackerWebhooks::dispatch($integration->id, $ids);
+        }
     }
 
     /**
@@ -296,6 +394,8 @@ class TrackerWebhooks
             'webhookProjects' => $projects,
             'webhookManual' => false,
             'webhookRegisteredAt' => $registered ? now()->toIso8601String() : $integration->setting('webhookRegisteredAt'),
+            'webhookFailedAt' => null,
+            'webhookFailedProjects' => [],
         ]);
 
         $integration->forceFill([

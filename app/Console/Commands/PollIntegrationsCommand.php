@@ -46,7 +46,7 @@ class PollIntegrationsCommand extends Command
                 $inboundModes->refresh($integration);
 
                 if ($previousMode !== IntegrationInboundMode::Webhook && $integration->inbound_mode === IntegrationInboundMode::Webhook) {
-                    $trackerWebhooks->registerIfProjectsChanged($integration);
+                    $trackerWebhooks->registerIfNeeded($integration);
                 }
 
                 $initialReadPending = StatusSync::initialReadPending($integration);

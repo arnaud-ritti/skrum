@@ -19,7 +19,9 @@ use Illuminate\Support\Facades\Gate;
 /**
  * Spec 8 §4.1, §7: the Jira Data Center manual registration details (the
  * only response carrying the URL token and secret, never cached), the
- * "I've registered it" confirmation and on-demand (re)registration.
+ * "I've registered it" confirmation and on-demand (re)registration. A
+ * request without `registered` always registers anew, except next to a
+ * webhook an administrator registered by hand (it is never duplicated).
  */
 class TrackerWebhooksController extends Controller
 {
@@ -64,9 +66,19 @@ class TrackerWebhooksController extends Controller
 
         if ($request->boolean('registered')) {
             $integration = $this->webhooks->confirmManual($integration);
-        } else {
-            RegisterTrackerWebhooks::dispatch($integration->id);
+
+            return response()->json($this->presentTeamIntegration->handle($integration->load('connectedBy')), 202);
         }
+
+        if (! $this->webhooks->canRegister($integration)) {
+            abort(409, __('Reconnect :provider so skrum can register its webhook.', $label));
+        }
+
+        if ($this->webhooks->isManuallyRegistered($integration)) {
+            abort(409, __('This webhook was registered by hand in :provider; skrum leaves it as it is.', $label));
+        }
+
+        RegisterTrackerWebhooks::dispatch($integration->id, true);
 
         return response()->json($this->presentTeamIntegration->handle($integration->load('connectedBy')), 202);
     }

@@ -113,7 +113,9 @@ class TeamIntegration extends Model
 
     /**
      * Merges settings under a row lock, so concurrent writers (token
-     * refresh, exports, sync bookkeeping) never overwrite each other.
+     * refresh, exports, sync bookkeeping) never overwrite each other. The
+     * row is re-read under the lock and this model takes its attributes:
+     * unsaved changes on it are discarded, so save them first.
      *
      * @param  array<string, mixed>  $changes
      */

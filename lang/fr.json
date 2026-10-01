@@ -1713,5 +1713,7 @@
     "This issue belongs to another :provider site.": "Ce ticket appartient à un autre site :provider.",
     "Guests cannot sync action items.": "Les invités ne peuvent pas synchroniser d'actions.",
     "Invalid signature.": "Signature invalide.",
-    "This skrum instance can't receive webhooks; it checks :provider regularly instead.": "Cette instance de skrum ne peut pas recevoir de webhooks ; elle interroge :provider régulièrement à la place."
+    "This skrum instance can't receive webhooks; it checks :provider regularly instead.": "Cette instance de skrum ne peut pas recevoir de webhooks ; elle interroge :provider régulièrement à la place.",
+    "Reconnect :provider so skrum can register its webhook.": "Reconnectez :provider pour que skrum puisse enregistrer son webhook.",
+    "This webhook was registered by hand in :provider; skrum leaves it as it is.": "Ce webhook a été enregistré à la main dans :provider ; skrum le laisse tel quel."
 }
