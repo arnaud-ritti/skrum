@@ -1466,6 +1466,15 @@ function runStatusPush(ActionItemExternalLink $link): PushActionItemState
     return $job;
 }
 
+const WhiteboardPng = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+
+function renamedWhiteboardUser(User $user, string $name, string $locale = 'en'): User
+{
+    $user->forceFill(['name' => $name, 'locale' => $locale])->save();
+
+    return $user;
+}
+
 /**
  * @return array{0: User, 1: WhiteboardMember}
  */
@@ -1486,6 +1495,26 @@ function whiteboardFacilitator(Whiteboard $board): array
     $board->update(['facilitator_member_id' => $member->id]);
 
     return [$user, $member];
+}
+
+/**
+ * @param  array<string, mixed>  $attributes
+ * @return array{
+ *     board: Whiteboard,
+ *     fran: User,
+ *     franMember: WhiteboardMember
+ * }
+ */
+function whiteboardWithFacilitator(array $attributes = []): array
+{
+    $board = Whiteboard::factory()->withGuestAccess()->create(['title' => 'Sprint board', ...$attributes]);
+    [$fran, $franMember] = whiteboardFacilitator($board);
+
+    return [
+        'board' => $board,
+        'fran' => renamedWhiteboardUser($fran, 'Fran Facilitator'),
+        'franMember' => $franMember,
+    ];
 }
 
 function whiteboardGuest(Whiteboard $board, string $secret = 'secret'): WhiteboardMember
