@@ -3,6 +3,7 @@
 namespace App\Support\Integrations\GitHub;
 
 use InvalidArgumentException;
+use RuntimeException;
 
 /**
  * The one block of a GitHub issue body skrum owns (spec 8 §4.2):
@@ -28,11 +29,11 @@ class EstimateBlock
 
     private const NeverWritten = ['?', '☕'];
 
-    private const BlockPattern = '~^[ \t]*<!-- skrum:estimate -->[ \t]*\r?\n(?:(?!^[ \t]*<!-- skrum:estimate -->).)*?^[ \t]*<!-- /skrum:estimate -->[ \t]*(?=\r?\n|\z)~ms';
+    private const BlockPattern = '~^[ \t]*<!-- skrum:estimate -->[ \t]*\r?\n(?:(?!^[ \t]*<!-- /?skrum:estimate -->)[^\n]*\n)*?^[ \t]*<!-- /skrum:estimate -->[ \t]*(?=\r?\n|\z)~m';
 
-    private const ValuePattern = '~^[ \t]*\*\*Estimate:\*\*(.*?)[ \t]*\r?$~m';
+    private const ValuePattern = '~\A[^\n]*\n[ \t]*\*\*Estimate:\*\*([^\n]*?)[ \t]*\r?(?:\n|\z)~';
 
-    private const Specials = '\\\\*_\[\]()#<>~|`';
+    private const Specials = '\\\\*_\[\]()#<>~|`&';
 
     public static function value(?string $body): ?string
     {
@@ -42,7 +43,8 @@ class EstimateBlock
             return null;
         }
 
-        $value = (string) preg_replace('/\\\\(['.self::Specials.'])/', '$1', trim($match[1]));
+        $unescaped = (string) preg_replace('/\\\\(['.self::Specials.'])/', '$1', trim($match[1]));
+        $value = str_replace("@\u{200B}", '@', $unescaped);
 
         return $value === '' ? null : $value;
     }
@@ -95,7 +97,11 @@ class EstimateBlock
 
     public static function render(string $estimate): string
     {
-        if (trim($estimate) === '' || in_array($estimate, self::NeverWritten, true)) {
+        if (preg_match('/[\r\n]/', $estimate) === 1) {
+            throw new InvalidArgumentException('An estimate label must be a single line.');
+        }
+
+        if (trim($estimate) === '' || in_array(trim($estimate), self::NeverWritten, true)) {
             throw new InvalidArgumentException('Only deck cards that are estimates can be written.');
         }
 
@@ -104,7 +110,9 @@ class EstimateBlock
 
     public static function escape(string $label): string
     {
-        return (string) preg_replace('/(['.self::Specials.'])/', '\\\\$1', $label);
+        $escaped = (string) preg_replace('/(['.self::Specials.'])/', '\\\\$1', $label);
+
+        return str_replace('@', "@\u{200B}", $escaped);
     }
 
     /**
@@ -112,7 +120,9 @@ class EstimateBlock
      */
     private static function blocks(string $body): array
     {
-        preg_match_all(self::BlockPattern, $body, $matches, PREG_OFFSET_CAPTURE);
+        if (preg_match_all(self::BlockPattern, $body, $matches, PREG_OFFSET_CAPTURE) === false) {
+            throw new RuntimeException('Could not scan the issue body for the estimate block: '.preg_last_error_msg());
+        }
 
         return $matches[0];
     }

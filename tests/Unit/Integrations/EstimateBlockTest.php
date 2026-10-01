@@ -125,3 +125,50 @@ it('preserves multibyte text byte for byte around the block', function () {
         ->and(EstimateBlock::value($updated))->toBe('☃')
         ->and(EstimateBlock::strip($updated))->toBe("{$text}\n\n{$text}");
 });
+
+it('finds a legitimate block with a huge interior', function () {
+    $interior = str_repeat("a line of text\n", 5000);
+    $body = "Intro\n\n<!-- skrum:estimate -->\n**Estimate:** 5\n{$interior}<!-- /skrum:estimate -->\n\nTail";
+
+    expect(strlen($interior))->toBeGreaterThan(70000)
+        ->and(EstimateBlock::count($body))->toBe(1)
+        ->and(EstimateBlock::value($body))->toBe('5')
+        ->and(EstimateBlock::apply($body, '8'))->toBe("Intro\n\n".renderedEstimateBlock('8')."\n\nTail");
+});
+
+it('does not duplicate blocks after an unclosed marker followed by a huge body', function () {
+    $huge = str_repeat("some user text\n", 5000);
+    $body = "<!-- skrum:estimate -->\n{$huge}\n".renderedEstimateBlock('3');
+
+    $updated = EstimateBlock::apply($body, '5');
+
+    expect(EstimateBlock::count($body))->toBe(1)
+        ->and(EstimateBlock::value($body))->toBe('3')
+        ->and($updated)->toBe(str_replace('**Estimate:** 3', '**Estimate:** 5', $body))
+        ->and(EstimateBlock::count($updated))->toBe(1);
+});
+
+it('does not duplicate blocks after an unclosed marker followed by one very long line', function () {
+    $body = "<!-- skrum:estimate -->\n".str_repeat('x', 70000);
+
+    expect(EstimateBlock::count($body))->toBe(0)
+        ->and(EstimateBlock::count(EstimateBlock::apply($body, '5')))->toBe(1);
+});
+
+it('neutralises mentions and ampersands in labels and reads them back', function () {
+    $rendered = EstimateBlock::render('@octocat &amp;');
+
+    expect($rendered)->toContain("@\u{200B}octocat \\&amp;")
+        ->and(EstimateBlock::value($rendered))->toBe('@octocat &amp;');
+});
+
+it('refuses labels with line breaks and padded unwritable cards', function (string $label) {
+    expect(fn () => EstimateBlock::render($label))->toThrow(InvalidArgumentException::class);
+})->with(["5\n<!-- /skrum:estimate -->", "5\r", ' ?', "☕\t", '  ', '']);
+
+it('reads only the value line right after the opening marker', function () {
+    $body = "<!-- skrum:estimate -->\nnote\n**Estimate:** 99\n<!-- /skrum:estimate -->";
+
+    expect(EstimateBlock::value($body))->toBeNull()
+        ->and(EstimateBlock::value("<!-- skrum:estimate -->\n**Estimate:** 5\n**Estimate:** 99\n<!-- /skrum:estimate -->"))->toBe('5');
+});
