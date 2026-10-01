@@ -12,12 +12,16 @@ A test is found by its identifier: `vendor/bin/pest tests/Browser/Walkthroughs -
 
 ## Summary
 
-| Walkthrough               | Rows   | `auto` | `auto-substituted` | `residual` |
-| ------------------------- | ------ | ------ | ------------------ | ---------- |
-| Plan 4, retro core        | 26     | 19     | 5                  | 2          |
-| Plan 10a, poker core      | 16     | 13     | 3                  | 0          |
-| Plan 10b, poker additions | 28     | 19     | 5                  | 4          |
-| **Total**                 | **70** | **51** | **13**             | **6**      |
+| Walkthrough                           | Rows    | `auto` | `auto-substituted` | `residual` |
+| ------------------------------------- | ------- | ------ | ------------------ | ---------- |
+| Plan 4, retro core                    | 26      | 19     | 5                  | 2          |
+| Plan 10a, poker core                  | 16      | 13     | 3                  | 0          |
+| Plan 10b, poker additions             | 28      | 19     | 5                  | 4          |
+| Plan 6: polish pass                   | 15      | 7      | 6                  | 2          |
+| Plan 7: board engagement              | 21      | 12     | 6                  | 3          |
+| Plan 9a: action items core            | 9       | 9      | 0                  | 0          |
+| Plan 9b: action items scope additions | 13      | 11     | 2                  | 0          |
+| **Total**                             | **128** | **90** | **27**             | **11**     |
 
 ## Plan 4: retro board core
 
@@ -110,6 +114,92 @@ Walkthrough: `docs/superpowers/plans/2026-10-02-plan-10b-planning-poker-scope-ad
 | P10b-15a, P10b-15b, P10b-15c (Task 6 Step 7 retro smoke check) | docs/superpowers/plans/2026-10-02-plan-10b-planning-poker-scope-additions.md:3886 | tests/Browser/Walkthroughs/Plan10bPokerAdditionsTest.php | auto             |
 | P10b-16 (tests P10b-16a, P10b-16b)                             | docs/superpowers/plans/2026-10-02-plan-10b-planning-poker-scope-additions.md:5916 | tests/Browser/Walkthroughs/Plan10bPokerAdditionsTest.php | auto             |
 
+## Plan 6: polish pass
+
+Walkthrough: `docs/superpowers/plans/2026-09-29-plan-6-polish-pass.md, final verification task`.
+
+| Id                   | Walkthrough step                                            | Test file                                           | Status           |
+| -------------------- | ----------------------------------------------------------- | --------------------------------------------------- | ---------------- |
+| P06-01               | docs/superpowers/plans/2026-09-29-plan-6-polish-pass.md:717 | (none)                                              | residual         |
+| P06-02               | docs/superpowers/plans/2026-09-29-plan-6-polish-pass.md:718 | tests/Browser/Walkthroughs/Plan06PolishPassTest.php | auto-substituted |
+| P06-03               | docs/superpowers/plans/2026-09-29-plan-6-polish-pass.md:718 | tests/Browser/Walkthroughs/Plan06PolishPassTest.php | auto             |
+| P06-04a              | docs/superpowers/plans/2026-09-29-plan-6-polish-pass.md:718 | tests/Browser/Walkthroughs/Plan06PolishPassTest.php | auto             |
+| P06-04b              | docs/superpowers/plans/2026-09-29-plan-6-polish-pass.md:718 | tests/Browser/Walkthroughs/Plan06PolishPassTest.php | auto             |
+| P06-05               | docs/superpowers/plans/2026-09-29-plan-6-polish-pass.md:718 | tests/Browser/Walkthroughs/Plan06PolishPassTest.php | auto             |
+| P06-06               | docs/superpowers/plans/2026-09-29-plan-6-polish-pass.md:718 | tests/Browser/Walkthroughs/Plan06PolishPassTest.php | auto             |
+| P06-07a              | docs/superpowers/plans/2026-09-29-plan-6-polish-pass.md:718 | tests/Browser/Walkthroughs/Plan06PolishPassTest.php | auto             |
+| P06-07b              | docs/superpowers/plans/2026-09-29-plan-6-polish-pass.md:718 | tests/Browser/Walkthroughs/Plan06PolishPassTest.php | auto-substituted |
+| P06-08a              | docs/superpowers/plans/2026-09-29-plan-6-polish-pass.md:719 | tests/Browser/Walkthroughs/Plan06PolishPassTest.php | auto-substituted |
+| P06-08b              | docs/superpowers/plans/2026-09-29-plan-6-polish-pass.md:719 | (none)                                              | residual         |
+| P06-09 (test P04-03) | docs/superpowers/plans/2026-09-29-plan-6-polish-pass.md:719 | tests/Browser/Walkthroughs/Plan04RetroCoreTest.php  | auto             |
+| P06-10a              | docs/superpowers/plans/2026-09-29-plan-6-polish-pass.md:720 | tests/Browser/Walkthroughs/Plan06PolishPassTest.php | auto-substituted |
+| P06-10b              | docs/superpowers/plans/2026-09-29-plan-6-polish-pass.md:720 | tests/Browser/Walkthroughs/Plan06PolishPassTest.php | auto-substituted |
+| P06-11               | docs/superpowers/plans/2026-09-29-plan-6-polish-pass.md:720 | tests/Browser/Walkthroughs/Plan06PolishPassTest.php | auto-substituted |
+
+## Plan 7: board engagement
+
+Walkthrough: `docs/superpowers/plans/2026-09-29-plan-7-board-engagement.md, final walkthrough`.
+
+| Id      | Walkthrough step                                                  | Test file                                                | Status           |
+| ------- | ----------------------------------------------------------------- | -------------------------------------------------------- | ---------------- |
+| P07-01a | docs/superpowers/plans/2026-09-29-plan-7-board-engagement.md:4867 | tests/Browser/Walkthroughs/Plan07BoardEngagementTest.php | auto             |
+| P07-01b | docs/superpowers/plans/2026-09-29-plan-7-board-engagement.md:4867 | tests/Browser/Walkthroughs/Plan07BoardEngagementTest.php | auto-substituted |
+| P07-01t | docs/superpowers/plans/2026-09-29-plan-7-board-engagement.md:4867 | (none)                                                   | residual         |
+| P07-02a | docs/superpowers/plans/2026-09-29-plan-7-board-engagement.md:4868 | tests/Browser/Walkthroughs/Plan07BoardEngagementTest.php | auto             |
+| P07-02b | docs/superpowers/plans/2026-09-29-plan-7-board-engagement.md:4868 | tests/Browser/Walkthroughs/Plan07BoardEngagementTest.php | auto-substituted |
+| P07-03a | docs/superpowers/plans/2026-09-29-plan-7-board-engagement.md:4869 | tests/Browser/Walkthroughs/Plan07BoardEngagementTest.php | auto             |
+| P07-03b | docs/superpowers/plans/2026-09-29-plan-7-board-engagement.md:4869 | tests/Browser/Walkthroughs/Plan07BoardEngagementTest.php | auto-substituted |
+| P07-04a | docs/superpowers/plans/2026-09-29-plan-7-board-engagement.md:4870 | tests/Browser/Walkthroughs/Plan07BoardEngagementTest.php | auto             |
+| P07-04b | docs/superpowers/plans/2026-09-29-plan-7-board-engagement.md:4870 | tests/Browser/Walkthroughs/Plan07BoardEngagementTest.php | auto             |
+| P07-05a | docs/superpowers/plans/2026-09-29-plan-7-board-engagement.md:4871 | tests/Browser/Walkthroughs/Plan07BoardEngagementTest.php | auto-substituted |
+| P07-05b | docs/superpowers/plans/2026-09-29-plan-7-board-engagement.md:4871 | tests/Browser/Walkthroughs/Plan07BoardEngagementTest.php | auto-substituted |
+| P07-05r | docs/superpowers/plans/2026-09-29-plan-7-board-engagement.md:4871 | (none)                                                   | residual         |
+| P07-06a | docs/superpowers/plans/2026-09-29-plan-7-board-engagement.md:4872 | tests/Browser/Walkthroughs/Plan07BoardEngagementTest.php | auto             |
+| P07-06b | docs/superpowers/plans/2026-09-29-plan-7-board-engagement.md:4872 | tests/Browser/Walkthroughs/Plan07BoardEngagementTest.php | auto             |
+| P07-07a | docs/superpowers/plans/2026-09-29-plan-7-board-engagement.md:4873 | tests/Browser/Walkthroughs/Plan07BoardEngagementTest.php | auto             |
+| P07-07b | docs/superpowers/plans/2026-09-29-plan-7-board-engagement.md:4873 | tests/Browser/Walkthroughs/Plan07BoardEngagementTest.php | auto-substituted |
+| P07-08a | docs/superpowers/plans/2026-09-29-plan-7-board-engagement.md:4874 | tests/Browser/Walkthroughs/Plan07BoardEngagementTest.php | auto             |
+| P07-08b | docs/superpowers/plans/2026-09-29-plan-7-board-engagement.md:4874 | tests/Browser/Walkthroughs/Plan07BoardEngagementTest.php | auto             |
+| P07-09  | docs/superpowers/plans/2026-09-29-plan-7-board-engagement.md:4875 | tests/Browser/Walkthroughs/Plan07BoardEngagementTest.php | auto             |
+| P07-10  | docs/superpowers/plans/2026-09-29-plan-7-board-engagement.md:4876 | tests/Browser/Walkthroughs/Plan07BoardEngagementTest.php | auto             |
+| P07-11  | docs/superpowers/plans/2026-09-29-plan-7-board-engagement.md:4877 | (none)                                                   | residual         |
+
+## Plan 9a: action items core
+
+Walkthrough: `docs/superpowers/plans/2026-10-01-plan-9a-action-items-core.md, final walkthrough`.
+
+| Id       | Walkthrough step                                                    | Test file                                                 | Status |
+| -------- | ------------------------------------------------------------------- | --------------------------------------------------------- | ------ |
+| P09a-01a | docs/superpowers/plans/2026-10-01-plan-9a-action-items-core.md:7684 | tests/Browser/Walkthroughs/Plan09aActionItemsCoreTest.php | auto   |
+| P09a-01b | docs/superpowers/plans/2026-10-01-plan-9a-action-items-core.md:7684 | tests/Browser/Walkthroughs/Plan09aActionItemsCoreTest.php | auto   |
+| P09a-01c | docs/superpowers/plans/2026-10-01-plan-9a-action-items-core.md:7684 | tests/Browser/Walkthroughs/Plan09aActionItemsCoreTest.php | auto   |
+| P09a-02  | docs/superpowers/plans/2026-10-01-plan-9a-action-items-core.md:7685 | tests/Browser/Walkthroughs/Plan09aActionItemsCoreTest.php | auto   |
+| P09a-03a | docs/superpowers/plans/2026-10-01-plan-9a-action-items-core.md:7686 | tests/Browser/Walkthroughs/Plan09aActionItemsCoreTest.php | auto   |
+| P09a-03b | docs/superpowers/plans/2026-10-01-plan-9a-action-items-core.md:7686 | tests/Browser/Walkthroughs/Plan09aActionItemsCoreTest.php | auto   |
+| P09a-03c | docs/superpowers/plans/2026-10-01-plan-9a-action-items-core.md:7686 | tests/Browser/Walkthroughs/Plan09aActionItemsCoreTest.php | auto   |
+| P09a-04  | docs/superpowers/plans/2026-10-01-plan-9a-action-items-core.md:7687 | tests/Browser/Walkthroughs/Plan09aActionItemsCoreTest.php | auto   |
+| P09a-05  | docs/superpowers/plans/2026-10-01-plan-9a-action-items-core.md:7688 | tests/Browser/Walkthroughs/Plan09aActionItemsCoreTest.php | auto   |
+
+## Plan 9b: action items scope additions
+
+Walkthrough: `docs/superpowers/plans/2026-10-01-plan-9b-action-items-scope-additions.md, final walkthrough`.
+
+| Id       | Walkthrough step                                                               | Test file                                                      | Status           |
+| -------- | ------------------------------------------------------------------------------ | -------------------------------------------------------------- | ---------------- |
+| P09b-01a | docs/superpowers/plans/2026-10-01-plan-9b-action-items-scope-additions.md:5229 | tests/Browser/Walkthroughs/Plan09bActionItemsAdditionsTest.php | auto             |
+| P09b-01b | docs/superpowers/plans/2026-10-01-plan-9b-action-items-scope-additions.md:5229 | tests/Browser/Walkthroughs/Plan09bActionItemsAdditionsTest.php | auto             |
+| P09b-01c | docs/superpowers/plans/2026-10-01-plan-9b-action-items-scope-additions.md:5229 | tests/Browser/Walkthroughs/Plan09bActionItemsAdditionsTest.php | auto             |
+| P09b-02a | docs/superpowers/plans/2026-10-01-plan-9b-action-items-scope-additions.md:5230 | tests/Browser/Walkthroughs/Plan09bActionItemsAdditionsTest.php | auto             |
+| P09b-02b | docs/superpowers/plans/2026-10-01-plan-9b-action-items-scope-additions.md:5230 | tests/Browser/Walkthroughs/Plan09bActionItemsAdditionsTest.php | auto             |
+| P09b-02c | docs/superpowers/plans/2026-10-01-plan-9b-action-items-scope-additions.md:5230 | tests/Browser/Walkthroughs/Plan09bActionItemsAdditionsTest.php | auto             |
+| P09b-03  | docs/superpowers/plans/2026-10-01-plan-9b-action-items-scope-additions.md:5231 | tests/Browser/Walkthroughs/Plan09bActionItemsAdditionsTest.php | auto             |
+| P09b-04  | docs/superpowers/plans/2026-10-01-plan-9b-action-items-scope-additions.md:5232 | tests/Browser/Walkthroughs/Plan09bActionItemsAdditionsTest.php | auto             |
+| P09b-05  | docs/superpowers/plans/2026-10-01-plan-9b-action-items-scope-additions.md:5233 | tests/Browser/Walkthroughs/Plan09bActionItemsAdditionsTest.php | auto             |
+| P09b-06a | docs/superpowers/plans/2026-10-01-plan-9b-action-items-scope-additions.md:5234 | tests/Browser/Walkthroughs/Plan09bActionItemsAdditionsTest.php | auto-substituted |
+| P09b-06b | docs/superpowers/plans/2026-10-01-plan-9b-action-items-scope-additions.md:5234 | tests/Browser/Walkthroughs/Plan09bActionItemsAdditionsTest.php | auto             |
+| P09b-07  | docs/superpowers/plans/2026-10-01-plan-9b-action-items-scope-additions.md:5235 | tests/Browser/Walkthroughs/Plan09bActionItemsAdditionsTest.php | auto-substituted |
+| P09b-08  | docs/superpowers/plans/2026-10-01-plan-9b-action-items-scope-additions.md:5236 | tests/Browser/Walkthroughs/Plan09bActionItemsAdditionsTest.php | auto             |
+
 ## Notes
 
 Where a walkthrough's wording and today's interface differ, the test follows the feature's spec.
@@ -126,6 +216,52 @@ Where a walkthrough's wording and today's interface differ, the test follows the
 - P10b-08a, P10b-08b: the shortest timer the interface offers is 30 seconds, so the tests travel in time and run one queued job.
 - P10b-16: both tests run in French, Spanish and German. `[P10b-16a]` has a guest spectator switch language in the header and asserts the spectator note and the "Watching" row, the "Auto-reveal" badge and the "Revealed automatically — everyone voted" note, and the "Anonymous votes" badge and row. `[P10b-16b]` opens the game as a facilitator whose profile language is already set (members have no language switcher on the game page; the switch in the settings is `[P04-17a]`) and asserts the timer menu ("Stop timer"), the auto-reveal note of the settings dialog and the saved decks heading ("Your team's decks"). The browser asserts at least one string per group, not every string: "Time's up!", the "time's up" reveal note and "Start timer" need a timer that has run down or a second dialog and are not asserted in the three languages. `tests/Feature/TranslationKeysTest.php` proves that every key used exists in all four languages.
 - P10b-15d: "card dragging still works" on the retro board is covered by the plan 4 keyboard-drag test `[P04-14c]`.
+- P06-02: the walkthrough votes "during a refetch triggered by a phase/settings change". The test holds the snapshot's response inside the member's page (a wrapper around `XMLHttpRequest` installed by the test) while the member votes, then lets it through; the facilitator's change is "Hide vote counts". The snapshot was built before the vote, as in the race PA1 describes.
+- P06-03: "two tabs of the same member" are two browser contexts signed in as the same user (two sessions, one participant). The test also edits the card in the first tab and expects the new content in the second.
+- P06-04a, P06-04b: a double click is two `click()` calls in one page script; the test counts the requests sent. The walkthrough names only the vote; the card deletion comes from acceptance criterion PB2.
+- P06-05: the card is edited during Grouping, the last phase in which a card is editable, and the facilitator's "Next" moves to Voting.
+- P06-07a, P06-07b: the walkthrough lists "PB5, PB6" without steps; the tests follow the acceptance criteria. For PB6 the response of the creating request is held in the page while the select is checked.
+- P06-08a: keyboard pick-up instead of a pointer drag; structural facts only. The visual check is the residual row P06-08b.
+- P06-09: keyboard-only grouping and moving in Grouping is covered by the plan 4 test `[P04-03]`, which uses `dragWithKeyboard(..., handleRemains: false)` since plan 16b Task 1. No test is added in the plan 6 file.
+- P06-10a: "sign out in another tab" is a `POST /logout` sent from the board page with `fetch()`, which ends the same session and leaves the board on screen. The board is inert once the banner shows, so the second refused request is the refetch caused by the facilitator's phase change, not a second action of the member.
+- P06-10b: not in the walkthrough. A guest-enabled retro answers the reload with the session-ended page instead of the login page (polish pass spec, PA5b); the walkthrough's "Reload leads to login" holds only for a retro without guest access (P06-10a).
+- P06-11: "`docker pause` of the Sail app for about 20 s" is a `RouteMatched` listener that sleeps 15.5 seconds on the first vote request, longer than the client's 15-second timeout. The member's locale is French, which proves the translation.
+- Step 1 (full checks) and Step 6 (report) of the plan 6 verification task are not walkthrough steps and have no row. PE1 and PE2 (image name, native build stages) are verified by plan 6 Task 5 Step 4, not by its walkthrough, and have no row either.
+- **Step 1, "follow scrolling" (P07-01a).** The test checks that the cursor sits over the same card on the watching page, before and after that page scrolls its board sideways. Both pages have the same viewport (800 × 700) and the same board content, because positions are normalised to the board's scroll size and two boards of different scroll width do not agree on a position (see "Notes for the lead").
+- **Step 1, "disappear on blur" (P07-01b).** A headless page cannot be unfocused, so the test dispatches the `blur` event the cursor library listens for and asserts that the cursor left in under 1.5 seconds, which separates it from the 3-second expiry of an idle cursor.
+- **Step 1, "Hide my cursor" (P07-01b).** The control is a toggle button in the header (`aria-label` "Hide my cursor" / "Show my cursor", `aria-pressed`), not a switch as the feature spec's §7 words it. The test also asserts what the spec adds: the preference is kept in `localStorage` across a reload and the viewer still sees other cursors.
+- **Step 2, "gather into a bubble" (P07-02a).** A bubble forms only when two different people send the same emoji within 700 ms and lasts under a second; the test records it with a `MutationObserver` and asserts a `gathering` reaction with a count of at least 2 on both pages.
+- **Step 3, "chip tooltip shows names; anonymous retro shows none" (P07-03a, P07-06a).** On an anonymous retro the tooltip is not rendered at all, which is what the tests assert.
+- **Step 3, "any emoji" (P07-03a, P07-03b).** P07-03a toggles an emoji outside the quick set that another participant already used (🦄); P07-03b picks one in the full picker with the emoji list faked upstream.
+- **Step 4, notifications (P07-04b).** "Only on private channels" is asserted as absence: the facilitator, who is neither the card's author nor in the thread, receives the comment itself (the count changes) but no toast and no unread dot.
+- **Step 5, "network panel shows no request to giphy.com, tenor.com or jsdelivr.net" (P07-05a, P07-05b, P07-07b).** Replaced by the page's Resource Timing entries and by the origin of every `img` and `source` element, read with `assertScript()`; the server side is asserted with `Http::assertSent()` (what skrum asked the provider and the CDN) and `Storage::assertExists()` (the proxy's local copy).
+- **Step 6 (P07-06a, P07-06b).** Covered by two tests; P07-06b overlaps `[P10b-15c]`, which checks the same two facts after the poker refactoring of the shared layers.
+- **Step 7, "each of the six toggles".** The settings dialog shows six engagement switches only when a GIF provider is configured, five otherwise (feature spec §5 and §7). P07-07a asserts the five and toggles reactions and cursors; P07-07b asserts the six and toggles GIFs; the three other switches are exercised live in P07-10 (hide vote counts), P07-08a (close for editing) and P07-09 (presentation mode).
+- **Step 8, lock (P07-08a, P07-08b).** The interface does not let a locked board send an edit: it removes or disables the controls, which is what P07-08a asserts for cards, drag, reactions, comments, votes and action items. The server's 423 and its toast are reached in P07-08b from a page that has not yet received the lock, arranged by setting `is_locked` in the database. The 423 of every endpoint stays covered by `tests/Feature/Retros/BoardLockTest.php`.
+- **Step 9, presentation overlay (P07-09).** When the facilitator closes the overlay the highlight is cleared for everyone (plan 7, line 4840), so "follows the highlight" is asserted as: opens for both, a participant's Escape hides it for that participant only, a new highlight reopens it, and the facilitator's close removes it for both.
+- **P09a-01a** — the walkthrough writes the chip as "Due 3 Oct". In English the product formats the date with `Intl.DateTimeFormat('en', { day: 'numeric', month: 'short' })`, which gives "Due Oct 3", and an overdue item's badge reads "Overdue · Oct 1". The test computes both labels from `ActionItem::today()` and asserts the red badge by its `bg-destructive` class.
+- **P09a-01c** — "the guest ticks their own item" is read as the item assigned to the guest (spec §4: the assignee completes). The test also checks a plain member: Bob can tick the item assigned to him, cannot tick the guest's, and sees no edit or delete button.
+- **P09a-03a / P09a-03b** — the walkthrough says "Lock the board: edits return the toast". Today's board disables every action item control as soon as it learns the board is closed, so no edit can be sent from a page that shows the lock. P09a-03a asserts the disabled controls and the "Board closed for editing" badge on both pages after the facilitator ticks "Close for editing"; P09a-03b locks the retro in the database after the page has loaded, so the click reaches the server and the page shows the toast "The board is closed for editing." and resyncs.
+- **P09a-03c** — "complete the retro" is arranged in the database (the phase flow is covered by P04-07). The guest joins through the interface while the retro is in `Discussing`, then reloads the completed retro. The priority has no text in the Results view, so it is asserted by the icon's colour class.
+- **P09a-05** — run with one and with two open items to cover the singular and plural sentences; a completed item is present and not counted.
+- **P09b-01a** — "complete a retro that has open items, then start a new retro" is arranged with factories: an earlier `Completed` retro dated one week back with one open item, and a new retro in `Writing`. The second member cannot tick the carried item (not a manager, not the assignee, not the review facilitator); the test asserts that the toggle is disabled for him and that his sheet updates when the facilitator completes it.
+- **P09b-01c** — not in the walkthrough's wording; added from spec §8 ("only when the board is first loaded while the phase is `Writing`"): on a board first opened in `Discussing` the sheet stays closed and the button opens it.
+- **P09b-02a** — "(sidebar "Action items", below "Teams")" is asserted as the order of the sidebar entries, "Teams / Action items / Templates", for a member.
+- **P09b-02c** — the guest and the retro are arranged with factories (a guest participant row, no browser session), because the step is about the member's page.
+- **P09b-03** — "it appears within about a second" is asserted as "it appears without a reload" within the browser timeout; no duration is measured. The team's next retro is created by a factory, dated one minute ahead.
+- **P09b-04** — the sub-tasks are reordered with the "Move up" button; the product has no drag handle for sub-tasks.
+- **P09b-05** — the "repeat icon" is asserted through its label "Repeats weekly" (the icon is `aria-hidden`). "Follows up the item completed on …" is asserted without its date, which the browser formats in its own time zone.
+- **P09b-06a** — substitution (spec §3.6, e-mail): `Notification::fake()` instead of `MAIL_MAILER=log`. The test asserts the recipient, the `mail` channel, the locale `fr`, and that the rendered digest lists the overdue item before the item due today. It has no browser page. It also travels two days to show the rule "one reminder per item, kind and due date".
+- **P09b-06b** — the bell has no realtime update (spec §1, out of scope), so after the command the test reloads the page with `navigate()` to the same URL. "The sidebar badge shows 1" is the count of the viewer's overdue items and is already 1 before the command runs.
+- **P09b-07** — substitution (spec §3.6, e-mail): the absence of the e-mail is asserted as "no `NotificationSent` event for the `mail` channel" while the `database` channel sent; the bell entry is then read in the browser. The reminder that step 6 had sent is arranged as an `action_item_reminders` row.
+- P06-08a: found and fixed a product defect (the drag preview was always 256 px wide); see "Defects found".
+- P07-01a: the cursor assertion is stricter than the plan's: it reads the position twice, 200 ms apart, and is true only when the cursor has stopped over the card, because a remote cursor is animated for about 150 ms and a retried assertion could pass while it only crosses the card. Two open defects found while measuring (cursor position across window widths, board scroll width after narrowing); see "Defects found".
+- P07-04a: the author line of a comment is asserted with `p:has-text("Bob Stone")` inside the thread, because the same name also appears in the card footer.
+- P07-08a: the comments toggle of a locked board is clicked from a script: the card's drag wrapper carries `aria-disabled="true"` while locked and Playwright waits on controls inside it. Open defect for the user; see "Defects found".
+- P07-09: a card with a reaction chip needs two presses of Escape to close the overlay, because the dialog focuses the chip and its names tooltip takes the first one. The test asserts today's behaviour. Open defect for the user; see "Defects found".
+- P09a-01a to P09a-05: the form of the action items panel is scoped with `[data-test="retro-action-items-panel"]`.
+- P09b-05, P09b-07: the save-on-blur of the due date field is triggered by clicking neutral page text after `fill()`, not by Tab: in Chromium Tab moves between the segments of a date input and the field keeps its focus.
+- P09b-03, P09b-04: Task 6 added `data-realtime` to the workspace "Action items" page (`resources/js/pages/action-items/index.tsx`) so that the tests can wait for the subscription; it is the only product change of plan 16b besides the drag preview fix.
 
 ## Defects found
 
