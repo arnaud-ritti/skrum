@@ -223,3 +223,39 @@ Proven by running the whole browser suite.
 
 - Rector rewrites `->toBe([])` to `->toBeEmpty()` when the value's type is known to be an array (`SimplifyToLiteralBooleanRector`); `->toBeArray()->toBeEmpty()` is as strict and is left alone.
 - The agent output (`laravel/pao`) of a browser run can report `"warnings":2` with no details in the first run after a run that failed. The failed run leaves `tests/Browser/Screenshots`; at the start of the next run the plugin's `Screenshot::cleanup()` empties and removes that folder and calls `@rmdir()` on two sub-folders of it that do not exist (`Sliders`, `ImageDiffView`), and PHPUnit counts the two suppressed PHP warnings as test-runner warnings. They come from the plugin, are harmless, and the following run has none.
+
+## Findings from plan 16d (walkthroughs of plans 13a to 13d)
+
+Proven by running the tests of plan 16d.
+
+### Canvas
+
+- Drawing works with `script()` dispatching `PointerEvent`s (`pointerdown`, `pointermove`, `pointerup`; `pointerId` 1, `pointerType` `mouse`, `button` 0, `buttons` 1, client coordinates from `getBoundingClientRect()`) on the canvas, after replacing `canvas.setPointerCapture` with a no-op. See `p13bPointer()`.
+- `getImageData(x, y, 1, 1)` gives exact colours for committed operations and for the live preview; a whole-canvas checksum computed in the page is equal on the drawer's and the viewer's page. The canvas repaints in `requestAnimationFrame`, so a "nothing was drawn" pixel assertion needs a two-frame wait first.
+
+### Selectors
+
+- A bare tag name is not CSS: `assertNotPresent('figure')` always passes and `assertCount('figure', n)` finds 0. Write `figure:has(img)`.
+- `:text-is("1 min")` separates a menu item from "10 min"; `:has-text()` is a substring match.
+- `assertSeeIn()` matches substrings: a row showing a rank and a score needs a narrower selector for the score.
+
+### Stubs and bindings
+
+- `navigator.clipboard.writeText` can be replaced through `script()`; the page's click handler calls the stub and the test reads the recorded value back with `script()`. No clipboard permission is needed.
+- `app()->instance(SomeClass::class, …)` set in the test body is used by browser requests (a word book with one word fixes the word of a round started through the interface).
+- `Storage::fake()` plus a hand-written small Emojibase data set under `emoji-data/{version}/{locale}/` feeds the emoji picker (see `p13bSeedEmojiData()`); picker cells are `button[frimousse-emoji][aria-label="Rocket"]`.
+- The GIF proxy works against `Http::fake()` with a streamed body and `Storage::fake()`; the media fake must be a closure.
+
+### Timing and state
+
+- `script('() => …')` reads a value once, without retry: use it right after a retried sync point for an absence that must hold immediately. A retried assertion that takes seconds inside a passing test can hide a defect that lasts seconds (a stroke that reappeared for three seconds); run with `PAO_DISABLE=1` to see per-test durations.
+- A live page refetches its snapshot about 250 ms after its presence subscription, so a replacement of the page's state can land in the middle of a fast test.
+- A refetch can be forced on every open page from the test body: bind a fresh request, then broadcast the page's "changed" event; use a visible change (a renamed room) as the sync point.
+- A stale page can be arranged on a live room: change the model from the test body without a broadcast and reload only the other page.
+- A deferred Inertia prop needs a waiting assertion on the deferred content before any script that reads it.
+- The options of the new-retro dialog sit inside a "Settings" collapsible that is closed by default.
+
+### Tooling
+
+- The browser suite holds 268 tests and takes about 475 seconds; `composer test` runs 3661 tests in about 146 seconds.
+- Global helper prefixes taken so far: `plan04*`, `plan06*`, `plan07*`, `p08a*` to `p08e*`, `p09a*`, `p09b*`, `p10a*`, `p10b*`, `p13a*` to `p13d*`.
