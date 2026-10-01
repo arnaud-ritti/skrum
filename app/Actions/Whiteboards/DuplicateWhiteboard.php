@@ -35,7 +35,7 @@ class DuplicateWhiteboard
         });
     }
 
-    private function title(string $title): string
+    public function title(string $title): string
     {
         $room = self::MaxTitleLength - mb_strlen(__(':title (copy)', ['title' => '']));
 

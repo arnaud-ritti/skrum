@@ -145,6 +145,8 @@ use App\Http\Controllers\Whiteboards\WhiteboardSettingsController;
 use App\Http\Controllers\Whiteboards\WhiteboardSnapshotsController;
 use App\Http\Controllers\Whiteboards\WhiteboardTemplatesController;
 use App\Http\Controllers\Whiteboards\WhiteboardTimersController;
+use App\Http\Controllers\Whiteboards\WhiteboardVersionCopiesController;
+use App\Http\Controllers\Whiteboards\WhiteboardVersionRestoresController;
 use App\Http\Controllers\Whiteboards\WhiteboardVersionsController;
 use App\Http\Controllers\Whiteboards\WhiteboardVoteClosuresController;
 use App\Http\Controllers\Whiteboards\WhiteboardVoteDismissalsController;
@@ -525,6 +527,8 @@ Route::prefix('whiteboards/{board}')
         Route::get('versions/{version}', [WhiteboardVersionsController::class, 'show'])->name('whiteboards.versions.show')->whereUuid('version');
         Route::patch('versions/{version}', [WhiteboardVersionsController::class, 'update'])->name('whiteboards.versions.update')->whereUuid('version');
         Route::delete('versions/{version}', [WhiteboardVersionsController::class, 'destroy'])->name('whiteboards.versions.destroy')->whereUuid('version');
+        Route::post('versions/{version}/restore', [WhiteboardVersionRestoresController::class, 'store'])->name('whiteboards.versions.restore.store')->whereUuid('version');
+        Route::post('versions/{version}/copy', [WhiteboardVersionCopiesController::class, 'store'])->name('whiteboards.versions.copy.store')->whereUuid('version');
     });
 
 Route::get('play/{guestToken}', [GameJoinsController::class, 'show'])->name('games.join.show');

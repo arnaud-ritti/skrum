@@ -1618,5 +1618,6 @@
     "Empty note": "Empty note",
     "No votes were cast.": "No votes were cast.",
     "Reveal the notes first.": "Reveal the notes first.",
-    "This board already has 100 saved versions.": "This board already has 100 saved versions."
+    "This board already has 100 saved versions.": "This board already has 100 saved versions.",
+    "Before restore · :date": "Before restore · :date"
 }

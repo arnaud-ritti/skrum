@@ -1862,5 +1862,6 @@
     "Empty note": "Post-it vide",
     "No votes were cast.": "Aucun vote n'a été exprimé.",
     "Reveal the notes first.": "Révélez d'abord les post-it.",
-    "This board already has 100 saved versions.": "Ce tableau a déjà 100 versions enregistrées."
+    "This board already has 100 saved versions.": "Ce tableau a déjà 100 versions enregistrées.",
+    "Before restore · :date": "Avant restauration · :date"
 }

@@ -1862,5 +1862,6 @@
     "Empty note": "Nota vacía",
     "No votes were cast.": "No se emitió ningún voto.",
     "Reveal the notes first.": "Revela primero las notas.",
-    "This board already has 100 saved versions.": "Esta pizarra ya tiene 100 versiones guardadas."
+    "This board already has 100 saved versions.": "Esta pizarra ya tiene 100 versiones guardadas.",
+    "Before restore · :date": "Antes de restaurar · :date"
 }
