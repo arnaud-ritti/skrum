@@ -1833,5 +1833,10 @@
     "There are no sticky notes to vote on.": "Il n'y a aucun post-it sur lequel voter.",
     "Only one vote per note is allowed.": "Un seul vote par post-it est autorisé.",
     "This note is not part of the vote.": "Ce post-it ne fait pas partie du vote.",
-    "Close the vote first.": "Clôturez d'abord le vote."
+    "Close the vote first.": "Clôturez d'abord le vote.",
+    "Facilitation tools": "Outils d'animation",
+    "Lock the board": "Verrouiller le tableau",
+    "Unlock the board": "Déverrouiller le tableau",
+    "Notes cannot be edited while a vote is open.": "Les post-it ne peuvent pas être modifiés pendant un vote.",
+    "No one else can facilitate this board yet.": "Personne d'autre ne peut encore animer ce tableau."
 }

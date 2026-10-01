@@ -31,6 +31,8 @@ export type SceneSyncDeps = {
     onFatal: (error: RetroRequestError) => void;
     onRejected: (reason: RejectReason) => void;
     onOffline: (offline: boolean) => void;
+    /** The board is locked for this member: unsent edits were dropped. */
+    onLocked: () => void;
 };
 
 export type SceneSync = {
@@ -45,6 +47,11 @@ const stamp = (element: SceneElement) =>
 
 const isFatal = (error: unknown): error is RetroRequestError =>
     error instanceof RetroRequestError && FatalStatuses.includes(error.status);
+
+const isLocked = (error: unknown): error is RetroRequestError =>
+    error instanceof RetroRequestError &&
+    error.status === 403 &&
+    'locked' in error.errors;
 
 export function createSceneSync(deps: SceneSyncDeps): SceneSync {
     const { api, boardId } = deps;
@@ -64,6 +71,8 @@ export function createSceneSync(deps: SceneSyncDeps): SceneSync {
     let recoveryOwed = false;
     let recoveryFailures = 0;
     let recoveryTimer: ReturnType<typeof setTimeout> | null = null;
+    /** The next reload drops what the server does not hold (locked board). */
+    let discarding = false;
 
     /** Nothing may report the board in step while a reload is still owed. */
     const setOffline = (offline: boolean) =>
@@ -327,6 +336,14 @@ export function createSceneSync(deps: SceneSyncDeps): SceneSync {
         } catch (error) {
             failed = true;
 
+            if (isLocked(error)) {
+                failed = false;
+                discard();
+                deps.onLocked();
+
+                return;
+            }
+
             if (isFatal(error)) {
                 deps.onFatal(error);
 
@@ -350,12 +367,13 @@ export function createSceneSync(deps: SceneSyncDeps): SceneSync {
             WhiteboardSnapshotsController.show(boardId),
         );
         const alive = new Set(snapshot.elements.map((element) => element.id));
+        const dropsLocal = discarding;
+        const keepsLocal = (element: SceneElement) =>
+            !dropsLocal && (pending.has(element.id) || !known.has(element.id));
 
         setScene(
             scene().map((element) =>
-                alive.has(element.id) ||
-                pending.has(element.id) ||
-                !known.has(element.id)
+                alive.has(element.id) || keepsLocal(element)
                     ? element
                     : { ...element, isDeleted: true },
             ),
@@ -363,6 +381,10 @@ export function createSceneSync(deps: SceneSyncDeps): SceneSync {
         remember(scene().filter((element) => !alive.has(element.id)));
         force(snapshot.elements);
         seq = snapshot.seq;
+
+        if (dropsLocal) {
+            discarding = false;
+        }
     };
 
     /**
@@ -421,7 +443,19 @@ export function createSceneSync(deps: SceneSyncDeps): SceneSync {
             })
             .finally(() => {
                 recovering = null;
+
+                // A discard asked for while a reload was running.
+                if (discarding && !disposed && recoveryTimer === null) {
+                    recover();
+                }
             });
+    };
+
+    /** The board is locked for us: what we have not sent is dropped (spec §11.2). */
+    const discard = () => {
+        pending.clear();
+        discarding = true;
+        recover();
     };
 
     const fetchDelta = async () => {

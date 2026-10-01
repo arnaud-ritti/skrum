@@ -1833,5 +1833,10 @@
     "There are no sticky notes to vote on.": "Es gibt keine Haftnotizen, über die abgestimmt werden kann.",
     "Only one vote per note is allowed.": "Pro Haftnotiz ist nur eine Stimme erlaubt.",
     "This note is not part of the vote.": "Diese Haftnotiz gehört nicht zur Abstimmung.",
-    "Close the vote first.": "Schließen Sie zuerst die Abstimmung."
+    "Close the vote first.": "Schließen Sie zuerst die Abstimmung.",
+    "Facilitation tools": "Moderationswerkzeuge",
+    "Lock the board": "Board sperren",
+    "Unlock the board": "Board entsperren",
+    "Notes cannot be edited while a vote is open.": "Haftnotizen können während einer Abstimmung nicht bearbeitet werden.",
+    "No one else can facilitate this board yet.": "Noch kann niemand sonst dieses Board moderieren."
 }

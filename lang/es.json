@@ -1833,5 +1833,10 @@
     "There are no sticky notes to vote on.": "No hay notas adhesivas sobre las que votar.",
     "Only one vote per note is allowed.": "Solo se permite un voto por nota.",
     "This note is not part of the vote.": "Esta nota no forma parte de la votación.",
-    "Close the vote first.": "Cierra primero la votación."
+    "Close the vote first.": "Cierra primero la votación.",
+    "Facilitation tools": "Herramientas de facilitación",
+    "Lock the board": "Bloquear la pizarra",
+    "Unlock the board": "Desbloquear la pizarra",
+    "Notes cannot be edited while a vote is open.": "Las notas no se pueden editar mientras hay una votación abierta.",
+    "No one else can facilitate this board yet.": "Nadie más puede facilitar esta pizarra todavía."
 }

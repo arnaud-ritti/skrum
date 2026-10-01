@@ -23,6 +23,7 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
+import { HandOverDialog } from '@/components/whiteboard/hand-over-dialog';
 import { SaveTemplateDialog } from '@/components/whiteboard/save-template-dialog';
 import { useTrans } from '@/hooks/use-trans';
 import type { WhiteboardState } from '@/hooks/use-whiteboard';
@@ -44,6 +45,7 @@ export function BoardMenu({
     const [renaming, setRenaming] = useState(false);
     const [confirmingDelete, setConfirmingDelete] = useState(false);
     const [savingTemplate, setSavingTemplate] = useState(false);
+    const [handingOver, setHandingOver] = useState(false);
 
     /** Resolves to whether the request went through; says why when it did not. */
     const attempt = async (request: Promise<unknown>): Promise<boolean> => {
@@ -174,6 +176,11 @@ export function BoardMenu({
                             >
                                 {t('Rename')}
                             </DropdownMenuItem>
+                            <DropdownMenuItem
+                                onSelect={() => setHandingOver(true)}
+                            >
+                                {t('Hand over facilitation')}
+                            </DropdownMenuItem>
                             <DropdownMenuCheckboxItem
                                 checked={board.cursorsEnabled}
                                 onCheckedChange={(checked) =>
@@ -257,6 +264,12 @@ export function BoardMenu({
                 boardId={board.id}
                 open={savingTemplate}
                 onOpenChange={setSavingTemplate}
+            />
+
+            <HandOverDialog
+                state={state}
+                open={handingOver}
+                onOpenChange={setHandingOver}
             />
 
             <Dialog open={confirmingDelete} onOpenChange={setConfirmingDelete}>

@@ -1589,5 +1589,10 @@
     "There are no sticky notes to vote on.": "There are no sticky notes to vote on.",
     "Only one vote per note is allowed.": "Only one vote per note is allowed.",
     "This note is not part of the vote.": "This note is not part of the vote.",
-    "Close the vote first.": "Close the vote first."
+    "Close the vote first.": "Close the vote first.",
+    "Facilitation tools": "Facilitation tools",
+    "Lock the board": "Lock the board",
+    "Unlock the board": "Unlock the board",
+    "Notes cannot be edited while a vote is open.": "Notes cannot be edited while a vote is open.",
+    "No one else can facilitate this board yet.": "No one else can facilitate this board yet."
 }

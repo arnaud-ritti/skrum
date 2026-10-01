@@ -1,9 +1,11 @@
 import { usePage } from '@inertiajs/react';
+import { Lock } from 'lucide-react';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { toast } from 'sonner';
 import { ConnectionBanner } from '@/components/retro/connection-banner';
 import { SessionExpiredBanner } from '@/components/retro/session-expired-banner';
+import { TimerDisplay } from '@/components/retro/timer-display';
 import { useLocalPreference } from '@/hooks/use-local-preference';
 import { useTrans } from '@/hooks/use-trans';
 import { useWhiteboard } from '@/hooks/use-whiteboard';
@@ -24,6 +26,8 @@ import type {
 import { BoardGone } from './board-gone';
 import { BoardMenu } from './board-menu';
 import { BoardReactions } from './board-reactions';
+import { FacilitatorBar } from './facilitator-bar';
+import { StatusBar } from './status-bar';
 import { StickyTool } from './sticky-tool';
 import { TopBar } from './top-bar';
 
@@ -54,6 +58,8 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
     const { t } = useTrans();
     const { locale } = usePage().props;
     const state = useWhiteboard(snapshot);
+    const { board, me } = state.snapshot;
+    const viewOnly = board.locked && !me.isFacilitator;
     const [api, setApi] = useState<ExcalidrawImperativeAPI | null>(null);
     const [offline, setOffline] = useState(false);
     const [hideMyCursor, setHideMyCursor] = useLocalPreference(
@@ -72,7 +78,7 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
         presence: state.presence,
         online: state.online,
         meId: state.snapshot.me.id,
-        enabled: state.snapshot.board.cursorsEnabled,
+        enabled: board.cursorsEnabled,
         hidden: hideMyCursor,
     });
     const forgetCursor = useRef(cursors.forget);
@@ -80,7 +86,7 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
     forgetCursor.current = cursors.forget;
     const dark = useSyncExternalStore(subscribeToTheme, isDark, () => false);
     const boardId = snapshot.board.id;
-    const { fail, listeners } = state;
+    const { fail, listeners, refetch } = state;
 
     const rejectionMessages = useRef<Record<RejectReason, string>>({
         invalid: '',
@@ -88,7 +94,11 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
         locked: '',
         file: '',
         full: '',
+        voting: '',
     });
+    const lockedMessage = useRef('');
+
+    lockedMessage.current = t('This board is locked.');
 
     rejectionMessages.current = {
         invalid: t('This element could not be saved.'),
@@ -96,6 +106,7 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
         locked: t('Only the facilitator can change a locked element.'),
         file: t('This image could not be added.'),
         full: t('This board is full.'),
+        voting: t('Notes cannot be edited while a vote is open.'),
     };
 
     useEffect(() => {
@@ -111,6 +122,11 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
             onRejected: (reason) =>
                 toast.error(rejectionMessages.current[reason], { id: reason }),
             onOffline: setOffline,
+            onLocked: () => {
+                toast.error(lockedMessage.current, { id: 'locked' });
+                // The lock may have been missed with its board.changed.
+                void refetch();
+            },
         });
 
         sync.current = created;
@@ -127,7 +143,7 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
             sync.current = null;
             listeners.current = null;
         };
-    }, [api, boardId, fail, listeners]);
+    }, [api, boardId, fail, listeners, refetch]);
 
     useEffect(() => {
         if (state.connected || state.status !== 'active') {
@@ -156,7 +172,14 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
                 inert={state.sessionExpired}
             >
                 <TopBar state={state}>
-                    {api && !toolbarSlot && <StickyTool api={api} />}
+                    <TimerDisplay
+                        endsAt={board.timerEndsAt}
+                        offset={state.serverOffset}
+                    />
+                    {me.isFacilitator && <FacilitatorBar state={state} />}
+                    {api && !toolbarSlot && !viewOnly && (
+                        <StickyTool api={api} />
+                    )}
                     <BoardMenu
                         state={state}
                         hideMyCursor={hideMyCursor}
@@ -166,17 +189,30 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
                 <ConnectionBanner
                     reconnecting={state.reconnecting || offline}
                 />
+                <StatusBar>
+                    {viewOnly && (
+                        <span className="flex items-center gap-1.5">
+                            <Lock className="size-4" aria-hidden="true" />
+                            {t('This board is locked.')}
+                        </span>
+                    )}
+                </StatusBar>
                 {api &&
                     toolbarSlot &&
                     createPortal(
                         <StickyTool api={api} inToolbar />,
                         toolbarSlot,
                     )}
-                <div ref={canvas} className="whiteboard-canvas min-h-0 flex-1">
+                <div
+                    ref={canvas}
+                    className="whiteboard-canvas relative min-h-0 flex-1"
+                    data-facilitator={me.isFacilitator}
+                >
                     <Excalidraw
+                        viewModeEnabled={viewOnly ? true : undefined}
                         excalidrawAPI={setApi}
                         initialData={{ elements: initialElements as never }}
-                        name={state.snapshot.board.title}
+                        name={board.title}
                         onChange={(elements) =>
                             sync.current?.handleChange(
                                 elements as unknown as SceneElement[],
