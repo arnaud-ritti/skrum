@@ -23,6 +23,7 @@ import {
 } from '@/lib/whiteboard/appearance';
 import {
     Excalidraw,
+    HiddenSaveToDiskAction,
     MainMenu,
     closeTextEditor,
     type ExcalidrawImperativeAPI,
@@ -38,6 +39,7 @@ import type {
 import { BoardGone } from './board-gone';
 import { BoardMenu } from './board-menu';
 import { BoardReactions } from './board-reactions';
+import { SceneExport } from './scene-export';
 import { FacilitatorBar } from './facilitator-bar';
 import { HistoryPanel } from './history-panel';
 import { MaskedNotes } from './masked-notes';
@@ -399,6 +401,22 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
                                     loadScene: false,
                                     saveToActiveFile: false,
                                     toggleTheme: false,
+                                    ...HiddenSaveToDiskAction,
+                                    export: {
+                                        saveFileToDisk: false,
+                                        renderCustomUI: (
+                                            exportedElements,
+                                            exportedAppState,
+                                            exportedFiles,
+                                        ) => (
+                                            <SceneExport
+                                                title={board.title}
+                                                elements={exportedElements}
+                                                appState={exportedAppState}
+                                                files={exportedFiles}
+                                            />
+                                        ),
+                                    },
                                 },
                             }}
                         >

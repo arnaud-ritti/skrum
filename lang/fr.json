@@ -1881,5 +1881,7 @@
     "The board goes back to this version for everyone. The current state is saved first.": "Le tableau revient à cette version pour tout le monde. L'état actuel est d'abord enregistré.",
     "Version restored.": "Version restaurée.",
     "Delete this version?": "Supprimer cette version ?",
-    ":count finished voting · :online online": ":count ont terminé de voter · :online en ligne"
+    ":count finished voting · :online online": ":count ont terminé de voter · :online en ligne",
+    "Download everything on the board as a data file.": "Téléchargez tout le contenu du tableau dans un fichier de données.",
+    "Download board data": "Télécharger les données du tableau"
 }

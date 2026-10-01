@@ -9,6 +9,7 @@ export {
     MainMenu,
     reconcileElements,
     restoreElements,
+    serializeAsJSON,
 } from '@excalidraw/excalidraw';
 export type { ExcalidrawElement } from '@excalidraw/excalidraw/element/types';
 export type {
@@ -21,6 +22,15 @@ export type {
 } from '@excalidraw/excalidraw/types';
 
 type Props = ComponentProps<typeof ExcalidrawComponent>;
+
+/**
+ * Excalidraw 0.18.1 hardcodes the file type of its scene export ("Excalidraw
+ * file", `.excalidraw`) and no prop changes it. Its "save to disk" action is
+ * therefore switched off, including its Ctrl+Shift+S shortcut: the action
+ * manager skips an action whose name is `false` in `canvasActions`, a key the
+ * types do not list. Check this when the library is upgraded.
+ */
+export const HiddenSaveToDiskAction = { saveFileToDisk: false } as const;
 
 export type RequiredApi = Pick<
     Api,

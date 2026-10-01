@@ -1881,5 +1881,7 @@
     "The board goes back to this version for everyone. The current state is saved first.": "La pizarra vuelve a esta versión para todos. Antes se guarda el estado actual.",
     "Version restored.": "Versión restaurada.",
     "Delete this version?": "¿Eliminar esta versión?",
-    ":count finished voting · :online online": ":count han terminado de votar · :online en línea"
+    ":count finished voting · :online online": ":count han terminado de votar · :online en línea",
+    "Download everything on the board as a data file.": "Descarga todo lo que hay en la pizarra como un archivo de datos.",
+    "Download board data": "Descargar los datos de la pizarra"
 }
