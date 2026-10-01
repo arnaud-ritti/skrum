@@ -2,10 +2,13 @@
 
 namespace App\Support\Integrations\Trackers;
 
+use App\Enums\ExternalIssueState;
 use App\Enums\PokerDeck;
 use App\Models\TeamIntegration;
 use App\Support\Integrations\Exceptions\ProviderRejected;
+use App\Support\Integrations\Exceptions\StatusPushRejected;
 use App\Support\Integrations\Jira\JiraApi;
+use App\Support\Integrations\Jira\JiraTransitions;
 use Carbon\CarbonImmutable;
 
 /**
@@ -160,6 +163,45 @@ abstract class JiraIssueTracker implements IssueTracker, SyncsIssueStatus
         }
 
         return array_values($statuses);
+    }
+
+    public function transition(TeamIntegration $integration, string $externalId, ExternalIssueState $target): ?TrackerIssue
+    {
+        $issue = ctype_digit($externalId) ? $this->issueById($integration, $externalId) : null;
+
+        if ($issue === null || $issue->issueStatus === null) {
+            return null;
+        }
+
+        if (DoneMapping::state($integration, $issue->issueStatus) === $target) {
+            return $issue;
+        }
+
+        $path = $this->api()->apiPath('issue/'.rawurlencode($externalId).'/transitions');
+        $transitions = (array) ($this->api()->get($integration, $path, ['expand' => 'transitions.fields'])['transitions'] ?? []);
+        $transition = JiraTransitions::choose($integration, $issue->issueStatus->container, $transitions, $target)
+            ?? throw StatusPushRejected::unavailable($integration->provider, $issue->key, $target);
+
+        $body = ['transition' => ['id' => (string) $transition['id']]];
+        $fields = JiraTransitions::requiredFields($integration->provider, $transition, $issue->key, $target);
+
+        if ($fields !== []) {
+            $body['fields'] = $fields;
+        }
+
+        $this->api()->post($integration, $path, $body);
+
+        return $this->issueById($integration, $externalId) ?? $issue;
+    }
+
+    /**
+     * Reads the issue from the source on every call.
+     *
+     * @phpstan-impure
+     */
+    private function issueById(TeamIntegration $integration, string $externalId): ?TrackerIssue
+    {
+        return $this->issues($integration, [$externalId])[$externalId] ?? null;
     }
 
     /**

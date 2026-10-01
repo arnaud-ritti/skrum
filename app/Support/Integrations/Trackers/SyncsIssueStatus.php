@@ -2,7 +2,9 @@
 
 namespace App\Support\Integrations\Trackers;
 
+use App\Enums\ExternalIssueState;
 use App\Models\TeamIntegration;
+use App\Support\Integrations\Exceptions\StatusPushRejected;
 use Carbon\CarbonImmutable;
 
 /**
@@ -24,4 +26,13 @@ interface SyncsIssueStatus
      * @return array<int, array{id: string, name: string, category: string}>
      */
     public function statuses(TeamIntegration $integration, string $container): array;
+
+    /**
+     * Moves the issue to open or done (spec 8 §5.2) unless it is there
+     * already, and returns it as the source now has it; null when the
+     * source no longer has the issue.
+     *
+     * @throws StatusPushRejected when no transition or state can be used
+     */
+    public function transition(TeamIntegration $integration, string $externalId, ExternalIssueState $target): ?TrackerIssue;
 }

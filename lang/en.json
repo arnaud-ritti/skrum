@@ -1456,5 +1456,10 @@
     "Written to the issue description.": "Written to the issue description.",
     "This repository isn't available to the GitHub App.": "This repository isn't available to the GitHub App.",
     "We couldn't read the Jira version.": "We couldn't read the Jira version.",
-    "Export repository": "Export repository"
+    "Export repository": "Export repository",
+    "No transition to a done status is available for :key.": "No transition to a done status is available for :key.",
+    "No transition to an open status is available for :key.": "No transition to an open status is available for :key.",
+    "Jira requires more fields to close :key. Close it in Jira.": "Jira requires more fields to close :key. Close it in Jira.",
+    "Jira requires more fields to reopen :key. Reopen it in Jira.": "Jira requires more fields to reopen :key. Reopen it in Jira.",
+    "Linear did not accept this status change.": "Linear did not accept this status change."
 }

@@ -2,6 +2,7 @@
 
 namespace App\Support\Integrations\Trackers;
 
+use App\Enums\ExternalIssueState;
 use App\Enums\IntegrationProvider;
 use App\Models\TeamIntegration;
 use App\Support\Integrations\Exceptions\ProviderRejected;
@@ -262,6 +263,33 @@ class GitHubTracker implements IssueTracker, SyncsIssueStatus
     public function statuses(TeamIntegration $integration, string $container): array
     {
         return [];
+    }
+
+    public function transition(TeamIntegration $integration, string $externalId, ExternalIssueState $target): ?TrackerIssue
+    {
+        $reference = self::issueReference($externalId);
+
+        if ($reference === null) {
+            return null;
+        }
+
+        $raw = $this->fetch($integration, $reference[0], $reference[1]);
+        $fullName = $raw === null ? null : self::fullName($raw);
+        $issue = $raw === null ? null : $this->issue($reference[0], $raw);
+
+        if ($fullName === null || $issue === null || $issue->issueStatus === null) {
+            return null;
+        }
+
+        if (DoneMapping::state($integration, $issue->issueStatus) === $target) {
+            return $issue;
+        }
+
+        $updated = $this->client->patch($integration, "repos/{$fullName}/issues/{$reference[1]}", $target === ExternalIssueState::Done
+            ? ['state' => 'closed', 'state_reason' => 'completed']
+            : ['state' => 'open']);
+
+        return $this->issue($reference[0], $updated) ?? $issue;
     }
 
     /**

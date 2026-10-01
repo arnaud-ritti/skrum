@@ -1343,3 +1343,40 @@ function gitHubGraphqlIssues(?array $issues = null): Closure
         return Http::response(['data' => ['repository' => $repository], ...($errors === [] ? [] : ['errors' => $errors])]);
     };
 }
+
+/**
+ * @param  array<string, mixed>  $fields
+ * @return array<string, mixed>
+ */
+function jiraTransition(string $id, string $toId, string $toName, string $category, array $fields = []): array
+{
+    return ['id' => $id, 'name' => $toName, 'to' => ['id' => $toId, 'name' => $toName, 'statusCategory' => ['key' => $category]], 'fields' => $fields];
+}
+
+/**
+ * Jira Cloud issue 10001 (PROJ-1) reads as `$before`, then as `$after`
+ * once a transition was posted.
+ *
+ * @param  array<string, mixed>  $before
+ * @param  array<string, mixed>  $after
+ * @param  array<int, array<string, mixed>>  $transitions
+ */
+function fakeJiraTransitions(array $before, array $after, array $transitions): void
+{
+    $posted = false;
+
+    Http::fake([
+        jiraApiUrl('rest/api/3/search/jql') => function () use (&$posted, $before, $after) {
+            return Http::response(['issues' => [jiraTrackerIssue('10001', 'PROJ-1', $posted ? $after : $before)], 'isLast' => true]);
+        },
+        jiraApiUrl('rest/api/3/issue/10001/transitions*') => function (HttpRequest $request) use (&$posted, $transitions) {
+            if ($request->method() === 'POST') {
+                $posted = true;
+
+                return Http::response(null, 204);
+            }
+
+            return Http::response(['transitions' => $transitions]);
+        },
+    ]);
+}

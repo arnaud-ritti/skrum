@@ -1702,5 +1702,10 @@
     "Written to the issue description.": "Escrito en la descripción de la incidencia.",
     "This repository isn't available to the GitHub App.": "Este repositorio no está disponible para la aplicación de GitHub.",
     "We couldn't read the Jira version.": "No pudimos leer la versión de Jira.",
-    "Export repository": "Repositorio de exportación"
+    "Export repository": "Repositorio de exportación",
+    "No transition to a done status is available for :key.": "No hay ninguna transición a un estado terminado disponible para :key.",
+    "No transition to an open status is available for :key.": "No hay ninguna transición a un estado abierto disponible para :key.",
+    "Jira requires more fields to close :key. Close it in Jira.": "Jira necesita más campos para cerrar :key. Ciérralo en Jira.",
+    "Jira requires more fields to reopen :key. Reopen it in Jira.": "Jira necesita más campos para reabrir :key. Reábrelo en Jira.",
+    "Linear did not accept this status change.": "Linear no aceptó este cambio de estado."
 }

@@ -2,9 +2,11 @@
 
 namespace App\Support\Integrations\Trackers;
 
+use App\Enums\ExternalIssueState;
 use App\Enums\PokerDeck;
 use App\Models\TeamIntegration;
 use App\Support\Integrations\Exceptions\ProviderRejected;
+use App\Support\Integrations\Exceptions\StatusPushRejected;
 use App\Support\Integrations\Jira\AdfToMarkdown;
 use App\Support\Integrations\Linear\LinearClient;
 use Carbon\CarbonImmutable;
@@ -184,6 +186,75 @@ class LinearTracker implements IssueTracker, SyncsIssueStatus
             'name' => $state['name'],
             'category' => DoneMapping::category($integration->provider, $state['type'])->value,
         ], self::states((array) data_get($data, 'teams.nodes.0.states.nodes', [])));
+    }
+
+    public function transition(TeamIntegration $integration, string $externalId, ExternalIssueState $target): ?TrackerIssue
+    {
+        $issue = $this->issueById($integration, $externalId);
+
+        if ($issue === null || $issue->issueStatus === null) {
+            return null;
+        }
+
+        if (DoneMapping::state($integration, $issue->issueStatus) === $target) {
+            return $issue;
+        }
+
+        $data = $this->client->query(
+            $integration,
+            'query($id: String!) { issue(id: $id) { team { states(first: 100) { nodes { id name type position } } } } }',
+            ['id' => $externalId],
+        );
+        $stateId = $this->targetState($integration, $issue->issueStatus->container, self::states((array) data_get($data, 'issue.team.states.nodes', [])), $target)
+            ?? throw StatusPushRejected::unavailable($integration->provider, $issue->key, $target);
+
+        $result = $this->client->query(
+            $integration,
+            'mutation($id: String!, $stateId: String!) { issueUpdate(id: $id, input: {stateId: $stateId}) { success } }',
+            ['id' => $externalId, 'stateId' => $stateId],
+        );
+
+        if (data_get($result, 'issueUpdate.success') !== true) {
+            throw new StatusPushRejected($integration->provider, __('Linear did not accept this status change.'));
+        }
+
+        return $this->issueById($integration, $externalId) ?? $issue;
+    }
+
+    /**
+     * Reads the issue from the source on every call.
+     *
+     * @phpstan-impure
+     */
+    private function issueById(TeamIntegration $integration, string $externalId): ?TrackerIssue
+    {
+        return $this->issues($integration, [$externalId])[$externalId] ?? null;
+    }
+
+    /**
+     * The configured state when the team still has it, else the first
+     * `completed` state, or for a reopen the first `unstarted`, then
+     * `backlog` state, in workflow order.
+     *
+     * @param  array<int, array{id: string, name: string, type: string, position: float}>  $states
+     */
+    private function targetState(TeamIntegration $integration, ?string $team, array $states, ExternalIssueState $target): ?string
+    {
+        $configured = DoneMapping::configured($integration, $team, $target === ExternalIssueState::Done ? 'completeStateId' : 'reopenStateId');
+
+        if ($configured !== null && in_array($configured, array_column($states, 'id'), true)) {
+            return $configured;
+        }
+
+        foreach ($target === ExternalIssueState::Done ? ['completed'] : ['unstarted', 'backlog'] as $type) {
+            foreach ($states as $state) {
+                if ($state['type'] === $type) {
+                    return $state['id'];
+                }
+            }
+        }
+
+        return null;
     }
 
     /**
