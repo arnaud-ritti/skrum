@@ -7,6 +7,7 @@ use App\Models\PokerTask;
 use App\Models\PokerVote;
 use App\Models\Team;
 use App\Models\User;
+use Tests\Browser\Support\ReverbServer;
 
 /**
  * @param  array<string, mixed>  $attributes
@@ -450,4 +451,292 @@ it('[P10a-09] re-votes to a consensus and saves the estimate for everyone', func
         ->assertSee('Average: 5.5');
 
     expect($task->refresh()->estimate)->toBe('5');
+});
+
+it('[P10a-10] moves to the next task and drops a deleted current task for everyone', function () {
+    $game = p10aGame(['guest_access_enabled' => true]);
+    [$ada] = p10aFacilitator($game);
+    $estimated = PokerTask::factory()->estimated('5')->create(['poker_game_id' => $game->id, 'title' => 'Login page']);
+    PokerTask::factory()->create(['poker_game_id' => $game->id, 'title' => 'Password reset']);
+    openPokerRound($game, $estimated);
+
+    $facilitator = $this->awaitRealtime($this->signIn($ada, "/poker/{$game->id}"));
+    $guest = $this->awaitRealtime($this->joinAsGuest("/poker/join/{$game->guest_token}", 'Visitor'));
+
+    $facilitator->assertSee('Next task')
+        ->click('Next task')
+        ->assertScript(p10aCurrentTaskScript(), 'Password reset');
+
+    $guest->assertScript(p10aCurrentTaskScript(), 'Password reset')
+        ->assertEnabled('[aria-label="Play 3"]')
+        ->click('[aria-label="Play 3"]');
+
+    $facilitator->assertVisible('[aria-label="Visitor: Voted"]')
+        ->assertVisible('[aria-label="Delete task"]')
+        ->click('[aria-label="Delete task"]')
+        ->assertSee('Delete this task?')
+        ->click('[role="dialog"] button:has-text("Delete")');
+
+    $facilitator->assertSee('Pick a task to start voting')
+        ->assertCount('@poker-task-row', 1);
+
+    $guest->assertSee('Waiting for the facilitator to pick a task')
+        ->assertCount('@poker-task-row', 1)
+        ->assertDontSee('Password reset');
+
+    expect(PokerTask::query()->where('poker_game_id', $game->id)->pluck('title')->all())->toBe(['Login page'])
+        ->and($game->refresh()->current_task_id)->toBeNull();
+});
+
+it('[P10a-12] makes an ended game read-only for everyone and editable again once reopened', function () {
+    $game = p10aGame(['guest_access_enabled' => true]);
+    [$ada] = p10aFacilitator($game);
+    $task = PokerTask::factory()->create(['poker_game_id' => $game->id, 'title' => 'Login page']);
+    openPokerRound($game, $task);
+
+    $facilitator = $this->awaitRealtime($this->signIn($ada, "/poker/{$game->id}"));
+    $guest = $this->awaitRealtime($this->joinAsGuest("/poker/join/{$game->guest_token}", 'Visitor'));
+
+    $guest->assertEnabled('[aria-label="Play 5"]');
+
+    $facilitator->assertVisible('[aria-label="Facilitator menu"]')
+        ->click('[aria-label="Facilitator menu"]')
+        ->assertSee('End game')
+        ->click('End game')
+        ->assertSee('End this game?')
+        ->click('[role="dialog"] button:has-text("End game")');
+
+    $facilitator->assertSee('Game ended')
+        ->assertDontSee('Add task')
+        ->assertNotPresent('[data-test="poker-task-row"] button')
+        ->assertDisabled('[aria-label="Play 5"]');
+
+    $guest->assertSee('Game ended')
+        ->assertSee('Waiting for the facilitator to pick a task')
+        ->assertDisabled('[aria-label="Play 5"]');
+
+    expect($game->refresh()->ended_at)->not->toBeNull();
+
+    $facilitator->assertVisible('[aria-label="Facilitator menu"]')
+        ->click('[aria-label="Facilitator menu"]')
+        ->assertSee('Reopen game')
+        ->click('Reopen game')
+        ->assertDontSee('Game ended')
+        ->assertSee('Add task')
+        ->click('Login page');
+
+    $guest->assertDontSee('Game ended')
+        ->assertEnabled('[aria-label="Play 5"]')
+        ->click('[aria-label="Play 5"]');
+
+    $facilitator->assertVisible('[aria-label="Visitor: Voted"]');
+
+    expect($game->refresh()->ended_at)->toBeNull();
+});
+
+it('[P10a-13a] lets another member take control and hand facilitation back', function () {
+    $game = p10aGame();
+    [$ada, $adaPlayer] = p10aFacilitator($game);
+    [$cleo, $cleoPlayer] = p10aMember($game, 'Cleo Member');
+
+    $facilitator = $this->awaitRealtime($this->signIn($ada, "/poker/{$game->id}"));
+    $member = $this->awaitRealtime($this->signIn($cleo, "/poker/{$game->id}"));
+
+    $facilitator->assertVisible('[aria-label="Facilitator menu"]');
+
+    $member->assertSee('Take control')
+        ->click('Take control')
+        ->assertVisible('[aria-label="Facilitator menu"]')
+        ->assertDontSee('Take control');
+
+    $facilitator->assertSee('Take control')
+        ->assertNotPresent('[aria-label="Facilitator menu"]');
+
+    expect($game->refresh()->facilitator_player_id)->toBe($cleoPlayer->id);
+
+    $member->assertVisible('[aria-label="Facilitator menu"]')
+        ->click('[aria-label="Facilitator menu"]')
+        ->assertSee('Hand over facilitation…')
+        ->click('Hand over facilitation…')
+        ->assertVisible('#poker-new-facilitator')
+        ->click('#poker-new-facilitator')
+        ->assertVisible('[role="option"]:has-text("Ada Facilitator")')
+        ->click('[role="option"]:has-text("Ada Facilitator")')
+        ->assertButtonEnabled('Hand over')
+        ->click('Hand over');
+
+    $facilitator->assertVisible('[aria-label="Facilitator menu"]')
+        ->assertDontSee('Take control');
+
+    $member->assertSee('Take control')
+        ->assertNotPresent('[aria-label="Facilitator menu"]');
+
+    expect($game->refresh()->facilitator_player_id)->toBe($adaPlayer->id);
+});
+
+it('[P10a-13b] lets a member take control of an ended game and reopen it', function () {
+    $game = p10aGame(['ended_at' => now()]);
+    [$ada] = p10aFacilitator($game);
+    [$cleo, $cleoPlayer] = p10aMember($game, 'Cleo Member');
+
+    $facilitator = $this->awaitRealtime($this->signIn($ada, "/poker/{$game->id}"));
+    $member = $this->awaitRealtime($this->signIn($cleo, "/poker/{$game->id}"));
+
+    $facilitator->assertSee('Game ended');
+
+    $member->assertSee('Game ended')
+        ->assertSee('Take control')
+        ->click('Take control')
+        ->assertVisible('[aria-label="Facilitator menu"]')
+        ->click('[aria-label="Facilitator menu"]')
+        ->assertSee('Reopen game')
+        ->click('Reopen game')
+        ->assertDontSee('Game ended');
+
+    $facilitator->assertDontSee('Game ended')
+        ->assertSee('Take control');
+
+    expect($game->refresh()->ended_at)->toBeNull()
+        ->and($game->facilitator_player_id)->toBe($cleoPlayer->id);
+});
+
+it('[P10a-14] ends the access of guests when the guest link is regenerated', function () {
+    $game = p10aGame(['guest_access_enabled' => true]);
+    [$ada] = p10aFacilitator($game);
+    PokerTask::factory()->create(['poker_game_id' => $game->id, 'title' => 'Login page']);
+    $oldToken = $game->guest_token;
+
+    $facilitator = $this->awaitRealtime($this->signIn($ada, "/poker/{$game->id}"));
+    $guest = $this->awaitRealtime($this->joinAsGuest("/poker/join/{$oldToken}", 'Visitor'));
+
+    $facilitator->assertVisible('[aria-label="Facilitator menu"]')
+        ->click('[aria-label="Facilitator menu"]')
+        ->assertSee('Guest link…')
+        ->click('Guest link…')
+        ->assertVisible('input[aria-label="Guest link"]');
+
+    $oldUrl = $facilitator->value('input[aria-label="Guest link"]');
+
+    $facilitator->click('Create a new link')
+        ->assertValueIsNot('input[aria-label="Guest link"]', $oldUrl);
+
+    $guest->assertSee('Your access to this game has ended.')
+        ->assertDontSee('Back to the team');
+
+    visit($oldUrl)->assertSee('This guest link is no longer valid.');
+
+    expect($game->refresh()->guest_token)->not->toBe($oldToken)
+        ->and($facilitator->value('input[aria-label="Guest link"]'))->toEndWith("/poker/join/{$game->guest_token}");
+});
+
+it('[P10a-15] shows the game summary on the team page and the rounds in the estimation history', function () {
+    $game = p10aGame();
+    [$ada, $adaPlayer] = p10aFacilitator($game);
+    [, $bobPlayer] = p10aMember($game, 'Bob Member');
+    $task = PokerTask::factory()->estimated('5')->create(['poker_game_id' => $game->id, 'title' => 'Export invoices']);
+    PokerTask::factory()->create(['poker_game_id' => $game->id, 'title' => 'Login page']);
+    PokerTask::factory()->create(['poker_game_id' => $game->id, 'title' => 'Password reset']);
+    $firstRound = PokerRound::factory()->revealed()->create(['poker_task_id' => $task->id]);
+    pokerVote($firstRound, $adaPlayer, '8');
+    pokerVote($firstRound, $bobPlayer, '3');
+    $secondRound = PokerRound::factory()->revealed()->create(['poker_task_id' => $task->id]);
+    pokerVote($secondRound, $adaPlayer, '5');
+    pokerVote($secondRound, $bobPlayer, '5');
+    $otherGame = p10aGame(['team_id' => $game->team_id, 'title' => 'Sprint 13 estimates']);
+    PokerTask::factory()->estimated('3')->create(['poker_game_id' => $otherGame->id, 'title' => 'Search page']);
+    $teamPath = p10aTeamPath($game->team);
+
+    $page = $this->signIn($ada, $teamPath);
+
+    $page->assertSee('Sprint 12 estimates')
+        ->assertSee('3 tasks · 1 estimated · 5 points')
+        ->assertSee('Last activity')
+        ->click('Estimation history')
+        ->assertPathIs("{$teamPath}/estimates")
+        ->assertSee('Export invoices')
+        ->assertSee('Search page');
+
+    $page->click('button[aria-label="Game"]')
+        ->assertVisible('[role="option"]:has-text("Sprint 12 estimates")')
+        ->click('[role="option"]:has-text("Sprint 12 estimates")')
+        ->assertQueryStringHas('game', $game->id)
+        ->assertDontSee('Search page')
+        ->assertSee('Export invoices');
+
+    $page->fill('input[aria-label="Search tasks"]', 'search')
+        ->click('Search')
+        ->assertQueryStringHas('q', 'search')
+        ->assertSee('No estimated tasks yet.')
+        ->fill('input[aria-label="Search tasks"]', 'invoice')
+        ->click('Search')
+        ->assertQueryStringHas('q', 'invoice')
+        ->assertSee('Export invoices');
+
+    $page->assertVisible('[aria-label="Show rounds"]')
+        ->click('[aria-label="Show rounds"]')
+        ->assertSee('Round 2')
+        ->assertSee('Round 1')
+        ->assertSee('Ada Facilitator: 5')
+        ->assertSee('Bob Member: 5')
+        ->assertSee('Ada Facilitator: 8')
+        ->assertSee('Bob Member: 3')
+        ->assertSee('5 × 2')
+        ->assertSee('Average: 5.5')
+        ->assertSee('Consensus');
+});
+
+it('[P10a-16] deletes the game, sends the facilitator to the team page and tells the guest', function () {
+    $game = p10aGame(['guest_access_enabled' => true]);
+    [$ada] = p10aFacilitator($game);
+    PokerTask::factory()->create(['poker_game_id' => $game->id, 'title' => 'Login page']);
+    $teamPath = p10aTeamPath($game->team);
+
+    $facilitator = $this->awaitRealtime($this->signIn($ada, "/poker/{$game->id}"));
+    $guest = $this->awaitRealtime($this->joinAsGuest("/poker/join/{$game->guest_token}", 'Visitor'));
+
+    $facilitator->assertVisible('[aria-label="Facilitator menu"]')
+        ->click('[aria-label="Facilitator menu"]')
+        ->assertSee('Delete game…')
+        ->click('Delete game…')
+        ->assertSee('Delete this game?')
+        ->click('[role="dialog"] button:has-text("Delete")');
+
+    $facilitator->assertPathIs($teamPath)
+        ->assertSee('Planning poker')
+        ->assertSee('No games yet.');
+
+    $guest->assertSee('This game was deleted.')
+        ->assertDontSee('Back to the team');
+
+    expect(PokerGame::query()->whereKey($game->id)->exists())->toBeFalse();
+});
+
+it('[P10a-11] shows the reconnecting banner and catches up when the connection returns', function () {
+    $game = p10aGame(['guest_access_enabled' => true]);
+    [$ada] = p10aFacilitator($game);
+    PokerTask::factory()->create(['poker_game_id' => $game->id, 'title' => 'Login page']);
+
+    $facilitator = $this->awaitRealtime($this->signIn($ada, "/poker/{$game->id}"));
+    $guest = $this->awaitRealtime($this->joinAsGuest("/poker/join/{$game->guest_token}", 'Visitor'));
+
+    try {
+        ReverbServer::stop();
+
+        $guest->assertSee('Reconnecting…');
+
+        $facilitator->assertSee('Add task')
+            ->click('Add task')
+            ->assertVisible('#poker-task-title')
+            ->fill('#poker-task-title', 'Added while offline')
+            ->click('Save')
+            ->assertCount('@poker-task-row', 2);
+
+        $guest->assertCount('@poker-task-row', 1);
+    } finally {
+        ReverbServer::start();
+    }
+
+    $guest->assertDontSee('Reconnecting…')
+        ->assertSee('Added while offline')
+        ->assertCount('@poker-task-row', 2);
 });
