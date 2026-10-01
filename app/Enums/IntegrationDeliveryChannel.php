@@ -7,6 +7,9 @@ enum IntegrationDeliveryChannel: string
     case Slack = 'slack';
     case Telegram = 'telegram';
     case Email = 'email';
+    case MicrosoftTeams = 'msteams';
+    case Mattermost = 'mattermost';
+    case Webhook = 'webhook';
 
     /**
      * @return array<int, self>
@@ -21,6 +24,9 @@ enum IntegrationDeliveryChannel: string
         return match ($this) {
             self::Slack => IntegrationProvider::Slack,
             self::Telegram => IntegrationProvider::Telegram,
+            self::MicrosoftTeams => IntegrationProvider::MicrosoftTeams,
+            self::Mattermost => IntegrationProvider::Mattermost,
+            self::Webhook => IntegrationProvider::Webhook,
             self::Email => null,
         };
     }

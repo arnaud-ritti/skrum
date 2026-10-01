@@ -3,8 +3,10 @@
 namespace App\Models;
 
 use App\Enums\IntegrationAccess;
+use App\Enums\IntegrationInboundMode;
 use App\Enums\IntegrationProvider;
 use App\Enums\IntegrationStatus;
+use App\Enums\IntegrationWebhookStatus;
 use App\Support\Integrations\Exceptions\NotConnected;
 use App\Support\Integrations\Exceptions\ReadOnlyConnection;
 use App\Support\Integrations\Exceptions\ReconnectRequired;
@@ -37,6 +39,14 @@ use Illuminate\Support\Carbon;
  * @property string|null $connected_by_user_id
  * @property string|null $last_error
  * @property Carbon|null $last_checked_at
+ * @property IntegrationInboundMode $inbound_mode
+ * @property IntegrationWebhookStatus|null $webhook_status
+ * @property Carbon|null $webhook_expires_at
+ * @property Carbon|null $last_inbound_at
+ * @property Carbon|null $last_polled_at
+ * @property Carbon|null $poll_cursor
+ * @property int $consecutive_failures
+ * @property Carbon|null $last_delivery_succeeded_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Team $team
@@ -50,6 +60,12 @@ class TeamIntegration extends Model
     use HasFactory;
 
     use HasUuids;
+
+    /** @var array<string, mixed> */
+    protected $attributes = [
+        'inbound_mode' => 'off',
+        'consecutive_failures' => 0,
+    ];
 
     /** @return BelongsTo<Team, $this> */
     public function team(): BelongsTo
@@ -192,6 +208,14 @@ class TeamIntegration extends Model
             'settings' => 'array',
             'scopes' => 'array',
             'last_checked_at' => 'datetime',
+            'inbound_mode' => IntegrationInboundMode::class,
+            'webhook_status' => IntegrationWebhookStatus::class,
+            'webhook_expires_at' => 'datetime',
+            'last_inbound_at' => 'datetime',
+            'last_polled_at' => 'datetime',
+            'poll_cursor' => 'datetime',
+            'consecutive_failures' => 'integer',
+            'last_delivery_succeeded_at' => 'datetime',
         ];
     }
 }

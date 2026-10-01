@@ -29,13 +29,19 @@ use Illuminate\Support\Carbon;
  * @property int|null $recipient_count
  * @property string|null $error
  * @property Carbon|null $sent_at
+ * @property string|null $team_integration_id
+ * @property string|null $event
+ * @property int $attempts
+ * @property int|null $response_status
+ * @property Carbon|null $last_attempt_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Team $team
  * @property-read Model|null $subject
  * @property-read User|null $requestedBy
+ * @property-read TeamIntegration|null $integration
  */
-#[Fillable(['team_id', 'channel', 'kind', 'subject_type', 'subject_id', 'requested_by_user_id', 'status', 'recipient_count', 'error', 'sent_at'])]
+#[Fillable(['team_id', 'channel', 'kind', 'subject_type', 'subject_id', 'requested_by_user_id', 'status', 'recipient_count', 'error', 'sent_at', 'team_integration_id', 'event', 'attempts', 'response_status', 'last_attempt_at'])]
 class IntegrationDelivery extends Model
 {
     /** @use HasFactory<IntegrationDeliveryFactory> */
@@ -62,6 +68,12 @@ class IntegrationDelivery extends Model
     public function requestedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'requested_by_user_id');
+    }
+
+    /** @return BelongsTo<TeamIntegration, $this> */
+    public function integration(): BelongsTo
+    {
+        return $this->belongsTo(TeamIntegration::class, 'team_integration_id');
     }
 
     public function markSent(?int $recipientCount = null): void
@@ -96,6 +108,9 @@ class IntegrationDelivery extends Model
             'status' => IntegrationDeliveryStatus::class,
             'recipient_count' => 'integer',
             'sent_at' => 'datetime',
+            'attempts' => 'integer',
+            'response_status' => 'integer',
+            'last_attempt_at' => 'datetime',
         ];
     }
 }
