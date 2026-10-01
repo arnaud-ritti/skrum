@@ -5,6 +5,7 @@ namespace Tests\Browser\Support;
 use App\Models\User;
 use Illuminate\Http\Request;
 use InvalidArgumentException;
+use RuntimeException;
 
 trait InteractsWithBrowser
 {
@@ -39,6 +40,27 @@ trait InteractsWithBrowser
         $page->assertAttribute('[data-realtime]', 'data-realtime', 'connected');
 
         return $page;
+    }
+
+    /**
+     * Fetches a same-origin path from inside the page, so the request carries that context's session or guest cookie
+     * and the answer is what the server sends to that viewer now (a scan of the document only proves what the page rendered).
+     *
+     * @return array<string, mixed>
+     */
+    protected function snapshotOf(mixed $page, string $snapshotPath): array
+    {
+        $path = json_encode($snapshotPath, JSON_THROW_ON_ERROR);
+
+        $answer = json_decode(
+            (string) $page->script("() => fetch({$path}, { headers: { Accept: 'application/json' } }).then((response) => response.text().then((body) => JSON.stringify({ status: response.status, body })))"),
+            true,
+            flags: JSON_THROW_ON_ERROR,
+        );
+
+        throw_unless($answer['status'] === 200, RuntimeException::class, "snapshotOf() got HTTP {$answer['status']} for {$snapshotPath}.");
+
+        return json_decode((string) $answer['body'], true, flags: JSON_THROW_ON_ERROR);
     }
 
     /**

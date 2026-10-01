@@ -5,6 +5,7 @@ namespace Tests;
 use Illuminate\Foundation\Http\Events\RequestHandled;
 use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Http;
 use Tests\Browser\Support\InteractsWithBrowser;
 use Tests\Browser\Support\ReverbServer;
 
@@ -29,6 +30,8 @@ abstract class BrowserTestCase extends TestCase
         ReverbServer::ensureRunning();
 
         $this->isolateRequests();
+
+        Http::preventStrayRequests();
     }
 
     public static function assetProblem(string $publicPath): ?string
