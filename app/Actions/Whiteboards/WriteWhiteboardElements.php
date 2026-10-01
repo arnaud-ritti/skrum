@@ -3,9 +3,11 @@
 namespace App\Actions\Whiteboards;
 
 use App\Events\Whiteboards\WhiteboardElementsChanged;
+use App\Events\Whiteboards\WhiteboardVoteChanged;
 use App\Models\Whiteboard;
 use App\Models\WhiteboardElement;
 use App\Models\WhiteboardMember;
+use App\Models\WhiteboardVoteSession;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -25,6 +27,7 @@ class WriteWhiteboardElements
         private SanitizeWhiteboardElement $sanitizeWhiteboardElement,
         private PresentWhiteboardElement $presentWhiteboardElement,
         private OrderWhiteboardElements $orderWhiteboardElements,
+        private PresentWhiteboardVoting $presentWhiteboardVoting,
     ) {}
 
     /**
@@ -41,13 +44,20 @@ class WriteWhiteboardElements
             $fromSeq = $locked->seq;
             $seq = $fromSeq;
             $isFacilitator = $locked->isFacilitator($member);
-            $stored = $this->storedElements($locked, $rawElements);
+            $session = $locked->voteSessions()->whereNull('closed_at')->first();
+            $stored = $this->storedElements($locked, $rawElements, $session !== null);
+            $targetsBefore = $this->targets($session, $stored);
+            $refunded = 0;
             $fileIds = $locked->files()->pluck('file_id')->flip();
             $liveCount = $locked->elements()->where('is_deleted', false)->count();
             $accepted = [];
             $rejected = [];
 
-            foreach ($rawElements as $raw) {
+            $queue = array_map(fn (mixed $raw): array => [$raw, true], array_values($rawElements));
+
+            while ($queue !== []) {
+                [$raw, $mayDefer] = array_shift($queue);
+
                 $element = $this->sanitizeWhiteboardElement->handle($raw);
 
                 if ($element === null) {
@@ -64,7 +74,21 @@ class WriteWhiteboardElements
                     continue;
                 }
 
+                if ($mayDefer && $this->isWordsOfTarget($existing, $element, $targetsBefore)) {
+                    $queue[] = [$raw, false];
+
+                    continue;
+                }
+
                 $reason = $this->refusal($existing, $element, $isFacilitator, $fileIds, $liveCount);
+
+                if ($reason === null && ! $mayDefer && $session !== null && $this->changesWordsOfTarget($session, $stored, $targetsBefore, $existing, $element)) {
+                    $reason = 'voting';
+                }
+
+                if ($reason === null && $session !== null && $this->rebindsWordsOfTarget($targetsBefore, $existing, $element)) {
+                    $reason = 'voting';
+                }
 
                 if ($reason !== null) {
                     $rejected[] = $this->rejection($element['id'], $reason, $existing, $member);
@@ -79,6 +103,10 @@ class WriteWhiteboardElements
 
                 $stored->put($element['id'], $saved);
                 $accepted[$element['id']] = $saved;
+
+                if ($session !== null && isset($targetsBefore[$element['id']]) && ! $session->isTarget($saved)) {
+                    $refunded += $session->votes()->where('element_id', $element['id'])->delete();
+                }
             }
 
             if ($seq === $fromSeq) {
@@ -89,6 +117,10 @@ class WriteWhiteboardElements
 
             (new WhiteboardElementsChanged($locked->id, $seq, $fromSeq, $this->broadcastable($accepted)))->sendToOthers();
 
+            if ($session !== null && $refunded > 0) {
+                (new WhiteboardVoteChanged($locked->id, $session->id, $this->presentWhiteboardVoting->finishedCount($session)))->sendToAll();
+            }
+
             return ['seq' => $seq, 'fromSeq' => $fromSeq, 'rejected' => $rejected];
         });
     }
@@ -97,15 +129,168 @@ class WriteWhiteboardElements
      * @param  array<int, mixed>  $rawElements
      * @return Collection<string, WhiteboardElement>
      */
-    private function storedElements(Whiteboard $board, array $rawElements): Collection
+    private function storedElements(Whiteboard $board, array $rawElements, bool $withContainers): Collection
     {
         $ids = collect($rawElements)
             ->map(fn (mixed $raw): ?string => $this->rawId($raw))
-            ->filter()
+            ->filter(fn (?string $id): bool => $id !== null)
             ->unique()
             ->values();
 
-        return $board->elements()->whereIn('element_id', $ids)->get()->keyBy('element_id');
+        $stored = $board->elements()->whereIn('element_id', $ids)->get()->keyBy('element_id');
+
+        if (! $withContainers) {
+            return $stored;
+        }
+
+        $containerIds = collect($rawElements)
+            ->map(fn (mixed $raw): mixed => is_array($raw) ? ($raw['containerId'] ?? null) : null)
+            ->merge($stored->map(fn (WhiteboardElement $element): mixed => $element->data['containerId'] ?? null)->values())
+            ->filter(fn (mixed $id): bool => is_string($id) && preg_match(SanitizeWhiteboardElement::IdPattern, $id) === 1 && ! $stored->has($id))
+            ->unique()
+            ->values();
+
+        if ($containerIds->isEmpty()) {
+            return $stored;
+        }
+
+        return $stored->union($board->elements()->whereIn('element_id', $containerIds)->get()->keyBy('element_id'));
+    }
+
+    /**
+     * @param  Collection<string, WhiteboardElement>  $stored
+     * @return array<int|string, true>
+     */
+    private function targets(?WhiteboardVoteSession $session, Collection $stored): array
+    {
+        if ($session === null) {
+            return [];
+        }
+
+        $targets = [];
+
+        foreach ($stored as $element) {
+            if ($session->isTarget($element)) {
+                $targets[$element->element_id] = true;
+            }
+        }
+
+        return $targets;
+    }
+
+    /**
+     * @param  array<string, mixed>  $element
+     * @return list<string>
+     */
+    private function containerIds(?WhiteboardElement $existing, array $element): array
+    {
+        return array_values(array_unique(array_filter(
+            [$element['containerId'] ?? null, $existing?->data['containerId'] ?? null],
+            fn (mixed $id): bool => is_string($id),
+        )));
+    }
+
+    /**
+     * @param  array<string, mixed>  $element
+     * @param  array<int|string, true>  $targetsBefore
+     */
+    private function isWordsOfTarget(?WhiteboardElement $existing, array $element, array $targetsBefore): bool
+    {
+        if ($element['type'] !== 'text') {
+            return false;
+        }
+
+        foreach ($this->containerIds($existing, $element) as $containerId) {
+            if (isset($targetsBefore[$containerId])) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param  Collection<string, WhiteboardElement>  $stored
+     * @param  array<int|string, true>  $targetsBefore
+     * @param  array<string, mixed>  $element
+     */
+    private function changesWordsOfTarget(WhiteboardVoteSession $session, Collection $stored, array $targetsBefore, ?WhiteboardElement $existing, array $element): bool
+    {
+        $underVote = false;
+
+        foreach ($this->containerIds($existing, $element) as $containerId) {
+            if (isset($targetsBefore[$containerId]) && $session->isTarget($stored->get($containerId))) {
+                $underVote = true;
+            }
+        }
+
+        if (! $underVote) {
+            return false;
+        }
+
+        if ($existing === null) {
+            return true;
+        }
+
+        $before = $existing->data;
+
+        return $this->letters($before['text'] ?? null) !== $this->letters($element['text'] ?? null)
+            || $this->letters($before['originalText'] ?? $before['text'] ?? null) !== $this->letters($element['originalText'] ?? $element['text'] ?? null)
+            || ($before['containerId'] ?? null) !== ($element['containerId'] ?? null)
+            || $existing->is_deleted !== $element['isDeleted'];
+    }
+
+    /**
+     * A note that stays under vote keeps the text it holds: the canvas
+     * rewrites the note's list when its words are cleared or first typed,
+     * and that half of the batch must not be stored without the other.
+     *
+     * @param  array<int|string, true>  $targetsBefore
+     * @param  array<string, mixed>  $element
+     */
+    private function rebindsWordsOfTarget(array $targetsBefore, ?WhiteboardElement $existing, array $element): bool
+    {
+        if ($existing === null || ! isset($targetsBefore[$element['id']])) {
+            return false;
+        }
+
+        if ($element['isDeleted'] || ! isset($element['customData'])) {
+            return false;
+        }
+
+        return $this->boundTextIds($existing->data) !== $this->boundTextIds($element);
+    }
+
+    /**
+     * @param  array<string, mixed>  $element
+     * @return list<string>
+     */
+    private function boundTextIds(array $element): array
+    {
+        $bound = $element['boundElements'] ?? null;
+
+        if (! is_array($bound)) {
+            return [];
+        }
+
+        $ids = [];
+
+        foreach ($bound as $entry) {
+            if (is_array($entry) && ($entry['type'] ?? null) === 'text' && is_string($entry['id'] ?? null)) {
+                $ids[] = $entry['id'];
+            }
+        }
+
+        $ids = array_values(array_unique($ids));
+
+        sort($ids);
+
+        return $ids;
+    }
+
+    private function letters(mixed $text): string
+    {
+        return (string) preg_replace('/\s+/u', '', is_string($text) ? $text : '');
     }
 
     private function rawId(mixed $raw): ?string
