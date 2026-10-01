@@ -1,5 +1,6 @@
 import type { Excalidraw as ExcalidrawComponent } from '@excalidraw/excalidraw';
 import '@excalidraw/excalidraw/index.css';
+import '../../../css/excalidraw-theme.css';
 import type { ExcalidrawImperativeAPI as Api } from '@excalidraw/excalidraw/types';
 import type { ComponentProps } from 'react';
 

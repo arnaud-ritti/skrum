@@ -1,0 +1,81 @@
+/* Skrüm × Excalidraw — native variables overridden by Skrüm tokens.
+   Import after @excalidraw/excalidraw/index.css. */
+.excalidraw,
+.excalidraw.theme--dark {
+    --color-primary: var(--primary);
+    --color-primary-darker: color-mix(
+        in oklch,
+        var(--primary) 86%,
+        var(--foreground)
+    );
+    --color-primary-darkest: color-mix(
+        in oklch,
+        var(--primary) 72%,
+        var(--foreground)
+    );
+    --color-primary-light: var(--skrum-primary-soft);
+    --color-primary-light-darker: color-mix(
+        in oklch,
+        var(--skrum-primary-soft) 85%,
+        var(--primary)
+    );
+    --color-primary-hover: color-mix(
+        in oklch,
+        var(--primary) 86%,
+        var(--foreground)
+    );
+    --color-on-primary-container: var(--skrum-primary-text);
+    --color-surface-primary-container: var(--skrum-primary-soft);
+    --color-brand-hover: var(--color-primary-darker);
+    --color-selection: var(--primary);
+    --select-highlight-color: var(--primary);
+
+    --island-bg-color: var(--popover);
+    --default-bg-color: var(--skrum-canvas);
+    --default-border-color: var(--border);
+    --popup-bg-color: var(--popover);
+    --popup-secondary-bg-color: var(--muted);
+    --popup-text-color: var(--popover-foreground);
+    --popup-text-inverted-color: var(--background);
+    --sidebar-bg-color: var(--sidebar);
+    --sidebar-border-color: var(--sidebar-border);
+    --overlay-bg-color: var(--skrum-scrim);
+    --color-surface-lowest: var(--background);
+    --color-surface-low: var(--muted);
+    --color-surface-mid: var(--accent);
+    --color-surface-high: var(--sidebar-accent);
+    --color-on-surface: var(--foreground);
+    --color-gray-100: var(--muted);
+
+    --button-bg: var(--popover);
+    --button-color: var(--foreground);
+    --button-hover-bg: var(--accent);
+    --button-active-bg: var(--skrum-primary-soft);
+    --button-active-border: var(--primary);
+    --button-hover-color: var(--foreground);
+    --input-bg-color: var(--card);
+    --input-border-color: var(--input);
+    --input-hover-bg-color: var(--accent);
+    --input-label-color: var(--muted-foreground);
+    --icon-fill-color: var(--foreground);
+    --text-primary-color: var(--foreground);
+    --keybinding-color: var(--muted-foreground);
+    --link-color: var(--skrum-primary-text);
+    --color-danger: var(--destructive);
+
+    --shadow-island: var(--shadow-raised);
+    --border-radius-md: var(--radius-md);
+    --border-radius-lg: var(--radius);
+    --ui-font: var(--font-sans);
+}
+
+.excalidraw :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+}
+
+/* Excalidraw 0.18.1 cannot swap its colour palette through props: a wrapper
+   with this class hides the native quick picks so WhiteboardColorBar replaces them. */
+.skrum-whiteboard--fallback-colors .excalidraw .color-picker__top-picks {
+    display: none;
+}
