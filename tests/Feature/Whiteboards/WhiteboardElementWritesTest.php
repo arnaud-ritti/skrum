@@ -267,6 +267,39 @@ it('refuses new elements on a full board but still accepts edits and deletions',
     ])->assertJsonPath('rejected', []);
 });
 
+it('brings a deleted element back when it is written live again', function () {
+    $board = Whiteboard::factory()->create();
+    [$user] = whiteboardMember($board);
+
+    writeElements($this->actingAs($user), $board, [sceneElement(['id' => 'box'])]);
+    writeElements($this->actingAs($user), $board, [sceneElement(['id' => 'box', 'version' => 2, 'isDeleted' => true])]);
+
+    writeElements($this->actingAs($user), $board, [sceneElement(['id' => 'box', 'version' => 3])])
+        ->assertOk()
+        ->assertJsonPath('rejected', []);
+
+    $stored = $board->elements()->sole();
+
+    expect($stored->is_deleted)->toBeFalse()
+        ->and($stored->version)->toBe(3);
+});
+
+it('refuses to bring a deleted element back on a full board', function () {
+    $board = Whiteboard::factory()->create();
+    [$user] = whiteboardMember($board);
+    WhiteboardElement::factory()->create(['whiteboard_id' => $board->id, 'element_id' => 'live']);
+    WhiteboardElement::factory()->create(['whiteboard_id' => $board->id, 'element_id' => 'gone', 'is_deleted' => true]);
+
+    $write = app(WriteWhiteboardElements::class);
+    $write->maxLiveElements = 1;
+
+    writeElements($this->actingAs($user), $board, [sceneElement(['id' => 'gone', 'version' => 2])])
+        ->assertJsonPath('rejected.0.id', 'gone')
+        ->assertJsonPath('rejected.0.reason', 'full');
+
+    expect($board->elements()->where('element_id', 'gone')->sole()->is_deleted)->toBeTrue();
+});
+
 it('validates the envelope', function (array $payload) {
     $board = Whiteboard::factory()->create();
     [$user] = whiteboardMember($board);
