@@ -1788,5 +1788,7 @@
     "You no longer have access to this board.": "Vous n'avez plus accès à ce tableau.",
     "Only the facilitator or a workspace admin can delete this board.": "Seul l'animateur ou un administrateur de l'espace peut supprimer ce tableau.",
     "Join a whiteboard": "Rejoindre un tableau blanc",
-    "This board changed too much. Reloading it.": "Ce tableau a trop changé. Rechargement en cours."
+    "This board changed too much. Reloading it.": "Ce tableau a trop changé. Rechargement en cours.",
+    "Only PNG, JPEG, WebP and GIF images can be added.": "Seules les images PNG, JPEG, WebP et GIF peuvent être ajoutées.",
+    "This board has reached its image storage limit.": "Ce tableau a atteint sa limite de stockage d'images."
 }

@@ -1788,5 +1788,7 @@
     "You no longer have access to this board.": "Ya no tienes acceso a esta pizarra.",
     "Only the facilitator or a workspace admin can delete this board.": "Solo el facilitador o un administrador del espacio puede eliminar esta pizarra.",
     "Join a whiteboard": "Unirse a una pizarra",
-    "This board changed too much. Reloading it.": "Esta pizarra ha cambiado demasiado. Se está recargando."
+    "This board changed too much. Reloading it.": "Esta pizarra ha cambiado demasiado. Se está recargando.",
+    "Only PNG, JPEG, WebP and GIF images can be added.": "Solo se pueden añadir imágenes PNG, JPEG, WebP y GIF.",
+    "This board has reached its image storage limit.": "Esta pizarra ha alcanzado su límite de almacenamiento de imágenes."
 }

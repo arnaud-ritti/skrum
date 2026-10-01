@@ -1788,5 +1788,7 @@
     "You no longer have access to this board.": "Sie haben keinen Zugriff mehr auf dieses Board.",
     "Only the facilitator or a workspace admin can delete this board.": "Nur der Moderator oder ein Workspace-Admin kann dieses Board löschen.",
     "Join a whiteboard": "Einem Whiteboard beitreten",
-    "This board changed too much. Reloading it.": "Dieses Board hat sich zu stark geändert. Es wird neu geladen."
+    "This board changed too much. Reloading it.": "Dieses Board hat sich zu stark geändert. Es wird neu geladen.",
+    "Only PNG, JPEG, WebP and GIF images can be added.": "Nur PNG-, JPEG-, WebP- und GIF-Bilder können hinzugefügt werden.",
+    "This board has reached its image storage limit.": "Dieses Board hat sein Speicherlimit für Bilder erreicht."
 }

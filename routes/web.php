@@ -137,6 +137,7 @@ use App\Http\Controllers\TeamWhiteboardsController;
 use App\Http\Controllers\WhiteboardJoinsController;
 use App\Http\Controllers\Whiteboards\WhiteboardElementsController;
 use App\Http\Controllers\Whiteboards\WhiteboardFacilitatorsController;
+use App\Http\Controllers\Whiteboards\WhiteboardFilesController;
 use App\Http\Controllers\Whiteboards\WhiteboardGuestTokensController;
 use App\Http\Controllers\Whiteboards\WhiteboardsController;
 use App\Http\Controllers\Whiteboards\WhiteboardSettingsController;
@@ -498,6 +499,8 @@ Route::prefix('whiteboards/{board}')
         Route::put('facilitator', [WhiteboardFacilitatorsController::class, 'update'])->name('whiteboards.facilitator.update');
         Route::get('elements', [WhiteboardElementsController::class, 'index'])->name('whiteboards.elements.index');
         Route::put('elements', [WhiteboardElementsController::class, 'update'])->name('whiteboards.elements.update')->middleware('throttle:whiteboard-writes');
+        Route::post('files', [WhiteboardFilesController::class, 'store'])->name('whiteboards.files.store');
+        Route::get('files/{fileId}', [WhiteboardFilesController::class, 'show'])->name('whiteboards.files.show')->where('fileId', '[A-Za-z0-9_-]{1,64}');
     });
 
 Route::get('play/{guestToken}', [GameJoinsController::class, 'show'])->name('games.join.show');

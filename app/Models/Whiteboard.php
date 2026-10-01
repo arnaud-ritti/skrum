@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * @property string $id
@@ -36,6 +37,17 @@ class Whiteboard extends Model
     use HasUuids;
 
     public const MaxLiveElements = 5000;
+
+    public const MaxFileKilobytes = 5120;
+
+    public const MaxStorageBytes = 104857600;
+
+    protected static function booted(): void
+    {
+        static::deleted(function (Whiteboard $board): void {
+            Storage::deleteDirectory($board->storageDirectory());
+        });
+    }
 
     /** @return BelongsTo<Team, $this> */
     public function team(): BelongsTo
