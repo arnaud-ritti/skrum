@@ -129,3 +129,22 @@ Where a walkthrough's wording and today's interface differ, the test follows the
 ## Defects found
 
 None recorded yet. Add one line per defect: identifier, what was wrong, the commit that fixed it.
+
+## Verification of plan 16a
+
+Date: 2026-10-01
+
+| Criterion (spec §10) | Evidence |
+|---|---|
+| 1 | `composer test:browser` passed twice: 82 tests (1253 assertions), 152 s and 151 s; run on the host PHP of the worktree, not inside Sail; port 8097 free after each run |
+| 2 | Source scan green (`tests/Arch/BrowserTestRulesTest.php`); grep for forbidden calls empty |
+| 3 | `tests/Browser/Smoke/HarnessTest.php` green |
+| 4 | `tests/Browser/Smoke/RealtimeTest.php` green |
+| 5 | 70 rows; 50 `auto`, 14 `auto-substituted`, 6 `residual`; 66 identifiers in test titles, all in the table; the 6 `residual` rows are in the checklist |
+| 6 | `composer test:arch`: 13 tests green; one `ignoring()` with its reason |
+| 7 | `composer test` green (3641 tests); no browser test listed |
+| 8 | CI run not pushed yet: waiting for the user |
+| 9 | Suite green; phpstan, types, lint, Rector clean; `npm run check` still reports the known formatting findings in `.devcontainer/devcontainer.json` and `docs/superpowers/*.md` only |
+| 10 | Product diff reviewed: only `data-test`, `data-realtime` and the §5.3 refactors (backend compared against the Rector commit `b321061`) |
+
+Residual steps still to be checked by hand: see `residual-manual-checklist.md`.
