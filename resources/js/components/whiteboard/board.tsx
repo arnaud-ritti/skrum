@@ -23,6 +23,7 @@ import type {
 } from '@/lib/whiteboard/types';
 import { BoardGone } from './board-gone';
 import { BoardMenu } from './board-menu';
+import { BoardReactions } from './board-reactions';
 import { StickyTool } from './sticky-tool';
 import { TopBar } from './top-bar';
 
@@ -204,6 +205,7 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
                         </MainMenu>
                     </Excalidraw>
                 </div>
+                <BoardReactions state={state} />
             </div>
         </div>
     );

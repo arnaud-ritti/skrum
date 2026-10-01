@@ -152,6 +152,16 @@ export function BoardMenu({
                                 {t('Show live cursors')}
                             </DropdownMenuCheckboxItem>
                             <DropdownMenuCheckboxItem
+                                checked={board.reactionsEnabled}
+                                onCheckedChange={(checked) =>
+                                    updateSettings({
+                                        reactions_enabled: checked,
+                                    })
+                                }
+                            >
+                                {t('Show flying reactions')}
+                            </DropdownMenuCheckboxItem>
+                            <DropdownMenuCheckboxItem
                                 checked={board.guestAccessEnabled}
                                 onCheckedChange={(checked) =>
                                     updateSettings({

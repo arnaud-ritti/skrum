@@ -39,6 +39,48 @@ it('refuses settings from anyone else', function () {
     expect($board->fresh()->title)->toBe('Kept');
 });
 
+it('lets the facilitator switch flying reactions off and on again', function () {
+    Event::fake([WhiteboardChanged::class]);
+
+    $board = Whiteboard::factory()->create();
+    [$user] = whiteboardFacilitator($board);
+
+    $this->actingAs($user)
+        ->patchJson(route('whiteboards.settings.update', $board), ['reactions_enabled' => false])
+        ->assertNoContent();
+
+    expect($board->fresh()->reactions_enabled)->toBeFalse();
+
+    $this->actingAs($user)
+        ->patchJson(route('whiteboards.settings.update', $board), ['reactions_enabled' => true])
+        ->assertNoContent();
+
+    expect($board->fresh()->reactions_enabled)->toBeTrue();
+
+    Event::assertDispatchedTimes(WhiteboardChanged::class, 2);
+});
+
+it('refuses the reactions switch from anyone else', function () {
+    $board = Whiteboard::factory()->create();
+    whiteboardFacilitator($board);
+    [$user] = whiteboardMember($board);
+
+    $this->actingAs($user)
+        ->patchJson(route('whiteboards.settings.update', $board), ['reactions_enabled' => false])
+        ->assertForbidden();
+
+    expect($board->fresh()->reactions_enabled)->toBeTrue();
+});
+
+it('refuses a reactions switch that is not a boolean', function () {
+    $board = Whiteboard::factory()->create();
+    [$user] = whiteboardFacilitator($board);
+
+    $this->actingAs($user)
+        ->patchJson(route('whiteboards.settings.update', $board), ['reactions_enabled' => 'sometimes'])
+        ->assertJsonValidationErrors('reactions_enabled');
+});
+
 it('validates the title', function () {
     $board = Whiteboard::factory()->create();
     [$user] = whiteboardFacilitator($board);

@@ -15,7 +15,8 @@ use App\Models\WhiteboardMember;
  *         facilitatorMemberId: ?string,
  *         guestAccessEnabled: bool,
  *         guestUrl: ?string,
- *         cursorsEnabled: bool
+ *         cursorsEnabled: bool,
+ *         reactionsEnabled: bool
  *     },
  *     me: array{
  *         id: string,
@@ -62,6 +63,7 @@ class BuildWhiteboardSnapshot
                 'guestAccessEnabled' => $board->guest_access_enabled,
                 'guestUrl' => $isGuest ? null : route('whiteboards.join.show', $board->guest_token),
                 'cursorsEnabled' => $board->cursors_enabled,
+                'reactionsEnabled' => $board->reactions_enabled,
             ],
             'me' => [
                 'id' => $viewer->id,

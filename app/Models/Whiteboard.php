@@ -21,13 +21,14 @@ use Illuminate\Support\Facades\Storage;
  * @property bool $guest_access_enabled
  * @property string $guest_token
  * @property bool $cursors_enabled
+ * @property bool $reactions_enabled
  * @property int $seq
  * @property int $purged_seq
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Team $team
  */
-#[Fillable(['title', 'facilitator_member_id', 'guest_access_enabled', 'guest_token', 'cursors_enabled', 'seq', 'purged_seq'])]
+#[Fillable(['title', 'facilitator_member_id', 'guest_access_enabled', 'guest_token', 'cursors_enabled', 'reactions_enabled', 'seq', 'purged_seq'])]
 #[Hidden(['guest_token'])]
 class Whiteboard extends Model
 {
@@ -94,6 +95,7 @@ class Whiteboard extends Model
         return [
             'guest_access_enabled' => 'boolean',
             'cursors_enabled' => 'boolean',
+            'reactions_enabled' => 'boolean',
             'seq' => 'integer',
             'purged_seq' => 'integer',
         ];

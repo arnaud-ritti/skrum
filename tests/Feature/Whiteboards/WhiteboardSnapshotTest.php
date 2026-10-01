@@ -16,6 +16,7 @@ it('describes the board, the viewer, the members and the live elements', functio
         ->assertJsonPath('board.facilitatorMemberId', $member->id)
         ->assertJsonPath('board.guestUrl', route('whiteboards.join.show', $board->guest_token))
         ->assertJsonPath('board.cursorsEnabled', true)
+        ->assertJsonPath('board.reactionsEnabled', true)
         ->assertJsonPath('me.id', $member->id)
         ->assertJsonPath('me.userId', $user->id)
         ->assertJsonPath('me.isFacilitator', true)

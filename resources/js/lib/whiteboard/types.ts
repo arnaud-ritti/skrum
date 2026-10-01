@@ -17,6 +17,7 @@ export type WhiteboardSnapshot = {
         guestAccessEnabled: boolean;
         guestUrl: string | null;
         cursorsEnabled: boolean;
+        reactionsEnabled: boolean;
     };
     me: {
         id: string;
