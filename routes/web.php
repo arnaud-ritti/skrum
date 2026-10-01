@@ -135,7 +135,10 @@ use App\Http\Controllers\TeamRetrosController;
 use App\Http\Controllers\TeamsController;
 use App\Http\Controllers\TeamWhiteboardsController;
 use App\Http\Controllers\WhiteboardJoinsController;
+use App\Http\Controllers\Whiteboards\WhiteboardFacilitatorsController;
+use App\Http\Controllers\Whiteboards\WhiteboardGuestTokensController;
 use App\Http\Controllers\Whiteboards\WhiteboardsController;
+use App\Http\Controllers\Whiteboards\WhiteboardSettingsController;
 use App\Http\Controllers\Whiteboards\WhiteboardSnapshotsController;
 use App\Http\Controllers\WorkspaceActionItemCommentsController;
 use App\Http\Controllers\WorkspaceActionItemsController;
@@ -489,6 +492,9 @@ Route::prefix('whiteboards/{board}')
         Route::get('/', [WhiteboardsController::class, 'show'])->name('whiteboards.show');
         Route::delete('/', [WhiteboardsController::class, 'destroy'])->name('whiteboards.destroy');
         Route::get('snapshot', [WhiteboardSnapshotsController::class, 'show'])->name('whiteboards.snapshot.show');
+        Route::patch('settings', [WhiteboardSettingsController::class, 'update'])->name('whiteboards.settings.update');
+        Route::post('guest-token', [WhiteboardGuestTokensController::class, 'store'])->name('whiteboards.guestToken.store');
+        Route::put('facilitator', [WhiteboardFacilitatorsController::class, 'update'])->name('whiteboards.facilitator.update');
     });
 
 Route::get('play/{guestToken}', [GameJoinsController::class, 'show'])->name('games.join.show');

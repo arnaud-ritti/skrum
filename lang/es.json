@@ -1786,5 +1786,6 @@
     "Status: :status": "Estado: :status",
     "The redelivery could not be queued. Try again.": "No se pudo poner el reenvío en cola. Inténtalo de nuevo.",
     "You no longer have access to this board.": "Ya no tienes acceso a esta pizarra.",
-    "Only the facilitator or a workspace admin can delete this board.": "Solo el facilitador o un administrador del espacio puede eliminar esta pizarra."
+    "Only the facilitator or a workspace admin can delete this board.": "Solo el facilitador o un administrador del espacio puede eliminar esta pizarra.",
+    "Join a whiteboard": "Unirse a una pizarra"
 }

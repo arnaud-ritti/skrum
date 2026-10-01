@@ -2,4 +2,75 @@
 
 namespace App\Http\Controllers;
 
-class WhiteboardJoinsController extends Controller {}
+use App\Actions\Retros\GuestCookie;
+use App\Actions\Whiteboards\ResolveMember;
+use App\Models\Whiteboard;
+use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+use Inertia\Inertia;
+use Symfony\Component\HttpFoundation\Response;
+
+class WhiteboardJoinsController extends Controller
+{
+    public function show(Request $request, string $guestToken, ResolveMember $resolveMember): Response
+    {
+        $board = $this->findBoard($guestToken);
+
+        if ($board === null) {
+            return $this->invalidLink($request);
+        }
+
+        if ($resolveMember->handle($request, $board) !== null) {
+            return to_route('whiteboards.show', $board);
+        }
+
+        return Inertia::render('whiteboards/join', [
+            'isInvalid' => false,
+            'guestToken' => $guestToken,
+            'boardTitle' => $board->title,
+            'suggestedName' => $request->user()?->name,
+        ])->toResponse($request);
+    }
+
+    public function store(Request $request, string $guestToken, ResolveMember $resolveMember): Response
+    {
+        $board = $this->findBoard($guestToken);
+
+        if ($board === null) {
+            return $this->invalidLink($request);
+        }
+
+        if ($resolveMember->handle($request, $board) !== null) {
+            return to_route('whiteboards.show', $board);
+        }
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:50'],
+        ]);
+
+        $secret = Str::random(40);
+
+        $member = $board->members()->create([
+            'guest_name' => $validated['name'],
+            'guest_secret_hash' => hash('sha256', $secret),
+        ]);
+
+        return to_route('whiteboards.show', $board)
+            ->withCookie(GuestCookie::make(GuestCookie::WhiteboardScope, $board->id, $member->id, $secret));
+    }
+
+    private function findBoard(string $guestToken): ?Whiteboard
+    {
+        return Whiteboard::query()
+            ->where('guest_token', $guestToken)
+            ->where('guest_access_enabled', true)
+            ->first();
+    }
+
+    private function invalidLink(Request $request): Response
+    {
+        return Inertia::render('whiteboards/join', ['isInvalid' => true])
+            ->toResponse($request)
+            ->setStatusCode(404);
+    }
+}
