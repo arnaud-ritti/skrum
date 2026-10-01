@@ -1,0 +1,292 @@
+GET|HEAD	.well-known/passkey-endpoints	well-known.passkeys	Closure	
+GET|HEAD	/	home	Closure	layouts/auth/auth-card-layout.tsx (routes), layouts/auth/auth-simple-layout.tsx (routes), layouts/auth/auth-split-layout.tsx (routes)
+POST	_boost/browser-logs	boost.browser-logs	Closure	
+GET|HEAD	_inertia/devtools/entries		Inertia\DevTools\Http\EntriesController@index	
+GET|HEAD	_inertia/devtools/entries/{id}		Inertia\DevTools\Http\EntriesController@show	
+GET|HEAD	auth/{provider}/callback	sso.callback	App\Http\Controllers\SsoCallbacksController@show	
+GET|HEAD	auth/{provider}/redirect	sso.redirect	App\Http\Controllers\SsoRedirectsController@show	components/sso-buttons.tsx
+GET|HEAD	avatars/{seed}.svg	avatars.show	App\Http\Controllers\AvatarsController@show	
+POST	broadcasting/auth	broadcasting.auth	App\Http\Controllers\BroadcastAuthorizationsController@store	app.tsx
+GET|HEAD	dashboard	dashboard	App\Http\Controllers\CurrentWorkspaceController@show	components/app-header.tsx (routes), components/app-sidebar.tsx (routes), components/games/delete-room-dialog.tsx (routes), components/poker/delete-game-dialog.tsx (routes), components/retro/delete-retro-dialog.tsx (routes), pages/welcome.tsx (routes)
+POST	email/verification-notification	verification.send	Laravel\Fortify\Http\Controllers\EmailVerificationNotificationController@store	pages/auth/verify-email.tsx (routes), pages/settings/profile.tsx (routes)
+GET|HEAD	email/verify	verification.notice	Laravel\Fortify\Http\Controllers\EmailVerificationPromptController@__invoke	
+GET|HEAD	email/verify/{id}/{hash}	verification.verify	Laravel\Fortify\Http\Controllers\VerifyEmailController@__invoke	
+GET|HEAD	emoji-data/{version}/{locale}/{file}	emoji-data.show	App\Http\Controllers\EmojiDataController@show	
+GET|HEAD	forgot-password	password.request	Laravel\Fortify\Http\Controllers\PasswordResetLinkController@create	pages/auth/login.tsx (routes)
+POST	forgot-password	password.email	Laravel\Fortify\Http\Controllers\PasswordResetLinkController@store	pages/auth/forgot-password.tsx (routes)
+GET|HEAD	games/{room}	games.show	App\Http\Controllers\Games\GameRoomsController@show	components/games/room-card.tsx
+PATCH	games/{room}	games.update	App\Http\Controllers\Games\GameRoomsController@update	components/games/room-settings-dialog.tsx
+DELETE	games/{room}	games.destroy	App\Http\Controllers\Games\GameRoomsController@destroy	components/games/delete-room-dialog.tsx
+PUT	games/{room}/game	games.game.update	App\Http\Controllers\Games\GameSwitchesController@update	components/games/game-switcher.tsx
+GET|HEAD	games/{room}/gifs	games.gifs.index	App\Http\Controllers\Games\GameGifsController@index	components/games/game-gif-picker.tsx
+POST	games/{room}/guest-token	games.guest-token.store	App\Http\Controllers\Games\GameGuestTokensController@store	components/games/room-menu.tsx
+PUT	games/{room}/host	games.host.update	App\Http\Controllers\Games\GameHostsController@update	components/games/room-menu.tsx
+POST	games/{room}/rounds	games.rounds.store	App\Http\Controllers\Games\GameRoundsController@store	components/games/start-round-controls.tsx
+GET|HEAD	games/{room}/rounds	games.rounds.index	App\Http\Controllers\Games\GameRoundsController@index	
+GET|HEAD	games/{room}/rounds/{round}	games.rounds.show	App\Http\Controllers\Games\GameRoundsController@show	components/games/round-detail.tsx, components/games/round-end-card.tsx, components/retro/results/round-replay-dialog.tsx
+PUT	games/{room}/rounds/{round}/answer	games.rounds.answer.update	App\Http\Controllers\Games\GameAnswersController@update	components/games/gif-answer-stage.tsx
+DELETE	games/{room}/rounds/{round}/answer	games.rounds.answer.destroy	App\Http\Controllers\Games\GameAnswersController@destroy	components/games/gif-answer-stage.tsx
+POST	games/{room}/rounds/{round}/close	games.rounds.close.store	App\Http\Controllers\Games\GameClosuresController@store	components/games/gif-voting-stage.tsx
+PUT	games/{room}/rounds/{round}/clue	games.rounds.clue.update	App\Http\Controllers\Games\GameRoundCluesController@update	components/games/clue-editor.tsx
+DELETE	games/{room}/rounds/{round}/drawing	games.rounds.drawing.destroy	App\Http\Controllers\Games\GameDrawingsController@destroy	components/games/draw-board.tsx
+POST	games/{room}/rounds/{round}/drawing-ops	games.rounds.drawing-ops.store	App\Http\Controllers\Games\GameDrawingOpsController@store	components/games/draw-board.tsx
+DELETE	games/{room}/rounds/{round}/drawing-ops/last	games.rounds.drawing-ops.last.destroy	App\Http\Controllers\Games\GameLastDrawingOpsController@destroy	components/games/draw-board.tsx
+POST	games/{room}/rounds/{round}/guesses	games.rounds.guesses.store	App\Http\Controllers\Games\GameGuessesController@store	components/games/guess-chat.tsx
+POST	games/{room}/rounds/{round}/hints	games.rounds.hints.store	App\Http\Controllers\Games\GameRoundHintsController@store	components/games/hint-button.tsx
+POST	games/{room}/rounds/{round}/letters	games.rounds.letters.store	App\Http\Controllers\Games\GameLettersController@store	components/games/hangman-board.tsx
+POST	games/{room}/rounds/{round}/pass	games.rounds.pass.store	App\Http\Controllers\Games\GameRoundPassesController@store	components/games/pass-round-button.tsx
+PUT	games/{room}/rounds/{round}/question	games.rounds.question.update	App\Http\Controllers\Games\GameQuestionsController@update	components/games/gif-question-banner.tsx
+POST	games/{room}/rounds/{round}/reveal	games.rounds.reveal.store	App\Http\Controllers\Games\GameRevealsController@store	components/games/gif-answer-stage.tsx
+GET|HEAD	games/{room}/rounds/{round}/secret	games.rounds.secret.show	App\Http\Controllers\Games\GameRoundSecretsController@show	hooks/use-secret-word.ts
+PUT	games/{room}/rounds/{round}/vote	games.rounds.vote.update	App\Http\Controllers\Games\GameVotesController@update	components/games/gif-voting-stage.tsx
+DELETE	games/{room}/rounds/{round}/vote	games.rounds.vote.destroy	App\Http\Controllers\Games\GameVotesController@destroy	components/games/gif-voting-stage.tsx
+DELETE	games/{room}/scores	games.scores.destroy	App\Http\Controllers\Games\GameScoresController@destroy	components/games/reset-scores-dialog.tsx
+POST	games/{room}/shares	games.shares.store	App\Http\Controllers\Games\GameSharesController@store	components/games/room-invite-dialog.tsx
+GET|HEAD	games/{room}/snapshot	games.snapshot.show	App\Http\Controllers\Games\GameSnapshotsController@show	hooks/use-game-room.ts
+PUT	games/{room}/timer	games.timer.update	App\Http\Controllers\Games\GameTimersController@update	components/games/room-timer.tsx
+GET|HEAD	gifs/{gif}/{size}	gifs.show	App\Http\Controllers\GifsController@show	
+GET|HEAD	integrations/jira-dc/callback	integrations.jiraDataCenter.callback	App\Http\Controllers\Integrations\IntegrationCallbacksController@show	
+POST	integrations/webhooks/{source}	integrations.webhooks.store	App\Http\Controllers\Integrations\InboundWebhooksController@store	
+POST	integrations/webhooks/{source}/{integration}/{token}	integrations.webhooks.tracker.store	App\Http\Controllers\Integrations\InboundWebhooksController@store	
+GET|HEAD	integrations/{provider}/callback	integrations.callback	App\Http\Controllers\Integrations\IntegrationCallbacksController@show	
+GET|HEAD	invitations/{token}	invitations.show	App\Http\Controllers\InvitationLinksController@show	
+POST	invitations/{token}/acceptance	invitations.acceptance.store	App\Http\Controllers\InvitationAcceptancesController@store	pages/invitations/show.tsx
+GET|HEAD	join/{guestToken}	retros.join.show	App\Http\Controllers\RetroJoinsController@show	
+POST	join/{guestToken}	retros.join.store	App\Http\Controllers\RetroJoinsController@store	pages/retros/join.tsx
+PUT	locale	locale.update	App\Http\Controllers\LocalesController@update	components/language-switcher.tsx
+GET|HEAD	login	login	Laravel\Fortify\Http\Controllers\AuthenticatedSessionController@create	pages/auth/forgot-password.tsx (routes), pages/auth/register.tsx (routes), pages/invitations/show.tsx (routes), pages/retros/session-ended.tsx (routes), pages/welcome.tsx (routes)
+POST	login	login.store	Laravel\Fortify\Http\Controllers\AuthenticatedSessionController@store	pages/auth/login.tsx (routes)
+POST	logout	logout	Laravel\Fortify\Http\Controllers\AuthenticatedSessionController@destroy	components/user-menu-content.tsx (routes), pages/auth/verify-email.tsx (routes), pages/invitations/show.tsx (routes)
+GET|HEAD	mcp		Closure	
+DELETE	mcp		Closure	
+POST	mcp	mcp	Closure	
+GET|HEAD	notifications	notifications.index	App\Http\Controllers\NotificationsController@index	components/notification-bell.tsx
+POST	notifications/read-all	notifications.readAll	App\Http\Controllers\ReadAllNotificationsController@store	components/notification-bell.tsx
+PATCH	notifications/{notification}	notifications.update	App\Http\Controllers\NotificationsController@update	components/notification-bell.tsx
+POST	passkeys/confirm	passkey.confirm	Laravel\Passkeys\Http\Controllers\PasskeyConfirmationController@store	pages/auth/confirm-password.tsx
+GET|HEAD	passkeys/confirm/options	passkey.confirm-options	Laravel\Passkeys\Http\Controllers\PasskeyConfirmationController@index	pages/auth/confirm-password.tsx
+POST	passkeys/login	passkey.login	Laravel\Passkeys\Http\Controllers\PasskeyLoginController@store	
+GET|HEAD	passkeys/login/options	passkey.login-options	Laravel\Passkeys\Http\Controllers\PasskeyLoginController@index	
+GET|HEAD	play/{guestToken}	games.join.show	App\Http\Controllers\GameJoinsController@show	
+POST	play/{guestToken}	games.join.store	App\Http\Controllers\GameJoinsController@store	pages/games/join.tsx
+GET|HEAD	poker/join/{guestToken}	poker.join.show	App\Http\Controllers\PokerJoinsController@show	
+POST	poker/join/{guestToken}	poker.join.store	App\Http\Controllers\PokerJoinsController@store	pages/poker/join.tsx
+GET|HEAD	poker/{game}	poker.show	App\Http\Controllers\Poker\PokerGamesController@show	components/teams/poker-games-section.tsx
+DELETE	poker/{game}	poker.destroy	App\Http\Controllers\Poker\PokerGamesController@destroy	components/poker/delete-game-dialog.tsx
+PUT	poker/{game}/current-task	poker.current-task.update	App\Http\Controllers\Poker\PokerCurrentTasksController@update	components/poker/facilitator-toolbar.tsx, components/poker/tasks-pane.tsx
+PUT	poker/{game}/facilitator	poker.facilitator.update	App\Http\Controllers\Poker\PokerFacilitatorsController@update	components/poker/take-control-button.tsx, components/poker/transfer-dialog.tsx
+POST	poker/{game}/guest-token	poker.guest-token.store	App\Http\Controllers\Poker\PokerGuestTokensController@store	components/poker/game-guest-link-dialog.tsx
+POST	poker/{game}/imports/refresh	poker.imports.refresh.store	App\Http\Controllers\Integrations\PokerImportRefreshesController@store	components/poker/tasks-pane.tsx
+POST	poker/{game}/imports/{source}	poker.imports.store	App\Http\Controllers\Integrations\PokerImportsController@store	components/poker/import-tasks-dialog.tsx
+GET|HEAD	poker/{game}/imports/{source}/containers	poker.imports.containers.index	App\Http\Controllers\Integrations\PokerImportContainersController@index	components/poker/import-tasks-dialog.tsx
+GET|HEAD	poker/{game}/imports/{source}/iterations	poker.imports.iterations.index	App\Http\Controllers\Integrations\PokerImportIterationsController@index	components/poker/import-tasks-dialog.tsx
+POST	poker/{game}/imports/{source}/preview	poker.imports.preview.store	App\Http\Controllers\Integrations\PokerImportPreviewsController@store	components/poker/import-tasks-dialog.tsx
+PUT	poker/{game}/players/{player}/spectator	poker.players.spectator.update	App\Http\Controllers\Poker\PokerSpectatorsController@update	components/poker/spectator-toggle.tsx
+POST	poker/{game}/rounds/{round}/auto-reveal	poker.rounds.auto-reveal.store	App\Http\Controllers\Poker\PokerAutoRevealsController@store	components/poker/auto-reveal-triggers.tsx
+POST	poker/{game}/rounds/{round}/reveal	poker.rounds.reveal.store	App\Http\Controllers\Poker\PokerRevealsController@store	components/poker/facilitator-toolbar.tsx
+PUT	poker/{game}/rounds/{round}/timer	poker.rounds.timer.update	App\Http\Controllers\Poker\PokerTimersController@update	components/poker/round-timer-control.tsx
+PUT	poker/{game}/rounds/{round}/vote	poker.rounds.vote.update	App\Http\Controllers\Poker\PokerVotesController@update	components/poker/hand.tsx
+DELETE	poker/{game}/rounds/{round}/vote	poker.rounds.vote.destroy	App\Http\Controllers\Poker\PokerVotesController@destroy	components/poker/hand.tsx
+GET|HEAD	poker/{game}/saved-decks	poker.saved-decks.index	App\Http\Controllers\Poker\PokerSavedDecksController@index	components/poker/game-settings-dialog.tsx
+PATCH	poker/{game}/settings	poker.settings.update	App\Http\Controllers\Poker\PokerSettingsController@update	components/poker/game-guest-link-dialog.tsx, components/poker/game-header.tsx, components/poker/game-settings-dialog.tsx
+POST	poker/{game}/shares	poker.shares.store	App\Http\Controllers\Integrations\PokerSharesController@store	components/poker/game-share-dialog.tsx
+GET|HEAD	poker/{game}/snapshot	poker.snapshot.show	App\Http\Controllers\Poker\PokerSnapshotsController@show	hooks/use-poker-game.ts
+PUT	poker/{game}/status	poker.status.update	App\Http\Controllers\Poker\PokerStatusesController@update	components/poker/game-menu.tsx
+PUT	poker/{game}/task-order	poker.task-order.update	App\Http\Controllers\Poker\PokerTaskOrdersController@update	components/poker/tasks-pane.tsx
+POST	poker/{game}/tasks	poker.tasks.store	App\Http\Controllers\Poker\PokerTasksController@store	components/poker/task-form-dialog.tsx
+PATCH	poker/{game}/tasks/{task}	poker.tasks.update	App\Http\Controllers\Poker\PokerTasksController@update	components/poker/task-form-dialog.tsx
+DELETE	poker/{game}/tasks/{task}	poker.tasks.destroy	App\Http\Controllers\Poker\PokerTasksController@destroy	components/poker/task-detail.tsx
+PUT	poker/{game}/tasks/{task}/estimate	poker.tasks.estimate.update	App\Http\Controllers\Poker\PokerTaskEstimatesController@update	components/poker/facilitator-toolbar.tsx
+POST	poker/{game}/tasks/{task}/estimate-conflict	poker.tasks.estimate-conflict.store	App\Http\Controllers\Integrations\PokerEstimateConflictsController@store	components/poker/estimate-conflict.tsx
+POST	poker/{game}/tasks/{task}/rounds	poker.tasks.rounds.store	App\Http\Controllers\Poker\PokerRoundsController@store	components/poker/facilitator-toolbar.tsx
+GET|HEAD	poker/{game}/tasks/{task}/rounds	poker.tasks.rounds.index	App\Http\Controllers\Poker\PokerRoundsController@index	components/poker/round-history.tsx
+POST	poker/{game}/tasks/{task}/sync	poker.tasks.sync.store	App\Http\Controllers\Integrations\PokerTaskSyncsController@store	components/poker/task-source-details.tsx
+GET|HEAD	register	register	Laravel\Fortify\Http\Controllers\RegisteredUserController@create	pages/auth/login.tsx (routes), pages/invitations/show.tsx (routes), pages/welcome.tsx (routes)
+POST	register	register.store	Laravel\Fortify\Http\Controllers\RegisteredUserController@store	pages/auth/register.tsx (routes)
+POST	reset-password	password.update	Laravel\Fortify\Http\Controllers\NewPasswordController@store	pages/auth/reset-password.tsx (routes)
+GET|HEAD	reset-password/{token}	password.reset	Laravel\Fortify\Http\Controllers\NewPasswordController@create	
+GET|HEAD	retros/{retro}	retros.show	App\Http\Controllers\Retros\RetrosController@show	pages/teams/show.tsx
+DELETE	retros/{retro}	retros.destroy	App\Http\Controllers\Retros\RetrosController@destroy	components/retro/delete-retro-dialog.tsx
+PATCH	retros/{retro}/action-item-comments/{actionItemComment}	retros.action-items.comments.update	App\Http\Controllers\Retros\ActionItemCommentsController@update	lib/action-items/endpoints.ts
+DELETE	retros/{retro}/action-item-comments/{actionItemComment}	retros.action-items.comments.destroy	App\Http\Controllers\Retros\ActionItemCommentsController@destroy	lib/action-items/endpoints.ts
+PATCH	retros/{retro}/action-item-subtasks/{actionItemSubtask}	retros.action-items.subtasks.update	App\Http\Controllers\Retros\ActionItemSubtasksController@update	lib/action-items/endpoints.ts
+DELETE	retros/{retro}/action-item-subtasks/{actionItemSubtask}	retros.action-items.subtasks.destroy	App\Http\Controllers\Retros\ActionItemSubtasksController@destroy	lib/action-items/endpoints.ts
+POST	retros/{retro}/action-items	retros.action-items.store	App\Http\Controllers\Retros\ActionItemsController@store	components/retro/action-items-panel.tsx
+PATCH	retros/{retro}/action-items/{actionItem}	retros.action-items.update	App\Http\Controllers\Retros\ActionItemsController@update	lib/action-items/endpoints.ts
+DELETE	retros/{retro}/action-items/{actionItem}	retros.action-items.destroy	App\Http\Controllers\Retros\ActionItemsController@destroy	lib/action-items/endpoints.ts
+GET|HEAD	retros/{retro}/action-items/{actionItem}/comments	retros.action-items.comments.index	App\Http\Controllers\Retros\ActionItemCommentsController@index	lib/action-items/endpoints.ts
+POST	retros/{retro}/action-items/{actionItem}/comments	retros.action-items.comments.store	App\Http\Controllers\Retros\ActionItemCommentsController@store	lib/action-items/endpoints.ts
+POST	retros/{retro}/action-items/{actionItem}/exports	retros.action-items.exports.store	App\Http\Controllers\Integrations\RetroActionItemExportsController@store	lib/action-items/endpoints.ts
+GET|HEAD	retros/{retro}/action-items/{actionItem}/exports/preview	retros.action-items.exports.preview	App\Http\Controllers\Integrations\RetroActionItemExportPreviewsController@show	lib/action-items/endpoints.ts
+POST	retros/{retro}/action-items/{actionItem}/external-links/{externalLink}/sync	retros.action-items.external-links.sync.store	App\Http\Controllers\Integrations\RetroActionItemLinkSyncsController@store	lib/action-items/endpoints.ts
+POST	retros/{retro}/action-items/{actionItem}/subtasks	retros.action-items.subtasks.store	App\Http\Controllers\Retros\ActionItemSubtasksController@store	lib/action-items/endpoints.ts
+POST	retros/{retro}/cards	retros.cards.store	App\Http\Controllers\Retros\CardsController@store	components/retro/card-composer.tsx
+PATCH	retros/{retro}/cards/{card}	retros.cards.update	App\Http\Controllers\Retros\CardsController@update	components/retro/card-editor.tsx
+DELETE	retros/{retro}/cards/{card}	retros.cards.destroy	App\Http\Controllers\Retros\CardsController@destroy	components/retro/retro-card.tsx
+POST	retros/{retro}/cards/{card}/comments	retros.cards.comments.store	App\Http\Controllers\Retros\CardCommentsController@store	components/retro/card-comments.tsx
+PUT	retros/{retro}/cards/{card}/group	retros.cards.group.update	App\Http\Controllers\Retros\CardGroupsController@update	components/retro/board.tsx
+DELETE	retros/{retro}/cards/{card}/group	retros.cards.group.destroy	App\Http\Controllers\Retros\CardGroupsController@destroy	components/retro/retro-card.tsx
+PUT	retros/{retro}/cards/{card}/group-name	retros.cards.group-name.update	App\Http\Controllers\Retros\CardGroupNamesController@update	components/retro/group-name-suggestions.tsx, components/retro/group-name.tsx
+DELETE	retros/{retro}/cards/{card}/group-name	retros.cards.group-name.destroy	App\Http\Controllers\Retros\CardGroupNamesController@destroy	components/retro/group-name.tsx
+PUT	retros/{retro}/cards/{card}/position	retros.cards.position.update	App\Http\Controllers\Retros\CardPositionsController@update	components/retro/board.tsx
+PUT	retros/{retro}/cards/{card}/reactions	retros.cards.reactions.update	App\Http\Controllers\Retros\CardReactionsController@update	components/retro/card-reactions.tsx
+DELETE	retros/{retro}/cards/{card}/reactions	retros.cards.reactions.destroy	App\Http\Controllers\Retros\CardReactionsController@destroy	components/retro/card-reactions.tsx
+POST	retros/{retro}/cards/{card}/votes	retros.cards.votes.store	App\Http\Controllers\Retros\CardVotesController@store	components/retro/vote-controls.tsx
+DELETE	retros/{retro}/cards/{card}/votes	retros.cards.votes.destroy	App\Http\Controllers\Retros\CardVotesController@destroy	components/retro/vote-controls.tsx
+PUT	retros/{retro}/column-order	retros.columns.order.update	App\Http\Controllers\Retros\ColumnOrdersController@update	components/retro/column-header.tsx
+POST	retros/{retro}/columns	retros.columns.store	App\Http\Controllers\Retros\ColumnsController@store	components/retro/add-column.tsx
+PATCH	retros/{retro}/columns/{column}	retros.columns.update	App\Http\Controllers\Retros\ColumnsController@update	components/retro/column-header.tsx
+DELETE	retros/{retro}/columns/{column}	retros.columns.destroy	App\Http\Controllers\Retros\ColumnsController@destroy	components/retro/column-header.tsx
+PATCH	retros/{retro}/comments/{comment}	retros.comments.update	App\Http\Controllers\Retros\CardCommentsController@update	components/retro/card-comments.tsx
+DELETE	retros/{retro}/comments/{comment}	retros.comments.destroy	App\Http\Controllers\Retros\CardCommentsController@destroy	components/retro/card-comments.tsx
+PUT	retros/{retro}/facilitator	retros.facilitator.update	App\Http\Controllers\Retros\RetroFacilitatorsController@update	components/retro/handover-dialog.tsx
+GET|HEAD	retros/{retro}/gifs	retros.gifs.index	App\Http\Controllers\Retros\RetroGifsController@index	components/retro/gif-picker.tsx
+POST	retros/{retro}/group-name-suggestions	retros.group-name-suggestions.store	App\Http\Controllers\Retros\GroupNameSuggestionsController@store	components/retro/group-name-suggestions.tsx
+POST	retros/{retro}/guest-token	retros.guest-token.store	App\Http\Controllers\Retros\RetroGuestTokensController@store	components/retro/guest-link-dialog.tsx
+PUT	retros/{retro}/health-check/{statement}	retros.health-check.update	App\Http\Controllers\Retros\HealthCheckAnswersController@update	components/retro/health-check-panel.tsx
+DELETE	retros/{retro}/health-check/{statement}	retros.health-check.destroy	App\Http\Controllers\Retros\HealthCheckAnswersController@destroy	components/retro/health-check-panel.tsx
+PUT	retros/{retro}/highlight	retros.highlight.update	App\Http\Controllers\Retros\RetroHighlightsController@update	components/retro/presentation-overlay.tsx, components/retro/retro-card.tsx
+PUT	retros/{retro}/phase	retros.phase.update	App\Http\Controllers\Retros\RetroPhasesController@update	components/retro/phase-stepper.tsx
+POST	retros/{retro}/results-email	retros.results-email.store	App\Http\Controllers\Integrations\RetroResultsEmailsController@store	components/retro/results/email-results-dialog.tsx
+PUT	retros/{retro}/roti	retros.roti.update	App\Http\Controllers\Retros\RetroRotiController@update	components/retro/roti-control.tsx
+DELETE	retros/{retro}/roti	retros.roti.destroy	App\Http\Controllers\Retros\RetroRotiController@destroy	components/retro/roti-control.tsx
+PATCH	retros/{retro}/settings	retros.settings.update	App\Http\Controllers\Retros\RetroSettingsController@update	components/retro/guest-link-dialog.tsx, components/retro/settings-dialog.tsx
+POST	retros/{retro}/shares	retros.shares.store	App\Http\Controllers\Integrations\RetroSharesController@store	components/retro/board-post-link.tsx, components/retro/results/recap-share-dialog.tsx
+GET|HEAD	retros/{retro}/snapshot	retros.snapshot.show	App\Http\Controllers\Retros\RetroSnapshotsController@show	hooks/use-retro-board.ts
+DELETE	retros/{retro}/suggested-actions/{suggestedAction}	retros.suggested-actions.destroy	App\Http\Controllers\Retros\SuggestedActionsController@destroy	components/retro/insights/suggestions-list.tsx
+POST	retros/{retro}/suggested-actions/{suggestedAction}/promotion	retros.suggested-actions.promotion.store	App\Http\Controllers\Retros\SuggestedActionPromotionsController@store	components/retro/insights/suggestions-list.tsx
+POST	retros/{retro}/summary	retros.summary.store	App\Http\Controllers\Retros\RetroSummariesController@store	components/retro/insights/summary-section.tsx
+DELETE	retros/{retro}/summary	retros.summary.destroy	App\Http\Controllers\Retros\RetroSummariesController@destroy	components/retro/insights/summary-section.tsx
+PATCH	retros/{retro}/survey-comments/{surveyComment}	retros.survey-comments.update	App\Http\Controllers\Retros\SurveyCommentsController@update	components/retro/survey-discussion.tsx
+DELETE	retros/{retro}/survey-comments/{surveyComment}	retros.survey-comments.destroy	App\Http\Controllers\Retros\SurveyCommentsController@destroy	components/retro/survey-discussion.tsx
+POST	retros/{retro}/survey-drafts	retros.survey-drafts.store	App\Http\Controllers\Retros\SurveyDraftsController@store	components/retro/survey-draft-field.tsx
+POST	retros/{retro}/surveys	retros.surveys.store	App\Http\Controllers\Retros\SurveysController@store	components/retro/survey-dialog.tsx
+GET|HEAD	retros/{retro}/surveys/{survey}	retros.surveys.show	App\Http\Controllers\Retros\SurveysController@show	lib/retro/survey-api.ts
+PATCH	retros/{retro}/surveys/{survey}	retros.surveys.update	App\Http\Controllers\Retros\SurveysController@update	components/retro/survey-dialog.tsx, components/retro/survey-menu.tsx
+DELETE	retros/{retro}/surveys/{survey}	retros.surveys.destroy	App\Http\Controllers\Retros\SurveysController@destroy	components/retro/survey-menu.tsx
+PUT	retros/{retro}/surveys/{survey}/closure	retros.surveys.closure.update	App\Http\Controllers\Retros\SurveyClosuresController@update	components/retro/survey-menu.tsx
+DELETE	retros/{retro}/surveys/{survey}/closure	retros.surveys.closure.destroy	App\Http\Controllers\Retros\SurveyClosuresController@destroy	components/retro/survey-menu.tsx
+POST	retros/{retro}/surveys/{survey}/comments	retros.surveys.comments.store	App\Http\Controllers\Retros\SurveyCommentsController@store	components/retro/survey-discussion.tsx
+PUT	retros/{retro}/surveys/{survey}/reactions	retros.surveys.reactions.update	App\Http\Controllers\Retros\SurveyReactionsController@update	components/retro/survey-discussion.tsx
+DELETE	retros/{retro}/surveys/{survey}/reactions	retros.surveys.reactions.destroy	App\Http\Controllers\Retros\SurveyReactionsController@destroy	components/retro/survey-discussion.tsx
+PUT	retros/{retro}/surveys/{survey}/response	retros.surveys.response.update	App\Http\Controllers\Retros\SurveyResponsesController@update	components/retro/survey-card.tsx
+DELETE	retros/{retro}/surveys/{survey}/response	retros.surveys.response.destroy	App\Http\Controllers\Retros\SurveyResponsesController@destroy	components/retro/survey-card.tsx
+PUT	retros/{retro}/timer	retros.timer.update	App\Http\Controllers\Retros\RetroTimersController@update	components/retro/timer-control.tsx
+GET|HEAD	sanctum/csrf-cookie	sanctum.csrf-cookie	Laravel\Sanctum\Http\Controllers\CsrfCookieController@show	
+GET|HEAD|POST|PUT|PATCH|DELETE|OPTIONS	settings		Illuminate\Routing\RedirectController	
+GET|HEAD	settings/api-tokens	apiTokens.index	App\Http\Controllers\Settings\ApiTokensController@index	layouts/settings/layout.tsx (routes)
+POST	settings/api-tokens	apiTokens.store	App\Http\Controllers\Settings\ApiTokensController@store	components/settings/create-token-dialog.tsx
+DELETE	settings/api-tokens/{token}	apiTokens.destroy	App\Http\Controllers\Settings\ApiTokensController@destroy	components/settings/revoke-token-dialog.tsx
+GET|HEAD	settings/appearance	appearance.edit	Inertia\Controller	layouts/settings/layout.tsx (routes), pages/settings/appearance.tsx (routes)
+GET|HEAD	settings/notifications	notificationPreferences.edit	App\Http\Controllers\Settings\NotificationPreferencesController@edit	layouts/settings/layout.tsx (routes), pages/settings/notifications.tsx (routes)
+PATCH	settings/notifications	notificationPreferences.update	App\Http\Controllers\Settings\NotificationPreferencesController@update	pages/settings/notifications.tsx
+PUT	settings/password	user-password.update	App\Http\Controllers\Settings\SecurityController@update	pages/settings/security.tsx
+GET|HEAD	settings/profile	profile.edit	App\Http\Controllers\Settings\ProfileController@edit	components/user-menu-content.tsx (routes), layouts/settings/layout.tsx (routes), pages/settings/profile.tsx (routes)
+PATCH	settings/profile	profile.update	App\Http\Controllers\Settings\ProfileController@update	pages/settings/profile.tsx
+DELETE	settings/profile	profile.destroy	App\Http\Controllers\Settings\ProfileController@destroy	components/delete-user.tsx
+GET|HEAD	settings/security	security.edit	App\Http\Controllers\Settings\SecurityController@edit	layouts/settings/layout.tsx (routes), pages/settings/security.tsx (routes)
+GET|HEAD	storage/{path}	storage.local	Closure	
+PUT	storage/{path}	storage.local.upload	Closure	
+GET|HEAD	two-factor-challenge	two-factor.login	Laravel\Fortify\Http\Controllers\TwoFactorAuthenticatedSessionController@create	
+POST	two-factor-challenge	two-factor.login.store	Laravel\Fortify\Http\Controllers\TwoFactorAuthenticatedSessionController@store	pages/auth/two-factor-challenge.tsx (routes)
+GET|HEAD	up		Closure	
+GET|HEAD	user/confirm-password	password.confirm	Laravel\Fortify\Http\Controllers\ConfirmablePasswordController@show	
+POST	user/confirm-password	password.confirm.store	Laravel\Fortify\Http\Controllers\ConfirmablePasswordController@store	pages/auth/confirm-password.tsx (routes)
+GET|HEAD	user/confirmed-password-status	password.confirmation	Laravel\Fortify\Http\Controllers\ConfirmedPasswordStatusController@show	
+POST	user/confirmed-two-factor-authentication	two-factor.confirm	Laravel\Fortify\Http\Controllers\ConfirmedTwoFactorAuthenticationController@store	components/two-factor-setup-modal.tsx (routes)
+POST	user/passkeys	passkey.store	Laravel\Passkeys\Http\Controllers\PasskeyRegistrationController@store	
+GET|HEAD	user/passkeys/options	passkey.registration-options	Laravel\Passkeys\Http\Controllers\PasskeyRegistrationController@index	
+DELETE	user/passkeys/{passkey}	passkey.destroy	Laravel\Passkeys\Http\Controllers\PasskeyRegistrationController@destroy	components/manage-passkeys.tsx
+POST	user/two-factor-authentication	two-factor.enable	Laravel\Fortify\Http\Controllers\TwoFactorAuthenticationController@store	components/manage-two-factor.tsx (routes)
+DELETE	user/two-factor-authentication	two-factor.disable	Laravel\Fortify\Http\Controllers\TwoFactorAuthenticationController@destroy	components/manage-two-factor.tsx (routes)
+GET|HEAD	user/two-factor-qr-code	two-factor.qr-code	Laravel\Fortify\Http\Controllers\TwoFactorQrCodeController@show	hooks/use-two-factor-auth.ts (routes)
+GET|HEAD	user/two-factor-recovery-codes	two-factor.recovery-codes	Laravel\Fortify\Http\Controllers\RecoveryCodeController@index	hooks/use-two-factor-auth.ts (routes)
+POST	user/two-factor-recovery-codes	two-factor.regenerate-recovery-codes	Laravel\Fortify\Http\Controllers\RecoveryCodeController@store	components/two-factor-recovery-codes.tsx (routes)
+GET|HEAD	user/two-factor-secret-key	two-factor.secret-key	Laravel\Fortify\Http\Controllers\TwoFactorSecretKeyController@show	hooks/use-two-factor-auth.ts (routes)
+GET|HEAD	w/{workspace}	workspaces.show	App\Http\Controllers\WorkspacesController@show	components/app-sidebar.tsx, components/workspace-switcher.tsx
+DELETE	w/{workspace}	workspaces.destroy	App\Http\Controllers\WorkspacesController@destroy	pages/workspaces/members.tsx
+PATCH	w/{workspace}/action-item-comments/{actionItemComment}	workspaces.actionItemComments.update	App\Http\Controllers\WorkspaceActionItemCommentsController@update	lib/action-items/endpoints.ts
+DELETE	w/{workspace}/action-item-comments/{actionItemComment}	workspaces.actionItemComments.destroy	App\Http\Controllers\WorkspaceActionItemCommentsController@destroy	lib/action-items/endpoints.ts
+PATCH	w/{workspace}/action-item-subtasks/{actionItemSubtask}	workspaces.actionItemSubtasks.update	App\Http\Controllers\WorkspaceActionItemSubtasksController@update	lib/action-items/endpoints.ts
+DELETE	w/{workspace}/action-item-subtasks/{actionItemSubtask}	workspaces.actionItemSubtasks.destroy	App\Http\Controllers\WorkspaceActionItemSubtasksController@destroy	lib/action-items/endpoints.ts
+GET|HEAD	w/{workspace}/action-items	workspaces.actionItems.index	App\Http\Controllers\WorkspaceActionItemsController@index	components/app-sidebar.tsx, pages/action-items/index.tsx, pages/teams/show.tsx
+POST	w/{workspace}/action-items	workspaces.actionItems.store	App\Http\Controllers\WorkspaceActionItemsController@store	pages/action-items/index.tsx
+PATCH	w/{workspace}/action-items/{actionItem}	workspaces.actionItems.update	App\Http\Controllers\WorkspaceActionItemsController@update	lib/action-items/endpoints.ts
+DELETE	w/{workspace}/action-items/{actionItem}	workspaces.actionItems.destroy	App\Http\Controllers\WorkspaceActionItemsController@destroy	lib/action-items/endpoints.ts
+GET|HEAD	w/{workspace}/action-items/{actionItem}/comments	workspaces.actionItemComments.index	App\Http\Controllers\WorkspaceActionItemCommentsController@index	lib/action-items/endpoints.ts
+POST	w/{workspace}/action-items/{actionItem}/comments	workspaces.actionItemComments.store	App\Http\Controllers\WorkspaceActionItemCommentsController@store	lib/action-items/endpoints.ts
+POST	w/{workspace}/action-items/{actionItem}/exports	workspaces.actionItemExports.store	App\Http\Controllers\Integrations\WorkspaceActionItemExportsController@store	lib/action-items/endpoints.ts
+GET|HEAD	w/{workspace}/action-items/{actionItem}/exports/preview	workspaces.actionItemExports.preview	App\Http\Controllers\Integrations\WorkspaceActionItemExportPreviewsController@show	lib/action-items/endpoints.ts
+POST	w/{workspace}/action-items/{actionItem}/external-links/{externalLink}/sync	workspaces.actionItemLinkSyncs.store	App\Http\Controllers\Integrations\WorkspaceActionItemLinkSyncsController@store	lib/action-items/endpoints.ts
+POST	w/{workspace}/action-items/{actionItem}/subtasks	workspaces.actionItemSubtasks.store	App\Http\Controllers\WorkspaceActionItemSubtasksController@store	lib/action-items/endpoints.ts
+POST	w/{workspace}/invitations	workspaces.invitations.store	App\Http\Controllers\WorkspaceInvitationsController@store	pages/workspaces/members.tsx
+DELETE	w/{workspace}/invitations/{invitation}	workspaces.invitations.destroy	App\Http\Controllers\WorkspaceInvitationsController@destroy	pages/workspaces/members.tsx
+GET|HEAD	w/{workspace}/members	workspaces.members.index	App\Http\Controllers\WorkspaceMembersController@index	components/app-sidebar.tsx
+PATCH	w/{workspace}/members/{member}	workspaces.members.update	App\Http\Controllers\WorkspaceMembersController@update	pages/workspaces/members.tsx
+DELETE	w/{workspace}/members/{member}	workspaces.members.destroy	App\Http\Controllers\WorkspaceMembersController@destroy	pages/workspaces/members.tsx, pages/workspaces/show.tsx
+POST	w/{workspace}/teams	teams.store	App\Http\Controllers\TeamsController@store	pages/workspaces/show.tsx
+GET|HEAD	w/{workspace}/teams/{team}	teams.show	App\Http\Controllers\TeamsController@show	pages/games/index.tsx, pages/poker/estimates.tsx, pages/teams/integrations.tsx, pages/workspaces/show.tsx
+PATCH	w/{workspace}/teams/{team}	teams.update	App\Http\Controllers\TeamsController@update	pages/teams/show.tsx
+DELETE	w/{workspace}/teams/{team}	teams.destroy	App\Http\Controllers\TeamsController@destroy	pages/teams/show.tsx
+GET|HEAD	w/{workspace}/teams/{team}/estimates	teams.estimates.index	App\Http\Controllers\TeamEstimatesController@index	components/teams/poker-games-section.tsx, pages/poker/estimates.tsx
+GET|HEAD	w/{workspace}/teams/{team}/games	teams.games.index	App\Http\Controllers\TeamGameRoomsController@index	pages/teams/show.tsx
+POST	w/{workspace}/teams/{team}/games	teams.games.store	App\Http\Controllers\TeamGameRoomsController@store	components/games/new-room-dialog.tsx
+PUT	w/{workspace}/teams/{team}/health-statement-order	teams.healthStatements.order.update	App\Http\Controllers\TeamHealthStatementOrdersController@update	components/teams/health-statements-section.tsx
+POST	w/{workspace}/teams/{team}/health-statements	teams.healthStatements.store	App\Http\Controllers\TeamHealthStatementsController@store	components/teams/health-statements-section.tsx
+PATCH	w/{workspace}/teams/{team}/health-statements/{statement}	teams.healthStatements.update	App\Http\Controllers\TeamHealthStatementsController@update	components/teams/health-statements-section.tsx
+PUT	w/{workspace}/teams/{team}/health-statements/{statement}/archival	teams.healthStatements.archival.update	App\Http\Controllers\TeamHealthStatementArchivalsController@update	components/teams/health-statements-section.tsx
+DELETE	w/{workspace}/teams/{team}/health-statements/{statement}/archival	teams.healthStatements.archival.destroy	App\Http\Controllers\TeamHealthStatementArchivalsController@destroy	components/teams/health-statements-section.tsx
+GET|HEAD	w/{workspace}/teams/{team}/integrations	teams.integrations.index	App\Http\Controllers\Integrations\TeamIntegrationsController@index	components/action-items/export-action-item-dialog.tsx, pages/teams/show.tsx
+POST	w/{workspace}/teams/{team}/integrations/jira-dc/token	teams.integrations.jiraDataCenterToken.store	App\Http\Controllers\Integrations\JiraDataCenterTokensController@store	components/integrations/jira-token-dialog.tsx
+POST	w/{workspace}/teams/{team}/integrations/telegram/code	teams.integrations.telegramCode.store	App\Http\Controllers\Integrations\TelegramConnectCodesController@store	components/integrations/telegram-integration.tsx
+PATCH	w/{workspace}/teams/{team}/integrations/{integration}	teams.integrations.update	App\Http\Controllers\Integrations\TeamIntegrationsController@update	components/integrations/github-priority-labels.tsx, components/integrations/jira-integration.tsx, components/integrations/priorities-panel.tsx, components/integrations/status-mapping-panel.tsx, components/integrations/status-sync-section.tsx, components/integrations/story-points-field.tsx, components/integrations/url-channel-integration.tsx, components/integrations/webhook-events-panel.tsx, components/integrations/webhook-integration.tsx
+DELETE	w/{workspace}/teams/{team}/integrations/{integration}	teams.integrations.destroy	App\Http\Controllers\Integrations\TeamIntegrationsController@destroy	components/integrations/disconnect-integration-dialog.tsx
+GET|HEAD	w/{workspace}/teams/{team}/integrations/{integration}/accounts	teams.integrations.accounts.index	App\Http\Controllers\Integrations\IntegrationAccountsController@index	components/integrations/account-picker-dialog.tsx
+GET|HEAD	w/{workspace}/teams/{team}/integrations/{integration}/deliveries	teams.integrations.deliveries.index	App\Http\Controllers\Integrations\WebhookDeliveriesController@index	components/integrations/webhook-deliveries-panel.tsx
+GET|HEAD	w/{workspace}/teams/{team}/integrations/{integration}/deliveries/{delivery}	teams.integrations.deliveries.show	App\Http\Controllers\Integrations\WebhookDeliveriesController@show	components/integrations/webhook-deliveries-panel.tsx
+POST	w/{workspace}/teams/{team}/integrations/{integration}/deliveries/{delivery}/redelivery	teams.integrations.deliveries.redelivery.store	App\Http\Controllers\Integrations\WebhookRedeliveriesController@store	components/integrations/webhook-deliveries-panel.tsx
+POST	w/{workspace}/teams/{team}/integrations/{integration}/detection	teams.integrations.detection.store	App\Http\Controllers\Integrations\JiraFieldDetectionsController@store	components/integrations/story-points-field.tsx
+GET|HEAD	w/{workspace}/teams/{team}/integrations/{integration}/priorities	teams.integrations.priorities.index	App\Http\Controllers\Integrations\IntegrationPrioritiesController@index	components/integrations/priorities-panel.tsx
+POST	w/{workspace}/teams/{team}/integrations/{integration}/secret	teams.integrations.secret.store	App\Http\Controllers\Integrations\WebhookSecretsController@store	components/integrations/webhook-secret.tsx
+GET|HEAD	w/{workspace}/teams/{team}/integrations/{integration}/statuses	teams.integrations.statuses.index	App\Http\Controllers\Integrations\IntegrationStatusesController@index	components/integrations/status-mapping-panel.tsx
+GET|HEAD	w/{workspace}/teams/{team}/integrations/{integration}/targets	teams.integrations.targets.index	App\Http\Controllers\Integrations\IntegrationTargetsController@index	components/action-items/export-action-item-dialog.tsx
+POST	w/{workspace}/teams/{team}/integrations/{integration}/test	teams.integrations.test.store	App\Http\Controllers\Integrations\IntegrationTestsController@store	components/integrations/integration-actions.tsx
+GET|HEAD	w/{workspace}/teams/{team}/integrations/{integration}/user-mappings	teams.integrations.userMappings.index	App\Http\Controllers\Integrations\IntegrationUserMappingsController@index	components/integrations/people-panel.tsx
+POST	w/{workspace}/teams/{team}/integrations/{integration}/user-mappings/match	teams.integrations.userMappings.match.store	App\Http\Controllers\Integrations\IntegrationUserMatchesController@store	components/integrations/people-panel.tsx
+PUT	w/{workspace}/teams/{team}/integrations/{integration}/user-mappings/{user}	teams.integrations.userMappings.update	App\Http\Controllers\Integrations\IntegrationUserMappingsController@update	components/integrations/people-panel.tsx
+DELETE	w/{workspace}/teams/{team}/integrations/{integration}/user-mappings/{user}	teams.integrations.userMappings.destroy	App\Http\Controllers\Integrations\IntegrationUserMappingsController@destroy	components/integrations/people-panel.tsx
+GET|HEAD	w/{workspace}/teams/{team}/integrations/{integration}/webhook	teams.integrations.trackerWebhook.show	App\Http\Controllers\Integrations\TrackerWebhooksController@show	components/integrations/jira-data-center-webhook-panel.tsx
+POST	w/{workspace}/teams/{team}/integrations/{integration}/webhook	teams.integrations.trackerWebhook.store	App\Http\Controllers\Integrations\TrackerWebhooksController@store	components/integrations/jira-data-center-webhook-panel.tsx
+POST	w/{workspace}/teams/{team}/integrations/{provider}	teams.integrations.urls.store	App\Http\Controllers\Integrations\IntegrationUrlsController@store	components/integrations/url-channel-integration.tsx, components/integrations/webhook-integration.tsx
+GET|HEAD	w/{workspace}/teams/{team}/integrations/{provider}/connect	teams.integrations.connect	App\Http\Controllers\Integrations\IntegrationAuthorizationsController@create	components/integrations/integration-actions.tsx
+POST	w/{workspace}/teams/{team}/members	teams.members.store	App\Http\Controllers\TeamMembersController@store	pages/teams/show.tsx
+DELETE	w/{workspace}/teams/{team}/members/{member}	teams.members.destroy	App\Http\Controllers\TeamMembersController@destroy	pages/teams/show.tsx
+POST	w/{workspace}/teams/{team}/poker-decks	teams.pokerDecks.store	App\Http\Controllers\PokerDecksController@store	components/teams/saved-decks-dialog.tsx
+PATCH	w/{workspace}/teams/{team}/poker-decks/{pokerDeck}	teams.pokerDecks.update	App\Http\Controllers\PokerDecksController@update	components/teams/saved-decks-dialog.tsx
+DELETE	w/{workspace}/teams/{team}/poker-decks/{pokerDeck}	teams.pokerDecks.destroy	App\Http\Controllers\PokerDecksController@destroy	components/teams/saved-decks-dialog.tsx
+POST	w/{workspace}/teams/{team}/poker-games	teams.pokerGames.store	App\Http\Controllers\TeamPokerGamesController@store	components/teams/new-poker-game-dialog.tsx
+POST	w/{workspace}/teams/{team}/retros	teams.retros.store	App\Http\Controllers\TeamRetrosController@store	components/teams/new-retro-dialog.tsx
+POST	w/{workspace}/teams/{team}/whiteboards	teams.whiteboards.store	App\Http\Controllers\TeamWhiteboardsController@store	components/teams/new-whiteboard-dialog.tsx
+GET|HEAD	w/{workspace}/templates	workspaces.templates.index	App\Http\Controllers\WorkspaceTemplatesController@index	components/app-sidebar.tsx
+POST	w/{workspace}/templates	workspaces.templates.store	App\Http\Controllers\WorkspaceTemplatesController@store	pages/workspaces/templates.tsx
+PATCH	w/{workspace}/templates/{template}	workspaces.templates.update	App\Http\Controllers\WorkspaceTemplatesController@update	pages/workspaces/templates.tsx
+DELETE	w/{workspace}/templates/{template}	workspaces.templates.destroy	App\Http\Controllers\WorkspaceTemplatesController@destroy	pages/workspaces/templates.tsx
+PATCH	w/{workspace}/whiteboard-templates/{whiteboardTemplate}	workspaces.whiteboardTemplates.update	App\Http\Controllers\WorkspaceWhiteboardTemplatesController@update	components/teams/whiteboard-templates-dialog.tsx
+DELETE	w/{workspace}/whiteboard-templates/{whiteboardTemplate}	workspaces.whiteboardTemplates.destroy	App\Http\Controllers\WorkspaceWhiteboardTemplatesController@destroy	components/teams/whiteboard-templates-dialog.tsx
+GET|HEAD	whiteboards/join/{guestToken}	whiteboards.join.show	App\Http\Controllers\WhiteboardJoinsController@show	
+POST	whiteboards/join/{guestToken}	whiteboards.join.store	App\Http\Controllers\WhiteboardJoinsController@store	pages/whiteboards/join.tsx
+GET|HEAD	whiteboards/{board}	whiteboards.show	App\Http\Controllers\Whiteboards\WhiteboardsController@show	components/teams/whiteboards-section.tsx
+DELETE	whiteboards/{board}	whiteboards.destroy	App\Http\Controllers\Whiteboards\WhiteboardsController@destroy	components/teams/whiteboards-section.tsx, components/whiteboard/board-menu.tsx
+POST	whiteboards/{board}/duplicate	whiteboards.duplicate.store	App\Http\Controllers\Whiteboards\WhiteboardDuplicatesController@store	components/whiteboard/board-menu.tsx
+GET|HEAD	whiteboards/{board}/elements	whiteboards.elements.index	App\Http\Controllers\Whiteboards\WhiteboardElementsController@index	lib/whiteboard/scene-sync.ts
+PUT	whiteboards/{board}/elements	whiteboards.elements.update	App\Http\Controllers\Whiteboards\WhiteboardElementsController@update	lib/whiteboard/scene-sync.ts
+PUT	whiteboards/{board}/facilitator	whiteboards.facilitator.update	App\Http\Controllers\Whiteboards\WhiteboardFacilitatorsController@update	components/whiteboard/board-menu.tsx, components/whiteboard/hand-over-dialog.tsx
+POST	whiteboards/{board}/files	whiteboards.files.store	App\Http\Controllers\Whiteboards\WhiteboardFilesController@store	lib/whiteboard/files.ts
+GET|HEAD	whiteboards/{board}/files/{fileId}	whiteboards.files.show	App\Http\Controllers\Whiteboards\WhiteboardFilesController@show	lib/whiteboard/files.ts
+POST	whiteboards/{board}/guest-token	whiteboards.guestToken.store	App\Http\Controllers\Whiteboards\WhiteboardGuestTokensController@store	components/whiteboard/board-menu.tsx
+PATCH	whiteboards/{board}/settings	whiteboards.settings.update	App\Http\Controllers\Whiteboards\WhiteboardSettingsController@update	components/whiteboard/board-menu.tsx, components/whiteboard/facilitator-bar.tsx
+GET|HEAD	whiteboards/{board}/snapshot	whiteboards.snapshot.show	App\Http\Controllers\Whiteboards\WhiteboardSnapshotsController@show	hooks/use-whiteboard.ts, lib/whiteboard/scene-sync.ts
+POST	whiteboards/{board}/template	whiteboards.template.store	App\Http\Controllers\Whiteboards\WhiteboardTemplatesController@store	components/whiteboard/save-template-dialog.tsx
+PUT	whiteboards/{board}/timer	whiteboards.timer.update	App\Http\Controllers\Whiteboards\WhiteboardTimersController@update	components/whiteboard/facilitator-bar.tsx
+POST	workspaces	workspaces.store	App\Http\Controllers\WorkspacesController@store	pages/workspaces/create.tsx
+GET|HEAD	workspaces/create	workspaces.create	App\Http\Controllers\WorkspacesController@create	components/workspace-switcher.tsx
