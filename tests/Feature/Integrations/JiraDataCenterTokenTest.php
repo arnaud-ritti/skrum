@@ -227,3 +227,22 @@ it('saves nothing when checking the token times out or the server fails', functi
     'timeout' => [fn () => Http::failedConnection('cURL error 28: Operation timed out')],
     'server error' => [fn () => Http::response(['message' => 'Internal error'], 500)],
 ]);
+
+it('keeps the webhook URL token and signing secret when replacing the token', function () {
+    fakeJiraDataCenterTokenCheck();
+    $team = Team::factory()->create();
+    $existing = TeamIntegration::factory()->jiraDataCenter(IntegrationAccess::Write, 'pat')->create(['team_id' => $team->id]);
+    $existing->forceFill(['credentials' => [
+        ...(array) $existing->readableCredentials(),
+        'webhookToken' => 'kept-webhook-token',
+        'webhookSecret' => 'kept-webhook-secret',
+    ]])->save();
+
+    postJiraDataCenterToken(integrationAdmin($team), $team)->assertSuccessful();
+
+    $integration = $existing->fresh();
+
+    expect($integration?->credential('personalAccessToken'))->toBe(JiraDataCenterPastedToken)
+        ->and($integration?->credential('webhookToken'))->toBe('kept-webhook-token')
+        ->and($integration?->credential('webhookSecret'))->toBe('kept-webhook-secret');
+});

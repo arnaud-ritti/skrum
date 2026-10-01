@@ -234,3 +234,22 @@ it('never refreshes a token against another Jira server than the configured one'
         ->and($integration->fresh()?->last_error)->toBe('skrum is now configured for another Jira server. Reconnect.');
     Http::assertNothingSent();
 });
+
+it('keeps the webhook URL token and signing secret when reconnecting with OAuth', function () {
+    fakeJiraDataCenterOAuth();
+    $team = Team::factory()->create();
+    $existing = TeamIntegration::factory()->jiraDataCenter()->create(['team_id' => $team->id]);
+    $existing->forceFill(['credentials' => [
+        ...(array) $existing->readableCredentials(),
+        'webhookToken' => 'kept-webhook-token',
+        'webhookSecret' => 'kept-webhook-secret',
+    ]])->save();
+
+    jiraDataCenterCallback(integrationAdmin($team), $team)->assertRedirect();
+
+    $integration = $existing->fresh();
+
+    expect($integration?->credential('access_token'))->toBe('jira-dc-access-new')
+        ->and($integration?->credential('webhookToken'))->toBe('kept-webhook-token')
+        ->and($integration?->credential('webhookSecret'))->toBe('kept-webhook-secret');
+});
