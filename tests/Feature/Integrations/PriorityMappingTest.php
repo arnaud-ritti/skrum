@@ -124,3 +124,19 @@ it('shows the mapping on the integrations page', function () {
             ->where('providers.2.provider', 'linear')
             ->where('providers.2.connection.settings.priorityMap', ['high' => 1]));
 });
+
+it('keeps settings written while the priorities were being read', function () {
+    $integration = TeamIntegration::factory()->jira()->create();
+    Http::fake([jiraApiUrl('rest/api/3/priority/search*') => function () use ($integration) {
+        TeamIntegration::query()->findOrFail($integration->id)->mergeSettings(['webhookIds' => ['7001']]);
+
+        return Http::response(['values' => [['id' => '1', 'name' => 'Highest']]]);
+    }]);
+
+    $this->actingAs(integrationAdmin($integration->team))
+        ->patchJson(route('teams.integrations.update', priorityRoute($integration)), ['priority_map' => ['high' => '1']])
+        ->assertOk()
+        ->assertJsonPath('settings.priorityMap.high', ['id' => '1', 'name' => 'Highest']);
+
+    expect($integration->fresh()->setting('webhookIds'))->toBe(['7001']);
+});

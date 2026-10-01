@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\Integrations\ListPokerSources;
+use App\Actions\Integrations\ToggleStatusSync;
 use App\Enums\IntegrationInboundMode;
 use App\Enums\IntegrationProvider;
 use App\Enums\IntegrationStatus;
@@ -319,4 +320,18 @@ it('presents no status mapping for GitHub', function () {
         ->assertOk()
         ->assertJsonPath('settings.treatCanceledAsDone', true)
         ->assertJsonMissingPath('settings.statusMapping');
+});
+
+it('removes the webhooks registered since the connection was loaded when sync is turned off', function () {
+    $integration = syncSettingsIntegration(
+        settings: ['statusSync' => true, 'webhookIds' => ['7001']],
+        attributes: ['inbound_mode' => IntegrationInboundMode::Webhook, 'webhook_status' => IntegrationWebhookStatus::Pending],
+    );
+    TeamIntegration::query()->findOrFail($integration->id)->mergeSettings(['webhookIds' => ['7002']]);
+
+    app(ToggleStatusSync::class)->handle($integration, false);
+
+    expect($integration->fresh()->setting('webhookIds'))->toBe([])
+        ->and($integration->fresh()->inbound_mode)->toBe(IntegrationInboundMode::Off);
+    Queue::assertPushed(RemoveTrackerWebhooks::class, fn (RemoveTrackerWebhooks $job) => $job->webhookIds === ['7002']);
 });

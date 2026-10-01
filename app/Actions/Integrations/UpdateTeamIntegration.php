@@ -78,10 +78,7 @@ class UpdateTeamIntegration
         }
 
         if (is_string($validated['story_point_field_id'] ?? null)) {
-            $integration->forceFill(['settings' => [
-                ...$integration->settings,
-                'storyPointFieldOverride' => $validated['story_point_field_id'],
-            ]])->save();
+            $integration->mergeSettings(['storyPointFieldOverride' => $validated['story_point_field_id']]);
 
             $integration = $this->detectStoryPointFields->applyOverride($integration);
         }
@@ -101,7 +98,7 @@ class UpdateTeamIntegration
                 $labels[$level] = is_string($label) && trim($label) !== '' ? trim($label) : null;
             }
 
-            $integration->forceFill(['settings' => [...$integration->settings, 'priorityLabels' => $labels]])->save();
+            $integration->mergeSettings(['priorityLabels' => $labels]);
         }
 
         $integration = $this->updateStatusSyncSettings->handle($integration, $validated);
@@ -128,9 +125,7 @@ class UpdateTeamIntegration
                 : (int) $value;
         }
 
-        $integration->forceFill(['settings' => [...$integration->settings, 'priorityMap' => $map]])->save();
-
-        return $integration;
+        return $integration->mergeSettings(['priorityMap' => $map]);
     }
 
     /**

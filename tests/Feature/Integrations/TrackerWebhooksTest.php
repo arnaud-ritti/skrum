@@ -447,3 +447,38 @@ it('removes a webhook registered while sync was being turned off', function () {
     expect($integration->fresh()->setting('webhookIds', []))->toBe([]);
     Http::assertSent(fn (Request $request) => $request->method() === 'DELETE' && $request['webhookIds'] === [7001]);
 });
+
+it('marks a re-registered webhook pending until its first event', function () {
+    $integration = webhookIntegration(
+        settings: ['webhookIds' => ['7001'], 'webhookProjects' => ['PROJ']],
+        attributes: ['inbound_mode' => IntegrationInboundMode::Webhook, 'webhook_status' => IntegrationWebhookStatus::Active, 'webhook_expires_at' => now()->addDays(20)],
+    );
+    Http::fake([jiraApiUrl('rest/api/3/webhook') => fn (Request $request) => $request->method() === 'DELETE'
+        ? Http::response(null, 202)
+        : Http::response(['webhookRegistrationResult' => [['createdWebhookId' => 7002]]])]);
+
+    runWebhookRegistration($integration);
+
+    expect($integration->fresh()->setting('webhookIds'))->toBe(['7002'])
+        ->and($integration->fresh()->webhook_status)->toBe(IntegrationWebhookStatus::Pending);
+});
+
+it('stops treating a webhook as live when the Data Center account no longer administers Jira', function () {
+    $integration = webhookIntegration(
+        IntegrationProvider::JiraDataCenter,
+        ['webhookIds' => ['12'], 'webhookProjects' => ['PROJ']],
+        ['inbound_mode' => IntegrationInboundMode::Webhook, 'webhook_status' => IntegrationWebhookStatus::Active],
+    );
+    Http::fake([
+        jiraDataCenterUrl('rest/api/2/mypermissions*') => Http::response(['permissions' => ['ADMINISTER' => ['havePermission' => false]]]),
+        jiraDataCenterUrl('rest/webhooks/1.0/webhook/12') => Http::response(null, 204),
+    ]);
+
+    runWebhookRegistration($integration);
+
+    $integration->refresh();
+    expect($integration->setting('webhookManual'))->toBeTrue()
+        ->and($integration->webhook_status)->toBeNull()
+        ->and($integration->inbound_mode)->toBe(IntegrationInboundMode::Polling)
+        ->and(app(TrackerWebhooks::class)->isManuallyRegistered($integration))->toBeFalse();
+});

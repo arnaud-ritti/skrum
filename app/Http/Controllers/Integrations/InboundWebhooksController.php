@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Integrations;
 
 use App\Actions\Integrations\TrackedIssues;
 use App\Enums\InboundEventStatus;
+use App\Enums\IntegrationInboundMode;
 use App\Enums\IntegrationProvider;
 use App\Enums\IntegrationStatus;
 use App\Enums\IntegrationWebhookStatus;
@@ -71,7 +72,14 @@ class InboundWebhooksController extends Controller
         $this->markHeard($event);
 
         if ($event->installationRemoved !== null) {
-            $removal = $this->confirmedRemoval($event);
+            try {
+                $removal = $this->confirmedRemoval($event);
+            } catch (IntegrationException $exception) {
+                report($exception);
+                $row->delete();
+
+                return response()->json(['message' => $exception->userMessage()], 503);
+            }
 
             if ($removal !== null) {
                 $this->removeInstallation($event, $removal);
@@ -129,16 +137,21 @@ class InboundWebhooksController extends Controller
         foreach ($event->integrations as $integration) {
             $integration->forceFill([
                 'last_inbound_at' => now(),
-                'webhook_status' => $integration->webhook_status === null ? null : IntegrationWebhookStatus::Active,
+                'webhook_status' => $integration->webhook_status === null && $integration->inbound_mode !== IntegrationInboundMode::Webhook
+                    ? null
+                    : IntegrationWebhookStatus::Active,
             ])->save();
         }
     }
 
     /**
      * Installation events are hints too: only what GitHub reports now counts,
-     * so a replayed or stale removal changes nothing.
+     * so a replayed or stale removal changes nothing. When GitHub cannot be
+     * asked, the event is forgotten so its redelivery is processed.
      *
      * @return 'deleted'|'suspend'|null
+     *
+     * @throws IntegrationException
      */
     private function confirmedRemoval(InboundEvent $event): ?string
     {
@@ -146,13 +159,7 @@ class InboundWebhooksController extends Controller
             return null;
         }
 
-        try {
-            return $this->gitHub->installationRemoval($event->installationId);
-        } catch (IntegrationException $exception) {
-            report($exception);
-
-            return null;
-        }
+        return $this->gitHub->installationRemoval($event->installationId);
     }
 
     /**

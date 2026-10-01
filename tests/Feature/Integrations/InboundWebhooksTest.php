@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\InboundEventStatus;
+use App\Enums\IntegrationInboundMode;
 use App\Enums\IntegrationProvider;
 use App\Enums\IntegrationStatus;
 use App\Enums\IntegrationWebhookStatus;
@@ -408,4 +409,32 @@ it('reads nothing for connections whose sync was turned off meanwhile', function
 
     Http::assertNothingSent();
     expect($event->fresh()->status)->toBe(InboundEventStatus::Ignored);
+});
+
+it('processes a redelivered installation event when GitHub could not confirm it the first time', function () {
+    $integration = TeamIntegration::factory()->gitHub()->create();
+    Http::fake(['api.github.com/app/installations/4242' => Http::sequence()
+        ->push(['message' => 'Server Error'], 500)
+        ->push(['id' => 4242, 'suspended_at' => '2026-10-07T10:29:00Z'])]);
+    [$body, $headers] = signedGitHubWebhook('installation', ['action' => 'suspend']);
+    $url = route('integrations.webhooks.store', ['source' => 'github']);
+
+    postInboundWebhook($url, $body, $headers)->assertStatus(503);
+
+    expect(IntegrationInboundEvent::query()->count())->toBe(0)
+        ->and($integration->fresh()->status)->toBe(IntegrationStatus::Active);
+
+    postInboundWebhook($url, $body, $headers)->assertStatus(202);
+
+    expect($integration->fresh()->status)->toBe(IntegrationStatus::ReconnectRequired);
+});
+
+it('marks webhooks of a connection listening to them active when an event arrives', function () {
+    $integration = withStatusSync(TeamIntegration::factory()->linear()->create());
+    $integration->forceFill(['inbound_mode' => IntegrationInboundMode::Webhook, 'webhook_status' => null])->save();
+    [$body, $headers] = signedLinearWebhook();
+
+    postInboundWebhook(route('integrations.webhooks.store', ['source' => 'linear']), $body, $headers)->assertStatus(202);
+
+    expect($integration->fresh()->webhook_status)->toBe(IntegrationWebhookStatus::Active);
 });

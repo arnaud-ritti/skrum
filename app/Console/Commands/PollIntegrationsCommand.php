@@ -36,37 +36,41 @@ class PollIntegrationsCommand extends Command
             }
         });
 
-        TeamIntegration::query()
-            ->where('status', IntegrationStatus::Active->value)
-            ->whereIn('provider', $trackers)
-            ->where('settings->statusSync', true)
-            ->lazyById()
-            ->each(function (TeamIntegration $integration) use ($inboundModes, $trackerWebhooks, &$queued, &$skipped): void {
-                $previousMode = $integration->inbound_mode;
-                $inboundModes->refresh($integration);
+        try {
+            TeamIntegration::query()
+                ->where('status', IntegrationStatus::Active->value)
+                ->whereIn('provider', $trackers)
+                ->where('settings->statusSync', true)
+                ->lazyById()
+                ->each(function (TeamIntegration $integration) use ($inboundModes, $trackerWebhooks, &$queued, &$skipped): void {
+                    $previousMode = $integration->inbound_mode;
+                    $inboundModes->refresh($integration);
 
-                if ($previousMode !== IntegrationInboundMode::Webhook && $integration->inbound_mode === IntegrationInboundMode::Webhook) {
-                    $trackerWebhooks->registerIfNeeded($integration);
-                }
+                    if ($previousMode !== IntegrationInboundMode::Webhook && $integration->inbound_mode === IntegrationInboundMode::Webhook) {
+                        $trackerWebhooks->registerIfNeeded($integration);
+                    }
 
-                $initialReadPending = StatusSync::initialReadPending($integration);
+                    $initialReadPending = StatusSync::initialReadPending($integration);
 
-                $isWaiting = $initialReadPending
-                    ? IntegrationPolls::isPaused($integration->id)
-                    : ! IntegrationPolls::isDue($integration);
+                    $isWaiting = $initialReadPending
+                        ? IntegrationPolls::isPaused($integration->id)
+                        : ! IntegrationPolls::isDue($integration);
 
-                if ($isWaiting) {
-                    return;
-                }
+                    if ($isWaiting) {
+                        return;
+                    }
 
-                $this->info("Queueing a read of {$integration->provider->label()} integration `{$integration->id}`…");
-                $skippedBefore = $skipped;
-                ReadTrackedIssues::dispatch($integration->id, $initialReadPending, $initialReadPending);
+                    $this->info("Queueing a read of {$integration->provider->label()} integration `{$integration->id}`…");
+                    $skippedBefore = $skipped;
+                    ReadTrackedIssues::dispatch($integration->id, $initialReadPending, $initialReadPending);
 
-                if ($skipped === $skippedBefore) {
-                    $queued++;
-                }
-            });
+                    if ($skipped === $skippedBefore) {
+                        $queued++;
+                    }
+                });
+        } finally {
+            Event::forget(UniqueJobSkipped::class);
+        }
 
         $this->comment("Queued {$queued} integration reads.");
 

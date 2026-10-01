@@ -133,16 +133,23 @@ class ReadTrackedIssues implements ShouldBeUnique, ShouldQueue
     }
 
     /**
-     * A first read that gave up is owed to a later poll, after a backoff,
-     * so a source that keeps failing is not read every minute.
+     * A read that gave up waits before the poll queues it again: a first
+     * read (still owed) after a backoff, any other read for a polling
+     * interval, so a source that keeps failing is not read every minute.
      */
     public function failed(?Throwable $exception): void
     {
-        if (! $this->initial) {
+        if ($this->initial) {
+            IntegrationPolls::pause($this->integrationId, self::InitialReadBackoffMinutes * 60);
+
             return;
         }
 
-        IntegrationPolls::pause($this->integrationId, self::InitialReadBackoffMinutes * 60);
+        $integration = TeamIntegration::query()->find($this->integrationId);
+
+        if ($integration !== null) {
+            IntegrationPolls::pause($integration->id, IntegrationPolls::intervalMinutes($integration) * 60);
+        }
     }
 
     /**
@@ -196,7 +203,7 @@ class ReadTrackedIssues implements ShouldBeUnique, ShouldQueue
             return;
         }
 
-        $quietSince = $integration->last_inbound_at ?? StatusSync::webhookWatchedSince($integration);
+        $quietSince = collect([$integration->last_inbound_at, StatusSync::webhookWatchedSince($integration)])->filter()->max();
 
         if ($quietSince !== null && $quietSince->gt(now()->subHours(self::SilentWebhookHours))) {
             return;

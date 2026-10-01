@@ -50,6 +50,9 @@ class GitHubClient
 
     private const IdPattern = '/^\d{1,20}\z/';
 
+    /** GitHub gives up on a webhook delivery after 10 seconds. */
+    private const InstallationCheckTimeoutSeconds = 8;
+
     private const LoginPattern = '/^[A-Za-z0-9-]{1,39}\z/';
 
     private const RepositoryPattern = '/^[A-Za-z0-9._-]{1,100}\z/';
@@ -154,7 +157,7 @@ class GitHubClient
             return null;
         }
 
-        $response = $this->call('GET', "app/installations/{$installationId}", [], $this->jwt->token());
+        $response = $this->call('GET', "app/installations/{$installationId}", [], $this->jwt->token(), self::InstallationCheckTimeoutSeconds);
 
         if ($response->status() === 404) {
             return 'deleted';
@@ -449,16 +452,16 @@ class GitHubClient
     /**
      * @param  array<string, mixed>  $data
      */
-    private function call(string $method, string $path, array $data, #[SensitiveParameter] string $token): Response
+    private function call(string $method, string $path, array $data, #[SensitiveParameter] string $token, int $timeout = ProviderHttp::DefaultTimeoutSeconds): Response
     {
         $options = $method === 'GET' ? ['query' => $data] : ['json' => $data];
 
-        return ProviderHttp::send(self::Provider, fn () => $this->http()->withToken($token)->send($method, self::ApiUrl.ltrim($path, '/'), $options));
+        return ProviderHttp::send(self::Provider, fn () => $this->http($timeout)->withToken($token)->send($method, self::ApiUrl.ltrim($path, '/'), $options));
     }
 
-    private function http(): PendingRequest
+    private function http(int $timeout = ProviderHttp::DefaultTimeoutSeconds): PendingRequest
     {
-        return ProviderHttp::request()
+        return ProviderHttp::request($timeout)
             ->withoutRedirecting()
             ->withHeaders(['Accept' => 'application/vnd.github+json', 'X-GitHub-Api-Version' => self::ApiVersion]);
     }

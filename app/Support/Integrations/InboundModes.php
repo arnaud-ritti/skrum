@@ -56,6 +56,8 @@ class InboundModes
     /**
      * While this instance's address cannot be resolved the current mode is
      * kept, so a DNS hiccup does not flip every connection to polling.
+     * Linear and GitHub webhooks need no registration: never heard ones
+     * are pending from the switch until their first event.
      */
     public function refresh(TeamIntegration $integration): TeamIntegration
     {
@@ -65,9 +67,18 @@ class InboundModes
             return $integration;
         }
 
-        if ($integration->inbound_mode !== $mode) {
-            $integration->forceFill(['inbound_mode' => $mode])->save();
+        if ($integration->inbound_mode === $mode) {
+            return $integration;
         }
+
+        $startsListening = $mode === IntegrationInboundMode::Webhook
+            && $integration->webhook_status === null
+            && in_array($integration->provider, [IntegrationProvider::Linear, IntegrationProvider::GitHub], true);
+
+        $integration->forceFill([
+            'inbound_mode' => $mode,
+            ...($startsListening ? ['webhook_status' => IntegrationWebhookStatus::Pending] : []),
+        ])->save();
 
         return $integration;
     }

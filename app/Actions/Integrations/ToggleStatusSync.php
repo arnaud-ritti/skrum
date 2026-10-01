@@ -12,6 +12,7 @@ use App\Models\TeamIntegration;
 use App\Support\Integrations\InboundModes;
 use App\Support\Integrations\StatusSync;
 use App\Support\Integrations\TrackerWebhooks;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 /**
@@ -65,16 +66,27 @@ class ToggleStatusSync
         return $integration;
     }
 
+    /**
+     * The webhook ids are read and cleared under the row lock, so one a
+     * concurrent registration just stored is removed too.
+     */
     private function turnOff(TeamIntegration $integration): TeamIntegration
     {
-        $webhookIds = TrackerWebhooks::ids($integration);
+        $webhookIds = DB::transaction(function () use ($integration): array {
+            $locked = TeamIntegration::query()->whereKey($integration->id)->lockForUpdate()->firstOrFail();
+            $webhookIds = TrackerWebhooks::ids($locked);
 
-        $integration->mergeSettings(['statusSync' => false, 'webhookIds' => [], 'webhookProjects' => [], StatusSync::InitialReadPending => null]);
-        $integration->forceFill([
-            'inbound_mode' => IntegrationInboundMode::Off,
-            'webhook_status' => null,
-            'webhook_expires_at' => null,
-        ])->save();
+            $locked->forceFill([
+                'settings' => [...$locked->settings, 'statusSync' => false, 'webhookIds' => [], 'webhookProjects' => [], StatusSync::InitialReadPending => null],
+                'inbound_mode' => IntegrationInboundMode::Off,
+                'webhook_status' => null,
+                'webhook_expires_at' => null,
+            ])->save();
+
+            $integration->setRawAttributes($locked->getAttributes(), true);
+
+            return $webhookIds;
+        });
 
         if ($webhookIds !== []) {
             RemoveTrackerWebhooks::dispatch($integration->id, $webhookIds);

@@ -41,11 +41,10 @@ class DetectJiraStoryPointFields
 
         usort($ranked, fn (array $first, array $second): int => $first['rank'] <=> $second['rank']);
 
-        $integration->forceFill(['settings' => [
-            ...$integration->settings,
+        $integration->mergeSettings([
             'numberFields' => $numberFields,
             'storyPointFields' => array_column($ranked, 'field'),
-        ]])->save();
+        ]);
 
         return $this->applyOverride($integration);
     }
@@ -76,9 +75,7 @@ class DetectJiraStoryPointFields
             fn (mixed $field): bool => is_array($field) && ($field['id'] ?? null) !== $override['id'],
         ));
 
-        $integration->forceFill(['settings' => [...$integration->settings, 'storyPointFields' => [$override, ...$others]]])->save();
-
-        return $integration;
+        return $integration->mergeSettings(['storyPointFields' => [$override, ...$others]]);
     }
 
     /**

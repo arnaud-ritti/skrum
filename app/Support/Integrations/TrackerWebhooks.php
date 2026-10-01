@@ -185,6 +185,7 @@ class TrackerWebhooks
         if ($ids === null) {
             $this->recordRejection($integration);
             $integration->mergeSettings(['webhookManual' => true, 'webhookIds' => [], 'webhookProjects' => []]);
+            $integration->forceFill(['webhook_status' => null, 'webhook_expires_at' => null])->save();
             $this->inboundModes->refresh($integration);
             $this->removeOrRetryLater($integration, $previousIds);
 
@@ -403,11 +404,7 @@ class TrackerWebhooks
         }
 
         $integration->forceFill([
-            'webhook_status' => match (true) {
-                ! $registered => $integration->webhook_status,
-                $integration->webhook_status === IntegrationWebhookStatus::Active => IntegrationWebhookStatus::Active,
-                default => IntegrationWebhookStatus::Pending,
-            },
+            'webhook_status' => $registered ? IntegrationWebhookStatus::Pending : $integration->webhook_status,
             'webhook_expires_at' => $registered && $integration->provider === IntegrationProvider::Jira ? now()->addDays(self::LifetimeDays) : null,
         ])->save();
 

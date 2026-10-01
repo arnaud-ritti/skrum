@@ -14,6 +14,8 @@ use App\Support\Integrations\HostResolver;
 use App\Support\Integrations\IntegrationPolls;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Client\Request;
+use Illuminate\Queue\Events\UniqueJobSkipped;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
@@ -425,4 +427,56 @@ it('honours a long Retry-After on the first read', function () {
     $this->artisan('skrum:poll-integrations')->assertSuccessful();
 
     Queue::assertPushed(ReadTrackedIssues::class, fn (ReadTrackedIssues $job) => $job->full && $job->initial);
+});
+
+it('gives a freshly registered webhook its own day before flagging it', function () {
+    $integration = pollingIntegration([
+        'inbound_mode' => IntegrationInboundMode::Webhook,
+        'webhook_status' => IntegrationWebhookStatus::Pending,
+        'last_inbound_at' => '2026-10-05 09:00:00',
+        'poll_cursor' => '2026-10-07 09:30:00',
+    ], ['webhookRegisteredAt' => '2026-10-07T10:00:00+00:00']);
+    trackedJiraLink($integration, '10001');
+    fakeJiraTrackerApi([jiraTrackerIssue('10001', 'PROJ-1', ['updated' => '2026-10-07T10:20:00.000+0000', 'project' => ['key' => 'PROJ']])]);
+
+    runTrackedRead($integration);
+
+    expect($integration->fresh()->webhook_status)->toBe(IntegrationWebhookStatus::Pending);
+});
+
+it('waits a polling interval after an incremental read fails unexpectedly', function () {
+    $integration = pollingIntegration(['last_polled_at' => now()->subMinutes(10)]);
+
+    (new ReadTrackedIssues($integration->id))->failed(new RuntimeException('Worker lost'));
+
+    Queue::fake();
+    $this->travel(1)->minute();
+    $this->artisan('skrum:poll-integrations')->assertSuccessful();
+
+    Queue::assertNothingPushed();
+
+    $this->travel(5)->minutes();
+    $this->artisan('skrum:poll-integrations')->assertSuccessful();
+
+    Queue::assertPushed(ReadTrackedIssues::class, 1);
+});
+
+it('marks Linear webhooks pending when a polling connection switches to them', function () {
+    Queue::fake();
+    config(['services.integrations.inbound_webhooks' => 'on', 'services.linear.webhook_secret' => 'linear-webhook-secret']);
+    $integration = pollingIntegration(['last_polled_at' => now()], provider: IntegrationProvider::Linear);
+
+    $this->artisan('skrum:poll-integrations')->assertSuccessful();
+
+    expect($integration->fresh()->inbound_mode)->toBe(IntegrationInboundMode::Webhook)
+        ->and($integration->fresh()->webhook_status)->toBe(IntegrationWebhookStatus::Pending);
+});
+
+it('leaves no listener behind after a run', function () {
+    Queue::fake();
+    pollingIntegration(['last_polled_at' => null]);
+
+    $this->artisan('skrum:poll-integrations')->assertSuccessful();
+
+    expect(Event::hasListeners(UniqueJobSkipped::class))->toBeFalse();
 });

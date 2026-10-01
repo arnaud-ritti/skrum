@@ -15,6 +15,8 @@ use Illuminate\Support\Facades\Http;
 
 class ProviderHttp
 {
+    public const DefaultTimeoutSeconds = 15;
+
     private const ConnectTimeoutSeconds = 5;
 
     /**
@@ -22,7 +24,7 @@ class ProviderHttp
      */
     private const MessagePaths = ['errorMessages.0', 'message', 'error_description', 'error', 'description', 'errors.0.message'];
 
-    public static function request(int $timeout = 15): PendingRequest
+    public static function request(int $timeout = self::DefaultTimeoutSeconds): PendingRequest
     {
         return Http::timeout($timeout)
             ->connectTimeout(self::ConnectTimeoutSeconds)
