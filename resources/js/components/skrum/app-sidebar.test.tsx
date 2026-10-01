@@ -1,12 +1,12 @@
-import { render, screen, within } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
+import { renderWithProviders } from '@/test/render';
 import {
     AppSidebar,
     type AppSidebarProps,
 } from '@/components/skrum/app-sidebar';
 import { MobileTabBar } from '@/components/skrum/mobile-tab-bar';
 import { SidebarProvider } from '@/components/ui/sidebar';
-import { TooltipProvider } from '@/components/ui/tooltip';
 
 const base: AppSidebarProps = {
     team: { id: 't1', name: 'Atlas', initials: 'AT', membersCount: 8 },
@@ -28,12 +28,10 @@ const base: AppSidebarProps = {
 };
 
 function renderSidebar(props: Partial<AppSidebarProps> = {}) {
-    return render(
-        <TooltipProvider>
-            <SidebarProvider>
-                <AppSidebar {...base} {...props} />
-            </SidebarProvider>
-        </TooltipProvider>,
+    return renderWithProviders(
+        <SidebarProvider>
+            <AppSidebar {...base} {...props} />
+        </SidebarProvider>,
     );
 }
 
@@ -157,7 +155,9 @@ describe('AppSidebar', () => {
 
 describe('MobileTabBar', () => {
     it('shows the five tabs', () => {
-        render(<MobileTabBar links={base.links} onMore={() => {}} />);
+        renderWithProviders(
+            <MobileTabBar links={base.links} onMore={() => {}} />,
+        );
 
         expect(
             screen.getAllByRole('link').map((link) => link.textContent?.trim()),

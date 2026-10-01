@@ -1,7 +1,7 @@
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
+import { renderWithProviders } from '@/test/render';
 import type { AppSidebarProps } from '@/components/skrum/app-sidebar';
-import { TooltipProvider } from '@/components/ui/tooltip';
 import { AppTopbar } from '@/components/skrum/app-topbar';
 import {
     AppFrame,
@@ -23,19 +23,17 @@ const sidebar: AppSidebarProps = {
 
 describe('AppFrame', () => {
     it('renders the sidebar, the topbar and the content in a main landmark', () => {
-        render(
-            <TooltipProvider>
-                <AppFrame
-                    sidebar={sidebar}
-                    topbar={
-                        <AppTopbar
-                            breadcrumbs={[{ title: 'Atlas', href: '/t1' }]}
-                        />
-                    }
-                >
-                    <p>content</p>
-                </AppFrame>
-            </TooltipProvider>,
+        renderWithProviders(
+            <AppFrame
+                sidebar={sidebar}
+                topbar={
+                    <AppTopbar
+                        breadcrumbs={[{ title: 'Atlas', href: '/t1' }]}
+                    />
+                }
+            >
+                <p>content</p>
+            </AppFrame>,
         );
 
         expect(
@@ -48,17 +46,15 @@ describe('AppFrame', () => {
 
 describe('SessionFrame', () => {
     it('starts with the sidebar collapsed and shows the session slots', () => {
-        const { container } = render(
-            <TooltipProvider>
-                <SessionFrame
-                    sidebar={sidebar}
-                    title="Sprint 42"
-                    phases={<span>phases</span>}
-                    timer={<span>05:00</span>}
-                >
-                    <p>board</p>
-                </SessionFrame>
-            </TooltipProvider>,
+        const { container } = renderWithProviders(
+            <SessionFrame
+                sidebar={sidebar}
+                title="Sprint 42"
+                phases={<span>phases</span>}
+                timer={<span>05:00</span>}
+            >
+                <p>board</p>
+            </SessionFrame>,
         );
 
         expect(
@@ -72,7 +68,7 @@ describe('SessionFrame', () => {
 
 describe('SettingsFrame', () => {
     it('marks the current section in a labelled sub-navigation', () => {
-        render(
+        renderWithProviders(
             <SettingsFrame
                 title="Settings"
                 navLabel="Settings"
@@ -111,7 +107,7 @@ describe('SettingsFrame', () => {
 
 describe('AuthFrame', () => {
     it('shows the title as the page heading and the logo', () => {
-        render(
+        renderWithProviders(
             <AuthFrame
                 title="Log in to your account"
                 description="Enter your email"
@@ -134,7 +130,7 @@ describe('AuthFrame', () => {
 
 describe('OnboardingFrame', () => {
     it('renders the stepper in the header and the content in main', () => {
-        render(
+        renderWithProviders(
             <OnboardingFrame stepper={<ol aria-label="Steps" />}>
                 <p>step</p>
             </OnboardingFrame>,
