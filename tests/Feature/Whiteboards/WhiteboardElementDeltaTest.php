@@ -20,6 +20,25 @@ it('returns what changed after a seq, tombstones included', function () {
         ->assertJsonPath('elements.1.isDeleted', true);
 });
 
+it('returns the changes in the order of their index, not of their writes', function () {
+    $board = Whiteboard::factory()->create(['seq' => 6]);
+    [$user] = whiteboardMember($board);
+
+    foreach ([['moved', 'a0', 6], ['top', 'a2', 2], ['bottom', 'Zz', 3], ['twin-b', 'a1', 4], ['twin-a', 'a1', 5]] as [$id, $index, $seq]) {
+        WhiteboardElement::factory()->create([
+            'whiteboard_id' => $board->id, 'element_id' => $id, 'seq' => $seq, 'data' => sceneElement(['id' => $id, 'index' => $index]),
+        ]);
+    }
+
+    WhiteboardElement::factory()->create(['whiteboard_id' => $board->id, 'element_id' => 'unplaced-late', 'seq' => 2]);
+    WhiteboardElement::factory()->create(['whiteboard_id' => $board->id, 'element_id' => 'unplaced-early', 'seq' => 1]);
+
+    $this->actingAs($user)
+        ->getJson(route('whiteboards.elements.index', [$board, 'since' => 0]))
+        ->assertOk()
+        ->assertJsonPath('elements.*.id', ['bottom', 'moved', 'twin-a', 'twin-b', 'top', 'unplaced-early', 'unplaced-late']);
+});
+
 it('answers 409 when the client is older than the last purge', function () {
     $board = Whiteboard::factory()->create(['seq' => 10, 'purged_seq' => 6]);
     [$user] = whiteboardMember($board);

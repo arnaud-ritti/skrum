@@ -28,6 +28,28 @@ it('describes the board, the viewer, the members and the live elements', functio
         ->assertJsonPath('links.team', route('teams.show', [$board->team->workspace, $board->team], absolute: false));
 });
 
+it('returns the elements in the order of their index, not of their writes', function () {
+    $board = Whiteboard::factory()->create(['seq' => 4]);
+    [$user] = whiteboardMember($board);
+
+    foreach ([['moved', 'a0', 4], ['top', 'a2', 2], ['bottom', 'Zz', 3]] as [$id, $index, $seq]) {
+        WhiteboardElement::factory()->create([
+            'whiteboard_id' => $board->id, 'element_id' => $id, 'seq' => $seq, 'data' => sceneElement(['id' => $id, 'index' => $index]),
+        ]);
+    }
+
+    WhiteboardElement::factory()->create(['whiteboard_id' => $board->id, 'element_id' => 'unplaced', 'seq' => 1]);
+
+    $this->actingAs($user)
+        ->getJson(route('whiteboards.snapshot.show', $board))
+        ->assertOk()
+        ->assertJsonPath('elements.*.id', ['bottom', 'moved', 'top', 'unplaced']);
+
+    $this->actingAs($user)
+        ->get(route('whiteboards.show', $board))
+        ->assertInertia(fn ($page) => $page->where('snapshot.elements.0.id', 'bottom')->where('snapshot.elements.3.id', 'unplaced'));
+});
+
 it('lets a non-facilitating member take control but not delete', function () {
     $board = Whiteboard::factory()->create();
     whiteboardFacilitator($board);

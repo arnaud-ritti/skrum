@@ -136,6 +136,63 @@ it('saves the good elements of a batch that holds bad ones', function () {
         ->and($board->elements()->where('element_id', 'linked')->sole()->data['link'])->toBeNull();
 });
 
+it('answers 200 and saves the rest when an element would not fit the columns or would break the canvas', function () {
+    $board = Whiteboard::factory()->create();
+    [$user] = whiteboardMember($board);
+
+    writeElements($this->actingAs($user), $board, [
+        sceneElement(['id' => 'good']),
+        sceneElement(['id' => 'huge', 'version' => 3_000_000_000]),
+        sceneElement(['id' => 'pointless', 'type' => 'line']),
+        sceneElement(['id' => 'also-good']),
+    ])
+        ->assertOk()
+        ->assertJsonPath('seq', 2)
+        ->assertJsonCount(2, 'rejected')
+        ->assertJsonPath('rejected.0', ['id' => 'huge', 'reason' => 'invalid', 'element' => null])
+        ->assertJsonPath('rejected.1', ['id' => 'pointless', 'reason' => 'invalid', 'element' => null]);
+
+    expect($board->elements()->pluck('element_id')->sort()->values()->all())->toBe(['also-good', 'good']);
+});
+
+it('returns the server copy with an invalid rejection of an element it already holds', function () {
+    $board = Whiteboard::factory()->create(['seq' => 4]);
+    [$user] = whiteboardMember($board);
+    $note = sceneElement(['id' => 'note', 'type' => 'text', 'text' => 'short', 'originalText' => 'short', 'version' => 3]);
+    WhiteboardElement::factory()->create([
+        'whiteboard_id' => $board->id, 'element_id' => 'note', 'type' => 'text', 'version' => 3, 'version_nonce' => 100, 'data' => $note,
+    ]);
+
+    writeElements($this->actingAs($user), $board, [
+        [...$note, 'version' => 4, 'text' => str_repeat('a', 10_001)],
+        sceneElement(['id' => 'unknown', 'type' => 'iframe']),
+    ])
+        ->assertOk()
+        ->assertJsonPath('seq', 4)
+        ->assertJsonCount(2, 'rejected')
+        ->assertJsonPath('rejected.0.id', 'note')
+        ->assertJsonPath('rejected.0.reason', 'invalid')
+        ->assertJsonPath('rejected.0.element', $note)
+        ->assertJsonPath('rejected.1', ['id' => 'unknown', 'reason' => 'invalid', 'element' => null]);
+
+    expect($board->elements()->sole()->data['text'])->toBe('short');
+
+    Event::assertNotDispatched(WhiteboardElementsChanged::class);
+});
+
+it('broadcasts the accepted elements in the order of their index', function () {
+    $board = Whiteboard::factory()->create();
+    [$user] = whiteboardMember($board);
+
+    writeElements($this->actingAs($user), $board, [
+        sceneElement(['id' => 'top', 'index' => 'a2']),
+        sceneElement(['id' => 'bottom', 'index' => 'Zz']),
+        sceneElement(['id' => 'middle', 'index' => 'a1']),
+    ])->assertJsonPath('rejected', []);
+
+    Event::assertDispatched(WhiteboardElementsChanged::class, fn (WhiteboardElementsChanged $event) => array_column($event->elements ?? [], 'id') === ['bottom', 'middle', 'top']);
+});
+
 it('stores text exactly as typed', function () {
     $board = Whiteboard::factory()->create();
     [$user] = whiteboardMember($board);

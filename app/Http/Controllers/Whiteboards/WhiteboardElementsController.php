@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Whiteboards;
 
+use App\Actions\Whiteboards\OrderWhiteboardElements;
 use App\Actions\Whiteboards\PresentWhiteboardElement;
 use App\Actions\Whiteboards\WriteWhiteboardElements;
 use App\Http\Controllers\Controller;
@@ -14,8 +15,12 @@ use Illuminate\Support\Facades\Validator;
 
 class WhiteboardElementsController extends Controller
 {
-    public function index(Request $request, Whiteboard $board, PresentWhiteboardElement $presentWhiteboardElement): JsonResponse
-    {
+    public function index(
+        Request $request,
+        Whiteboard $board,
+        PresentWhiteboardElement $presentWhiteboardElement,
+        OrderWhiteboardElements $orderWhiteboardElements,
+    ): JsonResponse {
         $member = WhiteboardMember::current($request);
 
         $validated = $request->validate([
@@ -28,10 +33,8 @@ class WhiteboardElementsController extends Controller
 
         return response()->json([
             'seq' => $board->seq,
-            'elements' => $board->elements()
-                ->where('seq', '>', $since)
-                ->orderBy('seq')
-                ->get()
+            'elements' => $orderWhiteboardElements
+                ->handle($board->elements()->where('seq', '>', $since)->orderBy('seq')->get())
                 ->map(fn (WhiteboardElement $element): array => $presentWhiteboardElement->handle($element, $member))
                 ->all(),
         ]);

@@ -101,6 +101,8 @@ Acceptance criteria for every requirement are in §16.
  serverTime}
 ```
 
+`elements` come in canvas order: by fractional `index` compared byte by byte (Excalidraw's own order, which a database collation does not give), then by id; elements without an index come last, by `seq`. `GET elements?since=` and the `elements` of `elements.changed` use the same order. Excalidraw repairs any other order by giving elements a new index and version, so the order is part of the contract: loading a board, fetching a delta or receiving a broadcast never changes an element's `index`, `version` or `versionNonce`, and never causes a write.
+
 One class, `BuildWhiteboardSnapshot`, builds it for the viewer. All redaction lives there and in `PresentWhiteboardElement` (the only serializer of elements) and `PresentWhiteboardVoting`.
 
 ### 6.3 Write
@@ -110,7 +112,7 @@ One class, `BuildWhiteboardSnapshot`, builds it for the viewer. All redaction li
   1. Validate (§6.6) and check rights (§8, §11). An element failing either is rejected with a reason.
   2. Accept when no row exists, or `version` is greater than the stored one, or versions are equal and `versionNonce` is lower (Excalidraw's own tie rule). Otherwise reject as stale.
   3. On accept: increment `whiteboards.seq`, store it on the row, set the author on first write.
-- Response: `{seq, fromSeq, rejected: [{id, reason, element}]}` where `fromSeq` is the board's `seq` before this request and `element` is the server's copy as the viewer may see it (null when the server has none), so the sender converges. Reasons: `invalid`, `stale`, `locked`, `file`, `full` (and `voting`, `private` from §11).
+- Response: `{seq, fromSeq, rejected: [{id, reason, element}]}` where `fromSeq` is the board's `seq` before this request and `element` is the server's copy as the viewer may see it (null when the server has none), so the sender converges; this holds for every reason, `invalid` included: an edit the server refuses puts the sender back on the stored copy and only removes the element locally when the server has none. Reasons: `invalid`, `stale`, `locked`, `file`, `full` (and `voting`, `private` from §11).
 - Deleting is a write with `isDeleted: true` (a tombstone). Tombstones are purged 24 hours later by a scheduled command; a client whose last `seq` is older than the oldest purge refetches the snapshot (`GET elements?since=` answers 409).
 - Broadcast `elements.changed` to others: `{seq, fromSeq, elements}` when the JSON is at most 8 KB and no private sticky is touched; otherwise `{seq, fromSeq}` and clients call `GET elements?since={their seq}`.
 - A client applies changes with `reconcileElements` then `updateScene`. It tracks the last applied `seq`; a `fromSeq` that does not match it, a resubscription or a reconnect triggers `GET elements?since=` (coalesced).

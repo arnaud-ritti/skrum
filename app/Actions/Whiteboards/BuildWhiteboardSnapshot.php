@@ -36,7 +36,10 @@ use App\Models\WhiteboardMember;
  */
 class BuildWhiteboardSnapshot
 {
-    public function __construct(private PresentWhiteboardElement $presentWhiteboardElement) {}
+    public function __construct(
+        private PresentWhiteboardElement $presentWhiteboardElement,
+        private OrderWhiteboardElements $orderWhiteboardElements,
+    ) {}
 
     /**
      * @return Snapshot
@@ -79,10 +82,8 @@ class BuildWhiteboardSnapshot
                 ])
                 ->values()
                 ->all(),
-            'elements' => $board->elements()
-                ->where('is_deleted', false)
-                ->orderBy('seq')
-                ->get()
+            'elements' => $this->orderWhiteboardElements
+                ->handle($board->elements()->where('is_deleted', false)->orderBy('seq')->get())
                 ->map(fn (WhiteboardElement $element): array => $this->presentWhiteboardElement->handle($element, $viewer))
                 ->all(),
             'seq' => $board->seq,

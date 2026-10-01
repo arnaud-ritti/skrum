@@ -24,6 +24,7 @@ class WriteWhiteboardElements
     public function __construct(
         private SanitizeWhiteboardElement $sanitizeWhiteboardElement,
         private PresentWhiteboardElement $presentWhiteboardElement,
+        private OrderWhiteboardElements $orderWhiteboardElements,
     ) {}
 
     /**
@@ -48,7 +49,9 @@ class WriteWhiteboardElements
                 $element = $this->sanitizeWhiteboardElement->handle($raw);
 
                 if ($element === null) {
-                    $rejected[] = $this->rejection($this->rawId($raw), 'invalid', null, $member);
+                    $id = $this->rawId($raw);
+
+                    $rejected[] = $this->rejection($id, 'invalid', $id === null ? null : $stored->get($id), $member);
 
                     continue;
                 }
@@ -240,7 +243,10 @@ class WriteWhiteboardElements
      */
     private function broadcastable(array $accepted): ?array
     {
-        $elements = array_values(array_map(fn (WhiteboardElement $element): array => $element->data, $accepted));
+        $elements = $this->orderWhiteboardElements
+            ->handle(collect(array_values($accepted)))
+            ->map(fn (WhiteboardElement $element): array => $element->data)
+            ->all();
 
         if (strlen((string) json_encode($elements)) > self::MaxBroadcastBytes) {
             return null;
