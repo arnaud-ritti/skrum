@@ -117,3 +117,51 @@ Found while writing the harness and the first three walkthrough files, after the
 
 - `handleRemains: false` ends the helper with `assertNotPresent($handle)` instead of `assertAttributeMissing($handle, 'aria-pressed')`. Use it when the dropped item is rendered again without its handle (a retro card dropped onto another card in Grouping).
 - Fewer than two keys throws `InvalidArgumentException` ("dragWithKeyboard() needs at least two keys: the first picks the item up and the last drops it."). Before, the helper called `keys()` with `null` and failed after the 20 s timeout with a Playwright message.
+
+## Findings from plan 16b (walkthroughs of plans 6, 7, 9a, 9b)
+
+Proven by running the tests of plan 16b.
+
+### Acting on elements
+
+- Playwright waits until the timeout instead of clicking an element whose ancestor has `aria-disabled="true"` (for example a control inside a retro card that cannot be dragged, on a locked board). Click such a control with `script("() => document.querySelector('…').click()")` and assert its state before and after.
+- `assertSeeIn($selector, $text)` is strict: it fails when the text matches more than one element inside the selector. Use `assertPresent()` with `:has-text()` on a narrower selector.
+- `hover()` works on buttons and opens Radix tooltips (`[data-slot="tooltip-content"]`); hovering another element in between lets the same tooltip open again.
+- A Radix dialog focuses its first focusable control. When that control has a tooltip, the tooltip opens on focus and takes the first Escape: send Escape to the focused control, assert the tooltip is gone, then send Escape again.
+- Radix select: click the trigger, `assertPresent('[role="listbox"]')`, click `[role="option"]:has-text("…")`, `assertNotPresent('[role="listbox"]')`. `assertDisabled()` and `assertEnabled()` work on Radix checkboxes (`button[role="checkbox"]`) and select triggers.
+- `fill()` on `<input type="date">` works with a `Y-m-d` value. Tab does not blur it (it walks the date segments): click neutral text elsewhere to trigger a save-on-blur.
+- `resize()` sets the viewport size.
+
+### Keyboard drag
+
+- A key sent right after the pick-up is lost unless one timer turn precedes it, Escape included: `$page->script('() => new Promise((resolve) => setTimeout(() => resolve(true), 0))')`. Assertions in between are not a substitute.
+- Inside dnd-kit's `onDragStart` (6.3.1), `event.active.rect.current.initial` is null; measure the element.
+
+### Scripts
+
+- `assertScript()` passes the expression unwrapped to `page.evaluate` when it contains `==`, `>`, `<`, `&&` or `||` (so any arrow function); otherwise it wraps it in `function () { return …; }`. An `(async () => { … })()` expression is awaited.
+- A value that is animated (a remote cursor moves to its target over about 150 ms) can satisfy a retried assertion while in transit: read it twice a short time apart in one script and assert it is stable.
+- Holding an XHR response in the page works by wrapping `XMLHttpRequest.prototype.open` and `send` and deferring the `onload` handler (see `plan06RecordRequests()`, `plan06Hold()`, `plan06Release()`); install it after the page's first requests, it does not survive a navigation.
+- `fetch('/logout', {method: 'POST'})` from the page with the `XSRF-TOKEN` cookie as `X-XSRF-TOKEN` ends that context's session while the page stays on screen.
+
+### Server side
+
+- `Http::fake()` closures, `Storage::fake()`, `Mail::fake()`, `Notification::fake()` and `Event::fake([Specific::class])` (even called in the middle of a test) apply to browser requests and to commands run from the test body.
+- A listener that sleeps inside a browser request blocks the whole test process; the test resumes afterwards.
+- Two `signIn()` calls for the same user give two contexts with separate sessions and the same participant.
+- A guest page keeps its session across `navigate()`.
+- A value shown only after navigation (a shared Inertia prop such as the unread count) is refreshed with `$page->navigate($samePath)`; no sleep is needed.
+- A model instance held by the test goes stale once the browser changes its row: `$model->update([...])` writes nothing when the in-memory value already equals the new one. Use `Model::query()->whereKey($id)->update([...])` or `fresh()`.
+
+### Hooks and helpers that exist
+
+- `[data-test="retro-action-items-panel"]` (the retro action-items panel) and `[data-test="retro-sort-by-votes"]` (one per column: `[data-test="retro-column-{id}"] [data-test="retro-sort-by-votes"]`).
+- `data-realtime` on the workspace action-items page; a viewer with no visible team stays `connecting`.
+- The source scan matches regular expressions over the whole file, comments and strings included.
+- Global helper functions already declared by walkthrough files must not be redeclared: `plan04*`, `plan06*`, `plan07*`, `p09a*`, `p09b*`, `p10a*`, `p10b*`.
+
+### Tooling
+
+- Format documents with `node_modules/.bin/vp fmt <file>`; `npx prettier` formats differently.
+- `composer test` runs PHPStan without a memory limit and can crash at PHP's default 128M on host PHP; run `vendor/bin/phpstan analyse --memory-limit=2G`.
+- The browser suite holds 142 tests and takes about 270 seconds.
