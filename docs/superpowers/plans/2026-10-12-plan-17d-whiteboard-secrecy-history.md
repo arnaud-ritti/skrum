@@ -4,7 +4,7 @@
 
 **Goal:** A facilitator runs a silent-writing round in which nobody, the facilitator included, receives the text of another person's sticky note before the reveal, and any member brings back an earlier state of the board from automatic or named versions.
 
-**Architecture:** Privacy is a column on the element row (`is_private`), set by the write path while the board's `private_writing` switch is on and cleared only by the reveal. `PresentWhiteboardElement`, already the only serializer of an element, masks a private row for every viewer but its author; a write that touches a private row is broadcast without elements, so each client fetches its own copy. The write path refuses, with reason `private`, anything another member does to a private row or to its binding. A version is a row holding the live scene as stored (real text); a queued job stores one five minutes after the first change that follows the last version. Restore rewrites the board from a version inside the board lock, as ordinary element rows with higher versions, so clients converge through the normal delta. A version also remembers which of its elements were private when it was stored (`private_element_ids`); the reveal takes the revealed ones off that list, and nothing a version later shows (preview, restore, copy) holds what is left on it: a note deleted while it was hidden.
+**Architecture:** Privacy is a column on the element row (`is_private`), set by the write path while the board's `private_writing` switch is on and cleared only by the reveal. `PresentWhiteboardElement`, already the only serializer of an element, masks a private row for every viewer but its author; a write that touches a private row is broadcast without elements, so each client fetches its own copy. The write path refuses, with reason `private`, anything another member does to a private row or to its binding, with one exception: the new stacking index a canvas gives a row when two rows share one, which the server takes without taking anything else. A version is a row holding the live scene as stored (real text); a queued job stores one five minutes after the first change that follows the last version. Restore rewrites the board from a version inside the board lock, as ordinary element rows with higher versions, so clients converge through the normal delta. A version also remembers which of its elements were private when it was stored (`private_element_ids`); the reveal takes the revealed ones off that list — only for a row that already existed when the version was stored, so an id used again after its tombstone was purged opens nothing — and nothing a version later shows (preview, restore, copy) holds what is left on it: a note deleted while it was hidden.
 
 **Tech Stack:** Laravel 13, PHP 8.4, PostgreSQL, Pest 5, queue worker, Reverb, Inertia 3 + React 19, Wayfinder, `@excalidraw/excalidraw` 0.18.1 (only through `resources/js/lib/whiteboard/excalidraw.ts`).
 
@@ -13,6 +13,8 @@
 **Prepared in advance, reconciled at `aff67e7`.** A first version of this plan was written at `e0524df`, before plan 17b was finished and without sight of plan 17c. It has been reconciled with the code both plans produced (plans `2026-10-10-plan-17b-whiteboard-templates.md` and `2026-10-11-plan-17c-whiteboard-facilitation.md`, their walkthroughs, and the tree at `aff67e7`). What the reconciliation changed is listed in the last section.
 
 **How the code here was checked:** every task was built once, in order, on a throwaway copy of the tree at `aff67e7`, and the tree was restored afterwards. On that prototype: `DB_HOST=127.0.0.1 php artisan test --compact tests/Feature/Whiteboards tests/Feature/TranslationKeysTest.php tests/Feature/UuidPrimaryKeysTest.php` passed (541 tests), the complete suite passed (4156 tests), Pint and PHPStan were clean on every touched PHP file, `npm run build` succeeded, `npm run types:check` showed only the known `manage-passkeys.tsx` error and `npx vp check` was clean on the touched frontend files. Every complete file and every snippet in this plan is the prototype's text. **Nothing was run in a browser**: what only a browser can show is listed per frontend task as "Browser checks" and replayed by the walkthrough that follows this plan. Canvas names were read in `node_modules/@excalidraw/excalidraw/dist` (files cited where used). Rule 2 of the implementers' rules still applies: if something here fails, fix the smallest thing that makes the tests and the spec true, and report it.
+
+**Corrected after an adversarial check (two findings, both confirmed by reading the code).** These corrections were written after the prototype was thrown away: their code was **not** built, type-checked or run. They are: in Task 2, rule 5 with `indexRepairOfHidden()`, its two tests and the `$isIndexRepair` argument of `refusal()`; in Task 3, `revealInVersions()` with its age check and the test "keeps a note deleted while hidden out of a version when its id is used again"; in Task 7, the change to `scene-sync.ts` and the new `onRejected`. Follow TDD on them as on everything else and expect to adjust details (rule 2 of the implementers' rules); the behaviour the tests describe is what is binding.
 
 ## Global Constraints
 
@@ -36,10 +38,10 @@
 
 ## Review Focus
 
-1. **A member holds a masked note and their canvas sends it back** — unchanged (a retry), edited (they dragged or typed on it), deleted (eraser, "clear canvas"), with a lower nonce, or as the facilitator. The author's text must survive every one of them and the sender's canvas must return to the masked copy. Pinned in Task 2: "refuses every change another member makes to a private note and keeps the text".
+1. **A member holds a masked note and their canvas sends it back** — unchanged (a retry), edited (they dragged or typed on it), deleted (eraser, "clear canvas"), with a lower nonce, re-indexed (the canvas repaired a duplicate stacking index, which nobody asked for), or as the facilitator. The author's text must survive every one of them. Everything but the index repair is refused and the sender's canvas returns to the masked copy; the index repair is accepted as an index and nothing else, or every canvas but the author's would send it again at every flush, with a toast and a closed text editor each time. Pinned in Task 2: "refuses every change another member makes to a private note and keeps the text", "takes the new index a canvas gives a hidden note of someone else, and nothing else" and "takes nothing but an index from the canvas of another member".
 2. **The text of a note reaches the server without its container** (the container was rejected, or the batch was split between the two) while private writing is on. It must not be broadcast or served in clear. Pinned in Task 2: "treats a bound text whose container is unknown as private while private writing is on".
 3. **The database refuses a statement that carries note text** (deadlock, constraint, lost connection). Laravel's `QueryException` message contains the statement with its bindings, and PostgreSQL adds the failing row: the report must hold neither. Pinned in Task 2: "keeps the text of a note out of the log, even when the database refuses the write", and in Task 4: "keeps the scene out of the log when a version cannot be stored".
-4. **A note is deleted while it is hidden.** The reveal must not show it, a later write by its author that leaves it deleted must not make its tombstone public, and a version stored while it was still on the board must never preview, restore or copy it. Pinned in Task 3: "never shows a private note that was deleted before the reveal" and "lets a version stored while the notes were hidden show what the reveal showed, and nothing else"; in Task 5: "never previews a note that was deleted before the reveal"; in Task 6: "never restores or copies a note that was deleted before the reveal".
+4. **A note is deleted while it is hidden.** The reveal must not show it, a later write by its author that leaves it deleted must not make its tombstone public, and a version stored while it was still on the board must never preview, restore or copy it. Pinned in Task 3: "never shows a private note that was deleted before the reveal" and "lets a version stored while the notes were hidden show what the reveal showed, and nothing else"; in Task 5: "never previews a note that was deleted before the reveal"; in Task 6: "never restores or copies a note that was deleted before the reveal". The list of a version is keyed by element id, and an id is free again once its tombstone is purged (24 hours): anyone who saw the masked copy knows the id and could write a new private note under it and have it revealed. The reveal therefore only takes an id off a version's list when the revealed row is not younger than the version. Pinned in Task 3: "keeps a note deleted while hidden out of a version when its id is used again".
 5. **Restore meets an element it cannot simply rewrite**: its row is gone (tombstone purged) while a browser left open still holds that tombstone at a higher version, or a client pushed it to the highest version number. Restore must bring the element back where it can, leave the rest of the board restored, and never answer 500. Pinned in Task 6: "brings back an element whose row is gone under a fresh id" and "restores the rest when an element sits at the highest version number".
 
 ---
@@ -80,6 +82,7 @@ Frontend (new unless marked):
 | Path | Responsibility |
 |---|---|
 | `resources/js/lib/whiteboard/types.ts` (modify) | `privateWriting`, reason `private`, version types |
+| `resources/js/lib/whiteboard/scene-sync.ts` (modify) | `onRejected` also says which element was refused |
 | `resources/js/hooks/use-whiteboard-overlay.ts` (modify) | `useMaskedNoteBoxes` |
 | `resources/js/components/whiteboard/masked-notes.tsx` | "•••" marks above masked notes |
 | `resources/js/components/whiteboard/facilitator-bar.tsx` (modify) | The private-writing button; no vote while it is on |
@@ -93,7 +96,8 @@ Shared shapes used by several tasks:
 
 ```
 VersionScene   = array{elements: list<array<string, mixed>>, fileIds: list<string>}      (whiteboard_versions.scene)
-private_element_ids = list<string>   (whiteboard_versions column: ids of `scene.elements` that were private when stored and not revealed since)
+private_element_ids = list<string>   (whiteboard_versions column: ids of `scene.elements` that were private when stored and not revealed since;
+                                      an id leaves the list only when the revealed row is not younger than the version)
 VersionSummary = array{id: string, name: ?string, createdAt: string, createdByName: ?string, automatic: bool}
 Scene          = array{elements: list<array<string, mixed>>, files: list<SceneFile>}     (CopyWhiteboardScene, unchanged)
 ```
@@ -112,6 +116,7 @@ Why this shape is safe on the client, checked in the library and in plan 17a's c
 - Because the bound text is deleted locally, the canvas draws the note empty; the "•••" mark is skrum's overlay (Task 7), in the layer plan 17c built for vote badges.
 - `reconcileElements` keeps the local copy only when it is being edited, has a higher version, or has the same version and a **lower** nonce (`dist/dev/index.js`, lines 32828–32837, `shouldDiscardRemoteElement`). After the reveal the real copy arrives with the same version and the same nonce as the masked one, so it replaces it. The reveal therefore changes no version: it only gives the revealed rows a new `seq` so that `GET elements?since=` returns them.
 - If the canvas does change a masked copy (drag, erase, typing creates a new bound text), the write is refused with reason `private` and `scene-sync.ts` forces the server's masked copy back (`settle` → `force`), or drops the element the server never had (`dropLocally`).
+- **One write of a masked copy is not a user's doing: the repair of a duplicate index.** The canvas generates indices without jitter (`generateNKeysBetween`, `chunk-4FTI6OG3.js` lines 15471 and 15671), so two members who each add a note before seeing the other's give the note, and its text, the same index — the ordinary case in a silent-writing round, where every write is ids-only and reaches the others a refetch later. `reconcileElements` (`dist/dev/index.js`, lines 32886–32888) and `Scene.replaceAllElements` (`chunk-4FTI6OG3.js`, lines 22668–22669) both run `syncInvalidIndices`, which gives the element with the greater id (order: index, then id, lines 15530–15541) a new index and, through `mutateElement`, a new version — whoever wrote it. `scene-sync.ts` then queues it (`handleChange`: its stamp no longer equals `known`). If the server refused that write, `force` would put the duplicate index back, the canvas would repair it again, and the `PUT` would repeat at every flush until the author's own canvas landed the same repair — never, if the author has left. So the server accepts it (Task 2, rule 5): it stores **its own data** with the new index, version and nonce. The masked text arrives as the canvas holds it — empty and locally deleted — and neither of those is taken. Not reproduced in a browser; derived from the code cited (browser check B7.11).
 
 ---
 
@@ -575,18 +580,26 @@ The heart of R9. After this task a board whose `private_writing` column is true 
 - Produces:
   - Masked wire shape (see "Wire shape of a private note" above) from `PresentWhiteboardElement::handle`, unchanged signature.
   - Rejection reason `'private'`.
+  - An index repair of a private row by a member who is not its author is accepted: the row keeps its stored data and takes the incoming `index`, `version`, `versionNonce` and `updated` (rule 5).
   - `KeepWhiteboardTextOutOfLogs::handle(string $boardId, Closure $work): mixed` — runs `$work`, turning a `QueryException` into `WhiteboardQueryFailed`.
   - `App\Exceptions\WhiteboardQueryFailed(string $boardId, string $sqlState)`.
 
 **Rules implemented here** (spec §11.5; the board row is locked, `$existing` is the stored row of the incoming element, `$container` the stored row its `containerId` names — rows saved earlier in the same batch count as stored):
 
 1. *Refusal `private`*, checked inside `refusal()` right after `stale` and before `locked`, for the facilitator too (plan 17c's `voting` reasons are decided after `refusal()` and stay where they are; its 403 on a locked board comes before any element is looked at):
-   - `$existing` is private and its author is not the writer (edit, move, delete, re-bind, detach, restore of a tombstone);
+   - `$existing` is private and its author is not the writer (edit, move, delete, re-bind, detach, restore of a tombstone) — unless the write is an index repair (rule 5), which skips the whole of rule 1;
    - `$container` is private and its author is not the writer (binding a text to someone else's private note);
    - `$container` is private and `$existing` exists with another author (a private note only takes text written by its own author).
 2. *Privacy of the saved row*: while the board's `private_writing` is off, true only for a private row that the write leaves deleted (a note deleted while it was hidden stays private until its author brings it back), false otherwise. While it is on, true when `$existing` is private, or `$container` is private, or the element is new and is either a sticky note (it carries the sticky marker) or a text with a `containerId` whose container is not stored. A write never clears the flag while private writing is on.
 3. *Broadcast*: when any accepted row is private, `elements` is null (ids-only form), whatever the size.
 4. A masked copy sent back unchanged has the stored `version` and `versionNonce`: the existing "same write" rule ignores it. A masked copy with a higher nonce is `stale`. Neither reaches rule 1, and neither changes anything.
+5. *Index repair* (see "One write of a masked copy is not a user's doing" at the top of this plan). A write of a private row by a member who is not its author is an index repair when all of this holds:
+   - its `index` is a string, and its `version` is the stored one or the stored one plus one (a client cannot push a hidden note towards the highest version number);
+   - its `index` differs from the stored one, **or** its `version` is the stored one (same version, lower nonce: another canvas landed the same repair first, and the canvas's own rule lets the lower nonce win);
+   - for a text, `text` and `originalText` are empty (the masked form);
+   - nothing else differs from the stored data, leaving aside `index`, `version`, `versionNonce`, `updated` and, for a text, `text`, `originalText` and `isDeleted` (the canvas holds a masked text as a deleted one). Numbers are compared loosely (`10` and `10.0` are the same coordinate).
+
+   It is then saved as **the stored data** with the incoming `index`, `version`, `versionNonce` and `updated`: text, deletion state, position, binding and author are the stored ones, `is_private` stays, the broadcast is ids-only. From there on the loop treats it as that element, so the live count and the voting checks see no change. A masked copy sent with `version + 1` and the stored index (an erased masked text looks like this) is not a repair: rule 1 refuses it.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -826,6 +839,121 @@ it('refuses every change another member makes to a private note and keeps the te
     'a guest' => 'guest',
 ]);
 
+it('takes the new index a canvas gives a hidden note of someone else, and nothing else', function () {
+    $table = privateWritingBoard();
+    $board = $table['board'];
+    [$own, $ownText] = stickyWithText('early', 'Typed at the same time');
+    storeWhiteboardElement($board, $own, 3, $table['otherMember'], private: true);
+    storeWhiteboardElement($board, $ownText, 4, $table['otherMember'], private: true);
+    $board->update(['seq' => 4]);
+    [$note, $masked] = stickyWithText('note', '');
+
+    $repair = putWhiteboardElements($this->actingAs($table['other']), $board, [
+        [...$note, 'customData' => ['skrum' => ['kind' => 'sticky', 'masked' => true]], 'index' => 'a1V', 'version' => 2, 'versionNonce' => 7, 'updated' => 1760263200000],
+        [...$masked, 'isDeleted' => true, 'index' => 'a2V', 'version' => 2, 'versionNonce' => 8, 'updated' => 1760263200000],
+    ])
+        ->assertOk()
+        ->assertExactJson(['seq' => 6, 'fromSeq' => 4, 'rejected' => []]);
+
+    $storedNote = $board->elements()->where('element_id', 'note')->sole();
+    $storedText = $board->elements()->where('element_id', 'note-text')->sole();
+
+    expect($storedNote->data['index'])->toBe('a1V')
+        ->and($storedNote->data['x'])->toBe(10)
+        ->and($storedNote->data['customData'])->toBe(['skrum' => ['kind' => 'sticky']])
+        ->and($storedNote->version)->toBe(2)
+        ->and($storedNote->version_nonce)->toBe(7)
+        ->and($storedNote->data['version'])->toBe(2)
+        ->and($storedNote->is_private)->toBeTrue()
+        ->and($storedNote->author_member_id)->toBe($table['authorMember']->id)
+        ->and($storedText->data['index'])->toBe('a2V')
+        ->and($storedText->data['text'])->toBe($table['secret'])
+        ->and($storedText->data['originalText'])->toBe($table['secret'])
+        ->and($storedText->data['isDeleted'])->toBeFalse()
+        ->and($storedText->is_deleted)->toBeFalse()
+        ->and($storedText->version)->toBe(2)
+        ->and($storedText->version_nonce)->toBe(8)
+        ->and($storedText->seq)->toBe(6)
+        ->and($storedText->is_private)->toBeTrue()
+        ->and($storedText->author_member_id)->toBe($table['authorMember']->id)
+        ->and(elementsChangedPayloads())->toBe([['seq' => 6, 'fromSeq' => 4]])
+        ->and(whiteboardPayloadExposes($repair->getContent(), $table['secret']))->toBeFalse();
+
+    $this->actingAs($table['author'])
+        ->getJson(route('whiteboards.elements.index', [$board, 'since' => 4]))
+        ->assertOk()
+        ->assertJsonPath('elements.0.id', 'note')
+        ->assertJsonPath('elements.0.index', 'a1V')
+        ->assertJsonPath('elements.1.index', 'a2V')
+        ->assertJsonPath('elements.1.version', 2)
+        ->assertJsonPath('elements.1.text', $table['secret']);
+
+    $masked = $this->actingAs($table['other'])
+        ->getJson(route('whiteboards.elements.index', [$board, 'since' => 4]))
+        ->assertOk()
+        ->assertJsonPath('elements.1.index', 'a2V')
+        ->assertJsonPath('elements.1.versionNonce', 8)
+        ->assertJsonPath('elements.1.text', '');
+
+    expect(whiteboardPayloadExposes($masked->getContent(), $table['secret']))->toBeFalse();
+});
+
+it('takes nothing but an index from the canvas of another member', function (string $viewer) {
+    $table = privateWritingBoard();
+    $board = $table['board'];
+    $request = fn () => whiteboardViewer($this, $table[$viewer]);
+    [$note, $masked] = stickyWithText('note', '');
+
+    putWhiteboardElements($request(), $board, [
+        [...$note, 'index' => 'a1V', 'version' => 2, 'x' => 900],
+        [...$masked, 'index' => 'a2V', 'version' => 2, 'text' => 'Overwritten', 'originalText' => 'Overwritten'],
+    ])
+        ->assertOk()
+        ->assertJsonPath('seq', 2)
+        ->assertJsonPath('rejected.0.id', 'note')
+        ->assertJsonPath('rejected.0.reason', 'private')
+        ->assertJsonPath('rejected.0.element.index', 'a1')
+        ->assertJsonPath('rejected.1.id', 'note-text')
+        ->assertJsonPath('rejected.1.reason', 'private')
+        ->assertJsonPath('rejected.1.element.index', 'a2');
+
+    putWhiteboardElements($request(), $board, [
+        [...$note, 'index' => 'a1V', 'version' => 2, 'isDeleted' => true],
+        [...$masked, 'index' => 'a2V', 'version' => 2, 'containerId' => null],
+        [...$masked, 'index' => 'a2V', 'version' => 3],
+        [...$note, 'index' => 'a1V', 'version' => 2147483647],
+    ])
+        ->assertOk()
+        ->assertJsonPath('seq', 2)
+        ->assertJsonCount(4, 'rejected')
+        ->assertJsonPath('rejected.0.reason', 'private')
+        ->assertJsonPath('rejected.1.reason', 'private')
+        ->assertJsonPath('rejected.2.reason', 'private')
+        ->assertJsonPath('rejected.3.reason', 'private');
+
+    expect($board->elements()->orderBy('seq')->pluck('version')->all())->toBe([1, 1])
+        ->and($board->elements()->where('element_id', 'note')->sole()->data['index'])->toBe('a1')
+        ->and($board->elements()->where('element_id', 'note-text')->sole()->data['index'])->toBe('a2');
+
+    Event::assertNotDispatched(WhiteboardElementsChanged::class);
+
+    putWhiteboardElements($request(), $board, [[...$masked, 'versionNonce' => 50]])
+        ->assertOk()
+        ->assertExactJson(['seq' => 3, 'fromSeq' => 2, 'rejected' => []]);
+
+    $storedText = $board->elements()->where('element_id', 'note-text')->sole();
+
+    expect($storedText->version)->toBe(1)
+        ->and($storedText->version_nonce)->toBe(50)
+        ->and($storedText->data['text'])->toBe($table['secret'])
+        ->and($storedText->is_private)->toBeTrue()
+        ->and(elementsChangedPayloads())->toBe([['seq' => 3, 'fromSeq' => 2]]);
+})->with([
+    'another member' => 'other',
+    'the facilitator' => 'facilitator',
+    'a guest' => 'guest',
+]);
+
 it('refuses to bind a text to a private note of someone else, or to detach its text', function () {
     $table = privateWritingBoard();
     $board = $table['board'];
@@ -958,12 +1086,14 @@ it('keeps the text of a note out of the log, even when the database refuses the 
 });
 ```
 
+Notes on the two index tests: `sceneElement()` gives every element `versionNonce` 100, so `'versionNonce' => 50` is the same version with a lower nonce — what a second canvas sends when another one landed the same repair first. `[...$masked, 'isDeleted' => true]` is the masked text as a canvas holds it (see the top of this plan). `updated` is sent with a new value, as a canvas does, and is one of the four keys taken.
+
 Notes on the last test: the check constraint lives in the test's transaction and is rolled back with it. The failing `update` runs inside `DB::transaction` at a nested level, so Laravel rolls back to its savepoint and the test's own transaction stays usable. PostgreSQL's message for a check violation contains the failing row ("Failing row contains (…)"), which is exactly what must not reach the log.
 
 - [ ] **Step 2: Run it to see it fail**
 
 Run: `DB_HOST=127.0.0.1 php artisan test --compact tests/Feature/Whiteboards/WhiteboardPrivateWritingTest.php`
-Expected: FAIL — the first test reports `note => false`; the masking tests find the secret in the snapshot; the log test finds it in the `QueryException` message.
+Expected: FAIL — the first test reports `note => false`; the masking tests find the secret in the snapshot; the index test finds the masked text stored over the real one (`text` is empty); the log test finds it in the `QueryException` message.
 
 - [ ] **Step 3: The exception and the wrapper**
 
@@ -1091,15 +1221,24 @@ the signature becomes `private function storedElements(Whiteboard $board, array 
 
 With no vote open the extra rows change nothing else: `targets()` returns `[]` for a null session.
 
-d. Inside the loop, three lines change: the container is resolved right after `$existing`, and the calls to `refusal()` and `save()` take the new arguments.
+d. Inside the loop: the container is resolved right after `$existing`; an index repair (rule 5) is recognised right after the "same write" check and, from there on, **replaces** `$element`; the calls to `refusal()` and `save()` take the new arguments.
 
 ```php
                 $existing = $stored->get($element['id']);
                 $container = $this->container($element, $stored);
+
+                if ($this->isSameWrite($existing, $element)) {
+                    continue;
+                }
+
+                $indexRepair = $this->indexRepairOfHidden($existing, $element, $member);
+                $element = $indexRepair ?? $element;
 ```
 
+(the `isSameWrite` block is the existing one, shown for position; the deferral of plan 17c follows, unchanged.)
+
 ```php
-                $reason = $this->refusal($existing, $container, $element, $member, $isFacilitator, $fileIds, $liveCount);
+                $reason = $this->refusal($existing, $container, $element, $member, $indexRepair !== null, $isFacilitator, $fileIds, $liveCount);
 ```
 
 ```php
@@ -1111,18 +1250,18 @@ Rows saved earlier in the batch are in `$stored` (`$stored->put(...)` after each
 e. `refusal()` gains the container and the writer, and the `private` reason after `stale`:
 
 ```php
-    private function refusal(?WhiteboardElement $existing, ?WhiteboardElement $container, array $element, WhiteboardMember $member, bool $isFacilitator, Collection $fileIds, int $liveCount): ?string
+    private function refusal(?WhiteboardElement $existing, ?WhiteboardElement $container, array $element, WhiteboardMember $member, bool $isIndexRepair, bool $isFacilitator, Collection $fileIds, int $liveCount): ?string
     {
         if ($this->isStale($existing, $element)) {
             return 'stale';
         }
 
-        if ($this->touchesPrivate($existing, $container, $member)) {
+        if (! $isIndexRepair && $this->touchesPrivate($existing, $container, $member)) {
             return 'private';
         }
 ```
 
-(the `locked`, `file` and `full` checks follow, unchanged).
+(the `locked`, `file` and `full` checks follow, unchanged). A repaired element carries the incoming version and nonce, so `stale` is decided on what the client sent; it carries the stored `locked`, so a hidden element that is locked still answers `locked` to a member who is not the facilitator, as any locked element does today.
 
 f. New private methods, placed before `isStale()`:
 
@@ -1164,6 +1303,46 @@ f. New private methods, placed before `isStale()`:
     }
 
     /**
+     * A canvas that holds two elements with the same index gives one of
+     * them a new index and a new version, whoever wrote it. From a member
+     * who is not the author of a hidden element the server takes that
+     * index and nothing else: its own data with the new index, version
+     * and nonce (spec §11.5). Null when the write is anything more.
+     *
+     * @param  array<string, mixed>  $element
+     * @return array<string, mixed>|null
+     */
+    private function indexRepairOfHidden(?WhiteboardElement $existing, array $element, WhiteboardMember $member): ?array
+    {
+        if (! $existing?->is_private || $existing->author_member_id === $member->id) {
+            return null;
+        }
+
+        if (! is_string($element['index'] ?? null) || $element['version'] > $existing->version + 1) {
+            return null;
+        }
+
+        if ($element['index'] === ($existing->data['index'] ?? null) && $element['version'] !== $existing->version) {
+            return null;
+        }
+
+        $isText = $existing->type === 'text';
+
+        if ($isText && (($element['text'] ?? '') !== '' || ($element['originalText'] ?? '') !== '')) {
+            return null;
+        }
+
+        $ignored = array_flip($isText ? [...self::IndexRepairKeys, ...self::MaskedTextKeys] : self::IndexRepairKeys);
+
+        // Loose on purpose: 10 and 10.0 are the same coordinate.
+        if (array_diff_key($element, $ignored) != array_diff_key($existing->data, $ignored)) {
+            return null;
+        }
+
+        return [...$existing->data, ...array_intersect_key($element, array_flip(self::IndexRepairKeys))];
+    }
+
+    /**
      * A write gives privacy and never takes it away while private writing
      * is on; only the reveal clears it. A new text whose container is not
      * stored yet is private too: it may be the text of a note still on its
@@ -1193,6 +1372,20 @@ f. New private methods, placed before `isStale()`:
         return isset($element['customData']);
     }
 ```
+
+and two constants, after `MaxBroadcastBytes`:
+
+```php
+    private const IndexRepairKeys = ['index', 'version', 'versionNonce', 'updated'];
+
+    /**
+     * What a canvas holds differently for a masked text: it is empty, and
+     * restoring an empty text marks it deleted.
+     */
+    private const MaskedTextKeys = ['text', 'originalText', 'isDeleted'];
+```
+
+Why `indexRepairOfHidden()` is safe: what it returns is the stored data except for four keys, none of which is text; `isPrivate()` keeps the flag (`$existing` is private; with private writing off the row is a tombstone and the repaired element is still deleted); `save()` updates the existing row, so the author does not change; `liveDelta()` is 0. A version lower than the stored one, or the same version with a higher nonce, is still `stale`. The comparison assumes the stored data went through a canvas (every private row does: it is created by the write path), so the keys a canvas adds when it restores an element are already there; if a field the canvas normalises ever differs, the write is refused as before this rule — the loop of the finding, not a leak.
 
 g. `save()` takes the flag: add the parameter `bool $private` at the end of its signature and `'is_private' => $private,` to `$attributes` (after `'is_sticky'`).
 
@@ -1242,12 +1435,12 @@ git commit -m "feat(whiteboard): private notes are masked for everyone but their
   - `SetWhiteboardPrivateWriting::handle(Whiteboard $locked, bool $on): void` — the caller holds the lock on the board row.
   - `WhiteboardGuard::notPrivateWriting(Whiteboard $board): void` — throws a `ValidationException` (422) whose message is "Reveal the notes first.". Used by Tasks 5 and 6.
   - `POST duplicate`, `POST template` and `POST vote-sessions` answer 422 "Reveal the notes first." while private writing is on; `PATCH settings {private_writing: true}` answers 422 "Close the vote first." while a vote is open.
-  - The reveal removes the revealed element ids from `private_element_ids` of every version of the board.
+  - The reveal removes the revealed element ids from `private_element_ids` of every version of the board, for the rows that are not younger than the version (`whiteboard_elements.created_at <= whiteboard_versions.created_at`).
 
 **The reveal, precisely** (spec §11.5, inside the lock):
 1. Every **live** private row of the board gets `is_private = false` and `seq = board.seq + 1` (one statement, one new seq for all of them). Versions and nonces do not change.
 2. Private **tombstones** keep their flag: a note deleted while hidden is never shown. They stay masked in `GET elements` until the nightly purge removes them; `ReadWhiteboardScene` only reads live rows, so no copy holds them.
-3. Every version of the board whose `private_element_ids` is not empty loses the revealed ids from that list (read with `get(['id', 'private_element_ids'])`: the scenes are not loaded). What stays listed was deleted before the reveal.
+3. Every version of the board whose `private_element_ids` is not empty loses from that list the revealed ids **whose row is not younger than the version** (versions read with `get(['id', 'private_element_ids', 'created_at'])`: the scenes are not loaded). What stays listed was deleted before the reveal — or is a different element under the same id. The list is keyed by id, and an id is free again once `PurgeWhiteboardTombstones` has removed its tombstone (24 hours after the deletion); every member received the id in the masked copy. Without the age check a member could write a new private note under the id of a note deleted while hidden, have it revealed, and read the deleted text in an old version — named and "Before restore" versions never expire. A row that was on the board when a version was stored was created before it; a row created under a purged id is at least 24 hours younger. Both `created_at` columns have a precision of one second, hence `<=`.
 4. The board gets `private_writing = false` and, when at least one row was revealed, the new `seq`.
 5. After the commit: `elements.changed` `{seq, fromSeq}` (no elements) when a row was revealed, then `board.changed`. The text reaches a client only through `GET elements?since=` or the snapshot.
 
@@ -1258,6 +1451,7 @@ git commit -m "feat(whiteboard): private notes are masked for everyone but their
 ```php
 <?php
 
+use App\Actions\Whiteboards\PurgeWhiteboardTombstones;
 use App\Events\Whiteboards\WhiteboardChanged;
 use App\Events\Whiteboards\WhiteboardElementsChanged;
 use App\Models\Whiteboard;
@@ -1396,6 +1590,46 @@ it('lets a version stored while the notes were hidden show what the reveal showe
         ->and($elsewhere->fresh()->private_element_ids)->toBe(['note', 'note-text']);
 });
 
+it('keeps a note deleted while hidden out of a version when its id is used again', function () {
+    $this->travelTo('2026-10-12 10:00:00');
+
+    $table = privateWritingBoard();
+    $board = $table['board'];
+    [$note, $text] = stickyWithText('note', $table['secret']);
+
+    $this->travel(5)->minutes();
+
+    $version = WhiteboardVersion::factory()->named()->create([
+        'whiteboard_id' => $board->id,
+        'scene' => ['elements' => [$note, $text], 'fileIds' => []],
+        'private_element_ids' => ['note', 'note-text'],
+    ]);
+
+    $this->travel(5)->minutes();
+
+    putWhiteboardElements($this->actingAs($table['author']), $board, [
+        [...$text, 'version' => 2, 'isDeleted' => true],
+        [...$note, 'version' => 2, 'isDeleted' => true],
+    ])->assertJsonPath('rejected', []);
+
+    $this->travel(2)->days();
+
+    expect(app(PurgeWhiteboardTombstones::class)->handle())->toBe(2)
+        ->and($board->elements()->count())->toBe(0);
+
+    putWhiteboardElements($this->actingAs($table['other']), $board, stickyWithText('note', 'Planted'))
+        ->assertJsonPath('rejected', []);
+
+    setPrivateWriting($this->actingAs($table['facilitator']), $board, false)->assertNoContent();
+
+    $planted = $board->elements()->where('element_id', 'note-text')->sole();
+
+    expect($planted->is_private)->toBeFalse()
+        ->and($planted->author_member_id)->toBe($table['otherMember']->id)
+        ->and($planted->data['text'])->toBe('Planted')
+        ->and($version->fresh()->private_element_ids)->toBe(['note', 'note-text']);
+});
+
 it('changes nothing when the switch already has that value', function () {
     $board = Whiteboard::factory()->create(['seq' => 5]);
     [$facilitator] = whiteboardFacilitator($board);
@@ -1523,7 +1757,7 @@ it('refuses to open a vote while the notes are hidden', function () {
 - [ ] **Step 2: Run it to see it fail**
 
 Run: `DB_HOST=127.0.0.1 php artisan test --compact tests/Feature/Whiteboards/WhiteboardPrivateWritingSwitchTest.php`
-Expected: FAIL — the first test finds `private_writing` still false (the key is not validated, so it is ignored); the duplicate test gets 201; the vote is opened although the notes are hidden.
+Expected: FAIL — the first test finds `private_writing` still false (the key is not validated, so it is ignored); the duplicate test gets 201; the vote is opened although the notes are hidden. The test "keeps a note deleted while hidden out of a version when its id is used again" must also be seen failing for its own reason: once Step 4 is in place, run it once with the `created_at` condition of `revealInVersions()` removed (expected: the list comes back `[]`), then put the condition back. In that test the version is created five minutes after the notes and the planted note two days later; tests that reveal a note written in the same second as the version pass because of the `<=`.
 
 - [ ] **Step 3: The guard**
 
@@ -1557,7 +1791,6 @@ namespace App\Actions\Whiteboards;
 use App\Events\Whiteboards\WhiteboardElementsChanged;
 use App\Models\Whiteboard;
 use App\Models\WhiteboardVersion;
-use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 
 class SetWhiteboardPrivateWriting
@@ -1605,7 +1838,7 @@ class SetWhiteboardPrivateWriting
 
         $hidden->update(['is_private' => false, 'seq' => $seq]);
 
-        $this->revealInVersions($locked, $revealedIds);
+        $this->revealInVersions($locked, $revealedIds->all());
 
         $locked->update(['private_writing' => false, 'seq' => $seq]);
 
@@ -1615,20 +1848,39 @@ class SetWhiteboardPrivateWriting
     /**
      * A version stored while the notes were hidden may now show them; what
      * stays on its list was deleted before the reveal and is never shown.
+     * The list holds ids, and an id is free again once its tombstone is
+     * purged: only a row that is not younger than the version is the
+     * element the version stored.
      *
-     * @param  Collection<int, string>  $revealedIds
+     * @param  list<string>  $revealedIds
      */
-    private function revealInVersions(Whiteboard $locked, Collection $revealedIds): void
+    private function revealInVersions(Whiteboard $locked, array $revealedIds): void
     {
         $locked->versions()
             ->whereJsonLength('private_element_ids', '>', 0)
-            ->get(['id', 'private_element_ids'])
-            ->each(fn (WhiteboardVersion $version) => $version->update([
-                'private_element_ids' => array_values(array_diff($version->private_element_ids, $revealedIds->all())),
-            ]));
+            ->get(['id', 'private_element_ids', 'created_at'])
+            ->each(function (WhiteboardVersion $version) use ($locked, $revealedIds): void {
+                $listed = array_values(array_intersect($version->private_element_ids, $revealedIds));
+
+                if ($listed === []) {
+                    return;
+                }
+
+                $shown = $locked->elements()
+                    ->whereIn('element_id', $listed)
+                    ->where('created_at', '<=', $version->created_at)
+                    ->pluck('element_id')
+                    ->all();
+
+                $version->update([
+                    'private_element_ids' => array_values(array_diff($version->private_element_ids, $shown)),
+                ]);
+            });
     }
 }
 ```
+
+One query per version that lists a revealed id (at most 50 automatic versions and 100 named ones, and only those stored during a private round). `$hidden->clone()->pluck('element_id')` is read before the update that clears the flag; `revealInVersions()` runs after it and finds the rows by id. An element row's `created_at` is set once, when the write path first creates the row, and no code path changes it: an update keeps it, and restore gives an element whose row is gone a fresh id (Task 6). (`->all()` on the plucked collection gives `array<int, string>`; if PHPStan asks for a list, wrap it in `array_values()`.)
 
 - [ ] **Step 5: The settings key**
 
@@ -3763,13 +4015,13 @@ Built and type-checked on the prototype, never opened in a browser. Names checke
 
 **Files:**
 - Create: `resources/js/components/whiteboard/masked-notes.tsx`
-- Modify: `resources/js/lib/whiteboard/types.ts`, `resources/js/hooks/use-whiteboard-overlay.ts`, `resources/js/components/whiteboard/board.tsx`, `resources/js/components/whiteboard/facilitator-bar.tsx`, `resources/js/components/whiteboard/board-menu.tsx`, `lang/{en,fr,de,es}.json`
+- Modify: `resources/js/lib/whiteboard/types.ts`, `resources/js/lib/whiteboard/scene-sync.ts`, `resources/js/hooks/use-whiteboard-overlay.ts`, `resources/js/components/whiteboard/board.tsx`, `resources/js/components/whiteboard/facilitator-bar.tsx`, `resources/js/components/whiteboard/board-menu.tsx`, `lang/{en,fr,de,es}.json`
 
 **Interfaces:**
 - Consumes: snapshot `board.privateWriting` (Task 1); rejection reason `private` and the masked wire shape (Task 2); `PATCH settings {private_writing}` (Task 3) through Wayfinder `WhiteboardSettingsController.update(boardId)`; `FacilitatorBar`'s own `updateSettings(settings: Record<string, boolean>)`; `useCanvasView(api): CanvasView | null`, `NoteBox` (`use-whiteboard-overlay.ts`); `<StatusBar>`; `SceneSync.resync()`.
 - Produces: `WhiteboardSnapshot['board']['privateWriting']: boolean`; `RejectReason` includes `'private'`; `useMaskedNoteBoxes(api: ExcalidrawImperativeAPI | null): MaskedNoteBox[]` with `MaskedNoteBox = NoteBox & { angle: number }`; `<MaskedNotes api={api} />`. Task 8 reads `privateWriting` in `board.tsx` to disable the history button.
 
-No change to `scene-sync.ts` or `restore.ts`: see "Wire shape of a private note" at the top of this plan for why a masked note is neither deleted on the server nor written back.
+No change to `restore.ts`, and one small change to `scene-sync.ts` (Step 5): `onRejected` also receives the id of the refused element, so that the board closes the text editor only when the refusal is about what is being typed. See "Wire shape of a private note" at the top of this plan for why a masked note is neither deleted on the server nor written back, and for the one write of a masked copy the canvas makes on its own (the index repair, which the server accepts: Task 2, rule 5).
 
 - [ ] **Step 1: Types** — in `resources/js/lib/whiteboard/types.ts` add `privateWriting: boolean;` to `WhiteboardSnapshot['board']` (after `followEnabled`) and `| 'private'` to `RejectReason` (after `'voting'`).
 
@@ -3966,19 +4218,40 @@ In `board-menu.tsx`, the "Duplicate this board" and "Save as template" items get
 
   - import `EyeOff` from `lucide-react` (beside `Lock`) and `{ MaskedNotes } from './masked-notes'`;
   - add `private: ''` to the initial `rejectionMessages` record and `private: t('Only its author can change a hidden note.')` to the assignment below it;
-  - `onRejected` of `createSceneSync` becomes:
+  - in `resources/js/lib/whiteboard/scene-sync.ts`, `onRejected` says which element was refused. The type in `SceneSyncDeps` becomes
+
+```ts
+    /** `elementId` is null when the server could not read an id. */
+    onRejected: (reason: RejectReason, elementId: string | null) => void;
+```
+
+    and its two callers pass the id: in `settle()`, `deps.onRejected(rejection.reason, rejection.id);`; in `withUploadedFiles()`, `deps.onRejected('file', element.id);`. Nothing else in the file changes.
+
+  - `onRejected` of `createSceneSync` in `board.tsx` becomes:
 
 ```tsx
-            onRejected: (reason) => {
+            onRejected: (reason, elementId) => {
+                const editing = api.getAppState().editingTextElement;
+
                 // Typing into someone's hidden note: the editor would keep
-                // writing a text the server refuses at every key.
-                if (reason === 'private') {
+                // writing a text the server refuses at every key. A refusal
+                // about any other element leaves the editor alone: the
+                // member may be typing their own note.
+                if (
+                    reason === 'private' &&
+                    editing &&
+                    elementId !== null &&
+                    (editing.id === elementId ||
+                        editing.containerId === elementId)
+                ) {
                     queueMicrotask(closeTextEditor);
                 }
 
                 toast.error(rejectionMessages.current[reason], { id: reason });
             },
 ```
+
+    `api` is the non-null canvas API of the effect that creates the sync (the effect returns early when it is null). Typing into a masked note creates a new bound text (the masked one is deleted locally) and rewrites the note's list: both are refused, the first with the id of the text being edited, the second with the id of its container — either closes the editor. `editingTextElement` is a text element, so it has `containerId` (`node_modules/@excalidraw/excalidraw/dist/types/excalidraw/types.d.ts`, `AppState.editingTextElement`); this snippet was written after the prototype and has not been type-checked.
 
   - after the polling effect:
 
@@ -4028,11 +4301,11 @@ The status row is a row of the page's flex column, between the top bar and the c
 
 - [ ] **Step 7: Gates and commit**
 
-Run: `npm run build && npm run types:check && npx vp check resources/js/lib/whiteboard/types.ts resources/js/hooks/use-whiteboard-overlay.ts resources/js/components/whiteboard/board.tsx resources/js/components/whiteboard/board-menu.tsx resources/js/components/whiteboard/facilitator-bar.tsx resources/js/components/whiteboard/masked-notes.tsx && DB_HOST=127.0.0.1 php artisan test --compact tests/Feature/TranslationKeysTest.php`
+Run: `npm run build && npm run types:check && npx vp check resources/js/lib/whiteboard/types.ts resources/js/lib/whiteboard/scene-sync.ts resources/js/hooks/use-whiteboard-overlay.ts resources/js/components/whiteboard/board.tsx resources/js/components/whiteboard/board-menu.tsx resources/js/components/whiteboard/facilitator-bar.tsx resources/js/components/whiteboard/masked-notes.tsx && DB_HOST=127.0.0.1 php artisan test --compact tests/Feature/TranslationKeysTest.php`
 Expected: no error in these files (run `npx vp check --fix <file>` for a formatting remark); test PASS.
 
 ```bash
-git add resources/js/lib/whiteboard/types.ts resources/js/hooks/use-whiteboard-overlay.ts resources/js/components/whiteboard/board.tsx resources/js/components/whiteboard/board-menu.tsx resources/js/components/whiteboard/facilitator-bar.tsx resources/js/components/whiteboard/masked-notes.tsx lang/en.json lang/fr.json lang/de.json lang/es.json
+git add resources/js/lib/whiteboard/types.ts resources/js/lib/whiteboard/scene-sync.ts resources/js/hooks/use-whiteboard-overlay.ts resources/js/components/whiteboard/board.tsx resources/js/components/whiteboard/board-menu.tsx resources/js/components/whiteboard/facilitator-bar.tsx resources/js/components/whiteboard/masked-notes.tsx lang/en.json lang/fr.json lang/de.json lang/es.json
 git commit -m "feat(whiteboard): private writing button, status sentence and masked note marks on the board"
 ```
 
@@ -4047,6 +4320,8 @@ git commit -m "feat(whiteboard): private writing button, status sentence and mas
 - B7.8 While the switch is on: "Duplicate this board" and "Save as template" are disabled; calling `POST duplicate` from the console answers 422 "Reveal the notes first.". Exporting as PNG from A's browser shows B's note empty.
 - B7.9 With a vote open, clicking the private-writing button shows the toast "Close the vote first." and changes nothing; with private writing on, "Start a vote" is disabled and `POST vote-sessions` from the console answers 422 "Reveal the notes first.".
 - B7.10 Two members type hidden notes at the same time for a minute: nobody sees the "reconnecting" banner, and each sees their own text and the other's marks.
+- B7.11 The duplicate index (Task 2, rule 5). With private writing on, A and B each add a sticky note within the same second (before either browser has fetched the other's note) and both keep typing in their own note. Expected: neither sees the toast "Only its author can change a hidden note.", neither text editor closes, and each browser's network log shows at most a few `PUT elements` in the seconds after, not one every flush. `select element_id, data->>'index', version from whiteboard_elements where whiteboard_id = '<id>' order by data->>'index'` shows four different indices once both are idle, and both texts are intact. Then B closes the tab while A's canvas still holds B's note: A's `PUT elements` do not repeat. If the two notes cannot be created close enough together by hand, force the case: from A's console, `PUT elements` with A's masked copy of B's note text at a new index and `version + 1` (as in the test "takes the new index a canvas gives a hidden note of someone else, and nothing else") answers `rejected: []`, and B still reads the text.
+- B7.12 While B is typing in B's own hidden note, A drags B's *other* hidden note: A gets the toast, B's editor stays open. While A is typing in A's own note, A's canvas is refused something about another note (A's console: `PUT elements` moving B's note does not go through the sync, so use B7.4's drag from a second tab of A): the editor of the first tab stays open.
 
 ---
 
@@ -4879,7 +5154,7 @@ Title `# Plan 17d — whiteboard secrecy and history: walkthrough`, a "Before st
 Private writing (R9)
 
 1. **Given private writing is on, when member A writes a sticky, then member B and the facilitator see a masked note at the same place and no payload they receive contains its text.** Setup: facilitator A and member B on the same board, private writing on. Action: B writes a note "Secret idea"; A fetches `GET snapshot` and `GET elements?since=0` from the console. Expected: A sees the note masked with "•••" at the same place, same size and colour; neither response contains "Secret idea"; B's second tab shows the text. Include B7.1, B7.2, B7.3, B7.5, B7.6, B7.10.
-2. **Given a masked note, when another member edits or deletes it, then the write is rejected and the author's text is intact.** Setup: as 1. Action: A drags, erases and types on B's note; A sends `PUT elements` from the console with the masked text at `version + 1` and `text: "Overwritten"`. Expected: each attempt returns to the masked note; the console call answers `rejected[0].reason = "private"` with an element whose `text` is empty; `select data->>'text' from whiteboard_elements where element_id = '<text id>'` still reads "Secret idea". Include B7.4.
+2. **Given a masked note, when another member edits or deletes it, then the write is rejected and the author's text is intact.** Setup: as 1. Action: A drags, erases and types on B's note; A sends `PUT elements` from the console with the masked text at `version + 1` and `text: "Overwritten"`. Expected: each attempt returns to the masked note; the console call answers `rejected[0].reason = "private"` with an element whose `text` is empty; `select data->>'text' from whiteboard_elements where element_id = '<text id>'` still reads "Secret idea". Include B7.4, B7.11, B7.12.
 3. **Given the facilitator reveals, then every member sees every note's text without reloading.** Setup: as 1, plus a second hidden note B deleted. Action: A clicks "Reveal the notes". Expected: every browser shows "Secret idea" within about a second; the deleted note does not come back; the banner and the marks are gone. Include B7.7.
 4. **While private writing is on, voting, version history, duplicate and save-as-template answer 422 "Reveal the notes first."** Setup: private writing on. Action: from A's console, `POST duplicate`, `POST template`, `GET versions`, `GET versions/<id>`, `POST versions/<id>/restore`, `POST versions/<id>/copy`, and opening a vote. Expected: 422 with that message for each; the menu entries, "Start a vote" and the history button are disabled. `POST versions` (saving) answers 201: it returns nothing of a scene (spec §9). Include B7.8, B7.9, B8.1.
 
@@ -4889,7 +5164,7 @@ Version history (R10)
 6. **Given a version, when the facilitator restores it, then every connected browser shows that scene and a "Before restore" version exists that restores the prior state.** Setup: A and B on a board with a saved version, then more edits. Action: A restores the version, then restores "Before restore · …". Expected: both browsers show the version, then the previous state, each time without a reload. Include B8.3, B8.4, B8.5, B8.6, B8.7, B8.8, B8.10, B8.11.
 7. **A guest gets 403 on every version endpoint.** Setup: guest on 127.0.0.1. Action: from the guest's console, the seven version requests (`GET versions`, `POST versions`, `GET`, `PATCH`, `DELETE versions/<id>`, `POST …/restore`, `POST …/copy`). Expected: 403 "Guests cannot do this." for each; no history button.
 
-End with a "Feature tests that pin these criteria" list: `WhiteboardPrivateWritingTest`, `WhiteboardPrivateWritingSwitchTest`, `WhiteboardAutomaticVersionsTest`, `WhiteboardVersionsTest`, `WhiteboardVersionRestoreTest`, `WhiteboardSecrecyModelTest`, and a table "surface of the invariant → test" with these rows: snapshot, Inertia page and `GET elements` → "masks a private note for everyone but its author"; `rejected` copies → "refuses every change another member makes to a private note and keeps the text"; `elements.changed` → "never broadcasts the elements of a write that touches a private note" and "reveals every live private note and makes every client fetch it"; versions → "keeps the history closed while the notes are hidden", "refuses to copy a version for guests, outsiders and while the notes are hidden", "never previews a note that was deleted before the reveal" and "never restores or copies a note that was deleted before the reveal"; voting → "refuses to hide the notes while a vote is open" and "refuses to open a vote while the notes are hidden"; duplicate and template → "refuses duplicate and save as template until the notes are revealed" and "copies the notes once they are revealed, and never one deleted while hidden"; export → client-side from the masked copies (B7.8); log lines → "keeps the text of a note out of the log, even when the database refuses the write" and "keeps the scene out of the log when a version cannot be stored".
+End with a "Feature tests that pin these criteria" list: `WhiteboardPrivateWritingTest`, `WhiteboardPrivateWritingSwitchTest`, `WhiteboardAutomaticVersionsTest`, `WhiteboardVersionsTest`, `WhiteboardVersionRestoreTest`, `WhiteboardSecrecyModelTest`, and a table "surface of the invariant → test" with these rows: snapshot, Inertia page and `GET elements` → "masks a private note for everyone but its author"; `rejected` copies → "refuses every change another member makes to a private note and keeps the text"; the index repair → "takes the new index a canvas gives a hidden note of someone else, and nothing else" and "takes nothing but an index from the canvas of another member"; `elements.changed` → "never broadcasts the elements of a write that touches a private note" and "reveals every live private note and makes every client fetch it"; versions → "keeps the history closed while the notes are hidden", "refuses to copy a version for guests, outsiders and while the notes are hidden", "never previews a note that was deleted before the reveal", "never restores or copies a note that was deleted before the reveal" and "keeps a note deleted while hidden out of a version when its id is used again"; voting → "refuses to hide the notes while a vote is open" and "refuses to open a vote while the notes are hidden"; duplicate and template → "refuses duplicate and save as template until the notes are revealed" and "copies the notes once they are revealed, and never one deleted while hidden"; export → client-side from the masked copies (B7.8); log lines → "keeps the text of a note out of the log, even when the database refuses the write" and "keeps the scene out of the log when a version cannot be stored".
 
 - [ ] **Step 2: Full gates**
 
@@ -4953,7 +5228,7 @@ Every key this plan adds, by task (each task repeats its own rows). English valu
 
 ## Spec edits made with this plan
 
-Each is a decision the spec needed for this slice; none changes a behaviour the user decided. Items 1–13 were written with the first version of this plan; items 14–18 with the reconciliation.
+Each is a decision the spec needed for this slice; none changes a behaviour the user decided. Items 1–13 were written with the first version of this plan; items 14–18 with the reconciliation; items 19–20 after the adversarial check.
 
 1. **§7 `whiteboard_versions.scene`** is `{elements, fileIds}`: the ids of the images beside the elements, so that the image prune can ask "does a version show this file" without reading every scene.
 2. **§9 automatic versions:** one at most every five minutes (a job that finds a younger automatic version does nothing); a board made from a template, a duplicate or a version starts with nothing left to version; the daily command queues the version of a board whose job was lost.
@@ -4973,6 +5248,8 @@ Each is a decision the spec needed for this slice; none changes a behaviour the 
 16. **§9 restore:** the votes of the session a restore closes are deleted, as at an ordinary close.
 17. **§11.5 scope / §13:** the sentence about hidden notes is an item of the status row; the switch is a button of the facilitator bar; "•••" marks use the overlay layer of the vote badges.
 18. **§13 history:** the history button sits in the top bar for non-guests; the preview is a read-only canvas in a dialog, without the canvas's menu and help buttons.
+19. **§11.5 write rules:** the one write of a private sticky by another member that is accepted — the canvas's repair of a duplicate stacking index — and what the server takes from it (the index, version and nonce; never text, position or deletion). The spec said "only the author may change", which made every other canvas repeat a refused write for as long as two hidden notes shared an index.
+20. **§7 and §9 "What a version shows":** the reveal takes an element off a version's list only when its row is not younger than the version. The spec keyed the list by id alone, and an id can be used again once its tombstone is purged.
 
 ## Reconciliation with plans 17b and 17c
 
@@ -4985,6 +5262,7 @@ What the first version of this plan assumed, and what the branch really holds at
 - **Board UI (17c):** a facilitator bar, a status row and an overlay layer exist. The switch moved from the board menu to the facilitator bar, the banner became an item of the status row, the marks use `useCanvasView` and a hook beside `useNoteBoxes`, requests use `useWhiteboardRequest`.
 - **Board menu (17b Task 8):** "Duplicate this board" and "Save as template" are `DropdownMenuItem`s of `board-menu.tsx`; Task 7 disables them. `DuplicateWhiteboard` and `SaveWhiteboardTemplate` have the shape the first version read.
 - **Migration date:** 17c's is `2026_10_11_100000`; `2026_10_12_100000` stays.
+- **Found by the adversarial check after the prototype, by reading the library and the sync code (not built, not run):** the repeated refused write when two hidden notes share an index (spec edit 19; Task 2 rule 5, Task 7 `onRejected`), and the re-use of a purged id to open a version's never-revealed list (spec edit 20; Task 3 `revealInVersions()`).
 - **Found while prototyping, not assumptions:** the never-revealed hole in versions (spec edit 14) and in tombstone rewrites (15); `now()->locale()` does not pass PHPStan; the history button needs no change to `top-bar.tsx`; `DialogContent` needs `sm:max-w-6xl` (its default is `sm:max-w-lg`); the preview dropped "Save as image" because the canvas opens that dialog outside the Radix dialog, where it cannot be used.
 
-**Things only a browser can show** (collected in the walkthrough): that a masked note is drawn empty with its mark and stays so through pan, zoom and remote updates; that the reveal replaces the masked copies without a reload in every tab, the facilitator's included; that closing the text editor on a `private` refusal leaves the canvas calm; that the preview canvas shows no library branding and writes nothing; that two canvases on one page (the board and the preview) do not disturb the sticky-note button, which looks for the toolbar inside the board's own container; that a dialog opened from the sheet stacks and closes cleanly.
+**Things only a browser can show** (collected in the walkthrough): that a masked note is drawn empty with its mark and stays so through pan, zoom and remote updates; that the reveal replaces the masked copies without a reload in every tab, the facilitator's included; that closing the text editor on a `private` refusal leaves the canvas calm, and that it closes only for the note being typed into; that two hidden notes created with the same index settle without toasts or repeated writes (B7.11); that the preview canvas shows no library branding and writes nothing; that two canvases on one page (the board and the preview) do not disturb the sticky-note button, which looks for the toolbar inside the board's own container; that a dialog opened from the sheet stacks and closes cleanly.
