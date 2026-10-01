@@ -1,6 +1,8 @@
 # Plan 17d — whiteboard secrecy and history: walkthrough
 
-> **Note, 2026-10-01 — private writing was removed.** After this walkthrough was run the product owner decided to remove private writing (and dot voting) from the whiteboard. The part "Private writing (R9)" below (sections 1 to 4), the "quick vote" regression line, the lines about hidden notes in "Result" and the table of the secrecy invariant at the end describe features that no longer exist; they are kept as the record of what was observed and are not to be replayed. "Version history (R10)" (sections 5 to 7) still applies; what the controller observed for sections 5 and 7 on 2026-10-01, before the removal, is recorded under each.
+> **Note, 2026-10-01 — version history was removed.** After the note below was written the product owner decided to remove version history from the whiteboard as well (spec §3 "Non-goals" and Decisions, entry 9). "Version history (R10)" below (sections 5 to 7), the version lines of "Result", the queue-worker instructions of "Before starting" and the version tests listed at the end describe a feature that no longer exists; they are kept as the record of what was observed on 2026-10-01 and are not to be replayed. Nothing of this walkthrough applies any more except "Regression of 17a to 17c basics", minus its lines about votes, hidden notes and versions.
+
+> **Note, 2026-10-01 — private writing was removed.** After this walkthrough was run the product owner decided to remove private writing (and dot voting) from the whiteboard. The part "Private writing (R9)" below (sections 1 to 4), the "quick vote" regression line, the lines about hidden notes in "Result" and the table of the secrecy invariant at the end describe features that no longer exist; they are kept as the record of what was observed and are not to be replayed. "Version history (R10)" (sections 5 to 7) still applied at that point (it was removed later the same day, note above); what the controller observed for sections 5 and 7 on 2026-10-01, before the removal, is recorded under each.
 
 ## Result
 
@@ -86,9 +88,9 @@ While private writing is on, voting, version history, duplicate and save-as-temp
 - [x] Action: from A's console, `POST duplicate`, `POST template`, `GET versions`, `GET versions/<id>`, `POST versions/<id>/restore`, `POST versions/<id>/copy`, and opening a vote. — the vote was tried as `POST vote-sessions` from the console; its button is disabled
 - [x] Expected: 422 with that message for each; the menu entries, "Start a vote" and the history button are disabled (B7.8, B7.9, B8.1). `POST versions` (saving) answers 201: it returns nothing of a scene (spec §9). — seven 422 "Reveal the notes first."; "Duplicate this board" and "Save as template" are `aria-disabled`, "Start a vote" and "Version history" are disabled with the title "Reveal the notes first."; `POST versions` 201 twice, body `{id, name, createdAt, createdByName, automatic}`
 
-## Version history (R10)
+## Version history (R10) (removed)
 
-### 5. Automatic versions
+### 5. Automatic versions (removed)
 
 Given edits over more than 5 minutes, then automatic versions exist, at most one per 5 minutes, and never more than 50.
 
@@ -98,7 +100,7 @@ Given edits over more than 5 minutes, then automatic versions exist, at most one
 
 Observed by the controller in Chrome on 2026-10-01, before the removal of dot voting and private writing: after the queue worker was restarted, it created one automatic version of the board. The five-minute cadence over several windows of activity was not observed, so the lines above stay unticked.
 
-### 6. Restore
+### 6. Restore (removed)
 
 Given a version, when the facilitator restores it, then every connected browser shows that scene and a "Before restore" version exists that restores the prior state.
 
@@ -106,7 +108,7 @@ Given a version, when the facilitator restores it, then every connected browser 
 - [x] Action: A restores the version, then restores "Before restore · …".
 - [x] Expected: both browsers show the version, then the previous state, each time without a reload (B8.3, B8.4, B8.5, B8.6, B8.7, B8.8, B8.10, B8.11). — restore from the version's menu, in-page confirmation "Restore this version?", toast "Version restored."; the second tab lost "Secret idea" after one `GET elements?since=14` and one `GET snapshot`, no reload (seq 16); "Before restore · October 1, 2026 3:28 PM" appeared at the top of the list; restoring it brought "Secret idea" back in both tabs (seq 18) and not the note deleted while hidden. Also seen: the list (name, date, author), the read-only preview dialog, the menu "Copy to a new board / Restore / Rename / Delete". Not replayed: rename, delete, copy to a new board, a restore with a vote open, and a member who is not the facilitator
 
-### 7. Guests have no history
+### 7. Guests have no history (removed)
 
 A guest gets 403 on every version endpoint.
 
