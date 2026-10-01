@@ -5825,3 +5825,8 @@ The draft of this plan was written at `e0524df`, before plan 17b was finished an
 ## Corrections
 
 - Task 4: the text half of the freeze was keyed on the incoming type only, so a write reusing the id of a note's text with another type erased the words under vote; `isWordsOfTarget` now also looks at the stored type and `changesWordsOfTarget` refuses a change of type (spec §11.4; test "rejects a text of a note under vote rewritten as another type").
+
+## Corrections after the final review
+
+1. Task 4, refund on delete: the plan sent `vote.changed` only when the delete removed at least one vote row ("After the batch, if any row was deleted", `$refunded > 0`), and its test "says nothing about votes when the deleted note had none or was not under vote" pinned that. Anyone could then delete a note under vote, undo, and learn from the arrival of the event whether somebody had voted for it; with two participants that names the other person's vote, against the secrecy rule of spec §11.4. `WriteWhiteboardElements` now counts the notes that left the scope (`$leftScope`), still deletes their votes, and sends `vote.changed` whenever one left, voted or not. The test is split: "says nothing about votes when the deleted note was not under vote" (a note outside the scope stays silent) and "announces the delete of a note under vote the same way whether or not it had votes".
+2. Spec §11.4 now states this, and that a drop of `finishedCount` when a member who had used their whole budget is refunded remains visible and is accepted. The code listings of Task 4 above still show `$refunded`; the code in the tree is the reference.

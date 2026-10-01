@@ -341,20 +341,33 @@ it('brings a deleted note back with its words and without its votes', function (
     'the text first' => [['text', 'note']],
 ]);
 
-it('says nothing about votes when the deleted note had none or was not under vote', function () {
+it('says nothing about votes when the deleted note was not under vote', function () {
     [$board, $user] = boardUnderVote();
     [$late] = whiteboardSticky($board, 'late');
-    [$unvoted] = whiteboardSticky($board, 'unvoted');
-    WhiteboardVoteSession::query()->sole()->update(['element_ids' => ['note', 'kept', 'unvoted']]);
 
-    writeDuringVote($this->actingAs($user), $board, [
-        [...$late->data, 'version' => 2, 'isDeleted' => true],
-        [...$unvoted->data, 'version' => 2, 'isDeleted' => true],
-    ])->assertOk()->assertJsonPath('rejected', []);
+    writeDuringVote($this->actingAs($user), $board, [[...$late->data, 'version' => 2, 'isDeleted' => true]])
+        ->assertOk()
+        ->assertJsonPath('rejected', []);
 
     expect(WhiteboardVote::query()->count())->toBe(3);
 
     Event::assertNotDispatched(WhiteboardVoteChanged::class);
+});
+
+it('announces the delete of a note under vote the same way whether or not it had votes', function () {
+    [$board, $user, $session] = boardUnderVote();
+    [$unvoted] = whiteboardSticky($board, 'unvoted');
+    $session->update(['element_ids' => ['note', 'kept', 'unvoted']]);
+
+    writeDuringVote($this->actingAs($user), $board, [[...$unvoted->data, 'version' => 2, 'isDeleted' => true]])
+        ->assertOk()
+        ->assertJsonPath('rejected', []);
+
+    expect(WhiteboardVote::query()->count())->toBe(3);
+
+    Event::assertDispatchedTimes(WhiteboardVoteChanged::class, 1);
+    Event::assertDispatched(WhiteboardVoteChanged::class, fn (WhiteboardVoteChanged $event) => $event->boardId === $board->id
+        && $event->broadcastWith() === ['sessionId' => $session->id, 'finishedCount' => 1]);
 });
 
 it('copies no vote into a duplicate or a template', function () {

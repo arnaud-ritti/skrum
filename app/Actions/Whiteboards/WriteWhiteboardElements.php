@@ -47,7 +47,7 @@ class WriteWhiteboardElements
             $session = $locked->voteSessions()->whereNull('closed_at')->first();
             $stored = $this->storedElements($locked, $rawElements, $session !== null);
             $targetsBefore = $this->targets($session, $stored);
-            $refunded = 0;
+            $leftScope = 0;
             $fileIds = $locked->files()->pluck('file_id')->flip();
             $liveCount = $locked->elements()->where('is_deleted', false)->count();
             $accepted = [];
@@ -105,7 +105,9 @@ class WriteWhiteboardElements
                 $accepted[$element['id']] = $saved;
 
                 if ($session !== null && isset($targetsBefore[$element['id']]) && ! $session->isTarget($saved)) {
-                    $refunded += $session->votes()->where('element_id', $element['id'])->delete();
+                    $session->votes()->where('element_id', $element['id'])->delete();
+
+                    $leftScope++;
                 }
             }
 
@@ -117,7 +119,7 @@ class WriteWhiteboardElements
 
             (new WhiteboardElementsChanged($locked->id, $seq, $fromSeq, $this->broadcastable($accepted)))->sendToOthers();
 
-            if ($session !== null && $refunded > 0) {
+            if ($session !== null && $leftScope > 0) {
                 (new WhiteboardVoteChanged($locked->id, $session->id, $this->presentWhiteboardVoting->finishedCount($session)))->sendToAll();
             }
 
