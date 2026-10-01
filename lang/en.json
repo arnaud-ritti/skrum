@@ -1604,5 +1604,12 @@
     "Following paused": "Following paused",
     "Resume": "Resume",
     "Download everything on the board as a data file.": "Download everything on the board as a data file.",
-    "Download board data": "Download board data"
+    "Download board data": "Download board data",
+    "Sprint :number retro": "Sprint :number retro",
+    "Members, rituals and integrations": "Members, rituals and integrations",
+    "General": "General",
+    "Members & rituals": "Members & rituals",
+    "Data & export": "Data & export",
+    "Card text": "Card text",
+    "Meetings end, actions remain.": "Meetings end, actions remain."
 }

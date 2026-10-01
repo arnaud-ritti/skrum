@@ -170,7 +170,8 @@ Route::get('/', fn () => Inertia::render('welcome', [
 
 Route::get('invitations/{token}', [InvitationLinksController::class, 'show'])->name('invitations.show');
 
-Route::get('dev/design-system/{section?}', [DesignSystemPagesController::class, 'show'])->name('dev.designSystem.show');
+Route::get('dev/design-system', [DesignSystemPagesController::class, 'index'])->name('dev.designSystem.index');
+Route::get('dev/design-system/{section}', [DesignSystemPagesController::class, 'show'])->name('dev.designSystem.show');
 
 Route::get('avatars/{seed}.svg', [AvatarsController::class, 'show'])->where('seed', '[a-f0-9]{32}')->name('avatars.show');
 Route::get('emoji-data/{version}/{locale}/{file}', [EmojiDataController::class, 'show'])

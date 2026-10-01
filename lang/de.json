@@ -1847,5 +1847,12 @@
     "Following paused": "Folgen pausiert",
     "Resume": "Fortsetzen",
     "Download everything on the board as a data file.": "Lade alles auf dem Board als Datendatei herunter.",
-    "Download board data": "Board-Daten herunterladen"
+    "Download board data": "Board-Daten herunterladen",
+    "Sprint :number retro": "Retro zu Sprint :number",
+    "Members, rituals and integrations": "Mitglieder, Rituale und Integrationen",
+    "General": "Allgemein",
+    "Members & rituals": "Mitglieder & Rituale",
+    "Data & export": "Daten & Export",
+    "Card text": "Kartentext",
+    "Meetings end, actions remain.": "Meetings enden, Maßnahmen bleiben."
 }
