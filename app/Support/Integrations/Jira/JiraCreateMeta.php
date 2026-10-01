@@ -15,7 +15,7 @@ class JiraCreateMeta
 
     private const FieldLimit = 200;
 
-    public function __construct(private JiraClient $jira) {}
+    public function __construct(private JiraApis $jiraApis) {}
 
     public function fields(TeamIntegration $integration, string $projectId, string $issueTypeId): JiraCreateFields
     {
@@ -37,9 +37,11 @@ class JiraCreateMeta
         $project = rawurlencode($projectId);
         $issueType = rawurlencode($issueTypeId);
 
-        $response = $this->jira->get(
+        $api = $this->jiraApis->for($integration);
+
+        $response = $api->get(
             $integration,
-            "rest/api/3/issue/createmeta/{$project}/issuetypes/{$issueType}",
+            $api->apiPath("issue/createmeta/{$project}/issuetypes/{$issueType}"),
             ['maxResults' => self::FieldLimit],
         );
 

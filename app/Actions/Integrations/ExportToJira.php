@@ -9,15 +9,16 @@ use App\Models\TeamIntegration;
 use App\Support\Integrations\Exceptions\IssueCreationUncertain;
 use App\Support\Integrations\Exceptions\ProviderRejected;
 use App\Support\Integrations\Exceptions\ProviderUnavailable;
-use App\Support\Integrations\Jira\JiraClient;
+use App\Support\Integrations\Jira\JiraApis;
 use App\Support\Integrations\Jira\JiraCreateMeta;
+use App\Support\Integrations\JiraDataCenter\MarkdownToWikiMarkup;
 
 class ExportToJira
 {
     private const IssueKeyPattern = '/^[A-Z][A-Z0-9_]*-\d+\z/';
 
     public function __construct(
-        private JiraClient $jira,
+        private JiraApis $jiraApis,
         private JiraCreateMeta $createMeta,
         private ResolveExportPriority $resolvePriority,
     ) {}
@@ -34,14 +35,16 @@ class ExportToJira
             $assignee = $assignee->withoutAccount(ExportWarningCode::AssigneeUnavailable);
         }
 
+        $isDataCenter = $integration->provider === IntegrationProvider::JiraDataCenter;
+
         $payload = array_filter([
             'project' => ['id' => $target['project_id']],
             'issuetype' => ['id' => $target['issue_type_id']],
             'summary' => $draft->title,
-            'description' => $draft->adf(),
+            'description' => $isDataCenter ? MarkdownToWikiMarkup::draft($draft) : $draft->adf(),
             'duedate' => $draft->dueOn,
             'priority' => $priority->value === null ? null : ['id' => (string) $priority->value],
-            'assignee' => $assignee->accountId === null ? null : ['accountId' => $assignee->accountId],
+            'assignee' => $assignee->accountId === null ? null : [$isDataCenter ? 'name' : 'accountId' => $assignee->accountId],
         ], fn (mixed $value): bool => $value !== null);
 
         try {
@@ -60,12 +63,10 @@ class ExportToJira
         $key = $created['key'] ?? null;
 
         if (! is_string($id) || $id === '' || ! is_string($key) || preg_match(self::IssueKeyPattern, $key) !== 1) {
-            throw new IssueCreationUncertain(IntegrationProvider::Jira, 'invalid_issue_response');
+            throw new IssueCreationUncertain($integration->provider, 'invalid_issue_response');
         }
 
-        $siteUrl = rtrim((string) $integration->setting('siteUrl'), '/');
-
-        return new ExportOutcome(new CreatedIssue($id, $key, "{$siteUrl}/browse/{$key}"), $assignee, $priority);
+        return new ExportOutcome(new CreatedIssue($id, $key, $this->jiraApis->for($integration)->browseUrl($integration, $key)), $assignee, $priority);
     }
 
     /**
@@ -74,11 +75,13 @@ class ExportToJira
      */
     private function send(TeamIntegration $integration, array $fields): array
     {
+        $api = $this->jiraApis->for($integration);
+
         try {
-            return $this->jira->post($integration, 'rest/api/3/issue', ['fields' => $fields]);
+            return $api->post($integration, $api->apiPath('issue'), ['fields' => $fields]);
         } catch (ProviderUnavailable $exception) {
             if ($exception->timedOut) {
-                throw new IssueCreationUncertain(IntegrationProvider::Jira, $exception->detail());
+                throw new IssueCreationUncertain($integration->provider, $exception->detail());
             }
 
             throw $exception;

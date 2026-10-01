@@ -2,7 +2,6 @@
 
 namespace App\Actions\Integrations;
 
-use App\Enums\IntegrationProvider;
 use Illuminate\Validation\Rule;
 
 /**
@@ -17,9 +16,9 @@ class ExportActionItemRules
     public static function rules(): array
     {
         return [
-            'source' => ['required', 'string', Rule::in([IntegrationProvider::Jira->value, IntegrationProvider::Linear->value])],
-            'project_id' => ['exclude_unless:source,jira', 'required', 'string', 'regex:/^\d{1,20}\z/'],
-            'issue_type_id' => ['exclude_unless:source,jira', 'required', 'string', 'regex:/^\d{1,20}\z/'],
+            'source' => ['required', 'string', Rule::in(ActionItemExportGuard::Sources)],
+            'project_id' => ['exclude_unless:source,jira,jira_dc', 'required', 'string', 'regex:/^\d{1,20}\z/'],
+            'issue_type_id' => ['exclude_unless:source,jira,jira_dc', 'required', 'string', 'regex:/^\d{1,20}\z/'],
             'team_id' => ['exclude_unless:source,linear', 'required', 'uuid'],
         ];
     }

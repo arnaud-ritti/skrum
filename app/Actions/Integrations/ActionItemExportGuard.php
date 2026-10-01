@@ -15,6 +15,11 @@ use Illuminate\Validation\Rule;
 
 class ActionItemExportGuard
 {
+    /**
+     * Trackers that take exported action items; the enum value is the `source`.
+     */
+    public const Sources = ['jira', 'jira_dc', 'linear'];
+
     public function __construct(private ActionItemPermissions $permissions) {}
 
     /**
@@ -22,7 +27,7 @@ class ActionItemExportGuard
      */
     public static function sourceRules(): array
     {
-        return ['source' => ['required', 'string', Rule::in([IntegrationProvider::Jira->value, IntegrationProvider::Linear->value])]];
+        return ['source' => ['required', 'string', Rule::in(self::Sources)]];
     }
 
     public function authorize(ActionItem $item, ActionItemActor $actor): User

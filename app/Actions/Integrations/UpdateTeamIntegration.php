@@ -38,6 +38,11 @@ class UpdateTeamIntegration
                 'priority_map' => ['sometimes', 'array:high,medium,low'],
                 'priority_map.*' => ['nullable', 'string', 'max:50', $this->jiraPriorityRule($integration)],
             ],
+            IntegrationProvider::JiraDataCenter => [
+                'story_point_field_id' => ['sometimes', 'required', 'string', Rule::in($this->ids($integration->setting('numberFields', []), 'id'))],
+                'priority_map' => ['sometimes', 'array:high,medium,low'],
+                'priority_map.*' => ['nullable', 'string', 'max:50', $this->jiraPriorityRule($integration)],
+            ],
             IntegrationProvider::Linear => [
                 'priority_map' => ['sometimes', 'array:high,medium,low'],
                 'priority_map.*' => ['required', Rule::in([...array_map('strval', LinearPriority::Scale), self::DefaultPriority])],
@@ -97,7 +102,7 @@ class UpdateTeamIntegration
                 continue;
             }
 
-            $map[$level] = $integration->provider === IntegrationProvider::Jira
+            $map[$level] = in_array($integration->provider, [IntegrationProvider::Jira, IntegrationProvider::JiraDataCenter], true)
                 ? $this->jiraPriority($integration, $value)
                 : (int) $value;
         }
