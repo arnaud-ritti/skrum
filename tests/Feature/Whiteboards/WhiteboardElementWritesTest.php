@@ -5,6 +5,7 @@ use App\Events\Whiteboards\WhiteboardElementsChanged;
 use App\Models\Whiteboard;
 use App\Models\WhiteboardElement;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Route;
 
 beforeEach(function () {
@@ -384,4 +385,15 @@ it('accepts a second write of an element whose id is 0', function () {
         ->assertJsonPath('rejected', []);
 
     expect($board->elements()->sole()->data['x'])->toBe(5);
+});
+
+it('queues no job for an element write', function () {
+    Queue::fake();
+
+    $board = Whiteboard::factory()->create();
+    [$user] = whiteboardMember($board);
+
+    writeElements($this->actingAs($user), $board, [sceneElement(['id' => 'first'])])->assertOk();
+
+    Queue::assertNothingPushed();
 });

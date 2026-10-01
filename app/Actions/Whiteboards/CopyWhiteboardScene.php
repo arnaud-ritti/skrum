@@ -67,7 +67,7 @@ class CopyWhiteboardScene
             WhiteboardElement::query()->fillAndInsert($chunk);
         }
 
-        $board->update(['seq' => count($rows), 'last_versioned_seq' => count($rows)]);
+        $board->update(['seq' => count($rows)]);
     }
 
     /**
