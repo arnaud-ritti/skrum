@@ -48,15 +48,24 @@ class InboundReachability
     private function appUrlIsPublic(): bool
     {
         $url = (string) config('app.url');
+        $key = 'integrations:inbound-public:'.sha1($url);
 
-        return Cache::remember(
-            'integrations:inbound-public:'.sha1($url),
-            self::CacheSeconds,
-            fn (): bool => $this->isPublicUrl($url),
-        );
+        $cached = Cache::get($key);
+
+        if (is_bool($cached)) {
+            return $cached;
+        }
+
+        $isPublic = $this->isPublicUrl($url);
+
+        if ($isPublic !== null) {
+            Cache::put($key, $isPublic, self::CacheSeconds);
+        }
+
+        return $isPublic ?? false;
     }
 
-    private function isPublicUrl(string $url): bool
+    private function isPublicUrl(string $url): ?bool
     {
         $parts = parse_url($url);
 
@@ -78,7 +87,13 @@ class InboundReachability
             return false;
         }
 
-        foreach ($this->resolver->addresses($host) as $address) {
+        $addresses = $this->resolver->addresses($host);
+
+        if ($addresses === []) {
+            return null;
+        }
+
+        foreach ($addresses as $address) {
             if (PublicAddress::isPublic($address)) {
                 return true;
             }

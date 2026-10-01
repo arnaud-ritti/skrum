@@ -40,6 +40,22 @@ it('tells public addresses from private and reserved ones', function (string $ad
     'v6 multicast' => ['ff02::1', false],
     'v4 mapped' => ['::ffff:127.0.0.1', false],
     'not an address' => ['example.com', false],
+    'ipv4 compatible' => ['::7f00:1', false],
+    '6to4 loopback' => ['2002:7f00:1::', false],
+    '6to4 metadata' => ['2002:a9fe:a9fe::1', false],
+    'local-use nat64' => ['64:ff9b:1::7f00:1', false],
+    'nat64 private v4' => ['64:ff9b::10.0.0.1', false],
+    'teredo' => ['2001:0::1', false],
+    'site local' => ['fec0::1', false],
+    '6to4 relay anycast' => ['192.88.99.1', false],
+    'ietf protocol' => ['192.0.0.8', false],
+    'benchmarking' => ['198.18.0.1', false],
+    'documentation 1' => ['192.0.2.1', false],
+    'documentation 2' => ['198.51.100.1', false],
+    'documentation 3' => ['203.0.113.1', false],
+    'documentation v6' => ['2001:db8::1', false],
+    'discard only' => ['100::1', false],
+    'hex mapped' => ['::ffff:7f00:1', false],
 ]);
 
 it('matches CIDR ranges on bit boundaries', function () {
@@ -77,6 +93,7 @@ it('treats local or private APP_URLs as not public', function (string $url, arra
     'http' => ['http://skrum.example.com', ['93.184.216.34'], 0],
     'localhost' => ['https://localhost', ['127.0.0.1'], 0],
     'ip literal' => ['https://203.0.113.10', ['203.0.113.10'], 0],
+    'ipv6 loopback literal' => ['https://[::1]', ['::1'], 0],
     'ipv6 literal' => ['https://[2606:4700:4700::1111]', ['2606:4700:4700::1111'], 0],
     '.test' => ['https://skrum.test', ['93.184.216.34'], 0],
     '.local' => ['https://skrum.local', ['93.184.216.34'], 0],
@@ -98,6 +115,16 @@ it('caches the answer for an hour', function () {
     $this->travel(61)->minutes();
 
     expect(app(InboundReachability::class)->isPublic())->toBeTrue();
+});
+
+it('does not cache an unresolvable host for an hour', function () {
+    config(['services.integrations.inbound_webhooks' => 'auto', 'app.url' => 'https://skrum.example.com']);
+    $resolver = Mockery::mock(HostResolver::class);
+    $resolver->shouldReceive('addresses')->twice()->andReturn([], ['93.184.216.34']);
+    app()->instance(HostResolver::class, $resolver);
+
+    expect(app(InboundReachability::class)->isPublic())->toBeFalse()
+        ->and(app(InboundReachability::class)->isPublic())->toBeTrue();
 });
 
 it('falls back to auto for an unknown mode and clamps the poll interval', function () {
