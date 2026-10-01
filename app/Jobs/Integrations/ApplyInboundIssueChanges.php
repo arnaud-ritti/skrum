@@ -45,7 +45,7 @@ class ApplyInboundIssueChanges implements ShouldBeUniqueUntilProcessing, ShouldQ
         $ids = $this->externalIds;
         sort($ids);
 
-        return $this->integrationId.':'.sha1(implode(',', $ids));
+        return $this->integrationId.':'.hash('xxh128', implode(',', $ids));
     }
 
     /** @return array<int, object> */

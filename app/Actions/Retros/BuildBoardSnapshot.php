@@ -17,13 +17,13 @@ use App\Actions\Surveys\PresentSurvey;
 use App\Enums\IntegrationDeliveryKind;
 use App\Enums\RetroPhase;
 use App\Enums\WorkspaceRole;
-use App\Http\Controllers\EmojiDataController;
 use App\Models\ActionItem;
 use App\Models\Card;
 use App\Models\GamePlayer;
 use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\User;
+use App\Support\EmojibaseLocale;
 use App\Support\Gifs\GifCatalog;
 use App\Support\Llm\Llm;
 use Illuminate\Contracts\Database\Query\Builder;
@@ -175,7 +175,7 @@ class BuildBoardSnapshot
             ],
             'emojiData' => [
                 'baseUrl' => '/emoji-data/'.config('services.emoji_data.version'),
-                'locale' => EmojiDataController::emojibaseLocale(app()->getLocale()),
+                'locale' => EmojibaseLocale::forAppLocale(app()->getLocale()),
             ],
             'features' => [
                 'llm' => $this->llm->isConfigured(),

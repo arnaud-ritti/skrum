@@ -59,7 +59,7 @@ class GifCatalog
 
         $query = trim($query);
         $rating = (string) config('services.gifs.rating', 'pg');
-        $cacheKey = "gifs:search:{$this->providerName()}:{$rating}:".md5(mb_strtolower($query));
+        $cacheKey = "gifs:search:{$this->providerName()}:{$rating}:".hash('xxh128', mb_strtolower($query));
 
         /** @var array<int, array{id: string, previewUrl: string, fullUrl: string, width: int, height: int}> $items */
         $items = Cache::remember($cacheKey, self::SearchTtlSeconds, fn (): array => array_map(

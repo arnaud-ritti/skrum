@@ -11,6 +11,7 @@ use Illuminate\Contracts\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\NewAccessToken;
+use LogicException;
 
 class IssueMcpToken
 {
@@ -31,7 +32,7 @@ class IssueMcpToken
 
             $token = $newToken->accessToken;
 
-            assert($token instanceof PersonalAccessToken);
+            throw_unless($token instanceof PersonalAccessToken, LogicException::class, 'Sanctum issued a token that is not a skrum personal access token.');
 
             $token->forceFill([
                 'team_id' => $team?->id,

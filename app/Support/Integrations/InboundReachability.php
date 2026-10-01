@@ -56,7 +56,7 @@ class InboundReachability
     private function appUrlIsPublic(): ?bool
     {
         $url = (string) config('app.url');
-        $key = 'integrations:inbound-public:'.sha1($url);
+        $key = 'integrations:inbound-public:'.hash('xxh128', $url);
 
         $cached = Cache::get($key);
 
