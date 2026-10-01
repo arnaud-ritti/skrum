@@ -93,10 +93,12 @@ Acceptance criteria for every requirement are in §16.
 ```
 {board: {id, title, teamId, locked, privateWriting, followEnabled, cursorsEnabled,
          timerEndsAt, facilitatorMemberId, guestAccessEnabled, guestUrl?},
- me: {id, name, avatarUrl, isGuest, isFacilitator},
+ me: {id, name, avatarUrl, isGuest, isFacilitator, canTakeControl, canDelete},
  members: [{id, name, avatarUrl, isGuest}],
- elements: [...], files: [{id, url, mimeType}], seq,
- voting: {...} | null}
+ elements: [...], seq,
+ voting: {...} | null,
+ links: {team: string | null},
+ serverTime}
 ```
 
 One class, `BuildWhiteboardSnapshot`, builds it for the viewer. All redaction lives there and in `PresentWhiteboardElement` (the only serializer of elements) and `PresentWhiteboardVoting`.
@@ -108,7 +110,7 @@ One class, `BuildWhiteboardSnapshot`, builds it for the viewer. All redaction li
   1. Validate (§6.6) and check rights (§8, §11). An element failing either is rejected with a reason.
   2. Accept when no row exists, or `version` is greater than the stored one, or versions are equal and `versionNonce` is lower (Excalidraw's own tie rule). Otherwise reject as stale.
   3. On accept: increment `whiteboards.seq`, store it on the row, set the author on first write.
-- Response: `{seq, rejected: [{id, reason, element}]}` where `element` is the server's copy as the viewer may see it, so the sender converges.
+- Response: `{seq, fromSeq, rejected: [{id, reason, element}]}` where `fromSeq` is the board's `seq` before this request and `element` is the server's copy as the viewer may see it (null when the server has none), so the sender converges. Reasons: `invalid`, `stale`, `locked`, `file`, `full` (and `voting`, `private` from §11).
 - Deleting is a write with `isDeleted: true` (a tombstone). Tombstones are purged 24 hours later by a scheduled command; a client whose last `seq` is older than the oldest purge refetches the snapshot (`GET elements?since=` answers 409).
 - Broadcast `elements.changed` to others: `{seq, fromSeq, elements}` when the JSON is at most 8 KB and no private sticky is touched; otherwise `{seq, fromSeq}` and clients call `GET elements?since={their seq}`.
 - A client applies changes with `reconcileElements` then `updateScene`. It tracks the last applied `seq`; a `fromSeq` that does not match it, a resubscription or a reconnect triggers `GET elements?since=` (coalesced).
@@ -122,7 +124,7 @@ One class, `BuildWhiteboardSnapshot`, builds it for the viewer. All redaction li
 
 - `POST files` (multipart) stores an image before the element that uses it is written. An image element whose file id is unknown for the board is rejected.
 - Allowed: PNG, JPEG, WebP, GIF, detected from content. SVG upload is refused (script risk). At most 5 MB per file and 100 MB per board (422 beyond).
-- Files are served by `GET files/{file}` to members of the board only, with `Content-Disposition: inline`, the stored MIME type and `X-Content-Type-Options: nosniff`.
+- Files are served by `GET files/{fileId}` (Excalidraw's file id, so a client derives the URL from an image element without a lookup) to members of the board only, with `Content-Disposition: inline`, the stored MIME type and `X-Content-Type-Options: nosniff`.
 - A file is deleted when no live element, version (§9) or template (§10) references it; a daily command cleans up.
 
 ### 6.6 Validation and limits
@@ -142,14 +144,14 @@ One class, `BuildWhiteboardSnapshot`, builds it for the viewer. All redaction li
 
 - **whiteboards**: `id` (UUID), `team_id` (cascade), `title` (string 120), `facilitator_member_id` (nullable FK → whiteboard_members, `nullOnDelete`), `guest_access_enabled` (bool, default `false`), `guest_token` (unique string 40), `locked` (bool, default `false`), `private_writing` (bool, default `false`), `follow_enabled` (bool, default `false`), `cursors_enabled` (bool, default `true`), `timer_ends_at` (nullable timestamp), `seq` (unsigned bigint, default 0), `last_versioned_seq` (unsigned bigint, default 0), timestamps. Index (`team_id`, `updated_at`).
 - **whiteboard_members**: `id`, `whiteboard_id` (cascade), `user_id` (nullable, `nullOnDelete`), `guest_name` (nullable string 50), `guest_secret_hash` (nullable string 64), timestamps. Unique (`whiteboard_id`, `user_id`). Uses `HasGuestIdentity`; cookie `GuestCookie::name('whiteboard', $id)`.
-- **whiteboard_elements**: `whiteboard_id` (cascade), `element_id` (string 40, the client-generated Excalidraw id), `type` (string 20), `data` (json, the full element), `version` (unsigned int), `version_nonce` (unsigned bigint), `author_member_id` (nullable FK, `nullOnDelete`), `is_sticky` (bool), `is_private` (bool, default `false`), `is_deleted` (bool, default `false`), `seq` (unsigned bigint), timestamps. Primary key (`whiteboard_id`, `element_id`). Index (`whiteboard_id`, `seq`).
+- **whiteboard_elements**: `whiteboard_id` (cascade), `element_id` (string 40, the client-generated Excalidraw id), `type` (string 20), `data` (json, the full element), `version` (unsigned int), `version_nonce` (unsigned bigint), `author_member_id` (nullable FK, `nullOnDelete`), `is_sticky` (bool), `is_private` (bool, default `false`), `is_deleted` (bool, default `false`), `seq` (unsigned bigint), timestamps. `id` (UUID) primary key, because Eloquent has no composite keys; unique (`whiteboard_id`, `element_id`). Index (`whiteboard_id`, `seq`).
 - **whiteboard_files**: `id` (UUID), `whiteboard_id` (cascade), `file_id` (string 64, Excalidraw's id), `path`, `mime_type` (string 40), `size` (unsigned int), `uploaded_by_member_id` (nullable FK), timestamps. Unique (`whiteboard_id`, `file_id`).
 - **whiteboard_versions**: `id` (UUID), `whiteboard_id` (cascade), `name` (nullable string 80; null = automatic), `scene` (json: live elements with their real text), `seq` (unsigned bigint), `created_by_member_id` (nullable FK; null = automatic), `created_at`. Index (`whiteboard_id`, `created_at`).
 - **whiteboard_vote_sessions**: `id` (UUID), `whiteboard_id` (cascade), `votes_per_member` (unsigned tinyint, 1–20), `frame_element_id` (nullable string 40), `allow_multiple` (bool), `opened_by_member_id` (nullable FK), `closed_at` (nullable timestamp), `dismissed_at` (nullable timestamp), `results` (nullable json, written at close: `[{elementId, text, count}]`), timestamps. At most one row per board with `closed_at` null (partial unique index).
 - **whiteboard_votes**: `id`, `whiteboard_vote_session_id` (cascade), `whiteboard_member_id` (cascade), `element_id` (string 40), `count` (unsigned tinyint), timestamps. Unique (session, member, element).
 - **whiteboard_templates**: `id` (UUID), `workspace_id` (cascade), `name` (string 80), `description` (nullable string 300), `scene` (json), `created_by_user_id` (nullable FK → users, `nullOnDelete`), timestamps. Unique (`workspace_id`, `lower(name)`). Template images are copied to a template-owned directory and referenced from `scene.files`.
 
-Models get factories; `Whiteboard` gets a seeder entry in the demo seeder.
+Models get factories.
 
 ## 8. Access and roles
 
@@ -240,9 +242,9 @@ Board-scoped, prefix `whiteboards/{board}` (`whereUuid`, middleware `ResolveWhit
 | GET | `/` | — | member | Inertia `whiteboards/show` with snapshot |
 | GET | `snapshot` | — | member | snapshot JSON |
 | GET | `elements` | `?since=` | member | `{seq, elements}`; 409 when `since` predates a purge |
-| PUT | `elements` | `{elements}` | member | `{seq, rejected}`, `elements.changed` |
-| POST | `files` | multipart `file`, `fileId` | member | `{id, url, mimeType}` |
-| GET | `files/{file}` | — | member | the image |
+| PUT | `elements` | `{elements}` | member | `{seq, fromSeq, rejected}`, `elements.changed` |
+| POST | `files` | multipart `file`, `file_id` | member | `{id, url, mimeType}` |
+| GET | `files/{fileId}` | — | member | the image |
 | PATCH | `settings` | `{title?, guestAccessEnabled?, locked?, privateWriting?, followEnabled?, cursorsEnabled?}` | facilitator | 204, `board.changed` |
 | PUT | `timer` | `{seconds}` | facilitator | `{timerEndsAt}`, `timer.changed` |
 | POST | `guest-token` | — | facilitator | `{guestUrl}`, `board.changed` |
@@ -263,7 +265,7 @@ Board-scoped, prefix `whiteboards/{board}` (`whereUuid`, middleware `ResolveWhit
 
 Join: `GET` and `POST /whiteboards/join/{guestToken}` (`{name}`), same behaviour as the poker join; an invalid or disabled link shows "This link is no longer valid".
 
-Controllers live in `app/Http/Controllers/Whiteboards/`, actions in `app/Actions/Whiteboards/`, events in `app/Events/Whiteboards/` extending a `WhiteboardBroadcastEvent` (same contract as `PokerBroadcastEvent`: broadcast now, after commit, to others, report-don't-throw). Routes are named in camelCase and consumed through Wayfinder.
+Request bodies use snake_case keys, as everywhere in the code (`guest_access_enabled`, `user_id`, `file_id`); the tables above show them in camelCase for readability. Excalidraw elements inside `elements` keep their native camelCase keys. Controllers live in `app/Http/Controllers/Whiteboards/`, actions in `app/Actions/Whiteboards/`, events in `app/Events/Whiteboards/` extending a `WhiteboardBroadcastEvent` (same contract as `PokerBroadcastEvent`: broadcast now, after commit, to others, report-don't-throw). Routes are named in camelCase and consumed through Wayfinder.
 
 Channel `presence-whiteboard.{boardId}`; `BroadcastAuthorizationsController` gains a branch that resolves the member as the page does and returns `{id, name, avatarUrl, isGuest}`.
 
