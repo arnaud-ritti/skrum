@@ -157,10 +157,10 @@ The three walkthroughs have 49 steps (plan 4's prose split into 17, plan 10a's 1
 |---|---|---|---|---|
 | Plan 4, retro core | 26 | 19 | 5 | 2 |
 | Plan 10a, poker core | 16 | 13 | 3 | 0 |
-| Plan 10b, poker additions | 28 | 18 | 6 | 4 |
-| **Total** | **70** | **50** | **14** | **6** |
+| Plan 10b, poker additions | 28 | 19 | 5 | 4 |
+| **Total** | **70** | **51** | **13** | **6** |
 
-Residual in this slice: the visual judgement at 375px/1440px and of dark mode (plan 4); touch cursors, where a reaction starts on screen, the timer's sound and toast, and the forged whisper (plan 10b). These counts come from plan 16a as written; the coverage table records the final classification after implementation.
+Residual in this slice: the visual judgement at 375px/1440px and of dark mode (plan 4); touch cursors, where a reaction starts on screen, the timer's sound and toast, and the forged whisper (plan 10b). These counts are those of the coverage table after plan 16a was implemented.
 
 ## 5. Architecture tests
 
