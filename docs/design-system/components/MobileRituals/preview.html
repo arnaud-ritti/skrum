@@ -1,0 +1,202 @@
+<!-- @dsCard group="Écrans · Mobile" width=1440 height=972 subtitle="Whiteboard (vue lecture + toolbar compacte) · Sondage (échelle 1–5 + progression) · Icebreaker pendu (clavier tactile AZERTY)" -->
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><title>MobileRituals</title>
+<style>
+/* mobile helpers (local, tokens only) */
+.m-app{flex:1;min-height:0;display:flex;flex-direction:column;position:relative}
+.m-bar{height:3.25rem;flex:none;display:flex;align-items:center;gap:var(--space-1);padding:0 var(--space-2)}
+.m-bar-t{flex:1;min-width:0;display:flex;flex-direction:column;padding:0 var(--space-1)}
+.m-bar-t b{font-size:1rem;line-height:1.25rem;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.m-bar-t small{font-size:0.75rem;line-height:1rem;color:var(--muted-foreground);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.m-body{flex:1;min-height:0;overflow:hidden;padding:var(--space-2) var(--space-4) var(--space-4);display:flex;flex-direction:column;gap:var(--space-4)}
+.m-foot{flex:none;padding:var(--space-3) var(--space-4) 1.875rem;border-top:1px solid var(--border);background:var(--background);display:flex;gap:var(--space-2)}
+.m-foot > .sk-btn{flex:1}
+.m-sec{font-size:0.75rem;line-height:1rem;font-weight:650;letter-spacing:.06em;text-transform:uppercase;color:var(--muted-foreground);display:flex;align-items:center;gap:var(--space-2)}
+.m-sec .sk-grow + *{letter-spacing:0;text-transform:none}
+.m-chips{display:flex;gap:var(--space-2);overflow:hidden;margin:0 calc(-1 * var(--space-4));padding:0.25rem var(--space-4)}
+.m-chip{position:relative;flex:none;height:2.25rem;padding:0 0.875rem;border-radius:var(--radius-full);border:1px solid var(--input);background:var(--card);display:inline-flex;align-items:center;gap:0.375rem;font-size:0.875rem;font-weight:600;color:var(--foreground);white-space:nowrap}
+.m-chip::before{content:"";position:absolute;inset:-0.25rem 0}
+.m-chip .n{font-size:0.75rem;font-weight:700;color:var(--muted-foreground)}
+.m-chip.is-on{background:var(--foreground);border-color:var(--foreground);color:var(--background)}
+.m-chip.is-on .n{color:inherit;opacity:.75}
+.m-tabnav{flex:none;display:flex;border-top:1px solid var(--border);background:var(--card);padding:0.25rem var(--space-2) 1.625rem}
+.m-tabnav a{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:3.125rem;font-size:0.6875rem;line-height:0.875rem;font-weight:600;color:var(--muted-foreground);text-decoration:none}
+.m-tabnav a .lucide{width:1.375rem;height:1.375rem}
+.m-tabnav a.is-on{color:var(--skrum-primary-text)}
+.m-list{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-xl);overflow:hidden}
+.m-li{min-height:3.25rem;display:flex;align-items:center;gap:var(--space-3);padding:var(--space-2) var(--space-4);font-size:0.9375rem;line-height:1.25rem}
+.m-li + .m-li{border-top:1px solid var(--border)}
+.m-li > .lucide:last-child{color:var(--muted-foreground)}
+.m-li-v{font-size:0.875rem;color:var(--muted-foreground);white-space:nowrap}
+.m-ico{width:2rem;height:2rem;border-radius:var(--radius-md);display:grid;place-items:center;flex:none;background:var(--c,var(--muted));color:var(--c-t,var(--foreground));border:1px solid var(--c-b,transparent)}
+.m-fab{position:absolute;right:var(--space-4);width:3.5rem;height:3.5rem;border-radius:var(--radius-full);background:var(--primary);color:var(--primary-foreground);display:grid;place-items:center;box-shadow:var(--shadow-raised);z-index:3}
+.m-fab .lucide{width:1.5rem;height:1.5rem}
+
+.m-drawer{position:absolute;left:0;right:0;bottom:0;z-index:5;border-left:0;border-right:0;padding-bottom:1.875rem}
+.sk-phone-status .lucide{width:1rem;height:1rem}
+.sk-phone-home{z-index:9}
+.m-foot.is-col{flex-direction:column}.m-foot.is-col > .sk-btn{flex:none}
+.sk-stack > .sk-avatar--sm + .sk-avatar{margin-left:-0.3125rem}
+
+.wb{flex:1;min-height:0;position:relative;overflow:hidden;border-top:1px solid var(--border)}
+.wb .sk-sticky{width:8rem;font-size:0.8125rem;line-height:1.125rem;padding:0.625rem}
+.wb-frame{position:absolute;border:1.5px dashed var(--input);border-radius:var(--radius-xl)}
+.wb-frame b{position:absolute;top:-0.6875rem;left:0.75rem;font-size:0.75rem;line-height:1.25rem;padding:0 0.5rem;background:var(--skrum-canvas);color:var(--muted-foreground);font-weight:650;border-radius:var(--radius-sm)}
+.wb-top{position:absolute;left:var(--space-3);right:var(--space-3);top:var(--space-3);display:flex;justify-content:space-between;align-items:center;z-index:2}
+.wb-pill{display:inline-flex;align-items:center;gap:0.375rem;height:2.25rem;padding:0 0.75rem;border-radius:var(--radius-full);background:var(--popover);border:1px solid var(--border);box-shadow:var(--shadow-card);font-size:0.8125rem;font-weight:600}
+.wb-dock{position:absolute;left:0;right:0;bottom:1.875rem;display:flex;justify-content:center;z-index:2}
+.wb-dock .sk-wbbar{padding:0.25rem;gap:2px}
+.wb-dock .sk-tool{width:2.75rem;height:2.75rem}
+.wb-dock .sk-btn{height:2.75rem;margin-left:0.25rem}
+.qcat{display:inline-flex;align-items:center;gap:0.375rem;font-size:0.8125rem;font-weight:650;color:var(--skrum-primary-text)}
+.q-t{font-family:var(--font-display);font-size:1.625rem;line-height:2rem;font-weight:650;letter-spacing:-.02em;margin:0}
+.m-scale .sk-scale-opt{height:3.75rem;font-size:1.25rem}
+.anchors{display:flex;justify-content:space-between;font-size:0.75rem;line-height:1rem;color:var(--muted-foreground);font-weight:600;margin-top:var(--space-2)}
+.hang{display:flex;align-items:center;gap:var(--space-4)}
+.word{display:flex;justify-content:center;gap:0.375rem}
+.word .sk-letter{width:2.25rem;height:3rem;font-size:1.75rem}
+.missed{display:flex;align-items:center;justify-content:center;gap:var(--space-2);font-size:0.8125rem;color:var(--muted-foreground);font-weight:600}
+.missed s{font-family:var(--font-display);font-size:1rem;color:var(--skrum-destructive-text);text-decoration-thickness:2px}
+.kb{display:flex;flex-direction:column;gap:0.375rem;padding:var(--space-3) 0.375rem 1.875rem;background:var(--muted);border-top:1px solid var(--border);flex:none}
+.kb-row{display:flex;gap:0.25rem;justify-content:center}
+.kb .sk-key{flex:1;max-width:2.25rem;width:auto;height:2.875rem;font-size:1rem;box-shadow:0 1px 0 var(--border)}
+.kb .sk-key.is-hit,.kb .sk-key.is-miss{box-shadow:none}
+.players{display:flex;gap:var(--space-2);overflow:hidden}
+.pl{display:inline-flex;align-items:center;gap:0.375rem;height:2.25rem;padding:0 0.625rem 0 0.25rem;border-radius:var(--radius-full);background:var(--card);border:1px solid var(--border);font-size:0.8125rem;font-weight:650;flex:none}
+.pl.is-turn{border-color:var(--primary);box-shadow:inset 0 0 0 1px var(--primary)}
+.pl .pts{color:var(--muted-foreground);font-variant-numeric:tabular-nums}
+</style></head>
+<body class="sk-canvas">
+<div class="sk-phones">
+
+  <!-- 1. Whiteboard -->
+  <div>
+    <div class="sk-phone">
+      <div class="sk-phone-status"><span>9:41</span><span class="sk-row sk-gap-1"><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></span></div>
+      <div class="m-app">
+        <div class="m-bar">
+          <a class="sk-btn sk-btn--ghost sk-btn--icon sk-btn--lg" aria-label="Retour"><i data-lucide="chevron-left" class="sk-ico-lg"></i></a>
+          <span class="m-bar-t"><b>Irritants du sprint 42</b><small>Whiteboard · 5 en ligne</small></span>
+          <span class="sk-stack"><span class="sk-avatar sk-avatar--sm sk-p4">CR</span><span class="sk-avatar sk-avatar--sm sk-p9">IB</span><span class="sk-avatar sk-avatar--sm sk-stack-more">+3</span></span>
+          <a class="sk-btn sk-btn--ghost sk-btn--icon sk-btn--lg" aria-label="Partager"><i data-lucide="share" class="sk-ico-lg"></i></a>
+        </div>
+        <div class="wb sk-dotgrid">
+          <div class="wb-top">
+            <span class="wb-pill"><i data-lucide="eye" class="sk-ico-sm"></i>Lecture</span>
+            <span class="wb-pill" style="padding-left:0.25rem"><span class="sk-avatar sk-avatar--sm sk-p4">CR</span>Suivre Camille</span>
+          </div>
+          <div class="wb-frame" style="left:1.125rem;top:4.625rem;width:20rem;height:15.625rem"><b>Delivery</b></div>
+          <div class="sk-sticky sk-c-sun" style="left:2.25rem;top:6.25rem;transform:rotate(-2deg)">Specs qui changent en plein sprint</div>
+          <div class="sk-sticky sk-c-sun" style="left:11.875rem;top:7rem;transform:rotate(1.5deg)">Env. de recette souvent cassé</div>
+          <div class="sk-sticky sk-c-apricot" style="left:3.875rem;top:13.25rem;transform:rotate(1deg)">Revues de code &gt; 48 h</div>
+          <svg style="position:absolute;left:11.875rem;top:12.5rem" width="120" height="90" viewBox="0 0 120 90" aria-hidden="true"><path d="M8 72 C40 80 80 60 100 22" fill="none" style="stroke:var(--foreground)" stroke-width="2" stroke-linecap="round"/><path d="M92 26 L101 20 L103 31" fill="none" style="stroke:var(--foreground)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <div class="wb-frame" style="left:1.125rem;top:21.875rem;width:20rem;height:9.375rem"><b>Outillage</b></div>
+          <div class="sk-sticky sk-c-lagoon" style="left:2.5rem;top:23.5rem;transform:rotate(-1deg)">Tests E2E instables</div>
+          <div class="sk-sticky sk-c-iris" style="left:11.75rem;top:24rem;transform:rotate(2deg)">Pipeline Kapsule trop lent le lundi</div>
+          <div class="sk-cursor" style="left:14.75rem;top:16.75rem;--cur:var(--skrum-presence-9);--cur-fg:var(--skrum-presence-9-foreground)"><svg viewBox="0 0 18 18"><path d="M2 1.5 L2 15 L5.8 11.4 L8.4 17 L10.9 15.9 L8.4 10.4 L13.8 10.4 Z"/></svg><span class="sk-cursor-tag">Inès</span></div>
+          <div class="wb-dock">
+            <div class="sk-wbbar" role="toolbar" aria-label="Outils">
+              <span class="sk-tool is-on" aria-label="Déplacer la vue"><i data-lucide="hand" class="sk-ico-lg"></i></span>
+              <span class="sk-tool" aria-label="Ajuster à l'écran"><i data-lucide="scan" class="sk-ico-lg"></i></span>
+              <span class="sk-tool" aria-label="Réagir"><i data-lucide="smile-plus" class="sk-ico-lg"></i></span>
+              <span class="sk-tool" aria-label="Commentaires"><i data-lucide="message-square" class="sk-ico-lg"></i></span>
+              <a class="sk-btn"><i data-lucide="pencil"></i>Modifier</a>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="sk-phone-home"></div>
+    </div>
+    <div class="sk-phone-cap">Whiteboard — lecture + toolbar compacte</div>
+  </div>
+
+  <!-- 2. Sondage -->
+  <div>
+    <div class="sk-phone">
+      <div class="sk-phone-status"><span>9:41</span><span class="sk-row sk-gap-1"><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></span></div>
+      <div class="m-app">
+        <div class="m-bar">
+          <a class="sk-btn sk-btn--ghost sk-btn--icon sk-btn--lg" aria-label="Fermer"><i data-lucide="x" class="sk-ico-lg"></i></a>
+          <span class="m-bar-t"><b>Baromètre d'équipe · T3</b><small>Atlas · environ 3 min</small></span>
+        </div>
+        <div class="m-body" style="gap:var(--space-5);padding-top:var(--space-3)">
+          <div class="sk-col sk-gap-2">
+            <div class="sk-between sk-sm"><span style="font-weight:650">Question 3 sur 8</span><span class="sk-muted">37 %</span></div>
+            <div class="sk-progress" role="progressbar" aria-valuenow="3" aria-valuemax="8"><span style="width:37.5%"></span></div>
+          </div>
+          <div class="sk-col" style="gap:var(--space-3)">
+            <span class="qcat"><i data-lucide="shield-check" class="sk-ico-sm"></i>Sécurité psychologique</span>
+            <h1 class="q-t">Je me sens à l'aise pour exprimer un désaccord en réunion.</h1>
+          </div>
+          <div>
+            <div class="sk-scale m-scale" role="radiogroup" aria-label="De 1, pas du tout d'accord, à 5, tout à fait d'accord">
+              <span class="sk-scale-opt">1</span><span class="sk-scale-opt">2</span><span class="sk-scale-opt">3</span><span class="sk-scale-opt is-on" role="radio" aria-checked="true">4</span><span class="sk-scale-opt">5</span>
+            </div>
+            <div class="anchors"><span>Pas du tout d'accord</span><span>Tout à fait d'accord</span></div>
+          </div>
+          <div class="sk-field">
+            <label>Un commentaire ? <span class="sk-muted" style="font-weight:500">(facultatif)</span></label>
+            <div class="sk-textarea" style="min-height:6rem;font-size:1rem"><span class="sk-placeholder">Un exemple, une nuance…</span></div>
+          </div>
+          <span class="sk-grow"></span>
+          <div class="sk-row sk-xs sk-muted" style="gap:0.375rem;justify-content:center;flex-wrap:nowrap"><i data-lucide="lock" class="sk-ico-sm"></i>Anonyme · résultats visibles dès 3 réponses</div>
+        </div>
+        <div class="m-foot">
+          <a class="sk-btn sk-btn--lg sk-btn--outline" style="flex:none;width:3.25rem;padding:0" aria-label="Question précédente"><i data-lucide="arrow-left"></i></a>
+          <a class="sk-btn sk-btn--lg">Suivant<i data-lucide="arrow-right"></i></a>
+        </div>
+      </div>
+      <div class="sk-phone-home"></div>
+    </div>
+    <div class="sk-phone-cap">Sondage — échelle 1–5 + progression</div>
+  </div>
+
+  <!-- 3. Icebreaker -->
+  <div>
+    <div class="sk-phone">
+      <div class="sk-phone-status"><span>9:41</span><span class="sk-row sk-gap-1"><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></span></div>
+      <div class="m-app">
+        <div class="m-bar">
+          <a class="sk-btn sk-btn--ghost sk-btn--icon sk-btn--lg" aria-label="Retour"><i data-lucide="chevron-left" class="sk-ico-lg"></i></a>
+          <span class="m-bar-t"><b>Icebreaker · Le pendu</b><small>Manche 2 sur 3 · thème « notre stack »</small></span>
+        </div>
+        <div class="m-body" style="gap:var(--space-5)">
+          <div class="players">
+            <span class="pl is-turn"><span class="sk-avatar sk-avatar--sm sk-p7">YU</span>Vous<span class="pts">3</span></span>
+            <span class="pl"><span class="sk-avatar sk-avatar--sm sk-p2">TM</span>Théo<span class="pts">5</span></span>
+            <span class="pl"><span class="sk-avatar sk-avatar--sm sk-p9">IB</span>Inès<span class="pts">2</span></span>
+            <span class="pl"><span class="sk-avatar sk-avatar--sm sk-p6">MK</span>Malik<span class="pts">4</span></span>
+          </div>
+          <div class="hang">
+            <svg width="150" height="160" viewBox="0 0 132 140" aria-label="4 erreurs sur 7" role="img">
+              <g fill="none" stroke-width="4" stroke-linecap="round" style="stroke:var(--muted-foreground)"><path d="M10 132 H80"/><path d="M30 132 V10 H90 V26"/><path d="M30 34 L52 10"/></g>
+              <g fill="none" stroke-width="4" stroke-linecap="round" style="stroke:var(--foreground)"><circle cx="90" cy="40" r="14"/><path d="M90 54 V92"/><path d="M90 64 L72 80"/><path d="M90 64 L108 80"/></g>
+              <g fill="none" stroke-width="3" stroke-linecap="round" stroke-dasharray="4 6" style="stroke:var(--border)"><path d="M90 92 L74 118"/><path d="M90 92 L106 118"/></g>
+            </svg>
+            <div class="sk-col sk-gap-2">
+              <span class="sk-badge sk-badge--soft sk-badge--pill" style="align-self:flex-start;height:1.75rem;font-size:0.8125rem">À vous de jouer</span>
+              <span class="sk-h4">3 essais restants</span>
+              <span class="sk-sm sk-muted">Indice : on l'a migrée au sprint 38.</span>
+            </div>
+          </div>
+          <div class="word" aria-label="Mot : P, vide, S, vide, vide, vide, E, S">
+            <span class="sk-letter">P</span><span class="sk-letter"></span><span class="sk-letter">S</span><span class="sk-letter"></span><span class="sk-letter"></span><span class="sk-letter"></span><span class="sk-letter">E</span><span class="sk-letter">S</span>
+          </div>
+          <div class="missed">Ratées : <s>A</s><s>I</s><s>N</s><s>U</s></div>
+          <div class="sk-row sk-sm sk-muted" style="justify-content:center;gap:0.375rem"><span class="sk-typing"><span class="sk-avatar sk-avatar--xs sk-p2">TM</span>Théo a proposé <b style="color:var(--foreground)">E</b> · bien vu</span></div>
+        </div>
+        <div class="kb" role="group" aria-label="Clavier">
+          <div class="kb-row"><span class="sk-key is-miss">A</span><span class="sk-key">Z</span><span class="sk-key is-hit">E</span><span class="sk-key">R</span><span class="sk-key">T</span><span class="sk-key">Y</span><span class="sk-key is-miss">U</span><span class="sk-key is-miss">I</span><span class="sk-key">O</span><span class="sk-key is-hit">P</span></div>
+          <div class="kb-row"><span class="sk-key">Q</span><span class="sk-key is-hit">S</span><span class="sk-key">D</span><span class="sk-key">F</span><span class="sk-key">G</span><span class="sk-key">H</span><span class="sk-key">J</span><span class="sk-key">K</span><span class="sk-key">L</span><span class="sk-key">M</span></div>
+          <div class="kb-row"><span class="sk-key">W</span><span class="sk-key">X</span><span class="sk-key">C</span><span class="sk-key">V</span><span class="sk-key">B</span><span class="sk-key is-miss">N</span><a class="sk-btn sk-btn--secondary" style="height:2.875rem;margin-left:0.375rem;padding:0 0.75rem">Deviner le mot</a></div>
+        </div>
+      </div>
+      <div class="sk-phone-home"></div>
+    </div>
+    <div class="sk-phone-cap">Icebreaker — pendu, clavier tactile</div>
+  </div>
+
+</div>
+</body>
+</html>

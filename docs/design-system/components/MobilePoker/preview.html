@@ -1,0 +1,218 @@
+<!-- @dsCard group="Écrans · Mobile" width=1440 height=972 subtitle="Planning poker — avant révélation (story, participants en rangée, deck scrollable) · Drawer de sélection de carte · après révélation (résultat)" -->
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><title>MobilePoker</title>
+<style>
+/* mobile helpers (local, tokens only) */
+.m-app{flex:1;min-height:0;display:flex;flex-direction:column;position:relative}
+.m-bar{height:3.25rem;flex:none;display:flex;align-items:center;gap:var(--space-1);padding:0 var(--space-2)}
+.m-bar-t{flex:1;min-width:0;display:flex;flex-direction:column;padding:0 var(--space-1)}
+.m-bar-t b{font-size:1rem;line-height:1.25rem;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.m-bar-t small{font-size:0.75rem;line-height:1rem;color:var(--muted-foreground);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.m-body{flex:1;min-height:0;overflow:hidden;padding:var(--space-2) var(--space-4) var(--space-4);display:flex;flex-direction:column;gap:var(--space-4)}
+.m-foot{flex:none;padding:var(--space-3) var(--space-4) 1.875rem;border-top:1px solid var(--border);background:var(--background);display:flex;gap:var(--space-2)}
+.m-foot > .sk-btn{flex:1}
+.m-sec{font-size:0.75rem;line-height:1rem;font-weight:650;letter-spacing:.06em;text-transform:uppercase;color:var(--muted-foreground);display:flex;align-items:center;gap:var(--space-2)}
+.m-sec .sk-grow + *{letter-spacing:0;text-transform:none}
+.m-chips{display:flex;gap:var(--space-2);overflow:hidden;margin:0 calc(-1 * var(--space-4));padding:0.25rem var(--space-4)}
+.m-chip{position:relative;flex:none;height:2.25rem;padding:0 0.875rem;border-radius:var(--radius-full);border:1px solid var(--input);background:var(--card);display:inline-flex;align-items:center;gap:0.375rem;font-size:0.875rem;font-weight:600;color:var(--foreground);white-space:nowrap}
+.m-chip::before{content:"";position:absolute;inset:-0.25rem 0}
+.m-chip .n{font-size:0.75rem;font-weight:700;color:var(--muted-foreground)}
+.m-chip.is-on{background:var(--foreground);border-color:var(--foreground);color:var(--background)}
+.m-chip.is-on .n{color:inherit;opacity:.75}
+.m-tabnav{flex:none;display:flex;border-top:1px solid var(--border);background:var(--card);padding:0.25rem var(--space-2) 1.625rem}
+.m-tabnav a{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:3.125rem;font-size:0.6875rem;line-height:0.875rem;font-weight:600;color:var(--muted-foreground);text-decoration:none}
+.m-tabnav a .lucide{width:1.375rem;height:1.375rem}
+.m-tabnav a.is-on{color:var(--skrum-primary-text)}
+.m-list{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-xl);overflow:hidden}
+.m-li{min-height:3.25rem;display:flex;align-items:center;gap:var(--space-3);padding:var(--space-2) var(--space-4);font-size:0.9375rem;line-height:1.25rem}
+.m-li + .m-li{border-top:1px solid var(--border)}
+.m-li > .lucide:last-child{color:var(--muted-foreground)}
+.m-li-v{font-size:0.875rem;color:var(--muted-foreground);white-space:nowrap}
+.m-ico{width:2rem;height:2rem;border-radius:var(--radius-md);display:grid;place-items:center;flex:none;background:var(--c,var(--muted));color:var(--c-t,var(--foreground));border:1px solid var(--c-b,transparent)}
+.m-fab{position:absolute;right:var(--space-4);width:3.5rem;height:3.5rem;border-radius:var(--radius-full);background:var(--primary);color:var(--primary-foreground);display:grid;place-items:center;box-shadow:var(--shadow-raised);z-index:3}
+.m-fab .lucide{width:1.5rem;height:1.5rem}
+
+.m-drawer{position:absolute;left:0;right:0;bottom:0;z-index:5;border-left:0;border-right:0;padding-bottom:1.875rem}
+.sk-phone-status .lucide{width:1rem;height:1rem}
+.sk-phone-home{z-index:9}
+.m-foot.is-col{flex-direction:column}.m-foot.is-col > .sk-btn{flex:none}
+.sk-stack > .sk-avatar--sm + .sk-avatar{margin-left:-0.3125rem}
+
+.story{border-radius:var(--radius-xl);background:var(--card);border:1px solid var(--border);box-shadow:var(--shadow-card);padding:var(--space-4);display:flex;flex-direction:column;gap:var(--space-2)}
+.story-t{font-size:1.125rem;line-height:1.5rem;font-weight:650;margin:0}
+.seats{display:flex;gap:var(--space-3);overflow:hidden;margin:0 calc(-1 * var(--space-4));padding:0.875rem var(--space-4) 2px}
+.seats .sk-seat{width:3.25rem;flex:none;gap:0.25rem}
+.seats .sk-seat > span:last-child{font-size:0.6875rem;line-height:0.875rem;max-width:3.25rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.seat-card{position:relative;display:block;margin-bottom:0.625rem}
+.seat-card .sk-pcard-face{place-items:start center;padding-top:0.375rem;font-size:1.125rem}
+.seat-card .sk-pcard{display:block}
+.sk-pcard-in{border-radius:inherit}
+.seat-card .sk-avatar{position:absolute;left:50%;bottom:-0.5rem;margin-left:-0.75rem;box-shadow:0 0 0 2px var(--background)}
+.seat-card .sk-pcard--sm{width:2.5rem;height:3.5rem}
+.seat-wait{width:2.5rem;height:3.5rem;border-radius:var(--radius-md);border:1.5px dashed var(--input);display:grid;place-items:center;color:var(--muted-foreground)}
+.deckbar{flex:none;border-top:1px solid var(--border);background:var(--card);padding:var(--space-3) 0 1.875rem;display:flex;flex-direction:column;gap:var(--space-2)}
+.deckbar .hd{display:flex;align-items:center;justify-content:space-between;padding:0 var(--space-4) 0 var(--space-4)}
+.mdeck{display:flex;gap:var(--space-2);overflow:hidden;padding:0.875rem var(--space-4) 0.25rem;align-items:flex-end}
+.mdeck .sk-pcard{width:3.75rem;height:5.375rem}
+.mdeck .sk-pcard-face{font-size:1.625rem}
+.dgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--space-3);justify-items:center;padding-top:var(--space-2)}
+.dgrid .sk-pcard{width:4.5rem;height:6.25rem}
+.dgrid .sk-pcard.is-selected{transform:translateY(-0.375rem)}
+.res{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--space-2)}
+.res .sk-stat{padding:var(--space-3);border-radius:var(--radius);background:var(--card);border:1px solid var(--border)}
+.res .sk-stat-v{font-size:1.5rem;line-height:1.75rem}
+.final{display:flex;gap:var(--space-2)}
+.final span{flex:1;height:3.25rem;border-radius:var(--radius);border:1px solid var(--input);background:var(--card);display:grid;place-items:center;font-family:var(--font-display);font-size:1.375rem;font-weight:700}
+.final span.is-on{border-color:var(--primary);background:var(--skrum-primary-soft);color:var(--skrum-primary-text);box-shadow:inset 0 0 0 1px var(--primary)}
+</style></head>
+<body class="sk-canvas">
+<div class="sk-phones">
+
+  <!-- 1. Avant révélation -->
+  <div>
+    <div class="sk-phone">
+      <div class="sk-phone-status"><span>9:41</span><span class="sk-row sk-gap-1"><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></span></div>
+      <div class="m-app">
+        <div class="m-bar">
+          <a class="sk-btn sk-btn--ghost sk-btn--icon sk-btn--lg" aria-label="Quitter"><i data-lucide="chevron-left" class="sk-ico-lg"></i></a>
+          <span class="m-bar-t"><b>Planning poker · Sprint 43</b><small>Story 3 sur 8 · Fibonacci</small></span>
+          <a class="sk-btn sk-btn--ghost sk-btn--icon sk-btn--lg" aria-label="Plus"><i data-lucide="ellipsis" class="sk-ico-lg"></i></a>
+        </div>
+        <div class="m-body" style="gap:var(--space-4)">
+          <div class="story">
+            <div class="sk-row sk-gap-2"><span class="sk-ticket"><i data-lucide="link-2" class="sk-ico-sm"></i>ATLAS-1287</span><span class="sk-badge sk-badge--info">Story</span></div>
+            <h1 class="story-t">Exporter en CSV les actions filtrées</h1>
+            <p class="sk-p sk-sm sk-muted">En tant que facilitatrice, je veux exporter la liste d'actions avec les filtres actifs pour la partager en comité.</p>
+          </div>
+          <div>
+            <div class="m-sec">Participants<span class="sk-grow"></span><span class="sk-sm" style="font-weight:600;color:var(--foreground)">5 / 8 ont voté</span></div>
+            <div class="seats">
+              <div class="sk-seat"><span class="seat-card"><span class="sk-pcard sk-pcard--sm is-hidden"><span class="sk-pcard-in"><span class="sk-pcard-face">5</span><span class="sk-pcard-back"></span></span></span><span class="sk-avatar sk-avatar--sm sk-p7">YU</span></span><span>Vous</span></div>
+              <div class="sk-seat"><span class="seat-card"><span class="sk-pcard sk-pcard--sm is-hidden"><span class="sk-pcard-in"><span class="sk-pcard-face">5</span><span class="sk-pcard-back"></span></span></span><span class="sk-avatar sk-avatar--sm sk-p4">CR</span></span><span>Camille</span></div>
+              <div class="sk-seat"><span class="seat-card"><span class="sk-pcard sk-pcard--sm is-hidden"><span class="sk-pcard-in"><span class="sk-pcard-face">8</span><span class="sk-pcard-back"></span></span></span><span class="sk-avatar sk-avatar--sm sk-p2">TM</span></span><span>Théo</span></div>
+              <div class="sk-seat"><span class="seat-card"><span class="seat-wait"><span class="sk-trema" style="color:var(--skrum-presence-9)"><i></i><i></i></span></span><span class="sk-avatar sk-avatar--sm sk-p9">IB</span></span><span>Inès</span></div>
+              <div class="sk-seat"><span class="seat-card"><span class="sk-pcard sk-pcard--sm is-hidden"><span class="sk-pcard-in"><span class="sk-pcard-face">8</span><span class="sk-pcard-back"></span></span></span><span class="sk-avatar sk-avatar--sm sk-p6">MK</span></span><span>Malik</span></div>
+              <div class="sk-seat"><span class="seat-card"><span class="seat-wait"><i data-lucide="clock" class="sk-ico-sm"></i></span><span class="sk-avatar sk-avatar--sm sk-p11">SO</span></span><span>Sofia</span></div>
+              <div class="sk-seat"><span class="seat-card"><span class="sk-pcard sk-pcard--sm is-hidden"><span class="sk-pcard-in"><span class="sk-pcard-face">2</span><span class="sk-pcard-back"></span></span></span><span class="sk-avatar sk-avatar--sm sk-p3">LU</span></span><span>Lucas</span></div>
+            </div>
+          </div>
+          <div class="sk-alert sk-alert--info" style="align-items:center"><i data-lucide="hourglass"></i><span class="sk-sm">Camille révélera les cartes quand tout le monde aura voté.</span></div>
+          <div class="m-list">
+            <div class="m-li"><span class="m-ico"><i data-lucide="list-checks"></i></span><span class="sk-grow">Critères d'acceptation</span><span class="m-li-v">4</span><i data-lucide="chevron-right"></i></div>
+            <div class="m-li"><span class="m-ico"><i data-lucide="history"></i></span><span class="sk-grow">Stories similaires</span><span class="m-li-v">5 pts en moy.</span><i data-lucide="chevron-right"></i></div>
+          </div>
+        </div>
+        <div class="deckbar">
+          <div class="hd"><span class="sk-lbl">Votre carte : <span style="color:var(--skrum-primary-text)">5</span></span><a class="sk-btn sk-btn--ghost" style="height:2.75rem;margin-right:-0.5rem"><i data-lucide="layout-grid"></i>Tout le deck</a></div>
+          <div class="mdeck" role="radiogroup" aria-label="Deck Fibonacci">
+            <span class="sk-pcard"><span class="sk-pcard-in"><span class="sk-pcard-face">1</span></span></span>
+            <span class="sk-pcard"><span class="sk-pcard-in"><span class="sk-pcard-face">2</span></span></span>
+            <span class="sk-pcard"><span class="sk-pcard-in"><span class="sk-pcard-face">3</span></span></span>
+            <span class="sk-pcard is-selected" role="radio" aria-checked="true"><span class="sk-pcard-in"><span class="sk-pcard-face">5</span></span></span>
+            <span class="sk-pcard"><span class="sk-pcard-in"><span class="sk-pcard-face">8</span></span></span>
+            <span class="sk-pcard"><span class="sk-pcard-in"><span class="sk-pcard-face">13</span></span></span>
+          </div>
+        </div>
+      </div>
+      <div class="sk-phone-home"></div>
+    </div>
+    <div class="sk-phone-cap">Avant révélation — deck scrollable en bas</div>
+  </div>
+
+  <!-- 2. Drawer -->
+  <div>
+    <div class="sk-phone">
+      <div class="sk-phone-status"><span>9:41</span><span class="sk-row sk-gap-1"><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></span></div>
+      <div class="m-app">
+        <div class="m-bar">
+          <a class="sk-btn sk-btn--ghost sk-btn--icon sk-btn--lg"><i data-lucide="chevron-left" class="sk-ico-lg"></i></a>
+          <span class="m-bar-t"><b>Planning poker · Sprint 43</b><small>Story 3 sur 8 · Fibonacci</small></span>
+        </div>
+        <div class="m-body">
+          <div class="story">
+            <div class="sk-row sk-gap-2"><span class="sk-ticket">ATLAS-1287</span><span class="sk-badge sk-badge--info">Story</span></div>
+            <h1 class="story-t">Exporter en CSV les actions filtrées</h1>
+          </div>
+        </div>
+        <div class="sk-overlay" style="z-index:4;top:-2.75rem"></div>
+        <div class="sk-drawer m-drawer" role="dialog" aria-label="Choisir une carte">
+          <div class="sk-drawer-grip"></div>
+          <div class="sk-between"><div><h2 class="sk-h3">Votre estimation</h2><div class="sk-xs sk-muted">ATLAS-1287 · en points de story</div></div><a class="sk-btn sk-btn--ghost sk-btn--icon sk-btn--lg" style="margin-right:-0.625rem" aria-label="Fermer"><i data-lucide="x" class="sk-ico-lg"></i></a></div>
+          <div class="dgrid" role="radiogroup">
+            <span class="sk-pcard"><span class="sk-pcard-in"><span class="sk-pcard-face">0</span></span></span>
+            <span class="sk-pcard"><span class="sk-pcard-in"><span class="sk-pcard-face">½</span></span></span>
+            <span class="sk-pcard"><span class="sk-pcard-in"><span class="sk-pcard-face">1</span></span></span>
+            <span class="sk-pcard"><span class="sk-pcard-in"><span class="sk-pcard-face">2</span></span></span>
+            <span class="sk-pcard"><span class="sk-pcard-in"><span class="sk-pcard-face">3</span></span></span>
+            <span class="sk-pcard"><span class="sk-pcard-in"><span class="sk-pcard-face">5</span></span></span>
+            <span class="sk-pcard is-selected" role="radio" aria-checked="true"><span class="sk-pcard-in"><span class="sk-pcard-face">8</span></span></span>
+            <span class="sk-pcard"><span class="sk-pcard-in"><span class="sk-pcard-face">13</span></span></span>
+            <span class="sk-pcard"><span class="sk-pcard-in"><span class="sk-pcard-face">21</span></span></span>
+            <span class="sk-pcard"><span class="sk-pcard-in"><span class="sk-pcard-face">40</span></span></span>
+            <span class="sk-pcard is-special"><span class="sk-pcard-in"><span class="sk-pcard-face">?</span></span></span>
+            <span class="sk-pcard is-special"><span class="sk-pcard-in"><span class="sk-pcard-face">☕</span></span></span>
+          </div>
+          <div class="sk-col sk-gap-2">
+            <a class="sk-btn sk-btn--lg sk-btn--block"><i data-lucide="check"></i>Valider 8 points</a>
+            <a class="sk-btn sk-btn--lg sk-btn--ghost sk-btn--block">Retirer mon vote</a>
+          </div>
+        </div>
+      </div>
+      <div class="sk-phone-home"></div>
+    </div>
+    <div class="sk-phone-cap">Drawer de sélection de carte</div>
+  </div>
+
+  <!-- 3. Après révélation -->
+  <div>
+    <div class="sk-phone">
+      <div class="sk-phone-status"><span>9:41</span><span class="sk-row sk-gap-1"><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></span></div>
+      <div class="m-app">
+        <div class="m-bar">
+          <a class="sk-btn sk-btn--ghost sk-btn--icon sk-btn--lg" aria-label="Quitter"><i data-lucide="chevron-left" class="sk-ico-lg"></i></a>
+          <span class="m-bar-t"><b>Planning poker · Sprint 43</b><small>ATLAS-1287 · cartes révélées</small></span>
+          <span class="sk-fbar-role" style="margin-right:var(--space-2)"><i data-lucide="crown" class="sk-ico-sm"></i>Vous</span>
+        </div>
+        <div class="m-body" style="gap:var(--space-4)">
+          <div class="seats" style="padding-top:0.375rem">
+            <div class="sk-seat"><span class="seat-card"><span class="sk-pcard sk-pcard--sm"><span class="sk-pcard-in"><span class="sk-pcard-face">5</span></span></span><span class="sk-avatar sk-avatar--sm sk-p4">CR</span></span><span>Vous</span></div>
+            <div class="sk-seat"><span class="seat-card"><span class="sk-pcard sk-pcard--sm"><span class="sk-pcard-in"><span class="sk-pcard-face">8</span></span></span><span class="sk-avatar sk-avatar--sm sk-p2">TM</span></span><span>Théo</span></div>
+            <div class="sk-seat"><span class="seat-card"><span class="sk-pcard sk-pcard--sm"><span class="sk-pcard-in"><span class="sk-pcard-face">5</span></span></span><span class="sk-avatar sk-avatar--sm sk-p9">IB</span></span><span>Inès</span></div>
+            <div class="sk-seat"><span class="seat-card"><span class="sk-pcard sk-pcard--sm"><span class="sk-pcard-in"><span class="sk-pcard-face">8</span></span></span><span class="sk-avatar sk-avatar--sm sk-p6">MK</span></span><span>Malik</span></div>
+            <div class="sk-seat"><span class="seat-card"><span class="sk-pcard sk-pcard--sm"><span class="sk-pcard-in"><span class="sk-pcard-face" style="color:var(--skrum-destructive-text)">2</span></span></span><span class="sk-avatar sk-avatar--sm sk-p3">LU</span></span><span>Lucas</span></div>
+            <div class="sk-seat"><span class="seat-card"><span class="sk-pcard sk-pcard--sm"><span class="sk-pcard-in"><span class="sk-pcard-face" style="color:var(--skrum-destructive-text)">13</span></span></span><span class="sk-avatar sk-avatar--sm sk-p5">NA</span></span><span>Nadia</span></div>
+            <div class="sk-seat"><span class="seat-card"><span class="sk-pcard sk-pcard--sm"><span class="sk-pcard-in"><span class="sk-pcard-face">8</span></span></span><span class="sk-avatar sk-avatar--sm sk-p11">SO</span></span><span>Sofia</span></div>
+          </div>
+          <div class="res">
+            <div class="sk-stat"><span class="sk-stat-v">6,8</span><span class="sk-stat-l">Moyenne</span></div>
+            <div class="sk-stat"><span class="sk-stat-v">6,5</span><span class="sk-stat-l">Médiane</span></div>
+            <div class="sk-stat"><span class="sk-stat-v">2–13</span><span class="sk-stat-l">Écart</span></div>
+          </div>
+          <div class="sk-card" style="padding:var(--space-4) var(--space-4) var(--space-6)">
+            <div class="sk-between" style="margin-bottom:var(--space-3)"><span class="sk-lbl">Répartition</span><span class="sk-xs sk-muted">8 votes</span></div>
+            <div class="sk-dist" style="justify-content:space-around;height:5rem">
+              <div class="sk-dist-bar is-low" style="height:26%;width:2.5rem"><span>2</span></div>
+              <div class="sk-dist-bar" style="height:100%;width:2.5rem"><span>5</span></div>
+              <div class="sk-dist-bar" style="height:100%;width:2.5rem"><span>8</span></div>
+              <div class="sk-dist-bar is-low" style="height:26%;width:2.5rem"><span>13</span></div>
+            </div>
+          </div>
+          <div class="sk-alert sk-alert--warning"><i data-lucide="messages-square"></i><span class="sk-sm">Écart important : Lucas (2) et Nadia (13) expliquent leur choix avant de trancher.</span></div>
+          <div class="sk-field"><label>Estimation retenue</label>
+            <div class="final"><span>5</span><span class="is-on">8</span><span>13</span></div>
+          </div>
+        </div>
+        <div class="m-foot">
+          <a class="sk-btn sk-btn--lg sk-btn--outline" style="flex:none;width:3.25rem;padding:0" aria-label="Revoter"><i data-lucide="rotate-ccw"></i></a>
+          <a class="sk-btn sk-btn--lg">Valider 8 pts · story suivante</a>
+        </div>
+      </div>
+      <div class="sk-phone-home"></div>
+    </div>
+    <div class="sk-phone-cap">Après révélation — résultat</div>
+  </div>
+
+</div>
+</body>
+</html>

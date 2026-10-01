@@ -1,0 +1,13 @@
+{
+    "elements": [
+        {"id": "activity-note", "type": "rectangle", "x": 40, "y": 40, "width": 200, "height": 200, "strokeColor": "transparent", "backgroundColor": "#a5d8ff", "strokeWidth": 1, "frameId": "activities", "customData": {"skrum": {"kind": "sticky"}}},
+        {"id": "activity-note-text", "type": "text", "fontSize": 16, "containerId": "activity-note", "text": "activity_note"},
+        {"id": "activities", "type": "frame", "x": 0, "y": 0, "width": 1400, "height": 280, "name": "activities", "locked": true},
+        {"id": "step-note", "type": "rectangle", "x": 40, "y": 380, "width": 200, "height": 200, "strokeColor": "transparent", "backgroundColor": "#fff3bf", "strokeWidth": 1, "frameId": "steps", "customData": {"skrum": {"kind": "sticky"}}},
+        {"id": "step-note-text", "type": "text", "fontSize": 16, "containerId": "step-note", "text": "step_note"},
+        {"id": "steps", "type": "frame", "x": 0, "y": 340, "width": 1400, "height": 280, "name": "steps", "locked": true},
+        {"id": "story-note", "type": "rectangle", "x": 40, "y": 720, "width": 200, "height": 200, "strokeColor": "transparent", "backgroundColor": "#b2f2bb", "strokeWidth": 1, "frameId": "stories", "customData": {"skrum": {"kind": "sticky"}}},
+        {"id": "story-note-text", "type": "text", "fontSize": 16, "containerId": "story-note", "text": "story_note"},
+        {"id": "stories", "type": "frame", "x": 0, "y": 680, "width": 1400, "height": 560, "name": "stories", "locked": true}
+    ]
+}

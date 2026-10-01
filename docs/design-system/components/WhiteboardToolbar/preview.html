@@ -1,0 +1,89 @@
+<!-- @dsCard group="Skrüm · Whiteboard" height=495 subtitle="outils + raccourcis · outil actif · séparateurs · zoom − / 100 % / + · minimap · variante verticale · tooltip" -->
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><title>WhiteboardToolbar</title>
+<style>
+  .wb-stage { position: relative; height: 23.75rem; border-radius: var(--radius-xl); border: 1px solid var(--border); overflow: hidden; }
+  .wb-tool-btn { border: 0; background: none; cursor: pointer; }
+  .sk-tool.is-hover:not(.is-on) { background: var(--accent); }
+  .wb-zoom { display: inline-flex; align-items: center; gap: 2px; }
+  .wb-zoom-v { min-width: 3.25rem; height: 2rem; padding: 0 0.375rem; border-radius: var(--radius-md); font-size: 0.8125rem; font-weight: 600; font-variant-numeric: tabular-nums; display: grid; place-items: center; }
+  .wb-top { position: absolute; left: 50%; top: var(--space-4); transform: translateX(-50%); }
+  .wb-tip { position: absolute; left: 50%; top: 4.375rem; transform: translateX(-6.5rem); }
+  .wb-tip::before { content: ""; position: absolute; top: -0.25rem; left: 0.875rem; width: 0.5rem; height: 0.5rem; background: var(--foreground); transform: rotate(45deg); }
+  .wb-left { position: absolute; left: var(--space-4); top: 5.25rem; }
+  .wb-mm { position: absolute; right: var(--space-4); bottom: var(--space-4); }
+  .wb-mm-item { position: absolute; border-radius: 2px; background: var(--c); border: 1px solid var(--c-b); }
+  .wb-zoombar { position: absolute; left: var(--space-4); bottom: var(--space-4); }
+  .wb-swatch { width: 1.125rem; height: 1.125rem; border-radius: 50%; background: var(--c); box-shadow: inset 0 0 0 1.5px var(--c-t); }
+  .wb-sub { position: absolute; left: 50%; top: 4.375rem; transform: translateX(0.625rem); display: flex; gap: 2px; }
+  .wb-legend { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-5); font-size: 0.75rem; color: var(--muted-foreground); }
+  .wb-legend span { display: inline-flex; gap: 0.375rem; align-items: center; }
+</style>
+</head>
+<body>
+<div class="sk-pad sk-col sk-gap-4">
+  <div class="wb-stage sk-dotgrid" aria-label="Whiteboard">
+    <div class="sk-sticky sk-c-sun" style="left:18.75rem;top:9.375rem;width:9.375rem">Vision produit T4</div>
+    <div class="sk-sticky sk-c-lagoon" style="left:31.25rem;top:11.875rem;width:9.375rem">Parcours invité</div>
+
+    <!-- barre principale -->
+    <div class="sk-wbbar wb-top" role="toolbar" aria-label="Outils du whiteboard">
+      <button class="sk-tool wb-tool-btn" aria-label="Sélection (V)"><i data-lucide="mouse-pointer-2"></i><span class="sk-tool-k">V</span></button>
+      <button class="sk-tool wb-tool-btn" aria-label="Main (H)"><i data-lucide="hand"></i><span class="sk-tool-k">H</span></button>
+      <span class="sk-vsep" style="margin:0.375rem 0.25rem"></span>
+      <button class="sk-tool wb-tool-btn is-on is-hover" aria-pressed="true" aria-label="Post-it (N)"><i data-lucide="sticky-note"></i><span class="sk-tool-k">N</span></button>
+      <button class="sk-tool wb-tool-btn" aria-label="Forme (R)"><i data-lucide="shapes"></i><span class="sk-tool-k">R</span></button>
+      <button class="sk-tool wb-tool-btn" aria-label="Texte (T)"><i data-lucide="type"></i><span class="sk-tool-k">T</span></button>
+      <button class="sk-tool wb-tool-btn" aria-label="Crayon (P)"><i data-lucide="pencil"></i><span class="sk-tool-k">P</span></button>
+      <button class="sk-tool wb-tool-btn" aria-label="Connecteur (C)"><i data-lucide="spline"></i><span class="sk-tool-k">C</span></button>
+      <span class="sk-vsep" style="margin:0.375rem 0.25rem"></span>
+      <button class="sk-tool wb-tool-btn" aria-label="Annuler (Ctrl+Z)"><i data-lucide="undo-2"></i></button>
+      <button class="sk-tool wb-tool-btn" aria-label="Rétablir (Ctrl+Maj+Z)"><i data-lucide="redo-2"></i></button>
+    </div>
+    <div class="sk-tooltip wb-tip">Post-it <span class="sk-kbd">N</span></div>
+    <div class="sk-wbbar wb-sub" aria-label="Couleur du post-it">
+      <span class="sk-tool is-on"><span class="wb-swatch sk-c-sun"></span></span>
+      <span class="sk-tool"><span class="wb-swatch sk-c-coral"></span></span>
+      <span class="sk-tool"><span class="wb-swatch sk-c-sky"></span></span>
+      <span class="sk-tool"><span class="wb-swatch sk-c-moss"></span></span>
+      <span class="sk-tool"><span class="wb-swatch sk-c-plum"></span></span>
+    </div>
+
+    <!-- variante verticale -->
+    <div class="sk-wbbar sk-wbbar--v wb-left" role="toolbar" aria-label="Outils (vertical)">
+      <button class="sk-tool wb-tool-btn is-on" aria-pressed="true" aria-label="Sélection (V)"><i data-lucide="mouse-pointer-2"></i></button>
+      <button class="sk-tool wb-tool-btn" aria-label="Main (H)"><i data-lucide="hand"></i></button>
+      <span class="sk-sep" style="width:1.5rem;margin:0.25rem 0"></span>
+      <button class="sk-tool wb-tool-btn" aria-label="Post-it (N)"><i data-lucide="sticky-note"></i></button>
+      <button class="sk-tool wb-tool-btn" aria-label="Texte (T)"><i data-lucide="type"></i></button>
+      <button class="sk-tool wb-tool-btn" aria-label="Crayon (P)"><i data-lucide="pencil"></i></button>
+    </div>
+
+    <!-- zoom -->
+    <div class="sk-wbbar wb-zoombar" role="group" aria-label="Zoom">
+      <button class="sk-tool wb-tool-btn" aria-label="Zoom arrière (−)"><i data-lucide="zoom-out"></i></button>
+      <button class="wb-zoom-v wb-tool-btn sk-tool" style="width:auto" aria-label="Zoom à 100 %, réinitialiser">100 %</button>
+      <button class="sk-tool wb-tool-btn" aria-label="Zoom avant (+)"><i data-lucide="zoom-in"></i></button>
+      <span class="sk-vsep" style="margin:0.375rem 0.25rem"></span>
+      <button class="sk-tool wb-tool-btn" aria-label="Ajuster à l'écran (Maj+1)"><i data-lucide="maximize"></i></button>
+      <button class="sk-tool wb-tool-btn" aria-label="Afficher la minimap (M)"><i data-lucide="map"></i></button>
+    </div>
+
+    <!-- minimap -->
+    <div class="sk-minimap wb-mm" aria-label="Minimap">
+      <span class="wb-mm-item sk-c-sun" style="left:1.25rem;top:1.375rem;width:1.375rem;height:1rem"></span>
+      <span class="wb-mm-item sk-c-lagoon" style="left:3.125rem;top:1.875rem;width:1.375rem;height:1rem"></span>
+      <span class="wb-mm-item sk-c-coral" style="left:7.5rem;top:1.125rem;width:1.125rem;height:0.875rem"></span>
+      <span class="wb-mm-item sk-c-sky" style="left:8.125rem;top:4.375rem;width:1.625rem;height:1.125rem"></span>
+      <span class="wb-mm-item sk-c-moss" style="left:1.875rem;top:4.875rem;width:1.25rem;height:0.875rem"></span>
+      <span class="sk-minimap-view" style="left:0.75rem;top:0.75rem;width:4.875rem;height:3rem"></span>
+    </div>
+  </div>
+
+  <div class="wb-legend" aria-label="Raccourcis">
+    <span><span class="sk-kbd">V</span>Sélection</span><span><span class="sk-kbd">H</span>/<span class="sk-kbd">Espace</span>Main</span><span><span class="sk-kbd">N</span>Post-it</span><span><span class="sk-kbd">R</span>Forme</span><span><span class="sk-kbd">T</span>Texte</span><span><span class="sk-kbd">P</span>Crayon</span><span><span class="sk-kbd">C</span>Connecteur</span><span><span class="sk-kbd">−</span><span class="sk-kbd">+</span>Zoom</span><span><span class="sk-kbd">Maj</span><span class="sk-kbd">1</span>Ajuster</span><span><span class="sk-kbd">M</span>Minimap</span>
+  </div>
+</div>
+</body>
+</html>

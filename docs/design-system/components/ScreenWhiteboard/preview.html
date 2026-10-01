@@ -1,0 +1,174 @@
+<!-- @dsCard group="Écrans · Desktop" width=1440 height=900 subtitle="Whiteboard collaboratif plein écran — post-its, formes, connecteurs, crayon, sélection, 3 curseurs live, toolbar, zoom + minimap" -->
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><title>ScreenWhiteboard</title>
+<style>
+  .wb { position: relative; flex: 1; overflow: hidden; }
+  .wb-layer { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+  .wb-shape { fill: var(--card); stroke: var(--foreground); stroke-width: 1.5; }
+  .wb-shape--soft { fill: var(--skrum-primary-soft); stroke: var(--skrum-primary-text); }
+  .wb-shape--dash { fill: var(--card); stroke: var(--muted-foreground); stroke-dasharray: 6 5; }
+  .wb-shape-t { font-family: var(--font-sans); font-size: 0.875rem; font-weight: 600; fill: var(--foreground); text-anchor: middle; dominant-baseline: middle; }
+  .wb-conn { fill: none; stroke: var(--muted-foreground); stroke-width: 1.75; }
+  .wb-conn-lbl { font-family: var(--font-sans); font-size: 0.75rem; font-weight: 700; fill: var(--muted-foreground); }
+  .wb-pencil { fill: none; stroke: var(--skrum-destructive-text); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+  .wb-title { position: absolute; font-family: var(--font-display); font-size: 1.75rem; line-height: 2.125rem; font-weight: 700; letter-spacing: -.02em; }
+  .wb-zone { position: absolute; font-size: 0.75rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted-foreground); display: flex; align-items: center; gap: 0.375rem; }
+  .wb-note { position: absolute; font-family: var(--font-display); font-size: 1.25rem; line-height: 1.625rem; font-weight: 600; color: var(--skrum-destructive-text); transform: rotate(-3deg); }
+  .sk-sticky { width: 11rem; min-height: 7.5rem; display: flex; flex-direction: column; justify-content: space-between; gap: 0.625rem; color: var(--foreground); }
+  .wb-st-by { display: flex; align-items: center; gap: 0.375rem; font-size: 0.6875rem; line-height: 1rem; font-weight: 600; color: var(--c-t); }
+  .wb-sel { position: absolute; border: 1.5px solid var(--ring); border-radius: 2px; pointer-events: none; }
+  .wb-h { position: absolute; width: 0.5625rem; height: 0.5625rem; background: var(--card); border: 1.5px solid var(--ring); border-radius: 2px; }
+  .wb-h.tl { top: -0.3125rem; left: -0.3125rem; } .wb-h.tr { top: -0.3125rem; right: -0.3125rem; } .wb-h.bl { bottom: -0.3125rem; left: -0.3125rem; } .wb-h.br { bottom: -0.3125rem; right: -0.3125rem; }
+  .wb-h.tm { top: -0.3125rem; left: calc(50% - 0.25rem); } .wb-h.bm { bottom: -0.3125rem; left: calc(50% - 0.25rem); } .wb-h.ml { top: calc(50% - 0.25rem); left: -0.3125rem; } .wb-h.mr { top: calc(50% - 0.25rem); right: -0.3125rem; }
+  .wb-rot { position: absolute; top: -1.625rem; left: calc(50% - 0.3125rem); width: 0.625rem; height: 0.625rem; border-radius: 50%; background: var(--card); border: 1.5px solid var(--ring); }
+  .wb-rot::after { content: ""; position: absolute; left: 0.1875rem; top: 0.5625rem; width: 1.5px; height: 0.75rem; background: var(--ring); }
+  .wb-selcount { position: absolute; top: -1.625rem; left: 0; font-size: 0.6875rem; font-weight: 700; line-height: 1.125rem; padding: 0 0.4375rem; border-radius: var(--radius-xs); background: var(--ring); color: var(--primary-foreground); }
+  .wb-swatch { width: 1.25rem; height: 1.25rem; border-radius: 50%; background: var(--c); border: 1.5px solid var(--c-b); flex: none; }
+  .wb-swatch.is-on { box-shadow: 0 0 0 2px var(--popover), 0 0 0 0.2188rem var(--foreground); }
+  .wb-mm-el { position: absolute; border-radius: 1px; background: var(--c, var(--muted-foreground)); border: 1px solid var(--c-b, transparent); }
+  .wb-zoom-v { font-size: 0.8125rem; font-weight: 700; min-width: 3.25rem; text-align: center; font-variant-numeric: tabular-nums; }
+  .wb-float { position: absolute; z-index: var(--z-chrome); }
+  .wb-doc { display: flex; flex-direction: column; line-height: 1.125rem; }
+</style>
+</head>
+<body>
+<div class="sk-desktop">
+  <header class="sk-topbar">
+    <svg viewBox="0 0 64 64" width="28" height="28" aria-label="Skrüm"><path d="M14 0 H50 A14 14 0 0 1 64 14 V46 L46 64 H14 A14 14 0 0 1 0 50 V14 A14 14 0 0 1 14 0 Z" style="fill:var(--primary)"/><path d="M64 46 L50 46 A4 4 0 0 0 46 50 L46 64 Z" style="fill:color-mix(in oklch, var(--primary) 70%, var(--foreground))"/><path d="M19 27 L19 38 C19 45 24 49.5 30 49.5 C36 49.5 41 45 41 38 L41 27" fill="none" style="stroke:var(--primary-foreground)" stroke-width="7" stroke-linecap="round"/><circle cx="21.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/><circle cx="38.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/></svg>
+    <nav class="sk-crumbs" aria-label="Fil d'Ariane"><span>Atlas</span><i data-lucide="chevron-right"></i><span>Whiteboards</span><i data-lucide="chevron-right"></i><span class="is-current">Parcours d'onboarding — irritants</span></nav>
+    <button class="sk-btn sk-btn--ghost sk-btn--icon sk-btn--sm" aria-label="Renommer"><i data-lucide="pencil"></i></button>
+    <span class="sk-grow"></span>
+    <span class="sk-conn is-ok"><span class="sk-dot"></span>Synchronisé</span>
+    <div class="sk-stack" aria-label="8 personnes sur le tableau">
+      <span class="sk-avatar sk-p1">AR</span>
+      <span class="sk-avatar sk-p4 is-typing" style="--typing:var(--skrum-presence-4)">CR</span>
+      <span class="sk-avatar sk-p2">TM</span>
+      <span class="sk-avatar sk-p9 is-typing" style="--typing:var(--skrum-presence-9)">IB</span>
+      <span class="sk-avatar sk-p7">MK</span>
+      <span class="sk-avatar sk-stack-more">+3</span>
+    </div>
+    <span class="sk-vsep" style="margin:0.75rem 0"></span>
+    <button class="sk-btn sk-btn--ghost sk-btn--icon" aria-label="Commentaires"><i data-lucide="message-square-plus"></i></button>
+    <button class="sk-btn sk-btn--outline"><i data-lucide="download"></i>Exporter</button>
+    <button class="sk-btn"><i data-lucide="share-2"></i>Partager</button>
+  </header>
+
+  <main class="wb sk-dotgrid" aria-label="Tableau blanc">
+    <!-- shapes, connectors, pencil -->
+    <svg class="wb-layer" viewBox="0 0 1440 844" aria-hidden="true">
+      <defs>
+        <marker id="wbArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 Z" style="fill:var(--muted-foreground)"/></marker>
+      </defs>
+      <rect class="wb-shape" x="110" y="110" width="150" height="60" rx="10"/><text class="wb-shape-t" x="185" y="140">Landing page</text>
+      <rect class="wb-shape" x="320" y="110" width="150" height="60" rx="10"/><text class="wb-shape-t" x="395" y="140">Inscription</text>
+      <path class="wb-shape wb-shape--soft" d="M545 140 L620 88 L695 140 L620 192 Z"/><text class="wb-shape-t" x="620" y="140">Email vérifié ?</text>
+      <rect class="wb-shape" x="760" y="110" width="160" height="60" rx="30"/><text class="wb-shape-t" x="840" y="140">Tableau de bord</text>
+      <rect class="wb-shape wb-shape--dash" x="545" y="252" width="150" height="52" rx="10"/><text class="wb-shape-t" x="620" y="278">Relance J+1</text>
+      <path class="wb-conn" d="M262 140 H316" marker-end="url(#wbArrow)"/>
+      <path class="wb-conn" d="M472 140 H541" marker-end="url(#wbArrow)"/>
+      <path class="wb-conn" d="M697 140 H756" marker-end="url(#wbArrow)"/><text class="wb-conn-lbl" x="714" y="130">oui</text>
+      <path class="wb-conn" d="M620 194 V248" marker-end="url(#wbArrow)"/><text class="wb-conn-lbl" x="628" y="226">non</text>
+      <path class="wb-conn" d="M543 278 C 440 278 395 250 395 174" stroke-dasharray="5 5" marker-end="url(#wbArrow)"/>
+      <!-- pencil: loop around the top irritant + arrow from the note -->
+      <path class="wb-pencil" d="M300 392 C 330 360 452 356 490 392 C 520 422 506 492 470 512 C 420 540 318 532 290 494 C 268 462 276 420 312 386"/>
+      <path class="wb-pencil" d="M600 402 C 570 404 540 414 506 432"/>
+      <path class="wb-pencil" d="M518 420 L504 434 L522 440"/>
+      <!-- connector from irritants to pistes -->
+      <path class="wb-conn" d="M684 616 C 800 616 860 440 976 430" marker-end="url(#wbArrow)"/>
+      <text class="wb-conn-lbl" x="712" y="642">résolu par</text>
+    </svg>
+
+    <h1 class="wb-title" style="left:6.875rem;top:2.25rem;margin:0">Parcours d'onboarding — irritants</h1>
+
+    <div class="wb-zone" style="left:6.875rem;top:21.25rem"><i data-lucide="frame" class="sk-ico-sm"></i>Irritants</div>
+    <div class="sk-sticky sk-c-coral" style="left:6.875rem;top:23.125rem"><span>Le formulaire demande 11 champs, dont le SIRET.</span><span class="wb-st-by"><span class="sk-avatar sk-avatar--xs sk-p4">CR</span>Camille</span></div>
+    <div class="sk-sticky sk-c-coral" style="left:18.875rem;top:24rem"><span>On ne sait pas pourquoi l'email de confirmation n'arrive pas.</span><span class="wb-st-by"><span class="sk-avatar sk-avatar--xs sk-p7">MK</span>Malik</span></div>
+    <div class="wb-note" style="left:37.75rem;top:24.125rem">Top irritant :<br>7 tickets support</div>
+
+    <div class="sk-sticky sk-c-apricot" style="left:6.875rem;top:34.75rem"><span>Règles du mot de passe affichées seulement après l'erreur.</span><span class="wb-st-by"><span class="sk-avatar sk-avatar--xs sk-p2">TM</span>Théo</span></div>
+    <div class="sk-sticky sk-c-sun" style="left:18.875rem;top:34.75rem"><span>Rien n'est sauvegardé si on quitte à l'étape 2.</span><span class="wb-st-by"><span class="sk-avatar sk-avatar--xs sk-p1">AR</span>Arnaud</span></div>
+    <div class="sk-sticky sk-c-apricot" style="left:30.875rem;top:34.75rem"><span>Le choix d'équipe arrive trop tôt, avant de comprendre l'outil.</span><span class="wb-st-by"><span class="sk-avatar sk-avatar--xs sk-p9">IB</span>Inès</span></div>
+    <!-- selection of 3 stickies -->
+    <div class="wb-sel" style="left:6.25rem;top:34.125rem;width:36.25rem;height:8.75rem">
+      <span class="wb-selcount">3 éléments</span>
+      <span class="wb-h tl"></span><span class="wb-h tm"></span><span class="wb-h tr"></span><span class="wb-h ml"></span><span class="wb-h mr"></span><span class="wb-h bl"></span><span class="wb-h bm"></span><span class="wb-h br"></span>
+    </div>
+    <!-- contextual toolbar for the selection -->
+    <div class="sk-wbbar wb-float" style="left:9.375rem;top:44rem" role="toolbar" aria-label="Sélection">
+      <span class="sk-row sk-gap-1" style="padding:0 0.375rem;gap:0.375rem">
+        <span class="wb-swatch sk-c-sun"></span><span class="wb-swatch sk-c-apricot is-on"></span><span class="wb-swatch sk-c-coral"></span><span class="wb-swatch sk-c-plum"></span><span class="wb-swatch sk-c-iris"></span><span class="wb-swatch sk-c-sky"></span><span class="wb-swatch sk-c-lagoon"></span><span class="wb-swatch sk-c-moss"></span>
+      </span>
+      <span class="sk-vsep" style="margin:0.25rem 2px"></span>
+      <span class="sk-tool" aria-label="Grouper"><i data-lucide="group"></i></span>
+      <span class="sk-tool" aria-label="Aligner"><i data-lucide="align-horizontal-distribute-center"></i></span>
+      <span class="sk-tool" aria-label="Verrouiller"><i data-lucide="lock"></i></span>
+      <span class="sk-tool" aria-label="Convertir en actions"><i data-lucide="list-checks"></i></span>
+      <span class="sk-tool" aria-label="Supprimer" style="color:var(--skrum-destructive-text)"><i data-lucide="trash-2"></i></span>
+    </div>
+
+    <div class="wb-zone" style="left:61.25rem;top:21.25rem"><i data-lucide="frame" class="sk-ico-sm"></i>Pistes</div>
+    <div class="sk-sticky sk-c-moss" style="left:61.25rem;top:23.125rem"><span>Inscription en 3 champs, le reste plus tard.</span><span class="wb-st-by"><span class="sk-avatar sk-avatar--xs sk-p2">TM</span>Théo</span></div>
+    <div class="sk-sticky sk-c-lagoon" style="left:73.25rem;top:23.125rem"><span>Lien magique à la place du mot de passe.</span><span class="wb-st-by"><span class="sk-avatar sk-avatar--xs sk-p4">CR</span>Camille</span></div>
+    <div class="sk-sticky sk-c-sky" style="left:61.25rem;top:32.625rem"><span>Brouillon auto à chaque étape (localStorage + serveur).</span><span class="wb-st-by"><span class="sk-avatar sk-avatar--xs sk-p7">MK</span>Malik</span></div>
+    <div class="sk-sticky sk-c-iris" style="left:73.25rem;top:32.625rem;box-shadow:0 0 0 2px var(--skrum-presence-9)"><span class="sk-lock-tag" style="position:absolute;top:-0.625rem;right:0.625rem;font-size:0.6875rem;font-weight:700;line-height:1.125rem;padding:0 0.4375rem;border-radius:999px;background:var(--skrum-presence-9);color:var(--skrum-presence-9-foreground);display:flex;align-items:center;gap:0.25rem"><i data-lucide="pencil" class="sk-ico-sm"></i>Inès écrit</span><span>Afficher l'état de l'email en direct<span class="sk-trema" style="margin-left:0.375rem;color:var(--skrum-col-iris-text)"><i></i><i></i></span></span><span class="wb-st-by"><span class="sk-avatar sk-avatar--xs sk-p9">IB</span>Inès</span></div>
+    <div class="sk-sticky sk-c-plum" style="left:61.25rem;top:42.125rem"><span>Tester avec 5 nouveaux clients avant la refonte.</span><span class="wb-st-by"><span class="sk-avatar sk-avatar--xs sk-p1">AR</span>Arnaud</span></div>
+
+    <!-- live cursors -->
+    <div class="sk-cursor" style="left:54.5rem;top:14.75rem;--cur:var(--skrum-presence-4);--cur-fg:var(--skrum-presence-4-foreground)"><svg viewBox="0 0 18 18"><path d="M2 1 L16 8 L9.5 9.5 L7 16 Z"/></svg><span class="sk-cursor-tag">Camille</span></div>
+    <div class="sk-cursor" style="left:69.375rem;top:29.375rem;--cur:var(--skrum-presence-2);--cur-fg:var(--skrum-presence-2-foreground)"><svg viewBox="0 0 18 18"><path d="M2 1 L16 8 L9.5 9.5 L7 16 Z"/></svg><span class="sk-cursor-tag">Théo</span></div>
+    <div class="sk-cursor" style="left:81.875rem;top:37.75rem;--cur:var(--skrum-presence-9);--cur-fg:var(--skrum-presence-9-foreground)"><svg viewBox="0 0 18 18"><path d="M2 1 L16 8 L9.5 9.5 L7 16 Z"/></svg><span class="sk-cursor-tag">Inès</span></div>
+
+    <!-- main toolbar -->
+    <div class="sk-wbbar sk-wbbar--v wb-float" style="left:1rem;top:10.625rem" role="toolbar" aria-label="Outils">
+      <span class="sk-tool is-on" aria-label="Sélection (V)"><i data-lucide="mouse-pointer-2"></i><span class="sk-tool-k">V</span></span>
+      <span class="sk-tool" aria-label="Main (H)"><i data-lucide="hand"></i><span class="sk-tool-k">H</span></span>
+      <span class="sk-sep" style="width:1.5rem;margin:0.25rem auto"></span>
+      <span class="sk-tool" aria-label="Post-it (S)"><i data-lucide="sticky-note"></i><span class="sk-tool-k">S</span></span>
+      <span class="sk-tool" aria-label="Forme (R)"><i data-lucide="shapes"></i><span class="sk-tool-k">R</span></span>
+      <span class="sk-tool" aria-label="Connecteur (C)"><i data-lucide="spline"></i><span class="sk-tool-k">C</span></span>
+      <span class="sk-tool" aria-label="Texte (T)"><i data-lucide="type"></i><span class="sk-tool-k">T</span></span>
+      <span class="sk-tool" aria-label="Crayon (P)"><i data-lucide="pencil"></i><span class="sk-tool-k">P</span></span>
+      <span class="sk-tool" aria-label="Gomme (E)"><i data-lucide="eraser"></i><span class="sk-tool-k">E</span></span>
+      <span class="sk-tool" aria-label="Cadre (F)"><i data-lucide="frame"></i><span class="sk-tool-k">F</span></span>
+      <span class="sk-sep" style="width:1.5rem;margin:0.25rem auto"></span>
+      <span class="sk-tool" aria-label="Image"><i data-lucide="image"></i></span>
+    </div>
+
+    <!-- undo / redo -->
+    <div class="sk-wbbar wb-float" style="left:1rem;bottom:1rem" role="toolbar" aria-label="Historique">
+      <span class="sk-tool" aria-label="Annuler"><i data-lucide="undo-2"></i></span>
+      <span class="sk-tool" aria-label="Rétablir" style="color:var(--muted-foreground)"><i data-lucide="redo-2"></i></span>
+    </div>
+
+    <!-- zoom + minimap -->
+    <div class="wb-float sk-col sk-gap-2" style="right:1rem;bottom:1rem;align-items:flex-end">
+      <div class="sk-wbbar" role="toolbar" aria-label="Zoom">
+        <span class="sk-tool" aria-label="Dézoomer"><i data-lucide="minus"></i></span>
+        <span class="wb-zoom-v">80 %</span>
+        <span class="sk-tool" aria-label="Zoomer"><i data-lucide="plus"></i></span>
+        <span class="sk-vsep" style="margin:0.25rem 2px"></span>
+        <span class="sk-tool" aria-label="Tout afficher"><i data-lucide="scan"></i></span>
+        <span class="sk-tool is-on" aria-label="Minimap"><i data-lucide="map"></i></span>
+      </div>
+      <div class="sk-minimap" aria-label="Minimap">
+        <span class="wb-mm-el" style="left:1.625rem;top:1.375rem;width:3.875rem;height:0.375rem;opacity:.5"></span>
+        <span class="wb-mm-el sk-c-coral" style="left:1.625rem;top:3rem;width:0.75rem;height:0.625rem"></span>
+        <span class="wb-mm-el sk-c-coral" style="left:2.5rem;top:3.0625rem;width:0.75rem;height:0.625rem"></span>
+        <span class="wb-mm-el sk-c-apricot" style="left:1.625rem;top:3.75rem;width:0.75rem;height:0.625rem"></span>
+        <span class="wb-mm-el sk-c-sun" style="left:2.5rem;top:3.75rem;width:0.75rem;height:0.625rem"></span>
+        <span class="wb-mm-el sk-c-apricot" style="left:3.375rem;top:3.75rem;width:0.75rem;height:0.625rem"></span>
+        <span class="wb-mm-el sk-c-moss" style="left:5.75rem;top:3rem;width:0.75rem;height:0.625rem"></span>
+        <span class="wb-mm-el sk-c-lagoon" style="left:6.625rem;top:3rem;width:0.75rem;height:0.625rem"></span>
+        <span class="wb-mm-el sk-c-sky" style="left:5.75rem;top:3.75rem;width:0.75rem;height:0.625rem"></span>
+        <span class="wb-mm-el sk-c-iris" style="left:6.625rem;top:3.75rem;width:0.75rem;height:0.625rem"></span>
+        <span class="wb-mm-el sk-c-plum" style="left:5.75rem;top:4.5rem;width:0.75rem;height:0.625rem"></span>
+        <span class="wb-mm-el sk-c-sun" style="left:8.75rem;top:5.25rem;width:0.75rem;height:0.625rem"></span>
+        <span class="wb-mm-el sk-c-sky" style="left:9.625rem;top:5.25rem;width:0.75rem;height:0.625rem"></span>
+        <span class="sk-minimap-view" style="left:1.125rem;top:0.875rem;width:6.75rem;height:4.625rem"></span>
+      </div>
+    </div>
+  </main>
+</div>
+</body>
+</html>

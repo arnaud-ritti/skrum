@@ -1,0 +1,52 @@
+<!-- @dsCard group="shadcn · Affichage" height=294 subtitle="Badge — default, secondary, outline, muted, soft, success, warning, info, destructive, pill, avec icône, point ; exemples métier" -->
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><title>Badge</title>
+<style>
+  .bd-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-6) var(--space-10); }
+  .bd-list { display: flex; flex-direction: column; gap: var(--space-2); }
+  .bd-list > div { display: flex; align-items: center; gap: var(--space-3); font-size: 0.8125rem; }
+  .bd-list .sk-muted { font-size: 0.75rem; }
+</style></head>
+<body>
+<div class="sk-pad sk-col sk-gap-6">
+  <div><div class="sk-state">Variantes</div>
+    <div class="sk-row sk-gap-2">
+      <span class="sk-badge">Default</span>
+      <span class="sk-badge sk-badge--secondary">Secondary</span>
+      <span class="sk-badge sk-badge--outline">Outline</span>
+      <span class="sk-badge sk-badge--muted">Muted</span>
+      <span class="sk-badge sk-badge--soft">Soft</span>
+      <span class="sk-badge sk-badge--success">Success</span>
+      <span class="sk-badge sk-badge--warning">Warning</span>
+      <span class="sk-badge sk-badge--info">Info</span>
+      <span class="sk-badge sk-badge--destructive">Destructive</span>
+    </div></div>
+  <div><div class="sk-state">Pill · avec icône · point</div>
+    <div class="sk-row sk-gap-2">
+      <span class="sk-badge sk-badge--pill">12</span>
+      <span class="sk-badge sk-badge--soft sk-badge--pill">6 actions</span>
+      <span class="sk-badge sk-badge--success sk-badge--pill"><i data-lucide="circle-check"></i>Faite</span>
+      <span class="sk-badge sk-badge--info sk-badge--pill"><i data-lucide="clock"></i>Phase Vote</span>
+      <span class="sk-badge sk-badge--outline sk-badge--pill"><span class="sk-dot" style="color:var(--skrum-success)"></span>En direct</span>
+      <span class="sk-badge sk-badge--outline sk-badge--pill"><span class="sk-dot" style="color:var(--muted-foreground)"></span>Terminée</span>
+      <span class="sk-badge sk-badge--muted"><i data-lucide="lock"></i>Privée</span>
+      <a class="sk-badge sk-badge--outline" href="#" style="text-decoration:none;background:var(--accent)">Lien survolé<i data-lucide="arrow-up-right"></i></a>
+    </div></div>
+  <div class="bd-grid">
+    <div><div class="sk-state">Exemples métier</div>
+      <div class="bd-list">
+        <div><span class="sk-badge sk-badge--soft"><i data-lucide="crown"></i>Facilitateur</span><span class="sk-muted">soft · rôle de pilote de la session</span></div>
+        <div><span class="sk-badge sk-badge--outline"><i data-lucide="user-round"></i>Invité</span><span class="sk-muted">outline · rejoint via lien, sans compte</span></div>
+        <div><span class="sk-badge sk-badge--muted"><i data-lucide="venetian-mask"></i>Anonyme</span><span class="sk-muted">muted · carte ou vote sans auteur</span></div>
+      </div></div>
+    <div><div class="sk-state">&nbsp;</div>
+      <div class="bd-list">
+        <div><span class="sk-badge sk-badge--success"><i data-lucide="check"></i>Consensus</span><span class="sk-muted">success · poker, écart ≤ 1 carte</span></div>
+        <div><span class="sk-badge sk-badge--destructive"><i data-lucide="calendar-clock"></i>En retard</span><span class="sk-muted">destructive · action après échéance</span></div>
+        <div><span class="sk-badge sk-badge--warning"><i data-lucide="triangle-alert"></i>Écart 3 → 13</span><span class="sk-muted">warning · poker à rediscuter</span></div>
+      </div></div>
+  </div>
+</div>
+</body>
+</html>

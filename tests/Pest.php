@@ -37,6 +37,8 @@ use App\Models\Team;
 use App\Models\TeamIntegration;
 use App\Models\User;
 use App\Models\Vote;
+use App\Models\Whiteboard;
+use App\Models\WhiteboardMember;
 use App\Models\Workspace;
 use App\Support\Games\GameRules;
 use App\Support\Games\GameRulesRegistry;
@@ -1462,4 +1464,86 @@ function runStatusPush(ActionItemExternalLink $link): PushActionItemState
     app()->call($job->handle(...));
 
     return $job;
+}
+
+/**
+ * @return array{0: User, 1: WhiteboardMember}
+ */
+function whiteboardMember(Whiteboard $board): array
+{
+    $user = teamMember($board->team);
+
+    return [$user, WhiteboardMember::factory()->create(['whiteboard_id' => $board->id, 'user_id' => $user->id])];
+}
+
+/**
+ * @return array{0: User, 1: WhiteboardMember}
+ */
+function whiteboardFacilitator(Whiteboard $board): array
+{
+    [$user, $member] = whiteboardMember($board);
+
+    $board->update(['facilitator_member_id' => $member->id]);
+
+    return [$user, $member];
+}
+
+function whiteboardGuest(Whiteboard $board, string $secret = 'secret'): WhiteboardMember
+{
+    return WhiteboardMember::factory()->guest($secret)->create(['whiteboard_id' => $board->id]);
+}
+
+/**
+ * @return array<string, string>
+ */
+function whiteboardGuestCookie(WhiteboardMember $member, string $secret = 'secret'): array
+{
+    return [GuestCookie::name(GuestCookie::WhiteboardScope, $member->whiteboard_id) => "{$member->id}|{$secret}"];
+}
+
+/**
+ * A rectangle as Excalidraw sends it.
+ *
+ * @param  array<string, mixed>  $overrides
+ * @return array<string, mixed>
+ */
+function sceneElement(array $overrides = []): array
+{
+    return [
+        'id' => Str::random(20),
+        'type' => 'rectangle',
+        'x' => 10,
+        'y' => 20,
+        'width' => 100,
+        'height' => 50,
+        'angle' => 0,
+        'strokeColor' => '#1e1e1e',
+        'backgroundColor' => 'transparent',
+        'fillStyle' => 'solid',
+        'strokeWidth' => 2,
+        'strokeStyle' => 'solid',
+        'roughness' => 1,
+        'opacity' => 100,
+        'groupIds' => [],
+        'frameId' => null,
+        'index' => 'a0',
+        'roundness' => null,
+        'seed' => 1,
+        'version' => 1,
+        'versionNonce' => 100,
+        'isDeleted' => false,
+        'boundElements' => null,
+        'updated' => 1,
+        'link' => null,
+        'locked' => false,
+        ...$overrides,
+    ];
+}
+
+/**
+ * @param  array<int, mixed>  $elements
+ */
+function putWhiteboardElements(mixed $test, Whiteboard $board, array $elements): TestResponse
+{
+    return $test->putJson(route('whiteboards.elements.update', $board), ['elements' => $elements]);
 }

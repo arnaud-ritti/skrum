@@ -1,0 +1,58 @@
+<!-- @dsCard group="shadcn · Formulaires" height=524 subtitle="Input + Textarea — défaut, placeholder, focus, invalide + message, désactivé, avec icône, compteur" -->
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><title>Input</title>
+<style>
+  .ip-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 17.5rem), 1fr)); gap: var(--space-6) var(--space-5); }
+  .ip-count { font-size: 0.75rem; line-height: 1rem; color: var(--muted-foreground); font-variant-numeric: tabular-nums; }
+  .ip-count.is-near { color: var(--skrum-warning-text); font-weight: 600; }
+  .ip-suffix { position: absolute; right: 0.5rem; }
+  .ip-caret { display: inline-block; width: 1px; height: 1.125rem; background: var(--foreground); margin-left: 1px; vertical-align: -0.25rem; }
+</style></head>
+<body>
+<div class="sk-pad sk-col sk-gap-8">
+  <div class="ip-grid">
+    <div><div class="sk-state">Défaut (rempli)</div>
+      <div class="sk-field"><label for="i1">Nom de la session</label>
+        <input id="i1" class="sk-input" value="Rétro sprint 42 — Atlas">
+        <span class="sk-help">Visible par tous les participants.</span></div></div>
+    <div><div class="sk-state">Placeholder</div>
+      <div class="sk-field"><label for="i2">Objectif de la rétro</label>
+        <input id="i2" class="sk-input" placeholder="Ex. : fiabiliser nos mises en prod"></div></div>
+    <div><div class="sk-state">Focus</div>
+      <div class="sk-field"><label for="i3">Votre prénom</label>
+        <div class="sk-input is-focus"><span>Camille<span class="ip-caret"></span></span></div>
+        <span class="sk-help">Laissez vide pour rester anonyme.</span></div></div>
+
+    <div><div class="sk-state">Invalide + message</div>
+      <div class="sk-field"><label for="i4">E-mail du facilitateur</label>
+        <input id="i4" class="sk-input is-invalid" value="theo.martin@atlas" aria-invalid="true" aria-describedby="i4e">
+        <span id="i4e" class="sk-error-msg"><i data-lucide="circle-alert" class="sk-ico-sm"></i>Adresse e-mail incomplète.</span></div></div>
+    <div><div class="sk-state">Invalide + focus</div>
+      <div class="sk-field"><label>Code de session</label>
+        <div class="sk-input is-invalid is-focus sk-mono"><span>ATL-9Q<span class="ip-caret"></span></span></div>
+        <span class="sk-error-msg"><i data-lucide="circle-alert" class="sk-ico-sm"></i>Le code fait 8 caractères.</span></div></div>
+    <div><div class="sk-state">Désactivé</div>
+      <div class="sk-field"><label for="i6" style="opacity:.55">Lien d'invitation</label>
+        <input id="i6" class="sk-input is-disabled" value="skrum.app/j/atlas-42" disabled>
+        <span class="sk-help">Généré au démarrage de la session.</span></div></div>
+
+    <div><div class="sk-state">Avec icône</div>
+      <div class="sk-col sk-gap-2">
+        <div class="sk-input-group"><i data-lucide="search"></i><input class="sk-input" placeholder="Rechercher une carte…"></div>
+        <div class="sk-input-group"><i data-lucide="mail"></i><input class="sk-input" value="ines.benali@atlas.io"></div>
+        <div class="sk-input-group"><i data-lucide="link-2"></i><input class="sk-input" value="jira.atlas.io/browse/ATLAS-1287" style="padding-right:2.5rem"><button class="sk-btn sk-btn--ghost sk-btn--icon sk-btn--sm ip-suffix" aria-label="Copier" style="height:1.75rem;width:1.75rem"><i data-lucide="copy" class="sk-ico-sm"></i></button></div>
+      </div></div>
+    <div style="grid-column: span 2"><div class="sk-state">Textarea avec compteur</div>
+      <div class="sk-grid" style="grid-template-columns:repeat(auto-fit, minmax(min(100%, 17.5rem), 1fr))">
+        <div class="sk-field"><label for="t1">Votre carte</label>
+          <textarea id="t1" class="sk-textarea" placeholder="Qu'est-ce qui s'est bien passé ce sprint ?"></textarea>
+          <div class="sk-between"><span class="sk-help">Anonyme pour les autres participants.</span><span class="ip-count">0/280</span></div></div>
+        <div class="sk-field"><label for="t2">Contexte de l'action</label>
+          <div class="sk-textarea is-focus" style="min-height:5.5rem"><span>Les tests E2E cassent une fois sur trois en CI. Nadia propose d'isoler les jeux de données par worker et de relancer automatiquement les specs instables avant de bloquer la merge request<span class="ip-caret"></span></span></div>
+          <div class="sk-between"><span class="sk-help">Markdown léger accepté.</span><span class="ip-count is-near">268/280</span></div></div>
+      </div></div>
+  </div>
+</div>
+</body>
+</html>

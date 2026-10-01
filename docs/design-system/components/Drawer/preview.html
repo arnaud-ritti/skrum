@@ -1,0 +1,84 @@
+<!-- @dsCard width=960 group="shadcn · Overlays" height=848 subtitle="Drawer mobile (390 px) — choisir sa carte de vote au planning poker · ajouter une réaction à une carte" -->
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><title>Drawer</title>
+<style>
+  .dr-phone { height: 45rem; }
+  .dr-screen { position: relative; flex: 1; overflow: hidden; }
+  .dr-content { padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-3); }
+  .dr-sheet { position: absolute; left: 0; right: 0; bottom: 0; padding-bottom: var(--space-8); }
+  .dr-deck { display: grid; grid-template-columns: repeat(5, 1fr); gap: var(--space-2); justify-items: center; padding-top: var(--space-3); }
+  .dr-deck .sk-pcard { width: 3.5rem; height: 5rem; }
+  .dr-deck .sk-pcard-face { font-size: 1.5rem; }
+  .dr-deck .sk-pcard-in { border-radius: inherit; }
+  .dr-phones { justify-content: center; }
+  .dr-emo { display: grid; grid-template-columns: repeat(6, 1fr); gap: var(--space-2); }
+  .dr-emo button { height: 3rem; border-radius: var(--radius); border: 1px solid var(--border); background: var(--card); font-size: 1.5rem; display: grid; place-items: center; }
+  .dr-emo button.is-on { border-color: var(--primary); background: var(--skrum-primary-soft); box-shadow: inset 0 0 0 1px var(--primary); }
+  .dr-t { font-size: 1.0625rem; line-height: 1.5rem; font-weight: 650; margin: 0; text-align: center; }
+  .dr-d { font-size: 0.8125rem; line-height: 1.25rem; color: var(--muted-foreground); margin: 0; text-align: center; }
+  .dr-ticket { padding: var(--space-4); }
+</style></head>
+<body>
+<div class="sk-phones dr-phones">
+  <div>
+    <div class="sk-phone dr-phone">
+      <div class="sk-phone-status"><span>9:41</span><span class="sk-row sk-gap-1"><i data-lucide="signal" class="sk-ico-sm"></i><i data-lucide="wifi" class="sk-ico-sm"></i><i data-lucide="battery-full" class="sk-ico-sm"></i></span></div>
+      <div class="dr-screen">
+        <div class="dr-content">
+          <div class="sk-between"><span class="sk-strong">Poker · Sprint 43</span><span class="sk-badge sk-badge--muted">5 / 8 ont voté</span></div>
+          <div class="sk-card dr-ticket sk-col sk-gap-2"><span class="sk-ticket">ATLAS-1302</span><span class="sk-h4">Export CSV des actions par équipe</span><span class="sk-help">En tant que facilitateur, je veux exporter…</span></div>
+        </div>
+        <div class="sk-overlay"></div>
+        <div class="dr-sheet sk-drawer" role="dialog" aria-modal="true" aria-labelledby="dr1">
+          <div class="sk-drawer-grip"></div>
+          <div class="sk-col sk-gap-1"><h2 id="dr1" class="dr-t">Choisissez votre carte</h2><p class="dr-d">Votre vote reste caché jusqu'à la révélation.</p></div>
+          <div class="dr-deck" role="radiogroup" aria-label="Cartes Fibonacci">
+            <div class="sk-pcard"><div class="sk-pcard-in"><div class="sk-pcard-face">1</div></div></div>
+            <div class="sk-pcard"><div class="sk-pcard-in"><div class="sk-pcard-face">2</div></div></div>
+            <div class="sk-pcard"><div class="sk-pcard-in"><div class="sk-pcard-face">3</div></div></div>
+            <div class="sk-pcard is-selected"><div class="sk-pcard-in"><div class="sk-pcard-face">5</div></div></div>
+            <div class="sk-pcard"><div class="sk-pcard-in"><div class="sk-pcard-face">8</div></div></div>
+            <div class="sk-pcard"><div class="sk-pcard-in"><div class="sk-pcard-face">13</div></div></div>
+            <div class="sk-pcard"><div class="sk-pcard-in"><div class="sk-pcard-face">21</div></div></div>
+            <div class="sk-pcard is-special"><div class="sk-pcard-in"><div class="sk-pcard-face">?</div></div></div>
+            <div class="sk-pcard is-special"><div class="sk-pcard-in"><div class="sk-pcard-face">☕</div></div></div>
+            <div class="sk-pcard is-disabled"><div class="sk-pcard-in"><div class="sk-pcard-face">40</div></div></div>
+          </div>
+          <button class="sk-btn sk-btn--lg sk-btn--block">Voter 5</button>
+          <button class="sk-btn sk-btn--ghost sk-btn--block" style="margin-top:calc(-1 * var(--space-2))">Retirer mon vote</button>
+        </div>
+      </div>
+      <div class="sk-phone-home"></div>
+    </div>
+    <div class="sk-phone-cap">Carte de vote · 5 sélectionnée</div>
+  </div>
+
+  <div>
+    <div class="sk-phone dr-phone">
+      <div class="sk-phone-status"><span>9:41</span><span class="sk-row sk-gap-1"><i data-lucide="signal" class="sk-ico-sm"></i><i data-lucide="wifi" class="sk-ico-sm"></i><i data-lucide="battery-full" class="sk-ico-sm"></i></span></div>
+      <div class="dr-screen sk-canvas">
+        <div class="dr-content">
+          <span class="sk-strong">Bien passé · 6 cartes</span>
+          <article class="sk-rcard sk-c-moss"><p class="sk-rcard-text">La démo client s'est super bien passée.</p></article>
+          <article class="sk-rcard sk-c-moss"><p class="sk-rcard-text">Le pair-programming du jeudi a débloqué la migration Postgres.</p></article>
+        </div>
+        <div class="sk-overlay"></div>
+        <div class="dr-sheet sk-drawer" role="dialog" aria-modal="true" aria-labelledby="dr2">
+          <div class="sk-drawer-grip"></div>
+          <div class="sk-col sk-gap-1"><h2 id="dr2" class="dr-t">Réagir à la carte</h2><p class="dr-d">« Le pair-programming du jeudi a débloqué… »</p></div>
+          <div class="sk-reactions" style="justify-content:center"><span class="sk-react is-mine">🎉 4</span><span class="sk-react">💡 2</span><span class="sk-react">❤️ 1</span></div>
+          <div class="dr-emo" role="group" aria-label="Réactions">
+            <button class="is-on" aria-pressed="true" aria-label="Fête">🎉</button><button aria-label="Idée">💡</button><button aria-label="Cœur">❤️</button><button aria-label="Rire">😂</button><button aria-label="Surprise">😮</button><button aria-label="Pouce">👍</button>
+            <button aria-label="Feu">🔥</button><button aria-label="Applaudir">👏</button><button aria-label="Pensif">🤔</button><button aria-label="Triste">😢</button><button aria-label="Fusée">🚀</button><button aria-label="Plus"><i data-lucide="smile-plus" class="sk-ico-lg" style="color:var(--muted-foreground)"></i></button>
+          </div>
+          <button class="sk-btn sk-btn--outline sk-btn--lg sk-btn--block">Fermer</button>
+        </div>
+      </div>
+      <div class="sk-phone-home"></div>
+    </div>
+    <div class="sk-phone-cap">Réactions · 🎉 déjà ajoutée</div>
+  </div>
+</div>
+</body>
+</html>

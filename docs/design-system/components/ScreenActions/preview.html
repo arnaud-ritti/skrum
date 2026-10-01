@@ -1,0 +1,126 @@
+<!-- @dsCard group="Écrans · Desktop" width=1440 height=900 subtitle="Liste globale des actions — filtres, groupement par sprint, table avec Jira/Linear, retards, sélection multiple + barre d'actions groupées" -->
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><title>ScreenActions</title>
+<style>
+  .ac-shell { display: flex; height: 100%; }
+  .ac-main { position: relative; }
+  .ac-page { flex: 1; min-height: 0; overflow: hidden; padding: var(--space-6) var(--space-8) 0; display: flex; flex-direction: column; gap: var(--space-4); }
+  .ac-filter { display: inline-flex; align-items: center; gap: 0.375rem; height: 2rem; padding: 0 0.625rem; border-radius: var(--radius-md); border: 1px dashed var(--input); background: var(--card); font-size: 0.8125rem; font-weight: 600; color: var(--foreground); white-space: nowrap; }
+  .ac-filter .lucide { width: 0.875rem; height: 0.875rem; color: var(--muted-foreground); }
+  .ac-filter.is-on { border-style: solid; border-color: var(--primary); background: var(--skrum-primary-soft); color: var(--skrum-primary-text); }
+  .ac-filter.is-on .lucide { color: inherit; }
+  .ac-filter .ac-fv { font-weight: 500; color: var(--muted-foreground); }
+  .ac-filter.is-on .ac-fv { color: inherit; }
+  .ac-tablewrap { border: 1px solid var(--border); border-radius: var(--radius-xl); background: var(--card); box-shadow: var(--shadow-card); overflow: hidden; }
+  .ac-tablewrap .sk-table td { padding: 0.5rem 0.75rem; }
+  .ac-tablewrap .sk-table th { background: var(--muted); }
+  .ac-grp td { background: color-mix(in oklch, var(--muted) 55%, var(--card)); font-size: 0.8125rem; font-weight: 650; padding: 0.5rem 0.75rem !important; }
+  .ac-t { font-weight: 600; line-height: 1.25rem; }
+  .ac-src { font-size: 0.75rem; line-height: 1rem; color: var(--muted-foreground); display: inline-flex; align-items: center; gap: 0.25rem; }
+  .ac-src .lucide { width: 0.75rem; height: 0.75rem; }
+  tr.is-done .ac-t { text-decoration: line-through; color: var(--muted-foreground); }
+  .ac-who { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.8125rem; white-space: nowrap; }
+  .ac-due { font-size: 0.8125rem; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.25rem; }
+  .ac-due .lucide { width: 0.875rem; height: 0.875rem; }
+  .ac-mark { width: 0.875rem; height: 0.875rem; border-radius: 0.1875rem; display: inline-grid; place-items: center; font-family: var(--font-sans); font-size: 0.5625rem; font-weight: 800; flex: none; }
+  .ac-mark--jira { background: var(--skrum-info); color: var(--skrum-info-foreground); }
+  .ac-mark--linear { background: var(--foreground); color: var(--background); border-radius: 50%; }
+  .ac-tablewrap .sk-check { vertical-align: middle; display: grid; }
+  .ac-sync { color: var(--skrum-success-text); }
+  .ac-bulk { position: absolute; left: 50%; bottom: 1.5rem; transform: translateX(-50%); z-index: var(--z-chrome); display: flex; align-items: center; gap: var(--space-2); padding: 0.375rem 0.375rem 0.375rem 0.875rem; border-radius: var(--radius-xl); background: var(--popover); border: 1px solid var(--border); box-shadow: var(--shadow-modal); white-space: nowrap; }
+  .ac-bulk-n { display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 650; font-size: 0.875rem; padding-right: var(--space-2); }
+  .ac-bulk-n b { min-width: 1.375rem; height: 1.375rem; border-radius: 999px; background: var(--primary); color: var(--primary-foreground); display: inline-grid; place-items: center; font-size: 0.75rem; }
+  .ac-late-row td:first-child { box-shadow: inset 0.1875rem 0 0 transparent; }
+</style>
+</head>
+<body>
+<div class="sk-desktop">
+  <div class="ac-shell">
+    <!--SB--><nav class="sk-sidebar" aria-label="Navigation">
+  <div class="sk-brand"><svg viewBox="0 0 64 64" width="24" height="24" aria-hidden="true"><path d="M14 0 H50 A14 14 0 0 1 64 14 V46 L46 64 H14 A14 14 0 0 1 0 50 V14 A14 14 0 0 1 14 0 Z" style="fill:var(--primary)"/><path d="M64 46 L50 46 A4 4 0 0 0 46 50 L46 64 Z" style="fill:color-mix(in oklch, var(--primary) 70%, var(--foreground))"/><path d="M19 27 L19 38 C19 45 24 49.5 30 49.5 C36 49.5 41 45 41 38 L41 27" fill="none" style="stroke:var(--primary-foreground)" stroke-width="7" stroke-linecap="round"/><circle cx="21.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/><circle cx="38.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/></svg><span class="sk-brand-word">skrüm</span></div>
+  <button class="sk-team sk-team-switch" aria-haspopup="menu" aria-label="Changer d'équipe ou d'espace"><span class="sk-team-mark">A</span><span class="sk-team-txt"><span class="sk-team-name">Atlas</span><span class="sk-team-sub">Nordlys · 11 membres</span></span><i data-lucide="chevrons-up-down" class="sk-ico-sm"></i></button>
+  <div class="sk-nav-group">Équipe</div>
+  <a class="sk-nav-item"><i data-lucide="layout-dashboard"></i><span>Tableau de bord</span></a>
+  <a class="sk-nav-item"><i data-lucide="calendar-clock"></i><span>Sessions</span></a>
+  <a class="sk-nav-item is-on" aria-current="page"><i data-lucide="list-checks"></i><span>Actions</span><span class="sk-badge sk-badge--destructive sk-badge--pill">2 en retard</span></a>
+  <a class="sk-nav-item"><i data-lucide="trending-up"></i><span>Moral & ROTI</span></a>
+  <a class="sk-nav-item"><i data-lucide="party-popper"></i><span>Jeux</span></a>
+  <a class="sk-nav-item"><i data-lucide="users"></i><span>Membres</span></a>
+  <div class="sk-nav-group">Espace de travail</div>
+  <a class="sk-nav-item"><i data-lucide="layout-template"></i><span>Modèles</span></a>
+  <a class="sk-nav-item"><i data-lucide="building-2"></i><span>Toutes les équipes</span></a>
+  <span class="sk-grow"></span>
+  <a class="sk-nav-item"><i data-lucide="settings"></i><span>Paramètres de l'équipe</span></a>
+  <a class="sk-nav-item"><i data-lucide="shield-check"></i><span>Administration</span></a>
+  <button class="sk-team sk-user" aria-haspopup="menu"><span class="sk-avatar sk-p1">AR</span><span class="sk-team-txt"><span class="sk-team-name">Arnaud Ritti</span><span class="sk-team-sub">Facilitateur · Admin</span></span><i data-lucide="chevrons-up-down" class="sk-ico-sm"></i></button>
+  </nav><!--/SB-->
+    <div class="sk-main ac-main">
+      <header class="sk-topbar">
+        <nav class="sk-crumbs"><span>Atlas</span><i data-lucide="chevron-right"></i><span class="is-current">Actions</span></nav>
+        <span class="sk-grow"></span>
+        <div class="sk-input-group" style="width:18.75rem"><i data-lucide="search"></i><div class="sk-input"><span class="sk-placeholder">Rechercher une action, un ticket…</span><span class="sk-kbd" style="margin-left:auto">⌘K</span></div></div>
+        <button class="sk-btn sk-btn--outline"><i data-lucide="file-down"></i>Exporter</button>
+        <button class="sk-btn"><i data-lucide="plus"></i>Nouvelle action</button>
+      </header>
+
+      <div class="ac-page">
+        <div class="sk-between" style="align-items:flex-end">
+          <div class="sk-col sk-gap-1"><h1 class="sk-h2">Actions</h1><span class="sk-sm sk-muted">28 actions ouvertes ou récentes · 4 en retard · issues de 9 rituels</span></div>
+          <div class="sk-row sk-gap-2"><span class="sk-sm sk-muted">Grouper par</span><div class="sk-tabs" role="tablist"><span class="sk-tab is-on" role="tab">Sprint</span><span class="sk-tab" role="tab">Équipe</span><span class="sk-tab" role="tab">Responsable</span><span class="sk-tab" role="tab">Aucun</span></div></div>
+        </div>
+
+        <div class="sk-row sk-gap-2" role="toolbar" aria-label="Filtres">
+          <span class="ac-filter is-on"><i data-lucide="users"></i>Équipe <span class="ac-fv">Atlas</span><i data-lucide="x"></i></span>
+          <span class="ac-filter is-on"><i data-lucide="circle-dot"></i>Statut <span class="ac-fv">3 sur 4</span><i data-lucide="chevron-down"></i></span>
+          <span class="ac-filter"><i data-lucide="user-round"></i>Responsable<i data-lucide="chevron-down"></i></span>
+          <span class="ac-filter"><i data-lucide="signal-high"></i>Priorité<i data-lucide="chevron-down"></i></span>
+          <span class="ac-filter"><i data-lucide="calendar"></i>Échéance<i data-lucide="chevron-down"></i></span>
+          <span class="ac-filter"><i data-lucide="sticky-note"></i>Source<i data-lucide="chevron-down"></i></span>
+          <span class="sk-vsep" style="margin:0.25rem 2px"></span>
+          <span class="ac-filter" style="border-style:solid;color:var(--skrum-destructive-text)"><i data-lucide="calendar-x" style="color:inherit"></i>En retard <span class="sk-badge sk-badge--destructive sk-badge--pill" style="height:1.125rem;padding:0 0.375rem">4</span></span>
+          <span class="sk-grow"></span>
+          <button class="sk-btn sk-btn--link sk-sm">Réinitialiser</button>
+        </div>
+
+        <div class="ac-tablewrap">
+          <table class="sk-table">
+            <thead><tr>
+              <th style="width:2.5rem"><span class="sk-check is-mixed" aria-label="3 sélectionnées sur 10"></span></th>
+              <th>Action</th><th style="width:6.25rem">Statut</th><th style="width:8.5rem">Responsable</th><th style="width:6.25rem">Priorité</th><th style="width:10.625rem">Échéance</th><th style="width:9.375rem">Ticket</th><th style="width:2.5rem"></th>
+            </tr></thead>
+            <tbody>
+              <tr class="ac-grp"><td><span class="sk-check"></span></td><td colspan="7"><span class="sk-row sk-gap-2"><i data-lucide="chevron-down" class="sk-ico-sm"></i>Sprint 42 <span class="sk-badge sk-badge--info sk-badge--pill">en cours</span><span class="sk-muted" style="font-weight:500">6 actions · 22 sept. → 3 oct.</span></span></td></tr>
+              <tr class="is-selected"><td><span class="sk-check is-on"></span></td><td><div class="ac-t">Limiter les PR à 400 lignes + template de revue</div><span class="ac-src"><i data-lucide="sticky-note"></i>Rétro sprint 42</span></td><td><span class="sk-badge sk-badge--outline sk-badge--pill">À faire</span></td><td><span class="ac-who"><span class="sk-avatar sk-avatar--xs sk-p9">IB</span>Inès B.</span></td><td><span class="sk-prio sk-prio--high"><span class="bars"><i></i><i></i><i></i></span>Haute</span></td><td><span class="ac-due"><i data-lucide="calendar"></i>Ven. 10 oct.</span></td><td><span class="sk-ticket"><span class="ac-mark ac-mark--jira">J</span>ATLAS-1287</span></td><td><button class="sk-btn sk-btn--ghost sk-btn--icon sk-btn--sm" aria-label="Plus"><i data-lucide="ellipsis"></i></button></td></tr>
+              <tr class="is-selected"><td><span class="sk-check is-on"></span></td><td><div class="ac-t">Stabiliser les tests E2E du parcours de paiement</div><span class="ac-src"><i data-lucide="sticky-note"></i>Rétro sprint 42</span></td><td><span class="sk-badge sk-badge--info sk-badge--pill">En cours</span></td><td><span class="ac-who"><span class="sk-avatar sk-avatar--xs sk-p7">MK</span>Malik K.</span></td><td><span class="sk-prio sk-prio--medium"><span class="bars"><i></i><i></i><i></i></span>Moyenne</span></td><td><span class="ac-due"><i data-lucide="calendar"></i>Mar. 14 oct.</span></td><td><span class="sk-ticket"><span class="ac-mark ac-mark--linear">L</span>ENG-42</span></td><td><button class="sk-btn sk-btn--ghost sk-btn--icon sk-btn--sm" aria-label="Plus"><i data-lucide="ellipsis"></i></button></td></tr>
+              <tr class="is-selected"><td><span class="sk-check is-on"></span></td><td><div class="ac-t">Réduire l'inscription à 3 champs, le reste plus tard</div><span class="ac-src"><i data-lucide="frame"></i>Whiteboard · Parcours d'onboarding</span></td><td><span class="sk-badge sk-badge--outline sk-badge--pill">À faire</span></td><td><span class="ac-who"><span class="sk-avatar sk-avatar--xs sk-p2">TM</span>Théo M.</span></td><td><span class="sk-prio sk-prio--high"><span class="bars"><i></i><i></i><i></i></span>Haute</span></td><td><span class="ac-due"><i data-lucide="calendar"></i>Ven. 17 oct.</span></td><td><span class="sk-ticket"><span class="ac-mark ac-mark--jira">J</span>ATLAS-1302</span></td><td><button class="sk-btn sk-btn--ghost sk-btn--icon sk-btn--sm" aria-label="Plus"><i data-lucide="ellipsis"></i></button></td></tr>
+              <tr><td><span class="sk-check"></span></td><td><div class="ac-t">Tester un lundi sans point hebdo</div><span class="ac-src"><i data-lucide="chart-bar"></i>Sondage · Pulse d'équipe sprint 42</span></td><td><span class="sk-badge sk-badge--outline sk-badge--pill">À faire</span></td><td><span class="ac-who"><span class="sk-avatar sk-avatar--xs sk-p4">CR</span>Camille R.</span></td><td><span class="sk-prio sk-prio--medium"><span class="bars"><i></i><i></i><i></i></span>Moyenne</span></td><td><span class="ac-due"><i data-lucide="calendar"></i>Lun. 6 oct.</span></td><td><button class="sk-btn sk-btn--ghost sk-btn--sm" style="height:1.625rem;padding:0 0.5rem"><i data-lucide="link"></i>Lier</button></td><td><button class="sk-btn sk-btn--ghost sk-btn--icon sk-btn--sm" aria-label="Plus"><i data-lucide="ellipsis"></i></button></td></tr>
+              <tr class="is-done"><td><span class="sk-check"></span></td><td><div class="ac-t">Déplacer la daily à 9 h 30</div><span class="ac-src"><i data-lucide="sticky-note"></i>Rétro sprint 42</span></td><td><span class="sk-badge sk-badge--success sk-badge--pill">Fait</span></td><td><span class="ac-who"><span class="sk-avatar sk-avatar--xs sk-p4">CR</span>Camille R.</span></td><td><span class="sk-prio sk-prio--low"><span class="bars"><i></i><i></i><i></i></span>Basse</span></td><td><span class="ac-due sk-muted"><i data-lucide="circle-check"></i>Fait le 29 sept.</span></td><td><span class="sk-ticket"><span class="ac-mark ac-mark--linear">L</span>ENG-38</span> <i data-lucide="refresh-cw" class="sk-ico-sm ac-sync" aria-label="Synchronisé"></i></td><td><button class="sk-btn sk-btn--ghost sk-btn--icon sk-btn--sm" aria-label="Plus"><i data-lucide="ellipsis"></i></button></td></tr>
+              <tr><td><span class="sk-check"></span></td><td><div class="ac-t">Planifier un atelier Postgres pour l'équipe</div><span class="ac-src"><i data-lucide="sticky-note"></i>Rétro sprint 42</span></td><td><span class="sk-badge sk-badge--outline sk-badge--pill">À faire</span></td><td><span class="ac-who sk-muted"><span class="sk-avatar sk-avatar--xs sk-avatar--guest"><i data-lucide="user-plus" style="width:0.6875rem;height:0.6875rem"></i></span>Non assignée</span></td><td><span class="sk-prio sk-prio--low"><span class="bars"><i></i><i></i><i></i></span>Basse</span></td><td><span class="ac-due sk-muted">Sans échéance</span></td><td><span class="sk-xs sk-muted">—</span></td><td><button class="sk-btn sk-btn--ghost sk-btn--icon sk-btn--sm" aria-label="Plus"><i data-lucide="ellipsis"></i></button></td></tr>
+
+              <tr class="ac-grp"><td><span class="sk-check"></span></td><td colspan="7"><span class="sk-row sk-gap-2"><i data-lucide="chevron-down" class="sk-ico-sm"></i>Sprint 41 <span class="sk-badge sk-badge--muted sk-badge--pill">terminé</span><span class="sk-muted" style="font-weight:500">4 actions reportées</span><span class="sk-badge sk-badge--destructive sk-badge--pill">2 en retard</span></span></td></tr>
+              <tr><td><span class="sk-check"></span></td><td><div class="ac-t">Documenter la procédure d'astreinte dans le wiki</div><span class="ac-src"><i data-lucide="sticky-note"></i>Rétro sprint 41</span></td><td><span class="sk-badge sk-badge--outline sk-badge--pill">À faire</span></td><td><span class="ac-who"><span class="sk-avatar sk-avatar--xs sk-p6">HG</span>Hugo G.</span></td><td><span class="sk-prio sk-prio--medium"><span class="bars"><i></i><i></i><i></i></span>Moyenne</span></td><td><span class="ac-due sk-due is-late"><i data-lucide="calendar-clock"></i>En retard · 26 sept.</span></td><td><span class="sk-ticket"><span class="ac-mark ac-mark--jira">J</span>ATLAS-1244</span></td><td><button class="sk-btn sk-btn--ghost sk-btn--icon sk-btn--sm" aria-label="Plus"><i data-lucide="ellipsis"></i></button></td></tr>
+              <tr><td><span class="sk-check"></span></td><td><div class="ac-t">Activer le feature flag du nouveau checkout</div><span class="ac-src"><i data-lucide="sticky-note"></i>Rétro sprint 41</span></td><td><span class="sk-badge sk-badge--info sk-badge--pill">En cours</span></td><td><span class="ac-who"><span class="sk-avatar sk-avatar--xs sk-p10">NA</span>Nadia A.</span></td><td><span class="sk-prio sk-prio--high"><span class="bars"><i></i><i></i><i></i></span>Haute</span></td><td><span class="ac-due sk-due is-late"><i data-lucide="calendar-clock"></i>En retard · 24 sept.</span></td><td><span class="sk-ticket"><span class="ac-mark ac-mark--linear">L</span>ENG-31</span></td><td><button class="sk-btn sk-btn--ghost sk-btn--icon sk-btn--sm" aria-label="Plus"><i data-lucide="ellipsis"></i></button></td></tr>
+              <tr><td><span class="sk-check"></span></td><td><div class="ac-t">Ajouter un runbook pour les migrations Postgres</div><span class="ac-src"><i data-lucide="sticky-note"></i>Rétro sprint 41</span></td><td><span class="sk-badge sk-badge--outline sk-badge--pill">À faire</span></td><td><span class="ac-who"><span class="sk-avatar sk-avatar--xs sk-p12">BL</span>Bastien L.</span></td><td><span class="sk-prio sk-prio--medium"><span class="bars"><i></i><i></i><i></i></span>Moyenne</span></td><td><span class="ac-due" style="color:var(--skrum-warning-text);font-weight:600"><i data-lucide="hourglass"></i>Ven. 3 oct. · dans 3 j</span></td><td><span class="sk-ticket"><span class="ac-mark ac-mark--jira">J</span>ATLAS-1251</span></td><td><button class="sk-btn sk-btn--ghost sk-btn--icon sk-btn--sm" aria-label="Plus"><i data-lucide="ellipsis"></i></button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="ac-bulk" role="toolbar" aria-label="Actions groupées">
+        <span class="ac-bulk-n"><b>3</b>sélectionnées</span>
+        <span class="sk-vsep" style="margin:0.25rem 0"></span>
+        <button class="sk-btn sk-btn--ghost sk-btn--sm"><i data-lucide="circle-dot"></i>Statut</button>
+        <button class="sk-btn sk-btn--ghost sk-btn--sm"><i data-lucide="user-round"></i>Assigner</button>
+        <button class="sk-btn sk-btn--ghost sk-btn--sm"><i data-lucide="calendar"></i>Échéance</button>
+        <button class="sk-btn sk-btn--ghost sk-btn--sm"><i data-lucide="signal-high"></i>Priorité</button>
+        <button class="sk-btn sk-btn--secondary sk-btn--sm"><span class="ac-mark ac-mark--jira">J</span>Synchroniser vers Jira</button>
+        <button class="sk-btn sk-btn--ghost sk-btn--sm" style="color:var(--skrum-destructive-text)"><i data-lucide="trash-2"></i>Supprimer</button>
+        <span class="sk-vsep" style="margin:0.25rem 0"></span>
+        <button class="sk-btn sk-btn--ghost sk-btn--icon sk-btn--sm" aria-label="Désélectionner"><i data-lucide="x"></i></button>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

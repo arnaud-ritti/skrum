@@ -1,0 +1,132 @@
+<!-- @dsCard group="Skrüm · Sondage" height=1580 subtitle="échelle 1-5 · NPS 0-10 · choix unique · choix multiple · texte libre — vue réponse et vue résultats agrégés" -->
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><title>SurveyQuestion</title>
+<style>
+  .sq-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr)); gap: var(--space-4) var(--space-6); align-items: stretch; }
+  .sq-q { padding: var(--space-5); display: flex; flex-direction: column; gap: var(--space-3); }
+  .sq-n { font-size: 0.75rem; font-weight: 600; color: var(--muted-foreground); display: flex; align-items: center; gap: var(--space-2); }
+  .sq-t { font-size: 0.9375rem; line-height: 1.375rem; font-weight: 650; margin: 0; }
+  .sq-ends { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--muted-foreground); }
+  .sq-res-row { display: grid; grid-template-columns: 1fr auto; gap: 2px var(--space-3); align-items: center; font-size: 0.8125rem; }
+  .sq-res-row .sk-result-bar { grid-column: 1 / -1; }
+  .sq-res-row b { font-variant-numeric: tabular-nums; font-weight: 700; }
+  .sq-res-row.is-top .sk-result-bar > span { background: var(--chart-1); }
+  .sq-res-row:not(.is-top) .sk-result-bar > span { background: color-mix(in oklch, var(--chart-1) 45%, var(--muted)); }
+  .sq-nps-bars { display: grid; grid-template-columns: repeat(11, 1fr); gap: 0.1875rem; align-items: end; height: 4rem; }
+  .sq-nps-bars i { display: block; border-radius: 0.1875rem 0.1875rem 1px 1px; }
+  .sq-nps-bars .d { background: var(--skrum-roti-1); } .sq-nps-bars .p { background: var(--skrum-roti-3); } .sq-nps-bars .pr { background: var(--skrum-roti-5); }
+  .sq-nps-x { display: grid; grid-template-columns: repeat(11, 1fr); gap: 0.1875rem; font-size: 0.6875rem; color: var(--muted-foreground); text-align: center; font-weight: 600; }
+  .sq-segs { display: flex; gap: var(--space-4); font-size: 0.75rem; color: var(--muted-foreground); }
+  .sq-segs span { display: inline-flex; align-items: center; gap: 0.375rem; }
+  .sq-segs i { width: 0.625rem; height: 0.625rem; border-radius: 0.1875rem; display: inline-block; }
+  .sq-quote { padding: 0.625rem 0.75rem; border-radius: var(--radius); background: var(--muted); font-size: 0.8125rem; line-height: 1.25rem; }
+  .sq-quote small { display: block; font-size: 0.6875rem; color: var(--muted-foreground); margin-top: 2px; }
+  .sq-tag { display: inline-flex; align-items: center; gap: 0.25rem; padding: 0 0.5rem; line-height: 1.375rem; border-radius: var(--radius-full); font-size: 0.75rem; font-weight: 600; background: var(--skrum-primary-soft); color: var(--skrum-primary-text); }
+  .sq-tag.s2 { font-size: 0.875rem; } .sq-tag.s3 { font-size: 1rem; }
+  .sq-big { font-family: var(--font-display); font-size: 2.125rem; line-height: 2.5rem; font-weight: 700; letter-spacing: -.02em; }
+</style>
+</head>
+<body class="sk-canvas">
+<div class="sk-pad">
+  <div class="sq-grid">
+    <div class="sk-state">Vue réponse (participant)</div>
+    <div class="sk-state">Vue résultats agrégés · 14 réponses</div>
+
+    <!-- 1-5 -->
+    <div class="sk-card sq-q">
+      <div class="sq-n">1 / 5 · Échelle 1-5</div>
+      <p class="sq-t" id="q1">Je me sens à l'aise pour remonter un problème à l'équipe.</p>
+      <div class="sk-scale" role="radiogroup" aria-labelledby="q1">
+        <span class="sk-scale-opt" role="radio" aria-checked="false">1</span><span class="sk-scale-opt" role="radio" aria-checked="false">2</span><span class="sk-scale-opt" role="radio" aria-checked="false">3</span><span class="sk-scale-opt is-on" role="radio" aria-checked="true">4</span><span class="sk-scale-opt" role="radio" aria-checked="false">5</span>
+      </div>
+      <div class="sq-ends"><span>Pas du tout d'accord</span><span>Tout à fait d'accord</span></div>
+    </div>
+    <div class="sk-card sq-q">
+      <div class="sk-between"><div class="sq-n">Échelle 1-5</div><span class="sk-row sk-gap-2"><span class="sq-big">3,9</span><span class="sk-xs sk-muted">moyenne</span></span></div>
+      <div class="sk-col sk-gap-2">
+        <div class="sq-res-row"><span>5 · Tout à fait</span><b>4</b><div class="sk-result-bar"><span style="width:29%"></span></div></div>
+        <div class="sq-res-row is-top"><span>4</span><b>6</b><div class="sk-result-bar"><span style="width:43%"></span></div></div>
+        <div class="sq-res-row"><span>3</span><b>3</b><div class="sk-result-bar"><span style="width:21%"></span></div></div>
+        <div class="sq-res-row"><span>2</span><b>1</b><div class="sk-result-bar"><span style="width:7%"></span></div></div>
+        <div class="sq-res-row"><span>1 · Pas du tout</span><b>0</b><div class="sk-result-bar"><span style="width:0%"></span></div></div>
+      </div>
+    </div>
+
+    <!-- NPS -->
+    <div class="sk-card sq-q">
+      <div class="sq-n">2 / 5 · NPS 0-10</div>
+      <p class="sq-t" id="q2">Recommanderiez-vous nos rétros à une autre équipe ?</p>
+      <div class="sk-scale sk-nps" role="radiogroup" aria-labelledby="q2" style="gap:0.25rem">
+        <span class="sk-scale-opt">0</span><span class="sk-scale-opt">1</span><span class="sk-scale-opt">2</span><span class="sk-scale-opt">3</span><span class="sk-scale-opt">4</span><span class="sk-scale-opt">5</span><span class="sk-scale-opt">6</span><span class="sk-scale-opt">7</span><span class="sk-scale-opt is-on" aria-checked="true">8</span><span class="sk-scale-opt">9</span><span class="sk-scale-opt">10</span>
+      </div>
+      <div class="sq-ends"><span>Pas du tout probable</span><span>Très probable</span></div>
+    </div>
+    <div class="sk-card sq-q">
+      <div class="sk-between"><div class="sq-n">NPS</div><span class="sk-row sk-gap-2"><span class="sq-big">+21</span><span class="sk-xs sk-muted">score NPS</span></span></div>
+      <div class="sq-nps-bars" role="img" aria-label="Répartition NPS : 2 détracteurs, 7 passifs, 5 promoteurs">
+        <i class="d" style="height:0"></i><i class="d" style="height:0"></i><i class="d" style="height:0"></i><i class="d" style="height:0"></i><i class="d" style="height:0"></i><i class="d" style="height:1rem"></i><i class="d" style="height:1rem"></i><i class="p" style="height:3rem"></i><i class="p" style="height:4rem"></i><i class="pr" style="height:3rem"></i><i class="pr" style="height:2rem"></i>
+      </div>
+      <div class="sq-nps-x"><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>10</span></div>
+      <div class="sq-segs"><span><i style="background:var(--skrum-roti-1)"></i>Détracteurs 2</span><span><i style="background:var(--skrum-roti-3)"></i>Passifs 7</span><span><i style="background:var(--skrum-roti-5)"></i>Promoteurs 5</span></div>
+    </div>
+
+    <!-- choix unique -->
+    <div class="sk-card sq-q">
+      <div class="sq-n">3 / 5 · Choix unique</div>
+      <p class="sq-t" id="q3">Quel format pour la prochaine rétro ?</p>
+      <div class="sk-col sk-gap-2" role="radiogroup" aria-labelledby="q3">
+        <div class="sk-opt"><span class="sk-radio"></span>Start / Stop / Continue</div>
+        <div class="sk-opt is-on"><span class="sk-radio is-on"></span>Voilier (vent, ancres, cap)</div>
+        <div class="sk-opt"><span class="sk-radio"></span>4L (Liked, Learned, Lacked, Longed for)</div>
+      </div>
+    </div>
+    <div class="sk-card sq-q">
+      <div class="sq-n">Choix unique</div>
+      <div class="sk-col sk-gap-2">
+        <div class="sq-res-row is-top"><span class="sk-strong">Voilier</span><b>57 %</b><div class="sk-result-bar"><span style="width:57%"></span></div></div>
+        <div class="sq-res-row"><span>Start / Stop / Continue</span><b>29 %</b><div class="sk-result-bar"><span style="width:29%"></span></div></div>
+        <div class="sq-res-row"><span>4L</span><b>14 %</b><div class="sk-result-bar"><span style="width:14%"></span></div></div>
+      </div>
+    </div>
+
+    <!-- choix multiple -->
+    <div class="sk-card sq-q">
+      <div class="sq-n">4 / 5 · Choix multiple <span class="sk-badge sk-badge--muted sk-badge--pill">3 max</span></div>
+      <p class="sq-t" id="q4">Qu'est-ce qui vous a ralenti ce sprint ?</p>
+      <div class="sk-col sk-gap-2" role="group" aria-labelledby="q4">
+        <div class="sk-opt is-on"><span class="sk-check is-on"></span>Revues de code</div>
+        <div class="sk-opt is-on"><span class="sk-check is-on"></span>Environnements de test</div>
+        <div class="sk-opt"><span class="sk-check"></span>Réunions</div>
+        <div class="sk-opt"><span class="sk-check"></span>Dépendances à d'autres équipes</div>
+      </div>
+    </div>
+    <div class="sk-card sq-q">
+      <div class="sq-n">Choix multiple · 31 sélections</div>
+      <div class="sk-col sk-gap-2">
+        <div class="sq-res-row is-top"><span class="sk-strong">Environnements de test</span><b>11</b><div class="sk-result-bar"><span style="width:79%"></span></div></div>
+        <div class="sq-res-row"><span>Revues de code</span><b>9</b><div class="sk-result-bar"><span style="width:64%"></span></div></div>
+        <div class="sq-res-row"><span>Réunions</span><b>7</b><div class="sk-result-bar"><span style="width:50%"></span></div></div>
+        <div class="sq-res-row"><span>Dépendances</span><b>4</b><div class="sk-result-bar"><span style="width:29%"></span></div></div>
+      </div>
+      <span class="sk-xs sk-muted">% des répondants ayant coché l'option</span>
+    </div>
+
+    <!-- texte libre -->
+    <div class="sk-card sq-q">
+      <div class="sq-n">5 / 5 · Texte libre <span class="sk-badge sk-badge--muted sk-badge--pill"><i data-lucide="venetian-mask"></i>anonyme</span></div>
+      <p class="sq-t" id="q5">Une chose à changer dès le prochain sprint ?</p>
+      <textarea class="sk-textarea is-focus" aria-labelledby="q5" style="min-height:4.75rem">Bloquer deux matinées sans réunion pour se concentrer sur le dev.</textarea>
+      <div class="sk-between"><span class="sk-xs sk-muted">64 / 500</span><button class="sk-btn sk-btn--sm">Envoyer mes réponses<i data-lucide="send"></i></button></div>
+    </div>
+    <div class="sk-card sq-q">
+      <div class="sq-n">Texte libre · 11 réponses</div>
+      <div class="sk-row sk-gap-2"><span class="sq-tag s3">réunions</span><span class="sq-tag s2">tests</span><span class="sq-tag">focus</span><span class="sq-tag">revues</span></div>
+      <div class="sq-quote">Bloquer deux matinées sans réunion pour se concentrer sur le dev.<small>Anonyme</small></div>
+      <div class="sq-quote">Un environnement de recette par PR, sinon on se marche dessus.<small>Anonyme</small></div>
+      <button class="sk-btn sk-btn--ghost sk-btn--sm" style="align-self:flex-start">Voir les 9 autres<i data-lucide="chevron-down"></i></button>
+    </div>
+  </div>
+</div>
+</body>
+</html>

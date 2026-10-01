@@ -1,0 +1,119 @@
+<!-- @dsCard group="Skrüm · Poker" height=855 subtitle="table ovale : a voté / n'a pas voté · révélée avec résultat · moyenne, médiane, consensus vs dispersion, distribution" -->
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><title>PokerTable</title>
+<style>
+  .pt-two { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 17.5rem), 1fr)); gap: var(--space-6); align-items: start; }
+  .pt-room { display: grid; grid-template-columns: 4rem 1fr 4rem; grid-template-rows: auto 8.25rem auto; gap: var(--space-3); align-items: center; }
+  .pt-top, .pt-bot { grid-column: 2; display: flex; justify-content: space-around; }
+  .pt-left { grid-column: 1; grid-row: 2; justify-self: center; }
+  .pt-right { grid-column: 3; grid-row: 2; justify-self: center; }
+  .pt-room .sk-ptable { grid-column: 2; grid-row: 2; height: 100%; flex-direction: column; gap: var(--space-2); text-align: center; padding: 0 var(--space-6); }
+  .pt-bot { grid-row: 3; }
+  .pt-top .sk-seat { flex-direction: column-reverse; }
+  .sk-seat { width: 4rem; }
+  .sk-seat-name { display: inline-flex; align-items: center; gap: 0.25rem; white-space: nowrap; }
+  .pt-center-t { font-size: 0.8125rem; font-weight: 600; color: var(--secondary-foreground); }
+  .pt-avg { font-family: var(--font-display); font-size: 2.5rem; line-height: 2.5rem; font-weight: 700; letter-spacing: -.02em; color: var(--secondary-foreground); }
+  .pt-out .sk-pcard-face { box-shadow: 0 0 0 2px var(--skrum-warning), var(--shadow-card); }
+  .pt-res { display: flex; flex-direction: column; gap: var(--space-4); }
+  .pt-stats { display: flex; gap: var(--space-8); }
+  .pt-dist { margin-bottom: var(--space-6); }
+  .pt-dist .sk-dist-bar { width: 2.25rem; }
+  .pt-dist-l { font-size: 0.6875rem; color: var(--muted-foreground); font-weight: 600; }
+  .pt-final { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
+  .pt-final .sk-pcard--sm .sk-pcard-face { font-size: 1.125rem; }
+</style>
+</head>
+<body>
+<div class="sk-pad sk-col sk-gap-6">
+  <div class="pt-two">
+    <!-- Vote en cours -->
+    <div>
+      <div class="sk-state">Vote en cours · 5 / 8 ont voté</div>
+      <div class="pt-room" aria-label="Table de poker, ATLAS-1290">
+        <div class="pt-top">
+          <div class="sk-seat"><span class="sk-pcard sk-pcard--sm is-hidden"><span class="sk-pcard-in"><span class="sk-pcard-face"></span><span class="sk-pcard-back"></span></span></span><span class="sk-seat-name"><span class="sk-avatar sk-avatar--xs sk-p4">CR</span>Camille</span><span class="sk-seat-state is-voted"><i data-lucide="check" style="width:0.75rem;height:0.75rem"></i>a voté</span></div>
+          <div class="sk-seat"><span class="sk-pcard sk-pcard--sm is-empty"><span class="sk-pcard-in"><span class="sk-pcard-face"></span></span></span><span class="sk-seat-name"><span class="sk-avatar sk-avatar--xs sk-p2">TM</span>Théo</span><span class="sk-seat-state"><span class="sk-trema"><i></i><i></i></span>réfléchit</span></div>
+          <div class="sk-seat"><span class="sk-pcard sk-pcard--sm is-hidden"><span class="sk-pcard-in"><span class="sk-pcard-face"></span><span class="sk-pcard-back"></span></span></span><span class="sk-seat-name"><span class="sk-avatar sk-avatar--xs sk-p9">IB</span>Inès</span><span class="sk-seat-state is-voted"><i data-lucide="check" style="width:0.75rem;height:0.75rem"></i>a voté</span></div>
+        </div>
+        <div class="pt-left sk-seat"><span class="sk-pcard sk-pcard--sm is-hidden"><span class="sk-pcard-in"><span class="sk-pcard-face"></span><span class="sk-pcard-back"></span></span></span><span class="sk-seat-name"><span class="sk-avatar sk-avatar--xs sk-p3">YS</span>Yuki</span><span class="sk-seat-state is-voted"><i data-lucide="check" style="width:0.75rem;height:0.75rem"></i>a voté</span></div>
+        <div class="sk-ptable">
+          <span class="pt-center-t">ATLAS-1290 · Export CSV des actions</span>
+          <span class="sk-progress" style="width:8.75rem"><span style="width:62.5%"></span></span>
+          <button class="sk-btn sk-btn--sm"><i data-lucide="eye"></i>Révéler</button>
+        </div>
+        <div class="pt-right sk-seat"><span class="sk-pcard sk-pcard--sm is-empty"><span class="sk-pcard-in"><span class="sk-pcard-face"></span></span></span><span class="sk-seat-name"><span class="sk-avatar sk-avatar--xs sk-p7">MK</span>Malik</span><span class="sk-seat-state">absent</span></div>
+        <div class="pt-bot">
+          <div class="sk-seat"><span class="sk-pcard sk-pcard--sm is-hidden"><span class="sk-pcard-in"><span class="sk-pcard-face"></span><span class="sk-pcard-back"></span></span></span><span class="sk-seat-name"><span class="sk-avatar sk-avatar--xs sk-p10">SL</span>Sofia</span><span class="sk-seat-state is-voted"><i data-lucide="check" style="width:0.75rem;height:0.75rem"></i>a voté</span></div>
+          <div class="sk-seat"><span class="sk-pcard sk-pcard--sm is-hidden"><span class="sk-pcard-in"><span class="sk-pcard-face"></span><span class="sk-pcard-back"></span></span></span><span class="sk-seat-name"><span class="sk-avatar sk-avatar--xs sk-p1">AR</span>Vous</span><span class="sk-seat-state is-voted"><i data-lucide="check" style="width:0.75rem;height:0.75rem"></i>5</span></div>
+          <div class="sk-seat"><span class="sk-pcard sk-pcard--sm is-empty"><span class="sk-pcard-in"><span class="sk-pcard-face"></span></span></span><span class="sk-seat-name"><span class="sk-avatar sk-avatar--xs sk-p5">LD</span>Lucas</span><span class="sk-seat-state"><span class="sk-trema"><i></i><i></i></span>réfléchit</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Révélé -->
+    <div>
+      <div class="sk-state">Révélé · dispersion forte</div>
+      <div class="pt-room" aria-label="Table de poker révélée">
+        <div class="pt-top">
+          <div class="sk-seat"><span class="sk-pcard sk-pcard--sm"><span class="sk-pcard-in"><span class="sk-pcard-face">5</span><span class="sk-pcard-back"></span></span></span><span class="sk-seat-name"><span class="sk-avatar sk-avatar--xs sk-p4">CR</span>Camille</span></div>
+          <div class="sk-seat"><span class="sk-pcard sk-pcard--sm"><span class="sk-pcard-in"><span class="sk-pcard-face">8</span><span class="sk-pcard-back"></span></span></span><span class="sk-seat-name"><span class="sk-avatar sk-avatar--xs sk-p2">TM</span>Théo</span></div>
+          <div class="sk-seat"><span class="sk-pcard sk-pcard--sm"><span class="sk-pcard-in"><span class="sk-pcard-face">5</span><span class="sk-pcard-back"></span></span></span><span class="sk-seat-name"><span class="sk-avatar sk-avatar--xs sk-p9">IB</span>Inès</span></div>
+        </div>
+        <div class="pt-left sk-seat"><span class="sk-pcard sk-pcard--sm pt-out"><span class="sk-pcard-in"><span class="sk-pcard-face">21</span><span class="sk-pcard-back"></span></span></span><span class="sk-seat-name"><span class="sk-avatar sk-avatar--xs sk-p3">YS</span>Yuki</span></div>
+        <div class="sk-ptable">
+          <span class="pt-center-t">Moyenne</span>
+          <span class="pt-avg">7,9</span>
+          <span class="sk-badge sk-badge--warning sk-badge--pill"><i data-lucide="split"></i>À discuter</span>
+        </div>
+        <div class="pt-right sk-seat"><span class="sk-pcard sk-pcard--sm is-special"><span class="sk-pcard-in"><span class="sk-pcard-face">☕</span><span class="sk-pcard-back"></span></span></span><span class="sk-seat-name"><span class="sk-avatar sk-avatar--xs sk-p7">MK</span>Malik</span></div>
+        <div class="pt-bot">
+          <div class="sk-seat"><span class="sk-pcard sk-pcard--sm"><span class="sk-pcard-in"><span class="sk-pcard-face">8</span><span class="sk-pcard-back"></span></span></span><span class="sk-seat-name"><span class="sk-avatar sk-avatar--xs sk-p10">SL</span>Sofia</span></div>
+          <div class="sk-seat"><span class="sk-pcard sk-pcard--sm"><span class="sk-pcard-in"><span class="sk-pcard-face">5</span><span class="sk-pcard-back"></span></span></span><span class="sk-seat-name"><span class="sk-avatar sk-avatar--xs sk-p1">AR</span>Vous</span></div>
+          <div class="sk-seat"><span class="sk-pcard sk-pcard--sm pt-out"><span class="sk-pcard-in"><span class="sk-pcard-face">3</span><span class="sk-pcard-back"></span></span></span><span class="sk-seat-name"><span class="sk-avatar sk-avatar--xs sk-p5">LD</span>Lucas</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="pt-two">
+    <div class="sk-card sk-card-b pt-res">
+      <div class="sk-between"><span class="sk-card-t">Résultat · 7 votes</span><span class="sk-badge sk-badge--warning sk-badge--pill"><i data-lucide="split"></i>Dispersion 3 → 21</span></div>
+      <div class="pt-stats">
+        <div class="sk-stat"><span class="sk-stat-v">7,9</span><span class="sk-stat-l">Moyenne</span></div>
+        <div class="sk-stat"><span class="sk-stat-v">5</span><span class="sk-stat-l">Médiane</span></div>
+        <div class="sk-stat"><span class="sk-stat-v">43 %</span><span class="sk-stat-l">Accord (mode 5)</span></div>
+      </div>
+      <div class="sk-dist pt-dist" role="img" aria-label="Distribution : 3 une fois, 5 trois fois, 8 deux fois, 21 une fois">
+        <div class="sk-dist-bar is-low" style="height:1.5rem"><span>3</span></div>
+        <div class="sk-dist-bar" style="height:4.5rem"><span>5</span></div>
+        <div class="sk-dist-bar is-low" style="height:3rem"><span>8</span></div>
+        <div class="sk-dist-bar is-low" style="height:0.25rem;opacity:.5"><span>13</span></div>
+        <div class="sk-dist-bar is-low" style="height:1.5rem"><span>21</span></div>
+      </div>
+      <p class="sk-sm sk-muted sk-p">Yuki (21) et Lucas (3) expliquent leur estimation, puis on revote.</p>
+      <div class="sk-row sk-gap-2"><button class="sk-btn sk-btn--sm"><i data-lucide="rotate-ccw"></i>Revoter</button><button class="sk-btn sk-btn--outline sk-btn--sm">Retenir 5</button></div>
+    </div>
+
+    <div class="sk-card sk-card-b pt-res">
+      <div class="sk-between"><span class="sk-card-t">Résultat · 6 votes</span><span class="sk-badge sk-badge--success sk-badge--pill"><i data-lucide="circle-check"></i>Consensus</span></div>
+      <div class="pt-stats">
+        <div class="sk-stat"><span class="sk-stat-v">7,5</span><span class="sk-stat-l">Moyenne</span></div>
+        <div class="sk-stat"><span class="sk-stat-v">8</span><span class="sk-stat-l">Médiane</span></div>
+        <div class="sk-stat"><span class="sk-stat-v">83 %</span><span class="sk-stat-l">Accord (mode 8)</span></div>
+      </div>
+      <div class="sk-dist pt-dist" role="img" aria-label="Distribution : 5 une fois, 8 cinq fois">
+        <div class="sk-dist-bar is-low" style="height:0.25rem;opacity:.5"><span>3</span></div>
+        <div class="sk-dist-bar is-low" style="height:0.875rem"><span>5</span></div>
+        <div class="sk-dist-bar" style="height:4.5rem"><span>8</span></div>
+        <div class="sk-dist-bar is-low" style="height:0.25rem;opacity:.5"><span>13</span></div>
+        <div class="sk-dist-bar is-low" style="height:0.25rem;opacity:.5"><span>21</span></div>
+      </div>
+      <p class="sk-sm sk-muted sk-p">Estimation retenue pour ATLAS-1291 · Import Jira.</p>
+      <div class="pt-final"><span class="sk-pcard sk-pcard--sm is-selected" style="transform:none"><span class="sk-pcard-in"><span class="sk-pcard-face">8</span></span></span><button class="sk-btn sk-btn--sm"><i data-lucide="check"></i>Valider 8 points</button><button class="sk-btn sk-btn--ghost sk-btn--sm">Story suivante<i data-lucide="arrow-right"></i></button></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

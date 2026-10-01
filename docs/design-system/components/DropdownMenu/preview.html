@@ -1,0 +1,61 @@
+<!-- @dsCard width=960 group="shadcn · Overlays" height=364 subtitle="DropdownMenu d'une carte — item focus, raccourcis, sous-menu « Déplacer vers » ouvert, séparateurs, item désactivé, suppression en danger ; variante avec cases" -->
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><title>DropdownMenu</title>
+<style>
+  .dm-stage { display: flex; gap: var(--space-6); align-items: flex-start; }
+  .dm-anchor { display: flex; flex-direction: column; gap: 0.375rem; width: 13.75rem; flex: none; }
+  .dm-menus { display: flex; align-items: flex-start; gap: 0.25rem; }
+  .dm-sub { margin-top: 6.75rem; min-width: 11.875rem; }
+  .dm-sub .sk-column-swatch { margin: 0 2px; }
+  .dm-chev { margin-left: auto; }
+  .dm-check { width: 1rem; display: inline-grid; place-items: center; }
+  .dm-check .lucide { color: var(--foreground); }
+</style></head>
+<body>
+<div class="sk-pad sk-canvas dm-stage">
+  <div class="dm-anchor">
+    <div class="sk-state">Menu d'une carte</div>
+    <article class="sk-rcard sk-c-coral">
+      <p class="sk-rcard-text">On découvre les changements de périmètre en plein milieu du sprint.</p>
+      <div class="sk-rcard-foot"><span class="sk-rcard-author"><span class="sk-avatar sk-avatar--xs sk-p5">SL</span>Sofia L.</span><span class="sk-grow"></span><button class="sk-btn sk-btn--ghost sk-btn--icon sk-btn--sm is-hover" aria-haspopup="menu" aria-expanded="true" aria-label="Actions de la carte" style="height:1.5rem;width:1.5rem"><i data-lucide="ellipsis" class="sk-ico-sm"></i></button></div>
+    </article>
+  </div>
+  <div class="dm-menus" style="margin-top:1.75rem">
+    <div class="sk-menu" role="menu" aria-label="Actions de la carte">
+      <div class="sk-menu-label">Carte de Sofia L.</div>
+      <div class="sk-menu-item" role="menuitem"><i data-lucide="pencil"></i>Éditer<span class="sk-shortcut">E</span></div>
+      <div class="sk-menu-item" role="menuitem"><i data-lucide="merge"></i>Fusionner avec…<span class="sk-shortcut">⌘M</span></div>
+      <div class="sk-menu-item is-on" role="menuitem" aria-haspopup="menu" aria-expanded="true"><i data-lucide="folder-input"></i>Déplacer vers<i data-lucide="chevron-right" class="dm-chev"></i></div>
+      <div class="sk-menu-item" role="menuitem"><i data-lucide="copy"></i>Dupliquer<span class="sk-shortcut">⌘D</span></div>
+      <div class="sk-menu-sep" role="separator"></div>
+      <div class="sk-menu-item" role="menuitem"><i data-lucide="list-checks"></i>Créer une action</div>
+      <div class="sk-menu-item is-disabled" role="menuitem" aria-disabled="true"><i data-lucide="link-2"></i>Lier à Jira<span class="sk-shortcut">Non configuré</span></div>
+      <div class="sk-menu-sep" role="separator"></div>
+      <div class="sk-menu-item is-danger" role="menuitem"><i data-lucide="trash-2"></i>Supprimer<span class="sk-shortcut" style="color:inherit;opacity:.8">⌫</span></div>
+    </div>
+    <div class="sk-menu dm-sub" role="menu" aria-label="Déplacer vers">
+      <div class="sk-menu-item sk-c-moss" role="menuitem"><span class="sk-column-swatch"></span>Bien passé</div>
+      <div class="sk-menu-item sk-c-coral" role="menuitemradio" aria-checked="true"><span class="sk-column-swatch"></span>À améliorer<i data-lucide="check" class="dm-chev" style="color:var(--foreground)"></i></div>
+      <div class="sk-menu-item sk-c-sky is-on" role="menuitem"><span class="sk-column-swatch"></span>Idées</div>
+      <div class="sk-menu-item sk-c-plum" role="menuitem"><span class="sk-column-swatch"></span>Questions</div>
+    </div>
+  </div>
+
+  <div class="sk-col sk-gap-2" style="margin-left:auto">
+    <div class="sk-state">Cases + radio</div>
+    <button class="sk-btn sk-btn--outline sk-btn--sm is-focus" style="align-self:flex-start"><i data-lucide="eye"></i>Affichage<i data-lucide="chevron-down"></i></button>
+    <div class="sk-menu" role="menu" style="min-width:14.375rem">
+      <div class="sk-menu-label">Afficher sur les cartes</div>
+      <div class="sk-menu-item" role="menuitemcheckbox" aria-checked="true"><span class="dm-check"><i data-lucide="check"></i></span>Auteurs</div>
+      <div class="sk-menu-item" role="menuitemcheckbox" aria-checked="true"><span class="dm-check"><i data-lucide="check"></i></span>Réactions</div>
+      <div class="sk-menu-item" role="menuitemcheckbox" aria-checked="false"><span class="dm-check"></span>Votes des autres</div>
+      <div class="sk-menu-sep"></div>
+      <div class="sk-menu-label">Trier par</div>
+      <div class="sk-menu-item" role="menuitemradio" aria-checked="true"><span class="dm-check"><span class="sk-dot" style="width:0.375rem;height:0.375rem"></span></span>Votes</div>
+      <div class="sk-menu-item" role="menuitemradio" aria-checked="false"><span class="dm-check"></span>Date d'ajout</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -7,6 +7,8 @@ use App\Actions\HealthCheck\PresentHealthStatement;
 use App\Actions\HealthCheck\TeamHealthStatements;
 use App\Actions\Poker\PresentPokerGameSummary;
 use App\Actions\Retros\BuildTemplateCatalogue;
+use App\Actions\Whiteboards\BuildWhiteboardGallery;
+use App\Actions\Whiteboards\PresentWhiteboardSummary;
 use App\Enums\IntegrationProvider;
 use App\Enums\PokerDeck;
 use App\Enums\TemplateCategory;
@@ -16,6 +18,8 @@ use App\Models\SavedPokerDeck;
 use App\Models\Team;
 use App\Models\TeamHealthStatement;
 use App\Models\User;
+use App\Models\Whiteboard;
+use App\Models\WhiteboardTemplate;
 use App\Models\Workspace;
 use App\Support\Llm\Llm;
 use Illuminate\Http\RedirectResponse;
@@ -30,6 +34,7 @@ class TeamsController extends Controller
         private TeamHealthStatements $teamHealthStatements,
         private PresentHealthStatement $presentHealthStatement,
         private PresentPokerGameSummary $presentPokerGameSummary,
+        private PresentWhiteboardSummary $presentWhiteboardSummary,
     ) {}
 
     public function store(Request $request, Workspace $workspace): RedirectResponse
@@ -45,11 +50,19 @@ class TeamsController extends Controller
         return to_route('teams.show', [$workspace, $team]);
     }
 
-    public function show(Request $request, Workspace $workspace, Team $team, Llm $llm, BuildTemplateCatalogue $buildTemplateCatalogue, IcebreakerGameOptions $icebreakerGameOptions): Response
-    {
+    public function show(
+        Request $request,
+        Workspace $workspace,
+        Team $team,
+        Llm $llm,
+        BuildTemplateCatalogue $buildTemplateCatalogue,
+        IcebreakerGameOptions $icebreakerGameOptions,
+        BuildWhiteboardGallery $buildWhiteboardGallery,
+    ): Response {
         Gate::authorize('view', $team);
 
         $canManage = $request->user()->can('manageMembers', $team);
+        $managesWorkspace = $request->user()->canManage($workspace);
 
         return Inertia::render('teams/show', [
             'workspace' => $workspace->only(['id', 'name', 'slug']),
@@ -90,6 +103,22 @@ class TeamsController extends Controller
             'pokerDecks' => $this->pokerDecks($request->user(), $workspace, $team),
             'pokerDeckOptions' => PokerDeck::options(),
             'canCreatePokerGame' => $request->user()->can('createPokerGame', $team),
+            'whiteboards' => $team->whiteboards()
+                ->with('facilitator.user')
+                ->latest('updated_at')
+                ->get()
+                ->map(fn (Whiteboard $board): array => $this->presentWhiteboardSummary->handle($board, $request->user(), $managesWorkspace)),
+            'canCreateWhiteboard' => $request->user()->can('createWhiteboard', $team),
+            'whiteboardTemplates' => $workspace->whiteboardTemplates()
+                ->orderBy('name')
+                ->get(['id', 'name', 'description', 'created_by_user_id'])
+                ->map(fn (WhiteboardTemplate $template): array => [
+                    'id' => $template->id,
+                    'name' => $template->name,
+                    'description' => $template->description,
+                    'canManage' => $managesWorkspace || $template->created_by_user_id === $request->user()->id,
+                ]),
+            'whiteboardGallery' => Inertia::optional(fn (): array => $buildWhiteboardGallery->handle($workspace)),
             'canManageIntegrations' => IntegrationProvider::anyEnabled() && $request->user()->can('manageIntegrations', $team),
         ]);
     }

@@ -1,0 +1,46 @@
+<!-- @dsCard group="Skrüm · Temps réel" height=410 subtitle="connexion perdue · reconnexion (loader tréma) · reconnecté · quelqu'un édite · bannière hors-ligne" -->
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><title>ConnectionState</title>
+<style>
+  .cs-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-6) var(--space-5); align-items: start; }
+  .cs-cap { font-size: 0.75rem; color: var(--muted-foreground); margin-top: var(--space-2); max-width: 12.5rem; line-height: 1rem; }
+  .cs-edit { display: inline-flex; align-items: center; gap: 0.5rem; height: 1.875rem; padding: 0 0.75rem 0 0.25rem; border-radius: var(--radius-full); font-size: 0.75rem; font-weight: 600; background: var(--card); border: 1px solid var(--border); box-shadow: var(--shadow-card); color: var(--foreground); }
+  .cs-banner { display: flex; align-items: center; gap: var(--space-3); padding: 0.625rem var(--space-4); border-radius: var(--radius); background: var(--skrum-destructive-soft); color: var(--skrum-destructive-text); font-size: 0.875rem; }
+  .cs-banner .sk-btn { margin-left: auto; }
+  .cs-board { position: relative; border-radius: var(--radius-xl); border: 1px solid var(--border); overflow: hidden; height: 7.5rem; }
+  .cs-board-dim { position: absolute; inset: 0; background: color-mix(in oklch, var(--background) 55%, transparent); display: grid; place-items: center; }
+</style>
+</head>
+<body>
+<div class="sk-pad sk-col sk-gap-6">
+  <div class="cs-grid">
+    <div><div class="sk-state">Connexion perdue</div>
+      <span class="sk-conn is-lost" role="status"><i data-lucide="wifi-off" class="sk-ico-sm"></i>Hors ligne</span>
+      <div class="cs-cap">Après 5 s sans heartbeat Reverb. Les modifs sont mises en file.</div></div>
+    <div><div class="sk-state">Reconnexion</div>
+      <span class="sk-conn" role="status" aria-live="polite"><span class="sk-trema"><i></i><i></i></span>Reconnexion… (2/5)</span>
+      <div class="cs-cap">Backoff 1 s → 2 s → 4 s… Loader tréma = le « ü ».</div></div>
+    <div><div class="sk-state">Reconnecté</div>
+      <span class="sk-conn is-ok" role="status"><i data-lucide="check" class="sk-ico-sm"></i>Reconnecté</span>
+      <div class="cs-cap">3 modifs en attente synchronisées. Disparaît après 3 s.</div></div>
+    <div><div class="sk-state">Quelqu'un édite</div>
+      <span class="cs-edit" role="status"><span class="sk-avatar sk-avatar--sm sk-p9">IB</span>Inès édite la carte<span class="sk-trema" style="color:var(--skrum-presence-9)"><i></i><i></i></span></span>
+      <div class="cs-cap">Verrou doux : la carte reste lisible, l'édition est bloquée.</div></div>
+  </div>
+
+  <div><div class="sk-state">Bannière · déconnexion prolongée (&gt; 30 s)</div>
+    <div class="cs-banner" role="alert"><i data-lucide="wifi-off"></i><span><span class="sk-strong">Connexion au serveur perdue.</span> Vos cartes sont gardées localement et seront envoyées au retour du réseau.</span><button class="sk-btn sk-btn--outline sk-btn--sm"><i data-lucide="refresh-cw"></i>Réessayer</button></div></div>
+
+  <div><div class="sk-state">Board en lecture seule pendant la reconnexion</div>
+    <div class="cs-board sk-dotgrid">
+      <div class="sk-row" style="padding:var(--space-4);gap:var(--space-3)">
+        <div class="sk-rcard sk-c-sun" style="width:12.5rem"><p class="sk-rcard-text">Bravo pour la release 3.2</p></div>
+        <div class="sk-rcard sk-c-sky" style="width:12.5rem"><p class="sk-rcard-text">Tester le mob-programming</p></div>
+        <div class="sk-rcard sk-c-coral" style="width:12.5rem"><p class="sk-rcard-text">Trop de réunions le lundi</p></div>
+      </div>
+      <div class="cs-board-dim"><span class="sk-conn" role="status"><span class="sk-trema sk-trema--lg"><i></i><i></i></span>Reconnexion à la session…</span></div>
+    </div></div>
+</div>
+</body>
+</html>

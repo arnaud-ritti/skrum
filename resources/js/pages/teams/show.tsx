@@ -11,6 +11,7 @@ import InputError from '@/components/input-error';
 import { HealthStatementsSection } from '@/components/teams/health-statements-section';
 import { NewRetroDialog } from '@/components/teams/new-retro-dialog';
 import { PokerGamesSection } from '@/components/teams/poker-games-section';
+import { WhiteboardsSection } from '@/components/teams/whiteboards-section';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -33,6 +34,9 @@ import type {
     RetroSummary,
     TeamHealthStatement,
     TeamSummary,
+    WhiteboardGalleryItem,
+    WhiteboardSummary,
+    WhiteboardTemplateSummary,
     WorkspaceSummary,
     SavedPokerDeck,
 } from '@/types';
@@ -57,6 +61,10 @@ type Props = {
     canCreatePokerGame: boolean;
     canManageIntegrations: boolean;
     pokerDecks: SavedPokerDeck[];
+    whiteboards: WhiteboardSummary[];
+    canCreateWhiteboard: boolean;
+    whiteboardTemplates: WhiteboardTemplateSummary[];
+    whiteboardGallery?: WhiteboardGalleryItem[];
 };
 
 export default function ShowTeam({
@@ -79,6 +87,10 @@ export default function ShowTeam({
     canCreatePokerGame,
     canManageIntegrations,
     pokerDecks,
+    whiteboards,
+    canCreateWhiteboard,
+    whiteboardTemplates,
+    whiteboardGallery,
 }: Props) {
     const { t } = useTrans();
     const params = { workspace: workspace.slug, team: team.id };
@@ -192,6 +204,14 @@ export default function ShowTeam({
                     deckOptions={pokerDeckOptions}
                     savedDecks={pokerDecks}
                     canCreate={canCreatePokerGame}
+                />
+                <WhiteboardsSection
+                    workspaceSlug={workspace.slug}
+                    teamId={team.id}
+                    boards={whiteboards}
+                    canCreate={canCreateWhiteboard}
+                    templates={whiteboardTemplates}
+                    gallery={whiteboardGallery}
                 />
                 <HealthStatementsSection
                     statements={healthStatements}

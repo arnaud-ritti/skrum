@@ -1,0 +1,355 @@
+<!-- @dsCard group="Écrans · Desktop" width=1440 height=3846 subtitle="États d'erreur, EN puis FR : 404, 403 (pas accès à l'équipe + demander l'accès), 500 (identifiant copiable), maintenance d'instance (heure de retour), connexion perdue en session (bandeau + 3 états, jamais de modale)" -->
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><title>ScreenErrors</title>
+<style>
+  .scr-cap { height: 3rem; display: flex; align-items: center; gap: var(--space-2); padding: 0 var(--space-6); font-size: 0.75rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted-foreground); white-space: nowrap; }
+  .scr-cap b { color: var(--foreground); }
+  .scr-cap .sk-badge { letter-spacing: 0; text-transform: none; }
+
+  .f-sun { fill: var(--skrum-col-sun); stroke: var(--skrum-col-sun-border); }
+  .f-apricot { fill: var(--skrum-col-apricot); stroke: var(--skrum-col-apricot-border); }
+  .f-coral { fill: var(--skrum-col-coral); stroke: var(--skrum-col-coral-border); }
+  .f-plum { fill: var(--skrum-col-plum); stroke: var(--skrum-col-plum-border); }
+  .f-iris { fill: var(--skrum-col-iris); stroke: var(--skrum-col-iris-border); }
+  .f-sky { fill: var(--skrum-col-sky); stroke: var(--skrum-col-sky-border); }
+  .f-lagoon { fill: var(--skrum-col-lagoon); stroke: var(--skrum-col-lagoon-border); }
+  .f-moss { fill: var(--skrum-col-moss); stroke: var(--skrum-col-moss-border); }
+  .f-card { fill: var(--card); stroke: var(--border); }
+  .f-primary { fill: var(--primary); stroke: none; }
+  .f-muted { fill: var(--muted); stroke: none; }
+  .f-dot { fill: var(--primary); }
+  .f-line { stroke: var(--muted-foreground); stroke-width: 2.5; stroke-linecap: round; fill: none; opacity: .5; }
+  .f-dash { fill: none; stroke: var(--input); stroke-width: 1.5; stroke-dasharray: 4 4; }
+  .f-ink { stroke: var(--primary); stroke-width: 2.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  .f-fold-sun { fill: var(--skrum-col-sun-border); } .f-fold-coral { fill: var(--skrum-col-coral-border); }
+  .f-fold-sky { fill: var(--skrum-col-sky-border); } .f-fold-apricot { fill: var(--skrum-col-apricot-border); }
+  .f-fold-moss { fill: var(--skrum-col-moss-border); }
+
+  body { background: var(--skrum-canvas); }
+  .er-frame { height: auto; background: var(--skrum-canvas); padding: var(--space-8) var(--space-10) var(--space-10); }
+  .er-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-8) var(--space-6); }
+  .er-cell { display: flex; flex-direction: column; min-width: 0; }
+  .er-wide { grid-column: 1 / -1; }
+  .er-view { background: var(--background); border: 1px solid var(--border); border-radius: var(--radius-xl); box-shadow: var(--shadow-raised); overflow: hidden; display: flex; flex-direction: column; flex: 1; min-width: 0; }
+  .er-bar { height: 2.25rem; flex: none; display: flex; align-items: center; gap: var(--space-2); padding: 0 var(--space-3); border-bottom: 1px solid var(--border); background: var(--muted); color: var(--muted-foreground); }
+  .er-url { flex: 1; min-width: 0; font-family: var(--font-mono); font-size: 0.75rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .er-page { flex: 1; display: flex; flex-direction: column; padding: var(--space-4) var(--space-6) var(--space-4); gap: var(--space-4); min-height: 33.5rem; }
+  .er-head { display: flex; align-items: center; gap: var(--space-4); }
+  .er-brand { display: inline-flex; align-items: center; gap: var(--space-2); }
+  .er-word { font-family: var(--font-display); font-weight: 700; letter-spacing: -.03em; font-size: 1.0625rem; }
+  .er-center { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: var(--space-3); max-width: 31rem; margin: 0 auto; width: 100%; }
+  .er-art { width: 10rem; height: 6.875rem; margin-bottom: var(--space-1); }
+  .er-art rect, .er-art path { stroke-width: 1.2; }
+  .er-over { font-size: 0.6875rem; line-height: 1rem; font-weight: 650; letter-spacing: .08em; text-transform: uppercase; color: var(--skrum-primary-text); }
+  .er-center .sk-h3 { text-wrap: balance; }
+  .er-d { margin: 0; font-size: 0.875rem; line-height: 1.375rem; color: var(--muted-foreground); text-wrap: pretty; }
+  .er-d b { color: var(--foreground); font-weight: 600; }
+  .er-actions { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: var(--space-2); margin-top: var(--space-1); }
+  .er-actions .sk-btn { min-width: 0; }
+  .er-foot { font-size: 0.75rem; color: var(--muted-foreground); text-align: center; }
+  .er-team { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-4) var(--space-2) var(--space-2); border-radius: var(--radius); border: 1px solid var(--border); background: var(--card); max-width: 100%; }
+  .er-msg { width: 100%; max-width: 24rem; text-align: left; }
+  .er-ell { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .er-nw { white-space: nowrap; }
+  .er-admins { display: inline-flex; align-items: center; gap: var(--space-2); font-size: 0.75rem; color: var(--muted-foreground); }
+  .er-id { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-1) var(--space-1) var(--space-1) var(--space-3); border-radius: var(--radius-md); border: 1px solid var(--input); background: var(--muted); min-width: 0; }
+  .er-idv { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; column-gap: var(--space-2); }
+  .er-eta { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-5) var(--space-3) var(--space-4); border-radius: var(--radius); background: var(--skrum-info-soft); color: var(--skrum-info-text); }
+  .er-eta .sk-muted { color: var(--skrum-info-text); }
+  .er-time { font-family: var(--font-display); font-size: 1.75rem; line-height: 2rem; font-weight: 700; letter-spacing: -.02em; color: var(--foreground); font-variant-numeric: tabular-nums; }
+  .er-quote { margin: 0; display: flex; flex-direction: column; gap: var(--space-1); align-items: center; }
+  .er-quote blockquote { margin: 0; font-size: 0.8125rem; line-height: 1.25rem; color: var(--foreground); font-style: italic; }
+  .er-quote figcaption { display: inline-flex; align-items: center; gap: var(--space-2); font-size: 0.75rem; color: var(--muted-foreground); }
+  .er-reload { display: inline-flex; align-items: center; gap: var(--space-2); font-size: 0.75rem; color: var(--muted-foreground); }
+  .er-reload .sk-trema { color: var(--primary); }
+  /* offline */
+  .er-offgrid { display: grid; grid-template-columns: minmax(0, 1fr) 22rem; gap: var(--space-6); align-items: stretch; }
+  .er-app { height: 28rem; flex: none; }
+  .er-shell { flex: 1; min-height: 0; display: flex; overflow: hidden; }
+  .er-shell .sk-topbar { padding: 0 var(--space-3); gap: var(--space-2); height: 3rem; }
+  .er-board { flex: 1; min-height: 0; display: flex; gap: var(--space-4); padding: var(--space-4); overflow: hidden; align-items: flex-start; }
+  .er-board .sk-column { width: 16.5rem; }
+  .er-banner { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-4); font-size: 0.8125rem; line-height: 1.25rem; border-bottom: 1px solid transparent; flex: none; }
+  .er-banner-t { flex: 1; min-width: 0; }
+  .er-banner b { font-weight: 650; }
+  .er-banner .sk-btn { flex: none; }
+  .er-banner--warning { background: var(--skrum-warning-soft); color: var(--skrum-warning-text); border-color: color-mix(in oklch, var(--skrum-warning-text) 22%, transparent); }
+  .er-banner--error { background: var(--skrum-destructive-soft); color: var(--skrum-destructive-text); border-color: color-mix(in oklch, var(--skrum-destructive-text) 22%, transparent); }
+  .er-banner--success { background: var(--skrum-success-soft); color: var(--skrum-success-text); border-color: color-mix(in oklch, var(--skrum-success-text) 22%, transparent); }
+  .er-banner--card { border-radius: var(--radius); border-width: 1px; border-style: solid; align-items: flex-start; padding: var(--space-3); }
+  .er-banner--card > .lucide, .er-banner--card > .sk-trema { margin-top: 0.1875rem; }
+  .er-banner--card > .sk-trema { margin-top: 0.5rem; }
+  .er-banner .sk-trema { flex: none; }
+  .er-pending { border-style: dashed; box-shadow: none; opacity: .85; }
+  .er-pend-tag { display: inline-flex; align-items: center; gap: var(--space-1); font-size: 0.6875rem; font-weight: 650; color: var(--muted-foreground); white-space: nowrap; }
+  .er-states { display: flex; flex-direction: column; gap: var(--space-4); min-width: 0; }
+  .er-st { display: flex; flex-direction: column; gap: var(--space-1-5); }
+  .er-st-l { font-size: 0.75rem; font-weight: 650; color: var(--foreground); }
+  .er-rule { display: flex; gap: var(--space-2); align-items: flex-start; margin-top: auto; }
+  .er-rule .lucide { margin-top: 0.1875rem; flex: none; }
+</style>
+</head>
+<body>
+<div class="scr-cap"><b>a</b><span class="sk-badge sk-badge--outline">EN</span>Error states — 404, 403, 500, maintenance, connection lost (banner, never a modal)</div>
+<div class="sk-desktop er-frame" lang="en">
+  <div class="er-grid">
+    <section class="er-cell"><div class="sk-state">404 · Page not found</div>
+  <div class="er-view">
+    <div class="er-bar"><i data-lucide="lock" class="sk-ico-sm"></i><span class="er-url">skrum.nordlys.fr/t/atlas/retro/sprint-24</span><span class="sk-badge sk-badge--muted">404</span></div>
+    <div class="er-page">
+      <div class="er-head"><span class="er-brand"><svg viewBox="0 0 64 64" width="22" height="22" aria-label="Skrüm"><path d="M14 0 H50 A14 14 0 0 1 64 14 V46 L46 64 H14 A14 14 0 0 1 0 50 V14 A14 14 0 0 1 14 0 Z" style="fill:var(--primary)"/><path d="M64 46 L50 46 A4 4 0 0 0 46 50 L46 64 Z" style="fill:color-mix(in oklch, var(--primary) 70%, var(--foreground))"/><path d="M19 27 L19 38 C19 45 24 49.5 30 49.5 C36 49.5 41 45 41 38 L41 27" fill="none" style="stroke:var(--primary-foreground)" stroke-width="7" stroke-linecap="round"/><circle cx="21.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/><circle cx="38.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/></svg><span class="er-word">skrüm</span></span><span class="sk-grow"></span><a class="sk-link sk-xs">Instance status</a><a class="sk-link sk-xs">Help</a></div>
+      <div class="er-center"><svg class="er-art" viewBox="0 0 160 110" aria-hidden="true">
+  <circle class="f-dot" cx="72" cy="12" r="4"/><circle class="f-dot" cx="88" cy="12" r="4"/>
+  <rect class="f-moss" x="14" y="30" width="40" height="40" rx="5"/><path class="f-line" d="M22 42 H44 M22 50 H36"/>
+  <rect class="f-dash" x="60" y="30" width="40" height="40" rx="5"/>
+  <g transform="rotate(16 128 74)"><path class="f-sun" d="M108 52 H148 V84 L140 92 H108 Z"/><path class="f-fold-sun" d="M148 84 H142 A2 2 0 0 0 140 86 V92 Z"/><path class="f-line" d="M116 64 H138 M116 72 H130"/></g>
+  <ellipse class="f-muted" cx="80" cy="103" rx="56" ry="4"/>
+</svg>
+      <span class="er-over">Error 404</span><h2 class="sk-h3">This page doesn't exist (anymore)</h2><p class="er-d">The link may be incomplete, or the facilitator deleted the session. Check the address, or start again from your teams.</p>
+      <div class="er-actions"><button class="sk-btn"><i data-lucide="house"></i><span>Back to my teams</span></button><button class="sk-btn sk-btn--outline"><i data-lucide="search"></i><span>Search sessions</span><span class="sk-kbd">⌘K</span></button></div></div>
+      <div class="er-foot">skrum.nordlys.fr · v1.8.2</div>
+    </div>
+  </div></section>
+    <section class="er-cell"><div class="sk-state">403 · No access to the team</div>
+  <div class="er-view">
+    <div class="er-bar"><i data-lucide="lock" class="sk-ico-sm"></i><span class="er-url">skrum.nordlys.fr/t/atlas</span><span class="sk-badge sk-badge--muted">403</span></div>
+    <div class="er-page">
+      <div class="er-head"><span class="er-brand"><svg viewBox="0 0 64 64" width="22" height="22" aria-label="Skrüm"><path d="M14 0 H50 A14 14 0 0 1 64 14 V46 L46 64 H14 A14 14 0 0 1 0 50 V14 A14 14 0 0 1 14 0 Z" style="fill:var(--primary)"/><path d="M64 46 L50 46 A4 4 0 0 0 46 50 L46 64 Z" style="fill:color-mix(in oklch, var(--primary) 70%, var(--foreground))"/><path d="M19 27 L19 38 C19 45 24 49.5 30 49.5 C36 49.5 41 45 41 38 L41 27" fill="none" style="stroke:var(--primary-foreground)" stroke-width="7" stroke-linecap="round"/><circle cx="21.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/><circle cx="38.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/></svg><span class="er-word">skrüm</span></span><span class="sk-grow"></span><a class="sk-link sk-xs">Instance status</a><a class="sk-link sk-xs">Help</a></div>
+      <div class="er-center"><svg class="er-art" viewBox="0 0 160 110" aria-hidden="true">
+  <circle class="f-dot" cx="72" cy="10" r="4"/><circle class="f-dot" cx="88" cy="10" r="4"/>
+  <path class="f-coral" d="M48 22 H112 V86 L102 96 H48 Z"/><path class="f-fold-coral" d="M112 86 H104 A2 2 0 0 0 102 88 V96 Z"/>
+  <path d="M68 52 V44 A12 12 0 0 1 92 44 V52" style="fill:none;stroke:var(--skrum-col-coral-text);stroke-width:4;stroke-linecap:round"/>
+  <rect x="62" y="52" width="36" height="28" rx="5" style="fill:var(--card);stroke:var(--skrum-col-coral-text);stroke-width:1.5"/>
+  <circle cx="80" cy="63" r="3.5" style="fill:var(--skrum-col-coral-text)"/><path d="M80 66 V72" style="stroke:var(--skrum-col-coral-text);stroke-width:3;stroke-linecap:round"/>
+  <ellipse class="f-muted" cx="80" cy="104" rx="44" ry="4"/>
+</svg>
+      <span class="er-over">Error 403 · Access denied</span><h2 class="sk-h3">You don't have access to this team</h2>
+      <div class="er-team"><span class="sk-team-mark">A</span><span class="sk-col" style="gap:0;min-width:0;text-align:left"><span class="sk-strong">Atlas</span><span class="sk-xs sk-muted">Nordlys workspace · 11 members</span></span></div>
+      <p class="er-d">You're signed in as <b>nadia@nordlys.fr</b>. Request access and a team admin will review it.</p>
+      <div class="sk-field er-msg"><label>Message to the admins (optional)</label><div class="sk-input"><span class="sk-placeholder er-ell">I'm covering for Théo on sprint 43.</span></div></div>
+      <div class="er-actions"><button class="sk-btn"><i data-lucide="send"></i><span>Request access</span></button><button class="sk-btn sk-btn--ghost"><i data-lucide="log-out"></i><span>Switch account</span></button></div>
+      <span class="er-admins"><span class="sk-stack"><span class="sk-avatar sk-avatar--sm sk-p4">CR</span><span class="sk-avatar sk-avatar--sm sk-p2">TM</span></span>Team admins: Camille Roux, Théo Martin</span></div>
+      <div class="er-foot">skrum.nordlys.fr · v1.8.2</div>
+    </div>
+  </div></section>
+    <section class="er-cell"><div class="sk-state">500 · Server error</div>
+  <div class="er-view">
+    <div class="er-bar"><i data-lucide="lock" class="sk-ico-sm"></i><span class="er-url">skrum.nordlys.fr/t/atlas/poker/sprint-43</span><span class="sk-badge sk-badge--muted">500</span></div>
+    <div class="er-page">
+      <div class="er-head"><span class="er-brand"><svg viewBox="0 0 64 64" width="22" height="22" aria-label="Skrüm"><path d="M14 0 H50 A14 14 0 0 1 64 14 V46 L46 64 H14 A14 14 0 0 1 0 50 V14 A14 14 0 0 1 14 0 Z" style="fill:var(--primary)"/><path d="M64 46 L50 46 A4 4 0 0 0 46 50 L46 64 Z" style="fill:color-mix(in oklch, var(--primary) 70%, var(--foreground))"/><path d="M19 27 L19 38 C19 45 24 49.5 30 49.5 C36 49.5 41 45 41 38 L41 27" fill="none" style="stroke:var(--primary-foreground)" stroke-width="7" stroke-linecap="round"/><circle cx="21.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/><circle cx="38.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/></svg><span class="er-word">skrüm</span></span><span class="sk-grow"></span><a class="sk-link sk-xs">Instance status</a><a class="sk-link sk-xs">Help</a></div>
+      <div class="er-center"><svg class="er-art" viewBox="0 0 160 110" aria-hidden="true">
+  <circle class="f-dot" cx="66" cy="12" r="4"/><circle class="f-dot" cx="86" cy="18" r="4"/>
+  <g transform="rotate(-7 60 60)"><path class="f-apricot" d="M40 30 H78 L72 44 L80 56 L72 70 L78 86 H40 Z"/><path class="f-line" d="M48 44 H64 M48 52 H60"/></g>
+  <g transform="rotate(9 104 62)"><path class="f-apricot" d="M86 32 H122 V78 L112 88 H86 L80 72 L88 58 L80 46 Z"/><path class="f-fold-apricot" d="M122 78 H114 A2 2 0 0 0 112 80 V88 Z"/><path class="f-line" d="M96 46 H112"/></g>
+  <ellipse class="f-muted" cx="80" cy="103" rx="52" ry="4"/>
+</svg>
+      <span class="er-over">Error 500</span><h2 class="sk-h3">Something broke on our side</h2><p class="er-d">Your cards and action items are safe. Try again in a moment; if it happens again, send this ID to your admin.</p>
+      <div class="sk-field er-msg"><span class="sk-lbl">Error ID</span><div class="er-id"><span class="er-idv"><span class="sk-mono">err_01J9Q4K7ZP3M</span><span class="sk-xs sk-muted">· 2026-10-01 12:02:37 UTC</span></span><button class="sk-btn sk-btn--outline sk-btn--sm"><i data-lucide="copy"></i><span>Copy</span></button></div></div>
+      <div class="er-actions"><button class="sk-btn"><i data-lucide="rotate-ccw"></i><span>Try again</span></button><button class="sk-btn sk-btn--outline"><i data-lucide="house"></i><span>Back to my teams</span></button></div></div>
+      <div class="er-foot">skrum.nordlys.fr · v1.8.2</div>
+    </div>
+  </div></section>
+    <section class="er-cell"><div class="sk-state">Maintenance · self-hosted instance</div>
+  <div class="er-view">
+    <div class="er-bar"><i data-lucide="lock" class="sk-ico-sm"></i><span class="er-url">skrum.nordlys.fr</span><span class="sk-badge sk-badge--muted">503</span></div>
+    <div class="er-page">
+      <div class="er-head"><span class="er-brand"><svg viewBox="0 0 64 64" width="22" height="22" aria-label="Skrüm"><path d="M14 0 H50 A14 14 0 0 1 64 14 V46 L46 64 H14 A14 14 0 0 1 0 50 V14 A14 14 0 0 1 14 0 Z" style="fill:var(--primary)"/><path d="M64 46 L50 46 A4 4 0 0 0 46 50 L46 64 Z" style="fill:color-mix(in oklch, var(--primary) 70%, var(--foreground))"/><path d="M19 27 L19 38 C19 45 24 49.5 30 49.5 C36 49.5 41 45 41 38 L41 27" fill="none" style="stroke:var(--primary-foreground)" stroke-width="7" stroke-linecap="round"/><circle cx="21.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/><circle cx="38.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/></svg><span class="er-word">skrüm</span></span><span class="sk-grow"></span><a class="sk-link sk-xs">Instance status</a><a class="sk-link sk-xs">Help</a></div>
+      <div class="er-center"><svg class="er-art" viewBox="0 0 160 110" aria-hidden="true">
+  <circle class="f-dot" cx="72" cy="10" r="4"/><circle class="f-dot" cx="88" cy="10" r="4"/>
+  <path class="f-sky" d="M46 22 H114 V84 L104 94 H46 Z"/><path class="f-fold-sky" d="M114 84 H106 A2 2 0 0 0 104 86 V94 Z"/>
+  <circle cx="80" cy="56" r="22" style="fill:var(--card);stroke:var(--skrum-col-sky-text);stroke-width:2"/>
+  <path d="M80 42 V56 L90 62" style="fill:none;stroke:var(--primary);stroke-width:3.5;stroke-linecap:round;stroke-linejoin:round"/>
+  <circle cx="80" cy="56" r="2.5" style="fill:var(--skrum-col-sky-text)"/>
+  <ellipse class="f-muted" cx="80" cy="103" rx="44" ry="4"/>
+</svg>
+      <span class="er-over">Scheduled maintenance</span><h2 class="sk-h3">skrum.nordlys.fr is being updated</h2><p class="er-d">Your admin is installing version 1.9.0. Nothing is lost: sessions pick up exactly where they stopped.</p>
+      <div class="er-eta"><i data-lucide="clock" class="sk-ico-lg"></i><span class="sk-col" style="gap:0;text-align:left;min-width:0"><span class="sk-xs sk-muted sk-strong">Back at</span><span class="er-time">2:30 pm</span><span class="sk-xs sk-muted">Paris time (CEST) · in about 25 min</span></span></div>
+      <figure class="er-quote"><blockquote>“Monthly update, plus two new icebreaker games.”</blockquote><figcaption><span class="sk-avatar sk-avatar--xs sk-p11">HL</span>Hugo Lambert, instance admin</figcaption></figure>
+      <div class="er-actions"><span class="er-reload"><span class="sk-trema"><i></i><i></i></span>This page reloads by itself as soon as the instance answers.</span><button class="sk-btn sk-btn--outline sk-btn--sm"><i data-lucide="refresh-cw"></i><span>Retry now</span></button></div></div>
+      <div class="er-foot">skrum.nordlys.fr · v1.8.2</div>
+    </div>
+  </div></section>
+    <section class="er-cell er-wide"><div class="sk-state">Connection lost during a session · banner, never a modal</div>
+  <div class="er-offgrid">
+   <div class="er-view er-app">
+    <div class="er-bar"><i data-lucide="lock" class="sk-ico-sm"></i><span class="er-url">skrum.nordlys.fr/t/atlas/retro/sprint-42</span><span class="sk-badge sk-badge--muted">WS</span></div>
+    <div class="er-shell">
+      <nav class="sk-sidebar is-collapsed" aria-label="Navigation">
+      <div class="sk-brand"><svg viewBox="0 0 64 64" width="24" height="24" aria-hidden="true"><path d="M14 0 H50 A14 14 0 0 1 64 14 V46 L46 64 H14 A14 14 0 0 1 0 50 V14 A14 14 0 0 1 14 0 Z" style="fill:var(--primary)"/><path d="M64 46 L50 46 A4 4 0 0 0 46 50 L46 64 Z" style="fill:color-mix(in oklch, var(--primary) 70%, var(--foreground))"/><path d="M19 27 L19 38 C19 45 24 49.5 30 49.5 C36 49.5 41 45 41 38 L41 27" fill="none" style="stroke:var(--primary-foreground)" stroke-width="7" stroke-linecap="round"/><circle cx="21.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/><circle cx="38.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/></svg><span class="sk-brand-word">skrüm</span></div>
+      <button class="sk-team sk-team-switch" aria-haspopup="menu" aria-label="Switch team or workspace"><span class="sk-team-mark">A</span><span class="sk-team-txt"><span class="sk-team-name">Atlas</span><span class="sk-team-sub">Nordlys · 11 members</span></span><i data-lucide="chevrons-up-down" class="sk-ico-sm"></i></button>
+      <a class="sk-nav-item" aria-label="Dashboard"><i data-lucide="layout-dashboard"></i><span>Dashboard</span></a>
+      <a class="sk-nav-item is-on" aria-current="page" aria-label="Sessions"><i data-lucide="calendar-clock"></i><span>Sessions</span></a>
+      <a class="sk-nav-item" aria-label="Actions"><i data-lucide="list-checks"></i><span>Actions</span><b class="sk-nav-dot" aria-hidden="true"></b></a>
+      <a class="sk-nav-item" aria-label="Mood & ROTI"><i data-lucide="trending-up"></i><span>Mood & ROTI</span></a>
+      <a class="sk-nav-item" aria-label="Games"><i data-lucide="party-popper"></i><span>Games</span></a>
+      <a class="sk-nav-item" aria-label="Members"><i data-lucide="users"></i><span>Members</span></a>
+      <hr class="sk-nav-sep">
+      <a class="sk-nav-item" aria-label="Templates"><i data-lucide="layout-template"></i><span>Templates</span></a>
+      <a class="sk-nav-item" aria-label="All teams"><i data-lucide="building-2"></i><span>All teams</span></a>
+      <span class="sk-grow"></span>
+      <a class="sk-nav-item" aria-label="Team settings"><i data-lucide="settings"></i><span>Team settings</span></a>
+      <a class="sk-nav-item" aria-label="Administration"><i data-lucide="shield-check"></i><span>Administration</span></a>
+      <button class="sk-team sk-user" aria-haspopup="menu"><span class="sk-avatar sk-p1">AR</span><span class="sk-team-txt"><span class="sk-team-name">Arnaud Ritti</span><span class="sk-team-sub">Facilitator · Admin</span></span><i data-lucide="chevrons-up-down" class="sk-ico-sm"></i></button>
+      </nav>
+      <div class="sk-main">
+        <header class="sk-topbar"><button class="sk-btn sk-btn--ghost sk-btn--icon sk-btn--sm" aria-label="Back"><i data-lucide="arrow-left"></i></button><span class="sk-strong er-nw">Retro sprint 42</span><span class="sk-badge sk-badge--soft">Writing</span><span class="sk-grow"></span><span class="sk-conn is-lost" role="status"><i data-lucide="wifi-off" class="sk-ico-sm"></i>Offline</span><span class="sk-stack"><span class="sk-avatar sk-avatar--sm sk-p1">AR</span><span class="sk-avatar sk-avatar--sm sk-p4">CR</span><span class="sk-avatar sk-avatar--sm sk-p2">TM</span><span class="sk-avatar sk-avatar--sm sk-stack-more">+6</span></span></header>
+        <div class="er-banner er-banner--warning" role="status" aria-live="polite"><span class="sk-trema"><i></i><i></i></span><span class="er-banner-t"><b>Connection lost</b> — your cards are kept, reconnecting…</span><span class="sk-xs er-nw">Next try in 8 s</span><button class="sk-btn sk-btn--outline sk-btn--sm"><i data-lucide="refresh-cw"></i><span>Retry now</span></button></div>
+        <div class="er-board sk-canvas">
+          <div class="sk-column sk-c-moss"><div class="sk-column-h"><span class="sk-column-swatch"></span><span class="sk-column-t">What went well</span><span class="sk-column-count">2</span></div>
+            <article class="sk-rcard sk-c-moss"><p class="sk-rcard-text">The client demo went really well.</p><div class="sk-rcard-foot"><span class="sk-rcard-author"><span class="sk-avatar sk-avatar--xs sk-p4">CR</span>Camille</span></div></article>
+            <article class="sk-rcard sk-c-moss er-pending"><p class="sk-rcard-text">Pair on the flaky tests on Monday.</p><div class="sk-rcard-foot"><span class="sk-rcard-author"><span class="sk-avatar sk-avatar--xs sk-p1">AR</span>You</span><span class="sk-grow"></span><span class="er-pend-tag"><i data-lucide="cloud-upload" class="sk-ico-sm"></i>Waiting to send</span></div></article>
+          </div>
+          <div class="sk-column sk-c-coral"><div class="sk-column-h"><span class="sk-column-swatch"></span><span class="sk-column-t">To improve</span><span class="sk-column-count">1</span></div>
+            <article class="sk-rcard sk-c-coral"><p class="sk-rcard-text">E2E tests fail one run out of three.</p><div class="sk-rcard-foot"><span class="sk-anon"><i data-lucide="venetian-mask"></i>Anonymous</span></div></article>
+            <div class="sk-column-add"><i data-lucide="plus"></i>Add a card…</div>
+          </div>
+          <div class="sk-column sk-c-sun"><div class="sk-column-h"><span class="sk-column-swatch"></span><span class="sk-column-t">Ideas</span><span class="sk-column-count">0</span></div>
+            <div class="sk-column-add"><i data-lucide="plus"></i>Add a card…</div>
+          </div>
+        </div>
+      </div>
+    </div>
+   </div>
+   <aside class="er-states">
+     <span class="sk-lbl">Banner states</span>
+     <div class="er-st"><span class="er-st-l">Reconnecting</span><div class="er-banner er-banner--warning er-banner--card"><span class="sk-trema"><i></i><i></i></span><span class="er-banner-t"><b>Connection lost</b> — your cards are kept, reconnecting…</span></div></div>
+     <div class="er-st"><span class="er-st-l">Offline for a while</span><div class="er-banner er-banner--error er-banner--card"><i data-lucide="wifi-off" class="sk-ico-sm"></i><span class="er-banner-t"><b>Offline for 2 min</b> — your changes stay on this device and are sent when you reconnect.</span></div></div>
+     <div class="er-st"><span class="er-st-l">Back online <span class="sk-muted" style="font-weight:500">· hides after 4 s</span></span><div class="er-banner er-banner--success er-banner--card"><i data-lucide="circle-check" class="sk-ico-sm"></i><span class="er-banner-t"><b>Reconnected</b> — 2 cards sent.</span></div></div>
+     <p class="sk-p sk-sm sk-muted er-rule"><i data-lucide="info" class="sk-ico-sm"></i><span>The board stays usable: writing continues locally; voting, reveal and timer pause until the connection is back. No blocking modal, ever.</span></p>
+   </aside>
+  </div></section>
+  </div>
+</div>
+<div class="scr-cap"><b>b</b><span class="sk-badge sk-badge--soft">FR · +30 %</span>États d'erreur — 404, 403, 500, maintenance, connexion perdue (bandeau, jamais de modale)</div>
+<div class="sk-desktop er-frame" lang="fr">
+  <div class="er-grid">
+    <section class="er-cell"><div class="sk-state">404 · Page introuvable</div>
+  <div class="er-view">
+    <div class="er-bar"><i data-lucide="lock" class="sk-ico-sm"></i><span class="er-url">skrum.nordlys.fr/t/atlas/retro/sprint-24</span><span class="sk-badge sk-badge--muted">404</span></div>
+    <div class="er-page">
+      <div class="er-head"><span class="er-brand"><svg viewBox="0 0 64 64" width="22" height="22" aria-label="Skrüm"><path d="M14 0 H50 A14 14 0 0 1 64 14 V46 L46 64 H14 A14 14 0 0 1 0 50 V14 A14 14 0 0 1 14 0 Z" style="fill:var(--primary)"/><path d="M64 46 L50 46 A4 4 0 0 0 46 50 L46 64 Z" style="fill:color-mix(in oklch, var(--primary) 70%, var(--foreground))"/><path d="M19 27 L19 38 C19 45 24 49.5 30 49.5 C36 49.5 41 45 41 38 L41 27" fill="none" style="stroke:var(--primary-foreground)" stroke-width="7" stroke-linecap="round"/><circle cx="21.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/><circle cx="38.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/></svg><span class="er-word">skrüm</span></span><span class="sk-grow"></span><a class="sk-link sk-xs">État de l'instance</a><a class="sk-link sk-xs">Aide</a></div>
+      <div class="er-center"><svg class="er-art" viewBox="0 0 160 110" aria-hidden="true">
+  <circle class="f-dot" cx="72" cy="12" r="4"/><circle class="f-dot" cx="88" cy="12" r="4"/>
+  <rect class="f-moss" x="14" y="30" width="40" height="40" rx="5"/><path class="f-line" d="M22 42 H44 M22 50 H36"/>
+  <rect class="f-dash" x="60" y="30" width="40" height="40" rx="5"/>
+  <g transform="rotate(16 128 74)"><path class="f-sun" d="M108 52 H148 V84 L140 92 H108 Z"/><path class="f-fold-sun" d="M148 84 H142 A2 2 0 0 0 140 86 V92 Z"/><path class="f-line" d="M116 64 H138 M116 72 H130"/></g>
+  <ellipse class="f-muted" cx="80" cy="103" rx="56" ry="4"/>
+</svg>
+      <span class="er-over">Erreur 404</span><h2 class="sk-h3">Cette page n'existe pas (ou plus)</h2><p class="er-d">Le lien est peut-être incomplet, ou le facilitateur a supprimé la session. Vérifiez l'adresse, ou repartez de vos équipes.</p>
+      <div class="er-actions"><button class="sk-btn"><i data-lucide="house"></i><span>Retour à mes équipes</span></button><button class="sk-btn sk-btn--outline"><i data-lucide="search"></i><span>Rechercher une session</span><span class="sk-kbd">⌘K</span></button></div></div>
+      <div class="er-foot">skrum.nordlys.fr · v1.8.2</div>
+    </div>
+  </div></section>
+    <section class="er-cell"><div class="sk-state">403 · Pas accès à l'équipe</div>
+  <div class="er-view">
+    <div class="er-bar"><i data-lucide="lock" class="sk-ico-sm"></i><span class="er-url">skrum.nordlys.fr/t/atlas</span><span class="sk-badge sk-badge--muted">403</span></div>
+    <div class="er-page">
+      <div class="er-head"><span class="er-brand"><svg viewBox="0 0 64 64" width="22" height="22" aria-label="Skrüm"><path d="M14 0 H50 A14 14 0 0 1 64 14 V46 L46 64 H14 A14 14 0 0 1 0 50 V14 A14 14 0 0 1 14 0 Z" style="fill:var(--primary)"/><path d="M64 46 L50 46 A4 4 0 0 0 46 50 L46 64 Z" style="fill:color-mix(in oklch, var(--primary) 70%, var(--foreground))"/><path d="M19 27 L19 38 C19 45 24 49.5 30 49.5 C36 49.5 41 45 41 38 L41 27" fill="none" style="stroke:var(--primary-foreground)" stroke-width="7" stroke-linecap="round"/><circle cx="21.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/><circle cx="38.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/></svg><span class="er-word">skrüm</span></span><span class="sk-grow"></span><a class="sk-link sk-xs">État de l'instance</a><a class="sk-link sk-xs">Aide</a></div>
+      <div class="er-center"><svg class="er-art" viewBox="0 0 160 110" aria-hidden="true">
+  <circle class="f-dot" cx="72" cy="10" r="4"/><circle class="f-dot" cx="88" cy="10" r="4"/>
+  <path class="f-coral" d="M48 22 H112 V86 L102 96 H48 Z"/><path class="f-fold-coral" d="M112 86 H104 A2 2 0 0 0 102 88 V96 Z"/>
+  <path d="M68 52 V44 A12 12 0 0 1 92 44 V52" style="fill:none;stroke:var(--skrum-col-coral-text);stroke-width:4;stroke-linecap:round"/>
+  <rect x="62" y="52" width="36" height="28" rx="5" style="fill:var(--card);stroke:var(--skrum-col-coral-text);stroke-width:1.5"/>
+  <circle cx="80" cy="63" r="3.5" style="fill:var(--skrum-col-coral-text)"/><path d="M80 66 V72" style="stroke:var(--skrum-col-coral-text);stroke-width:3;stroke-linecap:round"/>
+  <ellipse class="f-muted" cx="80" cy="104" rx="44" ry="4"/>
+</svg>
+      <span class="er-over">Erreur 403 · Accès refusé</span><h2 class="sk-h3">Vous n'avez pas accès à cette équipe</h2>
+      <div class="er-team"><span class="sk-team-mark">A</span><span class="sk-col" style="gap:0;min-width:0;text-align:left"><span class="sk-strong">Atlas</span><span class="sk-xs sk-muted">Espace Nordlys · 11 membres</span></span></div>
+      <p class="er-d">Vous êtes connecté·e en tant que <b>nadia@nordlys.fr</b>. Demandez l'accès : un admin de l'équipe examinera votre demande.</p>
+      <div class="sk-field er-msg"><label>Message aux admins (facultatif)</label><div class="sk-input"><span class="sk-placeholder er-ell">Je remplace Théo sur le sprint 43.</span></div></div>
+      <div class="er-actions"><button class="sk-btn"><i data-lucide="send"></i><span>Demander l'accès</span></button><button class="sk-btn sk-btn--ghost"><i data-lucide="log-out"></i><span>Changer de compte</span></button></div>
+      <span class="er-admins"><span class="sk-stack"><span class="sk-avatar sk-avatar--sm sk-p4">CR</span><span class="sk-avatar sk-avatar--sm sk-p2">TM</span></span>Admins de l'équipe : Camille Roux, Théo Martin</span></div>
+      <div class="er-foot">skrum.nordlys.fr · v1.8.2</div>
+    </div>
+  </div></section>
+    <section class="er-cell"><div class="sk-state">500 · Erreur serveur</div>
+  <div class="er-view">
+    <div class="er-bar"><i data-lucide="lock" class="sk-ico-sm"></i><span class="er-url">skrum.nordlys.fr/t/atlas/poker/sprint-43</span><span class="sk-badge sk-badge--muted">500</span></div>
+    <div class="er-page">
+      <div class="er-head"><span class="er-brand"><svg viewBox="0 0 64 64" width="22" height="22" aria-label="Skrüm"><path d="M14 0 H50 A14 14 0 0 1 64 14 V46 L46 64 H14 A14 14 0 0 1 0 50 V14 A14 14 0 0 1 14 0 Z" style="fill:var(--primary)"/><path d="M64 46 L50 46 A4 4 0 0 0 46 50 L46 64 Z" style="fill:color-mix(in oklch, var(--primary) 70%, var(--foreground))"/><path d="M19 27 L19 38 C19 45 24 49.5 30 49.5 C36 49.5 41 45 41 38 L41 27" fill="none" style="stroke:var(--primary-foreground)" stroke-width="7" stroke-linecap="round"/><circle cx="21.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/><circle cx="38.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/></svg><span class="er-word">skrüm</span></span><span class="sk-grow"></span><a class="sk-link sk-xs">État de l'instance</a><a class="sk-link sk-xs">Aide</a></div>
+      <div class="er-center"><svg class="er-art" viewBox="0 0 160 110" aria-hidden="true">
+  <circle class="f-dot" cx="66" cy="12" r="4"/><circle class="f-dot" cx="86" cy="18" r="4"/>
+  <g transform="rotate(-7 60 60)"><path class="f-apricot" d="M40 30 H78 L72 44 L80 56 L72 70 L78 86 H40 Z"/><path class="f-line" d="M48 44 H64 M48 52 H60"/></g>
+  <g transform="rotate(9 104 62)"><path class="f-apricot" d="M86 32 H122 V78 L112 88 H86 L80 72 L88 58 L80 46 Z"/><path class="f-fold-apricot" d="M122 78 H114 A2 2 0 0 0 112 80 V88 Z"/><path class="f-line" d="M96 46 H112"/></g>
+  <ellipse class="f-muted" cx="80" cy="103" rx="52" ry="4"/>
+</svg>
+      <span class="er-over">Erreur 500</span><h2 class="sk-h3">Quelque chose a cassé de notre côté</h2><p class="er-d">Vos cartes et vos actions sont intactes. Réessayez dans un instant ; si l'erreur revient, transmettez cet identifiant à votre admin.</p>
+      <div class="sk-field er-msg"><span class="sk-lbl">Identifiant d'erreur</span><div class="er-id"><span class="er-idv"><span class="sk-mono">err_01J9Q4K7ZP3M</span><span class="sk-xs sk-muted">· 2026-10-01 12:02:37 UTC</span></span><button class="sk-btn sk-btn--outline sk-btn--sm"><i data-lucide="copy"></i><span>Copier</span></button></div></div>
+      <div class="er-actions"><button class="sk-btn"><i data-lucide="rotate-ccw"></i><span>Réessayer</span></button><button class="sk-btn sk-btn--outline"><i data-lucide="house"></i><span>Retour à mes équipes</span></button></div></div>
+      <div class="er-foot">skrum.nordlys.fr · v1.8.2</div>
+    </div>
+  </div></section>
+    <section class="er-cell"><div class="sk-state">Maintenance · instance auto-hébergée</div>
+  <div class="er-view">
+    <div class="er-bar"><i data-lucide="lock" class="sk-ico-sm"></i><span class="er-url">skrum.nordlys.fr</span><span class="sk-badge sk-badge--muted">503</span></div>
+    <div class="er-page">
+      <div class="er-head"><span class="er-brand"><svg viewBox="0 0 64 64" width="22" height="22" aria-label="Skrüm"><path d="M14 0 H50 A14 14 0 0 1 64 14 V46 L46 64 H14 A14 14 0 0 1 0 50 V14 A14 14 0 0 1 14 0 Z" style="fill:var(--primary)"/><path d="M64 46 L50 46 A4 4 0 0 0 46 50 L46 64 Z" style="fill:color-mix(in oklch, var(--primary) 70%, var(--foreground))"/><path d="M19 27 L19 38 C19 45 24 49.5 30 49.5 C36 49.5 41 45 41 38 L41 27" fill="none" style="stroke:var(--primary-foreground)" stroke-width="7" stroke-linecap="round"/><circle cx="21.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/><circle cx="38.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/></svg><span class="er-word">skrüm</span></span><span class="sk-grow"></span><a class="sk-link sk-xs">État de l'instance</a><a class="sk-link sk-xs">Aide</a></div>
+      <div class="er-center"><svg class="er-art" viewBox="0 0 160 110" aria-hidden="true">
+  <circle class="f-dot" cx="72" cy="10" r="4"/><circle class="f-dot" cx="88" cy="10" r="4"/>
+  <path class="f-sky" d="M46 22 H114 V84 L104 94 H46 Z"/><path class="f-fold-sky" d="M114 84 H106 A2 2 0 0 0 104 86 V94 Z"/>
+  <circle cx="80" cy="56" r="22" style="fill:var(--card);stroke:var(--skrum-col-sky-text);stroke-width:2"/>
+  <path d="M80 42 V56 L90 62" style="fill:none;stroke:var(--primary);stroke-width:3.5;stroke-linecap:round;stroke-linejoin:round"/>
+  <circle cx="80" cy="56" r="2.5" style="fill:var(--skrum-col-sky-text)"/>
+  <ellipse class="f-muted" cx="80" cy="103" rx="44" ry="4"/>
+</svg>
+      <span class="er-over">Maintenance programmée</span><h2 class="sk-h3">skrum.nordlys.fr est en cours de mise à jour</h2><p class="er-d">Votre admin installe la version 1.9.0. Rien n'est perdu : les sessions reprendront exactement là où elles en étaient.</p>
+      <div class="er-eta"><i data-lucide="clock" class="sk-ico-lg"></i><span class="sk-col" style="gap:0;text-align:left;min-width:0"><span class="sk-xs sk-muted sk-strong">Retour prévu</span><span class="er-time">14 h 30</span><span class="sk-xs sk-muted">heure de Paris (CEST) · dans 25 min environ</span></span></div>
+      <figure class="er-quote"><blockquote>« Mise à jour mensuelle, et deux nouveaux jeux d'icebreaker. »</blockquote><figcaption><span class="sk-avatar sk-avatar--xs sk-p11">HL</span>Hugo Lambert, admin de l'instance</figcaption></figure>
+      <div class="er-actions"><span class="er-reload"><span class="sk-trema"><i></i><i></i></span>Cette page se recharge toute seule dès que l'instance répond.</span><button class="sk-btn sk-btn--outline sk-btn--sm"><i data-lucide="refresh-cw"></i><span>Réessayer maintenant</span></button></div></div>
+      <div class="er-foot">skrum.nordlys.fr · v1.8.2</div>
+    </div>
+  </div></section>
+    <section class="er-cell er-wide"><div class="sk-state">Connexion perdue en session · bandeau, jamais de modale</div>
+  <div class="er-offgrid">
+   <div class="er-view er-app">
+    <div class="er-bar"><i data-lucide="lock" class="sk-ico-sm"></i><span class="er-url">skrum.nordlys.fr/t/atlas/retro/sprint-42</span><span class="sk-badge sk-badge--muted">WS</span></div>
+    <div class="er-shell">
+      <nav class="sk-sidebar is-collapsed" aria-label="Navigation">
+      <div class="sk-brand"><svg viewBox="0 0 64 64" width="24" height="24" aria-hidden="true"><path d="M14 0 H50 A14 14 0 0 1 64 14 V46 L46 64 H14 A14 14 0 0 1 0 50 V14 A14 14 0 0 1 14 0 Z" style="fill:var(--primary)"/><path d="M64 46 L50 46 A4 4 0 0 0 46 50 L46 64 Z" style="fill:color-mix(in oklch, var(--primary) 70%, var(--foreground))"/><path d="M19 27 L19 38 C19 45 24 49.5 30 49.5 C36 49.5 41 45 41 38 L41 27" fill="none" style="stroke:var(--primary-foreground)" stroke-width="7" stroke-linecap="round"/><circle cx="21.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/><circle cx="38.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/></svg><span class="sk-brand-word">skrüm</span></div>
+      <button class="sk-team sk-team-switch" aria-haspopup="menu" aria-label="Changer d'équipe ou d'espace"><span class="sk-team-mark">A</span><span class="sk-team-txt"><span class="sk-team-name">Atlas</span><span class="sk-team-sub">Nordlys · 11 membres</span></span><i data-lucide="chevrons-up-down" class="sk-ico-sm"></i></button>
+      <a class="sk-nav-item" aria-label="Tableau de bord"><i data-lucide="layout-dashboard"></i><span>Tableau de bord</span></a>
+      <a class="sk-nav-item is-on" aria-current="page" aria-label="Sessions"><i data-lucide="calendar-clock"></i><span>Sessions</span></a>
+      <a class="sk-nav-item" aria-label="Actions"><i data-lucide="list-checks"></i><span>Actions</span><b class="sk-nav-dot" aria-hidden="true"></b></a>
+      <a class="sk-nav-item" aria-label="Moral & ROTI"><i data-lucide="trending-up"></i><span>Moral & ROTI</span></a>
+      <a class="sk-nav-item" aria-label="Jeux"><i data-lucide="party-popper"></i><span>Jeux</span></a>
+      <a class="sk-nav-item" aria-label="Membres"><i data-lucide="users"></i><span>Membres</span></a>
+      <hr class="sk-nav-sep">
+      <a class="sk-nav-item" aria-label="Modèles"><i data-lucide="layout-template"></i><span>Modèles</span></a>
+      <a class="sk-nav-item" aria-label="Toutes les équipes"><i data-lucide="building-2"></i><span>Toutes les équipes</span></a>
+      <span class="sk-grow"></span>
+      <a class="sk-nav-item" aria-label="Paramètres de l'équipe"><i data-lucide="settings"></i><span>Paramètres de l'équipe</span></a>
+      <a class="sk-nav-item" aria-label="Administration"><i data-lucide="shield-check"></i><span>Administration</span></a>
+      <button class="sk-team sk-user" aria-haspopup="menu"><span class="sk-avatar sk-p1">AR</span><span class="sk-team-txt"><span class="sk-team-name">Arnaud Ritti</span><span class="sk-team-sub">Facilitateur · Admin</span></span><i data-lucide="chevrons-up-down" class="sk-ico-sm"></i></button>
+      </nav>
+      <div class="sk-main">
+        <header class="sk-topbar"><button class="sk-btn sk-btn--ghost sk-btn--icon sk-btn--sm" aria-label="Back"><i data-lucide="arrow-left"></i></button><span class="sk-strong er-nw">Rétro sprint 42</span><span class="sk-badge sk-badge--soft">Écriture</span><span class="sk-grow"></span><span class="sk-conn is-lost" role="status"><i data-lucide="wifi-off" class="sk-ico-sm"></i>Hors ligne</span><span class="sk-stack"><span class="sk-avatar sk-avatar--sm sk-p1">AR</span><span class="sk-avatar sk-avatar--sm sk-p4">CR</span><span class="sk-avatar sk-avatar--sm sk-p2">TM</span><span class="sk-avatar sk-avatar--sm sk-stack-more">+6</span></span></header>
+        <div class="er-banner er-banner--warning" role="status" aria-live="polite"><span class="sk-trema"><i></i><i></i></span><span class="er-banner-t"><b>Connexion perdue</b> — vos cartes sont gardées, on se reconnecte…</span><span class="sk-xs er-nw">Nouvel essai dans 8 s</span><button class="sk-btn sk-btn--outline sk-btn--sm"><i data-lucide="refresh-cw"></i><span>Réessayer maintenant</span></button></div>
+        <div class="er-board sk-canvas">
+          <div class="sk-column sk-c-moss"><div class="sk-column-h"><span class="sk-column-swatch"></span><span class="sk-column-t">Ce qui a bien marché</span><span class="sk-column-count">2</span></div>
+            <article class="sk-rcard sk-c-moss"><p class="sk-rcard-text">La démo client s'est super bien passée.</p><div class="sk-rcard-foot"><span class="sk-rcard-author"><span class="sk-avatar sk-avatar--xs sk-p4">CR</span>Camille</span></div></article>
+            <article class="sk-rcard sk-c-moss er-pending"><p class="sk-rcard-text">Binômer sur les tests instables lundi.</p><div class="sk-rcard-foot"><span class="sk-rcard-author"><span class="sk-avatar sk-avatar--xs sk-p1">AR</span>Vous</span><span class="sk-grow"></span><span class="er-pend-tag"><i data-lucide="cloud-upload" class="sk-ico-sm"></i>En attente d'envoi</span></div></article>
+          </div>
+          <div class="sk-column sk-c-coral"><div class="sk-column-h"><span class="sk-column-swatch"></span><span class="sk-column-t">À améliorer</span><span class="sk-column-count">1</span></div>
+            <article class="sk-rcard sk-c-coral"><p class="sk-rcard-text">Les tests E2E cassent une fois sur trois.</p><div class="sk-rcard-foot"><span class="sk-anon"><i data-lucide="venetian-mask"></i>Anonyme</span></div></article>
+            <div class="sk-column-add"><i data-lucide="plus"></i>Ajouter une carte…</div>
+          </div>
+          <div class="sk-column sk-c-sun"><div class="sk-column-h"><span class="sk-column-swatch"></span><span class="sk-column-t">Idées</span><span class="sk-column-count">0</span></div>
+            <div class="sk-column-add"><i data-lucide="plus"></i>Ajouter une carte…</div>
+          </div>
+        </div>
+      </div>
+    </div>
+   </div>
+   <aside class="er-states">
+     <span class="sk-lbl">États du bandeau</span>
+     <div class="er-st"><span class="er-st-l">Reconnexion</span><div class="er-banner er-banner--warning er-banner--card"><span class="sk-trema"><i></i><i></i></span><span class="er-banner-t"><b>Connexion perdue</b> — vos cartes sont gardées, on se reconnecte…</span></div></div>
+     <div class="er-st"><span class="er-st-l">Hors ligne prolongé</span><div class="er-banner er-banner--error er-banner--card"><i data-lucide="wifi-off" class="sk-ico-sm"></i><span class="er-banner-t"><b>Hors ligne depuis 2 min</b> — vos modifications restent sur cet appareil et partiront à la reconnexion.</span></div></div>
+     <div class="er-st"><span class="er-st-l">Connexion rétablie <span class="sk-muted" style="font-weight:500">· disparaît après 4 s</span></span><div class="er-banner er-banner--success er-banner--card"><i data-lucide="circle-check" class="sk-ico-sm"></i><span class="er-banner-t"><b>Reconnecté</b> — 2 cartes envoyées.</span></div></div>
+     <p class="sk-p sk-sm sk-muted er-rule"><i data-lucide="info" class="sk-ico-sm"></i><span>Le board reste utilisable : l'écriture continue en local ; vote, révélation et timer se mettent en pause jusqu'au retour de la connexion. Jamais de modale bloquante.</span></p>
+   </aside>
+  </div></section>
+  </div>
+</div>
+</body>
+</html>

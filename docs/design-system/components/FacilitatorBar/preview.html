@@ -1,0 +1,87 @@
+<!-- @dsCard group="Skrüm · Facilitation" height=610 subtitle="défaut (cartes masquées) · board verrouillé · cartes révélées · focus sur une carte · menu timer" -->
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><title>FacilitatorBar</title>
+<style>
+  .fb-toggle.is-on { background: var(--skrum-primary-soft); color: var(--skrum-primary-text); border-color: color-mix(in oklch, var(--primary) 45%, transparent); }
+  .fb-lock.is-on { background: var(--skrum-warning-soft); color: var(--skrum-warning-text); border-color: color-mix(in oklch, var(--skrum-warning-text) 30%, transparent); }
+  .fb-focus { display: inline-flex; align-items: center; gap: 0.375rem; height: 2rem; padding: 0 0.25rem 0 0.625rem; border-radius: var(--radius-md); background: var(--skrum-info-soft); color: var(--skrum-info-text); font-size: 0.8125rem; font-weight: 600; max-width: 16.25rem; }
+  .fb-focus span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .fb-focus .sk-btn { color: inherit; }
+  .fb-banner { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; color: var(--muted-foreground); margin-top: var(--space-2); }
+  .fb-menu { position: relative; }
+</style>
+</head>
+<body class="sk-dotgrid">
+<div class="sk-pad sk-col sk-gap-6">
+  <div>
+    <div class="sk-state">Défaut · écriture, cartes masquées</div>
+    <div class="sk-fbar" role="toolbar" aria-label="Outils du facilitateur">
+      <span class="sk-fbar-role"><i data-lucide="wand-sparkles" class="sk-ico-sm"></i>Facilitateur</span>
+      <div class="sk-timer" role="timer" style="--p:.62"><span class="sk-timer-ring"></span>03:44</div>
+      <button class="sk-btn sk-btn--ghost sk-btn--icon sk-btn--sm" aria-label="Mettre le timer en pause"><i data-lucide="pause"></i></button>
+      <span class="sk-vsep"></span>
+      <button class="sk-btn sk-btn--outline sk-btn--sm fb-toggle" aria-pressed="false"><i data-lucide="eye"></i>Révéler les cartes</button>
+      <button class="sk-btn sk-btn--outline sk-btn--sm fb-lock" aria-pressed="false"><i data-lucide="lock-open"></i>Verrouiller</button>
+      <button class="sk-btn sk-btn--ghost sk-btn--icon sk-btn--sm" aria-label="Mettre une carte en focus"><i data-lucide="crosshair"></i></button>
+      <span class="sk-vsep"></span>
+      <button class="sk-btn sk-btn--sm">Regroupement<i data-lucide="arrow-right"></i></button>
+    </div>
+  </div>
+
+  <div>
+    <div class="sk-state">Board verrouillé</div>
+    <div class="sk-fbar" role="toolbar" aria-label="Outils du facilitateur">
+      <span class="sk-fbar-role"><i data-lucide="wand-sparkles" class="sk-ico-sm"></i>Facilitateur</span>
+      <div class="sk-timer is-low" role="timer" style="--p:.1"><span class="sk-timer-ring"></span>00:41</div>
+      <span class="sk-vsep"></span>
+      <button class="sk-btn sk-btn--outline sk-btn--sm fb-toggle" aria-pressed="false"><i data-lucide="eye"></i>Révéler les cartes</button>
+      <button class="sk-btn sk-btn--outline sk-btn--sm fb-lock is-on" aria-pressed="true"><i data-lucide="lock"></i>Board verrouillé</button>
+      <button class="sk-btn sk-btn--ghost sk-btn--icon sk-btn--sm" aria-label="Mettre une carte en focus"><i data-lucide="crosshair"></i></button>
+      <span class="sk-vsep"></span>
+      <button class="sk-btn sk-btn--sm">Regroupement<i data-lucide="arrow-right"></i></button>
+    </div>
+    <div class="fb-banner"><i data-lucide="lock" class="sk-ico-sm"></i>Les participants ne peuvent plus ajouter ni modifier de cartes.</div>
+  </div>
+
+  <div>
+    <div class="sk-state">Cartes révélées · focus sur une carte (discussion)</div>
+    <div class="sk-fbar" role="toolbar" aria-label="Outils du facilitateur">
+      <span class="sk-fbar-role"><i data-lucide="wand-sparkles" class="sk-ico-sm"></i>Facilitateur</span>
+      <div class="sk-timer" role="timer" style="--p:.35"><span class="sk-timer-ring"></span>01:45</div>
+      <span class="sk-vsep"></span>
+      <button class="sk-btn sk-btn--outline sk-btn--sm fb-toggle is-on" aria-pressed="true"><i data-lucide="eye-off"></i>Masquer</button>
+      <div class="fb-focus" role="status"><i data-lucide="crosshair" class="sk-ico-sm"></i><span>Focus : « Tests E2E instables »</span><button class="sk-btn sk-btn--ghost sk-btn--icon sk-btn--sm" aria-label="Arrêter le focus"><i data-lucide="x"></i></button></div>
+      <button class="sk-btn sk-btn--ghost sk-btn--icon sk-btn--sm" aria-label="Carte suivante"><i data-lucide="skip-forward"></i></button>
+      <span class="sk-vsep"></span>
+      <button class="sk-btn sk-btn--sm">Actions<i data-lucide="arrow-right"></i></button>
+    </div>
+  </div>
+
+  <div class="sk-row sk-gap-6" style="align-items:flex-start">
+    <div>
+      <div class="sk-state">Menu du timer</div>
+      <div class="sk-menu" style="width:15rem">
+        <div class="sk-menu-label">Durée de la phase</div>
+        <div class="sk-menu-item"><i data-lucide="timer"></i>3 min</div>
+        <div class="sk-menu-item is-on"><i data-lucide="timer"></i>5 min<span class="sk-shortcut">défaut</span></div>
+        <div class="sk-menu-item"><i data-lucide="timer"></i>10 min</div>
+        <div class="sk-menu-sep"></div>
+        <div class="sk-menu-item"><i data-lucide="plus"></i>Ajouter 1 min<span class="sk-kbd">+</span></div>
+        <div class="sk-menu-item is-danger"><i data-lucide="timer-off"></i>Arrêter le timer</div>
+      </div>
+    </div>
+    <div>
+      <div class="sk-state">Mobile · barre compacte</div>
+      <div class="sk-fbar" role="toolbar" aria-label="Outils du facilitateur">
+        <div class="sk-timer" role="timer" style="--p:.62"><span class="sk-timer-ring"></span>03:44</div>
+        <button class="sk-btn sk-btn--ghost sk-btn--icon" aria-label="Révéler les cartes"><i data-lucide="eye"></i></button>
+        <button class="sk-btn sk-btn--ghost sk-btn--icon" aria-label="Verrouiller"><i data-lucide="lock-open"></i></button>
+        <button class="sk-btn sk-btn--ghost sk-btn--icon" aria-label="Plus d'outils"><i data-lucide="ellipsis"></i></button>
+        <button class="sk-btn sk-btn--icon" aria-label="Phase suivante"><i data-lucide="arrow-right"></i></button>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

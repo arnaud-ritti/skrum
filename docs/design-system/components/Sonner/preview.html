@@ -1,0 +1,44 @@
+<!-- @dsCard group="shadcn · Feedback" height=532 subtitle="Sonner (toasts) — succès, info avec action « Annuler », avertissement reconnexion, erreur avec « Réessayer », pile repliée ; Alerts inline info · succès · avertissement · erreur" -->
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><title>Sonner</title>
+<style>
+  .sn-grid { display: grid; grid-template-columns: 23.75rem 1fr; gap: var(--space-8); }
+  .sn-toast > .lucide { margin-top: 2px; }
+  .sn-body { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+  .sn-close { width: 1.25rem; height: 1.25rem; border-radius: var(--radius-xs); display: grid; place-items: center; color: var(--muted-foreground); flex: none; margin: -2px -0.25rem 0 0; }
+  .sn-close .lucide { width: 0.875rem; height: 0.875rem; }
+  .sn-stack { position: relative; height: 4.5rem; width: 22.25rem; }
+  .sn-stack .sk-toast { position: absolute; left: 0; top: 1rem; height: 3.25rem; transform-origin: 50% 0; }
+  .sn-stack .sk-toast:nth-child(1) { transform: translateY(-1rem) scale(.9); }
+  .sn-stack .sk-toast:nth-child(2) { transform: translateY(-0.5rem) scale(.95); }
+  .sn-alert-t { font-weight: 650; line-height: 1.25rem; }
+  .sn-alert-d { font-size: 0.8125rem; line-height: 1.25rem; color: var(--foreground); opacity: .85; }
+  .sk-alert > .lucide { margin-top: 2px; }
+  .sn-neutral { background: var(--card); border-color: var(--border); color: var(--foreground); }
+</style></head>
+<body>
+<div class="sk-pad sn-grid">
+  <div class="sk-col sk-gap-3">
+    <div class="sk-state" style="margin:0">Toasts</div>
+    <div class="sk-toast sk-toast--success sn-toast" role="status"><i data-lucide="circle-check"></i><div class="sn-body"><span class="sk-toast-t">Rétro créée</span><span class="sk-toast-d">Le lien d'invitation est copié.</span></div><span class="sn-close"><i data-lucide="x"></i></span></div>
+    <div class="sk-toast sk-toast--info sn-toast" role="status"><i data-lucide="info"></i><div class="sn-body"><span class="sk-toast-t">3 cartes fusionnées</span><span class="sk-toast-d">Groupe « Tests instables ».</span></div><button class="sk-btn sk-btn--outline sk-btn--sm"><i data-lucide="undo-2"></i>Annuler</button></div>
+    <div class="sk-toast sk-toast--warning sn-toast" role="status" aria-live="polite"><i data-lucide="wifi-off"></i><div class="sn-body"><span class="sk-toast-t">Connexion perdue</span><span class="sk-toast-d sk-row sk-gap-2">Reconnexion dans 4 s <span class="sk-trema" style="color:var(--skrum-warning-text)"><i></i><i></i></span></span></div><button class="sk-btn sk-btn--ghost sk-btn--sm">Maintenant</button></div>
+    <div class="sk-toast sk-toast--error sn-toast" role="alert"><i data-lucide="circle-x"></i><div class="sn-body"><span class="sk-toast-t">Export Jira impossible</span><span class="sk-toast-d">Jeton expiré — reconnectez l'intégration.</span></div><button class="sk-btn sk-btn--outline sk-btn--sm">Réessayer</button></div>
+    <div class="sk-state" style="margin:var(--space-2) 0 0">Pile repliée (3 toasts)</div>
+    <div class="sn-stack">
+      <div class="sk-toast"></div><div class="sk-toast"></div>
+      <div class="sk-toast sk-toast--success sn-toast"><i data-lucide="circle-check"></i><div class="sn-body"><span class="sk-toast-t">Action assignée à Malik</span></div><span class="sn-close"><i data-lucide="x"></i></span></div>
+    </div>
+  </div>
+
+  <div class="sk-col sk-gap-3">
+    <div class="sk-state" style="margin:0">Alerts inline</div>
+    <div class="sk-alert sk-alert--info" role="note"><i data-lucide="info"></i><div class="sk-col sk-gap-1 sk-grow"><span class="sn-alert-t">Les cartes sont masquées pendant l'écriture</span><span class="sn-alert-d">Elles seront révélées à tous en même temps par le facilitateur.</span></div></div>
+    <div class="sk-alert sk-alert--success" role="status"><i data-lucide="circle-check"></i><div class="sk-col sk-gap-1 sk-grow"><span class="sn-alert-t">SMTP configuré</span><span class="sn-alert-d">Un e-mail de test a été envoyé à admin@atlas.io.</span></div></div>
+    <div class="sk-alert sk-alert--warning" role="status"><i data-lucide="triangle-alert"></i><div class="sk-col sk-gap-1 sk-grow"><span class="sn-alert-t">2 actions du sprint 41 ne sont pas terminées</span><span class="sn-alert-d">Reprenez-les en début de rétro ou reportez-les.</span></div><button class="sk-btn sk-btn--outline sk-btn--sm">Voir</button></div>
+    <div class="sk-alert sk-alert--error" role="alert"><i data-lucide="circle-alert"></i><div class="sk-col sk-gap-1 sk-grow"><span class="sn-alert-t">Certificat SSO expiré</span><span class="sn-alert-d">Les membres ne peuvent plus se connecter via Okta. Mettez à jour le certificat.</span></div></div>
+  </div>
+</div>
+</body>
+</html>

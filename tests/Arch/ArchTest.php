@@ -2,6 +2,7 @@
 
 use App\Enums\McpFeature;
 use App\Mcp\Tools\SkrumTool;
+use App\Models\WhiteboardTemplate;
 use Illuminate\Contracts\Validation\ValidationRule;
 
 arch()->preset()->php();
@@ -32,9 +33,10 @@ arch('enums use nothing from the application, except McpFeature which asks the c
     ])
     ->ignoring(McpFeature::class);
 
-arch('models do not use actions, the http layer or the mcp layer')
+arch('models do not use actions, the http layer or the mcp layer, except WhiteboardTemplate which imports array shapes from two actions for static analysis')
     ->expect('App\Models')
-    ->not->toUse(['App\Actions', 'App\Http', 'App\Mcp']);
+    ->not->toUse(['App\Actions', 'App\Http', 'App\Mcp'])
+    ->ignoring(WhiteboardTemplate::class);
 
 arch('support classes, jobs and events do not use the http layer or the mcp layer')
     ->expect(['App\Support', 'App\Jobs', 'App\Events'])

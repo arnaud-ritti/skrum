@@ -141,3 +141,74 @@
         @apply bg-background text-foreground;
     }
 }
+
+/*
+ * Excalidraw 0.18.1 has no UIOptions key for the library button, nor for what
+ * names the library or links to its sites: the help dialog's header
+ * (documentation, blog, issues, YouTube), the tabs of the search panel (the
+ * other tab is the element library, whose "Browse libraries" and publish
+ * dialog link out), and everything after the laser pointer in the extra tools
+ * (the "Generate" heading and "Mermaid to Excalidraw").
+ *
+ * `!important` because the library's stylesheet sets `display` on the same
+ * elements with the same specificity and loads later, with the canvas chunk.
+ * A wrapper class of ours on the board could not outweigh it everywhere: the
+ * library renders its dialogs in a container appended to the body.
+ */
+.excalidraw .default-sidebar-trigger,
+.excalidraw .HelpDialog__header,
+.excalidraw .default-sidebar .sidebar-triggers,
+.excalidraw .library-menu-browse-button,
+.excalidraw
+    .App-toolbar__extra-tools-dropdown
+    [data-testid='toolbar-laser']
+    ~ * {
+    display: none !important;
+}
+
+/*
+ * The reactions bar (fixed, 16px from the bottom, 46px tall: 36px buttons,
+ * 8px of padding, 2px of border) and the canvas's bottom controls, sizes from
+ * Excalidraw 0.18.1. The bar follows the canvas container as a sibling.
+ *
+ * "Scroll back to content" sits at the bottom centre too (30px up, or 80px
+ * in the mobile layout): it moves above the bar, which ends 62px up.
+ *
+ * In the mobile layout (the library's own class, set below 730px of width or
+ * below 500px of height and 1000px of width) the canvas has a toolbar along
+ * the bottom: 14px of margin, the safe area, then at most 56px (8px of
+ * padding around buttons of at most 40px). The bar sits 8px above it, and
+ * the scroll-back button, placed from the top of that margin, 10px above the
+ * bar. The panel of shape actions opens over that area: the bar gives way.
+ */
+.whiteboard-canvas:has(~ .whiteboard-reactions) .scroll-back-to-content {
+    bottom: 72px !important;
+}
+
+.whiteboard-canvas:has(~ .whiteboard-reactions)
+    .excalidraw--mobile
+    .scroll-back-to-content {
+    bottom: 120px !important;
+}
+
+.whiteboard-canvas:has(.excalidraw--mobile) ~ .whiteboard-reactions {
+    bottom: calc(78px + env(safe-area-inset-bottom, 0px));
+}
+
+.whiteboard-canvas:has(.App-mobile-menu) ~ .whiteboard-reactions {
+    display: none;
+}
+
+/*
+ * Only the facilitator may lock or unlock an element (spec §11.2). The
+ * context menu of Excalidraw 0.18.1 names its entries by action; the
+ * keyboard shortcut cannot be removed, and the server rejects what it does.
+ */
+.whiteboard-canvas[data-facilitator='false']
+    .context-menu
+    li[data-testid='toggleElementLock'],
+.whiteboard-canvas[data-facilitator='false']
+    .context-menu
+    li[data-testid='unlockAllElements'] {
+    display: none !important;
+}

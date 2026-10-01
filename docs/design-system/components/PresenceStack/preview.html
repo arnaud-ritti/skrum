@@ -1,0 +1,68 @@
+<!-- @dsCard group="Skrüm · Temps réel" height=420 subtitle="pile + « +N » · en ligne / absent · en train d'écrire · invités · popover liste des participants" -->
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><title>PresenceStack</title>
+<style>
+  .pr-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-6) var(--space-8); align-items: start; }
+  .pr-btn { display: inline-flex; align-items: center; gap: var(--space-2); padding: 0.1875rem 0.625rem 0.1875rem 0.1875rem; border-radius: var(--radius-full); border: 1px solid var(--border); background: var(--card); box-shadow: var(--shadow-card); font-size: 0.8125rem; font-weight: 600; }
+  .pr-btn .sk-stack > .sk-avatar { box-shadow: 0 0 0 2px var(--card); }
+  .pr-btn .sk-stack > .sk-avatar.is-typing { box-shadow: 0 0 0 2px var(--card), 0 0 0 0.25rem var(--typing, var(--primary)); }
+  .pr-pop { width: 20rem; padding: var(--space-2); }
+  .pr-pop-h { display: flex; align-items: center; justify-content: space-between; padding: var(--space-2) var(--space-2) var(--space-1); }
+  .pr-li { display: flex; align-items: center; gap: var(--space-3); padding: 0.375rem var(--space-2); border-radius: var(--radius-sm); font-size: 0.875rem; }
+  .pr-li .sk-muted { font-size: 0.75rem; }
+  .pr-li-name { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.125rem; }
+  .pr-away { opacity: .55; }
+  .pr-typing { font-size: 0.75rem; color: var(--muted-foreground); display: inline-flex; align-items: center; gap: 0.375rem; }
+</style>
+</head>
+<body>
+<div class="sk-pad">
+  <div class="pr-grid">
+    <div class="sk-col sk-gap-6">
+      <div><div class="sk-state">Pile + « +N » (12 connectés)</div>
+        <button class="pr-btn" aria-label="12 participants connectés, voir la liste" aria-haspopup="dialog">
+          <span class="sk-stack">
+            <span class="sk-avatar sk-p1">AR</span><span class="sk-avatar sk-p4">CR</span><span class="sk-avatar sk-p2">TM</span><span class="sk-avatar sk-p9">IB</span><span class="sk-avatar sk-p7">MK</span><span class="sk-avatar sk-stack-more">+7</span>
+          </span>12 en ligne
+        </button></div>
+
+      <div><div class="sk-state">En ligne / absent (onglet inactif)</div>
+        <div class="sk-row sk-gap-4">
+          <span class="sk-avatar sk-avatar--lg sk-p4" title="Camille · en ligne">CR<span class="sk-status"></span></span>
+          <span class="sk-avatar sk-avatar--lg sk-p10" title="Sofia · absente">SL<span class="sk-status is-away"></span></span>
+          <span class="sk-avatar sk-avatar--lg sk-p6 pr-away" title="Hugo · déconnecté">HG</span>
+        </div></div>
+
+      <div><div class="sk-state">En train d'écrire</div>
+        <div class="sk-row sk-gap-3">
+          <span class="sk-stack">
+            <span class="sk-avatar sk-p9 is-typing" style="--typing:var(--skrum-presence-9)">IB</span><span class="sk-avatar sk-p3 is-typing" style="--typing:var(--skrum-presence-3)">YS</span><span class="sk-avatar sk-p8">LB</span>
+          </span>
+          <span class="pr-typing"><span class="sk-trema"><i></i><i></i></span>Inès et Yuki écrivent…</span>
+        </div></div>
+
+      <div><div class="sk-state">Invités anonymes</div>
+        <div class="sk-row sk-gap-3">
+          <span class="sk-stack">
+            <span class="sk-avatar sk-p5">NA</span><span class="sk-avatar sk-avatar--guest"><i data-lucide="user-round" class="sk-ico-sm"></i></span><span class="sk-avatar sk-avatar--guest"><i data-lucide="user-round" class="sk-ico-sm"></i></span><span class="sk-avatar sk-p11">RB</span>
+          </span>
+          <span class="sk-badge sk-badge--muted sk-badge--pill"><i data-lucide="venetian-mask"></i>2 invités</span>
+        </div></div>
+    </div>
+
+    <div><div class="sk-state">Popover · liste des participants</div>
+      <div class="sk-popover pr-pop" role="dialog" aria-label="Participants">
+        <div class="pr-pop-h"><span class="sk-strong">Participants</span><span class="sk-badge sk-badge--success sk-badge--pill"><span class="sk-dot"></span>12 en ligne</span></div>
+        <div class="pr-li"><span class="sk-avatar sk-p4">CR<span class="sk-status"></span></span><span class="pr-li-name"><span class="sk-strong">Camille Roux</span><span class="sk-muted">Facilitatrice</span></span><i data-lucide="wand-sparkles" class="sk-ico-sm" style="color:var(--skrum-primary-text)"></i></div>
+        <div class="pr-li"><span class="sk-avatar sk-p1">AR<span class="sk-status"></span></span><span class="pr-li-name"><span class="sk-strong">Arnaud (vous)</span><span class="sk-muted">Membre</span></span></div>
+        <div class="pr-li"><span class="sk-avatar sk-p9" style="box-shadow:0 0 0 2px var(--popover), 0 0 0 0.25rem var(--skrum-presence-9)">IB<span class="sk-status"></span></span><span class="pr-li-name"><span class="sk-strong">Inès Benali</span><span class="pr-typing"><span class="sk-trema"><i></i><i></i></span>écrit une carte</span></span></div>
+        <div class="pr-li"><span class="sk-avatar sk-p10">SL<span class="sk-status is-away"></span></span><span class="pr-li-name"><span class="sk-strong">Sofia Lopes</span><span class="sk-muted">Absente depuis 3 min</span></span></div>
+        <div class="pr-li"><span class="sk-avatar sk-avatar--guest"><i data-lucide="user-round" class="sk-ico-sm"></i><span class="sk-status"></span></span><span class="pr-li-name"><span class="sk-strong">Loutre pensive</span><span class="sk-muted">Invité anonyme</span></span></div>
+        <div class="sk-sep" style="margin:var(--space-2) 0"></div>
+        <div class="sk-between" style="padding:0 var(--space-2) var(--space-1)"><span class="sk-xs sk-muted">+ 7 autres participants</span><button class="sk-btn sk-btn--ghost sk-btn--sm"><i data-lucide="user-plus"></i>Inviter</button></div>
+      </div></div>
+  </div>
+</div>
+</body>
+</html>

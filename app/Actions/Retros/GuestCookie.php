@@ -13,6 +13,8 @@ class GuestCookie
 
     public const GameScope = 'game';
 
+    public const WhiteboardScope = 'whiteboard';
+
     private const LifetimeMinutes = 60 * 24 * 30;
 
     /** @return non-empty-string */

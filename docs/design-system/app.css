@@ -1,0 +1,475 @@
+/* ==========================================================================
+   Skrüm — resources/css/app.css (Tailwind CSS v4 + shadcn/ui new-york)
+   Direction « Terracotta & Sauge ». Couleurs en OKLCH, contrastes vérifiés :
+   texte courant AAA (≥ 7:1), texte secondaire/couleur AA (≥ 4.5:1), contrôles et focus ≥ 3:1.
+   npm i tw-animate-css @fontsource-variable/figtree @fontsource-variable/bricolage-grotesque @fontsource-variable/jetbrains-mono
+   (polices auto-hébergées : aucune requête vers Google en self-host.)
+   ========================================================================== */
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "@fontsource-variable/figtree";
+@import "@fontsource-variable/bricolage-grotesque";
+@import "@fontsource-variable/jetbrains-mono";
+
+@source "../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php";
+@source "../../storage/framework/views/*.php";
+@source "../**/*.blade.php";
+@source "../**/*.{js,ts,jsx,tsx}";
+
+@custom-variant dark (&:is(.dark *));
+
+/* --------------------------------------------------------------------------
+   Mapping Tailwind ← variables (bg-primary, text-skrum-col-sun-text, shadow-drag…)
+   -------------------------------------------------------------------------- */
+@theme inline {
+  --font-sans: "Figtree Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Bricolage Grotesque Variable", "Figtree Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, "SF Mono", Menlo, monospace;
+
+  --radius-xs: calc(var(--radius) - 0.375rem);
+  --radius-sm: calc(var(--radius) - 0.25rem);
+  --radius-md: calc(var(--radius) - 0.125rem);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 0.25rem);
+  --radius-2xl: calc(var(--radius) + 0.625rem);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-skrum-success: var(--skrum-success);
+  --color-skrum-success-foreground: var(--skrum-success-foreground);
+  --color-skrum-success-soft: var(--skrum-success-soft);
+  --color-skrum-success-text: var(--skrum-success-text);
+  --color-skrum-warning: var(--skrum-warning);
+  --color-skrum-warning-foreground: var(--skrum-warning-foreground);
+  --color-skrum-warning-soft: var(--skrum-warning-soft);
+  --color-skrum-warning-text: var(--skrum-warning-text);
+  --color-skrum-info: var(--skrum-info);
+  --color-skrum-info-foreground: var(--skrum-info-foreground);
+  --color-skrum-info-soft: var(--skrum-info-soft);
+  --color-skrum-info-text: var(--skrum-info-text);
+  --color-skrum-destructive-soft: var(--skrum-destructive-soft);
+  --color-skrum-destructive-text: var(--skrum-destructive-text);
+  --color-skrum-primary-soft: var(--skrum-primary-soft);
+  --color-skrum-primary-text: var(--skrum-primary-text);
+  --color-skrum-canvas: var(--skrum-canvas);
+  --color-skrum-canvas-dot: var(--skrum-canvas-dot);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-skrum-roti-1: var(--skrum-roti-1);
+  --color-skrum-roti-2: var(--skrum-roti-2);
+  --color-skrum-roti-3: var(--skrum-roti-3);
+  --color-skrum-roti-4: var(--skrum-roti-4);
+  --color-skrum-roti-5: var(--skrum-roti-5);
+  --color-skrum-roti-foreground: var(--skrum-roti-foreground);
+  --color-skrum-col-sun: var(--skrum-col-sun);
+  --color-skrum-col-sun-border: var(--skrum-col-sun-border);
+  --color-skrum-col-sun-text: var(--skrum-col-sun-text);
+  --color-skrum-col-apricot: var(--skrum-col-apricot);
+  --color-skrum-col-apricot-border: var(--skrum-col-apricot-border);
+  --color-skrum-col-apricot-text: var(--skrum-col-apricot-text);
+  --color-skrum-col-coral: var(--skrum-col-coral);
+  --color-skrum-col-coral-border: var(--skrum-col-coral-border);
+  --color-skrum-col-coral-text: var(--skrum-col-coral-text);
+  --color-skrum-col-plum: var(--skrum-col-plum);
+  --color-skrum-col-plum-border: var(--skrum-col-plum-border);
+  --color-skrum-col-plum-text: var(--skrum-col-plum-text);
+  --color-skrum-col-iris: var(--skrum-col-iris);
+  --color-skrum-col-iris-border: var(--skrum-col-iris-border);
+  --color-skrum-col-iris-text: var(--skrum-col-iris-text);
+  --color-skrum-col-sky: var(--skrum-col-sky);
+  --color-skrum-col-sky-border: var(--skrum-col-sky-border);
+  --color-skrum-col-sky-text: var(--skrum-col-sky-text);
+  --color-skrum-col-lagoon: var(--skrum-col-lagoon);
+  --color-skrum-col-lagoon-border: var(--skrum-col-lagoon-border);
+  --color-skrum-col-lagoon-text: var(--skrum-col-lagoon-text);
+  --color-skrum-col-moss: var(--skrum-col-moss);
+  --color-skrum-col-moss-border: var(--skrum-col-moss-border);
+  --color-skrum-col-moss-text: var(--skrum-col-moss-text);
+  --color-skrum-presence-1: var(--skrum-presence-1);
+  --color-skrum-presence-1-foreground: var(--skrum-presence-1-foreground);
+  --color-skrum-presence-2: var(--skrum-presence-2);
+  --color-skrum-presence-2-foreground: var(--skrum-presence-2-foreground);
+  --color-skrum-presence-3: var(--skrum-presence-3);
+  --color-skrum-presence-3-foreground: var(--skrum-presence-3-foreground);
+  --color-skrum-presence-4: var(--skrum-presence-4);
+  --color-skrum-presence-4-foreground: var(--skrum-presence-4-foreground);
+  --color-skrum-presence-5: var(--skrum-presence-5);
+  --color-skrum-presence-5-foreground: var(--skrum-presence-5-foreground);
+  --color-skrum-presence-6: var(--skrum-presence-6);
+  --color-skrum-presence-6-foreground: var(--skrum-presence-6-foreground);
+  --color-skrum-presence-7: var(--skrum-presence-7);
+  --color-skrum-presence-7-foreground: var(--skrum-presence-7-foreground);
+  --color-skrum-presence-8: var(--skrum-presence-8);
+  --color-skrum-presence-8-foreground: var(--skrum-presence-8-foreground);
+  --color-skrum-presence-9: var(--skrum-presence-9);
+  --color-skrum-presence-9-foreground: var(--skrum-presence-9-foreground);
+  --color-skrum-presence-10: var(--skrum-presence-10);
+  --color-skrum-presence-10-foreground: var(--skrum-presence-10-foreground);
+  --color-skrum-presence-11: var(--skrum-presence-11);
+  --color-skrum-presence-11-foreground: var(--skrum-presence-11-foreground);
+  --color-skrum-presence-12: var(--skrum-presence-12);
+  --color-skrum-presence-12-foreground: var(--skrum-presence-12-foreground);
+  --color-skrum-scrim: var(--skrum-scrim);
+  --color-skrum-scrim: var(--skrum-scrim);
+
+  --shadow-card: var(--shadow-card);
+  --shadow-raised: var(--shadow-raised);
+  --shadow-popover: var(--shadow-popover);
+  --shadow-modal: var(--shadow-modal);
+  --shadow-drag: var(--shadow-drag);
+}
+
+@theme {
+  /* Tailwind defaults are used as-is wherever a Skrüm value already exists in the scale:
+     spacing = multiples of --spacing (p-3, h-5.5, w-105), text-xs/sm/base/xl/2xl/6xl, leading-*, font-semibold/bold,
+     tracking-tight, h-14, size-11, w-64, w-12, backdrop-blur-xs, rounded-* (derived from --radius below).
+     Only values that are NOT in Tailwind's scale are added here. Mapping table: section « Tailwind v4 — app.css ». */
+
+  /* Custom text sizes (not in Tailwind's scale) */
+  --text-display-xl: 2.75rem;    --text-display-xl--line-height: 3rem;     --text-display-xl--letter-spacing: -0.025em;  --text-display-xl--font-weight: 700;
+  --text-display-lg: 2.125rem;   --text-display-lg--line-height: 2.5rem;   --text-display-lg--letter-spacing: -0.02em;   --text-display-lg--font-weight: 650;
+  --text-poker: 2.5rem;          --text-poker--line-height: 1;             --text-poker--letter-spacing: -0.02em;        --text-poker--font-weight: 700;
+  --text-stat: 1.75rem;          --text-stat--line-height: 2rem;           --text-stat--letter-spacing: -0.02em;
+  --text-ui-lg: 0.9375rem;       --text-ui-lg--line-height: 1.375rem;
+  --text-body-sm: 0.8125rem;     --text-body-sm--line-height: 1.25rem;
+  --text-overline: 0.6875rem;    --text-overline--line-height: 1rem;       --text-overline--letter-spacing: 0.08em;      --text-overline--font-weight: 650;
+
+  /* Custom weight & tracking */
+  --font-weight-title: 650;
+  --tracking-display: -0.03em;
+  --tracking-title: -0.02em;
+  --tracking-heading: -0.015em;
+  --tracking-subheading: -0.01em;
+  --tracking-overline: 0.08em;
+
+  /* Custom sizes → w-column, max-w-page, @card-wide/card:, @max-card-compact/card: … */
+  --container-column: 18.75rem;
+  --container-page: 75rem;
+  --container-card-compact: 12.5rem;
+  --container-card-narrow: 17.5rem;
+  --container-card-wide: 18.75rem;
+  --container-action-stack: 30rem;
+
+  /* Motion (duration-base, ease-spring…) */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-enter: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --ease-exit: cubic-bezier(0.3, 0, 0.8, 0.15);
+  --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+  --ease-flip: cubic-bezier(0.45, 0, 0.2, 1);
+  --animate-card-in: card-in 220ms cubic-bezier(0.05, 0.7, 0.1, 1) both;
+  --animate-vote-pop: vote-pop 220ms cubic-bezier(0.34, 1.4, 0.64, 1);
+  --animate-trema: trema 1s cubic-bezier(0.2, 0, 0, 1) infinite;
+  --animate-nudge: nudge 1.2s cubic-bezier(0.2, 0, 0, 1) 2;
+  --animate-confetti: confetti 1400ms cubic-bezier(0.2, 0, 0, 1) forwards;
+  --animate-indeterminate: indeterminate 1.4s cubic-bezier(0.2, 0, 0, 1) infinite;
+
+  @keyframes card-in { from { opacity: 0; transform: translateY(0.5rem) scale(0.98); } to { opacity: 1; transform: none; } }
+  @keyframes vote-pop { 0% { transform: scale(0.4); } 70% { transform: scale(1.25); } 100% { transform: scale(1); } }
+  @keyframes trema { 0%, 100% { transform: translateY(0); opacity: 1; } 40% { transform: translateY(-0.25rem); opacity: 0.6; } }
+  @keyframes nudge { 0%, 100% { transform: none; } 20% { transform: translateX(-2px); } 40% { transform: translateX(2px); } 60% { transform: translateX(-1px); } }
+  @keyframes indeterminate { from { transform: translateX(-100%); } to { transform: translateX(260%); } }
+  @keyframes confetti { 0% { transform: translate(0, 0) rotate(0); opacity: 1; } 100% { transform: translate(var(--dx), var(--dy)) rotate(var(--rot)); opacity: 0; } }
+}
+
+/* --------------------------------------------------------------------------
+   Thème clair (défaut)
+   -------------------------------------------------------------------------- */
+:root {
+  --radius: 0.625rem;
+  --background: oklch(0.985 0.004 80);
+  --foreground: oklch(0.225 0.014 50);
+  --card: oklch(1 0 0);
+  --card-foreground: var(--foreground);
+  --popover: oklch(1 0 0);
+  --popover-foreground: var(--foreground);
+  --primary: oklch(0.560 0.150 38);
+  --primary-foreground: oklch(0.990 0.005 80);
+  --secondary: oklch(0.945 0.028 150);
+  --secondary-foreground: oklch(0.330 0.060 155);
+  --muted: oklch(0.955 0.007 75);
+  --muted-foreground: oklch(0.480 0.016 55);
+  --accent: oklch(0.950 0.025 50);
+  --accent-foreground: var(--foreground);
+  --destructive: oklch(0.505 0.195 18);
+  --destructive-foreground: oklch(0.990 0.005 80);
+  --border: oklch(0.905 0.009 70);
+  --input: oklch(0.640 0.016 60);
+  --ring: var(--primary);
+  --skrum-success: oklch(0.520 0.110 165);
+  --skrum-success-foreground: oklch(0.990 0.005 80);
+  --skrum-success-soft: oklch(0.955 0.035 165);
+  --skrum-success-text: oklch(0.400 0.085 165);
+  --skrum-warning: oklch(0.800 0.150 78);
+  --skrum-warning-foreground: oklch(0.260 0.050 60);
+  --skrum-warning-soft: oklch(0.965 0.045 90);
+  --skrum-warning-text: oklch(0.450 0.100 60);
+  --skrum-info: oklch(0.520 0.120 240);
+  --skrum-info-foreground: oklch(0.990 0.005 80);
+  --skrum-info-soft: oklch(0.955 0.024 240);
+  --skrum-info-text: oklch(0.420 0.109 245);
+  --skrum-destructive-soft: oklch(0.955 0.022 20);
+  --skrum-destructive-text: oklch(0.470 0.170 20);
+  --skrum-primary-soft: oklch(0.945 0.030 45);
+  --skrum-primary-text: oklch(0.480 0.140 38);
+  --skrum-canvas: oklch(0.965 0.006 80);
+  --skrum-canvas-dot: oklch(0.870 0.010 70);
+  --sidebar: oklch(0.970 0.006 78);
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: oklch(0.930 0.012 70);
+  --sidebar-accent-foreground: var(--foreground);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--primary);
+  --chart-1: oklch(0.600 0.150 38);
+  --chart-2: oklch(0.550 0.090 165);
+  --chart-3: oklch(0.580 0.120 245);
+  --chart-4: oklch(0.780 0.140 80);
+  --chart-5: oklch(0.520 0.120 330);
+  --skrum-roti-1: oklch(0.650 0.160 28);
+  --skrum-roti-2: oklch(0.680 0.150 55);
+  --skrum-roti-3: oklch(0.820 0.130 88);
+  --skrum-roti-4: oklch(0.720 0.110 150);
+  --skrum-roti-5: oklch(0.670 0.100 175);
+  --skrum-roti-foreground: oklch(0.220 0.020 50);
+  --skrum-col-sun: oklch(0.955 0.061 95);
+  --skrum-col-sun-border: oklch(0.820 0.121 95);
+  --skrum-col-sun-text: oklch(0.420 0.089 95);
+  --skrum-col-apricot: oklch(0.955 0.029 62);
+  --skrum-col-apricot-border: oklch(0.820 0.090 62);
+  --skrum-col-apricot-text: oklch(0.420 0.100 62);
+  --skrum-col-coral: oklch(0.955 0.022 28);
+  --skrum-col-coral-border: oklch(0.820 0.090 28);
+  --skrum-col-coral-text: oklch(0.420 0.100 28);
+  --skrum-col-plum: oklch(0.955 0.028 345);
+  --skrum-col-plum-border: oklch(0.820 0.090 345);
+  --skrum-col-plum-text: oklch(0.420 0.100 345);
+  --skrum-col-iris: oklch(0.955 0.023 290);
+  --skrum-col-iris-border: oklch(0.820 0.090 290);
+  --skrum-col-iris-text: oklch(0.420 0.100 290);
+  --skrum-col-sky: oklch(0.955 0.024 240);
+  --skrum-col-sky-border: oklch(0.820 0.090 240);
+  --skrum-col-sky-text: oklch(0.420 0.099 240);
+  --skrum-col-lagoon: oklch(0.955 0.045 195);
+  --skrum-col-lagoon-border: oklch(0.820 0.090 195);
+  --skrum-col-lagoon-text: oklch(0.420 0.073 195);
+  --skrum-col-moss: oklch(0.955 0.045 140);
+  --skrum-col-moss-border: oklch(0.820 0.090 140);
+  --skrum-col-moss-text: oklch(0.420 0.100 140);
+  --skrum-presence-1: oklch(0.714 0.179 24);
+  --skrum-presence-1-foreground: oklch(0.200 0.015 50);
+  --skrum-presence-2: oklch(0.563 0.147 264);
+  --skrum-presence-2-foreground: oklch(0.990 0.005 80);
+  --skrum-presence-3: oklch(0.786 0.158 73);
+  --skrum-presence-3-foreground: oklch(0.200 0.015 50);
+  --skrum-presence-4: oklch(0.690 0.087 178);
+  --skrum-presence-4-foreground: oklch(0.200 0.015 50);
+  --skrum-presence-5: oklch(0.567 0.190 342);
+  --skrum-presence-5-foreground: oklch(0.990 0.005 80);
+  --skrum-presence-6: oklch(0.796 0.095 232);
+  --skrum-presence-6-foreground: oklch(0.200 0.015 50);
+  --skrum-presence-7: oklch(0.380 0.060 260);
+  --skrum-presence-7-foreground: oklch(0.990 0.005 80);
+  --skrum-presence-8: oklch(0.890 0.160 105);
+  --skrum-presence-8-foreground: oklch(0.200 0.015 50);
+  --skrum-presence-9: oklch(0.441 0.190 310);
+  --skrum-presence-9-foreground: oklch(0.990 0.005 80);
+  --skrum-presence-10: oklch(0.428 0.132 42);
+  --skrum-presence-10-foreground: oklch(0.990 0.005 80);
+  --skrum-presence-11: oklch(0.532 0.123 116);
+  --skrum-presence-11-foreground: oklch(0.990 0.005 80);
+  --skrum-presence-12: oklch(0.468 0.074 182);
+  --skrum-presence-12-foreground: oklch(0.990 0.005 80);
+  --shadow-card: 0 1px 2px 0 #211a160f, 0 1px 1px 0 #211a160a;
+  --shadow-raised: 0 2px 0.25rem -1px #211a1614, 0 0.25rem 0.625rem -2px #211a1614;
+  --shadow-popover: 0 0.5rem 1.5rem -0.375rem #211a1624, 0 2px 0.375rem -2px #211a1614;
+  --shadow-modal: 0 1.5rem 3.75rem -0.75rem #211a1640, 0 0.5rem 1.25rem -0.5rem #211a1626;
+  --shadow-drag: 0 1.125rem 2.25rem -0.625rem #211a1647, 0 0.375rem 0.75rem -0.25rem #211a1629;
+  --skrum-scrim: oklch(0.15 0.01 50 / 0.45);
+  --duration-instant: 80ms;
+  --duration-fast: 140ms;
+  --duration-base: 220ms;
+  --duration-slow: 360ms;
+  --duration-flip: 520ms;
+  --duration-celebrate: 1400ms;
+  --z-cursor: 20; --z-chrome: 30; --z-sidebar: 40; --z-overlay: 50; --z-toast: 60; --z-drag: 70;
+}
+
+/* --------------------------------------------------------------------------
+   Thème sombre
+   -------------------------------------------------------------------------- */
+.dark {
+  --background: oklch(0.165 0.008 55);
+  --foreground: oklch(0.955 0.006 80);
+  --card: oklch(0.205 0.009 55);
+  --card-foreground: var(--foreground);
+  --popover: oklch(0.235 0.010 55);
+  --popover-foreground: var(--foreground);
+  --primary: oklch(0.720 0.135 42);
+  --primary-foreground: oklch(0.190 0.025 40);
+  --secondary: oklch(0.285 0.035 155);
+  --secondary-foreground: oklch(0.900 0.045 150);
+  --muted: oklch(0.255 0.010 55);
+  --muted-foreground: oklch(0.740 0.012 70);
+  --accent: oklch(0.290 0.030 45);
+  --accent-foreground: var(--foreground);
+  --destructive: oklch(0.700 0.170 20);
+  --destructive-foreground: oklch(0.180 0.030 20);
+  --border: oklch(0.310 0.011 55);
+  --input: oklch(0.520 0.014 60);
+  --ring: var(--primary);
+  --skrum-success: oklch(0.740 0.120 165);
+  --skrum-success-foreground: oklch(0.180 0.030 165);
+  --skrum-success-soft: oklch(0.270 0.045 165);
+  --skrum-success-text: oklch(0.850 0.090 165);
+  --skrum-warning: oklch(0.820 0.150 80);
+  --skrum-warning-foreground: oklch(0.220 0.050 60);
+  --skrum-warning-soft: oklch(0.285 0.050 75);
+  --skrum-warning-text: oklch(0.860 0.110 85);
+  --skrum-info: oklch(0.740 0.100 235);
+  --skrum-info-foreground: oklch(0.180 0.030 240);
+  --skrum-info-soft: oklch(0.270 0.040 240);
+  --skrum-info-text: oklch(0.840 0.080 235);
+  --skrum-destructive-soft: oklch(0.280 0.050 20);
+  --skrum-destructive-text: oklch(0.820 0.100 20);
+  --skrum-primary-soft: oklch(0.290 0.050 40);
+  --skrum-primary-text: oklch(0.800 0.110 45);
+  --skrum-canvas: oklch(0.140 0.007 55);
+  --skrum-canvas-dot: oklch(0.270 0.010 55);
+  --sidebar: oklch(0.190 0.009 55);
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: oklch(0.265 0.012 55);
+  --sidebar-accent-foreground: var(--foreground);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--primary);
+  --chart-1: oklch(0.720 0.135 42);
+  --chart-2: oklch(0.740 0.100 165);
+  --chart-3: oklch(0.730 0.100 240);
+  --chart-4: oklch(0.820 0.140 82);
+  --chart-5: oklch(0.720 0.110 330);
+  --skrum-roti-1: oklch(0.700 0.150 25);
+  --skrum-roti-2: oklch(0.760 0.130 58);
+  --skrum-roti-3: oklch(0.840 0.120 90);
+  --skrum-roti-4: oklch(0.780 0.110 150);
+  --skrum-roti-5: oklch(0.700 0.100 178);
+  --skrum-roti-foreground: oklch(0.180 0.020 50);
+  --skrum-col-sun: oklch(0.275 0.050 95);
+  --skrum-col-sun-border: oklch(0.440 0.080 95);
+  --skrum-col-sun-text: oklch(0.870 0.075 95);
+  --skrum-col-apricot: oklch(0.275 0.050 62);
+  --skrum-col-apricot-border: oklch(0.440 0.080 62);
+  --skrum-col-apricot-text: oklch(0.870 0.075 62);
+  --skrum-col-coral: oklch(0.275 0.050 28);
+  --skrum-col-coral-border: oklch(0.440 0.080 28);
+  --skrum-col-coral-text: oklch(0.870 0.070 28);
+  --skrum-col-plum: oklch(0.275 0.050 345);
+  --skrum-col-plum-border: oklch(0.440 0.080 345);
+  --skrum-col-plum-text: oklch(0.870 0.075 345);
+  --skrum-col-iris: oklch(0.275 0.050 290);
+  --skrum-col-iris-border: oklch(0.440 0.080 290);
+  --skrum-col-iris-text: oklch(0.870 0.068 290);
+  --skrum-col-sky: oklch(0.275 0.050 240);
+  --skrum-col-sky-border: oklch(0.440 0.080 240);
+  --skrum-col-sky-text: oklch(0.870 0.071 240);
+  --skrum-col-lagoon: oklch(0.275 0.050 195);
+  --skrum-col-lagoon-border: oklch(0.440 0.076 195);
+  --skrum-col-lagoon-text: oklch(0.870 0.075 195);
+  --skrum-col-moss: oklch(0.275 0.050 140);
+  --skrum-col-moss-border: oklch(0.440 0.080 140);
+  --skrum-col-moss-text: oklch(0.870 0.075 140);
+  --skrum-presence-1: oklch(0.705 0.177 47);
+  --skrum-presence-1-foreground: oklch(0.200 0.015 50);
+  --skrum-presence-2: oklch(0.748 0.135 250);
+  --skrum-presence-2-foreground: oklch(0.200 0.015 50);
+  --skrum-presence-3: oklch(0.792 0.163 95);
+  --skrum-presence-3-foreground: oklch(0.200 0.015 50);
+  --skrum-presence-4: oklch(0.740 0.066 125);
+  --skrum-presence-4-foreground: oklch(0.200 0.015 50);
+  --skrum-presence-5: oklch(0.759 0.156 344);
+  --skrum-presence-5-foreground: oklch(0.200 0.015 50);
+  --skrum-presence-6: oklch(0.836 0.089 243);
+  --skrum-presence-6-foreground: oklch(0.200 0.015 50);
+  --skrum-presence-7: oklch(0.920 0.030 233);
+  --skrum-presence-7-foreground: oklch(0.200 0.015 50);
+  --skrum-presence-8: oklch(0.917 0.169 102);
+  --skrum-presence-8-foreground: oklch(0.200 0.015 50);
+  --skrum-presence-9: oklch(0.643 0.129 297);
+  --skrum-presence-9-foreground: oklch(0.200 0.015 50);
+  --skrum-presence-10: oklch(0.630 0.134 33);
+  --skrum-presence-10-foreground: oklch(0.200 0.015 50);
+  --skrum-presence-11: oklch(0.837 0.074 122);
+  --skrum-presence-11-foreground: oklch(0.200 0.015 50);
+  --skrum-presence-12: oklch(0.624 0.074 181);
+  --skrum-presence-12-foreground: oklch(0.200 0.015 50);
+  --shadow-card: 0 1px 2px 0 #00000066;
+  --shadow-raised: 0 2px 0.375rem -1px #00000080;
+  --shadow-popover: 0 0.625rem 1.875rem -0.375rem #000000a6, 0 0 0 1px #ffffff0f;
+  --shadow-modal: 0 1.5rem 3.75rem -0.75rem #000000cc, 0 0 0 1px #ffffff14;
+  --shadow-drag: 0 1.125rem 2.25rem -0.625rem #000000d9, 0 0 0 1px #ffffff1f;
+  --skrum-scrim: oklch(0 0 0 / 0.6);
+}
+
+/* --------------------------------------------------------------------------
+   White-label : l'instance injecte ses surcharges APRÈS ce fichier
+   (<style id="skrum-brand"> généré par App\Support\Branding\BrandPalette).
+   Seuls --primary*, --ring, --sidebar-primary*, --chart-1, --skrum-primary-*, --radius sont surchargés.
+   -------------------------------------------------------------------------- */
+
+@layer base {
+  * { @apply border-border outline-ring/50; }
+  html { font-feature-settings: "ss01"; }
+  body { @apply bg-background text-foreground font-sans text-sm/snug antialiased; }
+  :focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+  .tabular { font-variant-numeric: tabular-nums; }
+}
+
+@layer utilities {
+  /* Contexte couleur de colonne : <div class="col-sun"> → bg-(--col) border-(--col-border) text-(--col-text) */
+  .col-sun { --col: var(--skrum-col-sun); --col-border: var(--skrum-col-sun-border); --col-text: var(--skrum-col-sun-text); }
+  .col-apricot { --col: var(--skrum-col-apricot); --col-border: var(--skrum-col-apricot-border); --col-text: var(--skrum-col-apricot-text); }
+  .col-coral { --col: var(--skrum-col-coral); --col-border: var(--skrum-col-coral-border); --col-text: var(--skrum-col-coral-text); }
+  .col-plum { --col: var(--skrum-col-plum); --col-border: var(--skrum-col-plum-border); --col-text: var(--skrum-col-plum-text); }
+  .col-iris { --col: var(--skrum-col-iris); --col-border: var(--skrum-col-iris-border); --col-text: var(--skrum-col-iris-text); }
+  .col-sky { --col: var(--skrum-col-sky); --col-border: var(--skrum-col-sky-border); --col-text: var(--skrum-col-sky-text); }
+  .col-lagoon { --col: var(--skrum-col-lagoon); --col-border: var(--skrum-col-lagoon-border); --col-text: var(--skrum-col-lagoon-text); }
+  .col-moss { --col: var(--skrum-col-moss); --col-border: var(--skrum-col-moss-border); --col-text: var(--skrum-col-moss-text); }
+  .bg-dotgrid { background-color: var(--skrum-canvas); background-image: radial-gradient(var(--skrum-canvas-dot) 1.2px, transparent 1.3px); background-size: 1.25rem 1.25rem; }
+  .card-dragging { transform: rotate(-2deg) scale(1.03); box-shadow: var(--shadow-drag); z-index: 70; }
+  .flip-3d { transform-style: preserve-3d; transition: transform 520ms var(--ease-flip); }
+  .backface-hidden { backface-visibility: hidden; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; scroll-behavior: auto !important; }
+  .flip-3d { transition: opacity 120ms linear !important; }
+}

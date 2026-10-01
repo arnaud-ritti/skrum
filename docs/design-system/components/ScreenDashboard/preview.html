@@ -1,0 +1,100 @@
+<!-- @dsCard group="Écrans · Desktop" width=1440 height=900 subtitle="Dashboard d'équipe « Atlas » : CTA nouvelles sessions, sessions récentes, actions ouvertes agrégées (en retard), tendance ROTI S35→S42, activité" -->
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><title>ScreenDashboard</title>
+<style>
+  .scr-shell { display: flex; flex: 1; min-height: 0; }
+  .scr-page { padding: var(--space-6) var(--space-10); display: flex; flex-direction: column; gap: var(--space-5); overflow: hidden; }
+  .scr-ctas { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-4); }
+  .scr-cta { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-4); text-decoration: none; color: inherit; }
+  .scr-cta.is-hover { box-shadow: var(--shadow-raised); border-color: var(--input); }
+  .scr-cta-ico { width: 2.5rem; height: 2.5rem; border-radius: var(--radius); display: grid; place-items: center; background: var(--c); color: var(--c-t); border: 1px solid var(--c-b); flex: none; }
+  .scr-cta-plus { margin-left: auto; color: var(--muted-foreground); }
+  .scr-mini { width: 1.75rem; height: 1.75rem; border-radius: var(--radius-md); display: grid; place-items: center; background: var(--c); color: var(--c-t); flex: none; }
+  .scr-grid { display: grid; grid-template-columns: 1.55fr 1fr; gap: var(--space-5); min-height: 0; }
+  .scr-feed { display: flex; gap: var(--space-3); align-items: flex-start; }
+  .scr-kpi { display: flex; gap: var(--space-6); }
+  .sk-sidebar .scr-logo { display: flex; align-items: center; gap: var(--space-2); padding: 0.25rem 0.5rem 0.75rem; }
+  .scr-word { font-family: var(--font-display); font-weight: 700; letter-spacing: -.03em; font-size: 1.25rem; }
+</style></head>
+<body>
+<div class="sk-desktop">
+ <div class="scr-shell">
+  <nav class="sk-sidebar" aria-label="Navigation">
+  <div class="sk-brand"><svg viewBox="0 0 64 64" width="24" height="24" aria-hidden="true"><path d="M14 0 H50 A14 14 0 0 1 64 14 V46 L46 64 H14 A14 14 0 0 1 0 50 V14 A14 14 0 0 1 14 0 Z" style="fill:var(--primary)"/><path d="M64 46 L50 46 A4 4 0 0 0 46 50 L46 64 Z" style="fill:color-mix(in oklch, var(--primary) 70%, var(--foreground))"/><path d="M19 27 L19 38 C19 45 24 49.5 30 49.5 C36 49.5 41 45 41 38 L41 27" fill="none" style="stroke:var(--primary-foreground)" stroke-width="7" stroke-linecap="round"/><circle cx="21.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/><circle cx="38.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/></svg><span class="sk-brand-word">skrüm</span></div>
+  <button class="sk-team sk-team-switch" aria-haspopup="menu" aria-label="Changer d'équipe ou d'espace"><span class="sk-team-mark">A</span><span class="sk-team-txt"><span class="sk-team-name">Atlas</span><span class="sk-team-sub">Nordlys · 11 membres</span></span><i data-lucide="chevrons-up-down" class="sk-ico-sm"></i></button>
+  <div class="sk-nav-group">Équipe</div>
+  <a class="sk-nav-item is-on" aria-current="page"><i data-lucide="layout-dashboard"></i><span>Tableau de bord</span></a>
+  <a class="sk-nav-item"><i data-lucide="calendar-clock"></i><span>Sessions</span></a>
+  <a class="sk-nav-item"><i data-lucide="list-checks"></i><span>Actions</span><span class="sk-badge sk-badge--destructive sk-badge--pill">2 en retard</span></a>
+  <a class="sk-nav-item"><i data-lucide="trending-up"></i><span>Moral & ROTI</span></a>
+  <a class="sk-nav-item"><i data-lucide="party-popper"></i><span>Jeux</span></a>
+  <a class="sk-nav-item"><i data-lucide="users"></i><span>Membres</span></a>
+  <div class="sk-nav-group">Espace de travail</div>
+  <a class="sk-nav-item"><i data-lucide="layout-template"></i><span>Modèles</span></a>
+  <a class="sk-nav-item"><i data-lucide="building-2"></i><span>Toutes les équipes</span></a>
+  <span class="sk-grow"></span>
+  <a class="sk-nav-item"><i data-lucide="settings"></i><span>Paramètres de l'équipe</span></a>
+  <a class="sk-nav-item"><i data-lucide="shield-check"></i><span>Administration</span></a>
+  <button class="sk-team sk-user" aria-haspopup="menu"><span class="sk-avatar sk-p1">AR</span><span class="sk-team-txt"><span class="sk-team-name">Arnaud Ritti</span><span class="sk-team-sub">Facilitateur · Admin</span></span><i data-lucide="chevrons-up-down" class="sk-ico-sm"></i></button>
+  </nav>
+  <main class="sk-main">
+    <header class="sk-topbar" style="padding:0 var(--space-10)">
+      <nav class="sk-crumbs"><span>Atlas</span><i data-lucide="chevron-right"></i><span class="is-current">Tableau de bord</span></nav>
+      <span class="sk-grow"></span>
+      <div class="sk-input" style="width:16.25rem;white-space:nowrap"><i data-lucide="search" class="sk-ico-sm" style="color:var(--muted-foreground)"></i><span class="sk-placeholder sk-grow">Rechercher…</span><span class="sk-kbd">⌘K</span></div>
+      <button class="sk-btn sk-btn--ghost sk-btn--icon" aria-label="Notifications"><i data-lucide="bell"></i></button>
+    </header>
+    <div class="scr-page">
+      <div class="sk-between" style="align-items:flex-end">
+        <div class="sk-col" style="gap:2px"><h1 class="sk-h1">Équipe Atlas</h1><span class="sk-muted">9 membres · Sprint 42 · rétro prévue jeudi 2 oct. à 14 h</span></div>
+        <div class="sk-row sk-gap-2"><button class="sk-btn sk-btn--outline"><i data-lucide="user-plus"></i>Inviter</button><button class="sk-btn"><i data-lucide="plus"></i>Nouvelle session</button></div>
+      </div>
+      <div class="scr-ctas">
+        <a class="sk-card scr-cta"><span class="scr-cta-ico sk-c-coral"><i data-lucide="layers" class="sk-ico-lg"></i></span><span class="sk-col" style="gap:0"><span class="sk-strong">Nouvelle rétro</span><span class="sk-xs sk-muted">4L, Start/Stop/Continue</span></span><i data-lucide="plus" class="scr-cta-plus"></i></a>
+        <a class="sk-card scr-cta"><span class="scr-cta-ico sk-c-iris"><i data-lucide="spade" class="sk-ico-lg"></i></span><span class="sk-col" style="gap:0"><span class="sk-strong">Planning poker</span><span class="sk-xs sk-muted">Fibonacci, T-shirt, Jira</span></span><i data-lucide="plus" class="scr-cta-plus"></i></a>
+        <a class="sk-card scr-cta"><span class="scr-cta-ico sk-c-lagoon"><i data-lucide="pen-tool" class="sk-ico-lg"></i></span><span class="sk-col" style="gap:0"><span class="sk-strong">Whiteboard</span><span class="sk-xs sk-muted">Canvas libre, post-its</span></span><i data-lucide="plus" class="scr-cta-plus"></i></a>
+        <a class="sk-card scr-cta"><span class="scr-cta-ico sk-c-sun"><i data-lucide="chart-column" class="sk-ico-lg"></i></span><span class="sk-col" style="gap:0"><span class="sk-strong">Sondage</span><span class="sk-xs sk-muted">ROTI, NPS, QCM</span></span><i data-lucide="plus" class="scr-cta-plus"></i></a>
+      </div>
+      <div class="scr-grid">
+        <div class="sk-col sk-gap-4" style="min-width:0">
+          <section class="sk-card">
+            <div class="sk-card-h"><div class="sk-between"><h2 class="sk-card-t">Sessions récentes</h2><a class="sk-btn sk-btn--link sk-sm">Toutes les sessions</a></div></div>
+            <div style="padding:var(--space-2) var(--space-3) var(--space-3)"><table class="sk-table">
+              <thead><tr><th>Session</th><th>Date</th><th>Participants</th><th>Statut</th><th></th></tr></thead>
+              <tbody>
+                <tr><td><span class="sk-row sk-gap-2" style="flex-wrap:nowrap"><span class="scr-mini sk-c-iris"><i data-lucide="spade" class="sk-ico-sm"></i></span><span class="sk-col" style="gap:0"><span class="sk-strong">Affinage sprint 43</span><span class="sk-xs sk-muted">Planning poker · 6 stories</span></span></span></td><td class="sk-muted sk-sm">Aujourd'hui</td><td class="sk-sm">8</td><td><span class="sk-badge sk-badge--success sk-badge--pill"><span class="sk-dot"></span>En direct</span></td><td style="text-align:right"><button class="sk-btn sk-btn--sm">Rejoindre</button></td></tr>
+                <tr><td><span class="sk-row sk-gap-2" style="flex-wrap:nowrap"><span class="scr-mini sk-c-coral"><i data-lucide="layers" class="sk-ico-sm"></i></span><span class="sk-col" style="gap:0"><span class="sk-strong">Rétro sprint 41</span><span class="sk-xs sk-muted">Rétro · 4 colonnes · 31 cartes</span></span></span></td><td class="sk-muted sk-sm">18 sept.</td><td class="sk-sm">9</td><td><span class="sk-badge sk-badge--muted sk-badge--pill">Terminée</span></td><td style="text-align:right"><span class="sk-xs sk-muted">6 actions</span></td></tr>
+                <tr><td><span class="sk-row sk-gap-2" style="flex-wrap:nowrap"><span class="scr-mini sk-c-sun"><i data-lucide="chart-column" class="sk-ico-sm"></i></span><span class="sk-col" style="gap:0"><span class="sk-strong">Charge ressentie Q3</span><span class="sk-xs sk-muted">Sondage · 5 questions</span></span></span></td><td class="sk-muted sk-sm">16 sept.</td><td class="sk-sm">7</td><td><span class="sk-badge sk-badge--muted sk-badge--pill">Terminée</span></td><td style="text-align:right"><span class="sk-xs sk-muted">7 réponses</span></td></tr>
+                <tr><td><span class="sk-row sk-gap-2" style="flex-wrap:nowrap"><span class="scr-mini sk-c-lagoon"><i data-lucide="pen-tool" class="sk-ico-sm"></i></span><span class="sk-col" style="gap:0"><span class="sk-strong">Parcours d'invitation</span><span class="sk-xs sk-muted">Whiteboard</span></span></span></td><td class="sk-muted sk-sm">11 sept.</td><td class="sk-sm">5</td><td><span class="sk-badge sk-badge--outline sk-badge--pill">Brouillon</span></td><td style="text-align:right"></td></tr>
+              </tbody></table></div>
+          </section>
+          <section class="sk-card">
+            <div class="sk-card-h"><div class="sk-between"><h2 class="sk-card-t">Actions ouvertes <span class="sk-badge sk-badge--muted sk-badge--pill" style="margin-left:0.25rem">7</span></h2><div class="sk-row sk-gap-2"><span class="sk-badge sk-badge--destructive sk-badge--pill"><i data-lucide="alarm-clock"></i>2 en retard</span><a class="sk-btn sk-btn--link sk-sm">Tout voir</a></div></div><p class="sk-card-d">Agrégées depuis toutes les sessions de l'équipe · en retard d'abord.</p></div>
+            <div class="sk-card-b sk-col sk-gap-2">
+              <div class="sk-action"><span class="sk-check"></span><div class="sk-grow"><div class="sk-action-t">Revoir la définition de prêt avec le PO</div><div class="sk-action-meta"><span><span class="sk-avatar sk-avatar--xs sk-p1">AR</span>Arnaud R</span><span class="sk-prio sk-prio--medium"><span class="bars"><i></i><i></i><i></i></span>Moyenne</span><span class="sk-due is-late"><i data-lucide="alarm-clock" class="sk-ico-sm"></i>29 sept. · en retard</span><span class="sk-ticket">ATLAS-1265</span><span><i data-lucide="layers" class="sk-ico-sm"></i>Rétro sprint 41</span></div></div></div>
+              <div class="sk-action"><span class="sk-check"></span><div class="sk-grow"><div class="sk-action-t">Automatiser le changelog de release</div><div class="sk-action-meta"><span><span class="sk-avatar sk-avatar--xs sk-p10">HP</span>Hugo P</span><span class="sk-prio sk-prio--low"><span class="bars"><i></i><i></i><i></i></span>Basse</span><span class="sk-due is-late"><i data-lucide="alarm-clock" class="sk-ico-sm"></i>26 sept. · en retard</span><span><i data-lucide="layers" class="sk-ico-sm"></i>Rétro sprint 40</span></div></div></div>
+            </div>
+          </section>
+        </div>
+        <div class="sk-col sk-gap-4" style="min-width:0">
+          <section class="sk-card">
+            <div class="sk-card-h"><div class="sk-between"><h2 class="sk-card-t">Tendance du moral</h2><span class="sk-badge sk-badge--success sk-badge--pill"><i data-lucide="trending-up"></i>+0,9 depuis S35</span></div><p class="sk-card-d">ROTI moyen de fin de rétro, sur 5</p></div>
+            <div class="sk-card-b" style="padding-top:var(--space-3)"><svg class="sk-chart" viewBox="0 0 500 178" role="img" aria-label="ROTI moyen par sprint, de 3,2 en S35 à 4,1 en S42"><line class="grid" x1="36" x2="488" y1="150.0" y2="150.0"/><text class="axis" x="26" y="154.0" text-anchor="end">1</text><line class="grid" x1="36" x2="488" y1="116.0" y2="116.0"/><text class="axis" x="26" y="120.0" text-anchor="end">2</text><line class="grid" x1="36" x2="488" y1="82.0" y2="82.0"/><text class="axis" x="26" y="86.0" text-anchor="end">3</text><line class="grid" x1="36" x2="488" y1="48.0" y2="48.0"/><text class="axis" x="26" y="52.0" text-anchor="end">4</text><line class="grid" x1="36" x2="488" y1="14.0" y2="14.0"/><text class="axis" x="26" y="18.0" text-anchor="end">5</text><path d="M36.0,150 L36.0,75.2 L100.6,65.0 L165.1,78.6 L229.7,61.6 L294.3,51.4 L358.9,68.4 L423.4,54.8 L488.0,44.6 L488.0,150 Z" style="fill:color-mix(in oklch, var(--chart-1) 14%, transparent)"/><polyline points="36.0,75.2 100.6,65.0 165.1,78.6 229.7,61.6 294.3,51.4 358.9,68.4 423.4,54.8 488.0,44.6" fill="none" style="stroke:var(--chart-1)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/><circle cx="36.0" cy="75.2" r="3" style="fill:var(--card);stroke:var(--chart-1);stroke-width:2"/><circle cx="100.6" cy="65.0" r="3" style="fill:var(--card);stroke:var(--chart-1);stroke-width:2"/><circle cx="165.1" cy="78.6" r="3" style="fill:var(--card);stroke:var(--chart-1);stroke-width:2"/><circle cx="229.7" cy="61.6" r="3" style="fill:var(--card);stroke:var(--chart-1);stroke-width:2"/><circle cx="294.3" cy="51.4" r="3" style="fill:var(--card);stroke:var(--chart-1);stroke-width:2"/><circle cx="358.9" cy="68.4" r="3" style="fill:var(--card);stroke:var(--chart-1);stroke-width:2"/><circle cx="423.4" cy="54.8" r="3" style="fill:var(--card);stroke:var(--chart-1);stroke-width:2"/><circle cx="488.0" cy="44.6" r="4.5" style="fill:var(--card);stroke:var(--chart-1);stroke-width:2"/><text class="axis" x="36.0" y="170" text-anchor="middle">S35</text><text class="axis" x="100.6" y="170" text-anchor="middle">S36</text><text class="axis" x="165.1" y="170" text-anchor="middle">S37</text><text class="axis" x="229.7" y="170" text-anchor="middle">S38</text><text class="axis" x="294.3" y="170" text-anchor="middle">S39</text><text class="axis" x="358.9" y="170" text-anchor="middle">S40</text><text class="axis" x="423.4" y="170" text-anchor="middle">S41</text><text class="axis" x="488.0" y="170" text-anchor="middle">S42</text><g transform="translate(444.0,14.6)"><rect width="52" height="22" rx="6" style="fill:var(--foreground)"/><text x="26" y="15" text-anchor="middle" style="fill:var(--background);font-size:0.75rem;font-weight:700;font-family:var(--font-sans)">4,1 / 5</text></g></svg></div>
+          </section>
+          <section class="sk-card">
+            <div class="sk-card-h"><h2 class="sk-card-t">Activité</h2></div>
+            <div class="sk-card-b sk-col sk-gap-3">
+              <div class="scr-feed"><span class="sk-avatar sk-avatar--sm sk-p8">LD</span><div class="sk-grow sk-sm"><strong>Lucas D</strong> a terminé « Mettre en quarantaine les tests E2E instables »<div class="sk-xs sk-muted">il y a 12 min</div></div></div>
+              <div class="scr-feed"><span class="sk-avatar sk-avatar--sm sk-p4">CR</span><div class="sk-grow sk-sm"><strong>Camille R</strong> a lancé le planning poker <strong>Affinage sprint 43</strong><div class="sk-xs sk-muted">il y a 34 min</div></div></div>
+              <div class="scr-feed"><span class="sk-avatar sk-avatar--sm sk-p7">NK</span><div class="sk-grow sk-sm"><strong>Nadia K</strong> a répondu au sondage « Charge ressentie Q3 »<div class="sk-xs sk-muted">hier</div></div></div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  </main>
+ </div>
+</div>
+</body>
+</html>

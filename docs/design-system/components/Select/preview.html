@@ -1,0 +1,78 @@
+<!-- @dsCard group="shadcn · Formulaires" height=492 subtitle="Select + Combobox — fermé, focus, invalide, désactivé, ouvert avec liste, option sélectionnée, recherche filtrée, état vide" -->
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><title>Select</title>
+<style>
+  .sl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 12.5rem), 1fr)); gap: var(--space-5); align-items: start; }
+  .sl-pop { margin-top: var(--space-1); min-width: 0; }
+  .sl-item { justify-content: flex-start; }
+  .sl-item .sl-tick { margin-left: auto; color: var(--foreground); }
+  .sl-item .sl-desc { font-size: 0.75rem; color: var(--muted-foreground); }
+  .sl-swatch { width: 0.625rem; height: 0.625rem; border-radius: 0.1875rem; background: var(--c-b); box-shadow: inset 0 0 0 1px var(--c-t); flex: none; }
+  .sl-search { display: flex; align-items: center; gap: var(--space-2); height: 2.25rem; padding: 0 var(--space-2); border-bottom: 1px solid var(--border); margin: -0.25rem -0.25rem 0.25rem; font-size: 0.875rem; }
+  .sl-search .lucide { color: var(--muted-foreground); }
+  .sl-hl { font-weight: 700; color: var(--skrum-primary-text); }
+  .sl-empty { padding: var(--space-4) var(--space-2); text-align: center; font-size: 0.8125rem; color: var(--muted-foreground); display: flex; flex-direction: column; align-items: center; gap: var(--space-2); }
+  .sl-caret { display: inline-block; width: 1px; height: 1rem; background: var(--foreground); vertical-align: -0.1875rem; }
+</style></head>
+<body>
+<div class="sk-pad sk-col sk-gap-6">
+  <div class="sl-grid">
+    <div><div class="sk-state">Fermé · placeholder</div>
+      <div class="sk-field"><span class="sk-lbl">Modèle de rétro</span>
+        <button class="sk-select"><span class="sk-placeholder">Choisir un modèle…</span><i data-lucide="chevron-down"></i></button></div></div>
+    <div><div class="sk-state">Fermé · valeur · focus</div>
+      <div class="sk-field"><span class="sk-lbl">Échelle de vote</span>
+        <button class="sk-select is-focus"><span>Fibonacci (1, 2, 3, 5, 8…)</span><i data-lucide="chevron-down"></i></button></div></div>
+    <div><div class="sk-state">Invalide</div>
+      <div class="sk-field"><span class="sk-lbl">Équipe</span>
+        <button class="sk-select is-invalid" aria-invalid="true"><span class="sk-placeholder">Choisir une équipe…</span><i data-lucide="chevron-down"></i></button>
+        <span class="sk-error-msg"><i data-lucide="circle-alert" class="sk-ico-sm"></i>Sélectionnez une équipe.</span></div></div>
+    <div><div class="sk-state">Désactivé</div>
+      <div class="sk-field"><span class="sk-lbl" style="opacity:.55">Durée par phase</span>
+        <button class="sk-select is-disabled" disabled><span>5 minutes</span><i data-lucide="chevron-down"></i></button></div></div>
+  </div>
+
+  <div class="sl-grid">
+    <div><div class="sk-state">Ouvert · option sélectionnée</div>
+      <button class="sk-select is-focus"><span>Start · Stop · Continue</span><i data-lucide="chevron-down"></i></button>
+      <div class="sk-menu sl-pop" role="listbox">
+        <div class="sk-menu-label">Modèles classiques</div>
+        <div class="sk-menu-item sl-item" role="option" aria-selected="true">Start · Stop · Continue<i data-lucide="check" class="sl-tick"></i></div>
+        <div class="sk-menu-item sl-item is-on" role="option">Glad · Sad · Mad</div>
+        <div class="sk-menu-item sl-item" role="option">4L (Liked, Learned…)</div>
+        <div class="sk-menu-sep"></div>
+        <div class="sk-menu-label">Modèles d'équipe</div>
+        <div class="sk-menu-item sl-item" role="option">Rétro Atlas v3</div>
+        <div class="sk-menu-item sl-item is-disabled" role="option" aria-disabled="true">Speedboat (archivé)</div>
+      </div></div>
+
+    <div><div class="sk-state">Ouvert · avec pastilles</div>
+      <button class="sk-select is-focus"><span class="sk-row sk-gap-2"><span class="sl-swatch sk-c-moss"></span>Mousse</span><i data-lucide="chevron-down"></i></button>
+      <div class="sk-menu sl-pop" role="listbox">
+        <div class="sk-menu-item sl-item sk-c-sun"><span class="sl-swatch"></span>Soleil</div>
+        <div class="sk-menu-item sl-item sk-c-coral"><span class="sl-swatch"></span>Corail</div>
+        <div class="sk-menu-item sl-item sk-c-iris is-on"><span class="sl-swatch"></span>Iris</div>
+        <div class="sk-menu-item sl-item sk-c-lagoon"><span class="sl-swatch"></span>Lagon</div>
+        <div class="sk-menu-item sl-item sk-c-moss"><span class="sl-swatch"></span>Mousse<i data-lucide="check" class="sl-tick"></i></div>
+      </div></div>
+
+    <div><div class="sk-state">Combobox · recherche filtrée</div>
+      <button class="sk-select is-focus"><span>Assigner à…</span><i data-lucide="chevrons-up-down"></i></button>
+      <div class="sk-menu sl-pop" role="listbox">
+        <div class="sl-search"><i data-lucide="search"></i><span>na<span class="sl-caret"></span></span></div>
+        <div class="sk-menu-item sl-item is-on"><span class="sk-avatar sk-avatar--xs sk-p6">NK</span><span><span class="sl-hl">Na</span>dia K.</span></div>
+        <div class="sk-menu-item sl-item"><span class="sk-avatar sk-avatar--xs sk-p3">IB</span><span>Inès Be<span class="sl-hl">na</span>li</span><i data-lucide="check" class="sl-tick"></i></div>
+        <div class="sk-menu-item sl-item"><span class="sk-avatar sk-avatar--xs sk-p11">LH</span><span>Léa Hoff<span class="sl-hl">na</span>gel</span></div>
+      </div></div>
+
+    <div><div class="sk-state">Combobox · aucun résultat</div>
+      <button class="sk-select is-focus"><span>Lier un ticket…</span><i data-lucide="chevrons-up-down"></i></button>
+      <div class="sk-menu sl-pop">
+        <div class="sl-search"><i data-lucide="search"></i><span class="sk-mono">ATLAS-9999<span class="sl-caret"></span></span></div>
+        <div class="sl-empty"><i data-lucide="search-x" class="sk-ico-lg"></i>Aucun ticket trouvé.<button class="sk-btn sk-btn--outline sk-btn--sm"><i data-lucide="plus"></i>Créer « ATLAS-9999 »</button></div>
+      </div></div>
+  </div>
+</div>
+</body>
+</html>

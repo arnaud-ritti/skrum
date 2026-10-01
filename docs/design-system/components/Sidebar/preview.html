@@ -1,0 +1,116 @@
+<!-- @dsCard group="shadcn · Navigation" height=1660 subtitle="Modèle unique : marque · sélecteur d'équipe (l'espace de travail est dedans) · Équipe · Espace de travail · paramètres / admin · utilisateur — FR, EN, repliée (sessions), sélecteur ouvert" -->
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><title>Sidebar</title>
+<style>
+  .sb-grid { display: flex; gap: var(--space-6); flex-wrap: wrap; align-items: flex-start; }
+  .sb-frame { width: max-content; height: 47.5rem; display: flex; border: 1px solid var(--border); border-radius: var(--radius-xl); overflow: hidden; background: var(--background); }
+  .sb-frame .sk-sidebar { height: 100%; }
+  .sb-stage { position: relative; }
+  .sb-switch { position: absolute; top: 5.75rem; left: calc(var(--sidebar-width) - 0.5rem); min-width: 15rem; z-index: 2; }
+  .sb-mini { width: 1.25rem; height: 1.25rem; font-size: 0.6875rem; border-radius: var(--radius-xs); }
+  .sb-b { background: var(--skrum-col-lagoon-text); color: var(--card); }
+  .sb-c { background: var(--skrum-col-iris-text); color: var(--card); }
+  .sb-ghost { width: 17rem; height: 100%; }
+</style></head>
+<body>
+<div class="sk-pad sb-grid">
+  <div><div class="sk-state">FR · déployée · Tableau de bord</div>
+    <div class="sb-frame">
+  <nav class="sk-sidebar" aria-label="Navigation">
+  <div class="sk-brand"><svg viewBox="0 0 64 64" width="24" height="24" aria-hidden="true"><path d="M14 0 H50 A14 14 0 0 1 64 14 V46 L46 64 H14 A14 14 0 0 1 0 50 V14 A14 14 0 0 1 14 0 Z" style="fill:var(--primary)"/><path d="M64 46 L50 46 A4 4 0 0 0 46 50 L46 64 Z" style="fill:color-mix(in oklch, var(--primary) 70%, var(--foreground))"/><path d="M19 27 L19 38 C19 45 24 49.5 30 49.5 C36 49.5 41 45 41 38 L41 27" fill="none" style="stroke:var(--primary-foreground)" stroke-width="7" stroke-linecap="round"/><circle cx="21.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/><circle cx="38.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/></svg><span class="sk-brand-word">skrüm</span></div>
+  <button class="sk-team sk-team-switch" aria-haspopup="menu" aria-label="Changer d'équipe ou d'espace"><span class="sk-team-mark">A</span><span class="sk-team-txt"><span class="sk-team-name">Atlas</span><span class="sk-team-sub">Nordlys · 11 membres</span></span><i data-lucide="chevrons-up-down" class="sk-ico-sm"></i></button>
+  <div class="sk-nav-group">Équipe</div>
+  <a class="sk-nav-item is-on" aria-current="page"><i data-lucide="layout-dashboard"></i><span>Tableau de bord</span></a>
+  <a class="sk-nav-item"><i data-lucide="calendar-clock"></i><span>Sessions</span></a>
+  <a class="sk-nav-item"><i data-lucide="list-checks"></i><span>Actions</span><span class="sk-badge sk-badge--destructive sk-badge--pill">2 en retard</span></a>
+  <a class="sk-nav-item"><i data-lucide="trending-up"></i><span>Moral & ROTI</span></a>
+  <a class="sk-nav-item"><i data-lucide="party-popper"></i><span>Jeux</span></a>
+  <a class="sk-nav-item"><i data-lucide="users"></i><span>Membres</span></a>
+  <div class="sk-nav-group">Espace de travail</div>
+  <a class="sk-nav-item"><i data-lucide="layout-template"></i><span>Modèles</span></a>
+  <a class="sk-nav-item"><i data-lucide="building-2"></i><span>Toutes les équipes</span></a>
+  <span class="sk-grow"></span>
+  <a class="sk-nav-item"><i data-lucide="settings"></i><span>Paramètres de l'équipe</span></a>
+  <a class="sk-nav-item"><i data-lucide="shield-check"></i><span>Administration</span></a>
+  <button class="sk-team sk-user" aria-haspopup="menu"><span class="sk-avatar sk-p1">AR</span><span class="sk-team-txt"><span class="sk-team-name">Arnaud Ritti</span><span class="sk-team-sub">Facilitateur · Admin</span></span><i data-lucide="chevrons-up-down" class="sk-ico-sm"></i></button>
+  </nav>
+    </div></div>
+  <div><div class="sk-state">EN · expanded · Actions</div>
+    <div class="sb-frame">
+  <nav class="sk-sidebar" aria-label="Navigation">
+  <div class="sk-brand"><svg viewBox="0 0 64 64" width="24" height="24" aria-hidden="true"><path d="M14 0 H50 A14 14 0 0 1 64 14 V46 L46 64 H14 A14 14 0 0 1 0 50 V14 A14 14 0 0 1 14 0 Z" style="fill:var(--primary)"/><path d="M64 46 L50 46 A4 4 0 0 0 46 50 L46 64 Z" style="fill:color-mix(in oklch, var(--primary) 70%, var(--foreground))"/><path d="M19 27 L19 38 C19 45 24 49.5 30 49.5 C36 49.5 41 45 41 38 L41 27" fill="none" style="stroke:var(--primary-foreground)" stroke-width="7" stroke-linecap="round"/><circle cx="21.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/><circle cx="38.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/></svg><span class="sk-brand-word">skrüm</span></div>
+  <button class="sk-team sk-team-switch" aria-haspopup="menu" aria-label="Switch team or workspace"><span class="sk-team-mark">A</span><span class="sk-team-txt"><span class="sk-team-name">Atlas</span><span class="sk-team-sub">Nordlys · 11 members</span></span><i data-lucide="chevrons-up-down" class="sk-ico-sm"></i></button>
+  <div class="sk-nav-group">Team</div>
+  <a class="sk-nav-item"><i data-lucide="layout-dashboard"></i><span>Dashboard</span></a>
+  <a class="sk-nav-item"><i data-lucide="calendar-clock"></i><span>Sessions</span></a>
+  <a class="sk-nav-item is-on" aria-current="page"><i data-lucide="list-checks"></i><span>Actions</span><span class="sk-badge sk-badge--destructive sk-badge--pill">2 overdue</span></a>
+  <a class="sk-nav-item"><i data-lucide="trending-up"></i><span>Mood & ROTI</span></a>
+  <a class="sk-nav-item"><i data-lucide="party-popper"></i><span>Games</span></a>
+  <a class="sk-nav-item"><i data-lucide="users"></i><span>Members</span></a>
+  <div class="sk-nav-group">Workspace</div>
+  <a class="sk-nav-item"><i data-lucide="layout-template"></i><span>Templates</span></a>
+  <a class="sk-nav-item"><i data-lucide="building-2"></i><span>All teams</span></a>
+  <span class="sk-grow"></span>
+  <a class="sk-nav-item"><i data-lucide="settings"></i><span>Team settings</span></a>
+  <a class="sk-nav-item"><i data-lucide="shield-check"></i><span>Administration</span></a>
+  <button class="sk-team sk-user" aria-haspopup="menu"><span class="sk-avatar sk-p1">AR</span><span class="sk-team-txt"><span class="sk-team-name">Arnaud Ritti</span><span class="sk-team-sub">Facilitator · Admin</span></span><i data-lucide="chevrons-up-down" class="sk-ico-sm"></i></button>
+  </nav>
+    </div></div>
+  <div><div class="sk-state">Repliée · en session</div>
+    <div class="sb-frame">
+  <nav class="sk-sidebar is-collapsed" aria-label="Navigation">
+  <div class="sk-brand"><svg viewBox="0 0 64 64" width="24" height="24" aria-hidden="true"><path d="M14 0 H50 A14 14 0 0 1 64 14 V46 L46 64 H14 A14 14 0 0 1 0 50 V14 A14 14 0 0 1 14 0 Z" style="fill:var(--primary)"/><path d="M64 46 L50 46 A4 4 0 0 0 46 50 L46 64 Z" style="fill:color-mix(in oklch, var(--primary) 70%, var(--foreground))"/><path d="M19 27 L19 38 C19 45 24 49.5 30 49.5 C36 49.5 41 45 41 38 L41 27" fill="none" style="stroke:var(--primary-foreground)" stroke-width="7" stroke-linecap="round"/><circle cx="21.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/><circle cx="38.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/></svg><span class="sk-brand-word">skrüm</span></div>
+  <button class="sk-team sk-team-switch" aria-haspopup="menu" aria-label="Changer d'équipe ou d'espace"><span class="sk-team-mark">A</span><span class="sk-team-txt"><span class="sk-team-name">Atlas</span><span class="sk-team-sub">Nordlys · 11 membres</span></span><i data-lucide="chevrons-up-down" class="sk-ico-sm"></i></button>
+  <a class="sk-nav-item" aria-label="Tableau de bord"><i data-lucide="layout-dashboard"></i><span>Tableau de bord</span></a>
+  <a class="sk-nav-item is-on" aria-current="page" aria-label="Sessions"><i data-lucide="calendar-clock"></i><span>Sessions</span></a>
+  <a class="sk-nav-item" aria-label="Actions"><i data-lucide="list-checks"></i><span>Actions</span><b class="sk-nav-dot" aria-hidden="true"></b></a>
+  <a class="sk-nav-item" aria-label="Moral & ROTI"><i data-lucide="trending-up"></i><span>Moral & ROTI</span></a>
+  <a class="sk-nav-item" aria-label="Jeux"><i data-lucide="party-popper"></i><span>Jeux</span></a>
+  <a class="sk-nav-item" aria-label="Membres"><i data-lucide="users"></i><span>Membres</span></a>
+  <hr class="sk-nav-sep">
+  <a class="sk-nav-item" aria-label="Modèles"><i data-lucide="layout-template"></i><span>Modèles</span></a>
+  <a class="sk-nav-item" aria-label="Toutes les équipes"><i data-lucide="building-2"></i><span>Toutes les équipes</span></a>
+  <span class="sk-grow"></span>
+  <a class="sk-nav-item" aria-label="Paramètres de l'équipe"><i data-lucide="settings"></i><span>Paramètres de l'équipe</span></a>
+  <a class="sk-nav-item" aria-label="Administration"><i data-lucide="shield-check"></i><span>Administration</span></a>
+  <button class="sk-team sk-user" aria-haspopup="menu"><span class="sk-avatar sk-p1">AR</span><span class="sk-team-txt"><span class="sk-team-name">Arnaud Ritti</span><span class="sk-team-sub">Facilitateur · Admin</span></span><i data-lucide="chevrons-up-down" class="sk-ico-sm"></i></button>
+  </nav>
+    </div></div>
+  <div><div class="sk-state">Sélecteur d'équipe ouvert</div>
+    <div class="sb-frame sb-stage">
+  <nav class="sk-sidebar" aria-label="Navigation">
+  <div class="sk-brand"><svg viewBox="0 0 64 64" width="24" height="24" aria-hidden="true"><path d="M14 0 H50 A14 14 0 0 1 64 14 V46 L46 64 H14 A14 14 0 0 1 0 50 V14 A14 14 0 0 1 14 0 Z" style="fill:var(--primary)"/><path d="M64 46 L50 46 A4 4 0 0 0 46 50 L46 64 Z" style="fill:color-mix(in oklch, var(--primary) 70%, var(--foreground))"/><path d="M19 27 L19 38 C19 45 24 49.5 30 49.5 C36 49.5 41 45 41 38 L41 27" fill="none" style="stroke:var(--primary-foreground)" stroke-width="7" stroke-linecap="round"/><circle cx="21.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/><circle cx="38.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/></svg><span class="sk-brand-word">skrüm</span></div>
+  <button class="sk-team sk-team-switch" aria-haspopup="menu" aria-label="Changer d'équipe ou d'espace"><span class="sk-team-mark">A</span><span class="sk-team-txt"><span class="sk-team-name">Atlas</span><span class="sk-team-sub">Nordlys · 11 membres</span></span><i data-lucide="chevrons-up-down" class="sk-ico-sm"></i></button>
+  <div class="sk-nav-group">Équipe</div>
+  <a class="sk-nav-item is-on" aria-current="page"><i data-lucide="layout-dashboard"></i><span>Tableau de bord</span></a>
+  <a class="sk-nav-item"><i data-lucide="calendar-clock"></i><span>Sessions</span></a>
+  <a class="sk-nav-item"><i data-lucide="list-checks"></i><span>Actions</span><span class="sk-badge sk-badge--destructive sk-badge--pill">2 en retard</span></a>
+  <a class="sk-nav-item"><i data-lucide="trending-up"></i><span>Moral & ROTI</span></a>
+  <a class="sk-nav-item"><i data-lucide="party-popper"></i><span>Jeux</span></a>
+  <a class="sk-nav-item"><i data-lucide="users"></i><span>Membres</span></a>
+  <div class="sk-nav-group">Espace de travail</div>
+  <a class="sk-nav-item"><i data-lucide="layout-template"></i><span>Modèles</span></a>
+  <a class="sk-nav-item"><i data-lucide="building-2"></i><span>Toutes les équipes</span></a>
+  <span class="sk-grow"></span>
+  <a class="sk-nav-item"><i data-lucide="settings"></i><span>Paramètres de l'équipe</span></a>
+  <a class="sk-nav-item"><i data-lucide="shield-check"></i><span>Administration</span></a>
+  <button class="sk-team sk-user" aria-haspopup="menu"><span class="sk-avatar sk-p1">AR</span><span class="sk-team-txt"><span class="sk-team-name">Arnaud Ritti</span><span class="sk-team-sub">Facilitateur · Admin</span></span><i data-lucide="chevrons-up-down" class="sk-ico-sm"></i></button>
+  </nav>
+      <div class="sb-ghost"></div>
+      <div class="sk-menu sb-switch" role="menu" aria-label="Changer d'équipe">
+        <div class="sk-menu-label">Nordlys · espace de travail</div>
+        <a class="sk-menu-item is-on" role="menuitemradio" aria-checked="true"><span class="sk-team-mark sb-mini">A</span>Atlas<i data-lucide="check" style="margin-left:auto"></i></a>
+        <a class="sk-menu-item" role="menuitemradio" aria-checked="false"><span class="sk-team-mark sb-mini sb-b">B</span>Borealis</a>
+        <a class="sk-menu-item" role="menuitemradio" aria-checked="false"><span class="sk-team-mark sb-mini sb-c">C</span>Comète</a>
+        <div class="sk-menu-sep"></div>
+        <div class="sk-menu-label">Autres espaces</div>
+        <a class="sk-menu-item"><i data-lucide="building-2"></i>Studio Kestrel<span class="sk-shortcut">4 équipes</span></a>
+        <div class="sk-menu-sep"></div>
+        <a class="sk-menu-item"><i data-lucide="plus"></i>Nouvelle équipe</a>
+        <a class="sk-menu-item"><i data-lucide="plus"></i>Nouvel espace de travail</a>
+      </div>
+    </div></div>
+</div>
+</body>
+</html>

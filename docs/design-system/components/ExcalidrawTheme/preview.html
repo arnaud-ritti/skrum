@@ -1,0 +1,189 @@
+<!-- @dsCard group="Skrüm · Whiteboard" height=1148 subtitle="UI Excalidraw thémée Skrüm · EN + FR · clair + sombre · outil actif terracotta · panneau propriétés avec palette post-it · zoom / annuler · aide · hint" -->
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><title>ExcalidrawTheme</title>
+<style>
+  .ex-wrap { display: flex; flex-direction: column; gap: var(--space-6); }
+  .ex-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 26rem), 1fr)); gap: var(--space-5) var(--space-4); align-items: start; }
+  .ex-frame { container-type: inline-size; position: relative; height: 25rem; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: var(--space-2); padding: var(--space-3); border-radius: var(--radius-xl); border: 1px solid var(--border); background: var(--skrum-canvas); color: var(--foreground); font-family: var(--font-sans); overflow: hidden; }
+  .ex-island { background: var(--popover); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-raised); }
+  .ex-top { display: flex; align-items: center; gap: var(--space-2); min-width: 0; position: relative; z-index: 3; }
+  .ex-center { flex: 1; min-width: 0; display: flex; justify-content: center; }
+  .ex-presence { display: none; }
+  .ex-tools { display: inline-flex; align-items: center; gap: 1px; padding: 0.1875rem; }
+  .ex-tool { position: relative; width: 2.25rem; height: 2.25rem; border-radius: var(--radius-md); border: 0; padding: 0; background: none; display: grid; place-items: center; color: var(--foreground); cursor: pointer; flex: none; }
+  .ex-tool.is-on { background: var(--skrum-primary-soft); color: var(--skrum-primary-text); box-shadow: inset 0 0 0 1px var(--primary); }
+  .ex-k { position: absolute; right: 0.1875rem; bottom: 0.0625rem; font-size: 0.5625rem; line-height: 0.75rem; font-weight: 600; color: var(--muted-foreground); }
+  .ex-tool.is-on .ex-k { color: var(--skrum-primary-text); }
+  .ex-tip { position: absolute; top: calc(100% + var(--space-2)); left: 50%; transform: translateX(-50%); z-index: 4; }
+  .ex-vsep { width: 1px; height: 1.25rem; background: var(--border); margin: 0 0.1875rem; flex: none; }
+  .ex-btn { width: 2.25rem; height: 2.25rem; display: grid; place-items: center; padding: 0; color: var(--foreground); cursor: pointer; flex: none; }
+  .ex-btn--flat { border: 0; background: none; border-radius: var(--radius-md); box-shadow: none; }
+  .ex-btn.is-disabled { color: var(--muted-foreground); opacity: .5; }
+  .ex-tool.ex-w, .ex-vsep, .ex-tool.ex-m { display: none; }
+  @container (min-width: 32rem) { .ex-tool.ex-m { display: grid; } }
+  @container (min-width: 40rem) { .ex-tool.ex-w { display: grid; } .ex-vsep { display: block; } .ex-presence { display: inline-flex; } }
+  .ex-mid { display: flex; gap: var(--space-2); min-height: 0; min-width: 0; }
+  .ex-props { width: 11.5rem; flex: none; padding: var(--space-3); display: flex; flex-direction: column; gap: var(--space-1-5); align-self: flex-start; position: relative; z-index: 2; }
+  .ex-pl { font-size: 0.75rem; line-height: 1rem; font-weight: 600; color: var(--muted-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ex-sws { display: grid; grid-template-columns: repeat(5, 1.5rem); gap: var(--space-1); margin-bottom: var(--space-1); }
+  .ex-sw { width: 1.5rem; height: 1.5rem; border-radius: var(--radius-sm); box-shadow: inset 0 0 0 1px var(--border); }
+  .ex-sw.is-on { outline: 2px solid var(--primary); outline-offset: 1px; }
+  .ex-sw--none { background: repeating-conic-gradient(var(--muted) 0 25%, var(--card) 0 50%) 0 0 / 0.5rem 0.5rem; }
+  .ex-opts { display: flex; gap: var(--space-1); margin-bottom: var(--space-1); }
+  .ex-opt { width: 2rem; height: 1.75rem; border-radius: var(--radius-sm); background: var(--muted); display: grid; place-items: center; color: var(--foreground); }
+  .ex-opt.is-on { background: var(--skrum-primary-soft); color: var(--skrum-primary-text); box-shadow: inset 0 0 0 1px var(--primary); }
+  .ex-line { width: 1rem; background: currentColor; border-radius: 1px; display: block; }
+  .ex-canvas { position: relative; flex: 1; min-width: 0; display: grid; place-items: center; }
+  .ex-svg { width: 100%; height: 100%; max-height: 15rem; }
+  .ex-txt { fill: var(--foreground); font-family: var(--font-display); font-size: 0.875rem; font-weight: 600; }
+  .ex-bot { display: flex; align-items: flex-end; gap: var(--space-2); min-width: 0; position: relative; z-index: 2; }
+  .ex-group { display: flex; gap: var(--space-2); flex: none; }
+  .ex-zoom { display: inline-flex; align-items: center; padding: 0.125rem; }
+  .ex-zoom .ex-btn { width: 2rem; height: 2rem; }
+  .ex-zv { min-width: 3rem; text-align: center; font-size: 0.8125rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .ex-hint { flex: 1; min-width: 0; margin: 0; text-align: center; font-size: 0.75rem; line-height: 1rem; color: var(--muted-foreground); display: none; }
+  .ex-bot > .ex-island.ex-btn { margin-left: auto; }
+  @container (min-width: 36rem) { .ex-hint { display: block; } }
+  .ex-pals { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 12.5rem), 1fr)); gap: var(--space-3); }
+  .ex-pal { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2); border-radius: var(--radius); border: 1px solid var(--border); background: var(--card); min-width: 0; }
+  .ex-pal-sw { width: 2.5rem; height: 2.5rem; border-radius: var(--radius-sm); background: var(--c); border: 2px solid var(--c-b); flex: none; }
+  .ex-pal-t { display: flex; flex-direction: column; min-width: 0; }
+  .ex-pal-tok { font-family: var(--font-mono); font-size: 0.6875rem; line-height: 1rem; color: var(--muted-foreground); overflow-wrap: anywhere; }
+</style></head>
+<body>
+<div class="sk-pad ex-wrap">
+<div class="ex-grid"><div><div class="sk-state">EN · thème clair</div>
+<div class="ex-frame" data-theme="light" lang="en">
+  <div class="ex-top">
+    <button class="ex-island ex-btn" aria-label="Menu"><i data-lucide="menu"></i></button>
+    <div class="ex-center"><div class="ex-island ex-tools" role="toolbar" aria-label="Shapes"><button class="ex-tool ex-w" aria-label="Lock"><i data-lucide="lock-open"></i></button><span class="ex-vsep" aria-hidden="true"></span><button class="ex-tool " aria-label="Hand (H)"><i data-lucide="hand"></i></button><button class="ex-tool " aria-label="Selection (V / 1)"><i data-lucide="mouse-pointer-2"></i><span class="ex-k">1</span></button><button class="ex-tool is-on" aria-label="Rectangle (R / 2)" aria-pressed="true"><i data-lucide="square"></i><span class="ex-k">2</span><span class="sk-tooltip ex-tip" role="tooltip">Rectangle <span class="sk-kbd">R or 2</span></span></button><button class="ex-tool ex-m" aria-label="Diamond (D / 3)"><i data-lucide="diamond"></i><span class="ex-k">3</span></button><button class="ex-tool " aria-label="Ellipse (O / 4)"><i data-lucide="circle"></i><span class="ex-k">4</span></button><button class="ex-tool " aria-label="Arrow (A / 5)"><i data-lucide="move-right"></i><span class="ex-k">5</span></button><button class="ex-tool ex-m" aria-label="Line (L / 6)"><i data-lucide="minus"></i><span class="ex-k">6</span></button><button class="ex-tool " aria-label="Draw (P / 7)"><i data-lucide="pencil"></i><span class="ex-k">7</span></button><button class="ex-tool " aria-label="Text (T / 8)"><i data-lucide="type"></i><span class="ex-k">8</span></button><button class="ex-tool ex-w" aria-label="Image (9)"><i data-lucide="image"></i><span class="ex-k">9</span></button><button class="ex-tool ex-m" aria-label="Eraser (E / 0)"><i data-lucide="eraser"></i><span class="ex-k">0</span></button><span class="ex-vsep" aria-hidden="true"></span><button class="ex-tool ex-w" aria-label="More tools"><i data-lucide="shapes"></i></button></div></div>
+    <span class="sk-stack ex-presence"><span class="sk-avatar sk-avatar--sm sk-p2">CL</span><span class="sk-avatar sk-avatar--sm sk-p9">IB</span><span class="sk-avatar sk-avatar--sm sk-p4">TM</span></span>
+  </div>
+  <div class="ex-mid"><div class="ex-island ex-props"><div class="ex-pl">Stroke</div><div class="ex-sws"><span class="ex-sw is-on" style="background:var(--foreground)"></span><span class="ex-sw" style="background:var(--skrum-col-coral-text)"></span><span class="ex-sw" style="background:var(--skrum-col-sky-text)"></span><span class="ex-sw" style="background:var(--skrum-col-moss-text)"></span><span class="ex-sw" style="background:var(--skrum-col-sun-text)"></span></div><div class="ex-pl">Background</div><div class="ex-sws"><span class="ex-sw ex-sw--none" title="Transparent"></span><span class="ex-sw sk-c-sun is-on" style="background:var(--c);box-shadow:inset 0 0 0 1.5px var(--c-b)" title="sun"></span><span class="ex-sw sk-c-apricot" style="background:var(--c);box-shadow:inset 0 0 0 1.5px var(--c-b)" title="apricot"></span><span class="ex-sw sk-c-coral" style="background:var(--c);box-shadow:inset 0 0 0 1.5px var(--c-b)" title="coral"></span><span class="ex-sw sk-c-plum" style="background:var(--c);box-shadow:inset 0 0 0 1.5px var(--c-b)" title="plum"></span><span class="ex-sw sk-c-iris" style="background:var(--c);box-shadow:inset 0 0 0 1.5px var(--c-b)" title="iris"></span><span class="ex-sw sk-c-sky" style="background:var(--c);box-shadow:inset 0 0 0 1.5px var(--c-b)" title="sky"></span><span class="ex-sw sk-c-lagoon" style="background:var(--c);box-shadow:inset 0 0 0 1.5px var(--c-b)" title="lagoon"></span><span class="ex-sw sk-c-moss" style="background:var(--c);box-shadow:inset 0 0 0 1.5px var(--c-b)" title="moss"></span></div><div class="ex-pl">Fill</div><div class="ex-opts"><span class="ex-opt"><i data-lucide="paint-bucket" class="sk-ico-sm"></i></span><span class="ex-opt is-on"><i data-lucide="square-dashed" class="sk-ico-sm"></i></span><span class="ex-opt"><i data-lucide="square" class="sk-ico-sm"></i></span></div><div class="ex-pl">Stroke width</div><div class="ex-opts"><span class="ex-opt"><span class="ex-line" style="height:1px"></span></span><span class="ex-opt is-on"><span class="ex-line" style="height:2px"></span></span><span class="ex-opt"><span class="ex-line" style="height:0.25rem"></span></span></div></div><div class="ex-canvas"><svg class="ex-svg" viewBox="0 0 320 220" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+  <g class="sk-c-sun"><path d="M42 30 L152 28 L154 108 L40 110 Z" style="fill:var(--c);stroke:var(--c-b)" stroke-width="2" stroke-linejoin="round"/>
+  <path d="M44 29 L151 30 L152 107 L41 108 Z" fill="none" style="stroke:var(--c-b)" stroke-width="1"/></g>
+  <text x="97" y="74" text-anchor="middle" class="ex-txt">Sprint goal</text>
+  <rect x="32" y="20" width="132" height="100" fill="none" style="stroke:var(--primary)" stroke-width="1"/>
+  <g style="fill:var(--card);stroke:var(--primary)" stroke-width="1"><rect x="28" y="16" width="8" height="8" rx="2"/><rect x="160" y="16" width="8" height="8" rx="2"/><rect x="28" y="116" width="8" height="8" rx="2"/><rect x="160" y="116" width="8" height="8" rx="2"/></g>
+  <circle cx="98" cy="8" r="4" style="fill:var(--card);stroke:var(--primary)" stroke-width="1"/>
+  <g class="sk-c-lagoon"><ellipse cx="248" cy="70" rx="56" ry="36" style="fill:var(--c);stroke:var(--c-b)" stroke-width="2"/>
+  <ellipse cx="249" cy="71" rx="55" ry="35" fill="none" style="stroke:var(--c-b)" stroke-width="1"/></g>
+  <text x="248" y="75" text-anchor="middle" class="ex-txt">Release</text>
+  <path d="M156 70 C175 66 180 68 190 70" fill="none" style="stroke:var(--foreground)" stroke-width="2" stroke-linecap="round"/>
+  <path d="M182 63 L191 70 L181 76" fill="none" style="stroke:var(--foreground)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <g class="sk-c-coral"><path d="M200 140 L250 118 L300 142 L250 196 Z" style="fill:var(--c);stroke:var(--c-b)" stroke-width="2" stroke-linejoin="round"/></g>
+  <text x="250" y="162" text-anchor="middle" class="ex-txt">Risks</text>
+  <path d="M60 170 C80 150 100 190 120 165 S160 150 170 175" fill="none" style="stroke:var(--skrum-col-iris-text)" stroke-width="2.5" stroke-linecap="round"/>
+</svg>
+    <span class="sk-cursor" style="left:34%;top:80%;--cur:var(--skrum-presence-9);--cur-fg:var(--skrum-presence-9-foreground)"><svg viewBox="0 0 18 18"><path d="M2 1 L16 8 L9 10 L6 17 Z"/></svg><span class="sk-cursor-tag">Inès</span></span></div></div>
+  <div class="ex-bot">
+    <div class="ex-group">
+      <div class="ex-island ex-zoom"><button class="ex-btn ex-btn--flat" aria-label="Zoom out"><i data-lucide="minus"></i></button><span class="ex-zv">100%</span><button class="ex-btn ex-btn--flat" aria-label="Zoom in"><i data-lucide="plus"></i></button></div>
+      <div class="ex-island ex-zoom"><button class="ex-btn ex-btn--flat" aria-label="Undo"><i data-lucide="undo-2"></i></button><button class="ex-btn ex-btn--flat is-disabled" aria-label="Redo"><i data-lucide="redo-2"></i></button></div>
+    </div>
+    <p class="ex-hint">To move canvas, hold mouse wheel or spacebar while dragging, or use the hand tool</p>
+    <button class="ex-island ex-btn" aria-label="Help"><i data-lucide="circle-help"></i></button>
+  </div>
+</div></div><div><div class="sk-state">FR · thème clair</div>
+<div class="ex-frame" data-theme="light" lang="fr">
+  <div class="ex-top">
+    <button class="ex-island ex-btn" aria-label="Menu"><i data-lucide="menu"></i></button>
+    <div class="ex-center"><div class="ex-island ex-tools" role="toolbar" aria-label="Formes"><button class="ex-tool ex-w" aria-label="Lock"><i data-lucide="lock-open"></i></button><span class="ex-vsep" aria-hidden="true"></span><button class="ex-tool " aria-label="Hand (H)"><i data-lucide="hand"></i></button><button class="ex-tool " aria-label="Selection (V / 1)"><i data-lucide="mouse-pointer-2"></i><span class="ex-k">1</span></button><button class="ex-tool is-on" aria-label="Rectangle (R / 2)" aria-pressed="true"><i data-lucide="square"></i><span class="ex-k">2</span><span class="sk-tooltip ex-tip" role="tooltip">Rectangle <span class="sk-kbd">R ou 2</span></span></button><button class="ex-tool ex-m" aria-label="Diamond (D / 3)"><i data-lucide="diamond"></i><span class="ex-k">3</span></button><button class="ex-tool " aria-label="Ellipse (O / 4)"><i data-lucide="circle"></i><span class="ex-k">4</span></button><button class="ex-tool " aria-label="Arrow (A / 5)"><i data-lucide="move-right"></i><span class="ex-k">5</span></button><button class="ex-tool ex-m" aria-label="Line (L / 6)"><i data-lucide="minus"></i><span class="ex-k">6</span></button><button class="ex-tool " aria-label="Draw (P / 7)"><i data-lucide="pencil"></i><span class="ex-k">7</span></button><button class="ex-tool " aria-label="Text (T / 8)"><i data-lucide="type"></i><span class="ex-k">8</span></button><button class="ex-tool ex-w" aria-label="Image (9)"><i data-lucide="image"></i><span class="ex-k">9</span></button><button class="ex-tool ex-m" aria-label="Eraser (E / 0)"><i data-lucide="eraser"></i><span class="ex-k">0</span></button><span class="ex-vsep" aria-hidden="true"></span><button class="ex-tool ex-w" aria-label="More tools"><i data-lucide="shapes"></i></button></div></div>
+    <span class="sk-stack ex-presence"><span class="sk-avatar sk-avatar--sm sk-p2">CL</span><span class="sk-avatar sk-avatar--sm sk-p9">IB</span><span class="sk-avatar sk-avatar--sm sk-p4">TM</span></span>
+  </div>
+  <div class="ex-mid"><div class="ex-island ex-props"><div class="ex-pl">Trait</div><div class="ex-sws"><span class="ex-sw is-on" style="background:var(--foreground)"></span><span class="ex-sw" style="background:var(--skrum-col-coral-text)"></span><span class="ex-sw" style="background:var(--skrum-col-sky-text)"></span><span class="ex-sw" style="background:var(--skrum-col-moss-text)"></span><span class="ex-sw" style="background:var(--skrum-col-sun-text)"></span></div><div class="ex-pl">Arrière-plan</div><div class="ex-sws"><span class="ex-sw ex-sw--none" title="Transparent"></span><span class="ex-sw sk-c-sun is-on" style="background:var(--c);box-shadow:inset 0 0 0 1.5px var(--c-b)" title="sun"></span><span class="ex-sw sk-c-apricot" style="background:var(--c);box-shadow:inset 0 0 0 1.5px var(--c-b)" title="apricot"></span><span class="ex-sw sk-c-coral" style="background:var(--c);box-shadow:inset 0 0 0 1.5px var(--c-b)" title="coral"></span><span class="ex-sw sk-c-plum" style="background:var(--c);box-shadow:inset 0 0 0 1.5px var(--c-b)" title="plum"></span><span class="ex-sw sk-c-iris" style="background:var(--c);box-shadow:inset 0 0 0 1.5px var(--c-b)" title="iris"></span><span class="ex-sw sk-c-sky" style="background:var(--c);box-shadow:inset 0 0 0 1.5px var(--c-b)" title="sky"></span><span class="ex-sw sk-c-lagoon" style="background:var(--c);box-shadow:inset 0 0 0 1.5px var(--c-b)" title="lagoon"></span><span class="ex-sw sk-c-moss" style="background:var(--c);box-shadow:inset 0 0 0 1.5px var(--c-b)" title="moss"></span></div><div class="ex-pl">Remplissage</div><div class="ex-opts"><span class="ex-opt"><i data-lucide="paint-bucket" class="sk-ico-sm"></i></span><span class="ex-opt is-on"><i data-lucide="square-dashed" class="sk-ico-sm"></i></span><span class="ex-opt"><i data-lucide="square" class="sk-ico-sm"></i></span></div><div class="ex-pl">Épaisseur du trait</div><div class="ex-opts"><span class="ex-opt"><span class="ex-line" style="height:1px"></span></span><span class="ex-opt is-on"><span class="ex-line" style="height:2px"></span></span><span class="ex-opt"><span class="ex-line" style="height:0.25rem"></span></span></div></div><div class="ex-canvas"><svg class="ex-svg" viewBox="0 0 320 220" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+  <g class="sk-c-sun"><path d="M42 30 L152 28 L154 108 L40 110 Z" style="fill:var(--c);stroke:var(--c-b)" stroke-width="2" stroke-linejoin="round"/>
+  <path d="M44 29 L151 30 L152 107 L41 108 Z" fill="none" style="stroke:var(--c-b)" stroke-width="1"/></g>
+  <text x="97" y="74" text-anchor="middle" class="ex-txt">Objectif sprint</text>
+  <rect x="32" y="20" width="132" height="100" fill="none" style="stroke:var(--primary)" stroke-width="1"/>
+  <g style="fill:var(--card);stroke:var(--primary)" stroke-width="1"><rect x="28" y="16" width="8" height="8" rx="2"/><rect x="160" y="16" width="8" height="8" rx="2"/><rect x="28" y="116" width="8" height="8" rx="2"/><rect x="160" y="116" width="8" height="8" rx="2"/></g>
+  <circle cx="98" cy="8" r="4" style="fill:var(--card);stroke:var(--primary)" stroke-width="1"/>
+  <g class="sk-c-lagoon"><ellipse cx="248" cy="70" rx="56" ry="36" style="fill:var(--c);stroke:var(--c-b)" stroke-width="2"/>
+  <ellipse cx="249" cy="71" rx="55" ry="35" fill="none" style="stroke:var(--c-b)" stroke-width="1"/></g>
+  <text x="248" y="75" text-anchor="middle" class="ex-txt">Mise en prod</text>
+  <path d="M156 70 C175 66 180 68 190 70" fill="none" style="stroke:var(--foreground)" stroke-width="2" stroke-linecap="round"/>
+  <path d="M182 63 L191 70 L181 76" fill="none" style="stroke:var(--foreground)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <g class="sk-c-coral"><path d="M200 140 L250 118 L300 142 L250 196 Z" style="fill:var(--c);stroke:var(--c-b)" stroke-width="2" stroke-linejoin="round"/></g>
+  <text x="250" y="162" text-anchor="middle" class="ex-txt">Risques</text>
+  <path d="M60 170 C80 150 100 190 120 165 S160 150 170 175" fill="none" style="stroke:var(--skrum-col-iris-text)" stroke-width="2.5" stroke-linecap="round"/>
+</svg>
+    <span class="sk-cursor" style="left:34%;top:80%;--cur:var(--skrum-presence-9);--cur-fg:var(--skrum-presence-9-foreground)"><svg viewBox="0 0 18 18"><path d="M2 1 L16 8 L9 10 L6 17 Z"/></svg><span class="sk-cursor-tag">Inès</span></span></div></div>
+  <div class="ex-bot">
+    <div class="ex-group">
+      <div class="ex-island ex-zoom"><button class="ex-btn ex-btn--flat" aria-label="Zoom arrière"><i data-lucide="minus"></i></button><span class="ex-zv">100%</span><button class="ex-btn ex-btn--flat" aria-label="Zoom avant"><i data-lucide="plus"></i></button></div>
+      <div class="ex-island ex-zoom"><button class="ex-btn ex-btn--flat" aria-label="Annuler"><i data-lucide="undo-2"></i></button><button class="ex-btn ex-btn--flat is-disabled" aria-label="Rétablir"><i data-lucide="redo-2"></i></button></div>
+    </div>
+    <p class="ex-hint">Pour déplacer le canevas, maintenez la molette ou la barre d'espace en glissant, ou utilisez l'outil main</p>
+    <button class="ex-island ex-btn" aria-label="Aide"><i data-lucide="circle-help"></i></button>
+  </div>
+</div></div><div><div class="sk-state">EN · thème sombre</div>
+<div class="ex-frame" data-theme="dark" lang="en">
+  <div class="ex-top">
+    <button class="ex-island ex-btn" aria-label="Menu"><i data-lucide="menu"></i></button>
+    <div class="ex-center"><div class="ex-island ex-tools" role="toolbar" aria-label="Shapes"><button class="ex-tool ex-w" aria-label="Lock"><i data-lucide="lock-open"></i></button><span class="ex-vsep" aria-hidden="true"></span><button class="ex-tool " aria-label="Hand (H)"><i data-lucide="hand"></i></button><button class="ex-tool " aria-label="Selection (V / 1)"><i data-lucide="mouse-pointer-2"></i><span class="ex-k">1</span></button><button class="ex-tool is-on" aria-label="Rectangle (R / 2)" aria-pressed="true"><i data-lucide="square"></i><span class="ex-k">2</span><span class="sk-tooltip ex-tip" role="tooltip">Rectangle <span class="sk-kbd">R or 2</span></span></button><button class="ex-tool ex-m" aria-label="Diamond (D / 3)"><i data-lucide="diamond"></i><span class="ex-k">3</span></button><button class="ex-tool " aria-label="Ellipse (O / 4)"><i data-lucide="circle"></i><span class="ex-k">4</span></button><button class="ex-tool " aria-label="Arrow (A / 5)"><i data-lucide="move-right"></i><span class="ex-k">5</span></button><button class="ex-tool ex-m" aria-label="Line (L / 6)"><i data-lucide="minus"></i><span class="ex-k">6</span></button><button class="ex-tool " aria-label="Draw (P / 7)"><i data-lucide="pencil"></i><span class="ex-k">7</span></button><button class="ex-tool " aria-label="Text (T / 8)"><i data-lucide="type"></i><span class="ex-k">8</span></button><button class="ex-tool ex-w" aria-label="Image (9)"><i data-lucide="image"></i><span class="ex-k">9</span></button><button class="ex-tool ex-m" aria-label="Eraser (E / 0)"><i data-lucide="eraser"></i><span class="ex-k">0</span></button><span class="ex-vsep" aria-hidden="true"></span><button class="ex-tool ex-w" aria-label="More tools"><i data-lucide="shapes"></i></button></div></div>
+    <span class="sk-stack ex-presence"><span class="sk-avatar sk-avatar--sm sk-p2">CL</span><span class="sk-avatar sk-avatar--sm sk-p9">IB</span><span class="sk-avatar sk-avatar--sm sk-p4">TM</span></span>
+  </div>
+  <div class="ex-mid"><div class="ex-island ex-props"><div class="ex-pl">Stroke</div><div class="ex-sws"><span class="ex-sw is-on" style="background:var(--foreground)"></span><span class="ex-sw" style="background:var(--skrum-col-coral-text)"></span><span class="ex-sw" style="background:var(--skrum-col-sky-text)"></span><span class="ex-sw" style="background:var(--skrum-col-moss-text)"></span><span class="ex-sw" style="background:var(--skrum-col-sun-text)"></span></div><div class="ex-pl">Background</div><div class="ex-sws"><span class="ex-sw ex-sw--none" title="Transparent"></span><span class="ex-sw sk-c-sun is-on" style="background:var(--c);box-shadow:inset 0 0 0 1.5px var(--c-b)" title="sun"></span><span class="ex-sw sk-c-apricot" style="background:var(--c);box-shadow:inset 0 0 0 1.5px var(--c-b)" title="apricot"></span><span class="ex-sw sk-c-coral" style="background:var(--c);box-shadow:inset 0 0 0 1.5px var(--c-b)" title="coral"></span><span class="ex-sw sk-c-plum" style="background:var(--c);box-shadow:inset 0 0 0 1.5px var(--c-b)" title="plum"></span><span class="ex-sw sk-c-iris" style="background:var(--c);box-shadow:inset 0 0 0 1.5px var(--c-b)" title="iris"></span><span class="ex-sw sk-c-sky" style="background:var(--c);box-shadow:inset 0 0 0 1.5px var(--c-b)" title="sky"></span><span class="ex-sw sk-c-lagoon" style="background:var(--c);box-shadow:inset 0 0 0 1.5px var(--c-b)" title="lagoon"></span><span class="ex-sw sk-c-moss" style="background:var(--c);box-shadow:inset 0 0 0 1.5px var(--c-b)" title="moss"></span></div><div class="ex-pl">Fill</div><div class="ex-opts"><span class="ex-opt"><i data-lucide="paint-bucket" class="sk-ico-sm"></i></span><span class="ex-opt is-on"><i data-lucide="square-dashed" class="sk-ico-sm"></i></span><span class="ex-opt"><i data-lucide="square" class="sk-ico-sm"></i></span></div><div class="ex-pl">Stroke width</div><div class="ex-opts"><span class="ex-opt"><span class="ex-line" style="height:1px"></span></span><span class="ex-opt is-on"><span class="ex-line" style="height:2px"></span></span><span class="ex-opt"><span class="ex-line" style="height:0.25rem"></span></span></div></div><div class="ex-canvas"><svg class="ex-svg" viewBox="0 0 320 220" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+  <g class="sk-c-sun"><path d="M42 30 L152 28 L154 108 L40 110 Z" style="fill:var(--c);stroke:var(--c-b)" stroke-width="2" stroke-linejoin="round"/>
+  <path d="M44 29 L151 30 L152 107 L41 108 Z" fill="none" style="stroke:var(--c-b)" stroke-width="1"/></g>
+  <text x="97" y="74" text-anchor="middle" class="ex-txt">Sprint goal</text>
+  <rect x="32" y="20" width="132" height="100" fill="none" style="stroke:var(--primary)" stroke-width="1"/>
+  <g style="fill:var(--card);stroke:var(--primary)" stroke-width="1"><rect x="28" y="16" width="8" height="8" rx="2"/><rect x="160" y="16" width="8" height="8" rx="2"/><rect x="28" y="116" width="8" height="8" rx="2"/><rect x="160" y="116" width="8" height="8" rx="2"/></g>
+  <circle cx="98" cy="8" r="4" style="fill:var(--card);stroke:var(--primary)" stroke-width="1"/>
+  <g class="sk-c-lagoon"><ellipse cx="248" cy="70" rx="56" ry="36" style="fill:var(--c);stroke:var(--c-b)" stroke-width="2"/>
+  <ellipse cx="249" cy="71" rx="55" ry="35" fill="none" style="stroke:var(--c-b)" stroke-width="1"/></g>
+  <text x="248" y="75" text-anchor="middle" class="ex-txt">Release</text>
+  <path d="M156 70 C175 66 180 68 190 70" fill="none" style="stroke:var(--foreground)" stroke-width="2" stroke-linecap="round"/>
+  <path d="M182 63 L191 70 L181 76" fill="none" style="stroke:var(--foreground)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <g class="sk-c-coral"><path d="M200 140 L250 118 L300 142 L250 196 Z" style="fill:var(--c);stroke:var(--c-b)" stroke-width="2" stroke-linejoin="round"/></g>
+  <text x="250" y="162" text-anchor="middle" class="ex-txt">Risks</text>
+  <path d="M60 170 C80 150 100 190 120 165 S160 150 170 175" fill="none" style="stroke:var(--skrum-col-iris-text)" stroke-width="2.5" stroke-linecap="round"/>
+</svg>
+    <span class="sk-cursor" style="left:34%;top:80%;--cur:var(--skrum-presence-9);--cur-fg:var(--skrum-presence-9-foreground)"><svg viewBox="0 0 18 18"><path d="M2 1 L16 8 L9 10 L6 17 Z"/></svg><span class="sk-cursor-tag">Inès</span></span></div></div>
+  <div class="ex-bot">
+    <div class="ex-group">
+      <div class="ex-island ex-zoom"><button class="ex-btn ex-btn--flat" aria-label="Zoom out"><i data-lucide="minus"></i></button><span class="ex-zv">100%</span><button class="ex-btn ex-btn--flat" aria-label="Zoom in"><i data-lucide="plus"></i></button></div>
+      <div class="ex-island ex-zoom"><button class="ex-btn ex-btn--flat" aria-label="Undo"><i data-lucide="undo-2"></i></button><button class="ex-btn ex-btn--flat is-disabled" aria-label="Redo"><i data-lucide="redo-2"></i></button></div>
+    </div>
+    <p class="ex-hint">To move canvas, hold mouse wheel or spacebar while dragging, or use the hand tool</p>
+    <button class="ex-island ex-btn" aria-label="Help"><i data-lucide="circle-help"></i></button>
+  </div>
+</div></div><div><div class="sk-state">FR · thème sombre</div>
+<div class="ex-frame" data-theme="dark" lang="fr">
+  <div class="ex-top">
+    <button class="ex-island ex-btn" aria-label="Menu"><i data-lucide="menu"></i></button>
+    <div class="ex-center"><div class="ex-island ex-tools" role="toolbar" aria-label="Formes"><button class="ex-tool ex-w" aria-label="Lock"><i data-lucide="lock-open"></i></button><span class="ex-vsep" aria-hidden="true"></span><button class="ex-tool " aria-label="Hand (H)"><i data-lucide="hand"></i></button><button class="ex-tool " aria-label="Selection (V / 1)"><i data-lucide="mouse-pointer-2"></i><span class="ex-k">1</span></button><button class="ex-tool is-on" aria-label="Rectangle (R / 2)" aria-pressed="true"><i data-lucide="square"></i><span class="ex-k">2</span><span class="sk-tooltip ex-tip" role="tooltip">Rectangle <span class="sk-kbd">R ou 2</span></span></button><button class="ex-tool ex-m" aria-label="Diamond (D / 3)"><i data-lucide="diamond"></i><span class="ex-k">3</span></button><button class="ex-tool " aria-label="Ellipse (O / 4)"><i data-lucide="circle"></i><span class="ex-k">4</span></button><button class="ex-tool " aria-label="Arrow (A / 5)"><i data-lucide="move-right"></i><span class="ex-k">5</span></button><button class="ex-tool ex-m" aria-label="Line (L / 6)"><i data-lucide="minus"></i><span class="ex-k">6</span></button><button class="ex-tool " aria-label="Draw (P / 7)"><i data-lucide="pencil"></i><span class="ex-k">7</span></button><button class="ex-tool " aria-label="Text (T / 8)"><i data-lucide="type"></i><span class="ex-k">8</span></button><button class="ex-tool ex-w" aria-label="Image (9)"><i data-lucide="image"></i><span class="ex-k">9</span></button><button class="ex-tool ex-m" aria-label="Eraser (E / 0)"><i data-lucide="eraser"></i><span class="ex-k">0</span></button><span class="ex-vsep" aria-hidden="true"></span><button class="ex-tool ex-w" aria-label="More tools"><i data-lucide="shapes"></i></button></div></div>
+    <span class="sk-stack ex-presence"><span class="sk-avatar sk-avatar--sm sk-p2">CL</span><span class="sk-avatar sk-avatar--sm sk-p9">IB</span><span class="sk-avatar sk-avatar--sm sk-p4">TM</span></span>
+  </div>
+  <div class="ex-mid"><div class="ex-island ex-props"><div class="ex-pl">Trait</div><div class="ex-sws"><span class="ex-sw is-on" style="background:var(--foreground)"></span><span class="ex-sw" style="background:var(--skrum-col-coral-text)"></span><span class="ex-sw" style="background:var(--skrum-col-sky-text)"></span><span class="ex-sw" style="background:var(--skrum-col-moss-text)"></span><span class="ex-sw" style="background:var(--skrum-col-sun-text)"></span></div><div class="ex-pl">Arrière-plan</div><div class="ex-sws"><span class="ex-sw ex-sw--none" title="Transparent"></span><span class="ex-sw sk-c-sun is-on" style="background:var(--c);box-shadow:inset 0 0 0 1.5px var(--c-b)" title="sun"></span><span class="ex-sw sk-c-apricot" style="background:var(--c);box-shadow:inset 0 0 0 1.5px var(--c-b)" title="apricot"></span><span class="ex-sw sk-c-coral" style="background:var(--c);box-shadow:inset 0 0 0 1.5px var(--c-b)" title="coral"></span><span class="ex-sw sk-c-plum" style="background:var(--c);box-shadow:inset 0 0 0 1.5px var(--c-b)" title="plum"></span><span class="ex-sw sk-c-iris" style="background:var(--c);box-shadow:inset 0 0 0 1.5px var(--c-b)" title="iris"></span><span class="ex-sw sk-c-sky" style="background:var(--c);box-shadow:inset 0 0 0 1.5px var(--c-b)" title="sky"></span><span class="ex-sw sk-c-lagoon" style="background:var(--c);box-shadow:inset 0 0 0 1.5px var(--c-b)" title="lagoon"></span><span class="ex-sw sk-c-moss" style="background:var(--c);box-shadow:inset 0 0 0 1.5px var(--c-b)" title="moss"></span></div><div class="ex-pl">Remplissage</div><div class="ex-opts"><span class="ex-opt"><i data-lucide="paint-bucket" class="sk-ico-sm"></i></span><span class="ex-opt is-on"><i data-lucide="square-dashed" class="sk-ico-sm"></i></span><span class="ex-opt"><i data-lucide="square" class="sk-ico-sm"></i></span></div><div class="ex-pl">Épaisseur du trait</div><div class="ex-opts"><span class="ex-opt"><span class="ex-line" style="height:1px"></span></span><span class="ex-opt is-on"><span class="ex-line" style="height:2px"></span></span><span class="ex-opt"><span class="ex-line" style="height:0.25rem"></span></span></div></div><div class="ex-canvas"><svg class="ex-svg" viewBox="0 0 320 220" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+  <g class="sk-c-sun"><path d="M42 30 L152 28 L154 108 L40 110 Z" style="fill:var(--c);stroke:var(--c-b)" stroke-width="2" stroke-linejoin="round"/>
+  <path d="M44 29 L151 30 L152 107 L41 108 Z" fill="none" style="stroke:var(--c-b)" stroke-width="1"/></g>
+  <text x="97" y="74" text-anchor="middle" class="ex-txt">Objectif sprint</text>
+  <rect x="32" y="20" width="132" height="100" fill="none" style="stroke:var(--primary)" stroke-width="1"/>
+  <g style="fill:var(--card);stroke:var(--primary)" stroke-width="1"><rect x="28" y="16" width="8" height="8" rx="2"/><rect x="160" y="16" width="8" height="8" rx="2"/><rect x="28" y="116" width="8" height="8" rx="2"/><rect x="160" y="116" width="8" height="8" rx="2"/></g>
+  <circle cx="98" cy="8" r="4" style="fill:var(--card);stroke:var(--primary)" stroke-width="1"/>
+  <g class="sk-c-lagoon"><ellipse cx="248" cy="70" rx="56" ry="36" style="fill:var(--c);stroke:var(--c-b)" stroke-width="2"/>
+  <ellipse cx="249" cy="71" rx="55" ry="35" fill="none" style="stroke:var(--c-b)" stroke-width="1"/></g>
+  <text x="248" y="75" text-anchor="middle" class="ex-txt">Mise en prod</text>
+  <path d="M156 70 C175 66 180 68 190 70" fill="none" style="stroke:var(--foreground)" stroke-width="2" stroke-linecap="round"/>
+  <path d="M182 63 L191 70 L181 76" fill="none" style="stroke:var(--foreground)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <g class="sk-c-coral"><path d="M200 140 L250 118 L300 142 L250 196 Z" style="fill:var(--c);stroke:var(--c-b)" stroke-width="2" stroke-linejoin="round"/></g>
+  <text x="250" y="162" text-anchor="middle" class="ex-txt">Risques</text>
+  <path d="M60 170 C80 150 100 190 120 165 S160 150 170 175" fill="none" style="stroke:var(--skrum-col-iris-text)" stroke-width="2.5" stroke-linecap="round"/>
+</svg>
+    <span class="sk-cursor" style="left:34%;top:80%;--cur:var(--skrum-presence-9);--cur-fg:var(--skrum-presence-9-foreground)"><svg viewBox="0 0 18 18"><path d="M2 1 L16 8 L9 10 L6 17 Z"/></svg><span class="sk-cursor-tag">Inès</span></span></div></div>
+  <div class="ex-bot">
+    <div class="ex-group">
+      <div class="ex-island ex-zoom"><button class="ex-btn ex-btn--flat" aria-label="Zoom arrière"><i data-lucide="minus"></i></button><span class="ex-zv">100%</span><button class="ex-btn ex-btn--flat" aria-label="Zoom avant"><i data-lucide="plus"></i></button></div>
+      <div class="ex-island ex-zoom"><button class="ex-btn ex-btn--flat" aria-label="Annuler"><i data-lucide="undo-2"></i></button><button class="ex-btn ex-btn--flat is-disabled" aria-label="Rétablir"><i data-lucide="redo-2"></i></button></div>
+    </div>
+    <p class="ex-hint">Pour déplacer le canevas, maintenez la molette ou la barre d'espace en glissant, ou utilisez l'outil main</p>
+    <button class="ex-island ex-btn" aria-label="Aide"><i data-lucide="circle-help"></i></button>
+  </div>
+</div></div></div>
+<div><div class="sk-state">Palette de remplissage · remplace les couleurs Excalidraw par défaut · fond --skrum-col-* · trait --skrum-col-*-border</div>
+<div class="ex-pals"><div class="ex-pal sk-c-sun"><span class="ex-pal-sw"></span><div class="ex-pal-t"><span class="sk-sm sk-strong">Sun · Soleil</span><span class="ex-pal-tok">--skrum-col-sun</span><span class="ex-pal-tok">--skrum-col-sun-border</span></div></div><div class="ex-pal sk-c-apricot"><span class="ex-pal-sw"></span><div class="ex-pal-t"><span class="sk-sm sk-strong">Apricot · Abricot</span><span class="ex-pal-tok">--skrum-col-apricot</span><span class="ex-pal-tok">--skrum-col-apricot-border</span></div></div><div class="ex-pal sk-c-coral"><span class="ex-pal-sw"></span><div class="ex-pal-t"><span class="sk-sm sk-strong">Coral · Corail</span><span class="ex-pal-tok">--skrum-col-coral</span><span class="ex-pal-tok">--skrum-col-coral-border</span></div></div><div class="ex-pal sk-c-plum"><span class="ex-pal-sw"></span><div class="ex-pal-t"><span class="sk-sm sk-strong">Plum · Prune</span><span class="ex-pal-tok">--skrum-col-plum</span><span class="ex-pal-tok">--skrum-col-plum-border</span></div></div><div class="ex-pal sk-c-iris"><span class="ex-pal-sw"></span><div class="ex-pal-t"><span class="sk-sm sk-strong">Iris · Iris</span><span class="ex-pal-tok">--skrum-col-iris</span><span class="ex-pal-tok">--skrum-col-iris-border</span></div></div><div class="ex-pal sk-c-sky"><span class="ex-pal-sw"></span><div class="ex-pal-t"><span class="sk-sm sk-strong">Sky · Ciel</span><span class="ex-pal-tok">--skrum-col-sky</span><span class="ex-pal-tok">--skrum-col-sky-border</span></div></div><div class="ex-pal sk-c-lagoon"><span class="ex-pal-sw"></span><div class="ex-pal-t"><span class="sk-sm sk-strong">Lagoon · Lagon</span><span class="ex-pal-tok">--skrum-col-lagoon</span><span class="ex-pal-tok">--skrum-col-lagoon-border</span></div></div><div class="ex-pal sk-c-moss"><span class="ex-pal-sw"></span><div class="ex-pal-t"><span class="sk-sm sk-strong">Moss · Mousse</span><span class="ex-pal-tok">--skrum-col-moss</span><span class="ex-pal-tok">--skrum-col-moss-border</span></div></div></div></div>
+</div>
+</body>
+</html>

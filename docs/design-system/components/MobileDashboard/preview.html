@@ -1,0 +1,192 @@
+<!-- @dsCard group="Écrans · Mobile" width=1440 height=972 subtitle="Dashboard d'équipe · Actions (chips de filtre, groupement par rétro) · Paramètres équipe / admin d'instance" -->
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><title>MobileDashboard</title>
+<style>
+/* mobile helpers (local, tokens only) */
+.m-app{flex:1;min-height:0;display:flex;flex-direction:column;position:relative}
+.m-bar{height:3.25rem;flex:none;display:flex;align-items:center;gap:var(--space-1);padding:0 var(--space-2)}
+.m-bar-t{flex:1;min-width:0;display:flex;flex-direction:column;padding:0 var(--space-1)}
+.m-bar-t b{font-size:1rem;line-height:1.25rem;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.m-bar-t small{font-size:0.75rem;line-height:1rem;color:var(--muted-foreground);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.m-body{flex:1;min-height:0;overflow:hidden;padding:var(--space-2) var(--space-4) var(--space-4);display:flex;flex-direction:column;gap:var(--space-4)}
+.m-foot{flex:none;padding:var(--space-3) var(--space-4) 1.875rem;border-top:1px solid var(--border);background:var(--background);display:flex;gap:var(--space-2)}
+.m-foot > .sk-btn{flex:1}
+.m-sec{font-size:0.75rem;line-height:1rem;font-weight:650;letter-spacing:.06em;text-transform:uppercase;color:var(--muted-foreground);display:flex;align-items:center;gap:var(--space-2)}
+.m-sec .sk-grow + *{letter-spacing:0;text-transform:none}
+.m-chips{display:flex;gap:var(--space-2);overflow:hidden;margin:0 calc(-1 * var(--space-4));padding:0.25rem var(--space-4)}
+.m-chip{position:relative;flex:none;height:2.25rem;padding:0 0.875rem;border-radius:var(--radius-full);border:1px solid var(--input);background:var(--card);display:inline-flex;align-items:center;gap:0.375rem;font-size:0.875rem;font-weight:600;color:var(--foreground);white-space:nowrap}
+.m-chip::before{content:"";position:absolute;inset:-0.25rem 0}
+.m-chip .n{font-size:0.75rem;font-weight:700;color:var(--muted-foreground)}
+.m-chip.is-on{background:var(--foreground);border-color:var(--foreground);color:var(--background)}
+.m-chip.is-on .n{color:inherit;opacity:.75}
+.m-tabnav{flex:none;display:flex;border-top:1px solid var(--border);background:var(--card);padding:0.25rem var(--space-2) 1.625rem}
+.m-tabnav a{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:3.125rem;font-size:0.6875rem;line-height:0.875rem;font-weight:600;color:var(--muted-foreground);text-decoration:none}
+.m-tabnav a .lucide{width:1.375rem;height:1.375rem}
+.m-tabnav a.is-on{color:var(--skrum-primary-text)}
+.m-list{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-xl);overflow:hidden}
+.m-li{min-height:3.25rem;display:flex;align-items:center;gap:var(--space-3);padding:var(--space-2) var(--space-4);font-size:0.9375rem;line-height:1.25rem}
+.m-li + .m-li{border-top:1px solid var(--border)}
+.m-li > .lucide:last-child{color:var(--muted-foreground)}
+.m-li-v{font-size:0.875rem;color:var(--muted-foreground);white-space:nowrap}
+.m-ico{width:2rem;height:2rem;border-radius:var(--radius-md);display:grid;place-items:center;flex:none;background:var(--c,var(--muted));color:var(--c-t,var(--foreground));border:1px solid var(--c-b,transparent)}
+.m-fab{position:absolute;right:var(--space-4);width:3.5rem;height:3.5rem;border-radius:var(--radius-full);background:var(--primary);color:var(--primary-foreground);display:grid;place-items:center;box-shadow:var(--shadow-raised);z-index:3}
+.m-fab .lucide{width:1.5rem;height:1.5rem}
+
+.m-drawer{position:absolute;left:0;right:0;bottom:0;z-index:5;border-left:0;border-right:0;padding-bottom:1.875rem}
+.sk-phone-status .lucide{width:1rem;height:1rem}
+.sk-phone-home{z-index:9}
+.m-foot.is-col{flex-direction:column}.m-foot.is-col > .sk-btn{flex:none}
+.sk-stack > .sk-avatar--sm + .sk-avatar{margin-left:-0.3125rem}
+
+.teamsw{display:flex;align-items:center;gap:var(--space-2);height:2.75rem;padding:0 var(--space-2);border-radius:var(--radius-md);font-size:1rem;font-weight:650}
+.live{border-radius:var(--radius-xl);background:var(--card);border:1px solid var(--border);box-shadow:var(--shadow-card);padding:var(--space-4);display:flex;flex-direction:column;gap:var(--space-3)}
+.quick{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-2)}
+.qt{min-height:3.5rem;display:flex;align-items:center;gap:var(--space-3);padding:0 var(--space-3);border-radius:var(--radius);background:var(--card);border:1px solid var(--border);font-size:0.875rem;font-weight:650}
+.m-action{display:flex;gap:var(--space-3);align-items:flex-start;padding:var(--space-3) var(--space-4);min-height:4rem}
+.m-action + .m-action{border-top:1px solid var(--border)}
+.m-action .hit{width:1.5rem;height:2.75rem;margin:-0.625rem 0;display:grid;place-items:center;flex:none}
+.m-action .sk-check{width:1.25rem;height:1.25rem;border-radius:var(--radius-sm)}
+.m-action.is-done .sk-action-t{text-decoration:line-through;color:var(--muted-foreground)}
+.grp-h{display:flex;align-items:center;gap:var(--space-2);font-size:0.8125rem;font-weight:650;color:var(--muted-foreground);padding:0 var(--space-1)}
+.grp-h .sk-grow{color:var(--foreground);font-size:0.875rem}
+.settings-h{display:flex;align-items:center;gap:var(--space-3);padding:var(--space-2) 0}
+</style></head>
+<body class="sk-canvas">
+<div class="sk-phones">
+
+  <!-- 1. Dashboard -->
+  <div>
+    <div class="sk-phone">
+      <div class="sk-phone-status"><span>9:41</span><span class="sk-row sk-gap-1"><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></span></div>
+      <div class="m-app">
+        <div class="m-bar">
+          <span class="teamsw"><span class="sk-team-mark">A</span>Atlas<i data-lucide="chevrons-up-down" class="sk-ico-sm" style="color:var(--muted-foreground)"></i></span>
+          <span class="sk-grow"></span>
+          <a class="sk-btn sk-btn--ghost sk-btn--icon sk-btn--lg" aria-label="Rechercher"><i data-lucide="search" class="sk-ico-lg"></i></a>
+          <span class="m-hit" style="display:grid;place-items:center"><span class="sk-avatar sk-p4">CR</span></span>
+        </div>
+        <div class="m-body">
+          <h1 class="sk-h2" style="font-family:var(--font-display)">Bonjour Camille</h1>
+          <div class="live">
+            <div class="sk-between"><span class="sk-badge sk-badge--success sk-badge--pill"><span class="sk-dot"></span>En direct · 18 min</span><span class="sk-stack"><span class="sk-avatar sk-avatar--sm sk-p2">TM</span><span class="sk-avatar sk-avatar--sm sk-p9">IB</span><span class="sk-avatar sk-avatar--sm sk-p6">MK</span><span class="sk-avatar sk-avatar--sm sk-stack-more">+3</span></span></div>
+            <div><b style="font-size:1.0625rem;line-height:1.5rem">Rétro · Sprint 42</b><div class="sk-sm sk-muted">Phase 2 sur 5 · Vote — vous facilitez</div></div>
+            <a class="sk-btn sk-btn--lg sk-btn--block">Reprendre la session<i data-lucide="arrow-right"></i></a>
+          </div>
+          <div>
+            <div class="m-sec" style="margin-bottom:var(--space-2)">Lancer un rituel</div>
+            <div class="quick">
+              <span class="qt"><span class="m-ico sk-c-coral"><i data-lucide="sticky-note"></i></span>Rétro</span>
+              <span class="qt"><span class="m-ico sk-c-iris"><i data-lucide="spade"></i></span>Planning poker</span>
+              <span class="qt"><span class="m-ico sk-c-lagoon"><i data-lucide="pen-line"></i></span>Whiteboard</span>
+              <span class="qt"><span class="m-ico sk-c-sun"><i data-lucide="chart-bar-big"></i></span>Sondage</span>
+            </div>
+          </div>
+          <div>
+            <div class="m-sec" style="margin-bottom:var(--space-2)">Mes actions<span class="sk-grow"></span><a class="sk-link sk-sm" style="font-weight:600">Tout voir</a></div>
+            <div class="m-list">
+              <div class="m-action"><span class="hit"><span class="sk-check"></span></span><span class="sk-grow"><span class="sk-action-t">Stabiliser les tests E2E du checkout</span><span class="sk-action-meta"><span class="sk-due is-late"><i data-lucide="calendar-clock" class="sk-ico-sm"></i>Hier</span><span class="sk-ticket">ATLAS-1287</span></span></span></div>
+              <div class="m-action"><span class="hit"><span class="sk-check"></span></span><span class="sk-grow"><span class="sk-action-t">Timeboxer le daily à 15 min</span><span class="sk-action-meta"><span><i data-lucide="calendar" class="sk-ico-sm"></i>Ven. 3 oct.</span><span class="sk-prio sk-prio--medium"><span class="bars"><i></i><i></i><i></i></span>Moyenne</span></span></span></div>
+            </div>
+          </div>
+        </div>
+        <nav class="m-tabnav">
+          <a class="is-on"><i data-lucide="layout-dashboard"></i>Accueil</a>
+          <a><i data-lucide="calendar-clock"></i>Sessions</a>
+          <a><i data-lucide="list-checks"></i>Actions</a>
+          <a><i data-lucide="trending-up"></i>Moral</a>
+          <a><i data-lucide="ellipsis"></i>Plus</a>
+        </nav>
+      </div>
+      <div class="sk-phone-home"></div>
+    </div>
+    <div class="sk-phone-cap">Dashboard d'équipe</div>
+  </div>
+
+  <!-- 2. Actions -->
+  <div>
+    <div class="sk-phone">
+      <div class="sk-phone-status"><span>9:41</span><span class="sk-row sk-gap-1"><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></span></div>
+      <div class="m-app">
+        <div class="m-bar" style="padding-left:var(--space-4)">
+          <h1 class="sk-h2 sk-grow" style="font-family:var(--font-display)">Actions</h1>
+          <a class="sk-btn sk-btn--ghost sk-btn--icon sk-btn--lg" aria-label="Rechercher"><i data-lucide="search" class="sk-ico-lg"></i></a>
+          <a class="sk-btn sk-btn--ghost sk-btn--icon sk-btn--lg" aria-label="Trier et grouper"><i data-lucide="arrow-down-wide-narrow" class="sk-ico-lg"></i></a>
+        </div>
+        <div class="m-body" style="gap:var(--space-3)">
+          <div class="m-chips">
+            <span class="m-chip is-on"><i data-lucide="user" class="sk-ico-sm"></i>À moi <span class="n">6</span></span>
+            <span class="m-chip"><i data-lucide="circle-alert" class="sk-ico-sm" style="color:var(--skrum-destructive-text)"></i>En retard <span class="n">2</span></span>
+            <span class="m-chip">Ouvertes <span class="n">24</span></span>
+            <span class="m-chip">Terminées</span>
+          </div>
+          <div class="sk-between sk-sm"><span class="sk-muted">Groupées par <b style="color:var(--foreground)">rétro d'origine</b></span><a class="sk-btn sk-btn--ghost sk-btn--sm" style="height:2.25rem">Modifier<i data-lucide="chevron-down" class="sk-ico-sm"></i></a></div>
+          <div class="grp-h"><i data-lucide="sticky-note" class="sk-ico-sm"></i><span class="sk-grow">Rétro · Sprint 42</span>3</div>
+          <div class="m-list">
+            <div class="m-action"><span class="hit"><span class="sk-check"></span></span><span class="sk-grow"><span class="sk-action-t">Stabiliser les tests E2E du checkout</span><span class="sk-action-meta"><span class="sk-due is-late"><i data-lucide="calendar-clock" class="sk-ico-sm"></i>Hier</span><span class="sk-prio sk-prio--high"><span class="bars"><i></i><i></i><i></i></span>Haute</span><span class="sk-ticket">ATLAS-1287</span></span></span></div>
+            <div class="m-action"><span class="hit"><span class="sk-check"></span></span><span class="sk-grow"><span class="sk-action-t">Timeboxer le daily à 15 min</span><span class="sk-action-meta"><span><i data-lucide="calendar" class="sk-ico-sm"></i>Ven. 3 oct.</span><span class="sk-prio sk-prio--medium"><span class="bars"><i></i><i></i><i></i></span>Moyenne</span></span></span></div>
+            <div class="m-action is-done"><span class="hit"><span class="sk-check is-on"></span></span><span class="sk-grow"><span class="sk-action-t">Documenter le rollback des migrations</span><span class="sk-action-meta"><span><i data-lucide="check" class="sk-ico-sm"></i>Fait lundi</span><span class="sk-ticket">ATLAS-1301</span></span></span></div>
+          </div>
+          <div class="grp-h"><i data-lucide="sticky-note" class="sk-ico-sm"></i><span class="sk-grow">Rétro · Sprint 41</span>3</div>
+          <div class="m-list">
+            <div class="m-action"><span class="hit"><span class="sk-check"></span></span><span class="sk-grow"><span class="sk-action-t">Revue de code en moins de 24 h</span><span class="sk-action-meta"><span class="sk-due is-late"><i data-lucide="calendar-clock" class="sk-ico-sm"></i>Il y a 4 j</span><span class="sk-prio sk-prio--medium"><span class="bars"><i></i><i></i><i></i></span>Moyenne</span></span></span></div>
+            <div class="m-action"><span class="hit"><span class="sk-check"></span></span><span class="sk-grow"><span class="sk-action-t">Préparer la démo Kapsule pour Théo</span><span class="sk-action-meta"><span><i data-lucide="calendar" class="sk-ico-sm"></i>Mar. 7 oct.</span><span class="sk-prio sk-prio--low"><span class="bars"><i></i><i></i><i></i></span>Basse</span></span></span></div>
+          </div>
+        </div>
+        <nav class="m-tabnav">
+          <a><i data-lucide="layout-dashboard"></i>Accueil</a>
+          <a><i data-lucide="calendar-clock"></i>Sessions</a>
+          <a class="is-on"><i data-lucide="list-checks"></i>Actions</a>
+          <a><i data-lucide="trending-up"></i>Moral</a>
+          <a><i data-lucide="ellipsis"></i>Plus</a>
+        </nav>
+      </div>
+      <div class="sk-phone-home"></div>
+    </div>
+    <div class="sk-phone-cap">Actions — filtres en chips, groupement</div>
+  </div>
+
+  <!-- 3. Settings -->
+  <div>
+    <div class="sk-phone">
+      <div class="sk-phone-status"><span>9:41</span><span class="sk-row sk-gap-1"><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></span></div>
+      <div class="m-app">
+        <div class="m-bar">
+          <a class="sk-btn sk-btn--ghost sk-btn--icon sk-btn--lg" aria-label="Retour"><i data-lucide="chevron-left" class="sk-ico-lg"></i></a>
+          <span class="m-bar-t"><b>Paramètres</b><small>Équipe Atlas</small></span>
+        </div>
+        <div class="m-body" style="gap:var(--space-3)">
+          <div class="settings-h"><span class="sk-team-mark" style="width:3rem;height:3rem;font-size:1.25rem;border-radius:var(--radius)">A</span><span class="sk-grow"><b style="font-size:1.0625rem;display:block;line-height:1.5rem">Atlas</b><span class="sk-sm sk-muted">12 membres · créée en mars 2025</span></span></div>
+          <div class="m-sec">Équipe</div>
+          <div class="m-list">
+            <div class="m-li"><span class="m-ico"><i data-lucide="users-round"></i></span><span class="sk-grow">Membres &amp; rôles</span><span class="m-li-v">12</span><i data-lucide="chevron-right"></i></div>
+            <div class="m-li"><span class="m-ico"><i data-lucide="layout-template"></i></span><span class="sk-grow">Modèles de rétro</span><span class="m-li-v">5</span><i data-lucide="chevron-right"></i></div>
+            <div class="m-li"><span class="m-ico"><i data-lucide="plug"></i></span><span class="sk-grow">Intégrations</span><span class="m-li-v">Jira</span><i data-lucide="chevron-right"></i></div>
+          </div>
+          <div class="m-sec">Instance<span class="sk-badge sk-badge--soft" style="letter-spacing:0;text-transform:none"><i data-lucide="shield-check"></i>Admin</span></div>
+          <div class="m-list">
+            <div class="m-li"><span class="m-ico"><i data-lucide="palette"></i></span><span class="sk-grow">Branding</span><i data-lucide="chevron-right"></i></div>
+            <div class="m-li"><span class="m-ico"><i data-lucide="key-round"></i></span><span class="sk-grow">SSO · OIDC</span><span class="sk-badge sk-badge--success">Actif</span><i data-lucide="chevron-right"></i></div>
+            <div class="m-li"><span class="m-ico"><i data-lucide="mail"></i></span><span class="sk-grow">SMTP</span><span class="sk-badge sk-badge--warning">À vérifier</span><i data-lucide="chevron-right"></i></div>
+            <div class="m-li"><span class="m-ico"><i data-lucide="database-backup"></i></span><span class="sk-grow">Sauvegardes</span><span class="m-li-v">Hier 03:00</span><i data-lucide="chevron-right"></i></div>
+          </div>
+          <div class="m-list">
+            <div class="m-li" style="color:var(--skrum-destructive-text)"><span class="m-ico" style="background:var(--skrum-destructive-soft);color:inherit"><i data-lucide="log-out"></i></span><span class="sk-grow" style="font-weight:600">Quitter l'équipe</span></div>
+          </div>
+        </div>
+        <nav class="m-tabnav">
+          <a><i data-lucide="layout-dashboard"></i>Accueil</a>
+          <a><i data-lucide="calendar-clock"></i>Sessions</a>
+          <a><i data-lucide="list-checks"></i>Actions</a>
+          <a><i data-lucide="trending-up"></i>Moral</a>
+          <a class="is-on"><i data-lucide="ellipsis"></i>Plus</a>
+        </nav>
+      </div>
+      <div class="sk-phone-home"></div>
+    </div>
+    <div class="sk-phone-cap">Paramètres équipe / admin d'instance</div>
+  </div>
+
+</div>
+</body>
+</html>

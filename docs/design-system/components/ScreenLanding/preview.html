@@ -1,0 +1,171 @@
+<!-- @dsCard group="Écrans · Desktop" width=1440 height=3930 subtitle="Landing marketing : hero + aperçu produit composé de vrais composants, modules, self-host / open source, pricing SaaS + self-host gratuit, CTA, footer" -->
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><title>ScreenLanding</title>
+<style>
+  .scr-in { width: 75rem; margin: 0 auto; }
+  .scr-nav { height: 4.5rem; display: flex; align-items: center; gap: var(--space-8); }
+  .scr-nav a { font-size: 0.875rem; font-weight: 500; color: var(--muted-foreground); text-decoration: none; }
+  .scr-word { font-family: var(--font-display); font-weight: 700; letter-spacing: -.03em; font-size: 1.375rem; }
+  .scr-hero { text-align: center; padding: var(--space-12) 0 var(--space-10); display: flex; flex-direction: column; align-items: center; gap: var(--space-5); }
+  .scr-d2 { font-family: var(--font-display); font-size: 3.75rem; line-height: 4rem; font-weight: 700; letter-spacing: -.03em; margin: 0; max-width: 56.25rem; }
+  .scr-d2 em { font-style: normal; color: var(--skrum-primary-text); }
+  .scr-lead { font-size: 1.125rem; line-height: 1.75rem; color: var(--muted-foreground); max-width: 40rem; margin: 0; }
+  .scr-cmd { display: inline-flex; align-items: center; gap: var(--space-3); font-family: var(--font-mono); font-size: 0.8125rem; padding: 0.375rem 0.5rem 0.375rem 0.875rem; border-radius: var(--radius-md); background: var(--muted); border: 1px solid var(--border); }
+  .scr-cmd b { color: var(--skrum-primary-text); font-weight: 600; }
+  .scr-app { overflow: hidden; box-shadow: var(--shadow-modal); text-align: left; }
+  .scr-app-top { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-4); border-bottom: 1px solid var(--border); height: 3.5rem; }
+  .scr-app-body { display: grid; grid-template-columns: 1fr 1fr 1fr 20.625rem; gap: var(--space-4); padding: var(--space-5); position: relative; align-items: start; }
+  .scr-app-actions { padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-2); box-shadow: var(--shadow-raised); }
+  .scr-app-actions .sk-action { padding: 0.625rem 0.75rem; }
+  .scr-sec { padding: var(--space-16) 0 0; }
+  .scr-eyebrow { font-size: 0.75rem; font-weight: 650; letter-spacing: .08em; text-transform: uppercase; color: var(--skrum-primary-text); }
+  .scr-sh { display: flex; flex-direction: column; gap: var(--space-3); margin-bottom: var(--space-8); max-width: 45rem; }
+  .scr-d1 { font-family: var(--font-display); font-size: 2.75rem; line-height: 3rem; font-weight: 700; letter-spacing: -.025em; margin: 0; }
+  .scr-mods { display: grid; grid-template-columns: repeat(6, 1fr); gap: var(--space-5); }
+  .scr-mod { overflow: hidden; }
+  .scr-mod-art { height: 11rem; display: grid; place-items: center; background: color-mix(in oklch, var(--c) 45%, var(--card)); border-bottom: 1px solid color-mix(in oklch, var(--c-b) 50%, transparent); }
+  .scr-mod-art > div > .sk-rcard { width: 16.25rem; flex: none; }
+  .scr-mod-ico { width: 1.875rem; height: 1.875rem; border-radius: var(--radius-md); display: grid; place-items: center; background: var(--c); color: var(--c-t); border: 1px solid var(--c-b); }
+  .scr-self { display: grid; grid-template-columns: 1fr 37.5rem; gap: var(--space-12); align-items: start; }
+  .scr-points { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-5); margin-top: var(--space-8); }
+  .scr-point { display: flex; gap: var(--space-3); }
+  .scr-point > .lucide { color: var(--skrum-primary-text); margin-top: 0.1875rem; }
+  .scr-code { overflow: hidden; }
+  .scr-code-h { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-3); border-bottom: 1px solid var(--border); background: var(--muted); }
+  .scr-code pre { margin: 0; padding: var(--space-5); font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.375rem; color: var(--foreground); white-space: pre; }
+  .scr-c { color: var(--skrum-info-text); } .scr-s { color: var(--skrum-success-text); } .scr-k { color: var(--muted-foreground); }
+  .scr-brandcard { padding: var(--space-5); display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-5); align-items: center; margin-top: var(--space-5); }
+  .scr-swatch { width: 1.75rem; height: 1.75rem; border-radius: var(--radius-md); border: 2px solid var(--card); box-shadow: 0 0 0 1px var(--border); }
+  .scr-swatch.is-on { box-shadow: 0 0 0 2px var(--ring); }
+  .scr-plans { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-5); align-items: stretch; }
+  .scr-plan { padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-5); }
+  .scr-plan.is-hi { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary), var(--shadow-raised); }
+  .scr-price { font-family: var(--font-display); font-size: 2.125rem; line-height: 2.5rem; font-weight: 700; letter-spacing: -.02em; }
+  .scr-feats { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); font-size: 0.875rem; }
+  .scr-feats li { display: flex; gap: var(--space-2); align-items: center; }
+  .scr-feats .lucide { color: var(--skrum-success-text); }
+  .scr-selfband { margin-top: var(--space-5); padding: var(--space-5) var(--space-6); display: flex; align-items: center; gap: var(--space-5); background: var(--secondary); color: var(--secondary-foreground); border-color: transparent; }
+  .scr-final { padding: var(--space-12); text-align: center; display: flex; flex-direction: column; align-items: center; gap: var(--space-5); background: var(--skrum-primary-soft); border-color: transparent; box-shadow: none; }
+  .scr-footer { margin-top: var(--space-16); border-top: 1px solid var(--border); padding: var(--space-12) 0 var(--space-10); }
+  .scr-fcols { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: var(--space-8); }
+  .scr-fcols h4 { font-size: 0.8125rem; font-weight: 650; margin: 0 0 var(--space-3); }
+  .scr-fcols a { display: block; font-size: 0.875rem; color: var(--muted-foreground); line-height: 1.875rem; text-decoration: none; }
+</style></head>
+<body>
+<div class="sk-desktop" style="height:auto">
+ <div class="scr-in">
+  <header class="scr-nav">
+    <a class="sk-row sk-gap-2" style="color:var(--foreground)"><svg viewBox="0 0 64 64" width="28" height="28" aria-label="Skrüm"><path d="M14 0 H50 A14 14 0 0 1 64 14 V46 L46 64 H14 A14 14 0 0 1 0 50 V14 A14 14 0 0 1 14 0 Z" style="fill:var(--primary)"/><path d="M64 46 L50 46 A4 4 0 0 0 46 50 L46 64 Z" style="fill:color-mix(in oklch, var(--primary) 70%, var(--foreground))"/><path d="M19 27 L19 38 C19 45 24 49.5 30 49.5 C36 49.5 41 45 41 38 L41 27" fill="none" style="stroke:var(--primary-foreground)" stroke-width="7" stroke-linecap="round"/><circle cx="21.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/><circle cx="38.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/></svg><span class="scr-word">skrüm</span></a>
+    <nav class="sk-row sk-gap-6"><a>Modules</a><a>Self-host</a><a>Tarifs</a><a>Documentation</a><a>Changelog</a></nav>
+    <span class="sk-grow"></span>
+    <button class="sk-btn sk-btn--ghost"><i data-lucide="github"></i>GitHub</button>
+    <button class="sk-btn sk-btn--ghost">Se connecter</button>
+    <button class="sk-btn">Essayer gratuitement</button>
+  </header>
+
+  <section class="scr-hero">
+    <span class="sk-badge sk-badge--soft sk-badge--pill"><i data-lucide="git-branch"></i>Open source · SaaS ou auto-hébergé</span>
+    <h1 class="scr-d2">Les réunions se terminent,<br><em>les actions restent.</em></h1>
+    <p class="scr-lead">Rétrospectives, planning poker, whiteboard, icebreakers et sondages dans un seul outil — et chaque décision devient une action suivie, avec un responsable et une échéance.</p>
+    <div class="sk-row sk-gap-3" style="justify-content:center">
+      <button class="sk-btn sk-btn--lg">Lancer une rétro gratuite<i data-lucide="arrow-right"></i></button>
+      <button class="sk-btn sk-btn--outline sk-btn--lg"><i data-lucide="server"></i>Déployer chez vous</button>
+    </div>
+    <span class="scr-cmd"><span class="scr-k">$</span><span>docker compose up -d <b>skrum</b></span><button class="sk-btn sk-btn--ghost sk-btn--icon sk-btn--sm" aria-label="Copier"><i data-lucide="copy"></i></button></span>
+  </section>
+  <div class="scr-app sk-card">
+  <div class="scr-app-top">
+    <span class="sk-col" style="gap:0"><span class="sk-xs sk-muted">Atlas · Sprint 42</span><span class="sk-strong">Rétro de fin de sprint</span></span>
+    <span class="sk-grow"></span><div class="sk-phases"><span class="sk-phase is-done"><span class="sk-phase-n"><i data-lucide="check" style="width:0.75rem;height:0.75rem"></i></span><span class="sk-phase-l">Écriture</span></span><span class="sk-phase-link"></span><span class="sk-phase is-done"><span class="sk-phase-n"><i data-lucide="check" style="width:0.75rem;height:0.75rem"></i></span><span class="sk-phase-l">Vote</span></span><span class="sk-phase-link"></span><span class="sk-phase is-current"><span class="sk-phase-n">3</span><span class="sk-phase-l">Actions</span></span></div><span class="sk-grow"></span>
+    <div class="sk-timer" style="--p:.8"><span class="sk-timer-ring"></span>04:30</div>
+    <div class="sk-stack"><span class="sk-avatar sk-avatar--sm sk-p1">AR</span><span class="sk-avatar sk-avatar--sm sk-p4">CR</span><span class="sk-avatar sk-avatar--sm sk-p9">IB</span><span class="sk-avatar sk-avatar--sm sk-p2">TM</span><span class="sk-avatar sk-avatar--sm sk-stack-more">+4</span></div>
+  </div>
+  <div class="scr-app-body sk-dotgrid">
+    <section class="sk-column sk-c-moss" style="width:auto"><div class="sk-column-h"><span class="sk-column-swatch"></span><span class="sk-column-t">Bien passé</span><span class="sk-column-count">3</span></div><article class="sk-rcard sk-c-moss"><p class="sk-rcard-text">La démo client s'est super bien passée.</p><div class="sk-rcard-foot"><span class="sk-rcard-author"><span class="sk-avatar sk-avatar--xs sk-p4">CR</span>Camille</span><span class="sk-grow"></span><span class="sk-vote-btn"><i data-lucide="thumbs-up" class="sk-ico-sm"></i>4</span></div></article><article class="sk-rcard sk-c-moss"><p class="sk-rcard-text">Migration Postgres débloquée en pair-programming.</p><div class="sk-rcard-foot"><span class="sk-rcard-author"><span class="sk-avatar sk-avatar--xs sk-p2">TM</span>Théo</span><span class="sk-grow"></span><span class="sk-vote-btn"><i data-lucide="thumbs-up" class="sk-ico-sm"></i>3</span></div></article></section>
+    <section class="sk-column sk-c-coral" style="width:auto"><div class="sk-column-h"><span class="sk-column-swatch"></span><span class="sk-column-t">À améliorer</span><span class="sk-column-count">4</span></div><article class="sk-rcard sk-c-coral"><p class="sk-rcard-text">Les tests E2E cassent une fois sur trois en CI.</p><div class="sk-rcard-foot"><span class="sk-anon"><i data-lucide="venetian-mask"></i>Anonyme</span><span class="sk-grow"></span><span class="sk-vote-btn is-mine"><i data-lucide="thumbs-up" class="sk-ico-sm"></i>9</span></div></article><article class="sk-rcard sk-c-coral"><p class="sk-rcard-text">Le périmètre change en plein sprint.</p><div class="sk-rcard-foot"><span class="sk-rcard-author"><span class="sk-avatar sk-avatar--xs sk-p9">IB</span>Inès</span><span class="sk-grow"></span><span class="sk-vote-btn"><i data-lucide="thumbs-up" class="sk-ico-sm"></i>7</span></div></article></section>
+    <section class="sk-column sk-c-sun" style="width:auto"><div class="sk-column-h"><span class="sk-column-swatch"></span><span class="sk-column-t">Idées</span><span class="sk-column-count">2</span></div><article class="sk-rcard sk-c-sun"><p class="sk-rcard-text">Un créneau « zéro réunion » le jeudi après-midi.</p><div class="sk-rcard-foot"><span class="sk-anon"><i data-lucide="venetian-mask"></i>Anonyme</span><span class="sk-grow"></span><span class="sk-vote-btn"><i data-lucide="thumbs-up" class="sk-ico-sm"></i>5</span></div></article><div class="sk-typing"><span class="sk-trema" style="color:var(--skrum-presence-6)"><i></i><i></i></span>Malik écrit…</div></section>
+    <div class="sk-card scr-app-actions">
+      <div class="sk-between"><span class="sk-strong">Actions</span><span class="sk-badge sk-badge--muted sk-badge--pill">3</span></div>
+      <div class="sk-action"><span class="sk-check"></span><div class="sk-grow"><div class="sk-action-t">Quarantaine des tests E2E instables</div><div class="sk-action-meta"><span><span class="sk-avatar sk-avatar--xs sk-p8">LD</span>Lucas D</span><span class="sk-prio sk-prio--high"><span class="bars"><i></i><i></i><i></i></span>Haute</span><span class="sk-due"><i data-lucide="calendar" class="sk-ico-sm"></i>10 oct.</span><span class="sk-ticket">ATLAS-1302</span></div></div></div>
+      <div class="sk-action"><span class="sk-check"></span><div class="sk-grow"><div class="sk-action-t">Second runner CI dédié aux E2E</div><div class="sk-action-meta"><span><span class="sk-avatar sk-avatar--xs sk-p11">YT</span>Yuki T</span><span class="sk-prio sk-prio--medium"><span class="bars"><i></i><i></i><i></i></span>Moyenne</span><span class="sk-due"><i data-lucide="calendar" class="sk-ico-sm"></i>17 oct.</span><span class="sk-ticket">ATLAS-1303</span></div></div></div>
+      <div class="sk-action"><span class="sk-check"></span><div class="sk-grow"><div class="sk-action-t">Bloquer le jeudi après-midi</div><div class="sk-action-meta"><span><span class="sk-avatar sk-avatar--xs sk-p4">CR</span>Camille R</span><span class="sk-prio sk-prio--low"><span class="bars"><i></i><i></i><i></i></span>Basse</span><span class="sk-due"><i data-lucide="calendar" class="sk-ico-sm"></i>8 oct.</span></div></div></div>
+    </div>
+    <div class="sk-cursor" style="left:35rem;top:15.625rem;--cur:var(--skrum-presence-6);--cur-fg:var(--skrum-presence-6-foreground)"><svg viewBox="0 0 18 18"><path d="M2 1 L16 8 L9.5 9.5 L7 16 Z"/></svg><span class="sk-cursor-tag">Malik</span></div>
+  </div>
+</div>
+
+  <section class="scr-sec">
+    <div class="scr-sh"><span class="scr-eyebrow">Modules</span><h2 class="scr-d1">Tous vos rituels, un seul endroit.</h2><p class="scr-lead" style="text-align:left">Même compte, mêmes équipes, mêmes invités anonymes. Les actions de chaque module arrivent au même tableau de bord.</p></div>
+    <div class="scr-mods"><article class="sk-card scr-mod" style="grid-column:span 3"><div class="scr-mod-art sk-c-coral"><div class="sk-row" style="gap:0.625rem;flex-wrap:nowrap;align-items:flex-start"><article class="sk-rcard sk-c-coral"><p class="sk-rcard-text">Les tests E2E cassent une fois sur trois.</p><div class="sk-rcard-foot"><span class="sk-anon"><i data-lucide="venetian-mask"></i>Anonyme</span><span class="sk-grow"></span><span class="sk-vote-btn is-mine"><i data-lucide="thumbs-up" class="sk-ico-sm"></i>9</span></div></article><div class="sk-group sk-c-sun" style="width:14.375rem"><div class="sk-group-h"><i data-lucide="layers" class="sk-ico-sm" style="color:var(--c-t)"></i><span class="sk-group-t">Rituels</span><span class="sk-votes"><span class="sk-vdot is-on"></span><span class="sk-vdot is-on"></span><span class="sk-vdot"></span></span></div><div class="sk-rcard sk-c-sun"><p class="sk-rcard-text">Jeudi « zéro réunion »</p></div></div></div></div><div class="sk-card-b sk-col sk-gap-2"><div class="sk-row sk-gap-2"><span class="scr-mod-ico sk-c-coral"><i data-lucide="layers"></i></span><h3 class="sk-h4">Rétrospectives</h3></div><p class="sk-p sk-muted sk-sm">Écriture silencieuse, regroupement, vote à budget, puis actions avec responsable et échéance. Formats 4L, Start/Stop/Continue, Voilier…</p></div></article><article class="sk-card scr-mod" style="grid-column:span 3"><div class="scr-mod-art sk-c-iris"><div class="sk-row" style="gap:0.625rem;flex-wrap:nowrap;align-items:flex-end"><div class="sk-pcard sk-pcard--sm "><div class="sk-pcard-in"><div class="sk-pcard-face">3</div><div class="sk-pcard-back"></div></div></div><div class="sk-pcard sk-pcard--sm is-selected"><div class="sk-pcard-in"><div class="sk-pcard-face">5</div><div class="sk-pcard-back"></div></div></div><div class="sk-pcard sk-pcard--sm "><div class="sk-pcard-in"><div class="sk-pcard-face">5</div><div class="sk-pcard-back"></div></div></div><div class="sk-pcard sk-pcard--sm is-hidden"><div class="sk-pcard-in"><div class="sk-pcard-face"></div><div class="sk-pcard-back"></div></div></div><div class="sk-pcard sk-pcard--sm "><div class="sk-pcard-in"><div class="sk-pcard-face">8</div><div class="sk-pcard-back"></div></div></div><div class="sk-dist" style="height:3.5rem;margin-left:1rem;margin-bottom:0.875rem"><div class="sk-dist-bar is-low" style="height:0.875rem"><span>3</span></div><div class="sk-dist-bar" style="height:3.5rem"><span>5</span></div><div class="sk-dist-bar is-low" style="height:1.75rem"><span>8</span></div></div></div></div><div class="sk-card-b sk-col sk-gap-2"><div class="sk-row sk-gap-2"><span class="scr-mod-ico sk-c-iris"><i data-lucide="spade"></i></span><h3 class="sk-h4">Planning poker</h3></div><p class="sk-p sk-muted sk-sm">Fibonacci ou T-shirt, cartes face cachée jusqu'à la révélation, médiane et dispersion, import des stories depuis Jira.</p></div></article><article class="sk-card scr-mod" style="grid-column:span 2"><div class="scr-mod-art sk-c-sky"><div style="position:relative;width:15.625rem;height:7.5rem"><div class="sk-sticky sk-c-sky" style="left:0;top:0.5rem;width:6.875rem;transform:rotate(-3deg)">Parcours invité</div><div class="sk-sticky sk-c-apricot" style="left:8.125rem;top:0;width:6.875rem;transform:rotate(2deg)">Lien expiré ?</div><svg style="position:absolute;left:3.75rem;top:4.375rem" width="140" height="40" viewBox="0 0 140 40" fill="none"><path d="M4 6 C40 40 100 40 134 10" style="stroke:var(--c-t)" stroke-width="2" stroke-dasharray="5 5" stroke-linecap="round"/></svg></div></div><div class="sk-card-b sk-col sk-gap-2"><div class="sk-row sk-gap-2"><span class="scr-mod-ico sk-c-sky"><i data-lucide="pen-tool"></i></span><h3 class="sk-h4">Whiteboard</h3></div><p class="sk-p sk-muted sk-sm">Canvas infini, post-its, flèches et curseurs en direct pour cartographier un problème à plusieurs.</p></div></article><article class="sk-card scr-mod" style="grid-column:span 2"><div class="scr-mod-art sk-c-apricot"><div class="sk-row" style="gap:0.375rem;flex-wrap:nowrap"><span class="sk-letter">R</span><span class="sk-letter">É</span><span class="sk-letter"></span><span class="sk-letter">R</span><span class="sk-letter">O</span></div></div><div class="sk-card-b sk-col sk-gap-2"><div class="sk-row sk-gap-2"><span class="scr-mod-ico sk-c-apricot"><i data-lucide="party-popper"></i></span><h3 class="sk-h4">Icebreakers</h3></div><p class="sk-p sk-muted sk-sm">Mini-jeux de 5 minutes pour lancer la séance : pendu d'équipe, deux vérités un mensonge…</p></div></article><article class="sk-card scr-mod" style="grid-column:span 2"><div class="scr-mod-art sk-c-sun"><div class="sk-roti" style="width:15.625rem"><div class="sk-roti-opt" style="min-width:0"><span class="sk-roti-n sk-r2" style="width:1.875rem;height:1.875rem;font-size:0.9375rem">2</span></div><div class="sk-roti-opt" style="min-width:0"><span class="sk-roti-n sk-r3" style="width:1.875rem;height:1.875rem;font-size:0.9375rem">3</span></div><div class="sk-roti-opt is-on" style="min-width:0"><span class="sk-roti-n sk-r4" style="width:1.875rem;height:1.875rem;font-size:0.9375rem">4</span></div><div class="sk-roti-opt" style="min-width:0"><span class="sk-roti-n sk-r5" style="width:1.875rem;height:1.875rem;font-size:0.9375rem">5</span></div></div></div><div class="sk-card-b sk-col sk-gap-2"><div class="sk-row sk-gap-2"><span class="scr-mod-ico sk-c-sun"><i data-lucide="chart-column"></i></span><h3 class="sk-h4">Sondages</h3></div><p class="sk-p sk-muted sk-sm">ROTI, NPS, choix multiple, anonymes par défaut, avec la tendance d'un sprint à l'autre.</p></div></article></div>
+  </section>
+
+  <section class="scr-sec">
+    <div class="scr-self">
+      <div>
+        <div class="scr-sh" style="margin-bottom:0"><span class="scr-eyebrow">Self-host &amp; open source</span><h2 class="scr-d1">Chez vous, à vos couleurs.</h2><p class="scr-lead" style="text-align:left">Le même code que le SaaS, sous licence AGPL-3.0. Une image Docker, une base PostgreSQL, et vos données ne quittent pas votre infrastructure.</p></div>
+        <div class="scr-points">
+          <div class="scr-point"><i data-lucide="scale"></i><div><div class="sk-strong">Licence AGPL-3.0</div><div class="sk-sm sk-muted">Code source public, contributions bienvenues.</div></div></div>
+          <div class="scr-point"><i data-lucide="key-round"></i><div><div class="sk-strong">SSO OIDC</div><div class="sk-sm sk-muted">Keycloak, Entra ID, Authentik, Google Workspace…</div></div></div>
+          <div class="scr-point"><i data-lucide="palette"></i><div><div class="sk-strong">Votre branding</div><div class="sk-sm sk-muted">Logo, couleur primaire, rayons, nom d'instance.</div></div></div>
+          <div class="scr-point"><i data-lucide="mail"></i><div><div class="sk-strong">Votre SMTP</div><div class="sk-sm sk-muted">Liens magiques et rappels d'actions envoyés par vous.</div></div></div>
+        </div>
+      </div>
+      <div>
+        <div class="sk-card scr-code">
+          <div class="scr-code-h"><div class="sk-tabs" style="background:var(--background)"><span class="sk-tab is-on"><i data-lucide="container" class="sk-ico-sm"></i>Docker Compose</span><span class="sk-tab"><i data-lucide="ship-wheel" class="sk-ico-sm"></i>Helm</span></div><span class="sk-grow"></span><span class="sk-xs sk-muted sk-mono">compose.yaml</span><button class="sk-btn sk-btn--ghost sk-btn--icon sk-btn--sm" aria-label="Copier"><i data-lucide="copy"></i></button></div>
+          <pre><span class="scr-c">services</span>:
+  <span class="scr-c">skrum</span>:
+    image: ghcr.io/skrum/skrum:1.8
+    ports: [<span class="scr-s">"8080:8080"</span>]
+    environment:
+      APP_URL: <span class="scr-s">https://retro.mon-entreprise.fr</span>
+      DB_CONNECTION: pgsql
+      OIDC_ISSUER: <span class="scr-s">https://sso.mon-entreprise.fr</span>
+      MAIL_HOST: smtp.mon-entreprise.fr
+    depends_on: [postgres, redis]</pre>
+          <div class="scr-code-h" style="border-top:1px solid var(--border);border-bottom:0"><span class="sk-mono sk-xs"><span class="scr-k">$</span> helm install skrum oci://ghcr.io/skrum/charts/skrum</span></div>
+        </div>
+        <div class="sk-card scr-brandcard">
+          <div class="sk-col sk-gap-3">
+            <span class="sk-xs sk-strong sk-muted">Admin · Apparence de l'instance</span>
+            <div class="sk-row sk-gap-2"><span class="scr-swatch is-on" style="background:var(--primary)"></span><span class="scr-swatch" style="background:var(--skrum-col-lagoon-text)"></span><span class="scr-swatch" style="background:var(--skrum-col-iris-text)"></span><span class="scr-swatch" style="background:var(--skrum-col-moss-text)"></span><span class="scr-swatch" style="background:var(--foreground)"></span></div>
+            <div class="sk-col sk-gap-1"><span class="sk-xs sk-muted">Rayon des cartes · 10 px</span><div class="sk-slider"><div class="sk-slider-track"><div class="sk-slider-range" style="width:62%"></div></div><span class="sk-slider-thumb" style="left:62%"></span></div></div>
+          </div>
+          <div class="sk-col sk-gap-2" style="align-items:flex-start">
+            <span class="sk-row sk-gap-2"><span class="sk-team-mark" style="background:var(--primary);color:var(--primary-foreground)">N</span><span class="sk-strong">Rétros Nordlys</span></span>
+            <button class="sk-btn sk-btn--sm">Rejoindre la session</button>
+            <span class="sk-xs sk-muted">Aperçu en direct</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="scr-sec">
+    <div class="scr-sh"><span class="scr-eyebrow">Tarifs</span><h2 class="scr-d1">Simple, sans surprise.</h2><p class="scr-lead" style="text-align:left">Les invités anonymes ne sont jamais facturés.</p></div>
+    <div class="scr-plans"><article class="sk-card scr-plan"><div class="sk-col sk-gap-2"><div class="sk-between"><h3 class="sk-h4">Gratuit</h3></div><div class="sk-row sk-gap-2" style="align-items:baseline"><span class="scr-price">0 €</span><span class="sk-sm sk-muted">pour toujours</span></div><p class="sk-p sk-sm sk-muted">Pour essayer avec une équipe.</p></div><button class="sk-btn sk-btn--outline sk-btn--block">Commencer</button><ul class="scr-feats"><li><i data-lucide="check" class="sk-ico-sm"></i>1 équipe, 10 participants par session</li><li><i data-lucide="check" class="sk-ico-sm"></i>Rétro, poker, icebreakers</li><li><i data-lucide="check" class="sk-ico-sm"></i>Historique de 3 mois</li><li><i data-lucide="check" class="sk-ico-sm"></i>Invités anonymes par lien</li></ul></article><article class="sk-card scr-plan is-hi"><div class="sk-col sk-gap-2"><div class="sk-between"><h3 class="sk-h4">Équipe</h3><span class="sk-badge sk-badge--pill">Recommandé</span></div><div class="sk-row sk-gap-2" style="align-items:baseline"><span class="scr-price">8 €</span><span class="sk-sm sk-muted">par membre / mois</span></div><p class="sk-p sk-sm sk-muted">Pour les équipes qui suivent leurs actions.</p></div><button class="sk-btn  sk-btn--block">Essayer 14 jours</button><ul class="scr-feats"><li><i data-lucide="check" class="sk-ico-sm"></i>Équipes et participants illimités</li><li><i data-lucide="check" class="sk-ico-sm"></i>Tous les modules, dont whiteboard</li><li><i data-lucide="check" class="sk-ico-sm"></i>Actions agrégées et rappels</li><li><i data-lucide="check" class="sk-ico-sm"></i>Intégrations Jira et Slack</li><li><i data-lucide="check" class="sk-ico-sm"></i>Historique illimité</li></ul></article><article class="sk-card scr-plan"><div class="sk-col sk-gap-2"><div class="sk-between"><h3 class="sk-h4">Organisation</h3></div><div class="sk-row sk-gap-2" style="align-items:baseline"><span class="scr-price">Sur devis</span><span class="sk-sm sk-muted">facturation annuelle</span></div><p class="sk-p sk-sm sk-muted">Pour plusieurs équipes et la conformité.</p></div><button class="sk-btn sk-btn--outline sk-btn--block">Nous contacter</button><ul class="scr-feats"><li><i data-lucide="check" class="sk-ico-sm"></i>SSO OIDC / SAML, SCIM</li><li><i data-lucide="check" class="sk-ico-sm"></i>Votre branding (logo, couleurs)</li><li><i data-lucide="check" class="sk-ico-sm"></i>Rôles et journal d'audit</li><li><i data-lucide="check" class="sk-ico-sm"></i>Hébergement UE, DPA</li><li><i data-lucide="check" class="sk-ico-sm"></i>Support prioritaire</li></ul></article></div>
+    <div class="sk-card scr-selfband"><i data-lucide="server" class="sk-ico-lg"></i><div class="sk-grow"><div class="sk-strong">Self-host : gratuit</div><div class="sk-sm" style="opacity:.85">Toutes les fonctionnalités, sur votre infrastructure, sous licence AGPL-3.0. Support et contrat de maintenance en option.</div></div><button class="sk-btn sk-btn--outline">Lire le guide d'installation<i data-lucide="arrow-right"></i></button></div>
+  </section>
+
+  <section class="scr-sec">
+    <div class="sk-card scr-final">
+      <h2 class="scr-d1" style="max-width:47.5rem">Votre prochaine rétro peut produire des actions qui tiennent.</h2>
+      <p class="scr-lead">Créez une session en 30 secondes, partagez le lien, l'équipe rejoint sans compte.</p>
+      <div class="sk-row sk-gap-3" style="justify-content:center"><button class="sk-btn sk-btn--lg">Lancer une rétro gratuite<i data-lucide="arrow-right"></i></button><button class="sk-btn sk-btn--outline sk-btn--lg"><i data-lucide="github"></i>Voir le code</button></div>
+    </div>
+  </section>
+
+  <footer class="scr-footer">
+    <div class="scr-fcols">
+      <div class="sk-col sk-gap-3"><span class="sk-row sk-gap-2"><svg viewBox="0 0 64 64" width="24" height="24" aria-label="Skrüm"><path d="M14 0 H50 A14 14 0 0 1 64 14 V46 L46 64 H14 A14 14 0 0 1 0 50 V14 A14 14 0 0 1 14 0 Z" style="fill:var(--primary)"/><path d="M64 46 L50 46 A4 4 0 0 0 46 50 L46 64 Z" style="fill:color-mix(in oklch, var(--primary) 70%, var(--foreground))"/><path d="M19 27 L19 38 C19 45 24 49.5 30 49.5 C36 49.5 41 45 41 38 L41 27" fill="none" style="stroke:var(--primary-foreground)" stroke-width="7" stroke-linecap="round"/><circle cx="21.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/><circle cx="38.5" cy="15.5" r="4.5" style="fill:var(--primary-foreground)"/></svg><span class="scr-word" style="font-size:1.25rem">skrüm</span></span><p class="sk-p sk-sm sk-muted" style="max-width:18.75rem">Rituels agiles open source. SaaS hébergé en Union européenne ou auto-hébergé.</p></div>
+      <div><h4>Produit</h4><a>Rétrospectives</a><a>Planning poker</a><a>Whiteboard</a><a>Icebreakers</a><a>Sondages</a></div>
+      <div><h4>Self-host</h4><a>Installation</a><a>Docker Compose</a><a>Chart Helm</a><a>Configuration SSO</a><a>Code source</a></div>
+      <div><h4>Ressources</h4><a>Documentation</a><a>Changelog</a><a>Statut du service</a><a>Confidentialité</a><a>Mentions légales</a></div>
+    </div>
+    <div class="sk-between sk-xs sk-muted" style="margin-top:var(--space-10)"><span>© 2026 Skrüm · Licence AGPL-3.0</span><span>Fait pour les équipes qui détestent les réunions inutiles.</span></div>
+  </footer>
+ </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,88 @@
+<!-- @dsCard group="shadcn · Affichage" height=398 subtitle="Chart — barres groupées + courbes en SVG inline (chart-1..5), grille, axes, légende, étiquettes directes, survol avec tooltip ; palette chart-1..5" -->
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><title>Chart</title>
+<style>
+  .ch-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); gap: var(--space-5); }
+  .ch-plot { position: relative; }
+  .ch-plot svg { overflow: visible; }
+  .sk-chart .val { fill: var(--foreground); font-size: 0.6875rem; font-weight: 700; font-family: var(--font-sans); }
+  .sk-chart .lbl { font-size: 0.6875rem; font-weight: 600; font-family: var(--font-sans); }
+  .ch-tip { position: absolute; background: var(--popover); color: var(--popover-foreground); border: 1px solid var(--border); border-radius: var(--radius-md); box-shadow: var(--shadow-popover); padding: 0.5rem 0.625rem; font-size: 0.75rem; line-height: 1rem; min-width: 9.375rem; display: flex; flex-direction: column; gap: 0.25rem; pointer-events: none; }
+  .ch-tip-t { font-weight: 650; }
+  .ch-tip-r { display: flex; align-items: center; gap: 0.375rem; color: var(--muted-foreground); }
+  .ch-tip-r b { margin-left: auto; color: var(--foreground); font-variant-numeric: tabular-nums; }
+  .ch-sw { width: 0.625rem; height: 0.625rem; border-radius: 0.1875rem; flex: none; }
+  .ch-pal { display: flex; gap: var(--space-4); flex-wrap: wrap; font-size: 0.75rem; color: var(--muted-foreground); }
+  .ch-pal span { display: inline-flex; align-items: center; gap: 0.375rem; }
+  .ch-pal i { width: 1.75rem; height: 0.875rem; border-radius: 0.25rem; display: inline-block; }
+</style></head>
+<body>
+<div class="sk-pad sk-col sk-gap-5">
+  <div class="ch-grid">
+    <div class="sk-card">
+      <div class="sk-card-h"><div class="sk-between"><h3 class="sk-card-t">Actions par sprint</h3><div class="sk-legend"><span><i class="sw" style="background:var(--chart-1)"></i>Créées</span><span><i class="sw" style="background:var(--chart-2)"></i>Terminées</span></div></div><p class="sk-card-d">Équipe Atlas · 6 derniers sprints</p></div>
+      <div class="sk-card-b">
+        <div class="ch-plot">
+          <svg class="sk-chart" viewBox="0 0 400 204" role="img" aria-label="Barres groupées : actions créées et terminées par sprint, de S38 à S43">
+<rect x="274" y="16" width="56" height="164" rx="6" style="fill:var(--muted)" opacity=".7"/>
+<line class="grid" x1="32" x2="392" y1="180.0" y2="180.0"/><text class="axis" x="24" y="184.0" text-anchor="end">0</text>
+<line class="grid" x1="32" x2="392" y1="98.0" y2="98.0"/><text class="axis" x="24" y="102.0" text-anchor="end">5</text>
+<line class="grid" x1="32" x2="392" y1="16.0" y2="16.0"/><text class="axis" x="24" y="20.0" text-anchor="end">10</text>
+<path d="M43,180 V69.20000000000002 Q43,65.20000000000002 47,65.20000000000002 H57 Q61,65.20000000000002 61,69.20000000000002 V180 Z" style="fill:var(--chart-1)"/>
+<path d="M63,180 V102.0 Q63,98.0 67,98.0 H77 Q81,98.0 81,102.0 V180 Z" style="fill:var(--chart-2)"/>
+<text class="axis" x="62" y="198" text-anchor="middle">S38</text>
+<path d="M103,180 V102.0 Q103,98.0 107,98.0 H117 Q121,98.0 121,102.0 V180 Z" style="fill:var(--chart-1)"/>
+<path d="M123,180 V102.0 Q123,98.0 127,98.0 H137 Q141,98.0 141,102.0 V180 Z" style="fill:var(--chart-2)"/>
+<text class="axis" x="122" y="198" text-anchor="middle">S39</text>
+<path d="M163,180 V52.80000000000001 Q163,48.80000000000001 167,48.80000000000001 H177 Q181,48.80000000000001 181,52.80000000000001 V180 Z" style="fill:var(--chart-1)"/>
+<path d="M183,180 V85.60000000000001 Q183,81.60000000000001 187,81.60000000000001 H197 Q201,81.60000000000001 201,85.60000000000001 V180 Z" style="fill:var(--chart-2)"/>
+<text class="axis" x="182" y="198" text-anchor="middle">S40</text>
+<path d="M223,180 V85.60000000000001 Q223,81.60000000000001 227,81.60000000000001 H237 Q241,81.60000000000001 241,85.60000000000001 V180 Z" style="fill:var(--chart-1)"/>
+<path d="M243,180 V118.4 Q243,114.4 247,114.4 H257 Q261,114.4 261,118.4 V180 Z" style="fill:var(--chart-2)"/>
+<text class="axis" x="242" y="198" text-anchor="middle">S41</text>
+<path d="M283,180 V36.400000000000006 Q283,32.400000000000006 287,32.400000000000006 H297 Q301,32.400000000000006 301,36.400000000000006 V180 Z" style="fill:var(--chart-1)"/>
+<path d="M303,180 V69.20000000000002 Q303,65.20000000000002 307,65.20000000000002 H317 Q321,65.20000000000002 321,69.20000000000002 V180 Z" style="fill:var(--chart-2)"/>
+<text class="axis" x="302" y="198" text-anchor="middle">S42</text>
+<path d="M343,180 V85.60000000000001 Q343,81.60000000000001 347,81.60000000000001 H357 Q361,81.60000000000001 361,85.60000000000001 V180 Z" style="fill:var(--chart-1)"/>
+<path d="M363,180 V134.8 Q363,130.8 367,130.8 H377 Q381,130.8 381,134.8 V180 Z" style="fill:var(--chart-2)"/>
+<text class="axis" x="362" y="198" text-anchor="middle">S43</text>
+<text class="val" x="292" y="26.400000000000006" text-anchor="middle">9</text><text class="val" x="312" y="59.20000000000002" text-anchor="middle">7</text>
+          </svg>
+          <div class="ch-tip" style="right:calc(100% - 75.5% + 2.25rem);top:22%" role="tooltip"><span class="ch-tip-t">Sprint 42</span><span class="ch-tip-r"><span class="ch-sw" style="background:var(--chart-1)"></span>Créées<b>9</b></span><span class="ch-tip-r"><span class="ch-sw" style="background:var(--chart-2)"></span>Terminées<b>7</b></span></div>
+        </div>
+      </div>
+    </div>
+    <div class="sk-card">
+      <div class="sk-card-h"><div class="sk-between"><h3 class="sk-card-t">Points engagés vs réalisés</h3><div class="sk-legend"><span><i class="sw" style="background:var(--chart-3)"></i>Engagé</span><span><i class="sw" style="background:var(--chart-1)"></i>Réalisé</span></div></div><p class="sk-card-d">Story points · S43 en cours</p></div>
+      <div class="sk-card-b">
+        <div class="ch-plot">
+          <svg class="sk-chart" viewBox="0 0 400 204" role="img" aria-label="Courbes : points engagés et réalisés par sprint">
+<line class="grid" x1="32" x2="392" y1="180.0" y2="180.0"/><text class="axis" x="24" y="184.0" text-anchor="end">0</text>
+<line class="grid" x1="32" x2="392" y1="139.0" y2="139.0"/><text class="axis" x="24" y="143.0" text-anchor="end">10</text>
+<line class="grid" x1="32" x2="392" y1="98.0" y2="98.0"/><text class="axis" x="24" y="102.0" text-anchor="end">20</text>
+<line class="grid" x1="32" x2="392" y1="57.0" y2="57.0"/><text class="axis" x="24" y="61.0" text-anchor="end">30</text>
+<line class="grid" x1="32" x2="392" y1="16.0" y2="16.0"/><text class="axis" x="24" y="20.0" text-anchor="end">40</text>
+<text class="axis" x="52" y="198" text-anchor="middle">S38</text>
+<text class="axis" x="116" y="198" text-anchor="middle">S39</text>
+<text class="axis" x="180" y="198" text-anchor="middle">S40</text>
+<text class="axis" x="244" y="198" text-anchor="middle">S41</text>
+<text class="axis" x="308" y="198" text-anchor="middle">S42</text>
+<text class="axis" x="372" y="198" text-anchor="middle">S43</text>
+<line x1="244" x2="244" y1="16" y2="180" style="stroke:var(--muted-foreground)" stroke-width="1" stroke-dasharray="3 3"/>
+<polyline points="52,40.6 116,57.0 180,32.4 244,48.8 308,24.2 372,36.5" fill="none" style="stroke:var(--chart-3)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+<polyline points="52,65.2 116,57.0 180,52.9 244,61.1 308,36.5" fill="none" style="stroke:var(--chart-1)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="244" cy="48.8" r="4.5" style="fill:var(--chart-3);stroke:var(--card)" stroke-width="2"/>
+<circle cx="244" cy="61.1" r="4.5" style="fill:var(--chart-1);stroke:var(--card)" stroke-width="2"/>
+<text class="lbl" x="48" y="31.6" style="fill:var(--muted-foreground)">Engagé</text>
+<text class="lbl" x="48" y="83.2" style="fill:var(--muted-foreground)">Réalisé</text>
+          </svg>
+          <div class="ch-tip" style="left:calc(61.0% + 0.75rem);top:42%" role="tooltip"><span class="ch-tip-t">Sprint 41</span><span class="ch-tip-r"><span class="ch-sw" style="background:var(--chart-3)"></span>Engagé<b>32 pts</b></span><span class="ch-tip-r"><span class="ch-sw" style="background:var(--chart-1)"></span>Réalisé<b>29 pts</b></span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="ch-pal"><span class="sk-state" style="margin:0">Palette (ordre fixe)</span><span><i style="background:var(--chart-1)"></i>chart-1</span><span><i style="background:var(--chart-2)"></i>chart-2</span><span><i style="background:var(--chart-3)"></i>chart-3</span><span><i style="background:var(--chart-4)"></i>chart-4</span><span><i style="background:var(--chart-5)"></i>chart-5</span></div>
+</div>
+</body>
+</html>
