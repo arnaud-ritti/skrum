@@ -1,12 +1,9 @@
 <?php
 
-namespace App\Listeners;
+namespace App\Actions\Integrations;
 
 use App\Actions\ActionItems\BroadcastActionItemChange;
-use App\Actions\Integrations\LinkStatusSync;
 use App\Enums\ActionItemEventOrigin;
-use App\Events\ActionItems\ActionItemCompleted;
-use App\Events\ActionItems\ActionItemReopened;
 use App\Exceptions\Integrations\ReadOnlyConnection;
 use App\Jobs\Integrations\PushActionItemState;
 use App\Models\ActionItem;
@@ -23,17 +20,7 @@ class QueueActionItemStatusPushes
 {
     public function __construct(private BroadcastActionItemChange $broadcast) {}
 
-    public function onActionItemCompleted(ActionItemCompleted $event): void
-    {
-        $this->queue($event->actionItem, $event->origin);
-    }
-
-    public function onActionItemReopened(ActionItemReopened $event): void
-    {
-        $this->queue($event->actionItem, $event->origin);
-    }
-
-    private function queue(ActionItem $item, ActionItemEventOrigin $origin): void
+    public function handle(ActionItem $item, ActionItemEventOrigin $origin): void
     {
         if ($origin !== ActionItemEventOrigin::Skrum) {
             return;

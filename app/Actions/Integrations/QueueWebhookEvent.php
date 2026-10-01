@@ -1,19 +1,12 @@
 <?php
 
-namespace App\Listeners;
+namespace App\Actions\Integrations;
 
-use App\Actions\Integrations\BuildWebhookEventData;
-use App\Actions\Integrations\StoreWebhookPayload;
 use App\Enums\IntegrationDeliveryChannel;
 use App\Enums\IntegrationDeliveryKind;
 use App\Enums\IntegrationDeliveryStatus;
 use App\Enums\IntegrationProvider;
 use App\Enums\WebhookEvent;
-use App\Events\ActionItems\ActionItemCompleted;
-use App\Events\ActionItems\ActionItemCreated;
-use App\Events\ActionItems\ActionItemReopened;
-use App\Events\Poker\PokerTaskEstimated;
-use App\Events\RetroCompleted;
 use App\Jobs\Integrations\DeliverWebhookEvent;
 use App\Models\IntegrationDelivery;
 use App\Models\Team;
@@ -24,56 +17,18 @@ use Illuminate\Support\Facades\DB;
 use Throwable;
 
 /**
- * Queues the automatic events a team's generic webhook subscribed to.
- * Methods are named `on…` so event discovery leaves them to the explicit
- * registration in AppServiceProvider.
+ * Queues an automatic event for the team's generic webhook when that
+ * webhook subscribed to it. A failure is reported, never thrown into the
+ * request that raised the event.
  */
-class QueueWebhookEvents
+class QueueWebhookEvent
 {
-    public function __construct(
-        private BuildWebhookEventData $buildWebhookEventData,
-        private StoreWebhookPayload $storeWebhookPayload,
-    ) {}
-
-    public function onRetroCompleted(RetroCompleted $event): void
-    {
-        $retro = $event->retro;
-
-        $this->queue($retro->team, WebhookEvent::RetroCompleted, $retro, fn (): array => $this->buildWebhookEventData->retroCompleted($retro));
-    }
-
-    public function onActionItemCreated(ActionItemCreated $event): void
-    {
-        $item = $event->actionItem;
-
-        $this->queue($item->team, WebhookEvent::ActionItemCreated, $item, fn (): array => $this->buildWebhookEventData->actionItemCreated($item));
-    }
-
-    public function onActionItemCompleted(ActionItemCompleted $event): void
-    {
-        $item = $event->actionItem;
-
-        $this->queue($item->team, WebhookEvent::ActionItemCompleted, $item, fn (): array => $this->buildWebhookEventData->actionItemStatusChanged($item, $event->origin, $event->actor));
-    }
-
-    public function onActionItemReopened(ActionItemReopened $event): void
-    {
-        $item = $event->actionItem;
-
-        $this->queue($item->team, WebhookEvent::ActionItemReopened, $item, fn (): array => $this->buildWebhookEventData->actionItemStatusChanged($item, $event->origin, $event->actor));
-    }
-
-    public function onPokerTaskEstimated(PokerTaskEstimated $event): void
-    {
-        $task = $event->task;
-
-        $this->queue($task->game->team, WebhookEvent::PokerTaskEstimated, $task, fn (): array => $this->buildWebhookEventData->pokerTaskEstimated($task));
-    }
+    public function __construct(private StoreWebhookPayload $storeWebhookPayload) {}
 
     /**
      * @param  Closure(): array<string, mixed>  $buildData
      */
-    private function queue(Team $team, WebhookEvent $event, Model $subject, Closure $buildData): void
+    public function handle(Team $team, WebhookEvent $event, Model $subject, Closure $buildData): void
     {
         $integration = $this->subscribedWebhook($team, $event);
 

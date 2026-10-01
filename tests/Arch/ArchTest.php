@@ -1,16 +1,10 @@
 <?php
 
-use App\Listeners\QueueActionItemStatusPushes;
-use App\Listeners\QueueWebhookEvents;
-
 arch()->preset()->php();
 
 arch()->preset()->security();
 
-arch()->preset()->laravel()->ignoring([
-    QueueActionItemStatusPushes::class,
-    QueueWebhookEvents::class,
-]);
+arch()->preset()->laravel();
 
 arch('actions do not use the http layer')
     ->expect('App\Http')
