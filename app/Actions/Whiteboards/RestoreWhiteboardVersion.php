@@ -22,17 +22,14 @@ class RestoreWhiteboardVersion
         private StoreWhiteboardVersion $storeWhiteboardVersion,
         private SanitizeWhiteboardElement $sanitizeWhiteboardElement,
         private ScheduleWhiteboardVersion $scheduleWhiteboardVersion,
-        private KeepWhiteboardTextOutOfLogs $keepWhiteboardTextOutOfLogs,
-        private ReadWhiteboardVersion $readWhiteboardVersion,
     ) {}
 
     public function handle(Whiteboard $board, WhiteboardMember $member, WhiteboardVersion $version): void
     {
-        $this->keepWhiteboardTextOutOfLogs->handle($board->id, fn () => DB::transaction(function () use ($board, $member, $version): void {
+        DB::transaction(function () use ($board, $member, $version): void {
             $locked = Whiteboard::query()->whereKey($board->id)->lockForUpdate()->firstOrFail();
 
             WhiteboardGuard::facilitator($locked, $member);
-            WhiteboardGuard::notPrivateWriting($locked);
 
             $chosen = $locked->versions()->whereKey($version->id)->firstOrFail();
 
@@ -40,8 +37,6 @@ class RestoreWhiteboardVersion
 
             $fromSeq = $locked->seq;
             $seq = $this->rewrite($locked, $member, $chosen, $fromSeq);
-
-            $this->endVoting($locked);
 
             if ($seq !== $fromSeq) {
                 $locked->update(['seq' => $seq]);
@@ -52,21 +47,7 @@ class RestoreWhiteboardVersion
             }
 
             (new WhiteboardChanged($locked->id))->sendToOthers();
-        }));
-    }
-
-    /**
-     * The notes a vote counted may be gone or changed (spec §9): an open
-     * session ends without results, and no closed session keeps its badges.
-     */
-    private function endVoting(Whiteboard $locked): void
-    {
-        $open = $locked->voteSessions()->whereNull('closed_at')->first();
-
-        $open?->votes()->delete();
-        $open?->update(['results' => [], 'closed_at' => now()]);
-
-        $locked->voteSessions()->whereNull('dismissed_at')->update(['dismissed_at' => now()]);
+        });
     }
 
     private function safetyName(): string
@@ -135,7 +116,7 @@ class RestoreWhiteboardVersion
         $fileIds = $locked->files()->pluck('file_id')->flip();
         $elements = [];
 
-        foreach ($this->readWhiteboardVersion->handle($chosen) as $raw) {
+        foreach ($chosen->scene['elements'] as $raw) {
             $element = $this->sanitizeWhiteboardElement->handle($raw);
 
             if ($element === null || $element['isDeleted']) {
@@ -247,7 +228,6 @@ class RestoreWhiteboardVersion
             'version' => $element['version'],
             'version_nonce' => $element['versionNonce'],
             'is_sticky' => isset($element['customData']),
-            'is_private' => false,
             'is_deleted' => $element['isDeleted'],
             'seq' => $seq,
         ];

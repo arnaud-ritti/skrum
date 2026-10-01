@@ -24,8 +24,6 @@ class DuplicateWhiteboard
         return DB::transaction(function () use ($board, $user): Whiteboard {
             $locked = Whiteboard::query()->whereKey($board->id)->lockForUpdate()->firstOrFail();
 
-            WhiteboardGuard::notPrivateWriting($locked);
-
             return $this->createWhiteboard->handle(
                 $locked->team,
                 $user,

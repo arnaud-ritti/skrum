@@ -340,3 +340,15 @@ it('rejects a guest who deletes, moves or unlocks a locked element and hands bac
     'move' => [['x' => 500]],
     'unlock' => [['locked' => false]],
 ]);
+
+it('accepts a second write of an element whose id is 0', function () {
+    $board = Whiteboard::factory()->create();
+    [$user] = whiteboardMember($board);
+
+    putWhiteboardElements($this->actingAs($user), $board, [sceneElement(['id' => '0'])])->assertOk()->assertJsonPath('rejected', []);
+    putWhiteboardElements($this->actingAs($user), $board, [sceneElement(['id' => '0', 'version' => 2, 'x' => 5])])
+        ->assertOk()
+        ->assertJsonPath('rejected', []);
+
+    expect($board->elements()->sole()->data['x'])->toBe(5);
+});

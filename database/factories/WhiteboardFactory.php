@@ -25,9 +25,4 @@ class WhiteboardFactory extends Factory
     {
         return $this->state(fn () => ['guest_access_enabled' => true]);
     }
-
-    public function privateWriting(): static
-    {
-        return $this->state(fn () => ['private_writing' => true]);
-    }
 }

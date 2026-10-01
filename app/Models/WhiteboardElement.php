@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use Carbon\CarbonImmutable;
 use Database\Factories\WhiteboardElementFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -20,12 +19,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $version_nonce
  * @property string|null $author_member_id
  * @property bool $is_sticky
- * @property bool $is_private
  * @property bool $is_deleted
  * @property int $seq
- * @property CarbonImmutable|null $withheld_at
  */
-#[Fillable(['whiteboard_id', 'element_id', 'type', 'data', 'version', 'version_nonce', 'author_member_id', 'is_sticky', 'is_private', 'is_deleted', 'seq'])]
+#[Fillable(['whiteboard_id', 'element_id', 'type', 'data', 'version', 'version_nonce', 'author_member_id', 'is_sticky', 'is_deleted', 'seq'])]
 class WhiteboardElement extends Model
 {
     /** @use HasFactory<WhiteboardElementFactory> */
@@ -46,10 +43,8 @@ class WhiteboardElement extends Model
             'version' => 'integer',
             'version_nonce' => 'integer',
             'is_sticky' => 'boolean',
-            'is_private' => 'boolean',
             'is_deleted' => 'boolean',
             'seq' => 'integer',
-            'withheld_at' => 'immutable_datetime',
         ];
     }
 }

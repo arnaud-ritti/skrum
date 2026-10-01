@@ -3,14 +3,12 @@
 use App\Actions\Whiteboards\CreateWhiteboard;
 use App\Events\Whiteboards\WhiteboardChanged;
 use App\Events\Whiteboards\WhiteboardElementsChanged;
-use App\Exceptions\WhiteboardQueryFailed;
 use App\Jobs\StoreAutomaticWhiteboardVersion;
 use App\Models\Team;
 use App\Models\Whiteboard;
 use App\Models\WhiteboardFile;
 use App\Models\WhiteboardVersion;
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
@@ -54,13 +52,13 @@ it('schedules nothing for a write that changes nothing', function () {
     Queue::assertNothingPushed();
 });
 
-it('stores the live scene with its real text and remembers how far it goes', function () {
-    $board = Whiteboard::factory()->privateWriting()->create(['seq' => 4, 'last_versioned_seq' => 1]);
+it('stores the live scene and remembers how far it goes', function () {
+    $board = Whiteboard::factory()->create(['seq' => 4, 'last_versioned_seq' => 1]);
     [, $member] = whiteboardMember($board);
     $file = WhiteboardFile::factory()->create(['whiteboard_id' => $board->id]);
-    [$note, $text] = stickyWithText('note', 'Secret idea 7391');
-    storeWhiteboardElement($board, [...$note, 'index' => 'a2'], 1, $member, private: true);
-    storeWhiteboardElement($board, [...$text, 'index' => 'a3'], 2, $member, private: true);
+    [$note, $text] = stickyWithText('note', 'Idea 7391');
+    storeWhiteboardElement($board, [...$note, 'index' => 'a2'], 1, $member);
+    storeWhiteboardElement($board, [...$text, 'index' => 'a3'], 2, $member);
     storeWhiteboardElement($board, sceneElement(['id' => 'photo', 'type' => 'image', 'fileId' => $file->file_id, 'status' => 'saved', 'scale' => [1, 1], 'index' => 'a1']), 3, $member);
     storeWhiteboardElement($board, sceneElement(['id' => 'erased', 'index' => 'a4', 'isDeleted' => true]), 4, $member);
     $changedAt = $board->fresh()->updated_at;
@@ -75,9 +73,8 @@ it('stores the live scene with its real text and remembers how far it goes', fun
         ->and($version->seq)->toBe(4)
         ->and($version->created_at->toDateTimeString())->toBe('2026-10-12 10:05:00')
         ->and(array_column($version->scene['elements'], 'id'))->toBe(['photo', 'note', 'note-text'])
-        ->and($version->scene['elements'][2]['text'])->toBe('Secret idea 7391')
+        ->and($version->scene['elements'][2]['text'])->toBe('Idea 7391')
         ->and($version->scene['fileIds'])->toBe([$file->file_id])
-        ->and($version->private_element_ids)->toBe(['note', 'note-text'])
         ->and($board->fresh()->last_versioned_seq)->toBe(4)
         ->and($board->fresh()->updated_at->equalTo($changedAt))->toBeTrue();
 });
@@ -156,17 +153,6 @@ it('schedules the first version of a board created from a scene', function () {
     Queue::assertPushed(StoreAutomaticWhiteboardVersion::class, fn (StoreAutomaticWhiteboardVersion $job) => $job->boardId === $board->id);
 });
 
-it('schedules a version when a reveal is the first change since the last one', function () {
-    $table = privateWritingBoard();
-    $table['board']->update(['last_versioned_seq' => 2]);
-
-    $this->actingAs($table['facilitator'])
-        ->patchJson(route('whiteboards.settings.update', $table['board']), ['private_writing' => false])
-        ->assertNoContent();
-
-    Queue::assertPushed(StoreAutomaticWhiteboardVersion::class, 1);
-});
-
 it('queues the versions a lost job never stored', function () {
     $stuck = Whiteboard::factory()->create(['seq' => 5, 'last_versioned_seq' => 2]);
     $versioned = Whiteboard::factory()->create(['seq' => 5, 'last_versioned_seq' => 5]);
@@ -212,23 +198,4 @@ it('keeps an image for as long as a version shows it', function () {
 
     Storage::assertMissing($file->path);
     expect($file->fresh())->toBeNull();
-});
-
-it('keeps the scene out of the log when a version cannot be stored', function () {
-    $table = privateWritingBoard();
-
-    DB::statement('alter table whiteboard_versions add constraint whiteboard_versions_refused check (seq < 0)');
-
-    $failure = null;
-
-    try {
-        runAutomaticVersionJob($table['board']);
-    } catch (Throwable $exception) {
-        $failure = $exception;
-    }
-
-    expect($failure)->toBeInstanceOf(WhiteboardQueryFailed::class)
-        ->and($failure->getPrevious())->toBeNull()
-        ->and(whiteboardPayloadExposes($failure->getMessage(), $table['secret']))->toBeFalse()
-        ->and(WhiteboardVersion::query()->count())->toBe(0);
 });

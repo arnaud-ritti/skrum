@@ -11,10 +11,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
- * The live scene of a board at one moment, as stored: real text, no viewer.
- * `private_element_ids` lists the elements that were private then and have
- * not been revealed since: nothing may show them (spec §9). A null name
- * means the version was stored automatically.
+ * The live scene of a board at one moment, as stored. A null name means the
+ * version was stored automatically (spec §9).
  *
  * @phpstan-type VersionScene array{elements: list<array<string, mixed>>, fileIds: list<string>}
  *
@@ -22,14 +20,13 @@ use Illuminate\Support\Carbon;
  * @property string $whiteboard_id
  * @property string|null $name
  * @property VersionScene $scene
- * @property list<string> $private_element_ids
  * @property int $seq
  * @property string|null $created_by_member_id
  * @property Carbon $created_at
  * @property-read Whiteboard $whiteboard
  * @property-read WhiteboardMember|null $createdBy
  */
-#[Fillable(['whiteboard_id', 'name', 'scene', 'private_element_ids', 'seq', 'created_by_member_id'])]
+#[Fillable(['whiteboard_id', 'name', 'scene', 'seq', 'created_by_member_id'])]
 class WhiteboardVersion extends Model
 {
     /** @use HasFactory<WhiteboardVersionFactory> */
@@ -64,7 +61,6 @@ class WhiteboardVersion extends Model
     {
         return [
             'scene' => 'array',
-            'private_element_ids' => 'array',
             'seq' => 'integer',
         ];
     }

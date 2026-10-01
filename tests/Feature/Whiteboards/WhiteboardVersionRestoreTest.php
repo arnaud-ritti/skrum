@@ -10,7 +10,6 @@ use App\Models\Whiteboard;
 use App\Models\WhiteboardElement;
 use App\Models\WhiteboardFile;
 use App\Models\WhiteboardVersion;
-use App\Models\WhiteboardVoteSession;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
@@ -123,7 +122,6 @@ it('rewrites the board from a version and stores the state it replaces first', f
         ->and($rows['added']->is_deleted)->toBeTrue()
         ->and($rows['added']->data['isDeleted'])->toBeTrue()
         ->and($rows['forgotten']->seq)->toBe(6)
-        ->and($rows->where('is_private', true)->count())->toBe(0)
         ->and($safety->name)->toStartWith('Before restore · ')
         ->and($safety->created_by_member_id)->toBe($facilitatorMemberId)
         ->and($safety->seq)->toBe(6)
@@ -279,30 +277,7 @@ it('restores an image the board still stores and leaves out one it lost', functi
     expect($board->elements()->get()->pluck('data.fileId')->all())->toBe([$file->file_id]);
 });
 
-it('never restores or copies a note that was deleted before the reveal', function () {
-    $board = Whiteboard::factory()->create(['title' => 'Retro']);
-    [$facilitator] = whiteboardFacilitator($board);
-    [$note, $text] = stickyWithText('note', 'Revealed idea');
-    [$dropped, $droppedText] = stickyWithText('dropped', 'Dropped thought 5522');
-    $version = WhiteboardVersion::factory()->create([
-        'whiteboard_id' => $board->id,
-        'scene' => ['elements' => [$note, $text, $dropped, $droppedText], 'fileIds' => []],
-        'private_element_ids' => ['dropped', 'dropped-text'],
-    ]);
-
-    $this->actingAs($facilitator)->postJson(route('whiteboards.versions.copy.store', [$board, $version]))->assertCreated();
-    restoreVersion($this->actingAs($facilitator), $board, $version)->assertNoContent();
-
-    $stored = WhiteboardElement::query()->get()->map(fn (WhiteboardElement $element): array => $element->data)->all();
-    $snapshot = $this->actingAs($facilitator)->getJson(route('whiteboards.snapshot.show', $board))->assertOk();
-
-    expect(WhiteboardElement::query()->count())->toBe(4)
-        ->and(whiteboardPayloadExposes($stored, 'Revealed idea'))->toBeTrue()
-        ->and(whiteboardPayloadExposes($stored, 'Dropped thought'))->toBeFalse()
-        ->and(whiteboardPayloadExposes($snapshot->getContent(), 'Dropped thought'))->toBeFalse();
-});
-
-it('only lets the facilitator restore, and never while the notes are hidden', function () {
+it('only lets the facilitator restore', function () {
     [$board, $facilitator, $version] = boardWithHistory();
     [$member] = whiteboardMember($board);
     $board->update(['guest_access_enabled' => true]);
@@ -319,12 +294,6 @@ it('only lets the facilitator restore, and never while the notes are hidden', fu
         ->assertJsonPath('message', 'Guests cannot do this.');
 
     restoreVersion($this->actingAs($facilitator), $board, $foreign)->assertNotFound();
-
-    $board->update(['private_writing' => true]);
-
-    restoreVersion($this->actingAs($facilitator), $board, $version)
-        ->assertStatus(422)
-        ->assertJsonPath('message', 'Reveal the notes first.');
 
     expect(liveWhiteboardScene($board))->toEqual($before)
         ->and($board->versions()->count())->toBe(1)
@@ -374,7 +343,6 @@ it('copies a version to a new board of the same team, for any member', function 
     expect($copy->title)->toBe('Discovery (copy)')
         ->and($copy->team_id)->toBe($board->team_id)
         ->and($copy->facilitator->user_id)->toBe($user->id)
-        ->and($copy->private_writing)->toBeFalse()
         ->and($elements)->toHaveCount(3)
         ->and($elements->pluck('element_id')->intersect(['note', 'note-text', 'photo'])->all())->toBe([])
         ->and($elements[1]->data['text'])->toBe('Kept in history')
@@ -390,17 +358,18 @@ it('copies a version to a new board of the same team, for any member', function 
     Event::assertNotDispatched(WhiteboardChanged::class);
 });
 
-it('refuses to copy a version for guests, outsiders and while the notes are hidden', function () {
-    $table = privateWritingBoard();
-    $board = $table['board'];
-    [$note, $text] = stickyWithText('note', $table['secret']);
+it('refuses to copy a version for guests and outsiders', function () {
+    $board = Whiteboard::factory()->withGuestAccess()->create();
+    whiteboardFacilitator($board);
+    $guest = whiteboardGuest($board);
+    [$note, $text] = stickyWithText('note', 'Kept in history');
     $version = WhiteboardVersion::factory()->create([
         'whiteboard_id' => $board->id,
         'scene' => ['elements' => [$note, $text], 'fileIds' => []],
     ]);
     $copyUrl = route('whiteboards.versions.copy.store', [$board, $version]);
 
-    whiteboardViewer($this, $table['guest'])->postJson($copyUrl)
+    whiteboardViewer($this, $guest)->postJson($copyUrl)
         ->assertForbidden()
         ->assertJsonPath('message', 'Guests cannot do this.');
 
@@ -409,35 +378,5 @@ it('refuses to copy a version for guests, outsiders and while the notes are hidd
 
     $this->actingAs($outsider)->postJson($copyUrl)->assertForbidden();
 
-    $hidden = $this->actingAs($table['other'])->postJson($copyUrl)
-        ->assertStatus(422)
-        ->assertJsonPath('message', 'Reveal the notes first.');
-
-    expect(Whiteboard::query()->count())->toBe(1)
-        ->and(whiteboardPayloadExposes($hidden->getContent(), $table['secret']))->toBeFalse();
-});
-
-it('closes an open vote without results and dismisses a closed one when a version is restored', function () {
-    [$board, $facilitator, $version] = boardWithHistory();
-    [, $voter] = whiteboardMember($board);
-    whiteboardSticky($board, 'voted');
-    $results = [['elementId' => 'voted', 'text' => 'Counted', 'count' => 2]];
-    $closed = WhiteboardVoteSession::factory()->closed($results)->create(['whiteboard_id' => $board->id, 'closed_at' => now()->subHour()]);
-    $open = openWhiteboardVote($board);
-    castWhiteboardVote($open, $voter, 'voted');
-
-    restoreVersion($this->actingAs($facilitator), $board, $version)->assertNoContent();
-
-    expect($open->fresh()->closed_at)->not->toBeNull()
-        ->and($open->fresh()->results)->toBe([])
-        ->and($open->fresh()->dismissed_at)->not->toBeNull()
-        ->and($open->votes()->count())->toBe(0)
-        ->and($closed->fresh()->dismissed_at)->not->toBeNull()
-        ->and($closed->fresh()->results)->toBe($results);
-
-    $this->actingAs($facilitator)
-        ->getJson(route('whiteboards.snapshot.show', $board))
-        ->assertOk()
-        ->assertJsonPath('voting', null)
-        ->assertJsonPath('votingHistory.*.id', [$closed->id]);
+    expect(Whiteboard::query()->count())->toBe(1);
 });

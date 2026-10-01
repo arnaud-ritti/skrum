@@ -1,6 +1,8 @@
 <?php
 
+use App\Enums\WorkspaceRole;
 use App\Events\Whiteboards\WhiteboardTimerChanged;
+use App\Models\User;
 use App\Models\Whiteboard;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Event;
@@ -47,6 +49,18 @@ it('lets only the facilitator set the timer', function () {
     $this->actingAs($user)
         ->putJson(route('whiteboards.timer.update', $board), ['seconds' => 60])
         ->assertForbidden();
+
+    expect($board->fresh()->timer_ends_at)->toBeNull();
+
+    Event::assertNotDispatched(WhiteboardTimerChanged::class);
+});
+
+it('refuses people outside the team', function () {
+    $board = Whiteboard::factory()->create();
+    $outsider = User::factory()->create();
+    $board->team->workspace->members()->attach($outsider, ['role' => WorkspaceRole::Member->value]);
+
+    $this->actingAs($outsider)->putJson(route('whiteboards.timer.update', $board), ['seconds' => 60])->assertForbidden();
 
     expect($board->fresh()->timer_ends_at)->toBeNull();
 

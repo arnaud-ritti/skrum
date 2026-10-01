@@ -7,8 +7,8 @@ use App\Models\WhiteboardElement;
 use App\Models\WhiteboardFile;
 
 /**
- * The live scene of a board as it is stored: real text, no viewer. Nothing
- * returned here may reach a client; it only feeds a copy made on the server.
+ * The live scene of a board as it is stored, with the files its images show:
+ * what a copy made on the server starts from.
  *
  * @phpstan-import-type Scene from CopyWhiteboardScene
  */

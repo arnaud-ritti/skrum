@@ -8,10 +8,7 @@ use App\Models\WhiteboardVersion;
 
 class StoreWhiteboardVersion
 {
-    public function __construct(
-        private ReadWhiteboardScene $readWhiteboardScene,
-        private KeepWhiteboardTextOutOfLogs $keepWhiteboardTextOutOfLogs,
-    ) {}
+    public function __construct(private ReadWhiteboardScene $readWhiteboardScene) {}
 
     /**
      * The caller holds the lock on the board row. A null name is an
@@ -21,13 +18,12 @@ class StoreWhiteboardVersion
     {
         $elements = $this->readWhiteboardScene->handle($locked)['elements'];
 
-        $version = $this->keepWhiteboardTextOutOfLogs->handle($locked->id, fn (): WhiteboardVersion => $locked->versions()->create([
+        $version = $locked->versions()->create([
             'name' => $name,
             'scene' => ['elements' => $elements, 'fileIds' => $this->fileIds($elements)],
-            'private_element_ids' => $this->privateElementIds($locked),
             'seq' => $locked->seq,
             'created_by_member_id' => $member?->id,
-        ]));
+        ]);
 
         $this->rememberHowFar($locked);
 
@@ -49,19 +45,6 @@ class StoreWhiteboardVersion
             ->pluck('fileId')
             ->filter(fn (mixed $fileId): bool => is_string($fileId))
             ->unique()
-            ->all());
-    }
-
-    /**
-     * @return list<string>
-     */
-    private function privateElementIds(Whiteboard $locked): array
-    {
-        return array_values($locked->elements()
-            ->where('is_private', true)
-            ->where('is_deleted', false)
-            ->orderBy('element_id')
-            ->pluck('element_id')
             ->all());
     }
 

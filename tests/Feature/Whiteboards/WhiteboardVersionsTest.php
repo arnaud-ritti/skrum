@@ -44,8 +44,7 @@ it('lists the versions of a board, newest first, without their scenes', function
 
     expect($versionQueries)->toHaveCount(1)
         ->and($versionQueries[0])->not->toContain('*')
-        ->not->toContain('"scene"')
-        ->not->toContain('"private_element_ids"');
+        ->not->toContain('"scene"');
 });
 
 it('saves a named version of the live scene for any member', function () {
@@ -57,14 +56,14 @@ it('saves a named version of the live scene for any member', function () {
     $changedAt = $board->fresh()->updated_at;
 
     $response = $this->actingAs($user)
-        ->postJson(route('whiteboards.versions.store', $board), ['name' => '  Before the vote  '])
+        ->postJson(route('whiteboards.versions.store', $board), ['name' => '  Before the break  '])
         ->assertCreated();
 
     $version = $board->versions()->sole();
 
     $response->assertExactJson([
         'id' => $version->id,
-        'name' => 'Before the vote',
+        'name' => 'Before the break',
         'createdAt' => now()->toIso8601String(),
         'createdByName' => $user->name,
         'automatic' => false,
@@ -138,26 +137,6 @@ it('previews a version: its elements and the images the board still stores', fun
             'url' => route('whiteboards.files.show', [$board, $file->file_id], absolute: false),
             'mimeType' => 'image/png',
         ]]);
-});
-
-it('never previews a note that was deleted before the reveal', function () {
-    $board = Whiteboard::factory()->create();
-    [$user] = whiteboardMember($board);
-    [$note, $text] = stickyWithText('note', 'Revealed idea');
-    [$dropped, $droppedText] = stickyWithText('dropped', 'Dropped thought 5522');
-    $version = WhiteboardVersion::factory()->create([
-        'whiteboard_id' => $board->id,
-        'scene' => ['elements' => [$note, $text, $dropped, $droppedText], 'fileIds' => []],
-        'private_element_ids' => ['dropped', 'dropped-text'],
-    ]);
-
-    $preview = $this->actingAs($user)
-        ->getJson(route('whiteboards.versions.show', [$board, $version]))
-        ->assertOk()
-        ->assertJsonPath('elements.*.id', ['note', 'note-text'])
-        ->assertJsonPath('elements.1.text', 'Revealed idea');
-
-    expect(whiteboardPayloadExposes($preview->getContent(), 'Dropped thought'))->toBeFalse();
 });
 
 it('lets the facilitator rename and delete a version, and no one else', function () {
@@ -247,34 +226,3 @@ it('refuses people outside the team, logged-out visitors and versions of another
     $this->actingAs($user)->getJson(route('whiteboards.versions.show', [$board, $foreign]))->assertNotFound();
     $this->actingAs($user)->deleteJson(route('whiteboards.versions.destroy', [$board, $foreign]))->assertNotFound();
 });
-
-it('keeps the history closed while the notes are hidden', function (string $viewer) {
-    $table = privateWritingBoard();
-    $board = $table['board'];
-    [$note, $text] = stickyWithText('note', $table['secret']);
-    $version = WhiteboardVersion::factory()->create([
-        'whiteboard_id' => $board->id,
-        'scene' => ['elements' => [$note, $text], 'fileIds' => []],
-    ]);
-
-    $list = $this->actingAs($table[$viewer])
-        ->getJson(route('whiteboards.versions.index', $board))
-        ->assertStatus(422)
-        ->assertJsonPath('message', 'Reveal the notes first.');
-
-    $preview = $this->actingAs($table[$viewer])
-        ->getJson(route('whiteboards.versions.show', [$board, $version]))
-        ->assertStatus(422)
-        ->assertJsonPath('message', 'Reveal the notes first.');
-
-    $saved = $this->actingAs($table[$viewer])
-        ->postJson(route('whiteboards.versions.store', $board), ['name' => 'While hidden'])
-        ->assertCreated();
-
-    expect(whiteboardPayloadExposes($list->getContent().$preview->getContent().$saved->getContent(), $table['secret']))->toBeFalse()
-        ->and(whiteboardPayloadExposes($board->versions()->whereNotNull('name')->sole()->scene, $table['secret']))->toBeTrue();
-})->with([
-    'another member' => 'other',
-    'the facilitator' => 'facilitator',
-    'the author' => 'author',
-]);

@@ -24,8 +24,6 @@ class SaveWhiteboardTemplate
         return DB::transaction(function () use ($board, $user, $name, $description): WhiteboardTemplate {
             $locked = Whiteboard::query()->whereKey($board->id)->lockForUpdate()->firstOrFail();
 
-            WhiteboardGuard::notPrivateWriting($locked);
-
             $workspace = Workspace::query()->whereKey($locked->team->workspace_id)->lockForUpdate()->firstOrFail();
 
             WhiteboardTemplateRules::ensureRoom($workspace);

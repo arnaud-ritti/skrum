@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Whiteboards;
 
 use App\Actions\Whiteboards\PresentWhiteboardVersion;
-use App\Actions\Whiteboards\ReadWhiteboardVersion;
 use App\Actions\Whiteboards\StoreWhiteboardVersion;
 use App\Actions\Whiteboards\WhiteboardGuard;
 use App\Http\Controllers\Controller;
@@ -24,7 +23,6 @@ class WhiteboardVersionsController extends Controller
     public function index(Request $request, Whiteboard $board, PresentWhiteboardVersion $presentWhiteboardVersion): JsonResponse
     {
         WhiteboardGuard::notGuest(WhiteboardMember::current($request));
-        WhiteboardGuard::notPrivateWriting($board);
 
         return response()->json(
             $board->versions()
@@ -62,13 +60,12 @@ class WhiteboardVersionsController extends Controller
         return response()->json($presentWhiteboardVersion->handle($version), 201);
     }
 
-    public function show(Request $request, Whiteboard $board, WhiteboardVersion $version, ReadWhiteboardVersion $readWhiteboardVersion): JsonResponse
+    public function show(Request $request, Whiteboard $board, WhiteboardVersion $version): JsonResponse
     {
         WhiteboardGuard::notGuest(WhiteboardMember::current($request));
-        WhiteboardGuard::notPrivateWriting($board);
 
         return response()->json([
-            'elements' => $readWhiteboardVersion->handle($version),
+            'elements' => $version->scene['elements'],
             'files' => $board->files()
                 ->whereIn('file_id', $version->scene['fileIds'])
                 ->orderBy('file_id')

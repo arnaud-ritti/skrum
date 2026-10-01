@@ -146,7 +146,7 @@ it('keeps text byte for byte and limits its length', function () {
 });
 
 it('reduces custom data to the sticky marker', function () {
-    $sticky = sanitizeElement(sceneElement(['customData' => ['skrum' => ['kind' => 'sticky', 'masked' => true], 'other' => 1]]));
+    $sticky = sanitizeElement(sceneElement(['customData' => ['skrum' => ['kind' => 'sticky', 'colour' => 'pink'], 'other' => 1]]));
     $forged = sanitizeElement(sceneElement(['type' => 'ellipse', 'customData' => ['skrum' => ['kind' => 'sticky']]]));
     $junk = sanitizeElement(sceneElement(['customData' => ['skrum' => ['kind' => 'admin']]]));
 

@@ -22,8 +22,6 @@ class WhiteboardElementsController extends Controller
         PresentWhiteboardElement $presentWhiteboardElement,
         OrderWhiteboardElements $orderWhiteboardElements,
     ): JsonResponse {
-        $member = WhiteboardMember::current($request);
-
         $validated = $request->validate([
             'since' => ['required', 'integer', 'min:0'],
         ]);
@@ -36,7 +34,7 @@ class WhiteboardElementsController extends Controller
             'seq' => $board->seq,
             'elements' => $orderWhiteboardElements
                 ->handle($board->elements()->where('seq', '>', $since)->orderBy('seq')->get())
-                ->map(fn (WhiteboardElement $element): array => $presentWhiteboardElement->handle($element, $member))
+                ->map(fn (WhiteboardElement $element): array => $presentWhiteboardElement->handle($element))
                 ->all(),
         ]);
     }

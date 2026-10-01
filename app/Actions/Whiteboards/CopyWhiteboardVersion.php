@@ -16,7 +16,6 @@ class CopyWhiteboardVersion
     public function __construct(
         private CreateWhiteboard $createWhiteboard,
         private DuplicateWhiteboard $duplicateWhiteboard,
-        private ReadWhiteboardVersion $readWhiteboardVersion,
     ) {}
 
     /**
@@ -28,12 +27,10 @@ class CopyWhiteboardVersion
         return DB::transaction(function () use ($board, $user, $version): Whiteboard {
             $locked = Whiteboard::query()->whereKey($board->id)->lockForUpdate()->firstOrFail();
 
-            WhiteboardGuard::notPrivateWriting($locked);
-
             $chosen = $locked->versions()->whereKey($version->id)->firstOrFail();
 
             return $this->createWhiteboard->handle($locked->team, $user, $this->duplicateWhiteboard->title($locked->title), [
-                'elements' => $this->readWhiteboardVersion->handle($chosen),
+                'elements' => $chosen->scene['elements'],
                 'files' => $this->files($locked, $chosen),
             ]);
         });

@@ -17,7 +17,6 @@ class WhiteboardVersionFactory extends Factory
             'whiteboard_id' => Whiteboard::factory(),
             'name' => null,
             'scene' => ['elements' => [], 'fileIds' => []],
-            'private_element_ids' => [],
             'seq' => 0,
             'created_by_member_id' => null,
         ];

@@ -10,22 +10,16 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('whiteboards', function (Blueprint $table) {
-            $table->boolean('private_writing')->default(false);
             $table->unsignedBigInteger('last_versioned_seq')->default(0);
         });
 
         DB::table('whiteboards')->update(['last_versioned_seq' => DB::raw('seq')]);
-
-        Schema::table('whiteboard_elements', function (Blueprint $table) {
-            $table->boolean('is_private')->default(false);
-        });
 
         Schema::create('whiteboard_versions', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->foreignUuid('whiteboard_id')->constrained()->cascadeOnDelete();
             $table->string('name', 80)->nullable();
             $table->json('scene');
-            $table->json('private_element_ids');
             $table->unsignedBigInteger('seq');
             $table->foreignUuid('created_by_member_id')->nullable()->constrained('whiteboard_members')->nullOnDelete();
             $table->timestamp('created_at')->nullable();

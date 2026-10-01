@@ -40,8 +40,6 @@ use App\Models\Vote;
 use App\Models\Whiteboard;
 use App\Models\WhiteboardElement;
 use App\Models\WhiteboardMember;
-use App\Models\WhiteboardVote;
-use App\Models\WhiteboardVoteSession;
 use App\Models\Workspace;
 use App\Support\Games\GameRules;
 use App\Support\Games\GameRulesRegistry;
@@ -1502,69 +1500,6 @@ function whiteboardGuestCookie(WhiteboardMember $member, string $secret = 'secre
 }
 
 /**
- * A stored sticky note and the text bound to it (`{$id}-text`).
- *
- * @param  array<string, mixed>  $overrides  merged into the note
- * @return array{0: WhiteboardElement, 1: WhiteboardElement}
- */
-function whiteboardSticky(Whiteboard $board, string $id, string $text = 'Idea', array $overrides = []): array
-{
-    $note = sceneElement([
-        'id' => $id,
-        'backgroundColor' => '#fff3bf',
-        'customData' => ['skrum' => ['kind' => 'sticky']],
-        'boundElements' => [['id' => "{$id}-text", 'type' => 'text']],
-        ...$overrides,
-    ]);
-
-    $words = sceneElement([
-        'id' => "{$id}-text",
-        'type' => 'text',
-        'text' => $text,
-        'originalText' => $text,
-        'containerId' => $id,
-        'frameId' => $note['frameId'],
-    ]);
-
-    $store = fn (array $element): WhiteboardElement => WhiteboardElement::factory()->create([
-        'whiteboard_id' => $board->id,
-        'element_id' => $element['id'],
-        'type' => $element['type'],
-        'data' => $element,
-        'version' => $element['version'],
-        'version_nonce' => $element['versionNonce'],
-        'is_sticky' => isset($element['customData']),
-        'seq' => 1,
-    ]);
-
-    return [$store($note), $store($words)];
-}
-
-/**
- * An open vote on the live sticky notes the board holds right now.
- *
- * @param  array<string, mixed>  $attributes
- */
-function openWhiteboardVote(Whiteboard $board, array $attributes = []): WhiteboardVoteSession
-{
-    return WhiteboardVoteSession::factory()->create([
-        'whiteboard_id' => $board->id,
-        'element_ids' => $board->elements()->where('is_sticky', true)->where('is_deleted', false)->orderBy('element_id')->pluck('element_id')->all(),
-        ...$attributes,
-    ]);
-}
-
-function castWhiteboardVote(WhiteboardVoteSession $session, WhiteboardMember $member, string $elementId, int $count = 1): WhiteboardVote
-{
-    return WhiteboardVote::factory()->create([
-        'whiteboard_vote_session_id' => $session->id,
-        'whiteboard_member_id' => $member->id,
-        'element_id' => $elementId,
-        'count' => $count,
-    ]);
-}
-
-/**
  * A rectangle as Excalidraw sends it.
  *
  * @param  array<string, mixed>  $overrides
@@ -1634,7 +1569,7 @@ function stickyWithText(string $id, string $text): array
  *
  * @param  array<string, mixed>  $data
  */
-function storeWhiteboardElement(Whiteboard $board, array $data, int $seq, ?WhiteboardMember $author = null, bool $private = false): WhiteboardElement
+function storeWhiteboardElement(Whiteboard $board, array $data, int $seq, ?WhiteboardMember $author = null): WhiteboardElement
 {
     return WhiteboardElement::factory()->create([
         'whiteboard_id' => $board->id,
@@ -1645,7 +1580,6 @@ function storeWhiteboardElement(Whiteboard $board, array $data, int $seq, ?White
         'version_nonce' => $data['versionNonce'],
         'author_member_id' => $author?->id,
         'is_sticky' => isset($data['customData']),
-        'is_private' => $private,
         'is_deleted' => $data['isDeleted'],
         'seq' => $seq,
     ]);
@@ -1671,47 +1605,4 @@ function whiteboardViewer(mixed $test, User|WhiteboardMember $viewer): mixed
     app('auth')->forgetGuards();
 
     return $test->withCookies(whiteboardGuestCookie($viewer))->withCredentials();
-}
-
-/**
- * Whether a payload (array, JSON or HTML) contains a text that must not leave the server.
- */
-function whiteboardPayloadExposes(mixed $payload, string $secret): bool
-{
-    $text = is_string($payload)
-        ? $payload
-        : (string) json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-
-    return str_contains($text, $secret);
-}
-
-/**
- * A board in private writing: a facilitator, an author who wrote one private
- * note ("note" and its text "note-text", seq 1 and 2), another member, a guest.
- *
- * @return array{board: Whiteboard, facilitator: User, author: User, authorMember: WhiteboardMember, other: User, otherMember: WhiteboardMember, guest: WhiteboardMember, secret: string}
- */
-function privateWritingBoard(): array
-{
-    $board = Whiteboard::factory()->withGuestAccess()->privateWriting()->create(['seq' => 2]);
-    [$facilitator] = whiteboardFacilitator($board);
-    [$author, $authorMember] = whiteboardMember($board);
-    [$other, $otherMember] = whiteboardMember($board);
-    $guest = whiteboardGuest($board);
-    $secret = 'Secret idea 7391';
-    [$note, $text] = stickyWithText('note', $secret);
-
-    storeWhiteboardElement($board, $note, 1, $authorMember, private: true);
-    storeWhiteboardElement($board, $text, 2, $authorMember, private: true);
-
-    return [
-        'board' => $board,
-        'facilitator' => $facilitator,
-        'author' => $author,
-        'authorMember' => $authorMember,
-        'other' => $other,
-        'otherMember' => $otherMember,
-        'guest' => $guest,
-        'secret' => $secret,
-    ];
 }
