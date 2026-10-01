@@ -1816,5 +1816,6 @@
     "This workspace already has 50 whiteboard templates.": "Dieser Workspace hat bereits 50 Whiteboard-Vorlagen.",
     "Choose either a built-in template or a workspace template.": "Wählen Sie entweder eine integrierte Vorlage oder eine Workspace-Vorlage.",
     "Choose a template of this workspace.": "Wählen Sie eine Vorlage dieses Workspace.",
-    "Only the creator of this template or a workspace admin can change it.": "Nur der Ersteller dieser Vorlage oder ein Workspace-Admin kann sie ändern."
+    "Only the creator of this template or a workspace admin can change it.": "Nur der Ersteller dieser Vorlage oder ein Workspace-Admin kann sie ändern.",
+    ":title (copy)": ":title (Kopie)"
 }

@@ -135,6 +135,7 @@ use App\Http\Controllers\TeamRetrosController;
 use App\Http\Controllers\TeamsController;
 use App\Http\Controllers\TeamWhiteboardsController;
 use App\Http\Controllers\WhiteboardJoinsController;
+use App\Http\Controllers\Whiteboards\WhiteboardDuplicatesController;
 use App\Http\Controllers\Whiteboards\WhiteboardElementsController;
 use App\Http\Controllers\Whiteboards\WhiteboardFacilitatorsController;
 use App\Http\Controllers\Whiteboards\WhiteboardFilesController;
@@ -506,6 +507,7 @@ Route::prefix('whiteboards/{board}')
         Route::post('files', [WhiteboardFilesController::class, 'store'])->name('whiteboards.files.store');
         Route::get('files/{fileId}', [WhiteboardFilesController::class, 'show'])->name('whiteboards.files.show')->where('fileId', '[A-Za-z0-9_-]{1,64}');
         Route::post('template', [WhiteboardTemplatesController::class, 'store'])->name('whiteboards.template.store');
+        Route::post('duplicate', [WhiteboardDuplicatesController::class, 'store'])->name('whiteboards.duplicate.store');
     });
 
 Route::get('play/{guestToken}', [GameJoinsController::class, 'show'])->name('games.join.show');
