@@ -182,3 +182,42 @@ it('drops participant names last', function () {
         ->and($mattermost)->toContain('Participants: 1500')
         ->and($mattermost)->toContain('#### Results of the retrospective');
 });
+
+it('measures Teams cards the way they are sent, with default JSON encoding', function () {
+    $items = array_map(fn (int $number) => [
+        'content' => str_repeat("é•/{$number} ", 30),
+        'assignee' => null,
+        'dueOn' => null,
+        'isCompleted' => false,
+    ], range(1, 200));
+
+    $message = (new RetroRecapContent(chatRecap(['actionItems' => $items])))->toMicrosoftTeams();
+
+    expect(strlen((string) json_encode($message)))->toBeLessThanOrEqual(MicrosoftTeamsText::PayloadLimitBytes)
+        ->and(MicrosoftTeamsText::fits($message))->toBeTrue();
+});
+
+it('treats a Teams message that cannot be encoded as not fitting', function () {
+    expect(MicrosoftTeamsText::fits(['text' => "\xB1\x31"]))->toBeFalse();
+});
+
+it('escapes list markers after carriage returns and invalid UTF-8 safely', function () {
+    expect(MicrosoftTeamsText::escape("a\r- x\r\n+ y"))->toBe("a\n\\- x\n\\+ y")
+        ->and(MattermostText::escape("a\r- x"))->toBe("a\n\\- x")
+        ->and(MicrosoftTeamsText::escape("bad \xB1 [x](y)"))->toBe('bad ? \[x\]\(y\)')
+        ->and(MattermostText::escape("bad \xB1 @here"))->toBe("bad ? @\u{200B}here");
+});
+
+it('falls back to the smallest message when even empty lists do not fit', function () {
+    $recap = chatRecap(['title' => str_repeat('T', 40000)]);
+
+    $teams = (new RetroRecapContent($recap))->toMicrosoftTeams();
+    $mattermost = (new RetroRecapContent($recap))->toMattermost();
+    $texts = collect($teams['attachments'][0]['content']['body'])->pluck('text')->implode("\n");
+
+    expect(MicrosoftTeamsText::fits($teams))->toBeFalse()
+        ->and($texts)->not->toContain('We shipped a lot.')->not->toContain('Fix the deploy')->toContain('Participants: 3')
+        ->and($teams['attachments'][0]['content']['actions'][0]['url'])->toBe('https://skrum.test/retros/1')
+        ->and($mattermost)->not->toContain('We shipped a lot.')->not->toContain('Fix the deploy')
+        ->and($mattermost)->toEndWith('[Open the results](https://skrum.test/retros/1)');
+});

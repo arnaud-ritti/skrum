@@ -10,9 +10,11 @@ class MarkdownText
      */
     public static function escape(string $text, string $specials): string
     {
-        $escaped = preg_replace('/(['.preg_quote($specials, '/').'])/u', '\\\\$1', $text) ?? $text;
-        $escaped = preg_replace('/^(\s*)([-+])/mu', '$1\\\\$2', $escaped) ?? $escaped;
+        $text = str_replace(["\r\n", "\r"], "\n", mb_scrub($text, 'UTF-8'));
 
-        return preg_replace('/^(\s*\d+)\./mu', '$1\\\\.', $escaped) ?? $escaped;
+        $escaped = (string) preg_replace('/(['.preg_quote($specials, '/').'])/u', '\\\\$1', $text);
+        $escaped = (string) preg_replace('/^(\s*)([-+])/mu', '$1\\\\$2', $escaped);
+
+        return (string) preg_replace('/^(\s*\d+)\./mu', '$1\\\\.', $escaped);
     }
 }

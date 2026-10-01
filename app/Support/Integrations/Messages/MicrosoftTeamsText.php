@@ -66,6 +66,8 @@ class MicrosoftTeamsText
      */
     public static function fits(array $message): bool
     {
-        return strlen((string) json_encode($message, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)) <= self::PayloadLimitBytes;
+        $json = json_encode($message);
+
+        return $json !== false && strlen($json) <= self::PayloadLimitBytes;
     }
 }
