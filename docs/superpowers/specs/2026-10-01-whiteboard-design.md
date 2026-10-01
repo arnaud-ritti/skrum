@@ -11,9 +11,9 @@ Teams using skrum leave it whenever a session needs free-form space: a brainstor
 
 ## 2. Goals
 
-1. A team runs a template-based workshop (brainstorm → vote → results) end to end inside skrum, with a member and a guest in two browsers, without a reload.
+1. A team runs a template-based workshop end to end inside skrum, with a member and a guest in two browsers, without a reload.
 2. A change made by one participant is visible to the others in under 1 second on a local network.
-3. A facilitator can run a silent-writing round and a dot vote in which no participant, the facilitator included, can see another person's note text or votes before the reveal. Feature tests prove it on every payload.
+3. A facilitator can keep a session on track: a shared countdown, a board lock, element locks and bringing everyone to their view. Every one of these rules is enforced on the server and pinned by feature tests.
 4. A board survives reloads, reconnects and mistakes: the exact scene is restored on load, and an earlier version can be brought back.
 5. The feature adds one dependency (`@excalidraw/excalidraw`) and no new service to the Docker image.
 
@@ -25,6 +25,7 @@ Teams using skrum leave it whenever a session needs free-form space: a brainstor
 - **Global undo, per-element change log, time scrubbing.** Own undo/redo is local; shared recovery goes through versions (§9).
 - **Per-board roles (viewer, commenter), following an arbitrary member, MCP tools, integrations, webhooks, LLM features.** Each is a follow-up once the core is used.
 - **Character-level merging of concurrent text edits.** Two people editing the same element at once: the later version wins (§6).
+- **Dot voting and private writing.** Voting on sticky notes, and notes kept from the other participants while people write: built in plans 17c/17d and removed on 2026-10-01 at the product owner's request. Requirements R8 and R9 and §11.4–11.5 of earlier revisions of this spec described them.
 
 ## 4. User stories
 
@@ -32,8 +33,6 @@ Facilitator (team member who created the board or took control):
 
 - As a facilitator, I want to create a board from a template so that the session starts with the right structure instead of an empty canvas.
 - As a facilitator, I want to invite people outside the workspace with a link so that stakeholders can take part without an account.
-- As a facilitator, I want notes to stay hidden while people write so that ideas are not anchored by what others wrote.
-- As a facilitator, I want to run a dot vote on the notes so that the group converges without seeing each other's choices first.
 - As a facilitator, I want to bring everyone to my view, lock the board or lock the template's structure so that the session stays on track.
 - As a facilitator, I want to start a shared countdown so that every activity is time-boxed.
 - As a facilitator, I want to restore an earlier version so that an accidental mass deletion is not fatal.
@@ -49,7 +48,7 @@ Team member:
 
 Guest:
 
-- As a guest, I want to join with only a display name so that I can contribute and vote without creating an account.
+- As a guest, I want to join with only a display name so that I can contribute without creating an account.
 
 ## 5. Requirements
 
@@ -64,12 +63,10 @@ Priorities: **P0** the feature cannot ship without it; **P1** part of this spec,
 | R5 | Template gallery: 8 built-in templates | P0 | §10 |
 | R6 | Workspace templates saved from a board; export PNG, SVG, `.whiteboard.json` | P1 | §10 |
 | R7 | Timer, board lock, element lock, follow-me | P1 | §11.1–11.3 |
-| R8 | Dot voting | P1 | §11.4 |
-| R9 | Private writing | P1 | §11.5 |
 | R10 | Version history: auto and named snapshots, preview, restore, copy to new board | P1 | §9 |
 | R11 | Canvas comments, retro attachment, import, MCP tools | P2 | Element ids are stable and server-owned, files are stored per board, and all mutations go through actions in `app/Actions/Whiteboards/`, so these can be added without a migration of existing data |
 
-Acceptance criteria for every requirement are in §16.
+Acceptance criteria for every requirement are in §16. R8 and R9 are not in use: the features they named were removed (§3), and the other numbers were kept.
 
 ### Dependencies
 
@@ -82,7 +79,7 @@ Acceptance criteria for every requirement are in §16.
 ### 6.1 Elements
 
 - The canvas is Excalidraw. Its element set (rectangle, diamond, ellipse, arrow, line, freedraw, text, image, frame) is the board's element set.
-- **Sticky note:** a rectangle with a bound text element, marked `customData.skrum = {kind: 'sticky'}`. A skrum button in the canvas shapes toolbar, between the image tool and the eraser, creates one in the chosen colour (six colours, each named for assistive technology; in the dark theme the swatches are shown through the canvas's dark filter so that they match the note, the stored colours being the same in both themes); when that toolbar is not on screen the button sits in skrum's top bar instead, so the tool is always reachable. Votes (§11.4) and private writing (§11.5) apply to sticky notes only.
+- **Sticky note:** a rectangle with a bound text element, marked `customData.skrum = {kind: 'sticky'}`. A skrum button in the canvas shapes toolbar, between the image tool and the eraser, creates one in the chosen colour (six colours, each named for assistive technology; in the dark theme the swatches are shown through the canvas's dark filter so that they match the note, the stored colours being the same in both themes); when that toolbar is not on screen the button sits in skrum's top bar instead, so the tool is always reachable.
 - The server is the source of truth. One row per element (§7); the author is the member who first wrote the element and is never read from the client payload.
 - Flowcharts use Excalidraw's shapes, bound arrows and its built-in flowchart shortcuts; nothing custom.
 
@@ -91,22 +88,20 @@ Acceptance criteria for every requirement are in §16.
 `GET /whiteboards/{board}` renders the Inertia page; `GET snapshot` returns the same data as JSON:
 
 ```
-{board: {id, title, teamId, locked, privateWriting, followEnabled, cursorsEnabled, reactionsEnabled,
+{board: {id, title, teamId, locked, followEnabled, cursorsEnabled, reactionsEnabled,
          timerEndsAt, facilitatorMemberId, guestAccessEnabled, guestUrl?},
  me: {id, userId, name, avatarUrl, isGuest, isFacilitator, canTakeControl, canDelete, transferCandidates},
  members: [{id, name, avatarUrl, isGuest}],
  elements: [...], seq,
- voting: {...} | null,
- votingHistory: [{id, closedAt, results}],
  links: {team: string | null},
  serverTime}
 ```
 
-`me.transferCandidates` (`[{userId, name}]`, by name) lists who the facilitator may hand over to: the team's members and the workspace's Owners and Admins, the viewer excepted; it is empty for everyone else. `voting` is the open voting session, else the latest closed session not yet dismissed, else null; §11.4 gives its shape. `votingHistory` holds the results of the ten most recent earlier sessions for non-guest members and is empty for guests. `serverTime` has millisecond precision: clients derive their clock offset from it for the countdown (§11.1) and measure it again on every snapshot they fetch.
+`me.transferCandidates` (`[{userId, name}]`, by name) lists who the facilitator may hand over to: the team's members and the workspace's Owners and Admins, the viewer excepted; it is empty for everyone else. `serverTime` has millisecond precision: clients derive their clock offset from it for the countdown (§11.1) and measure it again on every snapshot they fetch.
 
 `elements` come in canvas order: by fractional `index` compared byte by byte (Excalidraw's own order, which a database collation does not give), then by id; elements without an index come last, by `seq`. `GET elements?since=` and the `elements` of `elements.changed` use the same order. Excalidraw repairs any other order by giving elements a new index and version, so the order is part of the contract: loading a board, fetching a delta or receiving a broadcast never changes an element's `index`, `version` or `versionNonce`, and never causes a write.
 
-One class, `BuildWhiteboardSnapshot`, builds it for the viewer. All redaction lives there and in `PresentWhiteboardElement` (the only serializer of elements) and `PresentWhiteboardVoting`.
+One class, `BuildWhiteboardSnapshot`, builds it for the viewer (`me`, and `guestUrl`, which only the facilitator receives). `PresentWhiteboardElement` is the only serializer of elements; an element is the same for every viewer.
 
 ### 6.3 Write
 
@@ -115,16 +110,16 @@ One class, `BuildWhiteboardSnapshot`, builds it for the viewer. All redaction li
   1. Validate (§6.6) and check rights (§8, §11). An element failing either is rejected with a reason.
   2. Accept when no row exists, or `version` is greater than the stored one, or versions are equal and `versionNonce` is lower (Excalidraw's own tie rule). Otherwise reject as stale.
   3. On accept: increment `whiteboards.seq`, store it on the row, set the author on first write.
-- Response: `{seq, fromSeq, rejected: [{id, reason, element}]}` where `fromSeq` is the board's `seq` before this request and `element` is the server's copy as the viewer may see it (null when the server has none), so the sender converges; this holds for every reason, `invalid` included: an edit the server refuses puts the sender back on the stored copy and only removes the element locally when the server has none. Reasons: `invalid`, `stale`, `locked`, `file`, `full` (and `voting`, `private` from §11).
+- Response: `{seq, fromSeq, rejected: [{id, reason, element}]}` where `fromSeq` is the board's `seq` before this request and `element` is the server's copy (null when the server has none), so the sender converges; this holds for every reason, `invalid` included: an edit the server refuses puts the sender back on the stored copy and only removes the element locally when the server has none. Reasons: `invalid`, `stale`, `locked`, `file`, `full`.
 - Deleting is a write with `isDeleted: true` (a tombstone). Tombstones are purged 24 hours later by a scheduled command, which does not touch the board's `updated_at` (the team page sorts on it); a client whose last `seq` is older than the oldest purge refetches the snapshot (`GET elements?since=` answers 409).
-- Broadcast `elements.changed` to others: `{seq, fromSeq, elements}` when the JSON is at most 8 KB and no private sticky is touched; otherwise `{seq, fromSeq}` and clients call `GET elements?since={their seq}`.
+- Broadcast `elements.changed` to others: `{seq, fromSeq, elements}` when the JSON is at most 8 KB; otherwise `{seq, fromSeq}` and clients call `GET elements?since={their seq}`.
 - A client applies changes with `reconcileElements` then `updateScene`. It tracks the last applied `seq`; a `fromSeq` that does not match it, a resubscription or a reconnect triggers `GET elements?since=` (coalesced). It also remembers the highest `seq` announced by an event or a write response: when a fetch ends below it (the change was committed while the fetch was in flight) it fetches again, even when that fetch brought nothing new, and gives up after three fetches in a row that bring nothing (the next event or poll takes over). A fetch is also made once when the canvas becomes ready, for events that arrived before it.
 - Restoring on the client keeps the server's `index`, `version` and `versionNonce` (§6.2). Two exceptions are written back so that every client agrees: an element without an index and two elements with the same index get a new index from the first client that sees them. An element the canvas cannot restore is left out and logged to the console; the rest of the board loads. A remote change the canvas cannot merge is logged and the client replaces its scene with the server's snapshot, retrying with a growing delay (2 s doubling to 30 s) until that succeeds; the "Reconnecting…" banner stays up meanwhile.
 
 ### 6.4 Drafts, cursors and reactions
 
 - **Drafts:** not built. Intermediate states of a drag or stroke already travel in the 300 ms write batches (measured in the plan 17a walkthrough on a local stack: 11 writes during drags took 39–114 ms, median 56 ms, and one drag moved an element from version 5 to 49).
-- **Cursors:** `onPointerUpdate` → whisper `cursor` with scene coordinates (throttled 40 ms) → Excalidraw's `collaborators` map renders them with the member's name and a colour hashed from the member id. The existing `live-cursors` layer is not used on the canvas because it knows nothing about pan and zoom. The sender id is the presence id stamped by Reverb; receivers drop whispers from ids outside the presence roster. The "Hide my cursor" preference (`skrum.hideMyCursor`) and the board's `cursors_enabled` switch apply. Cursors are hidden while a voting session is open (§11.4).
+- **Cursors:** `onPointerUpdate` → whisper `cursor` with scene coordinates (throttled 40 ms) → Excalidraw's `collaborators` map renders them with the member's name and a colour hashed from the member id. The existing `live-cursors` layer is not used on the canvas because it knows nothing about pan and zoom. The sender id is the presence id stamped by Reverb; receivers drop whispers from ids outside the presence roster. The "Hide my cursor" preference (`skrum.hideMyCursor`) and the board's `cursors_enabled` switch apply.
 - **Flying reactions:** same transport, identity and abuse rules as the board-engagement spec §3 and poker §4 ("Live cursors and flying reactions"), on `presence-whiteboard.{boardId}`: whisper `reaction`, sender = the presence id stamped by Reverb, receivers drop senders outside the roster, anything that is not a single emoji, and anything above the per-sender bucket (burst 5, 2/s). A bar with the six quick emoji and the picker sits bottom-centre above the canvas (above the canvas's own bottom toolbar in its mobile layout; the canvas's "Scroll back to content" button is moved above the bar, and the bar hides while the mobile panel of shape actions is open); reactions rise from the bottom edge of the window, at the horizontal position of the sender's avatar in the presence strip when it is shown, otherwise near the centre. The shared component honours `prefers-reduced-motion`. Members and guests may react. Nothing is persisted. The board's `reactions_enabled` switch (facilitator, on by default) hides the bar and drops incoming reactions for everyone. Reuses `resources/js/components/realtime/flying-reactions.tsx` and the emoji picker; no new dependency.
 
 ### 6.5 Images
@@ -151,13 +146,11 @@ One class, `BuildWhiteboardSnapshot`, builds it for the viewer. All redaction li
 
 ## 7. Data model
 
-- **whiteboards**: `id` (UUID), `team_id` (cascade), `title` (string 120), `facilitator_member_id` (nullable FK → whiteboard_members, `nullOnDelete`), `guest_access_enabled` (bool, default `false`), `guest_token` (unique string 40), `locked` (bool, default `false`), `private_writing` (bool, default `false`), `follow_enabled` (bool, default `false`), `cursors_enabled` (bool, default `true`), `reactions_enabled` (bool, default `true`), `timer_ends_at` (nullable timestamp), `seq` (unsigned bigint, default 0), `purged_seq` (unsigned bigint, default 0 — the highest `seq` among purged tombstones; `GET elements?since=` answers 409 below it), `last_versioned_seq` (unsigned bigint, default 0), timestamps. Each plan's migration adds the columns its features need (17a: all but `locked`, `private_writing`, `follow_enabled`, `timer_ends_at`, `last_versioned_seq`). Index (`team_id`, `updated_at`).
+- **whiteboards**: `id` (UUID), `team_id` (cascade), `title` (string 120), `facilitator_member_id` (nullable FK → whiteboard_members, `nullOnDelete`), `guest_access_enabled` (bool, default `false`), `guest_token` (unique string 40), `locked` (bool, default `false`), `follow_enabled` (bool, default `false`), `cursors_enabled` (bool, default `true`), `reactions_enabled` (bool, default `true`), `timer_ends_at` (nullable timestamp), `seq` (unsigned bigint, default 0), `purged_seq` (unsigned bigint, default 0 — the highest `seq` among purged tombstones; `GET elements?since=` answers 409 below it), `last_versioned_seq` (unsigned bigint, default 0), timestamps. Each plan's migration adds the columns its features need (17a: all but `locked`, `follow_enabled`, `timer_ends_at`, `last_versioned_seq`). Index (`team_id`, `updated_at`).
 - **whiteboard_members**: `id`, `whiteboard_id` (cascade), `user_id` (nullable, `nullOnDelete`), `guest_name` (nullable string 50), `guest_secret_hash` (nullable string 64), timestamps. Unique (`whiteboard_id`, `user_id`). Uses `HasGuestIdentity`; cookie `GuestCookie::name('whiteboard', $id)`.
-- **whiteboard_elements**: `whiteboard_id` (cascade), `element_id` (string 40, the client-generated Excalidraw id), `type` (string 20), `data` (json, the full element), `version` (unsigned int), `version_nonce` (unsigned bigint), `author_member_id` (nullable FK, `nullOnDelete`), `is_sticky` (bool), `is_private` (bool, default `false`), `is_deleted` (bool, default `false`), `seq` (unsigned bigint), `withheld_at` (nullable timestamp: the last reveal that found the row a private tombstone and left it hidden, §9; set without touching `updated_at`, which the purge counts from), timestamps. `id` (UUID) primary key, because Eloquent has no composite keys; unique (`whiteboard_id`, `element_id`). Index (`whiteboard_id`, `seq`).
+- **whiteboard_elements**: `whiteboard_id` (cascade), `element_id` (string 40, the client-generated Excalidraw id), `type` (string 20), `data` (json, the full element), `version` (unsigned int), `version_nonce` (unsigned bigint), `author_member_id` (nullable FK, `nullOnDelete`), `is_sticky` (bool), `is_deleted` (bool, default `false`), `seq` (unsigned bigint), timestamps. `id` (UUID) primary key, because Eloquent has no composite keys; unique (`whiteboard_id`, `element_id`). Index (`whiteboard_id`, `seq`).
 - **whiteboard_files**: `id` (UUID), `whiteboard_id` (cascade), `file_id` (string 64, Excalidraw's id), `path`, `mime_type` (string 40), `size` (unsigned int), `uploaded_by_member_id` (nullable FK), timestamps. Unique (`whiteboard_id`, `file_id`).
-- **whiteboard_versions**: `id` (UUID), `whiteboard_id` (cascade), `name` (nullable string 80; null = automatic), `scene` (json: `{elements, fileIds}` — the live elements in canvas order with their real text, and the ids of the images they show, which is what the image prune of §6.5 reads), `private_element_ids` (json list: the ids of the elements that were private when the version was stored and that no reveal has shown since, §9; ids, so the reveal checks the age of the row before taking one off), `seq` (unsigned bigint), `created_by_member_id` (nullable FK; null = automatic), `created_at`. Index (`whiteboard_id`, `created_at`).
-- **whiteboard_vote_sessions**: `id` (UUID), `whiteboard_id` (cascade), `votes_per_member` (unsigned tinyint, 1–20), `frame_element_id` (nullable string 40), `allow_multiple` (bool), `element_ids` (json list: the ids of the sticky notes in scope, fixed when the session opens), `opened_by_member_id` (nullable FK), `closed_at` (nullable timestamp), `dismissed_at` (nullable timestamp), `results` (nullable json, written at close: `[{elementId, text, count}]`), timestamps. At most one row per board with `closed_at` null (partial unique index).
-- **whiteboard_votes**: `id`, `whiteboard_vote_session_id` (cascade), `whiteboard_member_id` (cascade), `element_id` (string 40), `count` (unsigned tinyint), timestamps. Unique (session, member, element).
+- **whiteboard_versions**: `id` (UUID), `whiteboard_id` (cascade), `name` (nullable string 80; null = automatic), `scene` (json: `{elements, fileIds}` — the live elements in canvas order, and the ids of the images they show, which is what the image prune of §6.5 reads), `seq` (unsigned bigint), `created_by_member_id` (nullable FK; null = automatic), `created_at`. Index (`whiteboard_id`, `created_at`).
 - **whiteboard_templates**: `id` (UUID), `workspace_id` (cascade), `name` (string 80), `description` (nullable string 300), `scene` (json: `{elements, files: [{fileId, path, mimeType, size}]}`, the live elements in canvas order as stored, without authors), `preview` (json: `{width, height, shapes}`, a text-free outline of the scene computed at save for the gallery thumbnail), `created_by_user_id` (nullable FK → users, `nullOnDelete`), timestamps. Unique (`workspace_id`, `lower(name)`). Template images are copied to a template-owned directory and referenced from `scene.files`.
 
 Models get factories.
@@ -166,36 +159,34 @@ Models get factories.
 
 - **Create:** any user who can view the team (`TeamPolicy::createWhiteboard` = `view`). The creator becomes a member and the facilitator.
 - **Enter** `/whiteboards/{board}` (middleware `ResolveWhiteboardMember`): a user who can view the team joins as themselves (member row created on first visit); otherwise a guest with a valid cookie while `guest_access_enabled`. Anyone else: logged out → login, or the "session ended" page when guest access is on; logged-in non-member → 403.
-- **Guests** join at `/whiteboards/join/{guestToken}` with a display name (1–50), `throttle:10,1`. Regenerating the token revokes old links and signs out every guest; their elements and votes stay. Guests edit the canvas and vote. Guests never facilitate, never see version history, never save or see workspace templates, never see team or workspace pages.
-- **Facilitator-only:** title and settings, guest access and link, board lock, element lock, private writing, timer, voting sessions, follow-me, restore, rename or delete versions, delete the board.
-- **Transfer and take over:** the facilitator hands over to any team member; any non-guest member may take control at any time (same rule and reason as poker §3). A change of facilitator switches follow-me off (the new facilitator has not chosen to lead everyone's view); the board lock, the timer and a voting session stay as they are.
+- **Guests** join at `/whiteboards/join/{guestToken}` with a display name (1–50), `throttle:10,1`. Regenerating the token revokes old links and signs out every guest; their elements stay. Guests edit the canvas. Guests never facilitate, never see version history, never save or see workspace templates, never see team or workspace pages.
+- **Facilitator-only:** title and settings, guest access and link, board lock, element lock, timer, follow-me, restore, rename or delete versions, delete the board.
+- **Transfer and take over:** the facilitator hands over to any team member; any non-guest member may take control at any time (same rule and reason as poker §3). A change of facilitator switches follow-me off (the new facilitator has not chosen to lead everyone's view); the board lock and the timer stay as they are.
 - **Delete the board:** the facilitator or a workspace Owner/Admin.
-- **Duplicate:** any non-guest member; blocked while private writing is on.
+- **Duplicate:** any non-guest member.
 
-A `WhiteboardGuard` mirrors `PokerGuard`: `facilitator`, `canWrite(element)`, `notLocked`, `openVoteSession`, `notPrivateWriting`.
+A `WhiteboardGuard` mirrors `PokerGuard`: `facilitator`, `notGuest`, `notLocked`, `canDelete`.
 
 ## 9. Version history
 
-- **Automatic versions:** a queued job, dispatched with a 5-minute delay by the first write after the last version, stores the live scene when `seq` is greater than `last_versioned_seq`. Kept: the last 50 automatic versions. At most one automatic version is stored every 5 minutes: a job that finds a younger one does nothing (the write that followed that version queued its own job). "Write" means any change of `seq`: an element write, a reveal, a restore. A board made from a template, a duplicate or a version starts with `last_versioned_seq = seq`, so its first edit is the first write. A daily command queues the version of a board that has changes no version holds and has been idle for an hour (its job was lost).
+- **Automatic versions:** a queued job, dispatched with a 5-minute delay by the first write after the last version, stores the live scene when `seq` is greater than `last_versioned_seq`. Kept: the last 50 automatic versions. At most one automatic version is stored every 5 minutes: a job that finds a younger one does nothing (the write that followed that version queued its own job). "Write" means any change of `seq`: an element write or a restore. A board made from a template, a duplicate or a version starts with `last_versioned_seq = seq`, so its first edit is the first write. A daily command queues the version of a board that has changes no version holds and has been idle for an hour (its job was lost).
 - **Named versions:** any non-guest member saves one (`name` 1–80). At most 100 per board (422 "This board already has 100 saved versions."). The facilitator renames and deletes versions, automatic ones included; naming an automatic version makes it a named one (it leaves the rotation of 50 and counts in the 100, so the cap applies).
 - **List and preview:** any non-guest member opens the history panel and previews a version in a read-only canvas.
-- **Restore** (facilitator): first stores the current scene as a named version "Before restore · {date}" (never refused by the cap of 100; `{date}` is a date in the facilitator's language without a clock time, since the server does not know the viewer's time zone and the panel shows each version's own time in the viewer's), then writes every element of the chosen version with a version number above the current one and tombstones every live element absent from it, all in one transaction. Clients receive it as a normal `elements.changed` (ids-only form). An open voting session is closed without results (`results = []`, its votes deleted as at an ordinary close); every closed, undismissed session is dismissed, the one just closed included.
+- **Restore** (facilitator): first stores the current scene as a named version "Before restore · {date}" (never refused by the cap of 100; `{date}` is a date in the facilitator's language without a clock time, since the server does not know the viewer's time zone and the panel shows each version's own time in the viewer's), then writes every element of the chosen version with a version number above the current one and tombstones every live element absent from it, all in one transaction. Clients receive it as an `elements.changed` without the elements (`{seq, fromSeq}`, §6.3) and fetch the delta.
   - An element whose row carries the same `version` and `versionNonce` as in the version is left alone: nothing changed since.
   - An element whose row no longer exists (its tombstone was purged), or is a tombstone already at the highest version number, comes back under a fresh id with the references to it rewritten: a browser left open may still hold the old tombstone at a higher version and would otherwise delete the element again.
   - A live element at the highest version number can be neither rewritten nor tombstoned and is left as it is; the rest of the board is restored.
   - An image whose file the board no longer stores is left out, as in the copy path of §10.
 - **Copy to a new board:** any non-guest member, from any version; the new board belongs to the same team and the requester facilitates it. It goes through the copy path of §10 and is titled like a duplicate.
-- **What a version shows:** a version stored while notes were hidden remembers which of its elements were private (`private_element_ids`). The reveal takes the revealed elements off that list in every version of the board, but only an element whose row is not younger than the version (`created_at` of the row ≤ `created_at` of the version): an element id can be used again once its tombstone is purged, and a new note written under the id of a note deleted while hidden is a different element, which must not open the old one. Preview, restore and copy leave out whatever is still on it: a note that was deleted before the reveal is never shown, even by a version stored while it was on the board. A hidden-deleted note that its author brings back later stays out of those older versions, whether private writing is off or on again when it comes back: a reveal stamps every private tombstone it leaves hidden (`withheld_at`), and a later reveal takes an element off a version's list only when the row carries no stamp or one older than the version. A version stored after the note came back hidden is opened by the reveal as usual.
-- **Private writing:** list, preview, restore and copy answer 422 "Reveal the notes first." while `private_writing` is on, because versions hold the real text. Automatic versions keep being stored; saving, renaming and deleting a version stay allowed, since they return nothing of a scene.
 
 ## 10. Templates and export
 
 - **Built-in templates** are JSON scenes in `resources/whiteboard-templates/{key}.json` with translated name and description: Blank, Brainstorm, Flowchart, User story map, Impact map, SWOT, Lean canvas, 2×2 matrix. Structure elements (frames, headings, backgrounds) are `locked`; sample sticky notes are not. Texts inside built-in scenes are translation keys (`lang/{locale}/whiteboards.php`) resolved at creation in the creator's locale; a scene file lists only what differs from the element defaults, and the size of each text is estimated on the server, a test checking that every label fits its shape in the four locales.
 - **Creation:** the dialog shows a gallery (built-in, then workspace templates) with a thumbnail rendered client-side from an outline of the scene (shapes and colours, no text; scenes themselves stay on the server; drawn on a fixed light surface in both themes, since the stored colours are those of the light canvas), name and description. `template` and `workspaceTemplateId` are mutually exclusive; neither means Blank. Creating copies the scene with fresh element ids, fresh stacking indices in the same order and version 1 (bindings, frame membership, bound text and groups remapped; a reference to an element outside the scene is dropped; an image whose stored file is missing or cannot be copied is left out, on creation, on duplication and when saving a template), author = creator.
-- **Save as template:** any non-guest member. Name 1–80, unique per workspace case-insensitively; description up to 300. Copies live elements and their images; drops authors, votes and private flags. At most 50 per workspace (422). Blocked while private writing is on.
+- **Save as template:** any non-guest member. Name 1–80, unique per workspace case-insensitively; description up to 300. Copies live elements and their images; drops authors. At most 50 per workspace (422).
 - **Manage:** the template's creator or a workspace Owner/Admin renames, edits the description or deletes. Changing or deleting a template never changes a board created from it.
 - **Duplicate board** uses the same copy path, keeping the title with " (copy)" (translated, cut to 120 characters). The copy is in the same team with default settings, the requester facilitates it, and the source is neither changed nor notified.
-- **Export:** PNG and SVG through the canvas's "Save as image" dialog, and the scene as `<board title>.whiteboard.json` (MIME `application/json`) through the menu's "Export" dialog, which holds one skrum button instead of the library's "save to disk" card (switched off, with its Ctrl+Shift+S shortcut, because the library fixes that file's type name and extension). The file is the library's scene JSON built in the browser by `serializeAsJSON`, with its `source` replaced by skrum's origin. All of it is made from what the viewer's browser holds; a masked note exports masked.
+- **Export:** PNG and SVG through the canvas's "Save as image" dialog, and the scene as `<board title>.whiteboard.json` (MIME `application/json`) through the menu's "Export" dialog, which holds one skrum button instead of the library's "save to disk" card (switched off, with its Ctrl+Shift+S shortcut, because the library fixes that file's type name and extension). The file is the library's scene JSON built in the browser by `serializeAsJSON`, with its `source` replaced by skrum's origin. All of it is made from what the viewer's browser holds.
 
 ## 11. Facilitation
 
@@ -207,7 +198,7 @@ Every rule here is enforced on the server; the client only reflects it.
 
 ### 11.2 Lock
 
-- **Board lock:** `locked = true` puts every other member in view mode (pan, zoom, vote; no edits). Their element writes and uploads answer 403 "This board is locked." The exemption belongs to whoever facilitates at the moment of the write, checked under the board lock. Reading, voting, duplicating and saving as a template stay allowed. The 403 carries `errors.locked`, which lets a client tell it from a lost access: it drops its unsent edits, reloads the scene from the server, says "This board is locked." and stays on the board.
+- **Board lock:** `locked = true` puts every other member in view mode (pan, zoom; no edits). Their element writes and uploads answer 403 "This board is locked." The exemption belongs to whoever facilitates at the moment of the write, checked under the board lock. Reading, duplicating and saving as a template stay allowed. The 403 carries `errors.locked`, which lets a client tell it from a lost access: it drops its unsent edits, reloads the scene from the server, says "This board is locked." and stays on the board.
 - **Element lock:** Excalidraw's `locked` flag. Only the facilitator may change the flag, and only the facilitator may change or delete an element whose stored copy is locked. Others' attempts are rejected with reason `locked`. The lock entries of the canvas context menu are hidden for non-facilitators; the keyboard shortcut cannot be removed, and what it does is rejected by the server.
 
 ### 11.3 Follow-me
@@ -215,28 +206,6 @@ Every rule here is enforced on the server; the client only reflects it.
 - The facilitator switches "Bring everyone to me" (`follow_enabled`, broadcast `board.changed`).
 - While on, the facilitator's client whispers `viewport` (`{x, y, width, height}` in scene coordinates; throttled 100 ms, repeated every 2 s for late joiners). Followers fit that rectangle into their own window. A receiver accepts `viewport` only from the presence id equal to `facilitatorMemberId`, and drops one whose numbers are not finite or whose rectangle is empty.
 - A follower who pans or zooms stops following and sees "Following paused · Resume". Switching off frees everyone.
-
-### 11.4 Dot voting
-
-- **Open** (`POST vote-sessions`): `{votesPerMember: 1–20, frameElementId?: string, allowMultiple: bool}`. Refused while a session is open or private writing is on (422). Targets are sticky notes: all of them, or those inside the given frame, that is those whose stored `frameId` is that frame, which must be a live frame of the board.
-- **Scope:** the targets are fixed when the session opens and stored in `element_ids`. A note created afterwards is not part of the vote and stays editable; a note moved into or out of the frame afterwards keeps its status. A note "in scope" is a live sticky whose id is in that list. Opening is refused (422 "There are no sticky notes to vote on.") when the list would be empty. Opening a session dismisses the previous session's results.
-- **Vote** (`PUT vote-sessions/{session}/votes/{elementId}`, `{count}`): the voter is always the requester. `count` 0 removes the vote; above 1 requires `allowMultiple`. 422 when the element is not a live sticky in scope, the session is closed, or the member's total would exceed the budget. Guests vote. The facilitator votes like anyone. Votes stay allowed on a locked board. The response is the voter's own tally, `{myVotes: [{elementId, count}], remaining, finishedCount}`; a vote that changes nothing (a retry) is answered the same way and broadcasts nothing.
-- **While open:** a viewer sees only their own votes and remaining budget. Totals and other members' votes are in no payload, for the facilitator too. Visible to all: `finishedCount` (members who used their whole budget, online or not), the ids of the notes in scope and the number of members present. The status row shows the two as separate facts, "N finished voting · M online", and never as a fraction: the server cannot see who is present and a payload must not say who voted, so a count of finished members present cannot be made. `voting` is then `{id, open: true, votesPerMember, allowMultiple, frameElementId, elementIds, myVotes, remaining, finishedCount, results: null}`.
-- **Text freeze:** while a session is open, changing the text of a sticky in scope is rejected (reason `voting`); moving, restyling and resizing stay allowed. The words of a note are its bound text element, so the rule is on text elements whose container is a note in scope: a write is rejected when it changes `text` or `originalText` (compared without whitespace, because resizing a note re-wraps its text), changes `containerId`, deletes or restores the text, or creates a text on such a note. The canvas writes the note too when its words are cleared or first typed (it takes the text out of, or adds it to, the note's `boundElements`), so the rule has a second half on the note: a write of a note in scope that stays in scope is rejected (`voting`) when the text entries of its `boundElements` differ from the stored copy's; entries of other types (arrows) are free. Both halves of such a batch are thus refused and handed back, in either order, and a note never stops listing a text that still points to it. The facilitator is not exempt. Deleting a sticky in scope is allowed, with its text, whatever the order of the two in the batch; it drops the note's votes and refunds them, and `vote.changed` then goes to everyone, the writer included. The event is sent whenever a note leaves the scope, whether or not it had votes: sent only on a refund, its arrival would tell everyone that somebody had voted for the note. Its `finishedCount` still goes down when a member who had used their whole budget is refunded; that is the progress figure everyone may see, and it is accepted. A deleted note brought back (undo) returns with its text and without its votes.
-- **Cursors** are neither sent nor shown while a session is open: a named pointer over a note would disclose a vote.
-- **Close** (`POST vote-sessions/{session}/close`): stores `results` (element id, text at close cut to 200 characters, count; sorted by count descending, then by position top-to-bottom, left-to-right) for the notes in scope that received at least one vote, and `closed_at`, then deletes the per-member votes: from then on only totals exist. Clients then show a count badge on each voted sticky and a results panel with a "jump to note" action. Results never say who voted for what. `voting` is then `{id, open: false, votesPerMember, allowMultiple, frameElementId, elementIds: [], myVotes: [], remaining: 0, finishedCount: null, results}`. Closing a closed session changes nothing.
-- **Dismiss** (`POST vote-sessions/{session}/dismiss`) hides badges; it is refused on an open session (422 "Close the vote first.") and changes nothing the second time. Past sessions stay listed in the results panel for non-guest members (`votingHistory`).
-- Badges are DOM nodes in an overlay above the canvas and below the canvas's own controls, positioned from the element's scene coordinates, zoom and scroll (`onScrollChange`).
-
-### 11.5 Private writing
-
-- **On** (`PATCH settings` `{privateWriting: true}`): refused while a voting session is open (422 "Close the vote first."). From then on every sticky note created is stored with `is_private = true`, and so is its bound text: a text bound to a private note, and a new bound text whose container the server does not hold yet (it may be the text of a note still on its way). Sticky notes that existed before stay visible, with whatever is typed into them. A write never clears the flag while private writing is on.
-- **Masking:** a private sticky authored by another member is serialized with its bound text's `text` and `originalText` set to an empty string and `customData.skrum.masked = true` on the note; position, size, colour, `version` and `versionNonce` are the stored ones. The client draws "•••" on masked notes through the overlay. The author receives the real element, in every tab. A private element whose author is gone is masked for everyone. The canvas keeps a masked text as an empty, locally deleted text and does not write it back (§6.3: restoring never changes a version); a masked copy that is sent back unchanged carries the stored version and nonce and is ignored.
-- **Invariant: the text of another member's private sticky never leaves the server** — not in the snapshot, `GET elements`, the `rejected` copies of a write response, `elements.changed`, drafts, versions, exports, the duplicate or template paths, or a log line. This holds for the facilitator too. For log lines: a database error on a statement that carries note text (element writes, versions, restore) is reported without the statement, its bindings or the failing row.
-- **Write rules while on:** only the author may change or delete their private sticky (others: rejected with reason `private`), so a masked copy can never overwrite the real text. One exception, which is not an edit: the canvas gives a new stacking index (and a new version) to one of two elements that share an index, whoever wrote it, and two notes created at the same moment share one. When another member's write of a private element carries a new `index`, a `version` that is the stored one or the next, and otherwise the element as that member was given it (for a text: empty, deleted or not), the server stores its own data with the new `index`, `version` and `versionNonce` — text, position, binding, deletion state, author and the private flag are untouched — and broadcasts in the ids-only form. The same holds for the same version with a lower nonce and the same content (two canvases made the same repair). Anything more is rejected as before. A write that touches a private sticky is broadcast in the ids-only form; each client fetches its own viewer-specific copy. A text element may not be re-bound to or detached from a private sticky by another member, and a private sticky only takes a text written by its own author. The rules follow the element's flag, not the board's switch: they also protect a private tombstone after the reveal.
-- **Scope:** only sticky notes are masked. Plain text, shapes and drawings stay visible; the banner "Notes are hidden until the facilitator reveals them. Other elements stay visible." says so. Inherent limit, stated in the help text: a note's size hints at its text length.
-- **Reveal** (`{privateWriting: false}`): clears the `is_private` flag of every live element of the board, gives those elements a new `seq` (their versions do not change) and broadcasts `elements.changed` in the ids-only form, then `board.changed`; clients refetch. Text reaches clients only through the snapshot and element endpoints. A note deleted while it was hidden is not revealed: its tombstone stays masked until it is purged, and becomes an ordinary note only if its author brings it back (a write of the author that leaves it deleted keeps it private). Versions follow the same rule (§9).
-- **Blocked while on:** opening a vote, version list/preview/restore/copy, save as template, duplicate (422 "Reveal the notes first.").
 
 ## 12. Endpoints, channel and events
 
@@ -260,18 +229,13 @@ Board-scoped, prefix `whiteboards/{board}` (`whereUuid`, middleware `ResolveWhit
 | PUT | `elements` | `{elements}` | member | `{seq, fromSeq, rejected}`, `elements.changed` |
 | POST | `files` | multipart `file`, `file_id` | member | `{id, url, mimeType}` |
 | GET | `files/{fileId}` | — | member | the image |
-| PATCH | `settings` | `{title?, guestAccessEnabled?, locked?, privateWriting?, followEnabled?, cursorsEnabled?, reactionsEnabled?}` | facilitator | 204, `board.changed` (and `elements.changed` when notes are revealed) |
+| PATCH | `settings` | `{title?, guestAccessEnabled?, locked?, followEnabled?, cursorsEnabled?, reactionsEnabled?}` | facilitator | 204, `board.changed` |
 | PUT | `timer` | `{seconds}` | facilitator | `{timerEndsAt}`, `timer.changed` |
 | POST | `guest-token` | — | facilitator | `{guestUrl}`, `board.changed` |
 | PUT | `facilitator` | `{userId}` | facilitator; or a team member with `userId` = self | 204, `board.changed` |
 | DELETE | `/` | — | facilitator, workspace Owner/Admin | 204, `board.deleted` |
 | POST | `duplicate` | — | non-guest member | 201 `{url}` |
 | POST | `template` | `{name, description?}` | non-guest member | 201 `{id, name}` |
-| POST | `vote-sessions` | §11.4 | facilitator | 201 `{id}`, `board.changed` |
-| GET | `vote-sessions/{session}` | — | member | the viewer's `voting` object for that session |
-| PUT | `vote-sessions/{session}/votes/{elementId}` | `{count}` | member | `{myVotes, remaining, finishedCount}`, `vote.changed` |
-| POST | `vote-sessions/{session}/close` | — | facilitator | 204, `board.changed` |
-| POST | `vote-sessions/{session}/dismiss` | — | facilitator | 204, `board.changed` |
 | GET | `versions` | — | non-guest member | `[{id, name, createdAt, createdByName, automatic}]` |
 | POST | `versions` | `{name}` | non-guest member | 201 `{id, name, createdAt, createdByName, automatic}` |
 | GET | `versions/{version}` | — | non-guest member | `{elements, files: [{id, url, mimeType}]}` (the images the board still stores) |
@@ -289,7 +253,6 @@ Channel `presence-whiteboard.{boardId}`; `BroadcastAuthorizationsController` gai
 |---|---|---|
 | `elements.changed` | `{seq, fromSeq, elements?}` | apply, or fetch the delta |
 | `timer.changed` | `{timerEndsAt}` | start, restart or clear the countdown |
-| `vote.changed` | `{sessionId, finishedCount}` | update the progress, then fetch the viewer's own tally (`GET vote-sessions/{session}`, coalesced): the event does not say who voted, so that is how another tab of the same member, or a voter whose note was deleted, catches up |
 | `board.changed` | `{}` | refetch the snapshot |
 | `board.deleted` | `{}` | show "This board was deleted" with a link to the team |
 
@@ -298,9 +261,9 @@ Whispers (client events, presence members only, never persisted): `cursor`, `rea
 ## 13. UI and error handling
 
 - **Team page:** a "Whiteboards" section beside retros and poker games: list, "New whiteboard" dialog with the template gallery, manage workspace templates.
-- **Board page** `resources/js/pages/whiteboards/show.tsx`, components in `resources/js/components/whiteboard/`: full-bleed canvas (lazy chunk with a skeleton while loading); top bar (title, presence strip, share, history, settings); sticky tool and colour palette; facilitator bar (timer, vote, private writing, lock, follow) in the top bar, for the facilitator only; a status row between the top bar and the canvas that says what everyone needs to know (board locked, notes hidden until the reveal, following or "Following paused · Resume", votes left, how many people finished and how many are online); overlay layer (vote badges, masked-note marks); results panel beside the canvas (above it below 768 px of width, at most 40% of the height, so that it never lies over the canvas or the reactions bar); history panel, a sheet opened by a button of the top bar that guests do not have, whose preview is a read-only canvas in a dialog without the canvas's menu and help buttons. None of these covers the canvas's own controls, the shapes toolbar or the reactions bar. Excalidraw's menu loses "Live collaboration", the library and "Open". No library branding and no outbound link to the library's sites is shown anywhere in the board UI: the main menu is rendered by skrum with neutral entries only (export, save as image, find on canvas, help, clear canvas, canvas background), the welcome screen is not rendered, AI entries are off, and the help dialog's link header, the "Mermaid to Excalidraw" entry, the library tab of the search panel and the "Browse libraries" link are hidden. What a prop or a style cannot remove stays: the `type` field inside the scene file and the links in the error shown by Brave when it blocks text measuring. Theme and locale follow skrum's; skrum strings are added to `lang/*.json` for the four shipped locales.
+- **Board page** `resources/js/pages/whiteboards/show.tsx`, components in `resources/js/components/whiteboard/`: full-bleed canvas (lazy chunk with a skeleton while loading); top bar (title, presence strip, share, history, settings); sticky tool and colour palette; facilitator bar (timer, lock, follow) in the top bar, for the facilitator only; a status row between the top bar and the canvas that says what everyone needs to know (board locked, following or "Following paused · Resume"); history panel, a sheet opened by a button of the top bar that guests do not have, whose preview is a read-only canvas in a dialog without the canvas's menu and help buttons. None of these covers the canvas's own controls, the shapes toolbar or the reactions bar. Excalidraw's menu loses "Live collaboration", the library and "Open". No library branding and no outbound link to the library's sites is shown anywhere in the board UI: the main menu is rendered by skrum with neutral entries only (export, save as image, find on canvas, help, clear canvas, canvas background), the welcome screen is not rendered, AI entries are off, and the help dialog's link header, the "Mermaid to Excalidraw" entry, the library tab of the search panel and the "Browse libraries" link are hidden. What a prop or a style cannot remove stays: the `type` field inside the scene file and the links in the error shown by Brave when it blocks text measuring. Theme and locale follow skrum's; skrum strings are added to `lang/*.json` for the four shipped locales.
 - **Join page** `resources/js/pages/whiteboards/join.tsx`.
-- **Errors:** 401, 403 and session-ended follow the parent spec. A rejected element converges silently except for limit reasons and for `locked` and `private`, which show a toast with the reason. A refused upload (413, 415, 422) shows a toast and removes the placeholder element; a 401, 403, 404 or 419 on an upload is handled like the same status on an element write, and any other failure is retried with the batch. A board-menu action that fails says so in a toast and leaves the page and the dialog as they were. A failed canvas chunk shows an error state with "Retry" and logs the cause to the console. Connection loss follows §6.7.
+- **Errors:** 401, 403 and session-ended follow the parent spec. A rejected element converges silently except for limit reasons and for `locked`, which show a toast with the reason. A refused upload (413, 415, 422) shows a toast and removes the placeholder element; a 401, 403, 404 or 419 on an upload is handled like the same status on an element write, and any other failure is retried with the batch. A board-menu action that fails says so in a toast and leaves the page and the dialog as they were. A failed canvas chunk shows an error state with "Retry" and logs the cause to the console. Connection loss follows §6.7.
 
 ## 14. Testing
 
@@ -308,12 +271,10 @@ Pest feature tests, with factories, cover:
 
 - Access matrix: member, guest, outsider, facilitator, workspace Owner/Admin, on every endpoint group; guest token regeneration.
 - Element writes: create, update, stale version, nonce tie, tombstone, purge and the 409, batch limit, board limit, size limit, validation and stripping, link scheme, author never taken from the client, rate limit.
-- Delta fetch; broadcast payload shape, the 8 KB switch to ids-only.
+- Delta fetch; broadcast payload shape, the 8 KB switch to the form without elements.
 - Files: types, sizes, quota, unknown file id, access by a non-member.
 - Lock: board and element, both directions.
-- Voting: budget, scope, multiple, text freeze, refund on delete, close results and order, dismiss; **secrecy** asserted on the snapshot, vote responses and broadcast payloads.
-- Private writing: **the invariant asserted on every surface listed in §11.5**, write rules, reveal, the blocked actions.
-- Versions: automatic cadence and retention, named cap, restore (including the "Before restore" version and its effect on voting), copy, guest refusal.
+- Versions: automatic cadence and retention, named cap, restore (including the "Before restore" version), copy, guest refusal.
 - Templates: every built-in scene loads and passes §6.6 validation; id remapping keeps bindings; workspace template rules.
 
 The two-browser flows of §16 run as browser tests when the plan 16 harness is merged; until then they are written as a walkthrough in `docs/superpowers/walkthroughs/`. The repo has no JavaScript unit runner, so client logic stays thin and is exercised by the browser tests.
@@ -324,8 +285,10 @@ One spec, four plans, each shippable:
 
 - **17a — Core (P0):** dependency spike, tables, access and guest join, canvas, sync, files, cursors, team page list, Blank template.
 - **17b — Templates:** the seven other built-in templates, gallery, workspace templates, duplicate, export.
-- **17c — Facilitation:** timer, lock, follow-me, dot voting.
-- **17d — Secrecy and history:** private writing, version history.
+- **17c — Facilitation:** timer, lock, follow-me.
+- **17d — History:** version history.
+
+Plans 17c and 17d also built dot voting and private writing; both were removed on 2026-10-01 (§3), after 17d and before the branch was merged.
 
 No hard deadline. 17a starts after the plan 16 arch refactors if those are in progress, to avoid conflicts in shared files (`BroadcastAuthorizationsController`, `GuestCookie`).
 
@@ -346,26 +309,16 @@ Core (R1–R4)
 Templates and export (R5–R6)
 
 - [ ] Each of the eight built-in templates creates a board whose structure is locked and whose texts are in the creator's language.
-- [ ] Given a board saved as a workspace template, when another member creates a board from it, then the new board has the same elements and images, no votes and no author data, and later edits of either do not affect the other.
+- [ ] Given a board saved as a workspace template, when another member creates a board from it, then the new board has the same elements and images, no author data, and later edits of either do not affect the other.
 - [ ] A guest cannot list, use or save workspace templates.
 - [ ] A member exports PNG, SVG and `.whiteboard.json` from the board.
 
-Facilitation (R7–R8)
+Facilitation (R7)
 
 - [ ] Given the facilitator starts a 60-second timer, then every browser shows the same countdown and "Time's up" at zero.
 - [ ] Given the board is locked, when a non-facilitator writes an element, then the server answers 403 and the element is unchanged; the facilitator can still edit.
 - [ ] Given a locked element, when a non-facilitator moves or unlocks it, then the write is rejected and their canvas returns to the server copy.
 - [ ] Given follow-me is on, when the facilitator pans, then followers' views follow; a follower who pans sees "Following paused" and "Resume" re-attaches them.
-- [ ] Given an open voting session, then no payload received by any member contains another member's votes or any total (feature tests), and a member cannot exceed their budget.
-- [ ] Given a closed session, then every member sees the same counts on notes and the same ranked list.
-- [ ] Given an open session, when a sticky in scope has its text changed, then the write is rejected.
-
-Private writing (R9)
-
-- [ ] Given private writing is on, when member A writes a sticky, then member B and the facilitator see a masked note at the same place and no payload they receive contains its text (feature tests on every surface of §11.5).
-- [ ] Given a masked note, when another member edits or deletes it, then the write is rejected and the author's text is intact.
-- [ ] Given the facilitator reveals, then every member sees every note's text without reloading.
-- [ ] While private writing is on, voting, version history, duplicate and save-as-template answer 422 "Reveal the notes first."
 
 Version history (R10)
 
@@ -386,7 +339,7 @@ Leading:
 
 - **Adoption:** share of active teams (a retro in the last 30 days) with at least one whiteboard. Success 30 %, stretch 50 %.
 - **Template use:** share of boards created from a non-blank template. Success 50 %.
-- **Facilitation use:** share of boards with at least one voting session or private-writing round. Success 25 %.
+- **Facilitation use:** share of boards on which a countdown was started (`timer_ends_at` set) or a version was saved by name. Success 25 %.
 - **Sync health:** share of element writes rejected as stale. Below 2 %.
 
 Lagging:
@@ -401,22 +354,18 @@ None blocking.
 
 ## Decisions made while planning 17c (facilitation)
 
-1. The scope of a vote is fixed at opening (`element_ids`); a session with nothing in scope is refused; opening dismisses the previous results (§11.4).
-2. The text freeze is defined on the bound text element and ignores whitespace, so that moving, restyling and resizing a note stay possible; a note in scope also keeps the text entries of its `boundElements`, so that a refused change of words cannot leave the note and its text pointing past each other (§11.4).
-3. `results` list only the notes that received a vote, with the text cut to 200 characters; the per-member votes are deleted at close (§11.4).
-4. `vote.changed` never says who voted; clients fetch their own tally from a new `GET vote-sessions/{session}`; the vote response gains `finishedCount` (§12).
-5. A refused write on a locked board is a 403 with `errors.locked`, which the client treats as "discard and reload", not as a lost access (§11.2).
-6. A change of facilitator switches follow-me off (§8).
-7. The snapshot gains `me.transferCandidates` and `votingHistory`; `serverTime` has millisecond precision (§6.2).
-8. The snapshot stops reporting a timer five minutes after its end (§11.1). Added when the plan was reconciled with the code; not asked for by the user, to be confirmed or removed at review.
-9. The results panel and the canvas share a row that keeps the class the reactions bar is placed against; the panel never covers the canvas (§13).
+1. A refused write on a locked board is a 403 with `errors.locked`, which the client treats as "discard and reload", not as a lost access (§11.2).
+2. A change of facilitator switches follow-me off (§8).
+3. The snapshot gains `me.transferCandidates`; `serverTime` has millisecond precision (§6.2).
+4. The snapshot stops reporting a timer five minutes after its end (§11.1). Added when the plan was reconciled with the code; not asked for by the user, to be confirmed or removed at review.
 
 ## Decisions (2026-10-01)
 
 1. Purpose: standalone team boards used for template-first, facilitated workshops.
-2. v1 includes the canvas core and facilitation (timer, dot voting, follow-me, lock, private writing).
+2. v1 includes the canvas core and facilitation (timer, follow-me, lock).
 3. Engine: Excalidraw (MIT). tldraw rejected for its licence; React Flow and a custom engine not chosen.
 4. Access mirrors retros and poker: team members, optional guest link, one facilitator.
 5. Templates: eight built-in plus workspace templates saved from a board.
-6. Sync: server-authoritative elements, last write wins per element; peer relay and Yjs rejected because private writing and locks could not be enforced.
+6. Sync: server-authoritative elements, last write wins per element; peer relay and Yjs rejected because locks and the server's validation could not be enforced.
 7. Version history: automatic and named snapshots with restore; own undo stays local; no global undo.
+8. Removal, decided by the product owner on 2026-10-01: dot voting and private writing leave the product entirely (code, tables and columns, UI, strings, tests). They had been built in plans 17c and 17d on a branch that was neither merged nor released, so its migrations were edited instead of adding migrations that drop. Version history, timer, lock, follow-me and everything else stay as specified. An element is now the same payload for every viewer.
