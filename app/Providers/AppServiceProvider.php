@@ -11,6 +11,7 @@ use App\Events\Integrations\IntegrationActivated;
 use App\Events\Poker\PokerTaskEstimated;
 use App\Events\RetroCompleted;
 use App\Jobs\MatchIntegrationUsers;
+use App\Listeners\QueueActionItemStatusPushes;
 use App\Listeners\QueueWebhookEvents;
 use App\Mcp\McpGrant;
 use App\Mcp\McpGrantContext;
@@ -82,6 +83,8 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(ActionItemCreated::class, [QueueWebhookEvents::class, 'onActionItemCreated']);
         Event::listen(ActionItemCompleted::class, [QueueWebhookEvents::class, 'onActionItemCompleted']);
         Event::listen(ActionItemReopened::class, [QueueWebhookEvents::class, 'onActionItemReopened']);
+        Event::listen(ActionItemCompleted::class, [QueueActionItemStatusPushes::class, 'onActionItemCompleted']);
+        Event::listen(ActionItemReopened::class, [QueueActionItemStatusPushes::class, 'onActionItemReopened']);
         Event::listen(PokerTaskEstimated::class, [QueueWebhookEvents::class, 'onPokerTaskEstimated']);
 
         if ($this->app->environment('local')) {

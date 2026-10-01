@@ -11,9 +11,11 @@ use App\Enums\PokerDeck;
 use App\Enums\RetroPhase;
 use App\Enums\WorkspaceRole;
 use App\Jobs\Integrations\DeliverToChannel;
+use App\Jobs\Integrations\PushActionItemState;
 use App\Mcp\McpGrant;
 use App\Mcp\Servers\SkrumServer;
 use App\Models\ActionItem;
+use App\Models\ActionItemExternalLink;
 use App\Models\Card;
 use App\Models\Column;
 use App\Models\GamePlayer;
@@ -41,6 +43,9 @@ use App\Support\Games\GameRulesRegistry;
 use App\Support\Integrations\HostResolver;
 use App\Support\Integrations\JiraDataCenter\JiraDataCenterServer;
 use App\Support\Integrations\OAuthState;
+use App\Support\Integrations\Trackers\IssueStatus;
+use App\Support\Integrations\Trackers\TrackerIssue;
+use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Database\Factories\TeamIntegrationFactory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -1379,4 +1384,76 @@ function fakeJiraTransitions(array $before, array $after, array $transitions): v
             return Http::response(['transitions' => $transitions]);
         },
     ]);
+}
+
+/**
+ * An item of a completed retro exported to Jira `cloud-1` as PROJ-1
+ * (issue 10001), with status sync on. The author created it on the board
+ * and owns it on the workspace pages too.
+ *
+ * @param  array<string, mixed>  $link
+ * @param  array<string, mixed>  $item
+ * @return array{integration: TeamIntegration, item: ActionItem, link: ActionItemExternalLink, retro: Retro, author: User}
+ */
+function statusSyncLink(array $link = [], IntegrationAccess $access = IntegrationAccess::Write, array $item = [], bool $syncOn = true): array
+{
+    enableIntegrations(IntegrationProvider::Jira);
+    [$retro, $actionItem, $author] = exportBoardItem($item);
+    $actionItem->forceFill(['created_by_user_id' => $author->id])->save();
+    $integration = TeamIntegration::factory()->jira($access)->create(['team_id' => $retro->team_id]);
+    $integration->forceFill(['settings' => [...$integration->settings, 'statusSync' => $syncOn, 'statusSyncSince' => '2026-10-01T00:00:00+00:00']])->save();
+    $externalLink = ActionItemExternalLink::factory()->create([
+        'action_item_id' => $actionItem->id,
+        'external_id' => '10001',
+        'external_key' => 'PROJ-1',
+        'external_url' => 'https://acme.atlassian.net/browse/PROJ-1',
+    ]);
+    $externalLink->forceFill($link)->save();
+
+    return [
+        'integration' => $integration->fresh() ?? $integration,
+        'item' => $actionItem->fresh() ?? $actionItem,
+        'link' => $externalLink->fresh() ?? $externalLink,
+        'retro' => $retro,
+        'author' => $author,
+    ];
+}
+
+/**
+ * A tracker read as the trackers return it; `$kind` is the provider's
+ * category (Jira `new`/`indeterminate`/`done`, Linear state type, GitHub
+ * `open`/`completed`/`not_planned`).
+ *
+ * @param  array<string, mixed>  $overrides
+ */
+function statusSyncIssue(string $externalId, string $key, string $kind, ?string $updatedAt = '2026-10-07T10:00:00+00:00', array $overrides = []): TrackerIssue
+{
+    $name = (string) ($overrides['status'] ?? ($kind === 'done' || $kind === 'completed' ? 'Done' : 'To Do'));
+
+    return new TrackerIssue(
+        externalId: $externalId,
+        key: $key,
+        title: (string) ($overrides['title'] ?? "Issue {$key}"),
+        description: $overrides['description'] ?? null,
+        url: (string) ($overrides['url'] ?? "https://acme.atlassian.net/browse/{$key}"),
+        assignee: $overrides['assignee'] ?? null,
+        estimate: $overrides['estimate'] ?? null,
+        status: $name,
+        issueStatus: new IssueStatus(
+            id: (string) ($overrides['statusId'] ?? ($kind === 'done' ? '10002' : '10000')),
+            name: $name,
+            kind: $kind,
+            container: (string) ($overrides['container'] ?? Str::before($key, '-')),
+            updatedAt: $updatedAt === null ? null : CarbonImmutable::parse($updatedAt),
+        ),
+    );
+}
+
+function runStatusPush(ActionItemExternalLink $link): PushActionItemState
+{
+    $job = (new PushActionItemState($link->id))->withFakeQueueInteractions();
+
+    app()->call([$job, 'handle']);
+
+    return $job;
 }

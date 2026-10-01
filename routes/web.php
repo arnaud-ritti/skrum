@@ -50,6 +50,7 @@ use App\Http\Controllers\Integrations\PokerSharesController;
 use App\Http\Controllers\Integrations\PokerTaskSyncsController;
 use App\Http\Controllers\Integrations\RetroActionItemExportPreviewsController;
 use App\Http\Controllers\Integrations\RetroActionItemExportsController;
+use App\Http\Controllers\Integrations\RetroActionItemLinkSyncsController;
 use App\Http\Controllers\Integrations\RetroResultsEmailsController;
 use App\Http\Controllers\Integrations\RetroSharesController;
 use App\Http\Controllers\Integrations\TeamIntegrationsController;
@@ -58,6 +59,7 @@ use App\Http\Controllers\Integrations\WebhookDeliveriesController;
 use App\Http\Controllers\Integrations\WebhookSecretsController;
 use App\Http\Controllers\Integrations\WorkspaceActionItemExportPreviewsController;
 use App\Http\Controllers\Integrations\WorkspaceActionItemExportsController;
+use App\Http\Controllers\Integrations\WorkspaceActionItemLinkSyncsController;
 use App\Http\Controllers\InvitationAcceptancesController;
 use App\Http\Controllers\InvitationLinksController;
 use App\Http\Controllers\LocalesController;
@@ -312,6 +314,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 ->middleware(EnsureIntegrationProviderEnabled::class)
                 ->name('workspaces.actionItemExports.store')
                 ->whereUuid('actionItem');
+            Route::post('action-items/{actionItem}/external-links/{externalLink}/sync', [WorkspaceActionItemLinkSyncsController::class, 'store'])
+                ->middleware([EnsureIntegrationProviderEnabled::class, 'throttle:10,1,actionItemLinkSyncs'])
+                ->name('workspaces.actionItemLinkSyncs.store')
+                ->whereUuid(['actionItem', 'externalLink']);
         });
 });
 
@@ -375,6 +381,10 @@ Route::prefix('retros/{retro}')
             ->middleware(EnsureIntegrationProviderEnabled::class)
             ->name('retros.action-items.exports.store')
             ->whereUuid('actionItem');
+        Route::post('action-items/{actionItem}/external-links/{externalLink}/sync', [RetroActionItemLinkSyncsController::class, 'store'])
+            ->middleware([EnsureIntegrationProviderEnabled::class, 'throttle:10,1,actionItemLinkSyncs'])
+            ->name('retros.action-items.external-links.sync.store')
+            ->whereUuid(['actionItem', 'externalLink']);
         Route::post('summary', [RetroSummariesController::class, 'store'])->name('retros.summary.store');
         Route::delete('summary', [RetroSummariesController::class, 'destroy'])->name('retros.summary.destroy');
         Route::post('shares', [RetroSharesController::class, 'store'])->middleware('throttle:5,1,shares')->name('retros.shares.store');
