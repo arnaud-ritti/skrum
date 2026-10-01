@@ -8,6 +8,7 @@ use App\Mcp\Prompts\SkrumPrompt;
 use App\Mcp\Prompts\TeamHealth;
 use App\Models\ActionItem;
 use App\Models\Card;
+use App\Models\Column;
 use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\RetroTheme;
@@ -196,10 +197,12 @@ it('turns an unexpected prompt failure into a translated error without logging i
 it('drops the last messages of the board order when vote totals are hidden', function () {
     $retro = Retro::factory()->inPhase(RetroPhase::Voting)->create(['hide_vote_counts' => true]);
     [$user, $participant] = retroMember($retro);
+    $column = Column::factory()->create(['retro_id' => $retro->id]);
 
     foreach (range(1, 300) as $index) {
         Card::factory()->create([
             'retro_id' => $retro->id,
+            'column_id' => $column->id,
             'participant_id' => $participant->id,
             'content' => "Card {$index} ".str_repeat('x', 480),
             'position' => $index,
