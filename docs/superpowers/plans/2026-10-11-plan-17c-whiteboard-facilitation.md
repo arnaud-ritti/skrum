@@ -39,6 +39,7 @@
 3. **A voted note is resized, or simply moved**: the canvas re-wraps the text (`text` gets other line breaks, the words stay) and sends the text element with a new position; both must be accepted, and a template text stored without `originalText` must not be mistaken for an edit on its first move. Pinned in Task 4 ("still lets a note under vote be moved, restyled and resized", "accepts the first move of a text stored without its original").
 4. **An element id that looks like a number** (`"0"`, `"12"`): PHP turns such array keys into integers and an empty-looking id into `false`; votes and results must keep the id a string, and a second write of element `"0"` must not answer 500. Pinned in Task 3 ("keeps element ids that look like numbers as strings") and Task 4 ("accepts a second write of an element whose id is 0").
 5. **Someone is locked out, or replaced, in the middle of an action** (the board is locked while their batch is in flight; another member takes control of a locked board): the refusal is a 403 that can be told from a lost access, nothing is stored, and the exemption follows the current facilitator, not the person who locked. Pinned in Task 2 ("refuses element writes from a member and a guest on a locked board", "follows the facilitator role, not the person, when control changes").
+6. **The words of a note under vote are cleared, or typed into a note that had none**: the canvas sends two elements, the text and the note (whose `boundElements` loses or gains the text). Refusing the text alone would store a note that no longer lists a live text still pointing to it — for every client, until a full page load. Both halves must be refused and handed back, in either order, while an arrow attached to the note still passes. Pinned in Task 4 ("refuses both halves when the words of a note under vote are cleared", "refuses both halves of the first words typed into an empty note under vote", "still lets an arrow be attached to a note under vote").
 
 ---
 
@@ -2289,17 +2290,19 @@ git commit -m "feat(whiteboard): dot voting with secret votes until the close"
 
 **Interfaces:**
 - Consumes: `WhiteboardVoteSession::isTarget(?WhiteboardElement): bool`, `Whiteboard::voteSessions()`, `PresentWhiteboardVoting::finishedCount(WhiteboardVoteSession): int`, `WhiteboardVoteChanged`, `WhiteboardBroadcastEvent::sendToAll()`, `WhiteboardGuard::notLocked()` (already called in `handle`, Task 2), routes `whiteboards.elements.update`, `whiteboards.duplicate.store`, `whiteboards.template.store`, `whiteboards.voteSessions.show`.
-- Produces: `WriteWhiteboardElements::handle()` keeps its signature and result shape; it now rejects with reason `voting`, refunds votes, and no longer loses an element whose id is `"0"`. Nothing new for later tasks; the client learns the reason `voting` in Task 5.
+- Produces: `WriteWhiteboardElements::handle()` keeps its signature and result shape; it now rejects with reason `voting` (a text, and a note whose list of bound texts changes), refunds votes, and no longer loses an element whose id is `"0"`. Nothing new for later tasks; the client learns the reason `voting` in Task 5.
 
 The rule, in stored-data terms (spec §11.4). While the board has an open session:
 
 - A **candidate** is an incoming element of type `text` whose container — the incoming `containerId` or the stored copy's — was a target of the session when the batch began.
 - Candidates are handled **after** every other element of the batch. A candidate is rejected with `voting` when its container is still a target at that point **and** the write changes the words: `text` or `originalText ?? text` differ once all whitespace is removed, or `containerId` differs, or `isDeleted` differs, or there is no stored copy (a new text on the note).
 - So: an edit, a lone deletion of the text, a new or re-bound text are refused; a move, a restyle, a re-wrap pass; deleting the note with its text passes in either order (the note is no longer a target when the text is looked at); the undo passes in either order (the note was not a target when the batch began).
+- The **note** has its half of the rule, because the canvas writes the note as well when its words are cleared or first typed. An incoming element that has a stored copy, was a target when the batch began and stays one in this write (not deleted, still a sticky) is rejected with `voting` when the ids of the `text` entries of its `boundElements` differ from the stored copy's (compared as sorted sets; `null` and `[]` are the same; entries of other types, arrows, are ignored). It is looked at in batch order, not deferred: the answer depends on the note alone. The rejection hands back the stored note, so the writer's canvas puts the entry back (`scene-sync.ts` forces `rejection.element`, and drops a rejected element that has no stored copy).
+- So: clearing the words refuses the text (`isDeleted`) **and** the note (`boundElements` without the text); the first words typed into an empty note in scope refuse the new text **and** the note (`boundElements` with it); in both cases, in either order, nothing is stored and nothing is broadcast. Attaching or detaching an arrow, moving, restyling, resizing and deleting the note pass.
 - When an accepted write makes a note that was a target stop being one (deleted, or no longer a sticky), its votes in the open session are deleted. After the batch, if any row was deleted, `vote.changed` goes to everyone, the writer included, with the new `finishedCount`.
 - The facilitator is not exempt. A closed session freezes nothing.
 
-Facts checked: the canvas re-wraps a bound text when its container is resized — `wrapText()` splits the original into lines and joins them with `\n`, changing whitespace only (`node_modules/@excalidraw/excalidraw/dist/dev/chunk-4FTI6OG3.js`, `var wrapText`), and keeps the unwrapped words in `originalText`; built-in templates store `originalText` (`app/Support/WhiteboardTemplates/BuiltInTemplates.php:158`), but an element restored by the client gets one when it had none, hence the whitespace-blind comparison of `originalText ?? text`; `storedElements()` builds its id list with `->filter()`, which drops the id `"0"`; `WriteWhiteboardElements` is bound as a singleton (`AppServiceProvider`), so it must keep no state between calls.
+Facts checked: the canvas re-wraps a bound text when its container is resized — `wrapText()` splits the original into lines and joins them with `\n`, changing whitespace only (`node_modules/@excalidraw/excalidraw/dist/dev/chunk-4FTI6OG3.js`, `var wrapText`), and keeps the unwrapped words in `originalText`; built-in templates store `originalText` (`app/Support/WhiteboardTemplates/BuiltInTemplates.php:158`), but an element restored by the client gets one when it had none, hence the whitespace-blind comparison of `originalText ?? text`; `storedElements()` builds its id list with `->filter()`, which drops the id `"0"`; `WriteWhiteboardElements` is bound as a singleton (`AppServiceProvider`), so it must keep no state between calls. When a text editor is submitted, the canvas mutates the container too (`node_modules/@excalidraw/excalidraw/dist/dev/index.js`, `handleSubmit`, about line 24345): with words and no entry yet, `boundElements` gains `{type: 'text', id}`; submitted empty, the container's `boundElements` is filtered of its text entries and the text is marked deleted — so the batch holds both elements. A note made by the sticky tool starts with `boundElements: null` (`resources/js/components/whiteboard/sticky-tool.tsx`). Nothing repairs a one-sided binding during a session: `resources/js/lib/whiteboard/restore.ts` calls `restoreElements(elements, null)` without `repairBindings`, which the library only applies to the initial scene of a page load. `SanitizeWhiteboardElement` keeps `boundElements` as `null` or a list of `{id, type}` and keeps `customData` only on a sticky, which is what `save()` reads for `is_sticky`.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -2401,6 +2404,98 @@ it('rejects a new text and a re-bound text on a note under vote', function () {
         ->assertJsonPath('rejected.1.element', $loose);
 
     expect($board->elements()->where('element_id', 'extra')->exists())->toBeFalse();
+});
+
+it('refuses both halves when the words of a note under vote are cleared', function (array $order) {
+    [$board, $user, , $note, $words] = boardUnderVote();
+    $batch = [
+        'note' => [...$note, 'version' => 2, 'boundElements' => []],
+        'text' => [...$words, 'version' => 2, 'isDeleted' => true],
+    ];
+
+    writeDuringVote($this->actingAs($user), $board, array_map(fn (string $key): array => $batch[$key], $order))
+        ->assertOk()
+        ->assertJsonPath('seq', 1)
+        ->assertJsonPath('fromSeq', 1)
+        ->assertJsonCount(2, 'rejected')
+        ->assertJsonPath('rejected.0.id', 'note')
+        ->assertJsonPath('rejected.0.reason', 'voting')
+        ->assertJsonPath('rejected.0.element', $note)
+        ->assertJsonPath('rejected.1.id', 'note-text')
+        ->assertJsonPath('rejected.1.reason', 'voting')
+        ->assertJsonPath('rejected.1.element', $words);
+
+    $storedNote = $board->elements()->where('element_id', 'note')->sole();
+    $storedWords = $board->elements()->where('element_id', 'note-text')->sole();
+
+    expect($storedNote->data)->toEqual($note)
+        ->and($storedNote->data['boundElements'])->toBe([['id' => 'note-text', 'type' => 'text']])
+        ->and($storedNote->version)->toBe(1)
+        ->and($storedWords->data)->toEqual($words)
+        ->and($storedWords->is_deleted)->toBeFalse()
+        ->and(WhiteboardVote::query()->count())->toBe(3);
+
+    Event::assertNotDispatched(WhiteboardElementsChanged::class);
+    Event::assertNotDispatched(WhiteboardVoteChanged::class);
+})->with([
+    'the note first' => [['note', 'text']],
+    'the text first' => [['text', 'note']],
+]);
+
+it('refuses both halves of the first words typed into an empty note under vote', function (array $order) {
+    [$board, $user] = boardUnderVote();
+    $empty = sceneElement(['id' => 'empty', 'backgroundColor' => '#fff3bf', 'customData' => ['skrum' => ['kind' => 'sticky']]]);
+    WhiteboardElement::factory()->create([
+        'whiteboard_id' => $board->id, 'element_id' => 'empty', 'type' => 'rectangle', 'version' => 1, 'version_nonce' => 100,
+        'is_sticky' => true, 'seq' => 1, 'data' => $empty,
+    ]);
+    WhiteboardVoteSession::query()->sole()->update(['element_ids' => ['note', 'kept', 'empty']]);
+    $batch = [
+        'note' => [...$empty, 'version' => 2, 'boundElements' => [['id' => 'first', 'type' => 'text']]],
+        'text' => sceneElement(['id' => 'first', 'type' => 'text', 'text' => 'Hello', 'originalText' => 'Hello', 'containerId' => 'empty']),
+    ];
+
+    writeDuringVote($this->actingAs($user), $board, array_map(fn (string $key): array => $batch[$key], $order))
+        ->assertOk()
+        ->assertJsonPath('seq', 1)
+        ->assertJsonCount(2, 'rejected')
+        ->assertJsonPath('rejected.0.id', 'empty')
+        ->assertJsonPath('rejected.0.reason', 'voting')
+        ->assertJsonPath('rejected.0.element', $empty)
+        ->assertJsonPath('rejected.1', ['id' => 'first', 'reason' => 'voting', 'element' => null]);
+
+    $storedNote = $board->elements()->where('element_id', 'empty')->sole();
+
+    expect($storedNote->data)->toEqual($empty)
+        ->and($storedNote->data['boundElements'])->toBeNull()
+        ->and($storedNote->version)->toBe(1)
+        ->and($board->elements()->where('element_id', 'first')->exists())->toBeFalse();
+
+    Event::assertNotDispatched(WhiteboardElementsChanged::class);
+})->with([
+    'the note first' => [['note', 'text']],
+    'the text first' => [['text', 'note']],
+]);
+
+it('still lets an arrow be attached to a note under vote', function () {
+    [$board, $user, , $note] = boardUnderVote();
+    $empty = sceneElement(['id' => 'empty', 'customData' => ['skrum' => ['kind' => 'sticky']]]);
+    WhiteboardElement::factory()->create([
+        'whiteboard_id' => $board->id, 'element_id' => 'empty', 'type' => 'rectangle', 'version' => 1, 'version_nonce' => 100,
+        'is_sticky' => true, 'seq' => 1, 'data' => $empty,
+    ]);
+    WhiteboardVoteSession::query()->sole()->update(['element_ids' => ['note', 'kept', 'empty']]);
+
+    writeDuringVote($this->actingAs($user), $board, [
+        [...$note, 'version' => 2, 'boundElements' => [['id' => 'link', 'type' => 'arrow'], ['id' => 'note-text', 'type' => 'text']]],
+        [...$empty, 'version' => 2, 'x' => 300, 'boundElements' => []],
+    ])
+        ->assertOk()
+        ->assertJsonPath('rejected', [])
+        ->assertJsonPath('seq', 3);
+
+    expect($board->elements()->where('element_id', 'note')->sole()->data['boundElements'])->toHaveCount(2)
+        ->and($board->elements()->where('element_id', 'empty')->sole()->data['x'])->toBe(300);
 });
 
 it('still lets a note under vote be moved, restyled and resized', function () {
@@ -2595,7 +2690,7 @@ it('accepts a second write of an element whose id is 0', function () {
 - [ ] **Step 2: Run them and see them fail**
 
 Run: `DB_HOST=127.0.0.1 php artisan test --compact tests/Feature/Whiteboards/WhiteboardVotingWritesTest.php`
-Expected: FAIL — the text changes are accepted (no `voting` rejection), the votes of a deleted note stay, the second write of `"0"` answers 500 (unique violation). "copies no vote into a duplicate or a template", "leaves a note added after the vote opened free to edit" and "frees the words again" are expected to PASS already: they pin what must stay true.
+Expected: FAIL — the text changes are accepted (no `voting` rejection), the note half of a cleared or first text is stored (`rejected` is empty and `seq` moves), the votes of a deleted note stay, the second write of `"0"` answers 500 (unique violation). "copies no vote into a duplicate or a template", "leaves a note added after the vote opened free to edit", "frees the words again", "still lets an arrow be attached to a note under vote" and "still lets a note under vote be moved, restyled and resized" are expected to PASS already: they pin what must stay true.
 
 - [ ] **Step 3: Implement in `WriteWhiteboardElements`**
 
@@ -2632,6 +2727,10 @@ while ($queue !== []) {
         $reason = 'voting';
     }
 
+    if ($reason === null && $session !== null && $this->rebindsWordsOfTarget($targetsBefore, $existing, $element)) {
+        $reason = 'voting';
+    }
+
     // unchanged: the rejection when `$reason !== null`, `$liveCount`, `$seq++`, `save`, `$stored->put`, `$accepted`
 
     if ($session !== null && isset($targetsBefore[$element['id']]) && ! $session->isTarget($saved)) {
@@ -2640,7 +2739,7 @@ while ($queue !== []) {
 }
 ```
 
-`stale`, `locked`, `file` and `full` keep precedence over `voting` (a stale write converges silently, as before). After `$locked->update(['seq' => $seq])` and the `WhiteboardElementsChanged` broadcast:
+`stale`, `locked`, `file` and `full` keep precedence over `voting` (a stale write converges silently, as before). The second check is the note's half of the freeze: it runs for every element in batch order (a note is never deferred) and is false for a text, which is never a target. After `$locked->update(['seq' => $seq])` and the `WhiteboardElementsChanged` broadcast:
 
 ```php
 if ($session !== null && $refunded > 0) {
@@ -2648,7 +2747,7 @@ if ($session !== null && $refunded > 0) {
 }
 ```
 
-A replayed batch stops at `isSameWrite` and therefore refunds nothing twice. New private methods:
+A replayed batch stops at `isSameWrite` and therefore refunds nothing twice. `rebindsWordsOfTarget` decides "stays a target" from the incoming element the way `save()` will store it (`is_deleted` from `isDeleted`, `is_sticky` from `isset(customData)`); the id is in the session's list because it is a key of `$targetsBefore`. New private methods:
 
 ```php
 /**
@@ -2738,6 +2837,54 @@ private function changesWordsOfTarget(WhiteboardVoteSession $session, Collection
         || $existing->is_deleted !== $element['isDeleted'];
 }
 
+/**
+ * A note that stays under vote keeps the text it holds: the canvas
+ * rewrites the note's list when its words are cleared or first typed,
+ * and that half of the batch must not be stored without the other.
+ *
+ * @param  array<int|string, true>  $targetsBefore
+ * @param  array<string, mixed>  $element
+ */
+private function rebindsWordsOfTarget(array $targetsBefore, ?WhiteboardElement $existing, array $element): bool
+{
+    if ($existing === null || ! isset($targetsBefore[$element['id']])) {
+        return false;
+    }
+
+    if ($element['isDeleted'] || ! isset($element['customData'])) {
+        return false;
+    }
+
+    return $this->boundTextIds($existing->data) !== $this->boundTextIds($element);
+}
+
+/**
+ * @param  array<string, mixed>  $element
+ * @return list<string>
+ */
+private function boundTextIds(array $element): array
+{
+    $bound = $element['boundElements'] ?? null;
+
+    if (! is_array($bound)) {
+        return [];
+    }
+
+    $ids = [];
+
+    foreach ($bound as $entry) {
+        if (is_array($entry) && ($entry['type'] ?? null) === 'text' && is_string($entry['id'] ?? null)) {
+            $ids[] = $entry['id'];
+        }
+    }
+
+    $ids = array_values(array_unique($ids));
+
+    sort($ids);
+
+    return $ids;
+}
+
 private function letters(mixed $text): string
 {
     return (string) preg_replace('/\s+/u', '', is_string($text) ? $text : '');
@@ -2782,7 +2929,7 @@ private function storedElements(Whiteboard $board, array $rawElements, bool $wit
 
 Imports: `App\Events\Whiteboards\WhiteboardVoteChanged`, `App\Models\WhiteboardVoteSession`. Keep the rest of the class as it is (`refusal`, `isStale`, `touchesLock`, `liveDelta`, `save`, `rejection`, `broadcastable`).
 
-The snippets above, put together, are this change to the file as it stands after Task 2 (it passed every test of this plan, Pint and PHPStan):
+The snippets above, put together, are this change to the file as it stands after Task 2. Everything in it except `rebindsWordsOfTarget`, `boundTextIds` and their one call passed every test of this plan, Pint and PHPStan on the prototype; those three pieces and their tests were added afterwards (Appendix B) and have not been run: see their tests fail first, as for the rest.
 
 ```diff
 --- a/app/Actions/Whiteboards/WriteWhiteboardElements.php
@@ -2830,7 +2977,7 @@ The snippets above, put together, are this change to the file as it stands after
                  $element = $this->sanitizeWhiteboardElement->handle($raw);
  
                  if ($element === null) {
-@@ -64,8 +74,18 @@
+@@ -64,8 +74,22 @@
                      continue;
                  }
  
@@ -2846,10 +2993,14 @@ The snippets above, put together, are this change to the file as it stands after
 +                    $reason = 'voting';
 +                }
 +
++                if ($reason === null && $session !== null && $this->rebindsWordsOfTarget($targetsBefore, $existing, $element)) {
++                    $reason = 'voting';
++                }
++
                  if ($reason !== null) {
                      $rejected[] = $this->rejection($element['id'], $reason, $existing, $member);
  
-@@ -79,6 +99,10 @@
+@@ -79,6 +103,10 @@
  
                  $stored->put($element['id'], $saved);
                  $accepted[$element['id']] = $saved;
@@ -2860,7 +3011,7 @@ The snippets above, put together, are this change to the file as it stands after
              }
  
              if ($seq === $fromSeq) {
-@@ -89,6 +113,10 @@
+@@ -89,6 +117,10 @@
  
              (new WhiteboardElementsChanged($locked->id, $seq, $fromSeq, $this->broadcastable($accepted)))->sendToOthers();
  
@@ -2871,7 +3022,7 @@ The snippets above, put together, are this change to the file as it stands after
              return ['seq' => $seq, 'fromSeq' => $fromSeq, 'rejected' => $rejected];
          });
      }
-@@ -97,17 +125,122 @@
+@@ -97,17 +129,170 @@
       * @param  array<int, mixed>  $rawElements
       * @return Collection<string, WhiteboardElement>
       */
@@ -2987,6 +3138,54 @@ The snippets above, put together, are this change to the file as it stands after
 +            || $this->letters($before['originalText'] ?? $before['text'] ?? null) !== $this->letters($element['originalText'] ?? $element['text'] ?? null)
 +            || ($before['containerId'] ?? null) !== ($element['containerId'] ?? null)
 +            || $existing->is_deleted !== $element['isDeleted'];
++    }
++
++    /**
++     * A note that stays under vote keeps the text it holds: the canvas
++     * rewrites the note's list when its words are cleared or first typed,
++     * and that half of the batch must not be stored without the other.
++     *
++     * @param  array<int|string, true>  $targetsBefore
++     * @param  array<string, mixed>  $element
++     */
++    private function rebindsWordsOfTarget(array $targetsBefore, ?WhiteboardElement $existing, array $element): bool
++    {
++        if ($existing === null || ! isset($targetsBefore[$element['id']])) {
++            return false;
++        }
++
++        if ($element['isDeleted'] || ! isset($element['customData'])) {
++            return false;
++        }
++
++        return $this->boundTextIds($existing->data) !== $this->boundTextIds($element);
++    }
++
++    /**
++     * @param  array<string, mixed>  $element
++     * @return list<string>
++     */
++    private function boundTextIds(array $element): array
++    {
++        $bound = $element['boundElements'] ?? null;
++
++        if (! is_array($bound)) {
++            return [];
++        }
++
++        $ids = [];
++
++        foreach ($bound as $entry) {
++            if (is_array($entry) && ($entry['type'] ?? null) === 'text' && is_string($entry['id'] ?? null)) {
++                $ids[] = $entry['id'];
++            }
++        }
++
++        $ids = array_values(array_unique($ids));
++
++        sort($ids);
++
++        return $ids;
 +    }
 +
 +    private function letters(mixed $text): string
@@ -5489,7 +5688,7 @@ git commit -m "feat(whiteboard): dot voting on the board, with badges and a resu
 - B7.2 Vote open: every in-scope note has a vote control at its top-right corner in A and B; a note added afterwards has none. The controls stay on their notes while panning, zooming, and while a note is dragged; a control that scrolls under the shapes toolbar passes **behind** it, and none lies over the canvas's bottom controls or the reactions bar. The canvas still fills its area and the reactions bar sits where it did before this plan. (If a control covers a canvas control, do not raise the canvas controls: clip the overlay to the drawing area and say so.)
 - B7.3 B votes: B's control shows B's count, the status row counts down "Votes left", A's page shows nothing of B's vote (no count on the note, no change but "x of y finished voting" when B spends the last one). At a budget of zero the "+" or the toggle of other notes is disabled; forcing it (`fetch` the PUT with a higher count) answers 422 "You have no votes left.".
 - B7.4 While the vote is open no remote cursor is drawn in A or B even with "Show live cursors" on, and the status row says so; they come back when it closes.
-- B7.5 B double-clicks an in-scope note and types: the text snaps back and the toast "Notes cannot be edited while a vote is open." shows; B can still drag, recolour and resize it, and A sees those. A (facilitator) is refused the same way.
+- B7.5 B double-clicks an in-scope note and types: the text snaps back and the toast "Notes cannot be edited while a vote is open." shows; B can still drag, recolour and resize it, and A sees those. A (facilitator) is refused the same way. Then B double-clicks an in-scope note, deletes all its words and clicks away: the words come back with the same toast; B and then A drag that note and its words move with it in both browsers; after the vote is closed a double-click on it edits the existing words (no second text appears on the note). B double-clicks an in-scope note that has no words and types: the words disappear with the toast, and the note can still be dragged.
 - B7.6 A deletes a note B voted for: B's "Votes left" goes back up within about 2 s without a reload.
 - B7.7 A second tab of B on the same board shows B's votes within about 2 s of a vote cast in the first tab.
 - B7.8 A closes the vote: in A and B the controls become count badges with the same numbers, and the results panel opens beside the canvas (the canvas shrinks; nothing is covered) with the same ranked list. "Show on the board" centres the note. A deleted note's entry has its button disabled.
@@ -5618,5 +5817,7 @@ The draft of this plan was written at `e0524df`, before plan 17b was finished an
 5. Test added from the draft's last revision: people outside the team are refused on every facilitation endpoint.
 6. Frontend tasks now carry complete, type-checked listings instead of descriptions.
 7. Names confirmed, not changed: Wayfinder parameters `board`, `voteSession`, `elementId`; the migration date `2026_10_11_100000` (the latest whiteboard migration is still `2026_10_10_100000`); none of the helper names this plan adds existed.
+
+**Added after the prototype, by review, and not run:** the note's half of the text freeze in Task 4 (`rebindsWordsOfTarget`, `boundTextIds`, their call, the tests "refuses both halves when the words of a note under vote are cleared", "refuses both halves of the first words typed into an empty note under vote" and "still lets an arrow be attached to a note under vote", Review Focus 6, spec §11.4). The fact behind it was read in the library (`handleSubmit` rewrites the container's `boundElements`), not observed in a browser; B7.5 now replays it.
 
 **Not verified, because only a browser can** (each is a browser check): the overlay's stacking between the drawing and the canvas's controls (B7.2); that the canvas leaves view mode when the prop goes back to `undefined` and abandons an unfinished text edit when view mode starts (B5.3, B5.5); that the canvas reports back exactly the scroll and zoom it was given (B6.1); the height of the canvas inside the new row (B5.1, B7.2); that the lock entries of the context menu are inside `.whiteboard-canvas` (B5.6).
