@@ -9,6 +9,7 @@ use App\Models\GameRound;
 use App\Models\Team;
 use App\Models\User;
 use App\Support\Games\GameWordBook;
+use Illuminate\Support\Facades\DB;
 
 function p13aRenamed(User $user, string $name): User
 {
@@ -319,4 +320,137 @@ it('[P13a-05] shows the solved word, the winner and the round in the history to 
 
     expect($round->fresh()->outcome)->toBe(GameRoundOutcome::Solved)
         ->and($round->fresh()->winner_player_id)->toBe(p13aGuestPlayer($room, 'Visitor')->id);
+});
+
+it('[P13a-06a] ends a round as "Time\'s up" when the one-minute timer of the host runs out', function () {
+    config(['queue.default' => 'database']);
+    p13aOnlyWord('quartz');
+    ['room' => $room, 'ada' => $ada] = p13aRoom();
+
+    $host = $this->awaitRealtime($this->signIn($ada, p13aRoomPath($room)));
+    $guest = $this->awaitRealtime($this->joinAsGuest(p13aJoinPath($room), 'Visitor'));
+
+    $host->assertPresent('[role="group"][aria-label="2 online"]')
+        ->click('[aria-label="Timer"]')
+        ->assertVisible('[role="menuitem"]:text-is("1 min")')
+        ->click('[role="menuitem"]:text-is("1 min")');
+
+    foreach ([$host, $guest] as $page) {
+        $page->assertSee('0:5');
+    }
+
+    expect(DB::table('jobs')->count())->toBe(0);
+
+    $host->assertNotPresent('[role="menu"]')
+        ->click('Start');
+
+    foreach ([$host, $guest] as $page) {
+        $page->assertCount('[role="group"][aria-label="Letters"] button', 26);
+    }
+
+    $round = GameRound::query()->sole();
+
+    expect(DB::table('jobs')->count())->toBe(1)
+        ->and($round->ended_at)->toBeNull();
+
+    $this->travel(61)->seconds();
+    $this->workQueue();
+
+    foreach ([$host, $guest] as $page) {
+        $page->assertSeeIn('main [data-slot="badge"]', "Time's up")
+            ->assertSee('quartz')
+            ->assertNotPresent('[role="group"][aria-label="Letters"]');
+    }
+
+    $host->assertSee('Next round');
+    $guest->assertSee('Waiting for the host to start.');
+
+    expect($round->fresh()->outcome)->toBe(GameRoundOutcome::TimedOut)
+        ->and(DB::table('jobs')->count())->toBe(0);
+});
+
+it('[P13a-06b] ends an expired round on the next request when no queue worker runs', function () {
+    ['room' => $room, 'ada' => $ada] = p13aRoom(['timer_ends_at' => now()->addMinute()->startOfSecond()]);
+    $round = activeGameRound($room, ['word' => 'quartz']);
+
+    $host = $this->awaitRealtime($this->signIn($ada, p13aRoomPath($room)));
+    $guest = $this->awaitRealtime($this->joinAsGuest(p13aJoinPath($room), 'Visitor'));
+
+    foreach ([$host, $guest] as $page) {
+        $page->assertCount('[role="group"][aria-label="Letters"] button', 26);
+    }
+
+    $this->travel(61)->seconds();
+
+    expect($round->fresh()->ended_at)->toBeNull();
+
+    $this->awaitRealtime($host->navigate(p13aRoomPath($room)));
+
+    foreach ([$host, $guest] as $page) {
+        $page->assertSeeIn('main [data-slot="badge"]', "Time's up")
+            ->assertSee('quartz')
+            ->assertNotPresent('[role="group"][aria-label="Letters"]');
+    }
+
+    expect($round->fresh()->outcome)->toBe(GameRoundOutcome::TimedOut);
+});
+
+it('[P13a-07] renames the room and ends the access of guests when it becomes team-only', function () {
+    ['room' => $room, 'ada' => $ada] = p13aRoom();
+
+    $host = $this->awaitRealtime($this->signIn($ada, p13aRoomPath($room)));
+    $guest = $this->awaitRealtime($this->joinAsGuest(p13aJoinPath($room), 'Visitor'));
+
+    $host->assertPresent('[role="group"][aria-label="2 online"]')
+        ->click('[aria-label="Room menu"]')
+        ->assertVisible('[role="menuitem"]:has-text("Room settings")')
+        ->click('[role="menuitem"]:has-text("Room settings")')
+        ->assertVisible('#room-name')
+        ->assertValue('#room-name', 'Lunch')
+        ->fill('#room-name', 'Lunch break')
+        ->click('#room-access')
+        ->assertVisible('[role="option"]:has-text("Team members only")')
+        ->click('[role="option"]:has-text("Team members only")')
+        ->assertSee('Guests in this room lose access.')
+        ->click('Save')
+        ->assertNotPresent('[role="dialog"]')
+        ->assertSeeIn('header > h1', 'Lunch break')
+        ->assertNotPresent('[aria-label="Copy guest link"]');
+
+    $guest->assertSee('Your access to this room has ended.')
+        ->assertDontSee('Back to the team')
+        ->assertNotPresent('header > h1');
+
+    $host->assertPresent('[role="group"][aria-label="1 online"]');
+
+    $guest->navigate(p13aRoomPath($room))
+        ->assertPathIs('/login');
+
+    visit(p13aJoinPath($room))->assertSee('This guest link is no longer valid.');
+
+    expect($room->fresh()->name)->toBe('Lunch break')
+        ->and($room->fresh()->access)->toBe(GameRoomAccess::Team);
+});
+
+it('[P13a-09] deletes the room, sends its creator to the team page and tells the guest', function () {
+    ['room' => $room, 'ada' => $ada] = p13aRoom();
+    $teamPath = route('teams.show', [$room->team->workspace, $room->team], false);
+
+    $host = $this->awaitRealtime($this->signIn($ada, p13aRoomPath($room)));
+    $guest = $this->awaitRealtime($this->joinAsGuest(p13aJoinPath($room), 'Visitor'));
+
+    $host->assertPresent('[role="group"][aria-label="2 online"]')
+        ->click('[aria-label="Room menu"]')
+        ->assertVisible('[role="menuitem"]:has-text("Delete room")')
+        ->click('[role="menuitem"]:has-text("Delete room")')
+        ->assertSee('Delete this room?')
+        ->assertSee('Its rounds and scores are deleted for everyone.')
+        ->click('[role="dialog"] button:has-text("Delete")');
+
+    $host->assertPathIs($teamPath);
+
+    $guest->assertSee('This room was deleted.')
+        ->assertDontSee('Back to the team');
+
+    expect(GameRoom::query()->whereKey($room->id)->exists())->toBeFalse();
 });
