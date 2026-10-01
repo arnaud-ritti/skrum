@@ -20,6 +20,10 @@ class InboundModes
 
     public const HintManual = 'manual';
 
+    private bool $publicityKnown = false;
+
+    private ?bool $publicity = null;
+
     public function __construct(private InboundReachability $reachability) {}
 
     public function for(TeamIntegration $integration): IntegrationInboundMode
@@ -37,7 +41,7 @@ class InboundModes
      */
     public function acceptsWebhooks(IntegrationProvider $provider): bool
     {
-        if (! $provider->isEnabled() || ! $this->reachability->isPublic()) {
+        if (! $provider->isEnabled() || $this->publicity() !== true) {
             return false;
         }
 
@@ -49,9 +53,17 @@ class InboundModes
         };
     }
 
+    /**
+     * While this instance's address cannot be resolved the current mode is
+     * kept, so a DNS hiccup does not flip every connection to polling.
+     */
     public function refresh(TeamIntegration $integration): TeamIntegration
     {
         $mode = $this->for($integration);
+
+        if ($mode !== IntegrationInboundMode::Off && $integration->inbound_mode !== IntegrationInboundMode::Off && $this->publicity() === null) {
+            return $integration;
+        }
 
         if ($integration->inbound_mode !== $mode) {
             $integration->forceFill(['inbound_mode' => $mode])->save();
@@ -80,6 +92,19 @@ class InboundModes
         }
 
         return null;
+    }
+
+    /**
+     * Read once per instance: a poll run asks for every connection.
+     */
+    private function publicity(): ?bool
+    {
+        if (! $this->publicityKnown) {
+            $this->publicity = $this->reachability->publicity();
+            $this->publicityKnown = true;
+        }
+
+        return $this->publicity;
     }
 
     private function webhooksReach(TeamIntegration $integration): bool

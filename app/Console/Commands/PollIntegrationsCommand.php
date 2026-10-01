@@ -9,6 +9,8 @@ use App\Models\TeamIntegration;
 use App\Support\Integrations\InboundModes;
 use App\Support\Integrations\IntegrationPolls;
 use Illuminate\Console\Command;
+use Illuminate\Queue\Events\UniqueJobSkipped;
+use Illuminate\Support\Facades\Event;
 
 class PollIntegrationsCommand extends Command
 {
@@ -23,13 +25,20 @@ class PollIntegrationsCommand extends Command
             array_filter(IntegrationProvider::enabled(), fn (IntegrationProvider $provider): bool => $provider->isTracker()),
         );
         $queued = 0;
+        $skipped = 0;
+
+        Event::listen(UniqueJobSkipped::class, function (UniqueJobSkipped $event) use (&$skipped): void {
+            if ($event->job instanceof ReadTrackedIssues) {
+                $skipped++;
+            }
+        });
 
         TeamIntegration::query()
             ->where('status', IntegrationStatus::Active->value)
             ->whereIn('provider', $trackers)
             ->where('settings->statusSync', true)
             ->lazyById()
-            ->each(function (TeamIntegration $integration) use ($inboundModes, &$queued): void {
+            ->each(function (TeamIntegration $integration) use ($inboundModes, &$queued, &$skipped): void {
                 $inboundModes->refresh($integration);
 
                 if (! IntegrationPolls::isDue($integration)) {
@@ -37,8 +46,12 @@ class PollIntegrationsCommand extends Command
                 }
 
                 $this->info("Queueing a read of {$integration->provider->label()} integration `{$integration->id}`…");
+                $skippedBefore = $skipped;
                 ReadTrackedIssues::dispatch($integration->id);
-                $queued++;
+
+                if ($skipped === $skippedBefore) {
+                    $queued++;
+                }
             });
 
         $this->comment("Queued {$queued} integration reads.");

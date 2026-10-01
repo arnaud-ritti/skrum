@@ -7,8 +7,10 @@ use App\Actions\Integrations\TrackedIssues;
 use App\Enums\IntegrationInboundMode;
 use App\Enums\IntegrationWebhookStatus;
 use App\Models\TeamIntegration;
+use App\Support\Integrations\Exceptions\IntegrationException;
 use App\Support\Integrations\Exceptions\RateLimited;
 use App\Support\Integrations\Exceptions\ReconnectRequired;
+use App\Support\Integrations\IntegrationErrors;
 use App\Support\Integrations\IntegrationPolls;
 use App\Support\Integrations\StatusSync;
 use App\Support\Integrations\Trackers\Trackers;
@@ -18,13 +20,15 @@ use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Spec 8 §5.4: an incremental poll (issues updated since the cursor minus
  * two minutes), or a full read of every tracked issue that also detects
  * deletions — daily, and when sync is turned on (the source then wins).
- * Reads of one connection never overlap; a failed poll waits for the next
- * run.
+ * Reads of one connection never overlap. A failed incremental poll waits
+ * for the next interval with its cursor kept; a failed full read is
+ * released and retried, so the source-wins read is never lost.
  */
 class ReadTrackedIssues implements ShouldBeUnique, ShouldQueue
 {
@@ -32,9 +36,14 @@ class ReadTrackedIssues implements ShouldBeUnique, ShouldQueue
 
     public const SilentWebhookHours = 24;
 
+    public const RetryMinutes = 15;
+
+    public const RetryAfterErrorSeconds = 60;
+
     public int $maxExceptions = 1;
 
-    public int $uniqueFor = 900;
+    /** Longer than the retry window, so a released read keeps its lock. */
+    public int $uniqueFor = 1200;
 
     public int $timeout = 300;
 
@@ -63,7 +72,7 @@ class ReadTrackedIssues implements ShouldBeUnique, ShouldQueue
 
     public function retryUntil(): DateTimeInterface
     {
-        return now()->addMinutes(15);
+        return now()->addMinutes(self::RetryMinutes);
     }
 
     public function handle(Trackers $trackers, TrackedIssues $trackedIssues, ApplyIssueChanges $applyIssueChanges): void
@@ -82,14 +91,40 @@ class ReadTrackedIssues implements ShouldBeUnique, ShouldQueue
                 $this->read($integration, $ids, $trackers, $applyIssueChanges);
             }
         } catch (RateLimited $exception) {
-            IntegrationPolls::pause($integration->id, $exception->retryAfter);
+            $this->postpone($integration, $exception->retryAfter);
 
             return;
         } catch (ReconnectRequired) {
             return;
+        } catch (IntegrationException $exception) {
+            Log::warning('Reading tracked issues failed.', [
+                'integration' => $integration->id,
+                'provider' => $integration->provider->value,
+                'full' => $this->full,
+                'detail' => IntegrationErrors::sanitize($exception->detail() ?? class_basename($exception)),
+            ]);
+
+            $this->postpone($integration, $this->full ? self::RetryAfterErrorSeconds : IntegrationPolls::intervalMinutes($integration) * 60);
+
+            return;
         }
 
         $integration->forceFill(['last_polled_at' => now(), 'poll_cursor' => $startedAt])->save();
+    }
+
+    /**
+     * Full reads are retried; polls wait, as the next one reads the same
+     * changes from the kept cursor.
+     */
+    private function postpone(TeamIntegration $integration, int $seconds): void
+    {
+        if ($this->full) {
+            $this->release($seconds);
+
+            return;
+        }
+
+        IntegrationPolls::pause($integration->id, $seconds);
     }
 
     /**
@@ -133,6 +168,12 @@ class ReadTrackedIssues implements ShouldBeUnique, ShouldQueue
             return;
         }
 
-        $integration->forceFill(['webhook_status' => IntegrationWebhookStatus::Failing])->save();
+        TeamIntegration::query()
+            ->whereKey($integration->id)
+            ->whereIn('webhook_status', [IntegrationWebhookStatus::Pending->value, IntegrationWebhookStatus::Active->value])
+            ->where(fn ($quiet) => $quiet
+                ->whereNull('last_inbound_at')
+                ->orWhere('last_inbound_at', '<=', now()->subHours(self::SilentWebhookHours)))
+            ->update(['webhook_status' => IntegrationWebhookStatus::Failing->value]);
     }
 }

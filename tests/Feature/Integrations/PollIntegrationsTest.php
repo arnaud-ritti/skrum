@@ -10,10 +10,12 @@ use App\Models\ActionItemExternalLink;
 use App\Models\PokerGame;
 use App\Models\PokerTask;
 use App\Models\TeamIntegration;
+use App\Support\Integrations\HostResolver;
 use App\Support\Integrations\IntegrationPolls;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
 
 beforeEach(function () {
@@ -49,9 +51,12 @@ function trackedJiraLink(TeamIntegration $integration, string $externalId, array
     ]);
 }
 
-function runTrackedRead(TeamIntegration $integration, bool $full = false): void
+function runTrackedRead(TeamIntegration $integration, bool $full = false, bool $initial = false): ReadTrackedIssues
 {
-    app()->call([(new ReadTrackedIssues($integration->id, $full))->withFakeQueueInteractions(), 'handle']);
+    $job = (new ReadTrackedIssues($integration->id, $full, $initial))->withFakeQueueInteractions();
+    app()->call([$job, 'handle']);
+
+    return $job;
 }
 
 it('queues reads of due integrations only', function () {
@@ -204,4 +209,130 @@ it('queues the daily full read of synced integrations after their check', functi
 
     Queue::assertPushed(ReadTrackedIssues::class, 1);
     Queue::assertPushed(ReadTrackedIssues::class, fn (ReadTrackedIssues $job) => $job->integrationId === $synced->id && $job->full && ! $job->initial);
+});
+
+it('waits a polling interval after a source error without failing the read', function () {
+    Log::spy();
+    $integration = pollingIntegration(['poll_cursor' => '2026-10-07 10:15:00', 'last_polled_at' => now()->subMinutes(10)]);
+    trackedJiraLink($integration, '10001');
+    Http::fake([jiraApiUrl('rest/api/3/search/jql') => Http::response(['errorMessages' => ['Down for maintenance']], 503)]);
+
+    $job = runTrackedRead($integration);
+
+    $job->assertNotFailed();
+    $job->assertNotReleased();
+    Http::assertSentCount(1);
+    Log::shouldHaveReceived('warning')->once();
+    expect($integration->fresh()->poll_cursor?->toIso8601String())->toBe('2026-10-07T10:15:00+00:00');
+
+    Queue::fake();
+    $this->travel(1)->minute();
+    $this->artisan('skrum:poll-integrations')->assertSuccessful();
+
+    Queue::assertNothingPushed();
+});
+
+it('retries the first read after sync is turned on instead of dropping it', function (int $status, array $headers, int $delay) {
+    $integration = pollingIntegration();
+    trackedJiraLink($integration, '10001');
+    Http::fake([jiraApiUrl('rest/api/3/search/jql') => Http::response(['errorMessages' => ['Not now']], $status, $headers)]);
+
+    $job = runTrackedRead($integration, full: true, initial: true);
+
+    $job->assertReleased($delay);
+    $job->assertNotFailed();
+})->with([
+    'rate limited' => [429, ['Retry-After' => '120'], 120],
+    'unavailable' => [503, [], 60],
+]);
+
+it('keeps the cursor when the connection must be reconnected', function () {
+    $integration = pollingIntegration(['poll_cursor' => '2026-10-07 10:15:00']);
+    trackedJiraLink($integration, '10001');
+    Http::fake([
+        'auth.atlassian.com/oauth/token' => Http::response(['error' => 'invalid_grant'], 400),
+        jiraApiUrl('rest/api/3/search/jql') => Http::response(['message' => 'Unauthorized'], 401),
+    ]);
+
+    $job = runTrackedRead($integration);
+
+    $job->assertNotFailed();
+    expect($integration->fresh()->poll_cursor?->toIso8601String())->toBe('2026-10-07T10:15:00+00:00')
+        ->and($integration->fresh()->status)->toBe(IntegrationStatus::ReconnectRequired);
+});
+
+it('reads nothing for connections that are not active or not synced', function (array $attributes, array $settings) {
+    Http::fake();
+    $integration = pollingIntegration($attributes, $settings);
+    trackedJiraLink($integration, '10001');
+
+    runTrackedRead($integration, full: true);
+
+    Http::assertNothingSent();
+})->with([
+    'reconnect required' => [['status' => IntegrationStatus::ReconnectRequired], []],
+    'sync off' => [[], ['statusSync' => false]],
+]);
+
+it('keeps the inbound mode while the instance address cannot be resolved', function () {
+    Queue::fake();
+    config(['services.integrations.inbound_webhooks' => 'auto', 'app.url' => 'https://skrum.example.com', 'services.linear.webhook_secret' => 'linear-webhook-secret']);
+    $resolver = new class extends HostResolver
+    {
+        public int $lookups = 0;
+
+        public function addresses(string $host): array
+        {
+            $this->lookups++;
+
+            return [];
+        }
+    };
+    app()->instance(HostResolver::class, $resolver);
+    $first = pollingIntegration(['inbound_mode' => IntegrationInboundMode::Webhook, 'webhook_status' => IntegrationWebhookStatus::Active, 'last_polled_at' => now()->subMinutes(10)], provider: IntegrationProvider::Linear);
+    $second = pollingIntegration(['inbound_mode' => IntegrationInboundMode::Webhook, 'webhook_status' => IntegrationWebhookStatus::Active, 'last_polled_at' => now()->subMinutes(10)], provider: IntegrationProvider::Linear);
+
+    $this->artisan('skrum:poll-integrations')->assertSuccessful();
+
+    expect($first->fresh()->inbound_mode)->toBe(IntegrationInboundMode::Webhook)
+        ->and($second->fresh()->inbound_mode)->toBe(IntegrationInboundMode::Webhook)
+        ->and($resolver->lookups)->toBe(1);
+    Queue::assertNothingPushed();
+});
+
+it('counts only the reads it actually queued', function () {
+    Queue::fake();
+    $integration = pollingIntegration(['last_polled_at' => null]);
+    ReadTrackedIssues::dispatch($integration->id);
+
+    $this->artisan('skrum:poll-integrations')
+        ->expectsOutputToContain('Queued 0 integration reads.')
+        ->assertSuccessful();
+
+    Queue::assertPushed(ReadTrackedIssues::class, 1);
+});
+
+it('keeps a webhook active when an event arrives during the read', function () {
+    $integration = pollingIntegration([
+        'inbound_mode' => IntegrationInboundMode::Webhook,
+        'webhook_status' => IntegrationWebhookStatus::Active,
+        'last_inbound_at' => '2026-10-06 09:00:00',
+        'poll_cursor' => '2026-10-07 09:30:00',
+    ]);
+    trackedJiraLink($integration, '10001');
+    Http::fake([jiraApiUrl('rest/api/3/search/jql') => function () use ($integration) {
+        TeamIntegration::query()->whereKey($integration->id)->update(['last_inbound_at' => now(), 'webhook_status' => IntegrationWebhookStatus::Active]);
+
+        return Http::response(['issues' => [jiraTrackerIssue('10001', 'PROJ-1', ['updated' => '2026-10-07T10:00:00.000+0000', 'project' => ['key' => 'PROJ']])], 'isLast' => true]);
+    }]);
+
+    runTrackedRead($integration);
+
+    expect($integration->fresh()->webhook_status)->toBe(IntegrationWebhookStatus::Active);
+});
+
+it('holds its unique lock longer than it may be retried', function () {
+    $job = new ReadTrackedIssues('integration');
+
+    expect(now()->addSeconds($job->uniqueFor)->gt($job->retryUntil()))->toBeTrue();
 });

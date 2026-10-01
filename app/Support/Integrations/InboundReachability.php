@@ -38,6 +38,14 @@ class InboundReachability
 
     public function isPublic(): bool
     {
+        return $this->publicity() ?? false;
+    }
+
+    /**
+     * Null while APP_URL's host cannot be resolved in auto mode.
+     */
+    public function publicity(): ?bool
+    {
         return match (self::mode()) {
             'on' => true,
             'off' => false,
@@ -45,7 +53,7 @@ class InboundReachability
         };
     }
 
-    private function appUrlIsPublic(): bool
+    private function appUrlIsPublic(): ?bool
     {
         $url = (string) config('app.url');
         $key = 'integrations:inbound-public:'.sha1($url);
@@ -62,7 +70,7 @@ class InboundReachability
             Cache::put($key, $isPublic, self::CacheSeconds);
         }
 
-        return $isPublic ?? false;
+        return $isPublic;
     }
 
     private function isPublicUrl(string $url): ?bool
