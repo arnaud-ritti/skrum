@@ -9,6 +9,7 @@ use App\Enums\McpScope;
 use App\Mcp\Concerns\ResolvesTracker;
 use App\Mcp\McpContext;
 use App\Mcp\McpFeature;
+use App\Mcp\PokerTrackerSources;
 use App\Mcp\Tools\SkrumTool;
 use App\Support\Integrations\TrackerBrowseLimit;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
@@ -27,7 +28,7 @@ class ImportTasks extends SkrumTool
 
     protected string $name = 'poker.game.tasks.import';
 
-    protected string $description = 'Import the issues of a tracker iteration (iteration_id: a Jira sprint or Linear cycle) or of a query (query: JQL for Jira, a search term for Linear) into a planning poker game, in source order, at most 100 per call. Issues already imported are skipped; a game holds at most 200 tasks.';
+    protected string $description = 'Import the issues of a tracker iteration (iteration_id: a Jira sprint, Linear cycle or GitHub milestone) or of a query (query: JQL for Jira, a search term for Linear or GitHub) into a planning poker game, in source order, at most 100 per call. GitHub queries need container_id (the repository). Issues already imported are skipped; a game holds at most 200 tasks.';
 
     public function __construct(
         private McpContext $context,
@@ -38,9 +39,9 @@ class ImportTasks extends SkrumTool
     {
         return [
             'game_id' => $schema->string()->format('uuid')->required(),
-            'source' => $schema->string()->enum(['jira', 'linear'])->required(),
+            'source' => $schema->string()->enum(PokerTrackerSources::Values)->required(),
             'iteration_id' => $schema->string()->max(100),
-            'container_id' => $schema->string()->max(100)->description('Accepted for Jira sprints; not needed.'),
+            'container_id' => $schema->string()->max(100)->description('The GitHub repository id for a query; accepted for Jira sprints, not needed.'),
             'query' => $schema->string()->min(1)->max(1000),
         ];
     }
@@ -59,9 +60,14 @@ class ImportTasks extends SkrumTool
     {
         $validated = $request->validate([
             'game_id' => ['required', 'uuid'],
-            'source' => ['required', 'string', Rule::in(['jira', 'linear'])],
+            'source' => ['required', 'string', Rule::in(PokerTrackerSources::Values)],
             'iteration_id' => ['nullable', 'string', 'max:100', 'required_without:query', 'prohibits:query'],
-            'container_id' => ['nullable', 'string', 'max:100'],
+            'container_id' => [
+                'nullable',
+                'string',
+                'max:100',
+                Rule::requiredIf(fn (): bool => $request->get('source') === 'github' && $request->get('iteration_id') === null),
+            ],
             'query' => ['nullable', 'string', 'max:1000', 'required_without:iteration_id'],
         ]);
 
@@ -83,6 +89,7 @@ class ImportTasks extends SkrumTool
             $iterationId === null ? PreviewPokerImport::ModeQuery : PreviewPokerImport::ModeIteration,
             $iterationId,
             $validated['query'] ?? null,
+            $validated['container_id'] ?? null,
         ));
     }
 }

@@ -1,9 +1,11 @@
 <?php
 
 use App\Enums\IntegrationAccess;
+use App\Enums\IntegrationInboundMode;
 use App\Enums\IntegrationProvider;
 use App\Enums\IntegrationStatus;
 use App\Enums\McpScope;
+use App\Enums\PokerDeck;
 use App\Jobs\SyncTaskEstimate;
 use App\Mcp\Tools\Poker\ImportTasks;
 use App\Mcp\Tools\Poker\ListIterations;
@@ -15,7 +17,9 @@ use App\Models\PokerTask;
 use App\Models\Team;
 use App\Models\TeamIntegration;
 use App\Models\User;
+use Database\Factories\TeamIntegrationFactory;
 use Illuminate\Http\Client\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 
@@ -68,8 +72,8 @@ it('lists the team trackers with their capabilities and nothing secret', functio
     $response = actingAsMcp($user)->tool(ListSources::class, ['team_id' => $team->id])->assertOk();
 
     expect(mcpStructured($response)['items'])->toBe([
-        ['source' => 'jira', 'siteName' => 'Acme', 'status' => 'active', 'access' => 'write', 'canImport' => true, 'canWriteBack' => true, 'writeBackUnavailableReason' => null],
-        ['source' => 'linear', 'siteName' => 'Acme', 'status' => 'active', 'access' => 'read', 'canImport' => true, 'canWriteBack' => false, 'writeBackUnavailableReason' => 'This Linear connection is read-only.'],
+        ['source' => 'jira', 'siteName' => 'Acme', 'status' => 'active', 'access' => 'write', 'canImport' => true, 'canWriteBack' => true, 'writeBackUnavailableReason' => null, 'canSyncStatus' => false, 'syncMode' => 'off'],
+        ['source' => 'linear', 'siteName' => 'Acme', 'status' => 'active', 'access' => 'read', 'canImport' => true, 'canWriteBack' => false, 'writeBackUnavailableReason' => 'This Linear connection is read-only.', 'canSyncStatus' => false, 'syncMode' => 'off'],
     ]);
     $response->assertDontSee(['jira-access', 'jira-refresh', 'linear-access', 'hooks.slack.com']);
 });
@@ -182,4 +186,78 @@ it('forces or retries a write-back for the facilitator only', function () {
     mcpWriter(User::factory()->create())->tool(SyncTask::class, ['task_id' => $synced->id])->assertHasErrors();
 
     Queue::assertPushed(SyncTaskEstimate::class, 2);
+});
+
+it('lists Jira Data Center and GitHub sources and never chat channels', function () {
+    enableIntegrations(IntegrationProvider::JiraDataCenter, IntegrationProvider::GitHub, IntegrationProvider::MicrosoftTeams);
+    $team = Team::factory()->create();
+    $user = teamMember($team);
+    TeamIntegration::factory()->jiraDataCenter(IntegrationAccess::Write, 'pat')->create(['team_id' => $team->id]);
+    TeamIntegration::factory()->gitHub(IntegrationAccess::Read)->create(['team_id' => $team->id]);
+    TeamIntegration::factory()->microsoftTeams()->create(['team_id' => $team->id]);
+
+    $response = actingAsMcp($user)->tool(ListSources::class, ['team_id' => $team->id])->assertOk();
+
+    expect(mcpStructured($response)['items'])->toBe([
+        ['source' => 'jira_dc', 'siteName' => 'Acme Jira', 'status' => 'active', 'access' => 'write', 'canImport' => true, 'canWriteBack' => true, 'writeBackUnavailableReason' => null, 'canSyncStatus' => false, 'syncMode' => 'off'],
+        ['source' => 'github', 'siteName' => 'acme', 'status' => 'active', 'access' => 'read', 'canImport' => true, 'canWriteBack' => false, 'writeBackUnavailableReason' => 'This GitHub connection is read-only.', 'canSyncStatus' => false, 'syncMode' => 'off'],
+    ]);
+    $response->assertDontSee([TeamIntegrationFactory::JiraDataCenterToken, 'logic.azure.com']);
+});
+
+it('reports status sync from the connection', function () {
+    enableIntegrations(IntegrationProvider::GitHub);
+    $team = Team::factory()->create();
+    $user = teamMember($team);
+    $integration = TeamIntegration::factory()->gitHub()->create(['team_id' => $team->id]);
+    $integration->forceFill(['settings' => [...$integration->settings, 'statusSync' => true], 'inbound_mode' => IntegrationInboundMode::Polling])->save();
+
+    expect(mcpStructured(actingAsMcp($user)->tool(ListSources::class, ['team_id' => $team->id])->assertOk())['items'][0])
+        ->toMatchArray(['canWriteBack' => true, 'canSyncStatus' => true, 'syncMode' => 'polling']);
+});
+
+it('lists GitHub repositories and milestones', function () {
+    $this->travelTo(Carbon::parse('2026-10-07 12:00:00'));
+    enableIntegrations(IntegrationProvider::GitHub);
+    $team = Team::factory()->create();
+    $user = teamMember($team);
+    TeamIntegration::factory()->gitHub()->create(['team_id' => $team->id]);
+    fakeGitHubTrackerApi();
+
+    expect(mcpStructured(actingAsMcp($user)->tool(ListIterations::class, ['team_id' => $team->id, 'source' => 'github'])->assertOk())['containers'])
+        ->toBe([['id' => '9001', 'name' => 'acme/api'], ['id' => '9002', 'name' => 'acme/web']]);
+
+    expect(mcpStructured(actingAsMcp($user)->tool(ListIterations::class, ['team_id' => $team->id, 'source' => 'github', 'container_id' => '9001'])->assertOk())['iterations'][1])
+        ->toBe(['id' => '9001/2', 'name' => 'Sprint 2', 'state' => 'active', 'startsOn' => null, 'endsOn' => '2026-10-10']);
+});
+
+it('requires a repository for GitHub queries', function () {
+    enableIntegrations(IntegrationProvider::GitHub);
+    $team = Team::factory()->create();
+    $user = teamMember($team);
+    TeamIntegration::factory()->gitHub()->create(['team_id' => $team->id]);
+    $game = PokerGame::factory()->create(['team_id' => $team->id]);
+    fakeGitHubTrackerApi();
+
+    mcpWriter($user)->tool(ImportTasks::class, ['game_id' => $game->id, 'source' => 'github', 'query' => 'login'])->assertHasErrors();
+
+    expect(mcpStructured(mcpWriter($user)->tool(ImportTasks::class, ['game_id' => $game->id, 'source' => 'github', 'query' => 'login', 'container_id' => '9001'])->assertOk()))
+        ->toBe(['imported' => 1, 'skipped' => 0, 'truncated' => false])
+        ->and($game->tasks()->where('external_key', 'acme/api#7')->exists())->toBeTrue();
+});
+
+it('queues the block write of a GitHub task for the facilitator', function () {
+    Queue::fake();
+    enableIntegrations(IntegrationProvider::GitHub);
+    $team = Team::factory()->create();
+    $user = teamMember($team);
+    TeamIntegration::factory()->gitHub()->create(['team_id' => $team->id]);
+    $game = PokerGame::factory()->deck(PokerDeck::Tshirt)->create(['team_id' => $team->id]);
+    $player = PokerPlayer::factory()->create(['poker_game_id' => $game->id, 'user_id' => $user->id]);
+    $game->forceFill(['facilitator_player_id' => $player->id])->save();
+    $task = importedPokerTask($game, ['estimate' => 'XL', 'synced_at' => now()], IntegrationProvider::GitHub);
+
+    expect(mcpStructured(mcpWriter($user)->tool(SyncTask::class, ['task_id' => $task->id])->assertOk()))->toBe(['syncState' => 'pending']);
+
+    Queue::assertPushed(SyncTaskEstimate::class, fn (SyncTaskEstimate $job) => $job->taskId === $task->id);
 });
