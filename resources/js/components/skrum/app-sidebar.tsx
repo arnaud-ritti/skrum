@@ -280,7 +280,7 @@ export function AppSidebar({
                                 />
                                 <SkrumLogo
                                     variant="wordmark"
-                                    className="h-5 w-auto group-data-[collapsible=icon]:hidden"
+                                    className="h-5! w-auto! group-data-[collapsible=icon]:hidden"
                                 />
                             </Link>
                         </SidebarMenuButton>
