@@ -1,0 +1,200 @@
+import { fireEvent, screen, within } from '@testing-library/react';
+import { Armchair, Keyboard, Spade } from 'lucide-react';
+import { useState } from 'react';
+import { describe, expect, it, vi } from 'vitest';
+import { KeyboardShortcuts } from '@/components/skrum/keyboard-shortcuts';
+import type {
+    KeyboardShortcutsProps,
+    ShortcutSection,
+} from '@/components/skrum/keyboard-shortcuts';
+import { renderWithProviders } from '@/test/render';
+
+const sections: ShortcutSection[] = [
+    {
+        id: 'poker',
+        title: 'Poker',
+        icon: Spade,
+        items: [
+            {
+                id: 'pick',
+                label: 'Pick a card',
+                keys: [],
+                range: ['0', '9'],
+                keywords: ['vote', 'estimate'],
+            },
+            {
+                id: 'reveal',
+                label: 'Reveal the cards',
+                keys: ['R'],
+                facilitatorOnly: true,
+            },
+            { id: 'revote', label: 'Vote again', keys: ['shift', 'R'] },
+        ],
+    },
+    {
+        id: 'retro',
+        title: 'Retro',
+        icon: Armchair,
+        items: [
+            { id: 'next', label: 'Next phase', keys: ['mod', 'ArrowRight'] },
+        ],
+    },
+    {
+        id: 'general',
+        title: 'General',
+        icon: Keyboard,
+        items: [
+            { id: 'palette', label: 'Command palette', keys: ['mod', 'K'] },
+        ],
+    },
+];
+
+function Harness(props: Partial<KeyboardShortcutsProps>) {
+    const [query, setQuery] = useState('');
+
+    return (
+        <KeyboardShortcuts
+            open
+            onOpenChange={() => {}}
+            sections={sections}
+            platform="mac"
+            query={query}
+            onQueryChange={setQuery}
+            {...props}
+        />
+    );
+}
+
+function sectionTitles(): string[] {
+    return screen
+        .getAllByRole('region')
+        .map((region) => region.getAttribute('aria-label') ?? '')
+        .filter((label) => ['General', 'Retro', 'Poker'].includes(label));
+}
+
+describe('KeyboardShortcuts', () => {
+    it('puts General first then the current context', () => {
+        renderWithProviders(<Harness context="retro" />);
+
+        expect(sectionTitles()).toEqual(['General', 'Retro', 'Poker']);
+    });
+
+    it('renders mod as the command key on mac and Ctrl elsewhere', () => {
+        const { rerender } = renderWithProviders(<Harness platform="mac" />);
+
+        expect(screen.getByRole('group', { name: 'Meta K' })).toBeTruthy();
+
+        rerender(<Harness platform="other" />);
+
+        expect(
+            screen.getByRole('group', { name: 'Control K' }).textContent,
+        ).toBe('CtrlK');
+    });
+
+    it('announces shift combos readably', () => {
+        renderWithProviders(<Harness />);
+
+        expect(screen.getByRole('group', { name: 'Shift R' })).toBeTruthy();
+    });
+
+    it('marks facilitator shortcuts instead of hiding them', () => {
+        renderWithProviders(<Harness />);
+
+        expect(
+            screen.getAllByRole('img', { name: 'Facilitator only' }),
+        ).toHaveLength(1);
+    });
+
+    it('filters by keyword, highlights the match and announces the count', () => {
+        renderWithProviders(<Harness query="vote" />);
+
+        expect(screen.getByText('Pick a card')).toBeTruthy();
+        expect(screen.queryByText('Reveal the cards')).toBeNull();
+        expect(screen.queryByText('Command palette')).toBeNull();
+        expect(screen.getByRole('status').textContent).toBe('2 results');
+        expect(document.querySelector('mark')?.textContent?.toLowerCase()).toBe(
+            'vote',
+        );
+    });
+
+    it('matches without regard to case', () => {
+        renderWithProviders(<Harness query="COMMAND" />);
+
+        expect(screen.getByText('Command')).toBeTruthy();
+        expect(screen.getByRole('status').textContent).toBe('1 result');
+    });
+
+    it('shows the empty state and opens the palette from it', () => {
+        const onOpenCommandPalette = vi.fn();
+        renderWithProviders(
+            <Harness
+                query="export"
+                onOpenCommandPalette={onOpenCommandPalette}
+            />,
+        );
+
+        expect(screen.getByText('No shortcut for “export”')).toBeTruthy();
+
+        fireEvent.click(
+            screen.getByRole('button', { name: /Open the command palette/ }),
+        );
+
+        expect(onOpenCommandPalette).toHaveBeenCalledTimes(1);
+    });
+
+    it('hides the palette button of the empty state without a callback', () => {
+        renderWithProviders(<Harness query="export" />);
+
+        expect(
+            screen.queryByRole('button', { name: /Open the command palette/ }),
+        ).toBeNull();
+    });
+
+    it('switches platform through the tabs and reports it', () => {
+        const onPlatformChange = vi.fn();
+        renderWithProviders(<Harness onPlatformChange={onPlatformChange} />);
+
+        const tab = screen.getByRole('tab', { name: 'Windows · Linux' });
+        fireEvent.mouseDown(tab);
+        fireEvent.click(tab);
+
+        expect(onPlatformChange).toHaveBeenCalledWith('other');
+    });
+
+    it('focuses the search field on open and with the slash key', () => {
+        renderWithProviders(<Harness />);
+
+        const search = screen.getByRole('searchbox');
+        expect(document.activeElement).toBe(search);
+
+        (document.activeElement as HTMLElement).blur();
+        fireEvent.keyDown(document.body, { key: '/' });
+
+        expect(document.activeElement).toBe(search);
+    });
+
+    it('closes with Escape', () => {
+        const onOpenChange = vi.fn();
+        renderWithProviders(<Harness onOpenChange={onOpenChange} />);
+
+        fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
+
+        expect(onOpenChange).toHaveBeenCalledWith(false);
+    });
+
+    it('labels the dialog with its title', () => {
+        renderWithProviders(<Harness />);
+
+        const dialog = screen.getByRole('dialog', {
+            name: 'Keyboard shortcuts',
+        });
+
+        expect(within(dialog).getByRole('searchbox')).toBeTruthy();
+    });
+
+    it('renders nothing when closed', () => {
+        renderWithProviders(<Harness open={false} />);
+
+        expect(screen.queryByRole('dialog')).toBeNull();
+    });
+});
