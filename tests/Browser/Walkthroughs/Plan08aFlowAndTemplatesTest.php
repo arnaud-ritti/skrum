@@ -68,6 +68,26 @@ function p08aPhaseOrder(): string
     return "[...document.querySelectorAll('header ol[aria-label=\"Phases\"] li')].map((step) => step.textContent).join(' > ')";
 }
 
+/**
+ * @param  array<string, mixed>  $snapshot
+ * @return array<string, array{
+ *     hidden: bool,
+ *     content: ?string,
+ *     author: ?string
+ * }>
+ */
+function p08aCardsSent(array $snapshot): array
+{
+    return collect($snapshot['cards'])
+        ->sortByDesc('isMine')
+        ->mapWithKeys(fn (array $card): array => [$card['isMine'] ? 'mine' : 'other' => [
+            'hidden' => $card['hidden'],
+            'content' => $card['content'],
+            'author' => $card['author']['name'] ?? null,
+        ]])
+        ->all();
+}
+
 function p08aColumnTitles(): string
 {
     return "[...document.querySelectorAll('[data-test^=\"retro-column-\"] h2')].map((title) => title.textContent).join(' | ')";
@@ -540,12 +560,27 @@ it('[P08a-03] hides the cards of others again each time the retro moves back to 
     $alicePage->click($previous)
         ->assertSeeIn($current, 'Icebreaker')
         ->assertPresent($stage)
-        ->assertNotPresent('[data-test^="retro-column-"]')
-        ->assertScript($inDocument($carolCard), false);
+        ->assertNotPresent('[data-test^="retro-column-"]');
     $carolPage->assertSeeIn($current, 'Icebreaker')
         ->assertPresent($stage)
-        ->assertNotPresent('[data-test^="retro-column-"]')
-        ->assertScript($inDocument($aliceCard), false);
+        ->assertNotPresent('[data-test^="retro-column-"]');
+
+    $aliceSnapshot = $this->snapshotOf($alicePage, "/retros/{$retro->id}/snapshot");
+    $carolSnapshot = $this->snapshotOf($carolPage, "/retros/{$retro->id}/snapshot");
+    $hiddenCard = ['hidden' => true, 'content' => null, 'author' => null];
+
+    expect($aliceSnapshot['retro']['phase'])->toBe('icebreaker')
+        ->and(p08aCardsSent($aliceSnapshot))->toBe([
+            'mine' => ['hidden' => false, 'content' => $aliceCard, 'author' => 'Alice Martin'],
+            'other' => $hiddenCard,
+        ])
+        ->and(json_encode($aliceSnapshot, JSON_THROW_ON_ERROR))->not->toContain($carolCard)
+        ->and($carolSnapshot['retro']['phase'])->toBe('icebreaker')
+        ->and(p08aCardsSent($carolSnapshot))->toBe([
+            'mine' => ['hidden' => false, 'content' => $carolCard, 'author' => 'Carol Guest'],
+            'other' => $hiddenCard,
+        ])
+        ->and(json_encode($carolSnapshot, JSON_THROW_ON_ERROR))->not->toContain($aliceCard);
 
     $alicePage->click($next)
         ->assertSeeIn($current, 'Writing')
