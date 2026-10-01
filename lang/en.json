@@ -1546,5 +1546,9 @@
     "Join a whiteboard": "Join a whiteboard",
     "This board changed too much. Reloading it.": "This board changed too much. Reloading it.",
     "Only PNG, JPEG, WebP and GIF images can be added.": "Only PNG, JPEG, WebP and GIF images can be added.",
-    "This board has reached its image storage limit.": "This board has reached its image storage limit."
+    "This board has reached its image storage limit.": "This board has reached its image storage limit.",
+    "Whiteboards": "Whiteboards",
+    "New whiteboard": "New whiteboard",
+    "No whiteboards yet.": "No whiteboards yet.",
+    "Facilitated by :name": "Facilitated by :name"
 }

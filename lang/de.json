@@ -1790,5 +1790,9 @@
     "Join a whiteboard": "Einem Whiteboard beitreten",
     "This board changed too much. Reloading it.": "Dieses Board hat sich zu stark geändert. Es wird neu geladen.",
     "Only PNG, JPEG, WebP and GIF images can be added.": "Nur PNG-, JPEG-, WebP- und GIF-Bilder können hinzugefügt werden.",
-    "This board has reached its image storage limit.": "Dieses Board hat sein Speicherlimit für Bilder erreicht."
+    "This board has reached its image storage limit.": "Dieses Board hat sein Speicherlimit für Bilder erreicht.",
+    "Whiteboards": "Whiteboards",
+    "New whiteboard": "Neues Whiteboard",
+    "No whiteboards yet.": "Noch keine Whiteboards.",
+    "Facilitated by :name": "Moderiert von :name"
 }

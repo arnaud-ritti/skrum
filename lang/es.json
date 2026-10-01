@@ -1790,5 +1790,9 @@
     "Join a whiteboard": "Unirse a una pizarra",
     "This board changed too much. Reloading it.": "Esta pizarra ha cambiado demasiado. Se está recargando.",
     "Only PNG, JPEG, WebP and GIF images can be added.": "Solo se pueden añadir imágenes PNG, JPEG, WebP y GIF.",
-    "This board has reached its image storage limit.": "Esta pizarra ha alcanzado su límite de almacenamiento de imágenes."
+    "This board has reached its image storage limit.": "Esta pizarra ha alcanzado su límite de almacenamiento de imágenes.",
+    "Whiteboards": "Pizarras",
+    "New whiteboard": "Nueva pizarra",
+    "No whiteboards yet.": "Aún no hay pizarras.",
+    "Facilitated by :name": "Facilitado por :name"
 }

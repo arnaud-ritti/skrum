@@ -11,6 +11,7 @@ import InputError from '@/components/input-error';
 import { HealthStatementsSection } from '@/components/teams/health-statements-section';
 import { NewRetroDialog } from '@/components/teams/new-retro-dialog';
 import { PokerGamesSection } from '@/components/teams/poker-games-section';
+import { WhiteboardsSection } from '@/components/teams/whiteboards-section';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -33,6 +34,7 @@ import type {
     RetroSummary,
     TeamHealthStatement,
     TeamSummary,
+    WhiteboardSummary,
     WorkspaceSummary,
     SavedPokerDeck,
 } from '@/types';
@@ -57,6 +59,8 @@ type Props = {
     canCreatePokerGame: boolean;
     canManageIntegrations: boolean;
     pokerDecks: SavedPokerDeck[];
+    whiteboards: WhiteboardSummary[];
+    canCreateWhiteboard: boolean;
 };
 
 export default function ShowTeam({
@@ -79,6 +83,8 @@ export default function ShowTeam({
     canCreatePokerGame,
     canManageIntegrations,
     pokerDecks,
+    whiteboards,
+    canCreateWhiteboard,
 }: Props) {
     const { t } = useTrans();
     const params = { workspace: workspace.slug, team: team.id };
@@ -192,6 +198,12 @@ export default function ShowTeam({
                     deckOptions={pokerDeckOptions}
                     savedDecks={pokerDecks}
                     canCreate={canCreatePokerGame}
+                />
+                <WhiteboardsSection
+                    workspaceSlug={workspace.slug}
+                    teamId={team.id}
+                    boards={whiteboards}
+                    canCreate={canCreateWhiteboard}
                 />
                 <HealthStatementsSection
                     statements={healthStatements}
