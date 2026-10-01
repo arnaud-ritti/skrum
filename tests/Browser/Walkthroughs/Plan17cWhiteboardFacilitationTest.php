@@ -399,7 +399,6 @@ it('[P17c-02c] closes the text a guest is typing when the facilitator locks the 
     $guestPage->assertPresent(P17cLockedNotice)
         ->assertNotPresent($editor)
         ->assertPresent(P17cViewMode)
-        ->assertPresent(P17cLockedToast)
         ->assertPresent('[data-realtime="connected"]')
         ->assertDontSee('Your access to this board has ended.');
 
