@@ -1,0 +1,686 @@
+import * as Switch from '@radix-ui/react-switch';
+import { CircleAlert, GripVertical, X } from 'lucide-react';
+import { useId, useRef, useState } from 'react';
+import type { KeyboardEvent } from 'react';
+import {
+    BreakCard,
+    DeckMaxValueLength,
+    DeckMaxValues,
+    DeckMinValues,
+    DeckPreviewCard,
+    DeckPreviewStrip,
+    UnknownCard,
+    deckCards,
+    isSpecialCard,
+} from '@/components/skrum/deck-picker';
+import type { Deck } from '@/components/skrum/deck-picker';
+import { LoadingButton } from '@/components/skrum/loading-button';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { useTrans } from '@/hooks/use-trans';
+import { cn } from '@/lib/utils';
+
+export type DeckDraft = Omit<Deck, 'id' | 'source'>;
+
+export interface DeckEditorProps {
+    value: DeckDraft;
+    onChange: (deck: DeckDraft) => void;
+    errors?: { name?: string; values?: string };
+    saving?: boolean;
+    onSave: () => void;
+    onCancel: () => void;
+    className?: string;
+}
+
+export function normalizeDeckValue(raw: string): string {
+    const trimmed = raw.trim();
+
+    return trimmed === '0.5' || trimmed === '0,5' ? '½' : trimmed;
+}
+
+type ValueProblem =
+    | { kind: 'empty' }
+    | { kind: 'tooLong' }
+    | { kind: 'special' }
+    | { kind: 'duplicate'; value: string }
+    | { kind: 'full' };
+
+export function checkDeckValue(
+    candidate: string,
+    existing: string[],
+): ValueProblem | null {
+    if (candidate === '') {
+        return { kind: 'empty' };
+    }
+
+    if (Array.from(candidate).length > DeckMaxValueLength) {
+        return { kind: 'tooLong' };
+    }
+
+    if (isSpecialCard(candidate)) {
+        return { kind: 'special' };
+    }
+
+    if (existing.includes(candidate)) {
+        return { kind: 'duplicate', value: candidate };
+    }
+
+    if (existing.length >= DeckMaxValues) {
+        return { kind: 'full' };
+    }
+
+    return null;
+}
+
+function SpecialCardRow({
+    card,
+    title,
+    description,
+    checked,
+    onCheckedChange,
+}: {
+    card: string;
+    title: string;
+    description: string;
+    checked: boolean;
+    onCheckedChange: (checked: boolean) => void;
+}) {
+    const labelId = useId();
+
+    return (
+        <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 border-b py-2">
+            <span
+                aria-hidden="true"
+                className="grid size-8 place-items-center rounded-sm bg-muted font-display text-sm font-bold text-muted-foreground"
+            >
+                {card}
+            </span>
+            <span className="min-w-0">
+                <span
+                    id={labelId}
+                    className="block truncate text-sm font-semibold"
+                >
+                    {title}
+                </span>
+                <span className="block text-xs text-muted-foreground">
+                    {description}
+                </span>
+            </span>
+            <Switch.Root
+                checked={checked}
+                onCheckedChange={onCheckedChange}
+                aria-labelledby={labelId}
+                className="peer inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border border-transparent bg-input transition-colors duration-140 ease-standard outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background data-[state=checked]:bg-primary motion-reduce:transition-none"
+            >
+                <Switch.Thumb className="pointer-events-none block size-4 rounded-full bg-card shadow-card transition-transform duration-140 ease-spring data-[state=checked]:translate-x-4 data-[state=unchecked]:translate-x-0.5 motion-reduce:transition-none" />
+            </Switch.Root>
+        </div>
+    );
+}
+
+export function DeckEditor({
+    value,
+    onChange,
+    errors,
+    saving = false,
+    onSave,
+    onCancel,
+    className,
+}: DeckEditorProps) {
+    const { t } = useTrans();
+    const nameId = useId();
+    const nameErrorId = useId();
+    const valuesLabelId = useId();
+    const valuesMessageId = useId();
+    const valuesHelpId = useId();
+    const addInputRef = useRef<HTMLInputElement>(null);
+    const chipRefs = useRef<Map<number, HTMLButtonElement>>(new Map());
+    const [draft, setDraft] = useState('');
+    const [problem, setProblem] = useState<ValueProblem | null>(null);
+    const [editingIndex, setEditingIndex] = useState<number | null>(null);
+    const [editingText, setEditingText] = useState('');
+    const [armedLast, setArmedLast] = useState(false);
+    const [touched, setTouched] = useState(false);
+    const [announcement, setAnnouncement] = useState('');
+
+    const values = value.values;
+    const tooFew = values.length < DeckMinValues;
+
+    function problemMessage(found: ValueProblem): string {
+        switch (found.kind) {
+            case 'tooLong':
+                return t('Values are :count characters at most.', {
+                    count: DeckMaxValueLength,
+                });
+            case 'special':
+                return t('Use the switches below for ? and ☕.');
+            case 'duplicate':
+                return t('Duplicate value: :value', { value: found.value });
+            case 'full':
+                return t('A deck has :count values at most.', {
+                    count: DeckMaxValues,
+                });
+            case 'empty':
+                return '';
+        }
+    }
+
+    const valuesMessage =
+        errors?.values ??
+        (problem && problem.kind !== 'empty'
+            ? problemMessage(problem)
+            : undefined) ??
+        (touched && tooFew
+            ? t('Add at least :count values.', { count: DeckMinValues })
+            : undefined);
+
+    const saveDisabled =
+        saving || tooFew || value.name.trim() === '' || editingIndex !== null;
+
+    function setValues(next: string[], message: string) {
+        onChange({ ...value, values: next });
+        setAnnouncement(message);
+        setTouched(true);
+    }
+
+    function focusChip(index: number) {
+        requestAnimationFrame(() => chipRefs.current.get(index)?.focus());
+    }
+
+    function addDraft() {
+        const candidate = normalizeDeckValue(draft);
+        const found = checkDeckValue(candidate, values);
+
+        if (found?.kind === 'empty') {
+            return;
+        }
+
+        if (found) {
+            setProblem(found);
+
+            return;
+        }
+
+        setProblem(null);
+        setDraft('');
+        setValues(
+            [...values, candidate],
+            t('Added :value', { value: candidate }),
+        );
+    }
+
+    function removeAt(index: number) {
+        const removed = values[index];
+
+        setValues(
+            values.filter((_, position) => position !== index),
+            t('Removed :value', { value: removed }),
+        );
+        setArmedLast(false);
+
+        if (index > 0) {
+            focusChip(index - 1);
+
+            return;
+        }
+
+        requestAnimationFrame(() => addInputRef.current?.focus());
+    }
+
+    function moveChip(index: number, direction: -1 | 1) {
+        const target = index + direction;
+
+        if (target < 0 || target >= values.length) {
+            return;
+        }
+
+        const next = [...values];
+        [next[index], next[target]] = [next[target], next[index]];
+        setValues(
+            next,
+            t('Moved :value to position :position', {
+                value: values[index],
+                position: target + 1,
+            }),
+        );
+        focusChip(target);
+    }
+
+    function startEditing(index: number) {
+        setEditingIndex(index);
+        setEditingText(values[index]);
+        setProblem(null);
+    }
+
+    function commitEditing() {
+        if (editingIndex === null) {
+            return;
+        }
+
+        const index = editingIndex;
+        const candidate = normalizeDeckValue(editingText);
+
+        if (candidate === values[index]) {
+            setEditingIndex(null);
+            focusChip(index);
+
+            return;
+        }
+
+        const found = checkDeckValue(
+            candidate,
+            values.filter((_, position) => position !== index),
+        );
+
+        if (found) {
+            setProblem(found);
+
+            return;
+        }
+
+        setProblem(null);
+        setEditingIndex(null);
+        setValues(
+            values.map((existing, position) =>
+                position === index ? candidate : existing,
+            ),
+            t('Changed :from to :to', { from: values[index], to: candidate }),
+        );
+        focusChip(index);
+    }
+
+    function cancelEditing() {
+        const index = editingIndex;
+
+        setEditingIndex(null);
+        setProblem(null);
+
+        if (index !== null) {
+            focusChip(index);
+        }
+    }
+
+    function onChipKeyDown(
+        event: KeyboardEvent<HTMLButtonElement>,
+        index: number,
+    ) {
+        if (event.key === 'Enter' || event.key === 'F2') {
+            event.preventDefault();
+            startEditing(index);
+
+            return;
+        }
+
+        if (event.key === 'Delete' || event.key === 'Backspace') {
+            event.preventDefault();
+            removeAt(index);
+
+            return;
+        }
+
+        if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') {
+            return;
+        }
+
+        event.preventDefault();
+        const direction = event.key === 'ArrowLeft' ? -1 : 1;
+
+        if (event.altKey) {
+            moveChip(index, direction);
+
+            return;
+        }
+
+        const target = index + direction;
+
+        if (target >= values.length) {
+            addInputRef.current?.focus();
+
+            return;
+        }
+
+        if (target >= 0) {
+            chipRefs.current.get(target)?.focus();
+        }
+    }
+
+    function onAddKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+        if (event.key === 'Enter' || event.key === ',') {
+            event.preventDefault();
+            addDraft();
+
+            return;
+        }
+
+        if (event.key === 'Backspace' && draft === '' && values.length > 0) {
+            event.preventDefault();
+
+            if (armedLast) {
+                removeAt(values.length - 1);
+
+                return;
+            }
+
+            setArmedLast(true);
+            setAnnouncement(
+                t('Press Backspace again to remove :value', {
+                    value: values[values.length - 1],
+                }),
+            );
+
+            return;
+        }
+
+        if (event.key === 'ArrowLeft' && draft === '' && values.length > 0) {
+            event.preventDefault();
+            chipRefs.current.get(values.length - 1)?.focus();
+        }
+    }
+
+    const preview: DeckDraft = value;
+    const cardCount = deckCards(preview).length;
+
+    return (
+        <div
+            data-slot="deck-editor"
+            className={cn('@container/deck min-w-0', className)}
+        >
+            <div className="grid gap-5 p-5 @3xl/deck:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
+                <div className="flex min-w-0 flex-col gap-5">
+                    <div className="flex flex-col gap-1.5">
+                        <label
+                            htmlFor={nameId}
+                            className="text-sm font-semibold"
+                        >
+                            {t('Name')}
+                        </label>
+                        <Input
+                            id={nameId}
+                            value={value.name}
+                            onChange={(event) =>
+                                onChange({ ...value, name: event.target.value })
+                            }
+                            aria-invalid={errors?.name ? true : undefined}
+                            aria-describedby={
+                                errors?.name ? nameErrorId : undefined
+                            }
+                        />
+                        {errors?.name ? (
+                            <p
+                                id={nameErrorId}
+                                className="flex items-center gap-1.5 text-xs text-skrum-destructive-text"
+                            >
+                                <CircleAlert
+                                    aria-hidden="true"
+                                    className="size-3.5 shrink-0"
+                                />
+                                {errors.name}
+                            </p>
+                        ) : null}
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                        <span
+                            id={valuesLabelId}
+                            className="text-sm font-semibold"
+                        >
+                            {t('Values')}
+                        </span>
+                        <ul
+                            role="list"
+                            aria-labelledby={valuesLabelId}
+                            aria-invalid={valuesMessage ? true : undefined}
+                            aria-describedby={
+                                valuesMessage ? valuesMessageId : valuesHelpId
+                            }
+                            data-slot="deck-values-input"
+                            onClick={(event) => {
+                                if (event.target === event.currentTarget) {
+                                    addInputRef.current?.focus();
+                                }
+                            }}
+                            className="flex min-h-11 flex-wrap items-center gap-1.5 rounded-md border border-input bg-card p-1.5 aria-invalid:border-destructive"
+                        >
+                            {values.map((chip, index) => (
+                                <li
+                                    key={chip}
+                                    data-slot="deck-chip"
+                                    data-editing={
+                                        editingIndex === index || undefined
+                                    }
+                                    className={cn(
+                                        'inline-flex h-7.5 items-center gap-0.5 rounded-sm border bg-muted pr-0.5 pl-1.5 font-display text-sm font-bold',
+                                        editingIndex === index &&
+                                            'bg-card ring-2 ring-ring ring-offset-1 ring-offset-background',
+                                    )}
+                                >
+                                    <GripVertical
+                                        aria-hidden="true"
+                                        className="size-3.5 shrink-0 text-muted-foreground"
+                                    />
+                                    {editingIndex === index ? (
+                                        <input
+                                            autoFocus
+                                            value={editingText}
+                                            aria-label={t('Edit value :value', {
+                                                value: chip,
+                                            })}
+                                            onChange={(event) => {
+                                                setEditingText(
+                                                    event.target.value,
+                                                );
+                                                setProblem(null);
+                                            }}
+                                            onBlur={cancelEditing}
+                                            onKeyDown={(event) => {
+                                                if (event.key === 'Enter') {
+                                                    event.preventDefault();
+                                                    commitEditing();
+                                                }
+
+                                                if (event.key === 'Escape') {
+                                                    event.preventDefault();
+                                                    cancelEditing();
+                                                }
+                                            }}
+                                            className="h-6 w-14 min-w-0 bg-transparent px-1 text-sm font-bold outline-none"
+                                        />
+                                    ) : (
+                                        <button
+                                            type="button"
+                                            ref={(node) => {
+                                                if (node) {
+                                                    chipRefs.current.set(
+                                                        index,
+                                                        node,
+                                                    );
+
+                                                    return;
+                                                }
+
+                                                chipRefs.current.delete(index);
+                                            }}
+                                            onDoubleClick={() =>
+                                                startEditing(index)
+                                            }
+                                            onKeyDown={(event) =>
+                                                onChipKeyDown(event, index)
+                                            }
+                                            aria-label={t('Value :value', {
+                                                value: chip,
+                                            })}
+                                            aria-keyshortcuts="Enter Alt+ArrowLeft Alt+ArrowRight Delete"
+                                            className={cn(
+                                                'h-6 rounded-xs px-1 outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                                                armedLast &&
+                                                    index ===
+                                                        values.length - 1 &&
+                                                    'bg-accent',
+                                            )}
+                                        >
+                                            {chip}
+                                        </button>
+                                    )}
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <button
+                                                type="button"
+                                                tabIndex={-1}
+                                                aria-label={t('Remove :value', {
+                                                    value: chip,
+                                                })}
+                                                onClick={() => removeAt(index)}
+                                                className="grid size-5.5 place-items-center rounded-xs text-muted-foreground outline-none hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                                            >
+                                                <X
+                                                    aria-hidden="true"
+                                                    className="size-3.5"
+                                                />
+                                            </button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            {t('Remove :value', {
+                                                value: chip,
+                                            })}
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </li>
+                            ))}
+                            <li className="flex min-w-24 flex-1 items-center gap-1.5">
+                                <input
+                                    ref={addInputRef}
+                                    value={draft}
+                                    onChange={(event) => {
+                                        setDraft(event.target.value);
+                                        setProblem(null);
+                                        setArmedLast(false);
+                                    }}
+                                    onKeyDown={onAddKeyDown}
+                                    onBlur={() => setArmedLast(false)}
+                                    aria-label={t('Add a value')}
+                                    placeholder={t('Add a value')}
+                                    className="h-7 min-w-0 flex-1 bg-transparent px-1 text-sm outline-none placeholder:text-muted-foreground"
+                                />
+                                <kbd
+                                    aria-hidden="true"
+                                    className="hidden rounded-xs border bg-muted px-1 font-sans text-xs text-muted-foreground @sm/deck:inline"
+                                >
+                                    ↵
+                                </kbd>
+                            </li>
+                        </ul>
+                        {valuesMessage ? (
+                            <p
+                                id={valuesMessageId}
+                                className="flex items-center gap-1.5 text-xs text-skrum-destructive-text"
+                            >
+                                <CircleAlert
+                                    aria-hidden="true"
+                                    className="size-3.5 shrink-0"
+                                />
+                                {valuesMessage}
+                            </p>
+                        ) : (
+                            <p
+                                id={valuesHelpId}
+                                className="text-xs text-muted-foreground"
+                            >
+                                {t(
+                                    ':min to :max values, :length characters each. Order is the order of the deck.',
+                                    {
+                                        min: DeckMinValues,
+                                        max: DeckMaxValues,
+                                        length: DeckMaxValueLength,
+                                    },
+                                )}
+                            </p>
+                        )}
+                        <div
+                            aria-live="polite"
+                            role="status"
+                            className="sr-only"
+                        >
+                            {announcement}
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col">
+                        <span className="text-sm font-semibold">
+                            {t('Special cards')}
+                        </span>
+                        <SpecialCardRow
+                            card={UnknownCard}
+                            title={t("I don't know")}
+                            description={t(
+                                'Abstain without skewing the result.',
+                            )}
+                            checked={value.unknownCard}
+                            onCheckedChange={(unknownCard) =>
+                                onChange({ ...value, unknownCard })
+                            }
+                        />
+                        <SpecialCardRow
+                            card={BreakCard}
+                            title={t('I need a break')}
+                            description={t('Ask the team for a pause.')}
+                            checked={value.breakCard}
+                            onCheckedChange={(breakCard) =>
+                                onChange({ ...value, breakCard })
+                            }
+                        />
+                    </div>
+                </div>
+
+                <div
+                    data-slot="deck-preview"
+                    className="flex min-w-0 flex-col gap-3 self-start rounded-lg border bg-skrum-canvas p-4"
+                >
+                    <div className="flex flex-col">
+                        <span className="text-sm font-semibold">
+                            {t('Preview · :count cards', { count: cardCount })}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                            {t('Order and look of the deck seen by voters.')}
+                        </span>
+                    </div>
+                    {cardCount === 0 ? (
+                        <DeckPreviewCard value="…" />
+                    ) : (
+                        <DeckPreviewStrip
+                            deck={preview}
+                            label={t('Preview · :count cards', {
+                                count: cardCount,
+                            })}
+                        />
+                    )}
+                </div>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-end gap-3 border-t px-5 py-3">
+                {saveDisabled && !saving && tooFew ? (
+                    <span className="mr-auto text-xs text-muted-foreground">
+                        {t('Add at least :count values.', {
+                            count: DeckMinValues,
+                        })}
+                    </span>
+                ) : null}
+                <Button type="button" variant="outline" onClick={onCancel}>
+                    {t('Cancel')}
+                </Button>
+                <LoadingButton
+                    type="button"
+                    loading={saving}
+                    disabled={saveDisabled}
+                    onClick={onSave}
+                >
+                    {t('Save deck')}
+                </LoadingButton>
+            </div>
+        </div>
+    );
+}
