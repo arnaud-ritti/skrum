@@ -10,14 +10,13 @@ import { integrationErrorMessage } from '@/lib/integrations';
 import { retroRequest } from '@/lib/retro/api';
 import type {
     IntegrationAccess,
-    IntegrationProviderKey,
     IntegrationScope,
     TeamIntegration,
 } from '@/types';
 
 type ConnectLinkProps = {
     scope: IntegrationScope;
-    provider: Exclude<IntegrationProviderKey, 'telegram'>;
+    provider: 'slack' | 'jira' | 'linear';
     label: string;
     access?: IntegrationAccess;
     variant?: 'default' | 'outline';

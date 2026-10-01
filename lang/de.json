@@ -1566,5 +1566,16 @@
     "Use the workflow URL from Microsoft Teams.": "Verwende die Workflow-URL aus Microsoft Teams.",
     "Use an incoming webhook of :url.": "Verwende einen eingehenden Webhook von :url.",
     "The Teams workflow URL no longer works. Paste a new one.": "Die Teams-Workflow-URL funktioniert nicht mehr. Füge eine neue ein.",
-    "The Mattermost webhook no longer works. Paste a new one.": "Der Mattermost-Webhook funktioniert nicht mehr. Füge einen neuen ein."
+    "The Mattermost webhook no longer works. Paste a new one.": "Der Mattermost-Webhook funktioniert nicht mehr. Füge einen neuen ein.",
+    "Post board links, game invites and results to a Microsoft Teams channel through a Workflows webhook.": "Teile Board-Links, Spieleinladungen und Ergebnisse über einen Workflows-Webhook in einem Microsoft-Teams-Kanal.",
+    "Post board links, game invites and results to a Mattermost channel through an incoming webhook of :url.": "Teile Board-Links, Spieleinladungen und Ergebnisse über einen eingehenden Webhook von :url in einem Mattermost-Kanal.",
+    "In Teams, add the workflow \"Post to a channel when a webhook request is received\" to the channel and paste its URL.": "Füge in Teams dem Kanal den Workflow „In einem Kanal posten, wenn eine Webhook-Anforderung empfangen wird“ hinzu und füge seine URL ein.",
+    "In Mattermost, create an incoming webhook for the channel and paste its URL.": "Erstelle in Mattermost einen eingehenden Webhook für den Kanal und füge seine URL ein.",
+    "Connect :provider": ":provider verbinden",
+    "Replace URL": "URL ersetzen",
+    "Replace the URL": "URL ersetzen",
+    "Webhook URL": "Webhook-URL",
+    "Channel label (optional)": "Kanalbezeichnung (optional)",
+    "Shown on this page only, to remember where messages go.": "Wird nur auf dieser Seite angezeigt, damit du weißt, wohin Nachrichten gehen.",
+    "Nothing is posted to :channel anymore. Delete the webhook in :provider if you no longer need it.": "In :channel wird nichts mehr gepostet. Lösche den Webhook in :provider, wenn du ihn nicht mehr brauchst."
 }

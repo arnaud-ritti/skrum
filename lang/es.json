@@ -1566,5 +1566,16 @@
     "Use the workflow URL from Microsoft Teams.": "Usa la URL del flujo de trabajo de Microsoft Teams.",
     "Use an incoming webhook of :url.": "Usa un webhook entrante de :url.",
     "The Teams workflow URL no longer works. Paste a new one.": "La URL del flujo de trabajo de Teams ya no funciona. Pega una nueva.",
-    "The Mattermost webhook no longer works. Paste a new one.": "El webhook de Mattermost ya no funciona. Pega uno nuevo."
+    "The Mattermost webhook no longer works. Paste a new one.": "El webhook de Mattermost ya no funciona. Pega uno nuevo.",
+    "Post board links, game invites and results to a Microsoft Teams channel through a Workflows webhook.": "Publica enlaces de tableros, invitaciones a juegos y resultados en un canal de Microsoft Teams mediante un webhook de Workflows.",
+    "Post board links, game invites and results to a Mattermost channel through an incoming webhook of :url.": "Publica enlaces de tableros, invitaciones a juegos y resultados en un canal de Mattermost mediante un webhook entrante de :url.",
+    "In Teams, add the workflow \"Post to a channel when a webhook request is received\" to the channel and paste its URL.": "En Teams, añade al canal el flujo de trabajo «Publicar en un canal cuando se reciba una solicitud de webhook» y pega su URL.",
+    "In Mattermost, create an incoming webhook for the channel and paste its URL.": "En Mattermost, crea un webhook entrante para el canal y pega su URL.",
+    "Connect :provider": "Conectar :provider",
+    "Replace URL": "Reemplazar URL",
+    "Replace the URL": "Reemplazar la URL",
+    "Webhook URL": "URL del webhook",
+    "Channel label (optional)": "Nombre del canal (opcional)",
+    "Shown on this page only, to remember where messages go.": "Solo se muestra en esta página, para recordar adónde van los mensajes.",
+    "Nothing is posted to :channel anymore. Delete the webhook in :provider if you no longer need it.": "Ya no se publicará nada en :channel. Elimina el webhook en :provider si ya no lo necesitas."
 }

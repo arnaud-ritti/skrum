@@ -1,4 +1,13 @@
-export type IntegrationProviderKey = 'slack' | 'telegram' | 'jira' | 'linear';
+export type IntegrationProviderKey =
+    | 'slack'
+    | 'telegram'
+    | 'jira'
+    | 'linear'
+    | 'jira_dc'
+    | 'github'
+    | 'msteams'
+    | 'mattermost'
+    | 'webhook';
 
 export type IntegrationStatus =
     | 'active'
@@ -27,6 +36,8 @@ export type IntegrationSettings = {
     organizationName?: string;
     urlKey?: string;
     priorityMap?: IntegrationPriorityMap;
+    host?: string;
+    channelLabel?: string | null;
 };
 
 export type TeamIntegration = {
@@ -53,6 +64,8 @@ export type IntegrationProviderCard = {
 export type IntegrationScope = { workspace: string; team: string };
 
 export type TelegramBotInfo = { botUsername: string | null; conflict: boolean };
+
+export type MattermostServerInfo = { url: string };
 
 export type TelegramConnectCode = {
     code: string;

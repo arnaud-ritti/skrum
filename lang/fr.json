@@ -1566,5 +1566,16 @@
     "Use the workflow URL from Microsoft Teams.": "Utilisez l'URL du workflow fournie par Microsoft Teams.",
     "Use an incoming webhook of :url.": "Utilisez un webhook entrant de :url.",
     "The Teams workflow URL no longer works. Paste a new one.": "L'URL du workflow Teams ne fonctionne plus. Collez-en une nouvelle.",
-    "The Mattermost webhook no longer works. Paste a new one.": "Le webhook Mattermost ne fonctionne plus. Collez-en un nouveau."
+    "The Mattermost webhook no longer works. Paste a new one.": "Le webhook Mattermost ne fonctionne plus. Collez-en un nouveau.",
+    "Post board links, game invites and results to a Microsoft Teams channel through a Workflows webhook.": "Publiez les liens des tableaux, les invitations aux jeux et les résultats dans un canal Microsoft Teams via un webhook Workflows.",
+    "Post board links, game invites and results to a Mattermost channel through an incoming webhook of :url.": "Publiez les liens des tableaux, les invitations aux jeux et les résultats dans un canal Mattermost via un webhook entrant de :url.",
+    "In Teams, add the workflow \"Post to a channel when a webhook request is received\" to the channel and paste its URL.": "Dans Teams, ajoutez au canal le workflow « Publier dans un canal lorsqu'une requête webhook est reçue » et collez son URL.",
+    "In Mattermost, create an incoming webhook for the channel and paste its URL.": "Dans Mattermost, créez un webhook entrant pour le canal et collez son URL.",
+    "Connect :provider": "Connecter :provider",
+    "Replace URL": "Remplacer l'URL",
+    "Replace the URL": "Remplacer l'URL",
+    "Webhook URL": "URL du webhook",
+    "Channel label (optional)": "Nom du canal (facultatif)",
+    "Shown on this page only, to remember where messages go.": "Affiché uniquement sur cette page, pour savoir où partent les messages.",
+    "Nothing is posted to :channel anymore. Delete the webhook in :provider if you no longer need it.": "Plus rien n'est publié dans :channel. Supprimez le webhook dans :provider si vous n'en avez plus besoin."
 }

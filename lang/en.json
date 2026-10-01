@@ -1320,5 +1320,16 @@
     "Use the workflow URL from Microsoft Teams.": "Use the workflow URL from Microsoft Teams.",
     "Use an incoming webhook of :url.": "Use an incoming webhook of :url.",
     "The Teams workflow URL no longer works. Paste a new one.": "The Teams workflow URL no longer works. Paste a new one.",
-    "The Mattermost webhook no longer works. Paste a new one.": "The Mattermost webhook no longer works. Paste a new one."
+    "The Mattermost webhook no longer works. Paste a new one.": "The Mattermost webhook no longer works. Paste a new one.",
+    "Post board links, game invites and results to a Microsoft Teams channel through a Workflows webhook.": "Post board links, game invites and results to a Microsoft Teams channel through a Workflows webhook.",
+    "Post board links, game invites and results to a Mattermost channel through an incoming webhook of :url.": "Post board links, game invites and results to a Mattermost channel through an incoming webhook of :url.",
+    "In Teams, add the workflow \"Post to a channel when a webhook request is received\" to the channel and paste its URL.": "In Teams, add the workflow \"Post to a channel when a webhook request is received\" to the channel and paste its URL.",
+    "In Mattermost, create an incoming webhook for the channel and paste its URL.": "In Mattermost, create an incoming webhook for the channel and paste its URL.",
+    "Connect :provider": "Connect :provider",
+    "Replace URL": "Replace URL",
+    "Replace the URL": "Replace the URL",
+    "Webhook URL": "Webhook URL",
+    "Channel label (optional)": "Channel label (optional)",
+    "Shown on this page only, to remember where messages go.": "Shown on this page only, to remember where messages go.",
+    "Nothing is posted to :channel anymore. Delete the webhook in :provider if you no longer need it.": "Nothing is posted to :channel anymore. Delete the webhook in :provider if you no longer need it."
 }
