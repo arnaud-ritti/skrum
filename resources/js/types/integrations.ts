@@ -53,6 +53,7 @@ export type IntegrationSettings = {
     accountLogin?: string;
     accountType?: 'Organization' | 'User';
     exportRepositoryId?: string;
+    exportRepositoryName?: string | null;
     priorityLabels?: Partial<Record<PriorityLevel, string | null>>;
 };
 

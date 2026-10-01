@@ -151,6 +151,8 @@ export function ExportActionItemDialog({
     const [targets, setTargets] = useState<ExportTargets | null>(null);
     const [selectedProject, setSelectedProject] =
         useState<ExportTargetOption | null>(null);
+    const [selectedRepository, setSelectedRepository] =
+        useState<ExportTargetOption | null>(null);
     const currentProject = useRef<string | null>(null);
     const [choice, setChoice] = useState<Choice>({
         projectId: null,
@@ -217,6 +219,15 @@ export function ExportActionItemDialog({
                             (project) => project.id === loadedProject,
                         ) ?? (previous?.id === loadedProject ? previous : null),
                 );
+                setSelectedRepository(
+                    (previous) =>
+                        previous ??
+                        loaded.repositories?.find(
+                            (repository) =>
+                                repository.id === loaded.defaults.repositoryId,
+                        ) ??
+                        null,
+                );
                 setChoice((previous) => ({
                     projectId: loadedProject,
                     issueTypeId:
@@ -227,11 +238,10 @@ export function ExportActionItemDialog({
                             ? previous.issueTypeId
                             : (loaded.defaults.issueTypeId ?? null),
                     teamId: loaded.defaults.teamId ?? null,
-                    repositoryId: loaded.repositories?.some(
-                        (repository) => repository.id === previous.repositoryId,
-                    )
-                        ? previous.repositoryId
-                        : (loaded.defaults.repositoryId ?? null),
+                    repositoryId:
+                        previous.repositoryId ??
+                        loaded.defaults.repositoryId ??
+                        null,
                 }));
                 setLoadError(null);
                 setLoadedRequest(request);
@@ -297,6 +307,14 @@ export function ExportActionItemDialog({
         listedProjects.some((project) => project.id === selectedProject.id)
             ? listedProjects
             : [selectedProject, ...listedProjects];
+    const listedRepositories = targets?.repositories ?? [];
+    const repositoryOptions =
+        selectedRepository === null ||
+        listedRepositories.some(
+            (repository) => repository.id === selectedRepository.id,
+        )
+            ? listedRepositories
+            : [selectedRepository, ...listedRepositories];
 
     const submit = async () => {
         if (!ready || busy) {
@@ -436,8 +454,7 @@ export function ExportActionItemDialog({
                                 </div>
                                 {!loadingTargets &&
                                     searchedProjects !== '' &&
-                                    (targets.repositories ?? []).length ===
-                                        0 && (
+                                    listedRepositories.length === 0 && (
                                         <p className="text-sm text-muted-foreground">
                                             {t('No repository found.')}
                                         </p>
@@ -445,11 +462,18 @@ export function ExportActionItemDialog({
                                 <TargetSelect
                                     label={t('Repository')}
                                     value={choice.repositoryId}
-                                    options={targets.repositories ?? []}
+                                    options={repositoryOptions}
                                     disabled={busy || loadingTargets}
-                                    onChange={(repositoryId) =>
-                                        setChoice({ ...choice, repositoryId })
-                                    }
+                                    onChange={(repositoryId) => {
+                                        setSelectedRepository(
+                                            repositoryOptions.find(
+                                                (repository) =>
+                                                    repository.id ===
+                                                    repositoryId,
+                                            ) ?? null,
+                                        );
+                                        setChoice({ ...choice, repositoryId });
+                                    }}
                                 />
                             </>
                         ) : (

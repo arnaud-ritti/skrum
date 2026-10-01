@@ -110,6 +110,14 @@ export function GitHubIntegration({ card, scope, statusSection }: Props) {
                                 ? t('Read and write')
                                 : t('Read only'),
                     },
+                    ...(settings.exportRepositoryName
+                        ? [
+                              {
+                                  label: t('Export repository'),
+                                  value: settings.exportRepositoryName,
+                              },
+                          ]
+                        : []),
                 ]}
             />
             {connection.access === 'read' && (
