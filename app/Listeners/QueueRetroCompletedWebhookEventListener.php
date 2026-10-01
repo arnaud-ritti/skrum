@@ -7,7 +7,7 @@ use App\Actions\Integrations\QueueWebhookEvent;
 use App\Enums\WebhookEvent;
 use App\Events\RetroCompleted;
 
-class QueueRetroCompletedWebhookEvent
+class QueueRetroCompletedWebhookEventListener
 {
     public function __construct(
         private QueueWebhookEvent $queueWebhookEvent,

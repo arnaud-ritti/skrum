@@ -7,7 +7,7 @@ use App\Actions\Integrations\QueueWebhookEvent;
 use App\Enums\WebhookEvent;
 use App\Events\ActionItems\ActionItemCreated;
 
-class QueueActionItemCreatedWebhookEvent
+class QueueActionItemCreatedWebhookEventListener
 {
     public function __construct(
         private QueueWebhookEvent $queueWebhookEvent,

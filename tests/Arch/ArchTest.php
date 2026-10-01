@@ -71,3 +71,7 @@ arch('no class is final')
     ->expect('App')
     ->classes()
     ->not->toBeFinal();
+
+arch('listeners are named with the Listener suffix')
+    ->expect('App\Listeners')
+    ->toHaveSuffix('Listener');

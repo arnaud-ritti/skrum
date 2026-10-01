@@ -5,7 +5,7 @@ namespace App\Listeners;
 use App\Actions\Integrations\QueueActionItemStatusPushes;
 use App\Events\ActionItems\ActionItemCompleted;
 
-class QueueCompletedActionItemStatusPushes
+class QueueCompletedActionItemStatusPushesListener
 {
     public function __construct(private QueueActionItemStatusPushes $queueActionItemStatusPushes) {}
 

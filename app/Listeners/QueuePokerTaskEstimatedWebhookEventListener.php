@@ -7,7 +7,7 @@ use App\Actions\Integrations\QueueWebhookEvent;
 use App\Enums\WebhookEvent;
 use App\Events\Poker\PokerTaskEstimated;
 
-class QueuePokerTaskEstimatedWebhookEvent
+class QueuePokerTaskEstimatedWebhookEventListener
 {
     public function __construct(
         private QueueWebhookEvent $queueWebhookEvent,
