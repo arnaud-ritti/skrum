@@ -101,7 +101,8 @@ In `tests/Browser/Support/`:
 | `signIn(User $user, string $to)` | Signs in through `/login`, then opens `$to`; returns the page. |
 | `joinAsGuest(string $url, string $name)` | Opens the join link in a new context and submits the name; returns the page. |
 | `awaitRealtime($page)` | Waits until the page's root shows `data-realtime="connected"`. |
-| `dragWithKeyboard($page, $handle, array $keys)` | Moves a sortable item with the keyboard (focus, Space, arrows, Space). |
+| `dragWithKeyboard($page, $handle, array $keys, bool $handleRemains = true)` | Moves a sortable item with the keyboard (focus, Space, arrows, Space). `handleRemains: false` when the drop removes the handle. |
+| `workQueue(int $jobs = 1)` | Runs that many queued jobs, each outside any browser request, so a broadcast made by a job reaches every open page. |
 
 - **Waiting:** no fixed sleeps. The plugin's assertions retry until the timeout, so after `awaitRealtime()` the assertion on the other page is the wait.
 - **Drag-and-drop:** the boards use dnd-kit with a pointer sensor that needs 6px of movement; the plugin's `drag()` does one press, one move and one release, which is unreliable there. Tests use the keyboard sensor, which the product already supports and documents for screen readers. Keys are sent one at a time, and the helper waits for the sensor between them (a turn of the page's event loop after the pick-up, then the next animation frames or the "Moved … to position N." announcement after each arrow): keys sent back to back are lost (spike finding c). These waits follow the page's own events; they are not fixed sleeps.
@@ -119,7 +120,7 @@ The plugin cannot inspect websocket frames, cut the network or control the brows
 |---|---|
 | "The websocket frame contains no card value" | Asserts the value is absent from the other user's page (visible text and document text). Payload redaction stays proved by the existing feature tests. |
 | "Go offline, come back" | Stops and restarts Reverb; asserts the reconnecting banner, then the catch-up. |
-| A timer reaching zero | Uses the `database` queue, travels in time, then runs one queued job. Where the browser's own countdown must be seen, a short real timer is used. |
+| A timer reaching zero | Uses the `database` queue, travels in time, then runs the queued job with `workQueue()`. Where the browser's own countdown must be seen, a short real timer is used. |
 | A link copied to the clipboard | Reads the link from the dialog's input. |
 | A third-party call | `Http::fake()` with the provider's response; asserts what skrum shows and what it sent. |
 | An email | `Mail::fake()` or `Notification::fake()`; asserts recipient and locale. |

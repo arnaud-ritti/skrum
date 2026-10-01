@@ -28,3 +28,8 @@ it('reorders poker tasks with the keyboard and keeps the new order', function ()
     $memberPage->assertScript($positionOfAlpha, 1);
     $facilitatorPage->navigate("/poker/{$game->id}")->assertScript($positionOfAlpha, 1);
 });
+
+it('refuses a keyboard drag with fewer than two keys', function () {
+    expect(fn () => $this->dragWithKeyboard(null, '#handle', ['Space']))
+        ->toThrow(InvalidArgumentException::class, 'dragWithKeyboard() needs at least two keys: the first picks the item up and the last drops it.');
+});

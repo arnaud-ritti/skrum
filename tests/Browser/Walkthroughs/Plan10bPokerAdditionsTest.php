@@ -9,9 +9,7 @@ use App\Models\Retro;
 use App\Models\SavedPokerDeck;
 use App\Models\Team;
 use App\Models\User;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Tests\TestCase;
 
 function p10bRenamed(User $user, string $name): User
 {
@@ -65,13 +63,6 @@ function p10bOpenSettings(mixed $page): mixed
         ->assertSee('Settings…')
         ->click('Settings…')
         ->assertSee('Game settings');
-}
-
-function p10bWorkQueueOutsideAnyRequest(TestCase $test): void
-{
-    app()->instance('request', Request::create('/'));
-
-    $test->artisan('queue:work', ['--once' => true])->assertSuccessful();
 }
 
 it('[P10b-01] saves a team deck, rejects a duplicate name and hides edit and delete from other members', function () {
@@ -792,7 +783,7 @@ it('[P10b-08a] counts a round timer down for everyone and reveals at zero when a
         ->and($round->fresh()->revealed_at)->toBeNull();
 
     $this->travel(31)->seconds();
-    p10bWorkQueueOutsideAnyRequest($this);
+    $this->workQueue();
 
     foreach ([$a, $b] as $page) {
         $page->assertSee("Revealed automatically — time's up")
@@ -830,7 +821,7 @@ it('[P10b-08b] only shows "Time\'s up!" at zero when auto-reveal is off and leav
     expect(DB::table('jobs')->count())->toBe(1);
 
     $this->travel(31)->seconds();
-    p10bWorkQueueOutsideAnyRequest($this);
+    $this->workQueue();
 
     expect(DB::table('jobs')->count())->toBe(0)
         ->and($round->fresh()->revealed_at)->toBeNull();
@@ -892,7 +883,7 @@ it('[P10b-09] does not reveal at the original zero of a timer that was stopped',
         ->and($round->fresh()->timer_ends_at)->toBeNull();
 
     $this->travel(31)->seconds();
-    p10bWorkQueueOutsideAnyRequest($this);
+    $this->workQueue();
 
     expect(DB::table('jobs')->count())->toBe(0)
         ->and($round->fresh()->revealed_at)->toBeNull();

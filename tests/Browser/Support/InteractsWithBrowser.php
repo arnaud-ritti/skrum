@@ -3,6 +3,8 @@
 namespace Tests\Browser\Support;
 
 use App\Models\User;
+use Illuminate\Http\Request;
+use InvalidArgumentException;
 
 trait InteractsWithBrowser
 {
@@ -39,14 +41,29 @@ trait InteractsWithBrowser
         return $page;
     }
 
+    /** Runs $jobs queued jobs, each outside any browser request, so a broadcast made by the job reaches every open page. */
+    protected function workQueue(int $jobs = 1): void
+    {
+        for ($job = 0; $job < $jobs; $job++) {
+            $this->app->instance('request', Request::create('/'));
+
+            $this->artisan('queue:work', ['--once' => true])->assertSuccessful();
+        }
+    }
+
     /**
      * dnd-kit's keyboard sensor starts listening one timer turn after the pick-up and reads
      * the drop target only once React has rendered the move, so each key waits for the page.
      *
+     * $handleRemains = false: the drop removes the handle (e.g. grouping a card), so the helper
+     * ends by asserting the handle is gone instead of asserting aria-pressed is cleared.
+     *
      * @param  array<int, string>  $keys
      */
-    protected function dragWithKeyboard(mixed $page, string $handleSelector, array $keys): mixed
+    protected function dragWithKeyboard(mixed $page, string $handleSelector, array $keys, bool $handleRemains = true): mixed
     {
+        throw_if(count($keys) < 2, InvalidArgumentException::class, 'dragWithKeyboard() needs at least two keys: the first picks the item up and the last drops it.');
+
         $pickUp = array_shift($keys);
         $drop = array_pop($keys);
 
@@ -60,6 +77,13 @@ trait InteractsWithBrowser
         }
 
         $page->keys($handleSelector, $drop);
+
+        if (! $handleRemains) {
+            $page->assertNotPresent($handleSelector);
+
+            return $page;
+        }
+
         $page->assertAttributeMissing($handleSelector, 'aria-pressed');
 
         return $page;

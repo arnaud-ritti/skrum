@@ -162,13 +162,7 @@ it('[P04-03] groups, ungroups and moves a card during Grouping', function () {
     $bobPage->assertSee('Drag cards onto each other to group them.')
         ->assertPresent($handle);
 
-    $bobPage->keys($handle, 'Space')
-        ->assertAttribute($handle, 'aria-pressed', 'true');
-    $bobPage->script('() => new Promise((resolve) => setTimeout(() => resolve(true), 0))');
-    $bobPage->keys($handle, 'ArrowDown');
-    $bobPage->script('() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve(true))))');
-    $bobPage->keys($handle, 'Space')
-        ->assertNotPresent($handle);
+    $this->dragWithKeyboard($bobPage, $handle, ['Space', 'ArrowDown', 'Space'], handleRemains: false);
 
     $alicePage->assertPresent("#card-{$slow->id} #card-{$flaky->id}");
     expect($flaky->fresh()->parent_card_id)->toBe($slow->id);

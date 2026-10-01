@@ -64,7 +64,7 @@ Found while writing the harness and the first three walkthrough files, after the
 
 - Artefact: a broadcast made by the test body, outside a browser request, never reaches the page that made the last browser request. Seen in `[P10b-08a]`: the reveal done by a job run with `queue:work` reached one page and not the page that had just voted.
 - Cause: every browser request is handled by the test's own application instance, and the container keeps the last request bound after it is handled. `App\Events\Concerns\SendsToOthers` calls `broadcast($this)->toOthers()`, which reads `X-Socket-ID` from that bound request, so the socket of the last page that acted is excluded. Not a product defect: in production a worker has no such request.
-- Workaround: `p10bWorkQueueOutsideAnyRequest()` in `tests/Browser/Walkthroughs/Plan10bPokerAdditionsTest.php` binds a fresh `Request::create('/')` and then runs `queue:work --once`. Use it (or do the same) before any job, action or model event that the test body runs and that broadcasts. A general cure in `BrowserTestCase` is left to plan 16b.
+- Cure: `$this->workQueue()` (plan 16b, Task 1) binds a fresh `Request::create('/')` and then runs `queue:work --once`, once per job. Code that broadcasts from the test body without a queued job (an action or a model event called directly) binds the fresh request itself first: `app()->instance('request', Request::create('/'))`.
 
 ### Selectors
 
@@ -83,7 +83,7 @@ Found while writing the harness and the first three walkthrough files, after the
 
 ### Keyboard drag
 
-- `dragWithKeyboard()` ends with `assertAttributeMissing($handle, 'aria-pressed')`, so it cannot be used when the drop removes the handle (dropping a card onto another to group them). `[P04-03]` sends the same keys and waits by hand, then asserts `assertNotPresent($handle)`.
+- `dragWithKeyboard()` ends with `assertAttributeMissing($handle, 'aria-pressed')` by default, which cannot pass when the drop removes the handle (dropping a card onto another to group them). Pass `handleRemains: false` for such a drop; `[P04-03]` does.
 
 ### Durations
 
@@ -103,3 +103,17 @@ Found while writing the harness and the first three walkthrough files, after the
 
 - Pint removes unused imports (`laravel` preset). An import added for a later task is gone after `vendor/bin/pint --dirty`; add it again with the code that uses it.
 - `package.json` has no `name`, so `npm install` in a worktree rewrites the root `name` of `package-lock.json` to the folder's name. Check `git diff package-lock.json` before committing; `npm ci` does not touch the lockfile.
+
+## Findings from plan 16b, Task 1
+
+### `workQueue()`
+
+- `$this->workQueue(int $jobs = 1)` lives in `tests/Browser/Support/InteractsWithBrowser.php`. Before each job it binds a fresh request in the container and runs `queue:work --once`, so `toOthers()` finds no `X-Socket-ID` and the job's broadcast reaches every open page. `tests/Browser/Smoke/QueuedBroadcastTest.php` pins it: without the fresh request the page that voted last never sees the timer reveal.
+- The cure is in `workQueue()` only, not in `BrowserTestCase::isolateRequests()`: that listener runs inside the kernel, before the plugin terminates the request, and changing the bound request there would affect the terminating middleware of every browser request.
+- The test sets `config(['queue.default' => 'database'])` before the action that queues the job. Pass the exact number of waiting jobs: `queue:work --once` on an empty queue sleeps three seconds before it returns.
+- The request is bound again before every job, because a page may send a request (a refetch) between two jobs.
+
+### `dragWithKeyboard()`
+
+- `handleRemains: false` ends the helper with `assertNotPresent($handle)` instead of `assertAttributeMissing($handle, 'aria-pressed')`. Use it when the dropped item is rendered again without its handle (a retro card dropped onto another card in Grouping).
+- Fewer than two keys throws `InvalidArgumentException` ("dragWithKeyboard() needs at least two keys: the first picks the item up and the last drops it."). Before, the helper called `keys()` with `null` and failed after the 20 s timeout with a Playwright message.
