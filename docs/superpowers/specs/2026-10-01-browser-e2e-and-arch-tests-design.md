@@ -130,6 +130,7 @@ The plugin cannot inspect websocket frames, cut the network or control the brows
 ### 3.7 Changes to product code
 
 - `data-realtime`: the root element of `retros/show`, `poker/show` and `games/show` carries `data-realtime="connecting"` or `"connected"`, taken from the state the channel hooks (`use-retro-channel.ts`, `use-poker-channel.ts`, `use-game-channel.ts`) already track.
+- Later slices may add `data-realtime` to another live page that subscribes to a channel (the workspace action-items page is the first), with only the state needed to know that the subscription succeeded; this stays within criterion 10.
 - `data-test`: added to an element only when a test cannot target it by English text or label (for example a card, a column, a poker hand card, a task row).
 - No other product change is made for the browser suite.
 
