@@ -147,6 +147,19 @@ export type WebhookDelivery = {
     error: string | null;
     createdAt: string | null;
     lastAttemptAt: string | null;
+    hasContent: boolean;
+    redeliverable: boolean;
+    redeliveryOf: string | null;
+};
+
+export type WebhookDeliveryDetails = {
+    id: string;
+    event: string | null;
+    status: DeliveryStatus;
+    attempts: number;
+    redeliveryOf: string | null;
+    request: { headers: Record<string, string>; body: string | null };
+    response: { status: number | null; excerpt: string | null };
 };
 
 export type WebhookDeliveryPage = {

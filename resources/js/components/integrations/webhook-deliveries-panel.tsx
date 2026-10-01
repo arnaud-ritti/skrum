@@ -2,7 +2,16 @@ import { usePage } from '@inertiajs/react';
 import { useRef, useState } from 'react';
 import { toast } from 'sonner';
 import WebhookDeliveriesController from '@/actions/App/Http/Controllers/Integrations/WebhookDeliveriesController';
+import WebhookRedeliveriesController from '@/actions/App/Http/Controllers/Integrations/WebhookRedeliveriesController';
 import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { Spinner } from '@/components/ui/spinner';
 import { useTrans } from '@/hooks/use-trans';
 import { integrationErrorMessage } from '@/lib/integrations';
@@ -12,8 +21,13 @@ import type {
     IntegrationScope,
     TeamIntegration,
     WebhookDelivery,
+    WebhookDeliveryDetails,
     WebhookDeliveryPage,
 } from '@/types';
+import { WebhookDeliveryDialog } from './webhook-delivery-dialog';
+
+const PayloadRetentionDays = 30;
+const DayMilliseconds = 86_400_000;
 
 type Props = {
     scope: IntegrationScope;
@@ -28,6 +42,15 @@ export function WebhookDeliveriesPanel({ scope, connection }: Props) {
     const [page, setPage] = useState<WebhookDeliveryPage | null>(null);
     const [failed, setFailed] = useState(false);
     const latestRequest = useRef(0);
+    const [viewing, setViewing] = useState<WebhookDelivery | null>(null);
+    const [details, setDetails] = useState<WebhookDeliveryDetails | null>(null);
+    const [detailsFailed, setDetailsFailed] = useState(false);
+    const latestDetails = useRef(0);
+    const [redelivering, setRedelivering] = useState<WebhookDelivery | null>(
+        null,
+    );
+    const [redeliverError, setRedeliverError] = useState<string | null>(null);
+    const [sending, setSending] = useState(false);
 
     const load = async (pageNumber: number) => {
         const requestId = ++latestRequest.current;
@@ -72,6 +95,84 @@ export function WebhookDeliveriesPanel({ scope, connection }: Props) {
         if (next) {
             void load(1);
         }
+    };
+
+    const openDetails = async (delivery: WebhookDelivery) => {
+        const requestId = ++latestDetails.current;
+        setViewing(delivery);
+        setDetails(null);
+        setDetailsFailed(false);
+
+        try {
+            const loaded = await retroRequest<WebhookDeliveryDetails>(
+                WebhookDeliveriesController.show({
+                    ...scope,
+                    integration: connection.id,
+                    delivery: delivery.id,
+                }),
+            );
+
+            if (requestId === latestDetails.current) {
+                setDetails(loaded);
+            }
+        } catch {
+            if (requestId === latestDetails.current) {
+                setDetailsFailed(true);
+            }
+        }
+    };
+
+    const closeDetails = () => {
+        latestDetails.current++;
+        setViewing(null);
+    };
+
+    const askRedelivery = (delivery: WebhookDelivery) => {
+        setRedeliverError(null);
+        setRedelivering(delivery);
+    };
+
+    const redeliver = async () => {
+        if (redelivering === null) {
+            return;
+        }
+
+        setSending(true);
+        setRedeliverError(null);
+
+        try {
+            await retroRequest<WebhookDelivery>(
+                WebhookRedeliveriesController.store({
+                    ...scope,
+                    integration: connection.id,
+                    delivery: redelivering.id,
+                }),
+            );
+            toast(t('Delivery queued again.'));
+            setRedelivering(null);
+            void load(1);
+        } catch (error) {
+            setRedeliverError(
+                integrationErrorMessage(error, t('Something went wrong.')),
+            );
+        } finally {
+            setSending(false);
+        }
+    };
+
+    const canRedeliver = (delivery: WebhookDelivery): boolean =>
+        delivery.redeliverable && connection.status === 'active';
+
+    const contentNote = (delivery: WebhookDelivery): string => {
+        const createdAt =
+            delivery.createdAt === null
+                ? null
+                : new Date(delivery.createdAt).getTime();
+        const expired =
+            createdAt !== null &&
+            Date.now() - createdAt > PayloadRetentionDays * DayMilliseconds;
+
+        return expired ? t('Content no longer kept') : t('Content not kept');
     };
 
     const statusLabel = (status: DeliveryStatus): string => {
@@ -168,8 +269,13 @@ export function WebhookDeliveriesPanel({ scope, connection }: Props) {
                                     <th className="py-1 pr-3 font-medium">
                                         {t('Response')}
                                     </th>
-                                    <th className="py-1 font-medium">
+                                    <th className="py-1 pr-3 font-medium">
                                         {t('Error')}
+                                    </th>
+                                    <th className="py-1 font-medium">
+                                        <span className="sr-only">
+                                            {t('Actions')}
+                                        </span>
                                     </th>
                                 </tr>
                             </thead>
@@ -184,6 +290,11 @@ export function WebhookDeliveriesPanel({ scope, connection }: Props) {
                                         </td>
                                         <td className="py-1 pr-3">
                                             <code>{kindLabel(delivery)}</code>
+                                            {delivery.redeliveryOf !== null && (
+                                                <span className="ml-2 text-muted-foreground">
+                                                    {t('Redelivery')}
+                                                </span>
+                                            )}
                                         </td>
                                         <td className="py-1 pr-3">
                                             {statusLabel(delivery.status)}
@@ -194,8 +305,42 @@ export function WebhookDeliveriesPanel({ scope, connection }: Props) {
                                         <td className="py-1 pr-3">
                                             {delivery.responseStatus ?? '—'}
                                         </td>
-                                        <td className="py-1 break-words">
+                                        <td className="py-1 pr-3 break-words">
                                             {delivery.error ?? '—'}
+                                        </td>
+                                        <td className="py-1 whitespace-nowrap">
+                                            {delivery.hasContent ? (
+                                                <div className="flex gap-1">
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() =>
+                                                            void openDetails(
+                                                                delivery,
+                                                            )
+                                                        }
+                                                    >
+                                                        {t('View')}
+                                                    </Button>
+                                                    {canRedeliver(delivery) && (
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() =>
+                                                                askRedelivery(
+                                                                    delivery,
+                                                                )
+                                                            }
+                                                        >
+                                                            {t('Redeliver')}
+                                                        </Button>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <span className="text-muted-foreground">
+                                                    {contentNote(delivery)}
+                                                </span>
+                                            )}
                                         </td>
                                     </tr>
                                 ))}
@@ -227,6 +372,59 @@ export function WebhookDeliveriesPanel({ scope, connection }: Props) {
                         </Button>
                     </div>
                 </>
+            )}
+            {viewing !== null && (
+                <WebhookDeliveryDialog
+                    label={kindLabel(viewing)}
+                    details={details}
+                    failed={detailsFailed}
+                    onClose={closeDetails}
+                />
+            )}
+            {redelivering !== null && (
+                <Dialog
+                    open
+                    onOpenChange={(open) => {
+                        if (!open && !sending) {
+                            setRedelivering(null);
+                        }
+                    }}
+                >
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>{t('Redeliver')}</DialogTitle>
+                            <DialogDescription>
+                                {t('Send this delivery again to :host?', {
+                                    host: connection.settings.host ?? '',
+                                })}
+                            </DialogDescription>
+                        </DialogHeader>
+                        {redeliverError !== null && (
+                            <p
+                                className="text-sm text-destructive"
+                                role="alert"
+                            >
+                                {redeliverError}
+                            </p>
+                        )}
+                        <DialogFooter>
+                            <Button
+                                variant="outline"
+                                disabled={sending}
+                                onClick={() => setRedelivering(null)}
+                            >
+                                {t('Cancel')}
+                            </Button>
+                            <Button
+                                disabled={sending}
+                                onClick={() => void redeliver()}
+                            >
+                                {sending && <Spinner />}
+                                {t('Redeliver')}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
             )}
         </section>
     );

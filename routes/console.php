@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\IntegrationDelivery;
+use App\Models\IntegrationDeliveryPayload;
 use App\Models\IntegrationInboundEvent;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
@@ -36,6 +37,6 @@ Schedule::command('skrum:check-integrations')
     ->daily()
     ->onOneServer();
 
-Schedule::command('model:prune', ['--model' => [IntegrationDelivery::class, IntegrationInboundEvent::class]])
+Schedule::command('model:prune', ['--model' => [IntegrationDelivery::class, IntegrationDeliveryPayload::class, IntegrationInboundEvent::class]])
     ->daily()
     ->onOneServer();

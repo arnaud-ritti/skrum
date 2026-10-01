@@ -3,6 +3,7 @@
 namespace App\Listeners;
 
 use App\Actions\Integrations\BuildWebhookEventData;
+use App\Actions\Integrations\StoreWebhookPayload;
 use App\Enums\IntegrationDeliveryChannel;
 use App\Enums\IntegrationDeliveryKind;
 use App\Enums\IntegrationDeliveryStatus;
@@ -19,6 +20,7 @@ use App\Models\Team;
 use App\Models\TeamIntegration;
 use Closure;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 use Throwable;
 
 /**
@@ -28,7 +30,10 @@ use Throwable;
  */
 class QueueWebhookEvents
 {
-    public function __construct(private BuildWebhookEventData $buildWebhookEventData) {}
+    public function __construct(
+        private BuildWebhookEventData $buildWebhookEventData,
+        private StoreWebhookPayload $storeWebhookPayload,
+    ) {}
 
     public function onRetroCompleted(RetroCompleted $event): void
     {
@@ -81,19 +86,32 @@ class QueueWebhookEvents
         try {
             $data = $buildData();
 
-            $delivery = IntegrationDelivery::query()->create([
-                'team_id' => $team->id,
-                'channel' => IntegrationDeliveryChannel::Webhook,
-                'kind' => IntegrationDeliveryKind::Event,
-                'team_integration_id' => $integration->id,
-                'event' => $event->value,
-                'subject_type' => $subject->getMorphClass(),
-                'subject_id' => $subject->getKey(),
-                'requested_by_user_id' => null,
-                'status' => IntegrationDeliveryStatus::Queued,
-            ]);
+            $occurredAt = now()->toIso8601ZuluString();
 
-            dispatch(new DeliverWebhookEvent($delivery->id, $event->value, now()->toIso8601ZuluString(), $data, app()->getLocale()))->afterCommit();
+            $delivery = DB::transaction(function () use ($team, $integration, $event, $subject, $occurredAt, $data): IntegrationDelivery {
+                $delivery = IntegrationDelivery::query()->create([
+                    'team_id' => $team->id,
+                    'channel' => IntegrationDeliveryChannel::Webhook,
+                    'kind' => IntegrationDeliveryKind::Event,
+                    'team_integration_id' => $integration->id,
+                    'event' => $event->value,
+                    'subject_type' => $subject->getMorphClass(),
+                    'subject_id' => $subject->getKey(),
+                    'requested_by_user_id' => null,
+                    'status' => IntegrationDeliveryStatus::Queued,
+                ]);
+
+                $this->storeWebhookPayload->keepIfPossible($delivery, [
+                    'id' => $delivery->id,
+                    'event' => $event->value,
+                    'occurredAt' => $occurredAt,
+                    'data' => $data,
+                ]);
+
+                return $delivery;
+            });
+
+            dispatch(new DeliverWebhookEvent($delivery->id, $event->value, $occurredAt, $data, app()->getLocale()))->afterCommit();
         } catch (Throwable $exception) {
             report($exception);
 
