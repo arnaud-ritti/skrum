@@ -14,6 +14,7 @@ import { useTrans } from '@/hooks/use-trans';
 import type { WebhookDeliveryDetails } from '@/types';
 
 type Props = {
+    label: string;
     details: WebhookDeliveryDetails | null;
     failed: boolean;
     onClose: () => void;
@@ -29,7 +30,12 @@ function prettyBody(body: string): string {
     }
 }
 
-export function WebhookDeliveryDialog({ details, failed, onClose }: Props) {
+export function WebhookDeliveryDialog({
+    label,
+    details,
+    failed,
+    onClose,
+}: Props) {
     const { t } = useTrans();
     const [, copy] = useClipboard();
     const [tab, setTab] = useState<Tab>('request');
@@ -44,8 +50,28 @@ export function WebhookDeliveryDialog({ details, failed, onClose }: Props) {
         toast.error(t('Something went wrong. Please try again.'));
     };
 
+    const moveBetweenTabs = (key: string, current: Tab) => {
+        const other = current === 'request' ? 'response' : 'request';
+        const targets: Record<string, Tab> = {
+            ArrowRight: other,
+            ArrowLeft: other,
+            Home: 'request',
+            End: 'response',
+        };
+        const next = targets[key];
+
+        if (next === undefined) {
+            return;
+        }
+
+        setTab(next);
+        document.getElementById(`delivery-tab-${next}`)?.focus();
+    };
+
     const headers =
         details === null ? [] : Object.entries(details.request.headers);
+    const nothingSent =
+        headers.length === 0 && (details?.request.body ?? null) === null;
     const tabs: { id: Tab; label: string }[] = [
         { id: 'request', label: t('Request') },
         { id: 'response', label: t('Response') },
@@ -64,10 +90,12 @@ export function WebhookDeliveryDialog({ details, failed, onClose }: Props) {
                 <DialogHeader>
                     <DialogTitle>{t('Delivery details')}</DialogTitle>
                     <DialogDescription>
-                        {details?.event ?? ''}
+                        {details?.event ?? label}
                     </DialogDescription>
                 </DialogHeader>
-                {details === null && !failed && <Spinner />}
+                {details === null && !failed && (
+                    <Spinner aria-label={t('Loading…')} />
+                )}
                 {failed && (
                     <p className="text-sm text-destructive" role="alert">
                         {t('Could not load this delivery.')}
@@ -93,23 +121,9 @@ export function WebhookDeliveryDialog({ details, failed, onClose }: Props) {
                                     aria-controls="delivery-tabpanel"
                                     tabIndex={tab === item.id ? 0 : -1}
                                     onClick={() => setTab(item.id)}
-                                    onKeyDown={(event) => {
-                                        if (
-                                            event.key === 'ArrowRight' ||
-                                            event.key === 'ArrowLeft'
-                                        ) {
-                                            const next =
-                                                item.id === 'request'
-                                                    ? 'response'
-                                                    : 'request';
-                                            setTab(next);
-                                            document
-                                                .getElementById(
-                                                    `delivery-tab-${next}`,
-                                                )
-                                                ?.focus();
-                                        }
-                                    }}
+                                    onKeyDown={(event) =>
+                                        moveBetweenTabs(event.key, item.id)
+                                    }
                                 >
                                     {item.label}
                                 </Button>
@@ -120,36 +134,42 @@ export function WebhookDeliveryDialog({ details, failed, onClose }: Props) {
                             role="tabpanel"
                             aria-labelledby={`delivery-tab-${tab}`}
                         >
-                            {tab === 'request' && headers.length === 0 && (
+                            {tab === 'request' && nothingSent && (
                                 <p className="text-sm text-muted-foreground">
                                     {t('Not sent yet.')}
                                 </p>
                             )}
-                            {tab === 'request' && headers.length > 0 && (
+                            {tab === 'request' && !nothingSent && (
                                 <div className="space-y-3">
-                                    <table
-                                        className="w-full text-left text-xs"
-                                        aria-label={t('Headers')}
-                                    >
-                                        <tbody>
-                                            {headers.map(([name, value]) => (
-                                                <tr
-                                                    key={name}
-                                                    className="border-t"
-                                                >
-                                                    <th
-                                                        scope="row"
-                                                        className="py-1 pr-3 font-medium whitespace-nowrap"
-                                                    >
-                                                        {name}
-                                                    </th>
-                                                    <td className="py-1 break-all">
-                                                        <code>{value}</code>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
+                                    {headers.length > 0 && (
+                                        <table
+                                            className="w-full text-left text-xs"
+                                            aria-label={t('Headers')}
+                                        >
+                                            <tbody>
+                                                {headers.map(
+                                                    ([name, value]) => (
+                                                        <tr
+                                                            key={name}
+                                                            className="border-t"
+                                                        >
+                                                            <th
+                                                                scope="row"
+                                                                className="py-1 pr-3 font-medium whitespace-nowrap"
+                                                            >
+                                                                {name}
+                                                            </th>
+                                                            <td className="py-1 break-all">
+                                                                <code>
+                                                                    {value}
+                                                                </code>
+                                                            </td>
+                                                        </tr>
+                                                    ),
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    )}
                                     {details.request.body !== null && (
                                         <div className="space-y-1">
                                             <div className="flex items-center justify-between gap-2">

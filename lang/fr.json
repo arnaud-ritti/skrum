@@ -1780,8 +1780,8 @@
     "Content no longer kept": "Contenu plus conservé",
     "Content not kept": "Contenu non conservé",
     "Send this delivery again to :host?": "Renvoyer cet envoi à :host ?",
-    "Delivery queued again.": "Envoi remis en file d'attente.",
-    "Delivery details": "Détails de l'envoi",
+    "Delivery queued again.": "Envoi remis en file d’attente.",
+    "Delivery details": "Détails de l’envoi",
     "Could not load this delivery.": "Impossible de charger cet envoi.",
     "Status: :status": "Statut : :status"
 }

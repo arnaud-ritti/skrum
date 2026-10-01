@@ -115,15 +115,9 @@ export function WebhookDeliveriesPanel({ scope, connection }: Props) {
             if (requestId === latestDetails.current) {
                 setDetails(loaded);
             }
-        } catch (error) {
+        } catch {
             if (requestId === latestDetails.current) {
                 setDetailsFailed(true);
-                toast.error(
-                    integrationErrorMessage(
-                        error,
-                        t('Could not load this delivery.'),
-                    ),
-                );
             }
         }
     };
@@ -383,6 +377,7 @@ export function WebhookDeliveriesPanel({ scope, connection }: Props) {
             )}
             {viewing !== null && (
                 <WebhookDeliveryDialog
+                    label={kindLabel(viewing)}
                     details={details}
                     failed={detailsFailed}
                     onClose={closeDetails}
