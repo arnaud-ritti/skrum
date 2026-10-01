@@ -31,4 +31,11 @@ trait InteractsWithBrowser
 
         return $page;
     }
+
+    protected function awaitRealtime(mixed $page): mixed
+    {
+        $page->assertAttribute('[data-realtime]', 'data-realtime', 'connected');
+
+        return $page;
+    }
 }

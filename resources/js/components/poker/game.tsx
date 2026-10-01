@@ -9,6 +9,7 @@ import { useLocalPreference } from '@/hooks/use-local-preference';
 import { usePokerGame } from '@/hooks/use-poker-game';
 import { useTrans } from '@/hooks/use-trans';
 import type { PokerSnapshot } from '@/lib/poker/types';
+import { realtimeState } from '@/lib/realtime/realtime-state';
 import type { PokerDeckOption } from '@/types';
 import { AutoRevealTriggers } from './auto-reveal-triggers';
 import { FacilitatorToolbar } from './facilitator-toolbar';
@@ -64,7 +65,10 @@ export function Game({ snapshot: initial, deckOptions }: Props) {
     return (
         <GameProvider value={ctx}>
             <AutoRevealTriggers departures={departures} />
-            <div className="flex min-h-dvh flex-col">
+            <div
+                className="flex min-h-dvh flex-col"
+                data-realtime={realtimeState(game.connected, game.online)}
+            >
                 {game.sessionExpired && <SessionExpiredBanner />}
                 <div
                     className="flex flex-1 flex-col"

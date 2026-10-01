@@ -15,6 +15,7 @@ import CardPositionsController from '@/actions/App/Http/Controllers/Retros/CardP
 import { useLocalPreference } from '@/hooks/use-local-preference';
 import { useRetroBoard } from '@/hooks/use-retro-board';
 import { useTrans } from '@/hooks/use-trans';
+import { realtimeState } from '@/lib/realtime/realtime-state';
 import { retroRequest } from '@/lib/retro/api';
 import { topLevelCards } from '@/lib/retro/board-reducer';
 import type { CardPayload, Snapshot } from '@/lib/retro/types';
@@ -67,6 +68,7 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
         presence,
         unreadCardIds,
         markCommentsRead,
+        connected,
         reconnecting,
         sessionExpired,
         subscribeGameEvents,
@@ -223,7 +225,10 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
     return (
         <BoardProvider value={ctx}>
             <GroupNameSuggestionsProvider>
-                <div className="flex min-h-dvh flex-col">
+                <div
+                    className="flex min-h-dvh flex-col"
+                    data-realtime={realtimeState(connected, online)}
+                >
                     {sessionExpired && <SessionExpiredBanner />}
                     <div
                         className="flex flex-1 flex-col"

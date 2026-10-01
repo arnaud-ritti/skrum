@@ -3,8 +3,10 @@
 namespace Tests;
 
 use Illuminate\Foundation\Http\Events\RequestHandled;
+use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Event;
 use Tests\Browser\Support\InteractsWithBrowser;
+use Tests\Browser\Support\ReverbServer;
 
 abstract class BrowserTestCase extends TestCase
 {
@@ -22,7 +24,9 @@ abstract class BrowserTestCase extends TestCase
             $this->fail($assetProblem);
         }
 
-        config(['app.locale' => 'en']);
+        $this->configureBrowserEnvironment();
+
+        ReverbServer::ensureRunning();
 
         $this->isolateRequests();
     }
@@ -38,6 +42,26 @@ abstract class BrowserTestCase extends TestCase
         }
 
         return null;
+    }
+
+    private function configureBrowserEnvironment(): void
+    {
+        config([
+            'app.locale' => 'en',
+            'broadcasting.default' => 'reverb',
+            'broadcasting.connections.reverb.key' => ReverbServer::AppKey,
+            'broadcasting.connections.reverb.secret' => ReverbServer::AppSecret,
+            'broadcasting.connections.reverb.app_id' => ReverbServer::AppId,
+            'broadcasting.connections.reverb.client.host' => ReverbServer::Host,
+            'broadcasting.connections.reverb.client.port' => ReverbServer::Port,
+            'broadcasting.connections.reverb.client.scheme' => 'http',
+            'broadcasting.connections.reverb.options.host' => ReverbServer::Host,
+            'broadcasting.connections.reverb.options.port' => ReverbServer::Port,
+            'broadcasting.connections.reverb.options.scheme' => 'http',
+            'broadcasting.connections.reverb.options.useTLS' => false,
+        ]);
+
+        Broadcast::forgetDrivers();
     }
 
     /**
