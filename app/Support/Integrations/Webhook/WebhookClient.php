@@ -16,6 +16,7 @@ use App\Support\Integrations\ProviderHttp;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
+use RuntimeException;
 use Throwable;
 
 /**
@@ -180,44 +181,60 @@ class WebhookClient
 
     private function recordAttempt(IntegrationDelivery $delivery, ?int $status): void
     {
-        $delivery->forceFill([
-            'attempts' => $delivery->attempts + 1,
-            'last_attempt_at' => now(),
-            'response_status' => $status,
-        ])->save();
+        try {
+            $delivery->forceFill([
+                'attempts' => $delivery->attempts + 1,
+                'last_attempt_at' => now(),
+                'response_status' => $status,
+            ])->save();
+        } catch (Throwable $exception) {
+            $this->reportStorageFailure('record', $delivery, $exception);
+        }
     }
 
     /**
-     * Keeping the attempt is a courtesy for the delivery log: a storage
-     * failure is reported but never turns a sent message into a failed one.
+     * The last attempt wins: one that never built a request clears what
+     * the previous attempt left, so the log never shows an answer the
+     * last attempt did not get. Keeping the attempt is a courtesy for the
+     * delivery log and never turns a sent message into a failed one.
      */
     private function capture(IntegrationDelivery $delivery, ?WebhookRequest $request, ?Response $response, ResponseExcerpt $excerpt): void
     {
-        if ($request === null) {
-            return;
-        }
-
         try {
-            $payload = $delivery->payload;
-
-            if ($payload === null) {
-                return;
-            }
-
-            $payload->forceFill([
-                'request_headers' => [
-                    'Content-Type' => 'application/json',
-                    'User-Agent' => self::UserAgent,
-                    ...$request->headers,
-                    'X-Skrum-Signature' => self::maskedSignature($request->headers['X-Skrum-Signature']),
-                ],
-                'request_body' => $request->body,
+            $delivery->payload?->forceFill([
+                'request_headers' => $request === null ? null : $this->storedHeaders($request),
+                'request_body' => $request?->body,
                 'response_status' => $response?->status(),
                 'response_excerpt' => $response === null ? null : $excerpt->orBodyOf($response),
             ])->save();
         } catch (Throwable $exception) {
-            report($exception);
+            $this->reportStorageFailure('keep', $delivery, $exception);
         }
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function storedHeaders(WebhookRequest $request): array
+    {
+        return [
+            'Accept' => 'application/json',
+            'Content-Type' => 'application/json',
+            'User-Agent' => self::UserAgent,
+            ...$request->headers,
+            'X-Skrum-Signature' => self::maskedSignature($request->headers['X-Skrum-Signature']),
+        ];
+    }
+
+    /**
+     * Only the class of the cause is reported: a query error's message
+     * carries its bound values.
+     */
+    private function reportStorageFailure(string $action, IntegrationDelivery $delivery, Throwable $cause): void
+    {
+        $causeName = class_basename($cause);
+
+        report(new RuntimeException("Could not {$action} the webhook attempt of delivery {$delivery->id} ({$causeName})."));
     }
 
     private function url(TeamIntegration $integration): string
