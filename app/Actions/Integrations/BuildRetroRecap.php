@@ -159,7 +159,7 @@ class BuildRetroRecap
         ];
     }
 
-    private function assignee(ActionItem $item): ?string
+    public function assignee(ActionItem $item): ?string
     {
         if ($item->assigneeUser !== null) {
             return $item->assigneeUser->name;

@@ -42,11 +42,11 @@ class SetActionItemStatus
         $origin = $actor instanceof ExternalSyncActor ? ActionItemEventOrigin::External : ActionItemEventOrigin::Skrum;
 
         if ($completing) {
-            ActionItemCompleted::dispatch($locked, $origin);
+            ActionItemCompleted::dispatch($locked, $origin, $actor);
         }
 
         if (! $completing) {
-            ActionItemReopened::dispatch($locked, $origin);
+            ActionItemReopened::dispatch($locked, $origin, $actor);
         }
 
         $this->broadcastActionItemChange->saved($locked);
