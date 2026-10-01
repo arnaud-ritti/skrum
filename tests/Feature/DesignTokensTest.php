@@ -16,10 +16,20 @@ it('keeps the whiteboard overrides after the tokens', function () {
 });
 
 it('paints the first frame with the token backgrounds', function () {
+    $stylesheet = file_get_contents(resource_path('css/app.css'));
     $view = file_get_contents(resource_path('views/app.blade.php'));
 
-    expect($view)
-        ->toContain('background-color: oklch(0.985 0.004 80)')
-        ->toContain('background-color: oklch(0.165 0.008 55)')
+    $background = function (string $selector) use ($stylesheet): string {
+        preg_match('/^'.preg_quote($selector, '/').'\s*\{[^}]*?--background:\s*([^;]+);/m', $stylesheet, $matches);
+
+        return trim($matches[1] ?? '');
+    };
+
+    expect($background(':root'))->not->toBeEmpty()
+        ->and($background('.dark'))->not->toBeEmpty()
+        ->and($background('.dark'))->not->toBe($background(':root'))
+        ->and($view)
+        ->toContain("background-color: {$background(':root')}")
+        ->toContain("background-color: {$background('.dark')}")
         ->not->toContain('@fonts');
 });

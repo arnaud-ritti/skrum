@@ -143,7 +143,15 @@ it('queries the visible teams once for both shared props', function () {
     DB::enableQueryLog();
     $this->actingAs($user)->get(route('profile.edit'));
     $teamQueries = collect(DB::getQueryLog())
-        ->filter(fn (array $query) => str_starts_with($query['query'], 'select * from "teams"'))
+        ->pluck('query')
+        ->map(function (string $sql): string {
+            do {
+                $sql = preg_replace('/\([^()]*\)/', '', $sql, count: $subqueries);
+            } while ($subqueries > 0);
+
+            return $sql;
+        })
+        ->filter(fn (string $outerSql) => str_contains($outerSql, 'from "teams"'))
         ->count();
     DB::disableQueryLog();
 

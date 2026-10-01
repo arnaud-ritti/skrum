@@ -46,9 +46,9 @@ it('offers to delete a board to its facilitator and to workspace admins only', f
         ->assertOk()
         ->inertiaProps('whiteboards'))->pluck('canDelete', 'id')->all();
 
-    expect($canDelete($facilitator))->toBe([$orphan->id => false, $board->id => true])
-        ->and($canDelete(teamMember($team)))->toBe([$orphan->id => false, $board->id => false])
-        ->and($canDelete(workspaceManager($team->workspace)))->toBe([$orphan->id => true, $board->id => true]);
+    expect($canDelete($facilitator))->toEqual([$orphan->id => false, $board->id => true])
+        ->and($canDelete(teamMember($team)))->toEqual([$orphan->id => false, $board->id => false])
+        ->and($canDelete(workspaceManager($team->workspace)))->toEqual([$orphan->id => true, $board->id => true]);
 });
 
 it('lists the workspace templates by name, without their scenes', function () {
