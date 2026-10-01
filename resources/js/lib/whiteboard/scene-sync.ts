@@ -21,6 +21,7 @@ const FlushDelayMs = 300;
 const RetryDelayMs = 2000;
 const MaxBatch = 200;
 const MaxIdleFetches = 3;
+const MaxRecoveryDelayMs = 30000;
 const FatalStatuses = [401, 403, 404, 419];
 
 export type SceneSyncDeps = {
@@ -59,6 +60,14 @@ export function createSceneSync(deps: SceneSyncDeps): SceneSync {
     let disposed = false;
     let resyncing: Promise<void> | null = null;
     let recovering: Promise<void> | null = null;
+    /** A remote change is missing from the canvas until the scene is reloaded. */
+    let recoveryOwed = false;
+    let recoveryFailures = 0;
+    let recoveryTimer: ReturnType<typeof setTimeout> | null = null;
+
+    /** Nothing may report the board in step while a reload is still owed. */
+    const setOffline = (offline: boolean) =>
+        deps.onOffline(offline || recoveryOwed);
 
     const scene = () =>
         api.getSceneElementsIncludingDeleted() as unknown as SceneElement[];
@@ -314,7 +323,7 @@ export function createSceneSync(deps: SceneSyncDeps): SceneSync {
                 }
             }
 
-            deps.onOffline(false);
+            setOffline(false);
         } catch (error) {
             failed = true;
 
@@ -325,7 +334,7 @@ export function createSceneSync(deps: SceneSyncDeps): SceneSync {
             }
 
             requeue(batch);
-            deps.onOffline(true);
+            setOffline(true);
         } finally {
             flushing = false;
 
@@ -356,8 +365,34 @@ export function createSceneSync(deps: SceneSyncDeps): SceneSync {
         seq = snapshot.seq;
     };
 
+    /**
+     * The seq has moved past the change that could not be merged, so no later
+     * delta brings it back: the reload is retried, with a growing delay, until
+     * it succeeds. A request made while one is running or waiting joins it.
+     */
     const recover = () => {
-        recovering ??= replaceScene()
+        recoveryOwed = true;
+
+        if (recovering || recoveryTimer !== null || disposed) {
+            return;
+        }
+
+        recovering = replaceScene()
+            .then(() => {
+                recoveryOwed = false;
+                recoveryFailures = 0;
+
+                if (disposed) {
+                    return;
+                }
+
+                setOffline(false);
+
+                // The snapshot may be older than an event applied meanwhile.
+                if (seq < wantedSeq) {
+                    void resync();
+                }
+            })
             .catch((error: unknown) => {
                 if (isFatal(error)) {
                     deps.onFatal(error);
@@ -366,7 +401,23 @@ export function createSceneSync(deps: SceneSyncDeps): SceneSync {
                 }
 
                 console.error('whiteboard: the board was not reloaded', error);
-                deps.onOffline(true);
+                setOffline(true);
+
+                if (disposed) {
+                    return;
+                }
+
+                recoveryFailures += 1;
+                recoveryTimer = setTimeout(
+                    () => {
+                        recoveryTimer = null;
+                        recover();
+                    },
+                    Math.min(
+                        RetryDelayMs * 2 ** (recoveryFailures - 1),
+                        MaxRecoveryDelayMs,
+                    ),
+                );
             })
             .finally(() => {
                 recovering = null;
@@ -408,7 +459,7 @@ export function createSceneSync(deps: SceneSyncDeps): SceneSync {
                     idleFetches < MaxIdleFetches
                 );
 
-                deps.onOffline(false);
+                setOffline(false);
             } catch (error) {
                 if (isFatal(error)) {
                     deps.onFatal(error);
@@ -416,9 +467,9 @@ export function createSceneSync(deps: SceneSyncDeps): SceneSync {
                     error instanceof RetroRequestError &&
                     error.status === 409
                 ) {
-                    await replaceScene().catch(() => deps.onOffline(true));
+                    await replaceScene().catch(() => setOffline(true));
                 } else {
-                    deps.onOffline(true);
+                    setOffline(true);
                 }
             } finally {
                 resyncing = null;
@@ -482,6 +533,10 @@ export function createSceneSync(deps: SceneSyncDeps): SceneSync {
 
             if (timer !== null) {
                 clearTimeout(timer);
+            }
+
+            if (recoveryTimer !== null) {
+                clearTimeout(recoveryTimer);
             }
         },
     };
