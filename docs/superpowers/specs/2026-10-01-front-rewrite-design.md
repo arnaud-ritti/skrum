@@ -43,7 +43,7 @@ The front end still carries the Laravel starter kit: stock shadcn neutral tokens
 | Languages | `en`, `fr`, `es`, `de` stay complete. New keys are added to all four files. Visual captures run in FR and EN. |
 | Migration strategy | In place, screen by screen. `app.css` and `components/ui` are replaced in phases 1 and 2; old pages run on them until rewritten in phase 5. There are never two versions of a component. |
 | Containers | Per domain, in `resources/js/components/<domain>/`. No new base folder. |
-| Instance admin | The first registered user is the instance admin and can name others. |
+| Instance admin | The first registered user is the instance admin (already the case in the code) and can name others (new). |
 | Magic link and e-mail 2FA code | Built in this project (phase 6). |
 | ⌘K | Navigation, commands and content search (new route). |
 | Column colours | `ColumnColor` is extended to the eight design-system colours. |
@@ -89,7 +89,7 @@ These come from the brief and the design system. They are acceptance criteria fo
 8. **Motion**: `sections/02-motion.md`; `prefers-reduced-motion` respected everywhere.
 9. **Icons**: lucide-react only, per `sections/03-iconographie.md`. Emoji only as a feature.
 10. **i18n**: no fixed width on a label. The literal call shape `t('…')` is kept, because `TranslationKeysTest` scans for it.
-11. **Presentational components**: typed props, no network, no Echo, no Inertia calls. Those live in hooks and containers.
+11. **Presentational components**: typed props, no network, no Echo, no Inertia router or page-prop access. Those live in hooks and containers. Two exceptions: `useTrans()` for labels and Inertia's `<Link>` for navigation.
 12. The values in `docs/design-system/app.css` are not modified. Additions to `@theme` are allowed for sizes missing from the scale.
 
 ## 6. Architecture
@@ -150,7 +150,7 @@ Numbers refer to `design-system-digest.md` §5.
 | 26 | In phase Actions the main facilitator action is "Next phase" (to ROTI). The session ends from ROTI. |
 | 27 | ReactionBar, settings icon, back button and icon share are present in every retro phase. |
 | 28 | FacilitatorBar takes a list of typed actions per phase, so every existing facilitator action has a slot. |
-| 35 | One game icon everywhere: the one in `sections/03-iconographie.md` (`Sparkles`). |
+| 35 | The sidebar entry Games uses `PartyPopper`, as `Sidebar/README.md` says. The icebreaker module elsewhere uses `Sparkles`, as `sections/03-iconographie.md` says. |
 
 Components without a README (`SessionCard`, `StatCard`, `ColumnColorPicker`, `DeckEditor`, `Alert`, `Combobox`, `Kbd`, game UIs, survey builder, skeleton variants) are derived from the screen previews and the README that mentions them.
 
@@ -210,7 +210,7 @@ Each item is approved by this spec once the spec is approved. Nothing else on th
 | B1 | `RetroPhase` gains `Actions` and `Roti` between `Discussing` and `Completed`. Neighbour rule, `Retro::phases()`, guards, visibility rules, `phase` payloads, TS types and reducer updated. Open retros in `discussing` move forward through the new phases; completed retros are unchanged. | 5.2 |
 | B2 | ROTI is collected in phase `roti`. It stays readable in `completed`. Voting on ROTI in `completed` stays allowed for retros completed before the change, so nothing is lost. | 5.2 |
 | B3 | Session-end screen: `completed` already serves results, exports and the recap e-mail. Props are added only if the mockup needs data that the server already holds (duration, participation, counts). | 5.2 |
-| B4 | Instance settings: table `instance_settings`, cache, and an Admin area with routes and a policy. Sections: Branding, Admins. `users.is_instance_admin` boolean. A migration marks the earliest-created user as admin on existing instances; on a fresh instance the first registered user is marked. Admins can grant and revoke the flag; the last admin cannot be revoked. | 4 |
+| B4 | Instance settings: table `instance_settings`, cache, and an Admin area with routes and a policy. Sections: Branding, Admins. `users.is_instance_admin` already exists and the first registered user (form or SSO) already receives it; nothing changes there. New: admins can grant and revoke the flag from Admin › Admins; the last admin cannot be revoked. | 4 |
 | B5 | `App\Support\Branding\BrandPalette` from `docs/design-system/php/BrandPalette.php`, adapted to the project's PHP guidelines, plus `toHex()`. `<style id="skrum-brand">` is injected after `@vite` in `app.blade.php`. | 4 |
 | B6 | Branding settings: colour, light and dark logos, favicon, radius (0–16px), display name, "Powered by Skrüm" toggle, DiceBear avatar style with "members can choose" (`users.avatar_style`, nullable), GIF provider key and enable switch. Environment variables stay as defaults when no setting is stored. Default GIF rating becomes `g`. | 4 |
 | B7 | CC BY attribution for the active avatar style on an "About" screen reachable from the user menu. | 4 |
@@ -222,6 +222,7 @@ Each item is approved by this spec once the spec is approved. Nothing else on th
 | B13 | E-mail code as a second factor: a user enables it in Security; at the challenge a 6-digit code valid 10 minutes is sent, stored hashed, with a 60-second resend cooldown and a limit of five attempts. TOTP, recovery codes and passkeys are unchanged. | 6 |
 | B14 | E-mails as Mailables per `components/Emails/README.md`, light and dark, using `BrandPalette::toHex()`: magic link, invitation, action reminder, retro recap, 2FA code. The three existing notifications keep their triggers and recipients. | 6 |
 | B15 | Custom Inertia error pages for 403, 404, 500, 503. | 5.11 |
+| B16 | Shared props for the team-centred sidebar: `currentTeam` (`id`, `name`, `membersCount`, or null) and `teams` (`id`, `name` of the teams of the current workspace visible to the user). The current team is the `team` route parameter when present; otherwise the last team visited, remembered in the session; otherwise the first visible team by name. | 1 |
 
 B12 and B13 are authentication changes. Their plan includes a security review step before merge.
 
