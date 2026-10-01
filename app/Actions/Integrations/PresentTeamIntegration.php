@@ -20,7 +20,7 @@ class PresentTeamIntegration
         'jira' => ['cloudId', 'siteName', 'siteUrl', 'sites', 'storyPointFields', 'numberFields', 'priorityMap'],
         'linear' => ['organizationName', 'urlKey', 'priorityMap'],
         'jira_dc' => ['serverTitle', 'version', 'baseUrl', 'authMethod', 'storyPointFields', 'numberFields', 'priorityMap'],
-        'github' => [],
+        'github' => ['installationId', 'accountLogin', 'accountType', 'exportRepositoryId', 'priorityLabels'],
         'msteams' => ['host', 'channelLabel'],
         'mattermost' => ['host', 'channelLabel'],
         'webhook' => ['host', 'channelLabel', 'secretCreatedAt', 'events', 'disabledReason'],

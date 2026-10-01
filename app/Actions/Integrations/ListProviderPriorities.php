@@ -18,6 +18,10 @@ class ListProviderPriorities
      */
     public function handle(TeamIntegration $integration): array
     {
+        if ($integration->provider === IntegrationProvider::GitHub) {
+            return [];
+        }
+
         if ($integration->provider === IntegrationProvider::Linear) {
             return LinearPriority::options();
         }

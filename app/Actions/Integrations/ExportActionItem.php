@@ -27,6 +27,7 @@ class ExportActionItem
         private ResolveExportAssignee $resolveAssignee,
         private ExportToJira $exportToJira,
         private ExportToLinear $exportToLinear,
+        private ExportToGitHub $exportToGitHub,
         private BroadcastActionItemChange $broadcast,
     ) {}
 
@@ -87,6 +88,7 @@ class ExportActionItem
                 'issue_type_id' => $this->targetId($target, 'issue_type_id'),
             ]),
             IntegrationProvider::Linear => $this->exportToLinear->create($integration, $locked, $draft, $assignee, ['team_id' => $this->targetId($target, 'team_id')]),
+            IntegrationProvider::GitHub => $this->exportToGitHub->create($integration, $locked, $draft, $assignee, ['repository_id' => $this->targetId($target, 'repository_id')]),
             default => throw new InvalidArgumentException("{$integration->provider->value} does not export action items."),
         };
 
@@ -133,6 +135,7 @@ class ExportActionItem
     {
         $saved = match ($integration->provider) {
             IntegrationProvider::Jira, IntegrationProvider::JiraDataCenter => ['exportProjectId' => $target['project_id'], 'exportIssueTypeId' => $target['issue_type_id']],
+            IntegrationProvider::GitHub => ['exportRepositoryId' => $target['repository_id']],
             default => ['exportTeamId' => $target['team_id']],
         };
 

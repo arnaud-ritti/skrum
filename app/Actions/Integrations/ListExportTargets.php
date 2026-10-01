@@ -4,6 +4,7 @@ namespace App\Actions\Integrations;
 
 use App\Enums\IntegrationProvider;
 use App\Models\TeamIntegration;
+use App\Support\Integrations\GitHub\GitHubClient;
 use App\Support\Integrations\Jira\JiraApis;
 use App\Support\Integrations\Linear\LinearClient;
 use Illuminate\Support\Str;
@@ -16,7 +17,7 @@ class ListExportTargets
 
     private const PreferredIssueType = 'task';
 
-    public function __construct(private JiraApis $jiraApis, private LinearClient $linear) {}
+    public function __construct(private JiraApis $jiraApis, private LinearClient $linear, private GitHubClient $gitHub) {}
 
     /**
      * @return array<string, mixed>
@@ -25,6 +26,7 @@ class ListExportTargets
     {
         return match ($integration->provider) {
             IntegrationProvider::Linear => $this->linearTargets($integration),
+            IntegrationProvider::GitHub => $this->gitHubTargets($integration, $query),
             default => $this->jiraTargets($integration, $projectId, $query),
         };
     }
@@ -155,6 +157,29 @@ class ListExportTargets
         return [
             'teams' => $teams,
             'defaults' => ['teamId' => $this->listed($teams, $integration->setting('exportTeamId')) ?? ($teams[0]['id'] ?? null)],
+        ];
+    }
+
+    /**
+     * @return array{repositories: array<int, array{id: string, name: string}>, defaults: array{repositoryId: ?string}}
+     */
+    private function gitHubTargets(TeamIntegration $integration, ?string $query): array
+    {
+        $needle = Str::lower(trim((string) $query));
+        $all = $this->gitHub->repositories($integration);
+        $listed = array_slice(array_values(array_filter(
+            $all,
+            fn (array $repository): bool => $needle === '' || str_contains(Str::lower($repository['name']), $needle),
+        )), 0, self::ProjectLimit);
+        $saved = collect($all)->first(fn (array $repository): bool => $repository['id'] === $integration->setting('exportRepositoryId'));
+
+        if ($saved !== null && $needle === '' && $this->listed($listed, $saved['id']) === null) {
+            array_unshift($listed, $saved);
+        }
+
+        return [
+            'repositories' => $listed,
+            'defaults' => ['repositoryId' => $this->listed($listed, $integration->setting('exportRepositoryId')) ?? ($listed[0]['id'] ?? null)],
         ];
     }
 

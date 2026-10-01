@@ -3,7 +3,9 @@
 namespace App\Actions\Integrations;
 
 use App\Enums\ExportWarningCode;
+use App\Enums\IntegrationProvider;
 use App\Enums\IntegrationUserMatch;
+use App\Enums\SsoProvider;
 use App\Models\ActionItem;
 use App\Models\TeamIntegration;
 use App\Models\User;
@@ -51,7 +53,7 @@ class ResolveExportAssignee
         $integration->userMappings()->firstOrCreate(['user_id' => $user->id], [
             'external_account_id' => $account->id,
             'external_display_name' => $account->displayName,
-            'matched_by' => IntegrationUserMatch::Email,
+            'matched_by' => $integration->provider === IntegrationProvider::GitHub ? IntegrationUserMatch::Sso : IntegrationUserMatch::Email,
             'account_inactive' => false,
             'checked_at' => now(),
         ]);
@@ -59,18 +61,29 @@ class ResolveExportAssignee
         return ExportAssignee::assigned($account->id, $user->name);
     }
 
-    private function lookUp(TeamIntegration $integration, User $user): ?ExternalAccount
+    /**
+     * Whether an export may look this member up: GitHub through their
+     * GitHub sign-in, the others by verified email.
+     */
+    public static function canLookUp(TeamIntegration $integration, User $user): bool
     {
-        if ($user->email_verified_at === null) {
-            return null;
+        if ($integration->provider === IntegrationProvider::GitHub) {
+            return $user->socialAccounts()->where('provider', SsoProvider::GitHub->value)->exists();
         }
 
-        if (! IntegrationMappingGuard::hasAccountScope($integration)) {
+        return $user->email_verified_at !== null && IntegrationMappingGuard::hasAccountScope($integration);
+    }
+
+    private function lookUp(TeamIntegration $integration, User $user): ?ExternalAccount
+    {
+        if (! self::canLookUp($integration, $user)) {
             return null;
         }
 
         try {
-            return $this->accounts->matchEmails($integration, [$user->email])[Str::lower($user->email)] ?? null;
+            return $integration->provider === IntegrationProvider::GitHub
+                ? $this->accounts->matchSso($integration, [$user])[$user->id] ?? null
+                : $this->accounts->matchEmails($integration, [$user->email])[Str::lower($user->email)] ?? null;
         } catch (IntegrationException) {
             return null;
         }

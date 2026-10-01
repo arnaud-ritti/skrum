@@ -1655,5 +1655,6 @@
     "Choose a repository to search in.": "Wähle ein Repository für die Suche.",
     "This card is not an estimate.": "Diese Karte ist keine Schätzung.",
     "The issue description is too long to add the estimate.": "Die Issue-Beschreibung ist zu lang, um die Schätzung hinzuzufügen.",
-    "The issue description kept changing. Try again.": "Die Issue-Beschreibung hat sich ständig geändert. Versuche es erneut."
+    "The issue description kept changing. Try again.": "Die Issue-Beschreibung hat sich ständig geändert. Versuche es erneut.",
+    "Due: :date": "Fällig: :date"
 }

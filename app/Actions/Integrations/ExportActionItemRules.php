@@ -6,7 +6,7 @@ use Illuminate\Validation\Rule;
 
 /**
  * Target ids end up in provider URL paths, so they are digits (Jira) or a
- * UUID (Linear) and nothing else.
+ * UUID (Linear) and nothing else; GitHub repository ids are digits too.
  */
 class ExportActionItemRules
 {
@@ -20,6 +20,7 @@ class ExportActionItemRules
             'project_id' => ['exclude_unless:source,jira,jira_dc', 'required', 'string', 'regex:/^\d{1,20}\z/'],
             'issue_type_id' => ['exclude_unless:source,jira,jira_dc', 'required', 'string', 'regex:/^\d{1,20}\z/'],
             'team_id' => ['exclude_unless:source,linear', 'required', 'uuid'],
+            'repository_id' => ['exclude_unless:source,github', 'required', 'string', 'regex:/^\d{1,20}\z/'],
         ];
     }
 }

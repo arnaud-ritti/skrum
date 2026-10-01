@@ -3,17 +3,21 @@
 namespace App\Support\Integrations;
 
 use App\Enums\IntegrationProvider;
+use App\Enums\SsoProvider;
+use App\Models\SocialAccount;
 use App\Models\TeamIntegration;
+use App\Models\User;
 use App\Support\Integrations\Exceptions\ProviderRejected;
+use App\Support\Integrations\GitHub\GitHubClient;
 use App\Support\Integrations\Jira\JiraClient;
 use App\Support\Integrations\JiraDataCenter\JiraDataCenterClient;
 use App\Support\Integrations\Linear\LinearClient;
 use Illuminate\Support\Str;
 
 /**
- * Accounts of the team's Jira site, Jira server or Linear workspace.
- * Provider emails are compared here, in memory, and never stored or
- * returned.
+ * Accounts of the team's Jira site, Jira server, Linear workspace or GitHub
+ * installation. Provider emails are compared here, in memory, and never
+ * stored or returned; GitHub is matched through SSO links only.
  */
 class IntegrationUserAccounts
 {
@@ -29,7 +33,12 @@ class IntegrationUserAccounts
 
     private const LinearUserFields = 'id name displayName email active';
 
-    public function __construct(private JiraClient $jira, private LinearClient $linear, private JiraDataCenterClient $jiraDataCenter) {}
+    public function __construct(
+        private JiraClient $jira,
+        private LinearClient $linear,
+        private JiraDataCenterClient $jiraDataCenter,
+        private GitHubClient $gitHub,
+    ) {}
 
     public function find(TeamIntegration $integration, string $accountId): ?ExternalAccount
     {
@@ -41,6 +50,9 @@ class IntegrationUserAccounts
                     $this->linear->query($integration, 'query User($id: String!) { user(id: $id) { '.self::LinearUserFields.' } }', ['id' => $accountId]),
                     'user',
                 )),
+                IntegrationProvider::GitHub => preg_match('/^\d{1,20}\z/', $accountId) === 1
+                    ? $this->gitHubAccount($this->gitHub->get($integration, "user/{$accountId}"))
+                    : null,
                 default => null,
             };
         } catch (ProviderRejected) {
@@ -54,6 +66,10 @@ class IntegrationUserAccounts
      */
     public function matchEmails(TeamIntegration $integration, array $emails): array
     {
+        if ($integration->provider === IntegrationProvider::GitHub) {
+            return [];
+        }
+
         if ($integration->provider === IntegrationProvider::Linear) {
             return $this->matchLinearEmails($this->linearUsers($integration), $emails);
         }
@@ -113,6 +129,10 @@ class IntegrationUserAccounts
      */
     public function search(TeamIntegration $integration, string $query): array
     {
+        if ($integration->provider === IntegrationProvider::GitHub) {
+            return $this->searchGitHub($integration, Str::lower($query));
+        }
+
         if ($integration->provider === IntegrationProvider::Linear) {
             return $this->searchLinear($integration, Str::lower($query));
         }
@@ -124,6 +144,70 @@ class IntegrationUserAccounts
         $results = $this->jira->get($integration, 'rest/api/3/user/search', ['query' => $query, 'maxResults' => self::SearchLimit]);
 
         return $this->activeJiraAccounts($results);
+    }
+
+    /**
+     * Spec 8 §4.2: members who signed in to skrum with GitHub, keyed by
+     * user id. No email is ever sent to GitHub.
+     *
+     * @param  iterable<int, User>  $members
+     * @return array<string, ExternalAccount>
+     */
+    public function matchSso(TeamIntegration $integration, iterable $members): array
+    {
+        $ids = collect($members)->map(fn (User $member): string => $member->id)->all();
+        $linked = SocialAccount::query()
+            ->where('provider', SsoProvider::GitHub->value)
+            ->whereIn('user_id', $ids)
+            ->pluck('provider_user_id', 'user_id');
+        $matches = [];
+
+        foreach ($linked as $userId => $gitHubUserId) {
+            $account = $this->find($integration, (string) $gitHubUserId);
+
+            if ($account !== null && $account->active) {
+                $matches[(string) $userId] = $account;
+            }
+        }
+
+        return $matches;
+    }
+
+    /**
+     * Organization members, or the export repository's collaborators for an
+     * installation on a personal account; filtered here by login.
+     *
+     * @return array<int, ExternalAccount>
+     */
+    private function searchGitHub(TeamIntegration $integration, string $needle): array
+    {
+        $login = $integration->setting('accountLogin');
+        $repositoryId = $integration->setting('exportRepositoryId');
+
+        $users = match (true) {
+            $integration->setting('accountType') === 'Organization' && GitHubClient::isLogin($login) => $this->gitHub->get($integration, "orgs/{$login}/members", ['per_page' => 100]),
+            is_string($repositoryId) => $this->gitHub->get($integration, 'repos/'.$this->gitHub->repositoryName($integration, $repositoryId).'/collaborators', ['per_page' => 100]),
+            default => [],
+        };
+
+        $found = array_values(array_filter(
+            array_map(fn (mixed $user): ?ExternalAccount => $this->gitHubAccount($user), $users),
+            fn (?ExternalAccount $account): bool => $account !== null && $account->active && str_contains(Str::lower($account->displayName), $needle),
+        ));
+
+        return array_slice($found, 0, self::SearchLimit);
+    }
+
+    /**
+     * The display name is the login; bots are never assignable.
+     */
+    private function gitHubAccount(mixed $user): ?ExternalAccount
+    {
+        if (! is_array($user) || ! is_int($user['id'] ?? null) || ! GitHubClient::isLogin($user['login'] ?? null)) {
+            return null;
+        }
+
+        return new ExternalAccount((string) $user['id'], $user['login'], ($user['type'] ?? 'User') === 'User');
     }
 
     /**

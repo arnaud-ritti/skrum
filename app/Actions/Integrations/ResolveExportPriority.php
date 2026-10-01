@@ -56,11 +56,26 @@ class ResolveExportPriority
     }
 
     /**
+     * Spec 8 §4.2: GitHub priorities are labels an admin names per level;
+     * none configured means no label.
+     */
+    public function gitHubLabel(ActionItem $item, TeamIntegration $integration): ?string
+    {
+        $label = data_get($integration->settings, 'priorityLabels.'.$item->priority->value);
+
+        return is_string($label) && trim($label) !== '' ? trim($label) : null;
+    }
+
+    /**
      * What the export dialog shows, from stored data only; null means
      * "the provider's default".
      */
     public function preview(ActionItem $item, TeamIntegration $integration): ?string
     {
+        if ($integration->provider === IntegrationProvider::GitHub) {
+            return $this->gitHubLabel($item, $integration);
+        }
+
         $level = $item->priority->value;
         $map = (array) $integration->setting('priorityMap', []);
 

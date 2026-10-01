@@ -47,6 +47,10 @@ class UpdateTeamIntegration
                 'priority_map' => ['sometimes', 'array:high,medium,low'],
                 'priority_map.*' => ['required', Rule::in([...array_map('strval', LinearPriority::Scale), self::DefaultPriority])],
             ],
+            IntegrationProvider::GitHub => [
+                'priority_labels' => ['sometimes', 'array:high,medium,low'],
+                'priority_labels.*' => ['nullable', 'string', 'max:50', 'not_regex:/^\s*\.{1,2}\s*\z/'],
+            ],
             IntegrationProvider::MicrosoftTeams, IntegrationProvider::Mattermost => $this->connectUrlChannel->rules($integration->provider, isUpdate: true),
             IntegrationProvider::Webhook => $this->connectOutgoingWebhook->rules(isUpdate: true),
             default => [],
@@ -83,6 +87,18 @@ class UpdateTeamIntegration
             $integration->ensureWritable();
 
             $integration = $this->savePriorityMap($integration, $validated['priority_map']);
+        }
+
+        if (is_array($validated['priority_labels'] ?? null)) {
+            $integration->ensureWritable();
+
+            $labels = (array) $integration->setting('priorityLabels', []);
+
+            foreach ($validated['priority_labels'] as $level => $label) {
+                $labels[$level] = is_string($label) && trim($label) !== '' ? trim($label) : null;
+            }
+
+            $integration->forceFill(['settings' => [...$integration->settings, 'priorityLabels' => $labels]])->save();
         }
 
         return $integration->refresh();

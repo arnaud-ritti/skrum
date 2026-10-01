@@ -1409,5 +1409,6 @@
     "Choose a repository to search in.": "Choose a repository to search in.",
     "This card is not an estimate.": "This card is not an estimate.",
     "The issue description is too long to add the estimate.": "The issue description is too long to add the estimate.",
-    "The issue description kept changing. Try again.": "The issue description kept changing. Try again."
+    "The issue description kept changing. Try again.": "The issue description kept changing. Try again.",
+    "Due: :date": "Due: :date"
 }

@@ -18,7 +18,7 @@ class ActionItemExportGuard
     /**
      * Trackers that take exported action items; the enum value is the `source`.
      */
-    public const Sources = ['jira', 'jira_dc', 'linear'];
+    public const Sources = ['jira', 'jira_dc', 'linear', 'github'];
 
     public function __construct(private ActionItemPermissions $permissions) {}
 
