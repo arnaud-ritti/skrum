@@ -142,11 +142,11 @@ function RoundVotes({
     const { t } = useTrans();
     const mode = round.result?.mode ?? [];
 
-    // An anonymous round lists the values in deck order, never next to a name
-    // and never in the order the votes came in.
+    // An anonymous round lists the values in deck order with their count,
+    // never next to a name and never in the order the votes came in.
     if (round.anonymous) {
-        const values = (round.result?.distribution ?? []).flatMap(
-            ({ value, count }) => Array.from({ length: count }, () => value),
+        const entries = (round.result?.distribution ?? []).filter(
+            (entry) => entry.count > 0,
         );
 
         return (
@@ -158,11 +158,14 @@ function RoundVotes({
                     aria-label={t('Anonymous votes')}
                     className="flex min-w-0 flex-wrap gap-1.5"
                 >
-                    {values.map((value, index) => (
-                        <li key={`${value}-${index}`} className="flex min-w-0">
+                    {entries.map((entry) => (
+                        <li key={entry.value} className="flex min-w-0">
                             <MiniCard
-                                value={value}
-                                highlighted={mode.includes(value)}
+                                value={t(':value × :count', {
+                                    value: entry.value,
+                                    count: entry.count,
+                                })}
+                                highlighted={mode.includes(entry.value)}
                             />
                         </li>
                     ))}
@@ -182,15 +185,15 @@ function RoundVotes({
                     data-slot="poker-round-vote"
                     className="flex max-w-full min-w-0 items-center gap-1.5 text-xs"
                 >
+                    <span className="min-w-0 truncate text-muted-foreground">
+                        {nameOf(vote.playerId)}:{' '}
+                    </span>
                     <MiniCard
                         value={vote.value ?? '—'}
                         highlighted={
                             vote.value !== null && mode.includes(vote.value)
                         }
                     />
-                    <span className="min-w-0 truncate text-muted-foreground">
-                        {nameOf(vote.playerId)}
-                    </span>
                 </li>
             ))}
         </ul>

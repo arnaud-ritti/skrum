@@ -3972,5 +3972,10 @@
     "Any values, emoji allowed": "Valeurs libres, emoji acceptés",
     "Set as default": "Définir par défaut",
     "Set :name as default": "Définir :name par défaut",
-    "Deck duplicated.": "Deck dupliqué."
+    "Deck duplicated.": "Deck dupliqué.",
+    ":name opens the discussion.": ":name ouvre la discussion.",
+    ":names open the discussion.": ":names ouvrent la discussion.",
+    "The lowest and the highest estimates open the discussion.": "L'estimation la plus basse et la plus haute ouvrent la discussion.",
+    ":percent % on :value": ":percent % sur :value",
+    ":percent %": ":percent %"
 }

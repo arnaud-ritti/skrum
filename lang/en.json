@@ -3749,5 +3749,10 @@
     "Set as default": "Set as default",
     "Set :name as default": "Set :name as default",
     "Duplicate :name": "Duplicate :name",
-    "Deck duplicated.": "Deck duplicated."
+    "Deck duplicated.": "Deck duplicated.",
+    ":name opens the discussion.": ":name opens the discussion.",
+    ":names open the discussion.": ":names open the discussion.",
+    "The lowest and the highest estimates open the discussion.": "The lowest and the highest estimates open the discussion.",
+    ":percent % on :value": ":percent % on :value",
+    ":percent %": ":percent %"
 }

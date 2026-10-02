@@ -3972,5 +3972,10 @@
     "Any values, emoji allowed": "Beliebige Werte, Emojis erlaubt",
     "Set as default": "Als Standard festlegen",
     "Set :name as default": ":name als Standard festlegen",
-    "Deck duplicated.": "Kartensatz dupliziert."
+    "Deck duplicated.": "Kartensatz dupliziert.",
+    ":name opens the discussion.": ":name eröffnet die Diskussion.",
+    ":names open the discussion.": ":names eröffnen die Diskussion.",
+    "The lowest and the highest estimates open the discussion.": "Die niedrigste und die höchste Schätzung eröffnen die Diskussion.",
+    ":percent % on :value": ":percent % auf :value",
+    ":percent %": ":percent %"
 }

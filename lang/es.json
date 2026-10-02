@@ -3972,5 +3972,10 @@
     "Any values, emoji allowed": "Valores libres, se admiten emojis",
     "Set as default": "Usar por defecto",
     "Set :name as default": "Usar :name por defecto",
-    "Deck duplicated.": "Baraja duplicada."
+    "Deck duplicated.": "Baraja duplicada.",
+    ":name opens the discussion.": ":name abre el debate.",
+    ":names open the discussion.": ":names abren el debate.",
+    "The lowest and the highest estimates open the discussion.": "La estimación más baja y la más alta abren el debate.",
+    ":percent % on :value": ":percent % en :value",
+    ":percent %": ":percent %"
 }

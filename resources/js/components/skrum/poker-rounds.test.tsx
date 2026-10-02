@@ -83,7 +83,7 @@ describe('PokerRounds', () => {
         expect(rounds()).toHaveLength(2);
     });
 
-    it('lists each vote next to its player, in the order given', () => {
+    it('lists each vote as "name: value", in the order given', () => {
         renderWithProviders(
             <PokerRounds
                 rounds={[consensusRound, round()]}
@@ -100,12 +100,12 @@ describe('PokerRounds', () => {
             within(second)
                 .getAllByRole('listitem')
                 .map((item) => item.textContent),
-        ).toEqual(['5Ada', '5Bob', '—Former member']);
+        ).toEqual(['Ada: 5', 'Bob: 5', 'Former member: —']);
         expect(within(first).getByText('Spread 3 → 13')).toBeTruthy();
         expect(within(first).getByText('3 votes')).toBeTruthy();
     });
 
-    it('lists an anonymous round by value in deck order, without any name', () => {
+    it('lists an anonymous round as "value × count" in deck order, without any name', () => {
         renderWithProviders(
             <PokerRounds
                 rounds={[
@@ -127,8 +127,8 @@ describe('PokerRounds', () => {
             within(list)
                 .getAllByRole('listitem')
                 .map((item) => item.textContent),
-        ).toEqual(['3', '5', '13']);
-        expect(screen.queryByText('Ada')).toBeNull();
+        ).toEqual(['3 × 1', '5 × 1', '13 × 1']);
+        expect(screen.queryByText(/Ada/)).toBeNull();
         expect(screen.queryByText('Bob')).toBeNull();
     });
 
@@ -275,8 +275,8 @@ describe('PokerRounds', () => {
         ).toBeTruthy();
         expect(rounds()).toHaveLength(200);
         expect(within(rounds()[0]).getAllByRole('listitem')).toHaveLength(13);
-        expect(within(rounds()[0]).getByText(longName).className).toContain(
-            'truncate',
-        );
+        expect(
+            within(rounds()[0]).getByText(`${longName}:`).className,
+        ).toContain('truncate');
     });
 });
