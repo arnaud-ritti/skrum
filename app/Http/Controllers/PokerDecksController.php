@@ -80,6 +80,7 @@ class PokerDecksController extends Controller
         $decks = $team->availablePokerDecks()
             ->with('creator:id,name')
             ->withCount(['games' => fn ($query) => $query->where('team_id', $team->id)])
+            ->orderBy('id')
             ->get();
 
         return Alphabetical::sort($decks, fn (SavedPokerDeck $deck): string => $deck->name)

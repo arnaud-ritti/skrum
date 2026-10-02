@@ -65,7 +65,7 @@ class BuildBoardSnapshot
     {
         $retro->loadMissing([
             'team.workspace',
-            'team.members',
+            'team.members' => fn (Builder $members) => $members->orderBy('users.id'),
             'participants.user',
             'cards.participant.user',
             'cards.reactions.participant.user',

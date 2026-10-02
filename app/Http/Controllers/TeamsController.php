@@ -171,7 +171,7 @@ class TeamsController extends Controller
     {
         $isManager = $user->canManage($workspace);
 
-        return Alphabetical::sort($team->availablePokerDecks()->get(), fn (SavedPokerDeck $deck): string => $deck->name)
+        return Alphabetical::sort($team->availablePokerDecks()->orderBy('id')->get(), fn (SavedPokerDeck $deck): string => $deck->name)
             ->map(fn (SavedPokerDeck $deck): array => [
                 'id' => $deck->id,
                 'name' => $deck->name,

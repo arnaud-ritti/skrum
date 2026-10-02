@@ -10,6 +10,7 @@ use App\Models\Card;
 use App\Models\Column;
 use App\Models\Participant;
 use App\Models\Retro;
+use App\Support\Alphabetical;
 use App\Support\Avatars\AvatarUrl;
 use App\Support\Integrations\Messages\RetroRecap;
 use App\Support\Integrations\Messages\RetroRecapContent;
@@ -85,11 +86,11 @@ class BuildRetroRecap
      */
     private function participantNames(Retro $retro, bool $forMachines = false): array
     {
-        return $retro->participants
+        $names = $retro->participants
             ->map(fn (Participant $participant): string => $this->participantName($participant, $forMachines))
-            ->sort(fn (string $first, string $second): int => strcasecmp($first, $second))
-            ->values()
-            ->all();
+            ->toBase();
+
+        return Alphabetical::sort($names, fn (string $name): string => $name)->all();
     }
 
     private function summary(Retro $retro): ?string
