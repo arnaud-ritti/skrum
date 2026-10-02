@@ -4076,5 +4076,7 @@
     "Who has voted": "Who has voted",
     "Thinking…": "Thinking…",
     "Results appear for everyone when the facilitator ends the session.": "Results appear for everyone when the facilitator ends the session.",
-    ":voted of :total have voted": ":voted of :total have voted"
+    ":voted of :total have voted": ":voted of :total have voted",
+    "1 team": "1 team",
+    ":count teams": ":count teams"
 }

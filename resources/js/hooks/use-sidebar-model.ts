@@ -84,6 +84,8 @@ export function useSidebarModel(active?: NavKey): AppSidebarProps {
             id: workspace.id,
             name: workspace.name,
             href: WorkspacesController.show(workspace.slug),
+            teamsCount: workspace.teamsCount,
+            role: workspace.role,
         })),
         newWorkspaceHref: WorkspacesController.create(),
         homeHref: dashboard(),

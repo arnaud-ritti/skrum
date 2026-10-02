@@ -4299,5 +4299,7 @@
     "Who has voted": "Quién ha votado",
     "Thinking…": "Pensando…",
     "Results appear for everyone when the facilitator ends the session.": "Los resultados aparecen para todos cuando el facilitador termina la sesión.",
-    ":voted of :total have voted": ":voted de :total han votado"
+    ":voted of :total have voted": ":voted de :total han votado",
+    "1 team": "1 equipo",
+    ":count teams": ":count equipos"
 }

@@ -244,6 +244,59 @@ describe('AppSidebar', () => {
         expect(screen.queryByRole('menuitem', { name: 'New team' })).toBeNull();
     });
 
+    it('says the team count and the role of each workspace, and marks the current one', async () => {
+        const user = userEvent.setup();
+
+        renderSidebar({
+            workspaces: [
+                {
+                    id: 'w1',
+                    name: 'Nordlys',
+                    href: '/w1',
+                    teamsCount: 3,
+                    role: 'admin',
+                },
+                {
+                    id: 'w2',
+                    name: 'Kestrel Labs',
+                    href: '/w2',
+                    teamsCount: 1,
+                    role: 'member',
+                },
+            ],
+        });
+        await user.click(screen.getByRole('button', { name: /Atlas/ }));
+
+        const current = screen.getByRole('menuitem', { name: /Nordlys/ });
+        const other = screen.getByRole('menuitem', { name: /Kestrel Labs/ });
+
+        expect(
+            current.querySelector('[data-slot="workspace-details"]')
+                ?.textContent,
+        ).toBe('3 teams · Admin');
+        expect(
+            other.querySelector('[data-slot="workspace-details"]')?.textContent,
+        ).toBe('1 team · Member');
+        expect(current.getAttribute('aria-current')).toBe('true');
+        expect(other.getAttribute('aria-current')).toBeNull();
+        expect(
+            other.querySelector('[data-slot="workspace-mark"]')?.textContent,
+        ).toBe('K');
+    });
+
+    it('shows a workspace without details when the server sends none', async () => {
+        const user = userEvent.setup();
+
+        renderSidebar();
+        await user.click(screen.getByRole('button', { name: /Atlas/ }));
+
+        expect(
+            screen
+                .getByRole('menuitem', { name: /Nordlys/ })
+                .querySelector('[data-slot="workspace-details"]'),
+        ).toBeNull();
+    });
+
     it('renders the user card in the footer when no footer is given', () => {
         renderSidebar({
             user: { name: 'Ada Lovelace', role: 'Admin', avatarUrl: null },
