@@ -3979,5 +3979,11 @@
     "Retro actions": "Aktionen der Retro",
     "Give each action an owner and a due date. They stay visible on the action items page of the team.": "Gib jeder Aktion eine verantwortliche Person und ein Fälligkeitsdatum. Sie bleiben auf der Aktionsseite des Teams sichtbar.",
     "Quick add": "Schnell hinzufügen",
-    "Action created": "Aktion erstellt"
+    "Action created": "Aktion erstellt",
+    "Distribution hidden": "Verteilung verborgen",
+    "Vote, a row of five scores with an eyebrow and the hidden distribution": "Abstimmung, eine Reihe von fünf Noten mit Dachzeile und verborgener Verteilung",
+    "Last step · ROTI (return on time invested)": "Letzter Schritt · ROTI (Ertrag der investierten Zeit)",
+    "Vote saved · you can change it until the session ends": "Stimme gespeichert · bis zum Ende der Sitzung änderbar",
+    "Votes hidden until the end": "Stimmen bis zum Ende verborgen",
+    "Anonymous · nobody sees who voted what": "Anonym · niemand sieht, wer was gestimmt hat"
 }

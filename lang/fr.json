@@ -3979,5 +3979,11 @@
     "Retro actions": "Actions de la rétro",
     "Give each action an owner and a due date. They stay visible on the action items page of the team.": "Donnez à chaque action un responsable et une échéance. Elles restent visibles sur la page des actions de l’équipe.",
     "Quick add": "Ajout rapide",
-    "Action created": "Action créée"
+    "Action created": "Action créée",
+    "Distribution hidden": "Répartition masquée",
+    "Vote, a row of five scores with an eyebrow and the hidden distribution": "Vote, une rangée de cinq notes avec un surtitre et la répartition masquée",
+    "Last step · ROTI (return on time invested)": "Dernière étape · ROTI (retour sur temps investi)",
+    "Vote saved · you can change it until the session ends": "Vote enregistré · modifiable jusqu’à la fin de la session",
+    "Votes hidden until the end": "Votes masqués jusqu’à la fin",
+    "Anonymous · nobody sees who voted what": "Anonyme · personne ne voit qui a voté quoi"
 }
