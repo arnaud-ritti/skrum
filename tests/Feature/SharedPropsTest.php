@@ -16,7 +16,8 @@ it('shares the avatar URL of the signed-in user and keeps the user attributes', 
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('auth.user.avatarUrl', $user->avatarUrl())
             ->where('auth.user.email', $user->email)
-            ->missing('auth.user.password'));
+            ->missing('auth.user.password')
+            ->missing('auth.user.email_key'));
 });
 
 it('shares no user and no team for a visitor', function () {
