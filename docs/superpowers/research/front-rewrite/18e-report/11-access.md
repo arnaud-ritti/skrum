@@ -79,3 +79,35 @@ Nothing is rendered while the props are undefined.
 | 390: logo at the left of the header with the language switcher, not a centred 3.5rem logo with a back button; no "instance of the team" subtitle; the sign-up line is not pushed to the bottom | `AuthFrame`; N (no landing page behind, D-34): reported |
 | 390: fields are 3rem high with 1rem text, as the mockup | — |
 | Rebranded instance: the right pane shows the brand logo (or its name) only | 11-D4 |
+
+## Task 11.3 — forgot password, reset password, e-mail verification
+
+Pages `auth/forgot-password`, `auth/reset-password` and `auth/verify-email` render `AuthLayout` (split, with `BrandAside`) themselves and are in `ownLayoutPages`. Containers: `ForgotPasswordForm`, `ResetPasswordForm`, `VerifyEmailForm` (`resources/js/components/auth/`). Captures: `access-forgot-password-page-*`, `access-reset-password-page-*`, `access-verify-email-page-*`. `components/text-link.tsx` is deleted (no importer left).
+
+### Parity (brief 11 §3, rows 15–20)
+
+| # | Behaviour | Control | Done |
+|---|---|---|---|
+| 15 | Forgot: e-mail and submit | `ForgotPasswordForm`: `#email`, `data-test="email-password-reset-link-button"` named "Email password reset link", posts to `password.email`; the error under the field | yes |
+| 16 | Forgot: status text, return-to-login link | success alert (`role="status"`) above the form; "Or, return to" / "log in" | yes |
+| 17 | Reset: read-only e-mail, password and confirmation; token and e-mail sent through `transform` | `ResetPasswordForm`: `#email` (read-only), `#password`, `#password_confirmation`, `data-test="reset-password-button"`; `resetOnSuccess` both passwords; `passwordrules` on both | yes |
+| 18 | Verify: resend the e-mail | secondary `lg` button "Resend verification email" in a form posting to `verification.send` | yes |
+| 19 | Verify: confirmation when `status === 'verification-link-sent'` | success alert, same sentence | yes |
+| 20 | Verify: log out | ghost button "Log out", an Inertia `Link` as a button posting to `/logout`, outside the resend form | yes |
+
+### Places left
+
+None: no mockup shows these three screens.
+
+### Differences with the mockup
+
+No mockup draws these screens; they follow the ScreenAuth form pattern (spec §7, "designed from neighbours"), so the differences of `AuthFrame` listed under Task 11.2 apply as they are.
+
+| Difference | Covered by |
+|---|---|
+| The right pane repeats the login promise (or the brand alone on a rebranded instance) | 11-D4; no mockup: reported |
+| The e-mail label is "Work email", as on login, where the old pages said "Email address" and "Email" | ScreenAuth label: reported |
+| Reset: the password label is "New password" and its placeholder ":count characters minimum" is read from the server rule (the old placeholders "Password" / "Confirm password" repeated the labels) | reported |
+| Forgot: `autocomplete="email"` where the old field had `off` | reported |
+| Verify: "Log out" is a full-width ghost button, where the old page had an underlined link | brief row 20 |
+| The read-only e-mail of the reset page looks like an editable field (`TextField` has no read-only style) | `skrum/text-field` (not in this task's files): reported |

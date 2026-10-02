@@ -3921,6 +3921,7 @@
     "Quarantine the flaky tests": "Poner en cuarentena los tests inestables",
     "A single provider": "Un solo proveedor",
     "Two providers": "Dos proveedores",
+    "Email verification, link sent": "Verificación del correo, enlace enviado",
     "Passkey, password confirmation": "Clave de acceso, confirmación de contraseña",
     "The provided password is incorrect.": "La contraseña proporcionada es incorrecta.",
     "Welcome back": "Qué bueno verte de nuevo",

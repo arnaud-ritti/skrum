@@ -50,3 +50,19 @@ it('[P18e-11-02] signs a member in with "Remember me" and leaves a remember toke
 
     expect($member->fresh()->remember_token)->not->toBeNull();
 });
+
+it('[P18e-11-04] shows the status of a requested reset link as an alert above the form', function () {
+    $member = p18eAccessMember();
+
+    $page = visit('/forgot-password');
+
+    $page->assertSee('Forgot password')
+        ->assertNotPresent('[data-slot="forgot-password-form"] [role="status"]')
+        ->fill('#email', $member->email)
+        ->click('@email-password-reset-link-button')
+        ->assertSeeIn('[data-slot="forgot-password-form"] [role="status"]', 'We have emailed your password reset link.')
+        ->assertPathIs('/forgot-password')
+        ->assertNotPresent('[data-sonner-toast]')
+        ->click('log in')
+        ->assertPathIs('/login');
+});

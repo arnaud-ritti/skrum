@@ -1,5 +1,9 @@
 <?php
 
+use App\Models\User;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Support\Facades\RateLimiter;
+
 it('renders the access pages without overflow', function (string $name, string $path, string $marker) {
     config([
         'app.name' => 'Skrum',
@@ -21,4 +25,35 @@ it('renders the access pages without overflow', function (string $name, string $
 })->with([
     'login' => ['access-login-page', '/login', '[data-slot="login-form"] [data-slot="sso-buttons"]'],
     'register' => ['access-register-page', '/register', '[data-slot="register-form"] [data-slot="sso-buttons"]'],
+    'forgot password' => ['access-forgot-password-page', '/forgot-password', '[data-slot="forgot-password-form"] #email'],
+    'reset password' => ['access-reset-password-page', '/reset-password/visual-token?email=mona.member%40example.com', '[data-slot="reset-password-form"] #password_confirmation'],
 ]);
+
+it('renders the e-mail verification page without overflow', function () {
+    config(['app.name' => 'Skrum']);
+    RateLimiter::for('login', fn (): Limit => Limit::none());
+
+    $member = User::factory()->unverified()->create([
+        'name' => 'Mona Member',
+        'email' => 'mona.member@example.com',
+    ]);
+
+    $this->captureVisuals(
+        'access-verify-email-page',
+        '/email/verify',
+        function (string $path, array $options) use ($member) {
+            User::query()->whereKey($member->id)->update(['locale' => str_starts_with($options['locale'], 'fr') ? 'fr' : 'en']);
+
+            $page = visit('/login', $options);
+
+            $page->fill('#email', $member->email)
+                ->fill('#password', 'password')
+                ->click('@login-button')
+                ->assertPathIsNot('/login');
+
+            $page->navigate($path);
+
+            return $page->assertPresent('[data-slot="verify-email-form"]');
+        },
+    );
+});

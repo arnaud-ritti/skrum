@@ -3,6 +3,7 @@ import { AuthAside } from '@/components/auth/auth-aside';
 import { LoginForm } from '@/components/auth/login-form';
 import { PasskeySignIn } from '@/components/auth/passkey-sign-in';
 import { PasswordField } from '@/components/auth/password-field';
+import { VerifyEmailForm } from '@/components/auth/verify-email-form';
 import { SsoButtons } from '@/components/auth/sso-buttons';
 import type { BenchGroup } from '@/components/dev/bench';
 import { AuthFrame } from '@/components/skrum/frames';
@@ -62,6 +63,9 @@ export default function AuthSection() {
                         loadingLabel={t('Confirming...')}
                         separator={t('Or confirm with password')}
                     />
+                </State>
+                <State label={t('Email verification, link sent')}>
+                    <VerifyEmailForm status="verification-link-sent" />
                 </State>
                 <State label={t('Field in error')}>
                     <PasswordField
