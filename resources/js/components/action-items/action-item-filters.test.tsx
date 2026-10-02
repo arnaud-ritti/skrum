@@ -178,7 +178,7 @@ describe('ActionItemFilterBar', () => {
         expect(props.onChange).toHaveBeenLastCalledWith({ status: 'open' });
     });
 
-    it('offers Reset only when a facet narrows the list', () => {
+    it('offers Reset only when the page left its opening state', () => {
         const props = bar({
             filters: { ...defaults, assignee: 'me' },
             isDefault: false,

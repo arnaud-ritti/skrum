@@ -121,7 +121,7 @@ export function TeamHeader({
                 <Button variant="outline" asChild>
                     <Link href={TeamGameRoomsController.index(params)}>
                         <Gamepad2 aria-hidden />
-                        <span className="truncate">{t('Games')}</span>
+                        <span className="truncate">{t('Team games')}</span>
                     </Link>
                 </Button>
                 {settingsHref !== undefined && (
