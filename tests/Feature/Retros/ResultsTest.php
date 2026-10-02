@@ -5,11 +5,14 @@ use App\Actions\HealthCheck\FreezeHealthStatements;
 use App\Actions\HealthCheck\SummarizeHealthCheck;
 use App\Actions\Retros\BuildBoardSnapshot;
 use App\Enums\RetroPhase;
+use App\Models\Card;
 use App\Models\HealthCheckAnswer;
 use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\RotiVote;
 use App\Models\Survey;
+use App\Models\User;
+use App\Models\Vote;
 use Illuminate\Support\Facades\DB;
 
 function resultsOf(Retro $retro, Participant $viewer): ?array
@@ -165,4 +168,50 @@ it('keeps the query count constant as ratings, participants, surveys and health 
         });
 
     expect($count())->toBe($few);
+});
+
+it('reports a duration of fifty minutes for a retro completed fifty minutes after its start', function () {
+    $this->freezeTime();
+    $retro = Retro::factory()->inPhase(RetroPhase::Completed)->started(now()->subMinutes(50))->create(['completed_at' => now()]);
+    [, $viewer] = retroMember($retro);
+
+    expect(resultsOf($retro, $viewer)['stats']['durationSeconds'])->toBe(3000);
+});
+
+it('reports no duration for a retro without a start time', function () {
+    $retro = Retro::factory()->inPhase(RetroPhase::Completed)->create(['completed_at' => now()]);
+    [, $viewer] = retroMember($retro);
+
+    expect(resultsOf($retro, $viewer)['stats']['durationSeconds'])->toBeNull();
+});
+
+it('counts the votes cast and the votes available', function () {
+    $retro = Retro::factory()->inPhase(RetroPhase::Completed)->create(['votes_per_participant' => 5]);
+    [, $viewer] = retroMember($retro);
+    $other = Participant::factory()->create(['retro_id' => $retro->id]);
+    $card = Card::factory()->create(['retro_id' => $retro->id, 'participant_id' => $viewer->id]);
+    Vote::factory()->count(3)->create(['retro_id' => $retro->id, 'card_id' => $card->id, 'participant_id' => $viewer->id]);
+    Vote::factory()->create(['retro_id' => $retro->id, 'card_id' => $card->id, 'participant_id' => $other->id]);
+
+    expect(resultsOf($retro, $viewer)['stats'])->toMatchArray(['votesCast' => 4, 'votesAvailable' => 10]);
+});
+
+it('reports the participants against the team members', function () {
+    $retro = Retro::factory()->inPhase(RetroPhase::Completed)->create();
+    [, $viewer] = retroMember($retro);
+    $second = Participant::factory()->create(['retro_id' => $retro->id]);
+    $retro->team->members()->attach(User::factory()->create());
+
+    expect(resultsOf($retro, $viewer)['stats']['participation'])->toBe(['participants' => 2, 'teamMembers' => 2])
+        ->and($second->retro_id)->toBe($retro->id);
+});
+
+it('carries the statistics to a guest without the health trend', function () {
+    $retro = Retro::factory()->inPhase(RetroPhase::Completed)->withGuestAccess()->create();
+    $guest = Participant::factory()->guest()->create(['retro_id' => $retro->id]);
+
+    $results = resultsOf($retro, $guest);
+
+    expect($results['stats'])->toHaveKeys(['votesCast', 'votesAvailable', 'participation', 'durationSeconds'])
+        ->and($results['healthTrend'])->toBeNull();
 });

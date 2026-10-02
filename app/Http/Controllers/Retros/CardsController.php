@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Retros;
 
 use App\Actions\Retros\DeleteCard;
 use App\Actions\Retros\EnsureCardGif;
+use App\Actions\Retros\MarkRetroStarted;
 use App\Actions\Retros\PresentCard;
 use App\Actions\Retros\RetroGuard;
 use App\Actions\Retros\UpdateCard;
@@ -29,6 +30,7 @@ class CardsController extends Controller
         private EnsureCardGif $ensureCardGif,
         private UpdateCard $updateCard,
         private DeleteCard $deleteCard,
+        private MarkRetroStarted $markRetroStarted,
     ) {}
 
     public function store(Request $request, Retro $retro): JsonResponse
@@ -70,6 +72,8 @@ class CardsController extends Controller
                 'gif_id' => $validated['gif_id'] ?? null,
                 'position' => $position === null ? 0 : $position + 1,
             ]);
+
+            $this->markRetroStarted->handle($locked);
 
             (new CardCreated($locked->id, $this->presentCard->handle($card, $locked, null), $locked->writersCount()))->sendToOthers();
             (new OwnCardSaved($locked->id, $participant->id, $this->presentCard->handle($card, $locked, $participant)))->sendToOthers();

@@ -21,6 +21,7 @@ class ChangeRetroPhase
         private ClearRetroInsights $clearRetroInsights,
         private AbandonIcebreakerRound $abandonIcebreakerRound,
         private EnsureIcebreakerRoom $ensureIcebreakerRoom,
+        private MarkRetroStarted $markRetroStarted,
     ) {}
 
     /**
@@ -32,6 +33,7 @@ class ChangeRetroPhase
         $this->abandonSummary($locked, $phase);
         $this->leaveIcebreaker($locked, $phase);
         $this->move($locked, $phase);
+        $this->markRetroStarted->handle($locked);
         $this->enterIcebreaker($locked, $phase);
         $this->closeSurveys($locked, $phase);
         $this->broadcast($locked, $phase);

@@ -5,6 +5,7 @@ namespace Database\Factories;
 use App\Enums\RetroPhase;
 use App\Models\Retro;
 use App\Models\Team;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
@@ -43,6 +44,11 @@ class RetroFactory extends Factory
     public function withHealthCheck(): static
     {
         return $this->state(fn () => ['health_check_enabled' => true]);
+    }
+
+    public function started(?CarbonInterface $at = null): static
+    {
+        return $this->state(fn () => ['started_at' => $at ?? now()]);
     }
 
     public function withIcebreaker(): static

@@ -352,6 +352,7 @@ export type HealthStatementResult = {
     isBuiltin: boolean;
     average: number | null;
     count: number;
+    previousAverage: number | null;
 };
 
 export type HealthHighlight = { key: string; label: string; average: number };
@@ -431,6 +432,13 @@ export type GamesPlayed = {
     roundsPlayed: number;
 };
 
+export type ResultsStats = {
+    votesCast: number;
+    votesAvailable: number;
+    participation: { participants: number; teamMembers: number };
+    durationSeconds: number | null;
+};
+
 export type Results = {
     participants: BoardParticipant[];
     health: HealthResults | null;
@@ -441,4 +449,5 @@ export type Results = {
     summary: ResultsSummary | null;
     deliveries: IntegrationDelivery[];
     emailRecipients: { participants: number; team: number } | null;
+    stats: ResultsStats;
 };

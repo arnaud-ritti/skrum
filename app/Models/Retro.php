@@ -47,6 +47,7 @@ use Illuminate\Support\Carbon;
  * @property string $guest_token
  * @property Carbon|null $timer_ends_at
  * @property string|null $highlighted_card_id
+ * @property Carbon|null $started_at
  * @property Carbon|null $completed_at
  * @property Carbon|null $created_at
  * @property-read Team $team
@@ -308,6 +309,7 @@ class Retro extends Model implements DeliverySubject
             'votes_version' => 'integer',
             'timer_ends_at' => 'datetime',
             'completed_at' => 'datetime',
+            'started_at' => 'datetime',
             'summary_status' => SummaryStatus::class,
             'summary_generated_at' => 'datetime',
             'summary_requested_at' => 'datetime',
