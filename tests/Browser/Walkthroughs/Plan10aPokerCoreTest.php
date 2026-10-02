@@ -403,7 +403,7 @@ it('[P10a-08] reveals both votes with the result to everyone', function () {
             ->assertSee('Nearest card: 5')
             ->assertScript('Array.from(document.querySelectorAll(\'[aria-labelledby="poker-result"] li\')).map(function (row) { return row.querySelectorAll("span")[0].textContent + " x" + row.querySelectorAll("span")[2].textContent; }).join(" / ")', '3 x1 / 8 x1')
             ->assertDontSee('Consensus')
-            ->assertDisabled('[aria-label="Play 5"]');
+            ->assertNotPresent('[aria-label="Play 5"]');
     }
 });
 
@@ -442,9 +442,9 @@ it('[P10a-09] re-votes to a consensus and saves the estimate for everyone', func
             ->assertSee('Nearest card: 5');
     }
 
-    $facilitator->assertVisible('[aria-label="Estimate"]')
-        ->assertSeeIn('[aria-label="Estimate"]', '5')
-        ->click('Save estimate');
+    $facilitator->assertAttribute('[aria-label="Final estimate"] [aria-checked="true"]', 'aria-label', '5')
+        ->assertSee('Validate 5')
+        ->click('@poker-validate');
 
     foreach ([$facilitator, $member] as $page) {
         $page->assertSee('Estimate: 5')

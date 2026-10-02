@@ -299,8 +299,8 @@ it('[P10b-11a] lets the facilitator switch a player to spectator and back, and f
         ->assertSee('Reveal cards')
         ->click('Reveal cards')
         ->assertPresent('[role="img"][aria-label="Bob: 5"]')
-        ->assertSee('Save estimate')
-        ->click('Save estimate')
+        ->assertSee('Validate 5')
+        ->click('@poker-validate')
         ->assertSee('Estimate: 5')
         ->click('Re-vote')
         ->assertSee('Reveal cards')
@@ -375,11 +375,11 @@ it('[P10b-10a] reveals an anonymous round as values without names', function () 
             ->assertSee('Average');
     }
 
-    $a->assertAriaAttribute('button[aria-label="Play 3"]', 'pressed', 'true')
-        ->assertAriaAttribute('button[aria-label="Play 5"]', 'pressed', 'false');
+    $a->assertSeeIn('[data-slot="poker-dock-status"]', 'Your card · 3')
+        ->assertNotPresent('button[aria-label="Play 3"]');
 
-    $b->assertAriaAttribute('button[aria-label="Play 5"]', 'pressed', 'true')
-        ->assertAriaAttribute('button[aria-label="Play 3"]', 'pressed', 'false');
+    $b->assertSeeIn('[data-slot="poker-dock-status"]', 'Your card · 5')
+        ->assertNotPresent('button[aria-label="Play 5"]');
 });
 
 it('[P10b-10b] keeps a revealed anonymous round anonymous in the history after anonymity is turned off', function () {

@@ -25,6 +25,10 @@ function roundActions(overrides: Partial<RoundActions> = {}): RoundActions {
         revote: vi.fn(async () => {}),
         saveEstimate: vi.fn(async () => {}),
         goToNext: vi.fn(async () => {}),
+        validate: vi.fn(async () => {}),
+        estimate: '5',
+        estimateCards: ['1', '2', '3', '5', '8'],
+        chooseEstimate: vi.fn(),
         next: pokerTask('t2', 'Password reset'),
         ...overrides,
     };
@@ -161,23 +165,21 @@ describe('RoomDock, the deck', () => {
         expect(ctx.refetch).toHaveBeenCalledTimes(1);
     });
 
-    it('keeps the deck, disabled, once the cards are revealed and on an ended game', () => {
-        const { unmount } = renderInRoom(
+    it('gives its place to the result once the cards are revealed, and stays, disabled, on an ended game', () => {
+        const { unmount, container } = renderInRoom(
             <RoomDock actions={roundActions()} compact={false} />,
             pokerSnapshot({ current: { taskId: 't1', round: revealed } }),
         );
 
-        expect(screen.getByRole('button', { name: 'Play 5' })).toHaveProperty(
-            'disabled',
-            true,
-        );
+        expect(screen.queryByRole('group', { name: 'Your cards' })).toBeNull();
+        expect(screen.queryByRole('button', { name: 'Play 5' })).toBeNull();
         expect(
-            screen
-                .getByRole('button', { name: 'Play 8' })
-                .getAttribute('aria-pressed'),
-        ).toBe('true');
+            container.querySelector(
+                '[data-slot="poker-deckbar"] [aria-labelledby="poker-result"]',
+            ),
+        ).not.toBeNull();
         expect(
-            document.querySelector('[data-slot="poker-dock-status"]')
+            container.querySelector('[data-slot="poker-dock-status"]')
                 ?.textContent,
         ).toBe('Your card · 8');
         unmount();
@@ -268,52 +270,147 @@ describe('RoomDock, the facilitator', () => {
         expect(actions.goToNext).toHaveBeenCalledTimes(1);
     });
 
-    it('offers Re-vote, the estimate, Save estimate and Next task once the cards are revealed', () => {
+    it('offers the final-estimate cards, one button that validates and moves on, and Re-vote once the cards are revealed', () => {
         const actions = roundActions();
         renderInRoom(
             <RoomDock actions={actions} compact={false} />,
             pokerSnapshot({ current: { taskId: 't1', round: revealed } }),
         );
-        const bar = screen.getByRole('toolbar', { name: 'Facilitator tools' });
-        const estimate = within(bar).getByRole('combobox', {
-            name: 'Estimate',
+        const tools = screen.getByRole('group', { name: 'Facilitator tools' });
+        const cards = within(tools).getByRole('radiogroup', {
+            name: 'Final estimate',
         });
 
         expect(
-            within(bar)
+            within(cards)
+                .getAllByRole('radio')
+                .map((card) => card.getAttribute('aria-label')),
+        ).toEqual(['1', '2', '3', '5', '8']);
+        expect(
+            within(cards)
+                .getByRole('radio', { checked: true })
+                .getAttribute('aria-label'),
+        ).toBe('5');
+        expect(
+            within(tools)
                 .getAllByRole('button')
-                .map((button) => button.getAttribute('aria-label')),
-        ).toEqual(['Re-vote', 'Save estimate', 'Next task']);
-        expect(estimate.textContent).toBe('5');
+                .map((button) => button.textContent),
+        ).toEqual(['Validate 5 · Next story', 'Re-vote']);
+        expect(screen.queryByRole('button', { name: 'Next task' })).toBeNull();
+        expect(
+            screen.queryByRole('button', { name: 'Save estimate' }),
+        ).toBeNull();
 
-        fireEvent.click(within(bar).getByRole('button', { name: 'Re-vote' }));
-        fireEvent.click(
-            within(bar).getByRole('button', { name: 'Save estimate' }),
-        );
+        fireEvent.click(within(tools).getByRole('button', { name: 'Re-vote' }));
+        fireEvent.click(within(cards).getByRole('radio', { name: '8' }));
 
         expect(actions.revote).toHaveBeenCalledTimes(1);
-        expect(actions.saveEstimate).toHaveBeenCalledWith('5');
-    });
+        expect(actions.chooseEstimate).toHaveBeenCalledWith('8');
 
-    it('proposes the saved estimate first, and disables Next task when every other task is estimated', () => {
-        const actions = roundActions({ next: null });
-        renderInRoom(
-            <RoomDock actions={actions} compact={false} />,
-            pokerSnapshot({
-                tasks: [pokerTask('t1', 'Login page', { estimate: '8' })],
-                current: { taskId: 't1', round: revealed },
+        fireEvent.click(
+            within(tools).getByRole('button', {
+                name: 'Validate 5 · Next story',
             }),
         );
-        const next = screen.getByRole('button', { name: 'Next task' });
+
+        expect(actions.validate).toHaveBeenCalledWith('5');
+        expect(actions.saveEstimate).not.toHaveBeenCalled();
+        expect(actions.goToNext).not.toHaveBeenCalled();
+    });
+
+    it('shows the agreement, the distribution and who opens the discussion to everyone', () => {
+        const { container } = renderInRoom(
+            <RoomDock actions={roundActions()} compact={false} />,
+            pokerSnapshot({
+                me: { playerId: 'bob', isFacilitator: false },
+                current: {
+                    taskId: 't1',
+                    round: {
+                        ...revealed,
+                        revealReason: 'everyone_voted',
+                        myVote: '3',
+                        result: {
+                            average: 5.5,
+                            median: 5.5,
+                            spread: { min: 3, max: 8 },
+                            agreement: 0.5,
+                            outliers: { low: ['bob'], high: ['ada'] },
+                            distribution: [
+                                { value: '3', count: 1 },
+                                { value: '8', count: 1 },
+                            ],
+                            mode: ['3', '8'],
+                            consensus: false,
+                            nearestCard: '5',
+                        },
+                    },
+                },
+            }),
+        );
+        const result = container.querySelector(
+            '[aria-labelledby="poker-result"]',
+        ) as HTMLElement;
+
+        expect(within(result).getByText('Result · 2 votes')).toBeTruthy();
+        expect(within(result).getByText('50 % on 3, 8')).toBeTruthy();
+        expect(
+            within(result).getByText(
+                'Bob (3) and Ada (8) open the discussion.',
+            ),
+        ).toBeTruthy();
+        expect(
+            within(result).getByText('Revealed automatically — everyone voted'),
+        ).toBeTruthy();
+        expect(within(result).getAllByRole('listitem')).toHaveLength(2);
+        expect(within(result).queryByRole('radiogroup')).toBeNull();
+        expect(
+            within(result).queryByRole('button', { name: 'Re-vote' }),
+        ).toBeNull();
+    });
+
+    it('names nobody on an anonymous round', () => {
+        renderInRoom(
+            <RoomDock actions={roundActions()} compact={false} />,
+            pokerSnapshot({
+                current: {
+                    taskId: 't1',
+                    round: {
+                        ...revealed,
+                        anonymous: true,
+                        result: {
+                            ...revealed.result!,
+                            spread: { min: 3, max: 8 },
+                            outliers: { low: ['bob'], high: ['ada'] },
+                        },
+                    },
+                },
+            }),
+        );
+
+        expect(screen.queryByText(/Bob \(3\)/)).toBeNull();
+        expect(
+            screen.getByText(
+                'The lowest and the highest estimates open the discussion.',
+            ),
+        ).toBeTruthy();
+    });
+
+    it('only validates when every other task is estimated', () => {
+        const actions = roundActions({ next: null, estimate: '8' });
+        renderInRoom(
+            <RoomDock actions={actions} compact={false} />,
+            pokerSnapshot({ current: { taskId: 't1', round: revealed } }),
+        );
 
         expect(
-            screen.getByRole('combobox', { name: 'Estimate' }).textContent,
+            screen
+                .getByRole('radio', { checked: true })
+                .getAttribute('aria-label'),
         ).toBe('8');
-        expect(next.getAttribute('aria-disabled')).toBe('true');
 
-        fireEvent.click(next);
+        fireEvent.click(screen.getByRole('button', { name: 'Validate 8' }));
 
-        expect(actions.goToNext).not.toHaveBeenCalled();
+        expect(actions.validate).toHaveBeenCalledWith('8');
     });
 
     it('ignores the actions while one is on its way', () => {
@@ -324,13 +421,16 @@ describe('RoomDock, the facilitator', () => {
         );
 
         fireEvent.click(screen.getByRole('button', { name: 'Re-vote' }));
-        fireEvent.click(screen.getByRole('button', { name: 'Save estimate' }));
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Validate 5 · Next story' }),
+        );
+        fireEvent.keyDown(document.body, { key: 'Enter', ctrlKey: true });
 
         expect(actions.revote).not.toHaveBeenCalled();
-        expect(actions.saveEstimate).not.toHaveBeenCalled();
+        expect(actions.validate).not.toHaveBeenCalled();
     });
 
-    it('shows the actions to the facilitator only, and to one who watches', () => {
+    it('shows the tools to the facilitator only, to one who watches, and not on an ended game', () => {
         const { unmount } = renderInRoom(
             <RoomDock actions={roundActions()} compact={false} />,
             pokerSnapshot({ me: { isFacilitator: false } }),
@@ -339,7 +439,7 @@ describe('RoomDock, the facilitator', () => {
         expect(screen.queryByRole('toolbar')).toBeNull();
         unmount();
 
-        renderInRoom(
+        const watching = renderInRoom(
             <RoomDock actions={roundActions()} compact={false} />,
             pokerSnapshot({
                 me: { isSpectator: true, canVote: false },
@@ -348,9 +448,25 @@ describe('RoomDock, the facilitator', () => {
         );
 
         expect(
-            screen.getByRole('toolbar', { name: 'Facilitator tools' }),
+            screen.getByRole('group', { name: 'Facilitator tools' }),
         ).toBeTruthy();
         expect(screen.queryByRole('group', { name: 'Your cards' })).toBeNull();
+        watching.unmount();
+
+        const { container } = renderInRoom(
+            <RoomDock actions={roundActions()} compact={false} />,
+            pokerSnapshot({
+                game: { endedAt: '2026-10-02T10:00:00Z' },
+                current: { taskId: 't1', round: revealed },
+            }),
+        );
+
+        expect(
+            container.querySelector('[aria-labelledby="poker-result"]'),
+        ).not.toBeNull();
+        expect(
+            screen.queryByRole('group', { name: 'Facilitator tools' }),
+        ).toBeNull();
     });
 });
 
@@ -395,10 +511,71 @@ describe('RoomDock on a phone', () => {
 
         expect(screen.queryByRole('button', { name: 'All deck' })).toBeNull();
     });
+
+    it('keeps only the two buttons of the facilitator once revealed: the result is a card of the stage', () => {
+        const actions = roundActions();
+        const { container } = renderInRoom(
+            <RoomDock actions={actions} compact />,
+            pokerSnapshot({ current: { taskId: 't1', round: revealed } }),
+        );
+        const tools = screen.getByRole('group', { name: 'Facilitator tools' });
+
+        expect(screen.queryByRole('group', { name: 'Your cards' })).toBeNull();
+        expect(
+            container.querySelector('[data-slot="poker-result"]'),
+        ).toBeNull();
+        expect(screen.queryByRole('radiogroup')).toBeNull();
+        expect(
+            within(tools)
+                .getAllByRole('button')
+                .map(
+                    (button) =>
+                        button.getAttribute('aria-label') ?? button.textContent,
+                ),
+        ).toEqual(['Validate 5 · Next story', 'Re-vote']);
+
+        fireEvent.click(within(tools).getByRole('button', { name: 'Re-vote' }));
+
+        expect(actions.revote).toHaveBeenCalledTimes(1);
+    });
+
+    it('has no deck panel for a participant once revealed', () => {
+        const { container } = renderInRoom(
+            <RoomDock
+                actions={roundActions()}
+                compact
+                reactions={<div role="toolbar" aria-label="Reactions" />}
+            />,
+            pokerSnapshot({
+                me: { isFacilitator: false },
+                current: { taskId: 't1', round: revealed },
+            }),
+        );
+
+        expect(screen.getByRole('toolbar', { name: 'Reactions' })).toBeTruthy();
+        expect(
+            container.querySelector('[data-slot="poker-deckbar"]'),
+        ).toBeNull();
+    });
 });
 
 describe('RoomDock, the focus when the round changes state', () => {
-    it('moves focus to the deck when the pressed Re-vote leaves with the reveal', () => {
+    const reveal = (
+        ctx: ReturnType<typeof renderInRoom>['ctx'],
+        actions: RoundActions,
+        round = revealed,
+    ) => (
+        <GameProvider
+            value={{
+                ...ctx,
+                snapshot: pokerSnapshot({ current: { taskId: 't1', round } }),
+            }}
+        >
+            <RoomDock actions={actions} compact={false} />
+        </GameProvider>
+    );
+
+    it('moves focus to the deck when the pressed Re-vote leaves with the result', () => {
         const actions = roundActions();
         const { ctx, rerender } = renderInRoom(
             <RoomDock actions={actions} compact={false} />,
@@ -408,19 +585,7 @@ describe('RoomDock, the focus when the round changes state', () => {
         screen.getByRole('button', { name: 'Re-vote' }).focus();
 
         rerender(
-            <GameProvider
-                value={{
-                    ...ctx,
-                    snapshot: pokerSnapshot({
-                        current: {
-                            taskId: 't1',
-                            round: pokerRound({ id: 'round-2', number: 2 }),
-                        },
-                    }),
-                }}
-            >
-                <RoomDock actions={actions} compact={false} />
-            </GameProvider>,
+            reveal(ctx, actions, pokerRound({ id: 'round-2', number: 2 })),
         );
 
         expect(screen.queryByRole('button', { name: 'Re-vote' })).toBeNull();
@@ -431,39 +596,39 @@ describe('RoomDock, the focus when the round changes state', () => {
         ).toBe(true);
     });
 
-    it('moves focus to the result when a reveal disables the focused card', () => {
-        const result = document.createElement('section');
-
-        result.tabIndex = -1;
-        result.setAttribute('data-slot', 'poker-result');
-        document.body.append(result);
-
+    it('moves focus to the result in the dock when a reveal takes the focused card away', () => {
         const actions = roundActions();
-        const { ctx, rerender } = renderInRoom(
+        const { ctx, rerender, container } = renderInRoom(
             <RoomDock actions={actions} compact={false} />,
         );
 
         screen.getByRole('button', { name: 'Play 5' }).focus();
 
-        rerender(
-            <GameProvider
-                value={{
-                    ...ctx,
-                    snapshot: pokerSnapshot({
-                        current: { taskId: 't1', round: revealed },
-                    }),
-                }}
-            >
-                <RoomDock actions={actions} compact={false} />
-            </GameProvider>,
+        rerender(reveal(ctx, actions));
+
+        expect(document.activeElement).toBe(
+            container.querySelector(
+                '[data-slot="poker-dock"] [data-slot="poker-result"]',
+            ),
         );
-
-        expect(document.activeElement).toBe(result);
-
-        result.remove();
     });
 
-    it('leaves focus alone when it was not in the dock', () => {
+    it('moves focus to the result on a reveal made from the keyboard, with focus on the page', () => {
+        const actions = roundActions();
+        const { ctx, rerender, container } = renderInRoom(
+            <RoomDock actions={actions} compact={false} />,
+        );
+
+        expect(document.activeElement).toBe(document.body);
+
+        rerender(reveal(ctx, actions));
+
+        expect(document.activeElement).toBe(
+            container.querySelector('[data-slot="poker-result"]'),
+        );
+    });
+
+    it('leaves focus alone when it stands elsewhere', () => {
         const outside = document.createElement('button');
 
         document.body.append(outside);
@@ -476,20 +641,12 @@ describe('RoomDock, the focus when the round changes state', () => {
         );
 
         rerender(
-            <GameProvider
-                value={{
-                    ...ctx,
-                    snapshot: pokerSnapshot({
-                        current: {
-                            taskId: 't1',
-                            round: pokerRound({ id: 'round-2', number: 2 }),
-                        },
-                    }),
-                }}
-            >
-                <RoomDock actions={actions} compact={false} />
-            </GameProvider>,
+            reveal(ctx, actions, pokerRound({ id: 'round-2', number: 2 })),
         );
+
+        expect(document.activeElement).toBe(outside);
+
+        rerender(reveal(ctx, actions));
 
         expect(document.activeElement).toBe(outside);
 
@@ -497,8 +654,8 @@ describe('RoomDock, the focus when the round changes state', () => {
     });
 });
 
-describe('RoomDock, the N shortcut', () => {
-    it('goes to the next task once the cards are revealed, and not while the round is open', () => {
+describe('RoomDock, the shortcuts of the result', () => {
+    it('goes to the next task with N once the cards are revealed, and not while the round is open', () => {
         const actions = roundActions();
         const { unmount } = renderInRoom(
             <RoomDock actions={actions} compact={false} />,
@@ -518,40 +675,16 @@ describe('RoomDock, the N shortcut', () => {
 
         expect(actions.goToNext).toHaveBeenCalledTimes(1);
     });
-});
 
-describe('RoomDock on a phone, once revealed', () => {
-    it('folds the deck away and keeps the facilitator actions', () => {
-        const { container } = renderInRoom(
-            <RoomDock actions={roundActions()} compact />,
+    it('validates the chosen estimate with Ctrl or Cmd and Enter', () => {
+        const actions = roundActions();
+        renderInRoom(
+            <RoomDock actions={actions} compact={false} />,
             pokerSnapshot({ current: { taskId: 't1', round: revealed } }),
         );
 
-        expect(screen.queryByRole('group', { name: 'Your cards' })).toBeNull();
-        expect(
-            screen.getByRole('toolbar', { name: 'Facilitator tools' }),
-        ).toBeTruthy();
-        expect(
-            container.querySelector('[data-slot="poker-dock-status"]')
-                ?.textContent,
-        ).toContain('8');
-    });
+        fireEvent.keyDown(document.body, { key: 'Enter', ctrlKey: true });
 
-    it('does not tell a watcher about a deck that is folded away', () => {
-        const { container } = renderInRoom(
-            <RoomDock actions={roundActions()} compact />,
-            pokerSnapshot({
-                me: { isSpectator: true, canVote: false },
-                current: {
-                    taskId: 't1',
-                    round: { ...revealed, myVote: null },
-                },
-            }),
-        );
-
-        expect(
-            container.querySelector('[data-slot="poker-dock-status"]')
-                ?.textContent,
-        ).toBe('The cards are revealed.');
+        expect(actions.validate).toHaveBeenCalledWith('5');
     });
 });

@@ -1,24 +1,16 @@
-import { EyeOff, LayoutGrid, RotateCcw, Save, SkipForward } from 'lucide-react';
+import { EyeOff, LayoutGrid, SkipForward } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { FacilitatorBar } from '@/components/skrum/facilitator-bar';
 import type { FacilitatorAction } from '@/components/skrum/facilitator-bar';
 import { PokerCard, PokerDeck } from '@/components/skrum/poker-card';
-import { suggestedEstimate } from '@/components/skrum/poker-table';
 import { VoteDrawer } from '@/components/skrum/vote-drawer';
 import { Button } from '@/components/ui/button';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
 import { useShortcut } from '@/hooks/use-shortcut';
 import { useTrans } from '@/hooks/use-trans';
-import { isSpecialCard } from '@/lib/poker/types';
 import { cn } from '@/lib/utils';
 import { useGame } from './game-context';
+import { RoomResult } from './room-result';
 import { useVote } from './use-round-actions';
 import type { RoundActions } from './use-round-actions';
 
@@ -26,88 +18,36 @@ type Props = {
     /** The reaction bar, stacked above the deck panel with a `space-3` gap; it never overlaps it. */
     reactions?: ReactNode;
     actions: RoundActions;
-    /** Phone: icon-only facilitator actions and the "All deck" drawer. */
+    /**
+     * Phone: icon-only skip action and the "All deck" drawer; once revealed,
+     * the dock keeps the facilitator's two buttons and the result is a card
+     * of the stage (`RoomResult`, layout `card`).
+     */
     compact: boolean;
 };
 
-/** What the facilitator does once the cards are down, where the deck is (3-D8). */
-function FacilitatorActions({
+/** Before the reveal the facilitator can only skip to the next task. */
+function SkipAction({
     actions,
     compact,
 }: {
     actions: RoundActions;
     compact: boolean;
 }) {
-    const { snapshot } = useGame();
     const { t } = useTrans();
-    const scope = useRef<HTMLDivElement>(null);
-    const [choice, setChoice] = useState<{
-        roundId: string;
-        value: string;
-    } | null>(null);
-    const { game, current } = snapshot;
-
-    const round = current?.round ?? null;
-    const task = snapshot.tasks.find(
-        (candidate) => candidate.id === current?.taskId,
-    );
-    const isRevealed = round !== null && round.revealedAt !== null;
-    const estimateCards = game.cards.filter((card) => !isSpecialCard(card));
-    const estimate =
-        round !== null && choice?.roundId === round.id
-            ? choice.value
-            : (task?.estimate ??
-              suggestedEstimate(round?.result, game.isNumeric) ??
-              '');
     const { busy, next } = actions;
-    const canSave = isRevealed && estimate !== '' && !busy;
-    const canGoNext = next !== null && !busy;
-
-    useShortcut('mod+enter', () => void actions.saveEstimate(estimate), {
-        scope,
-        enabled: canSave,
-    });
-    // A single key at document level: live with the result only, so that a
-    // stray "n" cannot leave an open round behind.
-    useShortcut('n', () => void actions.goToNext(), {
-        scope,
-        enabled: canGoNext && isRevealed,
-    });
-
-    if (round === null) {
-        return null;
-    }
-
-    const revote: FacilitatorAction = {
-        id: 'revote',
-        label: t('Re-vote'),
-        icon: RotateCcw,
-        disabled: busy,
-        onSelect: () => void actions.revote(),
-    };
-    const save: FacilitatorAction = {
-        id: 'save-estimate',
-        label: t('Save estimate'),
-        icon: Save,
-        shortcut: '⌘/Ctrl ↵',
-        disabled: !canSave,
-        disabledReason:
-            estimate === '' ? t('Choose an estimate first.') : undefined,
-        onSelect: () => void actions.saveEstimate(estimate),
-    };
     const goNext: FacilitatorAction = {
         id: 'next-task',
         label: t('Next task'),
         icon: SkipForward,
-        shortcut: isRevealed ? 'N' : undefined,
-        disabled: !canGoNext,
+        disabled: next === null || busy,
         disabledReason:
             next === null ? t('Every other task has an estimate.') : undefined,
         onSelect: () => void actions.goToNext(),
     };
 
     return (
-        <div ref={scope} className="flex max-w-full min-w-0">
+        <div className="flex max-w-full min-w-0">
             <FacilitatorBar
                 label={t('Facilitator tools')}
                 compact={compact}
@@ -116,38 +56,7 @@ function FacilitatorActions({
                     compact &&
                         '[&>[data-slot=facilitator-bar-separator]]:hidden',
                 )}
-                actions={isRevealed ? [revote] : []}
-                end={
-                    isRevealed ? (
-                        <label className="inline-flex h-8 min-w-0 items-center gap-2 rounded-md border border-input bg-card pr-1 pl-3 text-sm whitespace-nowrap">
-                            <span aria-hidden className="truncate">
-                                {t('Estimate')}
-                            </span>
-                            <Select
-                                value={estimate}
-                                onValueChange={(value) =>
-                                    setChoice({ roundId: round.id, value })
-                                }
-                            >
-                                <SelectTrigger
-                                    size="sm"
-                                    aria-label={t('Estimate')}
-                                    className="h-6 min-w-16 border-0 bg-muted px-2 py-0 font-bold shadow-none"
-                                >
-                                    <SelectValue placeholder="–" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {estimateCards.map((card) => (
-                                        <SelectItem key={card} value={card}>
-                                            {card}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </label>
-                    ) : undefined
-                }
-                primary={isRevealed ? save : undefined}
+                actions={[]}
                 trailing={[goNext]}
             />
         </div>
@@ -186,23 +95,44 @@ export function RoomDock({ reactions, actions, compact }: Props) {
     const isRevealed = round !== null && round.revealedAt !== null;
     const isClosed = round === null || isRevealed || isEnded;
     const hasDeck = snapshot.tasks.length > 0;
-    const showsActions = me.isFacilitator && !isEnded && round !== null;
-    const showsCards = !(compact && isRevealed);
+    const canFacilitate = me.isFacilitator && !isEnded;
+    const showsResult = isRevealed && current !== null;
+    // On a phone the result is a card of the stage: the dock keeps its buttons.
+    const showsResultPanel = showsResult && (!compact || canFacilitate);
     const deckClassName =
         'mx-auto max-w-full flex-nowrap justify-start overflow-x-auto';
     const dockRef = useRef<HTMLDivElement>(null);
-    const hadFocusInside = useRef(false);
     const wasRevealed = useRef(isRevealed);
 
-    // The control that held focus leaves with the state it belonged to
-    // (Re-vote on a new round, a card on the reveal): focus follows to the
-    // deck, or to the result.
+    useShortcut('mod+enter', () => void actions.validate(actions.estimate), {
+        scope: dockRef,
+        enabled:
+            canFacilitate &&
+            showsResult &&
+            actions.estimate !== '' &&
+            !actions.busy,
+    });
+    // A single key at document level: live with the result only, so that a
+    // stray "n" cannot leave an open round behind. It moves on without
+    // saving an estimate.
+    useShortcut('n', () => void actions.goToNext(), {
+        scope: dockRef,
+        enabled:
+            canFacilitate &&
+            showsResult &&
+            actions.next !== null &&
+            !actions.busy,
+    });
+
+    // The deck leaves on a reveal and the result on a re-vote, with the
+    // control that held focus: focus goes to the result, or back to the deck.
+    // Focus that stands elsewhere (a dialog, a field) is left alone.
     useEffect(() => {
         const before = wasRevealed.current;
 
         wasRevealed.current = isRevealed;
 
-        if (before === isRevealed || !hadFocusInside.current) {
+        if (before === isRevealed) {
             return;
         }
 
@@ -219,22 +149,20 @@ export function RoomDock({ reactions, actions, compact }: Props) {
             return;
         }
 
-        const seats = document.querySelector<HTMLElement>(
-            '[data-slot="poker-table"] > section[tabindex="-1"]',
-        );
         const target = isRevealed
-            ? (document.querySelector<HTMLElement>(
-                  '[data-slot="poker-result"]',
-              ) ?? seats)
+            ? document.querySelector<HTMLElement>('[data-slot="poker-result"]')
             : (dock?.querySelector<HTMLElement>(
                   '[data-slot="poker-deckbar"] [role="group"] button:not(:disabled)',
-              ) ?? seats);
+              ) ??
+              document.querySelector<HTMLElement>(
+                  '[data-slot="poker-table"] > section[tabindex="-1"]',
+              ));
 
         target?.focus();
     }, [isRevealed]);
 
     const status = (): ReactNode => {
-        if (!me.canVote && showsCards) {
+        if (!me.canVote) {
             return (
                 <>
                     <EyeOff aria-hidden className="size-4 shrink-0" />
@@ -250,13 +178,7 @@ export function RoomDock({ reactions, actions, compact }: Props) {
         }
 
         if (round.myVote === null) {
-            return (
-                <span className="min-w-0">
-                    {isRevealed
-                        ? t('The cards are revealed.')
-                        : t('Choose your card')}
-                </span>
-            );
+            return <span className="min-w-0">{t('Choose your card')}</span>;
         }
 
         return (
@@ -266,7 +188,7 @@ export function RoomDock({ reactions, actions, compact }: Props) {
                 <strong className="font-semibold text-foreground">
                     {round.myVote}
                 </strong>
-                {!isRevealed && ` — ${t('you can change it until the reveal')}`}
+                {` — ${t('you can change it until the reveal')}`}
             </span>
         );
     };
@@ -275,18 +197,22 @@ export function RoomDock({ reactions, actions, compact }: Props) {
         <div
             ref={dockRef}
             data-slot="poker-dock"
-            onFocus={() => {
-                hadFocusInside.current = true;
-            }}
-            onBlur={(event) => {
-                if (!event.currentTarget.contains(event.relatedTarget)) {
-                    hadFocusInside.current = false;
-                }
-            }}
             className="flex w-full shrink-0 flex-col items-center gap-3"
         >
             {reactions}
-            {hasDeck && (
+            {hasDeck && showsResultPanel && (
+                <div
+                    data-slot="poker-deckbar"
+                    className="flex w-full flex-col items-center border-t border-border bg-background/70 px-4 pt-3 pb-4"
+                >
+                    <RoomResult
+                        layout={compact ? 'foot' : 'bar'}
+                        actions={actions}
+                        className="max-w-5xl"
+                    />
+                </div>
+            )}
+            {hasDeck && !showsResult && (
                 <div
                     data-slot="poker-deckbar"
                     className="flex w-full flex-col items-center gap-2 border-t border-border bg-background/70 px-4 pt-3 pb-4"
@@ -312,14 +238,11 @@ export function RoomDock({ reactions, actions, compact }: Props) {
                                 </span>
                             </Button>
                         )}
-                        {showsActions && (
-                            <FacilitatorActions
-                                actions={actions}
-                                compact={compact}
-                            />
+                        {canFacilitate && round !== null && (
+                            <SkipAction actions={actions} compact={compact} />
                         )}
                     </div>
-                    {showsCards && me.canVote && (
+                    {me.canVote && (
                         <PokerDeck
                             values={game.cards}
                             value={round?.myVote ?? null}
@@ -330,7 +253,7 @@ export function RoomDock({ reactions, actions, compact }: Props) {
                             onRetract={() => void withdraw()}
                         />
                     )}
-                    {showsCards && !me.canVote && (
+                    {!me.canVote && (
                         <WatchedDeck
                             className={cn(
                                 'flex items-end gap-2 px-2 pt-4 pb-2',

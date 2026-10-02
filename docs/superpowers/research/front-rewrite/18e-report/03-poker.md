@@ -250,3 +250,38 @@ Fix later (defects, not deviations):
 - The voter avatars of the estimation history sit about 2 px above their count.
 - In a real-page capture only the viewer is online, so the other seats read "Offline" and their "…" menu shows under the name; at 1440 the bottom seats' menu is cut by the reactions strip until the stage is scrolled.
 - The settings dialog names itself twice to a screen reader (hidden dialog title, then the panel heading).
+
+## Rework RW-P1 — result in the oval and the dock, final-estimate cards (owner, fourth round)
+
+Rows D-64 and D-65. Built:
+
+- No result panel under the table (`PokerTable` takes `showResult={false}`). The oval keeps the average, the median and the spread.
+- The dock holds the result once the cards are revealed, in place of the deck (`RoomResult` on `skrum/PokerResultBar`): "Result · n votes", the nearest card, the reason of an automatic reveal, the viewer's card, the agreement, the distribution (with its table view) and the line naming the extremes. The section keeps `aria-labelledby="poker-result"`.
+- Facilitator: the final-estimate cards (radio group "Final estimate": the deck without "?" and the break, the saved estimate or the nearest card chosen), "Validate :value · Next story" ("Validate :value" when no other task waits) and "Re-vote". The button calls `PokerTaskEstimatesController@update` then `PokerCurrentTasksController@update`; when the second fails the estimate stays saved and the error shows. Ctrl/Cmd + Enter validates.
+- Focus goes to the result on a reveal when it was on the control that left (the Reveal button, a card of the deck) or on the page; focus that stands in a dialog or a field is left alone.
+- Phone (MobilePoker): the result is a card of the page under the seats, with the final-estimate cards; the dock keeps "Re-vote" (icon) and the validate button.
+
+### Parity
+
+| Feature before | Now |
+|---|---|
+| Average, median, spread | oval |
+| Nearest card, agreement, distribution, table view, extremes, reveal reason | dock (card on a phone) |
+| "Most played" figure | read in the agreement ("50 % on 5") and, on a deck without numbers, in the oval |
+| Estimate select | final-estimate cards |
+| "Save estimate" | "Validate :value" (and the next story when one waits) |
+| "Next task" after the reveal | the validate button; N still moves on without saving; the queue opens any task |
+| "Next task" before the reveal | unchanged |
+| Disabled deck after the reveal, with the played card pressed | the deck gives its place to the result; "Your card · n" in its heading line |
+| Anonymous votes listed under the seats | unchanged |
+
+### Differences with the mockup
+
+| Difference | Row |
+|---|---|
+| The dock does not repeat the average and the median; "Spread" is a badge of the oval | D-64 |
+| "Nearest card", the reveal reason, "Your card" and "View as table" in the dock | D-64 |
+| Every card of the deck as a final estimate, in a scrolling row centred on the chosen card | D-65 |
+| "Validate 5 · Next story" without "pts"; no "discuss with the extremes" button | D-65 |
+| At 1440 × 900 with the watchers box and the banner, the bottom row of seats is under the fold (the stage scrolls); the oval and the dock are in view | D-66 (watchers box in the flow) |
+| On a phone the result card is under the seats: a reveal that takes focus brings it into view, otherwise the page is scrolled by hand | D-66 (RW-P2 turns the seats into one scrolling row) |

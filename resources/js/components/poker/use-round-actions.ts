@@ -6,7 +6,9 @@ import PokerSpectatorsController from '@/actions/App/Http/Controllers/Poker/Poke
 import PokerStatusesController from '@/actions/App/Http/Controllers/Poker/PokerStatusesController';
 import PokerTaskEstimatesController from '@/actions/App/Http/Controllers/Poker/PokerTaskEstimatesController';
 import PokerVotesController from '@/actions/App/Http/Controllers/Poker/PokerVotesController';
+import { suggestedEstimate } from '@/components/skrum/poker-table';
 import { nextUnestimatedTask } from '@/lib/poker/room-adapters';
+import { isSpecialCard } from '@/lib/poker/types';
 import type { PokerTask, PokerVoteResponse } from '@/lib/poker/types';
 import { retroRequest } from '@/lib/retro/api';
 import { useGame } from './game-context';
@@ -18,16 +20,55 @@ export type RoundActions = {
     revote: () => Promise<void>;
     saveEstimate: (value: string) => Promise<void>;
     goToNext: () => Promise<void>;
+    /**
+     * Saves the estimate, then opens the next task when there is one. When
+     * the move fails, the estimate stays saved and the error is shown.
+     */
+    validate: (value: string) => Promise<void>;
     /** The task "Next task" goes to; null when every other task is estimated. */
     next: PokerTask | null;
+    /**
+     * The final estimate of the current round: what the facilitator chose,
+     * otherwise the saved estimate, otherwise the nearest card. Empty when
+     * nothing can be proposed.
+     */
+    estimate: string;
+    /** The cards a final estimate is chosen from: the deck without "?" and the break. */
+    estimateCards: string[];
+    chooseEstimate: (value: string) => void;
 };
 
 /** What the facilitator does to the current round. One instance for the table and the dock, so `busy` is shared. */
 export function useRoundActions(): RoundActions {
     const { snapshot, apply, run, refetch } = useGame();
     const [busy, setBusy] = useState(false);
+    const [choice, setChoice] = useState<{
+        roundId: string;
+        value: string;
+    } | null>(null);
     const { game, current } = snapshot;
     const next = nextUnestimatedTask(snapshot);
+    const round = current?.round ?? null;
+    const task = snapshot.tasks.find(
+        (candidate) => candidate.id === current?.taskId,
+    );
+    const estimate =
+        round !== null && choice?.roundId === round.id
+            ? choice.value
+            : (task?.estimate ??
+              suggestedEstimate(round?.result, game.isNumeric) ??
+              '');
+    const deckCards = game.cards.filter((card) => !isSpecialCard(card));
+    // A saved estimate that left the deck stays among the cards.
+    const estimateCards =
+        estimate === '' || deckCards.includes(estimate)
+            ? deckCards
+            : [...deckCards, estimate];
+    const chooseEstimate = (value: string) => {
+        if (round !== null) {
+            setChoice({ roundId: round.id, value });
+        }
+    };
 
     const perform = async <T>(mutation: Promise<T>): Promise<T | undefined> => {
         setBusy(true);
@@ -113,7 +154,62 @@ export function useRoundActions(): RoundActions {
         }
     };
 
-    return { busy, reveal, revote, saveEstimate, goToNext, next };
+    const validate = async (value: string) => {
+        if (!current || value === '') {
+            return;
+        }
+
+        setBusy(true);
+
+        const saved = await run(
+            retroRequest<PokerTask>(
+                PokerTaskEstimatesController.update({
+                    game: game.id,
+                    task: current.taskId,
+                }),
+                { value },
+            ),
+        );
+
+        if (!saved) {
+            setBusy(false);
+
+            return;
+        }
+
+        apply({ type: 'task.upsert', task: saved });
+
+        if (!next) {
+            setBusy(false);
+
+            return;
+        }
+
+        const moved = await run(
+            retroRequest(PokerCurrentTasksController.update(game.id), {
+                task_id: next.id,
+            }),
+        );
+
+        setBusy(false);
+
+        if (moved !== undefined) {
+            await refetch();
+        }
+    };
+
+    return {
+        busy,
+        reveal,
+        revote,
+        saveEstimate,
+        goToNext,
+        validate,
+        next,
+        estimate,
+        estimateCards,
+        chooseEstimate,
+    };
 }
 
 /** Plays, changes or withdraws the viewer's card of the open round, shown at once and confirmed by the server. */

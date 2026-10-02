@@ -373,9 +373,9 @@ it('[P14c-03] writes the saved estimate to the story points field of the Jira Da
         ->click('[aria-label="Play 5"]')
         ->assertButtonEnabled('Reveal cards')
         ->click('Reveal cards')
-        ->assertVisible('[aria-label="Estimate"]')
-        ->assertSeeIn('[aria-label="Estimate"]', '5')
-        ->click('Save estimate')
+        ->assertAttribute('[aria-label="Final estimate"] [aria-checked="true"]', 'aria-label', '5')
+        ->assertSee('Validate 5')
+        ->click('@poker-validate')
         ->assertSee('Estimate: 5')
         ->assertSee('Sync pending');
 
@@ -558,8 +558,9 @@ it('[P14c-09a] writes the estimate of a Fibonacci game as one block at the end o
         ->click('[aria-label="Play 5"]')
         ->assertButtonEnabled('Reveal cards')
         ->click('Reveal cards')
-        ->assertSeeIn('[aria-label="Estimate"]', '5')
-        ->click('Save estimate')
+        ->assertAttribute('[aria-label="Final estimate"] [aria-checked="true"]', 'aria-label', '5')
+        ->assertSee('Validate 5')
+        ->click('@poker-validate')
         ->assertSee('Estimate: 5')
         ->assertSee('Sync pending');
 
@@ -599,8 +600,9 @@ it('[P14c-09b] writes the estimate of a T-shirt game as text into the GitHub iss
         ->click('[aria-label="Play XL"]')
         ->assertButtonEnabled('Reveal cards')
         ->click('Reveal cards')
-        ->assertSeeIn('[aria-label="Estimate"]', 'XL')
-        ->click('Save estimate')
+        ->assertAttribute('[aria-label="Final estimate"] [aria-checked="true"]', 'aria-label', 'XL')
+        ->assertSee('Validate XL')
+        ->click('@poker-validate')
         ->assertSee('Estimate: XL')
         ->assertSee('Sync pending');
 
@@ -642,12 +644,11 @@ it('[P14c-10] updates the block in place and keeps the text written around it on
     $page = $this->awaitRealtime($this->signIn($table['facilitator'], "/poker/{$table['game']->id}"));
 
     $page->assertSee('Estimate: 3')
-        ->assertVisible('[aria-label="Estimate"]')
-        ->click('[aria-label="Estimate"]')
-        ->click('[role="option"]:has-text("13")')
-        ->assertNotPresent('[role="listbox"]')
-        ->assertSeeIn('[aria-label="Estimate"]', '13')
-        ->click('Save estimate')
+        ->assertVisible('[aria-label="Final estimate"]')
+        ->click('[aria-label="Final estimate"] [aria-label="13"]')
+        ->assertAttribute('[aria-label="Final estimate"] [aria-checked="true"]', 'aria-label', '13')
+        ->assertSee('Validate 13')
+        ->click('@poker-validate')
         ->assertSee('Estimate: 13')
         ->assertSee('Sync pending');
 

@@ -1,6 +1,6 @@
 import { usePage } from '@inertiajs/react';
 import { MoreHorizontal } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { EmptyState } from '@/components/skrum/empty-state';
 import { PokerTable } from '@/components/skrum/poker-table';
 import type { PokerSeat } from '@/components/skrum/poker-table';
@@ -18,9 +18,6 @@ import { useGame } from './game-context';
 import { TaskFormDialog } from './room-dialogs';
 import { useSetSpectator } from './use-round-actions';
 import type { RoundActions } from './use-round-actions';
-
-/** Id of the result heading: the browser suite finds the result section by it. */
-const ResultId = 'poker-result';
 
 /** The facilitator moves another player between the table and the watchers. */
 function PlayerRoleMenu({ seat }: { seat: PokerSeat }) {
@@ -100,31 +97,17 @@ type Props = {
     actions: RoundActions;
 };
 
-/** The table of the current round, or what to do when there is none. */
+/**
+ * The table of the current round, or what to do when there is none. Once the
+ * cards are revealed, the oval holds the average, the median and the spread;
+ * the rest of the result is in the dock.
+ */
 export function RoomTable({ task, actions }: Props) {
     const { snapshot, online } = useGame();
     const { t } = useTrans();
     const { locale } = usePage().props;
     const { game, me, current } = snapshot;
     const isEnded = game.endedAt !== null;
-    const isRevealed = (current?.round.revealedAt ?? null) !== null;
-    const wasRevealed = useRef(isRevealed);
-
-    // The result panel stands under the table: a reveal brings it into view.
-    useEffect(() => {
-        const before = wasRevealed.current;
-
-        wasRevealed.current = isRevealed;
-
-        if (before || !isRevealed) {
-            return;
-        }
-
-        document
-            .querySelector(`[aria-labelledby="${ResultId}"]`)
-            ?.scrollIntoView?.({ block: 'nearest' });
-    }, [isRevealed]);
-
     if (snapshot.tasks.length === 0) {
         return <NoTasks />;
     }
@@ -161,7 +144,7 @@ export function RoomTable({ task, actions }: Props) {
             seats={seatsFrom(snapshot, onlineIds)}
             revealed={round.revealedAt !== null}
             result={round.result}
-            resultId={ResultId}
+            showResult={false}
             anonymous={round.anonymous}
             revealReason={round.revealReason}
             facilitatorId={game.facilitatorPlayerId}

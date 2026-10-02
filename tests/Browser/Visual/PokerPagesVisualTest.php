@@ -151,7 +151,8 @@ it('[P18e-03-09] renders the revealed poker room of a facilitator who watches wi
             ->assertPresent('[aria-labelledby="poker-result"]')
             ->assertPresent('[data-slot="poker-watching-banner"]')
             ->assertPresent('[data-slot="poker-watching"]')
-            ->assertPresent('[data-slot="poker-deckbar"] [data-slot="facilitator-bar"]')
+            ->assertPresent('[data-slot="poker-deckbar"] [role="radiogroup"]')
+            ->assertPresent('[data-slot="poker-deckbar"] [data-test="poker-validate"]')
             ->assertCount('[data-slot="poker-seat-card"][data-outlier]', 2),
     );
 });
