@@ -5,6 +5,11 @@ import { Button } from '@/components/ui/button';
 import { useTrans } from '@/hooks/use-trans';
 import { login, logout as logoutRoute, register } from '@/routes';
 
+type InvitationPerson = {
+    name: string;
+    avatarUrl: string;
+};
+
 type Props = {
     isInvalid: boolean;
     token?: string;
@@ -14,6 +19,12 @@ type Props = {
     isLoggedIn?: boolean;
     emailMatches?: boolean;
     canRegister?: boolean;
+    ssoProviders?: { key: string; label: string }[];
+    inviter?: InvitationPerson | null;
+    role?: 'owner' | 'admin' | 'member';
+    expiresAt?: string;
+    membersCount?: number;
+    members?: InvitationPerson[];
 };
 
 export default function ShowInvitation({
