@@ -67,6 +67,39 @@ describe('SessionFrame', () => {
     });
 });
 
+describe('SessionFrame header order', () => {
+    it('puts the logo first, the connection state before the timer and the viewer last', () => {
+        renderWithProviders(
+            <SessionFrame
+                logo={<span>logo</span>}
+                title="Sprint 42"
+                status={<span>synced</span>}
+                timer={<span>05:00</span>}
+                presence={<span>2 online</span>}
+                actions={<span>share</span>}
+                avatar={<span>me</span>}
+            >
+                <p>board</p>
+            </SessionFrame>,
+        );
+
+        expect(
+            [...screen.getByRole('banner').children].map(
+                (child) => child.textContent,
+            ),
+        ).toEqual([
+            'logo',
+            'Sprint 42',
+            '',
+            'synced',
+            '05:00',
+            '2 online',
+            'share',
+            'me',
+        ]);
+    });
+});
+
 describe('SessionFrame for a guest', () => {
     it('has no application sidebar and no sidebar trigger without a sidebar', () => {
         const { container } = renderWithProviders(

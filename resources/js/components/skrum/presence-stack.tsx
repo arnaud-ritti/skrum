@@ -338,7 +338,11 @@ export function PresenceStack({
                 </PopoverContent>
             </Popover>
             {guestCount > 0 && (
-                <Badge variant="secondary" shape="pill">
+                <Badge
+                    variant="secondary"
+                    shape="pill"
+                    data-slot="presence-stack-guests"
+                >
                     {guestCount === 1
                         ? t(':count guest', { count: guestCount })
                         : t(':count guests', { count: guestCount })}

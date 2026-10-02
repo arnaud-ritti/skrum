@@ -2027,6 +2027,7 @@
     "Reconnecting in :seconds s": "Neuverbindung in :seconds s",
     "Now": "Jetzt",
     "Reconnected": "Wieder verbunden",
+    "Synced": "Synchronisiert",
     "Lose connection": "Verbindung trennen",
     "Close it": "Schließen",
     "Toast: error with a retry action": "Toast: Fehler mit Wiederholen-Aktion",

@@ -16,6 +16,7 @@ export type ConnectionStatus =
     | 'reconnecting'
     | 'offline'
     | 'resynced'
+    | 'synced'
     | 'expired';
 
 export type ConnectionStateProps = {
@@ -31,6 +32,8 @@ export type ConnectionStateProps = {
     hint?: string;
     realtime?: string;
     className?: string;
+    /** Classes of the short label; a narrow header keeps the marker alone with `sr-only`. */
+    labelClassName?: string;
 };
 
 export type EditingIndicatorProps = {
@@ -136,6 +139,10 @@ function useStatusCopy(
         return { tone: 'warning' as const, label: t('Connecting…') };
     }
 
+    if (status === 'synced') {
+        return { tone: 'ok' as const, label: t('Synced') };
+    }
+
     const label =
         attempt && maxAttempts
             ? t('Reconnecting… (:attempt/:max)', {
@@ -168,6 +175,16 @@ function Marker({
         return <CheckIcon aria-hidden="true" className="size-4 shrink-0" />;
     }
 
+    if (status === 'synced') {
+        return (
+            <span
+                aria-hidden="true"
+                data-slot="connection-dot"
+                className="size-2 shrink-0 rounded-full bg-current"
+            />
+        );
+    }
+
     return <Trema size={size} />;
 }
 
@@ -182,6 +199,7 @@ export function ConnectionState({
     hint,
     realtime,
     className,
+    labelClassName,
 }: ConnectionStateProps) {
     const { t } = useTrans();
     const copy = useStatusCopy(status, attempt, maxAttempts, pendingChanges);
@@ -194,6 +212,8 @@ export function ConnectionState({
 
     const detail = 'detail' in copy ? copy.detail : null;
     const isExpired = status === 'expired';
+    /** "Synced" is the resting state: it is read in place, never announced. */
+    const isResting = status === 'synced';
     const recovery = isExpired
         ? onReload && { label: t('Reload'), run: onReload }
         : status === 'offline' && onRetry
@@ -261,8 +281,8 @@ export function ConnectionState({
 
     const pill = (
         <span
-            role={isExpired ? 'alert' : 'status'}
-            aria-live={isExpired ? undefined : 'polite'}
+            role={isExpired ? 'alert' : isResting ? undefined : 'status'}
+            aria-live={isExpired || isResting ? undefined : 'polite'}
             data-slot="connection-state"
             data-variant={variant}
             data-status={status}
@@ -278,7 +298,7 @@ export function ConnectionState({
                 status={status}
                 size={variant === 'overlay' ? 'lg' : 'sm'}
             />
-            <span className="truncate">{copy.label}</span>
+            <span className={cn('truncate', labelClassName)}>{copy.label}</span>
             {detail ? (
                 <span className="truncate font-medium opacity-80">
                     {detail}

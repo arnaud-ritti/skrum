@@ -1785,6 +1785,7 @@
     "Reconnecting in :seconds s": "Reconnecting in :seconds s",
     "Now": "Now",
     "Reconnected": "Reconnected",
+    "Synced": "Synced",
     "Lose connection": "Lose connection",
     "Close it": "Close it",
     "Toast: error with a retry action": "Toast: error with a retry action",
