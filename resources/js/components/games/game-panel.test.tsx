@@ -3,7 +3,10 @@ import { describe, expect, it, vi } from 'vitest';
 import { GamePanel } from '@/components/games/game-panel';
 
 vi.mock('@/components/games/room-context', () => ({
-    useRoom: () => ({ snapshot: { round: null }, lastEnded: null }),
+    useRoom: () => ({
+        snapshot: { room: { game: 'trivia' }, round: null },
+        lastEnded: null,
+    }),
 }));
 
 vi.mock('@/components/games/round-end-card', () => ({
@@ -11,6 +14,8 @@ vi.mock('@/components/games/round-end-card', () => ({
 }));
 
 vi.mock('@/components/games/room-sidebar', () => ({
+    hasPlayersOnLeft: () => false,
+    RoomPlayersSide: () => null,
     RoomSidebar: () => <p>Players</p>,
 }));
 

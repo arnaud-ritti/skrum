@@ -583,8 +583,8 @@ describe('the retro form', () => {
         expect(lastPost()[0]).toContain('/retros');
         expect(lastPost()[1].template).toBe('sailboat');
         expect(lastPost()[1].columns).toEqual([
-            { title: 'Wind', description: null, color: 'green' },
-            { title: 'Rocks', description: null, color: 'red' },
+            { title: 'Wind', description: null, color: 'moss' },
+            { title: 'Rocks', description: null, color: 'coral' },
         ]);
     });
 

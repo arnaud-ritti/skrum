@@ -37,6 +37,8 @@ vi.mock('@/components/games/round-end-card', () => ({
 }));
 
 vi.mock('@/components/games/room-sidebar', () => ({
+    hasPlayersOnLeft: () => false,
+    RoomPlayersSide: () => null,
     RoomSidebar: () => <p>Players</p>,
 }));
 
