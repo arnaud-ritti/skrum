@@ -63,10 +63,6 @@ const alreadyOnLibrary = new Map([
         'written in plan 18d on Card and Badge, for the About page',
     ],
     [
-        'resources/js/components/breadcrumbs.tsx',
-        'themed in plan 18a on the Breadcrumb primitive; the topbar of the library mounts it',
-    ],
-    [
         'resources/js/components/dev/bench.tsx',
         'the bench of the design system itself (plans 18a to 18d)',
     ],
