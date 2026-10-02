@@ -26,7 +26,6 @@ import type { RetroPhase, Snapshot } from '@/lib/retro/types';
 import { cn } from '@/lib/utils';
 import { useBoard } from './board-context';
 import { BoardReactions, showsRetroReactions } from './board-reactions';
-import { hasSessionEndActions, SessionEndFooterRem } from './session-end';
 import { useOptionalDiscussion } from './phase-discussing';
 
 type Translate = (key: string) => string;
@@ -61,7 +60,9 @@ type DockBoard = Pick<Snapshot, 'retro'>;
 
 /**
  * The facilitator's actions of a phase (spec ruling 28): every action that
- * exists today has its slot. The completed state has no bar.
+ * exists today has its slot. The lock is in the bar while cards are written,
+ * grouped and voted; from Discussing on its slot is the settings popover,
+ * as in the mockups. The completed state has no bar.
  */
 export function facilitatorActions(
     phase: RetroPhase,
@@ -153,7 +154,7 @@ export function facilitatorActions(
     }
 
     if (phase === 'roti') {
-        return [lock, roti?.nudge, roti?.reveal].filter(
+        return [roti?.nudge, roti?.reveal].filter(
             (action): action is FacilitatorAction => action !== undefined,
         );
     }
@@ -304,12 +305,6 @@ export function FacilitatorDock({
     const { board } = ctx;
     const { phase } = board.retro;
     const hasBar = board.viewer.isFacilitator && phase !== 'completed';
-    // On a phone the actions of the session end are a bar stuck to the
-    // bottom of the screen: the reactions sit above it.
-    const endActionsHeight =
-        phase === 'completed' && isMobile && hasSessionEndActions(board)
-            ? SessionEndFooterRem
-            : undefined;
 
     const send = async (request: Promise<unknown>) => {
         setBusy(true);
@@ -370,7 +365,7 @@ export function FacilitatorDock({
                 <BoardReactions
                     compact={isMobile}
                     offsetBottom={
-                        hasBar ? DockBottomRem + barHeight : endActionsHeight
+                        hasBar ? DockBottomRem + barHeight : undefined
                     }
                 />
             )}

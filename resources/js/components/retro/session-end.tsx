@@ -62,7 +62,7 @@ function recapChannels(board: Pick<Snapshot, 'integrations'>): ShareChannel[] {
 
 /**
  * Whether the session end has something to do: on a phone its actions are a
- * bar stuck to the bottom of the screen, which the reaction bar clears.
+ * bar stuck to the bottom of the screen.
  */
 export function hasSessionEndActions(
     board: Pick<Snapshot, 'integrations' | 'links'>,
@@ -73,9 +73,6 @@ export function hasSessionEndActions(
         recapChannels(board).length > 0
     );
 }
-
-/** Height of the bar of actions on a phone, in rem. */
-export const SessionEndFooterRem = 4;
 
 /** "Session ended · 58 min · Thu, Oct 2": the duration only when the retro has a start time. */
 function useEndedLine(): { text: string; completedAt: string | null } {
@@ -291,7 +288,7 @@ function Results() {
     }
 
     return (
-        <div className="flex min-w-0 flex-col gap-4 px-4 pb-28 md:px-8">
+        <div className="flex min-w-0 flex-col gap-4 px-4 pb-8 md:px-8">
             <Stats />
             <div className="grid min-w-0 grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)] lg:grid-rows-[auto_1fr]">
                 <div className="min-w-0 lg:col-start-1 lg:row-start-1">
@@ -456,7 +453,7 @@ export function SessionEnd({
                 <TabsContent
                     value="board"
                     aria-labelledby={CompletedTabId('board')}
-                    className="flex min-w-0 flex-col pb-28 lg:flex-row"
+                    className="flex min-w-0 flex-col pb-8 lg:flex-row"
                 >
                     {children}
                 </TabsContent>

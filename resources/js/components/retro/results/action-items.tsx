@@ -34,20 +34,23 @@ export function ActionsCreated() {
     return (
         <ResultsCard
             title={t('Actions created')}
+            // Narrow: the count stays beside the title and the note takes
+            // the line under them.
+            asideClassName="contents @lg/card:flex"
             aside={
                 <>
                     <Badge
                         variant="muted"
                         shape="pill"
                         data-slot="retro-actions-created-count"
-                        className="shrink-0 tabular-nums"
+                        className="shrink-0 justify-self-start tabular-nums"
                     >
                         {items.length}
                     </Badge>
                     {notes.length > 0 && (
                         <span
                             data-slot="retro-actions-created-note"
-                            className="min-w-0 basis-full text-xs text-muted-foreground @lg/card:ml-auto @lg/card:basis-auto @lg/card:truncate"
+                            className="col-span-2 min-w-0 text-xs text-muted-foreground @lg/card:ml-auto @lg/card:truncate"
                         >
                             {notes.join(' · ')}
                         </span>

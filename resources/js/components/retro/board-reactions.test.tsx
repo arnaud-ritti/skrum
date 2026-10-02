@@ -11,9 +11,16 @@ function channel() {
 }
 
 describe('showsRetroReactions', () => {
-    it('follows the setting alone: the session end keeps its reaction bar', () => {
-        expect(showsRetroReactions({ reactionsEnabled: true })).toBe(true);
-        expect(showsRetroReactions({ reactionsEnabled: false })).toBe(false);
+    it('follows the setting and stops once the retro is completed', () => {
+        expect(
+            showsRetroReactions({ reactionsEnabled: true, phase: 'writing' }),
+        ).toBe(true);
+        expect(
+            showsRetroReactions({ reactionsEnabled: false, phase: 'writing' }),
+        ).toBe(false);
+        expect(
+            showsRetroReactions({ reactionsEnabled: true, phase: 'completed' }),
+        ).toBe(false);
     });
 });
 

@@ -92,13 +92,15 @@ describe('facilitatorActions', () => {
             onStep: vi.fn(),
             onFollow: vi.fn(),
         };
-        const [follow, previous, next] = facilitatorActions(
+        const [follow, previous, next, ...rest] = facilitatorActions(
             'discussing',
             retroSnapshot({
                 retro: { phase: 'discussing', presentationMode: true },
             }),
             { ...tools(), topics },
         );
+
+        expect(rest).toEqual([]);
 
         expect(previous).toMatchObject({
             id: 'previous-topic',
@@ -140,11 +142,13 @@ describe('facilitatorActions', () => {
         expect(ids('actions')).toEqual([]);
     });
 
-    it('keeps the lock in ROTI', () => {
-        expect(ids('roti')).toEqual(['lock']);
+    it('has the lock in the bar while cards are written, grouped and voted, and in the settings alone afterwards', () => {
+        for (const phase of ['discussing', 'actions', 'roti'] as const) {
+            expect(ids(phase)).not.toContain('lock');
+        }
     });
 
-    it('leaves the places of "Nudge" and "Reveal ROTI" after the lock', () => {
+    it('leaves the places of "Nudge" and "Reveal ROTI" in ROTI', () => {
         const place = (id: string) => ({
             id,
             label: id,
@@ -161,7 +165,7 @@ describe('facilitatorActions', () => {
                     roti: { nudge: place('nudge'), reveal: place('reveal') },
                 },
             ).map((action) => action.id),
-        ).toEqual(['lock', 'nudge', 'reveal']);
+        ).toEqual(['nudge', 'reveal']);
     });
 
     it('has nothing once the retro is completed', () => {
@@ -422,7 +426,7 @@ describe('FacilitatorDock', () => {
         expect(screen.queryByRole('toolbar')).toBeNull();
     });
 
-    it('keeps the reaction bar alone at the session end', () => {
+    it('has no reaction bar at the session end (spec §9.1)', () => {
         renderInBoard(
             <FacilitatorDock />,
             boardContext(retroSnapshot({ retro: { phase: 'completed' } }), {
@@ -434,9 +438,7 @@ describe('FacilitatorDock', () => {
             }),
         );
 
-        expect(
-            screen.getAllByRole('toolbar').map((bar) => bar.ariaLabel),
-        ).toEqual(['Reactions']);
+        expect(screen.queryByRole('toolbar')).toBeNull();
         expect(
             document.querySelector('[data-slot="facilitator-dock"]'),
         ).toBeNull();
