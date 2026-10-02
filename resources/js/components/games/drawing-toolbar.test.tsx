@@ -200,6 +200,16 @@ describe('DrawingToolbar', () => {
         ).toBe(true);
     });
 
+    it('shows the colours with the light values of the inks in both themes', () => {
+        const { toolbar } = setup();
+
+        expect(
+            [...toolbar.querySelectorAll('[data-color]')].every(
+                (swatch) => swatch.closest('.light') !== null,
+            ),
+        ).toBe(true);
+    });
+
     it('keeps the colours in a popover when compact', () => {
         const { toolbar, onColor } = setup({ compact: true, color: 'sky' });
         const bar = within(toolbar);
@@ -209,12 +219,14 @@ describe('DrawingToolbar', () => {
         const trigger = bar.getByRole('button', { name: 'Ink colour: Sky' });
 
         expect(trigger.getAttribute('data-color')).toBe('sky');
+        expect(trigger.closest('.light')).not.toBeNull();
 
         fireEvent.click(trigger);
 
         const popover = screen.getByRole('dialog');
 
         expect(popover.querySelectorAll('[data-color]')).toHaveLength(9);
+        expect(popover.closest('.light')).not.toBeNull();
         expect(
             within(popover)
                 .getByRole('button', { name: 'Sky' })

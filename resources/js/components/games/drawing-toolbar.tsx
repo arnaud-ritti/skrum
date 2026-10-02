@@ -36,8 +36,9 @@ export type DrawingToolbarProps = {
 };
 
 /**
- * The swatch follows the theme; the stroke is the canvas literal of
- * `lib/games/drawing.ts`, on a sheet that is white in both themes.
+ * The stroke is the canvas literal of `lib/games/drawing.ts`, on a sheet that
+ * is white in both themes. The swatches stand in a `.light` scope, on a chip
+ * in the colour of the sheet, so each shows the ink it draws in a dark theme too.
  */
 const swatchClasses: Partial<Record<DrawingColor, string>> = {
     black: 'bg-foreground',
@@ -335,29 +336,38 @@ export function DrawingToolbar({
                                 color: colorNames[color],
                             })}
                             className={cn(
-                                'grid size-11 shrink-0 place-items-center rounded-full',
+                                'light grid size-11 shrink-0 place-items-center rounded-full',
                                 focusClass,
                             )}
                         >
                             <span
                                 aria-hidden
-                                className={cn(
-                                    'size-6 rounded-full ring-1 ring-foreground/15 ring-inset',
-                                    swatchClasses[color],
-                                )}
-                            />
+                                className="grid size-9 place-items-center rounded-full bg-card"
+                            >
+                                <span
+                                    className={cn(
+                                        'size-6 rounded-full ring-1 ring-foreground/15 ring-inset',
+                                        swatchClasses[color],
+                                    )}
+                                />
+                            </span>
                         </button>
                     </PopoverTrigger>
                     <PopoverContent
                         side="top"
                         aria-label={t('Ink colour')}
-                        className="grid grid-cols-[repeat(3,auto)] gap-1 p-2"
+                        className="light grid grid-cols-[repeat(3,auto)] gap-1 bg-card p-2"
                     >
                         {swatches}
                     </PopoverContent>
                 </Popover>
             ) : (
-                <div className="flex items-center">{swatches}</div>
+                <div
+                    data-slot="drawing-swatches"
+                    className="light flex items-center rounded-full bg-card px-0.5"
+                >
+                    {swatches}
+                </div>
             )}
             <Separator />
             <ToolKey
