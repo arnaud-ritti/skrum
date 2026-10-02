@@ -4206,5 +4206,18 @@
     ":count action items": ":count action items",
     "1 action item": "1 action item",
     "Action items created in a retro or added here are listed on this page.": "Action items created in a retro or added here are listed on this page.",
-    "Change the filters or reset them to see more.": "Change the filters or reset them to see more."
+    "Change the filters or reset them to see more.": "Change the filters or reset them to see more.",
+    "Action items page, for a manager: counters, filters, rows": "Action items page, for a manager: counters, filters, rows",
+    "Rows of every team, grouped by team": "Rows of every team, grouped by team",
+    "Rows grouped by assignee, on a list of several pages": "Rows grouped by assignee, on a list of several pages",
+    "Counters at their longest, and one ritual": "Counters at their longest, and one ritual",
+    "Filters: every facet on, only what is overdue": "Filters: every facet on, only what is overdue",
+    "Overdue, due in three days, done": "Overdue, due in three days, done",
+    "Rows of a member who manages none of them": "Rows of a member who manages none of them",
+    "No action item yet": "No action item yet",
+    "No action item under the filters": "No action item under the filters",
+    "While a filter loads: the table shows placeholder rows, the list stays": "While a filter loads: the table shows placeholder rows, the list stays",
+    "Details of an overdue item": "Details of an overdue item",
+    "Details of an item deleted elsewhere": "Details of an item deleted elsewhere",
+    "Delete confirmation": "Delete confirmation"
 }

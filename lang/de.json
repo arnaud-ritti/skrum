@@ -4428,5 +4428,18 @@
     ":count action items": ":count Aktionspunkte",
     "1 action item": "1 Aktionspunkt",
     "Action items created in a retro or added here are listed on this page.": "Aktionspunkte aus einer Retro oder hier hinzugefügte stehen auf dieser Seite.",
-    "Change the filters or reset them to see more.": "Ändere die Filter oder setze sie zurück, um mehr zu sehen."
+    "Change the filters or reset them to see more.": "Ändere die Filter oder setze sie zurück, um mehr zu sehen.",
+    "Action items page, for a manager: counters, filters, rows": "Seite der Aktionen, für einen Verwalter: Zähler, Filter, Zeilen",
+    "Rows of every team, grouped by team": "Zeilen aller Teams, nach Team gruppiert",
+    "Rows grouped by assignee, on a list of several pages": "Zeilen nach Verantwortlichem gruppiert, in einer Liste mit mehreren Seiten",
+    "Counters at their longest, and one ritual": "Zähler in voller Länge, und ein einziges Ritual",
+    "Filters: every facet on, only what is overdue": "Filter: alle Facetten aktiv, nur Überfälliges",
+    "Overdue, due in three days, done": "Überfällig, in drei Tagen fällig, erledigt",
+    "Rows of a member who manages none of them": "Zeilen eines Mitglieds, das keine davon verwaltet",
+    "No action item yet": "Noch keine Aktion",
+    "No action item under the filters": "Keine Aktion mit diesen Filtern",
+    "While a filter loads: the table shows placeholder rows, the list stays": "Während ein Filter lädt: Die Tabelle zeigt Platzhalterzeilen, die Liste bleibt",
+    "Details of an overdue item": "Details einer überfälligen Aktion",
+    "Details of an item deleted elsewhere": "Details einer anderswo gelöschten Aktion",
+    "Delete confirmation": "Löschbestätigung"
 }

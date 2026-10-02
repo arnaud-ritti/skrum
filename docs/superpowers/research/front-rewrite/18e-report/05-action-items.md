@@ -69,3 +69,27 @@ Not compared on captures: the bench section and the captures are Task 5.3.
 | "Edit" of the "…" menu opens the sheet; the title is edited from its pencil there | new row |
 | The ticket chip is `ActionItemLinkChip` (provider and key), not the square and round marks | new row |
 | A date within three days reads "Fri, Oct 3 · in 3 days" (browser wording), not "· dans 3 j" | new row |
+
+## Task 5.3 — Bench section and captures of the action items page
+
+Section `actions-index` (`/dev/design-system/actions-index`), built from the pieces of the page (header, filter bar or phone chips and drawer, table or list, pagination, sheet, delete confirmation), not from `ActionItemsPage`: the container visits the server when it mounts (landing on the stored filters or on the current team) and listens to the team channels. The table shows from 80rem of viewport and the list below, as on the page.
+
+| State (`data-state`) | Shows |
+|---|---|
+| `page` | "New action item", counters, "Group by" (works on the rows), filters with the Team facet on, six rows (to do, overdue, due in three days with a repeat and a guest, unassigned without date outside a retro, 200-character title with three tickets, done), "Page 2 of 3" |
+| `grouped-team`, `grouped-assignee` | group rows that fold, with their count; "on this page" on a list of several pages |
+| `counters` | the header line at its longest, and with one ritual |
+| `filters` | every facet on, "Overdue" pressed, "Reset" |
+| `overdue` | overdue, due in three days, done |
+| `member` | rows of a viewer who manages none: no "…" menu, no export, status disabled |
+| `empty`, `empty-filtered` | the two empty states |
+| `loading` | placeholder rows of the table (the list has no loading state) |
+| `overlay` | the real sheet, open on an overdue item; `?overlay=deleted` opens it on an item deleted elsewhere, `?overlay=delete` opens the delete confirmation |
+
+In the bench the sheet is `ActionSheet` with a placeholder for the comment thread: `ItemComments` loads its thread from the server when it mounts.
+
+Captures (`tests/Browser/Visual/ActionsPageVisualTest.php`, written and not run; no capture generated): `actions-page` (the real page of a manager, Team facet on), `actions-index`, `actions-index-delete`, `actions-index-deleted`.
+
+The pagination of the page moved, unchanged, to `action-items-pagination.tsx` so that the bench renders the same markup.
+
+Differences with the mockup: not compared on captures (no capture is generated in this phase); the list of Task 5.2 above stands.

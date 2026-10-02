@@ -4428,5 +4428,18 @@
     ":count action items": ":count actions",
     "1 action item": "1 action",
     "Action items created in a retro or added here are listed on this page.": "Les actions créées en rétro ou ajoutées ici sont listées sur cette page.",
-    "Change the filters or reset them to see more.": "Modifiez les filtres ou réinitialisez-les pour en voir plus."
+    "Change the filters or reset them to see more.": "Modifiez les filtres ou réinitialisez-les pour en voir plus.",
+    "Action items page, for a manager: counters, filters, rows": "Page des actions, pour un gestionnaire : compteurs, filtres, lignes",
+    "Rows of every team, grouped by team": "Lignes de toutes les équipes, groupées par équipe",
+    "Rows grouped by assignee, on a list of several pages": "Lignes groupées par responsable, sur une liste de plusieurs pages",
+    "Counters at their longest, and one ritual": "Compteurs au plus long, et un seul rituel",
+    "Filters: every facet on, only what is overdue": "Filtres : toutes les facettes actives, uniquement ce qui est en retard",
+    "Overdue, due in three days, done": "En retard, à échéance dans trois jours, terminée",
+    "Rows of a member who manages none of them": "Lignes d’un membre qui n’en gère aucune",
+    "No action item yet": "Aucune action pour l’instant",
+    "No action item under the filters": "Aucune action sous les filtres",
+    "While a filter loads: the table shows placeholder rows, the list stays": "Pendant le chargement d’un filtre : le tableau affiche des lignes fantômes, la liste reste",
+    "Details of an overdue item": "Détails d’une action en retard",
+    "Details of an item deleted elsewhere": "Détails d’une action supprimée ailleurs",
+    "Delete confirmation": "Confirmation de suppression"
 }
