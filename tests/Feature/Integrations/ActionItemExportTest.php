@@ -17,11 +17,10 @@ use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\Team;
 use App\Models\TeamIntegration;
-use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Http\Client\Request as HttpClientRequest;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
+use Tests\Support\SqlProbe;
 
 const ExportLinearTeamId = '6a1f0c1e-4e8b-4a55-9b53-3c0b5f1f0a01';
 
@@ -260,18 +259,11 @@ it('leaves the retro row unlocked while the provider answers', function () {
     fakeJiraIssueCreation();
     [$retro, $item, $author] = exportBoardItem();
     TeamIntegration::factory()->jira()->create(['team_id' => $retro->team_id]);
-    $lockedTables = [];
 
-    DB::listen(function (QueryExecuted $query) use (&$lockedTables) {
-        if (preg_match('/from "(\w+)".* for update/i', $query->sql, $matches) === 1) {
-            $lockedTables[] = $matches[1];
-        }
-    });
-
-    $this->actingAs($author)->postJson(...jiraExportRequest($retro, $item))->assertCreated();
+    $lockedTables = SqlProbe::lockedTables(fn () => $this->actingAs($author)->postJson(...jiraExportRequest($retro, $item))->assertCreated());
 
     expect($lockedTables)->toContain('action_items')->not->toContain('retros');
-});
+})->skip(fn () => ! SqlProbe::rowLocksExist(), 'This engine has no row lock: its write transactions are serialised instead.');
 
 it('keeps settings saved by an admin during the export', function () {
     [$retro, $item, $author] = exportBoardItem();

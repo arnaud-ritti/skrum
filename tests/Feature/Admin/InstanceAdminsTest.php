@@ -2,9 +2,9 @@
 
 use App\Actions\Admin\RevokeInstanceAdmin;
 use App\Models\User;
-use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia;
+use Tests\Support\SqlProbe;
 
 function actingAsInstanceAdmin(mixed $test, array $attributes = []): User
 {
@@ -159,21 +159,17 @@ it('locks the admin rows inside a transaction before it counts them', function (
     $admin = User::factory()->instanceAdmin()->create();
     $other = User::factory()->instanceAdmin()->create();
     $levelOutside = DB::transactionLevel();
-    $lockingQueries = [];
+    $revoked = null;
 
-    DB::listen(function (QueryExecuted $query) use (&$lockingQueries): void {
-        if (str_contains(strtolower($query->sql), 'for update')) {
-            $lockingQueries[] = ['sql' => strtolower($query->sql), 'level' => DB::transactionLevel()];
-        }
+    $locks = SqlProbe::locks(function () use ($other, &$revoked): void {
+        $revoked = resolve(RevokeInstanceAdmin::class)->handle($other);
     });
 
-    expect(resolve(RevokeInstanceAdmin::class)->handle($other))->toBeTrue()
-        ->and($lockingQueries)->toHaveCount(1)
-        ->and($lockingQueries[0]['sql'])->toContain('"is_instance_admin" = ')
-        ->and($lockingQueries[0]['level'])->toBe($levelOutside + 1)
+    expect($revoked)->toBeTrue()
+        ->and($locks)->toBe([['table' => 'users', 'level' => $levelOutside + 1]])
         ->and(resolve(RevokeInstanceAdmin::class)->handle($admin))->toBeFalse()
         ->and($admin->fresh()->is_instance_admin)->toBeTrue();
-});
+})->skip(fn () => ! SqlProbe::rowLocksExist(), 'This engine has no row lock: its write transactions are serialised instead.');
 
 it('treats the revocation of a user who is not an admin as done', function () {
     $admin = actingAsInstanceAdmin($this);

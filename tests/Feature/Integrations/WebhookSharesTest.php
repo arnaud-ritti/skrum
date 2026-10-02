@@ -29,11 +29,11 @@ use App\Support\Integrations\Messages\LinkShareContent;
 use App\Support\Integrations\Webhook\WebhookHealth;
 use Database\Factories\TeamIntegrationFactory;
 use Illuminate\Http\Client\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Exceptions;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
+use Tests\Support\DatabaseFailure;
 
 beforeEach(function () {
     Http::preventStrayRequests();
@@ -462,7 +462,7 @@ it('still queues a share whose message cannot be kept', function () {
 it('still queues a share when the database refuses its content', function () {
     Exceptions::fake();
     [$retro, $facilitator] = webhookSharingRetro();
-    IntegrationDeliveryPayload::creating(fn () => DB::statement('select 1 / 0'));
+    IntegrationDeliveryPayload::creating(fn () => DatabaseFailure::provoke());
 
     $this->actingAs($facilitator)
         ->postJson(route('retros.shares.store', $retro), ['channel' => 'webhook', 'kind' => 'link'])

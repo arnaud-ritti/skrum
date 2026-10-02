@@ -8,7 +8,7 @@ use Illuminate\Encryption\Encrypter;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
-use Illuminate\Support\Facades\Schema;
+use Tests\Support\MissingTables;
 
 function freshInstanceSettings(): InstanceSettings
 {
@@ -170,18 +170,17 @@ it('caches the settings for five minutes, which bounds a stale re-cache', functi
 });
 
 it('answers with the defaults and caches nothing while the table is missing', function () {
-    DB::beginTransaction();
-    Schema::drop('instance_settings');
+    $settings = MissingTables::during(function (): InstanceSettings {
+        $settings = freshInstanceSettings();
 
-    $settings = freshInstanceSettings();
+        expect($settings->displayName())->toBe('Configured Name')
+            ->and($settings->brandColor())->toBeNull()
+            ->and($settings->gifKey())->toBe('config-gif-key')
+            ->and($settings->all()['gif_rating'])->toBe('pg')
+            ->and(Cache::has(InstanceSettings::CacheKey))->toBeFalse();
 
-    expect($settings->displayName())->toBe('Configured Name')
-        ->and($settings->brandColor())->toBeNull()
-        ->and($settings->gifKey())->toBe('config-gif-key')
-        ->and($settings->all()['gif_rating'])->toBe('pg')
-        ->and(Cache::has(InstanceSettings::CacheKey))->toBeFalse();
-
-    DB::rollBack();
+        return $settings;
+    });
 
     $settings->set('display_name', 'Acme Retros');
 

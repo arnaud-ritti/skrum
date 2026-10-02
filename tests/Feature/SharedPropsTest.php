@@ -151,7 +151,7 @@ it('queries the visible teams once for both shared props', function () {
 
             return $sql;
         })
-        ->filter(fn (string $outerSql) => str_contains($outerSql, 'from "teams"'))
+        ->filter(fn (string $outerSql) => str_contains($outerSql, 'from '.DB::connection()->getQueryGrammar()->wrapTable('teams')))
         ->count();
     DB::disableQueryLog();
 

@@ -1,16 +1,16 @@
 <?php
 
+use App\Models\InstanceSetting;
 use App\Models\User;
 use App\Support\Branding\BrandAssets;
 use App\Support\Branding\BrandPalette;
 use App\Support\InstanceSettings;
 use Illuminate\Foundation\Vite;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\HtmlString;
 use Inertia\Testing\AssertableInertia;
+use Tests\Support\MissingTables;
 
 const BrandStylesheetLink = '<link rel="stylesheet" href="/build/assets/app.css">';
 
@@ -179,13 +179,11 @@ it('returns to the default page once the settings are cleared', function () {
 });
 
 it('still renders the page while the settings table is missing', function () {
-    DB::beginTransaction();
-    Schema::drop('instance_settings');
-    app()->forgetScopedInstances();
+    $response = MissingTables::ofModel(InstanceSetting::class, function () {
+        app()->forgetScopedInstances();
 
-    $response = $this->get(route('login'));
-
-    DB::rollBack();
+        return $this->get(route('login'));
+    });
 
     $response->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page
