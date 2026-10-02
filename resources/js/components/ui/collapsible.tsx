@@ -62,7 +62,7 @@ function CollapsibleBlock({
           </span>
           <ChevronDown
             aria-hidden="true"
-            className="transition-transform duration-base ease-standard group-data-[state=open]:rotate-180"
+            className="transition-transform duration-220 ease-standard group-data-[state=open]:rotate-180"
           />
         </Button>
       </CollapsibleTrigger>

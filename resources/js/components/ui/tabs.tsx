@@ -115,7 +115,7 @@ function TabsTrigger({
     <TabsPrimitive.Trigger
       data-slot="tabs-trigger"
       className={cn(
-        "group/tab inline-flex min-w-0 items-center justify-center gap-1.5 whitespace-nowrap text-muted-foreground transition-colors duration-150 ease-out outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 data-[state=active]:text-foreground motion-reduce:transition-none",
+        "group/tab inline-flex min-w-0 items-center justify-center gap-1.5 whitespace-nowrap text-muted-foreground transition-colors duration-140 ease-out outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 data-[state=active]:text-foreground motion-reduce:transition-none",
         variant === "pill"
           ? "h-7.5 rounded-md px-3 text-body-sm font-semibold data-[state=active]:bg-card data-[state=active]:shadow-card"
           : "h-10 rounded-none px-0.5 text-body-sm font-semibold hover:not-data-[state=active]:shadow-[inset_0_-2px_0_var(--border)] data-[state=active]:bg-transparent data-[state=active]:shadow-[inset_0_-2px_0_var(--primary)] focus-visible:ring-inset",

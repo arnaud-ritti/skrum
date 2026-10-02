@@ -76,6 +76,17 @@ describe('TableSortHead', () => {
         return onSort;
     }
 
+    it('lets a long header label truncate inside the button', () => {
+        renderHead(null);
+
+        const button = screen.getByRole('button', { name: 'Due date' });
+
+        expect(button.className.split(/\s+/)).toContain('min-w-0');
+        expect(screen.getByText('Due date').className.split(/\s+/)).toContain(
+            'truncate',
+        );
+    });
+
     it.each([
         ['asc', 'ascending'],
         ['desc', 'descending'],

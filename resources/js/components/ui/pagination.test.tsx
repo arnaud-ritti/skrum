@@ -219,6 +219,12 @@ describe('LoadMore', () => {
         );
 
         expect(screen.getByText('20 more')).toBeTruthy();
+        expect(screen.getByText('Load more').className).toContain('truncate');
+        expect(
+            screen
+                .getByRole('button', { name: /Load more/ })
+                .className.split(/\s+/),
+        ).toContain('min-w-0');
 
         fireEvent.click(screen.getByRole('button', { name: /Load more/ }));
 

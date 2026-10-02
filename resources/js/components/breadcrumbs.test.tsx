@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { Home } from 'lucide-react';
 import { describe, expect, it } from 'vitest';
 import { Breadcrumbs } from '@/components/breadcrumbs';
+import { Breadcrumb, BreadcrumbEllipsis } from '@/components/ui/breadcrumb';
 import { renderWithProviders } from '@/test/render';
 
 const crumb = (title: string, href = `/${title}`) => ({ title, href });
@@ -131,5 +132,23 @@ describe('Breadcrumbs', () => {
 
         expect(screen.getByText('Renamed')).toBeTruthy();
         expect(screen.queryByText('Old')).toBeNull();
+    });
+});
+
+describe('Breadcrumb primitive', () => {
+    it('names its landmark and its ellipsis through the translator', () => {
+        const { container } = renderWithProviders(
+            <Breadcrumb>
+                <BreadcrumbEllipsis />
+            </Breadcrumb>,
+        );
+
+        expect(
+            screen.getByRole('navigation', { name: 'Breadcrumb' }),
+        ).not.toBeNull();
+        expect(
+            container.querySelector('[data-slot="breadcrumb-ellipsis"]')
+                ?.textContent,
+        ).toBe('Show full path');
     });
 });

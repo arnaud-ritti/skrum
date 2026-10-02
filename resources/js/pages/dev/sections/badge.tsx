@@ -86,10 +86,10 @@ export default function BadgeSection() {
                 </Badge>
             </State>
             <State label={t('As link (hover and focus)')}>
-                <Badge asChild variant="outline">
+                <Badge asChild linkIcon variant="outline">
                     <a href="#badge">{t('Open team')}</a>
                 </Badge>
-                <Badge asChild variant="soft" icon={Crown}>
+                <Badge asChild linkIcon variant="soft" icon={Crown}>
                     <a href="#badge">{t('Facilitator')}</a>
                 </Badge>
             </State>

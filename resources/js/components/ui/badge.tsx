@@ -44,6 +44,7 @@ type BadgeProps = React.ComponentProps<"span"> &
     asChild?: boolean
     icon?: LucideIcon
     dot?: string
+    linkIcon?: boolean
   }
 
 function Badge({
@@ -53,6 +54,7 @@ function Badge({
   icon: Icon,
   dot,
   asChild = false,
+  linkIcon = false,
   children,
   ...props
 }: BadgeProps) {
@@ -74,7 +76,7 @@ function Badge({
       ) : null}
       {Icon ? <Icon aria-hidden="true" /> : null}
       {asChild ? <Slottable>{children}</Slottable> : children}
-      {asChild ? <ArrowUpRight aria-hidden="true" /> : null}
+      {linkIcon ? <ArrowUpRight aria-hidden="true" /> : null}
     </Comp>
   )
 }

@@ -159,11 +159,11 @@ function TableSortHead({
         type="button"
         onClick={onSort}
         className={cn(
-          "-ml-2 inline-flex h-7 max-w-full items-center gap-1 rounded-md px-2 text-xs font-semibold transition-colors outline-none hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none",
+          "-ml-2 inline-flex h-7 w-max max-w-full min-w-0 items-center gap-1 rounded-md px-2 text-xs font-semibold transition-colors outline-none hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none",
           direction ? "text-foreground" : "text-muted-foreground"
         )}
       >
-        <span className="whitespace-nowrap">{children}</span>
+        <span className="truncate">{children}</span>
         <Icon aria-hidden="true" className="size-3.5 shrink-0" />
       </button>
     </TableHead>

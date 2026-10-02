@@ -104,7 +104,7 @@ function AccordionTrigger({
       <AccordionPrimitive.Trigger
         data-slot="accordion-trigger"
         className={cn(
-          "group flex flex-1 items-start gap-3 py-4 text-left text-sm font-semibold outline-none transition-colors duration-fast focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50",
+          "group flex flex-1 items-start gap-3 py-4 text-left text-sm font-semibold outline-none transition-colors duration-140 focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50",
           isCard &&
             "m-1 w-auto flex-none grow rounded-md px-3 py-2 hover:bg-muted disabled:hover:bg-transparent",
           className
@@ -143,7 +143,7 @@ function AccordionTrigger({
           data-slot="accordion-chevron"
           aria-hidden="true"
           className={cn(
-            "size-4 shrink-0 text-muted-foreground transition-transform duration-base ease-standard group-data-[state=open]:rotate-180",
+            "size-4 shrink-0 text-muted-foreground transition-transform duration-220 ease-standard group-data-[state=open]:rotate-180",
             Icon ? "mt-1.5" : "mt-0.5"
           )}
         />

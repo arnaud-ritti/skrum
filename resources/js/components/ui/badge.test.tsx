@@ -54,9 +54,9 @@ describe('Badge', () => {
         expect(dot?.style.backgroundColor).toBe('var(--skrum-success)');
     });
 
-    it('renders the child as a link with a trailing arrow when asChild', () => {
+    it('renders the child as a link with a trailing arrow when linkIcon is set', () => {
         render(
-            <Badge asChild icon={Crown}>
+            <Badge asChild linkIcon icon={Crown}>
                 <a href="/team">Team</a>
             </Badge>,
         );
@@ -66,6 +66,20 @@ describe('Badge', () => {
         expect(link.getAttribute('data-slot')).toBe('badge');
         expect(link.querySelectorAll('svg')).toHaveLength(2);
         expect(link.firstElementChild?.tagName.toLowerCase()).toBe('svg');
+    });
+});
+
+describe('Badge as a link', () => {
+    it('adds no arrow to an asChild badge unless asked', () => {
+        render(
+            <Badge asChild>
+                <a href="/team">Team</a>
+            </Badge>,
+        );
+
+        expect(
+            screen.getByRole('link', { name: 'Team' }).querySelector('svg'),
+        ).toBeNull();
     });
 });
 

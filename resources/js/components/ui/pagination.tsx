@@ -534,8 +534,11 @@ function LoadMore({
         loading={loading}
         loader="trema"
         onClick={onLoadMore}
+        className="max-w-full min-w-0"
       >
-        {loading ? t("Loading…") : t("Load more")}
+        <span className="truncate">
+          {loading ? t("Loading…") : t("Load more")}
+        </span>
         {loading ? null : (
           <Badge variant="secondary">
             {t(":count more", { count: Math.min(nextCount ?? remaining, remaining) })}

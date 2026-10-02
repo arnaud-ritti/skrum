@@ -7,6 +7,7 @@ import {
     DropdownMenuCheckboxItem,
     DropdownMenuContent,
     DropdownMenuItem,
+    DropdownMenuLabel,
     DropdownMenuRadioGroup,
     DropdownMenuRadioItem,
     DropdownMenuSub,
@@ -228,5 +229,120 @@ describe('DropdownMenu rows', () => {
         );
 
         expect(screen.getByRole('menuitem', { name: 'Edit' })).toBeTruthy();
+    });
+});
+
+describe('defaults kept for existing menus', () => {
+    it('keeps the compact minimum width unless the wide size is asked', async () => {
+        const user = userEvent.setup();
+
+        render(
+            <DropdownMenu>
+                <DropdownMenuTrigger>Colours</DropdownMenuTrigger>
+                <DropdownMenuContent>
+                    <DropdownMenuLabel>Ada Lovelace</DropdownMenuLabel>
+                    <DropdownMenuLabel variant="overline">
+                        Sort by
+                    </DropdownMenuLabel>
+                    <DropdownMenuItem>Red</DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>,
+        );
+
+        await user.click(screen.getByRole('button', { name: 'Colours' }));
+        const menu = screen.getByRole('menu');
+
+        expect(menu.getAttribute('data-size')).toBe('default');
+        expect(menu.className.split(/\s+/)).toContain('min-w-32');
+        expect(menu.className.split(/\s+/)).not.toContain('min-w-55');
+
+        const name = screen.getByText('Ada Lovelace').className.split(/\s+/);
+
+        expect(name).toContain('text-sm');
+        expect(name).toContain('text-foreground');
+        expect(name).not.toContain('text-muted-foreground');
+
+        const overline = screen.getByText('Sort by').className.split(/\s+/);
+
+        expect(overline).toContain('text-xs');
+        expect(overline).toContain('text-muted-foreground');
+    });
+
+    it('gives the card menu the wide size and overline labels', async () => {
+        const user = setup([
+            { type: 'label', label: 'Sort by' },
+            { type: 'item', label: 'Edit', onSelect: vi.fn() },
+        ]);
+
+        await user.click(screen.getByRole('button', { name: 'Open' }));
+
+        expect(screen.getByRole('menu').getAttribute('data-size')).toBe('wide');
+        expect(screen.getByText('Sort by').getAttribute('data-variant')).toBe(
+            'overline',
+        );
+    });
+
+    it('letter-spaces a shortcut but not a disabled reason', async () => {
+        const user = setup([
+            { type: 'item', label: 'Copy', shortcut: '⌘C', onSelect: vi.fn() },
+            {
+                type: 'item',
+                label: 'Edit',
+                disabled: true,
+                disabledReason: 'Inès is writing',
+                onSelect: vi.fn(),
+            },
+        ]);
+
+        await user.click(screen.getByRole('button', { name: 'Open' }));
+
+        expect(screen.getByText('⌘C').className.split(/\s+/)).toContain(
+            'tracking-widest',
+        );
+
+        const reason = screen.getByText('Inès is writing').className.split(/\s+/);
+
+        expect(reason).toContain('tracking-normal');
+        expect(reason).not.toContain('tracking-widest');
+    });
+});
+
+describe('CardMenu inline', () => {
+    it('renders the menu open in the flow, next to its trigger', () => {
+        const { container } = render(
+            <CardMenu
+                inline
+                trigger={<button>Open</button>}
+                entries={[
+                    { type: 'item', label: 'Edit', onSelect: vi.fn() },
+                    { type: 'item', label: 'Duplicate', onSelect: vi.fn() },
+                ]}
+            />,
+        );
+
+        const menu = screen.getByRole('menu');
+
+        expect(container.contains(menu)).toBe(true);
+        expect(within(menu).getAllByRole('menuitem')).toHaveLength(2);
+        expect(document.body.style.pointerEvents).not.toBe('none');
+    });
+
+    it('stays open after Escape and still runs an item', async () => {
+        const onSelect = vi.fn();
+        const user = userEvent.setup();
+
+        render(
+            <CardMenu
+                inline
+                trigger={<button>Open</button>}
+                entries={[{ type: 'item', label: 'Edit', onSelect }]}
+            />,
+        );
+
+        await user.click(screen.getByRole('menuitem', { name: 'Edit' }));
+        await user.keyboard('{Escape}');
+
+        expect(onSelect).toHaveBeenCalledOnce();
+        expect(screen.getByRole('menu')).not.toBeNull();
     });
 });

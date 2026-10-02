@@ -50,10 +50,12 @@ function DialogContent({
   children,
   showCloseButton = true,
   closeLabel,
+  size = "default",
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   showCloseButton?: boolean
   closeLabel?: string
+  size?: "default" | "sm"
 }) {
   const { t } = useTrans()
 
@@ -62,8 +64,9 @@ function DialogContent({
       <DialogOverlay />
       <DialogPrimitive.Content
         data-slot="dialog-content"
+        data-size={size}
         className={cn(
-          "bg-popover text-popover-foreground shadow-modal data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 motion-reduce:data-[state=closed]:zoom-out-100 motion-reduce:data-[state=open]:zoom-in-100 data-[state=open]:duration-(--duration-slow) data-[state=open]:ease-(--ease-enter) data-[state=closed]:duration-(--duration-base) data-[state=closed]:ease-(--ease-exit) fixed top-1/2 left-1/2 z-50 grid max-h-dialog w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 overflow-y-auto rounded-xl border p-6 sm:max-w-110",
+          "bg-popover text-popover-foreground shadow-modal data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 motion-reduce:data-[state=closed]:zoom-out-100 motion-reduce:data-[state=open]:zoom-in-100 data-[state=open]:duration-(--duration-slow) data-[state=open]:ease-(--ease-enter) data-[state=closed]:duration-(--duration-base) data-[state=closed]:ease-(--ease-exit) fixed top-1/2 left-1/2 z-50 grid max-h-dialog w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 overflow-y-auto rounded-xl border p-6 sm:max-w-lg data-[size=sm]:sm:max-w-110",
           className
         )}
         {...props}
@@ -101,7 +104,10 @@ function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="dialog-header"
-      className={cn("flex flex-col gap-2 text-center sm:text-left", className)}
+      className={cn(
+        "flex flex-col gap-2 pr-8 text-center sm:text-left",
+        className
+      )}
       {...props}
     />
   )

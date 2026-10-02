@@ -92,7 +92,7 @@ const InputOTP = React.forwardRef<
           aria-describedby={describedBy}
           containerClassName={cn(
             "flex w-fit max-w-full items-center gap-2 has-[:disabled]:opacity-55",
-            hasError && "motion-safe:animate-[nudge_0.6s_var(--ease-standard)_1]",
+            hasError && "motion-safe:animate-nudge",
             containerClassName
           )}
           className={cn("disabled:cursor-not-allowed", className)}
@@ -140,7 +140,7 @@ const InputOTPSlot = React.forwardRef<
       aria-hidden="true"
       aria-invalid={invalid ? true : undefined}
       className={cn(
-        "relative flex h-11 w-10 items-center justify-center border-y border-r border-input bg-card font-mono text-xl font-semibold tabular-nums text-foreground transition-colors duration-fast ease-standard first:rounded-l-md first:border-l last:rounded-r-md @max-card-wide/card:w-9",
+        "relative flex h-11 w-10 items-center justify-center border-y border-r border-input bg-card font-mono text-xl font-semibold tabular-nums text-foreground transition-colors duration-140 ease-standard first:rounded-l-md first:border-l last:rounded-r-md @max-card-wide/card:w-9",
         "data-[active=true]:z-10 data-[active=true]:border-ring data-[active=true]:ring-2 data-[active=true]:ring-ring",
         "aria-invalid:border-destructive aria-invalid:text-skrum-destructive-text",
         pasted && !invalid && "bg-skrum-success-soft",

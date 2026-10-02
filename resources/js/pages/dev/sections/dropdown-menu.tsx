@@ -10,12 +10,14 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import type { ComponentProps, ReactNode } from 'react';
+import { BenchOverlayStage } from '@/components/dev/bench';
 import type { BenchGroup } from '@/components/dev/bench';
 import { Button } from '@/components/ui/button';
 import {
     CardMenu,
     DropdownMenu,
     DropdownMenuContent,
+    DropdownMenuInlineFrame,
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
@@ -190,7 +192,7 @@ export default function DropdownMenuSection() {
             >
                 <div>
                     <CardMenu
-                        defaultOpen
+                        inline
                         trigger={<Trigger label={t('Card actions')} />}
                         entries={cardActions}
                         label={t('Card actions')}
@@ -200,6 +202,7 @@ export default function DropdownMenuSection() {
             <State label={t('Locked by someone else: disabled with a reason')}>
                 <div>
                     <CardMenu
+                        inline
                         trigger={<Trigger label={t('Locked card actions')} />}
                         entries={lockedActions}
                         label={t('Locked card actions')}
@@ -209,6 +212,7 @@ export default function DropdownMenuSection() {
             <State label={t('Checkboxes and radios')}>
                 <div>
                     <CardMenu
+                        inline
                         trigger={<Trigger label={t('Display options')} />}
                         entries={displayOptions}
                         label={t('Display options')}
@@ -216,8 +220,8 @@ export default function DropdownMenuSection() {
                 </div>
             </State>
             <State label={t('Two-line items: the row grows with its content')}>
-                <div>
-                    <DropdownMenu>
+                <DropdownMenuInlineFrame>
+                    <DropdownMenu open modal={false}>
                         <DropdownMenuTrigger asChild>
                             <Button
                                 variant="ghost"
@@ -228,9 +232,11 @@ export default function DropdownMenuSection() {
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent
+                            portalled={false}
                             align="start"
-                            className="w-72"
+                            className="w-72 max-w-full animate-none!"
                             aria-label={t('Notifications')}
+                            onCloseAutoFocus={(event) => event.preventDefault()}
                         >
                             {[
                                 t(
@@ -250,17 +256,18 @@ export default function DropdownMenuSection() {
                             ))}
                         </DropdownMenuContent>
                     </DropdownMenu>
-                </div>
+                </DropdownMenuInlineFrame>
             </State>
-            <State label={t('Aligned to start')}>
-                <div>
+            <State label={t('Open as a floating layer, aligned to start')}>
+                <BenchOverlayStage>
                     <CardMenu
+                        defaultOpen
                         align="start"
                         trigger={<Trigger label={t('Start-aligned menu')} />}
-                        entries={lockedActions}
+                        entries={cardActions}
                         label={t('Start-aligned menu')}
                     />
-                </div>
+                </BenchOverlayStage>
             </State>
         </div>
     );

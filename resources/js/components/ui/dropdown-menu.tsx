@@ -36,23 +36,35 @@ function DropdownMenuTrigger({
   )
 }
 
+type DropdownMenuSize = "default" | "wide"
+
 function DropdownMenuContent({
   className,
   sideOffset = 4,
+  collisionPadding = 8,
+  size = "default",
+  portalled = true,
   ...props
-}: React.ComponentProps<typeof DropdownMenuPrimitive.Content>) {
+}: React.ComponentProps<typeof DropdownMenuPrimitive.Content> & {
+  size?: DropdownMenuSize
+  portalled?: boolean
+}) {
+  const Wrapper = portalled ? DropdownMenuPrimitive.Portal : React.Fragment
+
   return (
-    <DropdownMenuPrimitive.Portal>
+    <Wrapper>
       <DropdownMenuPrimitive.Content
         data-slot="dropdown-menu-content"
+        data-size={size}
         sideOffset={sideOffset}
+        collisionPadding={collisionPadding}
         className={cn(
-          "bg-popover text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 duration-(--duration-base) ease-(--ease-enter) motion-reduce:animate-none z-50 min-w-55 overflow-hidden rounded-lg border p-1 shadow-popover",
+          "bg-popover text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 duration-(--duration-base) ease-(--ease-enter) motion-reduce:animate-none z-50 min-w-32 overflow-hidden rounded-lg border p-1 shadow-popover data-[size=wide]:min-w-55",
           className
         )}
         {...props}
       />
-    </DropdownMenuPrimitive.Portal>
+    </Wrapper>
   )
 }
 
@@ -151,16 +163,22 @@ function DropdownMenuRadioItem({
 function DropdownMenuLabel({
   className,
   inset,
+  variant = "default",
   ...props
 }: React.ComponentProps<typeof DropdownMenuPrimitive.Label> & {
   inset?: boolean
+  variant?: "default" | "overline"
 }) {
   return (
     <DropdownMenuPrimitive.Label
       data-slot="dropdown-menu-label"
       data-inset={inset}
+      data-variant={variant}
       className={cn(
-        "text-muted-foreground px-2 py-1.5 text-xs font-semibold data-[inset]:pl-8",
+        "px-2 py-1.5 data-[inset]:pl-8",
+        variant === "overline"
+          ? "text-muted-foreground text-xs font-semibold"
+          : "text-foreground text-sm font-medium",
         className
       )}
       {...props}
@@ -229,13 +247,35 @@ function DropdownMenuSubTrigger({
 
 function DropdownMenuSubContent({
   className,
+  collisionPadding = 8,
+  size = "default",
   ...props
-}: React.ComponentProps<typeof DropdownMenuPrimitive.SubContent>) {
+}: React.ComponentProps<typeof DropdownMenuPrimitive.SubContent> & {
+  size?: DropdownMenuSize
+}) {
   return (
     <DropdownMenuPrimitive.SubContent
       data-slot="dropdown-menu-sub-content"
+      data-size={size}
+      collisionPadding={collisionPadding}
       className={cn(
-        "bg-popover text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 duration-(--duration-base) ease-(--ease-enter) motion-reduce:animate-none z-50 min-w-55 overflow-hidden rounded-lg border p-1 shadow-popover",
+        "bg-popover text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 duration-(--duration-base) ease-(--ease-enter) motion-reduce:animate-none z-50 min-w-32 overflow-hidden rounded-lg border p-1 shadow-popover data-[size=wide]:min-w-55",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function DropdownMenuInlineFrame({
+  className,
+  ...props
+}: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="dropdown-menu-inline-frame"
+      className={cn(
+        "flex flex-col items-start gap-1 [&>[data-radix-popper-content-wrapper]]:static! [&>[data-radix-popper-content-wrapper]]:transform-none!",
         className
       )}
       {...props}
@@ -276,6 +316,11 @@ interface CardMenuProps {
   align?: "start" | "end"
   label?: string
   defaultOpen?: boolean
+  /**
+   * Renders the menu open in the document flow, under its trigger, instead of
+   * a floating layer: for previews where several menus must be visible at once.
+   */
+  inline?: boolean
 }
 
 function CardMenuEntries({ entries }: { entries: MenuEntry[] }) {
@@ -285,7 +330,11 @@ function CardMenuEntries({ entries }: { entries: MenuEntry[] }) {
     }
 
     if (entry.type === "label") {
-      return <DropdownMenuLabel key={index}>{entry.label}</DropdownMenuLabel>
+      return (
+        <DropdownMenuLabel key={index} variant="overline">
+          {entry.label}
+        </DropdownMenuLabel>
+      )
     }
 
     if (entry.type === "checkbox") {
@@ -325,7 +374,7 @@ function CardMenuEntries({ entries }: { entries: MenuEntry[] }) {
             {Icon ? <Icon aria-hidden /> : null}
             <span className="truncate">{entry.label}</span>
           </DropdownMenuSubTrigger>
-          <DropdownMenuSubContent>
+          <DropdownMenuSubContent size="wide">
             <CardMenuEntries entries={entry.items} />
           </DropdownMenuSubContent>
         </DropdownMenuSub>
@@ -334,9 +383,8 @@ function CardMenuEntries({ entries }: { entries: MenuEntry[] }) {
 
     const isDanger = entry.tone === "danger"
     const Icon = entry.icon ?? (isDanger ? Trash2Icon : undefined)
-    const trailing = entry.disabled
-      ? (entry.disabledReason ?? entry.shortcut)
-      : entry.shortcut
+    const reason = entry.disabled ? entry.disabledReason : undefined
+    const trailing = reason ?? entry.shortcut
 
     return (
       <DropdownMenuItem
@@ -349,8 +397,10 @@ function CardMenuEntries({ entries }: { entries: MenuEntry[] }) {
         <span className="truncate">{entry.label}</span>
         {trailing ? (
           <DropdownMenuShortcut
+            data-kind={reason ? "reason" : "shortcut"}
             className={cn(
               "truncate",
+              reason && "tracking-normal",
               isDanger && "text-current opacity-80"
             )}
           >
@@ -368,13 +418,38 @@ function CardMenu({
   align = "end",
   label,
   defaultOpen,
+  inline = false,
 }: CardMenuProps) {
   const { t } = useTrans()
+
+  if (inline) {
+    return (
+      <DropdownMenuInlineFrame>
+        <DropdownMenu open modal={false}>
+          <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
+          <DropdownMenuContent
+            portalled={false}
+            size="wide"
+            align={align}
+            aria-label={label ?? t("Actions")}
+            className="animate-none!"
+            onCloseAutoFocus={(event) => event.preventDefault()}
+          >
+            <CardMenuEntries entries={entries} />
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </DropdownMenuInlineFrame>
+    )
+  }
 
   return (
     <DropdownMenu defaultOpen={defaultOpen}>
       <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
-      <DropdownMenuContent align={align} aria-label={label ?? t("Actions")}>
+      <DropdownMenuContent
+        size="wide"
+        align={align}
+        aria-label={label ?? t("Actions")}
+      >
         <CardMenuEntries entries={entries} />
       </DropdownMenuContent>
     </DropdownMenu>
@@ -390,6 +465,7 @@ export {
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuGroup,
+  DropdownMenuInlineFrame,
   DropdownMenuLabel,
   DropdownMenuItem,
   DropdownMenuCheckboxItem,
