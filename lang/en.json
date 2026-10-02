@@ -3876,5 +3876,13 @@
     "Scopes": "Scopes",
     "New API token": "New API token",
     "MCP server": "MCP server",
-    "Revoke :name": "Revoke :name"
+    "Revoke :name": "Revoke :name",
+    "Settings card: body and footer, header and rows, destructive": "Settings card: body and footer, header and rows, destructive",
+    "Password strength: nothing typed, weak, good, strong, and the rule of the server": "Password strength: nothing typed, weak, good, strong, and the rule of the server",
+    "Two-factor setup: loading, a code being typed, a refused code": "Two-factor setup: loading, a code being typed, a refused code",
+    "Recovery codes: loading, eight codes": "Recovery codes: loading, eight codes",
+    "Theme picker: System, Light, Dark": "Theme picker: System, Light, Dark",
+    "API tokens: the table, and the cards of a narrow list": "API tokens: the table, and the cards of a narrow list",
+    "New token, shown once": "New token, shown once",
+    "Provider card: not connected, connected, setup required, reconnect required": "Provider card: not connected, connected, setup required, reconnect required"
 }

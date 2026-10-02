@@ -4099,5 +4099,13 @@
     "Scopes": "Berechtigungen",
     "New API token": "Neues API-Token",
     "MCP server": "MCP-Server",
-    "Revoke :name": ":name widerrufen"
+    "Revoke :name": ":name widerrufen",
+    "Settings card: body and footer, header and rows, destructive": "Einstellungskarte: Inhalt und Fuß, Kopf und Zeilen, destruktiv",
+    "Password strength: nothing typed, weak, good, strong, and the rule of the server": "Passwortstärke: nichts eingegeben, schwach, gut, stark, und die Regel des Servers",
+    "Two-factor setup: loading, a code being typed, a refused code": "Zwei-Faktor-Einrichtung: lädt, ein Code wird eingegeben, ein abgelehnter Code",
+    "Recovery codes: loading, eight codes": "Wiederherstellungscodes: lädt, acht Codes",
+    "Theme picker: System, Light, Dark": "Themenauswahl: System, Hell, Dunkel",
+    "API tokens: the table, and the cards of a narrow list": "API-Tokens: die Tabelle und die Karten einer schmalen Liste",
+    "New token, shown once": "Neues Token, einmal angezeigt",
+    "Provider card: not connected, connected, setup required, reconnect required": "Anbieterkarte: nicht verbunden, verbunden, Einrichtung erforderlich, erneute Verbindung erforderlich"
 }

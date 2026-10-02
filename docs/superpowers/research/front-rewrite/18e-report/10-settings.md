@@ -328,3 +328,46 @@ No mockup shows the panels of a tracker (brief 10 §6); ScreenSettings gives the
 | The logo box holds a lucide icon (`list-checks`, `server-cog`, `list-todo`, `git-branch`), not the coloured letter marks "J" and "L" of frame b | `ProviderCard` of 10.5; lucide has no brand icon in use. Reported |
 | No switch per integration and no "Configure" | as 10.5: a connection has no "off" state |
 | "I understand" stays a checkbox | plan, Task 10.7 (an acknowledgement) |
+
+## Task 10.8 — walkthrough, captures and bench of the settings
+
+No screen changes. `Plan18eSettingsTest.php` now holds fourteen tests; `SettingsPagesVisualTest.php` twenty-six; two bench sections, `settings-account` and `settings-integrations` (captured by `DesignSystemVisualTest.php` as `design-system-settings-account-*` and `design-system-settings-integrations-*`).
+
+### Walkthrough
+
+The brief numbers its ten tests `-01` to `-10`. Tasks 10.2 and 10.4 had already used `-02` (two-factor setup) and `-04` (inline token form) for other subjects than the brief's, so the brief's "delete account" and the end of its "2FA" test take a letter.
+
+| Id | Subject | Brief |
+|---|---|---|
+| `[P18e-10-01]` | name and email saved, a taken email refused under its field, the unverified notice and the link sent again | `-01` |
+| `[P18e-10-01b]` | deletion dialog: wrong password under the field with the focus, refusal forgotten on close, then deletion and `/login` | `-02` |
+| `[P18e-10-01c]` | the only owner of a shared workspace and the last instance admin keep their account (two cases) | `-02` |
+| `[P18e-10-02]` | two-factor setup inside the card (10.2) | `-04` |
+| `[P18e-10-03]` | password: fields emptied and the refused one focused, then the change | `-03` |
+| `[P18e-10-03b]` | enabled second factor: view, regenerate and hide the recovery codes; turn off after a confirmation | `-04` |
+| `[P18e-10-04]` | inline token form (10.4) | 10-D2 |
+| `[P18e-10-05]` | passkeys: empty state, a stored passkey listed, removed after a confirmation | `-05` |
+| `[P18e-10-06]`, `[P18e-10-07]` | appearance, notifications (10.3) | `-06`, `-07` |
+| `[P18e-10-08]` | one `aria-current="page"` per page of the sub-navigation, five entries, one `nav[aria-label="Settings"]` | `-08` |
+| `[P18e-10-09]` | the team switcher of the sidebar lists the teams on `/settings/api-tokens` | `-09` |
+| `[P18e-10-10]` | team settings: breadcrumb, "Integrations" current, "Team" back to the team page | `-10` |
+
+"API tokens hidden when MCP is off" stays in `P11b-17`. Registering a passkey is not tested: WebAuthn has no authenticator in the headless browser.
+
+### Captures added
+
+| Capture | State |
+|---|---|
+| `settings-security-passkeys-*` | two passkeys, one with its authenticator badge and "Last used", one with a long name |
+| `team-integrations-setup-required-*` | Jira in "Setup required" with its site select, Linear not connected |
+
+With `team-integrations-page-*` (Connected, Reconnect required, Not connected) the four statuses of a provider card are captured.
+
+### Differences with the mockup
+
+None added by this task: the differences of each screen are in the sections above. Seen again in the captures, not owned by this lane:
+
+| Seen | Where |
+|---|---|
+| "Nordlys · 1 members" under the team in the sidebar: the switcher has no singular | `components/skrum/app-sidebar.tsx` (18b) |
+| In a full-page capture at 390 the fixed bottom navigation is drawn at the height of the first viewport and covers a band of a long page (the head of the two-factor card in `settings-security-two-factor-on-*-390-*`) | the application layout and `CapturesVisuals` |

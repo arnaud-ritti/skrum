@@ -4099,5 +4099,13 @@
     "Scopes": "Ámbitos",
     "New API token": "Nuevo token de API",
     "MCP server": "Servidor MCP",
-    "Revoke :name": "Revocar :name"
+    "Revoke :name": "Revocar :name",
+    "Settings card: body and footer, header and rows, destructive": "Tarjeta de ajustes: cuerpo y pie, encabezado y filas, destructiva",
+    "Password strength: nothing typed, weak, good, strong, and the rule of the server": "Seguridad de la contraseña: nada escrito, débil, buena, fuerte, y la regla del servidor",
+    "Two-factor setup: loading, a code being typed, a refused code": "Configuración de dos factores: cargando, un código en curso, un código rechazado",
+    "Recovery codes: loading, eight codes": "Códigos de recuperación: cargando, ocho códigos",
+    "Theme picker: System, Light, Dark": "Selector de tema: Sistema, Claro, Oscuro",
+    "API tokens: the table, and the cards of a narrow list": "Tokens de API: la tabla, y las tarjetas de una lista estrecha",
+    "New token, shown once": "Token nuevo, mostrado una sola vez",
+    "Provider card: not connected, connected, setup required, reconnect required": "Tarjeta de proveedor: no conectado, conectado, configuración requerida, reconexión requerida"
 }

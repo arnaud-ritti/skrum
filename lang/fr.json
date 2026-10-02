@@ -4099,5 +4099,13 @@
     "Scopes": "Portées",
     "New API token": "Nouveau jeton d'API",
     "MCP server": "Serveur MCP",
-    "Revoke :name": "Révoquer :name"
+    "Revoke :name": "Révoquer :name",
+    "Settings card: body and footer, header and rows, destructive": "Carte de réglages : corps et pied, en-tête et lignes, destructive",
+    "Password strength: nothing typed, weak, good, strong, and the rule of the server": "Robustesse du mot de passe : rien de saisi, faible, bon, fort, et la règle du serveur",
+    "Two-factor setup: loading, a code being typed, a refused code": "Configuration de la double authentification : chargement, code en cours de saisie, code refusé",
+    "Recovery codes: loading, eight codes": "Codes de récupération : chargement, huit codes",
+    "Theme picker: System, Light, Dark": "Choix du thème : Système, Clair, Sombre",
+    "API tokens: the table, and the cards of a narrow list": "Jetons d'API : le tableau, et les cartes d'une liste étroite",
+    "New token, shown once": "Nouveau jeton, affiché une seule fois",
+    "Provider card: not connected, connected, setup required, reconnect required": "Carte de fournisseur : non connecté, connecté, configuration requise, reconnexion requise"
 }

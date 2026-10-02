@@ -1136,3 +1136,66 @@ it('renders Jira Data Center connected with a token and its manual webhook witho
         },
     );
 });
+
+it('renders the passkeys of a member, one named by its authenticator, without overflow', function () {
+    config(['app.name' => 'Skrum', 'skrum.mcp.enabled' => true]);
+    RateLimiter::for('login', fn (): Limit => Limit::none());
+
+    $member = p18eSettingsMember();
+
+    $this->captureVisuals(
+        'settings-security-passkeys',
+        '/settings/security',
+        function (string $path, array $options) use ($member) {
+            p18eWithoutTwoFactor($member);
+            $member->passkeys()->delete();
+
+            $laptop = $member->passkeys()->create([
+                'name' => 'MacBook Pro',
+                'credential_id' => 'p18e-visual-laptop',
+                'credential' => ['aaguid' => 'adce0002-35bc-c60a-648b-0b25f1f05503'],
+            ]);
+            $laptop->forceFill(['created_at' => now()->subDays(3), 'last_used_at' => now()->subHours(2)])->save();
+
+            $phone = $member->passkeys()->create([
+                'name' => 'The phone I carry everywhere, with a rather long name to shorten',
+                'credential_id' => 'p18e-visual-phone',
+                'credential' => [],
+            ]);
+            $phone->forceFill(['created_at' => now()->subMonths(2)])->save();
+
+            return p18eSecurityVisit($member, $options, '[data-slot="settings-shell"] [data-slot="password-card"]')
+                ->assertCount('[data-slot="passkey-row"]', 2)
+                ->assertPresent('[data-slot="passkey-row"] [data-slot="badge"]');
+        },
+    );
+});
+
+it('renders a tracker that waits for its site, the "Setup required" status, without overflow', function () {
+    config(['app.name' => 'Skrum']);
+    RateLimiter::for('login', fn (): Limit => Limit::none());
+
+    disableIntegrations();
+    enableIntegrations(IntegrationProvider::Jira, IntegrationProvider::Linear);
+    Http::fake(['*' => Http::response(['message' => 'Unexpected request in a visual test.'], 404)]);
+
+    [$admin, $team] = p18eTrackerTeam('0199a000-0000-7000-8000-000000000070');
+
+    TeamIntegration::factory()->setupRequired()->create([
+        'team_id' => $team->id,
+        'connected_by_user_id' => $admin->id,
+        'last_checked_at' => '2026-09-28 16:20:00',
+    ]);
+
+    $this->captureVisuals(
+        'team-integrations-setup-required',
+        p18eIntegrationsPath(),
+        fn (string $path, array $options) => p18eSettingsVisit(
+            $admin,
+            $path,
+            $options,
+            '[data-slot="team-settings-shell"] [data-test="integration-card-jira"][data-status="setup"] button[role="combobox"]',
+        )->assertPresent('[data-test="integration-card-linear"][data-status="none"]')
+            ->assertNotPresent('[data-test="integration-card-jira"] [data-slot="status-sync"]'),
+    );
+});
