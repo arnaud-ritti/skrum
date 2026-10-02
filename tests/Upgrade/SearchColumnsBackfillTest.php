@@ -36,7 +36,7 @@ function rowsBeforeSearchColumns(): array
 {
     $workspace = rowBeforeSearchColumns('workspaces', ['name' => 'Acme', 'slug' => 'acme']);
     $team = rowBeforeSearchColumns('teams', ['workspace_id' => $workspace, 'name' => 'Platform']);
-    $user = rowBeforeSearchColumns('users', ['name' => 'Émile ZOLA', 'email' => 'emile@example.test', 'password' => 'secret']);
+    $user = rowBeforeSearchColumns('users', ['name' => 'Émile ZOLA', 'email' => 'emile@example.test', 'email_key' => 'emile@example.test', 'password' => 'secret']);
     $retro = rowBeforeSearchColumns('retros', [
         'team_id' => $team,
         'title' => 'Sprint ÉTÉ',
@@ -106,6 +106,7 @@ it('fills more rows than it reads at once', function () {
         'id' => (string) Str::uuid7(),
         'name' => "Person {$number}",
         'email' => "person{$number}@example.test",
+        'email_key' => "person{$number}@example.test",
         'password' => 'secret',
     ])->all());
 
