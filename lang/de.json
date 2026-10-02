@@ -4156,5 +4156,6 @@
     "Mood card, for a team without results": "Stimmungskarte, für ein Team ohne Ergebnisse",
     "Mood card, while the trend loads": "Stimmungskarte, während der Trend lädt",
     "Picker, compact: small tiles with the values in mono, \"New deck\" in the header, edit and delete on the selected deck": "Auswahl, kompakt: kleine Kacheln mit den Werten in Mono, „Neuer Kartensatz“ in der Kopfzeile, Bearbeiten und Löschen am gewählten Deck",
-    "Picker, compact: narrow container (20rem)": "Auswahl, kompakt: schmaler Container (20rem)"
+    "Picker, compact: narrow container (20rem)": "Auswahl, kompakt: schmaler Container (20rem)",
+    "Colour swatches alone: the name is the tooltip and the accessible name; eight colours, one used by another column, a long column title": "Nur Farbfelder: Der Name ist der Tooltip und der zugängliche Name; acht Farben, eine von einer anderen Spalte verwendet, ein langer Spaltentitel"
 }

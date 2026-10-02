@@ -3933,5 +3933,6 @@
     "Mood card, for a team without results": "Mood card, for a team without results",
     "Mood card, while the trend loads": "Mood card, while the trend loads",
     "Picker, compact: small tiles with the values in mono, \"New deck\" in the header, edit and delete on the selected deck": "Picker, compact: small tiles with the values in mono, \"New deck\" in the header, edit and delete on the selected deck",
-    "Picker, compact: narrow container (20rem)": "Picker, compact: narrow container (20rem)"
+    "Picker, compact: narrow container (20rem)": "Picker, compact: narrow container (20rem)",
+    "Colour swatches alone: the name is the tooltip and the accessible name; eight colours, one used by another column, a long column title": "Colour swatches alone: the name is the tooltip and the accessible name; eight colours, one used by another column, a long column title"
 }
