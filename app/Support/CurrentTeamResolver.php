@@ -10,6 +10,7 @@ use Illuminate\Support\Collection;
 
 class CurrentTeamResolver
 {
+    /** @var ?Collection<int, Team> */
     private ?Collection $visibleTeams = null;
 
     public function __construct(private Request $request) {}
