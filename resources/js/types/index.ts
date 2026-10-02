@@ -7,3 +7,4 @@ export type * from './api-tokens';
 export type * from './integrations';
 export type * from './games';
 export type * from './brand';
+export type * from './sessions';

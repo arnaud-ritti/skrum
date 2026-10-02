@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Actions\Retros\GuestCookie;
 use App\Actions\Retros\ResolveParticipant;
+use App\Actions\Sessions\PresentJoinSession;
 use App\Models\Retro;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -12,7 +13,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 class RetroJoinsController extends Controller
 {
-    public function show(Request $request, string $guestToken, ResolveParticipant $resolveParticipant): Response
+    public function show(Request $request, string $guestToken, ResolveParticipant $resolveParticipant, PresentJoinSession $presentJoinSession): Response
     {
         $retro = $this->findRetro($guestToken);
 
@@ -28,6 +29,7 @@ class RetroJoinsController extends Controller
             'isInvalid' => false,
             'guestToken' => $guestToken,
             'retroTitle' => $retro->title,
+            'session' => $presentJoinSession->retro($retro),
             'suggestedName' => $request->user()?->name,
         ])->toResponse($request);
     }

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Actions\Games\FindGamePlayer;
 use App\Actions\Retros\GuestCookie;
+use App\Actions\Sessions\PresentJoinSession;
 use App\Enums\GameRoomAccess;
 use App\Models\GameRoom;
 use App\Support\Games\GuestNames;
@@ -14,7 +15,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 class GameJoinsController extends Controller
 {
-    public function show(Request $request, string $guestToken, FindGamePlayer $findGamePlayer): Response
+    public function show(Request $request, string $guestToken, FindGamePlayer $findGamePlayer, PresentJoinSession $presentJoinSession): Response
     {
         $room = $this->findRoom($guestToken);
 
@@ -31,6 +32,7 @@ class GameJoinsController extends Controller
             'guestToken' => $guestToken,
             'roomName' => $room->name,
             'gameLabel' => $room->game->label(),
+            'session' => $presentJoinSession->game($room),
             'suggestedName' => GuestNames::random(app()->getLocale()),
         ])->toResponse($request);
     }

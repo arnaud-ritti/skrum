@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Actions\Poker\ResolvePlayer;
 use App\Actions\Retros\GuestCookie;
+use App\Actions\Sessions\PresentJoinSession;
 use App\Models\PokerGame;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -12,7 +13,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 class PokerJoinsController extends Controller
 {
-    public function show(Request $request, string $guestToken, ResolvePlayer $resolvePlayer): Response
+    public function show(Request $request, string $guestToken, ResolvePlayer $resolvePlayer, PresentJoinSession $presentJoinSession): Response
     {
         $game = $this->findGame($guestToken);
 
@@ -28,6 +29,7 @@ class PokerJoinsController extends Controller
             'isInvalid' => false,
             'guestToken' => $guestToken,
             'gameTitle' => $game->title,
+            'session' => $presentJoinSession->poker($game),
             'suggestedName' => $request->user()?->name,
         ])->toResponse($request);
     }

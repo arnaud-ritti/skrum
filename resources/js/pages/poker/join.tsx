@@ -7,12 +7,14 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useTrans } from '@/hooks/use-trans';
+import type { JoinSession } from '@/types';
 
 type Props =
     | { isInvalid: true }
     | {
           isInvalid: false;
           guestToken: string;
+          session: JoinSession;
           gameTitle: string;
           suggestedName: string | null;
       };

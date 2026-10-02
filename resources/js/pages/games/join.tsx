@@ -6,12 +6,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useTrans } from '@/hooks/use-trans';
+import type { GameJoinSession } from '@/types';
 
 type Props =
     | { isInvalid: true }
     | {
           isInvalid: false;
           guestToken: string;
+          session: GameJoinSession;
           roomName: string | null;
           gameLabel: string;
           suggestedName: string;
