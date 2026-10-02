@@ -95,3 +95,12 @@ Condensed from the two fix passes of plan 18b+18c. "old → new" where a prop ch
 
 ### Bench
 - `BenchOverlayStage` (`components/dev/bench.tsx`) holds the one real open overlay of a section: last, one viewport tall, kept in view, so a full-page capture shows every other state.
+
+### From the final fix round
+- `PokerTable`: `section[aria-label="Players"]` now also contains the story title and the "n of m voted" text. `Plan10aPokerCoreTest` asserts that this section shows no "5" / "8" before the reveal: watch task titles (a key such as `ATLAS-58`) and counts ("5 of 8 voted") when the poker screen is rebuilt.
+- `PokerTable`: Re-vote, Save estimate and Next task stay focusable while `busy` (`aria-disabled`, presses ignored); native `disabled` only for "no estimate" and `nextDisabled`. The `N` and `mod+Enter` shortcuts are scoped to the actions group.
+- `PokerDeck` with `selection="toggle"`: the digit of the selected card calls `onRetract`, like a click on it.
+- `TemplateEditor` (`ids`), `DeckEditor` (`idPrefix`) and `NewGameRoomDialog` (`ids`) use fixed default ids: two instances on one page need their own `ids` / `idPrefix`.
+- `ROTIWidget` vote mode: `role="group"` named by the question with five `button[aria-pressed]` (labels "Time wasted" … "Excellent use of time"), as the old `RotiControl` and `Plan08dResultsTest` expect; no radiogroup. Arrows move the focus, 1 to 5 vote. A press on the pressed score calls `onVote` with the same value: the host decides to retract, as `RotiControl` does.
+- `CardVotes` and `RetroCard`: the blocked vote wrapper is a `role="group"` named by the reason (no hidden text any more); focus moves there, or to the card, when the press spends the last vote.
+- `DialogHeader` has no right padding by default (as on main); a dialog with the close button and a long title adds `pr-8` itself. `SelectItem` joins consecutive text children in one truncating span.
