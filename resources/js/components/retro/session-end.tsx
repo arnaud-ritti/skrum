@@ -41,12 +41,11 @@ import { HealthResult } from './results/health';
 import { Participants } from './results/participants';
 import { RecapEmailDialog } from './results/recap-email';
 import { RecapShareDialog } from './results/recap-share';
-import { ResultsCard } from './results/results-card';
 import { RotiResult } from './results/roti';
 import { Summary } from './results/summary';
-import { SurveyResult } from './results/survey-result';
 import { TopTopics } from './results/top-topics';
 import { prefersReducedMotion, SessionConfetti } from './session-confetti';
+import { SurveyResultList } from './surveys/survey-result-list';
 
 export type CompletedView = 'results' | 'board';
 
@@ -280,7 +279,6 @@ function Stats() {
 
 function Results() {
     const { board } = useBoard();
-    const { t } = useTrans();
     const { results } = board;
 
     if (results === null) {
@@ -307,18 +305,7 @@ function Results() {
                 <div className="flex min-w-0 flex-col gap-5 lg:col-start-1 lg:row-start-2">
                     <Summary />
                     <TopTopics />
-                    {results.surveys.length > 0 && (
-                        <ResultsCard title={t('Surveys')}>
-                            <div className="grid min-w-0 grid-cols-[repeat(auto-fit,minmax(15rem,1fr))] gap-3">
-                                {results.surveys.map((survey) => (
-                                    <SurveyResult
-                                        key={survey.id}
-                                        survey={survey}
-                                    />
-                                ))}
-                            </div>
-                        </ResultsCard>
-                    )}
+                    <SurveyResultList surveys={results.surveys} />
                     {results.games && <GamesPlayed games={results.games} />}
                 </div>
             </div>

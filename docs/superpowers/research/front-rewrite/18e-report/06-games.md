@@ -384,3 +384,41 @@ No test removed. Vitest: new `hangman-board.test.tsx`, `guess-dock.test.tsx`; on
 RW-G1 to RW-G3 are merged with the RW-C2 header. `game-room.tsx` passes `self` to `SessionShell` and `RoomTitle` passes the overline "team · Games" (or "team · Icebreaker"), as the poker room and the whiteboard do; nothing had to be reconciled by hand. Row D-57 now says what remains of the header: "Back to the team", not "Back to games".
 
 The 40 `games-room-*-1440-*` captures are the lane's files: they show the new layouts and the old header (no overline, no "Synced", no avatar). No capture was run at this integration; they are to regenerate at the end-of-phase run.
+
+## Task G6 — Icebreaker stage in the retro
+
+`components/games/icebreaker-stage.tsx` replaces `retro/icebreaker-stage.tsx` and `retro/icebreaker-game.tsx`: the same container (provider, `useUnknownPlayerRefetch`, `useBoardSnapshotRefetch`, `withBoardTimer`, moved unchanged) renders `GameLayout` and `GameStage` under `section[aria-label="Icebreaker game"]`, without a header and without a `main`. The columns of a game are computed once, in `useRoomPanels` (`games/room-panels.tsx`), for the room and for the stage. `games/game-panel.tsx` and `games/game-switcher.tsx` (the "Game" select) are deleted with their test; `game-panel.test.tsx` is rewritten as `icebreaker-stage.test.tsx`. No test was run (owner decision); walkthroughs and captures are not touched.
+
+### Parity (brief 06, rows 57 to 63)
+
+| # | Action | New | Done |
+|---|---|---|---|
+| 57 | The stage replaces the columns; spinner while `board.icebreaker` is null | `IcebreakerStage`, `Spinner`, then `GameLayout` | yes |
+| 58 | "Icebreaker", game select or badge, History | game cards (6-D1) in the left column: the facilitator chooses, a player reads them (PB-31), "In play" on the current one; "History" in the header of the stage (`GameStage`) | yes |
+| 59 | `useGameRoom(snapshot, { subscribe: false })`, `subscribeGameEvents`, the two refetch hooks, `withBoardTimer` | moved unchanged | yes |
+| 60 | Live cursors over the stage | `BoardCursors` on the wrapper `[data-slot="icebreaker-stage"]` | yes |
+| 61 | Not mounted: timer menu, copy link, invite, room menu, presence strip, language, full / gone, "Reset scores" | no room header is rendered; "Reset scores" stays off through `room.isIcebreaker` | yes |
+| 62 | The board timer drives the game; "Time's up" in the stage | `withBoardTimer`, then `TimeUpBadge` of `GameStage` | yes |
+| 63 | Retro results reuse | untouched | yes |
+
+PB-30 (built as option A, the recommendation; the owner's answer is not recorded in `pre-build-deviations.md`): during the icebreaker the facilitator's main button reads "Go to the retro" (`facilitatorPrimary`); no duration badge, no second button in the header.
+
+### Places left
+
+None filled: `useRoomPanels` keeps `settingsCard`, `turnOrder`, `gifCaption`, `gifPodium` (GM-1 to GM-3); the stage passes none.
+
+### Differences with the mockup
+
+| Difference | Row |
+|---|---|
+| Four games, no settings card, no turn order, no "Round n of m", no whole-word guess | D-20, D-59 |
+| Draw & Guess and Sprint in one GIF have the players on the left: a player sees no game cards there, the facilitator changes game from "Choose a game". PB-31 says "cards visible to all": not met for these two games | D-57; owner to confirm against PB-31 |
+| On a screen narrower than 80rem a player has no sheet of the cards (the mockup: facilitator only), so a player sees the cards only from 80rem and only in Hangman-type games | as the mockup; owner to confirm against PB-31 |
+| The facilitator's panel reads "You choose the game, everyone plays." in a retro, where the game room says "The host starts, everyone plays.": a retro has no host | new key, four languages |
+| The reaction bar is the board's, fixed above the facilitator bar; the stage ends 8rem above the bottom of the screen (`pb-32` of the board body) so that neither bar covers the keyboard or a column | D-58; new row for the 8rem band |
+| The header is the retro's session header with its stepper; no "Warm-up · 10 min" badge | PB-30, RW-C2 |
+| A live cursor is placed against the stage wrapper, whose columns now scroll on their own: two people scrolled differently see a pointer at the same place of the frame, not on the same element | new row |
+
+### Browser tests
+
+`P13d-06a`, `06b`, `06c` (game choice by cards) and line 327 of `Plan13d` ("Go to the retro") are walkthroughs: not edited (owner decision), they need the change when walkthroughs come back.

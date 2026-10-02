@@ -18,7 +18,7 @@ import { ActionItemsList } from './action-items-list';
 import { useBoard } from './board-context';
 import { BoardCursors } from './board-cursors';
 import { SuggestionsPanel } from './suggestions-panel';
-import { SurveysColumn } from './surveys-column';
+import { SurveysColumn } from './surveys/surveys-column';
 import { TopicFocus, TopicUpNext } from './topic-focus';
 import { TopicsList } from './topics-list';
 

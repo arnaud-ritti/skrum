@@ -53,7 +53,7 @@ import { BoardCursors } from './board-cursors';
 import { GroupingBanner } from './board-group';
 import { parseDndId, useDragAccessibility } from './dnd';
 import { PhaseVotingBar } from './phase-voting-bar';
-import { SurveysColumn } from './surveys-column';
+import { SurveysColumn } from './surveys/surveys-column';
 
 const DefaultColor: ColumnColor = 'moss';
 
@@ -564,7 +564,7 @@ export function ColumnsBoard({
                         data-slot="retro-columns"
                         className="relative flex min-w-0 flex-1 items-start gap-4 overflow-x-auto p-4 md:px-6 md:py-5"
                     >
-                        <SurveysColumn />
+                        <SurveysColumn className="w-column shrink-0" />
                         {board.columns.length === 0 && (
                             <EmptyState
                                 module="retro"

@@ -18,6 +18,10 @@ use App\Models\HealthCheckAnswer;
 use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\RotiVote;
+use App\Models\Survey;
+use App\Models\SurveyComment;
+use App\Models\SurveyResponse;
+use App\Models\SurveyTextAnswer;
 use App\Models\Team;
 use App\Models\User;
 use App\Models\Vote;
@@ -437,3 +441,101 @@ it('[P18e-R13-01] renders the drawers of the phone board at 390 without overflow
     'the topics, discussing' => ['retro-phone-topics', RetroPhase::Discussing, '[data-slot="retro-topics-selector"] button', '[data-slot="retro-topics-drawer"] [data-test="retro-topics"]'],
     'a new action, actions' => ['retro-phone-action', RetroPhase::Actions, '[data-test="retro-action-items-panel"] button[aria-haspopup="dialog"]', '[data-slot="retro-action-drawer"] [data-slot="assignee-chips"]'],
 ]);
+
+it('[P18e-08-04] renders the surveys column and an open thread at 390 without overflow', function () {
+    config(['app.name' => 'Skrum', 'app.key' => 'base64:'.base64_encode(str_repeat('v', 32))]);
+
+    [$retro, $facilitator, $member] = p18eRetroVisualBoard(RetroPhase::Writing);
+    $fran = Participant::query()->where('retro_id', $retro->id)->where('user_id', $facilitator->id)->sole();
+    $max = Participant::query()->where('retro_id', $retro->id)->where('user_id', $member->id)->sole();
+
+    $mood = Survey::factory()->single()->withOptions(['Energised', 'Steady', 'Running on empty, and it shows in the reviews'])->create([
+        'retro_id' => $retro->id,
+        'created_by_participant_id' => $fran->id,
+        'question' => 'How did this sprint leave you?',
+        'description' => 'One answer. Results show once you have answered.',
+        'show_voters' => true,
+        'position' => 0,
+    ]);
+    $options = $mood->options()->orderBy('position')->get();
+
+    SurveyResponse::factory()->create(['survey_id' => $mood->id, 'survey_option_id' => $options[0]->id, 'participant_id' => $fran->id]);
+    SurveyResponse::factory()->create(['survey_id' => $mood->id, 'survey_option_id' => $options[1]->id, 'participant_id' => $max->id]);
+    SurveyComment::factory()->create([
+        'retro_id' => $retro->id,
+        'survey_id' => $mood->id,
+        'participant_id' => $max->id,
+        'content' => 'Steady, but the last two days were a rush to the demo.',
+    ]);
+
+    Survey::factory()->multiple()->withOptions(['Pairing', 'Smaller pull requests', 'A quieter Thursday'])->create([
+        'retro_id' => $retro->id,
+        'created_by_participant_id' => $fran->id,
+        'question' => 'What should we keep doing?',
+        'position' => 1,
+    ]);
+
+    $wish = Survey::factory()->text()->create([
+        'retro_id' => $retro->id,
+        'created_by_participant_id' => $fran->id,
+        'question' => 'One thing to change next sprint?',
+        'position' => 2,
+    ]);
+
+    SurveyTextAnswer::factory()->create([
+        'survey_id' => $wish->id,
+        'participant_id' => $fran->id,
+        'content' => 'Freeze the scope on day two.',
+    ]);
+
+    RateLimiter::for('login', fn (): Limit => Limit::none());
+    File::ensureDirectoryExists(base_path('tests/visual/__screenshots__'));
+
+    $settle = '() => document.fonts.ready'
+        .'.then(() => Promise.allSettled(document.getAnimations().filter((animation) => Number.isFinite(animation.effect?.getComputedTiming().endTime)).map((animation) => animation.finished)))'
+        .'.then(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve(true)))))';
+
+    $capture = function (mixed $page, string $label) use ($settle): void {
+        $page->script($settle);
+
+        expect($this->overflowingElements($page))->toBe([], "Horizontal overflow in {$label}");
+
+        $page->screenshot(fullPage: true, filename: "{$label}.candidate");
+
+        CaptureFile::replaceWhenPictureDiffers(
+            base_path("tests/Browser/Screenshots/{$label}.candidate"),
+            base_path("tests/visual/__screenshots__/{$label}.png"),
+        );
+    };
+
+    $thread = "[data-test=\"retro-survey-{$mood->id}\"]";
+
+    foreach (['light', 'dark'] as $theme) {
+        foreach (['en' => 'en-US', 'fr' => 'fr-FR'] as $locale => $browserLocale) {
+            User::query()->whereKey($facilitator->id)->update(['locale' => $locale]);
+
+            $page = visit('/login', ['colorScheme' => $theme, 'locale' => $browserLocale, 'reducedMotion' => 'reduce']);
+
+            $page->fill('#email', $facilitator->email)
+                ->fill('#password', 'password')
+                ->click('@login-button')
+                ->assertPathIsNot('/login');
+
+            $page->navigate("/retros/{$retro->id}");
+
+            $page->assertAttribute('[data-realtime]', 'data-realtime', 'connected')
+                ->resize(390, 844)
+                ->click('[data-slot="column-tab"][id$="+surveys"]')
+                ->assertCount('[data-slot="retro-surveys"] [data-slot="survey-question"]', 3)
+                ->assertPresent("{$thread} [data-slot=\"survey-result-bar\"]");
+
+            $capture($page, "retro-phone-surveys-{$theme}-390-{$locale}");
+
+            $page->click("{$thread} [data-slot=\"survey-comments-toggle\"]")
+                ->assertAriaAttribute("{$thread} [data-slot=\"survey-comments-toggle\"]", 'expanded', 'true')
+                ->assertPresent("{$thread} [data-slot=\"comment\"]");
+
+            $capture($page, "retro-phone-survey-thread-{$theme}-390-{$locale}");
+        }
+    }
+});

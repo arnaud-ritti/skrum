@@ -4442,5 +4442,8 @@
     "While a filter loads: the table shows placeholder rows, the list stays": "Während ein Filter lädt: Die Tabelle zeigt Platzhalterzeilen, die Liste bleibt",
     "Details of an overdue item": "Details einer überfälligen Aktion",
     "Details of an item deleted elsewhere": "Details einer anderswo gelöschten Aktion",
-    "Delete confirmation": "Löschbestätigung"
+    "Delete confirmation": "Löschbestätigung",
+    "Go to the retro": "Zur Retro",
+    "The facilitator chooses the game.": "Die Moderation wählt das Spiel.",
+    "You choose the game, everyone plays.": "Du wählst das Spiel, alle spielen."
 }

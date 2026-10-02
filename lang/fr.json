@@ -4442,5 +4442,8 @@
     "While a filter loads: the table shows placeholder rows, the list stays": "Pendant le chargement d’un filtre : le tableau affiche des lignes fantômes, la liste reste",
     "Details of an overdue item": "Détails d’une action en retard",
     "Details of an item deleted elsewhere": "Détails d’une action supprimée ailleurs",
-    "Delete confirmation": "Confirmation de suppression"
+    "Delete confirmation": "Confirmation de suppression",
+    "Go to the retro": "Passer à la rétro",
+    "The facilitator chooses the game.": "Le facilitateur choisit le jeu.",
+    "You choose the game, everyone plays.": "Vous choisissez le jeu, tout le monde joue."
 }

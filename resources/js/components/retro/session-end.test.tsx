@@ -311,6 +311,60 @@ describe('SessionEnd', () => {
         ]);
     });
 
+    it('shows the surveys read only under "Surveys", after the top topics', () => {
+        show(
+            ended({
+                results: results({
+                    surveys: [
+                        {
+                            id: 'survey-1',
+                            kind: 'single',
+                            question: 'How was the sprint?',
+                            description: null,
+                            position: 0,
+                            isClosed: false,
+                            version: 1,
+                            showVoters: false,
+                            responseCount: 1,
+                            myOptionIds: ['great'],
+                            myText: null,
+                            resultsVisible: true,
+                            options: [
+                                {
+                                    id: 'great',
+                                    label: 'Great',
+                                    position: 0,
+                                    count: 1,
+                                    voters: null,
+                                },
+                            ],
+                            textAnswers: null,
+                            reactions: [],
+                            commentCount: 0,
+                            comments: [],
+                        },
+                    ],
+                }),
+            }),
+        );
+
+        const titles = [...document.querySelectorAll('section > h2')].map(
+            (title) => title.textContent,
+        );
+        const survey = within(section('Surveys')).getByRole('article', {
+            name: 'How was the sprint?',
+        });
+
+        expect(titles.slice(-2)).toEqual(['Top topics', 'Surveys']);
+        expect(within(survey).queryByRole('radio')).toBeNull();
+        expect(
+            survey.querySelector('[data-slot="survey-result-bar"] > div'),
+        ).not.toBeNull();
+        expect(
+            document.querySelector('[aria-label="Survey actions"]'),
+        ).toBeNull();
+    });
+
     it('lists the action items read only, with their count and a link to those of the team', () => {
         show(
             ended({
