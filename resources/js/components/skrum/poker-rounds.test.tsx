@@ -53,6 +53,34 @@ const consensusRound = round({
     },
 });
 
+const figuresRound = round({
+    id: 'r3',
+    number: 3,
+    votesCount: 4,
+    votes: [
+        { playerId: 'p1', value: '3' },
+        { playerId: 'p2', value: '5' },
+        { playerId: 'p3', value: '5' },
+        { playerId: 'p4', value: '8' },
+    ],
+    result: {
+        average: 5.25,
+        mode: ['5'],
+        consensus: false,
+        nearestCard: '5',
+        distribution: [
+            { value: '3', count: 1 },
+            { value: '5', count: 2 },
+            { value: '8', count: 1 },
+            { value: '13', count: 0 },
+        ],
+        median: 5,
+        spread: { min: 3, max: 8 },
+        agreement: 0.5,
+        outliers: { low: ['p1'], high: ['p4'] },
+    },
+});
+
 const players = [
     { id: 'p1', name: 'Ada' },
     { id: 'p2', name: 'Bob' },
@@ -278,5 +306,80 @@ describe('PokerRounds', () => {
         expect(
             within(rounds()[0]).getByText(`${longName}:`).className,
         ).toContain('truncate');
+    });
+
+    it('shows no distribution, median or agreement unless asked', () => {
+        renderWithProviders(
+            <PokerRounds
+                rounds={[figuresRound]}
+                players={players}
+                defaultOpen
+            />,
+        );
+
+        expect(
+            document.querySelector('[data-slot="poker-round-figures"]'),
+        ).toBeNull();
+    });
+
+    it('adds the distribution, the median and the agreement of a revealed round when asked', () => {
+        renderWithProviders(
+            <PokerRounds
+                rounds={[figuresRound]}
+                players={players}
+                defaultOpen
+                statistics
+            />,
+        );
+        const figures = document.querySelector<HTMLElement>(
+            '[data-slot="poker-round-figures"]',
+        );
+
+        expect(figures).not.toBeNull();
+        expect(
+            within(figures as HTMLElement)
+                .getAllByRole('listitem')
+                .map((item) => item.textContent),
+        ).toEqual([
+            '3 × 1',
+            '5 × 2',
+            '8 × 1',
+            'Median: 5',
+            'Agreement: 50 % on 5',
+        ]);
+    });
+
+    it('does not repeat the distribution of an anonymous round, and skips figures the server did not send', () => {
+        renderWithProviders(
+            <PokerRounds
+                rounds={[
+                    { ...figuresRound, anonymous: true },
+                    round({ id: 'r9', number: 2 }),
+                ]}
+                players={players}
+                defaultOpen
+                statistics
+            />,
+        );
+        const [anonymous, bare] = rounds();
+
+        expect(
+            within(
+                anonymous.querySelector<HTMLElement>(
+                    '[data-slot="poker-round-figures"]',
+                ) as HTMLElement,
+            )
+                .getAllByRole('listitem')
+                .map((item) => item.textContent),
+        ).toEqual(['Median: 5', 'Agreement: 50 % on 5']);
+        expect(
+            within(
+                bare.querySelector<HTMLElement>(
+                    '[data-slot="poker-round-figures"]',
+                ) as HTMLElement,
+            )
+                .getAllByRole('listitem')
+                .map((item) => item.textContent),
+        ).toEqual(['3 × 1', '5 × 1', '13 × 1']);
     });
 });
