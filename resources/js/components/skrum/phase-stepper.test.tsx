@@ -334,7 +334,7 @@ describe('PhaseStepper', () => {
         expect(mode()).toBe('mobile');
         expect(
             container.querySelectorAll('[data-slot="phase-step"]'),
-        ).toHaveLength(1);
+        ).toHaveLength(6);
     });
 
     it('reflects a phase change from props and announces it', () => {
@@ -389,14 +389,74 @@ describe('PhaseStepper', () => {
         expect(screen.getByText(', skipped')).toBeTruthy();
     });
 
-    it('shows Phase n/total with progress on mobile', () => {
-        renderWithProviders(
+    it('is the compact rail on mobile: a marker per step, the label of the current one, no count and no progress bar', () => {
+        const { container } = renderWithProviders(
             <PhaseStepper phases={steps()} current="voting" mobile />,
         );
+        const rail = screen.getByRole('list', { name: 'Phases' });
+        const shown = [...rail.querySelectorAll('[data-slot="phase-step"]')];
 
-        expect(screen.getByText('Phase 5/6')).toBeTruthy();
+        expect(shown).toHaveLength(6);
+        expect(shown.every((step) => !step.classList.contains('hidden'))).toBe(
+            true,
+        );
         expect(
-            screen.getByRole('progressbar').getAttribute('aria-valuenow'),
-        ).toBe('5');
+            container.querySelectorAll('[data-slot="phase-marker"]'),
+        ).toHaveLength(6);
+        expect(
+            container.querySelectorAll('[data-slot="phase-link"]'),
+        ).toHaveLength(5);
+        expect(
+            rail.querySelector('[aria-current="step"] .truncate')?.className,
+        ).not.toContain('sr-only');
+        expect(screen.getByText('Writing').parentElement?.className).toContain(
+            'sr-only',
+        );
+        expect(screen.queryByText('Phase 5/6')).toBeNull();
+        expect(screen.queryByRole('progressbar')).toBeNull();
+        expect(screen.getByRole('status').textContent).toBe('Phase Voting');
+    });
+
+    it('leaves the moves to the screen on mobile: the rail is read, and still names the leader', () => {
+        const onPhaseChange = vi.fn();
+        const { rerender } = renderWithProviders(
+            <PhaseStepper
+                phases={steps()}
+                current="voting"
+                mobile
+                interactive
+                leaderName="Camille"
+                onPhaseChange={onPhaseChange}
+            />,
+        );
+
+        expect(screen.queryByRole('button')).toBeNull();
+        expect(screen.queryByText('Camille leads the phases')).toBeNull();
+
+        rerender(
+            <PhaseStepper
+                phases={steps()}
+                current="completed"
+                mobile
+                interactive
+                onPhaseChange={onPhaseChange}
+            />,
+        );
+
+        expect(screen.queryByRole('button')).toBeNull();
+        expect(
+            document.querySelector('[aria-current="step"]')?.textContent,
+        ).toContain('Completed');
+
+        rerender(
+            <PhaseStepper
+                phases={steps()}
+                current="voting"
+                mobile
+                leaderName="Camille"
+            />,
+        );
+
+        expect(screen.getByText('Camille leads the phases')).toBeTruthy();
     });
 });
