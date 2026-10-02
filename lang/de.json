@@ -3886,5 +3886,9 @@
     "With attributions and a GIF provider": "Mit Namensnennungen und einem GIF-Anbieter",
     "Nothing to attribute, no \"Powered by\" line": "Nichts zu nennen, ohne „Bereitgestellt von“-Zeile",
     "Default: :name": "Standard: :name",
-    "The style of the environment applies until you choose another one.": "Der Stil der Umgebung gilt, bis Sie einen anderen wählen."
+    "The style of the environment applies until you choose another one.": "Der Stil der Umgebung gilt, bis Sie einen anderen wählen.",
+    "Unsubscribe from reminders": "Erinnerungen abbestellen",
+    "Reminder e-mails": "Erinnerungs-E-Mails",
+    "Stop the action item reminders sent by e-mail?": "Erinnerungen an Maßnahmen per E-Mail beenden?",
+    "You no longer receive action item reminders by e-mail.": "Sie erhalten keine Erinnerungen an Maßnahmen mehr per E-Mail."
 }

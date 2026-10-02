@@ -30,6 +30,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->convertEmptyStringsToNull(except: [$isInboundWebhook]);
 
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
+        $middleware->preventRequestForgery(except: ['reminder-unsubscribe/*']);
 
         $middleware->web(append: [
             HandleAppearance::class,

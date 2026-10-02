@@ -3660,5 +3660,10 @@
     "With attributions and a GIF provider": "With attributions and a GIF provider",
     "Nothing to attribute, no \"Powered by\" line": "Nothing to attribute, no \"Powered by\" line",
     "Default: :name": "Default: :name",
-    "The style of the environment applies until you choose another one.": "The style of the environment applies until you choose another one."
+    "The style of the environment applies until you choose another one.": "The style of the environment applies until you choose another one.",
+    "Unsubscribe from reminders": "Unsubscribe from reminders",
+    "Unsubscribe": "Unsubscribe",
+    "Reminder e-mails": "Reminder e-mails",
+    "Stop the action item reminders sent by e-mail?": "Stop the action item reminders sent by e-mail?",
+    "You no longer receive action item reminders by e-mail.": "You no longer receive action item reminders by e-mail."
 }

@@ -2,7 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\ActionItemReminderKind;
 use App\Mail\WorkspaceInvitationMail;
+use App\Models\ActionItem;
+use App\Models\User;
+use App\Notifications\ActionItemReminderDigestNotification;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -39,6 +43,12 @@ class MailPreviewsController extends Controller
         return [
             'invitation' => fn (): Mailable => (new WorkspaceInvitationMail('Nordlys', 'Fran Facilitator', url('/invitations/sample'), now()->addDays(7)))
                 ->subject(__('You are invited to join :workspace', ['workspace' => 'Nordlys'])),
+            'action-reminder' => fn (): ?Mailable => ($user = User::query()->whereHas('teams')->first()) === null
+                ? null
+                : (new ActionItemReminderDigestNotification(
+                    ActionItem::query()->whereIn('team_id', $user->teams()->select('teams.id'))->limit(3)->pluck('id')
+                        ->map(fn (string $id): array => ['actionItemId' => $id, 'kind' => ActionItemReminderKind::Overdue->value])->all(),
+                ))->toMail($user),
         ];
     }
 }

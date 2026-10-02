@@ -93,6 +93,7 @@ use App\Http\Controllers\Poker\PokerVotesController;
 use App\Http\Controllers\PokerDecksController;
 use App\Http\Controllers\PokerJoinsController;
 use App\Http\Controllers\ReadAllNotificationsController;
+use App\Http\Controllers\ReminderUnsubscribesController;
 use App\Http\Controllers\RetroJoinsController;
 use App\Http\Controllers\Retros\ActionItemCommentsController;
 use App\Http\Controllers\Retros\ActionItemsController;
@@ -176,6 +177,11 @@ Route::get('invitations/{token}', [InvitationLinksController::class, 'show'])->n
 
 Route::get('dev/design-system', [DesignSystemPagesController::class, 'index'])->name('dev.designSystem.index');
 Route::get('dev/design-system/{section}', [DesignSystemPagesController::class, 'show'])->name('dev.designSystem.show');
+Route::middleware(['signed', 'throttle:30,1'])->group(function (): void {
+    Route::get('reminder-unsubscribe/{user}', [ReminderUnsubscribesController::class, 'show'])->whereUuid('user')->name('reminderUnsubscribes.show');
+    Route::post('reminder-unsubscribe/{user}', [ReminderUnsubscribesController::class, 'store'])->whereUuid('user')->name('reminderUnsubscribes.store');
+});
+
 Route::get('dev/mail/{mail}', [MailPreviewsController::class, 'show'])->where('mail', '[a-z-]+')->name('dev.mail.show');
 
 Route::get('avatars/{seed}.svg', [AvatarsController::class, 'show'])->where('seed', '[a-f0-9]{32}')->name('avatars.show');

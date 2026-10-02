@@ -3886,5 +3886,9 @@
     "With attributions and a GIF provider": "Avec attributions et un fournisseur de GIF",
     "Nothing to attribute, no \"Powered by\" line": "Rien à attribuer, sans ligne « Propulsé par »",
     "Default: :name": "Par défaut : :name",
-    "The style of the environment applies until you choose another one.": "Le style de l'environnement s'applique tant que vous n'en choisissez pas un autre."
+    "The style of the environment applies until you choose another one.": "Le style de l'environnement s'applique tant que vous n'en choisissez pas un autre.",
+    "Unsubscribe from reminders": "Se désabonner des rappels",
+    "Reminder e-mails": "E-mails de rappel",
+    "Stop the action item reminders sent by e-mail?": "Arrêter les rappels d'actions envoyés par e-mail ?",
+    "You no longer receive action item reminders by e-mail.": "Vous ne recevez plus les rappels d'actions par e-mail."
 }
