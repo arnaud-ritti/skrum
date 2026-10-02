@@ -273,7 +273,7 @@ it('[P14b-02b] sends a game room invite to the webhook without players or game s
 
     $page->assertSee('Invite')
         ->click('Invite')
-        ->assertSee('Invite to the room')
+        ->assertSeeIn('[data-slot="share-dialog"]', 'Invite to ')
         ->assertSee('Only members of Platform can join.')
         ->click('Send link to webhook')
         ->assertSee('The message is on its way.');

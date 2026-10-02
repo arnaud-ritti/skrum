@@ -585,7 +585,7 @@ it('[P18e-01-18] offers four types and no Poll, and opens the room of an icebrea
     $room = GameRoom::query()->sole();
 
     $page->assertPathIs("/games/{$room->id}")
-        ->assertSeeIn('header > h1', 'Friday warm-up')
+        ->assertSeeIn('header:has(h1) h1', 'Friday warm-up')
         ->assertSee('Ready to play?');
 
     expect($room->name)->toBe('Friday warm-up')
