@@ -3,6 +3,7 @@ import type { LucideIcon } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import type { MouseEvent } from 'react';
 import type { NavHref } from '@/components/skrum/app-sidebar';
+import { cn } from '@/lib/utils';
 
 export type SubNavItem = {
     label: string;
@@ -24,9 +25,15 @@ const itemClass =
 export function SubNav({
     items,
     label,
+    stuck = false,
 }: {
     items: SubNavItem[];
     label: string;
+    /**
+     * Below `lg` the list stays under the top bar while the page scrolls,
+     * for a long page whose entries lead to its own sections.
+     */
+    stuck?: boolean;
 }) {
     const nav = useRef<HTMLElement>(null);
     const currentLabel = items.find((item) => item.current)?.label;
@@ -44,7 +51,12 @@ export function SubNav({
         <nav
             ref={nav}
             aria-label={label}
-            className="flex gap-0.5 overflow-x-auto lg:sticky lg:top-20 lg:w-54 lg:shrink-0 lg:flex-col lg:self-start lg:overflow-visible"
+            data-stuck={stuck ? '' : undefined}
+            className={cn(
+                'flex gap-0.5 overflow-x-auto lg:sticky lg:top-20 lg:w-54 lg:shrink-0 lg:flex-col lg:self-start lg:overflow-visible',
+                stuck &&
+                    'max-lg:sticky max-lg:top-14 max-lg:z-20 max-lg:border-b max-lg:bg-background max-lg:py-2',
+            )}
         >
             {items.map((item) => {
                 const content = (

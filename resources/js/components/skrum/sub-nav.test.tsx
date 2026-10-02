@@ -67,4 +67,19 @@ describe('SubNav', () => {
 
         expect(onSelect).toHaveBeenCalledTimes(1);
     });
+
+    it('stays under the top bar below lg only where the page asks for it', () => {
+        const items = [{ label: 'Team', href: '/team', current: true }];
+        const { rerender } = render(<SubNav label="Settings" items={items} />);
+        const nav = screen.getByRole('navigation', { name: 'Settings' });
+
+        expect(nav.hasAttribute('data-stuck')).toBe(false);
+        expect(nav.className).not.toContain('max-lg:sticky');
+
+        rerender(<SubNav label="Settings" items={items} stuck />);
+
+        expect(nav.hasAttribute('data-stuck')).toBe(true);
+        expect(nav.className).toContain('max-lg:sticky max-lg:top-14');
+        expect(nav.className).toContain('lg:sticky lg:top-20');
+    });
 });
