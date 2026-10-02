@@ -63,6 +63,26 @@ it('exports an action item to Jira Data Center with wiki markup and a name assig
         ->and($integration->fresh()?->setting('exportProjectId'))->toBe('10000');
 });
 
+it('lists Data Center projects alphabetically, whatever their case and accents', function () {
+    Http::fake([
+        jiraDataCenterUrl('rest/api/2/project') => Http::response([
+            ['id' => '10002', 'key' => 'ZEB', 'name' => 'Zebra'],
+            ['id' => '10001', 'key' => 'ECH', 'name' => 'Écho'],
+            ['id' => '10000', 'key' => 'APO', 'name' => 'apollo'],
+        ]),
+        '*' => Http::response(['values' => []]),
+    ]);
+    $integration = TeamIntegration::factory()->jiraDataCenter()->create();
+    $team = $integration->team;
+
+    $this->actingAs(integrationAdmin($team))
+        ->getJson(route('teams.integrations.targets.index', [$team->workspace, $team, $integration]))
+        ->assertOk()
+        ->assertJsonPath('projects.0.name', 'apollo')
+        ->assertJsonPath('projects.1.name', 'Écho')
+        ->assertJsonPath('projects.2.name', 'Zebra');
+});
+
 it('lists Data Center projects, issue types and priorities', function () {
     Http::fake([
         jiraDataCenterUrl('rest/api/2/project') => Http::response([

@@ -13,6 +13,7 @@ use App\Models\PokerGame;
 use App\Models\PokerPlayer;
 use App\Models\PokerTask;
 use App\Models\User;
+use App\Support\Alphabetical;
 use Illuminate\Contracts\Database\Query\Builder;
 
 /**
@@ -173,13 +174,15 @@ class BuildPokerSnapshot
             ->wherePivotIn('role', [WorkspaceRole::Owner->value, WorkspaceRole::Admin->value])
             ->pluck('users.id');
 
-        return User::query()
+        $candidates = User::query()
             ->where(fn (Builder $query) => $query
                 ->whereIn('id', $team->members()->select('users.id'))
                 ->orWhereIn('id', $managerIds))
             ->when($viewer->user_id !== null, fn ($query) => $query->whereKeyNot($viewer->user_id))
-            ->orderBy('name')
-            ->get(['id', 'name'])
+            ->orderBy('id')
+            ->get(['id', 'name']);
+
+        return Alphabetical::sort($candidates, fn (User $user): string => $user->name)
             ->map(fn (User $user): array => ['userId' => $user->id, 'name' => $user->name])
             ->all();
     }

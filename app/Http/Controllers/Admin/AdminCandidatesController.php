@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\AdminCandidatesRequest;
 use App\Models\User;
+use App\Support\Alphabetical;
 use App\Support\Database\SearchText;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -41,7 +42,7 @@ class AdminCandidatesController extends Controller
                 'avatarUrl' => $user->avatarUrl(),
             ]);
 
-        return response()->json(['candidates' => $candidates->all()]);
+        return response()->json(['candidates' => Alphabetical::sort($candidates->collect(), fn (array $candidate): string => $candidate['name'])->all()]);
     }
 
     private function escapeLike(string $value): string

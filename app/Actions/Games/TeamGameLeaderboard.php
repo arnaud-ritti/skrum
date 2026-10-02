@@ -4,6 +4,7 @@ namespace App\Actions\Games;
 
 use App\Models\Team;
 use App\Models\User;
+use App\Support\Alphabetical;
 use Illuminate\Database\Eloquent\Builder;
 
 /**
@@ -49,8 +50,8 @@ class TeamGameLeaderboard
             ->withSum(['gamePoints as total_points' => $inScope], 'points')
             ->withCount(['gamePoints as wins' => fn (Builder $points) => $inScope($points)->where('is_win', true), 'gamePoints as rounds_played' => $inScope])
             ->get()
-            ->sort(fn (User $first, User $second): int => [(int) $second->total_points, (int) $second->wins, mb_strtolower($first->name), $first->name, $first->id]
-                <=> [(int) $first->total_points, (int) $first->wins, mb_strtolower($second->name), $second->name, $second->id])
+            ->sort(fn (User $first, User $second): int => [(int) $second->total_points, (int) $second->wins, Alphabetical::key($first->name), $first->name, $first->id]
+                <=> [(int) $first->total_points, (int) $first->wins, Alphabetical::key($second->name), $second->name, $second->id])
             ->take(self::Size)
             ->values();
 

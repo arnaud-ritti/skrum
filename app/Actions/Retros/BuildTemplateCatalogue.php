@@ -4,6 +4,7 @@ namespace App\Actions\Retros;
 
 use App\Models\Workspace;
 use App\Models\WorkspaceTemplate;
+use App\Support\Alphabetical;
 use App\Support\RetroTemplates\TemplateCatalogue;
 use App\Support\RetroTemplates\TemplateDefinition;
 
@@ -21,7 +22,7 @@ class BuildTemplateCatalogue
      */
     public function handle(Workspace $workspace): array
     {
-        $workspaceTemplates = $workspace->templates()->with('columns')->orderBy('name')->get()
+        $workspaceTemplates = Alphabetical::sort($workspace->templates()->with('columns')->get(), fn (WorkspaceTemplate $template): string => $template->name)
             ->map(fn (WorkspaceTemplate $template): array => [
                 'key' => $template->catalogueKey(),
                 'name' => $template->name,

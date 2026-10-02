@@ -6,6 +6,7 @@ use App\Jobs\MatchIntegrationUsers;
 use App\Models\IntegrationUserMapping;
 use App\Models\TeamIntegration;
 use App\Models\User;
+use App\Support\Alphabetical;
 
 class PresentIntegrationUserMappings
 {
@@ -27,7 +28,7 @@ class PresentIntegrationUserMappings
     public function handle(TeamIntegration $integration): array
     {
         $mappings = $integration->userMappings()->get()->keyBy('user_id');
-        $members = $integration->team->members()->orderBy('name')->get();
+        $members = Alphabetical::sort($integration->team->members()->orderBy('users.id')->get(), fn (User $member): string => $member->name);
 
         return [
             'members' => $members

@@ -23,6 +23,7 @@ use App\Models\GamePlayer;
 use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\User;
+use App\Support\Alphabetical;
 use App\Support\EmojibaseLocale;
 use App\Support\Gifs\GifCatalog;
 use App\Support\Llm\Llm;
@@ -64,7 +65,7 @@ class BuildBoardSnapshot
     {
         $retro->loadMissing([
             'team.workspace',
-            'team.members',
+            'team.members' => fn (Builder $members) => $members->orderBy('users.id'),
             'participants.user',
             'cards.participant.user',
             'cards.reactions.participant.user',
@@ -202,8 +203,7 @@ class BuildBoardSnapshot
     {
         $participantIds = $retro->participants->whereNotNull('user_id')->pluck('id', 'user_id');
 
-        return $retro->team->members
-            ->sortBy('name')
+        return Alphabetical::sort($retro->team->members, fn (User $member): string => $member->name)
             ->map(fn (User $member): array => [
                 'id' => $member->id,
                 'name' => $member->name,
@@ -266,13 +266,15 @@ class BuildBoardSnapshot
             ->wherePivotIn('role', [WorkspaceRole::Owner->value, WorkspaceRole::Admin->value])
             ->pluck('users.id');
 
-        return User::query()
+        $candidates = User::query()
             ->where(fn (Builder $query) => $query
                 ->whereIn('id', $team->members()->select('users.id'))
                 ->orWhereIn('id', $managerIds))
             ->when($viewer->user_id !== null, fn ($query) => $query->whereKeyNot($viewer->user_id))
-            ->orderBy('name')
-            ->get(['id', 'name'])
+            ->orderBy('id')
+            ->get(['id', 'name']);
+
+        return Alphabetical::sort($candidates, fn (User $user): string => $user->name)
             ->map(fn (User $user): array => ['userId' => $user->id, 'name' => $user->name])
             ->all();
     }

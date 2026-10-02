@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Models\WhiteboardTemplate;
 use App\Models\Workspace;
 use App\Models\WorkspaceTemplate;
+use App\Support\Alphabetical;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -101,11 +102,12 @@ class WorkspaceTemplatesController extends Controller
      */
     private function retroTemplates(Workspace $workspace, array $visibleTeamIds): Collection
     {
-        return $workspace->templates()
+        $templates = $workspace->templates()
             ->with(['columns', 'creator'])
             ->withCount(['retros' => fn (Builder $retros) => $retros->whereIn('team_id', $visibleTeamIds)])
-            ->orderBy('name')
-            ->get()
+            ->get();
+
+        return Alphabetical::sort($templates, fn (WorkspaceTemplate $template): string => $template->name)
             ->map(fn (WorkspaceTemplate $template): array => $this->present($template))
             ->values();
     }
@@ -123,9 +125,9 @@ class WorkspaceTemplatesController extends Controller
     {
         $managesWorkspace = $user->canManage($workspace);
 
-        return $workspace->whiteboardTemplates()
-            ->orderBy('name')
-            ->get(['id', 'name', 'description', 'preview', 'created_by_user_id'])
+        $templates = $workspace->whiteboardTemplates()->get(['id', 'name', 'description', 'preview', 'created_by_user_id']);
+
+        return Alphabetical::sort($templates, fn (WhiteboardTemplate $template): string => $template->name)
             ->map(fn (WhiteboardTemplate $template): array => [
                 'id' => $template->id,
                 'name' => $template->name,
@@ -151,11 +153,12 @@ class WorkspaceTemplatesController extends Controller
     {
         $canManage = $user->canManage($workspace);
 
-        return $workspace->pokerDecks()
+        $decks = $workspace->pokerDecks()
             ->with('creator')
             ->withCount(['games as usage_count' => fn (Builder $games) => $games->whereIn('team_id', $visibleTeamIds)])
-            ->orderBy('name')
-            ->get()
+            ->get();
+
+        return Alphabetical::sort($decks, fn (SavedPokerDeck $deck): string => $deck->name)
             ->map(fn (SavedPokerDeck $deck): array => [
                 'id' => $deck->id,
                 'name' => $deck->name,

@@ -11,6 +11,7 @@ use App\Models\Survey;
 use App\Models\SurveyComment;
 use App\Models\SurveyOption;
 use App\Models\SurveyTextAnswer;
+use App\Support\Alphabetical;
 
 class PresentSurvey
 {
@@ -125,9 +126,7 @@ class PresentSurvey
      */
     private function textAnswers(Survey $survey, Participant $viewer, bool $showsNames): array
     {
-        return $survey->textAnswers
-            ->sort(fn (SurveyTextAnswer $first, SurveyTextAnswer $second): int => [mb_strtolower($first->content), $first->id]
-                <=> [mb_strtolower($second->content), $second->id])
+        return Alphabetical::sort($survey->textAnswers->sortBy('id'), fn (SurveyTextAnswer $answer): string => $answer->content)
             ->map(fn (SurveyTextAnswer $answer): array => [
                 'id' => $answer->id,
                 'text' => $answer->content,

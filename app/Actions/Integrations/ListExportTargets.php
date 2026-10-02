@@ -4,6 +4,7 @@ namespace App\Actions\Integrations;
 
 use App\Enums\IntegrationProvider;
 use App\Models\TeamIntegration;
+use App\Support\Alphabetical;
 use App\Support\Integrations\GitHub\GitHubClient;
 use App\Support\Integrations\Jira\JiraApis;
 use App\Support\Integrations\Linear\LinearClient;
@@ -93,8 +94,9 @@ class ListExportTargets
                 fn (mixed $project): bool => is_array($project)
                     && ($needle === '' || str_contains(Str::lower(($project['name'] ?? '').' '.($project['key'] ?? '')), $needle)),
             );
-            usort($listed, fn (array $first, array $second): int => strcasecmp((string) ($first['name'] ?? ''), (string) ($second['name'] ?? '')));
-            $listed = array_slice($listed, 0, self::ProjectLimit);
+            $listed = Alphabetical::sort(collect($listed), fn (array $project): string => (string) ($project['name'] ?? ''))
+                ->take(self::ProjectLimit)
+                ->all();
         } else {
             $listed = (array) ($api->get($integration, $api->apiPath('project/search'), array_filter([
                 'maxResults' => self::ProjectLimit,

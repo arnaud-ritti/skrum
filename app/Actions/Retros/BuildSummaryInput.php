@@ -9,6 +9,7 @@ use App\Models\Retro;
 use App\Models\Survey;
 use App\Models\SurveyOption;
 use App\Models\SurveyTextAnswer;
+use App\Support\Alphabetical;
 use App\Support\Llm\LlmLanguages;
 use Illuminate\Support\Collection;
 
@@ -221,7 +222,7 @@ class BuildSummaryInput
             ->where('is_closed', true)
             ->with([
                 'options' => fn ($query) => $query->orderBy('position')->withCount('responses'),
-                'textAnswers' => fn ($query) => $query->orderByRaw('lower(content)'),
+                'textAnswers' => fn ($query) => $query->orderBy('id'),
             ])
             ->get()
             ->map(function (Survey $survey): array {
@@ -234,7 +235,7 @@ class BuildSummaryInput
                 ];
 
                 if ($survey->kind === SurveyKind::Text) {
-                    return [...$entry, 'answers' => $survey->textAnswers
+                    return [...$entry, 'answers' => Alphabetical::sort($survey->textAnswers, fn (SurveyTextAnswer $answer): string => $answer->content)
                         ->take(self::MaxTextAnswersPerSurvey)
                         ->map(fn (SurveyTextAnswer $answer) => $answer->content)
                         ->values()->all()];

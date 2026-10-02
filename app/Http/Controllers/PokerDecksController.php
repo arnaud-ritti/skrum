@@ -9,6 +9,7 @@ use App\Models\SavedPokerDeck;
 use App\Models\Team;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Support\Alphabetical;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -76,11 +77,13 @@ class PokerDecksController extends Controller
     {
         $isManager = $user->canManage($workspace);
 
-        return $team->availablePokerDecks()
+        $decks = $team->availablePokerDecks()
             ->with('creator:id,name')
             ->withCount(['games' => fn ($query) => $query->where('team_id', $team->id)])
-            ->orderBy('name')
-            ->get()
+            ->orderBy('id')
+            ->get();
+
+        return Alphabetical::sort($decks, fn (SavedPokerDeck $deck): string => $deck->name)
             ->map(fn (SavedPokerDeck $deck): array => [
                 'id' => $deck->id,
                 'name' => $deck->name,

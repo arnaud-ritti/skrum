@@ -6,6 +6,7 @@ use App\Actions\Auth\SignupGate;
 use App\Enums\SsoProvider;
 use App\Models\User;
 use App\Models\WorkspaceInvitation;
+use App\Support\Alphabetical;
 use App\Support\Auth\SignInPolicy;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rules\Password;
@@ -83,10 +84,7 @@ class InvitationLinksController extends Controller
         return [
             'role' => $invitation->role->value,
             'membersCount' => $members->count(),
-            'members' => $members
-                ->orderBy('users.name')
-                ->limit(5)
-                ->get()
+            'members' => Alphabetical::sort($members->orderBy('users.name')->orderBy('users.id')->limit(5)->get(), fn (User $member): string => $member->name)
                 ->map(fn (User $member): array => $this->person($member))
                 ->all(),
         ];

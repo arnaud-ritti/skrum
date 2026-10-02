@@ -7,6 +7,7 @@ use App\Mcp\McpContext;
 use App\Mcp\Tools\SkrumTool;
 use App\Models\User;
 use App\Models\WorkspaceMembership;
+use App\Support\Alphabetical;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -40,7 +41,7 @@ class ListTeamMembers extends SkrumTool
     {
         $validated = $request->validate(['team_id' => ['required', 'uuid']]);
         $team = $this->context->team($validated['team_id']);
-        $members = $team->members()->orderBy('name')->get();
+        $members = Alphabetical::sort($team->members()->orderBy('users.id')->get(), fn (User $member): string => $member->name);
         $roles = WorkspaceMembership::query()
             ->where('workspace_id', $team->workspace_id)
             ->whereIn('user_id', $members->pluck('id'))
