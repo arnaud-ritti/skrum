@@ -6,9 +6,11 @@ import { RadiusControl } from './radius-control';
 
 function Harness({
     initial,
+    exact,
     onChange,
 }: {
     initial: number;
+    exact?: boolean;
     onChange?: (value: number) => void;
 }) {
     const [value, setValue] = useState(initial);
@@ -16,6 +18,7 @@ function Harness({
     return (
         <RadiusControl
             value={value}
+            exact={exact}
             onChange={(next) => {
                 setValue(next);
                 onChange?.(next);
@@ -54,7 +57,7 @@ describe('RadiusControl', () => {
         expect(checked()).toEqual([name]);
     });
 
-    it('offers the four segments and no exact value field', () => {
+    it('offers the four segments and no exact value field unless asked', () => {
         renderWithProviders(<Harness initial={8} />);
 
         expect(
@@ -63,7 +66,7 @@ describe('RadiusControl', () => {
         expect(screen.queryByRole('spinbutton')).toBeNull();
     });
 
-    it('shows Soft selected for a stored value of 6 and does not write it', () => {
+    it('shows Soft selected for a default value of 6 and does not write it', () => {
         const onChange = vi.fn();
 
         renderWithProviders(<Harness initial={6} onChange={onChange} />);
@@ -75,7 +78,7 @@ describe('RadiusControl', () => {
         expect(onChange).not.toHaveBeenCalled();
     });
 
-    it('shows the nearest segment for any stored value', () => {
+    it('shows the nearest segment for any default value', () => {
         const { unmount } = renderWithProviders(<Harness initial={10} />);
 
         expect(checked()).toEqual(['Standard']);
@@ -86,11 +89,84 @@ describe('RadiusControl', () => {
         expect(checked()).toEqual(['Round']);
     });
 
+    it('shows no segment selected and the exact value for a stored radius of 6', () => {
+        renderWithProviders(<Harness initial={6} exact />);
+
+        expect(checked()).toEqual([]);
+        expect(
+            (
+                screen.getByRole('spinbutton', {
+                    name: 'Exact radius in pixels',
+                }) as HTMLInputElement
+            ).value,
+        ).toBe('6');
+    });
+
+    it('writes a typed exact value, kept between 0 and 16', () => {
+        const onChange = vi.fn();
+
+        renderWithProviders(<Harness initial={6} exact onChange={onChange} />);
+
+        const field = screen.getByRole('spinbutton') as HTMLInputElement;
+
+        fireEvent.change(field, { target: { value: '' } });
+
+        expect(onChange).not.toHaveBeenCalled();
+        expect(field.value).toBe('');
+
+        fireEvent.change(field, { target: { value: '11' } });
+
+        expect(onChange).toHaveBeenLastCalledWith(11);
+
+        fireEvent.change(field, { target: { value: '40' } });
+
+        expect(onChange).toHaveBeenLastCalledWith(16);
+        expect(field.value).toBe('16');
+
+        fireEvent.change(field, { target: { value: '6.5' } });
+
+        expect(onChange).toHaveBeenLastCalledWith(7);
+        expect(field.value).toBe('7');
+
+        fireEvent.change(field, { target: { value: '40' } });
+        fireEvent.blur(field);
+
+        expect(field.value).toBe('16');
+        expect(checked()).toEqual(['Round']);
+    });
+
+    it('keeps the exact field filled once a segment is chosen', () => {
+        renderWithProviders(<Harness initial={6} exact />);
+
+        fireEvent.click(preset('Soft'));
+
+        expect(checked()).toEqual(['Soft']);
+        expect((screen.getByRole('spinbutton') as HTMLInputElement).value).toBe(
+            '4',
+        );
+    });
+
     it('shows the server error', () => {
         renderWithProviders(
             <RadiusControl value={8} onChange={vi.fn()} error="Too round." />,
         );
 
         expect(screen.getByText('Too round.')).toBeTruthy();
+    });
+
+    it('ties the server error to the exact value field', () => {
+        renderWithProviders(
+            <RadiusControl
+                value={6}
+                exact
+                onChange={vi.fn()}
+                error="Too round."
+            />,
+        );
+
+        expect(
+            screen.getByRole('spinbutton').getAttribute('aria-describedby'),
+        ).toBe(screen.getByText('Too round.').id);
+        expect(screen.getByText('Too round.').id).not.toBe('');
     });
 });

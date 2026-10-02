@@ -38,7 +38,7 @@ it('offers no provider on an expired invitation', function () {
     WorkspaceInvitation::factory()->expired()->withToken('secret-token')->create();
 
     $this->get(route('invitations.show', 'secret-token'))
-        ->assertInertia(fn (Assert $page) => $page->where('ssoProviders', []));
+        ->assertInertia(fn (Assert $page) => $page->missing('ssoProviders'));
 });
 
 it('sends none of the invitation props for an invalid token', function () {
@@ -95,16 +95,66 @@ it('sends the role, the expiry, the member count and the first five members by n
             ->has('members.0', fn (Assert $member) => $member->hasAll(['name', 'avatarUrl'])));
 });
 
-it('sends the inviter and the expiry but no members on an expired invitation', function () {
+it('sends the workspace name, the inviter and the expiry of an expired invitation, and nothing else', function (string $state) {
+    $workspace = Workspace::factory()->create(['name' => 'Nordlys']);
     $inviter = User::factory()->create(['name' => 'Ada Lovelace']);
-    WorkspaceInvitation::factory()->expired()->withToken('secret-token')->create(['invited_by_id' => $inviter->id]);
+    WorkspaceInvitation::factory()->{$state}()->withToken('secret-token')->create([
+        'workspace_id' => $workspace->id,
+        'invited_by_id' => $inviter->id,
+    ]);
 
-    $this->get(route('invitations.show', 'secret-token'))
+    $sharedProps = array_keys($this->get(route('invitations.show', 'unknown-token'))->inertiaProps());
+    $response = $this->get(route('invitations.show', 'secret-token'))->assertOk();
+
+    expect(array_values(array_diff(array_keys($response->inertiaProps()), $sharedProps)))
+        ->toEqualCanonicalizing(['isExpired', 'workspaceName', 'inviter', 'expiresAt']);
+
+    $response->assertInertia(fn (Assert $page) => $page
+        ->where('isInvalid', false)
+        ->where('isExpired', true)
+        ->where('workspaceName', 'Nordlys')
+        ->where('inviter', ['name' => 'Ada Lovelace', 'avatarUrl' => $inviter->avatarUrl()])
+        ->has('expiresAt'));
+})->with(['expired', 'accepted']);
+
+it('sends the same expired props to a signed in visitor', function () {
+    $workspace = Workspace::factory()->create(['name' => 'Nordlys']);
+    $invitation = WorkspaceInvitation::factory()->expired()->withToken('secret-token')->create([
+        'workspace_id' => $workspace->id,
+        'email' => 'invited@example.com',
+    ]);
+
+    $this->actingAs(User::factory()->create(['email' => 'invited@example.com']))
+        ->get(route('invitations.show', 'secret-token'))
         ->assertInertia(fn (Assert $page) => $page
-            ->where('inviter.name', 'Ada Lovelace')
-            ->has('expiresAt')
-            ->missing('members')
-            ->missing('membersCount'));
+            ->where('workspaceName', 'Nordlys')
+            ->where('expiresAt', $invitation->expires_at->toIso8601String())
+            ->missing('token')
+            ->missing('email')
+            ->missing('emailMatches')
+            ->missing('canRegister'));
+});
+
+it('carries no member, no e-mail and no token on an expired invitation', function () {
+    $workspace = Workspace::factory()->create(['name' => 'Nordlys']);
+    $member = User::factory()->create(['name' => 'Hidden Member', 'email' => 'member-secret@example.com']);
+    $inviter = User::factory()->create(['email' => 'inviter-secret@example.com']);
+    $workspace->members()->attach($member, ['role' => WorkspaceRole::Member]);
+    WorkspaceInvitation::factory()->expired()->withToken('secret-token')->create([
+        'workspace_id' => $workspace->id,
+        'email' => 'invited@example.com',
+        'invited_by_id' => $inviter->id,
+    ]);
+
+    $props = json_encode($this->get(route('invitations.show', 'secret-token'))->inertiaProps());
+
+    expect($props)->toContain('Nordlys')
+        ->not->toContain('Hidden Member')
+        ->not->toContain('member-secret@example.com')
+        ->not->toContain('inviter-secret@example.com')
+        ->not->toContain('invited@example.com')
+        ->not->toContain('secret-token')
+        ->not->toContain($workspace->id);
 });
 
 it('never carries an e-mail other than the invited one', function () {

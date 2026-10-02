@@ -8,6 +8,7 @@ import { initializeTheme } from '@/hooks/use-appearance';
 import AppLayout from '@/layouts/app-layout';
 import AuthLayout from '@/layouts/auth-layout';
 import SettingsLayout from '@/layouts/settings/layout';
+import { loadDocumentOnMaintenance } from '@/lib/maintenance-reload';
 import { usesOwnLayout } from '@/lib/page-layouts';
 import { echoConnection } from '@/lib/reverb-config';
 
@@ -37,6 +38,10 @@ if (connection) {
             },
         },
     });
+}
+
+if (typeof window !== 'undefined') {
+    loadDocumentOnMaintenance();
 }
 
 void createInertiaApp({

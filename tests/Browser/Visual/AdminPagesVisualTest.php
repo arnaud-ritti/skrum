@@ -86,3 +86,25 @@ it('renders the instance admin pages and the about page without overflow', funct
     'admins' => ['admin-admins-page', '/admin/admins', '[data-slot="admins-panel"] [data-slot="admin-row"]'],
     'about' => ['about-page', '/about', '[data-slot="about"] [data-slot="about-attribution"]'],
 ]);
+
+it('renders the branding page with a stored radius outside the segments and a staged logo without overflow', function () {
+    config(['app.name' => 'Skrum', 'app.key' => 'base64:'.base64_encode(str_repeat('v', 32))]);
+
+    $admin = p18dVisualAdmin();
+
+    resolve(InstanceSettings::class)->setMany(['brand_radius' => 6]);
+
+    $logo = sys_get_temp_dir().'/atlas-logo.png';
+
+    file_put_contents($logo, (string) base64_decode(WhiteboardPng, true));
+
+    RateLimiter::for('login', fn (): Limit => Limit::none());
+
+    $this->captureVisuals(
+        'admin-branding-exact-radius-staged',
+        '/admin/branding',
+        fn (string $path, array $options) => p18dVisualVisit($admin, $path, $options, '[data-slot="radius-exact"] input')
+            ->attach('[data-slot="asset-uploader"] input[type="file"]', $logo)
+            ->assertPresent('[data-slot="asset-undo"]'),
+    );
+});

@@ -1,4 +1,4 @@
-import { CircleAlert, ImageOff, Trash2, Upload } from 'lucide-react';
+import { CircleAlert, ImageOff, Trash2, Undo2, Upload } from 'lucide-react';
 import { useId, useRef, useState } from 'react';
 import type { ChangeEvent, DragEvent } from 'react';
 import { ConfirmDialog } from '@/components/skrum/confirm-dialog';
@@ -25,8 +25,10 @@ export type AssetUploaderProps = {
     /** Server refusal of the last upload. */
     error?: string;
     onUpload: (file: File) => void;
-    /** Removal of a stored image is confirmed first; a staged file goes at once. */
+    /** Removal of the stored image, confirmed first. */
     onRemove: () => Promise<void> | void;
+    /** Takes back the staged file or the staged removal of this image alone. */
+    onUndo?: () => void;
     className?: string;
 };
 
@@ -41,11 +43,13 @@ export function AssetUploader({
     error,
     onUpload,
     onRemove,
+    onUndo,
     className,
 }: AssetUploaderProps) {
     const { t } = useTrans();
     const id = useId();
     const inputRef = useRef<HTMLInputElement>(null);
+    const uploadRef = useRef<HTMLButtonElement>(null);
     const [rejection, setRejection] = useState<AssetRejection | null>(null);
     const [confirming, setConfirming] = useState(false);
     const [dragging, setDragging] = useState(false);
@@ -90,14 +94,11 @@ export function AssetUploader({
         setDragging(true);
     }
 
-    function remove(): void {
-        if (fileName !== undefined) {
-            void onRemove();
-
-            return;
-        }
-
-        setConfirming(true);
+    /** The button leaves with the staged change: the focus goes to its neighbour. */
+    function undo(): void {
+        setRejection(null);
+        onUndo?.();
+        uploadRef.current?.focus();
     }
 
     return (
@@ -175,6 +176,7 @@ export function AssetUploader({
                 />
                 <div className="flex min-w-0 flex-wrap gap-2">
                     <LoadingButton
+                        ref={uploadRef}
                         type="button"
                         variant="outline"
                         size="sm"
@@ -187,13 +189,27 @@ export function AssetUploader({
                             {url === null ? t('Upload') : t('Replace')}
                         </span>
                     </LoadingButton>
-                    {url !== null && (
+                    {staged && onUndo && (
                         <Button
                             type="button"
                             variant="ghost"
                             size="sm"
                             disabled={busy}
-                            onClick={remove}
+                            data-slot="asset-undo"
+                            onClick={undo}
+                            className="max-w-full min-w-0"
+                        >
+                            <Undo2 aria-hidden="true" />
+                            <span className="truncate">{t('Undo')}</span>
+                        </Button>
+                    )}
+                    {url !== null && fileName === undefined && (
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            disabled={busy}
+                            onClick={() => setConfirming(true)}
                             className="max-w-full min-w-0 text-skrum-destructive-text"
                         >
                             <Trash2 aria-hidden="true" />

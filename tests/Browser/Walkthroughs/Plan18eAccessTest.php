@@ -129,6 +129,7 @@ it('[P18e-11-05] walks an invitation through its states: logged out, another acc
         'invited_by_id' => $inviter->id,
     ]);
     WorkspaceInvitation::factory()->expired()->withToken('expired-token')->create([
+        'workspace_id' => Workspace::factory()->create(['name' => 'Aurora'])->id,
         'email' => $mona->email,
         'invited_by_id' => $inviter->id,
     ]);
@@ -172,6 +173,7 @@ it('[P18e-11-05] walks an invitation through its states: logged out, another acc
 
     $page->navigate('/invitations/expired-token')
         ->assertSeeIn('[data-slot="access-notice"]', 'This invitation has expired')
+        ->assertSeeIn('[data-slot="access-notice"]', 'Your invitation to join Aurora was valid until')
         ->assertSeeIn('[data-slot="access-notice"]', "Ask {$inviter->name} for a new link; nothing else to do.")
         ->assertNotPresent('[data-slot="invitation-card"]')
         ->assertNotPresent('@accept-invitation-button');
@@ -303,4 +305,53 @@ it('[P18e-11-10] "Reload" on the 419 page of a log out that expired goes back to
         ->assertPathIs('/invitations/pending-token')
         ->assertAttribute('[data-slot="invitation-card"]', 'data-state', 'wrong-account')
         ->assertNotPresent('[data-slot="error-page"]');
+});
+
+it('[P18e-11-11] a link followed during maintenance loads the static 503 page, which loads the page again once the instance answers, fragment included', function () {
+    config(['app.maintenance.driver' => 'cache', 'app.maintenance.store' => 'array']);
+
+    $askNow = <<<'JS'
+        () => {
+            window.maintenancePageKept = true;
+            new Function('setTimeout', document.scripts[0].textContent)((callback) => window.setTimeout(callback, 50));
+
+            return true;
+        }
+        JS;
+
+    $page = visit('/login');
+
+    $page->assertSee('Welcome back');
+
+    $this->artisan('down')->assertSuccessful();
+
+    try {
+        $page->click('Forgot your password?')
+            ->assertPresent('body[data-slot="maintenance-page"]')
+            ->assertPathIs('/forgot-password')
+            ->assertSeeIn('[data-slot="maintenance-reload"]', 'This page reloads by itself as soon as the instance answers.')
+            ->assertNotPresent('dialog')
+            ->assertNotPresent('iframe');
+
+        $page->script("() => { window.location.hash = 'reset'; return true; }");
+        $page->script($askNow);
+
+        $keptWhileDown = $page->script(<<<'JS'
+            () => new Promise((resolve) => window.setTimeout(
+                () => resolve(window.maintenancePageKept === true && document.body.dataset.slot === 'maintenance-page'),
+                600,
+            ))
+            JS);
+
+        expect($keptWhileDown)->toBeTrue();
+    } finally {
+        $this->artisan('up');
+    }
+
+    $page->script($askNow);
+
+    $page->assertPresent('#email')
+        ->assertPathIs('/forgot-password')
+        ->assertScript('window.location.hash', '#reset')
+        ->assertNotPresent('[data-slot="maintenance-page"]');
 });

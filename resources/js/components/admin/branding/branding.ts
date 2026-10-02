@@ -156,9 +156,13 @@ export function clampRadius(value: number): number {
     return Math.min(MaxRadius, Math.max(MinRadius, Math.round(value)));
 }
 
+export function isRadiusPreset(value: number): value is RadiusPreset {
+    return RadiusPresets.some((preset) => preset === value);
+}
+
 /**
- * The segment shown for a stored radius: the server accepts 0 to 16, the
- * control offers four values. Between two segments the smaller one wins.
+ * The segment shown while the default radius applies: the server accepts 0 to
+ * 16, the control offers four values. Between two segments the smaller one wins.
  */
 export function nearestRadiusPreset(value: number): RadiusPreset {
     const radius = clampRadius(value);

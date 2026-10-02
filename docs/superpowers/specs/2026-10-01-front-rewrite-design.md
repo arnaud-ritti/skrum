@@ -429,7 +429,7 @@ Added by rule 13 of §5: these elements were omitted by the first plan because n
 
 **B43 — security page.** `settings/security` gains `twoFactor`: `confirmedAt`, `recoveryCodesRemaining` and `recoveryCodesTotal` (numbers, never the codes). Criterion 42.
 
-**B44 — invitation page.** `invitations/show` gains, for a valid invitation, `inviter` (`name`, `avatarUrl`, or `null` when the inviter's account is gone), `role` (the invited role's value; the page translates it), `expiresAt`, `membersCount` and `members` (the first five of the workspace: `name`, `avatarUrl`). They are sent to whoever holds the invitation token, signed in or not, and to nobody else. Team, message and "decline" stay out: an invitation is to a workspace, carries no message, and declining is backlog. Criterion 43.
+**B44 — invitation page.** `invitations/show` gains, for a valid invitation, `inviter` (`name`, `avatarUrl`, or `null` when the inviter's account is gone), `role` (the invited role's value; the page translates it), `expiresAt`, `membersCount` and `members` (the first five of the workspace: `name`, `avatarUrl`). They are sent to whoever holds the invitation token, signed in or not, and to nobody else. An expired or already used invitation sends only `isExpired`, `workspaceName`, `inviter` and `expiresAt` (owner's fourth round); an unknown or revoked token sends `isInvalid` alone. Team, message and "decline" stay out: an invitation is to a workspace, carries no message, and declining is backlog. Criterion 43.
 
 **B45 — guest-join pages.** `retros/join`, `poker/join`, `games/join` and `whiteboards/join` gain `session`: `title`, `facilitatorName` (or `null`), `participantsCount` (people who have joined) and `isLive` (the retro is not completed, the poker game is not ended, the room or the board exists and is open). Sent only for a valid guest token with guest access on. The colour picker and the short code of the mockup stay backlog. Criterion 44.
 
@@ -522,7 +522,7 @@ End-of-phase report: what is done; gaps with the mockups and why; old features v
 40. (B41) A retro card shows its template, its facilitator and, once completed with votes, its ROTI; an active game shows how many players are in the room, or nothing when the roster is unavailable.
 41. (B42) The workspace header and each team tile show their member counts and the tile its first five members; the switcher shows the role and the number of teams of each workspace; a team the user cannot see is not counted.
 42. (B43) The security page shows when the second factor was added and how many recovery codes are left, and never sends the codes with the page.
-43. (B44) A valid invitation shows who invited, the role, the expiry date and the members; an invalid or expired token gets none of these props.
+43. (B44) A valid invitation shows who invited, the role, the expiry date and the members. An expired or already used invitation shows the workspace name, who invited and the day it expired, so the visitor knows whom to ask, and gets nothing else of the workspace (no role, no members, no e-mail, no token). An invalid (unknown or revoked) token gets none of these props.
 44. (B45) A valid guest link shows the session's title, facilitator, number of people and whether it is live; an invalid link, or a session with guest access off, gets none of them.
 
 ## 14. Risks

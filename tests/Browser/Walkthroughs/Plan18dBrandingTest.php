@@ -286,6 +286,64 @@ it('[P18e-00-01] shows a staged logo in the live preview before Save and on the 
     unlink($file);
 });
 
+it('[P18e-RW-S2] shows the exact value of a stored radius outside the segments and undoes each staged image on its own', function () {
+    Storage::fake(BrandAssets::Disk);
+
+    $admin = p18dMember('Fran Facilitator', admin: true);
+    $file = sys_get_temp_dir().'/p18e-undo-favicon.png';
+
+    file_put_contents($file, (string) base64_decode(WhiteboardPng, true));
+
+    resolve(BrandAssets::class)->store(
+        'logo-light',
+        UploadedFile::fake()->createWithContent('logo.png', (string) base64_decode(WhiteboardPng, true)),
+    );
+    resolve(InstanceSettings::class)->setMany(['brand_radius' => 6]);
+    app()->forgetScopedInstances();
+
+    $page = $this->signIn($admin, '/admin/branding');
+
+    $radius = '[role="radiogroup"][aria-label="Corner radius"]';
+    $images = '[role="radiogroup"][aria-label="Image"]';
+
+    p18dConfirmPassword($page, '/admin/branding')
+        ->assertNotPresent($radius.' [role="radio"][aria-checked="true"]')
+        ->assertValue('input[aria-label="Exact radius in pixels"]', '6')
+        ->assertSeeIn(P18dUnsavedBar.' [role="status"]', 'No unsaved changes')
+        ->assertNotPresent('[data-slot="asset-undo"]');
+
+    $page->click(P18dUploader.' button:has-text("Remove")')
+        ->click('[role="alertdialog"] button:has-text("Remove")')
+        ->assertNotPresent('[role="alertdialog"]')
+        ->assertSeeIn(P18dUploader, 'No image')
+        ->click($images.' [role="radio"]:has-text("Favicon")')
+        ->attach(P18dUploader.' input[type="file"]', $file)
+        ->assertSeeIn(P18dUploader, 'p18e-undo-favicon.png')
+        ->assertSeeIn(P18dUnsavedBar.' [role="status"]', '2 unsaved changes');
+
+    $page->click($images.' [role="radio"]:has-text("Light logo")')
+        ->click(P18dUploader.' button:has-text("Undo")')
+        ->assertPresent(P18dUploader.' img[alt="Current image: Light logo"][src*="/brand/logo-light"]')
+        ->assertNotPresent('[data-slot="asset-undo"]')
+        ->assertSeeIn(P18dUnsavedBar.' [role="status"]', '1 unsaved change');
+
+    $page->click($images.' [role="radio"]:has-text("Favicon")')
+        ->assertSeeIn(P18dUploader, 'p18e-undo-favicon.png')
+        ->click(P18dUploader.' button:has-text("Undo")')
+        ->assertSeeIn(P18dUploader, 'No image')
+        ->assertSeeIn(P18dUnsavedBar.' [role="status"]', 'No unsaved changes');
+
+    $page->click($radius.' [role="radio"]:has-text("Soft")')
+        ->assertValue('input[aria-label="Exact radius in pixels"]', '4')
+        ->assertSeeIn(P18dUnsavedBar.' [role="status"]', '1 unsaved change');
+
+    p18dSave($page);
+
+    expect(p18dStoredSettings())->toHaveKey('logo_light')
+        ->and(p18dStoredSettings()['brand_radius'])->toBe(4)
+        ->and(Storage::disk(BrandAssets::Disk)->allFiles(BrandAssets::Directory))->toHaveCount(1);
+});
+
 it('[P18d-04] grants admin rights through the search, revokes them, and keeps the dialog open with the server message when the last admin would go', function () {
     $admin = p18dMember('Fran Facilitator', admin: true);
     $hedy = p18dMember('Hedy Lamarr');

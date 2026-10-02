@@ -87,16 +87,14 @@ describe('InvitationCard', () => {
         );
     });
 
-    it('names the inviter and the last day of an expired invitation', () => {
+    it('names the workspace, the inviter and the last day of an expired invitation', () => {
         renderWithProviders(
             <InvitationCard
-                {...pending}
+                isInvalid={false}
                 isExpired
+                workspaceName="Nordlys"
+                inviter={{ name: 'Ada Lovelace', avatarUrl: '' }}
                 expiresAt="2026-09-24T12:00:00+00:00"
-                role={undefined}
-                membersCount={undefined}
-                members={undefined}
-                ssoProviders={[{ key: 'google', label: 'Google' }]}
             />,
         );
 
@@ -106,7 +104,9 @@ describe('InvitationCard', () => {
             }),
         ).toBeTruthy();
         expect(
-            screen.getByText('It was valid until September 24.'),
+            screen.getByText(
+                'Your invitation to join Nordlys was valid until September 24.',
+            ),
         ).toBeTruthy();
         expect(
             screen.getByText(
@@ -132,7 +132,9 @@ describe('InvitationCard', () => {
         );
 
         expect(
-            screen.getByText('It was valid until September 24, 2025.'),
+            screen.getByText(
+                'Your invitation to join Nordlys was valid until September 24, 2025.',
+            ),
         ).toBeTruthy();
     });
 
@@ -146,12 +148,27 @@ describe('InvitationCard', () => {
         ).toBeTruthy();
         expect(
             screen.getByText(
-                'This invitation has expired or was already used.',
+                'Your invitation to join Nordlys has expired or was already used.',
             ),
         ).toBeTruthy();
-        expect(screen.queryByText(/It was valid until/)).toBeNull();
+        expect(screen.queryByText(/was valid until/)).toBeNull();
         expect(
             screen.getByText('Ask an administrator of Nordlys for a new link.'),
+        ).toBeTruthy();
+    });
+
+    it('names the inviter of a used invitation', () => {
+        renderWithProviders(<InvitationCard {...pending} isExpired />);
+
+        expect(
+            screen.getByText(
+                'Your invitation to join Nordlys has expired or was already used.',
+            ),
+        ).toBeTruthy();
+        expect(
+            screen.getByText(
+                'Ask Ada Lovelace for a new link; nothing else to do.',
+            ),
         ).toBeTruthy();
     });
 
