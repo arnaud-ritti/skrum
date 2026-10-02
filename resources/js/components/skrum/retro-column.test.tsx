@@ -26,6 +26,27 @@ function column(props: Partial<RetroColumnProps> = {}) {
 }
 
 describe('RetroColumn', () => {
+    it('shows the composer of the host in place of the "Add a card" button, and only while cards can be added', () => {
+        const composer = <form aria-label="Composer" />;
+        const { rerender } = renderWithProviders(column({ composer }));
+
+        expect(screen.getByRole('form', { name: 'Composer' })).toBeTruthy();
+        expect(screen.queryByRole('button', { name: 'Add a card' })).toBeNull();
+
+        rerender(column({ composer, canAdd: false }));
+
+        expect(screen.queryByRole('form', { name: 'Composer' })).toBeNull();
+    });
+
+    it('still calls onAdd with N when the host has a composer', () => {
+        const onAdd = vi.fn();
+
+        renderWithProviders(column({ onAdd, composer: <form /> }));
+        fireEvent.keyDown(screen.getByRole('region'), { key: 'n' });
+
+        expect(onAdd).toHaveBeenCalledTimes(1);
+    });
+
     it('labels the section with its title and announces the count', () => {
         renderWithProviders(column());
 
@@ -492,10 +513,10 @@ describe('RetroColumn', () => {
             expect(screen.getByText(reason)).toBeTruthy();
         });
 
-        it('offers the colours of the set the column uses', async () => {
+        it('offers the eight colours under their names', async () => {
             const onColorChange = vi.fn();
             const { rerender } = renderWithProviders(
-                column({ onColorChange, color: 'green' }),
+                column({ onColorChange, color: 'moss' }),
             );
 
             openMenu();
@@ -508,15 +529,26 @@ describe('RetroColumn', () => {
                 (await screen.findAllByRole('menuitemradio')).map(
                     (item) => item.textContent,
                 ),
-            ).toEqual(['Green', 'Red', 'Blue', 'Amber', 'Purple', 'Slate']);
+            ).toEqual([
+                'Sun',
+                'Apricot',
+                'Coral',
+                'Plum',
+                'Iris',
+                'Sky',
+                'Lagoon',
+                'Moss',
+            ]);
             expect(
                 screen
-                    .getByRole('menuitemradio', { name: 'Green' })
+                    .getByRole('menuitemradio', { name: 'Moss' })
                     .getAttribute('aria-checked'),
             ).toBe('true');
 
-            fireEvent.click(screen.getByRole('menuitemradio', { name: 'Red' }));
-            expect(onColorChange).toHaveBeenCalledWith('red');
+            fireEvent.click(
+                screen.getByRole('menuitemradio', { name: 'Coral' }),
+            );
+            expect(onColorChange).toHaveBeenCalledWith('coral');
 
             await settle();
             rerender(column({ onColorChange, color: 'moss' }));
@@ -553,8 +585,8 @@ describe('RetroColumn', () => {
         ).toBeTruthy();
     });
 
-    it('maps the server colours to the column context', () => {
-        renderWithProviders(column({ color: 'amber' }));
+    it('takes its colour as the column context', () => {
+        renderWithProviders(column({ color: 'sun' }));
 
         expect(screen.getByRole('region').classList.contains('col-sun')).toBe(
             true,
@@ -599,7 +631,7 @@ describe('RetroColumn', () => {
 
     it('keeps 200 cards inside its own scroller', () => {
         const { container } = renderWithProviders(
-            <RetroColumn id="big" title="Everything" color="blue" count={200}>
+            <RetroColumn id="big" title="Everything" color="sky" count={200}>
                 {Array.from({ length: 200 }, (_, index) => (
                     <article key={index} data-slot="retro-card" tabIndex={0}>
                         {`Card ${index + 1}`}

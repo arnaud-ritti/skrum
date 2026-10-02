@@ -52,6 +52,9 @@ type TwoFactorCardProps = {
     emailCode?: EmailSecondFactor;
 };
 
+/** At this many recovery codes or fewer, the card asks for new ones. */
+const LowRecoveryCodes = 3;
+
 /** `scan`: QR code, key and code. `codes`: the recovery codes, once, to save. */
 type SetupStep = 'scan' | 'codes' | null;
 
@@ -102,6 +105,7 @@ export function TwoFactorCard({
     const [saved, setSaved] = useState(false);
     const [codesVisible, setCodesVisible] = useState(false);
     const [codesLoading, setCodesLoading] = useState(false);
+    const [codesRegenerated, setCodesRegenerated] = useState(false);
     const [turnOffOpen, setTurnOffOpen] = useState(false);
     const [turnOffError, setTurnOffError] = useState<string>();
     const wasEnabled = useRef(enabled);
@@ -245,7 +249,31 @@ export function TwoFactorCard({
             void loadCodes();
         }
 
+        setCodesRegenerated(false);
         setCodesVisible((visible) => !visible);
+    };
+
+    const showRegeneratedCodes = (): void => {
+        setCodesVisible(true);
+        setCodesRegenerated(true);
+        void loadCodes();
+    };
+
+    const codesLeft = summary.recoveryCodesRemaining;
+
+    /** With no code left there is nothing to view: only a regeneration helps. */
+    const hasCodesToView = codesLeft !== 0;
+
+    const lowCodesTitle = (left: number): string => {
+        if (left === 0) {
+            return t('No recovery codes left');
+        }
+
+        if (left === 1) {
+            return t('Only one recovery code left');
+        }
+
+        return t('Only :count recovery codes left', { count: left });
     };
 
     if (step === 'codes') {
@@ -511,29 +539,80 @@ export function TwoFactorCard({
                       })
             }
             action={
-                <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    aria-expanded={codesVisible}
-                    aria-controls={codesId}
-                    className="max-w-full"
-                    onClick={toggleCodes}
-                >
-                    {codesVisible ? (
-                        <EyeOff aria-hidden="true" />
-                    ) : (
-                        <Eye aria-hidden="true" />
+                <div className="flex max-w-full min-w-0 flex-wrap gap-2">
+                    {hasCodesToView && (
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            aria-expanded={codesVisible}
+                            aria-controls={codesVisible ? codesId : undefined}
+                            className="max-w-full"
+                            onClick={toggleCodes}
+                        >
+                            {codesVisible ? (
+                                <EyeOff aria-hidden="true" />
+                            ) : (
+                                <Eye aria-hidden="true" />
+                            )}
+                            <span className="truncate">
+                                {codesVisible
+                                    ? t('Hide recovery codes')
+                                    : t('View recovery codes')}
+                            </span>
+                        </Button>
                     )}
-                    <span className="truncate">
-                        {codesVisible
-                            ? t('Hide recovery codes')
-                            : t('View recovery codes')}
-                    </span>
-                </Button>
+                    <Form
+                        {...regenerateRecoveryCodes.form()}
+                        options={{ preserveScroll: true }}
+                        onSuccess={showRegeneratedCodes}
+                        className="max-w-full min-w-0"
+                    >
+                        {({ processing }) => (
+                            <LoadingButton
+                                type="submit"
+                                variant="outline"
+                                size="sm"
+                                loading={processing}
+                                className="max-w-full"
+                            >
+                                <RotateCcw aria-hidden="true" />
+                                <span className="truncate">
+                                    {t('Regenerate codes')}
+                                </span>
+                            </LoadingButton>
+                        )}
+                    </Form>
+                </div>
             }
         >
-            {codesVisible && (
+            {codesLeft !== null && codesLeft <= LowRecoveryCodes && (
+                <Alert
+                    data-slot="recovery-codes-alert"
+                    variant={codesLeft === 0 ? 'destructive' : 'warning'}
+                    title={lowCodesTitle(codesLeft)}
+                    description={
+                        codesLeft === 0
+                            ? t(
+                                  'If you lose your phone, you may not be able to sign in. Regenerate your codes now.',
+                              )
+                            : t(
+                                  'Regenerate your codes to get :total new ones. The old ones stop working.',
+                                  { total: summary.recoveryCodesTotal },
+                              )
+                    }
+                />
+            )}
+            <p
+                role="status"
+                data-slot="recovery-codes-status"
+                className="sr-only"
+            >
+                {codesRegenerated && hasCodesToView
+                    ? t('New recovery codes generated.')
+                    : ''}
+            </p>
+            {codesVisible && hasCodesToView && (
                 <div id={codesId} className="flex min-w-0 flex-col gap-3">
                     {codesFailures || (
                         <>
@@ -545,33 +624,11 @@ export function TwoFactorCard({
                                     summary.recoveryCodesTotal
                                 }
                             />
-                            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                                <p className="min-w-0 flex-1 basis-56 text-xs text-muted-foreground">
-                                    {t(
-                                        'Each recovery code can be used once. Regenerating them makes the old codes invalid.',
-                                    )}
-                                </p>
-                                <Form
-                                    {...regenerateRecoveryCodes.form()}
-                                    options={{ preserveScroll: true }}
-                                    onSuccess={() => void loadCodes()}
-                                >
-                                    {({ processing }) => (
-                                        <LoadingButton
-                                            type="submit"
-                                            variant="outline"
-                                            size="sm"
-                                            loading={processing}
-                                            className="max-w-full"
-                                        >
-                                            <RotateCcw aria-hidden="true" />
-                                            <span className="truncate">
-                                                {t('Regenerate codes')}
-                                            </span>
-                                        </LoadingButton>
-                                    )}
-                                </Form>
-                            </div>
+                            <p className="text-xs text-muted-foreground">
+                                {t(
+                                    'Each recovery code can be used once. Regenerating them makes the old codes invalid.',
+                                )}
+                            </p>
                         </>
                     )}
                 </div>

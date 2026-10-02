@@ -173,7 +173,7 @@ it('[P08e-02b] offers no "Suggest group names" button during Grouping without a 
 
     $page = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
 
-    $page->assertSeeIn("#card-{$lead->id}", 'Name this group')
+    $page->assertSeeIn("#group-{$lead->id}", 'Name this group')
         ->assertDontSee('Suggest group names')
         ->assertDontSee('Card contents of these groups are sent to');
 });
@@ -190,7 +190,11 @@ it('[P08e-03a] completes a retro without a provider: no summary section, no card
 
     $page = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
 
-    $page->press('Complete')
+    $page->press('Next')
+        ->assertSeeIn('[aria-current="step"]', 'Actions')
+        ->press('Next')
+        ->assertSeeIn('[aria-current="step"]', 'ROTI')
+        ->press('Complete')
         ->assertSeeIn('[aria-current="step"]', 'Completed')
         ->assertSee('Top topics')
         ->assertNotPresent('[aria-labelledby="results-summary"]')
@@ -258,7 +262,7 @@ it('[P08e-04a] creates a retro with the AI summary on by default, the new sessio
         ->assertDontSeeIn('[role="dialog"]', 'Automatic AI summary')
         ->click('[role="dialog"] button[type="submit"]')
         ->assertPathBeginsWith('/retros/')
-        ->assertSeeIn('header > h1', 'Sprint 13 retro');
+        ->assertSeeIn('header >> h1', 'Sprint 13 retro');
 
     expect(Retro::query()->where('title', 'Sprint 13 retro')->firstOrFail()->ai_summary_enabled)->toBeTrue();
 
@@ -287,7 +291,9 @@ it('[P08e-04b] lets the facilitator turn the AI summary off in the board setting
         ->assertSeeIn('[role="dialog"]', 'its board content is sent automatically to Anthropic to write a summary')
         ->click('#retro-ai-summary')
         ->assertAriaAttribute('#retro-ai-summary', 'checked', 'false')
-        ->click('[role="dialog"] button[type="submit"]')
+        ->click('[role="dialog"] button:has-text("Apply")')
+        ->assertSeeIn('[role="dialog"]', 'No changes')
+        ->keys('[role="dialog"]', 'Escape')
         ->assertNotPresent('[role="dialog"]');
 
     expect($retro->fresh()->ai_summary_enabled)->toBeFalse();
@@ -421,10 +427,10 @@ it('[P08e-06] shows suggested group names only to the guest who asked, and appli
         ->assertSee('Card contents of these groups are sent to Anthropic.')
         ->click('Suggest group names')
         ->assertCount($ghost, 2)
-        ->assertSeeIn("#card-{$release->id} {$ghost}", 'Release pain')
-        ->assertSeeIn("#card-{$rituals->id} {$ghost}", 'Team rituals');
+        ->assertSeeIn("#group-{$release->id} {$ghost}", 'Release pain')
+        ->assertSeeIn("#group-{$rituals->id} {$ghost}", 'Team rituals');
 
-    $alicePage->assertSeeIn("#card-{$release->id}", 'Name this group')
+    $alicePage->assertSeeIn("#group-{$release->id}", 'Name this group')
         ->assertNotPresent($ghost)
         ->assertDontSee('Release pain')
         ->assertDontSee('Team rituals');
@@ -449,24 +455,24 @@ it('[P08e-06] shows suggested group names only to the guest who asked, and appli
         ->not->toContain($aliceParticipant->id)
         ->not->toContain($bobParticipant->id);
 
-    $carolPage->click("#card-{$release->id} button:has-text(\"Use this name\")")
-        ->assertPresent("#card-{$release->id} [aria-label=\"Rename group\"]")
+    $carolPage->click("#group-{$release->id} button:has-text(\"Use this name\")")
+        ->assertPresent("#group-{$release->id} [aria-label=\"Rename group\"]")
         ->assertCount($ghost, 1);
 
-    $alicePage->assertSeeIn("#card-{$release->id}", 'Release pain');
+    $alicePage->assertSeeIn("#group-{$release->id}", 'Release pain');
     expect($release->fresh()->group_name)->toBe('Release pain');
 
-    $carolPage->click("#card-{$rituals->id} button:has-text(\"Edit this name\")")
+    $carolPage->click("#group-{$rituals->id} button:has-text(\"Edit this name\")")
         ->assertValue($editor, 'Team rituals')
         ->assertNotPresent($ghost);
 
     $alicePage->assertDontSee('Team rituals');
 
     $carolPage->keys($editor, 'Enter')
-        ->assertPresent("#card-{$rituals->id} [aria-label=\"Rename group\"]")
+        ->assertPresent("#group-{$rituals->id} [aria-label=\"Rename group\"]")
         ->assertDontSee('Suggest group names');
 
-    $alicePage->assertSeeIn("#card-{$rituals->id}", 'Team rituals');
+    $alicePage->assertSeeIn("#group-{$rituals->id}", 'Team rituals');
     expect($rituals->fresh()->group_name)->toBe('Team rituals');
 });
 
@@ -497,7 +503,11 @@ it('[P08e-07] generates the summary, themes, suggested actions and card insights
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
     $carolPage = $this->awaitRealtime($this->joinAsGuest("/join/{$retro->guest_token}", 'Carol Guest'));
 
-    $alicePage->press('Complete')
+    $alicePage->press('Next')
+        ->assertSeeIn('[aria-current="step"]', 'Actions')
+        ->press('Next')
+        ->assertSeeIn('[aria-current="step"]', 'ROTI')
+        ->press('Complete')
         ->assertSeeIn('[aria-current="step"]', 'Completed');
 
     foreach ([$alicePage, $carolPage] as $page) {
@@ -572,7 +582,11 @@ it('[P08e-08] lets the facilitator promote one suggestion and reject another, an
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
     $carolPage = $this->awaitRealtime($this->joinAsGuest("/join/{$retro->guest_token}", 'Carol Guest'));
 
-    $alicePage->press('Complete')
+    $alicePage->press('Next')
+        ->assertSeeIn('[aria-current="step"]', 'Actions')
+        ->press('Next')
+        ->assertSeeIn('[aria-current="step"]', 'ROTI')
+        ->press('Complete')
         ->assertSeeIn($summary, 'Generating the summary…');
 
     $this->workQueue();
@@ -637,7 +651,11 @@ it('[P08e-09] keeps handled suggestions on Regenerate, and on Remove clears the 
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
     $carolPage = $this->awaitRealtime($this->joinAsGuest("/join/{$retro->guest_token}", 'Carol Guest'));
 
-    $alicePage->press('Complete')
+    $alicePage->press('Next')
+        ->assertSeeIn('[aria-current="step"]', 'Actions')
+        ->press('Next')
+        ->assertSeeIn('[aria-current="step"]', 'ROTI')
+        ->press('Complete')
         ->assertSeeIn($summary, 'Generating the summary…');
 
     $this->workQueue();
@@ -712,7 +730,7 @@ it('[P08e-10a] creates a retro from the dialog, then switches its AI summary off
         ->assertNotPresent('#new-retro-ai-summary')
         ->click('[role="dialog"] button[type="submit"]')
         ->assertPathBeginsWith('/retros/')
-        ->assertSeeIn('header > h1', 'Sprint 14 retro');
+        ->assertSeeIn('header >> h1', 'Sprint 14 retro');
 
     $this->awaitRealtime($page)
         ->click('[aria-label="Facilitator menu"]')
@@ -742,7 +760,11 @@ it('[P08e-10b] sends nothing when an opted-out retro is completed, until the fac
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
     $carolPage = $this->awaitRealtime($this->joinAsGuest("/join/{$retro->guest_token}", 'Carol Guest'));
 
-    $alicePage->press('Complete')
+    $alicePage->press('Next')
+        ->assertSeeIn('[aria-current="step"]', 'Actions')
+        ->press('Next')
+        ->assertSeeIn('[aria-current="step"]', 'ROTI')
+        ->press('Complete')
         ->assertSeeIn('[aria-current="step"]', 'Completed')
         ->assertSeeIn($summary, 'Generate summary')
         ->assertSeeIn($summary, 'The board content is sent to Anthropic to write the summary.')
@@ -780,7 +802,7 @@ it('[P08e-10c] offers no "Suggest group names" button on an opted-out retro', fu
 
     $page = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
 
-    $page->assertSeeIn("#card-{$lead->id}", 'Name this group')
+    $page->assertSeeIn("#group-{$lead->id}", 'Name this group')
         ->assertDontSee('Suggest group names');
 
     Http::assertNothingSent();
@@ -805,7 +827,11 @@ it('[P08e-11a] shows the failure to the facilitator after the provider failed th
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
     $carolPage = $this->awaitRealtime($this->joinAsGuest("/join/{$retro->guest_token}", 'Carol Guest'));
 
-    $alicePage->press('Complete')
+    $alicePage->press('Next')
+        ->assertSeeIn('[aria-current="step"]', 'Actions')
+        ->press('Next')
+        ->assertSeeIn('[aria-current="step"]', 'ROTI')
+        ->press('Complete')
         ->assertSeeIn($summary, 'Generating the summary…');
     $carolPage->assertSeeIn($summary, 'Generating the summary…');
 
@@ -859,7 +885,11 @@ it('[P08e-11b] treats a summary still pending after ten minutes as failed and le
 
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
 
-    $alicePage->press('Complete')
+    $alicePage->press('Next')
+        ->assertSeeIn('[aria-current="step"]', 'Actions')
+        ->press('Next')
+        ->assertSeeIn('[aria-current="step"]', 'ROTI')
+        ->press('Complete')
         ->assertSeeIn($summary, 'Generating the summary…');
 
     $this->travel(9)->minutes();

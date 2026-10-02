@@ -238,7 +238,7 @@ it('[P14b-02a] sends a board link to the webhook from the board', function () {
 
     $page->assertSee('Share')
         ->click('Share')
-        ->assertSee('Share the board')
+        ->assertSee('Post a link')
         ->click('Send link to webhook')
         ->assertSee('The message is on its way.')
         ->assertSee('Sending to Webhook…');
@@ -404,6 +404,10 @@ it('[P14b-03c] sends retro.completed with the recap and hides who took part in a
     $page = $this->awaitRealtime($this->signIn($admin, "/retros/{$retro->id}"));
 
     $page->assertSeeIn('[aria-current="step"]', 'Discussing')
+        ->press('Next')
+        ->assertSeeIn('[aria-current="step"]', 'Actions')
+        ->press('Next')
+        ->assertSeeIn('[aria-current="step"]', 'ROTI')
         ->press('Complete')
         ->assertSeeIn('[aria-current="step"]', 'Completed');
 
@@ -534,7 +538,7 @@ it('[P14b-04b] disables the webhook at the tenth failed delivery in a row and se
 
     $page->assertSee('Share')
         ->click('Share')
-        ->assertSee('Share the board')
+        ->assertSee('Post a link')
         ->click('Send link to webhook')
         ->assertSee('The message is on its way.');
 

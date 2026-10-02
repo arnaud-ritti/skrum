@@ -177,7 +177,9 @@ it('[P06-02] keeps a vote cast while a snapshot refetch is in flight', function 
         ->assertVisible('#retro-hide-vote-counts')
         ->click('#retro-hide-vote-counts')
         ->assertAriaAttribute('#retro-hide-vote-counts', 'checked', 'true')
-        ->click('[role="dialog"] button[type="submit"]')
+        ->click('[role="dialog"] button:has-text("Apply")')
+        ->assertSeeIn('[role="dialog"]', 'No changes')
+        ->keys('[role="dialog"]', 'Escape')
         ->assertNotPresent('[role="dialog"]');
 
     $bobPage->assertScript(plan06Held(), 1)
@@ -217,10 +219,10 @@ it('[P06-03] shows a member their own card in a second tab during Writing and ke
     $card = Card::query()->where('content', 'Ship smaller pull requests')->firstOrFail();
 
     $secondTab->assertSeeIn("#card-{$card->id}", 'Ship smaller pull requests')
-        ->assertSeeIn("#card-{$card->id}", 'You')
-        ->assertDontSee('Hidden until writing ends');
+        ->assertSeeIn("#card-{$card->id} [data-slot=\"retro-card-mine\"]", 'You')
+        ->assertDontSee('Hidden until the reveal');
 
-    $alicePage->assertSeeIn("#card-{$card->id}", 'Hidden until writing ends')
+    $alicePage->assertSeeIn("#card-{$card->id}", 'Hidden until the reveal')
         ->assertDontSee('Ship smaller pull requests')
         ->assertScript('document.documentElement.outerHTML.includes("Ship smaller pull requests")', false);
 
@@ -232,7 +234,7 @@ it('[P06-03] shows a member their own card in a second tab during Writing and ke
 
     $secondTab->assertSeeIn("#card-{$card->id}", 'Ship much smaller pull requests');
 
-    $alicePage->assertSeeIn("#card-{$card->id}", 'Hidden until writing ends')
+    $alicePage->assertSeeIn("#card-{$card->id}", 'Hidden until the reveal')
         ->assertScript('document.documentElement.outerHTML.includes("Ship much smaller pull requests")', false);
 
     expect($card->fresh()->content)->toBe('Ship much smaller pull requests');
@@ -314,16 +316,16 @@ it('[P06-06] keeps the delete-column dialog open when the server refuses the del
     $alicePage->click("{$continue} [aria-label=\"Column menu\"]")
         ->assertPresent('[role="menu"]')
         ->click('[role="menuitem"]:has-text("Delete column")')
-        ->assertSeeIn('[role="dialog"]', 'Delete the column Continue?');
+        ->assertSeeIn('[role="alertdialog"]', 'Delete the column Continue?');
 
     $bobPage->fill("{$continue} textarea", 'Keep the demo on Fridays')
         ->click("{$continue} form button:not([type=\"button\"])")
         ->assertSee('Keep the demo on Fridays');
 
     $alicePage->assertCount('article[id^="card-"]', 1)
-        ->click('[role="dialog"] button:has-text("Delete")')
+        ->click('[role="alertdialog"] button:has-text("Delete")')
         ->assertSee('This column still has cards.')
-        ->assertSeeIn('[role="dialog"]', 'Delete the column Continue?')
+        ->assertSeeIn('[role="alertdialog"]', 'Delete the column Continue?')
         ->assertCount('[data-test^="retro-column-"]', 3);
 
     expect(Column::query()->whereKey($columns[2]->id)->exists())->toBeTrue();
@@ -332,26 +334,26 @@ it('[P06-06] keeps the delete-column dialog open when the server refuses the del
 it('[P06-07a] resets the title and the colour of the add-column form after a column is added', function () {
     [$retro, , $alice, $bob] = plan06Board();
     $form = 'form:has([role="radiogroup"])';
-    $blue = "{$form} [role=\"radio\"][aria-label=\"Blue\"]";
-    $green = "{$form} [role=\"radio\"][aria-label=\"Green\"]";
+    $sky = "{$form} [role=\"radio\"][aria-label=\"Sky\"]";
+    $moss = "{$form} [role=\"radio\"][aria-label=\"Moss\"]";
 
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
     $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
 
-    $alicePage->assertAriaAttribute($green, 'checked', 'true')
+    $alicePage->assertAriaAttribute($moss, 'checked', 'true')
         ->fill("{$form} input", 'Kudos')
-        ->click($blue)
-        ->assertAriaAttribute($blue, 'checked', 'true')
+        ->click($sky)
+        ->assertAriaAttribute($sky, 'checked', 'true')
         ->click("{$form} button[type=\"submit\"]")
         ->assertCount('[data-test^="retro-column-"]', 4)
         ->assertValue("{$form} input", '')
-        ->assertAriaAttribute($green, 'checked', 'true')
-        ->assertAriaAttribute($blue, 'checked', 'false');
+        ->assertAriaAttribute($moss, 'checked', 'true')
+        ->assertAriaAttribute($sky, 'checked', 'false');
 
     $bobPage->assertCount('[data-test^="retro-column-"]', 4)
         ->assertSee('Kudos');
 
-    expect($retro->columns()->where('title', 'Kudos')->sole()->color)->toBe(ColumnColor::Blue);
+    expect($retro->columns()->where('title', 'Kudos')->sole()->color)->toBe(ColumnColor::Sky);
 });
 
 it('[P06-07b] disables the assignee select of the action-item form while the item is being saved', function () {

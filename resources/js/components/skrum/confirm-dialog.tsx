@@ -57,6 +57,8 @@ type FormDialogSubmit =
           submitTest?: string;
           /** The form is not complete yet: the submit button is disabled and Enter does nothing. */
           submitDisabled?: boolean;
+          /** Icon of the submit button; a destructive form shows a bin without it. */
+          submitIcon?: LucideIcon;
       }
     /** No submit button: the body explains why, the only action is Cancel. */
     | {
@@ -64,6 +66,7 @@ type FormDialogSubmit =
           onSubmit?: undefined;
           submitTest?: undefined;
           submitDisabled?: undefined;
+          submitIcon?: undefined;
       };
 
 export type FormDialogProps = DialogShellProps & {
@@ -289,6 +292,7 @@ export function FormDialog({
     onSubmit,
     submitTest,
     submitDisabled = false,
+    submitIcon,
     tone = 'default',
     children,
     unavailableMessage,
@@ -298,6 +302,7 @@ export function FormDialog({
     const { pending, guardedOpenChange, run } = usePendingGuard(onOpenChange);
     const restoreFocus = useRestoreFocus(open);
     const destructive = tone === 'destructive';
+    const SubmitIcon = submitIcon ?? (destructive ? Trash2Icon : undefined);
 
     if (unavailableMessage !== undefined) {
         return (
@@ -391,8 +396,8 @@ export function FormDialog({
                                         className={FooterIconClass}
                                     />
                                 ) : (
-                                    destructive && (
-                                        <Trash2Icon
+                                    SubmitIcon !== undefined && (
+                                        <SubmitIcon
                                             aria-hidden="true"
                                             className={FooterIconClass}
                                         />

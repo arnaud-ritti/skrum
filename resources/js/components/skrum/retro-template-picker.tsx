@@ -4,6 +4,7 @@ import {
     CircleCheck,
     Copy,
     History,
+    Pencil,
     Plus,
     Search,
     SearchX,
@@ -23,28 +24,13 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useShortcut } from '@/hooks/use-shortcut';
 import { useTrans } from '@/hooks/use-trans';
+import type { ColumnColor } from '@/lib/retro/types';
 import { cn } from '@/lib/utils';
 
 /** The server's empty board (`TemplateCatalogue::Custom`). */
 export const BlankTemplateId = 'custom';
 
-export type ServerColumnColor =
-    | 'green'
-    | 'red'
-    | 'blue'
-    | 'amber'
-    | 'purple'
-    | 'slate';
-export type DesignColumnColor =
-    | 'sun'
-    | 'apricot'
-    | 'coral'
-    | 'plum'
-    | 'iris'
-    | 'sky'
-    | 'lagoon'
-    | 'moss';
-export type TemplateColumnColor = DesignColumnColor | ServerColumnColor;
+export type TemplateColumnColor = ColumnColor;
 export type TemplateSource = 'builtin' | 'workspace' | 'recent';
 
 export type RetroTemplateColumn = {
@@ -70,6 +56,8 @@ export type RetroTemplate = {
     isTeamDefault?: boolean;
     usageCount?: number;
     workspaceName?: string;
+    /** Who made a workspace template; shown in the detail. */
+    author?: string;
 };
 
 export type RetroTemplateCategory = { value: string; label: string };
@@ -91,13 +79,17 @@ export type RetroTemplatePickerProps = {
     loading?: boolean;
     onUse?: (id: string) => void;
     onDuplicate?: (id: string) => void;
+    /** Offered on a workspace template only. */
+    onEdit?: (id: string) => void;
+    /** Why "Use this template" cannot be used now: the button stays in place, inert, with this sentence. */
+    useDisabledReason?: string;
     onCreate?: () => void;
     /** `/` focuses the search. Off when the host owns that key. */
     shortcuts?: boolean;
     className?: string;
 };
 
-const colorContext: Record<string, string> = {
+const colorContext: Record<ColumnColor, string> = {
     sun: 'col-sun',
     apricot: 'col-apricot',
     coral: 'col-coral',
@@ -106,16 +98,10 @@ const colorContext: Record<string, string> = {
     sky: 'col-sky',
     lagoon: 'col-lagoon',
     moss: 'col-moss',
-    amber: 'col-sun',
-    red: 'col-coral',
-    blue: 'col-sky',
-    green: 'col-moss',
-    purple: 'col-plum',
-    slate: 'col-iris',
 };
 
 export function columnColorClass(color: string): string {
-    return colorContext[color] ?? 'col-iris';
+    return colorContext[color as ColumnColor] ?? 'col-iris';
 }
 
 const SearchDebounceMs = 300;
@@ -478,6 +464,8 @@ function DetailPanel({
     blankId,
     onUse,
     onDuplicate,
+    onEdit,
+    useDisabledReason,
     categoryLabel,
 }: {
     template: RetroTemplate | undefined;
@@ -485,15 +473,19 @@ function DetailPanel({
     blankId: string;
     onUse?: (id: string) => void;
     onDuplicate?: (id: string) => void;
+    onEdit?: (id: string) => void;
+    useDisabledReason?: string;
     categoryLabel?: string;
 }) {
     const { t } = useTrans();
+    const reasonId = useId();
 
     if (template === undefined && !blank) {
         return null;
     }
 
     const id = template?.id ?? blankId;
+    const canEdit = onEdit !== undefined && template?.source === 'workspace';
     const name = template?.name ?? t('Start from scratch');
     const description =
         template === undefined
@@ -529,6 +521,14 @@ function DetailPanel({
             {description ? (
                 <p className="text-sm text-muted-foreground">{description}</p>
             ) : null}
+            {template?.author !== undefined && (
+                <p
+                    data-slot="template-author"
+                    className="text-xs wrap-anywhere text-muted-foreground"
+                >
+                    {t('By :name', { name: template.author })}
+                </p>
+            )}
             {template !== undefined && template.columns.length > 0 && (
                 <MiniBoard columns={template.columns} />
             )}
@@ -536,13 +536,28 @@ function DetailPanel({
                 <DetailSettings defaults={template.defaults} />
             )}
             {(onUse !== undefined ||
-                (onDuplicate !== undefined && template !== undefined)) && (
+                (onDuplicate !== undefined && template !== undefined) ||
+                canEdit) && (
                 <div className="flex min-w-0 flex-wrap gap-2">
                     {onUse !== undefined && (
                         <Button
                             type="button"
-                            className="max-w-full"
-                            onClick={() => onUse(id)}
+                            className="max-w-full aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
+                            aria-disabled={
+                                useDisabledReason === undefined
+                                    ? undefined
+                                    : true
+                            }
+                            aria-describedby={
+                                useDisabledReason === undefined
+                                    ? undefined
+                                    : reasonId
+                            }
+                            onClick={() => {
+                                if (useDisabledReason === undefined) {
+                                    onUse(id);
+                                }
+                            }}
                         >
                             <span className="truncate">
                                 {t('Use this template')}
@@ -562,6 +577,26 @@ function DetailPanel({
                                 {t('Duplicate and edit')}
                             </span>
                         </Button>
+                    )}
+                    {canEdit && (
+                        <Button
+                            type="button"
+                            variant="outline"
+                            className="max-w-full"
+                            onClick={() => onEdit?.(id)}
+                        >
+                            <Pencil aria-hidden />
+                            <span className="truncate">{t('Edit')}</span>
+                        </Button>
+                    )}
+                    {onUse !== undefined && useDisabledReason !== undefined && (
+                        <p
+                            id={reasonId}
+                            data-slot="template-use-reason"
+                            className="basis-full text-xs text-muted-foreground"
+                        >
+                            {useDisabledReason}
+                        </p>
                     )}
                 </div>
             )}
@@ -618,6 +653,8 @@ export function RetroTemplatePicker({
     loading = false,
     onUse,
     onDuplicate,
+    onEdit,
+    useDisabledReason,
     onCreate,
     shortcuts = true,
     className,
@@ -730,7 +767,7 @@ export function RetroTemplatePicker({
         }
 
         if (event.key === 'Enter') {
-            if (onUse === undefined) {
+            if (onUse === undefined || useDisabledReason !== undefined) {
                 return;
             }
 
@@ -971,6 +1008,8 @@ export function RetroTemplatePicker({
                                 blankId={blankId}
                                 onUse={onUse}
                                 onDuplicate={onDuplicate}
+                                onEdit={onEdit}
+                                useDisabledReason={useDisabledReason}
                                 categoryLabel={
                                     categoryLabelOf(
                                         selectedTemplate?.category,

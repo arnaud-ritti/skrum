@@ -29,15 +29,6 @@ const colors: ColumnColor[] = [
     'moss',
 ];
 
-const serverColors: ColumnColor[] = [
-    'green',
-    'red',
-    'blue',
-    'amber',
-    'purple',
-    'slate',
-];
-
 function DiscussExample() {
     const { t } = useTrans();
     const [focused, setFocused] = useState(true);
@@ -319,7 +310,7 @@ export default function RetroCardSection() {
                 <Example label={t('My card: You badge, edit and delete')}>
                     <RetroCard
                         id="mine"
-                        color="green"
+                        color="moss"
                         text={t('Code review happens too late')}
                         author={withAvatar}
                         isMine
@@ -331,7 +322,7 @@ export default function RetroCardSection() {
                 <Example label={t('GIF with text, comments')}>
                     <RetroCard
                         id="gif-text"
-                        color="blue"
+                        color="sky"
                         text={t('The release on Friday, in one picture.')}
                         gif={sampleGif}
                         author={withAvatar}
@@ -345,7 +336,7 @@ export default function RetroCardSection() {
                 <Example label={t('GIF only, no text')}>
                     <RetroCard
                         id="gif-only"
-                        color="amber"
+                        color="sun"
                         text={null}
                         gif={sampleGif}
                         author={null}
@@ -355,7 +346,7 @@ export default function RetroCardSection() {
                 <Example label={t('Insight: sentiment and category')}>
                     <RetroCard
                         id="insight"
-                        color="red"
+                        color="coral"
                         text={t(
                             'We find out about scope changes in the middle of the sprint.',
                         )}
@@ -373,7 +364,7 @@ export default function RetroCardSection() {
                 <Example label={t('Comments open, thread in the card')}>
                     <RetroCard
                         id="thread"
-                        color="purple"
+                        color="plum"
                         text={t('Previous retros had no follow-up on actions')}
                         author={ines}
                         commentCount={1}
@@ -388,7 +379,7 @@ export default function RetroCardSection() {
                 <Example label={t('Menu and footer slot')}>
                     <RetroCard
                         id="menu"
-                        color="slate"
+                        color="iris"
                         text={t('E2E tests break one time out of three in CI.')}
                         author={camille}
                         votes={{ total: 4, mine: 0 }}
@@ -472,20 +463,6 @@ export default function RetroCardSection() {
                             votes={{ total: 0, mine: 0 }}
                         />
                     </div>
-                </div>
-            </Example>
-            <Example label={t('Colors sent by the server today')}>
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                    {serverColors.map((color) => (
-                        <RetroCard
-                            key={color}
-                            id={color}
-                            color={color}
-                            text={t('Sample card text')}
-                            author={camille}
-                            votes={{ total: 2, mine: 0 }}
-                        />
-                    ))}
                 </div>
             </Example>
             <Example label={t('All column colors')}>

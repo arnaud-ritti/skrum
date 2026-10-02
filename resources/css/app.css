@@ -464,6 +464,7 @@
   .col-lagoon { --col: var(--skrum-col-lagoon); --col-border: var(--skrum-col-lagoon-border); --col-text: var(--skrum-col-lagoon-text); }
   .col-moss { --col: var(--skrum-col-moss); --col-border: var(--skrum-col-moss-border); --col-text: var(--skrum-col-moss-text); }
   .bg-dotgrid { background-color: var(--skrum-canvas); background-image: radial-gradient(var(--skrum-canvas-dot) 1.2px, transparent 1.3px); background-size: 1.25rem 1.25rem; }
+  .bg-stripes { background-image: repeating-linear-gradient(135deg, var(--muted) 0 0.375rem, color-mix(in oklch, var(--muted-foreground) 22%, var(--muted)) 0.375rem 0.75rem); }
   .card-dragging { transform: rotate(-2deg) scale(1.03); box-shadow: var(--shadow-drag); z-index: 70; }
   .flip-3d { transform-style: preserve-3d; transition: transform 520ms var(--ease-flip); }
   .backface-hidden { backface-visibility: hidden; }

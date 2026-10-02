@@ -20,3 +20,7 @@ Differences with the mockup that remain, by screen (rows of the plan):
 | Team settings, sidebar entry | without a provider the entry opens the team page, not a settings screen | none: the mockup has no state without integrations |
 
 Stale captures (to regenerate at the end-of-phase run): the French bench captures that show "Off" (toggle group, checkbox, session settings summary: "Repos" became "Désactivé"), `settings-notifications-*-390-*` (the sub-navigation now scrolls to its current entry), and every capture that shows the sidebar of a team of one.
+
+## Integration of wave 4 (2026-10-02): RW-S4, recovery codes
+
+Merged with its fix pass; no test was run. Row **D-95** records the difference: two buttons on the row ("View recovery codes", absent at zero codes, and "Regenerate codes"), no "generated on" date, a warning at three codes or fewer and an error at zero whose wording has no mockup, no button inside the alert, and no confirmation before a regeneration (owner decision). Stale capture: `settings-security-two-factor-on-*` (two buttons on the row).

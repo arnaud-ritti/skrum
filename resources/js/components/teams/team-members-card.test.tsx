@@ -154,7 +154,7 @@ describe('the members card of a team', () => {
         );
         await user.click(
             within(screen.getByRole('alertdialog')).getByRole('button', {
-                name: 'Remove',
+                name: 'Remove from team',
             }),
         );
         await act(async () => {});
@@ -182,7 +182,7 @@ describe('the members card of a team', () => {
         );
         await user.click(
             within(screen.getByRole('alertdialog')).getByRole('button', {
-                name: 'Remove',
+                name: 'Remove from team',
             }),
         );
 

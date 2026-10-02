@@ -64,7 +64,7 @@ describe('the mood card of a team', () => {
         expect(screen.getByRole('status').textContent).toBe('Loading chart');
         expect(
             container.querySelectorAll(
-                '[data-slot="team-mood-loading"] [data-slot="skeleton"]',
+                '[data-slot="team-trend-loading"] [data-slot="skeleton"]',
             ).length,
         ).toBeGreaterThan(0);
         expect(
@@ -72,7 +72,7 @@ describe('the mood card of a team', () => {
         ).toBeNull();
     });
 
-    it('draws the mood first: one point per retro with a health score, on 10, with the change since the previous retro', () => {
+    it('draws one point per retro with a health score, on 10, with the change since the previous retro, and no ROTI tab', () => {
         const { container } = renderWithProviders(
             <TeamMoodCard trend={trend} />,
         );
@@ -80,11 +80,8 @@ describe('the mood card of a team', () => {
         expect(
             screen.getByRole('heading', { level: 2, name: 'Mood trend' }),
         ).toBeTruthy();
-        expect(
-            screen
-                .getByRole('tab', { name: 'Mood' })
-                .getAttribute('aria-selected'),
-        ).toBe('true');
+        expect(screen.queryByRole('tab', { name: 'Mood' })).toBeNull();
+        expect(screen.queryByRole('tab', { name: 'ROTI' })).toBeNull();
         expect(dots(container)).toHaveLength(2);
         expect(
             container.querySelector('[data-slot="mood-trend-kpi"]')
@@ -94,28 +91,6 @@ describe('the mood card of a team', () => {
             container.querySelector('[data-slot="mood-trend-delta"]')
                 ?.textContent,
         ).toBe('+1.5 since the previous retro');
-    });
-
-    it('draws the ROTI averages on the ROTI tab, on the scale of the ROTI', async () => {
-        const user = userEvent.setup();
-        const { container } = renderWithProviders(
-            <TeamMoodCard trend={trend} />,
-        );
-
-        await user.click(screen.getByRole('tab', { name: 'ROTI' }));
-
-        expect(dots(container)).toHaveLength(3);
-        expect(
-            container.querySelector('[data-slot="mood-trend-kpi"]')
-                ?.textContent,
-        ).toBe('4.0');
-        expect(
-            container.querySelector('[data-slot="mood-trend-delta"]')
-                ?.textContent,
-        ).toBe('−0.3 since the previous retro');
-        expect(
-            container.querySelector('[data-slot="mood-trend-threshold"]'),
-        ).not.toBeNull();
     });
 
     it('lists the same values in the table view, each retro as a link', async () => {
@@ -137,40 +112,12 @@ describe('the mood card of a team', () => {
                 .getByRole('link', { name: 'Sprint 42' })
                 .getAttribute('href'),
         ).toBe('/retros/42');
-
-        await user.click(screen.getByRole('tab', { name: 'ROTI' }));
-
-        expect(
-            within(screen.getByRole('table'))
-                .getAllByRole('row')
-                .map((row) => row.textContent),
-        ).toEqual([
-            'RetroAverage ROTIVoters',
-            'Sprint 403.84',
-            'Sprint 414.33',
-            'Sprint 424.05',
-        ]);
     });
 
-    it('opens on the ROTI when no retro has a health score', () => {
+    it('says so for a team without a health score, even when it has ROTI votes', () => {
         const { container } = renderWithProviders(
             <TeamMoodCard trend={[trend[0]]} />,
         );
-
-        expect(
-            screen
-                .getByRole('tab', { name: 'ROTI' })
-                .getAttribute('aria-selected'),
-        ).toBe('true');
-        expect(dots(container)).toHaveLength(1);
-        expect(
-            container.querySelector('[data-slot="mood-trend-delta"]'),
-        ).toBeNull();
-    });
-
-    it('says so on each tab for a team without data', async () => {
-        const user = userEvent.setup();
-        const { container } = renderWithProviders(<TeamMoodCard trend={[]} />);
 
         expect(
             container.querySelector('[data-slot="mood-trend-empty"]')
@@ -179,29 +126,23 @@ describe('the mood card of a team', () => {
         expect(
             container.querySelector('[data-slot="mood-trend-kpi"]'),
         ).toBeNull();
-
-        await user.click(screen.getByRole('tab', { name: 'ROTI' }));
-
-        expect(
-            container.querySelector('[data-slot="mood-trend-empty"]')
-                ?.textContent,
-        ).toBe('No ROTI results yet.');
     });
 
-    it('keeps the chart, not the skeleton, while the trend is fetched again', () => {
-        const { container, rerender } = renderWithProviders(
-            <TeamMoodCard trend={trend} />,
+    it('says the trend could not be loaded and offers to try again', async () => {
+        const onRetry = vi.fn();
+        const { container } = renderWithProviders(
+            <TeamMoodCard failed onRetry={onRetry} />,
         );
 
-        rerender(<TeamMoodCard />);
-
+        expect(screen.getByRole('alert').textContent).toBe(
+            'The trend could not be loaded.',
+        );
         expect(
-            container.querySelector('[data-slot="team-mood-loading"]'),
+            container.querySelector('[data-slot="mood-trend-chart"]'),
         ).toBeNull();
-        expect(dots(container)).toHaveLength(2);
 
-        rerender(<TeamMoodCard trend={[trend[2]]} />);
+        await userEvent.click(screen.getByRole('button', { name: 'Retry' }));
 
-        expect(dots(container)).toHaveLength(1);
+        expect(onRetry).toHaveBeenCalledOnce();
     });
 });

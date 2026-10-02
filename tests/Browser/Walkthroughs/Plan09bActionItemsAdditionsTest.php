@@ -173,7 +173,7 @@ it('[P09b-01b] never shows the previous action items to a guest', function () {
     $carolPage = $this->awaitRealtime($this->joinAsGuest("/join/{$retro->guest_token}", 'Carol Guest'));
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
 
-    $carolPage->assertSeeIn('header > h1', 'Sprint 12');
+    $carolPage->assertSeeIn('header >> h1', 'Sprint 12');
 
     $alicePage->click("{$card} [aria-label=\"Mark as done\"]")
         ->assertPresent("{$card} [aria-label=\"Reopen\"]")

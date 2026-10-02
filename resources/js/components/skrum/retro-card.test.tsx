@@ -57,6 +57,31 @@ describe('RetroCard', () => {
         ).toBeTruthy();
     });
 
+    it('names the editing field "Card text", or as the host says', () => {
+        const { rerender } = renderWithProviders(card({ editing: true }));
+
+        expect(screen.getByRole('textbox', { name: 'Card text' })).toBeTruthy();
+
+        rerender(card({ editing: true, labels: { editor: 'Add a card…' } }));
+
+        expect(
+            screen
+                .getByRole('textbox', { name: 'Add a card…' })
+                .getAttribute('placeholder'),
+        ).toBe('Add a card…');
+    });
+
+    it('takes the focus when editing starts, unless the host keeps it', () => {
+        const { unmount } = renderWithProviders(card({ editing: true }));
+
+        expect(document.activeElement).toBe(screen.getByRole('textbox'));
+
+        unmount();
+        renderWithProviders(card({ editing: true, autoFocusEditor: false }));
+
+        expect(document.activeElement).not.toBe(screen.getByRole('textbox'));
+    });
+
     it('shows Anonymous instead of the author', () => {
         renderWithProviders(card({ author: null }));
 
@@ -133,6 +158,68 @@ describe('RetroCard', () => {
 
         expect((button as HTMLButtonElement).disabled).toBe(true);
         expect(onVote).not.toHaveBeenCalled();
+    });
+
+    it('takes a vote back when the budget is spent, by the button and by Shift+V', () => {
+        const onVote = vi.fn();
+        renderWithProviders(
+            card({
+                votes: { total: 1, mine: 1 },
+                canVote: false,
+                canUnvote: true,
+                onVote,
+            }),
+        );
+
+        fireEvent.keyDown(screen.getByRole('article'), { key: 'v' });
+        expect(onVote).not.toHaveBeenCalled();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Remove a vote' }));
+        fireEvent.keyDown(screen.getByRole('article'), {
+            key: 'V',
+            shiftKey: true,
+        });
+
+        expect(onVote.mock.calls).toEqual([[-1], [-1]]);
+    });
+
+    it('has no "Remove a vote" where no vote can be taken back', () => {
+        const { rerender } = renderWithProviders(
+            card({ votes: { total: 1, mine: 1 }, canVote: false }),
+        );
+
+        expect(
+            screen.queryByRole('button', { name: 'Remove a vote' }),
+        ).toBeNull();
+
+        rerender(
+            card({
+                votes: { total: 1, mine: 0 },
+                canVote: true,
+                canUnvote: true,
+            }),
+        );
+
+        expect(
+            screen.queryByRole('button', { name: 'Remove a vote' }),
+        ).toBeNull();
+    });
+
+    it('keeps the focus on the card when the last vote is taken back from a spent budget', () => {
+        const spent = (mine: number) =>
+            card({
+                votes: { total: mine, mine },
+                canVote: false,
+                canUnvote: true,
+            });
+        const { rerender } = renderWithProviders(spent(1));
+        const remove = screen.getByRole('button', { name: 'Remove a vote' });
+
+        remove.focus();
+        fireEvent.click(remove);
+        rerender(spent(0));
+
+        expect(document.activeElement).toBe(screen.getByRole('article'));
     });
 
     it('keeps the reason of a closed vote reachable next to the disabled button', () => {
@@ -350,6 +437,68 @@ describe('RetroCard', () => {
             ).toBeTruthy();
         });
 
+        it('disables the chips of a card nobody may react to, and keeps the names reachable', async () => {
+            renderWithProviders(
+                card({
+                    reactions: [
+                        {
+                            emoji: '👍',
+                            count: 1,
+                            mine: false,
+                            names: ['Alice'],
+                        },
+                        { emoji: '🎉', count: 1, mine: false },
+                    ],
+                }),
+            );
+
+            const chip = screen.getByRole('button', {
+                name: '👍, 1 reaction',
+            }) as HTMLButtonElement;
+            const reader = chip.closest(
+                '[data-slot="retro-card-reaction-reader"]',
+            ) as HTMLElement;
+
+            expect(chip.disabled).toBe(true);
+            expect(reader.tabIndex).toBe(0);
+            expect(
+                screen
+                    .getByRole('button', { name: '🎉, 1 reaction' })
+                    .closest('[data-slot="retro-card-reaction-reader"]'),
+            ).toBeNull();
+
+            fireEvent.focus(reader);
+
+            expect(
+                (await screen.findAllByText('Alice')).length,
+            ).toBeGreaterThan(0);
+        });
+
+        it('leaves the chips enabled, without a wrapper, when reacting is allowed', () => {
+            renderWithProviders(
+                card({
+                    onReact: vi.fn(),
+                    reactions: [
+                        {
+                            emoji: '👍',
+                            count: 1,
+                            mine: false,
+                            names: ['Alice'],
+                        },
+                    ],
+                }),
+            );
+
+            const chip = screen.getByRole('button', {
+                name: '👍, 1 reaction',
+            }) as HTMLButtonElement;
+
+            expect(chip.disabled).toBe(false);
+            expect(
+                chip.closest('[data-slot="retro-card-reaction-reader"]'),
+            ).toBeNull();
+        });
+
         it('names who reacted in a tooltip', async () => {
             renderWithProviders(
                 card({
@@ -530,14 +679,14 @@ describe('RetroCard', () => {
             );
         });
 
-        it('accepts the colours the server sends today', () => {
-            const { rerender } = renderWithProviders(card({ color: 'green' }));
+        it('takes the column colour as its colour context', () => {
+            const { rerender } = renderWithProviders(card({ color: 'moss' }));
 
             expect(
                 screen.getByRole('article').classList.contains('col-moss'),
             ).toBe(true);
 
-            rerender(card({ color: 'slate' }));
+            rerender(card({ color: 'iris' }));
 
             expect(
                 screen.getByRole('article').classList.contains('col-iris'),
@@ -794,5 +943,29 @@ describe('RetroCard', () => {
                 'Maximilienne-Alexandrine',
             );
         });
+    });
+});
+
+describe('RetroCard votes on a phone', () => {
+    it('gives the vote and its take-back a 44px target below md', () => {
+        const { container } = renderWithProviders(
+            <RetroCard
+                id="c1"
+                text="Slow CI"
+                color="moss"
+                votes={{ total: 2, mine: 1 }}
+                canVote
+                onVote={() => {}}
+            />,
+        );
+        const vote = container.querySelector(
+            '[data-slot="retro-card-vote"]',
+        ) as HTMLElement;
+
+        expect(vote.className).toContain('max-md:h-11');
+        expect(vote.className).toContain('max-md:min-w-11');
+        expect(
+            screen.getByRole('button', { name: 'Remove a vote' }).className,
+        ).toContain('max-md:size-11');
     });
 });

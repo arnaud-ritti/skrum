@@ -56,6 +56,8 @@ export type WhiteboardTemplateSummary = {
 export type EstimatedTaskRow = {
     id: string;
     title: string;
+    /** The key of the issue an imported task comes from. */
+    ticketKey: string | null;
     gameId: string;
     gameTitle: string;
     estimate: string;

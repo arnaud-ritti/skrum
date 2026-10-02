@@ -180,8 +180,10 @@ export type PokerSnapshot = {
     players: PokerPlayer[];
     tasks: PokerTask[];
     current: PokerCurrent | null;
-    /** Both are null for a guest. `decks` is the saved decks page of the team. */
-    links: { team: string | null; decks: string | null };
+    /** The route keys of the team and of its workspace; null for a guest. */
+    team: { id: string; workspace: string } | null;
+    /** Null for a guest. */
+    links: { team: string | null };
     share: ShareAvailability;
     deliveries: IntegrationDelivery[];
     integrations: PokerIntegrations | null;

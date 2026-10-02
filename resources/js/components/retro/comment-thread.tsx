@@ -1,7 +1,13 @@
-import { Pencil, Reply, Trash2 } from 'lucide-react';
+import { CornerDownRight, Pencil, Trash2, VenetianMask } from 'lucide-react';
 import { useRef, useState } from 'react';
+import { PersonAvatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { useTrans } from '@/hooks/use-trans';
 import type { Person } from '@/lib/retro/types';
 import { useBoard } from './board-context';
@@ -34,6 +40,15 @@ type Props<T extends ThreadComment> = {
     composerNote?: string;
 };
 
+export const CommentMaxLength = 500;
+
+const iconButtonClass =
+    'inline-flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground outline-none hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50';
+
+/**
+ * The comments of a card or of a survey: threads one level deep, a field to
+ * comment and, on each thread, a field to reply.
+ */
 export function CommentThreadList<T extends ThreadComment>({
     threads,
     canWrite,
@@ -43,7 +58,10 @@ export function CommentThreadList<T extends ThreadComment>({
     const { t } = useTrans();
 
     return (
-        <div className="mt-2 space-y-3 border-l pl-3">
+        <div
+            data-slot="comment-threads"
+            className="flex min-w-0 flex-col gap-3 border-t border-border pt-3"
+        >
             {threads.map((thread) => (
                 <ThreadItem
                     key={thread.id}
@@ -52,6 +70,11 @@ export function CommentThreadList<T extends ThreadComment>({
                     actions={actions}
                 />
             ))}
+            {!canWrite && threads.length === 0 && (
+                <p className="text-xs text-muted-foreground">
+                    {t('No comments yet.')}
+                </p>
+            )}
             {canWrite && composerNote && (
                 <p className="text-xs text-muted-foreground">{composerNote}</p>
             )}
@@ -80,7 +103,7 @@ function ThreadItem<T extends ThreadComment>({
     const [replying, setReplying] = useState(false);
 
     return (
-        <div className="space-y-2">
+        <div data-slot="comment-thread" className="flex min-w-0 flex-col gap-2">
             <CommentItem
                 comment={thread}
                 canWrite={canWrite}
@@ -88,20 +111,19 @@ function ThreadItem<T extends ThreadComment>({
                 actions={actions}
             />
             {thread.replies.length > 0 && (
-                <Button
-                    size="sm"
-                    variant="link"
-                    className="h-auto p-0 text-xs"
+                <button
+                    type="button"
                     aria-expanded={expanded}
                     onClick={() => setExpanded(!expanded)}
+                    className="max-w-full self-start truncate rounded-sm text-xs font-semibold text-skrum-primary-text underline underline-offset-4 outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                     {thread.replies.length === 1
                         ? t('1 reply')
                         : t(':count replies', { count: thread.replies.length })}
-                </Button>
+                </button>
             )}
             {expanded && (
-                <div className="space-y-2 pl-4">
+                <div className="flex min-w-0 flex-col gap-2 border-l-2 border-border pl-3">
                     {thread.replies.map((reply) => (
                         <CommentItem
                             key={reply.id}
@@ -115,24 +137,26 @@ function ThreadItem<T extends ThreadComment>({
             )}
             {canWrite && !replying && !thread.deleted && (
                 <Button
+                    type="button"
                     size="sm"
                     variant="ghost"
-                    className="h-6 gap-1 text-xs"
+                    className="max-w-full self-start"
                     onClick={() => {
                         setReplying(true);
                         setExpanded(true);
                     }}
                 >
-                    <Reply className="size-3" />
-                    {t('Reply')}
+                    <CornerDownRight aria-hidden />
+                    <span className="truncate">{t('Reply')}</span>
                 </Button>
             )}
             {replying && (
-                <div className="pl-4">
+                <div className="border-l-2 border-border pl-3">
                     <CommentForm
                         actions={actions}
                         target={{ parentCommentId: thread.id }}
                         placeholder={t('Write a reply…')}
+                        autoFocus
                         onDone={() => setReplying(false)}
                     />
                 </div>
@@ -189,41 +213,76 @@ function CommentItem<T extends ThreadComment>({
                 actions={actions}
                 target={{ comment }}
                 placeholder={t('Edit comment')}
+                autoFocus
                 onDone={() => setEditing(false)}
             />
         );
     }
 
+    const { author } = comment;
+    const avatarUrl = author
+        ? ctx.board.participants.find(
+              (participant) => participant.id === author.id,
+          )?.avatarUrl
+        : null;
+
     return (
-        <div className="text-xs">
-            <p className="font-medium">
-                {comment.author?.name ?? t('Anonymous')}
-            </p>
-            <p className="break-words whitespace-pre-wrap">{comment.content}</p>
+        <div data-slot="comment" className="flex min-w-0 items-start gap-2">
+            {author ? (
+                <PersonAvatar
+                    name={author.name}
+                    src={avatarUrl}
+                    size="xs"
+                    decorative
+                />
+            ) : (
+                <VenetianMask
+                    className="mt-0.5 size-4 shrink-0 text-muted-foreground"
+                    aria-hidden
+                />
+            )}
+            <div className="min-w-0 flex-1 text-xs">
+                <p className="truncate font-semibold">
+                    {author?.name ?? t('Anonymous')}
+                </p>
+                <p className="break-words whitespace-pre-wrap">
+                    {comment.content}
+                </p>
+            </div>
             {(canEdit || canDelete) && (
-                <div className="mt-1 flex gap-1">
+                <div className="flex shrink-0 items-center">
                     {canEdit && (
-                        <Button
-                            size="icon"
-                            variant="ghost"
-                            className="size-6"
-                            aria-label={t('Edit comment')}
-                            onClick={() => setEditing(true)}
-                        >
-                            <Pencil className="size-3" />
-                        </Button>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <button
+                                    type="button"
+                                    aria-label={t('Edit comment')}
+                                    onClick={() => setEditing(true)}
+                                    className={iconButtonClass}
+                                >
+                                    <Pencil className="size-4" aria-hidden />
+                                </button>
+                            </TooltipTrigger>
+                            <TooltipContent>{t('Edit comment')}</TooltipContent>
+                        </Tooltip>
                     )}
                     {canDelete && (
-                        <Button
-                            size="icon"
-                            variant="ghost"
-                            className="size-6"
-                            aria-label={t('Delete comment')}
-                            disabled={removing}
-                            onClick={() => void remove()}
-                        >
-                            <Trash2 className="size-3" />
-                        </Button>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <button
+                                    type="button"
+                                    aria-label={t('Delete comment')}
+                                    disabled={removing}
+                                    onClick={() => void remove()}
+                                    className={`${iconButtonClass} hover:text-skrum-destructive-text`}
+                                >
+                                    <Trash2 className="size-4" aria-hidden />
+                                </button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                {t('Delete comment')}
+                            </TooltipContent>
+                        </Tooltip>
                     )}
                 </div>
             )}
@@ -237,11 +296,13 @@ function CommentForm<T extends ThreadComment>({
     actions,
     target,
     placeholder,
+    autoFocus = false,
     onDone,
 }: {
     actions: CommentThreadActions<T>;
     target: FormTarget<T>;
     placeholder: string;
+    autoFocus?: boolean;
     onDone?: () => void;
 }) {
     const { t } = useTrans();
@@ -284,7 +345,8 @@ function CommentForm<T extends ThreadComment>({
 
     return (
         <form
-            className="space-y-1"
+            data-slot="comment-form"
+            className="flex min-w-0 flex-col gap-1.5"
             onSubmit={(event) => {
                 event.preventDefault();
                 void submit();
@@ -292,31 +354,49 @@ function CommentForm<T extends ThreadComment>({
         >
             <Textarea
                 value={content}
-                maxLength={500}
+                maxLength={CommentMaxLength}
                 rows={2}
+                autoFocus={autoFocus}
                 placeholder={placeholder}
                 aria-label={placeholder}
+                className="min-h-14 text-xs"
                 onChange={(event) => setContent(event.target.value)}
                 onKeyDown={(event) => {
-                    if (event.key === 'Enter' && !event.shiftKey) {
+                    if (
+                        event.key === 'Enter' &&
+                        !event.shiftKey &&
+                        !event.nativeEvent.isComposing
+                    ) {
                         event.preventDefault();
                         void submit();
                     }
+
+                    if (event.key === 'Escape' && onDone) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        onDone();
+                    }
                 }}
             />
-            <div className="flex justify-end gap-1">
+            <div className="flex min-w-0 flex-wrap justify-end gap-1.5">
                 {onDone && (
                     <Button
                         type="button"
                         size="sm"
                         variant="ghost"
+                        className="max-w-full"
                         onClick={onDone}
                     >
-                        {t('Cancel')}
+                        <span className="truncate">{t('Cancel')}</span>
                     </Button>
                 )}
-                <Button size="sm" disabled={sending || content.trim() === ''}>
-                    {submitLabel}
+                <Button
+                    type="submit"
+                    size="sm"
+                    className="max-w-full"
+                    disabled={sending || content.trim() === ''}
+                >
+                    <span className="truncate">{submitLabel}</span>
                 </Button>
             </div>
         </form>

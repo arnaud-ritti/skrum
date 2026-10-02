@@ -23,9 +23,9 @@ function template(
             {
                 title: 'Start',
                 description: 'What should begin?',
-                color: 'green',
+                color: 'moss',
             },
-            { title: 'Stop', description: null, color: 'red' },
+            { title: 'Stop', description: null, color: 'coral' },
         ],
         ...overrides,
     };
@@ -49,10 +49,10 @@ describe('toRetroTemplate', () => {
             columns: [
                 {
                     title: 'Start',
-                    color: 'green',
+                    color: 'moss',
                     description: 'What should begin?',
                 },
-                { title: 'Stop', color: 'red', description: null },
+                { title: 'Stop', color: 'coral', description: null },
             ],
         });
         expect(toRetroTemplate(catalogue[2]).source).toBe('builtin');
@@ -132,8 +132,8 @@ describe('draft columns', () => {
                 color,
             ]),
         ).toEqual([
-            ['Start', 'What should begin?', 'green'],
-            ['Stop', null, 'red'],
+            ['Start', 'What should begin?', 'moss'],
+            ['Stop', null, 'coral'],
         ]);
         expect(new Set(draft.map((column) => column.id)).size).toBe(2);
     });
@@ -152,7 +152,7 @@ describe('draft columns', () => {
         expect(sameColumns([draft[1], draft[0]], source.columns)).toBe(false);
         expect(
             sameColumns(
-                [{ ...draft[0], color: 'blue' }, draft[1]],
+                [{ ...draft[0], color: 'sky' }, draft[1]],
                 source.columns,
             ),
         ).toBe(false);

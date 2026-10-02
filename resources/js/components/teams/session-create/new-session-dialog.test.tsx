@@ -40,7 +40,7 @@ function template(
     titles: string[],
     overrides: Partial<CatalogueTemplate> = {},
 ): CatalogueTemplate {
-    const colors = ['green', 'red', 'blue', 'amber'] as const;
+    const colors = ['moss', 'coral', 'sky', 'sun'] as const;
 
     return {
         key,
@@ -436,9 +436,9 @@ describe('the retro form', () => {
         expect(lastPost()[1]).toMatchObject({
             template: 'sailboat',
             columns: [
-                { title: 'Tailwind', description: null, color: 'green' },
-                { title: 'Anchors', description: null, color: 'red' },
-                { title: 'Island', description: null, color: 'blue' },
+                { title: 'Tailwind', description: null, color: 'moss' },
+                { title: 'Anchors', description: null, color: 'coral' },
+                { title: 'Island', description: null, color: 'sun' },
             ],
         });
     });
@@ -552,8 +552,8 @@ describe('the retro form', () => {
             name: 'Harbour retro',
             category: 'themed',
             columns: [
-                { title: 'Wind', description: null, color: 'green' },
-                { title: 'Rocks', description: null, color: 'red' },
+                { title: 'Wind', description: null, color: 'moss' },
+                { title: 'Rocks', description: null, color: 'coral' },
             ],
         });
         expect(options.only).toEqual(['catalogue']);

@@ -108,7 +108,7 @@ it('[P18e-01-02] creates a retro from a workspace template found under "Browse",
         'category' => TemplateCategory::TeamMood,
     ]);
 
-    foreach ([['Energy', ColumnColor::Green], ['Blockers', ColumnColor::Red]] as $position => [$title, $color]) {
+    foreach ([['Energy', ColumnColor::Moss], ['Blockers', ColumnColor::Coral]] as $position => [$title, $color]) {
         WorkspaceTemplateColumn::factory()->create([
             'workspace_template_id' => $template->id,
             'title' => $title,
@@ -233,7 +233,7 @@ it('[P18e-01-10] creates the board with the columns renamed, added and reordered
         ->click('Add a column')
         ->assertSeeIn('[role="dialog"]', 'Columns · 4')
         ->fill('[role="dialog"] [aria-label="Column 4 title"]', 'Ideas')
-        ->click('[role="dialog"] [role="radiogroup"][aria-label="Color of “Ideas”"] [role="radio"][data-color="purple"]');
+        ->click('[role="dialog"] [role="radiogroup"][aria-label="Color of “Ideas”"] [role="radio"][data-color="plum"]');
 
     $this->dragWithKeyboard($page, $handle, ['Space', 'ArrowRight', 'Space']);
 
@@ -249,7 +249,7 @@ it('[P18e-01-10] creates the board with the columns renamed, added and reordered
     expect($retro->template)->toBe('start_stop_continue')
         ->and($retro->columns->pluck('title')->all())->toBe(['Pause', 'Start', 'Continue', 'Ideas'])
         ->and($retro->columns->pluck('color')->map(fn (ColumnColor $color): string => $color->value)->all())
-        ->toBe(['red', 'green', 'blue', 'purple']);
+        ->toBe(['coral', 'moss', 'sky', 'plum']);
 });
 
 it('[P18e-01-11] opens the guest link of the new retro with "Anonymous guests allowed"', function () {

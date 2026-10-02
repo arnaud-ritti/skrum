@@ -15,8 +15,16 @@ export type StatCardProps = {
     value: string;
     trend?: StatCardTrend;
     series?: number[];
-    context: string;
+    /** Required by the stacked layout; the inline layout has none. */
+    context?: string;
     icon?: LucideIcon;
+    /**
+     * `inline` is the tile of a row of figures: the icon in a square, the
+     * value, the label under it. No trend, sparkline or context.
+     */
+    layout?: 'stacked' | 'inline';
+    /** Inline layout: the figure the row is about. */
+    emphasis?: boolean;
     className?: string;
 };
 
@@ -45,11 +53,52 @@ export function StatCard({
     series,
     context,
     icon: Icon,
+    layout = 'stacked',
+    emphasis = false,
     className,
 }: StatCardProps) {
     const { t } = useTrans();
     const TrendIcon = trend?.direction === 'down' ? ArrowDown : ArrowUp;
     const hasSparkline = series !== undefined && series.length >= 2;
+
+    if (layout === 'inline') {
+        return (
+            <Card
+                data-slot="stat-card"
+                data-layout="inline"
+                data-emphasis={emphasis || undefined}
+                className={cn(
+                    'flex-row items-center gap-3 px-4 py-3',
+                    className,
+                )}
+            >
+                {Icon && (
+                    <span
+                        data-slot="stat-card-icon"
+                        className={cn(
+                            'grid size-9 shrink-0 place-items-center rounded-md',
+                            emphasis
+                                ? 'bg-skrum-primary-soft text-skrum-primary-text'
+                                : 'bg-muted text-muted-foreground',
+                        )}
+                    >
+                        <Icon className="size-4" aria-hidden />
+                    </span>
+                )}
+                <div className="flex min-w-0 flex-col-reverse">
+                    <span className="truncate text-xs font-semibold text-muted-foreground">
+                        {label}
+                    </span>
+                    <span
+                        data-slot="stat-card-value"
+                        className="font-display text-xl font-bold tracking-tight wrap-anywhere tabular-nums"
+                    >
+                        {value}
+                    </span>
+                </div>
+            </Card>
+        );
+    }
 
     return (
         <Card
@@ -109,7 +158,11 @@ export function StatCard({
                     />
                 </svg>
             )}
-            <p className="truncate text-xs text-muted-foreground">{context}</p>
+            {context !== undefined && (
+                <p className="truncate text-xs text-muted-foreground">
+                    {context}
+                </p>
+            )}
         </Card>
     );
 }

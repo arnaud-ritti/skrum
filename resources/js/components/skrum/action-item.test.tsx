@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import {
     ActionItem,
+    groupActionOwners,
     actionOwnerValue,
     isActionOverdue,
     nextActionStatus,
@@ -223,6 +224,14 @@ describe('ActionItem', () => {
         });
         expect(jira.getAttribute('target')).toBe('_blank');
         expect(jira.getAttribute('rel')).toContain('noopener');
+        // The sync state is also in the text of the chip, where the old
+        // chip had it: the browser suite reads it there.
+        expect(jira.textContent).toBe('Jira · ATLAS-1287');
+        expect(
+            screen.getByRole('link', {
+                name: 'Open skrum#12 in GitHub · Closed in GitHub',
+            }).textContent,
+        ).toBe('GitHub · skrum#12Closed in GitHub');
         expect(
             screen.getByRole('link', {
                 name: 'Open skrum#12 in GitHub · Closed in GitHub',
@@ -453,6 +462,30 @@ describe('ActionItem', () => {
             dueDate: null,
             recurrence: null,
         });
+    });
+
+    it('lists the assignee options under the heading of their group, a guest marked as one', () => {
+        expect(
+            groupActionOwners([
+                { id: 'u1', name: 'Ines', group: 'In this retro' },
+                { id: 'u2', name: 'Dan', group: 'Team' },
+                {
+                    id: 'p1',
+                    name: 'Zoe',
+                    kind: 'guest',
+                    group: 'In this retro',
+                },
+            ]).map((group) => [
+                group.label,
+                group.members.map((member) => member.name),
+            ]),
+        ).toEqual([
+            ['In this retro', ['Ines', 'Zoe']],
+            ['Team', ['Dan']],
+        ]);
+        expect(groupActionOwners([{ id: 'u1', name: 'Ines' }])).toEqual([
+            { label: null, members: [{ id: 'u1', name: 'Ines' }] },
+        ]);
     });
 
     it('returns focus to the edit button when the editor saves or cancels', () => {

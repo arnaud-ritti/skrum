@@ -19,14 +19,18 @@ export type RetroPhase =
     | 'grouping'
     | 'voting'
     | 'discussing'
+    | 'actions'
+    | 'roti'
     | 'completed';
 export type ColumnColor =
-    | 'green'
-    | 'red'
-    | 'blue'
-    | 'amber'
-    | 'purple'
-    | 'slate';
+    | 'sun'
+    | 'apricot'
+    | 'coral'
+    | 'plum'
+    | 'iris'
+    | 'sky'
+    | 'lagoon'
+    | 'moss';
 
 export type CardSentiment = 'positive' | 'neutral' | 'negative';
 
@@ -270,6 +274,8 @@ export type Snapshot = {
     retro: {
         id: string;
         teamId: string;
+        /** Null for a guest, who is not told the team. */
+        teamName: string | null;
         title: string;
         template: string;
         phase: RetroPhase;
@@ -395,7 +401,12 @@ export type RotiState = {
     myScore: number | null;
     respondents: number;
     voterIds: string[];
+    /** True in the ROTI phase, and on a retro completed before that phase existed. */
+    canVote: boolean;
 };
+
+/** What a vote or a retract answers. */
+export type RotiVoteResponse = Omit<RotiState, 'canVote'>;
 
 export type GamesPlayedPerson = {
     playerId: string;

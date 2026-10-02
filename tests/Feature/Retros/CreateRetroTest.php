@@ -89,16 +89,16 @@ it('starts in the first enabled phase with the chosen options', function () {
 it('copies the columns of a workspace template and remembers it', function () {
     [$user, $workspace, $team] = teamWithMember();
     $template = WorkspaceTemplate::factory()->for($workspace)->create();
-    $template->columns()->create(['title' => 'Energy', 'description' => 'How charged you feel', 'color' => 'green', 'position' => 0]);
-    $template->columns()->create(['title' => 'Blockers', 'description' => null, 'color' => 'red', 'position' => 1]);
+    $template->columns()->create(['title' => 'Energy', 'description' => 'How charged you feel', 'color' => 'moss', 'position' => 0]);
+    $template->columns()->create(['title' => 'Blockers', 'description' => null, 'color' => 'coral', 'position' => 1]);
 
     $retro = resolve(CreateRetro::class)->handle($team, $user, new NewRetro('Pulse', $template->catalogueKey()));
 
     expect($retro->template)->toBe(TemplateCatalogue::Workspace)
         ->and($retro->workspace_template_id)->toBe($template->id)
         ->and($retro->columns->map(fn ($column) => [$column->title, $column->description, $column->color->value])->all())->toBe([
-            ['Energy', 'How charged you feel', 'green'],
-            ['Blockers', null, 'red'],
+            ['Energy', 'How charged you feel', 'moss'],
+            ['Blockers', null, 'coral'],
         ]);
 
     $template->columns()->delete();
@@ -205,9 +205,9 @@ it('creates a retro with the given columns in order and keeps the template key',
         'title' => 'Custom',
         'template' => 'sailboat',
         'columns' => [
-            ['title' => 'Wind', 'description' => 'What pushes us', 'color' => 'green'],
-            ['title' => 'Anchor', 'description' => null, 'color' => 'red'],
-            ['title' => 'Rocks', 'color' => 'blue'],
+            ['title' => 'Wind', 'description' => 'What pushes us', 'color' => 'moss'],
+            ['title' => 'Anchor', 'description' => null, 'color' => 'coral'],
+            ['title' => 'Rocks', 'color' => 'sky'],
         ],
     ])->assertRedirect();
 
@@ -215,9 +215,9 @@ it('creates a retro with the given columns in order and keeps the template key',
 
     expect($retro->template)->toBe('sailboat')
         ->and($retro->columns->map(fn ($column) => [$column->title, $column->description, $column->color->value, $column->position])->all())->toBe([
-            ['Wind', 'What pushes us', 'green', 0],
-            ['Anchor', null, 'red', 1],
-            ['Rocks', null, 'blue', 2],
+            ['Wind', 'What pushes us', 'moss', 0],
+            ['Anchor', null, 'coral', 1],
+            ['Rocks', null, 'sky', 2],
         ]);
 });
 
@@ -231,8 +231,9 @@ it('refuses invalid columns', function (array $columns, string $field) {
     expect(Retro::count())->toBe(0);
 })->with([
     'unknown colour' => [[['title' => 'A', 'color' => 'chartreuse']], 'columns.0.color'],
-    'empty title' => [[['title' => '', 'color' => 'green']], 'columns.0.title'],
-    'too many columns' => [fn () => array_fill(0, 11, ['title' => 'A', 'color' => 'green']), 'columns'],
+    'empty title' => [[['title' => '', 'color' => 'moss']], 'columns.0.title'],
+    'old color name' => [[['title' => 'A', 'color' => 'green']], 'columns.0.color'],
+    'too many columns' => [fn () => array_fill(0, 11, ['title' => 'A', 'color' => 'moss']), 'columns'],
     'no column' => [[], 'columns'],
 ]);
 

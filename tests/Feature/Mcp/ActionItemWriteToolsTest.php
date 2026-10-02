@@ -18,8 +18,8 @@ beforeEach(function () {
     Event::fake([ActionItemCreated::class, ActionItemSaved::class]);
 });
 
-it('creates an action item on a discussing board as the user\'s participant', function () {
-    $retro = Retro::factory()->inPhase(RetroPhase::Discussing)->create();
+it('creates an action item on a board that takes action items as the user\'s participant', function (RetroPhase $phase) {
+    $retro = Retro::factory()->inPhase($phase)->create();
     $user = teamMember($retro->team);
 
     $item = mcpStructured(mcpWriter($user)->tool(CreateAction::class, ['board_id' => $retro->id, 'content' => 'Pair on reviews'])->assertOk());
@@ -37,7 +37,7 @@ it('creates an action item on a discussing board as the user\'s participant', fu
 
     Event::assertDispatched(ActionItemCreated::class);
     Event::assertDispatched(ActionItemSaved::class);
-});
+})->with([RetroPhase::Discussing, RetroPhase::Actions, RetroPhase::Roti]);
 
 it('refuses boards outside Discussing without creating a participant', function (RetroPhase $phase) {
     $retro = Retro::factory()->inPhase($phase)->create();

@@ -94,9 +94,14 @@ function p08bTeamStatements(): string
     return "[...[...document.querySelectorAll('section')].find((section) => section.querySelector('h2')?.textContent === 'Health check statements').querySelectorAll('ol > li')].map((row) => row.querySelector('p').textContent).join(' | ')";
 }
 
+function p08bTeamSummary(): string
+{
+    return "[...document.querySelectorAll('[data-slot=\"health-check-summary-statement\"]')].map((row) => row.lastElementChild.textContent).join(' | ')";
+}
+
 function p08bBoardStatements(): string
 {
-    return "[...document.querySelectorAll('ol > li > [role=\"radiogroup\"]')].map((group) => group.getAttribute('aria-label')).join(' | ')";
+    return "[...document.querySelectorAll('ol > li [role=\"radiogroup\"]')].map((group) => group.getAttribute('aria-label')).join(' | ')";
 }
 
 /**
@@ -135,7 +140,7 @@ function p08bOpenSettings(mixed $page): mixed
     return $page;
 }
 
-it('[P08b-01a] lets an Owner add, archive, reorder, reword and restore the health check statements of a team', function () {
+it('[P08b-01a] lets an Owner add, archive, reorder, reword and restore the health check statements of a team, on the page the team card leads to', function () {
     $team = Team::factory()->create();
     $olivia = workspaceManager($team->workspace, WorkspaceRole::Owner);
     $olivia->update(['name' => 'Olivia Owner', 'locale' => 'en']);
@@ -148,6 +153,15 @@ it('[P08b-01a] lets an Owner add, archive, reorder, reword and restore the healt
     $announcement = "document.querySelector('[id^=\"DndLiveRegion\"]').textContent";
 
     $page = $this->signIn($olivia, route('teams.show', [$team->workspace, $team], false));
+
+    $page->assertSeeIn('[data-slot="health-check-summary"] h2', 'Health check')
+        ->assertSeeIn('[data-slot="health-check-summary-facts"]', '6 statements asked at the end of each retro, scored 1–10.')
+        ->assertScript(p08bTeamSummary(), p08bBuiltIns())
+        ->assertNotPresent('[aria-label="Drag to reorder"]')
+        ->assertNotPresent('[aria-label="Statement"]')
+        ->assertSeeIn('[data-slot="health-check-manage"]', 'Manage')
+        ->click('[data-slot="health-check-manage"]')
+        ->assertPathIs(route('teams.healthCheck.show', [$team->workspace, $team], false));
 
     $page->assertSee('Health check statements')
         ->assertSee('Changes apply to retros that have not collected answers yet.')
@@ -211,12 +225,21 @@ it('[P08b-01a] lets an Owner add, archive, reorder, reword and restore the healt
         ->and($statements->whereNull('archived_at')->first()->builtin)->toBe(HealthStatement::TaskClarity);
 });
 
-it('[P08b-01b] shows the health check statements to a plain member as a read-only list', function () {
+it('[P08b-01b] shows the health check statements to a plain member as a read-only list, on the team page and on the health check page', function () {
     $team = Team::factory()->create();
     $bob = teamMember($team);
     $bob->update(['name' => 'Bob Stone', 'locale' => 'en']);
 
     $page = $this->signIn($bob, route('teams.show', [$team->workspace, $team], false));
+
+    $page->assertSeeIn('[data-slot="health-check-summary"] h2', 'Health check')
+        ->assertSee('Changes apply to retros that have not collected answers yet.')
+        ->assertScript(p08bTeamSummary(), p08bBuiltIns())
+        ->assertNotPresent('[aria-label="Drag to reorder"]')
+        ->assertNotPresent('button:has-text("Archive")')
+        ->assertSeeIn('[data-slot="health-check-manage"]', 'Details')
+        ->click('[data-slot="health-check-manage"]')
+        ->assertPathIs(route('teams.healthCheck.show', [$team->workspace, $team], false));
 
     $page->assertSee('Health check statements')
         ->assertSee('Changes apply to retros that have not collected answers yet.')
@@ -244,7 +267,7 @@ it('[P08b-02] starts a retro on the Health check with the active statements of t
     TeamHealthStatement::factory()->builtin(HealthStatement::Motivation)->create(['team_id' => $team->id, 'position' => 2]);
     TeamHealthStatement::factory()->builtin(HealthStatement::Interaction)->create(['team_id' => $team->id, 'position' => 3]);
     TeamHealthStatement::factory()->builtin(HealthStatement::ManagerSupport)->archived()->create(['team_id' => $team->id, 'position' => 4]);
-    $phaseOrder = "[...document.querySelectorAll('header ol[aria-label=\"Phases\"] li')].map((step) => step.textContent).join(' > ')";
+    $phaseOrder = "[...document.querySelectorAll('header ol[aria-label=\"Phases\"] [data-slot=\"phase-step\"]')].map((step) => step.querySelector('.truncate').textContent).join(' > ')";
 
     $page = $this->signIn($alice, route('teams.show', [$team->workspace, $team], false));
 
@@ -258,9 +281,9 @@ it('[P08b-02] starts a retro on the Health check with the active statements of t
         ->assertAttribute('#new-retro-health-check', 'aria-checked', 'true')
         ->click('[role="dialog"] button[type="submit"]')
         ->assertPathBeginsWith('/retros/')
-        ->assertSeeIn('header > h1', 'Sprint 15 retro')
+        ->assertSeeIn('header >> h1', 'Sprint 15 retro')
         ->assertSeeIn('[aria-current="step"]', 'Health check')
-        ->assertScript($phaseOrder, 'Health check > Writing > Grouping > Voting > Discussing > Completed')
+        ->assertScript($phaseOrder, 'Health check > Writing > Grouping > Voting > Discussing')
         ->assertSee('Rate each statement from 1 (Awful) to 10 (Great). Only you see your own scores.')
         ->assertScript(p08bBoardStatements(), implode(' | ', [
             'The vision and goals are clear to me',
@@ -413,7 +436,9 @@ it('[P08b-05a] disables the score buttons for everyone when the board is closed 
     p08bOpenSettings($alicePage)
         ->click('#retro-locked')
         ->assertAttribute('#retro-locked', 'aria-checked', 'true')
-        ->click('[role="dialog"] button[type="submit"]')
+        ->click('[role="dialog"] button:has-text("Apply")')
+        ->assertSeeIn('[role="dialog"]', 'No changes')
+        ->keys('[role="dialog"]', 'Escape')
         ->assertNotPresent('[role="dialog"]')
         ->assertSee('Board closed for editing')
         ->assertScript($disabled, 60);
@@ -490,7 +515,7 @@ it('[P08b-07] keeps the statements a retro froze once it has answers', function 
     $stepper = 'header ol[aria-label="Phases"]';
     $frozenKeys = ['interaction', 'task_clarity', 'manager_support', 'vision', 'processes', 'motivation'];
 
-    $teamPage = $this->signIn($olivia, route('teams.show', [$retro->team->workspace, $retro->team], false));
+    $teamPage = $this->signIn($olivia, route('teams.healthCheck.show', [$retro->team->workspace, $retro->team], false));
 
     $teamPage->assertVisible('[aria-label="Statement"]')
         ->fill('[aria-label="Statement"]', 'We shipped what we promised')
@@ -510,7 +535,9 @@ it('[P08b-07] keeps the statements a retro froze once it has answers', function 
         ->assertAttribute('#retro-health-check', 'aria-checked', 'true')
         ->click('#retro-health-check')
         ->assertAttribute('#retro-health-check', 'aria-checked', 'false')
-        ->click('[role="dialog"] button[type="submit"]')
+        ->click('[role="dialog"] button:has-text("Apply")')
+        ->assertSeeIn('[role="dialog"]', 'No changes')
+        ->keys('[role="dialog"]', 'Escape')
         ->assertNotPresent('[role="dialog"]')
         ->assertDontSeeIn($stepper, 'Health check');
 
@@ -519,7 +546,9 @@ it('[P08b-07] keeps the statements a retro froze once it has answers', function 
     p08bOpenSettings($alicePage)
         ->click('#retro-health-check')
         ->assertAttribute('#retro-health-check', 'aria-checked', 'true')
-        ->click('[role="dialog"] button[type="submit"]')
+        ->click('[role="dialog"] button:has-text("Apply")')
+        ->assertSeeIn('[role="dialog"]', 'No changes')
+        ->keys('[role="dialog"]', 'Escape')
         ->assertNotPresent('[role="dialog"]')
         ->assertSeeIn($stepper, 'Health check')
         ->click('header button:has-text("Previous")')

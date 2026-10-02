@@ -310,7 +310,12 @@ describe('ActionSheet', () => {
             .closest('section') as HTMLElement;
 
         expect(within(section).getAllByRole('link')).toHaveLength(6);
-        expect(within(section).getByText('Sync failed')).toBeTruthy();
+        expect(
+            within(section).getByRole('link', {
+                name: /KEY-0 .* · Sync failed$/,
+            }),
+        ).toBeTruthy();
+        expect(within(section).getAllByText('Sync failed')).toHaveLength(2);
         fireEvent.click(
             within(section).getByRole('button', {
                 name: 'Retry the sync of KEY-0',
