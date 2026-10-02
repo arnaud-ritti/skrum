@@ -1,4 +1,4 @@
-import { LiveCursors } from '@/components/realtime/live-cursors';
+import { LiveCursors } from '@/components/session/live-cursors';
 import { useTrans } from '@/hooks/use-trans';
 import type { PokerSnapshot } from '@/lib/poker/types';
 import { channelKey } from '@/lib/realtime/whisper-transport';

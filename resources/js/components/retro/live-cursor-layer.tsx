@@ -1,9 +1,9 @@
-import { LiveCursors } from '@/components/realtime/live-cursors';
+import { LiveCursors } from '@/components/session/live-cursors';
 import { useTrans } from '@/hooks/use-trans';
 import { channelKey } from '@/lib/realtime/whisper-transport';
 import { useBoard } from './board-context';
 
-export const HideMyCursorKey = 'skrum.hideMyCursor';
+export { HideMyCursorKey } from '@/components/session/cursor-preference';
 
 /**
  * During Voting a named pointer on a vote button would reveal who votes
