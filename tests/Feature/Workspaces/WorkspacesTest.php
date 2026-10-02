@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\WorkspaceRole;
+use App\Models\Team;
 use App\Models\User;
 use App\Models\Workspace;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -94,3 +95,57 @@ it('lets only owners delete a workspace', function (WorkspaceRole $role, int $ex
     'admin' => [WorkspaceRole::Admin, 403],
     'member' => [WorkspaceRole::Member, 403],
 ]);
+
+it('shows the member and admin counts of a workspace and the counts of each team', function () {
+    $workspace = Workspace::factory()->create();
+    $owner = workspaceManager($workspace, WorkspaceRole::Owner);
+    workspaceManager($workspace, WorkspaceRole::Admin);
+    workspaceManager($workspace, WorkspaceRole::Member);
+    workspaceManager($workspace, WorkspaceRole::Member);
+    $alpha = Team::factory()->for($workspace)->create(['name' => 'Alpha']);
+    Team::factory()->for($workspace)->create(['name' => 'Beta']);
+    $alpha->members()->attach($owner);
+
+    $this->actingAs($owner)
+        ->get(route('workspaces.show', $workspace))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('membersCount', 4)
+            ->where('adminsCount', 2)
+            ->has('teams', 2)
+            ->where('teams.0.membersCount', 1)
+            ->where('teams.1.membersCount', 0)
+            ->where('teams.1.members', []));
+});
+
+it('lists the first five members of a team by name next to its total', function () {
+    $workspace = Workspace::factory()->create();
+    $owner = workspaceManager($workspace, WorkspaceRole::Owner);
+    $team = Team::factory()->for($workspace)->create();
+    $names = ['Gina', 'Alice', 'Frank', 'Bob', 'Eve', 'Dan', 'Carol'];
+    foreach ($names as $name) {
+        $team->members()->attach(User::factory()->create(['name' => $name]));
+    }
+
+    $this->actingAs($owner)
+        ->get(route('workspaces.show', $workspace))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('teams.0.membersCount', 7)
+            ->has('teams.0.members', 5)
+            ->where('teams.0.members.0.name', 'Alice')
+            ->where('teams.0.members.4.name', 'Eve')
+            ->has('teams.0.members.0.avatarUrl'));
+});
+
+it('leaves out of the workspace page a team the user cannot see', function () {
+    $workspace = Workspace::factory()->create();
+    $member = workspaceManager($workspace, WorkspaceRole::Member);
+    $visible = Team::factory()->for($workspace)->create(['name' => 'Visible']);
+    Team::factory()->for($workspace)->create(['name' => 'Hidden']);
+    $visible->members()->attach($member);
+
+    $this->actingAs($member)
+        ->get(route('workspaces.show', $workspace))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('teams', 1)
+            ->where('teams.0.name', 'Visible'));
+});

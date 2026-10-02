@@ -3,6 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Actions\Workspaces\CreateWorkspace;
+use App\Enums\WorkspaceRole;
+use App\Models\Team;
+use App\Models\User;
 use App\Models\Workspace;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -32,9 +35,24 @@ class WorkspacesController extends Controller
     {
         $user = $request->user();
 
+        $teams = $workspace->teamsVisibleTo($user)
+            ->loadCount('members')
+            ->load(['members' => fn ($members) => $members->orderBy('users.name')->limit(5)]);
+
         return Inertia::render('workspaces/show', [
             'workspace' => $workspace->only(['id', 'name', 'slug']),
-            'teams' => $workspace->teamsVisibleTo($user)->map->only(['id', 'name'])->values(),
+            'membersCount' => $workspace->members()->count(),
+            'adminsCount' => $workspace->members()
+                ->wherePivotIn('role', [WorkspaceRole::Owner->value, WorkspaceRole::Admin->value])
+                ->count(),
+            'teams' => $teams->map(fn (Team $team): array => [
+                ...$team->only(['id', 'name']),
+                'membersCount' => $team->members_count,
+                'members' => $team->members->map(fn (User $member): array => [
+                    'name' => $member->name,
+                    'avatarUrl' => $member->avatarUrl(),
+                ])->all(),
+            ])->values(),
             'canManage' => $user->canManage($workspace),
         ]);
     }

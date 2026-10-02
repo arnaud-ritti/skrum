@@ -157,3 +157,53 @@ it('queries the visible teams once for both shared props', function () {
 
     expect($teamQueries)->toBe(1);
 });
+
+it('shares the role of the user and the visible team count of each workspace', function () {
+    $user = User::factory()->create();
+    $managed = Workspace::factory()->create(['name' => 'Managed']);
+    $managed->members()->attach($user, ['role' => WorkspaceRole::Admin->value]);
+    Team::factory()->count(2)->for($managed)->create();
+    $joined = Workspace::factory()->create(['name' => 'Joined']);
+    $joined->members()->attach($user, ['role' => WorkspaceRole::Member->value]);
+    $visibleTeam = Team::factory()->for($joined)->create();
+    Team::factory()->for($joined)->create();
+    $visibleTeam->members()->attach($user);
+
+    $this->actingAs($user)
+        ->get(route('workspaces.show', $managed))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('workspaces.0.name', 'Joined')
+            ->where('workspaces.0.role', 'member')
+            ->where('workspaces.0.teamsCount', 1)
+            ->where('workspaces.1.name', 'Managed')
+            ->where('workspaces.1.role', 'admin')
+            ->where('workspaces.1.teamsCount', 2));
+});
+
+it('adds a constant number of queries to the shared workspaces whatever their number', function () {
+    $user = User::factory()->create();
+    $countQueries = function () use ($user): int {
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+        $this->actingAs($user)->get(route('workspaces.create'))->assertOk();
+
+        return collect(DB::getQueryLog())
+            ->filter(fn (array $query): bool => str_contains($query['query'], 'workspace_user'))
+            ->count();
+    };
+    $first = Workspace::factory()->create();
+    $first->members()->attach($user, ['role' => WorkspaceRole::Member->value]);
+    $withOne = $countQueries();
+
+    foreach (Workspace::factory()->count(4)->create() as $workspace) {
+        $workspace->members()->attach($user, ['role' => WorkspaceRole::Admin->value]);
+        Team::factory()->for($workspace)->create();
+    }
+
+    expect($countQueries())->toBe($withOne);
+});
+
+it('shares no workspaces for a guest', function () {
+    $this->get(route('login'))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('workspaces', []));
+});

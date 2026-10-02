@@ -8,8 +8,23 @@ export type WorkspaceSummary = {
     slug: string;
 };
 
+export type SwitcherWorkspace = WorkspaceSummary & {
+    teamsCount: number;
+    role: WorkspaceRole;
+};
+
 export type CurrentWorkspace = WorkspaceSummary & {
     role: WorkspaceRole;
+};
+
+export type WorkspaceTeamMember = {
+    name: string;
+    avatarUrl: string;
+};
+
+export type WorkspaceTeamTile = TeamSummary & {
+    membersCount: number;
+    members: WorkspaceTeamMember[];
 };
 
 export type TeamSummary = {
