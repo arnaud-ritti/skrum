@@ -8,6 +8,7 @@ use App\Enums\IntegrationProvider;
 use App\Models\ActionItem;
 use App\Models\Team;
 use App\Models\Workspace;
+use App\Support\Alphabetical;
 use App\Support\Auth\SignInPolicy;
 use App\Support\Branding\BrandAssets;
 use App\Support\CurrentTeamResolver;
@@ -137,14 +138,16 @@ class HandleInertiaRequests extends Middleware
             return [];
         }
 
-        return $user->workspaces()
+        $workspaces = $user->workspaces()
             ->withCount([
                 'teams',
                 'teams as member_teams_count' => fn (Builder $teams) => $teams
                     ->whereHas('members', fn (Builder $members) => $members->whereKey($user->id)),
             ])
-            ->orderBy('name')
-            ->get()
+            ->orderBy('workspaces.id')
+            ->get();
+
+        return Alphabetical::sort($workspaces, fn (Workspace $workspace): string => $workspace->name)
             ->map(function (Workspace $workspace): array {
                 $role = $workspace->membership->role;
 

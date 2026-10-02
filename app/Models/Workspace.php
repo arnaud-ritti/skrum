@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\WorkspaceRole;
+use App\Support\Alphabetical;
 use Database\Factories\WorkspaceFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\RouteKey;
@@ -87,12 +88,12 @@ class Workspace extends Model
     /** @return Collection<int, Team> */
     public function teamsVisibleTo(User $user): Collection
     {
-        $teams = $this->teams()->orderBy('name');
+        $teams = $this->teams()->orderBy('id');
 
         if (! $user->canManage($this)) {
             $teams->whereHas('members', fn (Builder $query) => $query->whereKey($user->id));
         }
 
-        return $teams->get();
+        return Alphabetical::sort($teams->get(), fn (Team $team): string => $team->name);
     }
 }

@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceInvitation;
 use App\Models\WorkspaceMembership;
+use App\Support\Alphabetical;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -25,7 +26,7 @@ class WorkspaceMembersController extends Controller
 
         return Inertia::render('workspaces/members', [
             'workspace' => $workspace->only(['id', 'name', 'slug']),
-            'members' => $workspace->members()->orderBy('name')->get()->map(fn (User $member): array => [
+            'members' => Alphabetical::sort($workspace->members()->orderBy('users.id')->get(), fn (User $member): string => $member->name)->map(fn (User $member): array => [
                 ...$member->only(['id', 'name', 'email']),
                 'avatarUrl' => $member->avatarUrl(),
                 'role' => $this->membershipOf($member)->role->value,

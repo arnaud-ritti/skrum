@@ -54,7 +54,7 @@ class CurrentTeamResolver
             return collect();
         }
 
-        return $workspace->teamsVisibleTo($user)->sortBy('name')->values();
+        return $workspace->teamsVisibleTo($user);
     }
 
     private function workspaceInScope(User $user): ?Workspace

@@ -11,6 +11,7 @@ use App\Models\Team;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMembership;
+use App\Support\Alphabetical;
 use Carbon\CarbonInterface;
 use Closure;
 use Illuminate\Contracts\Database\Query\Builder;
@@ -138,9 +139,7 @@ class ApiTokensController extends Controller
      */
     private function teamsByWorkspace(User $user): array
     {
-        return $user->workspaces()
-            ->orderBy('name')
-            ->get()
+        return Alphabetical::sort($user->workspaces()->orderBy('workspaces.id')->get(), fn (Workspace $workspace): string => $workspace->name)
             ->map(fn (Workspace $workspace): array => [
                 'workspace' => ['id' => $workspace->id, 'name' => $workspace->name],
                 'teams' => $workspace->teamsVisibleTo($user)

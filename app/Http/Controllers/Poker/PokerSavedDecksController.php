@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\PokerGame;
 use App\Models\PokerPlayer;
 use App\Models\SavedPokerDeck;
+use App\Support\Alphabetical;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -19,7 +20,7 @@ class PokerSavedDecksController extends Controller
     {
         PokerGuard::facilitator($game, PokerPlayer::current($request));
 
-        return response()->json($game->team->availablePokerDecks()->orderBy('name')->get()
+        return response()->json(Alphabetical::sort($game->team->availablePokerDecks()->get(), fn (SavedPokerDeck $deck): string => $deck->name)
             ->map(fn (SavedPokerDeck $deck): array => [
                 'id' => $deck->id,
                 'name' => $deck->name,

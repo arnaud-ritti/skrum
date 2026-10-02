@@ -20,6 +20,7 @@ use App\Models\Retro;
 use App\Models\Team;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Support\Alphabetical;
 use Illuminate\Contracts\Database\Query\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
@@ -48,7 +49,8 @@ class WorkspaceActionItemsController extends Controller
     {
         $user = $request->user();
         $actor = ActionItemActor::forUser($user);
-        $teams = $workspace->teamsVisibleTo($user)->load(['members' => fn ($query) => $query->orderBy('name')]);
+        $teams = $workspace->teamsVisibleTo($user)->load(['members' => fn ($query) => $query->orderBy('users.id')]);
+        $teams->each(fn (Team $team) => $team->setRelation('members', Alphabetical::sort($team->members, fn (User $member): string => $member->name)));
         $filters = ActionItemFilters::fromRequest($request, $teams);
         $facilitated = Retro::query()
             ->whereIn('team_id', $teams->pluck('id'))
@@ -63,9 +65,7 @@ class WorkspaceActionItemsController extends Controller
             'counts' => fn (): array => $this->actionItemQuery->counts($user, $workspace, $filters),
             'filterTeams' => $this->presentTeams($teams),
             'creatableTeams' => $this->presentTeams($teams->filter(fn (Team $team) => $team->members->contains('id', $user->id))),
-            'assignees' => $teams->flatMap(fn (Team $team) => $team->members)
-                ->unique('id')
-                ->sortBy('name')
+            'assignees' => Alphabetical::sort($teams->flatMap(fn (Team $team) => $team->members)->unique('id'), fn (User $member): string => $member->name)
                 ->map(fn (User $member): array => ['id' => $member->id, 'name' => $member->name])
                 ->values(),
             'realtimeTeamIds' => $filters->teamId === null ? $teams->pluck('id')->values() : [$filters->teamId],

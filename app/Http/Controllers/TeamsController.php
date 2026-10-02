@@ -24,6 +24,7 @@ use App\Models\User;
 use App\Models\Whiteboard;
 use App\Models\WhiteboardTemplate;
 use App\Models\Workspace;
+use App\Support\Alphabetical;
 use App\Support\Games\GameRulesRegistry;
 use App\Support\Llm\Llm;
 use Illuminate\Database\Eloquent\Builder;
@@ -76,10 +77,13 @@ class TeamsController extends Controller
         return Inertia::render('teams/show', [
             'workspace' => $workspace->only(['id', 'name', 'slug']),
             'team' => $team->only(['id', 'name']),
-            'members' => $team->members()->orderBy('name')->get()
+            'members' => Alphabetical::sort($team->members()->orderBy('users.id')->get(), fn (User $member): string => $member->name)
                 ->map(fn (User $member): array => [...$member->only(['id', 'name', 'email']), 'avatarUrl' => $member->avatarUrl()]),
             'availableMembers' => $canManage
-                ? $workspace->members()->whereNotIn('users.id', $team->members()->select('users.id'))->orderBy('name')->get()
+                ? Alphabetical::sort(
+                    $workspace->members()->whereNotIn('users.id', $team->members()->select('users.id'))->orderBy('users.id')->get(),
+                    fn (User $member): string => $member->name,
+                )
                     ->map(fn (User $member): array => [...$member->only(['id', 'name', 'email']), 'avatarUrl' => $member->avatarUrl()])
                 : [],
             'canManage' => $canManage,
@@ -124,9 +128,10 @@ class TeamsController extends Controller
                 ->get()
                 ->map(fn (Whiteboard $board): array => $this->presentWhiteboardSummary->handle($board, $request->user(), $managesWorkspace)),
             'canCreateWhiteboard' => $request->user()->can('createWhiteboard', $team),
-            'whiteboardTemplates' => $workspace->whiteboardTemplates()
-                ->orderBy('name')
-                ->get(['id', 'name', 'description', 'created_by_user_id'])
+            'whiteboardTemplates' => Alphabetical::sort(
+                $workspace->whiteboardTemplates()->get(['id', 'name', 'description', 'created_by_user_id']),
+                fn (WhiteboardTemplate $template): string => $template->name,
+            )
                 ->map(fn (WhiteboardTemplate $template): array => [
                     'id' => $template->id,
                     'name' => $template->name,
@@ -166,7 +171,7 @@ class TeamsController extends Controller
     {
         $isManager = $user->canManage($workspace);
 
-        return $team->availablePokerDecks()->orderBy('name')->get()
+        return Alphabetical::sort($team->availablePokerDecks()->get(), fn (SavedPokerDeck $deck): string => $deck->name)
             ->map(fn (SavedPokerDeck $deck): array => [
                 'id' => $deck->id,
                 'name' => $deck->name,

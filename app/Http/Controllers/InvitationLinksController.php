@@ -85,6 +85,7 @@ class InvitationLinksController extends Controller
             'membersCount' => $members->count(),
             'members' => $members
                 ->orderBy('users.name')
+                ->orderBy('users.id')
                 ->limit(5)
                 ->get()
                 ->map(fn (User $member): array => $this->person($member))

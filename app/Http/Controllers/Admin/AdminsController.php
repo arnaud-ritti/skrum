@@ -6,6 +6,7 @@ use App\Actions\Admin\RevokeInstanceAdmin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\AdminStoreRequest;
 use App\Models\User;
+use App\Support\Alphabetical;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -16,11 +17,10 @@ class AdminsController extends Controller
 {
     public function index(Request $request): Response
     {
-        $admins = User::query()
-            ->where('is_instance_admin', true)
-            ->orderBy('name')
-            ->orderBy('id')
-            ->get();
+        $admins = Alphabetical::sort(
+            User::query()->where('is_instance_admin', true)->orderBy('id')->get(),
+            fn (User $admin): string => $admin->name,
+        );
 
         $canRevoke = $admins->count() > 1;
 

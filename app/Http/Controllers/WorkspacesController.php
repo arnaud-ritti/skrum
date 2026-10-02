@@ -10,6 +10,7 @@ use App\Models\Retro;
 use App\Models\Team;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Support\Alphabetical;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -55,7 +56,7 @@ class WorkspacesController extends Controller
                 ['retros as last_retro_at' => fn (Builder $retros) => $retros->where('phase', RetroPhase::Completed->value)],
                 'completed_at',
             )
-            ->load(['members' => fn ($members) => $members->orderBy('users.name')->limit(5)]);
+            ->load(['members' => fn ($members) => $members->orderBy('users.name')->orderBy('users.id')->limit(5)]);
 
         $openRetroTitles = Retro::query()
             ->whereIn('team_id', $teams->modelKeys())
@@ -84,13 +85,14 @@ class WorkspacesController extends Controller
                     ->wherePivotIn('role', $managerRoles)
                     ->whereKeyNot($user->id)
                     ->orderBy('users.name')
+                    ->orderBy('users.id')
                     ->first()
                     ?->name
                 : null,
             'teams' => $teams->map(fn (Team $team): array => [
                 ...$team->only(['id', 'name']),
                 'membersCount' => $team->members_count,
-                'members' => $team->members->map(fn (User $member): array => [
+                'members' => Alphabetical::sort($team->members, fn (User $member): string => $member->name)->map(fn (User $member): array => [
                     'name' => $member->name,
                     'avatarUrl' => $member->avatarUrl(),
                 ])->all(),

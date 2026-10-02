@@ -4,6 +4,7 @@ namespace App\Actions\Whiteboards;
 
 use App\Models\WhiteboardTemplate;
 use App\Models\Workspace;
+use App\Support\Alphabetical;
 use App\Support\WhiteboardTemplates\BuiltInTemplates;
 
 /**
@@ -40,9 +41,10 @@ class BuildWhiteboardGallery
             'preview' => $this->presentWhiteboardPreview->handle($this->builtInTemplates->elements($key)),
         ], BuiltInTemplates::keys());
 
-        $workspaceTemplates = $workspace->whiteboardTemplates()
-            ->orderBy('name')
-            ->get(['id', 'name', 'description', 'preview'])
+        $workspaceTemplates = Alphabetical::sort(
+            $workspace->whiteboardTemplates()->get(['id', 'name', 'description', 'preview']),
+            fn (WhiteboardTemplate $template): string => $template->name,
+        )
             ->map(fn (WhiteboardTemplate $template): array => [
                 'key' => "workspace:{$template->id}",
                 'workspaceTemplateId' => $template->id,
