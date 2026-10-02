@@ -1,6 +1,6 @@
 import { EyeOff, Minus, ThumbsUp, Vote, CircleSlash } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import type { KeyboardEvent } from 'react';
+import type { KeyboardEvent, ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import {
     Tooltip,
@@ -13,6 +13,8 @@ import { cn } from '@/lib/utils';
 export type VoteBudgetProps = {
     total: number;
     remaining: number;
+    /** Said after the dots, in a quieter voice: "of 5", a rule of the vote. */
+    detail?: ReactNode;
     className?: string;
 };
 
@@ -21,6 +23,11 @@ export type CardVotesProps = {
     total: number | null;
     maxPerCard?: number;
     budgetLeft: number;
+    /**
+     * Why nobody may vote here now (a closed board). The vote button is
+     * disabled with this reason and no vote can be taken back.
+     */
+    disabledReason?: string;
     onVote: () => void;
     onUnvote: () => void;
     className?: string;
@@ -40,7 +47,12 @@ function VoteDot({ filled, pop }: { filled: boolean; pop?: boolean }) {
     );
 }
 
-export function VoteBudget({ total, remaining, className }: VoteBudgetProps) {
+export function VoteBudget({
+    total,
+    remaining,
+    detail,
+    className,
+}: VoteBudgetProps) {
     const { t } = useTrans();
     const safeRemaining = Math.min(Math.max(remaining, 0), total);
     const isEmpty = safeRemaining === 0;
@@ -75,6 +87,14 @@ export function VoteBudget({ total, remaining, className }: VoteBudgetProps) {
                     <VoteDot key={index} filled={index < safeRemaining} />
                 ))}
             </span>
+            {detail !== undefined && detail !== null && (
+                <span
+                    data-slot="vote-budget-detail"
+                    className="min-w-0 truncate text-xs font-normal text-muted-foreground"
+                >
+                    {detail}
+                </span>
+            )}
         </div>
     );
 }
@@ -84,6 +104,7 @@ export function CardVotes({
     total,
     maxPerCard,
     budgetLeft,
+    disabledReason,
     onVote,
     onUnvote,
     className,
@@ -99,12 +120,14 @@ export function CardVotes({
 
     const isOutOfBudget = budgetLeft <= 0;
     const isAtCardLimit = maxPerCard !== undefined && mine >= maxPerCard;
-    const isVoteBlocked = isOutOfBudget || isAtCardLimit;
-    const blockedReason = isOutOfBudget
+    const isClosed = disabledReason !== undefined;
+    const isVoteBlocked = isClosed || isOutOfBudget || isAtCardLimit;
+    const budgetReason = isOutOfBudget
         ? t('You have used all your votes')
         : t('You reached the limit of :max votes on this card', {
               max: maxPerCard ?? 0,
           });
+    const blockedReason = disabledReason ?? budgetReason;
 
     const voteButtonRef = useRef<HTMLButtonElement>(null);
     const wrapperRef = useRef<HTMLSpanElement>(null);
@@ -128,11 +151,29 @@ export function CardVotes({
     }
 
     function unvote(): void {
-        if (mine <= 0) {
+        if (isClosed || mine <= 0) {
             return;
         }
 
         onUnvote();
+    }
+
+    /**
+     * Taking the last vote back removes the button that was pressed. Focus
+     * goes to the vote button, or to its wrapper while it is disabled.
+     */
+    function unvoteFromButton(): void {
+        unvote();
+
+        if (mine > 1) {
+            return;
+        }
+
+        const target = voteButtonRef.current?.disabled
+            ? wrapperRef.current
+            : voteButtonRef.current;
+
+        target?.focus();
     }
 
     function handleKeyDown(event: KeyboardEvent<HTMLElement>): void {
@@ -203,7 +244,7 @@ export function CardVotes({
                 </span>
             )}
             <span className="grow" />
-            {mine > 0 && (
+            {mine > 0 && !isClosed && (
                 <Tooltip>
                     <TooltipTrigger asChild>
                         <Button
@@ -211,7 +252,7 @@ export function CardVotes({
                             variant="ghost"
                             size="icon-sm"
                             aria-label={t('Remove a vote')}
-                            onClick={unvote}
+                            onClick={unvoteFromButton}
                         >
                             <Minus aria-hidden />
                         </Button>
