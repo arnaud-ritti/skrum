@@ -134,6 +134,7 @@ export function TopicsList({
                         >
                             <button
                                 type="button"
+                                aria-current={isCurrent ? 'true' : undefined}
                                 onClick={() => onSelect(topic)}
                                 className={cn(
                                     'grid w-full min-w-0 grid-cols-[1.75rem_minmax(0,1fr)_auto] items-start gap-x-2 gap-y-1 rounded-lg py-2.5 pr-3 pl-2 text-left outline-ring transition-colors duration-140 ease-standard hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 motion-reduce:transition-none',

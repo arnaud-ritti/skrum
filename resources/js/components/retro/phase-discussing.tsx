@@ -305,7 +305,7 @@ export function PhaseDiscussing({
     topicMeta,
     linkedTo,
 }: Props) {
-    const { board } = useBoard();
+    const { board, sessionExpired } = useBoard();
     const { t } = useTrans();
     const { topics, current, shared, presenting, goTo, step } = useDiscussion();
     const isMobile = useIsMobile();
@@ -357,7 +357,10 @@ export function PhaseDiscussing({
                             </span>
                             <ChevronDown aria-hidden />
                         </Button>
-                        <Drawer open={listOpen} onOpenChange={setListOpen}>
+                        <Drawer
+                            open={listOpen && !sessionExpired}
+                            onOpenChange={setListOpen}
+                        >
                             <DrawerContent
                                 aria-describedby={undefined}
                                 data-slot="retro-topics-drawer"
@@ -446,7 +449,7 @@ export function PhaseDiscussing({
  * facilitator's close stops presenting for everyone.
  */
 export function PresentationOverlay() {
-    const { board } = useBoard();
+    const { board, sessionExpired } = useBoard();
     const { t } = useTrans();
     const discussion = useDiscussion();
     const { topics, shared, presenting, busy } = discussion;
@@ -455,7 +458,7 @@ export function PresentationOverlay() {
 
     return (
         <Dialog
-            open={presenting}
+            open={presenting && !sessionExpired}
             onOpenChange={(open) => {
                 if (open) {
                     return;

@@ -145,13 +145,30 @@ describe('PhaseStepper', () => {
         expect(
             document.querySelector('[aria-current="step"]')?.textContent,
         ).toBe('Completed');
-        expect(
-            screen
-                .getByRole('button', { name: 'Previous' })
-                .getAttribute('aria-disabled'),
-        ).toBe('true');
+        expect(screen.queryByRole('button', { name: 'Previous' })).toBeNull();
         fireEvent.click(screen.getByRole('button', { name: 'Reopen' }));
         expect(onPhaseChange).toHaveBeenLastCalledWith('discussing');
+    });
+
+    it('keeps every step as a ticked marker once ended: the labels are read, not shown', () => {
+        renderWithProviders(
+            <PhaseStepper phases={steps()} current="completed" />,
+        );
+
+        const items = Array.from(
+            document.querySelectorAll('[data-slot="phase-step"]'),
+        );
+
+        expect(items).toHaveLength(6);
+
+        for (const item of items) {
+            expect(item.getAttribute('data-state')).toBe('done');
+            expect(item.querySelector('.sr-only')?.className).not.toContain(
+                'not-sr-only',
+            );
+        }
+
+        expect(items[0].textContent).toContain('Health check');
     });
 
     it('names the list Phases, as the board header did', () => {

@@ -34,7 +34,8 @@ export type PhaseStepperProps = {
      * Without `compact` or `mobile` the stepper follows its container: full
      * rail from 56rem, markers with the current label from 36rem, "Phase n/m"
      * with a progress bar below. `compact` never shows the full rail,
-     * `mobile` always shows the narrow form.
+     * `mobile` always shows the narrow form. Once completed the rail is its
+     * ticked markers beside the badge, and "Reopen" is the only action.
      */
     compact?: boolean;
     mobile?: boolean;
@@ -195,14 +196,17 @@ export function PhaseStepper({
 
     const mode: StepperMode = mobile ? 'mobile' : compact ? 'compact' : 'auto';
     const hasRail = mode !== 'mobile';
-    const otherLabels: LabelVisibility = mode === 'auto' ? 'full' : 'never';
+    const isEnded = current === CompletedPhase;
+    // Once ended no step is the current one: every label at once does not
+    // fit a header, so the rail keeps its ticked markers.
+    const otherLabels: LabelVisibility =
+        mode === 'auto' && !isEnded ? 'full' : 'never';
     const actionLabels: LabelVisibility = compact
         ? 'never'
         : mode === 'mobile'
           ? 'always'
           : 'full';
 
-    const isEnded = current === CompletedPhase;
     const total = phases.length;
     const foundIndex = phases.findIndex((phase) => phase.id === current);
     const currentIndex = isEnded ? total : foundIndex;
@@ -294,19 +298,21 @@ export function PhaseStepper({
 
     const actions = canChange && (
         <>
-            <ActionButton
-                slot="phase-previous"
-                label={t('Previous')}
-                icon={<ArrowLeft aria-hidden />}
-                labelVisibility={actionLabels}
-                variant="outline"
-                unavailable={disabled || previousStep === undefined}
-                onClick={() => {
-                    if (previousStep) {
-                        onPhaseChange(previousStep.id);
-                    }
-                }}
-            />
+            {!isEnded && (
+                <ActionButton
+                    slot="phase-previous"
+                    label={t('Previous')}
+                    icon={<ArrowLeft aria-hidden />}
+                    labelVisibility={actionLabels}
+                    variant="outline"
+                    unavailable={disabled || previousStep === undefined}
+                    onClick={() => {
+                        if (previousStep) {
+                            onPhaseChange(previousStep.id);
+                        }
+                    }}
+                />
+            )}
             <ActionButton
                 slot="phase-forward"
                 label={forward.label}

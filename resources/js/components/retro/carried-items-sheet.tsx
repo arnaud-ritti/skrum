@@ -170,7 +170,7 @@ export function CarriedItemRows({
  * opens by itself the first time a member sees the board in Writing.
  */
 export function CarriedItemsSheet() {
-    const { board } = useBoard();
+    const { board, sessionExpired } = useBoard();
     const { t } = useTrans();
     const { locale } = usePage().props;
     const [open, setOpen] = useState(false);
@@ -218,7 +218,7 @@ export function CarriedItemsSheet() {
                     {t('Previous action items (:count)', { count: openCount })}
                 </span>
             </Button>
-            <Sheet open={open} onOpenChange={setOpen}>
+            <Sheet open={open && !sessionExpired} onOpenChange={setOpen}>
                 <SheetContent
                     data-slot="retro-carried-items"
                     className="sm:max-w-lg"

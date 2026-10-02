@@ -9,6 +9,8 @@ type Props = {
     titleId?: string;
     /** What sits on the line of the title: a count, a note, actions. */
     aside?: ReactNode;
+    /** Layout of the aside, for a card whose note takes a line of its own when narrow. */
+    asideClassName?: string;
     className?: string;
     children: ReactNode;
 };
@@ -21,6 +23,7 @@ export function ResultsCard({
     title,
     titleId,
     aside,
+    asideClassName,
     className,
     children,
 }: Props) {
@@ -46,7 +49,12 @@ export function ResultsCard({
                     {title}
                 </h2>
                 {aside && (
-                    <div className="flex min-w-0 flex-wrap items-center gap-2">
+                    <div
+                        className={cn(
+                            'flex min-w-0 flex-wrap items-center gap-2',
+                            asideClassName,
+                        )}
+                    >
                         {aside}
                     </div>
                 )}

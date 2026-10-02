@@ -926,13 +926,14 @@ it('[P18e-02-04b] shows no duration at the end of a retro without a start time',
     expect($retro->fresh()->started_at)->toBeNull();
 });
 
-it('[P18e-02-06] shows one column per tab at 390, changes it on a swipe and from the keyboard, adds a card from the round button, takes a vote, and opens the topics and the action item in a drawer', function () {
+it('[P18e-02-06] shows one column per tab at 390, changes it on a swipe (also one that starts on a card, which moves no card) and from the keyboard, adds a card from the round button, takes a vote, and opens the topics and the action item in a drawer', function () {
     [$retro, $alice] = p18eShellBoard();
     [$start, $stop, $continue] = $retro->columns()->orderBy('position')->get()->all();
     $tabs = '[role="tablist"][aria-label="Columns"]';
     $tab = fn (string $title): string => "{$tabs} [role=\"tab\"]:has-text(\"{$title}\")";
     $shown = "[...document.querySelectorAll('[data-test^=\"retro-column-\"]')].map((column) => column.dataset.test).join(',')";
     $swipe = fn (int $from, int $to): string => "() => { const area = document.querySelector('[data-slot=\"retro-columns\"]'); const fire = (type, x) => area.dispatchEvent(new PointerEvent(type, { bubbles: true, clientX: x, clientY: 420, pointerType: 'touch', isPrimary: true })); fire('pointerdown', {$from}); fire('pointerup', {$to}); return true; }";
+    $swipeFromCard = fn (string $cardId, int $from, int $to): string => "() => { const card = document.getElementById('card-{$cardId}'); const fire = (type, x) => card.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, clientX: x, clientY: 420, pointerId: 7, pointerType: 'touch', isPrimary: true, button: 0 })); fire('pointerdown', {$from}); for (let x = {$from}; x !== {$to}; x += Math.sign({$to} - {$from}) * 10) { fire('pointermove', x); } fire('pointermove', {$to}); fire('pointerup', {$to}); return true; }";
     $pageScrollsSideways = 'document.documentElement.scrollWidth > document.documentElement.clientWidth';
     $heightOf = fn (string $selector): string => "Math.round(document.querySelector('{$selector}').getBoundingClientRect().height)";
     $panel = '[data-test="retro-action-items-panel"]';
@@ -984,10 +985,24 @@ it('[P18e-02-06] shows one column per tab at 390, changes it on a swipe and from
 
     $paired = $retro->cards()->where('content', 'Keep pairing on reviews')->sole();
 
+    $page->script($swipeFromCard($card->id, 60, 300));
+    $page->assertAriaAttribute($tab('Stop'), 'selected', 'true')
+        ->assertScript($shown, "retro-column-{$stop->id}");
+
     $page->press('Next')
         ->assertSeeIn('[aria-current="step"]', 'Grouping')
         ->assertNotPresent('[aria-label^="Add a card in"]')
-        ->click($tab('Continue'))
+        ->click($tab('Continue'));
+
+    $page->script($swipeFromCard($card->id, 60, 300));
+    $page->assertAriaAttribute($tab('Stop'), 'selected', 'true')
+        ->assertScript($shown, "retro-column-{$stop->id}");
+
+    expect($retro->cards()->where('column_id', $continue->id)->orderBy('position')->pluck('id')->all())->toBe([$card->id, $paired->id])
+        ->and($card->fresh()->parent_card_id)->toBeNull()
+        ->and($paired->fresh()->parent_card_id)->toBeNull();
+
+    $page->click($tab('Continue'))
         ->click("#card-{$paired->id} [data-slot=\"retro-card-menu\"]")
         ->click('[role="menuitem"]:has-text("Add to group…")')
         ->assertSeeIn('[data-slot="retro-group-drawer"]', 'Add to a group')
@@ -1094,7 +1109,7 @@ it('[P18e-02-15] throws the confetti for a guest in a second browser when the fa
         $page->assertSeeIn('[aria-current="step"]', 'Completed')
             ->assertCount("{$confetti} > span", 40)
             ->assertAttribute($confetti, 'aria-hidden', 'true')
-            ->assertPresent('[role="toolbar"][aria-label="Reactions"]');
+            ->assertNotPresent('[role="toolbar"][aria-label="Reactions"]');
     }
 
     $carolPage->navigate("/retros/{$retro->id}");

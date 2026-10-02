@@ -748,7 +748,7 @@ Captures `retro-board-roti-*` (facilitator, has voted) and `retro-board-roti-par
 | The question is an `h2`; the mockup has an `h1` | A: the page has one `h1`, the title of the session |
 | "Thinking…" with the two dots and an ellipsis; the mockup writes "Thinking" | the plan's label, verbatim |
 | The list holds who is connected, and the count is "voted among those connected"; a voter who left the room is not in it | M8 as the plan words it ("every participant present") |
-| "Lock board" in the bar | ruling 28 |
+| ~~"Lock board" in the bar~~ — removed in the fix round | D-108 |
 | No countdown in the capture | no timer is running in the fixture; the timer is the shell's |
 | The captures show one person: one browser is connected | — |
 | The header rail shows the current label only for the facilitator | reported in R3 |
@@ -823,7 +823,8 @@ Captures `retro-board-completed-*` (facilitator, with health check, ROTI, action
 | Action rows are the `ActionItem` of 18c (status, "To do" badge, creator line) | 18c component |
 | Phone: "Back to the team" and Share are in a "…" menu beside the e-mail button only when mail is on; without mail they are plain buttons in the bar | mockup README names the case with mail only |
 | Participation can read "3 of 2 · 100%": guests are participants, the team count is members; the percentage is capped at 100 | B3 as specified. For the owner |
-| The reaction bar floats above the cards at the bottom centre | mockup (docked bar) |
+| No reaction bar (fix round): the mockup shows it docked under the results | D-112 (spec §9.1: flying reactions are off in `completed`) |
+| The header rail is its ticked markers without labels beside "Completed", and "Previous" is not drawn (fix round) | D-101 |
 
 ### Browser tests changed
 
@@ -902,3 +903,39 @@ Not listed by the plan (it says "none: the suite runs at desktop width"), impose
 | `Plan04` `P04-15a` | at 375 the topics are no longer in `main`: the test asserts the selector `[data-slot="retro-topics-selector"]`, the panel under it, and the list inside the drawer; at 1440 it also asserts the list is back in `main` and the selector gone | plan R13: "the topics list of R9 as a drawer"; `ScreenRetroDiscussion` README, "Mobile" |
 
 New: `[P18e-02-06]`, `[P18e-R13-01]`. No test was removed.
+
+## Fix round — review of `lane/18e-back-a`
+
+What the review changed on the screens, and where each difference marked "No row" above now has its row in the plan's Deviations table (rows `D-97` to `D-115`, all to approve by the owner).
+
+### Changed
+
+- Phone board: below `md` only the keyboard sensor of the drag is mounted. A swipe that starts on a card changes the column and moves no card; `useSwipe` ignores a mouse. `[P18e-02-06]` swipes from a card in Writing and in Grouping.
+- Session end: the rail of the header is its ticked markers beside "Completed", and "Previous" is not drawn; no reaction bar (spec §9.1), so `[P18e-02-15]` asserts its absence; the note of "Actions created" takes its own line under the title when the card is narrow.
+- "Lock board" leaves the facilitator bar of ROTI: the bar has it from Health check to Voting, and from Discussing on the lock is in the settings popover alone, as in the mockups (ruling 28: the popover is its slot). Adding it to Discussing and Actions was tried first: at 1440 in French the bar then covered the foot of the topics list and the action form.
+- The presentation dialog, the topics drawer, the add-card drawer and the sheet of the previous action items close when the session expires, as every other dialog of the board.
+- The selected topic is said on its button (`aria-current`), which takes the focus; the `li` keeps the attribute for the tests.
+
+### Rows
+
+| "No row" difference | Row |
+|---|---|
+| R2: logo drawn twice; sticky action at 390 | D-115 |
+| R3: "+2 min" and the timer menu in the header | D-99 |
+| R3: "Previous", "Next", settings, cursor toggle, "…" menu in the header; no "team · sprint" line | D-100 |
+| R3: the rail shows the current label only at 1440 | D-101 |
+| R4: composer card kept open; "Add", "Cancel", "Save", "GIF" | D-97 |
+| R4: "Visible only to you" on its own line; my name on an anonymous retro; dimmed card under a drag | D-98 |
+| R5: scale of 10, no "Submit answers", who answered, the check | D-102 |
+| R7: "Comments (n)" and "Add a reaction" on every card | D-103 |
+| R7: grip on lone cards; the AI group names in the suggestion bar | D-104 |
+| R8: "n of m votes cast"; the thumb button; no live cursor | D-105 |
+| R9: "Action items" of the retro; the presentation dialog; labels of the topic moves; the title of a group | D-106 |
+| R10: the facilitator bar at the bottom centre | D-107 |
+| R3, R11: "Lock board" in the bar | D-108 |
+| R11: the question and the five labels | D-109 |
+| R11: no action item on the ROTI screen (spec §9.1 keeps them editable) | D-110 |
+| R12: `HealthCheckResults`; no team name in the subline | D-111 |
+| R12: no reaction bar | D-112 |
+| R13: no finger drag; "Add to group…" in the menu, not a long press | D-113 |
+| R13: header, stepper and vote controls of the phone | D-114 |

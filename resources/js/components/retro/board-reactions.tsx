@@ -7,11 +7,12 @@ import { channelKey } from '@/lib/realtime/whisper-transport';
 import { useBoard } from './board-context';
 import { dragIsolation } from './dnd';
 
-/** The setting alone decides: the session end keeps its reaction bar. */
+/** Flying reactions follow the setting and stop with the session (spec §9.1). */
 export function showsRetroReactions(retro: {
     reactionsEnabled: boolean;
+    phase: string;
 }): boolean {
-    return retro.reactionsEnabled;
+    return retro.reactionsEnabled && retro.phase !== 'completed';
 }
 
 type Props = {

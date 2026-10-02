@@ -96,6 +96,20 @@ function swipe(node: HTMLElement, from: number, to: number): void {
     fireEvent.pointerUp(node, { clientX: to, clientY: 300 });
 }
 
+/**
+ * A finger that starts on a card: the events bubble to the panel and to the
+ * document, as they do in a browser.
+ */
+function swipeFromCard(container: HTMLElement, from: number, to: number): void {
+    const node = container.querySelector('#card-c1') as HTMLElement;
+    const finger = { pointerType: 'touch', isPrimary: true, button: 0 };
+
+    panel(container);
+    fireEvent.pointerDown(node, { ...finger, clientX: from, clientY: 300 });
+    fireEvent.pointerMove(node, { ...finger, clientX: to, clientY: 300 });
+    fireEvent.pointerUp(node, { ...finger, clientX: to, clientY: 300 });
+}
+
 function selectedTab(): string | null {
     return (
         screen
@@ -174,6 +188,26 @@ describe('ColumnsBoard on a phone', () => {
         expect(shownColumns(container)).toEqual(['retro-column-start']);
     });
 
+    it.each(['writing', 'grouping'] as const)(
+        'changes the column on a swipe that starts on a card in %s, and moves no card',
+        async (phase) => {
+            const { container } = board({
+                retro: { phase },
+                viewer: { isFacilitator: false },
+                cards: [...cards, card({ id: 'c3', position: 1 })],
+            });
+
+            swipeFromCard(container, 300, 150);
+
+            expect(selectedTab()).toContain('Stop');
+            expect(shownColumns(container)).toEqual(['retro-column-stop']);
+
+            await Promise.resolve();
+
+            expect(retroRequest).not.toHaveBeenCalled();
+        },
+    );
+
     it('does not animate the slide for who prefers reduced motion', () => {
         const { container } = board();
 
@@ -224,6 +258,22 @@ describe('ColumnsBoard on a phone', () => {
                 screen.queryByRole('dialog', { name: 'Add a card in Stop' }),
             ).toBeNull(),
         );
+    });
+
+    it('keeps the card drawer closed once the session has expired', async () => {
+        renderInBoard(
+            <ColumnsBoard hideMyCursor />,
+            boardContext(retroSnapshot({ columns, cards }), {
+                sessionExpired: true,
+            }),
+        );
+
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Add a card in Start' }),
+        );
+        await Promise.resolve();
+
+        expect(screen.queryByRole('dialog')).toBeNull();
     });
 
     it('has no round button once writing is over', () => {

@@ -117,6 +117,27 @@ describe('useSwipe', () => {
         expect(onSwipe).not.toHaveBeenCalled();
     });
 
+    it('ignores a mouse, which selects text', () => {
+        const onSwipe = vi.fn();
+
+        render(<Area onSwipe={onSwipe} />);
+
+        const node = area();
+
+        fireEvent.pointerDown(node, {
+            clientX: 300,
+            clientY: 100,
+            pointerType: 'mouse',
+        });
+        fireEvent.pointerUp(node, {
+            clientX: 100,
+            clientY: 100,
+            pointerType: 'mouse',
+        });
+
+        expect(onSwipe).not.toHaveBeenCalled();
+    });
+
     it('forgets a move the browser cancelled', () => {
         const onSwipe = vi.fn();
 
