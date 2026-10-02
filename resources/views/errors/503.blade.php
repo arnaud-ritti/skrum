@@ -1,5 +1,8 @@
 {{--
-    Static maintenance page: `php artisan down` and every other 503.
+    Static maintenance page: `php artisan down` and every other 503. A busy
+    database (a deadlock or a lock wait that outlived its retries) keeps the
+    page and swaps the maintenance wording for its own message, without the
+    reload probe: the instance is up.
     It reads no database, cache or session and loads no asset, so it cannot use
     app.css: the colours below are copied from
     docs/design-system/tokens.json (light theme, then dark). This file is
@@ -17,6 +20,8 @@
     $locale = request()->route() === null && filled(request()->header('Accept-Language'))
         ? request()->getPreferredLanguage(array_unique([app()->getLocale(), ...config('skrum.locales')]))
         : app()->getLocale();
+    $busyHeader = isset($exception) ? ($exception->getHeaders()[\App\Support\Database\Transactions::BusyHeader] ?? null) : null;
+    $busyMessage = $busyHeader === null ? null : rawurldecode($busyHeader);
 @endphp
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', $locale) }}" @class([$appearance => $appearance !== null])>
@@ -24,7 +29,7 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="robots" content="noindex">
-        <title>{{ __('Maintenance', [], $locale) }} - {{ $instance }}</title>
+        <title>{{ $busyMessage ?? __('Maintenance', [], $locale) }} - {{ $instance }}</title>
         <style>
             :root {
                 color-scheme: light;
@@ -302,15 +307,21 @@
                 <circle cx="80" cy="56" r="2.5" fill="var(--sky-text)"/>
                 <ellipse cx="80" cy="103" rx="44" ry="4" fill="var(--muted)"/>
             </svg>
-            <p class="overline">{{ __('Maintenance', [], $locale) }}</p>
-            <h1>{{ __(':name is being updated', ['name' => $instance], $locale) }}</h1>
-            <p class="description">{{ __('Nothing is lost: sessions pick up exactly where they stopped.', [], $locale) }}</p>
+            @if($busyMessage === null)
+                <p class="overline">{{ __('Maintenance', [], $locale) }}</p>
+                <h1>{{ __(':name is being updated', ['name' => $instance], $locale) }}</h1>
+                <p class="description">{{ __('Nothing is lost: sessions pick up exactly where they stopped.', [], $locale) }}</p>
+            @else
+                <h1>{{ $busyMessage }}</h1>
+            @endif
             {{-- Place left (AD-5): the "Back at" block, then the message of the instance admin. --}}
             <div class="actions">
-                <span class="reload" data-slot="maintenance-reload" hidden>
-                    <span class="trema" aria-hidden="true"><i></i><i></i></span>
-                    <span>{{ __('This page reloads by itself as soon as the instance answers.', [], $locale) }}</span>
-                </span>
+                @if($busyMessage === null)
+                    <span class="reload" data-slot="maintenance-reload" hidden>
+                        <span class="trema" aria-hidden="true"><i></i><i></i></span>
+                        <span>{{ __('This page reloads by itself as soon as the instance answers.', [], $locale) }}</span>
+                    </span>
+                @endif
                 <a class="retry" href="/{{ ltrim(request()->getRequestUri(), '/') }}">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
@@ -326,6 +337,7 @@
             {{ $instance }}
             {{-- Place left (AD-2): the version, after the name of the instance. --}}
         </footer>
+        @if($busyMessage === null)
         <script>
             (function () {
                 var wait = function () {
@@ -348,5 +360,6 @@
                 wait();
             })();
         </script>
+        @endif
     </body>
 </html>

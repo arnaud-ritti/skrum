@@ -11,6 +11,7 @@ use App\Models\WhiteboardTemplate;
 use App\Models\Workspace;
 use App\Models\WorkspaceTemplate;
 use App\Support\Alphabetical;
+use App\Support\Database\Transactions;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -56,7 +57,7 @@ class WorkspaceTemplatesController extends Controller
             ]);
 
             $this->replaceColumns($template, $request->templateColumns());
-        });
+        }, Transactions::Attempts);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Template saved.')]);
 
@@ -66,10 +67,12 @@ class WorkspaceTemplatesController extends Controller
     public function update(WorkspaceTemplateRequest $request, Workspace $workspace, WorkspaceTemplate $template): RedirectResponse
     {
         DB::transaction(function () use ($request, $template): void {
-            $template->update($request->templateAttributes());
+            $lockedTemplate = WorkspaceTemplate::query()->whereKey($template->id)->lockForUpdate()->firstOrFail();
 
-            $this->replaceColumns($template, $request->templateColumns());
-        });
+            $lockedTemplate->update($request->templateAttributes());
+
+            $this->replaceColumns($lockedTemplate, $request->templateColumns());
+        }, Transactions::Attempts);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Template saved.')]);
 

@@ -3,7 +3,10 @@ import { loadDocumentOnMaintenance } from '@/lib/maintenance-reload';
 
 const reload = vi.hoisted(() => vi.fn());
 
+const toastError = vi.hoisted(() => vi.fn());
+
 vi.mock('@/lib/reload-document', () => ({ reloadDocument: reload }));
+vi.mock('sonner', () => ({ toast: { error: toastError } }));
 
 type StartedVisit = {
     url: URL;
@@ -24,12 +27,12 @@ function finish(visit: StartedVisit): void {
     );
 }
 
-function answer(status: number): boolean {
+function answer(status: number, headers: Record<string, string> = {}): boolean {
     return document.dispatchEvent(
         new CustomEvent('inertia:httpException', {
             cancelable: true,
             detail: {
-                response: { status, data: '<html></html>', headers: {} },
+                response: { status, data: '<html></html>', headers },
             },
         }),
     );
@@ -40,6 +43,7 @@ describe('loadDocumentOnMaintenance', () => {
 
     beforeEach(() => {
         reload.mockClear();
+        toastError.mockClear();
         stop = loadDocumentOnMaintenance();
     });
 
@@ -131,6 +135,25 @@ describe('loadDocumentOnMaintenance', () => {
     it('reloads the current document when no visit is known', () => {
         expect(answer(503)).toBe(false);
         expect(reload).toHaveBeenCalledExactlyOnceWith(null);
+    });
+
+    it('shows the message of a busy database and keeps the page, whatever the case of the header', () => {
+        start({ url: new URL('http://localhost/decks'), method: 'post' });
+
+        expect(
+            answer(503, {
+                'X-Database-Busy':
+                    'La%20base%20de%20donn%C3%A9es%20est%20occup%C3%A9e.',
+            }),
+        ).toBe(false);
+        expect(toastError).toHaveBeenCalledExactlyOnceWith(
+            'La base de données est occupée.',
+        );
+        expect(reload).not.toHaveBeenCalled();
+
+        expect(answer(503, { 'x-database-busy': 'Busy' })).toBe(false);
+        expect(toastError).toHaveBeenLastCalledWith('Busy');
+        expect(reload).not.toHaveBeenCalled();
     });
 
     it('leaves every other status to Inertia', () => {

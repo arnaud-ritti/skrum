@@ -11,6 +11,7 @@ use App\Models\Card;
 use App\Models\Participant;
 use App\Models\Retro;
 use App\Rules\SingleEmoji;
+use App\Support\Database\Transactions;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -62,7 +63,7 @@ class CardReactionsController extends Controller
             (new CardReactionsChanged($locked->id, $fresh->id, $this->summarizeReactions->forOthers($reactions, $locked)))->sendToOthers();
 
             return [$reactions, $locked];
-        });
+        }, Transactions::Attempts);
 
         return response()->json([
             'cardId' => $card->id,

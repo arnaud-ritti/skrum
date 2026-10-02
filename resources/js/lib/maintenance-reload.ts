@@ -1,4 +1,5 @@
 import { router } from '@inertiajs/react';
+import { toast } from 'sonner';
 import { reloadDocument } from '@/lib/reload-document';
 
 type StartedVisit = {
@@ -7,6 +8,19 @@ type StartedVisit = {
     prefetch?: boolean;
     async?: boolean;
 };
+
+const busyHeader = 'x-database-busy';
+
+function busyMessage(headers: Record<string, unknown>): string | null {
+    const name = Object.keys(headers).find(
+        (key) => key.toLowerCase() === busyHeader,
+    );
+    const value = name ? headers[name] : null;
+
+    return typeof value === 'string' && value !== ''
+        ? decodeURIComponent(value)
+        : null;
+}
 
 function withoutFragment(url: URL | Location): string {
     return `${url.origin}${url.pathname}${url.search}`;
@@ -19,7 +33,9 @@ function withoutFragment(url: URL | Location): string {
  * otherwise. The answer does not say which visit it belongs to, so every visit
  * under way is kept: a 503 is dropped only when all of them are prefetches,
  * which nobody asked for. A visit to the current URL with another fragment
- * reloads, since assigning it would only move the fragment.
+ * reloads, since assigning it would only move the fragment. A busy database
+ * also answers 503, with its message in a header: the instance is up, so the
+ * page stays, with what the user typed, and the message is shown as a toast.
  */
 export function loadDocumentOnMaintenance(): () => void {
     const visitsUnderWay = new Set<StartedVisit>();
@@ -38,6 +54,14 @@ export function loadDocumentOnMaintenance(): () => void {
         }
 
         event.preventDefault();
+
+        const busy = busyMessage(event.detail.response.headers);
+
+        if (busy !== null) {
+            toast.error(busy);
+
+            return;
+        }
 
         const visits = [...visitsUnderWay];
 

@@ -10,6 +10,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Card;
 use App\Models\Participant;
 use App\Models\Retro;
+use App\Support\Database\Transactions;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -58,7 +59,7 @@ class CardVotesController extends Controller
             (new VoteCast($locked->id, $votesCast, $locked->votes_version, $cardTotal))->sendToOthers();
 
             return ['votesCast' => $votesCast, 'votesVersion' => $locked->votes_version, 'total' => $total];
-        });
+        }, Transactions::Attempts);
 
         return response()->json($this->tally($retro, $card, $participant, $totals), 201);
     }
@@ -93,7 +94,7 @@ class CardVotesController extends Controller
             (new VoteRetracted($locked->id, $votesCast, $locked->votes_version, $cardTotal))->sendToOthers();
 
             return ['votesCast' => $votesCast, 'votesVersion' => $locked->votes_version, 'total' => $total];
-        });
+        }, Transactions::Attempts);
 
         return response()->json($this->tally($retro, $card, $participant, $totals));
     }

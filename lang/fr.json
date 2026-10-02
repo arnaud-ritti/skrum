@@ -4360,5 +4360,6 @@
     "Group with another card": "Grouper avec une autre carte",
     "Focus the selected card": "Mettre la carte sélectionnée en avant",
     "Create a password": "Créez un mot de passe",
-    "Create my account and join :workspace": "Créer mon compte et rejoindre :workspace"
+    "Create my account and join :workspace": "Créer mon compte et rejoindre :workspace",
+    "The database is busy. Try again.": "La base de données est occupée. Réessayez."
 }

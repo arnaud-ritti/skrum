@@ -4139,5 +4139,6 @@
     "Group with another card": "Group with another card",
     "Focus the selected card": "Focus the selected card",
     "Create a password": "Create a password",
-    "Create my account and join :workspace": "Create my account and join :workspace"
+    "Create my account and join :workspace": "Create my account and join :workspace",
+    "The database is busy. Try again.": "The database is busy. Try again."
 }

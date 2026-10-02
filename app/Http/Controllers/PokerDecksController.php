@@ -10,6 +10,7 @@ use App\Models\Team;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Support\Alphabetical;
+use App\Support\Database\Transactions;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -120,7 +121,7 @@ class PokerDecksController extends Controller
                 'cards' => $this->cards($validated),
                 'created_by_user_id' => $request->user()->id,
             ]);
-        });
+        }, Transactions::Attempts);
 
         return back();
     }
