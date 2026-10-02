@@ -1,7 +1,10 @@
 <?php
 
+use App\Enums\WorkspaceRole;
 use App\Models\Team;
 use App\Models\User;
+use App\Models\Workspace;
+use App\Models\WorkspaceInvitation;
 
 function p18eAccessMember(): User
 {
@@ -110,4 +113,122 @@ it('[P18e-11-04] shows the status of a requested reset link as an alert above th
         ->assertNotPresent('[data-sonner-toast]')
         ->click('log in')
         ->assertPathIs('/login');
+});
+
+it('[P18e-11-05] walks an invitation through its states: logged out, another account, the invited account, expired, invalid', function () {
+    $workspace = Workspace::factory()->create(['name' => 'Nordlys']);
+    $inviter = workspaceManager($workspace);
+    $mona = User::factory()->create(['name' => 'Mona Member', 'email' => 'mona@example.com', 'locale' => 'en']);
+    $otto = User::factory()->create(['name' => 'Otto Other', 'email' => 'otto@example.com', 'locale' => 'en']);
+
+    WorkspaceInvitation::factory()->withToken('pending-token')->create([
+        'workspace_id' => $workspace->id,
+        'email' => $mona->email,
+        'invited_by_id' => $inviter->id,
+    ]);
+    WorkspaceInvitation::factory()->expired()->withToken('expired-token')->create([
+        'email' => $mona->email,
+        'invited_by_id' => $inviter->id,
+    ]);
+
+    $page = visit('/invitations/pending-token');
+
+    $page->assertAttribute('[data-slot="invitation-card"]', 'data-state', 'logged-out')
+        ->assertValue('#email', 'mona@example.com')
+        ->assertPresent('[data-slot="invitation-card"] a[href$="/register"]')
+        ->assertSeeIn('[data-slot="invitation-card"] a[href$="/register"]', 'Create an account')
+        ->assertSeeIn('[data-slot="invitation-card"] a[href$="/login"]', 'Log in')
+        ->click('[data-slot="invitation-card"] a[href$="/login"]')
+        ->assertPathIs('/login')
+        ->fill('#email', $otto->email)
+        ->fill('#password', 'password')
+        ->click('@login-button')
+        ->assertPathIs('/invitations/pending-token')
+        ->assertAttribute('[data-slot="invitation-card"]', 'data-state', 'wrong-account')
+        ->assertSee('You are logged in with another email address. Log out and sign in as mona@example.com to accept.')
+        ->assertNotPresent('@accept-invitation-button')
+        ->click('Log out')
+        ->assertPathIsNot('/invitations/pending-token');
+
+    expect($workspace->members()->whereKey($otto->id)->exists())->toBeFalse();
+
+    $page->navigate('/invitations/pending-token')
+        ->assertAttribute('[data-slot="invitation-card"]', 'data-state', 'logged-out')
+        ->click('[data-slot="invitation-card"] a[href$="/login"]')
+        ->assertPathIs('/login')
+        ->fill('#email', $mona->email)
+        ->fill('#password', 'password')
+        ->click('@login-button')
+        ->assertPathIs('/invitations/pending-token')
+        ->assertAttribute('[data-slot="invitation-card"]', 'data-state', 'accept')
+        ->assertSee('Join Nordlys as Mona Member?')
+        ->assertSeeIn('@accept-invitation-button', 'Join Nordlys')
+        ->click('@accept-invitation-button')
+        ->assertPathIs("/w/{$workspace->slug}");
+
+    expect($workspace->members()->whereKey($mona->id)->exists())->toBeTrue();
+
+    $page->navigate('/invitations/expired-token')
+        ->assertSeeIn('[data-slot="access-notice"]', 'This invitation has expired')
+        ->assertSeeIn('[data-slot="access-notice"]', "Ask {$inviter->name} for a new link; nothing else to do.")
+        ->assertNotPresent('[data-slot="invitation-card"]')
+        ->assertNotPresent('@accept-invitation-button');
+
+    $page->navigate('/invitations/unknown-token')
+        ->assertSeeIn('[data-slot="access-notice"]', 'This invitation link is no longer valid.')
+        ->assertNotPresent('[data-slot="invitation-card"]');
+});
+
+it('[P18e-11-08] shows the inviter, the role and the members, and the SSO buttons only to a logged out visitor of a pending invitation', function () {
+    config([
+        'services.github.client_id' => 'walkthrough',
+        'services.github.client_secret' => 'walkthrough',
+    ]);
+
+    $workspace = Workspace::factory()->create(['name' => 'Nordlys']);
+    $inviter = workspaceManager($workspace, WorkspaceRole::Owner);
+    $inviter->forceFill(['name' => 'Ada Lovelace'])->save();
+
+    foreach (['Bea Martin', 'Cleo Lopez', 'Dora Schmidt'] as $name) {
+        $workspace->members()->attach(User::factory()->create(['name' => $name]), ['role' => WorkspaceRole::Member->value]);
+    }
+
+    $mona = User::factory()->create(['name' => 'Mona Member', 'email' => 'mona@example.com', 'locale' => 'en']);
+
+    WorkspaceInvitation::factory()->withToken('pending-token')->create([
+        'workspace_id' => $workspace->id,
+        'email' => $mona->email,
+        'role' => WorkspaceRole::Admin,
+        'invited_by_id' => $inviter->id,
+    ]);
+    WorkspaceInvitation::factory()->expired()->withToken('expired-token')->create([
+        'email' => $mona->email,
+        'invited_by_id' => $inviter->id,
+    ]);
+
+    $page = visit('/invitations/pending-token');
+
+    $page->assertSeeIn('[data-slot="invitation-sentence"]', 'Ada Lovelace invited you to join Nordlys')
+        ->assertSeeIn('[data-slot="invitation-members"]', '4 members · you join as Admin')
+        ->assertPresent('[data-slot="invitation-members"] [aria-label="Ada Lovelace"]')
+        ->assertPresent('[data-slot="invitation-members"] [aria-label="Bea Martin"]')
+        ->assertPresent('[data-slot="invitation-members"] [aria-label="Cleo Lopez"]')
+        ->assertPresent('[data-slot="invitation-members"] [aria-label="1 more"]')
+        ->assertSeeIn('[data-slot="sso-buttons"] a[href$="/auth/github/redirect"]', 'Continue with GitHub');
+
+    $page->navigate('/invitations/expired-token')
+        ->assertSeeIn('[data-slot="access-notice"]', 'This invitation has expired')
+        ->assertNotPresent('[data-slot="sso-buttons"]')
+        ->assertNotPresent('a[href$="/auth/github/redirect"]');
+
+    $page->navigate('/invitations/pending-token')
+        ->click('[data-slot="invitation-card"] a[href$="/login"]')
+        ->fill('#email', $mona->email)
+        ->fill('#password', 'password')
+        ->click('@login-button')
+        ->assertPathIs('/invitations/pending-token')
+        ->assertSeeIn('[data-slot="invitation-sentence"]', 'Ada Lovelace invited you to join Nordlys')
+        ->assertSeeIn('@accept-invitation-button', 'Join Nordlys')
+        ->assertNotPresent('[data-slot="sso-buttons"]')
+        ->assertNotPresent('a[href$="/auth/github/redirect"]');
 });

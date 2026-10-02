@@ -143,3 +143,50 @@ No mockup draws these screens; they follow the ScreenAuth form pattern (spec §7
 | The recovery code is typed in the mono font | ScreenSecurity (codes in `font-mono`) |
 | The right pane repeats the login promise on a page reached while signed in (password confirmation) | 11-D4; no mockup: reported |
 | Password confirmation: no placeholder (the old "Password" repeated the label) | same as Task 11.3 |
+
+## Task 11.5 — accept-invitation card
+
+Page `invitations/show` renders `AuthLayout variant="centered"` itself and is in `ownLayoutPages`. Container: `InvitationCard` (`resources/js/components/auth/invitation-card.tsx`), which reads the signed-in user from the shared props. Bench: `/dev/design-system/invitation`. Captures: `access-invitation-page-*` (logged out, with the three providers), `access-invitation-accept-page-*`, `access-invitation-wrong-account-page-*`, `access-invitation-expired-page-*`, `access-invitation-invalid-page-*`. Shared components touched, each in its own commit: `AccessNotice` has a `warning` tone; `AvatarStack` has a `total` prop and draws its "+N" over the avatar it overlaps.
+
+### Parity (brief 11 §3, rows 26–31)
+
+| # | Behaviour | Control | Done |
+|---|---|---|---|
+| 26 | Invalid link (HTTP 404) | `AccessNotice`: title "Invitation", "This invitation link is no longer valid."; no action | yes |
+| 27 | Expired or used invitation | `AccessNotice tone="warning"`, clock mark. Past its last day: "This invitation has expired", "It was valid until :date.". Used before its last day: "Invitation", "This invitation has expired or was already used.". Hint: "Ask :name for a new link; nothing else to do.", or "Ask an administrator of :workspace for a new link." when the inviter's account is gone | yes |
+| 28 | Card header | inviter's avatar (the workspace initial when the inviter is gone), ":inviter invited you to join :workspace" ("You are invited to join :workspace" without an inviter), three member avatars and "+N", ":count members · you join as :role"; the locked e-mail with "The invitation was sent to this address." (logged out) | yes |
+| 29 | Accept, signed in with the invited address | "Join :workspace as :name?" with the account's avatar and e-mail; `LoadingButton lg` "Join :workspace" (`data-test="accept-invitation-button"`) posting to `invitations.acceptance.store`; "Not you? Switch account" (logs out) | yes |
+| 30 | Signed in with another address | the account's avatar, name and e-mail; warning alert "You are logged in with another email address. Log out and sign in as :email to accept."; outline button "Log out" | yes |
+| 31 | Logged out | `SsoButtons` (11-D2) and the separator, the locked e-mail, "Create an account" (`lg`, when `canRegister`) and "Already have an account? Log in"; "Log in" alone as the `lg` button when registration is closed. The session `invitation_token` flow is server-side and untouched | yes |
+
+### Places left
+
+| Mockup element | Slot | Later |
+|---|---|---|
+| Team mark over the corner of the inviter's avatar (and the team's name in the sentence) | `InvitationCard` prop `team`, rendered in `[data-slot="invitation-team"]` | IN-1 |
+| The inviter's message under the members line | `InvitationCard` prop `message`, rendered in `[data-slot="invitation-message"]` | IN-2 |
+| "Decline invitation" under a separator at the foot of the card (logged out), "Decline" beside "Join" (signed in) | `InvitationCard` prop `decline`, rendered in `[data-slot="invitation-decline"]` | IN-3 |
+
+Nothing is rendered while the props are undefined. The bench shows the three places filled.
+
+### Differences with the mockup (ScreenOnboarding, frames b and d and their variants)
+
+| Difference | Covered by |
+|---|---|
+| No team name, colour or mark; the sentence names the workspace only | D-30 (IN-1) |
+| No inviter's message | D-30 (IN-2) |
+| No "Decline invitation" and no "declined" variant | D-30 (IN-3) |
+| No "already in n teams" on the signed-in variant | D-30 |
+| No password field and no "Create my account and join Atlas": the card links to the register page ("Create an account") and to the login ("Log in", not "Sign in") | plan 11.5 composition, brief row 31 (the session flow is not touched): no row, reported |
+| Expired: no "Ask for a new invitation" button (no route); the sentence names the inviter | brief row 27: no row, reported |
+| Expired: the inviter's full name, not the first name; the date follows the locale ("September 24" in English, "24 septembre" in French) and takes its year when it is not this year | reported |
+| A used invitation that is not past its last day is not called expired | F (false statement) |
+| The signed-in variants are states of the main card and keep its header (inviter, members, role); the mockup draws them as small separate cards | plan 11.5 composition: reported |
+| "Join :workspace" is an `lg` full-width button, as the other access pages; the mockup's variant uses small buttons in a row | reported |
+| "Signed in with another address" has no mockup; it follows the signed-in variant, with a warning alert and "Log out" | parity row 30 |
+| The first provider button is `lg`, and the separator reads "or with your e-mail" | `SsoButtons` (Task 11.1) |
+| The locked e-mail is a read-only field on the muted background at full opacity (the mockup dims it to 55 %): contrast rule | A |
+| Page background is `background`, not the `skrum-canvas` of the mockup; the card is centred vertically, the mockup puts it under the header | `AuthFrame` centred variant (Task 0.7, not in this task's files): reported |
+| Header: the logo and the language switcher; the mockup shows "skrum.nordlys.fr · Nordlys" at the right | `AuthFrame`; the workspace is named in the card: reported |
+| The notices (expired, invalid) use the 28rem `AccessNotice` card with a 2.5rem mark and a `text-xl` title, where the mockup's variant card is 22rem with a 2.25rem mark | `AccessNotice` (Task 0.7): reported |
+| 390: the card keeps its border and 1.25rem padding inside the frame's 1.5rem gutter, where the mockup says full width | `AuthFrame`: reported |

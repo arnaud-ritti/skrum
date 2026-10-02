@@ -3934,5 +3934,20 @@
     "The invitation was sent to this address.": "La invitación se envió a esta dirección.",
     ":count characters minimum": ":count caracteres como mínimo",
     "Create my account": "Crear mi cuenta",
-    "Already registered?": "¿Ya tienes cuenta?"
+    "Already registered?": "¿Ya tienes cuenta?",
+    ":inviter invited you to join :workspace": ":inviter te invita a unirte a :workspace",
+    ":count members · you join as :role": ":count miembros · te unes como :role",
+    "1 member · you join as :role": "1 miembro · te unes como :role",
+    "Join :workspace as :name?": "¿Unirte a :workspace como :name?",
+    "Not you?": "¿No eres tú?",
+    "Switch account": "Cambiar de cuenta",
+    "This invitation has expired": "Esta invitación ha caducado",
+    "It was valid until :date.": "Era válida hasta el :date.",
+    "Ask :name for a new link; nothing else to do.": "Pide un enlace nuevo a :name; no hay nada más que hacer.",
+    "Ask an administrator of :workspace for a new link.": "Pide un enlace nuevo a un administrador de :workspace.",
+    "Accept an invitation": "Aceptar una invitación",
+    "Places left filled": "Espacios reservados rellenados",
+    "Decline invitation": "Rechazar la invitación",
+    "Already used, inviter gone": "Ya usada, sin invitante",
+    "Invalid link": "Enlace no válido"
 }

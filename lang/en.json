@@ -3709,5 +3709,20 @@
     "The invitation was sent to this address.": "The invitation was sent to this address.",
     ":count characters minimum": ":count characters minimum",
     "Create my account": "Create my account",
-    "Already registered?": "Already registered?"
+    "Already registered?": "Already registered?",
+    ":inviter invited you to join :workspace": ":inviter invited you to join :workspace",
+    ":count members · you join as :role": ":count members · you join as :role",
+    "1 member · you join as :role": "1 member · you join as :role",
+    "Join :workspace as :name?": "Join :workspace as :name?",
+    "Not you?": "Not you?",
+    "Switch account": "Switch account",
+    "This invitation has expired": "This invitation has expired",
+    "It was valid until :date.": "It was valid until :date.",
+    "Ask :name for a new link; nothing else to do.": "Ask :name for a new link; nothing else to do.",
+    "Ask an administrator of :workspace for a new link.": "Ask an administrator of :workspace for a new link.",
+    "Accept an invitation": "Accept an invitation",
+    "Places left filled": "Places left filled",
+    "Decline invitation": "Decline invitation",
+    "Already used, inviter gone": "Already used, inviter gone",
+    "Invalid link": "Invalid link"
 }
