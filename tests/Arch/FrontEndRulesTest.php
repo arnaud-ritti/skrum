@@ -43,31 +43,6 @@ const FrontEndRuleExemptions = [
     ],
 ];
 
-/**
- * Old files that break a rule and are about to be deleted: the action items page, the old application shell it is the
- * last page to mount, the old auth layout and the old bell, which the last screens of plans 18e and 18f replace.
- * To empty in the final pass of plan 18g, with the constant. A listed file is not read for that rule; nothing is added here.
- */
-const FrontEndRuleBaseline = [
-    'arbitrary-size' => [
-        'resources/js/components/notification-bell.tsx',
-    ],
-    'colour' => [
-        'resources/js/components/action-items/external-link-chips.tsx',
-        'resources/js/components/action-items/priority-select.tsx',
-        'resources/js/components/app-logo.tsx',
-        'resources/js/components/nav-main.tsx',
-        'resources/js/components/notification-bell.tsx',
-        'resources/js/layouts/auth/auth-simple-layout.tsx',
-    ],
-    'px' => [
-        'resources/js/components/notification-bell.tsx',
-    ],
-    'inline-svg' => [
-        'resources/js/components/app-logo-icon.tsx',
-    ],
-];
-
 const FrontEndGeneratedFolders = ['resources/js/actions', 'resources/js/routes', 'resources/js/wayfinder'];
 
 /**
@@ -268,15 +243,10 @@ function presentationalImportOffences(string $source): array
 function frontEndOffences(array $sources, callable $detector, string $rule): array
 {
     $exempt = FrontEndRuleExemptions[$rule] ?? [];
-    $baseline = FrontEndRuleBaseline[$rule] ?? [];
     $offences = [];
 
     foreach ($sources as $path => $source) {
         if (isset($exempt[$path])) {
-            continue;
-        }
-
-        if (in_array($path, $baseline, true)) {
             continue;
         }
 
@@ -363,16 +333,6 @@ it('keeps only exemptions that still exempt something', function () {
     }
 
     expect($stale)->toBe([]);
-});
-
-it('keeps the baseline sorted, and apart from the exemptions', function () {
-    foreach (FrontEndRuleBaseline as $rule => $files) {
-        $sorted = $files;
-        sort($sorted);
-
-        expect($files)->toBe($sorted)
-            ->and(array_values(array_intersect($files, array_keys(FrontEndRuleExemptions[$rule] ?? []))))->toBe([]);
-    }
 });
 
 it('gives every exemption a reason', function () {

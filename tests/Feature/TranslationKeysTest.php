@@ -139,19 +139,14 @@ const DynamicTranslationSources = [
     'resources/js/components/breadcrumbs.tsx' => 'titles arrive already translated by the page, or as layout props, which the layout-prop test covers',
     'resources/js/layouts/skrum/auth-layout.tsx' => 'title and description are layout props of the auth pages, which the layout-prop test covers',
     'resources/js/components/admin/branding/palette-warnings.tsx' => 'warning keys are built by BrandPalette; tests/Unit/Branding/BrandPaletteTest.php checks them in the four files',
-    'resources/js/components/nav-main.tsx' => 'item titles are literals of app-sidebar.tsx, which TranslationKeysHeldAsData covers',
     'resources/js/components/settings/security/two-factor-card.tsx' => 'messages set by use-two-factor-auth.ts, which TranslationKeysHeldAsData covers',
-    'resources/js/layouts/auth-layout.tsx' => 'title and description are layout props of the auth pages, which the layout-prop test covers',
-    'resources/js/layouts/settings/layout.tsx' => 'titles of its own navigation items, which TranslationKeysHeldAsData covers',
 ];
 
 /**
  * Files that hold translation keys as data another file hands to `t()`, with the pattern that captures each key.
  */
 const TranslationKeysHeldAsData = [
-    'resources/js/components/app-sidebar.tsx' => '/\btitle:\s*\'((?:[^\'\\\\]|\\\\.)+)\'/',
     'resources/js/hooks/use-two-factor-auth.ts' => '/setErrors\(\(prev\) => \[\.\.\.prev, \'((?:[^\'\\\\]|\\\\.)+)\'\]\)/',
-    'resources/js/layouts/settings/layout.tsx' => '/\btitle:\s*\'((?:[^\'\\\\]|\\\\.)+)\'/',
 ];
 
 /**
