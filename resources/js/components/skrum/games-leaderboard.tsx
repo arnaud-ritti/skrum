@@ -661,7 +661,7 @@ function PodiumPlace({
             data-me={isMe || undefined}
             className={cn('flex min-w-0 flex-col items-center gap-1', order)}
         >
-            <div className="flex min-w-0 flex-col items-center gap-1 px-1 text-center">
+            <div className="flex w-full min-w-0 flex-col items-center gap-1 px-1 text-center">
                 {place === 1 && (
                     <Crown
                         aria-hidden
@@ -708,10 +708,10 @@ function PodiumPlace({
             </div>
             <div
                 className={cn(
-                    'flex w-full items-center justify-center rounded-t-md text-sm font-bold',
+                    'flex w-full items-start justify-center rounded-t-md border border-b-0 pt-2 font-display text-xl font-bold',
                     step,
                     place === 1
-                        ? 'bg-skrum-primary-soft text-skrum-primary-text'
+                        ? 'border-primary/35 bg-skrum-primary-soft text-skrum-primary-text'
                         : 'bg-muted text-muted-foreground',
                 )}
             >
@@ -758,7 +758,7 @@ function LeaderboardBody({
                 <ol
                     start={4}
                     data-slot="leaderboard-list"
-                    className="relative flex max-h-80 flex-col gap-1 overflow-y-auto"
+                    className="relative flex max-h-80 flex-col divide-y overflow-y-auto border-t"
                 >
                     {rest.map((entry, index) => {
                         const me = isMe(entry);
@@ -769,8 +769,8 @@ function LeaderboardBody({
                                 data-slot="leaderboard-row"
                                 data-me={me || undefined}
                                 className={cn(
-                                    'flex items-center gap-3 rounded-md px-2 py-1.5 text-sm',
-                                    me && 'bg-accent',
+                                    'flex items-center gap-3 p-2 text-sm',
+                                    me && 'rounded-md bg-accent',
                                 )}
                             >
                                 <span className="w-6 shrink-0 text-right text-muted-foreground tabular-nums">
@@ -793,20 +793,28 @@ function LeaderboardBody({
                                             </span>
                                         )}
                                     </span>
-                                    <span className="truncate text-xs text-muted-foreground">
-                                        {counts.rounds(entry.roundsPlayed)} ·{' '}
-                                        {counts.wins(entry.wins)}
+                                    <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+                                        <span className="truncate text-xs text-muted-foreground">
+                                            {counts.rounds(entry.roundsPlayed)}{' '}
+                                            · {counts.wins(entry.wins)}
+                                        </span>
+                                        {(entry.streak ?? 0) >=
+                                            StreakBadgeFrom && (
+                                            <Badge
+                                                variant="outline"
+                                                icon={Flame}
+                                                className="max-w-full"
+                                            >
+                                                <span className="truncate">
+                                                    {t(':count-week streak', {
+                                                        count:
+                                                            entry.streak ?? 0,
+                                                    })}
+                                                </span>
+                                            </Badge>
+                                        )}
                                     </span>
                                 </span>
-                                {(entry.streak ?? 0) >= StreakBadgeFrom && (
-                                    <Badge variant="outline" icon={Flame}>
-                                        <span className="truncate">
-                                            {t(':count-week streak', {
-                                                count: entry.streak ?? 0,
-                                            })}
-                                        </span>
-                                    </Badge>
-                                )}
                                 <span className="shrink-0 font-semibold tabular-nums">
                                     {formatNumber(entry.points)}{' '}
                                     <span className="text-xs font-normal text-muted-foreground">
