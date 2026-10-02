@@ -4020,5 +4020,10 @@
     "Validate :value · Next story": "Validate :value · Next story",
     "Final estimate": "Final estimate",
     "Result in the dock: the oval keeps the figures, the bar holds the agreement, the distribution and the final estimate": "Result in the dock: the oval keeps the figures, the bar holds the agreement, the distribution and the final estimate",
-    "Result on a phone: a card in the page, the two buttons at the bottom": "Result on a phone: a card in the page, the two buttons at the bottom"
+    "Result on a phone: a card in the page, the two buttons at the bottom": "Result on a phone: a card in the page, the two buttons at the bottom",
+    "Only :count recovery codes left": "Only :count recovery codes left",
+    "Only one recovery code left": "Only one recovery code left",
+    "No recovery codes left": "No recovery codes left",
+    "Regenerate your codes to get :total new ones. The old ones stop working.": "Regenerate your codes to get :total new ones. The old ones stop working.",
+    "If you lose your phone, you will not be able to sign in. Regenerate your codes now.": "If you lose your phone, you will not be able to sign in. Regenerate your codes now."
 }

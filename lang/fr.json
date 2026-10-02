@@ -4243,5 +4243,10 @@
     "Validate :value · Next story": "Valider :value · Story suivante",
     "Final estimate": "Estimation finale",
     "Result in the dock: the oval keeps the figures, the bar holds the agreement, the distribution and the final estimate": "Résultat dans le dock : l'ovale garde les chiffres, la barre porte l'accord, la distribution et l'estimation finale",
-    "Result on a phone: a card in the page, the two buttons at the bottom": "Résultat sur téléphone : une carte dans la page, les deux boutons en bas"
+    "Result on a phone: a card in the page, the two buttons at the bottom": "Résultat sur téléphone : une carte dans la page, les deux boutons en bas",
+    "Only :count recovery codes left": "Plus que :count codes de récupération",
+    "Only one recovery code left": "Plus qu'un code de récupération",
+    "No recovery codes left": "Plus aucun code de récupération",
+    "Regenerate your codes to get :total new ones. The old ones stop working.": "Régénérez vos codes pour en obtenir :total nouveaux. Les anciens ne fonctionnent plus.",
+    "If you lose your phone, you will not be able to sign in. Regenerate your codes now.": "Si vous perdez votre téléphone, vous ne pourrez plus vous connecter. Régénérez vos codes maintenant."
 }
