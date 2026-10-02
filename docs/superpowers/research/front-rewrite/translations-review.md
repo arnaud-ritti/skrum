@@ -6,6 +6,27 @@ Scope: the 733 keys present in `lang/fr.json`, `lang/es.json` and `lang/de.json`
 
 Checked for each key: term consistency with the vocabulary the application already had, register, length of labels, `:placeholders`, plural forms.
 
+## Register: informal everywhere (owner decision, 2026-10-02, sixth round)
+
+"Langue : tutoiement partout." Every user-facing text addresses the user informally in every language that has the distinction: French "tu", Spanish "tú", German "du"; English is unchanged. This overrides what the sections below say about the register (French "vous", Spanish mails with "usted") and the wording of the mail mockups.
+
+| | French | Spanish | German |
+|---|---|---|---|
+| Values changed in `lang/<l>.json` | 485 | 53 | 2 |
+| Values changed in `lang/<l>/*.php` | 48 (templates 41, passwords 3, whiteboards 2, auth 1, validation 1) | 6 (passwords 3, actions 1, auth 1, validation 1) | 5 (actions 2, auth 1, passwords 1, validation 1) |
+
+Blade views, PHP code and TSX hold no literal text in these languages: every string goes through the translation files, the static 503 page included.
+
+Plural "vous" kept in French, because the text addresses several people at once:
+
+- the four summaries of the team health check ("L’équipe s’épanouit. Continuez ce qui fonctionne.", "… Gardez cette dynamique.", "… Choisissez-en un à améliorer.", "… Parlez de ce qui aiderait le plus.");
+- the three messages posted to a channel (":sharer vous invite à la rétrospective…", "… à la partie de planning poker…", "… à jouer à :game…");
+- one retro template column ("… mettez-vous d’accord dessus avant le reste").
+
+Spanish has no such case left: the same texts already used the singular "tú". German keeps "ihr" where it had it.
+
+`tests/Feature/InformalRegisterTest.php` scans the values of the JSON and PHP files of the three languages for formal forms, with an allow-list for the cases above, for the noun "rendez-vous" and for five German sentences that start with a third-person "Sie" or "Ihre".
+
 ## Result
 
 | | French | Spanish | German |
@@ -23,7 +44,7 @@ No test, PHP file or TypeScript file spells any of the changed values.
 
 ### French
 
-- Register: every new key already uses "vous". Nothing to fix.
+- Register: every new key already used "vous" at the time of the review. Superseded: French says "tu" (see above).
 - Vocabulary brought to the words of the mockups (`docs/design-system` uses "facilitateur" 185 times against "animateur" once, "deck" 288 times against "jeu de cartes" never, "icebreaker" 135 against "brise-glace" once, "double authentification" against "authentification à deux facteurs" never):
   - "animateur" becomes "facilitateur" (21 values, with the article: "l'animateur" → "le facilitateur", "de l'animateur" → "du facilitateur", "nouvel animateur" → "nouveau facilitateur").
   - "jeu de cartes" becomes "deck" (19 values).
@@ -32,7 +53,7 @@ No test, PHP file or TypeScript file spells any of the changed values.
 
 ### Spanish
 
-- Register: the application says "tú"; the mails say "usted", as the Laravel mail lines the application already had ("Si no ha creado una cuenta…"). 24 new screen strings written with "usted" now say "tú" ("Introduzca el código…" → "Introduce el código…", "Revise su bandeja de entrada" → "Revisa tu bandeja de entrada", the SSO and second-factor messages). One older string too ("Use los interruptores…"). The 19 mail strings stay with "usted".
+- Register: the application says "tú"; the mails say "usted", as the Laravel mail lines the application already had ("Si no ha creado una cuenta…"). 24 new screen strings written with "usted" now say "tú" ("Introduzca el código…" → "Introduce el código…", "Revise su bandeja de entrada" → "Revisa tu bandeja de entrada", the SSO and second-factor messages). One older string too ("Use los interruptores…"). The 19 mail strings stayed with "usted" at the time of the review. Superseded: they say "tú" (see above).
 - "mazo" becomes "baraja", the word of the key "Deck" (25 values, 6 of them new).
 - "llave de acceso" becomes "clave de acceso" in the three new keys (9 older strings say "clave", 6 say "llave": see the doubtful cases).
 - "poker" becomes "póker" where it is a common noun ("partida de póker"); "Planning poker" stays.
@@ -75,8 +96,8 @@ None of these was changed. Each needs a person who speaks the language, or a dec
 
 | Case | Detail |
 |---|---|
-| ":inviter le invita a unirse a :workspace" | One key serves the mail (usted) and the invitation card (tú). Left with "usted". A key of its own for the card would fix it. |
-| Mails with "usted" | Kept, to match the older mail lines. If the owner wants "tú" everywhere, 19 new strings and the Laravel mail lines change. |
+| ":inviter le invita a unirse a :workspace" | One key serves the mail (usted) and the invitation card (tú). Settled: "te invita", the mail and the card agree. |
+| Mails with "usted" | Settled by the owner: "tú" everywhere; the mail strings and the Laravel lines were changed. |
 | "clave de acceso" and "llave de acceso" | 6 older strings still say "llave". |
 | "Ajustes" and "Configuración" | The key "Settings" is "Configuración"; 42 strings say "ajustes". |
 | "incidencia" and "ticket" | 36 older strings say "incidencia" for an issue of a tracker; the new action-item strings say "ticket". |
@@ -88,7 +109,7 @@ None of these was changed. Each needs a person who speaks the language, or a dec
 
 | Case | Detail |
 |---|---|
-| "du" everywhere | The largest change of this review (189 values). To overturn: revert the commit "fix(i18n): German says du…" — but then 78 new strings say "Sie" next to older ones with "du". |
+| "du" everywhere | The largest change of this review (189 values). Confirmed by the owner (informal everywhere). Seven more strings found with "Sie" (two in the JSON file, five in the PHP files) now say "du" or use the infinitive. |
 | "Deck" and "Kartensatz" | 41 strings say "Deck", 18 "Kartensatz"; the key "Deck" is "Kartensatz". Not harmonised. |
 | "Moderator" and "Moderation" | 28 older strings say "Moderator", 19 "Moderation" (the neutral form, and the word of the key "Facilitator"). |
 | "Admin" and "Administrator" | 38 and 26 strings. |

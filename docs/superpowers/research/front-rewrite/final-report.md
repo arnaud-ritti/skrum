@@ -164,10 +164,11 @@ The table of `18f-report.md` §4 stands as written: the second-factor condition 
 
 | Decision | To overturn |
 |---|---|
-| German says "du" everywhere (189 values, 70 of them older than plan 18e) | Revert `78935c16`; 78 new strings then say "Sie" next to older ones with "du" |
-| Spanish says "tú" on screen and keeps "usted" in mails; "baraja", "clave de acceso" | Revert `a67e4836` |
+| German says "du" everywhere (189 values, 70 of them older than plan 18e) | **Settled by the owner** (sixth round: informal address everywhere). Seven remaining "Sie" strings were changed too |
+| Spanish says "tú" on screen and keeps "usted" in mails; "baraja", "clave de acceso" | Register **settled by the owner** (sixth round): "tú" everywhere, mails included; French says "tu" everywhere. For "baraja" and "clave de acceso": revert `a67e4836` |
 | French takes the words of the mockups: "facilitateur", "deck", "icebreaker", "double authentification", "Enregistrer", "Synthèse", "Depuis toujours" | Revert `b7d2790b`; the last three are in `cabda665` and `5faee0d6` |
 | French: a non-breaking space before `: ; ? !` (469 values); the mail strings were left out so that they match their mockup to the letter | Revert `52945310` |
+| Participation of the session end (plan 18e close: team members only, guests left out) | **Settled by the owner** (sixth round): a guest counts. Everyone who joined out of everyone expected (team members plus the participants who are not members); never above 100%. Spec B3 amended |
 | The link of a team tile uses the key "Open team"; the key "Open" is removed | `team-tile.tsx`; restore the key |
 | The poker header shows the round alone below 110rem; "Anonymous votes" and "Auto-reveal" are then only in the settings and the facilitator panel | `OptionBadgesFrom` in `poker/poker-room.tsx` |
 | The unsaved line of the admin topbar shows only when something is unsaved | `unsaved-bar.tsx` (`md:data-[dirty]:not-sr-only`) |
