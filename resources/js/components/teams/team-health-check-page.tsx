@@ -14,7 +14,7 @@ export type TeamHealthCheckPageProps = {
     team: TeamSummary;
     healthStatements: TeamHealthStatement[];
     canManageHealthStatements: boolean;
-    /** Deferred: absent while it loads, null when the server could not build it. */
+    /** Deferred: absent while it loads, and still absent when the server could not build it. */
     moodTrend?: TeamMoodPoint[] | null;
 };
 

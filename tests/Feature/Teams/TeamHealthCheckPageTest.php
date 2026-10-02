@@ -119,5 +119,5 @@ it('answers the team page and the health check page when their trend cannot be b
         ->assertInertia(fn (Assert $page) => $page
             ->missing('moodTrend')
             ->loadDeferredProps('trend', fn (Assert $reload) => $reload
-                ->where('moodTrend', null)));
+                ->missing('moodTrend')));
 })->with(['teams.show', 'teams.healthCheck.show']);

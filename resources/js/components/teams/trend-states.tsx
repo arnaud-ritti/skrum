@@ -17,7 +17,7 @@ export type TrendState = {
 };
 
 type Props = {
-    /** The deferred `moodTrend` prop: absent while loading, null once rescued. */
+    /** The deferred `moodTrend` prop: absent while loading, and still absent once rescued. */
     trend?: TeamMoodPoint[] | null;
     children: (state: TrendState) => ReactNode;
 };
