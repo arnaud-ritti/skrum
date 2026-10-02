@@ -1,6 +1,7 @@
 import { usePage } from '@inertiajs/react';
-import { ExternalLink, ServerCog, TriangleAlert } from 'lucide-react';
+import { ServerCog } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { Alert } from '@/components/ui/alert';
 import { useTrans } from '@/hooks/use-trans';
 import type {
     IntegrationProviderCard,
@@ -18,6 +19,7 @@ import { JiraTokenDialog } from './jira-token-dialog';
 import { PeoplePanel } from './people-panel';
 import { PrioritiesPanel } from './priorities-panel';
 import { StoryPointsField } from './story-points-field';
+import { TrackerIntro, TrackerLink } from './tracker-parts';
 
 type Props = {
     card: IntegrationProviderCard;
@@ -79,11 +81,11 @@ export function JiraDataCenterIntegration({
                     </>
                 }
             >
-                <p className="text-sm text-muted-foreground">
+                <TrackerIntro>
                     {t(
                         'Import issues into planning poker. With write access, estimates are written back and action items can be exported.',
                     )}
-                </p>
+                </TrackerIntro>
             </ProviderCard>
         );
     }
@@ -179,29 +181,20 @@ function ConnectedJiraDataCenter({
             }
         >
             {usesToken && (
-                <div
+                <Alert
+                    variant="warning"
                     role="note"
-                    className="flex gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm"
+                    data-slot="jira-token-owner"
+                    title={t('Acting as :name in Jira', { name: owner })}
+                    description={t(
+                        'This token acts as :name in Jira. Everything skrum does — imports, estimates, exported issues, status changes — will appear as done by :name, and skrum sees only what :name can see. Prefer OAuth when your Jira supports it.',
+                        { name: owner },
+                    )}
                 >
-                    <TriangleAlert
-                        className="mt-0.5 size-4 shrink-0 text-amber-600"
-                        aria-hidden
-                    />
-                    <div className="space-y-1">
-                        <p className="font-medium">
-                            {t('Acting as :name in Jira', { name: owner })}
-                        </p>
-                        <p>
-                            {t(
-                                'This token acts as :name in Jira. Everything skrum does — imports, estimates, exported issues, status changes — will appear as done by :name, and skrum sees only what :name can see. Prefer OAuth when your Jira supports it.',
-                                { name: owner },
-                            )}
-                        </p>
-                        <p className="text-muted-foreground">
-                            {t('Token saved on :date', { date: savedOn })}
-                        </p>
-                    </div>
-                </div>
+                    <p className="text-body-sm text-foreground/70">
+                        {t('Token saved on :date', { date: savedOn })}
+                    </p>
+                </Alert>
             )}
             <ProviderDetails
                 connection={connection}
@@ -209,15 +202,9 @@ function ConnectedJiraDataCenter({
                     {
                         label: t('Jira server'),
                         value: settings.baseUrl ? (
-                            <a
-                                href={settings.baseUrl}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="inline-flex items-center gap-1 underline"
-                            >
+                            <TrackerLink href={settings.baseUrl}>
                                 {settings.serverTitle}
-                                <ExternalLink className="size-3" aria-hidden />
-                            </a>
+                            </TrackerLink>
                         ) : (
                             settings.serverTitle
                         ),

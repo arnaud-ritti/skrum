@@ -281,3 +281,50 @@ No mockup of this card exists (brief 10 §6). What was decided without one:
 | Copying the secret or a body no longer shows a toast: the button says "Copied" | the pattern of 10.2, 10.4 and 10.5 |
 | The signing secret dialog has no close cross | parity row 66: it is the one chance to copy the secret |
 | Status of the response as a badge ("Status: 200", success below 400, destructive from 400) | none needed |
+
+## Task 10.7 — trackers (Jira, Jira Data Center, Linear, GitHub)
+
+Rewritten in place, same exports: `jira-integration.tsx`, `jira-data-center-integration.tsx`, `jira-data-center-webhook-panel.tsx`, `jira-token-dialog.tsx`, `linear-integration.tsx`, `github-integration.tsx`, `github-priority-labels.tsx`, `people-panel.tsx`, `account-picker-dialog.tsx`, `priorities-panel.tsx`, `status-sync-section.tsx`, `status-mapping-panel.tsx`, `story-points-field.tsx`. New: `tracker-parts.tsx` (`TrackerPanel`, the titled part of a tracker card; `PanelError`, `PanelLoading`, `TrackerLink`, `TrackerIntro`). Vitest: `trackers.test.tsx`. Captures: `team-integrations-trackers-*`, `team-integrations-status-sync-dialog-*`, `team-integrations-jira-token-dialog-*`, `team-integrations-jira-data-center-*`.
+
+Shared component extended, in its own commit: `FormDialog` takes `submitDisabled` ("Save token" waits for "I understand").
+
+Browser test changed (K24, M26): `Plan14dStatusSyncTest.php`, the six selectors `label:has-text("Sync status") button[role="checkbox"]` and `label:has-text("Treat canceled as done") button[role="checkbox"]` read `button[role="switch"]`.
+
+### Parity (brief 10 §3.5, rows 77–88)
+
+| # | Action | Control | Done |
+|---|---|---|---|
+| 77 | Jira Cloud: choose the site, upgrade, open the site | while `setup_required`: `Select` named "Jira site" under "Choose the Jira site this team uses:"; then the site as a link in the details; "Upgrade to read and write" in the footer of a read-only connection; the story points field is not shown during the setup | yes |
+| 78 | Jira Data Center: OAuth or token | `FormDialog` "Personal access token": `TextField` of type password (never shown again), segmented `ToggleGroup` "Access" (Read only / Read and write), warning note, `Checkbox` "I understand" inside its label; "Save token" disabled until it is ticked; a refusal shows under the field, which takes the focus. Triggers "Older Jira server? Use a personal access token" (link), "Use a personal access token", "Replace token"; "Remove token" is the disconnect dialog with its own title. A connected token shows the warning "Acting as :name in Jira" with the date it was saved | yes |
+| 79 | Story points field, "Detect again" | `Select` named "Story points field" and the outline button "Detect again" with its spinner; "No story points field found." | yes |
+| 80 | People mapping | section "People" with the hint of the provider and "Match by email" / "Match GitHub sign-ins" (spinner and disabled while the matching runs; refetch every 5 s); one list item per member: avatar, name, e-mail, the account, a badge (Not mapped, Matched by email, Set manually, Linked via GitHub sign-in, Never assign, Account inactive) and the menu "Change the :provider account of :name" (Choose an account…, Never assign, Reset); the account search dialog (300 ms, from 2 characters, `[aria-label="Search"]`) | yes |
+| 81 | Priority map | section "Priorities": three `Select` named "Priority for :level", "Default (:name)", "Don't set" for Jira | yes |
+| 82 | GitHub priority labels | section "Priority labels": three `TextField` (50 characters), "Save"; a refusal under its field, which takes the focus | yes |
+| 83 | Status sync on / off | `Switch` inside the label "Sync status"; turning it on asks "Turn on status sync with :provider?" in a dialog; turning it off sends at once | yes |
+| 84 | Treat canceled as done | `Switch` inside its label (Linear, GitHub), on by default | yes |
+| 85 | Status mapping | sub-section "Status mapping": one bordered block per project or team, "Edit mapping", then "Counts as done" (`Checkbox`, the last one locked with "At least one status must count as done.") and the `Select` "Complete to" / "Reopen to"; "Try again" when the list cannot be loaded | yes |
+| 86 | Jira Data Center manual webhook | bordered box: the sentence, "Show webhook details", then the four values each with its copy button ("Copy Webhook URL"…), "I've registered it" | yes |
+| 87 | Status-sync mode line | box under the switch: an icon and one of the four sentences, "Last sync: :time", and "Reconnect :provider to receive live updates." | yes |
+| 88 | Providers absent when disabled | unchanged: the page gets the enabled providers only | yes |
+
+### Places left
+
+None: the task has no "Places left" line.
+
+### Differences with the mockup
+
+No mockup shows the panels of a tracker (brief 10 §6); ScreenSettings gives the card (`.st-card`), the option row with its switch at the end (`.sk-between`) and the integration rows of frame b. What was decided without one:
+
+| Decision | Reason |
+|---|---|
+| "Sync status" and "Treat canceled as done" are the mockup's option rows: the name on the left, the switch at the end of the line, both inside one `<label>` | K24 as flipped, M26; `Plan14d` reads the switch inside its label |
+| The two option rows have no help line under their name (the mockup's rows have one) | the explanation is the sentence of the section; no new statement is invented. Reported |
+| The people are a list, not the `Table` the plan names | `Plan12d` reads each member as `li` (`li:has-text("Not mapped")` counted, `li:has-text("bob@example.test")`) and the task lists no change for it; `Table/README.md`: fewer than four attributes is a simple list. Reported |
+| The confirmation of the status sync is a `dialog`, not the `alertdialog` of `ConfirmDialog` | `Plan14d` clicks `[role="dialog"] button:has-text("Turn on status sync")`; same ruling as 10.5 and 10.6. Reported |
+| The account search dialog is a plain `Dialog`, not a `FormDialog`: it has nothing to submit, choosing a result closes it | parity row 80 |
+| The manual webhook panel is always open, not collapsible as the brief proposes | `Plan14d` reads "Only a Jira administrator can register the webhook." without opening anything |
+| A copy button of the webhook details shows a check for two seconds and keeps its toast: an icon alone would not say "Copied" | A: the button has no visible label to change |
+| A list that cannot be loaded (people, priorities) has a "Retry" button, which the old panels lacked | the pattern of the deliveries (10.6) |
+| The logo box holds a lucide icon (`list-checks`, `server-cog`, `list-todo`, `git-branch`), not the coloured letter marks "J" and "L" of frame b | `ProviderCard` of 10.5; lucide has no brand icon in use. Reported |
+| No switch per integration and no "Configure" | as 10.5: a connection has no "off" state |
+| "I understand" stays a checkbox | plan, Task 10.7 (an acknowledgement) |

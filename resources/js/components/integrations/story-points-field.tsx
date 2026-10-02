@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import JiraFieldDetectionsController from '@/actions/App/Http/Controllers/Integrations/JiraFieldDetectionsController';
 import TeamIntegrationsController from '@/actions/App/Http/Controllers/Integrations/TeamIntegrationsController';
-import { Button } from '@/components/ui/button';
+import { LoadingButton } from '@/components/skrum/loading-button';
 import {
     Select,
     SelectContent,
@@ -22,16 +22,22 @@ type Props = {
     connection: TeamIntegration;
 };
 
+type Pending = 'field' | 'detection' | null;
+
 /** The story points field of a Jira Cloud or Jira Data Center connection. */
 export function StoryPointsField({ scope, connection }: Props) {
     const { t } = useTrans();
-    const [busy, setBusy] = useState(false);
+    const [pending, setPending] = useState<Pending>(null);
     const numberFields = connection.settings.numberFields ?? [];
     const storyPointFields = connection.settings.storyPointFields ?? [];
     const target = { ...scope, integration: connection.id };
 
-    const send = async (request: Promise<unknown>, successMessage: string) => {
-        setBusy(true);
+    const send = async (
+        kind: Exclude<Pending, null>,
+        request: Promise<unknown>,
+        successMessage: string,
+    ) => {
+        setPending(kind);
 
         try {
             await request;
@@ -42,12 +48,13 @@ export function StoryPointsField({ scope, connection }: Props) {
                 integrationErrorMessage(error, t('Something went wrong.')),
             );
         } finally {
-            setBusy(false);
+            setPending(null);
         }
     };
 
     const chooseField = (fieldId: string) =>
         void send(
+            'field',
             retroRequest(TeamIntegrationsController.update(target), {
                 story_point_field_id: fieldId,
             }),
@@ -56,21 +63,25 @@ export function StoryPointsField({ scope, connection }: Props) {
 
     const detect = () =>
         void send(
+            'detection',
             retroRequest(JiraFieldDetectionsController.store(target)),
             t('Fields detected again.'),
         );
 
     return (
-        <div className="space-y-2">
+        <div
+            data-slot="story-points-field"
+            className="flex min-w-0 flex-col gap-1.5"
+        >
             <p className="text-sm font-medium">{t('Story points field')}</p>
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex min-w-0 flex-wrap items-center gap-2">
                 {numberFields.length === 0 ? (
                     <p className="text-sm text-muted-foreground">
                         {t('No story points field found.')}
                     </p>
                 ) : (
                     <Select
-                        disabled={busy}
+                        disabled={pending !== null}
                         value={storyPointFields[0]?.id}
                         onValueChange={chooseField}
                     >
@@ -90,15 +101,18 @@ export function StoryPointsField({ scope, connection }: Props) {
                     </Select>
                 )}
                 {connection.status === 'active' && (
-                    <Button
+                    <LoadingButton
+                        type="button"
                         variant="outline"
                         size="sm"
-                        disabled={busy}
+                        className="max-w-full"
+                        loading={pending === 'detection'}
+                        disabled={pending !== null}
                         onClick={detect}
                     >
-                        <RefreshCw className="size-4" aria-hidden />
-                        {t('Detect again')}
-                    </Button>
+                        <RefreshCw aria-hidden="true" />
+                        <span className="truncate">{t('Detect again')}</span>
+                    </LoadingButton>
                 )}
             </div>
         </div>

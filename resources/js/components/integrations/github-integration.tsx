@@ -1,5 +1,6 @@
-import { ExternalLink, GitBranch } from 'lucide-react';
+import { GitBranch, Info } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useTrans } from '@/hooks/use-trans';
 import type { IntegrationProviderCard, IntegrationScope } from '@/types';
 import { DisconnectIntegrationDialog } from './disconnect-integration-dialog';
@@ -11,6 +12,7 @@ import {
     providerCardProps,
 } from './provider-card';
 import { PeoplePanel } from './people-panel';
+import { TrackerIntro, TrackerLink } from './tracker-parts';
 
 type Props = {
     card: IntegrationProviderCard;
@@ -39,11 +41,11 @@ export function GitHubIntegration({ card, scope, statusSection }: Props) {
                     />
                 }
             >
-                <p className="text-sm text-muted-foreground">
+                <TrackerIntro>
                     {t(
                         'Import issues into planning poker by milestone or search, write estimates into issue descriptions and export action items.',
                     )}
-                </p>
+                </TrackerIntro>
             </ProviderCard>
         );
     }
@@ -59,6 +61,36 @@ export function GitHubIntegration({ card, scope, statusSection }: Props) {
     return (
         <ProviderCard
             {...providerCardProps(card, GitBranch, t)}
+            details={
+                <ProviderDetails
+                    connection={connection}
+                    rows={[
+                        {
+                            label: t('GitHub account'),
+                            value: (
+                                <TrackerLink href={installationUrl}>
+                                    {account}
+                                </TrackerLink>
+                            ),
+                        },
+                        {
+                            label: t('Access'),
+                            value:
+                                connection.access === 'write'
+                                    ? t('Read and write')
+                                    : t('Read only'),
+                        },
+                        ...(settings.exportRepositoryName
+                            ? [
+                                  {
+                                      label: t('Export repository'),
+                                      value: settings.exportRepositoryName,
+                                  },
+                              ]
+                            : []),
+                    ]}
+                />
+            }
             actions={
                 <>
                     <ConnectLink
@@ -87,46 +119,15 @@ export function GitHubIntegration({ card, scope, statusSection }: Props) {
                 </>
             }
         >
-            <ProviderDetails
-                connection={connection}
-                rows={[
-                    {
-                        label: t('GitHub account'),
-                        value: (
-                            <a
-                                href={installationUrl}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="inline-flex items-center gap-1 underline"
-                            >
-                                {account}
-                                <ExternalLink className="size-3" aria-hidden />
-                            </a>
-                        ),
-                    },
-                    {
-                        label: t('Access'),
-                        value:
-                            connection.access === 'write'
-                                ? t('Read and write')
-                                : t('Read only'),
-                    },
-                    ...(settings.exportRepositoryName
-                        ? [
-                              {
-                                  label: t('Export repository'),
-                                  value: settings.exportRepositoryName,
-                              },
-                          ]
-                        : []),
-                ]}
-            />
             {connection.access === 'read' && (
-                <p className="text-sm text-muted-foreground">
-                    {t(
-                        'This installation can only read issues. Give the app "Issues: read and write" on GitHub to write estimates and export action items.',
-                    )}
-                </p>
+                <Alert variant="info">
+                    <Info aria-hidden="true" />
+                    <AlertDescription>
+                        {t(
+                            'This installation can only read issues. Give the app "Issues: read and write" on GitHub to write estimates and export action items.',
+                        )}
+                    </AlertDescription>
+                </Alert>
             )}
             {active && connection.access === 'write' && (
                 <>

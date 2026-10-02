@@ -369,7 +369,7 @@ it('[P14d-01a] turns status sync on for Jira after a confirmation and shows the 
         'api.atlassian.com/*' => Http::response(['message' => 'Unexpected request in a browser test.'], 404),
     ]);
     $path = p14dIntegrationsPath($retro);
-    $switch = 'label:has-text("Sync status") button[role="checkbox"]';
+    $switch = 'label:has-text("Sync status") button[role="switch"]';
 
     $page = $this->signIn($ada, $path);
 
@@ -422,7 +422,7 @@ it('[P14d-01b] asks to reconnect a Jira connection made without the webhook scop
     $page = $this->signIn($ada, p14dIntegrationsPath($retro));
 
     $page->assertSee('Status sync')
-        ->assertAttribute('label:has-text("Sync status") button[role="checkbox"]', 'aria-checked', 'true')
+        ->assertAttribute('label:has-text("Sync status") button[role="switch"]', 'aria-checked', 'true')
         ->assertSee('Reconnect Jira to receive live updates.')
         ->assertSee('Checking every 5 minutes.')
         ->assertVisible('a:has-text("Reconnect")')
@@ -860,7 +860,7 @@ it('[P14d-07c] leaves the action item open when its Linear issue is canceled and
     fakeLinearGraphql([
         'issues(' => ['issues' => ['nodes' => [p14dLinearIssue('canceled')]]],
     ]);
-    $treatCanceled = 'label:has-text("Treat canceled as done") button[role="checkbox"]';
+    $treatCanceled = 'label:has-text("Treat canceled as done") button[role="switch"]';
     $card = "#action-item-{$item->id}";
 
     $page = $this->signIn($ada, p14dIntegrationsPath($retro));
@@ -989,7 +989,7 @@ it('[P14d-09a] registers the Jira Data Center webhook itself when the token belo
         'jira.example.com/*' => Http::response(['message' => 'Unexpected request in a browser test.'], 404),
     ]);
     $path = p14dIntegrationsPath($retro);
-    $switch = 'label:has-text("Sync status") button[role="checkbox"]';
+    $switch = 'label:has-text("Sync status") button[role="switch"]';
 
     $page = $this->signIn($ada, $path);
 
@@ -1032,7 +1032,7 @@ it('[P14d-09b] shows the manual webhook panel to a non-administrator and goes li
         'jira.example.com/*' => Http::response(['message' => 'Unexpected request in a browser test.'], 404),
     ]);
     $path = p14dIntegrationsPath($retro);
-    $switch = 'label:has-text("Sync status") button[role="checkbox"]';
+    $switch = 'label:has-text("Sync status") button[role="switch"]';
 
     $page = $this->signIn($ada, $path);
 
@@ -1246,7 +1246,7 @@ it('[P14d-11a] says it checks every 5 minutes and answers 404 to webhooks when i
     ['retro' => $retro, 'ada' => $ada, 'integration' => $integration] = p14dSyncedItem(IntegrationProvider::GitHub, mode: null);
     fakeGitHubTrackerApi();
     Http::fake(['api.github.com/*' => Http::response(['message' => 'Unexpected request in a browser test.'], 404)]);
-    $switch = 'label:has-text("Sync status") button[role="checkbox"]';
+    $switch = 'label:has-text("Sync status") button[role="switch"]';
 
     $page = $this->signIn($ada, p14dIntegrationsPath($retro));
 

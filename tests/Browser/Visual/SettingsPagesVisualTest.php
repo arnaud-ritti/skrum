@@ -1,19 +1,30 @@
 <?php
 
 use App\Actions\Mcp\IssueMcpToken;
+use App\Enums\IntegrationAccess;
 use App\Enums\IntegrationDeliveryChannel;
 use App\Enums\IntegrationDeliveryKind;
+use App\Enums\IntegrationInboundMode;
 use App\Enums\IntegrationProvider;
 use App\Enums\IntegrationStatus;
+use App\Enums\IntegrationWebhookStatus;
 use App\Enums\McpScope;
+use App\Enums\RetroPhase;
 use App\Enums\WorkspaceRole;
+use App\Models\ActionItem;
+use App\Models\ActionItemExternalLink;
 use App\Models\IntegrationDelivery;
+use App\Models\IntegrationUserMapping;
+use App\Models\Participant;
 use App\Models\PersonalAccessToken;
+use App\Models\Retro;
 use App\Models\Team;
 use App\Models\TeamIntegration;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Support\Integrations\JiraDataCenter\JiraDataCenterServer;
 use Carbon\CarbonInterface;
+use Database\Factories\TeamIntegrationFactory;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\RateLimiter;
@@ -811,6 +822,311 @@ it('renders the signing secret of a webhook, shown once, without overflow', func
             $page->script(<<<'JS'
                 () => {
                     document.querySelector('[role="dialog"] input[readonly]').value = 'whsec_4f1c2e9a8d3b4b8e9f512a7c0d6e5b13a7c0d6e5';
+
+                    return true;
+                }
+                JS);
+
+            return $page;
+        },
+    );
+});
+
+/**
+ * A workspace admin of a team of four, with fixed ids so that the avatars of
+ * the people panel are the same picture on every run.
+ *
+ * @return array{0: User, 1: Team}
+ */
+function p18eTrackerTeam(string $adminId): array
+{
+    $workspace = Workspace::factory()->create(['name' => 'Nordlys']);
+    $team = Team::factory()->for($workspace)->create(['name' => 'Atlas']);
+
+    $admin = User::factory()->create([
+        'id' => $adminId,
+        'name' => 'Ada Admin',
+        'email' => 'ada.admin@example.com',
+    ]);
+    $workspace->members()->attach($admin, ['role' => WorkspaceRole::Admin->value]);
+    $team->members()->attach($admin);
+
+    $members = [
+        ['0199a000-0000-7000-8000-000000000051', 'Bob Member', 'bob.member@example.com'],
+        ['0199a000-0000-7000-8000-000000000052', 'Cleo Maximiliane von Hohenberg-Lindqvist', 'cleo.maximiliane.von.hohenberg@example.com'],
+        ['0199a000-0000-7000-8000-000000000053', 'Dan Member', 'dan.member@example.com'],
+    ];
+
+    foreach ($members as [$id, $name, $email]) {
+        $member = User::factory()->create(['id' => $id, 'name' => $name, 'email' => $email]);
+        $workspace->members()->attach($member, ['role' => WorkspaceRole::Member->value]);
+        $team->members()->attach($member);
+    }
+
+    return [$admin, $team];
+}
+
+/**
+ * An action item of the team exported to the tracker: its project is what the
+ * status mapping lists.
+ *
+ * @param  array<string, mixed>  $link
+ */
+function p18eTrackedItem(Team $team, User $admin, array $link): void
+{
+    $retro = Retro::factory()->inPhase(RetroPhase::Discussing)->create(['team_id' => $team->id, 'title' => 'Sprint 12']);
+    $participant = Participant::factory()->create(['retro_id' => $retro->id, 'user_id' => $admin->id]);
+    $retro->forceFill(['facilitator_participant_id' => $participant->id])->save();
+
+    $item = ActionItem::factory()->create([
+        'retro_id' => $retro->id,
+        'created_by_participant_id' => $participant->id,
+        'content' => 'Speed up CI',
+    ]);
+
+    ActionItemExternalLink::factory()->create(['action_item_id' => $item->id, ...$link]);
+}
+
+/**
+ * Jira connected with write access and the status sync on (live updates), a
+ * member matched by email and one never assigned; GitHub connected read only;
+ * Linear not connected.
+ */
+function p18eTrackersAdmin(): User
+{
+    disableIntegrations();
+    enableIntegrations(IntegrationProvider::Jira, IntegrationProvider::Linear, IntegrationProvider::GitHub);
+    config([
+        'services.integrations.inbound_webhooks' => 'on',
+        'services.integrations.poll_minutes' => 5,
+    ]);
+    Http::fake([
+        jiraApiUrl('rest/api/3/priority/search*') => Http::response(['values' => [
+            ['id' => '1', 'name' => 'Highest'],
+            ['id' => '2', 'name' => 'High'],
+            ['id' => '3', 'name' => 'Medium'],
+            ['id' => '4', 'name' => 'Low'],
+        ]]),
+        jiraApiUrl('rest/api/3/project/PROJ/statuses') => Http::response([
+            ['id' => '1', 'name' => 'Task', 'statuses' => [
+                ['id' => '10000', 'name' => 'To Do', 'statusCategory' => ['key' => 'new']],
+                ['id' => '3', 'name' => 'In Progress', 'statusCategory' => ['key' => 'indeterminate']],
+                ['id' => '10002', 'name' => 'Done', 'statusCategory' => ['key' => 'done']],
+                ['id' => '10005', 'name' => 'Closed', 'statusCategory' => ['key' => 'done']],
+            ]],
+        ]),
+        'api.atlassian.com/*' => Http::response(['message' => 'Unexpected request in a visual test.'], 404),
+    ]);
+
+    [$admin, $team] = p18eTrackerTeam('0199a000-0000-7000-8000-000000000040');
+
+    $jira = TeamIntegration::factory()->jira()->create([
+        'team_id' => $team->id,
+        'connected_by_user_id' => $admin->id,
+        'last_checked_at' => '2026-09-28 16:20:00',
+    ]);
+    $jira->forceFill([
+        'settings' => [
+            ...$jira->settings,
+            'statusSync' => true,
+            'statusSyncSince' => '2026-09-20T08:00:00+00:00',
+            'webhookIds' => ['7001'],
+            'webhookProjects' => ['PROJ'],
+            'numberFields' => [
+                ['id' => 'customfield_10016', 'name' => 'Story point estimate'],
+                ['id' => 'customfield_10050', 'name' => 'Business value'],
+            ],
+        ],
+        'inbound_mode' => IntegrationInboundMode::Webhook,
+        'webhook_status' => IntegrationWebhookStatus::Active,
+        'webhook_expires_at' => now()->addDays(20),
+        'last_polled_at' => '2026-09-30 09:00:00',
+        'last_inbound_at' => '2026-09-30 09:12:04',
+        'poll_cursor' => now(),
+    ])->save();
+
+    IntegrationUserMapping::factory()->create([
+        'team_integration_id' => $jira->id,
+        'user_id' => '0199a000-0000-7000-8000-000000000051',
+        'external_account_id' => 'acc-bob',
+        'external_display_name' => 'Bob (Jira)',
+    ]);
+    IntegrationUserMapping::factory()->manual()->create([
+        'team_integration_id' => $jira->id,
+        'user_id' => '0199a000-0000-7000-8000-000000000052',
+        'external_account_id' => 'acc-cleo',
+        'external_display_name' => 'Cleo Maximiliane von Hohenberg',
+    ]);
+    IntegrationUserMapping::factory()->neverAssign()->create([
+        'team_integration_id' => $jira->id,
+        'user_id' => '0199a000-0000-7000-8000-000000000053',
+    ]);
+
+    p18eTrackedItem($team, $admin, [
+        'source' => IntegrationProvider::Jira,
+        'external_site' => 'cloud-1',
+        'external_id' => '10001',
+        'external_key' => 'PROJ-1',
+        'external_url' => 'https://acme.atlassian.net/browse/PROJ-1',
+    ]);
+
+    TeamIntegration::factory()->gitHub(IntegrationAccess::Read)->create([
+        'team_id' => $team->id,
+        'connected_by_user_id' => $admin->id,
+        'last_checked_at' => '2026-09-29 11:05:00',
+    ]);
+
+    return $admin;
+}
+
+/**
+ * Jira Data Center connected with a personal access token, the status sync on
+ * and the webhook left to a Jira administrator.
+ */
+function p18eJiraDataCenterAdmin(bool $connected): User
+{
+    disableIntegrations();
+    enableIntegrations(IntegrationProvider::JiraDataCenter);
+    config([
+        'services.integrations.inbound_webhooks' => 'on',
+        'services.integrations.poll_minutes' => 5,
+    ]);
+    Http::fake([
+        jiraDataCenterUrl('rest/api/2/priority') => Http::response([['id' => '2', 'name' => 'High'], ['id' => '3', 'name' => 'Medium']]),
+        'jira.example.com/*' => Http::response(['message' => 'Unexpected request in a visual test.'], 404),
+    ]);
+
+    [$admin, $team] = p18eTrackerTeam('0199a000-0000-7000-8000-000000000060');
+
+    if (! $connected) {
+        return $admin;
+    }
+
+    $integration = TeamIntegration::factory()->jiraDataCenter(IntegrationAccess::Write, 'pat')->create([
+        'id' => '0199c000-0000-7000-8000-000000000001',
+        'team_id' => $team->id,
+        'connected_by_user_id' => $admin->id,
+        'last_checked_at' => '2026-09-28 16:20:00',
+    ]);
+    $integration->forceFill([
+        'settings' => [
+            ...$integration->settings,
+            'statusSync' => true,
+            'statusSyncSince' => '2026-09-20T08:00:00+00:00',
+            'webhookManual' => true,
+        ],
+        'credentials' => [
+            ...(array) $integration->readableCredentials(),
+            'webhookToken' => 'AbCdEfGhIjKlMnOpQrStUvWxYz0123456789abcd',
+            'webhookSecret' => 'dc-webhook-secret',
+        ],
+        'inbound_mode' => IntegrationInboundMode::Polling,
+        'webhook_status' => null,
+        'last_polled_at' => '2026-09-30 09:00:00',
+        'poll_cursor' => now(),
+    ])->save();
+
+    p18eTrackedItem($team, $admin, [
+        'source' => IntegrationProvider::JiraDataCenter,
+        'external_site' => JiraDataCenterServer::key(TeamIntegrationFactory::JiraDataCenterUrl),
+        'external_id' => '10001',
+        'external_key' => 'OPS-1',
+        'external_url' => 'https://jira.example.com/browse/OPS-1',
+    ]);
+
+    return $admin;
+}
+
+it('renders the connected trackers, their people, priorities and status sync, without overflow', function () {
+    config(['app.name' => 'Skrum']);
+    RateLimiter::for('login', fn (): Limit => Limit::none());
+
+    $admin = p18eTrackersAdmin();
+
+    $this->captureVisuals(
+        'team-integrations-trackers',
+        p18eIntegrationsPath(),
+        fn (string $path, array $options) => p18eSettingsVisit(
+            $admin,
+            $path,
+            $options,
+            '[data-slot="team-settings-shell"] [data-test="integration-card-jira"] [data-slot="status-sync"]',
+        )->assertCount('[data-test="integration-card-jira"] [data-slot="tracker-people"] li', 4)
+            ->assertPresent('[data-test="integration-card-jira"] [data-slot="tracker-priorities"] button[role="combobox"]')
+            ->click('[data-test="integration-card-jira"] [data-slot="status-mapping-container"] button')
+            ->assertPresent('[data-test="integration-card-jira"] [data-slot="status-mapping-container"] button[role="checkbox"]')
+            ->assertAttribute('[data-test="integration-card-jira"] label button[role="switch"]', 'aria-checked', 'true')
+            ->assertPresent('[data-test="integration-card-github"] [data-slot="alert"]')
+            ->assertScript('document.querySelectorAll(\'[data-slot="person-avatar"] .animate-pulse\').length', 0),
+    );
+});
+
+it('renders the dialog that turns the status sync on without overflow', function () {
+    config(['app.name' => 'Skrum']);
+    RateLimiter::for('login', fn (): Limit => Limit::none());
+
+    $admin = p18eTrackersAdmin();
+
+    $this->captureVisuals(
+        'team-integrations-status-sync-dialog',
+        p18eIntegrationsPath(),
+        fn (string $path, array $options) => p18eSettingsVisit(
+            $admin,
+            $path,
+            $options,
+            '[data-slot="team-settings-shell"] [data-test="integration-card-github"] [data-slot="status-sync"]',
+        )->click('[data-test="integration-card-github"] label button[role="switch"]')
+            ->assertPresent('[role="dialog"] button:last-child'),
+    );
+});
+
+it('renders the personal access token dialog of Jira Data Center without overflow', function () {
+    config(['app.name' => 'Skrum']);
+    RateLimiter::for('login', fn (): Limit => Limit::none());
+
+    $admin = p18eJiraDataCenterAdmin(connected: false);
+
+    $this->captureVisuals(
+        'team-integrations-jira-token-dialog',
+        p18eIntegrationsPath(),
+        fn (string $path, array $options) => p18eSettingsVisit(
+            $admin,
+            $path,
+            $options,
+            '[data-slot="team-settings-shell"] [data-test="integration-card-jira_dc"]',
+        )->click('[data-test="integration-card-jira_dc"] button')
+            ->fill('[role="dialog"] input[type="password"]', 'pasted-jira-token-abcdefghijklmnop')
+            ->click('[role="dialog"] label button[role="checkbox"]')
+            ->assertPresent('[role="dialog"] button[type="submit"]:not([disabled])'),
+    );
+});
+
+it('renders Jira Data Center connected with a token and its manual webhook without overflow', function () {
+    config(['app.name' => 'Skrum']);
+    RateLimiter::for('login', fn (): Limit => Limit::none());
+
+    $admin = p18eJiraDataCenterAdmin(connected: true);
+
+    $this->captureVisuals(
+        'team-integrations-jira-data-center',
+        p18eIntegrationsPath(),
+        function (string $path, array $options) use ($admin) {
+            $page = p18eSettingsVisit(
+                $admin,
+                $path,
+                $options,
+                '[data-slot="team-settings-shell"] [data-test="integration-card-jira_dc"] [data-slot="jira-token-owner"]',
+            )->assertCount('[data-test="integration-card-jira_dc"] [data-slot="tracker-people"] li', 4)
+                ->click('[data-slot="tracker-webhook"] button:first-child')
+                ->assertCount('[data-slot="tracker-webhook"] dd code', 4)
+                ->assertPresent('[data-slot="status-mapping-container"]')
+                ->assertScript('document.querySelectorAll(\'[data-slot="person-avatar"] .animate-pulse\').length', 0);
+
+            $page->script(<<<'JS'
+                () => {
+                    const url = document.querySelector('[data-slot="tracker-webhook"] dd code');
+
+                    url.textContent = url.textContent.replace(/^https?:\/\/[^/]+/, 'https://skrum.example.com');
 
                     return true;
                 }

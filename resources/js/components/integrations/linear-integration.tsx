@@ -11,6 +11,7 @@ import {
 import { PeoplePanel } from './people-panel';
 import { PrioritiesPanel } from './priorities-panel';
 import { StatusSyncSection } from './status-sync-section';
+import { TrackerIntro } from './tracker-parts';
 
 type Props = {
     card: IntegrationProviderCard;
@@ -43,11 +44,11 @@ export function LinearIntegration({ card, scope }: Props) {
                     </>
                 }
             >
-                <p className="text-sm text-muted-foreground">
+                <TrackerIntro>
                     {t(
                         'Import issues into planning poker. With write access, estimates are written back and action items can be exported.',
                     )}
-                </p>
+                </TrackerIntro>
             </ProviderCard>
         );
     }
@@ -55,6 +56,24 @@ export function LinearIntegration({ card, scope }: Props) {
     return (
         <ProviderCard
             {...providerCardProps(card, ListTodo, t)}
+            details={
+                <ProviderDetails
+                    connection={connection}
+                    rows={[
+                        {
+                            label: t('Linear workspace'),
+                            value: connection.settings.organizationName,
+                        },
+                        {
+                            label: t('Access'),
+                            value:
+                                connection.access === 'write'
+                                    ? t('Read and write')
+                                    : t('Read only'),
+                        },
+                    ]}
+                />
+            }
             actions={
                 <>
                     <ConnectLink
@@ -92,22 +111,6 @@ export function LinearIntegration({ card, scope }: Props) {
                 </>
             }
         >
-            <ProviderDetails
-                connection={connection}
-                rows={[
-                    {
-                        label: t('Linear workspace'),
-                        value: connection.settings.organizationName,
-                    },
-                    {
-                        label: t('Access'),
-                        value:
-                            connection.access === 'write'
-                                ? t('Read and write')
-                                : t('Read only'),
-                    },
-                ]}
-            />
             {connection.status === 'active' &&
                 connection.access === 'write' && (
                     <>
