@@ -348,7 +348,7 @@ it('renders the keyboard shortcuts dialog without overflow', function (string $n
             $page = p18fSignIn($member, $options, $width)
                 ->assertPresent('[data-test="command-menu-button"]');
 
-            $page->keys('body', '?');
+            $page->keys('html > body', '?');
             $page->assertPresent('[data-slot="keyboard-shortcuts"] [data-slot="keyboard-shortcuts-body"]');
 
             if ($search !== null) {
