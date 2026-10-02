@@ -239,7 +239,7 @@ it('[P08e-03b] shows no Suggestions panel in Discussing without a provider, and 
         ->assertSeeIn("#card-{$card->id}", 'Tooling');
 });
 
-it('[P08e-04a] turns the AI summary on by default in the new retrospective dialog and names the provider in the privacy notice', function () {
+it('[P08e-04a] creates a retro with the AI summary on by default, the new session dialog having no switch for it, and names the provider in the board settings', function () {
     configureLlm();
 
     $team = Team::factory()->create();
@@ -254,15 +254,22 @@ it('[P08e-04a] turns the AI summary on by default in the new retrospective dialo
         ->fill('#new-retro-title', 'Sprint 13 retro')
         ->assertSee('Start, Stop, Continue')
         ->click('[role="dialog"] [role="radiogroup"][aria-label="Retrospective template"] [role="radio"]:has-text("Start, Stop, Continue")')
-        ->assertVisible('#new-retro-ai-summary')
-        ->assertAriaAttribute('#new-retro-ai-summary', 'checked', 'true')
-        ->assertSeeIn('[role="dialog"]', 'Automatic AI summary')
-        ->assertSeeIn('[role="dialog"]', 'When the retro is completed, its board content is sent automatically to Anthropic to write a summary. Participants can also ask it to suggest group names. Turn this off to keep it on this server.')
+        ->assertNotPresent('#new-retro-ai-summary')
+        ->assertDontSeeIn('[role="dialog"]', 'Automatic AI summary')
         ->click('[role="dialog"] button[type="submit"]')
         ->assertPathBeginsWith('/retros/')
         ->assertSeeIn('header > h1', 'Sprint 13 retro');
 
     expect(Retro::query()->where('title', 'Sprint 13 retro')->firstOrFail()->ai_summary_enabled)->toBeTrue();
+
+    $this->awaitRealtime($page)
+        ->click('[aria-label="Facilitator menu"]')
+        ->assertSee('Settings…')
+        ->click('Settings…')
+        ->assertSee('Retrospective settings')
+        ->assertAriaAttribute('#retro-ai-summary', 'checked', 'true')
+        ->assertSeeIn('[role="dialog"]', 'Automatic AI summary')
+        ->assertSeeIn('[role="dialog"]', 'its board content is sent automatically to Anthropic to write a summary');
 });
 
 it('[P08e-04b] lets the facilitator turn the AI summary off in the board settings, with the same privacy notice', function () {
@@ -687,7 +694,7 @@ it('[P08e-09] keeps handled suggestions on Regenerate, and on Remove clears the 
     Http::assertSentCount(2);
 });
 
-it('[P08e-10a] creates a retro with the AI summary switched off in the dialog', function () {
+it('[P08e-10a] creates a retro from the dialog, then switches its AI summary off in the board settings', function () {
     configureLlm();
 
     $team = Team::factory()->create();
@@ -702,12 +709,21 @@ it('[P08e-10a] creates a retro with the AI summary switched off in the dialog', 
         ->fill('#new-retro-title', 'Sprint 14 retro')
         ->assertSee('Start, Stop, Continue')
         ->click('[role="dialog"] [role="radiogroup"][aria-label="Retrospective template"] [role="radio"]:has-text("Start, Stop, Continue")')
-        ->assertAriaAttribute('#new-retro-ai-summary', 'checked', 'true')
-        ->click('#new-retro-ai-summary')
-        ->assertAriaAttribute('#new-retro-ai-summary', 'checked', 'false')
+        ->assertNotPresent('#new-retro-ai-summary')
         ->click('[role="dialog"] button[type="submit"]')
         ->assertPathBeginsWith('/retros/')
         ->assertSeeIn('header > h1', 'Sprint 14 retro');
+
+    $this->awaitRealtime($page)
+        ->click('[aria-label="Facilitator menu"]')
+        ->assertSee('Settings…')
+        ->click('Settings…')
+        ->assertSee('Retrospective settings')
+        ->assertAriaAttribute('#retro-ai-summary', 'checked', 'true')
+        ->click('#retro-ai-summary')
+        ->assertAriaAttribute('#retro-ai-summary', 'checked', 'false')
+        ->click('[role="dialog"] button[type="submit"]')
+        ->assertNotPresent('[role="dialog"]');
 
     expect(Retro::query()->where('title', 'Sprint 14 retro')->firstOrFail()->ai_summary_enabled)->toBeFalse();
 });

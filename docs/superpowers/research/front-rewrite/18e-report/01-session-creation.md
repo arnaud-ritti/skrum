@@ -49,10 +49,9 @@ Added by rule 13 (M1, M2): editable column list (`columns`), "Anonymous guests a
 | Type tiles read "Retro", "Planning poker", "Whiteboard", "Icebreaker" (the mockup: "Poker") | plan, "Browser tests that change" (the type radio "Planning poker") |
 | "Votes per person" has an "Automatic" switch beside the stepper | D-40 (awaiting the owner) |
 | "Icebreaker at the start" has a switch beside the select | D-40 (awaiting the owner) |
-| "Automatic AI summary" row | D-41 (awaiting the owner) |
 | "Health check" help reads "The team rates its health statements first" (the mockup: "6 statements, before the ROTI", false here: the count varies and the phase comes first) | D-44 (awaiting the owner) |
-| The colour palette shows the six server colours with their names, not eight | D-42 (awaiting the owner); K20, until R1 |
-| "Delete column" beside the palette title | D-42 (awaiting the owner) |
+| The colour palette shows the six server colours, not eight (swatches alone since RW-C1: the name is the tooltip and the accessible name) | D-42; K20, until R1 |
+| "Delete column" on the palette line; a dot on a colour another column uses, with its hint | D-42 (owner, round 4b: stays) |
 | A shortcut shows its category ("Essentials"), the mockup "Classic" | D-43 (awaiting the owner) |
 | "All templates" and "Browse" open the same full picker in place of the shortcuts; the picker shows its own read-only preview above the editable list | D-43 (awaiting the owner) |
 
@@ -90,10 +89,6 @@ Added by rule 13 (M2, M3): Tasks ("Type them", one title per line, 50 at most, a
 | No "Import from Jira" tab, no "Timer per task", "Change vote after reveal", "Write estimates to Jira", no Jira note | D-07 |
 | No "Schedule…" | D-06 |
 | No invitation link and "Copy link" | D-08 |
-| Deck tiles are the cards of `DeckPicker` (name, "n cards", value chips, badge; two per row in the dialog) and not the mockup's four small tiles with the values in mono; the list is taller, so the Tasks block is below the fold of the dialog with six decks | D-37, D-38 (awaiting the owner; D-38 is the one to decide first) |
-| "Create a deck" is the dashed card at the end of the grid, not a "New deck" button in the section header | D-39 (awaiting the owner) |
-| The value preview under the grid is the picker's strip of large cards on a canvas, with the deck's name | D-37 (awaiting the owner) |
-| "Anonymous votes" row | D-41 (awaiting the owner) |
 | "Auto reveal" and "Anonymous guests allowed" open off (the mockup shows them on): the defaults of today are kept | D-44 (awaiting the owner) |
 | FR: "Facilitateur en « Regarder seulement »" (the mockup: « Watch only »): the name the room gives that mode in French | no row |
 | The type row of the bench dialog shows one tile (only the poker form is passed there) | bench only |
@@ -219,3 +214,10 @@ None: the "Saved decks" panel of ScreenPokerQueue has no element left for a late
 - An intent naming a type the user cannot use (`?new=whiteboard` without the right) no longer opens the dialog.
 - Known and accepted: the dialog is a `Drawer` below 768 px and a `Dialog` above, two trees. Crossing 768 px while it is open (rotation, resize) resets what was typed. Keeping it needs the state of the four forms lifted above the switch; not done.
 - Rows D-37 to D-46 of the plan carry the differences that had no row. They await the owner's word.
+
+## Rework RW-C1 (owner's fourth round)
+
+- Poker: the deck choice is the compact `DeckPicker` (small tiles: name, values in mono, origin), "New deck" in the header of the Deck section, small value strip under the tiles. Edit of the one-off deck sits under the strip, on the selected deck. The Tasks block is in view at 1440 × 900 with six decks (browser test P18e-01-22). Rows D-37, D-38, D-39 are closed.
+- "Automatic AI summary" (retro) and "Anonymous votes" (poker) left the dialog; the request no longer sends them and the server defaults apply (AI summary on when a provider is configured, anonymous votes off). Both are set in the session: `#retro-ai-summary` in "Retrospective settings", "Anonymous votes" in the poker room settings. Row D-41 is closed.
+- Column colours are swatches alone on the line "Color of “title”". Row D-42 keeps the six colours (until R1) and "Delete column" on that line.
+- Differences that remain with the mockup: six colours, not eight (D-42); "Delete column" and the "used by another column" dot and hint on the palette line (D-42); deck tiles wrap on more than one row beyond four decks, three per row at 390 (the mockup shows four decks); the mockup's Jira import tab and settings rows the product lacks are unchanged rows of the table above.

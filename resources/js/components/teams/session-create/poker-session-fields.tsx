@@ -1,5 +1,5 @@
 import { router, usePage } from '@inertiajs/react';
-import { Eye, EyeOff, UserRoundPlus, VenetianMask } from 'lucide-react';
+import { Eye, EyeOff, UserRoundPlus } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import type { FormEvent, ReactElement, ReactNode } from 'react';
@@ -126,7 +126,6 @@ export function PokerSessionFields({
     );
     const [autoReveal, setAutoReveal] = useState(false);
     const [spectator, setSpectator] = useState(false);
-    const [anonymousVotes, setAnonymousVotes] = useState(false);
     const [guests, setGuests] = useState(false);
     const [errors, setErrors] = useState<Errors>({});
     const [processing, setProcessing] = useState(false);
@@ -188,7 +187,6 @@ export function PokerSessionFields({
             {
                 title,
                 ...deck,
-                anonymous_votes: anonymousVotes,
                 auto_reveal: autoReveal,
                 spectator,
                 guest_access_enabled: guests,
@@ -285,20 +283,6 @@ export function PokerSessionFields({
                 />
             ),
         },
-        {
-            key: 'anonymous',
-            label: t('Anonymous votes'),
-            htmlFor: 'new-poker-anonymous',
-            help: t('Values are shown without names'),
-            icon: VenetianMask,
-            control: (
-                <Switch
-                    id="new-poker-anonymous"
-                    checked={anonymousVotes}
-                    onCheckedChange={setAnonymousVotes}
-                />
-            ),
-        },
     ];
 
     return (
@@ -332,11 +316,14 @@ export function PokerSessionFields({
                 </div>
 
                 <div className="flex min-w-0 flex-col gap-2">
-                    <span className="truncate text-sm font-semibold">
-                        {t('Deck')}
-                    </span>
+                    {editing && (
+                        <span className="truncate text-sm font-semibold">
+                            {t('Deck')}
+                        </span>
+                    )}
                     {editorDraft === null ? (
                         <DeckPicker
+                            variant="compact"
                             value={deckId}
                             onValueChange={setPicked}
                             decks={decks}

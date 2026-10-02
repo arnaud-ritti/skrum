@@ -391,7 +391,6 @@ describe('the retro form', () => {
             icebreaker_enabled: false,
             icebreaker_game: 'draw',
             votes_per_participant: null,
-            ai_summary_enabled: false,
             guest_access_enabled: true,
         });
     });
@@ -484,7 +483,7 @@ describe('the retro form', () => {
         expect(screen.getByRole('radio', { name: /Sailboat/ })).toBeTruthy();
     });
 
-    it('shows the AI summary row only when a provider is configured', () => {
+    it('leaves the AI summary to the session settings, even with a provider configured', () => {
         open({
             retro: retroSessionForm({
                 ...retroProps,
@@ -492,14 +491,12 @@ describe('the retro form', () => {
             }),
         });
 
-        const row = document.getElementById(
-            'new-retro-ai-summary',
-        ) as HTMLElement;
+        expect(document.getElementById('new-retro-ai-summary')).toBeNull();
+        expect(screen.queryByText('Automatic AI summary')).toBeNull();
 
-        expect(row.getAttribute('aria-checked')).toBe('true');
-        expect(
-            screen.getByText(/sent automatically to Anthropic/),
-        ).toBeTruthy();
+        fireEvent.click(screen.getByRole('button', { name: 'Create & open' }));
+
+        expect(lastPost()[1]).not.toHaveProperty('ai_summary_enabled');
     });
 
     it('hides "Save as team template" from who may not manage templates', () => {
@@ -508,7 +505,6 @@ describe('the retro form', () => {
         });
 
         expect(screen.queryByLabelText('Save as team template')).toBeNull();
-        expect(document.getElementById('new-retro-ai-summary')).toBeNull();
     });
 
     it('saves the columns as a template, then creates the retro from it', () => {

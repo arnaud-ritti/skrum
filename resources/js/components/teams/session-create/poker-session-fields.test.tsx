@@ -150,13 +150,23 @@ describe('the poker form', () => {
         for (const id of [
             'new-poker-auto-reveal',
             'new-poker-spectator',
-            'new-poker-anonymous',
             'new-poker-guests',
         ]) {
             expect(
                 document.querySelector(`#${id}`)?.getAttribute('aria-checked'),
             ).toBe('false');
         }
+
+        expect(document.querySelector('#new-poker-anonymous')).toBeNull();
+        expect(screen.queryByLabelText('Anonymous votes')).toBeNull();
+        expect(
+            dialog
+                .querySelector('[data-slot="deck-picker"]')
+                ?.getAttribute('data-variant'),
+        ).toBe('compact');
+        expect(
+            screen.queryByRole('button', { name: 'Create a deck' }),
+        ).toBeNull();
 
         expect(
             within(dialog)
@@ -194,7 +204,6 @@ describe('the poker form', () => {
         expect(body).toEqual({
             title: 'Refinement',
             deck: 'fibonacci',
-            anonymous_votes: false,
             auto_reveal: false,
             spectator: false,
             guest_access_enabled: false,
@@ -207,7 +216,6 @@ describe('the poker form', () => {
         fireEvent.click(screen.getByRole('radio', { name: 'Hours, 4 cards' }));
         fireEvent.click(screen.getByLabelText('Auto reveal'));
         fireEvent.click(screen.getByLabelText('Facilitator in “Watch only”'));
-        fireEvent.click(screen.getByLabelText('Anonymous votes'));
         fireEvent.click(screen.getByLabelText('Anonymous guests allowed'));
         fireEvent.mouseDown(screen.getByRole('tab', { name: 'Type them' }));
         fireEvent.change(screen.getByLabelText('Tasks, one per line'), {
@@ -218,12 +226,12 @@ describe('the poker form', () => {
         expect(lastPost()[1]).toMatchObject({
             deck: 'custom',
             saved_deck_id: 'deck-2',
-            anonymous_votes: true,
             auto_reveal: true,
             spectator: true,
             guest_access_enabled: true,
             tasks: ['Login', 'Checkout', 'Search'],
         });
+        expect(lastPost()[1]).not.toHaveProperty('anonymous_votes');
     });
 
     it('does not create a game with more than fifty tasks', () => {
@@ -243,7 +251,7 @@ describe('the poker form', () => {
     it('uses a deck typed for this game, shown as "This game only"', () => {
         const dialog = open();
 
-        fireEvent.click(screen.getByRole('button', { name: 'Create a deck' }));
+        fireEvent.click(screen.getByRole('button', { name: 'New deck' }));
 
         expect(screen.queryByRole('radiogroup', { name: 'Deck' })).toBeNull();
         expect(document.querySelector('#deck-custom-name')).toBeTruthy();
@@ -286,7 +294,7 @@ describe('the poker form', () => {
     it('saves the typed deck for the team when it has a name', () => {
         const dialog = open();
 
-        fireEvent.click(screen.getByRole('button', { name: 'Create a deck' }));
+        fireEvent.click(screen.getByRole('button', { name: 'New deck' }));
         fireEvent.change(
             document.querySelector('#deck-custom-name') as Element,
             {
@@ -310,7 +318,7 @@ describe('the poker form', () => {
     it('takes the deck being typed when the game is created with the editor open', () => {
         const dialog = open();
 
-        fireEvent.click(screen.getByRole('button', { name: 'Create a deck' }));
+        fireEvent.click(screen.getByRole('button', { name: 'New deck' }));
         typeCards('1, 2, 3, 5, 8');
         submit(dialog);
 
@@ -325,7 +333,7 @@ describe('the poker form', () => {
     it('does not create a game from an unfinished deck', () => {
         const dialog = open();
 
-        fireEvent.click(screen.getByRole('button', { name: 'Create a deck' }));
+        fireEvent.click(screen.getByRole('button', { name: 'New deck' }));
         typeCards('3, 3');
 
         expect(screen.getByText('Duplicate value: 3')).toBeTruthy();
@@ -346,7 +354,7 @@ describe('the poker form', () => {
         fireEvent.click(
             screen.getByRole('radio', { name: 'T-shirt sizes, 4 cards' }),
         );
-        fireEvent.click(screen.getByRole('button', { name: 'Create a deck' }));
+        fireEvent.click(screen.getByRole('button', { name: 'New deck' }));
         typeCards('1, 2');
         fireEvent.click(
             within(
@@ -363,7 +371,7 @@ describe('the poker form', () => {
     it('reopens the typed deck from its "Edit" action', () => {
         open();
 
-        fireEvent.click(screen.getByRole('button', { name: 'Create a deck' }));
+        fireEvent.click(screen.getByRole('button', { name: 'New deck' }));
         typeCards('1, 2');
         fireEvent.click(screen.getByRole('button', { name: 'Use this deck' }));
         fireEvent.click(
@@ -377,7 +385,7 @@ describe('the poker form', () => {
     it('shows the errors of the server where they belong', () => {
         const dialog = open();
 
-        fireEvent.click(screen.getByRole('button', { name: 'Create a deck' }));
+        fireEvent.click(screen.getByRole('button', { name: 'New deck' }));
         fireEvent.change(
             document.querySelector('#deck-custom-name') as Element,
             {
@@ -429,7 +437,7 @@ describe('the poker form', () => {
     it('takes the typed deck with Enter in its name, without creating the game', () => {
         open();
 
-        fireEvent.click(screen.getByRole('button', { name: 'Create a deck' }));
+        fireEvent.click(screen.getByRole('button', { name: 'New deck' }));
 
         const name = (): Element =>
             document.querySelector('#deck-custom-name') as Element;

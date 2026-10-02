@@ -7,7 +7,6 @@ import {
     Minus,
     PartyPopper,
     Plus,
-    Sparkles,
     UserRoundPlus,
     VenetianMask,
     Vote,
@@ -70,7 +69,8 @@ export type RetroSessionFormProps = {
     categories: CategoryOption[];
     catalogue?: CatalogueTemplate[];
     topTemplates: string[];
-    llm: LlmAvailability;
+    /** Not read any more: the AI summary is set in the session's settings. */
+    llm?: LlmAvailability;
     icebreakerGames: GameOption[];
     /** Shows "Save as team template": who may manage the workspace templates. */
     canSaveTemplate: boolean;
@@ -284,7 +284,6 @@ export function RetroSessionFields({
     categories,
     catalogue,
     topTemplates,
-    llm,
     icebreakerGames,
     canSaveTemplate,
     initialTitle,
@@ -314,7 +313,6 @@ export function RetroSessionFields({
     const [icebreaker, setIcebreaker] = useState(false);
     const [icebreakerGame, setIcebreakerGame] = useState<GameKind>('draw');
     const [votes, setVotes] = useState<number | null>(null);
-    const [aiSummary, setAiSummary] = useState(llm.enabled);
     const [guests, setGuests] = useState(false);
     const [saveTemplate, setSaveTemplate] = useState(false);
     const [errors, setErrors] = useState<Errors>({});
@@ -358,7 +356,6 @@ export function RetroSessionFields({
     const categoryLabel = (category: string | null | undefined): string =>
         categories.find((option) => option.value === category)?.label ?? '';
     const loading = catalogue === undefined;
-    const withAiSummary = llm.enabled && llm.provider !== null;
     const games = icebreakerGames.filter(
         (option) => option.available || option.value === icebreakerGame,
     );
@@ -370,7 +367,6 @@ export function RetroSessionFields({
         icebreaker_enabled: icebreaker,
         icebreaker_game: icebreakerGame,
         votes_per_participant: votes,
-        ai_summary_enabled: aiSummary,
         guest_access_enabled: guests,
     });
 
@@ -575,27 +571,6 @@ export function RetroSessionFields({
                 />
             ),
         },
-        ...(withAiSummary
-            ? [
-                  {
-                      key: 'ai-summary',
-                      label: t('Automatic AI summary'),
-                      htmlFor: 'new-retro-ai-summary',
-                      help: t(
-                          'When the retro is completed, its board content is sent automatically to :provider to write a summary. Participants can also ask it to suggest group names. Turn this off to keep it on this server.',
-                          { provider: llm.provider ?? '' },
-                      ),
-                      icon: Sparkles,
-                      control: (
-                          <Switch
-                              id="new-retro-ai-summary"
-                              checked={aiSummary}
-                              onCheckedChange={setAiSummary}
-                          />
-                      ),
-                  } satisfies SettingEntry,
-              ]
-            : []),
     ];
 
     return (

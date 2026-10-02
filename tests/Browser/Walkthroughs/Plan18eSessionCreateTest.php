@@ -343,7 +343,7 @@ it('[P18e-01-04] creates a game and a saved deck from a named deck, and a one-of
         ->click(P18ePokerType)
         ->assertVisible('#new-poker-title')
         ->fill('#new-poker-title', 'Named deck game')
-        ->click('[role="dialog"] button:has-text("Create a deck")')
+        ->click('[role="dialog"] button:has-text("New deck")')
         ->assertNotPresent(P18eDecks)
         ->fill('#deck-custom-name', 'Halves')
         ->fill('#deck-custom-cards', '1, 2, 3')
@@ -368,7 +368,7 @@ it('[P18e-01-04] creates a game and a saved deck from a named deck, and a one-of
         ->assertVisible('#new-poker-title')
         ->assertSeeIn(P18eDecks.' [role="radio"]:has-text("Halves")', 'Saved')
         ->fill('#new-poker-title', 'One-off deck game')
-        ->click('[role="dialog"] button:has-text("Create a deck")')
+        ->click('[role="dialog"] button:has-text("New deck")')
         ->fill('#deck-custom-cards', '5, 10')
         ->click('#deck-custom-coffee')
         ->click('Use this deck')
@@ -465,6 +465,42 @@ it('[P18e-01-15] preselects the default deck of the team', function () {
 
     expect($game->cards)->toBe(['1', '2', '3', '5', '8', '?'])
         ->and($game->deck_name)->toBe('Team scale');
+});
+
+it('[P18e-01-22] shows the deck tiles, the "New deck" button and the Tasks block without scrolling at 1440 × 900', function () {
+    $team = Team::factory()->create();
+    $alice = p18eMember($team);
+
+    foreach (['Atlas hours', 'Team scale'] as $name) {
+        SavedPokerDeck::factory()->create([
+            'team_id' => $team->id,
+            'name' => $name,
+            'cards' => ['1', '2', '4', '8', '16', '?'],
+            'created_by_user_id' => $alice->id,
+        ]);
+    }
+
+    $page = $this->signIn($alice, p18eTeamPath($team));
+
+    $page->resize(1440, 900)
+        ->click('New session')
+        ->click(P18ePokerType)
+        ->assertVisible('#new-poker-title')
+        ->assertPresent('[role="dialog"] [data-slot="deck-picker"][data-variant="compact"]')
+        ->assertCount(P18eDecks.' [role="radio"]', 6)
+        ->assertVisible('[role="dialog"] [data-slot="deck-create"]:has-text("New deck")')
+        ->assertDontSeeIn('[role="dialog"]', 'Create a deck')
+        ->assertSeeIn(P18eDecks.' [role="radio"]:has-text("Atlas hours") [data-slot="deck-values"]', '1 2 4 8 16 ?')
+        ->assertScript('getComputedStyle(document.querySelector(\'[role="dialog"] [role="radio"] [data-slot="deck-values"]\')).fontFamily.includes("JetBrains Mono")', true)
+        ->assertNotPresent('#new-poker-anonymous')
+        ->assertDontSeeIn('[role="dialog"]', 'Anonymous votes')
+        ->assertScript('(function () {
+            const tasks = document.querySelector(\'[role="dialog"] [data-slot="poker-tasks"]\').getBoundingClientRect();
+            const body = document.querySelector(\'[role="dialog"] [data-slot="session-dialog-body"]\');
+            const footer = document.querySelector(\'[role="dialog"] [data-slot="session-dialog-footer"]\').getBoundingClientRect();
+
+            return body.scrollTop === 0 && tasks.top >= 0 && tasks.height > 0 && tasks.bottom <= footer.top && tasks.bottom <= window.innerHeight;
+        })()', true);
 });
 
 it('[P18e-01-05] picks a whiteboard template with the arrows, and creates a board from a workspace template', function () {

@@ -134,7 +134,7 @@ it('[P10b-02a] creates a game from a saved deck and keeps its cards when the dec
         ->assertSeeIn('[aria-label="Deck"] [role="radio"]:has-text("Team scale")', 'Saved')
         ->click('[role="radio"]:has-text("Team scale")')
         ->assertAriaAttribute('[role="radio"]:has-text("Team scale")', 'checked', 'true')
-        ->assertAriaAttribute('#new-poker-anonymous', 'checked', 'false')
+        ->assertNotPresent('#new-poker-anonymous')
         ->assertAriaAttribute('#new-poker-auto-reveal', 'checked', 'false')
         ->click('Create & open')
         ->assertPathBeginsWith('/poker/')

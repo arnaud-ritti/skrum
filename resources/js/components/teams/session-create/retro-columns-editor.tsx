@@ -459,8 +459,24 @@ export function RetroColumnsEditor({
             {selected !== undefined && (
                 <div
                     data-slot="retro-column-options"
-                    className="grid *:col-start-1 *:row-start-1"
+                    className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 *:data-[slot=column-color-options]:min-w-0 *:data-[slot=column-color-options]:flex-1 *:data-[slot=column-color-options]:basis-48"
                 >
+                    <ColumnColorOptions
+                        value={selected.color}
+                        colors={colors}
+                        usedBy={usedBy}
+                        columnTitle={selected.title}
+                        labels="tooltip"
+                        onValueChange={(color) =>
+                            onChange(
+                                swapColumnColor(
+                                    value,
+                                    selectedIndex,
+                                    color,
+                                ) as DraftColumn[],
+                            )
+                        }
+                    />
                     <Button
                         type="button"
                         variant="ghost"
@@ -473,26 +489,11 @@ export function RetroColumnsEditor({
                                     : selected.title,
                         })}
                         onClick={removeSelected}
-                        className="z-10 -mt-1.5 self-start justify-self-end bg-popover text-skrum-destructive-text hover:bg-skrum-destructive-soft hover:text-skrum-destructive-text"
+                        className="ml-auto shrink-0 text-skrum-destructive-text hover:bg-skrum-destructive-soft hover:text-skrum-destructive-text"
                     >
                         <Trash2 aria-hidden />
                         <span>{t('Delete column')}</span>
                     </Button>
-                    <ColumnColorOptions
-                        value={selected.color}
-                        colors={colors}
-                        usedBy={usedBy}
-                        columnTitle={selected.title}
-                        onValueChange={(color) =>
-                            onChange(
-                                swapColumnColor(
-                                    value,
-                                    selectedIndex,
-                                    color,
-                                ) as DraftColumn[],
-                            )
-                        }
-                    />
                 </div>
             )}
             {columnErrors.map(([field, message]) => (

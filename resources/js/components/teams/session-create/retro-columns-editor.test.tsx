@@ -1,4 +1,4 @@
-import { fireEvent, screen } from '@testing-library/react';
+import { fireEvent, screen, within } from '@testing-library/react';
 import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { RetroColumnsEditor } from '@/components/teams/session-create/retro-columns-editor';
@@ -125,6 +125,10 @@ describe('RetroColumnsEditor', () => {
                 .querySelector('[aria-checked="true"]')
                 ?.getAttribute('data-color'),
         ).toBe('red');
+        expect(palette.textContent).toBe('');
+        expect(
+            within(palette).getByRole('radio', { name: 'Red' }),
+        ).toBeTruthy();
 
         fireEvent.click(
             palette.querySelector('[data-color="purple"]') as HTMLElement,
