@@ -1,5 +1,13 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
-import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+    afterEach,
+    beforeAll,
+    beforeEach,
+    describe,
+    expect,
+    it,
+    vi,
+} from 'vitest';
 import {
     CarriedItemsSheet,
     groupCarriedActionItems,
@@ -41,7 +49,10 @@ const carried = [
 
 type Overrides = Parameters<typeof retroSnapshot>[0];
 
-function sheet(overrides: Overrides = {}) {
+function sheet(
+    overrides: Overrides = {},
+    ctx: Parameters<typeof boardContext>[1] = {},
+) {
     return renderInBoard(
         <CarriedItemsSheet />,
         boardContext(
@@ -54,8 +65,21 @@ function sheet(overrides: Overrides = {}) {
                 },
                 ...overrides,
             }),
+            ctx,
         ),
     );
+}
+
+function memoryStorage(): Pick<Storage, 'getItem' | 'setItem' | 'clear'> {
+    const values = new Map<string, string>();
+
+    return {
+        getItem: (key) => values.get(key) ?? null,
+        setItem: (key, value) => {
+            values.set(key, value);
+        },
+        clear: () => values.clear(),
+    };
 }
 
 const callsTo = (method: string) =>
@@ -70,7 +94,13 @@ beforeAll(() => {
 beforeEach(() => {
     retroRequest.mockReset();
     retroRequest.mockResolvedValue(null);
-    window.localStorage.clear();
+    // The storage of the test environment goes missing on some runs of
+    // several files: the sheet gets one of its own.
+    vi.stubGlobal('localStorage', memoryStorage());
+});
+
+afterEach(() => {
+    vi.unstubAllGlobals();
 });
 
 describe('groupCarriedActionItems', () => {
@@ -135,6 +165,12 @@ describe('CarriedItemsSheet', () => {
         expect(window.localStorage.getItem('skrum.carriedSeen.retro-1')).toBe(
             'true',
         );
+    });
+
+    it('is closed once the session has expired', () => {
+        sheet({}, { sessionExpired: true });
+
+        expect(screen.queryByRole('dialog')).toBeNull();
     });
 
     it('stays closed once seen, and when the board is first opened after Writing', () => {

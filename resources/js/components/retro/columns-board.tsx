@@ -193,7 +193,7 @@ function PhoneColumns({
     canAddColumn: boolean;
     hideMyCursor: boolean;
 }) {
-    const { board } = useBoard();
+    const { board, sessionExpired } = useBoard();
     const { t } = useTrans();
     const panelId = useId();
     const { phase, highlightedCardId } = board.retro;
@@ -368,7 +368,10 @@ function PhoneColumns({
                     >
                         <Plus aria-hidden className="size-6" />
                     </Button>
-                    <Drawer open={composing} onOpenChange={setComposing}>
+                    <Drawer
+                        open={composing && !sessionExpired}
+                        onOpenChange={setComposing}
+                    >
                         <DrawerContent
                             aria-describedby={undefined}
                             data-slot="retro-add-card-drawer"
@@ -409,8 +412,14 @@ export function ColumnsBoard({
     const { board, dispatch, apply, run } = useBoard();
     const { t } = useTrans();
     const isMobile = useIsMobile();
+    const pointerSensor = useSensor(PointerSensor, {
+        activationConstraint: { distance: 6 },
+    });
+    // On a phone a finger that moves sideways is a swipe to the next column,
+    // also when it starts on a card: cards move from the keyboard and from
+    // "Add to group…" there.
     const sensors = useSensors(
-        useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+        isMobile ? null : pointerSensor,
         useSensor(KeyboardSensor, {
             coordinateGetter: sortableKeyboardCoordinates,
         }),

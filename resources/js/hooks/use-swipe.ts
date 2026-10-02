@@ -19,8 +19,8 @@ function startsInTextField(target: EventTarget): boolean {
 }
 
 /**
- * A horizontal swipe on an area: 1 for a move to the left (the next one), -1
- * for a move to the right. The area keeps its vertical scroll with
+ * A horizontal swipe of a finger or a pen on an area: 1 for a move to the left
+ * (the next one), -1 for a move to the right. The area keeps its vertical scroll with
  * `touch-pan-y`. `cancel` voids the move in progress, for a host whose own
  * drag took it over.
  */
@@ -40,6 +40,11 @@ export function useSwipe(onSwipe: (direction: -1 | 1) => void): {
 
                 // A dialog opened from the area is a React child of it, not a
                 // DOM one: its moves are its own.
+                // A mouse that moves sideways selects text.
+                if (event.pointerType === 'mouse') {
+                    return;
+                }
+
                 if (
                     !(event.target instanceof Node) ||
                     !event.currentTarget.contains(event.target) ||

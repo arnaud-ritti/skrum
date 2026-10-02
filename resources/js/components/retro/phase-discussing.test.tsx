@@ -170,6 +170,24 @@ describe('PhaseDiscussing', () => {
         expect(screen.getByText('Topic 1 of 3')).toBeTruthy();
     });
 
+    it('says which topic is selected on the button that takes the focus', () => {
+        const { container } = discussion();
+
+        expect(row(container, 'slow').getAttribute('aria-current')).toBe(
+            'true',
+        );
+        expect(row(container, 'scope').hasAttribute('aria-current')).toBe(
+            false,
+        );
+
+        fireEvent.click(row(container, 'scope'));
+
+        expect(row(container, 'scope').getAttribute('aria-current')).toBe(
+            'true',
+        );
+        expect(row(container, 'slow').hasAttribute('aria-current')).toBe(false);
+    });
+
     it('draws the topic in focus as its card, with the ids of the board, and no other card', () => {
         const { container } = discussion();
         const focus = container.querySelector(
@@ -460,6 +478,15 @@ describe('PresentationOverlay', () => {
         ).toBeNull();
     });
 
+    it('is closed once the session has expired, so that the banner and its "Reload" are reachable', () => {
+        discussion(
+            { retro: { presentationMode: true, highlightedCardId: 'slow' } },
+            { sessionExpired: true },
+        );
+
+        expect(screen.queryByRole('dialog')).toBeNull();
+    });
+
     it('stays closed without the presentation mode', () => {
         discussion({ retro: { highlightedCardId: 'slow' } });
 
@@ -580,6 +607,18 @@ describe('PhaseDiscussing on a phone', () => {
             screen.getByRole('button', { name: /Topic 3 of 3\s*Flaky tests/ }),
         ).toBeTruthy();
         expect(container.querySelector('#card-flaky')).toBeTruthy();
+    });
+
+    it('keeps the topics drawer closed once the session has expired', async () => {
+        discussion(
+            { viewer: { isFacilitator: false } },
+            { sessionExpired: true },
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: /Topic 1 of 3/ }));
+        await Promise.resolve();
+
+        expect(screen.queryByRole('dialog')).toBeNull();
     });
 
     it('moves to the next and the previous topic on a swipe', () => {
