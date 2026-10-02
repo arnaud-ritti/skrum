@@ -81,7 +81,10 @@ class CardsController extends Controller
             return [$card, $locked];
         });
 
-        return response()->json(['card' => $this->presentCard->handle($card, $presentingRetro, $participant)], 201);
+        return response()->json([
+            'card' => $this->presentCard->handle($card, $presentingRetro, $participant),
+            'writersCount' => $presentingRetro->writersCount(),
+        ], 201);
     }
 
     public function update(Request $request, Retro $retro, Card $card): JsonResponse

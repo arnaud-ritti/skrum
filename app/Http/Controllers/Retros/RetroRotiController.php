@@ -26,7 +26,7 @@ class RetroRotiController extends Controller
 
         $score = (int) $validated['score'];
 
-        $respondents = DB::transaction(function () use ($retro, $participant, $score): int {
+        $voterIds = DB::transaction(function () use ($retro, $participant, $score): array {
             $locked = Retro::query()->whereKey($retro->id)->lockForUpdate()->firstOrFail();
 
             $this->guard($locked);
@@ -36,7 +36,7 @@ class RetroRotiController extends Controller
             return $this->announce($locked);
         });
 
-        return response()->json(['myScore' => $score, 'respondents' => $respondents]);
+        return response()->json(['myScore' => $score, 'respondents' => count($voterIds), 'voterIds' => $voterIds]);
     }
 
     public function destroy(Request $request, Retro $retro): JsonResponse
@@ -45,7 +45,7 @@ class RetroRotiController extends Controller
 
         $this->guard($retro);
 
-        $respondents = DB::transaction(function () use ($retro, $participant): int {
+        $voterIds = DB::transaction(function () use ($retro, $participant): array {
             $locked = Retro::query()->whereKey($retro->id)->lockForUpdate()->firstOrFail();
 
             $this->guard($locked);
@@ -55,7 +55,7 @@ class RetroRotiController extends Controller
             return $this->announce($locked);
         });
 
-        return response()->json(['myScore' => null, 'respondents' => $respondents]);
+        return response()->json(['myScore' => null, 'respondents' => count($voterIds), 'voterIds' => $voterIds]);
     }
 
     private function guard(Retro $retro): void
@@ -63,12 +63,13 @@ class RetroRotiController extends Controller
         RetroGuard::phase($retro, RetroPhase::Discussing, RetroPhase::Completed);
     }
 
-    private function announce(Retro $retro): int
+    /** @return array<int, string> */
+    private function announce(Retro $retro): array
     {
         $voterIds = $retro->rotiVotes()->pluck('participant_id')->all();
 
         (new RotiChanged($retro->id, count($voterIds), $voterIds))->sendToOthers();
 
-        return count($voterIds);
+        return $voterIds;
     }
 }

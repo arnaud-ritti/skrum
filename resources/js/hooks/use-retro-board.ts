@@ -179,10 +179,13 @@ export function useRetroBoard(initial: Snapshot) {
                         cardId: payload.cardId as string,
                         ungroupedCards: payload.ungroupedCards as CardPayload[],
                     });
-                    apply({
-                        type: 'writers.set',
-                        writersCount: payload.writersCount as number,
-                    });
+
+                    if (typeof payload.writersCount === 'number') {
+                        apply({
+                            type: 'writers.set',
+                            writersCount: payload.writersCount,
+                        });
+                    }
                     break;
                 case 'cards.moved':
                 case 'card.grouped':

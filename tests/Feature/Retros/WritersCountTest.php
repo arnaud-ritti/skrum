@@ -88,3 +88,15 @@ it('keeps the count when a participant deletes one of several cards', function (
 
     Event::assertDispatched(fn (CardDeleted $event) => $event->broadcastWith()['writersCount'] === 1);
 });
+
+it('answers the author of a new card with the new count', function () {
+    $retro = Retro::factory()->create();
+    $column = Column::factory()->create(['retro_id' => $retro->id]);
+    [$user] = retroMember($retro);
+
+    $this->actingAs($user)
+        ->postJson(route('retros.cards.store', $retro), ['column_id' => $column->id, 'content' => 'First'])
+        ->assertCreated()
+        ->assertJsonPath('writersCount', 1)
+        ->assertJsonPath('card.content', 'First');
+});

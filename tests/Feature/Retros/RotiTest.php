@@ -25,16 +25,16 @@ it('rates, changes and withdraws the own rating', function () {
 
     $this->actingAs($user)->putJson(route('retros.roti.update', $retro), ['score' => 4])
         ->assertOk()
-        ->assertExactJson(['myScore' => 4, 'respondents' => 1]);
+        ->assertExactJson(['myScore' => 4, 'respondents' => 1, 'voterIds' => [$participant->id]]);
     $this->actingAs($user)->putJson(route('retros.roti.update', $retro), ['score' => 2])
         ->assertOk()
-        ->assertExactJson(['myScore' => 2, 'respondents' => 1]);
+        ->assertExactJson(['myScore' => 2, 'respondents' => 1, 'voterIds' => [$participant->id]]);
 
     expect(RotiVote::sole()->only(['participant_id', 'score']))->toBe(['participant_id' => $participant->id, 'score' => 2]);
 
     $this->actingAs($user)->deleteJson(route('retros.roti.destroy', $retro))
         ->assertOk()
-        ->assertExactJson(['myScore' => null, 'respondents' => 0]);
+        ->assertExactJson(['myScore' => null, 'respondents' => 0, 'voterIds' => []]);
 
     expect(RotiVote::count())->toBe(0);
 });

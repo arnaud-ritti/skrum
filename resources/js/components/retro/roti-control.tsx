@@ -46,6 +46,7 @@ export function RotiControl() {
             type: 'roti.set',
             myScore: response.myScore,
             respondents: response.respondents,
+            voterIds: response.voterIds,
         });
 
         if (ctx.board.retro.phase === 'completed') {

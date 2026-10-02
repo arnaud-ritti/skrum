@@ -31,6 +31,21 @@ describe('boardReducer writers and ROTI voters', () => {
         });
     });
 
+    it('applies the own rating with the voter ids of the response', () => {
+        const next = boardReducer(board, {
+            type: 'roti.set',
+            myScore: 5,
+            respondents: 2,
+            voterIds: ['a', 'me'],
+        });
+
+        expect(next.roti).toEqual({
+            myScore: 5,
+            respondents: 2,
+            voterIds: ['a', 'me'],
+        });
+    });
+
     it('keeps the voter ids when the action carries none', () => {
         const next = boardReducer(board, {
             type: 'roti.set',
