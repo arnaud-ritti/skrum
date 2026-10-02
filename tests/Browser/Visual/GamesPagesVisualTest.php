@@ -4,6 +4,8 @@ use App\Enums\GameKind;
 use App\Enums\GameRoomAccess;
 use App\Enums\GameRoundOutcome;
 use App\Enums\WorkspaceRole;
+use App\Models\GameGifAnswer;
+use App\Models\GameGifVote;
 use App\Models\GameGuess;
 use App\Models\GamePlayer;
 use App\Models\GameRoom;
@@ -11,7 +13,10 @@ use App\Models\Team;
 use App\Models\User;
 use App\Models\Workspace;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Client\Request as HttpRequest;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * @return array{0: User, 1: string}
@@ -273,4 +278,102 @@ it('renders a Draw & Guess room and a Decoded room without overflow', function (
     'a guesser of the drawing' => ['games-room-draw-guesser', GameKind::DrawAndGuess, false, '[data-slot="draw-sheet"] canvas:not(.cursor-crosshair)'],
     'the clue giver' => ['games-room-decoded', GameKind::Decoded, true, '[data-slot="clue-editor"]'],
     'a guesser of the clue' => ['games-room-decoded-guesser', GameKind::Decoded, false, '[data-slot="clue-row"]'],
+]);
+
+/**
+ * A GIF provider whose pictures are flat tiles, one colour per GIF.
+ */
+function p18eVisualGifs(): void
+{
+    config(['services.gifs' => ['provider' => 'giphy', 'key' => 'visual-gif-key', 'rating' => 'pg']]);
+
+    Storage::fake();
+
+    $colours = [[244, 190, 150], [150, 200, 235], [245, 225, 150], [200, 170, 225], [165, 215, 175], [240, 160, 160]];
+
+    Http::fake([
+        'api.giphy.com/*' => function (HttpRequest $request) {
+            $endpoint = basename((string) parse_url($request->url(), PHP_URL_PATH));
+
+            if (in_array($endpoint, ['search', 'trending'], true)) {
+                return Http::response(['data' => array_map(gameGiphyItem(...), ['gifone', 'giftwo', 'gifthree', 'giffour'])]);
+            }
+
+            return Http::response(['data' => gameGiphyItem($endpoint)]);
+        },
+        'media.giphy.com/*' => function (HttpRequest $request) use ($colours) {
+            [$red, $green, $blue] = $colours[crc32((string) parse_url($request->url(), PHP_URL_PATH)) % count($colours)];
+
+            return Http::response(
+                "GIF89a\x01\x00\x01\x00\x80\x00\x00".chr($red).chr($green).chr($blue)."\xff\xff\xff,\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02D\x01\x00;",
+                200,
+                ['Content-Type' => 'image/gif'],
+            );
+        },
+    ]);
+}
+
+it('renders a Sprint in one GIF room without overflow', function (string $name, string $step, string $marker) {
+    config(['app.name' => 'Skrum']);
+
+    p18eVisualGames(false);
+    p18eVisualGifs();
+
+    $team = Team::query()->sole();
+    $users = User::query()->orderBy('email')->get();
+    $room = GameRoom::factory()->create([
+        'id' => '0199b000-0000-7000-9000-0000000000c1',
+        'team_id' => $team->id,
+        'name' => 'Monday warm-up of the platform guild',
+        'game' => GameKind::SprintGif,
+        'access' => GameRoomAccess::Link,
+        'created_by_user_id' => $users[0]->id,
+    ]);
+    $players = $users->take(7)
+        ->map(fn (User $user): GamePlayer => GamePlayer::factory()->create(['game_room_id' => $room->id, 'user_id' => $user->id]));
+
+    $room->update(['host_player_id' => $players[0]->id]);
+
+    $round = activeGameRound($room, [
+        'word' => null,
+        'question' => 'Which GIF sums up your sprint 42?',
+        'revealed_at' => $step === 'picking' ? null : now()->startOfSecond(),
+        ...($step === 'results' ? ['outcome' => GameRoundOutcome::Revealed, 'ended_at' => now()->startOfSecond()] : []),
+    ]);
+
+    $senders = $step === 'picking' ? [0, 1, 2, 3, 6] : [0, 1, 2, 3, 4, 6];
+    $answers = [];
+
+    foreach ($senders as $index) {
+        $answers[$index] = GameGifAnswer::factory()->create([
+            'game_round_id' => $round->id,
+            'player_id' => $players[$index]->id,
+            'gif_id' => "sprint{$index}",
+        ]);
+    }
+
+    if ($step !== 'picking') {
+        foreach ([[0, 1], [2, 1], [3, 1], [4, 2], [1, 2], [6, 3]] as [$voter, $answer]) {
+            GameGifVote::factory()->create([
+                'game_round_id' => $round->id,
+                'voter_player_id' => $players[$voter]->id,
+                'answer_id' => $answers[$answer]->id,
+            ]);
+        }
+    }
+
+    RateLimiter::for('login', fn (): Limit => Limit::none());
+
+    $this->captureVisuals(
+        $name,
+        "/games/{$room->id}",
+        fn (string $path, array $options) => p18eVisualGamesVisit($users[0], $path, $options, $marker)
+            ->assertAttribute('[data-realtime]', 'data-realtime', 'connected')
+            ->assertCount('[data-realtime]', 1)
+            ->assertScript('[...document.querySelectorAll(\'[data-slot="gif-tile"] img\')].every((image) => image.complete && image.naturalWidth > 0)', true),
+    );
+})->with([
+    'picking a GIF' => ['games-room-gif', 'picking', '[data-slot="gif-answer-stage"] [data-slot="gif-tile"]'],
+    'voting' => ['games-room-gif-voting', 'voting', '[data-slot="gif-gallery"] [data-slot="gif-tile"]'],
+    'the results' => ['games-room-gif-results', 'results', '[data-slot="gif-results"] [data-slot="gif-tile"][data-winner]'],
 ]);

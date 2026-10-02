@@ -1,19 +1,36 @@
-import { Eye, ImageIcon } from 'lucide-react';
-import { useState } from 'react';
+import { Check, Eye, EyeOff, ImagePlay, RefreshCw, Trash2 } from 'lucide-react';
+import { useCallback, useState } from 'react';
+import type { ReactNode } from 'react';
 import GameAnswersController from '@/actions/App/Http/Controllers/Games/GameAnswersController';
+import GameGifsController from '@/actions/App/Http/Controllers/Games/GameGifsController';
 import GameRevealsController from '@/actions/App/Http/Controllers/Games/GameRevealsController';
-import type { PickedGif } from '@/components/gifs/gif-search-dialog';
+import {
+    GifSearchDialog,
+    type PickedGif,
+} from '@/components/gifs/gif-search-dialog';
+import { PersonAvatar } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { useTrans } from '@/hooks/use-trans';
 import { pendingAnswers } from '@/lib/games/gif';
-import type { GameMyGifAnswer, GameRound } from '@/lib/games/types';
+import type {
+    GameGifSearchResult,
+    GameMyGifAnswer,
+    GameRound,
+} from '@/lib/games/types';
 import { retroRequest } from '@/lib/retro/api';
-import { GameGifPicker } from './game-gif-picker';
 import { GifTile } from './gif-tile';
 import { useRoom } from './room-context';
 
+type Props = {
+    round: GameRound;
+    /** Place left under the chosen GIF for its caption (GM-3). */
+    caption?: ReactNode;
+};
+
 /** Other players' GIFs are never known before the reveal: only placeholders. */
-export function GifAnswerStage({ round }: { round: GameRound }) {
+export function GifAnswerStage({ round, caption }: Props) {
     const ctx = useRoom();
     const { t } = useTrans();
     const [picking, setPicking] = useState(false);
@@ -22,8 +39,17 @@ export function GifAnswerStage({ round }: { round: GameRound }) {
     const others = pendingAnswers(round).filter(
         (answer) => answer.playerId !== me.playerId,
     );
-    const names = new Map(players.map((player) => [player.id, player.name]));
-    const target = { room: room.id, round: round.id };
+    const byId = new Map(players.map((player) => [player.id, player]));
+    const roomId = room.id;
+    const target = { room: roomId, round: round.id };
+
+    const search = useCallback(
+        (query: string) =>
+            retroRequest<{ gifs: GameGifSearchResult[] }>(
+                GameGifsController.index(roomId, { query: { q: query } }),
+            ),
+        [roomId],
+    );
 
     const markAnswered = (myAnswer: GameMyGifAnswer | null) => {
         ctx.dispatch({
@@ -101,69 +127,142 @@ export function GifAnswerStage({ round }: { round: GameRound }) {
     };
 
     return (
-        <section className="flex flex-col items-center gap-4">
-            <p className="text-sm text-muted-foreground">
-                {t('Pick a GIF that answers the question.')}
-            </p>
-            {round.myAnswer && (
-                <div className="w-48">
-                    <GifTile gif={round.myAnswer.gif} caption={t('Your GIF')} />
+        <section
+            data-slot="gif-answer-stage"
+            aria-labelledby="gif-pick-title"
+            className="flex w-full max-w-160 flex-col gap-4"
+        >
+            <Card className="gap-3 p-4">
+                <div className="flex items-center justify-between gap-2">
+                    <h3 id="gif-pick-title" className="text-base font-title">
+                        {t('Your pick')}
+                    </h3>
+                    {round.myAnswer && (
+                        <Badge variant="success" shape="pill" icon={Check}>
+                            {t('Sent')}
+                        </Badge>
+                    )}
+                </div>
+                {round.myAnswer ? (
+                    <div className="flex min-w-0 flex-col gap-3 @md/card:flex-row @md/card:items-start">
+                        <GifTile
+                            gif={round.myAnswer.gif}
+                            caption={t('Your GIF')}
+                            className="w-full shrink-0 @md/card:w-64"
+                        />
+                        <div className="flex min-w-0 flex-1 flex-col gap-3">
+                            <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                                <EyeOff
+                                    aria-hidden
+                                    className="size-4 shrink-0"
+                                />
+                                {t('Your GIF stays hidden until the reveal.')}
+                            </p>
+                            {caption}
+                            <div className="flex flex-wrap gap-2">
+                                <Button
+                                    variant="outline"
+                                    disabled={busy}
+                                    onClick={() => setPicking(true)}
+                                >
+                                    <RefreshCw aria-hidden />
+                                    {t('Change GIF')}
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    disabled={busy}
+                                    onClick={() => void remove()}
+                                >
+                                    <Trash2 aria-hidden />
+                                    {t('Remove GIF')}
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed border-input bg-muted/60 px-4 py-8 text-center">
+                        <ImagePlay
+                            aria-hidden
+                            className="size-6 text-muted-foreground"
+                        />
+                        <Button
+                            disabled={busy}
+                            onClick={() => setPicking(true)}
+                        >
+                            {t('Choose a GIF')}
+                        </Button>
+                    </div>
+                )}
+            </Card>
+            {others.length > 0 && (
+                <div className="flex min-w-0 flex-col gap-2">
+                    <h3 className="text-sm font-medium">
+                        {t('Already sent · :count', { count: others.length })}
+                    </h3>
+                    <ul
+                        aria-label={t('Answers')}
+                        className="grid grid-cols-[repeat(auto-fill,minmax(9rem,1fr))] gap-2"
+                    >
+                        {others.map((answer) => {
+                            const player = byId.get(answer.playerId);
+                            const name = player?.name ?? t('Someone');
+
+                            return (
+                                <li
+                                    key={answer.playerId}
+                                    data-slot="gif-hidden"
+                                    className="flex min-h-18 min-w-0 flex-col items-center justify-center gap-1.5 rounded-md border border-dashed border-input bg-muted/60 p-2 text-muted-foreground"
+                                >
+                                    <EyeOff aria-hidden className="size-5" />
+                                    <span className="flex max-w-full min-w-0 items-center gap-1.5 text-xs font-medium">
+                                        {player &&
+                                            player.avatarUrl !== null && (
+                                                <PersonAvatar
+                                                    name={name}
+                                                    src={player.avatarUrl}
+                                                    kind={
+                                                        player.isGuest
+                                                            ? 'guest'
+                                                            : 'member'
+                                                    }
+                                                    size="xs"
+                                                    decorative
+                                                />
+                                            )}
+                                        <span className="min-w-0 truncate">
+                                            {t(':name answered', { name })}
+                                        </span>
+                                    </span>
+                                </li>
+                            );
+                        })}
+                    </ul>
                 </div>
             )}
-            <div className="flex gap-2">
-                <Button disabled={busy} onClick={() => setPicking(true)}>
-                    {round.myAnswer ? t('Change GIF') : t('Choose a GIF')}
-                </Button>
-                {round.myAnswer && (
-                    <Button
-                        variant="outline"
-                        disabled={busy}
-                        onClick={() => void remove()}
-                    >
-                        {t('Remove GIF')}
-                    </Button>
-                )}
-            </div>
-            {others.length > 0 ? (
-                <ul
-                    aria-label={t('Answers')}
-                    className="grid w-full grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4"
-                >
-                    {others.map((answer) => (
-                        <li
-                            key={answer.playerId}
-                            className="flex aspect-square flex-col items-center justify-center gap-2 rounded-lg border border-dashed p-2 text-center text-sm text-muted-foreground"
-                        >
-                            <ImageIcon className="size-6" aria-hidden />
-                            {t(':name answered', {
-                                name:
-                                    names.get(answer.playerId) ?? t('Someone'),
-                            })}
-                        </li>
-                    ))}
-                </ul>
-            ) : (
-                !round.myAnswer && (
-                    <p className="text-sm text-muted-foreground">
-                        {t('No GIFs yet.')}
-                    </p>
-                )
+            {others.length === 0 && !round.myAnswer && (
+                <p className="text-center text-sm text-muted-foreground">
+                    {t('No GIFs yet.')}
+                </p>
             )}
             {room.isHost && (
-                <Button
-                    variant="secondary"
-                    disabled={busy}
-                    onClick={() => void reveal()}
-                >
-                    <Eye className="size-4" />
-                    {t('Reveal the GIFs')}
-                </Button>
+                <div className="flex justify-center">
+                    <Button
+                        variant="secondary"
+                        disabled={busy}
+                        onClick={() => void reveal()}
+                    >
+                        <Eye aria-hidden />
+                        {t('Reveal the GIFs')}
+                    </Button>
+                </div>
             )}
-            <GameGifPicker
+            <GifSearchDialog
                 open={picking}
                 onOpenChange={setPicking}
                 onPick={(gif) => void choose(gif)}
+                search={search}
                 provider={round.gifProvider ?? null}
+                selectedId={round.myAnswer?.gif.id}
             />
         </section>
     );

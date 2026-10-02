@@ -3940,5 +3940,19 @@
     "Letters revealed: :count of :max": "Lettres révélées : :count sur :max",
     "You are drawing": "Vous dessinez",
     "You are giving clues": "Vous donnez les indices",
-    ":count letters": ":count lettres"
+    ":count letters": ":count lettres",
+    "Your pick": "Votre choix",
+    "GIFs stay hidden until the reveal.": "Les GIF restent cachés jusqu’à la révélation.",
+    "Already sent · :count": "Déjà envoyés · :count",
+    "GIF picked": "GIF choisi",
+    "picking…": "choisit…",
+    "voting…": "vote…",
+    "How it works": "Déroulé",
+    "Pick a GIF": "Choix du GIF",
+    "Reveal & vote": "Révélation et votes",
+    "Step 1 of 3 · Pick a GIF": "Étape 1 sur 3 · Choix du GIF",
+    "Step 2 of 3 · Reveal & vote": "Étape 2 sur 3 · Révélation et votes",
+    "Step 3 of 3 · Results": "Étape 3 sur 3 · Résultats",
+    "Ready": "Prêts",
+    "Your GIF stays hidden until the reveal.": "Votre GIF reste caché jusqu’à la révélation."
 }

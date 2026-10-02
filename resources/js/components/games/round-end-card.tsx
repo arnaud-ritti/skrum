@@ -10,6 +10,7 @@ import type {
     GameRoundDetail,
 } from '@/lib/games/types';
 import { retroRequest } from '@/lib/retro/api';
+import { cn } from '@/lib/utils';
 import { GifRoundResults } from './gif-round-results';
 import { useRoom } from './room-context';
 import { StartRoundControls } from './start-round-controls';
@@ -103,6 +104,7 @@ export function RoundEndCard() {
         fetched !== null && fetched.roundId === gifRoundId
             ? fetched.answers
             : null;
+    const gifAnswers = lastEnded?.answers ?? fetchedAnswers;
 
     if (outcome === null) {
         return (
@@ -121,7 +123,10 @@ export function RoundEndCard() {
     return (
         <Card
             data-slot="round-end-card"
-            className="w-full max-w-2xl items-center gap-3 p-6 text-center"
+            className={cn(
+                'w-full max-w-2xl items-center gap-3 p-6 text-center',
+                gifAnswers && 'max-w-4xl',
+            )}
         >
             <Badge variant="secondary" shape="pill">
                 {outcomeLabel(outcome, t)}
@@ -136,13 +141,11 @@ export function RoundEndCard() {
                     {question}
                 </p>
             )}
-            {lastEnded?.answers ? (
+            {gifAnswers && (
                 <GifRoundResults
-                    answers={lastEnded.answers}
-                    points={lastEnded.points}
+                    answers={gifAnswers}
+                    points={lastEnded?.answers ? lastEnded.points : []}
                 />
-            ) : (
-                fetchedAnswers && <GifRoundResults answers={fetchedAnswers} />
             )}
             {winner && (
                 <p className="text-muted-foreground">

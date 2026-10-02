@@ -23,6 +23,8 @@ export type GameRoomProps = {
     settingsCard?: ReactNode;
     turnOrder?: ReactNode;
     roundInfo?: ReactNode;
+    gifCaption?: ReactNode;
+    gifPodium?: ReactNode;
 };
 
 const reactionBarClass =
@@ -33,6 +35,8 @@ export function GameRoom({
     settingsCard,
     turnOrder,
     roundInfo,
+    gifCaption,
+    gifPodium,
 }: GameRoomProps) {
     const room = useGameRoom(initial, { subscribe: true });
     const isMobile = useIsMobile();
@@ -105,7 +109,12 @@ export function GameRoom({
                             <GamePicker settings={settingsCard} />
                         ) : undefined
                     }
-                    stage={<GameStage roundInfo={roundInfo} />}
+                    stage={
+                        <GameStage
+                            roundInfo={roundInfo}
+                            gifCaption={gifCaption}
+                        />
+                    }
                     right={
                         <RoomSidebar
                             highlightPlayerId={
@@ -114,6 +123,7 @@ export function GameRoom({
                                     : (lastEnded?.winnerPlayerId ?? null)
                             }
                             turnOrder={turnOrder}
+                            gifPodium={gifPodium}
                         />
                     }
                     summary={<PlayerChips />}

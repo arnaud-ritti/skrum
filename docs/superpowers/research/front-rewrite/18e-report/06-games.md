@@ -185,3 +185,47 @@ None new. "Round n of m" keeps the `roundInfo` slot of G3, above the status line
 ### Browser tests
 
 Changed: none in this task (`Plan13bDrawAndDecodedTest` already reads "Coral" and its RGB since G0a). New in `Plan18eGamesTest.php`: `[P18e-06-06]`, `[P18e-06-10a]`, `[P18e-06-10b]` (the plan's `[P18e-06-10]` in two tests: live inks and keys; the legacy red replay in the retro results). The RGB of each ink is read from `lib/games/drawing.ts` by the test.
+
+## Task G5: Sprint in one GIF
+
+New bodies, same files: `sprint-gif-board.tsx`, `gif-question-banner.tsx`, `gif-answer-stage.tsx`, `gif-voting-stage.tsx`, `gif-round-results.tsx`; rewritten in place with the same export: `gif-tile.tsx` (the retro results import it). New: `gif-steps.tsx` (`useGifStep`, `GifStepLine`, `GifSteps`). Deleted: `game-gif-picker.tsx` (the answer stage gives its search to `GifSearchDialog` itself). Touched for the stage: `game-stage.tsx` (the step line above the name of the game, the caption place), `room-sidebar.tsx` (status of each player, "Ready", "How it works", the podium place), `round-end-card.tsx` (a wider card for the gallery), `game-room.tsx` (the two places).
+
+### Parity (brief 06 §3 rows 49–54)
+
+| # | Action | New control | Done |
+|---|---|---|---|
+| 49 | Question, Shuffle, Edit, Save / Cancel | prompt card of the mockup (iris clapperboard, question, what to do at this step); "Shuffle question" and "Edit question" at its right end for the host until the first answer; `Input[aria-label="Question"]`, "Save", "Cancel" | done |
+| 50 | Choose / Change / Remove a GIF | card "Your pick": "Choose a GIF" in the empty frame; then the tile "Your GIF", badge "Sent", "Your GIF stays hidden until the reveal.", "Change GIF", "Remove GIF"; `GifSearchDialog` with `search` = `GET games.gifs.index?q=`, `provider = round.gifProvider`, `selectedId = myAnswer?.gif.id`; "Already sent · n" over `ul[aria-label="Answers"]` of hidden tiles (eye-off, avatar, ":name answered"); "No GIFs yet." | done |
+| 51 | Reveal | "Reveal the GIFs" (host) | done |
+| 52 | Vote, change, retract; live tally | gallery of GIF cards (`auto-fill`, one column on a phone); `Toggle` with the heart, "Favourite" / "Your favourite" (`aria-pressed`), not on one's own GIF; "n of m voted" (`aria-live="polite"`) | done |
+| 53 | Finish the round | "Finish round" (host), beside the tally | done |
+| 54 | Results: counts, "+N", "Anonymous GIF" | gallery in the end card, the most voted first with the mark "Winner" (6-D5; every GIF of a tie, none without a vote), "Votes: n", "+N", "by :name" / "Anonymous GIF"; same gallery in the history sheet | done |
+
+New from the mockup: "Step n of 3 · …" above the name of the game; in the right column, the status of each player ("GIF picked" / "picking…", then "voted" / "voting…"), the "Ready n / m" bar while picking, and "How it works" (Pick a GIF, Reveal & vote, Winner).
+
+### Places left
+
+| Place | Slot | Feature |
+|---|---|---|
+| Card "Your pick", under the line of the chosen GIF | `GameRoom gifCaption` → `GameStage gifCaption` → `RoundBoard gifCaption` → `SprintGifBoard caption` → `GifAnswerStage caption` | caption of a GIF (GM-3) |
+| Right column, under the players and the turn order | `GameRoom gifPodium` → `RoomSidebar gifPodium` | podium of the results (GM-3) |
+
+### Differences with the mockup
+
+| Difference | Covered by |
+|---|---|
+| No caption (field, counter, caption on a card), two votes, vote budget, podium and ranking, "Pin to the retro", "New round" in the right column, "Copy the gallery link" | D-20 (places left for the caption and the podium) |
+| No reactions on a GIF card; the vote control reads "Favourite" / "Your favourite" and shows no count while the votes are open; the results read "Votes: n", the mockup "n votes" | D-20; the labels are the browser contract |
+| The GIF picker opens in a dialog from "Choose a GIF" / "Change GIF"; the mockup shows it open on the stage | plan text of G5 (`GifSearchDialog`, no second GIF container) and the browser contract; no row in the table |
+| "Your pick" stands on the stage, under the question; the mockup has it in the right column. There is no "Draft" then "Send my GIF": a chosen GIF is sent at once (badge "Sent") | the picker being a dialog, the stage would be empty; the engine has no draft (N); no row in the table |
+| Participants, their status and "How it works" stand in the right column, under the Players / Scores tabs; the mockup has them on the left. The left column is the game choice of G3 (host only) | G3 layout; no row in the table |
+| No settings card (theme, votes, hide authors), no "Sprint 42" badge, no timer on the stage | D-20 (settings card, place left by G3); one room timer in the header |
+| Step line "Step 1 of 3 · Pick a GIF"; the mockup "Pick your GIF" | the browser contract: `assertDontSee('Your GIF')` after a removal is not case sensitive; no row in the table |
+| Step 2 (the votes open) has no mockup: it uses the gallery of step 3. The end card keeps the outcome badge "Revealed" and the question; the mockup has a badge "Votes closed" in the stage header | browser contract ("Revealed"); no row in the table |
+| A hidden pick shows ":name answered" beside the avatar; the mockup the avatar alone | browser contract (`Casey answered` in `ul[aria-label="Answers"]`) |
+| GIFs are `<img>` of the proxied preview, in a 4:3 frame, with an empty `alt`; the mockup asks for looping video, a still under reduced motion and the title as `alt` | the proxy gives a preview and a full GIF, no still, no video, no title (brief 06 §6); no row in the table — reported |
+| Phone: the picker is the dialog of Task 0.13, not a full-screen drawer; no double-tap vote | Task 0.13; no row in the table |
+
+### Browser tests
+
+Changed: none. `Plan13cSprintGifTest.php` passes as it is. New captures: `games-room-gif`, `games-room-gif-voting`, `games-room-gif-results` (`GamesPagesVisualTest.php`, a GIF provider faked with flat tiles) and the bench section `games-gif`.

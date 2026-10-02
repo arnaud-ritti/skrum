@@ -5,6 +5,7 @@ import type { GameRound } from '@/lib/games/types';
 import { cn } from '@/lib/utils';
 import { DecodedBoard } from './decoded-board';
 import { DrawBoard } from './draw-board';
+import { GifStepLine, useGifStep } from './gif-steps';
 import { HangmanBoard } from './hangman-board';
 import { HistoryDrawer } from './history-drawer';
 import { PassRoundButton } from './pass-round-button';
@@ -13,7 +14,14 @@ import { RoundEndCard } from './round-end-card';
 import { SprintGifBoard } from './sprint-gif-board';
 
 /** Keyed by round so live previews and tool state start clean each turn. */
-export function RoundBoard({ round }: { round: GameRound }) {
+export function RoundBoard({
+    round,
+    gifCaption,
+}: {
+    round: GameRound;
+    /** Place left under the chosen GIF of Sprint in one GIF (GM-3). */
+    gifCaption?: ReactNode;
+}) {
     const { t } = useTrans();
 
     switch (round.game) {
@@ -24,7 +32,7 @@ export function RoundBoard({ round }: { round: GameRound }) {
         case 'decoded':
             return <DecodedBoard key={round.id} round={round} />;
         case 'gif':
-            return <SprintGifBoard round={round} />;
+            return <SprintGifBoard round={round} caption={gifCaption} />;
         default:
             return (
                 <p className="text-muted-foreground">
@@ -38,6 +46,10 @@ export function RoundBoard({ round }: { round: GameRound }) {
 export function RoundStatus({ round }: { round: GameRound }) {
     const { snapshot } = useRoom();
     const { t } = useTrans();
+
+    if (round.game === 'gif') {
+        return <GifStepLine step={round.revealedAt === null ? 1 : 2} />;
+    }
 
     if (round.game !== 'draw' && round.game !== 'decoded') {
         return null;
@@ -74,11 +86,14 @@ export function RoundStatus({ round }: { round: GameRound }) {
 export type GameStageProps = {
     /** Place left above the title for "Round n of m" (GM-2). */
     roundInfo?: ReactNode;
+    /** Place left under the chosen GIF for its caption (GM-3). */
+    gifCaption?: ReactNode;
 };
 
 /** The centre of a room: the game's name, then the round in play or the end card. */
-export function GameStage({ roundInfo }: GameStageProps) {
+export function GameStage({ roundInfo, gifCaption }: GameStageProps) {
     const { snapshot, lastEnded, serverOffset } = useRoom();
+    const gifStep = useGifStep();
     const { room, round, games, history } = snapshot;
     const gameLabel =
         games.find((option) => option.value === room.game)?.label ?? room.game;
@@ -103,6 +118,7 @@ export function GameStage({ roundInfo }: GameStageProps) {
                 <div className="flex min-w-0 flex-col gap-1">
                     {roundInfo}
                     {round && <RoundStatus round={round} />}
+                    {gifStep === 3 && <GifStepLine step={3} />}
                     <div className="flex min-w-0 flex-wrap items-center gap-2">
                         <h2
                             id="game-stage-title"
@@ -123,7 +139,11 @@ export function GameStage({ roundInfo }: GameStageProps) {
                     <HistoryDrawer />
                 </div>
             </div>
-            {round ? <RoundBoard round={round} /> : <RoundEndCard />}
+            {round ? (
+                <RoundBoard round={round} gifCaption={gifCaption} />
+            ) : (
+                <RoundEndCard />
+            )}
         </section>
     );
 }

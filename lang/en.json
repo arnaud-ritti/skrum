@@ -3715,5 +3715,19 @@
     "Letters revealed: :count of :max": "Letters revealed: :count of :max",
     "You are drawing": "You are drawing",
     "You are giving clues": "You are giving clues",
-    ":count letters": ":count letters"
+    ":count letters": ":count letters",
+    "Your pick": "Your pick",
+    "GIFs stay hidden until the reveal.": "GIFs stay hidden until the reveal.",
+    "Already sent · :count": "Already sent · :count",
+    "GIF picked": "GIF picked",
+    "picking…": "picking…",
+    "voting…": "voting…",
+    "How it works": "How it works",
+    "Pick a GIF": "Pick a GIF",
+    "Reveal & vote": "Reveal & vote",
+    "Step 1 of 3 · Pick a GIF": "Step 1 of 3 · Pick a GIF",
+    "Step 2 of 3 · Reveal & vote": "Step 2 of 3 · Reveal & vote",
+    "Step 3 of 3 · Results": "Step 3 of 3 · Results",
+    "Ready": "Ready",
+    "Your GIF stays hidden until the reveal.": "Your GIF stays hidden until the reveal."
 }
