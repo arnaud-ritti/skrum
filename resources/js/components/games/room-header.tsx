@@ -1,74 +1,143 @@
-import { Link } from '@inertiajs/react';
-import { ArrowLeft, Link2 } from 'lucide-react';
-import { toast } from 'sonner';
+import { Brush, Film, Smile, UserRoundPlus, WholeWord } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+import { useState } from 'react';
+import GameTimerExtensionsController from '@/actions/App/Http/Controllers/Games/GameTimerExtensionsController';
+import GameTimersController from '@/actions/App/Http/Controllers/Games/GameTimersController';
 import { LanguageSwitcher } from '@/components/language-switcher';
-import { PresenceStrip } from '@/components/retro/presence-strip';
+import { SessionTimer } from '@/components/session/session-timer';
+import { SessionTitle } from '@/components/session/session-title';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useTrans } from '@/hooks/use-trans';
-import { GameSwitcher } from './game-switcher';
-import { HistoryDrawer } from './history-drawer';
+import type { GameKind } from '@/lib/games/types';
+import { retroRequest } from '@/lib/retro/api';
 import { useRoom } from './room-context';
-import { RoomInviteButton } from './room-invite-button';
 import { RoomMenu } from './room-menu';
-import { RoomTimer } from './room-timer';
+import { RoomShareDialog } from './room-share-dialog';
 
-export function RoomHeader() {
-    const { snapshot, online } = useRoom();
-    const { t } = useTrans();
-    const { room, me, links } = snapshot;
+const gameIcons: Record<GameKind, LucideIcon> = {
+    hangman: WholeWord,
+    draw: Brush,
+    gif: Film,
+    decoded: Smile,
+};
+
+const ExtensionSeconds = 120;
+
+/** The room's name with its way back to the team and the game in play. */
+export function RoomTitle() {
+    const { snapshot } = useRoom();
+    const { room, games, links } = snapshot;
     const gameLabel =
-        snapshot.games.find((option) => option.value === room.game)?.label ??
-        room.game;
+        games.find((option) => option.value === room.game)?.label ?? room.game;
+    const GameIcon = gameIcons[room.game];
 
-    const copyGuestLink = async () => {
-        if (room.guestUrl === null) {
+    return (
+        <SessionTitle
+            backHref={links.team}
+            badges={
+                <Badge
+                    variant="soft"
+                    shape="pill"
+                    data-slot="room-game"
+                    className="hidden sm:inline-flex"
+                >
+                    <GameIcon aria-hidden />
+                    {gameLabel}
+                </Badge>
+            }
+        >
+            {room.name}
+        </SessionTitle>
+    );
+}
+
+/** The one timer of the room; only the host of a standalone room starts, stops and extends it. */
+export function RoomTimer() {
+    const ctx = useRoom();
+    const [totalSeconds, setTotalSeconds] = useState<number>();
+    const { room } = ctx.snapshot;
+    const canSet = room.isHost && !room.isIcebreaker;
+
+    const set = async (seconds: number | null) => {
+        const response = await ctx.run(
+            retroRequest<{ timerEndsAt: string | null }>(
+                GameTimersController.update(room.id),
+                { seconds },
+            ),
+        );
+
+        if (!response) {
             return;
         }
 
-        try {
-            await navigator.clipboard.writeText(room.guestUrl);
-            toast(t('Link copied'));
-        } catch {
-            toast.error(t('Something went wrong. Please try again.'));
+        setTotalSeconds(seconds ?? undefined);
+        ctx.apply({ type: 'timer.set', timerEndsAt: response.timerEndsAt });
+    };
+
+    const extend = async () => {
+        const response = await ctx.run(
+            retroRequest<{ timerEndsAt: string }>(
+                GameTimerExtensionsController.store(room.id),
+            ),
+        );
+
+        if (!response) {
+            return;
         }
+
+        setTotalSeconds((total) =>
+            total === undefined ? undefined : total + ExtensionSeconds,
+        );
+        ctx.apply({ type: 'timer.set', timerEndsAt: response.timerEndsAt });
     };
 
     return (
-        <header className="flex flex-wrap items-center gap-3 border-b px-4 py-3">
-            {links.team && (
-                <Link
-                    href={links.team}
-                    className="text-muted-foreground hover:text-foreground"
-                    aria-label={t('Back to the team')}
-                >
-                    <ArrowLeft className="size-5" />
-                </Link>
-            )}
-            <h1 className="text-lg font-semibold">{room.name}</h1>
-            {room.isHost ? (
-                <GameSwitcher />
-            ) : (
-                <Badge variant="outline">{gameLabel}</Badge>
-            )}
-            <div className="ml-auto flex flex-wrap items-center gap-3">
-                <RoomTimer />
-                <HistoryDrawer />
-                {room.guestUrl !== null && (
+        <SessionTimer
+            endsAt={room.timerEndsAt}
+            offset={ctx.serverOffset}
+            totalSeconds={totalSeconds}
+            alarm={false}
+            onStart={canSet ? (seconds) => void set(seconds) : undefined}
+            onStop={canSet ? () => void set(null) : undefined}
+            onExtend={canSet ? () => void extend() : undefined}
+        />
+    );
+}
+
+/** Right end of the header: "Invite" for who manages the room, its menu, the guest's language. */
+export function RoomActions() {
+    const { snapshot, sessionExpired } = useRoom();
+    const { t } = useTrans();
+    const [sharing, setSharing] = useState(false);
+    const { room, me } = snapshot;
+    const canInvite = room.canManage && !room.isIcebreaker;
+
+    return (
+        <>
+            {canInvite && (
+                <>
                     <Button
-                        size="icon"
-                        variant="ghost"
-                        aria-label={t('Copy guest link')}
-                        onClick={() => void copyGuestLink()}
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        aria-label={t('Invite')}
+                        disabled={sessionExpired}
+                        onClick={() => setSharing(true)}
                     >
-                        <Link2 className="size-4" />
+                        <UserRoundPlus aria-hidden />
+                        <span className="hidden truncate md:inline">
+                            {t('Invite')}
+                        </span>
                     </Button>
-                )}
-                <RoomInviteButton />
-                <RoomMenu />
-                <PresenceStrip members={online} />
-                {me.isGuest && <LanguageSwitcher />}
-            </div>
-        </header>
+                    <RoomShareDialog
+                        open={sharing && !sessionExpired}
+                        onOpenChange={setSharing}
+                    />
+                </>
+            )}
+            <RoomMenu />
+            {me.isGuest && <LanguageSwitcher />}
+        </>
     );
 }

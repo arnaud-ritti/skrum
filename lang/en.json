@@ -3692,5 +3692,13 @@
     "Session shell, session expired: inert content": "Session shell, session expired: inert content",
     "started just now": "started just now",
     "started :count min ago": "started :count min ago",
-    "started :count h ago": "started :count h ago"
+    "started :count h ago": "started :count h ago",
+    "(you)": "(you)",
+    "Ask the host for a way back in.": "Ask the host for a way back in.",
+    "Missed: :letters": "Missed: :letters",
+    "Players and scores": "Players and scores",
+    "Players can send emoji reactions during the game.": "Players can send emoji reactions during the game.",
+    "The host starts, everyone plays.": "The host starts, everyone plays.",
+    "in the word": "in the word",
+    "not in the word": "not in the word"
 }

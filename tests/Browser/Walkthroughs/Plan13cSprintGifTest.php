@@ -125,10 +125,8 @@ it('[P13c-01] lets the host switch to Sprint in one GIF, start, shuffle and edit
     $c->assertSeeIn('header:has(h1)', 'Hangman')
         ->assertSee('Waiting for the host to start.');
 
-    $a->click('[aria-label="Game"]')
-        ->assertVisible('[role="option"]:has-text("Sprint in one GIF")')
-        ->click('[role="option"]:has-text("Sprint in one GIF")')
-        ->assertSeeIn('[aria-label="Game"]', 'Sprint in one GIF');
+    $a->click('[role="radiogroup"][aria-label="Choose an icebreaker"] [role="radio"]:has-text("Sprint in one GIF")')
+        ->assertAriaAttribute('[role="radiogroup"][aria-label="Choose an icebreaker"] [role="radio"]:has-text("Sprint in one GIF")', 'checked', 'true');
 
     $c->assertSeeIn('header:has(h1)', 'Sprint in one GIF');
 

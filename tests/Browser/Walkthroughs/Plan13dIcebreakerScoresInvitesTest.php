@@ -122,9 +122,9 @@ function p13dTeamGamesPath(GameRoom $room): string
 
 function p13dOpenInvite(mixed $page): mixed
 {
-    return $page->assertSee('Invite')
-        ->click('Invite')
-        ->assertSee('Invite to the room')
+    return $page->assertVisible('[aria-label="Invite"]')
+        ->click('[aria-label="Invite"]')
+        ->assertSeeIn('[data-slot="share-dialog"]', 'Invite to Friday fun')
         ->assertSee('Post a link');
 }
 
@@ -537,7 +537,7 @@ it('[P13d-09b] empties the room leaderboard on "Reset scores" while the team lea
 
     $a->click('Reset scores')
         ->assertSee('Scores in this room start again from zero. The team leaderboard keeps them.')
-        ->click('[role="dialog"] button:has-text("Reset scores")')
+        ->click('[role="alertdialog"] button:has-text("Reset scores")')
         ->assertNotPresent('[role="dialog"]');
 
     foreach ([$a, $b] as $page) {
@@ -638,7 +638,7 @@ it('[P13d-12a] posts the room invite to Slack and to Telegram with a link that o
     $b = $this->signIn($bob, "/games/{$room->id}");
 
     $b->assertPathIs("/games/{$room->id}")
-        ->assertSeeIn('header > h1', 'Friday fun');
+        ->assertSeeIn('header:has(h1) h1', 'Friday fun');
 });
 
 it('[P13d-12b] posts the guest join link of a link room when "Include the guest link" is ticked', function () {
@@ -684,7 +684,7 @@ it('[P13d-12c] offers no guest link on a team room, says who can join, and shows
 
     $b->assertPresent('[role="group"][aria-label="2 online"]')
         ->assertDontSee('Invite')
-        ->assertNotPresent('[aria-label="Copy guest link"]');
+        ->assertNotPresent('[aria-label="Invite"]');
 
     p13dOpenInvite($a)
         ->assertSee('Only members of Platform can join.')
@@ -737,7 +737,7 @@ it('[P13d-12f] keeps "Invite" and the failed delivery line, without a guest-link
     $this->workQueue();
 
     $a->assertSee('Slack: failed — Reconnect Slack in the team settings.')
-        ->assertSee('Invite to the room')
+        ->assertSee('Invite to Friday fun')
         ->assertNotPresent('[role="dialog"] button:has-text("Post link to Slack")')
         ->assertNotPresent('[role="dialog"] button[role="checkbox"]');
 

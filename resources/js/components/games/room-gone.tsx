@@ -1,5 +1,4 @@
-import { Link } from '@inertiajs/react';
-import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/skrum/empty-state';
 import { useTrans } from '@/hooks/use-trans';
 
 type Props = {
@@ -11,17 +10,33 @@ export function RoomGone({ reason, teamUrl }: Props) {
     const { t } = useTrans();
 
     return (
-        <div className="flex min-h-dvh flex-col items-center justify-center gap-4 p-6 text-center">
-            <p className="text-lg">
-                {reason === 'deleted'
-                    ? t('This room was deleted.')
-                    : t('Your access to this room has ended.')}
-            </p>
-            {teamUrl && (
-                <Button asChild variant="outline">
-                    <Link href={teamUrl}>{t('Back to the team')}</Link>
-                </Button>
-            )}
-        </div>
+        <main
+            data-slot="room-gone"
+            className="grid min-h-svh place-items-center bg-skrum-canvas p-6"
+        >
+            <EmptyState
+                module="icebreaker"
+                headingLevel="h2"
+                title={
+                    reason === 'deleted'
+                        ? t('This room was deleted.')
+                        : t('Your access to this room has ended.')
+                }
+                description={
+                    reason === 'deleted'
+                        ? t('Its rounds and scores are deleted for everyone.')
+                        : t('Ask the host for a way back in.')
+                }
+                action={
+                    teamUrl === null
+                        ? undefined
+                        : {
+                              label: t('Back to the team'),
+                              href: teamUrl,
+                              variant: 'outline',
+                          }
+                }
+            />
+        </main>
     );
 }

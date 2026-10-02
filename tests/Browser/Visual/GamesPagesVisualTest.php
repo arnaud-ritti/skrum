@@ -2,6 +2,7 @@
 
 use App\Enums\GameKind;
 use App\Enums\GameRoomAccess;
+use App\Enums\GameRoundOutcome;
 use App\Enums\WorkspaceRole;
 use App\Models\GamePlayer;
 use App\Models\GameRoom;
@@ -148,4 +149,58 @@ it('renders the guest join page of a game room without overflow', function (stri
 })->with([
     'join' => ['games-join-page', true, '[data-slot="guest-join"]'],
     'invalid link' => ['games-join-invalid-page', false, '[data-slot="access-notice"]'],
+]);
+
+it('renders a hangman room without overflow', function (string $name, bool $playing, string $marker) {
+    config(['app.name' => 'Skrum']);
+
+    p18eVisualGames(false);
+
+    $team = Team::query()->sole();
+    $users = User::query()->orderBy('email')->get();
+    $room = GameRoom::factory()->create([
+        'id' => '0199b000-0000-7000-9000-0000000000a1',
+        'team_id' => $team->id,
+        'name' => 'Monday warm-up of the platform guild',
+        'game' => GameKind::Hangman,
+        'access' => GameRoomAccess::Link,
+        'created_by_user_id' => $users[0]->id,
+    ]);
+    $players = $users->take(6)
+        ->map(fn (User $user): GamePlayer => GamePlayer::factory()->create(['game_room_id' => $room->id, 'user_id' => $user->id]));
+
+    $room->update(['host_player_id' => $players[0]->id]);
+
+    foreach ($players as $index => $player) {
+        awardGamePoints($room, $player, 60 - 10 * $index, $index === 0, ['created_at' => now()]);
+    }
+
+    $attributes = [
+        'word' => 'déploiement',
+        'picked_letters' => ['a', 'e', 'r', 't', 's', 'o', 'l', 'n'],
+        'picked_by' => array_fill(0, 8, $players[1]->id),
+        'revealed_positions' => [1, 3, 4, 6, 8, 9, 10],
+        'misses' => 3,
+    ];
+
+    activeGameRound($room, $playing ? $attributes : [
+        ...$attributes,
+        'revealed_positions' => range(0, 10),
+        'outcome' => GameRoundOutcome::Solved,
+        'ended_at' => now()->startOfSecond(),
+        'winner_player_id' => $players[2]->id,
+    ]);
+
+    RateLimiter::for('login', fn (): Limit => Limit::none());
+
+    $this->captureVisuals(
+        $name,
+        "/games/{$room->id}",
+        fn (string $path, array $options) => p18eVisualGamesVisit($users[0], $path, $options, $marker)
+            ->assertAttribute('[data-realtime]', 'data-realtime', 'connected')
+            ->assertCount('[data-realtime]', 1),
+    );
+})->with([
+    'a round in play' => ['games-room-hangman', true, '[data-slot="hangman-board"]'],
+    'between two rounds' => ['games-room-hangman-end', false, '[data-slot="round-end-card"]'],
 ]);

@@ -3917,5 +3917,13 @@
     "Session shell, session expired: inert content": "Cadre de session, session expirée : contenu inerte",
     "started just now": "lancée à l'instant",
     "started :count min ago": "lancée il y a :count min",
-    "started :count h ago": "lancée il y a :count h"
+    "started :count h ago": "lancée il y a :count h",
+    "(you)": "(vous)",
+    "Ask the host for a way back in.": "Demandez à l'hôte comment revenir.",
+    "Missed: :letters": "Ratées : :letters",
+    "Players and scores": "Joueurs et scores",
+    "Players can send emoji reactions during the game.": "Les joueurs peuvent envoyer des réactions emoji pendant la partie.",
+    "The host starts, everyone plays.": "L'hôte lance, tout le monde joue.",
+    "in the word": "dans le mot",
+    "not in the word": "pas dans le mot"
 }

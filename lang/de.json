@@ -3917,5 +3917,13 @@
     "Session shell, session expired: inert content": "Sitzungsrahmen, Sitzung abgelaufen: Inhalt inaktiv",
     "started just now": "gerade gestartet",
     "started :count min ago": "vor :count Min. gestartet",
-    "started :count h ago": "vor :count Std. gestartet"
+    "started :count h ago": "vor :count Std. gestartet",
+    "(you)": "(du)",
+    "Ask the host for a way back in.": "Frag den Host, wie du wieder hineinkommst.",
+    "Missed: :letters": "Daneben: :letters",
+    "Players and scores": "Spieler und Punkte",
+    "Players can send emoji reactions during the game.": "Spieler können während des Spiels Emoji-Reaktionen senden.",
+    "The host starts, everyone plays.": "Der Host startet, alle spielen.",
+    "in the word": "im Wort",
+    "not in the word": "nicht im Wort"
 }

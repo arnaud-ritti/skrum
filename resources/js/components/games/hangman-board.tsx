@@ -1,9 +1,11 @@
+import { usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import GameLettersController from '@/actions/App/Http/Controllers/Games/GameLettersController';
+import { Badge } from '@/components/ui/badge';
 import { useTrans } from '@/hooks/use-trans';
+import { hitLetters, keyboardLayoutFor } from '@/lib/games/hangman';
 import type { GameLetterResponse, GameRound } from '@/lib/games/types';
 import { retroRequest } from '@/lib/retro/api';
-import { cn } from '@/lib/utils';
 import { HangmanFigure } from './hangman-figure';
 import { LetterKeyboard } from './letter-keyboard';
 import { useRoom } from './room-context';
@@ -12,12 +14,14 @@ import { WordMask } from './word-mask';
 export function HangmanBoard({ round }: { round: GameRound }) {
     const ctx = useRoom();
     const { t } = useTrans();
+    const { locale } = usePage().props;
     const [pending, setPending] = useState(false);
     const misses = round.misses ?? 0;
     const maxMisses = round.maxMisses ?? 6;
-    const names = new Map(
-        ctx.snapshot.players.map((player) => [player.id, player.name]),
-    );
+    const mask = round.mask ?? [];
+    const picked = round.pickedLetters ?? [];
+    const hits = hitLetters(mask, picked);
+    const missed = picked.filter((letter) => !hits.includes(letter));
 
     const pick = async (letter: string) => {
         setPending(true);
@@ -49,41 +53,37 @@ export function HangmanBoard({ round }: { round: GameRound }) {
     };
 
     return (
-        <div className="flex w-full max-w-2xl flex-col items-center gap-6">
+        <div
+            data-slot="hangman-board"
+            className="flex w-full flex-col items-center gap-5"
+        >
             <HangmanFigure misses={misses} maxMisses={maxMisses} />
-            <p className="text-sm text-muted-foreground">
-                {t(':count of :max misses', { count: misses, max: maxMisses })}
-            </p>
-            <WordMask mask={round.mask ?? []} />
+            <div className="-mt-3 flex max-w-full flex-wrap items-center justify-center gap-2">
+                <Badge variant="destructive" shape="pill">
+                    {t(':count of :max misses', {
+                        count: misses,
+                        max: maxMisses,
+                    })}
+                </Badge>
+                {missed.length > 0 && (
+                    <span
+                        data-slot="hangman-missed"
+                        className="text-xs text-muted-foreground"
+                    >
+                        {t('Missed: :letters', {
+                            letters: missed.join(', ').toUpperCase(),
+                        })}
+                    </span>
+                )}
+            </div>
+            <WordMask mask={mask} size="lg" />
             <LetterKeyboard
-                picked={round.pickedLetters ?? []}
+                layout={keyboardLayoutFor(locale)}
+                picked={picked}
+                hits={hits}
                 disabled={pending}
                 onPick={(letter) => void pick(letter)}
             />
-            {(round.recentPicks ?? []).length > 0 && (
-                <ul
-                    aria-label={t('Last letters')}
-                    className="flex flex-wrap justify-center gap-2 text-sm"
-                >
-                    {[...(round.recentPicks ?? [])].reverse().map((recent) => (
-                        <li
-                            key={`${recent.playerId}-${recent.letter}`}
-                            className={cn(
-                                'rounded-full border px-2 py-0.5',
-                                recent.hit
-                                    ? 'border-green-600 text-green-700 dark:text-green-400'
-                                    : 'text-muted-foreground',
-                            )}
-                        >
-                            {t(':name picked :letter', {
-                                name:
-                                    names.get(recent.playerId) ?? t('Someone'),
-                                letter: recent.letter.toUpperCase(),
-                            })}
-                        </li>
-                    ))}
-                </ul>
-            )}
         </div>
     );
 }
