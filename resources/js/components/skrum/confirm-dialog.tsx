@@ -42,9 +42,14 @@ export type ConfirmDialogProps = DialogShellProps & {
 };
 
 type FormDialogSubmit =
-    | { submitLabel: string; onSubmit: (data: FormData) => Promise<void> }
+    | {
+          submitLabel: string;
+          onSubmit: (data: FormData) => Promise<void>;
+          /** `data-test` of the submit button. */
+          submitTest?: string;
+      }
     /** No submit button: the body explains why, the only action is Cancel. */
-    | { submitLabel?: undefined; onSubmit?: undefined };
+    | { submitLabel?: undefined; onSubmit?: undefined; submitTest?: undefined };
 
 export type FormDialogProps = DialogShellProps & {
     description?: string;
@@ -257,6 +262,7 @@ export function FormDialog({
     description,
     submitLabel,
     onSubmit,
+    submitTest,
     tone = 'default',
     children,
     unavailableMessage,
@@ -349,6 +355,7 @@ export function FormDialog({
                                     destructive ? 'destructive' : 'default'
                                 }
                                 disabled={pending}
+                                data-test={submitTest}
                             >
                                 {pending ? (
                                     <Spinner aria-label={t('Loading')} />

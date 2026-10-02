@@ -347,6 +347,27 @@ describe('FormDialog', () => {
         );
     });
 
+    it('puts the given test hook on its submit button', () => {
+        render(
+            <FormDialog
+                open
+                onOpenChange={vi.fn()}
+                title="Delete account"
+                submitLabel="Delete account"
+                submitTest="confirm-delete-user-button"
+                onSubmit={vi.fn()}
+            >
+                <input name="password" aria-label="Password" />
+            </FormDialog>,
+        );
+
+        expect(
+            screen
+                .getByRole('button', { name: 'Delete account' })
+                .getAttribute('data-test'),
+        ).toBe('confirm-delete-user-button');
+    });
+
     it('has no submit button and closes on Cancel when it cannot be submitted', async () => {
         const onOpenChange = vi.fn();
 
