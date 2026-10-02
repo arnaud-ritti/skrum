@@ -42,9 +42,18 @@ export type ConfirmDialogProps = DialogShellProps & {
 };
 
 type FormDialogSubmit =
-    | { submitLabel: string; onSubmit: (data: FormData) => Promise<void> }
+    | {
+          submitLabel: string;
+          onSubmit: (data: FormData) => Promise<void>;
+          /** The form is not complete yet: the submit button is disabled and Enter does nothing. */
+          submitDisabled?: boolean;
+      }
     /** No submit button: the body explains why, the only action is Cancel. */
-    | { submitLabel?: undefined; onSubmit?: undefined };
+    | {
+          submitLabel?: undefined;
+          onSubmit?: undefined;
+          submitDisabled?: undefined;
+      };
 
 export type FormDialogProps = DialogShellProps & {
     description?: string;
@@ -257,6 +266,7 @@ export function FormDialog({
     description,
     submitLabel,
     onSubmit,
+    submitDisabled = false,
     tone = 'default',
     children,
     unavailableMessage,
@@ -286,7 +296,7 @@ export function FormDialog({
             return;
         }
 
-        if (pending) {
+        if (pending || submitDisabled) {
             return;
         }
 
@@ -348,7 +358,7 @@ export function FormDialog({
                                 variant={
                                     destructive ? 'destructive' : 'default'
                                 }
-                                disabled={pending}
+                                disabled={pending || submitDisabled}
                             >
                                 {pending ? (
                                     <Spinner aria-label={t('Loading')} />

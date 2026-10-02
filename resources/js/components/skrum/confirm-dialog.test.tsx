@@ -347,6 +347,42 @@ describe('FormDialog', () => {
         );
     });
 
+    it('keeps the submit button disabled, and ignores Enter, until the form is complete', async () => {
+        const onSubmit = vi.fn(async () => {});
+        const form = (complete: boolean) => (
+            <FormDialog
+                open
+                onOpenChange={() => {}}
+                title="Hand over facilitation"
+                submitLabel="Hand over"
+                submitDisabled={!complete}
+                onSubmit={onSubmit}
+            >
+                <input aria-label="Name" name="name" />
+            </FormDialog>
+        );
+
+        const { rerender } = render(form(false));
+        const submit = () =>
+            screen.getByRole('button', {
+                name: 'Hand over',
+            }) as HTMLButtonElement;
+
+        expect(submit().disabled).toBe(true);
+
+        await userEvent.type(screen.getByLabelText('Name'), '{Enter}');
+
+        expect(onSubmit).not.toHaveBeenCalled();
+
+        rerender(form(true));
+
+        expect(submit().disabled).toBe(false);
+
+        await userEvent.click(submit());
+
+        await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+    });
+
     it('has no submit button and closes on Cancel when it cannot be submitted', async () => {
         const onOpenChange = vi.fn();
 
