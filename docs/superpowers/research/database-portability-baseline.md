@@ -82,3 +82,26 @@ object keys, which MariaDB's (a `longtext`) does not: the likely cause, for Task
 Preflight: `bin/test-db` on the tree before the edits answered exit 3 in 2 s (MariaDB, `2026_10_01_100300_create_workspace_templates_table`),
 0.5 s (SQLite, `2026_10_06_100000_create_game_tables`) and 4 s (MySQL). After the edits a second stop appeared on MariaDB and MySQL,
 `2026_10_01_120200_create_survey_responses_table` (index name of 65 characters), fixed with an explicit name.
+
+## Wave 1 — Tasks 4, 5, 6, 7, 11 merged, then the finished front-end rewrite (plans 18e, 18f, 18g)
+
+Run on 2026-10-02 with `TEST_DB_PROCESSES=6`, database `testing_l9`. The suite has 5 580 tests (Unit, Feature, Upgrade, Arch).
+
+| Driver | Result | Time |
+|---|---|---|
+| pgsql | `test-db pgsql: FAIL (exit 1), Tests: 6 failed, 1 skipped, 5573 passed (52858 assertions)` | 2 min 32 |
+| sqlite | `test-db sqlite: FAIL (exit 1), Tests: 23 failed, 9 skipped, 5548 passed (52741 assertions)` | 42 s |
+| mariadb | `test-db mariadb: FAIL (exit 1), Tests: 21 failed, 4 skipped, 5555 passed (52759 assertions)` | 5 min 16 |
+| mysql | `test-db mysql: FAIL (exit 1), Tests: 33 failed, 4 skipped, 5543 passed (52723 assertions)` | 9 min 53 |
+
+| Cause | Files | pgsql | sqlite | mariadb | mysql | Task |
+|---|---|---|---|---|---|---|
+| The check constraints are gone, the model guards are not there yet | `ActionItems/ActionItemModelTest` 3; on PostgreSQL only (the tests branch on the driver) `Retros/HealthStatementModelsTest` 1, `Poker/WorkspacePokerDecksTest` 2 | 6 | 3 | 3 | 3 | 9 |
+| Date-only values stored with a time part | `ActionItems/ReminderSelectionTest` 3 | | 3 | | | 9 |
+| `ilike` in the workspace search of plan 18f (every request answers 500) | `SearchTest` 17 | | 17 | 17 | 17 | 7 step 7, with 10 |
+| A test reads SQL text with PostgreSQL quoting | `Auth/MagicLinkTest` 1 | | | 1 | 1 | 10, then scenario C2 of 14 |
+| Key order of an array read back from a `json` column | `Integrations/TelegramConnectTest` 4, `Whiteboards/WhiteboardElementWritesTest` 4, `Integrations/ConnectLinearTest` 1, `Integrations/StatusSyncSettingsTest` 1, `Whiteboards/WhiteboardTemplatesTest` 1, `Notifications/BellNotificationsTest` 1 (new with 18f) | | | | 12 | 12 |
+
+Nothing is left for Tasks 4, 5, 6 and 11. The whole-suite time on MariaDB and MySQL rose because `tests/Upgrade`
+now holds seven tests that each run `migrate:fresh` (about 35 s each on MariaDB, 60 s on MySQL, in one worker).
+`bin/check-pg-upgrade` passes on the merged tree.
