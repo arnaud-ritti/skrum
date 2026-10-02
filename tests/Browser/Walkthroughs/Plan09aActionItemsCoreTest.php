@@ -381,25 +381,26 @@ it('[P09a-03c] lists priority, due date, overdue badge, assignee, status and the
 
     $bobPage = $this->signIn($bob, "/retros/{$retro->id}");
 
-    $bobPage->assertSee('Retrospective completed on')
-        ->assertPresent("{$openCard} svg.text-red-600")
+    $bobPage->assertSee('Session ended')
+        ->assertPresent("{$openCard} [data-slot=\"action-item-priority\"][data-priority=\"high\"]")
         ->assertScript(p09aCardShows($open, "Overdue · {$pastDueLabel}"), true)
-        ->assertPresent("{$openCard} [data-slot=\"badge\"].bg-skrum-destructive-soft")
+        ->assertPresent("{$openCard} [data-slot=\"action-item-due\"].text-skrum-destructive-text")
         ->assertScript(p09aCardShows($open, 'Bob Stone'), true)
         ->assertScript(p09aCardShows($open, 'Theme: Delivery'), true)
-        ->assertNotPresent("{$openCard} [aria-label=\"Done\"]")
-        ->assertPresent("{$doneCard} svg.text-slate-500")
-        ->assertScript(p09aCardShows($done, "Due {$dueSoonLabel}"), true)
-        ->assertScript(p09aCardShows($done, 'Carol Guest (guest)'), true)
-        ->assertPresent("{$doneCard} [aria-label=\"Done\"]")
-        ->assertNotPresent('[aria-label="Mark as done"]')
+        ->assertAttribute($openCard, 'data-status', 'open')
+        ->assertDisabled("{$openCard} [aria-label=\"Mark as done\"]")
+        ->assertPresent("{$doneCard} [data-slot=\"action-item-priority\"][data-priority=\"low\"]")
+        ->assertAttribute($doneCard, 'data-status', 'completed')
+        ->assertScript(p09aCardShows($done, 'Carol Guest (Guest)'), true)
+        ->assertDisabled("{$doneCard} [aria-label=\"Reopen\"]")
+        ->assertNotPresent('[aria-label="Delete action item"]')
         ->assertNotPresent('[aria-label="Add an action item…"]')
         ->assertSee("View the team's action items")
         ->assertPresent("a[href*=\"/action-items?team={$retro->team_id}\"]");
 
     $carolPage->navigate("/retros/{$retro->id}");
 
-    $carolPage->assertSee('Retrospective completed on')
+    $carolPage->assertSee('Session ended')
         ->assertScript(p09aCardShows($open, 'Rotate the on-call'), true)
         ->assertDontSee("View the team's action items")
         ->assertNotPresent('a[href*="/action-items"]');

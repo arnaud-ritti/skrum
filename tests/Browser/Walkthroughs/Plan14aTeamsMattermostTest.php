@@ -318,7 +318,7 @@ it('[P14a-04a] shares the recap of an anonymous retro to both channels with a co
 
     $page = $this->awaitRealtime($this->signIn($fran, "/retros/{$retro->id}"));
 
-    $page->assertSee('Retrospective completed on')
+    $page->assertSee('Session ended')
         ->click('Share')
         ->assertSee('Share to Microsoft Teams')
         ->click('Share to Microsoft Teams')

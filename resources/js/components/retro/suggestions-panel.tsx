@@ -2,7 +2,7 @@ import { Sparkles } from 'lucide-react';
 import { useTrans } from '@/hooks/use-trans';
 import { cn } from '@/lib/utils';
 import { useBoard } from './board-context';
-import { SuggestionsList } from './insights/suggestions-list';
+import { SuggestionsList } from './suggestions-list';
 
 /** The themes and the suggested actions of the retro, as a panel of the discussion. */
 export function SuggestionsPanel({ className }: { className?: string }) {

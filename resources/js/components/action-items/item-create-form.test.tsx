@@ -329,3 +329,82 @@ describe('ItemCreateForm', () => {
         ).toBeTruthy();
     });
 });
+
+describe('ItemCreateForm, stacked for a drawer', () => {
+    it('picks the assignee among avatar chips and the priority among three segments', async () => {
+        const onCreate = vi.fn(async () => true);
+
+        render(
+            <ItemCreateForm
+                layout="stacked"
+                members={members}
+                onCreate={onCreate}
+            />,
+        );
+
+        const assignees = screen.getByRole('radiogroup', { name: 'Assignee' });
+        const chips = Array.from(
+            assignees.querySelectorAll<HTMLElement>('[role="radio"]'),
+        );
+
+        expect(chips.map((chip) => chip.textContent)).toEqual([
+            'Unassigned',
+            expect.stringContaining('Alice Martin'),
+            expect.stringContaining('Bob Stone'),
+            expect.stringContaining('Carol Guest (Guest)'),
+        ]);
+        expect(chips[0].getAttribute('aria-checked')).toBe('true');
+        expect(screen.queryByRole('combobox', { name: 'Assignee' })).toBeNull();
+        expect(screen.queryByRole('combobox', { name: 'Priority' })).toBeNull();
+
+        const priorities = Array.from(
+            screen
+                .getByRole('radiogroup', { name: 'Priority' })
+                .querySelectorAll<HTMLElement>('[role="radio"]'),
+        );
+
+        expect(priorities.map((segment) => segment.textContent)).toEqual([
+            'Low',
+            'Medium',
+            'High',
+        ]);
+        expect(priorities[1].getAttribute('aria-checked')).toBe('true');
+
+        fireEvent.click(chips[3]);
+        fireEvent.click(priorities[2]);
+
+        const field = typeTitle('Timebox the daily');
+
+        fireEvent.submit(field.closest('form') as HTMLFormElement);
+
+        await waitFor(() =>
+            expect(onCreate).toHaveBeenCalledWith({
+                title: 'Timebox the daily',
+                priority: 'high',
+                dueDate: null,
+                recurrence: null,
+                owner: members[2],
+            }),
+        );
+    });
+
+    it('keeps the due date, the repeat and the ticket of the inline form', () => {
+        render(
+            <ItemCreateForm
+                layout="stacked"
+                members={members}
+                onCreate={vi.fn(async () => true)}
+                exportSources={[linear]}
+                onCreatedWithTicket={vi.fn()}
+            />,
+        );
+
+        expect(screen.getByLabelText('Due date')).toBeTruthy();
+        expect(screen.getByRole('combobox', { name: 'Repeat' })).toBeTruthy();
+        expect(
+            screen.getByRole('checkbox', {
+                name: 'Create the ticket in Linear',
+            }),
+        ).toBeTruthy();
+    });
+});

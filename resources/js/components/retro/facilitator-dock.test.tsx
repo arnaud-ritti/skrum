@@ -421,4 +421,24 @@ describe('FacilitatorDock', () => {
 
         expect(screen.queryByRole('toolbar')).toBeNull();
     });
+
+    it('keeps the reaction bar alone at the session end', () => {
+        renderInBoard(
+            <FacilitatorDock />,
+            boardContext(retroSnapshot({ retro: { phase: 'completed' } }), {
+                presence: {
+                    whisper: vi.fn(),
+                    listen: vi.fn(),
+                    stopListening: vi.fn(),
+                } as never,
+            }),
+        );
+
+        expect(
+            screen.getAllByRole('toolbar').map((bar) => bar.ariaLabel),
+        ).toEqual(['Reactions']);
+        expect(
+            document.querySelector('[data-slot="facilitator-dock"]'),
+        ).toBeNull();
+    });
 });

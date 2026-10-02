@@ -945,3 +945,27 @@ describe('RetroCard', () => {
         });
     });
 });
+
+describe('RetroCard votes on a phone', () => {
+    it('gives the vote and its take-back a 44px target below md', () => {
+        const { container } = renderWithProviders(
+            <RetroCard
+                id="c1"
+                text="Slow CI"
+                color="moss"
+                votes={{ total: 2, mine: 1 }}
+                canVote
+                onVote={() => {}}
+            />,
+        );
+        const vote = container.querySelector(
+            '[data-slot="retro-card-vote"]',
+        ) as HTMLElement;
+
+        expect(vote.className).toContain('max-md:h-11');
+        expect(vote.className).toContain('max-md:min-w-11');
+        expect(
+            screen.getByRole('button', { name: 'Remove a vote' }).className,
+        ).toContain('max-md:size-11');
+    });
+});

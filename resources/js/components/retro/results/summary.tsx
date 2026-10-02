@@ -1,12 +1,19 @@
 import { useState } from 'react';
 import RetroSummariesController from '@/actions/App/Http/Controllers/Retros/RetroSummariesController';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useTrans } from '@/hooks/use-trans';
 import { retroRequest } from '@/lib/retro/api';
 import { useBoard } from '../board-context';
-import { SuggestionsList } from './suggestions-list';
+import { SuggestionsList } from '../suggestions-list';
+import { ResultsCard } from './results-card';
 
-export function SummarySection() {
+/**
+ * The summary written by the language model, with the themes and the
+ * suggested actions. Only the facilitator generates, regenerates or removes
+ * it.
+ */
+export function Summary() {
     const ctx = useBoard();
     const { t } = useTrans();
     const [busy, setBusy] = useState(false);
@@ -52,24 +59,24 @@ export function SummarySection() {
         }
     };
 
+    const canAct = isFacilitator && summary.status !== 'pending';
+
     return (
-        <section
-            aria-labelledby="results-summary"
-            className="space-y-3 rounded-lg border p-4"
-        >
-            <div className="flex flex-wrap items-center justify-between gap-2">
-                <h2 id="results-summary" className="text-sm font-semibold">
-                    {t('Summary')}
-                </h2>
-                {isFacilitator && summary.status !== 'pending' && (
-                    <div className="flex gap-2">
+        <ResultsCard
+            title={t('Summary')}
+            titleId="results-summary"
+            aside={
+                canAct ? (
+                    <div className="ml-auto flex min-w-0 flex-wrap justify-end gap-2">
                         {summary.status === null && (
                             <Button
                                 size="sm"
                                 disabled={busy}
                                 onClick={() => void send(false)}
                             >
-                                {t('Generate summary')}
+                                <span className="truncate">
+                                    {t('Generate summary')}
+                                </span>
                             </Button>
                         )}
                         {summary.status === 'failed' && (
@@ -78,7 +85,7 @@ export function SummarySection() {
                                 disabled={busy}
                                 onClick={() => void send(false)}
                             >
-                                {t('Retry')}
+                                <span className="truncate">{t('Retry')}</span>
                             </Button>
                         )}
                         {summary.status === 'ready' && (
@@ -89,7 +96,9 @@ export function SummarySection() {
                                     disabled={busy}
                                     onClick={() => void send(false)}
                                 >
-                                    {t('Regenerate')}
+                                    <span className="truncate">
+                                        {t('Regenerate')}
+                                    </span>
                                 </Button>
                                 <Button
                                     size="sm"
@@ -97,14 +106,16 @@ export function SummarySection() {
                                     disabled={busy}
                                     onClick={() => void send(true)}
                                 >
-                                    {t('Remove')}
+                                    <span className="truncate">
+                                        {t('Remove')}
+                                    </span>
                                 </Button>
                             </>
                         )}
                     </div>
-                )}
-            </div>
-
+                ) : undefined
+            }
+        >
             {isFacilitator &&
                 (summary.status === null || summary.status === 'failed') && (
                     <p className="text-xs text-muted-foreground">
@@ -116,19 +127,19 @@ export function SummarySection() {
                 )}
 
             {summary.status === 'pending' && (
-                <div className="space-y-2" aria-busy="true">
+                <div className="flex flex-col gap-2" aria-busy="true">
                     <p role="status" className="text-sm text-muted-foreground">
                         {t('Generating the summary…')}
                     </p>
-                    <div className="h-3 w-full rounded bg-muted motion-safe:animate-pulse" />
-                    <div className="h-3 w-4/5 rounded bg-muted motion-safe:animate-pulse" />
-                    <div className="h-3 w-3/5 rounded bg-muted motion-safe:animate-pulse" />
+                    <Skeleton className="h-3 w-full" />
+                    <Skeleton className="h-3 w-4/5" />
+                    <Skeleton className="h-3 w-3/5" />
                 </div>
             )}
 
             {showsText && (
                 <>
-                    <p className="text-sm break-words whitespace-pre-wrap">
+                    <p className="text-sm wrap-anywhere whitespace-pre-wrap">
                         {summary.text}
                     </p>
                     <p className="text-xs text-muted-foreground">
@@ -146,6 +157,6 @@ export function SummarySection() {
             )}
 
             {hasInsights && <SuggestionsList />}
-        </section>
+        </ResultsCard>
     );
 }

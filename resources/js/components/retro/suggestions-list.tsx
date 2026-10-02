@@ -7,8 +7,8 @@ import { Button } from '@/components/ui/button';
 import { useTrans } from '@/hooks/use-trans';
 import { retroRequest } from '@/lib/retro/api';
 import type { ActionItem, SuggestedAction } from '@/lib/retro/types';
-import { useBoard } from '../board-context';
-import { SentimentIcon } from '../card-insight';
+import { useBoard } from './board-context';
+import { SentimentIcon } from './card-insight';
 
 type HandledResponse = {
     suggestedAction: SuggestedAction;
@@ -113,7 +113,7 @@ export function SuggestionsList() {
                                                 {card.category && (
                                                     <Badge
                                                         variant="outline"
-                                                        className="shrink-0 px-1.5 py-0 text-[11px] font-normal"
+                                                        className="shrink-0 font-normal"
                                                     >
                                                         {card.category}
                                                     </Badge>

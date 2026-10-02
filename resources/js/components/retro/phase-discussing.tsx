@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, ScanEye } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight, ScanEye } from 'lucide-react';
 import { createContext, Fragment, useContext, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import RetroHighlightsController from '@/actions/App/Http/Controllers/Retros/RetroHighlightsController';
@@ -6,10 +6,14 @@ import RetroSettingsController from '@/actions/App/Http/Controllers/Retros/Retro
 import { EmptyState } from '@/components/skrum/empty-state';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { useSwipe } from '@/hooks/use-swipe';
 import { useTrans } from '@/hooks/use-trans';
 import { retroRequest } from '@/lib/retro/api';
 import { stepTopic, topicOfCard, topicsFrom } from '@/lib/retro/topics';
 import type { Topic } from '@/lib/retro/topics';
+import { cn } from '@/lib/utils';
 import { ActionItemsList } from './action-items-list';
 import { useBoard } from './board-context';
 import { BoardCursors } from './board-cursors';
@@ -303,10 +307,17 @@ export function PhaseDiscussing({
 }: Props) {
     const { board } = useBoard();
     const { t } = useTrans();
-    const { topics, current, shared, presenting, goTo } = useDiscussion();
+    const { topics, current, shared, presenting, goTo, step } = useDiscussion();
+    const isMobile = useIsMobile();
     const [stage, setStage] = useState<HTMLElement | null>(null);
+    const [listOpen, setListOpen] = useState(false);
+    const swipe = useSwipe(step);
     const index = topics.findIndex((topic) => topic.id === current?.id);
     const next = topics[index + 1];
+    const position = t('Topic :current of :total', {
+        current: index + 1,
+        total: topics.length,
+    });
 
     const panels: { id: string; node: ReactNode }[] = [
         { id: 'notes', node: notes },
@@ -320,19 +331,79 @@ export function PhaseDiscussing({
             data-slot="retro-discussion"
             className="grid min-w-0 shrink-0 grow grid-cols-1 lg:grid-cols-[minmax(0,17rem)_minmax(0,1fr)_minmax(0,20rem)] xl:min-h-0 xl:shrink xl:grid-cols-[19.5rem_minmax(0,1fr)_23rem] xl:grid-rows-[minmax(0,1fr)]"
         >
-            <TopicsList
-                topics={topics}
-                columns={board.columns}
-                currentId={current?.id ?? null}
-                sharedId={shared?.id ?? null}
-                actionCount={board.actionItems.length}
-                rowMeta={topicMeta}
-                onSelect={goTo}
-            />
+            {isMobile ? (
+                topics.length > 0 && (
+                    <div
+                        data-slot="retro-topics-selector"
+                        className="sticky top-0 z-10 flex min-w-0 border-b bg-background px-4 py-2"
+                    >
+                        <Button
+                            type="button"
+                            variant="outline"
+                            aria-haspopup="dialog"
+                            aria-expanded={listOpen}
+                            className="h-11 w-full min-w-0 justify-start gap-2"
+                            onClick={() => setListOpen(true)}
+                        >
+                            <span
+                                aria-hidden
+                                className="shrink-0 font-mono text-xs font-semibold text-skrum-primary-text tabular-nums"
+                            >
+                                {index + 1}/{topics.length}
+                            </span>
+                            <span className="sr-only">{position}</span>
+                            <span className="min-w-0 flex-1 truncate text-left">
+                                {current?.title || t('GIF')}
+                            </span>
+                            <ChevronDown aria-hidden />
+                        </Button>
+                        <Drawer open={listOpen} onOpenChange={setListOpen}>
+                            <DrawerContent
+                                aria-describedby={undefined}
+                                data-slot="retro-topics-drawer"
+                                className="px-0"
+                            >
+                                <DrawerTitle className="sr-only">
+                                    {t('Topics')}
+                                </DrawerTitle>
+                                <div className="min-h-0 overflow-y-auto">
+                                    <TopicsList
+                                        topics={topics}
+                                        columns={board.columns}
+                                        currentId={current?.id ?? null}
+                                        sharedId={shared?.id ?? null}
+                                        actionCount={board.actionItems.length}
+                                        rowMeta={topicMeta}
+                                        className="border-b-0 bg-transparent"
+                                        onSelect={(topic) => {
+                                            goTo(topic);
+                                            setListOpen(false);
+                                        }}
+                                    />
+                                </div>
+                            </DrawerContent>
+                        </Drawer>
+                    </div>
+                )
+            ) : (
+                <TopicsList
+                    topics={topics}
+                    columns={board.columns}
+                    currentId={current?.id ?? null}
+                    sharedId={shared?.id ?? null}
+                    actionCount={board.actionItems.length}
+                    rowMeta={topicMeta}
+                    onSelect={goTo}
+                />
+            )}
             <div
                 ref={setStage}
                 data-slot="retro-topic-stage"
-                className="relative flex min-w-0 flex-col gap-4 px-4 pt-4 md:px-6 xl:overflow-y-auto xl:pb-32"
+                className={cn(
+                    'relative flex min-w-0 flex-col gap-4 px-4 pt-4 md:px-6 xl:overflow-y-auto xl:pb-32',
+                    isMobile && 'touch-pan-y',
+                )}
+                {...(isMobile ? swipe.handlers : {})}
             >
                 <FollowBanner following={following} />
                 {current ? (

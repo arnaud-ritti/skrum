@@ -14,6 +14,8 @@ use App\Models\TeamIntegration;
 use App\Models\User;
 use App\Models\Vote;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Notification;
 use Tests\Browser\Support\ReverbServer;
 
 it('[P18e-02-05] renders a board with the eight colours, shows a migrated green column as Moss and recolours it for everyone', function () {
@@ -781,8 +783,8 @@ it('[P18e-02-01] walks a member and a guest from Writing to Grouping, Voting, Di
     foreach ([$alicePage, $carolPage] as $page) {
         $page->assertSeeIn($current, 'Completed')
             ->assertSee('Top topics')
-            ->assertSeeIn(p18eSection('Return on time invested'), 'Average: 5.0/5')
-            ->assertSeeIn(p18eSection('Return on time invested'), '1 rating')
+            ->assertSeeIn(p18eSection('Return on time invested').' [data-slot="roti-mean"]', '5.0')
+            ->assertSeeIn(p18eSection('Return on time invested'), '1 vote')
             ->assertNotPresent($control)
             ->assertSee('Buy a faster runner')
             ->assertScript('window.__p18eSamePage === true', true);
@@ -790,4 +792,315 @@ it('[P18e-02-01] walks a member and a guest from Writing to Grouping, Voting, Di
 
     expect($retro->fresh()->phase)->toBe(RetroPhase::Completed)
         ->and($retro->fresh()->roti_votable_when_completed)->toBeFalse();
+});
+
+/**
+ * A board in ROTI, started 58 minutes ago, with a card, two votes and an action item.
+ *
+ * @return array{
+ *     0: Retro,
+ *     1: User,
+ *     2: User
+ * }
+ */
+function p18eRotiBoard(bool $started = true): array
+{
+    $retro = Retro::factory()->inPhase(RetroPhase::Roti)->withGuestAccess()->create([
+        'title' => 'Sprint 42',
+        'votes_per_participant' => 5,
+        'started_at' => $started ? now()->subMinutes(58) : null,
+    ]);
+    $column = Column::factory()->create(['retro_id' => $retro->id, 'title' => 'Start', 'position' => 0]);
+
+    [$alice, $aliceParticipant] = retroFacilitator($retro);
+    [$bob, $bobParticipant] = retroMember($retro);
+    $alice->update(['name' => 'Alice Martin', 'locale' => 'en']);
+    $bob->update(['name' => 'Bob Stone', 'locale' => 'en']);
+
+    $card = Card::factory()->create([
+        'retro_id' => $retro->id,
+        'column_id' => $column->id,
+        'participant_id' => $bobParticipant->id,
+        'content' => 'Slow CI',
+        'position' => 0,
+    ]);
+    Vote::factory()->count(2)->create(['retro_id' => $retro->id, 'card_id' => $card->id, 'participant_id' => $aliceParticipant->id]);
+    ActionItem::factory()->create([
+        'retro_id' => $retro->id,
+        'content' => 'Buy a faster runner',
+        'created_by_participant_id' => $aliceParticipant->id,
+    ]);
+
+    return [$retro->fresh(), $alice, $bob];
+}
+
+function p18eStat(string $label): string
+{
+    return "[data-slot=\"stat-card\"]:has-text(\"{$label}\") [data-slot=\"stat-card-value\"]";
+}
+
+it('[P18e-02-04] ends the session on its figures with the duration and the votes cast, switches between Results and Board, e-mails the recap, shares it to a channel and reopens on ROTI', function () {
+    config(['mail.default' => 'smtp', 'queue.default' => 'database']);
+    Notification::fake();
+    Http::fake(['hooks.slack.com/*' => Http::response('ok')]);
+    disableIntegrations();
+    enableIntegrations(IntegrationProvider::Slack);
+    [$retro, $alice] = p18eRotiBoard();
+    TeamIntegration::factory()->slack()->create(['team_id' => $retro->team_id]);
+    $current = '[aria-current="step"]';
+    $line = '[data-slot="retro-session-end-line"]';
+    $send = '[role="dialog"] button:has-text("Send")';
+
+    $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
+    $carolPage = $this->awaitRealtime($this->joinAsGuest("/join/{$retro->guest_token}", 'Carol Guest'));
+
+    $alicePage->click('[data-slot="facilitator-bar"] button:has-text("End session")');
+
+    foreach ([$alicePage, $carolPage] as $page) {
+        $page->assertSeeIn($current, 'Completed')
+            ->assertSeeIn($line, 'SESSION ENDED · 58 MIN ·')
+            ->assertSee('Sprint 42, wrapped up')
+            ->assertSee('Meetings end, actions stay.')
+            ->assertSeeIn(p18eStat('Actions created'), '1')
+            ->assertSeeIn(p18eStat('Participation'), '3 of 2 · 100%')
+            ->assertSeeIn(p18eStat('Cards'), '1')
+            ->assertSeeIn(p18eStat('Groups'), '0')
+            ->assertSeeIn(p18eStat('Votes cast'), '2 of 15')
+            ->assertAriaAttribute('#completed-tab-results', 'selected', 'true')
+            ->assertSeeIn(p18eSection('Actions created'), 'Buy a faster runner')
+            ->click('#completed-tab-board')
+            ->assertAriaAttribute('#completed-tab-board', 'selected', 'true')
+            ->assertPresent('[role="tabpanel"] [data-test^="retro-column-"]')
+            ->assertNotPresent('[data-slot="retro-session-end-stats"]')
+            ->assertSee('Sprint 42, wrapped up')
+            ->click('#completed-tab-results')
+            ->assertPresent('[data-slot="retro-session-end-stats"]');
+    }
+
+    $carolPage->assertDontSee('Send the recap by e-mail')
+        ->assertDontSee('Back to the team')
+        ->assertNotPresent('button:has-text("Share")');
+
+    $alicePage->assertSee('Back to the team')
+        ->click('Send the recap by e-mail')
+        ->assertSee('Email the results')
+        ->assertSee('Participants with an account (2)')
+        ->click($send)
+        ->assertSee('The results are on their way.')
+        ->assertNotPresent('[role="dialog"]')
+        ->assertSee('Emailed to 2 people');
+
+    Notification::assertCount(2);
+
+    $alicePage->click('Share')
+        ->click('Share to Slack')
+        ->assertSee('Share the results to Slack')
+        ->click($send)
+        ->assertNotPresent('[role="dialog"]')
+        ->assertSee('Sending to Slack…');
+
+    $this->workQueue();
+
+    $alicePage->assertSee('Sent to Slack')
+        ->press('Reopen')
+        ->assertSeeIn($current, 'ROTI');
+
+    $carolPage->assertSeeIn($current, 'ROTI')
+        ->assertNotPresent('#completed-tab-results')
+        ->assertPresent('[role="group"][aria-label="How was this retro?"]');
+
+    expect($retro->fresh()->phase)->toBe(RetroPhase::Roti)
+        ->and($retro->fresh()->started_at)->not->toBeNull();
+});
+
+it('[P18e-02-04b] shows no duration at the end of a retro without a start time', function () {
+    [$retro, $alice] = p18eRotiBoard(started: false);
+    $retro->forceFill(['phase' => RetroPhase::Completed, 'completed_at' => now()])->save();
+
+    $page = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
+
+    $page->assertSeeIn('[data-slot="retro-session-end-line"]', 'SESSION ENDED ·')
+        ->assertDontSeeIn('[data-slot="retro-session-end-line"]', 'MIN')
+        ->assertSeeIn(p18eStat('Votes cast'), '2 of 10');
+
+    expect($retro->fresh()->started_at)->toBeNull();
+});
+
+it('[P18e-02-06] shows one column per tab at 390, changes it on a swipe and from the keyboard, adds a card from the round button, takes a vote, and opens the topics and the action item in a drawer', function () {
+    [$retro, $alice] = p18eShellBoard();
+    [$start, $stop, $continue] = $retro->columns()->orderBy('position')->get()->all();
+    $tabs = '[role="tablist"][aria-label="Columns"]';
+    $tab = fn (string $title): string => "{$tabs} [role=\"tab\"]:has-text(\"{$title}\")";
+    $shown = "[...document.querySelectorAll('[data-test^=\"retro-column-\"]')].map((column) => column.dataset.test).join(',')";
+    $swipe = fn (int $from, int $to): string => "() => { const area = document.querySelector('[data-slot=\"retro-columns\"]'); const fire = (type, x) => area.dispatchEvent(new PointerEvent(type, { bubbles: true, clientX: x, clientY: 420, pointerType: 'touch', isPrimary: true })); fire('pointerdown', {$from}); fire('pointerup', {$to}); return true; }";
+    $pageScrollsSideways = 'document.documentElement.scrollWidth > document.documentElement.clientWidth';
+    $heightOf = fn (string $selector): string => "Math.round(document.querySelector('{$selector}').getBoundingClientRect().height)";
+    $panel = '[data-test="retro-action-items-panel"]';
+
+    $page = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
+
+    $page->resize(390, 844)
+        ->assertCount("{$tabs} [role=\"tab\"]", 4)
+        ->assertAriaAttribute($tab('Start'), 'selected', 'true')
+        ->assertScript($shown, "retro-column-{$start->id}")
+        ->assertScript($pageScrollsSideways, false)
+        ->assertNotPresent('[data-slot="retro-card-composer"]');
+
+    $page->script($swipe(330, 120));
+    $page->assertAriaAttribute($tab('Stop'), 'selected', 'true')
+        ->assertScript($shown, "retro-column-{$stop->id}");
+
+    $page->script($swipe(330, 280));
+    $page->assertScript($shown, "retro-column-{$stop->id}");
+
+    $page->script($swipe(60, 300));
+    $page->assertAriaAttribute($tab('Start'), 'selected', 'true')
+        ->assertScript($shown, "retro-column-{$start->id}");
+
+    $page->keys($tab('Start'), 'ArrowRight')
+        ->assertAriaAttribute($tab('Stop'), 'selected', 'true')
+        ->keys($tab('Stop'), 'ArrowRight')
+        ->assertAriaAttribute($tab('Continue'), 'selected', 'true')
+        ->assertScript($shown, "retro-column-{$continue->id}")
+        ->assertScript("document.activeElement.textContent.includes('Continue')", true);
+
+    $page->click('[aria-label="Add a card in Continue"]')
+        ->assertSeeIn('[role="dialog"]', 'Add a card in Continue')
+        ->type('[role="dialog"] textarea', 'Keep the demo on Fridays')
+        ->keys('[role="dialog"] textarea', 'Enter')
+        ->assertNotPresent('[role="dialog"]')
+        ->assertSeeIn("[data-test=\"retro-column-{$continue->id}\"]", 'Keep the demo on Fridays')
+        ->assertSeeIn($tab('Continue'), '1 card');
+
+    $card = $retro->cards()->where('content', 'Keep the demo on Fridays')->sole();
+
+    expect($card->column_id)->toBe($continue->id);
+
+    $page->click('[aria-label="Add a card in Continue"]')
+        ->type('[role="dialog"] textarea', 'Keep pairing on reviews')
+        ->keys('[role="dialog"] textarea', 'Enter')
+        ->assertNotPresent('[role="dialog"]')
+        ->assertSeeIn($tab('Continue'), '2 cards');
+
+    $paired = $retro->cards()->where('content', 'Keep pairing on reviews')->sole();
+
+    $page->press('Next')
+        ->assertSeeIn('[aria-current="step"]', 'Grouping')
+        ->assertNotPresent('[aria-label^="Add a card in"]')
+        ->click($tab('Continue'))
+        ->click("#card-{$paired->id} [data-slot=\"retro-card-menu\"]")
+        ->click('[role="menuitem"]:has-text("Add to group…")')
+        ->assertSeeIn('[data-slot="retro-group-drawer"]', 'Add to a group')
+        ->click("[data-slot=\"retro-group-drawer\"] [data-target-id=\"{$card->id}\"]")
+        ->assertNotPresent('[data-slot="retro-group-drawer"]')
+        ->assertPresent("[data-slot=\"card-group\"] #card-{$paired->id}");
+
+    expect($paired->fresh()->parent_card_id)->toBe($card->id);
+
+    $vote = '[data-slot="card-group-votes"] [data-slot="vote-button"]';
+
+    $page->press('Next')
+        ->assertSeeIn('[aria-current="step"]', 'Voting')
+        ->assertPresent('[data-slot="retro-phone-columns-head"] [data-slot="vote-budget"]')
+        ->click($tab('Continue'))
+        ->assertScript($heightOf($vote), 44)
+        ->click($vote)
+        ->assertSeeIn('[data-slot="vote-budget"]', '4 votes left')
+        ->assertScript($pageScrollsSideways, false);
+
+    expect(Vote::query()->where('card_id', $card->id)->count())->toBe(1);
+
+    $page->press('Next')
+        ->assertSeeIn('[aria-current="step"]', 'Discussing')
+        ->assertNotPresent('main [data-test="retro-topics"]')
+        ->assertSeeIn('[data-slot="retro-topics-selector"]', '1/1')
+        ->assertSeeIn('[data-slot="retro-topics-selector"]', 'Keep the demo on Fridays')
+        ->click('[data-slot="retro-topics-selector"] button')
+        ->assertCount('[data-slot="retro-topics-drawer"] [data-test="retro-topics"] > li', 1)
+        ->click('[data-slot="retro-topics-drawer"] [data-test="retro-topics"] > li button')
+        ->assertNotPresent('[data-slot="retro-topics-drawer"]')
+        ->assertPresent("#card-{$card->id}")
+        ->assertNotPresent("{$panel} form");
+
+    $page->click("{$panel} button:has-text(\"Create an action\")")
+        ->assertSeeIn('[data-slot="retro-action-drawer"]', 'New action item')
+        ->fill('[data-slot="retro-action-drawer"] [aria-label="Add an action item…"]', 'Book the demo room')
+        ->click('[data-slot="retro-action-drawer"] [role="radiogroup"][aria-label="Assignee"] [role="radio"]:has-text("Bob Stone")')
+        ->assertAriaAttribute('[data-slot="retro-action-drawer"] [role="radio"]:has-text("Bob Stone")', 'checked', 'true')
+        ->click('[data-slot="retro-action-drawer"] button:has-text("Create")')
+        ->assertNotPresent('[data-slot="retro-action-drawer"]')
+        ->assertSeeIn($panel, 'Book the demo room')
+        ->assertSeeIn($panel, 'Bob Stone')
+        ->assertScript($pageScrollsSideways, false);
+
+    $item = ActionItem::query()->where('content', 'Book the demo room')->sole();
+
+    expect($item->assignee_user_id)->not->toBeNull();
+});
+
+it('[P18e-02-07] holds a reaction in place instead of flying it and throws no confetti for a viewer who prefers reduced motion, who reads that the session has ended in a toast', function () {
+    [$retro, $alice, $bob] = p18eRotiBoard();
+    $joinPath = "/join/{$retro->guest_token}";
+    $watchReactions = '() => { window.p18eReactionAnimations = []; new MutationObserver(() => { for (const reaction of document.querySelectorAll(".lr-reaction")) { const name = getComputedStyle(reaction).animationName; if (! window.p18eReactionAnimations.includes(name)) { window.p18eReactionAnimations.push(name); } } }).observe(document.body, { childList: true, subtree: true }); return true; }';
+
+    $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
+    $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
+    $carolPage = visit($joinPath, ['reducedMotion' => 'reduce']);
+
+    $carolPage->fill('#name', 'Carol Guest')
+        ->click('Join')
+        ->assertPathIsNot($joinPath);
+
+    $this->awaitRealtime($carolPage)
+        ->assertScript('window.matchMedia("(prefers-reduced-motion: reduce)").matches', true);
+
+    foreach ([$alicePage, $bobPage] as $page) {
+        $page->assertPresent('[role="group"][aria-label="3 online"]');
+    }
+
+    foreach ([$bobPage, $carolPage] as $page) {
+        $page->script($watchReactions);
+    }
+
+    $alicePage->click('[aria-label="Send a reaction 🎉"]');
+
+    $bobPage->assertPresent('.lr-reaction')
+        ->assertScript('window.p18eReactionAnimations.length > 0 && ! window.p18eReactionAnimations.includes("lr-hold")', true);
+    $carolPage->assertPresent('.lr-reaction')
+        ->assertScript('window.p18eReactionAnimations.join(",")', 'lr-hold');
+
+    $alicePage->click('[data-slot="facilitator-bar"] button:has-text("End session")');
+
+    $bobPage->assertSeeIn('[aria-current="step"]', 'Completed')
+        ->assertPresent('[data-slot="session-confetti"]');
+
+    $carolPage->assertSeeIn('[aria-current="step"]', 'Completed')
+        ->assertSee('Session ended — 1 action created')
+        ->assertNotPresent('[data-slot="session-confetti"]');
+});
+
+it('[P18e-02-15] throws the confetti for a guest in a second browser when the facilitator ends the session, and none after a reload', function () {
+    [$retro, $alice] = p18eRotiBoard();
+    $confetti = '[data-slot="session-confetti"]';
+
+    $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
+    $carolPage = $this->awaitRealtime($this->joinAsGuest("/join/{$retro->guest_token}", 'Carol Guest'));
+
+    $carolPage->assertNotPresent($confetti);
+
+    $alicePage->click('[data-slot="facilitator-bar"] button:has-text("End session")');
+
+    foreach ([$alicePage, $carolPage] as $page) {
+        $page->assertSeeIn('[aria-current="step"]', 'Completed')
+            ->assertCount("{$confetti} > span", 40)
+            ->assertAttribute($confetti, 'aria-hidden', 'true')
+            ->assertPresent('[role="toolbar"][aria-label="Reactions"]');
+    }
+
+    $carolPage->navigate("/retros/{$retro->id}");
+
+    $this->awaitRealtime($carolPage)
+        ->assertSeeIn('[aria-current="step"]', 'Completed')
+        ->assertSee('Sprint 42, wrapped up')
+        ->assertNotPresent($confetti);
 });

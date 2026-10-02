@@ -26,7 +26,7 @@ type Props = {
  * Sends a request for a dialog: a refusal is shown inside the dialog, which
  * stays open; an expired session closes it (the shell shows its banner).
  */
-function useDialogRequest(onOpenChange: (open: boolean) => void) {
+export function useDialogRequest(onOpenChange: (open: boolean) => void) {
     const ctx = useBoard();
     const [error, setError] = useState<string>();
 

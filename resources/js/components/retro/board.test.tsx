@@ -266,4 +266,75 @@ describe('Board', () => {
             expect(screen.queryByText('Suggest group names')).toBeNull();
         });
     });
+
+    describe('once completed', () => {
+        const completedSnapshot = () =>
+            retroSnapshot({
+                retro: {
+                    phase: 'completed',
+                    completedAt: '2026-10-02T10:00:00Z',
+                },
+                results: {
+                    participants: [],
+                    health: null,
+                    healthTrend: null,
+                    surveys: [],
+                    games: null,
+                    roti: { distribution: [], average: null, respondents: 0 },
+                    summary: null,
+                    deliveries: [],
+                    emailRecipients: null,
+                    stats: {
+                        votesCast: 0,
+                        votesAvailable: 5,
+                        participation: { participants: 1, teamMembers: 1 },
+                        durationSeconds: null,
+                    },
+                },
+            });
+        const confetti = () =>
+            document.querySelector('[data-slot="session-confetti"]');
+
+        it('shows the session end in place of the columns, without a facilitator bar and without confetti on a visit', () => {
+            const { container } = given({}, completedSnapshot());
+
+            expect(
+                container.querySelector('[data-slot="retro-session-end"]'),
+            ).not.toBeNull();
+            expect(
+                screen
+                    .getByRole('tab', { name: 'Results' })
+                    .getAttribute('aria-selected'),
+            ).toBe('true');
+            expect(
+                container.querySelector('[data-slot="retro-columns"]'),
+            ).toBeNull();
+            expect(
+                screen.queryByRole('toolbar', { name: 'Facilitation tools' }),
+            ).toBeNull();
+            expect(confetti()).toBeNull();
+        });
+
+        it('throws the confetti for who sees the session end, and not again after a reopen', () => {
+            const roti = retroSnapshot({ retro: { phase: 'roti' } });
+            const view = given({}, roti);
+            const turn = (snapshot: ReturnType<typeof retroSnapshot>) => {
+                state.value = { ...state.value, board: snapshot };
+                view.rerender(<Board snapshot={snapshot} />);
+            };
+
+            expect(confetti()).toBeNull();
+
+            turn(completedSnapshot());
+
+            expect(confetti()).not.toBeNull();
+
+            turn(roti);
+
+            expect(confetti()).toBeNull();
+            expect(
+                view.container.querySelector('[data-slot="retro-roti"]'),
+            ).not.toBeNull();
+        });
+    });
 });

@@ -33,13 +33,7 @@ import {
 import { PhaseActions } from './phase-actions';
 import { PhaseHealth } from './phase-health';
 import { PhaseRoti } from './phase-roti';
-import {
-    CompletedPanelId,
-    CompletedTabId,
-    CompletedTabs,
-    type CompletedView,
-} from './results/completed-tabs';
-import { ResultsView } from './results/results-view';
+import { SessionEnd, type CompletedView } from './session-end';
 import { AddSurveyButton } from './surveys-column';
 
 /**
@@ -77,29 +71,26 @@ function BoardBody({ hideMyCursor }: { hideMyCursor: boolean }) {
     const [completedView, setCompletedView] =
         useState<CompletedView>('results');
     const [trackedPhase, setTrackedPhase] = useState(board.retro.phase);
+    const [celebrates, setCelebrates] = useState(false);
     const { phase } = board.retro;
 
     if (trackedPhase !== phase) {
         setTrackedPhase(phase);
         setCompletedView('results');
+        // Only who sees the session end live gets the confetti: a board
+        // opened once completed never passes here.
+        setCelebrates(phase === 'completed');
     }
 
-    if (phase === 'completed' && completedView === 'results') {
+    if (phase === 'completed') {
         return (
-            <>
-                <CompletedTabs
-                    value={completedView}
-                    onChange={setCompletedView}
-                />
-                <div
-                    role="tabpanel"
-                    id={CompletedPanelId}
-                    aria-labelledby={CompletedTabId('results')}
-                    className="flex flex-1 flex-col"
-                >
-                    <ResultsView />
-                </div>
-            </>
+            <SessionEnd
+                view={completedView}
+                onViewChange={setCompletedView}
+                celebrates={celebrates}
+            >
+                <ColumnsBoard hideMyCursor={hideMyCursor} />
+            </SessionEnd>
         );
     }
 
@@ -122,20 +113,7 @@ function BoardBody({ hideMyCursor }: { hideMyCursor: boolean }) {
     return (
         <>
             {phase === 'health_check' && <PhaseHealth />}
-            {phase === 'completed' && (
-                <CompletedTabs
-                    value={completedView}
-                    onChange={setCompletedView}
-                />
-            )}
-            <div
-                {...(phase === 'completed' && {
-                    role: 'tabpanel',
-                    id: CompletedPanelId,
-                    'aria-labelledby': CompletedTabId('board'),
-                })}
-                className="flex flex-1 flex-col lg:flex-row"
-            >
+            <div className="flex flex-1 flex-col lg:flex-row">
                 <ColumnsBoard hideMyCursor={hideMyCursor} />
             </div>
         </>

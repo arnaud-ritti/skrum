@@ -11,6 +11,12 @@ import { boardContext, renderInBoard, retroSnapshot } from '@/test/retro-board';
 
 const retroRequest = vi.hoisted(() => vi.fn());
 
+const phone = vi.hoisted(() => ({ on: false }));
+
+vi.mock('@/hooks/use-mobile', () => ({
+    useIsMobile: () => phone.on,
+}));
+
 vi.mock('@/lib/retro/api', async (importOriginal) => ({
     ...(await importOriginal<typeof import('@/lib/retro/api')>()),
     retroRequest,
@@ -87,6 +93,7 @@ beforeAll(() => {
 });
 
 beforeEach(() => {
+    phone.on = false;
     retroRequest.mockReset();
     retroRequest.mockResolvedValue(null);
     vi.mocked(toast.success).mockReset();
@@ -446,5 +453,106 @@ describe('ActionItemsList', () => {
                 name: 'Create the ticket in Linear',
             }),
         ).toBeNull();
+    });
+});
+
+describe('ActionItemsList on a phone', () => {
+    beforeEach(() => {
+        phone.on = true;
+    });
+
+    it('creates an item from the drawer, with the assignee picked among the avatar chips, and closes it', async () => {
+        const created = actionItemFixture({
+            id: 'new-item',
+            content: 'Quarantine the flaky tests',
+        });
+
+        retroRequest.mockResolvedValue({ actionItem: created });
+
+        const { container, ctx } = list();
+
+        expect(
+            container.querySelector('[data-slot="item-create-form"]'),
+        ).toBeNull();
+
+        const trigger = screen.getByRole('button', {
+            name: 'Create an action',
+        });
+
+        expect(trigger.getAttribute('aria-haspopup')).toBe('dialog');
+        fireEvent.click(trigger);
+
+        const drawer = await screen.findByRole('dialog', {
+            name: 'New action item',
+        });
+        const assignees = within(drawer).getByRole('radiogroup', {
+            name: 'Assignee',
+        });
+
+        expect(
+            within(assignees)
+                .getAllByRole('radio')
+                .map((chip) => chip.textContent),
+        ).toEqual([
+            'Unassigned',
+            expect.stringContaining('Alice Martin'),
+            expect.stringContaining('Bob Stone'),
+            expect.stringContaining('Carol Guest'),
+            expect.stringContaining('Dan Rivers'),
+        ]);
+
+        fireEvent.click(
+            within(assignees).getByRole('radio', { name: /Bob Stone/ }),
+        );
+        fireEvent.click(
+            within(
+                within(drawer).getByRole('radiogroup', { name: 'Priority' }),
+            ).getByRole('radio', { name: 'High' }),
+        );
+        fireEvent.change(within(drawer).getByLabelText('Add an action item…'), {
+            target: { value: 'Quarantine the flaky tests' },
+        });
+        fireEvent.click(within(drawer).getByRole('button', { name: 'Create' }));
+
+        await waitFor(() =>
+            expect(ctx.apply).toHaveBeenCalledWith({
+                type: 'actionItem.upsert',
+                actionItem: created,
+            }),
+        );
+        expect(callsTo('post')[0][1]).toMatchObject({
+            content: 'Quarantine the flaky tests',
+            priority: 'high',
+            assignee_user_id: 'user-2',
+        });
+        await waitFor(() =>
+            expect(
+                screen.queryByRole('dialog', { name: 'New action item' }),
+            ).toBeNull(),
+        );
+    });
+
+    it('keeps the drawer open when the server refuses the item', async () => {
+        retroRequest.mockRejectedValue(new Error('refused'));
+
+        list();
+
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Create an action' }),
+        );
+
+        const drawer = await screen.findByRole('dialog', {
+            name: 'New action item',
+        });
+
+        fireEvent.change(within(drawer).getByLabelText('Add an action item…'), {
+            target: { value: 'Quarantine the flaky tests' },
+        });
+        fireEvent.click(within(drawer).getByRole('button', { name: 'Create' }));
+
+        await waitFor(() => expect(callsTo('post')).toHaveLength(1));
+        expect(
+            screen.getByRole('dialog', { name: 'New action item' }),
+        ).toBeTruthy();
     });
 });

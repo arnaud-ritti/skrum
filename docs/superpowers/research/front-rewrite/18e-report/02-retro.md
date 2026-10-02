@@ -774,3 +774,131 @@ New: `[P18e-02-03]`, `[P18e-02-01]` in `Plan18eRetroTest.php`. Captures: two dat
 Feature tests changed outside the plan's list: `tests/Feature/Mcp/McpSweepTest.php` (the board of the sweep is in Discussing, where `GetRoti` now answers "not_started").
 
 No test was removed. The Vitest case of `phase-discussing.test.tsx` that found the rating beside the topic now asserts it is absent.
+
+## Task R12 — Session end (B3)
+
+A completed retro shows `components/retro/session-end.tsx`: the header ("Session ended · duration · date", the title, the participants and the promise), the actions (Back to the team, Share, "Send the recap by e-mail"), the tabs Results / Board, then under Results the five figures and the cards. The old `results/*` (16 files) and `insights/summary-section.tsx` are deleted; `insights/suggestions-list.tsx` moved to `components/retro/suggestions-list.tsx` (the Discussing panel still uses it), its markup unchanged.
+
+### Parity (brief 02 §3.5 rows 86–98)
+
+| Row | Feature | Now | Done |
+|---|---|---|---|
+| 86 | Results / Board tabs, back to Results on a phase change | `ui/tabs` with `#completed-tab-results`, `#completed-tab-board`, `[role="tabpanel"]` labelled by its tab; `BoardBody` resets the view | yes |
+| 87 | Completed date, participants | header line with `<time>`; "n participants"; card "Thanks for participating" (name, "Guest") | yes |
+| new | Duration (2-D6, B19) | "58 min", "1 h 12 min" from `results.stats.durationSeconds`; nothing for a retro without a start time | yes |
+| new | Five figures (B3, M9) | `StatCard layout="inline"`: actions created, participation "n of m · p %", cards, groups, votes cast "n of m" (`lib/retro/session-end.ts`) | yes |
+| 88 | Summary: generate, retry, regenerate, remove; themes and suggested actions | `results/summary.tsx`, `[aria-labelledby="results-summary"]`, `Skeleton` while pending; facilitator only | yes |
+| 89 | Health: figures, radar, trend, statements | `HealthCheckResults` with the radar and the trend as children; each statement with its move since the previous retro (`previousAverage`), "compared with :retro" for a member | yes |
+| 90 | Top topics | `results/top-topics.tsx`: five, by votes, group name and grouped count | yes |
+| 91 | Action items, read only, link to the team's | `ActionItem` without handlers (`#action-item-{id}`), count badge, "n linked to Jira · all have an owner and a due date" | yes |
+| 92 | Games played: podium, "Show all", rounds, replay | `results/games-played.tsx` (composed: the podium of `GamesLeaderboard` is not exported and has period tabs) | yes |
+| 93 | ROTI results; vote on a legacy retro | `ROTIWidget mode="result"`; `RotiVote` above it when `roti.canVote` | yes |
+| 94 | Share the results to a channel | "Share" menu in the header → `FormDialog` saying what the recap holds | yes |
+| 95 | E-mail the results | primary button "Send the recap by e-mail" (2-D14) → `FormDialog` with the two audiences; a refusal shows in the dialog | yes |
+| 96 | Delivery lines | `DeliveryLines` under the header | yes |
+| 97 | Survey results | old `SurveyResult` mounted in a "Surveys" card (S2) | yes |
+| 98 | Read-only board | `ColumnsBoard` in the Board tab | yes |
+| 2-D13 | Confetti | `SessionConfetti`: forty pieces, `animate-confetti`, the colours of the columns, once, only for who sees the phase turn to completed; never mounted with `prefers-reduced-motion`, where a toast says "Session ended — n actions created" | yes |
+| mockup | Reaction bar at the session end | `showsRetroReactions` follows the setting alone; on a phone the bar sits above the actions bar | yes |
+
+### Places left
+
+None requested by the plan (Export menu and ROTI trend are backlog, D-15). The header keeps the order ghost / outline / primary of the mockup: an export menu would sit beside "Share".
+
+### Differences with the mockup
+
+Captures `retro-board-completed-*` (facilitator, with health check, ROTI, action items, mail on) against frames c and d of `ScreenRetroROTI`. Compared by the implementer on light 1440 EN and dark 390 FR, and on two tall temporary captures (1440 light, 390 dark) to see below the fold.
+
+| Difference | Covered by |
+|---|---|
+| No Export menu; "Share" (to a chat channel) holds its place when a channel is connected | D-15; brief row 94 |
+| No ROTI delta badge and no sparkline | D-15 |
+| The ROTI card is the `ROTIWidget` result: the five rows under the stacked bar | plan interface (`ROTIWidget mode="result"`) |
+| The health card is `HealthCheckResults` (title "Health check results · :retro", figures, radar, trend, one block per statement, scale of 10, alert under 6) and not the six compact rows of the mockup | plan interface; brief row 89. No row — reported |
+| "Session ended" line: the primary button reads "Send the recap by e-mail" | O: 2-D14 |
+| Subline "n participants." without the team name | the snapshot of this lane holds no team name (RW-C2 is on another branch). Reported |
+| Title ":title, wrapped up" is an `h2` | A: one `h1`, the session title of the header |
+| Tabs Results / Board, cards Summary, Top topics, Surveys, Games, Thanks for participating | no mockup: brief 02 §6 |
+| Confetti is not frozen on screen: it plays 1.4 s and fades; forty pieces (plan) and not 24 | ruling 37; plan |
+| Action rows are the `ActionItem` of 18c (status, "To do" badge, creator line) | 18c component |
+| Phone: "Back to the team" and Share are in a "…" menu beside the e-mail button only when mail is on; without mail they are plain buttons in the bar | mockup README names the case with mail only |
+| Participation can read "3 of 2 · 100%": guests are participants, the team count is members; the percentage is capped at 100 | B3 as specified. For the owner |
+| The reaction bar floats above the cards at the bottom centre | mockup (docked bar) |
+
+### Browser tests changed
+
+Listed by the plan: `Plan12b` (the results share and e-mail tests) — "Send to email" inside the Share menu → the button "Send the recap by e-mail" (2-D14).
+
+Not listed, imposed by the mockup, 2-D14 or the components the plan names:
+
+| Test | Change | Cause |
+|---|---|---|
+| `Plan04` `P04-06`, `Plan08d` `P08d-04a`, `Plan09a` `P09a-03c` (2), `Plan12b` (3), `Plan14a` (1) | "Retrospective completed on" → "Session ended" | header of the mockup |
+| `Plan04` `P04-06`, `Plan08d` `P08d-04a`, `04d` | section "Action items" → "Actions created" | mockup |
+| `Plan08d` `P08d-04b` | the figures no longer hold "Participation"; "2 answers from 3 participants" is asserted | `HealthCheckResults` |
+| `Plan08d` `P08d-04e`, `05a`; `Plan18e` `P18e-02-01` | "Average: 4.5/5", "n ratings", "No ratings yet.", the rows and bars → `[data-slot="roti-mean"]`, "n votes", "Nobody has voted yet.", `li[data-rating]` (5 first) | `ROTIWidget mode="result"` |
+| `Plan08d` `P08d-06` | the ROTI bars of the widget have no transition in either mode: the test asserts they are still in both, and that no confetti is mounted with reduced motion; the title is found by its section (it is read by screen readers only) | `ROTIWidget` |
+| `Plan09a` `P09a-03c` | priority, overdue, status and guest label are read on the `ActionItem` row (`data-priority`, `data-status`, "(Guest)", disabled status button) | brief row 91; 5-D7 |
+| `Plan13d` `P13d-11a` | order: Actions created, ROTI, Top topics, Games we played | mockup: actions, then ROTI |
+
+New: `[P18e-02-04]`, `[P18e-02-04b]`, `[P18e-02-07]`, `[P18e-02-15]`. No test was removed; the Vitest file `results/roti-section.test.tsx` went with its component and its two cases are in `session-end.test.tsx`.
+
+## Task R13 — Mobile board
+
+Below `md` (767 px, `useIsMobile`) the board is a phone board. Nothing changes from `md`.
+
+### Parity (brief 02, commit R13; every row of R4 to R12 keeps its control on a phone)
+
+| Feature | On a phone | Done |
+|---|---|---|
+| Columns (Health check, Writing, Grouping, Voting, the Board tab of a completed retro) | `ColumnTabs` (`skrum/column-tabs.tsx`): one tab per column with its colour and its count, the line of dots, one column on screen (`role="tabpanel"`, `[data-slot="retro-columns"]`). Arrows, Home and End move between tabs | yes |
+| Swipe between columns (M10) | `useSwipe` (`hooks/use-swipe.ts`) on the panel: past a quarter of its width, more horizontal than vertical; ignored while a card is dragged, from a text field and from a dialog opened from the panel. The new column slides in; no slide with `prefers-reduced-motion` | yes |
+| Column menu, description, lock, `data-test="retro-column-{id}"` | the `RetroColumn` of the tab keeps its header | yes |
+| Add a card | round button `[data-slot="retro-add-card"]`, "Add a card in :column", opens a drawer with the composer (GIF tools included); it closes on the card added. `N` on the column opens it too | yes |
+| Add a column (facilitator) | last tab "Add column" | yes |
+| Surveys column (old component until S1) | first tab "Surveys" when the retro has one | yes |
+| Group cards | a card alone has "Add to group…" in its menu: a drawer lists the groups, then the lone cards of its column (`group-target-drawer.tsx`, same request as a drop). The banner says so instead of "Drag a card…" | yes |
+| Votes | the budget stays stuck above the tabs; the hidden-totals pill and the progress scroll with the cards; the vote and its take-back are 44 px targets (`RetroCard`, `CardVotes`) | yes |
+| Highlighted card | its column comes in front | yes |
+| Discussing: topics list | a selector "n/m · title" stuck at the top opens the `TopicsList` in a drawer; a swipe on the topic goes to the next or the previous one; "Previous topic" / "Next topic" stay | yes |
+| Discussing and Actions: create an action item | "Create an action" opens a drawer: title, assignee as avatar chips (radios), priority as three segments, due date, repeat, ticket; it closes on the item created (M10) | yes |
+| Actions: topics | folded behind their heading (open at first) | yes |
+| Facilitator bar, reaction bar | `FacilitatorBar compact`, `SessionReactions compact` (R3) | yes |
+| Captures at 390 | every phase (`[P18e-R3-01]`), and the three drawers (`[P18e-R13-01]`, `retro-phone-*`) | yes |
+
+### Places left
+
+None new. The slots of R4 to R12 (`typing`, `moving`, `cap`, `finished`, `done`, `timer`, `notes`, `linkedTo`, `topicMeta`) are passed through unchanged; `PhoneColumns` takes the Writing and Grouping banners as its `banner`.
+
+### Differences with the mockup
+
+Captures `retro-board-*-390-*`, `retro-phone-add-card-*`, `retro-phone-topics-*`, `retro-phone-action-*` and `design-system-column-tabs-*` against `MobileRetro/preview.html` and the "Mobile" line of the README of each phase. Compared by the implementer on light 390 EN (Writing, Voting, Actions, the three drawers) and dark 390 FR (Writing, Grouping, Discussing, the topics drawer).
+
+| Difference | Covered by |
+|---|---|
+| Header: no phase subtitle under the title ("Atlas · 7 online"), the sidebar button of the frame shows, presence is the counter alone | Task 0.3 / 0.4 (`SessionTitle` takes one line, K17); no row — reported in R3 |
+| The stepper is the phone form of `PhaseStepper` ("Phase n/m", the label, Previous, Next, a progress bar) and not the compact rail of markers | `PhaseStepper/README.md` (the rail needs 36rem); the suite presses "Next". No row — reported in R3 |
+| The column of a tab keeps its own header (title, count, menu): the title is said twice | parity: column menu, description, lock |
+| No "… is writing" line, no typing ring on an avatar | D-10 |
+| The facilitator bar has no "Reveal"; its main button names the next phase | D-10; R3 |
+| Votes: a button with the total and a "−" beside it, both 44 px, not the "− n +" stepper; the budget is the `VoteBudget` pill, not a full-width bar; no "I have finished voting" | D-11 for the last; the first two: no row — the 18c components, reported |
+| "Totals hidden until the end of the vote" is a pill under the tabs, not a line above the footer | R8 |
+| Actions: the topics are the cards of R10 (rank, votes, excerpt), without the "n actions" badge | D-12 (action count per topic) |
+| Action drawer: no "From « topic » · n votes" line | D-12 (the `linkedTo` place) |
+| Action drawer: the title is a one-line field (Enter creates), the due date is a date field with "Repeat" beside it, not "End of sprint 43" with "Change" | N: no sprint (TM-1); parity rows of R8b |
+| Action drawer: the ticket is the checkbox or the select of R8b ("Create the ticket in :provider"), not a switch with the project | R8b; D-13 |
+| Action drawer: an "Unassigned" chip before the people | parity: an item may have no assignee |
+| Discussing: the notes and the action items are not in a tabbed drawer: the panels stay under the topic, only the form is a drawer | D-12 (no notes); the plan names the topics drawer and the action drawer |
+| Grouping: "Add to group…" is in the menu of the card, not behind a long press; no duplicate suggestion | D-10 for the suggestion; the long press: no row — a menu entry is reachable from the keyboard (rule 5) |
+| "Add survey" and "Previous action items" sit above the tabs | transitional (S1); no mockup for the carried items |
+| The reaction bar floats above the facilitator bar | ruling 27 |
+
+### Browser tests changed
+
+Not listed by the plan (it says "none: the suite runs at desktop width"), imposed by the topics drawer the plan asks for:
+
+| Test | Change | Cause |
+|---|---|---|
+| `Plan04` `P04-15a` | at 375 the topics are no longer in `main`: the test asserts the selector `[data-slot="retro-topics-selector"]`, the panel under it, and the list inside the drawer; at 1440 it also asserts the list is back in `main` and the selector gone | plan R13: "the topics list of R9 as a drawer"; `ScreenRetroDiscussion` README, "Mobile" |
+
+New: `[P18e-02-06]`, `[P18e-R13-01]`. No test was removed.

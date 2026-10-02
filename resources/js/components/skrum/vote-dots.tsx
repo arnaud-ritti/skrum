@@ -209,7 +209,7 @@ export function CardVotes({
             disabled={isVoteBlocked}
             onClick={vote}
             className={cn(
-                'inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border px-3 text-sm font-semibold transition-colors duration-140 ease-standard outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none',
+                'inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-full border px-3 text-sm font-semibold transition-colors duration-140 ease-standard outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none max-md:h-11 max-md:min-w-11',
                 mine > 0
                     ? 'border-transparent bg-skrum-primary-soft text-skrum-primary-text'
                     : 'border-input bg-card text-foreground hover:bg-accent',
@@ -256,6 +256,7 @@ export function CardVotes({
                             variant="ghost"
                             size="icon-sm"
                             aria-label={t('Remove a vote')}
+                            className="max-md:size-11"
                             onClick={unvoteFromButton}
                         >
                             <Minus aria-hidden />

@@ -16,6 +16,7 @@ import type {
     BoardColumn as BoardColumnData,
     ColumnColor,
 } from '@/lib/retro/types';
+import { cn } from '@/lib/utils';
 import { BoardCard, CardComposer } from './board-card';
 import { useBoard } from './board-context';
 import { BoardGroup } from './board-group';
@@ -41,8 +42,16 @@ export function BoardColumn({
     column,
     typing,
     moving,
+    className,
+    onAdd,
 }: {
     column: BoardColumnData;
+    className?: string;
+    /**
+     * The host writes the new card somewhere else (the drawer of the phone
+     * board): the column then has no card open for writing.
+     */
+    onAdd?: () => void;
     /** Place of the "… is writing a card" line of the Writing mockup (RT-1). */
     typing?: ReactNode;
     /** Place of the "… is moving a card" line of the Grouping mockup (RT-1). */
@@ -171,7 +180,7 @@ export function BoardColumn({
                 drop.setNodeRef(node);
             }}
             data-test={`retro-column-${column.id}`}
-            className="max-w-85 min-w-column flex-1 basis-0"
+            className={cn('max-w-85 min-w-column flex-1 basis-0', className)}
             isDropTarget={drop.isOver}
             editDisabledReason={
                 hasCards
@@ -184,9 +193,11 @@ export function BoardColumn({
             onSortByVotesChange={
                 canSortByVotes ? setIsSortedByVotes : undefined
             }
-            onAdd={focusComposer}
+            onAdd={onAdd ?? focusComposer}
             composer={
-                <CardComposer columnId={column.id} color={column.color} />
+                onAdd ? null : (
+                    <CardComposer columnId={column.id} color={column.color} />
+                )
             }
             {...(canManage && {
                 onRename: (title: string) => void update({ title }),
