@@ -241,6 +241,7 @@ it('[P18e-10-03c] warns in red when no recovery code is left, and regenerating f
         ->assertSee('0 of 8 recovery codes left')
         ->assertSeeIn('[data-slot="two-factor-row"] [data-slot="recovery-codes-alert"][role="alert"]', 'No recovery codes left')
         ->assertNotPresent('ol[aria-label="Recovery codes"]')
+        ->assertDontSee('View recovery codes')
         ->click('Regenerate codes')
         ->assertPresent('ol[aria-label="Recovery codes"] li:nth-child(8)')
         ->assertSee('8 of 8 recovery codes left')

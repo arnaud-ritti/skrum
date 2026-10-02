@@ -4248,5 +4248,6 @@
     "Only one recovery code left": "Solo queda un código de recuperación",
     "No recovery codes left": "No queda ningún código de recuperación",
     "Regenerate your codes to get :total new ones. The old ones stop working.": "Regenera tus códigos para obtener :total nuevos. Los anteriores dejan de valer.",
-    "If you lose your phone, you will not be able to sign in. Regenerate your codes now.": "Si pierdes tu teléfono, no podrás iniciar sesión. Regenera tus códigos ahora."
+    "If you lose your phone, you may not be able to sign in. Regenerate your codes now.": "Si pierdes tu teléfono, es posible que no puedas iniciar sesión. Regenera tus códigos ahora.",
+    "New recovery codes generated.": "Se han generado nuevos códigos de recuperación."
 }

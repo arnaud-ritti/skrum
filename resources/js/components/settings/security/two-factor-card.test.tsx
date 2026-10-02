@@ -514,6 +514,38 @@ describe('TwoFactorCard, on', () => {
         ).toBe(1);
     });
 
+    it('announces the new codes after a regeneration, until they are hidden', async () => {
+        twoFactor.recoveryCodesList = codes;
+        renderWithProviders(
+            <TwoFactorCard enabled requiresConfirmation summary={on} />,
+        );
+
+        const announcement = (): string | null | undefined =>
+            document.querySelector('[data-slot="recovery-codes-status"]')
+                ?.textContent;
+
+        expect(announcement()).toBe('');
+
+        await act(async () => (form.props.onSuccess as () => void)());
+
+        expect(announcement()).toBe('New recovery codes generated.');
+
+        const hide = screen.getByRole('button', {
+            name: 'Hide recovery codes',
+        });
+
+        expect(hide.getAttribute('aria-controls')).not.toBeNull();
+
+        await userEvent.click(hide);
+
+        expect(announcement()).toBe('');
+        expect(
+            screen
+                .getByRole('button', { name: 'View recovery codes' })
+                .hasAttribute('aria-controls'),
+        ).toBe(false);
+    });
+
     it('says nothing about the count while more than three codes are left', () => {
         renderWithProviders(
             <TwoFactorCard
@@ -537,9 +569,13 @@ describe('TwoFactorCard, on', () => {
             />,
         );
 
-        const alert = screen.getByRole('status');
+        const lowCodesAlert = (): HTMLElement =>
+            document.querySelector(
+                '[data-slot="recovery-codes-alert"]',
+            ) as HTMLElement;
+        const alert = lowCodesAlert();
 
-        expect(alert.getAttribute('data-slot')).toBe('alert');
+        expect(alert.getAttribute('role')).toBe('status');
         expect(alert.textContent).toContain('Only 3 recovery codes left');
         expect(alert.textContent).toContain(
             'Regenerate your codes to get 8 new ones. The old ones stop working.',
@@ -559,7 +595,7 @@ describe('TwoFactorCard, on', () => {
             />,
         );
 
-        expect(screen.getByRole('status').textContent).toContain(
+        expect(lowCodesAlert().textContent).toContain(
             'Only one recovery code left',
         );
     });
@@ -577,13 +613,33 @@ describe('TwoFactorCard, on', () => {
 
         expect(alert.textContent).toContain('No recovery codes left');
         expect(alert.textContent).toContain(
-            'If you lose your phone, you will not be able to sign in. Regenerate your codes now.',
+            'If you lose your phone, you may not be able to sign in. Regenerate your codes now.',
         );
         expect(alert.className).toContain('bg-skrum-destructive-soft');
         expect(screen.getByText('0 of 8 recovery codes left')).toBeTruthy();
         expect(
             screen.getByRole('button', { name: 'Regenerate codes' }),
         ).toBeTruthy();
+    });
+
+    it('offers no codes to view, and reports no failed fetch, when no code is left', async () => {
+        renderWithProviders(
+            <TwoFactorCard
+                enabled
+                requiresConfirmation
+                summary={{ ...on, recoveryCodesRemaining: 0 }}
+            />,
+        );
+
+        expect(
+            screen.queryByRole('button', { name: 'View recovery codes' }),
+        ).toBeNull();
+
+        await act(async () => (form.props.onSuccess as () => void)());
+
+        expect(screen.getAllByRole('alert').length).toBe(1);
+        expect(screen.queryByText('Failed to fetch recovery codes')).toBeNull();
+        expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
     });
 
     it('shows no alert when the count of codes is unknown', () => {

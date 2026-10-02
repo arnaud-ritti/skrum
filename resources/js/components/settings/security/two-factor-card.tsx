@@ -139,6 +139,7 @@ export function TwoFactorCard({
     const [saved, setSaved] = useState(false);
     const [codesVisible, setCodesVisible] = useState(false);
     const [codesLoading, setCodesLoading] = useState(false);
+    const [codesRegenerated, setCodesRegenerated] = useState(false);
     const [turnOffOpen, setTurnOffOpen] = useState(false);
     const [turnOffError, setTurnOffError] = useState<string>();
     const wasEnabled = useRef(enabled);
@@ -269,15 +270,20 @@ export function TwoFactorCard({
             void loadCodes();
         }
 
+        setCodesRegenerated(false);
         setCodesVisible((visible) => !visible);
     };
 
     const showRegeneratedCodes = (): void => {
         setCodesVisible(true);
+        setCodesRegenerated(true);
         void loadCodes();
     };
 
     const codesLeft = summary.recoveryCodesRemaining;
+
+    /** With no code left there is nothing to view: only a regeneration helps. */
+    const hasCodesToView = codesLeft !== 0;
 
     const lowCodesTitle = (left: number): string => {
         if (left === 0) {
@@ -576,26 +582,30 @@ export function TwoFactorCard({
                 }
                 action={
                     <div className="flex max-w-full min-w-0 flex-wrap gap-2">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            aria-expanded={codesVisible}
-                            aria-controls={codesId}
-                            className="max-w-full"
-                            onClick={toggleCodes}
-                        >
-                            {codesVisible ? (
-                                <EyeOff aria-hidden="true" />
-                            ) : (
-                                <Eye aria-hidden="true" />
-                            )}
-                            <span className="truncate">
-                                {codesVisible
-                                    ? t('Hide recovery codes')
-                                    : t('View recovery codes')}
-                            </span>
-                        </Button>
+                        {hasCodesToView && (
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                aria-expanded={codesVisible}
+                                aria-controls={
+                                    codesVisible ? codesId : undefined
+                                }
+                                className="max-w-full"
+                                onClick={toggleCodes}
+                            >
+                                {codesVisible ? (
+                                    <EyeOff aria-hidden="true" />
+                                ) : (
+                                    <Eye aria-hidden="true" />
+                                )}
+                                <span className="truncate">
+                                    {codesVisible
+                                        ? t('Hide recovery codes')
+                                        : t('View recovery codes')}
+                                </span>
+                            </Button>
+                        )}
                         <Form
                             {...regenerateRecoveryCodes.form()}
                             options={{ preserveScroll: true }}
@@ -628,7 +638,7 @@ export function TwoFactorCard({
                         description={
                             codesLeft === 0
                                 ? t(
-                                      'If you lose your phone, you will not be able to sign in. Regenerate your codes now.',
+                                      'If you lose your phone, you may not be able to sign in. Regenerate your codes now.',
                                   )
                                 : t(
                                       'Regenerate your codes to get :total new ones. The old ones stop working.',
@@ -637,7 +647,16 @@ export function TwoFactorCard({
                         }
                     />
                 )}
-                {codesVisible && (
+                <p
+                    role="status"
+                    data-slot="recovery-codes-status"
+                    className="sr-only"
+                >
+                    {codesRegenerated && hasCodesToView
+                        ? t('New recovery codes generated.')
+                        : ''}
+                </p>
+                {codesVisible && hasCodesToView && (
                     <div id={codesId} className="flex min-w-0 flex-col gap-3">
                         {codesFailures || (
                             <>
