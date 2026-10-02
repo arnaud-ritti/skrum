@@ -5,30 +5,21 @@ import Heading from '@/components/heading';
 import { Button } from '@/components/ui/button';
 import { useTrans } from '@/hooks/use-trans';
 import { formatPoints } from '@/lib/poker/format';
-import type {
-    PokerDeckOption,
-    PokerGameSummary,
-    SavedPokerDeck,
-} from '@/types';
-import { NewPokerGameDialog } from './new-poker-game-dialog';
+import type { PokerGameSummary, SavedPokerDeck } from '@/types';
 import { SavedDecksDialog } from './saved-decks-dialog';
 
 type Props = {
     workspaceSlug: string;
     teamId: string;
     games: PokerGameSummary[];
-    deckOptions: PokerDeckOption[];
     savedDecks: SavedPokerDeck[];
-    canCreate: boolean;
 };
 
 export function PokerGamesSection({
     workspaceSlug,
     teamId,
     games,
-    deckOptions,
     savedDecks,
-    canCreate,
 }: Props) {
     const { t } = useTrans();
     const active = games.filter((game) => game.endedAt === null);
@@ -39,14 +30,6 @@ export function PokerGamesSection({
             <Heading variant="small" title={t('Planning poker')} />
 
             <div className="flex flex-wrap items-center gap-2">
-                {canCreate && (
-                    <NewPokerGameDialog
-                        workspaceSlug={workspaceSlug}
-                        teamId={teamId}
-                        deckOptions={deckOptions}
-                        savedDecks={savedDecks}
-                    />
-                )}
                 <Button variant="outline" asChild>
                     <Link
                         href={TeamEstimatesController.index({

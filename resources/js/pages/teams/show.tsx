@@ -12,6 +12,7 @@ import InputError from '@/components/input-error';
 import { HealthStatementsSection } from '@/components/teams/health-statements-section';
 import { PokerGamesSection } from '@/components/teams/poker-games-section';
 import { NewSessionDialog } from '@/components/teams/session-create/new-session-dialog';
+import { pokerSessionForm } from '@/components/teams/session-create/poker-session-fields';
 import { retroSessionForm } from '@/components/teams/session-create/retro-session-fields';
 import { useNewSessionIntent } from '@/components/teams/session-create/use-new-session-intent';
 import { WhiteboardsSection } from '@/components/teams/whiteboards-section';
@@ -95,6 +96,7 @@ export default function ShowTeam({
     llm,
     icebreakerGames,
     pokerGames,
+    defaultPokerDeck,
     pokerDeckOptions,
     canCreatePokerGame,
     canManageIntegrations,
@@ -140,6 +142,16 @@ export default function ShowTeam({
                                       llm,
                                       icebreakerGames,
                                       canSaveTemplate: canManageTemplates,
+                                  })
+                                : undefined
+                        }
+                        poker={
+                            canCreatePokerGame
+                                ? pokerSessionForm({
+                                      workspaceSlug: workspace.slug,
+                                      deckOptions: pokerDeckOptions,
+                                      savedDecks: pokerDecks,
+                                      defaultPokerDeck,
                                   })
                                 : undefined
                         }
@@ -232,9 +244,7 @@ export default function ShowTeam({
                     workspaceSlug={workspace.slug}
                     teamId={team.id}
                     games={pokerGames}
-                    deckOptions={pokerDeckOptions}
                     savedDecks={pokerDecks}
-                    canCreate={canCreatePokerGame}
                 />
                 <WhiteboardsSection
                     workspaceSlug={workspace.slug}

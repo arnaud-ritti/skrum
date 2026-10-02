@@ -55,3 +55,45 @@ Added by rule 13 (M1, M2): editable column list (`columns`), "Anonymous guests a
 | "Delete column" beside the palette title | no row: named in the task's composition |
 | A shortcut shows its category ("Essentials"), the mockup "Classic" | no row: the catalogue's own category |
 | "All templates" and "Browse" open the same full picker in place of the shortcuts; the picker shows its own read-only preview above the editable list | no row: 1-D3 |
+
+## Task 1.2 — Poker form on DeckPicker and DeckEditor
+
+### Parity (brief 01 §3, rows 20–29)
+
+| # | Action | New control | Done |
+|---|---|---|---|
+| 20 | Open the poker creation form | "New session", then the type radio "Planning poker" (1-D2); the "New game" trigger of the poker section is gone | yes |
+| 21 | Name, default `Poker :date`, max 120 | `#new-poker-title`, label "Name" | yes |
+| 22 | Choose a deck (built-in, saved) | `DeckPicker`, radiogroup "Deck": the four built-in decks, then the decks of the team ("Saved") and of the workspace ("Workspace"); the team's default deck is preselected, `?deck=` wins | yes |
+| 23 | Custom deck: cards, `?` and `☕` | "Create a deck" opens `DeckEditor` in place of the picker: `#deck-custom-cards`, `#deck-custom-unknown`, `#deck-custom-coffee`, both on. "Use this deck" returns to the picker with the deck selected ("This game only", "Edit"); "Create & open" with the editor open takes the deck being typed | yes |
+| 24 | Save the custom deck for the team | `#deck-custom-name` ("Name (optional)"): a named deck is sent as `save_deck_as` | yes |
+| 25 | Deck errors of the server | `custom_cards`, `custom_cards.N` → the editor's values; `save_deck_as` → the editor's name (the editor reopens); `deck`, `saved_deck_id` → under the picker. Duplicates and `?`/`☕` typed as values are refused by the editor before the server | yes |
+| 26 | Anonymous votes | `Switch #new-poker-anonymous` | yes |
+| 27 | Reveal automatically | `Switch #new-poker-auto-reveal`, label "Auto reveal" (mockup) | yes |
+| 28 | Create the game | "Create & open", POST `teams.pokerGames.store` | yes |
+| 29 | Cancel | "Cancel" in the footer | yes |
+
+Added by rule 13 (M2, M3): Tasks ("Type them", one title per line, 50 at most, a counter; "Later", preselected), Facilitator in "Watch only" (`spectator`, `#new-poker-spectator`), "Anonymous guests allowed" (`guest_access_enabled`, `#new-poker-guests`).
+
+### Places left
+
+| Mockup element | Slot | Later |
+|---|---|---|
+| Tasks tab "Import from Jira" | `tabs`, the list of `PokerTasksField` (before "Type them"), with its own `TabsContent` | SE-3 |
+| "Timer per task", "Change vote after reveal", "Write estimates to Jira" rows (and the note about Jira under them) | `settingRows`, the list of `PokerSessionFields` (after "Facilitator in “Watch only”") | SE-3 |
+| "Schedule…" in the footer | `secondaryAction` of `PokerSessionFormProps`, passed to `SessionFormFooter` | SE-2 |
+
+### Differences with the mockup
+
+| Difference | Row |
+|---|---|
+| No "Import from Jira" tab, no "Timer per task", "Change vote after reveal", "Write estimates to Jira", no Jira note | D-07 |
+| No "Schedule…" | D-06 |
+| No invitation link and "Copy link" | D-08 |
+| Deck tiles are the cards of `DeckPicker` (name, "n cards", value chips, badge; two per row in the dialog) and not the mockup's four small tiles with the values in mono; the list is taller, so the Tasks block is below the fold of the dialog with six decks | no row: the task's composition and `DeckPicker/README.md` |
+| "Create a deck" is the dashed card at the end of the grid, not a "New deck" button in the section header | no row: `DeckPicker/README.md`, plan "Browser tests changed" |
+| The value preview under the grid is the picker's strip of large cards on a canvas, with the deck's name | no row: `DeckPicker/README.md` |
+| "Anonymous votes" row | no row: no mockup, named in the task's composition |
+| "Auto reveal" and "Anonymous guests allowed" open off (the mockup shows them on): the defaults of today are kept | no row: parity rows 27, and 1.1 for the guests |
+| FR: "Facilitateur en « Regarder seulement »" (the mockup: « Watch only »): the name the room gives that mode in French | no row |
+| The type row of the bench dialog shows one tile (only the poker form is passed there) | bench only |

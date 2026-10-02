@@ -118,14 +118,15 @@ it('[P10b-02a] creates a game from a saved deck and keeps its cards when the dec
 
     $page = $this->signIn($ada, $teamPath);
 
-    $page->assertSee('New game')
-        ->click('New game')
-        ->assertSee("Your team's decks")
+    $page->assertSee('New session')
+        ->click('New session')
+        ->click('[role="dialog"] [role="radio"]:has-text("Planning poker")')
+        ->assertSeeIn('[aria-label="Deck"] [role="radio"]:has-text("Team scale")', 'Saved')
         ->click('[role="radio"]:has-text("Team scale")')
         ->assertAriaAttribute('[role="radio"]:has-text("Team scale")', 'checked', 'true')
         ->assertAriaAttribute('#new-poker-anonymous', 'checked', 'false')
         ->assertAriaAttribute('#new-poker-auto-reveal', 'checked', 'false')
-        ->click('Create game')
+        ->click('Create & open')
         ->assertPathBeginsWith('/poker/')
         ->assertSee('Team scale');
 

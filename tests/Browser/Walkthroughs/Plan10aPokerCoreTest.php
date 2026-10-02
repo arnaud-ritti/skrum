@@ -81,7 +81,7 @@ it('[P10a-01] shows the planning poker section under the retrospectives on the t
 
     $page->assertSee('No retrospectives yet.')
         ->assertSee('Planning poker')
-        ->assertSee('New game')
+        ->assertSee('New session')
         ->assertSee('Estimation history')
         ->assertSee('No games yet.')
         ->assertScript('document.body.innerText.indexOf("No retrospectives yet.") < document.body.innerText.indexOf("Planning poker")', true);
@@ -93,26 +93,28 @@ it('[P10a-02] creates a game with a custom deck and opens it', function () {
 
     $page = $this->signIn($ada, p10aTeamPath($team));
 
-    $page->assertSee('New game')
-        ->click('New game')
+    $page->assertSee('New session')
+        ->click('New session')
+        ->click('[role="dialog"] [role="radio"]:has-text("Planning poker")')
         ->assertVisible('#new-poker-title')
         ->assertScript('document.querySelector("#new-poker-title").value === "Poker " + new Date().toLocaleDateString("en", { dateStyle: "medium" })', true)
-        ->assertCount('[role="radio"]', 5)
+        ->assertCount('[aria-label="Deck"] [role="radio"]', 4)
         ->assertSee('Fibonacci')
         ->assertSee('Modified Fibonacci')
         ->assertSee('T-shirt sizes')
         ->assertSee('Powers of 2')
-        ->assertSee('Custom')
-        ->assertScript('Array.from(document.querySelectorAll(\'[role="radio"]\')[0].querySelectorAll("span span")).map(function (chip) { return chip.textContent; }).join(" ")', '0 1 2 3 5 8 13 21 34 55 89 ? ☕')
-        ->click('[role="radio"]:has-text("Custom")')
+        ->assertSee('Create a deck')
+        ->assertAttribute('[aria-label="Deck"] [role="radio"] >> nth=0', 'aria-checked', 'true')
+        ->assertScript('Array.from(document.querySelectorAll(\'[data-slot="deck-selected"] [data-slot="deck-preview-card"] > span[aria-hidden="true"]\')).map(function (chip) { return chip.textContent; }).join(" ")', '0 1 2 3 5 8 13 21 34 55 89 ? ☕')
+        ->click('[role="dialog"] button:has-text("Create a deck")')
         ->assertVisible('#deck-custom-cards')
         ->fill('#deck-custom-cards', '1, 2, 3, 5, 8')
-        ->assertSee('Add ?')
-        ->assertSee('Add ☕')
-        ->assertAttribute('#deck-include-unknown', 'aria-checked', 'true')
-        ->assertAttribute('#deck-include-coffee', 'aria-checked', 'true')
+        ->assertSee("I don't know")
+        ->assertSee('I need a break')
+        ->assertAttribute('#deck-custom-unknown', 'aria-checked', 'true')
+        ->assertAttribute('#deck-custom-coffee', 'aria-checked', 'true')
         ->fill('#new-poker-title', 'Sprint 12 estimates')
-        ->click('Create game')
+        ->click('Create & open')
         ->assertPathBeginsWith('/poker/');
 
     $game = PokerGame::query()->sole();
@@ -135,18 +137,22 @@ it('[P10a-03] rejects a custom deck with a repeated card or without an estimate 
 
     $page = $this->signIn($ada, p10aTeamPath($team));
 
-    $page->assertSee('New game')
-        ->click('New game')
-        ->assertVisible('[role="radio"]:has-text("Custom")')
-        ->click('[role="radio"]:has-text("Custom")')
+    $page->assertSee('New session')
+        ->click('New session')
+        ->click('[role="dialog"] [role="radio"]:has-text("Planning poker")')
+        ->assertVisible('[role="dialog"] button:has-text("Create a deck")')
+        ->click('[role="dialog"] button:has-text("Create a deck")')
         ->assertVisible('#deck-custom-cards')
         ->fill('#deck-custom-cards', '3,  3')
-        ->click('Create game')
-        ->assertSee('Each card can appear only once.')
+        ->assertSee('Duplicate value: 3')
+        ->click('Create & open')
+        ->assertSee('This deck needs at least 2 values before the game is created.')
         ->fill('#deck-custom-cards', '?, ☕')
-        ->click('Create game')
-        ->assertSee('Add at least one card that can be an estimate.')
-        ->click('Cancel')
+        ->assertSee('Use the switches below for ? and ☕.')
+        ->click('Create & open')
+        ->assertSee('This deck needs at least 2 values before the game is created.')
+        ->assertPathIs(p10aTeamPath($team))
+        ->click('[role="dialog"] [data-slot="session-dialog-footer"] button:has-text("Cancel")')
         ->assertNotPresent('[role="dialog"]')
         ->assertSee('No games yet.');
 

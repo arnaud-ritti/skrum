@@ -4,13 +4,19 @@ use App\Enums\ColumnColor;
 use App\Enums\RetroPhase;
 use App\Enums\TemplateCategory;
 use App\Enums\WorkspaceRole;
+use App\Models\PokerGame;
 use App\Models\Retro;
+use App\Models\SavedPokerDeck;
 use App\Models\Team;
 use App\Models\User;
 use App\Models\WorkspaceTemplate;
 use App\Models\WorkspaceTemplateColumn;
 
 const P18eTemplates = '[role="dialog"] [role="radiogroup"][aria-label="Retrospective template"]';
+
+const P18eDecks = '[role="dialog"] [role="radiogroup"][aria-label="Deck"]';
+
+const P18ePokerType = '[role="dialog"] [role="radiogroup"][aria-label="Session type"] [role="radio"][data-type="poker"]';
 
 function p18eMember(Team $team, string $name = 'Alice Martin'): User
 {
@@ -279,4 +285,139 @@ it('[P18e-01-17] saves the edited columns as a team template and creates the ret
         ->and($template->columns->pluck('title')->all())->toBe(['Start', 'Stop', 'Keep going'])
         ->and($retro->workspace_template_id)->toBe($template->id)
         ->and($retro->columns->pluck('title')->all())->toBe(['Start', 'Stop', 'Keep going']);
+});
+
+it('[P18e-01-04] creates a game and a saved deck from a named deck, and a one-off deck without a name', function () {
+    $team = Team::factory()->create();
+    $alice = p18eMember($team);
+
+    $page = $this->signIn($alice, p18eTeamPath($team));
+
+    $page->assertDontSee('New game')
+        ->click('New session')
+        ->click(P18ePokerType)
+        ->assertVisible('#new-poker-title')
+        ->fill('#new-poker-title', 'Named deck game')
+        ->click('[role="dialog"] button:has-text("Create a deck")')
+        ->assertNotPresent(P18eDecks)
+        ->fill('#deck-custom-name', 'Halves')
+        ->fill('#deck-custom-cards', '1, 2, 3')
+        ->click('Use this deck')
+        ->assertAttribute(P18eDecks.' [role="radio"]:has-text("Halves")', 'aria-checked', 'true')
+        ->click('Create & open')
+        ->assertPathBeginsWith('/poker/')
+        ->assertSee('Halves');
+
+    $named = PokerGame::query()->where('title', 'Named deck game')->sole();
+    $saved = SavedPokerDeck::query()->sole();
+
+    expect($named->cards)->toBe(['1', '2', '3', '?', '☕'])
+        ->and($named->deck_name)->toBe('Halves')
+        ->and($saved->name)->toBe('Halves')
+        ->and($saved->team_id)->toBe($team->id)
+        ->and($saved->cards)->toBe(['1', '2', '3', '?', '☕']);
+
+    $page->navigate(p18eTeamPath($team))
+        ->click('New session')
+        ->click(P18ePokerType)
+        ->assertVisible('#new-poker-title')
+        ->assertSeeIn(P18eDecks.' [role="radio"]:has-text("Halves")', 'Saved')
+        ->fill('#new-poker-title', 'One-off deck game')
+        ->click('[role="dialog"] button:has-text("Create a deck")')
+        ->fill('#deck-custom-cards', '5, 10')
+        ->click('#deck-custom-coffee')
+        ->click('Use this deck')
+        ->assertAttribute(P18eDecks.' [role="radio"]:has-text("Custom deck")', 'aria-checked', 'true')
+        ->assertSeeIn(P18eDecks.' [role="radio"]:has-text("Custom deck")', 'This game only')
+        ->click('Create & open')
+        ->assertPathBeginsWith('/poker/');
+
+    $oneOff = PokerGame::query()->where('title', 'One-off deck game')->sole();
+
+    expect($oneOff->cards)->toBe(['5', '10', '?'])
+        ->and($oneOff->deck_name)->toBeNull()
+        ->and(SavedPokerDeck::query()->count())->toBe(1);
+});
+
+it('[P18e-01-13] starts the game with the three typed tasks as its queue, in order', function () {
+    $team = Team::factory()->create();
+    $alice = p18eMember($team);
+    $queue = "[...document.querySelectorAll('[data-test=\"poker-task-row\"]')].map((row) => row.querySelector('span span').textContent).join(' / ')";
+
+    $page = $this->signIn($alice, p18eTeamPath($team));
+
+    $page->click('New session')
+        ->click(P18ePokerType)
+        ->assertVisible('#new-poker-title')
+        ->assertAttribute('[role="dialog"] [role="tab"]:has-text("Later")', 'aria-selected', 'true')
+        ->assertNotPresent('#new-poker-tasks')
+        ->fill('#new-poker-title', 'Typed tasks')
+        ->click('[role="dialog"] [role="tab"]:has-text("Type them")')
+        ->fill('#new-poker-tasks', "Checkout flow\n\nSearch filters\nExport to CSV")
+        ->assertSeeIn('[role="dialog"]', '3 / 50 tasks')
+        ->click('Create & open')
+        ->assertPathBeginsWith('/poker/')
+        ->assertCount('[data-test="poker-task-row"]', 3)
+        ->assertScript($queue, 'Checkout flow / Search filters / Export to CSV');
+
+    $game = PokerGame::query()->where('title', 'Typed tasks')->sole();
+
+    expect($game->tasks()->orderBy('position')->pluck('title')->all())
+        ->toBe(['Checkout flow', 'Search filters', 'Export to CSV']);
+});
+
+it('[P18e-01-14] lets the creator arrive watching with "Watch only"', function () {
+    $team = Team::factory()->create();
+    $alice = p18eMember($team);
+
+    $page = $this->signIn($alice, p18eTeamPath($team));
+
+    $page->click('New session')
+        ->click(P18ePokerType)
+        ->assertVisible('#new-poker-title')
+        ->fill('#new-poker-title', 'Facilitator watches')
+        ->assertAttribute('#new-poker-spectator', 'aria-checked', 'false')
+        ->click('#new-poker-spectator')
+        ->assertAttribute('#new-poker-spectator', 'aria-checked', 'true')
+        ->click('[role="dialog"] [role="tab"]:has-text("Type them")')
+        ->fill('#new-poker-tasks', 'Checkout flow')
+        ->click('Create & open')
+        ->assertPathBeginsWith('/poker/')
+        ->assertSee("You're watching — switch to Play to vote")
+        ->assertNotPresent('[aria-label="Your cards"]');
+
+    $game = PokerGame::query()->where('title', 'Facilitator watches')->sole();
+
+    expect($game->players()->sole()->is_spectator)->toBeTrue()
+        ->and($game->guest_access_enabled)->toBeFalse();
+});
+
+it('[P18e-01-15] preselects the default deck of the team', function () {
+    $team = Team::factory()->create();
+    $alice = p18eMember($team);
+    $deck = SavedPokerDeck::factory()->create([
+        'team_id' => $team->id,
+        'name' => 'Team scale',
+        'cards' => ['1', '2', '3', '5', '8', '?'],
+        'created_by_user_id' => $alice->id,
+    ]);
+    $team->update(['default_saved_poker_deck_id' => $deck->id]);
+
+    $page = $this->signIn($alice, p18eTeamPath($team));
+
+    $page->click('New session')
+        ->click(P18ePokerType)
+        ->assertVisible('#new-poker-title')
+        ->assertCount(P18eDecks.' [role="radio"]', 5)
+        ->assertCount(P18eDecks.' [role="radio"][aria-checked="true"]', 1)
+        ->assertSeeIn(P18eDecks.' [role="radio"][aria-checked="true"]', 'Team scale')
+        ->fill('#new-poker-title', 'Default deck game')
+        ->click('Create & open')
+        ->assertPathBeginsWith('/poker/')
+        ->assertSee('Team scale');
+
+    $game = PokerGame::query()->where('title', 'Default deck game')->sole();
+
+    expect($game->cards)->toBe(['1', '2', '3', '5', '8', '?'])
+        ->and($game->deck_name)->toBe('Team scale');
 });
