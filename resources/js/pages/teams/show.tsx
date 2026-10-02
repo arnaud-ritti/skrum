@@ -28,7 +28,7 @@ import type {
     CategoryOption,
     GameOption,
     LlmAvailability,
-    MemberSummary,
+    TeamMember,
     PokerDeckOption,
     PokerGameSummary,
     RetroSummary,
@@ -45,8 +45,8 @@ import type {
 type Props = {
     workspace: WorkspaceSummary;
     team: TeamSummary;
-    members: MemberSummary[];
-    availableMembers: MemberSummary[];
+    members: TeamMember[];
+    availableMembers: TeamMember[];
     canManage: boolean;
     openActionItemCount: number;
     retros: RetroSummary[];

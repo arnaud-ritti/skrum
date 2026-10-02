@@ -70,10 +70,10 @@ class TeamsController extends Controller
             'workspace' => $workspace->only(['id', 'name', 'slug']),
             'team' => $team->only(['id', 'name']),
             'members' => $team->members()->orderBy('name')->get()
-                ->map(fn (User $member) => $member->only(['id', 'name', 'email'])),
+                ->map(fn (User $member): array => [...$member->only(['id', 'name', 'email']), 'avatarUrl' => $member->avatarUrl()]),
             'availableMembers' => $canManage
                 ? $workspace->members()->whereNotIn('users.id', $team->members()->select('users.id'))->orderBy('name')->get()
-                    ->map(fn (User $member) => $member->only(['id', 'name', 'email']))
+                    ->map(fn (User $member): array => [...$member->only(['id', 'name', 'email']), 'avatarUrl' => $member->avatarUrl()])
                 : [],
             'canManage' => $canManage,
             'openActionItemCount' => $team->actionItems()->whereNull('completed_at')->count(),

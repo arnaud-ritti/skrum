@@ -186,3 +186,38 @@ it('presents built-in statements translated and custom statements as stored', fu
                 'isArchived' => false,
             ]));
 });
+
+it('gives each team member and each available member an avatar url', function () {
+    $admin = User::factory()->create();
+    $colleague = User::factory()->create();
+    $workspace = Workspace::factory()
+        ->withMember($admin, WorkspaceRole::Admin)
+        ->withMember($colleague, WorkspaceRole::Member)
+        ->create();
+    $team = Team::factory()->for($workspace)->withMember($admin)->create();
+    $avatarRoute = '/avatars/';
+
+    $this->actingAs($admin)
+        ->get(route('teams.show', [$workspace, $team]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('members', 1, fn (Assert $member) => $member
+                ->where('avatarUrl', fn (string $url) => str_starts_with($url, $avatarRoute))
+                ->etc())
+            ->has('availableMembers', 1, fn (Assert $member) => $member
+                ->where('avatarUrl', fn (string $url) => str_starts_with($url, $avatarRoute))
+                ->etc()));
+});
+
+it('keeps the available members empty for a user who cannot manage members', function () {
+    $member = User::factory()->create();
+    $colleague = User::factory()->create();
+    $workspace = Workspace::factory()
+        ->withMember($member, WorkspaceRole::Member)
+        ->withMember($colleague, WorkspaceRole::Member)
+        ->create();
+    $team = Team::factory()->for($workspace)->withMember($member)->create();
+
+    $this->actingAs($member)
+        ->get(route('teams.show', [$workspace, $team]))
+        ->assertInertia(fn (Assert $page) => $page->has('availableMembers', 0));
+});

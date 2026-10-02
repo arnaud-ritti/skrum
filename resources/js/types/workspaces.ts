@@ -27,6 +27,10 @@ export type MemberSummary = {
     email: string;
 };
 
+export type TeamMember = MemberSummary & {
+    avatarUrl: string;
+};
+
 export type WorkspaceMember = MemberSummary & {
     role: WorkspaceRole;
 };
