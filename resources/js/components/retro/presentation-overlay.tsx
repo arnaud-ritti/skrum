@@ -8,7 +8,7 @@ import { childrenOf } from '@/lib/retro/board-reducer';
 import type { BoardCard } from '@/lib/retro/types';
 import { useBoard } from './board-context';
 import { CardComments } from './card-comments';
-import { CardGif } from './card-gif';
+import { CardGif } from './board-card';
 import { CardReactions } from './card-reactions';
 
 function PresentedContent({

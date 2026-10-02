@@ -42,9 +42,10 @@ it('[P18e-02-05] renders a board with the eight colours, shows a migrated green 
     $moss = "[data-test=\"retro-column-{$migrated->id}\"]";
 
     $alicePage->click("{$moss} [aria-label=\"Column menu\"]")
+        ->click('[role="menuitem"]:has-text("Color")')
         ->assertCount('[role="menu"] [role="menuitemradio"]', 8)
-        ->assertAriaAttribute('[role="menuitemradio"][aria-label="Moss"]', 'checked', 'true')
-        ->click('[role="menuitemradio"][aria-label="Lagoon"]')
+        ->assertAriaAttribute('[role="menuitemradio"]:has-text("Moss")', 'checked', 'true')
+        ->click('[role="menuitemradio"]:has-text("Lagoon")')
         ->assertPresent("{$moss}.col-lagoon")
         ->assertNotPresent("{$moss}.col-moss");
 
@@ -189,3 +190,60 @@ it('[P18e-02-09] offers "+2 min" to the facilitator while a timer runs and moves
 
     expect((int) $endsAt->diffInSeconds($retro->fresh()->timer_ends_at))->toBe(120);
 });
+
+it('[P18e-02-10] counts the cards and who has written in the Writing banner, live for everyone', function (bool $isAnonymous) {
+    [$retro, $alice, $bob] = p18eShellBoard();
+    $retro->update(['is_anonymous' => $isAnonymous]);
+    $start = $retro->columns()->orderBy('position')->firstOrFail();
+    $composer = "[data-test=\"retro-column-{$start->id}\"] textarea";
+    $progress = '[data-slot="retro-writing-progress"]';
+    $bar = '[data-slot="facilitator-bar"]';
+
+    $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
+    $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
+
+    foreach ([$alicePage, $bobPage] as $page) {
+        $page->assertSee('Silent writing: your cards are only visible to you until the reveal.')
+            ->assertSeeIn($progress, '0 cards · 0/2 have written');
+    }
+
+    $isAnonymous
+        ? $alicePage->assertSeeIn($bar, 'Anonymity: on')
+        : $alicePage->assertDontSee('Anonymity: on');
+
+    $bobPage->type($composer, 'Ship smaller pull requests')
+        ->keys($composer, 'Enter')
+        ->assertSeeIn($progress, '1 card · 1/2 have written')
+        ->assertSeeIn('article[id^="card-"]', 'Visible only to you');
+
+    $alicePage->assertSeeIn($progress, '1 card · 1/2 have written')
+        ->assertSeeIn('article[id^="card-"]', 'Hidden until the reveal')
+        ->assertDontSee('Visible only to you');
+
+    $bobPage->type($composer, 'Pair on reviews')
+        ->keys($composer, 'Enter')
+        ->assertSeeIn($progress, '2 cards · 1/2 have written');
+
+    $alicePage->assertSeeIn($progress, '2 cards · 1/2 have written');
+
+    $alicePage->type($composer, 'Keep the demo on Fridays')
+        ->keys($composer, 'Enter')
+        ->assertSeeIn($progress, '3 cards · 2/2 have written');
+
+    $bobPage->assertSeeIn($progress, '3 cards · 2/2 have written');
+
+    $card = $retro->cards()->where('content', 'Keep the demo on Fridays')->sole();
+
+    $alicePage->click("#card-{$card->id} [aria-label=\"Delete card\"]")
+        ->assertSeeIn($progress, '2 cards · 1/2 have written');
+
+    $bobPage->assertSeeIn($progress, '2 cards · 1/2 have written');
+
+    $alicePage->press('Next')
+        ->assertSeeIn('[aria-current="step"]', 'Grouping')
+        ->assertNotPresent($progress)
+        ->assertDontSee('Anonymity: on');
+})->with([
+    'named retro' => false,
+    'anonymous retro' => true,
+]);

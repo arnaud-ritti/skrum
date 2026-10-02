@@ -219,10 +219,10 @@ it('[P06-03] shows a member their own card in a second tab during Writing and ke
     $card = Card::query()->where('content', 'Ship smaller pull requests')->firstOrFail();
 
     $secondTab->assertSeeIn("#card-{$card->id}", 'Ship smaller pull requests')
-        ->assertSeeIn("#card-{$card->id}", 'You')
-        ->assertDontSee('Hidden until writing ends');
+        ->assertSeeIn("#card-{$card->id} [data-slot=\"retro-card-mine\"]", 'You')
+        ->assertDontSee('Hidden until the reveal');
 
-    $alicePage->assertSeeIn("#card-{$card->id}", 'Hidden until writing ends')
+    $alicePage->assertSeeIn("#card-{$card->id}", 'Hidden until the reveal')
         ->assertDontSee('Ship smaller pull requests')
         ->assertScript('document.documentElement.outerHTML.includes("Ship smaller pull requests")', false);
 
@@ -234,7 +234,7 @@ it('[P06-03] shows a member their own card in a second tab during Writing and ke
 
     $secondTab->assertSeeIn("#card-{$card->id}", 'Ship much smaller pull requests');
 
-    $alicePage->assertSeeIn("#card-{$card->id}", 'Hidden until writing ends')
+    $alicePage->assertSeeIn("#card-{$card->id}", 'Hidden until the reveal')
         ->assertScript('document.documentElement.outerHTML.includes("Ship much smaller pull requests")', false);
 
     expect($card->fresh()->content)->toBe('Ship much smaller pull requests');
@@ -316,16 +316,16 @@ it('[P06-06] keeps the delete-column dialog open when the server refuses the del
     $alicePage->click("{$continue} [aria-label=\"Column menu\"]")
         ->assertPresent('[role="menu"]')
         ->click('[role="menuitem"]:has-text("Delete column")')
-        ->assertSeeIn('[role="dialog"]', 'Delete the column Continue?');
+        ->assertSeeIn('[role="alertdialog"]', 'Delete the column Continue?');
 
     $bobPage->fill("{$continue} textarea", 'Keep the demo on Fridays')
         ->click("{$continue} form button:not([type=\"button\"])")
         ->assertSee('Keep the demo on Fridays');
 
     $alicePage->assertCount('article[id^="card-"]', 1)
-        ->click('[role="dialog"] button:has-text("Delete")')
+        ->click('[role="alertdialog"] button:has-text("Delete")')
         ->assertSee('This column still has cards.')
-        ->assertSeeIn('[role="dialog"]', 'Delete the column Continue?')
+        ->assertSeeIn('[role="alertdialog"]', 'Delete the column Continue?')
         ->assertCount('[data-test^="retro-column-"]', 3);
 
     expect(Column::query()->whereKey($columns[2]->id)->exists())->toBeTrue();

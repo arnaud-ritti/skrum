@@ -3932,5 +3932,11 @@
     "Team :team": "Equipo :team",
     "Guests join with a nickname, no account": "Se unen con un apodo, sin cuenta",
     "New session, retro form: the whole form, not scrolled": "Nueva sesión, formulario retro: el formulario entero, sin desplazamiento",
-    "New session dialog, open on the retro type": "Diálogo «Nueva sesión», abierto en el tipo retro"
+    "New session dialog, open on the retro type": "Diálogo «Nueva sesión», abierto en el tipo retro",
+    "Visible only to you": "Visible solo para ti",
+    "Silent writing: your cards are only visible to you until the reveal.": "Escritura en silencio: tus tarjetas solo son visibles para ti hasta la revelación.",
+    ":written/:present have written": ":written/:present han escrito",
+    "Anonymity: on": "Anonimato: activado",
+    "Add a column to start writing.": "Añade una columna para empezar a escribir.",
+    "The facilitator has not added a column yet.": "El facilitador aún no ha añadido ninguna columna."
 }

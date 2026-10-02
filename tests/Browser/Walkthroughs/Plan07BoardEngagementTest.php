@@ -1029,7 +1029,7 @@ it('[P07-05a] searches GIFs and shows them on cards through skrum, without any r
     $bobPage->assertAttribute("#card-{$card->id} button[aria-label=\"GIF\"] img", 'src', '/gifs/party1/preview')
         ->assertScript(plan07ImageLoaded("#card-{$card->id} button[aria-label=\"GIF\"] img"), true);
 
-    $carolPage->assertSeeIn("#card-{$card->id}", 'Hidden until writing ends')
+    $carolPage->assertSeeIn("#card-{$card->id}", 'Hidden until the reveal')
         ->assertNotPresent("#card-{$card->id} img");
 
     $alicePage->press('Next')->assertSeeIn('[aria-current="step"]', 'Grouping');

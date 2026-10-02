@@ -90,7 +90,7 @@ function p08aCardsSent(array $snapshot): array
 
 function p08aColumnTitles(): string
 {
-    return "[...document.querySelectorAll('[data-test^=\"retro-column-\"] h2')].map((title) => title.textContent).join(' | ')";
+    return "[...document.querySelectorAll('[data-test^=\"retro-column-\"] h3')].map((title) => title.textContent).join(' | ')";
 }
 
 /**
@@ -490,7 +490,7 @@ it('[P08a-02b] shows a column and its description added by the facilitator to a 
     $kudos = p08aColumn($column);
 
     $carolPage->assertCount($columns, 4)
-        ->assertSeeIn("{$kudos} h2", 'Kudos');
+        ->assertSeeIn("{$kudos} h3", 'Kudos');
 
     $alicePage->click("{$kudos} [aria-label=\"Column menu\"]")
         ->assertPresent('[role="menu"]')
@@ -533,13 +533,13 @@ it('[P08a-03] hides the cards of others again each time the retro moves back to 
     $alicePage->fill($composer, $aliceCard)
         ->click($add)
         ->assertSee($aliceCard);
-    $carolPage->assertSee('Hidden until writing ends')
+    $carolPage->assertSee('Hidden until the reveal')
         ->fill($composer, $carolCard)
         ->click($add)
         ->assertSee($carolCard)
         ->assertDontSee($aliceCard);
     $alicePage->assertCount('article[id^="card-"]', 2)
-        ->assertSee('Hidden until writing ends')
+        ->assertSee('Hidden until the reveal')
         ->assertDontSee($carolCard);
 
     $alicePage->click($next)
@@ -547,16 +547,16 @@ it('[P08a-03] hides the cards of others again each time the retro moves back to 
         ->assertSee($carolCard);
     $carolPage->assertSeeIn($current, 'Grouping')
         ->assertSee($aliceCard)
-        ->assertDontSee('Hidden until writing ends');
+        ->assertDontSee('Hidden until the reveal');
 
     $alicePage->click($previous)
         ->assertSeeIn($current, 'Writing')
-        ->assertSee('Hidden until writing ends')
+        ->assertSee('Hidden until the reveal')
         ->assertSee($aliceCard)
         ->assertDontSee($carolCard)
         ->assertScript($inDocument($carolCard), false);
     $carolPage->assertSeeIn($current, 'Writing')
-        ->assertSee('Hidden until writing ends')
+        ->assertSee('Hidden until the reveal')
         ->assertSee($carolCard)
         ->assertDontSee($aliceCard)
         ->assertScript($inDocument($aliceCard), false);
@@ -589,11 +589,11 @@ it('[P08a-03] hides the cards of others again each time the retro moves back to 
     $alicePage->click($next)
         ->assertSeeIn($current, 'Writing')
         ->assertSee($aliceCard)
-        ->assertSee('Hidden until writing ends')
+        ->assertSee('Hidden until the reveal')
         ->assertDontSee($carolCard);
     $carolPage->assertSeeIn($current, 'Writing')
         ->assertSee($carolCard)
-        ->assertSee('Hidden until writing ends')
+        ->assertSee('Hidden until the reveal')
         ->assertDontSee($aliceCard);
 
     expect($retro->cards()->count())->toBe(2)
@@ -728,7 +728,7 @@ it('[P08a-06] edits the description of a column that has cards and keeps Rename 
         ->assertSeeIn($start, 'What we should begin doing next sprint');
 
     $bobPage->assertSeeIn($start, 'What we should begin doing next sprint')
-        ->assertSeeIn("{$start} h2", 'Start')
+        ->assertSeeIn("{$start} h3", 'Start')
         ->assertNotPresent('[aria-label="Column menu"]');
 
     expect($columns[0]->fresh()->description)->toBe('What we should begin doing next sprint')

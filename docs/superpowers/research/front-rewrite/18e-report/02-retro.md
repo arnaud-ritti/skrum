@@ -151,3 +151,80 @@ Not listed, imposed by the shell and its components:
 | `P12b-01c` | the facilitator has "Share" without any channel, and the dialog shows no "Post a link" | the guest link lives in the Share dialog only (2-D11) |
 
 No test was removed.
+
+## Task R4 — Writing phase
+
+`components/retro/columns-board.tsx`, `board-column.tsx` and `board-card.tsx` draw the columns and the cards of every phase on `skrum/RetroColumn` and `skrum/RetroCard`; `lib/retro/adapters.ts` maps the snapshot to their props. Votes, reactions, comments, the group name and "Ungroup" keep their old controls, mounted in the card's `footer` and `children` slots, until R7, R8 and R9 move them onto the card's own props.
+
+### Parity (brief 02 §3.2 rows 30–39, §3.3 rows 40–48 and 67)
+
+| Row | Feature | Now | Done |
+|---|---|---|---|
+| 30 | Add a column (title and colour) | `AddColumnForm` in `columns-board.tsx`: `Input` "Column title", `ColumnColorOptions`, "Add column"; facilitator, until Writing ends; resets after a column is added | yes |
+| 31 | Rename a column | `RetroColumn onRename`; disabled with the reason when the column has cards | yes |
+| 32 | Edit the description | `RetroColumn onDescriptionChange` (`FormDialog`, "Save"); stays open when the server refuses | yes |
+| 33 | Recolour | `RetroColumn onColorChange`: the eight colours are a "Color" submenu of radio items named Sun … Moss | yes |
+| 34 | Move left / right | `RetroColumn onMove`, `canMoveLeft`, `canMoveRight` | yes |
+| 35 | Delete a column | `RetroColumn onDelete` (`ConfirmDialog`, `role="alertdialog"`); stays open with the toast when the column has received a card meanwhile | yes |
+| 36 | Description, card count | `RetroColumn description` (shown under the title, no longer in a tooltip), `count` | yes |
+| 37 | `data-test="retro-column-{id}"` | rest prop of `RetroColumn`; the columns are inside the frame's `<main>` | yes |
+| 38 | Sort by votes (Discussing, Completed) | `RetroColumn sortedByVotes`, `onSortByVotesChange`; on by default | yes |
+| 39 | Empty board | `EmptyState` "No columns yet." with a sentence for the facilitator and one for the others | yes |
+| 40 | Write a card | `CardComposer`: a `RetroCard` in editing, always open, in a `<form>`; the field is named "Add a card…" (2-D12); Enter or "Add"; empties itself and keeps the focus after a card is published | yes |
+| 41 | Attach a GIF | "GIF" in the editor tools opens `GifSearchDialog` (0.13) with `isolation={dragIsolation}`; "Remove GIF"; the preview is the card's `gif` | yes |
+| 42 | Edit a card | `RetroCard editing`, `onEditStart`, `onEdit`, `onEditCancel`; Enter or "Save", Esc or "Cancel"; the toast "The phase changed before your edit was saved." is kept | yes |
+| 43 | Delete a card | `RetroCard onDelete`; one request on a double click; the snapshot is taken again (writers count) | yes |
+| 44 | Reorder or move one's card | `SortableCard` (`dnd.tsx`) around the card; `data-test="retro-card-handle-{id}"`, `aria-pressed`, `aria-disabled` | yes |
+| 45 | `#card-{id}`, masked state | `RetroCard` default id, `masked`; the sentence is the component's "Hidden until the reveal" | yes |
+| 46 | "You", author, anonymous | `RetroCard isMine`, `author` (avatar and first name, full name as title), "Anonymous" without author | yes |
+| 47 | GIF at full size | `RetroCard onGifOpen` and `CardGifDialog` | yes |
+| 48 | Card insight | `RetroCard insight` | yes |
+| 67 | Drag overlay, announcements, isolation | `dnd.tsx` rewritten in place: same ids, same announcements, `dragIsolation` unchanged; the column is the drop zone (`RetroColumn isDropTarget`, "Drop here"); the preview is `CardPreview`, outside `<main>` | yes |
+| M4 | "n cards · x/y have written" | `WritingBanner`: `writersCount` over the people present (never fewer than the writers) | yes |
+| M4 | "Visible only to you" | under one's own cards in Writing | yes |
+| M4 | "Anonymity: on" | a state in the facilitator bar (`end` slot), in Writing on an anonymous retro | yes |
+
+### Places left
+
+| Slot | Where | Roadmap |
+|---|---|---|
+| `typing` of `ColumnsBoard` → `WritingBanner` | in the help banner, before the counter | RT-1 |
+| `typing` of `BoardColumn` | after the cards of a column: the mockup's "… is writing a card" line | RT-1 |
+| avatar ring "writing" | `SessionPresence presenceFor` (Task 0.4) | RT-1 |
+| "Pause" | `facilitatorActions` is a list: the action goes first, before the timer's "+2 min" | RT-2 |
+
+### Differences with the mockup
+
+Captures `retro-board-facilitator-*` and `retro-board-anonymous-*` (Writing) against `ScreenRetroWriting`, `RetroColumn` and `RetroCard`. Compared by the implementer on light 1440 EN (both names) and dark 390 FR (both names), against the markup of the previews.
+
+| Difference | Covered by |
+|---|---|
+| Each column ends with a card kept open for writing, with "GIF" and "Add"; the mockup has the dashed "Add a card" button and one card in editing | owner answer 2-D12 (the 13 uses of `[aria-label="Add a card…"]` stay). No row — for the owner |
+| The editing card has "Add" (composer) or "Cancel" and "Save" (edit), and "GIF"; the mockup has the two key hints and the counter only | parity rows 40–42 (a touch screen has no Esc; the suite binds the buttons). No row — reported |
+| "Visible only to you" is on its own line under the author, right-aligned; the mockup has it on the author's line | the card's footer also holds "You", edit and delete: a 300px card has no room. No row — reported |
+| My card on an anonymous retro shows my name and "You", not "Anonymous" | the server sends its author to the author only; the mockup's per-card anonymity is not a concept of the product (brief 02 §6). No row — reported |
+| No "… is writing a card", no ring on the avatar | D-10 (RT-1) |
+| No Pause, no "Reveal the cards" in the facilitator bar | D-10 |
+| "+2 min" is beside the countdown, not in the bar | reported in R3 |
+| The counter is 1000 characters, the mockup's 280 | the server rule (`max:1000`) |
+| The dragged card leaves a dimmed card, not the dashed ghost | the ghost of `RetroCard` drops the reactions and comments still mounted under the card: the board would move under the drag. R7 can use the ghost once they are props. No row — reported |
+| A column in a phase other than Writing, or on a locked board, shows the padlock "Adding cards is locked" | `RetroColumn/README.md` |
+| The add-column form (facilitator) is a fifth box and the columns stay at 300px at 1440 | no mockup (parity row 30) |
+| "Add survey" above the banner | transitional (S1) |
+| Phone: the columns scroll sideways, the reaction bar floats over the composer | R13 |
+
+### Browser tests changed
+
+The plan lists none. Imposed by `RetroCard` and `RetroColumn` (their README), and by the caption of M4:
+
+| Test | Change | Cause |
+|---|---|---|
+| `Plan04` (10), `Plan06` (3), `Plan07` (1), `Plan08a` (7) | "Hidden until writing ends" → "Hidden until the reveal"; the three translations of `plan04Locales` | the masked card of `RetroCard` ("Masquée jusqu'à la révélation") |
+| `P04-05b` | `class` contains `ring-primary` → `data-focused="true"` | the facilitator's focus ring is `--skrum-info` (`RetroCard/README.md`) |
+| `P04-09` | "Bob Stone" in the card → the `title` of `[data-slot="retro-card-author"]` | the card shows the first name |
+| `P04-17a`, `P06-03` | "You" is read in `[data-slot="retro-card-mine"]` | "Visible only to you" (M4) also holds the word |
+| `P06-06` | `[role="dialog"]` → `[role="alertdialog"]` | the column is deleted through `ConfirmDialog` |
+| `P08a` (`p08aColumnTitles`, `P08a-02b`, `P08a-06`) | `h2` → `h3` | the column title of `RetroColumn` |
+| `P18e-02-05` | open "Color", then the radio item by its text | the colours are a submenu of `RetroColumn` |
+
+New: `[P18e-02-10]` (named and anonymous retro); capture `retro-board-anonymous`. No test was removed.

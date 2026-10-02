@@ -106,7 +106,7 @@ it('[P04-02] hides the cards of other participants behind placeholders during Wr
     $start = plan04Column($columns[0]);
     $composer = "{$start} textarea";
     $add = "{$start} form button:not([type=\"button\"])";
-    $placeholders = "[...document.querySelectorAll('article[id^=\"card-\"]')].filter((card) => card.innerText.includes('Hidden until writing ends')).length";
+    $placeholders = "[...document.querySelectorAll('article[id^=\"card-\"]')].filter((card) => card.innerText.includes('Hidden until the reveal')).length";
 
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
     $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
@@ -266,7 +266,7 @@ it('[P04-05b] scrolls the highlighted card into view for everyone during Discuss
     $alicePage->click("#card-{$target->id} button[aria-pressed=\"false\"]")
         ->assertPresent("#card-{$target->id} button[aria-pressed=\"true\"]");
 
-    $bobPage->assertAttributeContains("#card-{$target->id}", 'class', 'ring-primary')
+    $bobPage->assertAttribute("#card-{$target->id}", 'data-focused', 'true')
         ->assertScript($inView, true);
 
     expect($retro->fresh()->highlighted_card_id)->toBe($target->id);
@@ -343,7 +343,7 @@ it('[P04-07] follows the facilitator through every phase, a reopen and a second 
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
     $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
 
-    $alicePage->assertSeeIn($current, 'Writing')->assertSee('Hidden until writing ends');
+    $alicePage->assertSeeIn($current, 'Writing')->assertSee('Hidden until the reveal');
     $bobPage->assertSeeIn($current, 'Writing')->assertCount('[aria-label="Add a card…"]', 3);
 
     $alicePage->press('Next')->assertSeeIn($current, 'Grouping')->assertSee('Pair on reviews');
@@ -434,11 +434,11 @@ it('[P04-09] never shows the author of another participant\'s card on an anonymo
     }
 
     $page->assertSeeIn("#card-{$mine->id}", 'Pairing works well')
-        ->assertSeeIn("#card-{$mine->id}", 'Bob Stone')
+        ->assertAttribute("#card-{$mine->id} [data-slot=\"retro-card-author\"]", 'title', 'Bob Stone')
         ->assertDontSeeIn("#card-{$theirs->id}", 'Alice Martin');
 
     if ($phase === RetroPhase::Writing->value) {
-        $page->assertSeeIn("#card-{$theirs->id}", 'Hidden until writing ends');
+        $page->assertSeeIn("#card-{$theirs->id}", 'Hidden until the reveal');
 
         return;
     }
@@ -547,7 +547,7 @@ it('[P04-14a] writes a card with the keyboard only', function () {
         ->assertValue($composer, '');
 
     $alicePage->assertCount('article[id^="card-"]', 1)
-        ->assertSee('Hidden until writing ends');
+        ->assertSee('Hidden until the reveal');
 
     expect($retro->cards()->where('content', 'Typed without a mouse')->exists())->toBeTrue();
 });
@@ -667,9 +667,9 @@ it('[P04-16a] keeps the dark appearance on the board', function () {
 });
 
 dataset('plan04Locales', [
-    'fr' => ['fr', 'Français', 'Langue', 'Écriture', 'Regroupement', "Masquée jusqu'à la fin de la rédaction", 'Ajouter une carte…', 'Vous'],
-    'es' => ['es', 'Español', 'Idioma', 'Escritura', 'Agrupación', 'Oculta hasta que termine la escritura', 'Añadir una tarjeta…', 'Tú'],
-    'de' => ['de', 'Deutsch', 'Sprache', 'Schreiben', 'Gruppieren', 'Verborgen, bis die Schreibphase endet', 'Karte hinzufügen…', 'Du'],
+    'fr' => ['fr', 'Français', 'Langue', 'Écriture', 'Regroupement', "Masquée jusqu'à la révélation", 'Ajouter une carte…', 'Vous'],
+    'es' => ['es', 'Español', 'Idioma', 'Escritura', 'Agrupación', 'Oculta hasta la revelación', 'Añadir una tarjeta…', 'Tú'],
+    'de' => ['de', 'Deutsch', 'Sprache', 'Schreiben', 'Gruppieren', 'Verborgen bis zur Aufdeckung', 'Karte hinzufügen…', 'Du'],
 ]);
 
 it('[P04-17a] translates the board after a member changes language in the settings', function (string $locale, string $languageName, string $languageLabel, string $writing, string $grouping, string $hidden, string $composer, string $you) {
@@ -692,9 +692,9 @@ it('[P04-17a] translates the board after a member changes language in the settin
         ->assertSeeIn('[aria-current="step"]', $writing)
         ->assertSeeIn($stepper, $grouping)
         ->assertSeeIn("#card-{$theirs->id}", $hidden)
-        ->assertSeeIn("#card-{$mine->id}", $you)
+        ->assertSeeIn("#card-{$mine->id} [data-slot=\"retro-card-mine\"]", $you)
         ->assertCount("[aria-label=\"{$composer}\"]", 3)
-        ->assertDontSee('Hidden until writing ends')
+        ->assertDontSee('Hidden until the reveal')
         ->assertNotPresent('[aria-label="Add a card…"]')
         ->assertDontSeeIn($stepper, 'Writing');
 })->with('plan04Locales');
@@ -715,7 +715,7 @@ it('[P04-17b] translates the board after a guest changes language in the header'
         ->assertSeeIn($stepper, $grouping)
         ->assertSeeIn("#card-{$theirs->id}", $hidden)
         ->assertCount("[aria-label=\"{$composer}\"]", 3)
-        ->assertDontSee('Hidden until writing ends')
+        ->assertDontSee('Hidden until the reveal')
         ->assertNotPresent('[aria-label="Add a card…"]')
         ->assertDontSeeIn($stepper, 'Writing');
 })->with('plan04Locales');
@@ -730,7 +730,7 @@ it('[P04-12] shows the reconnecting banner and catches up when Reverb comes back
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
     $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
 
-    $bobPage->assertSee('Hidden until writing ends')
+    $bobPage->assertSee('Hidden until the reveal')
         ->assertDontSee('Reconnecting…');
 
     ReverbServer::stop();

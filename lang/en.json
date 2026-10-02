@@ -3708,5 +3708,11 @@
     "Team :team": "Team :team",
     "Guests join with a nickname, no account": "Guests join with a nickname, no account",
     "New session, retro form: the whole form, not scrolled": "New session, retro form: the whole form, not scrolled",
-    "New session dialog, open on the retro type": "New session dialog, open on the retro type"
+    "New session dialog, open on the retro type": "New session dialog, open on the retro type",
+    "Visible only to you": "Visible only to you",
+    "Silent writing: your cards are only visible to you until the reveal.": "Silent writing: your cards are only visible to you until the reveal.",
+    ":written/:present have written": ":written/:present have written",
+    "Anonymity: on": "Anonymity: on",
+    "Add a column to start writing.": "Add a column to start writing.",
+    "The facilitator has not added a column yet.": "The facilitator has not added a column yet."
 }

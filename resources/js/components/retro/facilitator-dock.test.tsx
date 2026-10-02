@@ -164,6 +164,42 @@ describe('FacilitatorDock', () => {
         );
     });
 
+    it('says that anonymity is on while an anonymous retro is in Writing, as a state', () => {
+        const anonymous = renderInBoard(
+            <FacilitatorDock />,
+            boardContext(retroSnapshot({ retro: { isAnonymous: true } })),
+        );
+        const bar = screen.getByRole('toolbar', { name: 'Facilitation tools' });
+
+        expect(bar.textContent).toContain('Anonymity: on');
+        expect(
+            screen.queryByRole('button', { name: 'Anonymity: on' }),
+        ).toBeNull();
+        anonymous.unmount();
+
+        const named = renderInBoard(<FacilitatorDock />, boardContext());
+
+        expect(
+            screen.getByRole('toolbar', { name: 'Facilitation tools' })
+                .textContent,
+        ).not.toContain('Anonymity');
+        named.unmount();
+
+        renderInBoard(
+            <FacilitatorDock />,
+            boardContext(
+                retroSnapshot({
+                    retro: { isAnonymous: true, phase: 'grouping' },
+                }),
+            ),
+        );
+
+        expect(
+            screen.getByRole('toolbar', { name: 'Facilitation tools' })
+                .textContent,
+        ).not.toContain('Anonymity');
+    });
+
     it('has no bar for a participant, nor on a completed retro', () => {
         const participant = renderInBoard(
             <FacilitatorDock />,

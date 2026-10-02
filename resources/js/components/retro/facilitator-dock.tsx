@@ -6,6 +6,7 @@ import {
     Lock,
     LockOpen,
     ScanEye,
+    VenetianMask,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
@@ -18,6 +19,7 @@ import { useTrans } from '@/hooks/use-trans';
 import { retroRequest } from '@/lib/retro/api';
 import { nextPhase, PhaseLabels } from '@/lib/retro/phases';
 import type { RetroPhase, Snapshot } from '@/lib/retro/types';
+import { cn } from '@/lib/utils';
 import { useBoard } from './board-context';
 import { BoardReactions, showsRetroReactions } from './board-reactions';
 
@@ -119,6 +121,27 @@ export function facilitatorPrimary(
         disabled: busy,
         onSelect: () => onPhase(target),
     };
+}
+
+/**
+ * "Anonymity: on" of the Writing mockup. A state, not a control: anonymity is
+ * changed in the settings, where the rule that it cannot be turned off after
+ * the first card is explained.
+ */
+function AnonymityState({ compact }: { compact: boolean }) {
+    const { t } = useTrans();
+
+    return (
+        <span
+            data-slot="facilitator-anonymity"
+            className="inline-flex h-8 min-w-0 shrink items-center gap-1.5 px-2 text-sm font-medium"
+        >
+            <VenetianMask className="size-4 shrink-0" aria-hidden />
+            <span className={cn('truncate', compact && 'sr-only')}>
+                {t('Anonymity: on')}
+            </span>
+        </span>
+    );
 }
 
 const RootFontSize = 16;
@@ -232,6 +255,11 @@ export function FacilitatorDock({ start }: { start?: ReactNode }) {
                             </>
                         }
                         actions={facilitatorActions(phase, board, tools)}
+                        end={
+                            phase === 'writing' && board.retro.isAnonymous ? (
+                                <AnonymityState compact={isMobile} />
+                            ) : undefined
+                        }
                         primary={facilitatorPrimary(phase, board, tools)}
                     />
                 </div>

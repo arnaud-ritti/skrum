@@ -12,6 +12,12 @@ import { useTrans } from '@/hooks/use-trans';
 import type { Snapshot } from '@/lib/retro/types';
 import { cn } from '@/lib/utils';
 
+/** What a card shows of the drag it takes part in. */
+export type CardDragState = { isDragging: boolean; isDropTarget: boolean };
+
+const handleClass =
+    'rounded-lg outline-ring focus-visible:outline-2 focus-visible:outline-offset-2';
+
 export function parseDndId(
     id: string | number | undefined | null,
 ): { kind: 'card' | 'column'; id: string } | null {
@@ -92,7 +98,7 @@ export function SortableCard({
 }: {
     id: string;
     disabled: boolean;
-    children: ReactNode;
+    children: (state: CardDragState) => ReactNode;
 }) {
     const {
         attributes,
@@ -111,14 +117,11 @@ export function SortableCard({
             ref={setNodeRef}
             data-test={`retro-card-handle-${id}`}
             style={{ transform: CSS.Transform.toString(transform), transition }}
-            className={cn(
-                isDragging && 'opacity-50',
-                !disabled && 'cursor-grab',
-            )}
+            className={cn(handleClass, !disabled && 'cursor-grab')}
             {...attributes}
             {...listeners}
         >
-            {children}
+            {children({ isDragging, isDropTarget: false })}
         </div>
     );
 }
@@ -140,10 +143,11 @@ export function GroupableCard({
 }: {
     id: string;
     disabled: boolean;
-    children: ReactNode;
+    children: (state: CardDragState) => ReactNode;
 }) {
     const drag = useDraggable({ id: `card:${id}`, disabled });
     const drop = useDroppable({ id: `card:${id}` });
+    const isDropTarget = drop.isOver && !drag.isDragging;
 
     return (
         <div
@@ -153,38 +157,25 @@ export function GroupableCard({
             }}
             data-test={`retro-card-handle-${id}`}
             className={cn(
-                'rounded-md',
+                handleClass,
                 !disabled && 'cursor-grab',
-                drag.isDragging && 'opacity-50',
-                drop.isOver &&
-                    !drag.isDragging &&
-                    'ring-2 ring-primary ring-offset-2',
+                isDropTarget &&
+                    'ring-2 ring-primary ring-offset-2 ring-offset-background',
             )}
             {...drag.attributes}
             {...drag.listeners}
         >
-            {children}
+            {children({ isDragging: drag.isDragging, isDropTarget })}
         </div>
     );
 }
 
-export function ColumnDropZone({
-    id,
-    children,
-    className,
-}: {
-    id: string;
-    children: ReactNode;
-    className?: string;
-}) {
+/** The column as a place to drop a card: its ref and whether a card is over it. */
+export function useColumnDropZone(id: string): {
+    setNodeRef: (node: HTMLElement | null) => void;
+    isOver: boolean;
+} {
     const { setNodeRef, isOver } = useDroppable({ id: `column:${id}` });
 
-    return (
-        <div
-            ref={setNodeRef}
-            className={cn(className, isOver && 'bg-primary/5')}
-        >
-            {children}
-        </div>
-    );
+    return { setNodeRef, isOver };
 }

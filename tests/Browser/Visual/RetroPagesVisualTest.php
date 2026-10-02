@@ -113,11 +113,11 @@ function p18eRetroVisualBoard(RetroPhase $phase): array
     return [$retro->fresh(), $people[0][0], $people[1][0]];
 }
 
-it('[P18e-R3-01] renders the board in its session shell without overflow', function (string $name, RetroPhase $phase, bool $asFacilitator, bool $isLocked) {
+it('[P18e-R3-01] renders the board in its session shell without overflow', function (string $name, RetroPhase $phase, bool $asFacilitator, bool $isLocked, bool $isAnonymous = false) {
     config(['app.name' => 'Skrum', 'app.key' => 'base64:'.base64_encode(str_repeat('v', 32))]);
 
     [$retro, $facilitator, $member] = p18eRetroVisualBoard($phase);
-    $retro->update(['is_locked' => $isLocked]);
+    $retro->update(['is_locked' => $isLocked, 'is_anonymous' => $isAnonymous]);
     $viewer = $asFacilitator ? $facilitator : $member;
 
     RateLimiter::for('login', fn (): Limit => Limit::none());
@@ -146,6 +146,7 @@ it('[P18e-R3-01] renders the board in its session shell without overflow', funct
     );
 })->with([
     'facilitator, writing' => ['retro-board-facilitator', RetroPhase::Writing, true, false],
+    'facilitator, writing, anonymous' => ['retro-board-anonymous', RetroPhase::Writing, true, false, true],
     'participant, voting, locked' => ['retro-board-participant', RetroPhase::Voting, false, true],
     'facilitator, completed' => ['retro-board-completed', RetroPhase::Completed, true, false],
 ]);
