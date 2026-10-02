@@ -4132,5 +4132,6 @@
     "Members page, for an owner": "Members page, for an owner",
     "Members page, for an admin": "Members page, for an admin",
     "Members page, long names": "Members page, long names",
-    "Deleting a workspace": "Deleting a workspace"
+    "Deleting a workspace": "Deleting a workspace",
+    "By :name": "By :name"
 }

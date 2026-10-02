@@ -235,6 +235,55 @@ describe('RetroTemplatePicker', () => {
         expect(onDuplicate).toHaveBeenCalledWith('tpl-1');
     });
 
+    it('offers Edit on a workspace template only, and names its author', () => {
+        const onEdit = vi.fn();
+        const withAuthor = templates.map((template) =>
+            template.id === 'tpl-5'
+                ? { ...template, author: 'Ada Lovelace' }
+                : template,
+        );
+
+        const view = renderPicker({ onEdit, templates: withAuthor });
+
+        expect(screen.queryByRole('button', { name: 'Edit' })).toBeNull();
+        expect(screen.queryByText('By Ada Lovelace')).toBeNull();
+
+        view.rerender(
+            <RetroTemplatePicker
+                value="tpl-5"
+                onValueChange={vi.fn()}
+                templates={withAuthor}
+                tab="workspace"
+                onEdit={onEdit}
+            />,
+        );
+
+        expect(screen.getByText('By Ada Lovelace')).toBeTruthy();
+        fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
+        expect(onEdit).toHaveBeenCalledWith('tpl-5');
+    });
+
+    it('keeps "Use this template" in place, inert, with the reason it cannot be used', () => {
+        const onUse = vi.fn();
+
+        renderPicker({ onUse, useDisabledReason: 'Pick a team first' });
+
+        const use = screen.getByRole('button', { name: 'Use this template' });
+
+        expect(use.getAttribute('aria-disabled')).toBe('true');
+        expect(screen.getByText('Pick a team first').id).toBe(
+            use.getAttribute('aria-describedby'),
+        );
+
+        fireEvent.click(use);
+        fireEvent.keyDown(
+            screen.getByRole('radio', { name: 'Start Stop Continue' }),
+            { key: 'Enter' },
+        );
+
+        expect(onUse).not.toHaveBeenCalled();
+    });
+
     it('does not re-register the Escape listener of the search on an unrelated render', () => {
         const { rerender } = renderPicker();
 

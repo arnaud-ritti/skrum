@@ -4355,5 +4355,6 @@
     "Members page, for an owner": "Mitgliederseite, für einen Inhaber",
     "Members page, for an admin": "Mitgliederseite, für einen Administrator",
     "Members page, long names": "Mitgliederseite, lange Namen",
-    "Deleting a workspace": "Löschen eines Arbeitsbereichs"
+    "Deleting a workspace": "Löschen eines Arbeitsbereichs",
+    "By :name": "Von :name"
 }
