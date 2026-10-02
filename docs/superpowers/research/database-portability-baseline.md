@@ -105,3 +105,20 @@ Run on 2026-10-02 with `TEST_DB_PROCESSES=6`, database `testing_l9`. The suite h
 Nothing is left for Tasks 4, 5, 6 and 11. The whole-suite time on MariaDB and MySQL rose because `tests/Upgrade`
 now holds seven tests that each run `migrate:fresh` (about 35 s each on MariaDB, 60 s on MySQL, in one worker).
 `bin/check-pg-upgrade` passes on the merged tree.
+
+## Wave 2 — Tasks 9, 8, 10, 13, 16 merged
+
+Run on 2026-10-03 with `TEST_DB_PROCESSES=4`, database `testing_l9`, one engine at a time. The suite has 5 715 tests.
+
+| Driver | Result | Time |
+|---|---|---|
+| pgsql | `test-db pgsql: PASS, Tests: 2 skipped, 5713 passed (53153 assertions)` | 4 min 21 |
+| sqlite | `test-db sqlite: PASS, Tests: 8 skipped, 5707 passed (53140 assertions)` | 1 min 01 |
+| mariadb | `test-db mariadb: PASS, Tests: 1 skipped, 5714 passed (53155 assertions)` | 8 min 43 |
+| mysql | `test-db mysql: FAIL (exit 1), Tests: 12 failed, 1 skipped, 5702 passed (53119 assertions)` | about 14 min 40 |
+
+| Cause | Files | mysql | Task |
+|---|---|---|---|
+| Key order of an array read back from a `json` column | `Integrations/TelegramConnectTest` 4, `Whiteboards/WhiteboardElementWritesTest` 4, `Integrations/ConnectLinearTest` 1, `Integrations/StatusSyncSettingsTest` 1, `Whiteboards/WhiteboardTemplatesTest` 1, `Notifications/BellNotificationsTest` 1 | 12 | 12 |
+
+PostgreSQL, SQLite and MariaDB are green. The arch baseline is empty. `bin/check-pg-upgrade` passes on the merged tree.
