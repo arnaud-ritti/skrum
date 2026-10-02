@@ -1,6 +1,7 @@
 import { Head } from '@inertiajs/react';
 import { PasskeysCard } from '@/components/settings/security/passkeys-card';
 import { PasswordCard } from '@/components/settings/security/password-card';
+import { PasswordBreachCheck } from '@/components/settings/security/password-strength';
 import { SecurityStack } from '@/components/settings/security/security-stack';
 import { TwoFactorCard } from '@/components/settings/security/two-factor-card';
 import { SettingsShell } from '@/components/settings/settings-shell';
@@ -9,6 +10,8 @@ import type { Passkey, TwoFactorSummary } from '@/types/auth';
 
 type Props = {
     passwordRules: string;
+    /** The server refuses a password found in known data breaches. */
+    checksCompromisedPasswords?: boolean;
     twoFactor: TwoFactorSummary;
     canManageTwoFactor?: boolean;
     requiresConfirmation?: boolean;
@@ -19,6 +22,7 @@ type Props = {
 
 export default function Security({
     passwordRules,
+    checksCompromisedPasswords = false,
     twoFactor,
     canManageTwoFactor = false,
     requiresConfirmation = false,
@@ -53,7 +57,14 @@ export default function Security({
             <Head title={t('Security settings')} />
 
             <SecurityStack>
-                <PasswordCard passwordRules={passwordRules} />
+                <PasswordCard
+                    passwordRules={passwordRules}
+                    breachCheck={
+                        checksCompromisedPasswords ? (
+                            <PasswordBreachCheck />
+                        ) : undefined
+                    }
+                />
                 {canManageTwoFactor && (
                     <TwoFactorCard
                         enabled={twoFactorEnabled}

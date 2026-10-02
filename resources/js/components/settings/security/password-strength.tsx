@@ -1,4 +1,4 @@
-import { Check, Circle } from 'lucide-react';
+import { Check, Circle, ShieldCheck } from 'lucide-react';
 import type { ReactElement, ReactNode } from 'react';
 import { useTrans } from '@/hooks/use-trans';
 import { cn } from '@/lib/utils';
@@ -133,7 +133,7 @@ export function PasswordStrength({
         <div
             data-slot="password-strength"
             data-level={level ?? 'empty'}
-            className="flex min-w-0 flex-col gap-1.5"
+            className="flex min-w-0 flex-col"
         >
             <div
                 role="meter"
@@ -162,27 +162,48 @@ export function PasswordStrength({
                     />
                 ))}
             </div>
-            {level !== null && (
-                <p
-                    data-slot="password-strength-label"
-                    aria-live="polite"
-                    className="text-body-sm text-muted-foreground"
-                >
-                    <b
-                        className={cn(
-                            'font-semibold',
-                            level === 'weak'
-                                ? 'text-skrum-destructive-text'
-                                : 'text-skrum-success-text',
-                        )}
+            <div data-slot="password-strength-live" aria-live="polite">
+                {level !== null && (
+                    <p
+                        data-slot="password-strength-label"
+                        className="mt-1.5 text-body-sm text-muted-foreground"
                     >
-                        {labels[level]}
-                    </b>
-                    {' — '}
-                    {hints[level]}
-                </p>
-            )}
+                        <b
+                            className={cn(
+                                'font-semibold',
+                                level === 'weak'
+                                    ? 'text-skrum-destructive-text'
+                                    : 'text-skrum-success-text',
+                            )}
+                        >
+                            {labels[level]}
+                        </b>
+                        {' — '}
+                        {hints[level]}
+                    </p>
+                )}
+            </div>
         </div>
+    );
+}
+
+/**
+ * The breach check of the server's rule. It runs when the form is saved, so
+ * the line informs and carries no met / not met mark.
+ */
+export function PasswordBreachCheck(): ReactElement {
+    const { t } = useTrans();
+
+    return (
+        <li
+            data-slot="password-breach-check"
+            className="inline-flex items-center gap-1.5"
+        >
+            <ShieldCheck aria-hidden="true" className="size-4 shrink-0" />
+            <span>
+                {t('Checked against known data breaches when you save')}
+            </span>
+        </li>
     );
 }
 
@@ -194,7 +215,7 @@ export function PasswordRules({
     /** The server's rule, as `toPasswordRulesString()` writes it. */
     rules: string;
     password: string;
-    /** Place left at the end of the list for the breach check (AC-6). */
+    /** Last item of the list: `PasswordBreachCheck` when the server's rule has one. */
     breachCheck?: ReactNode;
 }): ReactElement | null {
     const { t } = useTrans();

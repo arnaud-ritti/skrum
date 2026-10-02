@@ -4,6 +4,7 @@ import { renderWithProviders } from '@/test/render';
 import {
     estimatePasswordStrength,
     parsePasswordRules,
+    PasswordBreachCheck,
     PasswordRules,
     PasswordStrength,
 } from './password-strength';
@@ -189,5 +190,38 @@ describe('PasswordRules', () => {
         expect(screen.getAllByRole('listitem').at(-1)?.textContent).toBe(
             'Not found in known data breaches',
         );
+    });
+
+    it('says the breach check runs on save, without a met or not met mark', () => {
+        renderWithProviders(
+            <PasswordRules
+                rules="minlength: 8;"
+                password=""
+                breachCheck={<PasswordBreachCheck />}
+            />,
+        );
+
+        expect(screen.getAllByRole('listitem').at(-1)?.textContent).toBe(
+            'Checked against known data breaches when you save',
+        );
+    });
+});
+
+describe('PasswordStrength, announced', () => {
+    it('keeps its live region mounted before anything is typed, so the first level is announced', () => {
+        const view = renderWithProviders(<PasswordStrength password="" />);
+        const live = document.querySelector(
+            '[data-slot="password-strength-live"]',
+        );
+
+        expect(live?.getAttribute('aria-live')).toBe('polite');
+        expect(live?.textContent).toBe('');
+
+        view.rerender(<PasswordStrength password="abc12" />);
+
+        expect(
+            document.querySelector('[data-slot="password-strength-live"]'),
+        ).toBe(live);
+        expect(live?.textContent).toContain('Weak');
     });
 });

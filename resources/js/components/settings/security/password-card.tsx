@@ -18,7 +18,7 @@ const NewPasswordId = 'password';
 type PasswordCardProps = {
     /** The server's rule, as `Password::defaults()->toPasswordRulesString()`. */
     passwordRules: string;
-    /** Place left at the end of the rule list for the breach check (AC-6). */
+    /** Last item of the rule list: `PasswordBreachCheck` when the server's rule has one. */
     breachCheck?: ReactNode;
 };
 

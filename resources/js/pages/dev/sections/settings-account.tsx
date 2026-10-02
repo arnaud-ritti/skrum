@@ -13,6 +13,7 @@ import { TokenCards } from '@/components/settings/api-tokens/token-cards';
 import { TokensTable } from '@/components/settings/api-tokens/tokens-table';
 import { ThemePicker } from '@/components/settings/appearance/theme-picker';
 import {
+    PasswordBreachCheck,
     PasswordRules,
     PasswordStrength,
 } from '@/components/settings/security/password-strength';
@@ -193,7 +194,11 @@ export default function SettingsAccountSection() {
                     <PasswordStrength password="abcdefghijklmn" />
                     <PasswordStrength password="Abcdefgh-ijklmn-42" />
                 </div>
-                <PasswordRules rules={passwordRules} password="Abcdefgh" />
+                <PasswordRules
+                    rules={passwordRules}
+                    password="Abcdefgh"
+                    breachCheck={<PasswordBreachCheck />}
+                />
             </Example>
             <Example
                 label={t(
@@ -221,7 +226,7 @@ export default function SettingsAccountSection() {
             </Example>
             <Example label={t('Recovery codes: loading, eight codes')}>
                 <div className="flex max-w-200 min-w-0 flex-col gap-6">
-                    <RecoveryCodes codes={[]} />
+                    <RecoveryCodes codes={[]} loading />
                     <RecoveryCodes codes={recoveryCodes} />
                 </div>
             </Example>
