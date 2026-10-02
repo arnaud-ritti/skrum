@@ -7,11 +7,13 @@ use App\Actions\HealthCheck\PresentHealthStatement;
 use App\Actions\HealthCheck\TeamHealthStatements;
 use App\Actions\Poker\PresentPokerGameSummary;
 use App\Actions\Retros\BuildTemplateCatalogue;
+use App\Actions\Retros\TopTeamTemplates;
 use App\Actions\Whiteboards\BuildWhiteboardGallery;
 use App\Actions\Whiteboards\PresentWhiteboardSummary;
 use App\Enums\IntegrationProvider;
 use App\Enums\PokerDeck;
 use App\Enums\TemplateCategory;
+use App\Models\GameRoom;
 use App\Models\PokerGame;
 use App\Models\Retro;
 use App\Models\SavedPokerDeck;
@@ -21,6 +23,7 @@ use App\Models\User;
 use App\Models\Whiteboard;
 use App\Models\WhiteboardTemplate;
 use App\Models\Workspace;
+use App\Support\Games\GameRulesRegistry;
 use App\Support\Llm\Llm;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -58,6 +61,8 @@ class TeamsController extends Controller
         BuildTemplateCatalogue $buildTemplateCatalogue,
         IcebreakerGameOptions $icebreakerGameOptions,
         BuildWhiteboardGallery $buildWhiteboardGallery,
+        TopTeamTemplates $topTeamTemplates,
+        GameRulesRegistry $gameRulesRegistry,
     ): Response {
         Gate::authorize('view', $team);
 
@@ -83,6 +88,7 @@ class TeamsController extends Controller
                 'createdAt' => $retro->created_at?->toIso8601String(),
             ]),
             'templateCategories' => TemplateCategory::options(),
+            'topTemplates' => $topTeamTemplates->handle($team),
             'catalogue' => Inertia::optional(fn (): array => $buildTemplateCatalogue->handle($workspace)),
             'llm' => [
                 'enabled' => $llm->isConfigured(),
@@ -90,6 +96,10 @@ class TeamsController extends Controller
             ],
             'canCreateRetro' => $request->user()->can('createRetro', $team),
             'icebreakerGames' => $icebreakerGameOptions->options(),
+            'gameOptions' => $gameRulesRegistry->options(new GameRoom(['team_id' => $team->id])),
+            'canCreateGameRoom' => $request->user()->can('createGameRoom', $team)
+                && $team->gameRooms()->whereNull('retro_id')->count() < GameRoom::MaxRoomsPerTeam,
+            'roomLimit' => GameRoom::MaxRoomsPerTeam,
             'healthStatements' => $this->teamHealthStatements->all($team)->map(fn (TeamHealthStatement $statement): array => [
                 'id' => $statement->id ?? $statement->key(),
                 ...$this->presentHealthStatement->handle($statement),
@@ -101,6 +111,10 @@ class TeamsController extends Controller
                 ->get()
                 ->map(fn (PokerGame $game): array => $this->presentPokerGameSummary->handle($game)),
             'pokerDecks' => $this->pokerDecks($request->user(), $workspace, $team),
+            'defaultPokerDeck' => [
+                'deck' => $team->default_poker_deck,
+                'savedDeckId' => $team->default_saved_poker_deck_id,
+            ],
             'pokerDeckOptions' => PokerDeck::options(),
             'canCreatePokerGame' => $request->user()->can('createPokerGame', $team),
             'whiteboards' => $team->whiteboards()
@@ -130,12 +144,13 @@ class TeamsController extends Controller
     {
         $isManager = $user->canManage($workspace);
 
-        return $team->pokerDecks()->orderBy('name')->get()
+        return $team->availablePokerDecks()->orderBy('name')->get()
             ->map(fn (SavedPokerDeck $deck): array => [
                 'id' => $deck->id,
                 'name' => $deck->name,
                 'cards' => $deck->cards,
-                'canManage' => $isManager || $deck->created_by_user_id === $user->id,
+                'scope' => $deck->isWorkspaceDeck() ? 'workspace' : 'team',
+                'canManage' => $isManager || (! $deck->isWorkspaceDeck() && $deck->created_by_user_id === $user->id),
             ])
             ->values()
             ->all();

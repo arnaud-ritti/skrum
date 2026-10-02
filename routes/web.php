@@ -89,6 +89,7 @@ use App\Http\Controllers\Poker\PokerTaskOrdersController;
 use App\Http\Controllers\Poker\PokerTasksController;
 use App\Http\Controllers\Poker\PokerTimersController;
 use App\Http\Controllers\Poker\PokerVotesController;
+use App\Http\Controllers\PokerDeckDuplicatesController;
 use App\Http\Controllers\PokerDecksController;
 use App\Http\Controllers\PokerJoinsController;
 use App\Http\Controllers\ReadAllNotificationsController;
@@ -117,6 +118,7 @@ use App\Http\Controllers\Retros\RetrosController;
 use App\Http\Controllers\Retros\RetroSettingsController;
 use App\Http\Controllers\Retros\RetroSnapshotsController;
 use App\Http\Controllers\Retros\RetroSummariesController;
+use App\Http\Controllers\Retros\RetroTimerExtensionsController;
 use App\Http\Controllers\Retros\RetroTimersController;
 use App\Http\Controllers\Retros\SuggestedActionPromotionsController;
 use App\Http\Controllers\Retros\SuggestedActionsController;
@@ -129,6 +131,7 @@ use App\Http\Controllers\Retros\SurveysController;
 use App\Http\Controllers\SsoCallbacksController;
 use App\Http\Controllers\SsoRedirectsController;
 use App\Http\Controllers\StyledAvatarsController;
+use App\Http\Controllers\TeamDefaultPokerDecksController;
 use App\Http\Controllers\TeamEstimatesController;
 use App\Http\Controllers\TeamGameRoomsController;
 use App\Http\Controllers\TeamHealthStatementArchivalsController;
@@ -155,6 +158,7 @@ use App\Http\Controllers\WorkspaceActionItemsController;
 use App\Http\Controllers\WorkspaceActionItemSubtasksController;
 use App\Http\Controllers\WorkspaceInvitationsController;
 use App\Http\Controllers\WorkspaceMembersController;
+use App\Http\Controllers\WorkspacePokerDecksController;
 use App\Http\Controllers\WorkspacesController;
 use App\Http\Controllers\WorkspaceTemplatesController;
 use App\Http\Controllers\WorkspaceWhiteboardTemplatesController;
@@ -246,6 +250,8 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             Route::post('teams/{team}/poker-decks', [PokerDecksController::class, 'store'])->name('teams.pokerDecks.store');
             Route::patch('teams/{team}/poker-decks/{pokerDeck}', [PokerDecksController::class, 'update'])->name('teams.pokerDecks.update')->whereUuid('pokerDeck');
             Route::delete('teams/{team}/poker-decks/{pokerDeck}', [PokerDecksController::class, 'destroy'])->name('teams.pokerDecks.destroy')->whereUuid('pokerDeck');
+            Route::put('teams/{team}/default-poker-deck', [TeamDefaultPokerDecksController::class, 'update'])->name('teams.defaultPokerDeck.update');
+            Route::post('teams/{team}/poker-decks/{pokerDeck}/duplicate', [PokerDeckDuplicatesController::class, 'store'])->name('teams.pokerDecks.duplicate.store')->whereUuid('pokerDeck');
             Route::get('teams/{team}/games', [TeamGameRoomsController::class, 'index'])->name('teams.games.index');
             Route::post('teams/{team}/games', [TeamGameRoomsController::class, 'store'])->name('teams.games.store');
 
@@ -351,6 +357,9 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             Route::post('templates', [WorkspaceTemplatesController::class, 'store'])->name('workspaces.templates.store');
             Route::patch('templates/{template}', [WorkspaceTemplatesController::class, 'update'])->name('workspaces.templates.update')->whereUuid('template');
             Route::delete('templates/{template}', [WorkspaceTemplatesController::class, 'destroy'])->name('workspaces.templates.destroy')->whereUuid('template');
+            Route::post('poker-decks', [WorkspacePokerDecksController::class, 'store'])->name('workspaces.pokerDecks.store');
+            Route::patch('poker-decks/{pokerDeck}', [WorkspacePokerDecksController::class, 'update'])->name('workspaces.pokerDecks.update')->whereUuid('pokerDeck');
+            Route::delete('poker-decks/{pokerDeck}', [WorkspacePokerDecksController::class, 'destroy'])->name('workspaces.pokerDecks.destroy')->whereUuid('pokerDeck');
             Route::patch('whiteboard-templates/{whiteboardTemplate}', [WorkspaceWhiteboardTemplatesController::class, 'update'])->name('workspaces.whiteboardTemplates.update')->whereUuid('whiteboardTemplate');
             Route::delete('whiteboard-templates/{whiteboardTemplate}', [WorkspaceWhiteboardTemplatesController::class, 'destroy'])->name('workspaces.whiteboardTemplates.destroy')->whereUuid('whiteboardTemplate');
 
@@ -392,6 +401,7 @@ Route::prefix('retros/{retro}')
         Route::delete('/', [RetrosController::class, 'destroy'])->name('retros.destroy');
         Route::put('phase', [RetroPhasesController::class, 'update'])->name('retros.phase.update');
         Route::put('timer', [RetroTimersController::class, 'update'])->name('retros.timer.update');
+        Route::post('timer/extension', [RetroTimerExtensionsController::class, 'store'])->name('retros.timer.extension.store');
         Route::put('highlight', [RetroHighlightsController::class, 'update'])->name('retros.highlight.update');
         Route::patch('settings', [RetroSettingsController::class, 'update'])->name('retros.settings.update');
         Route::post('guest-token', [RetroGuestTokensController::class, 'store'])->name('retros.guest-token.store');

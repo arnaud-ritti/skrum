@@ -168,3 +168,39 @@ it('scores a list of one-decimal averages', function () {
         ->and(SummarizeHealthCheck::scoreOf([7.0, 4.0]))->toBe(5.5)
         ->and(SummarizeHealthCheck::scoreOf([1.7, 1.6]))->toBe(1.7);
 });
+
+it('reports the previous average of a statement present in the previous retro', function () {
+    $previous = Retro::factory()->withHealthCheck()->inPhase(RetroPhase::Completed)->create(['completed_at' => now()->subWeek()]);
+    summarizedRetro(['vision' => [6, 7], 'interaction' => [4]], retro: $previous);
+    $current = Retro::factory()->withHealthCheck()->inPhase(RetroPhase::Completed)->create(['team_id' => $previous->team_id, 'completed_at' => now()]);
+
+    $statements = collect(healthSummary(summarizedRetro(['vision' => [8], 'task_clarity' => [5]], retro: $current))['statements'])->keyBy('key');
+
+    expect($statements['vision']['previousAverage'])->toBe(6.5)
+        ->and($statements['task_clarity']['previousAverage'])->toBeNull()
+        ->and($statements['interaction']['previousAverage'])->toBe(4.0);
+});
+
+it('uses the retro just before this one and ignores later and other-team retros', function () {
+    $older = Retro::factory()->withHealthCheck()->inPhase(RetroPhase::Completed)->create(['completed_at' => now()->subWeeks(2)]);
+    summarizedRetro(['vision' => [2]], retro: $older);
+    $previous = Retro::factory()->withHealthCheck()->inPhase(RetroPhase::Completed)->create(['team_id' => $older->team_id, 'completed_at' => now()->subWeek()]);
+    summarizedRetro(['vision' => [9]], retro: $previous);
+    $later = Retro::factory()->withHealthCheck()->inPhase(RetroPhase::Completed)->create(['team_id' => $older->team_id, 'completed_at' => now()->addWeek()]);
+    summarizedRetro(['vision' => [1]], retro: $later);
+    $foreign = Retro::factory()->withHealthCheck()->inPhase(RetroPhase::Completed)->create(['completed_at' => now()->subDay()]);
+    summarizedRetro(['vision' => [3]], retro: $foreign);
+    $current = Retro::factory()->withHealthCheck()->inPhase(RetroPhase::Completed)->create(['team_id' => $older->team_id, 'completed_at' => now()]);
+
+    $statements = collect(healthSummary(summarizedRetro(['vision' => [5]], retro: $current))['statements'])->keyBy('key');
+
+    expect($statements['vision']['previousAverage'])->toBe(9.0);
+});
+
+it('has no previous average for the first health check of the team', function () {
+    $retro = Retro::factory()->withHealthCheck()->inPhase(RetroPhase::Completed)->create(['completed_at' => now()]);
+
+    $statements = collect(healthSummary(summarizedRetro(['vision' => [5]], retro: $retro))['statements']);
+
+    expect($statements->pluck('previousAverage')->unique()->all())->toBe([null]);
+});

@@ -13,6 +13,8 @@ use Illuminate\Validation\Validator;
 
 class WorkspaceTemplateRequest extends FormRequest
 {
+    public const MaxColumns = 10;
+
     public function authorize(): bool
     {
         return $this->user()?->can('manageTemplates', $this->workspace()) ?? false;
@@ -26,7 +28,7 @@ class WorkspaceTemplateRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:80'],
             'category' => ['required', Rule::enum(TemplateCategory::class)],
-            'columns' => ['required', 'array', 'min:1', 'max:10'],
+            'columns' => ['required', 'array', 'min:1', 'max:'.self::MaxColumns],
             'columns.*.title' => ['required', 'string', 'max:100'],
             'columns.*.description' => ['nullable', 'string', 'max:200'],
             'columns.*.color' => ['required', Rule::enum(ColumnColor::class)],

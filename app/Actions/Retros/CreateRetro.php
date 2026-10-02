@@ -38,13 +38,14 @@ class CreateRetro
                 'icebreaker_game' => $data->icebreakerGame ?? GameKind::DrawAndGuess,
                 'votes_per_participant' => $data->votesPerParticipant,
                 'ai_summary_enabled' => $data->aiSummaryEnabled && $this->llm->isConfigured(),
+                'guest_access_enabled' => $data->guestAccessEnabled,
                 'guest_token' => Str::random(40),
             ]);
 
             $retro->phase = $retro->firstPhase();
             $retro->save();
 
-            foreach ($this->columns($data->template, $workspaceTemplate) as $position => $column) {
+            foreach ($data->columns ?? $this->columns($data->template, $workspaceTemplate) as $position => $column) {
                 $retro->columns()->create([...$column, 'position' => $position]);
             }
 

@@ -20,6 +20,7 @@ use Illuminate\Support\Str;
  * @property TemplateCategory $category
  * @property string|null $created_by_user_id
  * @property-read Collection<int, WorkspaceTemplateColumn> $columns
+ * @property-read User|null $creator
  */
 #[Fillable(['name', 'category', 'created_by_user_id'])]
 class WorkspaceTemplate extends Model
@@ -51,6 +52,12 @@ class WorkspaceTemplate extends Model
     public function workspace(): BelongsTo
     {
         return $this->belongsTo(Workspace::class);
+    }
+
+    /** @return BelongsTo<User, $this> */
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by_user_id');
     }
 
     /** @return HasMany<WorkspaceTemplateColumn, $this> */

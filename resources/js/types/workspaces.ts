@@ -1,4 +1,5 @@
 import type { ColumnColor } from '@/lib/retro/types';
+import type { WhiteboardPreview } from '@/types/poker';
 
 export type WorkspaceRole = 'owner' | 'admin' | 'member';
 
@@ -74,7 +75,24 @@ export type WorkspaceTemplateSummary = {
     id: string;
     name: string;
     category: TemplateCategory;
+    author: string | null;
     columns: TemplateColumn[];
+};
+
+export type WorkspaceWhiteboardTemplate = {
+    id: string;
+    name: string;
+    description: string | null;
+    preview: WhiteboardPreview;
+    canManage: boolean;
+};
+
+export type WorkspacePokerDeck = {
+    id: string;
+    name: string;
+    cards: string[];
+    usageCount: number;
+    canManage: boolean;
 };
 
 export type LlmAvailability = {

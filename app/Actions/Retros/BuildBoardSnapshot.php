@@ -156,6 +156,7 @@ class BuildBoardSnapshot
             'exportSources' => $viewer->isGuest() ? [] : $this->listExportSources->forTeam($retro->team),
             'teamMembers' => $this->teamMembers($retro),
             'insights' => $this->buildInsights->handle($retro),
+            'writersCount' => $retro->writersCount(),
             'roti' => $this->roti($retro, $viewer),
             'surveys' => $surveys,
             'results' => $this->buildResults->handle($retro, $viewer, $surveys),
@@ -285,16 +286,20 @@ class BuildBoardSnapshot
     /**
      * @return array{
      *     myScore: ?int,
-     *     respondents: int
+     *     respondents: int,
+     *     voterIds: array<int, string>
      * }
      */
     private function roti(Retro $retro, Participant $viewer): array
     {
         $myScore = $retro->rotiVotes()->where('participant_id', $viewer->id)->value('score');
 
+        $voterIds = $retro->rotiVotes()->pluck('participant_id')->all();
+
         return [
             'myScore' => $myScore === null ? null : (int) $myScore,
-            'respondents' => $retro->rotiVotes()->count(),
+            'respondents' => count($voterIds),
+            'voterIds' => $voterIds,
         ];
     }
 

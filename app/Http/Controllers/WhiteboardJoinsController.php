@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Actions\Retros\GuestCookie;
+use App\Actions\Sessions\PresentJoinSession;
 use App\Actions\Whiteboards\ResolveMember;
 use App\Models\Whiteboard;
 use Illuminate\Http\Request;
@@ -12,7 +13,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 class WhiteboardJoinsController extends Controller
 {
-    public function show(Request $request, string $guestToken, ResolveMember $resolveMember): Response
+    public function show(Request $request, string $guestToken, ResolveMember $resolveMember, PresentJoinSession $presentJoinSession): Response
     {
         $board = $this->findBoard($guestToken);
 
@@ -28,6 +29,7 @@ class WhiteboardJoinsController extends Controller
             'isInvalid' => false,
             'guestToken' => $guestToken,
             'boardTitle' => $board->title,
+            'session' => $presentJoinSession->whiteboard($board),
             'suggestedName' => $request->user()?->name,
         ])->toResponse($request);
     }

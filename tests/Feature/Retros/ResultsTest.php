@@ -5,11 +5,14 @@ use App\Actions\HealthCheck\FreezeHealthStatements;
 use App\Actions\HealthCheck\SummarizeHealthCheck;
 use App\Actions\Retros\BuildBoardSnapshot;
 use App\Enums\RetroPhase;
+use App\Models\Card;
 use App\Models\HealthCheckAnswer;
 use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\RotiVote;
 use App\Models\Survey;
+use App\Models\User;
+use App\Models\Vote;
 use Illuminate\Support\Facades\DB;
 
 function resultsOf(Retro $retro, Participant $viewer): ?array
@@ -165,4 +168,75 @@ it('keeps the query count constant as ratings, participants, surveys and health 
         });
 
     expect($count())->toBe($few);
+});
+
+it('reports a duration of fifty minutes for a retro completed fifty minutes after its start', function () {
+    $this->freezeTime();
+    $retro = Retro::factory()->inPhase(RetroPhase::Completed)->started(now()->subMinutes(50))->create(['completed_at' => now()]);
+    [, $viewer] = retroMember($retro);
+
+    expect(resultsOf($retro, $viewer)['stats']['durationSeconds'])->toBe(3000);
+});
+
+it('reports no duration for a retro without a start time', function () {
+    $retro = Retro::factory()->inPhase(RetroPhase::Completed)->create(['completed_at' => now()]);
+    [, $viewer] = retroMember($retro);
+
+    expect(resultsOf($retro, $viewer)['stats']['durationSeconds'])->toBeNull();
+});
+
+it('counts the votes cast and the votes available', function () {
+    $retro = Retro::factory()->inPhase(RetroPhase::Completed)->create(['votes_per_participant' => 5]);
+    [, $viewer] = retroMember($retro);
+    $other = Participant::factory()->create(['retro_id' => $retro->id]);
+    $card = Card::factory()->create(['retro_id' => $retro->id, 'participant_id' => $viewer->id]);
+    Vote::factory()->count(3)->create(['retro_id' => $retro->id, 'card_id' => $card->id, 'participant_id' => $viewer->id]);
+    Vote::factory()->create(['retro_id' => $retro->id, 'card_id' => $card->id, 'participant_id' => $other->id]);
+
+    expect(resultsOf($retro, $viewer)['stats'])->toMatchArray(['votesCast' => 4, 'votesAvailable' => 10]);
+});
+
+it('reports the participants against the team members', function () {
+    $retro = Retro::factory()->inPhase(RetroPhase::Completed)->create();
+    [, $viewer] = retroMember($retro);
+    $second = Participant::factory()->create(['retro_id' => $retro->id]);
+    $retro->team->members()->attach(User::factory()->create());
+
+    expect(resultsOf($retro, $viewer)['stats']['participation'])->toBe(['participants' => 2, 'teamMembers' => 2])
+        ->and($second->retro_id)->toBe($retro->id);
+});
+
+it('carries the statistics to a guest without the health trend', function () {
+    $retro = Retro::factory()->inPhase(RetroPhase::Completed)->withGuestAccess()->create();
+    $guest = Participant::factory()->guest()->create(['retro_id' => $retro->id]);
+
+    $results = resultsOf($retro, $guest);
+
+    expect($results['stats'])->toHaveKeys(['votesCast', 'votesAvailable', 'participation', 'durationSeconds'])
+        ->and($results['healthTrend'])->toBeNull();
+});
+
+it('hides the previous retro averages and the health trend from a guest', function () {
+    $previous = Retro::factory()->withHealthCheck()->inPhase(RetroPhase::Completed)->create(['completed_at' => now()->subWeek()]);
+    resolve(FreezeHealthStatements::class)->handle($previous);
+    HealthCheckAnswer::factory()->create([
+        'retro_id' => $previous->id,
+        'participant_id' => Participant::factory()->create(['retro_id' => $previous->id])->id,
+        'statement' => 'vision',
+        'score' => 6,
+    ]);
+    $retro = Retro::factory()->withHealthCheck()->inPhase(RetroPhase::Completed)->withGuestAccess()->create(['team_id' => $previous->team_id, 'completed_at' => now()]);
+    resolve(FreezeHealthStatements::class)->handle($retro);
+    [, $member] = retroMember($retro);
+    $guest = Participant::factory()->guest()->create(['retro_id' => $retro->id]);
+    HealthCheckAnswer::factory()->create(['retro_id' => $retro->id, 'participant_id' => $member->id, 'statement' => 'vision', 'score' => 8]);
+
+    $memberResults = resultsOf($retro, $member);
+    $guestResults = resultsOf($retro, $guest);
+
+    expect(collect($memberResults['health']['statements'])->firstWhere('key', 'vision')['previousAverage'])->toBe(6.0)
+        ->and($memberResults['healthTrend'])->toHaveCount(2)
+        ->and(collect($guestResults['health']['statements'])->firstWhere('key', 'vision'))->toMatchArray(['average' => 8.0, 'previousAverage' => null])
+        ->and(collect($guestResults['health']['statements'])->pluck('previousAverage')->unique()->all())->toBe([null])
+        ->and($guestResults['healthTrend'])->toBeNull();
 });

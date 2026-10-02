@@ -50,13 +50,18 @@ type Props = {
     openActionItemCount: number;
     retros: RetroSummary[];
     templateCategories: CategoryOption[];
+    topTemplates: string[];
     catalogue?: CatalogueTemplate[];
     canCreateRetro: boolean;
     healthStatements: TeamHealthStatement[];
     canManageHealthStatements: boolean;
     llm: LlmAvailability;
     icebreakerGames: GameOption[];
+    gameOptions: GameOption[];
+    canCreateGameRoom: boolean;
+    roomLimit: number;
     pokerGames: PokerGameSummary[];
+    defaultPokerDeck: { deck: string | null; savedDeckId: string | null };
     pokerDeckOptions: PokerDeckOption[];
     canCreatePokerGame: boolean;
     canManageIntegrations: boolean;

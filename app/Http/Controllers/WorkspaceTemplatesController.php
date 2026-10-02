@@ -5,6 +5,10 @@ namespace App\Http\Controllers;
 use App\Actions\Retros\BuildTemplateCatalogue;
 use App\Enums\TemplateCategory;
 use App\Http\Requests\WorkspaceTemplateRequest;
+use App\Models\PokerGame;
+use App\Models\SavedPokerDeck;
+use App\Models\User;
+use App\Models\WhiteboardTemplate;
 use App\Models\Workspace;
 use App\Models\WorkspaceTemplate;
 use Illuminate\Http\RedirectResponse;
@@ -23,10 +27,13 @@ class WorkspaceTemplatesController extends Controller
     {
         return Inertia::render('workspaces/templates', [
             'workspace' => $workspace->only(['id', 'name', 'slug']),
-            'templates' => $workspace->templates()->with('columns')->orderBy('name')->get()
+            'templates' => $workspace->templates()->with(['columns', 'creator'])->orderBy('name')->get()
                 ->map(fn (WorkspaceTemplate $template): array => $this->present($template))
                 ->values(),
             'categories' => TemplateCategory::options(),
+            'whiteboardTemplates' => $this->whiteboardTemplates($request->user(), $workspace),
+            'pokerDecks' => $this->pokerDecks($request->user(), $workspace),
+            'canCreatePokerDeck' => $request->user()->can('createForWorkspace', [SavedPokerDeck::class, $workspace]),
             'canManage' => $request->user()->canManage($workspace),
             'catalogue' => Inertia::optional(fn (): array => $buildTemplateCatalogue->handle($workspace)),
         ]);
@@ -79,6 +86,64 @@ class WorkspaceTemplatesController extends Controller
     }
 
     /**
+     * @return array<int, array{
+     *     id: string,
+     *     name: string,
+     *     description: ?string,
+     *     preview: array<string, mixed>,
+     *     canManage: bool
+     * }>
+     */
+    private function whiteboardTemplates(User $user, Workspace $workspace): array
+    {
+        $managesWorkspace = $user->canManage($workspace);
+
+        return $workspace->whiteboardTemplates()
+            ->orderBy('name')
+            ->get(['id', 'name', 'description', 'preview', 'created_by_user_id'])
+            ->map(fn (WhiteboardTemplate $template): array => [
+                'id' => $template->id,
+                'name' => $template->name,
+                'description' => $template->description,
+                'preview' => $template->preview,
+                'canManage' => $managesWorkspace || $template->created_by_user_id === $user->id,
+            ])
+            ->all();
+    }
+
+    /**
+     * @return array<int, array{
+     *     id: string,
+     *     name: string,
+     *     cards: array<int, string>,
+     *     usageCount: int,
+     *     canManage: bool
+     * }>
+     */
+    private function pokerDecks(User $user, Workspace $workspace): array
+    {
+        $canManage = $user->canManage($workspace);
+        $decks = $workspace->pokerDecks()->orderBy('name')->get();
+
+        $usageCounts = PokerGame::query()
+            ->whereIn('saved_deck_id', $decks->modelKeys())
+            ->whereIn('team_id', $workspace->teamsVisibleTo($user)->modelKeys())
+            ->selectRaw('saved_deck_id, count(*) as aggregate')
+            ->groupBy('saved_deck_id')
+            ->pluck('aggregate', 'saved_deck_id');
+
+        return $decks
+            ->map(fn (SavedPokerDeck $deck): array => [
+                'id' => $deck->id,
+                'name' => $deck->name,
+                'cards' => $deck->cards,
+                'usageCount' => (int) ($usageCounts[$deck->id] ?? 0),
+                'canManage' => $canManage,
+            ])
+            ->all();
+    }
+
+    /**
      * @param  array<int, array{title: string, description: ?string, color: string}>  $columns
      */
     private function replaceColumns(WorkspaceTemplate $template, array $columns): void
@@ -95,6 +160,7 @@ class WorkspaceTemplatesController extends Controller
      *     id: string,
      *     name: string,
      *     category: string,
+     *     author: ?string,
      *     columns: array<int, array{title: string, description: ?string, color: string}>
      * }
      */
@@ -104,6 +170,7 @@ class WorkspaceTemplatesController extends Controller
             'id' => $template->id,
             'name' => $template->name,
             'category' => $template->category->value,
+            'author' => $template->creator?->name,
             'columns' => $template->presentColumns(),
         ];
     }

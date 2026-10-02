@@ -188,7 +188,7 @@ it('lists the team decks to the facilitator only', function () {
     $this->actingAs($facilitatorUser)
         ->getJson(route('poker.saved-decks.index', $game))
         ->assertOk()
-        ->assertExactJson([['id' => $deck->id, 'name' => 'Team scale', 'cards' => ['1', '2', '4', '8', '?']]]);
+        ->assertExactJson([['id' => $deck->id, 'name' => 'Team scale', 'cards' => ['1', '2', '4', '8', '?'], 'scope' => 'team']]);
 
     $this->actingAs($memberUser)
         ->getJson(route('poker.saved-decks.index', $game))

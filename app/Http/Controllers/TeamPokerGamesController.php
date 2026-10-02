@@ -34,7 +34,13 @@ class TeamPokerGamesController extends Controller
             'save_deck_as' => ['nullable', ...SavedPokerDeckRules::nameRules($team)],
             'anonymous_votes' => ['sometimes', 'boolean'],
             'auto_reveal' => ['sometimes', 'boolean'],
+            'guest_access_enabled' => ['sometimes', 'boolean'],
+            'spectator' => ['sometimes', 'boolean'],
+            'tasks' => ['sometimes', 'array', 'max:50'],
+            'tasks.*' => ['required', 'string', 'max:200'],
         ]);
+
+        $savedDeck = null;
 
         if ($usesSavedDeck) {
             $savedDeck = SavedPokerDeckRules::findForTeam($team, (string) $validated['saved_deck_id']);
@@ -52,6 +58,10 @@ class TeamPokerGamesController extends Controller
             anonymousVotes: (bool) ($validated['anonymous_votes'] ?? false),
             autoReveal: (bool) ($validated['auto_reveal'] ?? false),
             saveDeckAs: $validated['save_deck_as'] ?? null,
+            savedDeckId: $savedDeck?->id,
+            guestAccessEnabled: (bool) ($validated['guest_access_enabled'] ?? false),
+            spectator: (bool) ($validated['spectator'] ?? false),
+            tasks: array_values($validated['tasks'] ?? []),
         ));
 
         return to_route('poker.show', $game);

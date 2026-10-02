@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Retros;
 
 use App\Actions\Retros\DeleteCard;
 use App\Actions\Retros\EnsureCardGif;
+use App\Actions\Retros\MarkRetroStarted;
 use App\Actions\Retros\PresentCard;
 use App\Actions\Retros\RetroGuard;
 use App\Actions\Retros\UpdateCard;
@@ -29,6 +30,7 @@ class CardsController extends Controller
         private EnsureCardGif $ensureCardGif,
         private UpdateCard $updateCard,
         private DeleteCard $deleteCard,
+        private MarkRetroStarted $markRetroStarted,
     ) {}
 
     public function store(Request $request, Retro $retro): JsonResponse
@@ -71,13 +73,18 @@ class CardsController extends Controller
                 'position' => $position === null ? 0 : $position + 1,
             ]);
 
-            (new CardCreated($locked->id, $this->presentCard->handle($card, $locked, null)))->sendToOthers();
+            $this->markRetroStarted->handle($locked);
+
+            (new CardCreated($locked->id, $this->presentCard->handle($card, $locked, null), $locked->writersCount()))->sendToOthers();
             (new OwnCardSaved($locked->id, $participant->id, $this->presentCard->handle($card, $locked, $participant)))->sendToOthers();
 
             return [$card, $locked];
         });
 
-        return response()->json(['card' => $this->presentCard->handle($card, $presentingRetro, $participant)], 201);
+        return response()->json([
+            'card' => $this->presentCard->handle($card, $presentingRetro, $participant),
+            'writersCount' => $presentingRetro->writersCount(),
+        ], 201);
     }
 
     public function update(Request $request, Retro $retro, Card $card): JsonResponse

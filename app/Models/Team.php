@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\IntegrationProvider;
 use Database\Factories\TeamFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -16,9 +17,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string $id
  * @property string $workspace_id
  * @property string $name
+ * @property string|null $default_poker_deck
+ * @property string|null $default_saved_poker_deck_id
  * @property-read Workspace $workspace
  */
-#[Fillable(['name'])]
+#[Fillable(['name', 'default_poker_deck', 'default_saved_poker_deck_id'])]
 class Team extends Model
 {
     /** @use HasFactory<TeamFactory> */
@@ -71,6 +74,24 @@ class Team extends Model
     public function pokerDecks(): HasMany
     {
         return $this->hasMany(SavedPokerDeck::class);
+    }
+
+    /**
+     * The decks of the team plus the decks of its workspace.
+     *
+     * @return Builder<SavedPokerDeck>
+     */
+    public function availablePokerDecks(): Builder
+    {
+        return SavedPokerDeck::query()->where(function (Builder $query): void {
+            $query->where('team_id', $this->id)->orWhere('workspace_id', $this->workspace_id);
+        });
+    }
+
+    /** @return BelongsTo<SavedPokerDeck, $this> */
+    public function defaultSavedPokerDeck(): BelongsTo
+    {
+        return $this->belongsTo(SavedPokerDeck::class, 'default_saved_poker_deck_id');
     }
 
     /** @return HasMany<GameRoom, $this> */
