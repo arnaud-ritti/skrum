@@ -6,6 +6,8 @@ Each line: the question, the plan's default (what is built if nobody answers), t
 
 **Standing rule of the owner, given after the answers** (spec §5 rule 13): the mockup must be faithfully respected. The answers of this file stand as written. Every other default, and every conflict ruling of the plan, follows the mockup; the plan's "Deviations from the mockup" table lists what cannot. The six decisions still unanswered are not mockup matters (file ownership, ids, a folder), or already follow the mockup. Nothing blocks any more.
 
+**Third round (same day).** The reading of that rule is confirmed, with "rewrite first, features after": an element the server cannot feed is omitted, its place is left, and it becomes a feature of a later plan (`feature-roadmap.md`). Answers that change a row below: 1-D4 — four types in plan 18e (retro, poker, whiteboard, icebreaker); the Poll type arrives with the standalone survey of plan 19. 2-D8 — "+2 min" on every timer (retro, poker, games, whiteboard); poker keeps "Custom…". 3-D3 — usage counts start from now, no backfill. 6-D2 — eight theme colours plus black. 6-D6 — the rooms list is live (team-level games channel). 9-D1 — the Poker tab holds workspace-level decks. 11-D2 — an SSO address the provider does not mark verified is refused even with an invitation (plan 18f). The health-check phase stays through plan 18e and becomes a default survey template in plan 19.
+
 Task ids are those of `2026-10-16-plan-18e-front-rewrite-screens.md`. Brief ids (D1, R3…) are those of `18e-briefs/<nn>-*.md`.
 
 ## Blocking
@@ -39,7 +41,7 @@ Everything else has a default and does not stop the plan. The four blocking ques
 | 1-D1 | Footer button "Create & open" for the three types (today "Start", "Create game", "Create")? | Yes (mockup). 3 poker and 3 whiteboard clicks change. | 1.1–1.3 | no | **Answered.** Default: "Create & open". |
 | 1-D2 | Three triggers (New retrospective, New game, New whiteboard) or one "New session"? | Three triggers, each preselects its type. | 1.1, 4.1 | no | **Answered, ≠ default.** One "New session" trigger; the type is chosen in the dialog. Tasks 1.1 to 1.4, 4.1. |
 | 1-D3 | Full template picker inside the dialog, or five shortcut cards and "Browse"? | Full picker inline. | 1.1 | no | **Answered, ≠ default.** Five shortcut cards and "Browse"; the five are the team's most used templates, with a fixed fallback. Spec B17; tasks 1.0a, 1.1. |
-| 1-D4 | Three session types or the mockup's five (Poll, Icebreaker)? | Three. | 1.1 (five needs two new props on `teams/show`, outside spec §9) | no | **Answered, ≠ default.** Five types: Poll and Icebreaker added. Spec B18; tasks 1.0b, 1.4. |
+| 1-D4 | Three session types or the mockup's five (Poll, Icebreaker)? | Three. | 1.1 (five needs two new props on `teams/show`, outside spec §9) | no | **Answered, ≠ default.** Five types: Poll and Icebreaker added. **Third round:** four types in plan 18e; Poll moves to plan 19. Spec B18; tasks 1.0b, 1.4. |
 | 1-D5 | Add `Deck.source: 'custom'` (badge "This game only") and a `@theme` token for the always-white whiteboard preview paper? | Both. | 1.2, 1.3 (otherwise `P17b-07` is relaxed) | no | **Answered (second round).** Default: both. |
 | 1-D6 | Custom deck field ids: `deck-new-*` in the new-game dialog and `deck-custom-*` in the game settings (two briefs), or one prefix? | One prefix `deck-custom` in both: `#deck-custom-cards` stays as today. | 1.2, 3.1b | no | Not answered: the default stands (element ids). |
 | 1-D7 | Saved decks: three briefs rewrite the dialog, two designs. | One owner (1.2), built on `DeckPicker` as the ScreenPokerQueue mockup shows; labels become "Create a deck", "Edit :name", "Delete :name". | 1.2 (alternative: keep the old labels with a hand-made list, no test change) | no | **Answered (second round).** Mockup labels "Create a deck", "Edit :name", "Delete :name", on the full page of 3-D3. Task 1.5. |
@@ -56,7 +58,7 @@ Everything else has a default and does not stop the plan. The four blocking ques
 | 2-D5 | ROTI is no longer offered in `discussing`. | Confirm. | R11, tests `Plan08d` | BLOCK-2 | **Answered** with BLOCK-2 (confirmed). |
 | 2-D6 | Session-end statistics: duration from when? Participation out of what? | No duration (the server has no start time). Participation = people who joined / team members. | R12 (amendment A3) | no | **Answered, ≠ default.** Duration added, from a new start-time column; shown for new retros only. Participation = joined / team members. Spec B3, B19; tasks R12a, R12. |
 | 2-D7 | Export menu PDF / CSV / Markdown of the session-end mockup. | Not built; added to the backlog. | R12 | no | **Answered.** Backlog (export PDF / CSV / Markdown). |
-| 2-D8 | Timer "+2 min". | Not built (start and stop only). | R3 | no | **Answered, ≠ default.** "+2 min" is built: a new action extends a running timer. Spec B20; tasks R2b, R3. |
+| 2-D8 | Timer "+2 min". | Not built (start and stop only). | R3 | no | **Answered, ≠ default.** "+2 min" is built: a new action extends a running timer. **Third round:** on every timer. Spec B20; tasks R2b, R3, 3.0c, G0e, 7.0b. |
 | 2-D9 | Discussion screen: topics list only (mockup), or topics rail plus the columns? | Topics rail plus the columns view, so card actions and the `retro-column-*` hooks keep a home. | R9 (topics only would change the discussing tests) | no | **Answered, ≠ default.** Topics list only, sorted by votes; each topic keeps its controls (comments, reactions, highlight). Task R9. |
 | 2-D10 | Live cursors in `roti`. | Off (as in voting). | R11 | BLOCK-1 (row of the matrix) | **Answered** with BLOCK-1 (off). |
 | 2-D11 | Guest link moves into the Share dialog; "Create a new link" asks for confirmation. | Accept; the guest-link tests gain one click. | R3 | no | **Answered.** Default for the retro; and with 7-D2 the guest-link controls live in the Share dialog only, on every session type. Tasks R3, 3.1b, G3, 7.2, 7.3. |
@@ -69,7 +71,7 @@ Everything else has a default and does not stop the plan. The four blocking ques
 
 | Id | Question | Default | Tasks affected otherwise | Blocks | Answer (2026-10-02) |
 |---|---|---|---|---|---|
-| 3-D3 | Saved decks stay a dialog on the team page (mockup: a full page with Default, Duplicate, usage)? | Dialog; Default, Duplicate and usage are backlog. | 1.2 | no | **Answered, ≠ default.** Saved decks as a full page: route, default deck, duplicate, usage count. Spec B21; tasks 1.0c, 1.5. |
+| 3-D3 | Saved decks stay a dialog on the team page (mockup: a full page with Default, Duplicate, usage)? | Dialog; Default, Duplicate and usage are backlog. | 1.2 | no | **Answered, ≠ default.** Saved decks as a full page: route, default deck, duplicate, usage count. **Third round:** no backfill of usage. Spec B21; tasks 1.0c, 1.5. |
 | 3-D5 | Spectator "eye" badge in the presence stack. | Dropped (the watching row of the table shows who watches). | 3.1a | no | **Answered.** Default: badge dropped. |
 | 3-D6 | CSV export and the deck, period and "re-voted only" filters of the estimation history. | Backlog (no back end). | 3.3 | no | **Answered.** Backlog. |
 | 3-D7 | Reveal button: "Show votes" (today, 8 tests) or the mockup's "Reveal cards"? | "Show votes". | 3.1a | no | **Answered, ≠ default.** "Reveal cards"; the tests follow. Task 3.1a. |
@@ -109,7 +111,7 @@ Everything else has a default and does not stop the plan. The four blocking ques
 | 6-D3 | ReactionBar in a standalone game room (none today). | Not added; backlog. | G3 | no | **Answered, ≠ default.** ReactionBar in standalone game rooms. Spec B27; tasks G0b, G3. |
 | 6-D4 | Timer durations 1/2/3/5/10 (today) or 1/3/5/10? | Today's (X5). | G3 | no | **Answered by X5, ≠ default.** 1/3/5/10. |
 | 6-D5 | Mark the most voted GIF as "Winner" (derived on the client). | Yes. | G5 | no | **Answered.** Default: "Winner" mark. |
-| 6-D6 | Room status and avatars in the rooms list (needs back end). | Not shown. | G1 | no | **Answered, ≠ default.** Room status and avatars in the rooms list. Spec B28; tasks G0c, G1. |
+| 6-D6 | Room status and avatars in the rooms list (needs back end). | Not shown. | G1 | no | **Answered, ≠ default.** Room status and avatars in the rooms list. **Third round:** live list. Spec B28; tasks G0c, G0d, G1. |
 | 6-D7 | Invite dialog: the existing post-link section, or the full Share dialog? | Existing post-link section in a plain dialog. | G3 | no | **Answered, ≠ default.** Full Share dialog. Task G3. |
 | 6-D8 | Hangman keyboard by locale (AZERTY, QWERTZ, QWERTY) or alphabetical? | By locale. | G3 | no | **Answered.** Default: keyboard by locale. |
 | 6-D9 | Guest nickname: prefilled with the random name (today) or an empty field with the name as placeholder and "Another random nickname" (mockup)? | Prefilled. | G2 (the mockup choice edits `Plan13a` and `Plan13d`) | no | **Answered.** Default: prefilled nickname. |
@@ -139,8 +141,8 @@ Everything else has a default and does not stop the plan. The four blocking ques
 
 | Id | Question | Default | Tasks affected otherwise | Blocks | Answer (2026-10-02) |
 |---|---|---|---|---|---|
-| 9-D1 | Templates page: "Use" button and Poker / Whiteboard tabs. | Omitted. | 9c | no | **Answered, ≠ default.** "Use" (opens session creation with the template) and the Poker / Whiteboard tabs are built. Spec B30; tasks 9.0b, 9c. |
-| 9-D2 | Workspace-only card grid, or the full template picker with the built-ins? | Card grid. | 9c | no | **Answered (second round), ≠ default.** The page includes the built-in templates (full picker), with "Use" and the Poker / Whiteboard tabs. Spec B30; tasks 9.0b, 9c. |
+| 9-D1 | Templates page: "Use" button and Poker / Whiteboard tabs. | Omitted. | 9c | no | **Answered, ≠ default.** "Use" (opens session creation with the template) and the Poker / Whiteboard tabs are built. **Third round:** workspace-level decks. Spec B30; tasks 1.0e, 9.0b, 9c. |
+| 9-D2 | Workspace-only card grid, or the full template picker with the built-ins? | Card grid. | 9c | no | **Answered (second round), ≠ default.** The page includes the built-in templates (full picker), with "Use" and the Poker / Whiteboard tabs. **Third round:** workspace-level decks. Spec B30; tasks 1.0e, 9.0b, 9c. |
 | 9-D4 | Typed-name confirmation for "Delete workspace" and for "Leave" on the members page (mockup shows it for Leave on the workspace page only). | Both. | 9a, 9b | no | **Answered.** Default: typed name for both. |
 | 9-D5 | Revoke an invitation without confirmation. | As today, none. | 9b | no | **Answered (second round), ≠ default.** Revoking asks for confirmation. Task 9b. |
 | 9-D6 | Members page stays for managers only. | Yes. | 9b | no | **Answered (second round).** Default: managers only. |
@@ -162,7 +164,7 @@ Everything else has a default and does not stop the plan. The four blocking ques
 | Id | Question | Default | Tasks affected otherwise | Blocks | Answer (2026-10-02) |
 |---|---|---|---|---|---|
 | 11-D1 | A centred variant of the auth frame for guest join, invitation and notices. | Yes (built in 0.7). | 0.7 | no | Not answered: the default stands; it is what the GuestJoin and invitation mockups show. |
-| 11-D2 | SSO buttons on the invitation page (needs a new prop). | Not added. | 11.5 | no | **Answered, ≠ default.** SSO buttons on the invitation page (`ssoProviders`); accepting through SSO is authentication work, reviewed under plan 18f's security rules. Spec B31; task 11.5. |
+| 11-D2 | SSO buttons on the invitation page (needs a new prop). | Not added. | 11.5 | no | **Answered, ≠ default.** SSO buttons on the invitation page (`ssoProviders`); accepting through SSO is authentication work, reviewed under plan 18f's security rules. **Third round:** an unverified SSO address is refused (plan 18f). Spec B31; tasks 11.5a, 11.5. |
 | 11-D3 | Request id on the 500 page. | Not shown. | 11.7 | no | **Answered (second round), ≠ default.** Request id on the 500 page: generated per request, written to the log, shown. Spec B36; tasks 11.6, 11.7. |
 | 11-D4 | Login aside on a rebranded instance: Skrüm's promise or the brand logo only? | Brand logo only when the instance has its own brand; the promise otherwise. | 11.2 | no | **Answered.** Default: brand logo only on a rebranded instance. |
 | 11-D5 | "Remember me" (mockup says "30 days", which is false). | "Remember me". | 11.2 | no | **Answered (second round).** Default: "Remember me". |

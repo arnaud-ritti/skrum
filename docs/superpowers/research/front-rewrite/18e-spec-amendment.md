@@ -15,4 +15,4 @@ Status: APPLIED on 2026-10-02. The owner approved the amendment in `owner-answer
 | A8 | Corrections of fact | §7 rows 1, 10 and the note under the table; §11; §9 B16 | Yes |
 | A9 | Limits of the error pages | §9 B15 | Changed by the second round: 419 and 429 are design-system error pages, 503 is a static Blade page, and the 500 page shows a request id (11-D3, 11-D7, 11-D10, B36) |
 
-The same revision of the spec added the back-end items B17 to B36 (from the owner's two rounds of answers) and B37 to B45 (from the owner's rule that the mockup is the reference, §5 rule 13), the acceptance criteria 14 to 44 and the open points of §15.
+The same revision of the spec added the back-end items B17 to B36 (from the owner's two rounds of answers) and B37 to B45 (from the owner's rule that the mockup is the reference, §5 rule 13), the acceptance criteria 14 to 44 and the open points of §15. A third round of answers then settled the open points: four session types, "+2 min" on every timer, workspace-level decks, a live rooms list, the security wording of B31 and B33, and the feature roadmap (`feature-roadmap.md`).

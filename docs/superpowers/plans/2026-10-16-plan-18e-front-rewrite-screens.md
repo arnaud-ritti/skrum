@@ -8,15 +8,15 @@
 
 **Tech Stack:** Laravel 13, PHP 8.4, Pest 5 (feature, arch, browser), Inertia 3, React 19, Tailwind 4, vite-plus (Vitest), Wayfinder, Reverb, dnd-kit, frimousse, live-cursors, live-reactions, Excalidraw 0.18.1.
 
-**Spec:** `docs/superpowers/specs/2026-10-01-front-rewrite-design.md` as amended on 2026-10-02 — §4 to §13; rule 13 of §5; row 18e of §12; §9.1 (B1 matrix), §9.2 (B17 to B36) and §9.3 (B37 to B45); the open points of §15. The amendment `18e-spec-amendment.md` is folded into the spec; that file is now a pointer.
+**Spec:** `docs/superpowers/specs/2026-10-01-front-rewrite-design.md` as amended on 2026-10-02 — §4 to §13; rule 13 of §5; row 18e of §12; §9.1 (B1 matrix), §9.2 (B17 to B36) and §9.3 (B37 to B45); the four open points of §15. The amendment `18e-spec-amendment.md` is folded into the spec; that file is now a pointer.
 
 **Research base (requirements of each screen task):** `docs/superpowers/research/front-rewrite/18e-briefs/01-session-creation.md` … `12-landing.md`. A brief holds the parity table (one row per action of the old front), the composition, the adapters, the realtime landing points, the mockup elements not rendered, the browser-test contract and the risks of its group. Also `notes-for-18e.md` (component interfaces as built in 18b+18c) in the same research folder. **The briefs were written before the owner's answers and before rule 13. Where a brief and this plan differ, this plan wins**; in particular a brief's section 6 ("Mockup elements not rendered") is replaced by the tables "Defaults flipped to the mockup" and "Deviations from the mockup" below.
 
-**Owner decisions:** `docs/superpowers/research/front-rewrite/18e-owner-decisions.md`, answered on 2026-10-02 in two rounds (`owner-answers-2026-10-02.md`). The plan is written for the answers. After them the owner gave a standing rule, "the mockup must be faithfully respected" (spec §5 rule 13): every default the owner did not answer follows the mockup.
+**Owner decisions:** `docs/superpowers/research/front-rewrite/18e-owner-decisions.md`, answered on 2026-10-02 in two rounds (`owner-answers-2026-10-02.md`). The plan is written for the answers. After them the owner gave a standing rule, "the mockup must be faithfully respected" (spec §5 rule 13): every default the owner did not answer follows the mockup. A third round confirmed the reading of that rule and added "rewrite first, features after": what the server cannot feed is omitted here, its place is left, and it becomes a feature of a later plan (`docs/superpowers/research/front-rewrite/feature-roadmap.md`).
 
-**Not in this plan:** ⌘K search, bell wiring, magic link, e-mail code, e-mails, the instance setting `sso_required` (B33), the user preferences `recap_emails` (B34) and `single_key_shortcuts` with the shortcuts `G`, `F`, `C`, `⇧R`, `⌘→` (B35), the global shortcut registry (18f); the security review of B31 (18f); `knip` clean-up, removal of unused dependencies, the three greps over the whole tree, and the rewrite of any old view component still imported at the end of this plan (18g); any mockup element listed in spec §10 or in the "Deviations from the mockup" table.
+**Not in this plan:** ⌘K search, bell wiring, magic link, e-mail code, e-mails, the instance setting `sso_required` (B33), the user preferences `recap_emails` (B34) and `single_key_shortcuts` with the shortcuts `G`, `F`, `C`, `⇧R`, `⌘→` (B35), the global shortcut registry (18f); the security review of B31 (18f); `knip` clean-up, removal of unused dependencies, the three greps over the whole tree, and the rewrite of any old view component still imported at the end of this plan (18g); the Poll session type, the standalone survey and the health check as a survey template (plan 19); the rebuilt whiteboard toolbars (their own plan); any mockup element listed in spec §10 or in the "Deviations from the mockup" table, each of which is a row of the feature roadmap or stays backlog.
 
-**Tasks:** 102 (the first version had 73). Step A (single writer): 42 — Task 0: 15; Group 1: 9; Group 2: 18. Step B (lanes): 57 — lane S: 2; lane P: 7; lane T: 10; lane G: 9 (G6 runs on lane S); lane W: 6; lane K: 5; lane A: 8; lane X: 9; lane L: 1. Final: 3. Of the 102, 25 are back-end tasks without a screen (1.0a to 1.0d, R2a, R2b, R2c, R12a, 3.0a, 3.0b, 4.0a to 4.0d, 5.0, G0a to G0c, 7.0, 9.0a, 9.0b, 10.0, 11.5a, 11.6, 12.1) and 5 carry both a back-end change and its screen (R1, R10, R11, 1.5, 11.7).
+**Tasks:** 107 (the first version had 73). Step A (single writer): 43 — Task 0: 15; Group 1: 10; Group 2: 18. Step B (lanes): 61 — lane S: 2; lane P: 8; lane T: 10; lane G: 11 (G6 runs on lane S); lane W: 7; lane K: 5; lane A: 8; lane X: 9; lane L: 1. Final: 3. Of the 107, 30 are back-end tasks without a screen (1.0a to 1.0e, R2a, R2b, R2c, R12a, 3.0a to 3.0c, 4.0a to 4.0d, 5.0, G0a to G0e, 7.0, 7.0b, 9.0a, 9.0b, 10.0, 11.5a, 11.6, 12.1) and 5 carry both a back-end change and its screen (R1, R10, R11, 1.5, 11.7).
 
 ## Branch and run
 
@@ -31,8 +31,8 @@ The four spec gates of the first version of this plan are gone: the owner approv
 | Gate | Condition | Stops |
 |---|---|---|
 | G-visual-<group> | Human visual review of the group's captures, side by side with the mockups (rule 13) | merge of the next group on the same lane; the phase report |
-| G-deviations | The owner approves the table "Deviations from the mockup" | the phase report (F3). A row the owner refuses becomes a task (and a §9 item when it needs back end) before F2 |
-| G-open-points | The owner reads spec §15 | nothing; an answer that differs from the choice made is a change request on the task it names |
+| G-deviations | The owner approved the reading behind the table "Deviations from the mockup" (third round). The gate now checks, at F2, that every difference found by step 7 of a screen has a row | the phase report (F3). A difference without a row is fixed, or becomes a row and a feature of the roadmap with the owner's word |
+| G-open-points | The owner reads the four points of spec §15 (workspace decks, team games channel, "+2 min" maxima, the administrators' password form). The seventeen points of the first version are answered | nothing; an answer that differs from the choice made is a change request on 1.0e, G0d, the timer-extension tasks, or plan 18f |
 
 ## Global Constraints
 
@@ -50,7 +50,7 @@ Rules of spec §5, verbatim. They are acceptance criteria for every commit.
 10. **i18n**: no fixed width on a label. The literal call shape `t('…')` is kept, because `TranslationKeysTest` scans for it.
 11. **Presentational components**: typed props, no network, no Echo, no Inertia router or page-prop access. Those live in hooks and containers. Two exceptions: `useTrans()` for labels and Inertia's `<Link>` for navigation.
 12. The values in `docs/design-system/app.css` are not modified. Additions to `@theme` are allowed for sizes missing from the scale.
-13. **The mockup is the reference.** A screen follows its mockup faithfully: layout, placement, labels, component structure, states. The owner's written answers stand as written. Everything else follows the mockup; a browser test that contradicts the mockup changes, in the commit of its screen, and the plan lists it. When the mockup shows data that the server holds but does not expose, the prop or the route is added to §9 with a task; the element is not omitted. The only deviations allowed are: a statement that would be false or unsafe; the accessibility rules of this section; and data or a concept the product does not have at all. Each deviation is a row of the "Deviations from the mockup" table of this plan. Each screen task ends with a side-by-side comparison of its captures with the mockup's `preview.html`, in light and dark, at 390 and 1440, and lists the differences that remain.
+13. **The mockup is the reference.** A screen follows its mockup faithfully: layout, placement, labels, component structure, states. The owner's written answers stand as written. Everything else follows the mockup; a browser test that contradicts the mockup changes, in the commit of its screen, and the plan lists it. When the mockup shows data that the server holds but does not expose, the prop or the route is added to §9 with a task; the element is not omitted. The only deviations allowed are: a statement that would be false or unsafe; the accessibility rules of this section; and data or a concept the product does not have at all. Each deviation is a row of the "Deviations from the mockup" table of this plan. Rewrite first, features after: an omitted element becomes a feature of a later plan, and the screen leaves its place. Each screen task ends with a side-by-side comparison of its captures with the mockup's `preview.html`, in light and dark, at 390 and 1440, and lists the differences that remain.
 
 Two documented exceptions to rule 1, both canvas data and not theme (spec ruling 36): the drawing ink of Draw & Guess (`lib/games/drawing.ts`: black, the eight theme colours, the five legacy colours of old drawings, and the white eraser; pixel-tested) and the always-white paper of the whiteboard template preview (a named `@theme` token, decision 1-D5).
 
@@ -88,6 +88,7 @@ Every screen task (all tasks of Step A after Task 0, and all tasks of Step B, ex
 - [ ] **Step 1: Read.** The brief section named by the task (parity rows, composition, adapters, tests), the mockup README and `preview.html`, the old page and components about to be deleted, and the source of each `skrum/` component used (props are in the source, not in the README). List what the mockup shows on this screen; each element is built, or is a row of "Deviations from the mockup". An element that is neither is reported before any code is written.
 - [ ] **Step 2: Failing tests first.** Write the Vitest files named by the task (adapters, container logic) and the new browser tests; run them and see them fail for the expected reason.
 - [ ] **Step 3: Build** the containers and the thin page; the page renders its layout (see Task 0.2) and is added to `ownLayoutPages` in `resources/js/lib/page-layouts.ts`.
+- [ ] **Step 3b: Leave the places.** The task's line "Places left" names the mockup elements of this screen that a later plan builds (feature roadmap). For each, the layout keeps its region: a named slot of the container (a prop of type `ReactNode`, undefined today), or an empty grid area, so that the later feature fills it without moving anything else. Nothing is rendered in it: no disabled control, no "coming soon". The slot's name is written in `18e-report/<group>.md` under "Places left".
 - [ ] **Step 4: Parity check.** Walk the brief's parity table row by row against the running page; every row has its control. Copy the table, with a "done" column, into `docs/superpowers/research/front-rewrite/18e-report/<group>.md` (the phase report is assembled from these files).
 - [ ] **Step 5: Edit the browser tests listed** under "Browser tests changed", and no other.
 - [ ] **Step 6: Bench and captures.** Add `resources/js/pages/dev/sections/<name>.tsx` for composed surfaces and a visual test `tests/Browser/Visual/<Group>VisualTest.php` on the pattern of `AdminPagesVisualTest.php` (`captureVisuals`, light and dark, 390 and 1440, EN and FR, overflow check). Screenshots go to `tests/visual/__screenshots__/`.
@@ -100,7 +101,7 @@ At the end of each group: the controller runs `bin/test-browser` and the PHP sui
 
 ## Back-end task procedure
 
-Every back-end task (ids `1.0a` to `1.0d`, `R2a`, `R2b`, `R2c`, `R12a`, `3.0a`, `3.0b`, `4.0a` to `4.0d`, `5.0`, `G0a` to `G0c`, `7.0`, `9.0a`, `9.0b`, `10.0`, `11.5a`, `11.6`, `12.1`, and the back-end half of `R1`, `R10`, `R11`, `1.5`, `11.7`) follows these steps. It changes no screen: the prop or route it adds is consumed by the screen task named in its "Consumed by" line.
+Every back-end task (ids `1.0a` to `1.0e`, `R2a`, `R2b`, `R2c`, `R12a`, `3.0a` to `3.0c`, `4.0a` to `4.0d`, `5.0`, `G0a` to `G0e`, `7.0`, `7.0b`, `9.0a`, `9.0b`, `10.0`, `11.5a`, `11.6`, `12.1`, and the back-end half of `R1`, `R10`, `R11`, `1.5`, `11.7`) follows these steps. It changes no screen: the prop or route it adds is consumed by the screen task named in its "Consumed by" line.
 
 - [ ] **Step 1: Read** the spec item (§9.2 or §9.3) and its acceptance criterion in §13, then the controller, action, policy, model, factory and existing feature test the task names. Check sibling files for the convention.
 - [ ] **Step 2: Failing feature test first** (Pest, `tests/Feature/<Domain>/…`, created with `vendor/bin/sail artisan make:test --pest <Name> --no-interaction`). One test per sentence of the acceptance criterion, plus the authorisation failures the task lists. Models come from factories. Run it; it fails for the expected reason.
@@ -119,23 +120,23 @@ Failure modes the spec implies and that are most likely to reach a user. Each is
 3. **A JSON client that meets an error after B15** (`retroRequest` reading 401, 403, 404, 410, 419, 429; the MCP server), **and a 500 or a 503 while the database is down** — JSON answers are unchanged; the error page renders without shared props; the 503 page is static. Pinned in 11.7 (feature tests).
 4. **Long content at 390 px in French or German**: a 120-character title, nine phases, a timer, twelve people in the session header; a 7-column table; FR labels 30% longer — no horizontal scroll, every control reachable. Pinned in Task 0.14 (bench capture with overflow check) and each group's visual test.
 5. **A user with no workspace, or a member of a workspace with no team, on the new `AppLayout` and on `/dashboard`** — the sidebar renders, "Create a workspace" is reachable, the redirect of B22 does not loop. Pinned in 9a (`[P18e-09-03]`), 4.1 (`[P18e-04-07]`) and 4.0a (feature tests).
-6. **Stored data that meets a changed palette or enum** — a `green` column (B10), a drawing in `red` (B26), a board made from a built-in template before B29, a retro without `started_at` (B19), a game created from a saved deck before `saved_deck_id` (B21). Each still renders and none is rewritten except where the spec says so. Pinned in R1, G0a, 7.0, R12a and 1.0c (feature tests named there).
+6. **Stored data that meets a changed palette or enum** — a `green` column (B10), a drawing in `red` (B26), a board made from a built-in template before B29, a retro without `started_at` (B19), a game created from a saved deck before `saved_deck_id` (B21: not counted, by decision). Each still renders and none is rewritten except where the spec says so. Pinned in R1, G0a, 7.0, R12a and 1.0c (feature tests named there).
 7. **Data shown to someone who holds only a link** — the guest-join pages (B45) and the invitation page (B31, B44) send their new props for a valid token only, and never a participant's vote, score or e-mail. Pinned in R2a and 11.5a (feature tests).
 
 ## Dependency graph
 
 ```
 Task 0 (0.1 → 0.15)                                    single writer
-  └─ Group 1 (1.0a, 1.0b, 1.0c, 1.0d → 1.1 → 1.2 → 1.3 → 1.4 → 1.5)
+  └─ Group 1 (1.0a, 1.0b, 1.0c → 1.0e, 1.0d → 1.1 → 1.2 → 1.3 → 1.4 → 1.5)
        └─ Group 2 (R1, R2a → R2, R2b, R2c → R3 → R4 … R8, R8b, R9, R10, R11, R12a → R12, R13)
             │
             ├─ Lane S   Group 8 surveys (S1 → S2)                       needs R13
             │             └─ G6 (icebreaker stage)                       needs S2 and G5
-            ├─ Lane P   Group 3 poker (3.0a, 3.0b → 3.1a → 3.1b → 3.1c → 3.2 → 3.3)
+            ├─ Lane P   Group 3 poker (3.0a, 3.0b, 3.0c → 3.1a → 3.1b → 3.1c → 3.2 → 3.3)
             ├─ Lane T   Group 4 team (4.0a, 4.0b, 4.0c, 4.0d → 4.1 → 4.2 → 4.3)   needs Group 1
             │             └─ Group 5 action items (5.0 → 5.2 → 5.3)     needs R12 and 4.1
-            ├─ Lane G   Group 6 games (G0a, G0b, G0c → G1, G2, G3 → G4 → G5) → G6 on lane S
-            ├─ Lane W   Group 7 whiteboard (7.0 → 7.1 → 7.2 → 7.3 → 7.4 → 7.5)
+            ├─ Lane G   Group 6 games (G0a, G0b, G0c → G0d, G0e → G1, G2, G3 → G4 → G5) → G6 on lane S
+            ├─ Lane W   Group 7 whiteboard (7.0, 7.0b → 7.1 → 7.2 → 7.3 → 7.4 → 7.5)
             ├─ Lane K   Group 9 workspace (9.0a, 9.0b → 9a → 9b → 9c)    needs R1 and Group 1
             ├─ Lane A   Group 11 access (11.1 → 11.2 → 11.3 → 11.4 → 11.5a → 11.5, 11.6 → 11.7)
             │             └─ Lane X  Group 10 settings (10.0 → 10.1 … 10.8)   10.2 needs 11.1 and 10.0
@@ -144,7 +145,7 @@ Task 0 (0.1 → 0.15)                                    single writer
                  └─ F1 shared deletions → F2 full gates → F3 phase report
 ```
 
-Back-end tasks come first in their group or lane and are independent of one another, except where an arrow says otherwise: R2a before R2 (the join page reads `session`), R2b and R2c before R3 and R4 (the timer reads the extension route, the Writing banner reads `writersCount`), R12a before R12, 11.5a before 11.5, 11.6 before 11.7 (the 500 page reads the request id), 10.0 before 10.2.
+Back-end tasks come first in their group or lane and are independent of one another, except where an arrow says otherwise: R2a before R2 (the join page reads `session`), R2b and R2c before R3 and R4 (the timer reads the extension route, the Writing banner reads `writersCount`), R12a before R12, 11.5a before 11.5, 11.6 before 11.7 (the 500 page reads the request id), 10.0 before 10.2, 1.0c before 1.0e (both migrate `poker_decks` and the default-deck columns), G0c before G0d (the channel sends the summary G0c extends), 3.0c before 3.1a, G0e before G3, 7.0b before 7.2 (each timer reads its extension route).
 
 Parallel: lanes P, T, G, W, K, A, L and S may run at the same time in separate worktrees. Sequential inside a lane. Sequential across lanes: 5 after 4.1 (same test file `Plan09bActionItemsAdditionsTest.php`), 10.2 after 11.1 (`PasswordField`), G6 after S2 (both edit the retro board mounts), 9c after Group 1 ("Use" opens the dialog of 1.1 through `useNewSessionIntent`), 3.2, G2 and 7.1 after R2a (the three join pages read the `session` prop that R2a adds for the four types), F1 after every lane.
 
@@ -157,10 +158,11 @@ Parallel: lanes P, T, G, W, K, A, L and S may run at the same time in separate w
 | `resources/js/app.tsx` | 0.2, F1 | no other task edits it |
 | `resources/js/layouts/skrum/app-layout.tsx` | 0.15 (topbar `actions` slot) | read by 5.2 and the admin shell; no other edit |
 | `resources/css/app.css` | 1.3 (preview paper token), 7.2 and 7.4 (Excalidraw block, lines 477–546), any task adding a `@theme` size | additions only, outside the Excalidraw block except lane W |
-| `routes/web.php` | 1.0c, R2b, 12.1 | additions next to the routes of the same resource; union on merge |
-| `app/Http/Controllers/TeamsController.php` (`show`) | 1.0a, 1.0b, 1.0c (Step A), then 4.0b, 4.0c, 4.0d (lane T) | one prop per task, each with its own action; sequential by construction |
+| `routes/web.php` | 1.0c, 1.0e, 1.5, R2b, 3.0c, G0e, 7.0b, 12.1 | additions next to the routes of the same resource; union on merge |
+| `app/Http/Controllers/BroadcastAuthorizationsController.php` | G0d (the `private-team-games.` branch) | no other task edits it |
+| `app/Http/Controllers/TeamsController.php` (`show`) | 1.0a, 1.0b, 1.0c, 1.0e (Step A), then 4.0b, 4.0c, 4.0d (lane T) | one prop per task, each with its own action; sequential by construction |
 | `app/Http/Middleware/HandleInertiaRequests.php` | 9.0a (`workspaces[].teamsCount`, `role`) | no other task edits it |
-| `database/migrations/*` | 1.0c, R1, R11, R12a, G0b | one file per task; timestamps in task order |
+| `database/migrations/*` | 1.0c, 1.0e, R1, R11, R12a, G0b | one file per task; timestamps in task order |
 | `resources/js/components/session/*` | written in Task 0; read by groups 2, 3, 6, 7 | a fix goes in its own commit `fix(session): …` on `plan-18e-screens`, then lanes rebase |
 | `resources/js/components/skrum/*` | fixes: 0.3 (`connection-state` hint), 0.5 (`timer` add label), 0.10, 0.11, 0.12, 0.13 (leaderboard, form dialog, share dialog, gif picker), 1.2 (`deck-picker`), R1 (colour unions), R4 (`retro-card` label), S1 (`survey-question`), R2 (`guest-join` session lines and sticky action) | a group that needs a fix in a component it does not own reports it; no silent edit |
 | `resources/js/components/teams/session-create/*`, `use-new-session-intent.ts` | Group 1; read by 4.1 and, through the URL, by 9c | 4.1 mounts the dialog and does not edit it |
@@ -191,6 +193,7 @@ One table for the controller; each line is repeated under its task. "Confirm" me
 | Answer | What changes in the tests | Files | Task |
 |---|---|---|---|
 | 1-D2 one "New session" trigger | `click('New retrospective')` → `click('New session')` (Retrospective is the preselected type); `click('New game')` → `click('New session')` then the type radio "Planning poker"; `button:text-is("New whiteboard")` → `click('New session')` then the type radio "Whiteboard" | `Plan04` (1), `Plan08a` (3), `Plan08b` (1), `Plan08e` (3), `Plan13d` (1); `Plan10a` (2), `Plan10b` (1); `Plan17a` (1), `Plan17b` (8, with the helper `p17bCreateBoard`) | 1.1, 1.2, 1.3 |
+| 1-D4 four types (third round) | no test change: the Poll type is not built; the type radios are Retrospective, Planning poker, Whiteboard, Icebreaker | — | 1.1, 1.4 |
 | 1-D3 shortcuts and "Browse" | a test that searches, filters by category or opens the "My workspace" tab clicks "Browse" first; a test that picks one of the five shortcut templates does not | `Plan08a` `P08a-01a`, `01b`, `03` | 1.1 |
 | 1-D8 dialog confirmation | `div.bg-muted button:text-is("Delete")` and the text "Delete this template?" → `[role="alertdialog"]` and its "Delete" button | `Plan17b` (manager tests) | 1.3 |
 | 3-D3 saved decks page, 1-D7 labels | `click('Saved decks')` opens a page, not a dialog: `[role="dialog"]` scopes go; "New deck" → "Create a deck"; "Edit deck" / "Delete deck" → "Edit :name" / "Delete :name" | `Plan10b` `P10b-01`, `02a`, `02b` | 1.5 |
@@ -279,48 +282,48 @@ What the first version of this plan left out or did differently, and now builds 
 | M29 | Share dialog | link and channels | QR code with "Download" (the component draws it; no back end) | none | 0.12 |
 | M30 | Admin › Branding (18d) | sub-navigation of two entries, bar in the content, 20rem preview, three image cards, text warning, Reset card | the mockup's admin navigation column, bar in the topbar, 27.5rem preview with the mockup's content, one logo drop zone, warning with two swatches, Reset as a header button | none | 0.15 |
 
-## Deviations from the mockup (for the owner's approval, gate G-deviations)
+## Deviations from the mockup (gate G-deviations)
 
-Reasons: **F** false or unsafe statement; **A** accessibility rule of spec §5; **N** the product has no such data or concept (spec §10 backlog); **S** an approved spec decision; **O** an owner's answer. Only F, A and N are deviations in the sense of rule 13; S and O rows are listed so that the comparison of step 7 has a row for every difference. A row of kind S is the one the owner should look at first: the spec was approved before rule 13.
+Reasons: **F** false or unsafe statement; **A** accessibility rule of spec §5; **N** the product has no such data or concept; **S** an approved spec decision; **O** an owner's answer. The owner read the first version of this table on 2026-10-02 (third round): the reading of rule 13 is confirmed, D-01, D-02 and D-04 are kept by decision, D-03 stands until plan 19, and the toolbars of D-21 are a plan of their own after 18e. "Rewrite first, features after": the last column names the feature of `research/front-rewrite/feature-roadmap.md` that later builds the element, and the screen leaves its place (procedure step 3b). "Backlog" means the owner did not ask for it.
 
-| # | Screen | Mockup element not built, or built differently | Reason |
-|---|---|---|---|
-| D-01 | Reaction bar | the picker also offers "More emoji…" (full emoji search), which the mockup's picker lacks | S: goal 2, no feature lost |
-| D-02 | Session timer, poker | the menu keeps "Custom…" beside 1/3/5/10 | S: goal 2 (spec §15 point 4) |
-| D-03 | Retro | the optional Health check phase appears in the stepper; the mockups have none | S: spec §4 |
-| D-04 | Retro, Actions | "Close the retro" in the FacilitatorBar; built: "Next phase" to ROTI | S: ruling 26 |
-| D-05 | Session header | the topbar connection state is hidden from assistive technology; the banner is the only announcement | A |
-| D-06 | Session creation | the Sessions page behind the dialog, "Schedule…" | N (§10: Sessions index, scheduling) |
-| D-07 | Session creation | "Max per card", "Timer per phase", "Timer per task", "Change vote after reveal", "ROTI at the end" switch, "Write estimates to Jira" select, the Jira import tab | N (§10: per-phase timers, Jira JQL import; no per-card cap, no revote flag; ROTI is always a phase, spec §6.4) |
-| D-08 | Session creation | invitation link and "Copy link" inside the dialog; built: the guest switch, and the link in the Share dialog once the session exists | F: the link does not exist before creation |
-| D-09 | Session creation | one "New session" trigger; no per-type tiles on the team page | O: 1-D2 |
-| D-10 | Retro, Writing and Grouping | "is writing…", "is moving a card…" indicators; Pause; "Reveal the cards" as a button separate from the next phase; duplicate detection; "Undo last group" | N (§10); the cards are revealed by the phase change |
-| D-11 | Retro, Voting | "max 2 per card", "5/8 have finished", "I have finished voting" | N (§10) |
-| D-12 | Retro, Discussion | per-topic timer and time estimates, shared notes, "8/8 following", "discussed" flag, action count per topic | N (§10; an action item is not linked to a card) |
-| D-13 | Retro, Actions | bulk "Export to Jira" | N (§10) |
-| D-14 | Retro, ROTI | distribution hidden until "Reveal ROTI"; "Nudge the last 2"; built: the distribution is shown at session end | N (§10; no reveal state) |
-| D-15 | Retro, session end | Export menu PDF / CSV / Markdown; ROTI delta and sparkline | O: 2-D7; N (§10) |
-| D-16 | Poker room | ticket type, labels, acceptance criteria, Jira description; spectator eye in presence; role and expiry in the Share dialog | N (§10); O: 3-D5 |
-| D-17 | Estimation history | deck, period and "re-voted only" filters; Export CSV | O: 3-D6 |
-| D-18 | Team page | "Invite", sprint name and next retro, the mixed "recent sessions" table, the aggregated open actions, the activity feed, participant / card / action counts on a retro card, member role badge, whiteboard thumbnails | N (§10) |
-| D-19 | Action items | grouping by sprint (built: by team, assignee, status); selection and bulk bar; filters priority, due date, source; status "In progress"; topbar "Export"; whiteboard and survey sources | N (§10); O: 5-D4 |
-| D-20 | Games | "needs n more players" in the rooms list (no game has a minimum); the four games the engine does not have; the settings card (themes, time per turn, auto hints); turn order, "round n of m", "found by" chips; Redo and "New word"; the emoji riddle bank; GIF captions, two votes, podium, "Pin to the retro"; duration on a game card | N |
-| D-21 | Whiteboard | the rebuilt vertical toolbar, selection bar, zoom and minimap; comments, "convert to actions", "follow"; sticky authors | S: spec §3 and rulings 5, 29; N (§10) |
-| D-22 | Surveys | the multi-question builder, scale and NPS questions, builder settings, compare, CSV, "send to whiteboard"; the standalone participant page | N (§10) |
-| D-23 | Surveys | "Add survey" in the settings popover only; no "Anonymous" badge | O: 8-D2, 8-D3 |
-| D-24 | Workspace | team description and activity lines; template usage, visibility, defaults; poker template settings; workspace-level decks (built: the team's saved decks, by team) | N (§10) |
-| D-25 | User settings | presence colours, photo upload, "Reduce animations", other notification events, breach check and "last changed", active sessions, linked accounts, "Change device", revoked-token rows | N (§10; revoked tokens are deleted) |
-| D-26 | Security | the Print button of the recovery codes | O: 10-D3 |
-| D-27 | Team settings | tabs other than Team and Integrations | N (§10) |
-| D-28 | Login, register | "Remember me for 30 days" (built: "Remember me"); "Free up to 10 participants"; the terms sentence; "Privacy · Terms"; "Team name" on register; version in the footer | F (the duration is wrong; the instance has no plan, terms or privacy page); N (§10: version check) |
-| D-29 | Login | the magic-link button and tab | built in plan 18f (B12); 11.2 leaves their place |
-| D-30 | Invitation | team name and colour, inviter's message, "Decline", "already in n teams" | N (an invitation is to a workspace; §10) |
-| D-31 | Error pages | "Instance status" and "Help" links; the access request of the 403 page; "Back at" and the admin message of the 503 page | F (no such pages); N (§10) |
-| D-32 | Guest join | colour picker, short code | N (§10) |
-| D-33 | Onboarding | the four-step onboarding | N (§10) |
-| D-34 | `/` | the landing page | O: BLOCK-3 |
-| D-35 | Admin | sections other than Branding and Admins; the version line | N (§10) |
-| D-36 | Whiteboard, phone | the read mode is a local view mode, not a permission | N (spec §15 point 13) |
+| # | Screen | Mockup element not built, or built differently | Reason | Later |
+|---|---|---|---|---|
+| D-01 | Reaction bar | the picker also offers "More emoji…" (full emoji search), which the mockup's picker lacks | O: kept (third round) | stays |
+| D-02 | Session timer, poker | the menu keeps "Custom…" beside 1/3/5/10 | O: kept (third round) | stays |
+| D-03 | Retro | the optional Health check phase appears in the stepper; the mockups have none | S: spec §4; O: stands until plan 19 | SV-5 |
+| D-04 | Retro, Actions | "Close the retro" in the FacilitatorBar; built: "Next phase" to ROTI | O: kept (third round) | stays |
+| D-05 | Session header | the topbar connection state is hidden from assistive technology; the banner is the only announcement | A | stays |
+| D-06 | Session creation | the Sessions page behind the dialog, "Schedule…" | N | SE-1, SE-2 |
+| D-07 | Session creation | "Max per card", "Timer per phase", "Timer per task", "Change vote after reveal", "Write estimates to Jira" select, the Jira import tab; the "ROTI at the end" switch | N | SE-3 (with RT-3); the ROTI switch: backlog (ROTI is always a phase, spec §6.4) |
+| D-08 | Session creation | invitation link and "Copy link" inside the dialog; built: the guest switch, and the link in the Share dialog once the session exists | F: the link does not exist before creation | stays |
+| D-09 | Session creation | one "New session" trigger, no per-type tiles on the team page; four types, no Poll | O: 1-D2; O: third round | SV-1 (Poll) |
+| D-10 | Retro, Writing and Grouping | "is writing…", "is moving a card…" indicators; Pause; "Reveal the cards" as a button separate from the next phase; duplicate detection; "Undo last group" | N | RT-1, RT-2; the last three: backlog |
+| D-11 | Retro, Voting | "max 2 per card", "5/8 have finished", "I have finished voting" | N | RT-3, RT-4 |
+| D-12 | Retro, Discussion | per-topic timer and time estimates, shared notes, "discussed" flag, action count per topic; "8/8 following" | N | RT-5, RT-6, RT-7, RT-8; "following" count: backlog |
+| D-13 | Retro, Actions | bulk "Export to Jira" | N | RT-10 |
+| D-14 | Retro, ROTI | distribution hidden until "Reveal ROTI"; "Nudge the last 2"; built: the distribution is shown at session end | N | RT-9 |
+| D-15 | Retro, session end | Export menu PDF / CSV / Markdown; ROTI delta and sparkline | O: 2-D7; N | backlog (not requested) |
+| D-16 | Poker room | ticket type, labels, acceptance criteria, Jira description; spectator eye in presence; role and expiry in the Share dialog | N; O: 3-D5 | PK-1; the eye and the share roles: backlog |
+| D-17 | Estimation history | deck, period and "re-voted only" filters; Export CSV | O: 3-D6 | backlog (not requested) |
+| D-18 | Team page | "Invite", sprint name and next retro, the mixed "recent sessions" table, the aggregated open actions, the activity feed, participant / card / action counts on a retro card, member role badge, whiteboard thumbnails | N | IN-4, TM-1 to TM-7 |
+| D-19 | Action items | grouping by sprint (built: by team, assignee, status); selection and bulk bar; filters priority, due date, source; status "In progress"; topbar "Export"; whiteboard and survey sources | N; O: 5-D4 | AI-1 to AI-4; sprint grouping with TM-1; other sources with WB-5 and SV-1 |
+| D-20 | Games | the four games the engine does not have; the settings card (themes, time per turn, auto hints); turn order, "round n of m"; GIF captions, two votes, podium; "needs n more players", "found by" chips, Redo and "New word", the emoji riddle bank, "Pin to the retro", duration on a game card | N | GM-1 to GM-4; from "needs n more players" on: backlog |
+| D-21 | Whiteboard | the rebuilt vertical toolbar, selection bar, zoom and minimap; comments, "convert to actions", "follow"; sticky authors | S: spec §3 and rulings 5, 29; O: a separate plan after 18e; N | WB-1; WB-2 to WB-5 |
+| D-22 | Surveys | the multi-question builder, scale and NPS questions, compare, CSV; the standalone participant page; builder settings (anonymity modes, close date, threshold), "send to whiteboard" | N | SV-1 to SV-4; the builder settings and "send to whiteboard": backlog |
+| D-23 | Surveys | "Add survey" in the settings popover only; no "Anonymous" badge | O: 8-D2, 8-D3 | stays |
+| D-24 | Workspace | team description and activity lines; template usage and visibility; template defaults and poker template settings | N | WS-1, WS-2, TM-4; defaults and settings: backlog |
+| D-25 | User settings | presence colours, photo upload, "Reduce animations", breach check, active sessions, linked accounts; other notification events, "last changed", "Change device", revoked-token rows | N | AC-1 to AC-6; the rest: backlog |
+| D-26 | Security | the Print button of the recovery codes | O: 10-D3 | stays |
+| D-27 | Team settings | tabs other than Team and Integrations | N | WS-3 |
+| D-28 | Login, register | "Remember me for 30 days" (built: "Remember me"); "Free up to 10 participants"; the terms sentence; "Privacy · Terms"; "Team name" on register; version in the footer | F; N | backlog (not requested) |
+| D-29 | Login | the magic-link button and tab | built in plan 18f (B12); 11.2 leaves their place | plan 18f |
+| D-30 | Invitation | team name and colour, inviter's message, "Decline"; "already in n teams" | N | IN-1, IN-2, IN-3; the last: backlog |
+| D-31 | Error pages | "Instance status" link; the access request of the 403 page; "Back at" and the admin message of the 503 page; the version line; "Help" link | F; N | AD-2 to AD-5; "Help": backlog |
+| D-32 | Guest join | colour picker, short code | N | GU-1, GU-2 |
+| D-33 | Onboarding | the four-step onboarding | N | ON-1 |
+| D-34 | `/` | the landing page | O: BLOCK-3 | stays |
+| D-35 | Admin | sections other than Branding and Admins; the version line | N | AD-1, AD-2 |
+| D-36 | Whiteboard, phone | the read mode is a local view mode, not a permission | N (as written in the spec, confirmed) | stays |
 
 ---
 
@@ -1095,9 +1098,9 @@ export type SessionTimerProps = {
     /** Given only to who may start and stop (the facilitator, the host). */
     onStart?: (seconds: number) => void;
     onStop?: () => void;
-    /** Poker only: opens its custom-duration dialog (deviation D-02). */
+    /** Poker only: opens its custom-duration dialog (kept by the owner beside 1/3/5/10). */
     onCustom?: () => void;
-    /** Retro only (B20): adds two minutes to the running timer. Shown as "+2 min" while a timer runs. */
+    /** B20, the four session types: adds two minutes to the running timer. Shown as "+2 min" while a timer runs. */
     onExtend?: () => void;
     /** false in a game room: it shows <TimeUpBadge> instead of a toast. */
     alarm?: boolean;
@@ -1765,6 +1768,8 @@ In `realtime/flying-reactions.tsx`, replace the roster, bucket and transport cod
 
 ### Task 0.7: Centred auth frame, access notice and the guest-join page
 
+**Places left (feature roadmap):** the colour picker and the short code of the guest-join card (GU-1, GU-2): `GuestJoin` already has the props `takenColors` and `session.code`; the page passes neither.
+
 **Files:**
 - Modify: `resources/js/components/skrum/frames.tsx:168-223` (`AuthFrame`), `resources/js/components/skrum/frames.test.tsx`
 - Modify: `resources/js/layouts/skrum/auth-layout.tsx`, `resources/js/layouts/skrum/auth-layout.test.tsx`
@@ -2241,6 +2246,8 @@ The section renders `SessionShell` with every slot filled at its worst case: a 1
 
 ### Task 0.15: Admin pages of plan 18d in line with the mockup; topbar actions slot
 
+**Places left (feature roadmap):** the other entries of the admin navigation column and the version line under the host (AD-1, AD-2): the navigation takes its entries from a list.
+
 Rule 13 applies to the screens already built. The differences are listed in `.superpowers/sdd/2026-10-15-plan-18d-front-rewrite-branding/reports/integrator.md` under "Differences with the mockup"; the mockup is ScreenSettings frame b (Branding block). This task follows the screen task procedure.
 
 **Read first:** that report section; `docs/design-system/` ScreenSettings README and `preview.html`, frame b; `resources/js/components/admin/admin-shell.tsx` and the files of `components/admin/`; `resources/js/pages/admin/branding.tsx`, `admin/admins.tsx`; `tests/Browser/Walkthroughs/Plan18dBrandingTest.php`, `tests/Browser/Visual/AdminPagesVisualTest.php`.
@@ -2279,9 +2286,9 @@ Rule 13 applies to the screens already built. The differences are listed in `.su
 
 ## Group 1 — Session creation (after Task 0)
 
-Brief: `18e-briefs/01-session-creation.md`. Layout: none changes (a dialog over `teams/show`, which stays on the old layout until 4.1). Nine tasks: four back-end tasks, then the dialog shell with the retro form, the poker form, the whiteboard form, the Poll and Icebreaker forms, and the saved decks page. The brief's fourth commit (C4, "New room") is done by G1 (K9). Constraint K20: no colour literal in this group (fixtures and the editable column list take colours from `serverColumnColors`).
+Brief: `18e-briefs/01-session-creation.md`. Layout: none changes (a dialog over `teams/show`, which stays on the old layout until 4.1). Ten tasks: five back-end tasks, then the dialog shell with the retro form, the poker form, the whiteboard form, the Icebreaker form, and the saved decks page. The brief's fourth commit (C4, "New room") is done by G1 (K9). Constraint K20: no colour literal in this group (fixtures and the editable column list take colours from `serverColumnColors`).
 
-What the owner changed in this group: one "New session" trigger and the type chosen in the dialog (1-D2); five shortcut cards and "Browse" (1-D3); five types (1-D4); the saved decks as a page (3-D3); the templates manager confirming in a dialog (1-D8). What rule 13 added: the editable column list, the guest switch, the poker tasks and "Watch only" (M1 to M3).
+What the owner changed in this group: one "New session" trigger and the type chosen in the dialog (1-D2); five shortcut cards and "Browse" (1-D3); four types, the Poll type arriving with plan 19 (1-D4, third round); workspace-level decks (third round); the saved decks as a page (3-D3); the templates manager confirming in a dialog (1-D8). What rule 13 added: the editable column list, the guest switch, the poker tasks and "Watch only" (M1 to M3).
 
 ### Task 1.0a: Most used retro templates of the team (B17) — back end
 
@@ -2309,26 +2316,24 @@ One grouped query over `retros` (`team_id`, `template`, `workspace_template_id`,
 
 **Consumed by:** 1.1. **Run:** `vendor/bin/sail artisan test --compact tests/Feature/Retros/TopTeamTemplatesTest.php tests/Feature/Teams`. **Commit:** `feat(teams): most used retro templates of the team (B17)`
 
-### Task 1.0b: Poll and Icebreaker session types (B18) — back end
+### Task 1.0b: Icebreaker session type (B18) — back end
 
-**Read first:** spec §9.2 B18, criterion 15, §15 point 1; `app/Http/Controllers/TeamRetrosController.php`, `app/Actions/Retros/CreateRetro.php`, `NewRetro.php`; `app/Http/Controllers/TeamGameRoomsController.php` (`index`: `gameOptions`, `canCreate`, `roomLimit`); `tests/Feature/Retros/CreateRetroTest.php`.
+**Read first:** spec §9.2 B18, criterion 15; `app/Http/Controllers/TeamGameRoomsController.php` (`index`: `gameOptions`, `canCreate`, `roomLimit`), `TeamsController@show`, `tests/Feature/Teams/TeamsTest.php`.
 
-**Files:**
-- Modify: `app/Http/Controllers/TeamRetrosController.php` (the `poll` field and the redirect), `app/Http/Controllers/TeamsController.php` (`gameOptions`, `canCreateGameRoom`, `roomLimit`), the props type of `teams/show`
-- Create: `tests/Feature/Retros/CreatePollTest.php`; extend `tests/Feature/Teams/TeamsTest.php`
+**Files:** modify `app/Http/Controllers/TeamsController.php` (`gameOptions`, `canCreateGameRoom`, `roomLimit`), the props type of `teams/show`; extend `tests/Feature/Teams/TeamsTest.php`.
 
-**What changes:** `store` adds `'poll' => ['sometimes', 'boolean']` to its rules. When `poll` is true: `template` must equal `TemplateCatalogue::Custom` (otherwise a validation error on `template`, "A poll starts from an empty board."), `health_check_enabled` and `icebreaker_enabled` are forced to false, and the redirect is `to_route('retros.show', [$retro, 'survey' => 'new'])`. Nothing is stored that says "poll": it is a retro without columns. Before writing, confirm that `TemplateCatalogue::find('custom')` has no column; if it has any, stop and report (the poll would then need the `columns` field of 1.0d). `TeamsController@show` adds `gameOptions` (`$gameRulesRegistry->options(new GameRoom(['team_id' => $team->id]))`), `canCreateGameRoom` (`can('createGameRoom', $team)` and fewer than `GameRoom::MaxRoomsPerTeam` standalone rooms) and `roomLimit`.
+**What changes:** `TeamsController@show` adds `gameOptions` (`$gameRulesRegistry->options(new GameRoom(['team_id' => $team->id]))`), `canCreateGameRoom` (`can('createGameRoom', $team)` and fewer than `GameRoom::MaxRoomsPerTeam` standalone rooms) and `roomLimit`. No route changes: the Icebreaker type posts to the existing `teams.games.store`. Nothing is added for a poll: the Poll type is the standalone survey of plan 19 and `TeamRetrosController` is not touched by this task.
 
-**Feature tests (written first):** `poll` with `custom` creates a retro with no column and redirects to the board with `survey=new`; `poll` with `sailboat` is refused with an error on `template`; `poll` ignores `health_check_enabled` and `icebreaker_enabled`; without `poll` the redirect has no query (existing tests stay green); a user without `createRetro` gets 403; `teams/show` carries `gameOptions` with the same shape as `games/index`, and `canCreateGameRoom` is false at the room limit and for a user who may not create a room.
+**Feature tests (written first):** `teams/show` carries `gameOptions` with the same shape as `games/index`; `canCreateGameRoom` is false at the room limit and for a user who may not create a room; `roomLimit` equals `GameRoom::MaxRoomsPerTeam`.
 
-**Consumed by:** 1.4. **Run:** `vendor/bin/sail artisan test --compact tests/Feature/Retros/CreatePollTest.php tests/Feature/Retros/CreateRetroTest.php tests/Feature/Teams`. **Commit:** `feat(teams): poll and icebreaker session types (B18)`
+**Consumed by:** 1.4. **Run:** `vendor/bin/sail artisan test --compact tests/Feature/Teams`. **Commit:** `feat(teams): icebreaker session type props (B18)`
 
 ### Task 1.0c: Default deck, duplicate and usage of saved decks (B21) — back end
 
-**Read first:** spec §9.2 B21, criterion 18, §15 point 5; `app/Http/Controllers/PokerDecksController.php`, `app/Policies/PokerDeckPolicy.php`, `app/Actions/Poker/SavedPokerDeckRules.php` (`nameRules`, `ensureRoom`, `findForTeam`, `MaxDecks`), `app/Actions/Poker/CreatePokerGame.php`, `NewPokerGame.php`, `app/Http/Controllers/TeamPokerGamesController.php`, `app/Http/Controllers/Poker/PokerSettingsController.php:85-100`, `app/Http/Controllers/Whiteboards/WhiteboardDuplicatesController.php` (the convention for a "duplicate" controller), `database/migrations/2026_10_03_100100_create_poker_decks_table.php`, `tests/Feature/Poker/SavedPokerDecksTest.php`, `PokerSavedDeckGamesTest.php`.
+**Read first:** spec §9.2 B21, criterion 18 (usage counts start from the change: no backfill, third round); `app/Http/Controllers/PokerDecksController.php`, `app/Policies/PokerDeckPolicy.php`, `app/Actions/Poker/SavedPokerDeckRules.php` (`nameRules`, `ensureRoom`, `findForTeam`, `MaxDecks`), `app/Actions/Poker/CreatePokerGame.php`, `NewPokerGame.php`, `app/Http/Controllers/TeamPokerGamesController.php`, `app/Http/Controllers/Poker/PokerSettingsController.php:85-100`, `app/Http/Controllers/Whiteboards/WhiteboardDuplicatesController.php` (the convention for a "duplicate" controller), `database/migrations/2026_10_03_100100_create_poker_decks_table.php`, `tests/Feature/Poker/SavedPokerDecksTest.php`, `PokerSavedDeckGamesTest.php`.
 
 **Files:**
-- Create: a migration `add_default_deck_and_usage_to_poker_tables` (up only): `teams.default_poker_deck` (`string(30)`, nullable), `teams.default_saved_poker_deck_id` (`foreignUuid`, nullable, `constrained('poker_decks')`, `nullOnDelete`), `poker_games.saved_deck_id` (same shape); then the backfill: for each game with `deck = 'custom'` and a `deck_name`, the id of the deck of the same team whose `lower(name)` equals `lower(deck_name)`
+- Create: a migration `add_default_deck_and_usage_to_poker_tables` (up only): `teams.default_poker_deck` (`string(30)`, nullable), `teams.default_saved_poker_deck_id` (`foreignUuid`, nullable, `constrained('poker_decks')`, `nullOnDelete`), `poker_games.saved_deck_id` (same shape). No backfill: a game created before the migration keeps `saved_deck_id` null and counts for no deck
 - Create: `app/Http/Controllers/TeamDefaultPokerDecksController.php` (`update`), `app/Http/Requests/DefaultPokerDeckUpdateRequest.php`, `app/Http/Controllers/PokerDeckDuplicatesController.php` (`store`)
 - Create: `tests/Feature/Poker/DefaultPokerDeckTest.php`, `PokerDeckDuplicateTest.php`, `PokerDeckUsageTest.php`
 - Modify: `app/Models/Team.php`, `PokerGame.php`, `SavedPokerDeck.php` (fillable, PHPDoc, relations `defaultSavedPokerDeck()`, `savedDeck()`, `games()`), their factories; `app/Actions/Poker/NewPokerGame.php` (`?string $savedDeckId = null`), `CreatePokerGame.php`, `TeamPokerGamesController.php` (passes the saved deck's id), `PokerSettingsController.php` (sets or clears `saved_deck_id` with the deck); `TeamsController.php` (`defaultPokerDeck`); `routes/web.php` (next to line 246); the props type of `teams/show`
@@ -2353,9 +2358,38 @@ Route::post('teams/{team}/poker-decks/{pokerDeck}/duplicate', [PokerDeckDuplicat
 
 `TeamDefaultPokerDecksController@update` writes one column and nulls the other; a `saved_deck_id` is resolved with `SavedPokerDeckRules::findForTeam` (404 for a deck of another team). `PokerDeckDuplicatesController@store` authorises `create` on `[SavedPokerDeck::class, $team]`, locks the team as `PokerDecksController@store` does, calls `SavedPokerDeckRules::ensureRoom`, and creates the copy named `__('Copy of :name', …)` cut to 40 characters, with " 2", " 3"… appended (and the base cut further) while the name is taken; it answers `back()`.
 
-**Feature tests (written first):** default — a member without `update` on the team gets 403; a built-in value is stored and clears the saved id; a saved deck of the team is stored and clears the built-in; `custom`, both fields, and a deck of another team are refused; deleting the default saved deck leaves both columns null; `teams/show` carries `defaultPokerDeck`. Duplicate — the copy has the same cards and the name "Copy of Fibonacci+"; a second copy is "Copy of Fibonacci+ 2"; a 40-character name still yields a valid, unique 40-character name; refused at `MaxDecks`; 403 for a user who cannot view the team. Usage — a game created from a saved deck stores `saved_deck_id`; changing its deck in the settings clears it; **the migration backfills a game created before it whose `deck_name` matches a deck of its team, and leaves a game of another team alone** (Review Focus 6).
+**Feature tests (written first):** default — a member without `update` on the team gets 403; a built-in value is stored and clears the saved id; a saved deck of the team is stored and clears the built-in; `custom`, both fields, and a deck of another team are refused; deleting the default saved deck leaves both columns null; `teams/show` carries `defaultPokerDeck`. Duplicate — the copy has the same cards and the name "Copy of Fibonacci+"; a second copy is "Copy of Fibonacci+ 2"; a 40-character name still yields a valid, unique 40-character name; refused at `MaxDecks`; 403 for a user who cannot view the team. Usage — a game created from a saved deck stores `saved_deck_id`; changing its deck in the settings clears it; **a game that existed before the migration, created from a deck of the same name, has `saved_deck_id` null and is not counted** (Review Focus 6).
 
 **Consumed by:** 1.2 (preselection), 1.5 (page). **Run:** `vendor/bin/sail artisan test --compact tests/Feature/Poker tests/Feature/Teams`; `php artisan wayfinder:generate`. **Commit:** `feat(poker): default deck, duplicate and usage of saved decks (B21)`
+
+### Task 1.0e: Workspace-level decks (B30) — back end
+
+**Read first:** spec §9.2 B30 ("Workspace decks"), criterion 27, §15 point 1; `database/migrations/2026_10_03_100100_create_poker_decks_table.php` (the team index and the unique index on `lower(name)`), `app/Models/SavedPokerDeck.php`, `app/Policies/PokerDeckPolicy.php`, `app/Actions/Poker/SavedPokerDeckRules.php` (`nameRules`, `ensureRoom`, `findForTeam`, `MaxDecks`), `app/Http/Controllers/PokerDecksController.php`, `WorkspaceWhiteboardTemplatesController.php` (the convention of a workspace-owned resource), `TeamsController::pokerDecks()`, `app/Http/Controllers/Poker/PokerSavedDecksController.php`, the files of 1.0c.
+
+**Files:**
+- Create: a migration `add_workspace_to_poker_decks_table` (up only): `foreignUuid('workspace_id')->nullable()->constrained()->cascadeOnDelete()`; `team_id` becomes nullable; on PostgreSQL, a check constraint `(team_id is null) <> (workspace_id is null)` and `create unique index poker_decks_workspace_name_unique on poker_decks (workspace_id, lower(name)) where workspace_id is not null` (the same `DB::getDriverName()` guard as the existing migration)
+- Create: `app/Http/Controllers/WorkspacePokerDecksController.php` (`store`, `update`, `destroy`), `app/Http/Requests/WorkspacePokerDeckRequest.php`, `tests/Feature/Poker/WorkspacePokerDecksTest.php`
+- Modify: `SavedPokerDeck.php` (`workspace()` relation, `isWorkspaceDeck(): bool`, PHPDoc, fillable), its factory (state `forWorkspace(Workspace $workspace)`), `app/Models/Workspace.php` (`pokerDecks()`), `PokerDeckPolicy.php`, `SavedPokerDeckRules.php` (`findForTeam` accepts a deck of the team's workspace; `nameRules` and `ensureRoom` gain a workspace variant), `TeamsController::pokerDecks()`, `PokerSavedDecksController@index`, `TeamDefaultPokerDecksController` (a workspace deck of the team's workspace is a valid default), `routes/web.php` (next to line 354), the deck types in `resources/js/types/poker.ts`
+
+**Interfaces — produces:**
+
+```php
+// routes, inside the workspace group
+Route::post('poker-decks', [WorkspacePokerDecksController::class, 'store'])->name('workspaces.pokerDecks.store');
+Route::patch('poker-decks/{pokerDeck}', [WorkspacePokerDecksController::class, 'update'])->name('workspaces.pokerDecks.update')->whereUuid('pokerDeck');
+Route::delete('poker-decks/{pokerDeck}', [WorkspacePokerDecksController::class, 'destroy'])->name('workspaces.pokerDecks.destroy')->whereUuid('pokerDeck');
+
+// PokerDeckPolicy
+public function createForWorkspace(User $user, Workspace $workspace): bool; // $user->canManage($workspace)
+// manage(): a workspace deck is managed by who canManage its workspace; a team deck as today
+// a deck reached through a route of another workspace, or of a team of another workspace, is 404
+```
+
+Every deck list gains `scope` (`'team'` or `'workspace'`); a workspace deck's `canManage` is true for a workspace manager only. `WorkspacePokerDeckRequest` holds the rules of `PokerDecksController@store` (name, cards, the two special-card flags), with the name unique in the workspace; `authorize()` calls the policy. The limit is `SavedPokerDeckRules::MaxDecks` per workspace, checked under a lock of the workspace row, as the team controller locks the team.
+
+**Feature tests (written first):** a workspace manager creates, renames and deletes a workspace deck; a plain member gets 403 on the three; a deck of workspace A is 404 through the routes of workspace B; the name is unique per workspace, case-insensitive, and may equal a team deck's name; the limit; a workspace deck is listed, with `scope: 'workspace'`, on `teams/show` of every team of the workspace and in the game settings list, and on no team of another workspace; a game is created from it (`saved_deck_id` set); a team takes it as its default, and deleting it clears that default; a row with both owners, or with none, is refused by the database on PostgreSQL; the existing `SavedPokerDecksTest` stays green.
+
+**Consumed by:** 1.2, 1.5, 3.1b, 9.0b, 9c. **Run:** `vendor/bin/sail artisan test --compact tests/Feature/Poker tests/Feature/Teams`; `php artisan wayfinder:generate`. **Commit:** `feat(poker): workspace-level decks (B30)`
 
 ### Task 1.0d: Session creation options the mockup shows (B37) — back end
 
@@ -2385,13 +2419,15 @@ Route::post('teams/{team}/poker-decks/{pokerDeck}/duplicate', [PokerDeckDuplicat
 'guest_access_enabled' => ['sometimes', 'boolean'],
 ```
 
-`WorkspaceTemplateRequest` writes its limit as the literal `max:10` (line 29); this task gives it the constant `public const MaxColumns = 10`, uses it there, and reuses it here, so that a template and a retro cannot drift. `CreateRetro` uses `columns` in place of the template's when it is given; `retros.template` keeps the chosen key. `CreatePokerGame` creates the tasks in order through `AddPokerTask` and sets `is_spectator` on the creator's player. A poll (1.0b) with `columns` is refused.
+`WorkspaceTemplateRequest` writes its limit as the literal `max:10` (line 29); this task gives it the constant `public const MaxColumns = 10`, uses it there, and reuses it here, so that a template and a retro cannot drift. `CreateRetro` uses `columns` in place of the template's when it is given; `retros.template` keeps the chosen key. `CreatePokerGame` creates the tasks in order through `AddPokerTask` and sets `is_spectator` on the creator's player.
 
 **Feature tests (written first):** a retro created with three columns has those three, in order, with their colours, and the template key it was given; an unknown colour, an empty title and one column too many are refused; `guest_access_enabled` is stored on the three session types and is false by default; a game created with `spectator` has its creator watching; `tasks` creates the tasks in order with positions 0…n; 51 titles and a 201-character title are refused; the existing creation tests stay green.
 
 **Consumed by:** 1.1, 1.2, 1.3. **Run:** `vendor/bin/sail artisan test --compact tests/Feature/Retros/CreateRetroTest.php tests/Feature/Poker/CreatePokerGameTest.php tests/Feature/Whiteboards/CreateWhiteboardTest.php`. **Commit:** `feat(teams): guest access, columns, tasks and watch-only at session creation (B37)`
 
 ### Task 1.1: New session dialog shell with the retro form
+
+**Places left (feature roadmap):** in the right settings column, the rows "Max per card" and "Timer per phase" (SE-3, RT-3); in the footer, "Schedule…" beside "Create & open" (SE-2); the Poll tile (SV-1). `SettingRow`s come from a list and the footer takes a `secondaryAction` slot.
 
 **Read first:** brief 01 §3 rows 1–19, 53, 54; §4 (`new-session-dialog`, `retro-session-fields`, `setting-row`, `lib/retro/template-adapter.ts`); §8. ScreenSessionCreate README and `preview.html`, retro variant: type tiles, left column (name, template shortcuts, columns list), right settings, footer.
 
@@ -2407,7 +2443,7 @@ Route::post('teams/{team}/poker-decks/{pokerDeck}/duplicate', [PokerDeckDuplicat
 - Produces:
 
 ```ts
-export type SessionType = 'retro' | 'poker' | 'whiteboard' | 'poll' | 'icebreaker';
+export type SessionType = 'retro' | 'poker' | 'whiteboard' | 'icebreaker';
 
 /** One trigger, one dialog. A type is offered when its form is passed; a type whose form is passed with `disabledReason` is shown disabled with that reason. */
 export function NewSessionDialog(props: {
@@ -2417,7 +2453,6 @@ export function NewSessionDialog(props: {
     retro?: RetroSessionForm;
     poker?: PokerSessionForm;          // 1.2
     whiteboard?: WhiteboardSessionForm; // 1.3
-    poll?: PollSessionForm;            // 1.4
     icebreaker?: IcebreakerSessionForm; // 1.4
 }): ReactElement;
 
@@ -2431,7 +2466,7 @@ export function SettingRow(props: { label: string; htmlFor: string; help?: strin
 export function RetroColumnsEditor(props: { value: DraftColumn[]; onChange: (columns: DraftColumn[]) => void; max: number; errors?: Record<string, string> }): ReactElement;
 ```
 
-**Composition (the mockup, element by element):** type tiles on top (Retrospective preselected). Left column: Name; the template radiogroup of five shortcut cards from `topTemplates`, then "Browse", which opens the full `RetroTemplatePicker` (search, categories, tabs Built-in / My workspace, detail) in place of the shortcuts, with "Back" to return; under it the columns of the chosen template as an editable list (`RetroColumnsEditor`: reorder handle with keyboard support, title, colour radiogroup, "Add a column", delete), sent as `columns` only when the user changed something. Right column: switches Anonymous cards, Health check, Anonymous guests allowed (`guest_access_enabled`); stepper Votes per person (with "Automatic"); Icebreaker at the start with its game select; the AI summary row (no mockup: placed last, in the same row style); checkbox "Save as team template", shown to who may manage templates, which posts the edited columns to `workspaces.templates.store` and then creates the retro from the new template. Footer: Cancel, "Create & open". Not built, with their row in "Deviations": Max per card, Timer per phase, ROTI at the end (D-07), the invitation link inside the dialog (D-08), the Sessions page behind (D-06).
+**Composition (the mockup, element by element):** type tiles on top (Retrospective preselected): four types. The mockup's fifth tile, Poll, is not rendered; `SessionTypePicker` receives its options as a list, so plan 19 adds the entry and its form without touching the dialog (place left: the `poll` form prop is simply absent from `NewSessionDialog` today). Left column: Name; the template radiogroup of five shortcut cards from `topTemplates`, then "Browse", which opens the full `RetroTemplatePicker` (search, categories, tabs Built-in / My workspace, detail) in place of the shortcuts, with "Back" to return; under it the columns of the chosen template as an editable list (`RetroColumnsEditor`: reorder handle with keyboard support, title, colour radiogroup, "Add a column", delete), sent as `columns` only when the user changed something. Right column: switches Anonymous cards, Health check, Anonymous guests allowed (`guest_access_enabled`); stepper Votes per person (with "Automatic"); Icebreaker at the start with its game select; the AI summary row (no mockup: placed last, in the same row style); checkbox "Save as team template", shown to who may manage templates, which posts the edited columns to `workspaces.templates.store` and then creates the retro from the new template. Footer: Cancel, "Create & open". Not built, with their row in "Deviations": Max per card, Timer per phase, ROTI at the end (D-07), the invitation link inside the dialog (D-08), the Sessions page behind (D-06).
 
 **Browser tests changed** (imposed by ScreenSessionCreate, by `RetroTemplatePicker/README.md`, and by the owner's answers 1-D1, 1-D2, 1-D3):
 - Trigger (1-D2): `click('New retrospective')` → `click('New session')` in `Plan04RetroCoreTest.php` (1), `Plan08aFlowAndTemplatesTest.php` (3), `Plan08bHealthCheckTest.php` (1), `Plan08eLlmTest.php` (3), `Plan13dIcebreakerScoresInvitesTest.php` (1). Retrospective is preselected, so no type click is added.
@@ -2448,6 +2483,8 @@ export function RetroColumnsEditor(props: { value: DraftColumn[]; onChange: (col
 
 ### Task 1.2: Poker form on DeckPicker and DeckEditor
 
+**Places left (feature roadmap):** the third Tasks tab "Import from Jira", and the rows "Change vote after reveal", "Timer per task", "Write estimates to Jira" (SE-3): the tabs and the rows come from lists.
+
 **Read first:** brief 01 §3 rows 20–35; §4 (`poker-session-fields`, `lib/poker/deck-adapter.ts`). ScreenSessionCreate, poker variant: deck radio with value preview, Tasks tabs, switches, footer.
 
 **Files:**
@@ -2458,7 +2495,7 @@ export function RetroColumnsEditor(props: { value: DraftColumn[]; onChange: (col
 - Not touched: `resources/js/components/teams/saved-decks-dialog.tsx` (replaced by the page in 1.5)
 
 **Interfaces:**
-- Consumes: `NewSessionDialog` (1.1), `DeckPicker` (`onCreate`, `Deck.canManage`), `DeckEditor` (`idPrefix`, `nameRequired`, `saveLabel`, `errors`), `deckShapeFromCards`; props `defaultPokerDeck` (1.0c); fields `guest_access_enabled`, `spectator`, `tasks` (1.0d).
+- Consumes: `NewSessionDialog` (1.1), the deck lists of 1.0e (team and workspace decks, the latter with a "Workspace" badge), `DeckPicker` (`onCreate`, `Deck.canManage`), `DeckEditor` (`idPrefix`, `nameRequired`, `saveLabel`, `errors`), `deckShapeFromCards`; props `defaultPokerDeck` (1.0c); fields `guest_access_enabled`, `spectator`, `tasks` (1.0d).
 - Produces: `toDeck(option: PokerDeckOption): Deck`, `toSavedDeck(saved: SavedPokerDeck): Deck`, `customDeckToPayload(draft): Record<string, unknown>`, `serverErrorsToDeckErrors(errors): { name?: string; values?: string }`, `initialDeckId(decks: Deck[], defaultPokerDeck, intentDeck?: string): string`; `lib/poker/deck-payload.ts` exports for 3.1b. Custom deck editor uses `idPrefix="deck-custom"` (1-D6): `#deck-custom-cards` (unchanged), `#deck-custom-unknown`, `#deck-custom-coffee`, `#deck-custom-name`.
 
 **Composition:** Name; deck radiogroup (built-in and saved decks, the team's default preselected, a deck named by `?deck=` wins) with the value preview and "Create a deck" (a one-off deck, or a saved one when named); Tasks with two tabs, "Type them" (one title per line, 50 at most, a counter) and "Later" (preselected); switches Auto reveal, Facilitator "Watch only" (`spectator`), Anonymous votes (no mockup: same row style), Anonymous guests allowed; footer "Create & open". Not built: the Jira import tab, "Change vote after reveal", "Timer per task", "Write estimates to Jira" (D-07), "Schedule…" (D-06).
@@ -2501,27 +2538,29 @@ export function RetroColumnsEditor(props: { value: DraftColumn[]; onChange: (col
 
 **Commit:** `feat(session-create): whiteboard form and template gallery, templates manager`
 
-### Task 1.4: Poll and Icebreaker forms
+### Task 1.4: Icebreaker form
 
-**Read first:** spec §9.2 B18, §15 point 1; ScreenSessionCreate (the five type tiles); `resources/js/components/games/new-room-dialog.tsx` (the fields a room needs; G1 rewrites that dialog, this task does not touch it); `resources/js/components/retro/board.tsx` and `survey-dialog.tsx` (how the survey editor is opened today).
+**Read first:** spec §9.2 B18; ScreenSessionCreate (the type tiles); `resources/js/components/games/new-room-dialog.tsx` (the fields a room needs; G1 rewrites that dialog, this task does not touch it).
 
 **Files:**
-- Create: `resources/js/components/teams/session-create/poll-session-fields.tsx`, `icebreaker-session-fields.tsx` and their tests
-- Modify: `resources/js/pages/teams/show.tsx` (passes the two forms), `resources/js/components/retro/board.tsx` (opens the survey editor once when the URL has `survey=new` and the viewer is the facilitator, then removes the query)
+- Create: `resources/js/components/teams/session-create/icebreaker-session-fields.tsx` and its test
+- Modify: `resources/js/pages/teams/show.tsx` (passes the form)
 
 **Interfaces:**
-- Consumes: `NewSessionDialog` (1.1); props `gameOptions`, `canCreateGameRoom`, `roomLimit`, `canCreateRetro` (1.0b); `IcebreakerGameGrid` / `IcebreakerGameCard`; `TeamRetrosController.store` with `poll: true, template: 'custom'`; `TeamGameRoomsController.store`.
-- Produces: `PollSessionForm`, `IcebreakerSessionForm`; `useSurveyIntent(): boolean` in `components/retro/` (true once when `?survey=new`), which R3 keeps when it rewrites the board and S1 wires to the new editor.
+- Consumes: `NewSessionDialog` (1.1); props `gameOptions`, `canCreateGameRoom`, `roomLimit` (1.0b); `IcebreakerGameGrid` / `IcebreakerGameCard`; `TeamGameRoomsController.store`.
+- Produces: `IcebreakerSessionForm`.
 
-**Composition:** Poll — Name, a sentence saying that the poll opens on its first question, "Create & open". Icebreaker — Name, the game as cards (unavailable games disabled with their reason), Access; the tile is disabled with "This team already has :count game rooms." at the room limit and hidden for a user who may not create a room.
+**Composition:** Name, the game as cards (unavailable games disabled with their reason), Access; the tile is disabled with "This team already has :count game rooms." at the room limit and absent for a user who may not create a room.
+
+**Places left (feature roadmap):** the Poll tile and its form (SV-1).
 
 **Browser tests changed:** none.
 
-**New tests:** `[P18e-01-17]` Poll: the board opens with the survey editor, the first question is created and answered by a guest; `[P18e-01-18]` Icebreaker: the room opens on the chosen game; at the room limit the tile is disabled with its reason. Vitest: the two forms' payloads; `useSurveyIntent` reads and clears the query.
+**New tests:** `[P18e-01-18]` Icebreaker: the room opens on the chosen game; at the room limit the tile is disabled with its reason; the dialog offers four types and no Poll. Vitest: the form's payload.
 
-**Run:** `tests/Feature/Retros/CreatePollTest.php`; browser `Plan18eSessionCreateTest.php`, `Plan08cSurveysTest.php` (the board's survey flow is unchanged), `Plan13aGamesFoundationTest.php`.
+**Run:** browser `Plan18eSessionCreateTest.php`, `Plan13aGamesFoundationTest.php`.
 
-**Commit:** `feat(session-create): poll and icebreaker types`
+**Commit:** `feat(session-create): icebreaker type`
 
 ### Task 1.5: Saved decks page
 
@@ -2533,11 +2572,11 @@ export function RetroColumnsEditor(props: { value: DraftColumn[]; onChange: (col
 - Modify: `resources/js/pages/teams/show.tsx` ("Saved decks" becomes a link to the page), `tests/Browser/Visual/SessionCreateVisualTest.php` (captures of the page)
 - Delete: `resources/js/components/teams/saved-decks-dialog.tsx`
 
-**Interfaces — `index` props:** `workspace`, `team`, `builtInDecks` (`key`, `name`, `cards`, `isDefault`, `usageCount`), `savedDecks` (`id`, `name`, `cards`, `isDefault`, `usageCount`, `canManage`), `canCreate`, `canSetDefault`, `deckLimit`. `usageCount` through `withCount('games')` for saved decks and one grouped query on `poker_games.deck` for the built-ins; with no stored default, the first built-in deck has `isDefault`.
+**Interfaces — `index` props:** `workspace`, `team`, `builtInDecks` (`key`, `name`, `cards`, `isDefault`, `usageCount`), `savedDecks` (`id`, `name`, `cards`, `scope`, `isDefault`, `usageCount`, `canManage`: the team's decks and the workspace's, 1.0e), `canCreate`, `canSetDefault`, `deckLimit`. `usageCount` counts this team's games only, from the change on (no backfill), through `withCount('games')` for saved decks and one grouped query on `poker_games.deck` for the built-ins; with no stored default, the first built-in deck has `isDefault`.
 
 **Feature tests (written first):** a team member gets the page with the built-in and saved decks; 403 for a user who cannot view the team; `isDefault` follows the two columns and falls back to the first built-in; `usageCount` counts the team's games only; `canManage` is true for the creator and a workspace admin; `canSetDefault` follows `update` on the team.
 
-**Composition:** a grid of deck cards: name, value preview, "Used n times", "Default" badge; a built-in card shows a lock and "Duplicate" (posts its cards to `teams.pokerDecks.store` under "Copy of :name"); a saved card shows "Edit :name", "Duplicate" (`teams.pokerDecks.duplicate.store`), "Delete :name" (with confirmation) when `canManage`; "Set as default" on any card when `canSetDefault`; "Create a deck" opens `DeckEditor` (`idPrefix="deck-new"`).
+**Composition:** a grid of deck cards: name, value preview, "Used n times", "Default" badge; a built-in card shows a lock and "Duplicate" (posts its cards to `teams.pokerDecks.store` under "Copy of :name"); a saved card shows "Edit :name", "Duplicate" (`teams.pokerDecks.duplicate.store`), "Delete :name" (with confirmation) when `canManage`; a workspace deck carries the badge "Workspace", is edited here only by a workspace manager, and its "Duplicate" makes a team deck; "Set as default" on any card when `canSetDefault`; "Create a deck" opens `DeckEditor` (`idPrefix="deck-new"`).
 
 **Browser tests changed** (imposed by ScreenPokerQueue and the answers 3-D3, 1-D7): `Plan10bPokerAdditionsTest.php` `P10b-01` (60-100), `02a` (120-160), `02b` (160-190): `click('Saved decks')` opens a page (`assertPathEndsWith('/poker-decks')`), the `[role="dialog"]` scopes of the list go; "New deck" → "Create a deck"; chip selector → the card's preview values; "Edit deck" / "Delete deck" → "Edit :name" / "Delete :name"; the deletion is confirmed in `[role="alertdialog"]`; the `#deck-new-*` ids of the editor are unchanged.
 
@@ -2551,7 +2590,7 @@ export function RetroColumnsEditor(props: { value: DraftColumn[]; onChange: (col
 
 ## Group 2 — Retro (after Group 1)
 
-Brief: `18e-briefs/02-retro.md`. Eighteen tasks; R2a, R2b, R2c and R12a are back-end tasks. What the owner changed in this group: "+2 min" (2-D8), the topics-only discussion (2-D9), the duration (2-D6), confetti (2-D13), the reconnecting banner (X3), the delete confirmation and "(Guest)" of action items (5-D3, 5-D7). What rule 13 added: M4 to M10 and M28. Layout: `SessionShell kind="retro"` (Task 0.3), rendered by `components/retro/board.tsx`. Until its own commit, a phase keeps its old components mounted inside the new shell (they only need `useBoard()` from `board-context.tsx`, which keeps its API to the end of the plan). Files kept with the same exports for group 8: `board-context.tsx`, `comment-thread.tsx` (`CommentThreadList`), `reaction-chips.tsx` (`ReactionChips`), `emoji-picker.tsx` (`EmojiPicker`), and the eight survey files.
+Brief: `18e-briefs/02-retro.md`. Eighteen tasks; R2a, R2b, R2c and R12a are back-end tasks. What the owner changed in this group: "+2 min" (2-D8; on every timer since the third round, so lanes P, G and W have their own extension task), the topics-only discussion (2-D9), the duration (2-D6), confetti (2-D13), the reconnecting banner (X3), the delete confirmation and "(Guest)" of action items (5-D3, 5-D7). What rule 13 added: M4 to M10 and M28. Layout: `SessionShell kind="retro"` (Task 0.3), rendered by `components/retro/board.tsx`. Until its own commit, a phase keeps its old components mounted inside the new shell (they only need `useBoard()` from `board-context.tsx`, which keeps its API to the end of the plan). Files kept with the same exports for group 8: `board-context.tsx`, `comment-thread.tsx` (`CommentThreadList`), `reaction-chips.tsx` (`ReactionChips`), `emoji-picker.tsx` (`EmojiPicker`), and the eight survey files.
 
 ### Task R1: Eight column colours (B10)
 
@@ -2617,7 +2656,7 @@ public function whiteboard(Whiteboard $board): array; // members count; isLive =
 
 ### Task R2b: "+2 min" on a running retro timer (B20) — back end
 
-**Read first:** spec §9.2 B20, criterion 17, §15 point 3; `app/Http/Controllers/Retros/RetroTimersController.php` (the whole file: guards, lock, event, icebreaker expiry), `app/Events/Retros/TimerChanged.php`, `tests/Feature/Retros/FacilitationTest.php` (the timer tests), `routes/web.php:394`.
+**Read first:** spec §9.2 B20 (the table: this task is its Retro row), criterion 17, §15 point 3; `app/Http/Controllers/Retros/RetroTimersController.php` (the whole file: guards, lock, event, icebreaker expiry), `app/Events/Retros/TimerChanged.php`, `tests/Feature/Retros/FacilitationTest.php` (the timer tests), `routes/web.php:394`.
 
 **Files:**
 - Create: `app/Http/Controllers/Retros/RetroTimerExtensionsController.php` (`store`), `tests/Feature/Retros/TimerExtensionTest.php`
@@ -2691,7 +2730,7 @@ public function store(Request $request, Retro $retro, ScheduleIcebreakerExpiry $
 - Kept for F1: `connection-banner.tsx`, `session-expired-banner.tsx`, `timer-display.tsx`, `presence-strip.tsx`, `live-cursor-layer.tsx`
 
 **Interfaces:**
-- Consumes: `SessionShell` (`kind="retro"`), `SessionTitle`, `SessionPresence`, `SessionTimer` (the Timer's own list 1, 3, 5, 10; `onStart`, `onStop` and `onExtend` for the facilitator only; `onExtend` posts to `retros.timer.extension.store` of R2b and applies the answered `timerEndsAt`), `useSurveyIntent` (1.4, kept), `CursorToggle`, `useHideMyCursor`, `LiveCursors`, `SessionReactions` (`toolbarProps={dragIsolation}`; `labelFor` null and `originFor={centreOrigin}` on an anonymous retro), `PhaseStepper`, `SessionSettingsPopover` + `useRetroSettingGroups`, `ShareDialog` (`channelsExtra` = `delivery-lines`), `FormDialog`, `ConfirmDialog`, `FacilitatorBar`.
+- Consumes: `SessionShell` (`kind="retro"`), `SessionTitle`, `SessionPresence`, `SessionTimer` (the Timer's own list 1, 3, 5, 10; `onStart`, `onStop` and `onExtend` for the facilitator only; `onExtend` posts to `retros.timer.extension.store` of R2b and applies the answered `timerEndsAt`), `CursorToggle`, `useHideMyCursor`, `LiveCursors`, `SessionReactions` (`toolbarProps={dragIsolation}`; `labelFor` null and `originFor={centreOrigin}` on an anonymous retro), `PhaseStepper`, `SessionSettingsPopover` + `useRetroSettingGroups`, `ShareDialog` (`channelsExtra` = `delivery-lines`), `FormDialog`, `ConfirmDialog`, `FacilitatorBar`.
 - Produces: `showsRetroCursors(retro: { cursorsEnabled: boolean; phase: string }): boolean` in `board-cursors.tsx` (off in `voting` and `completed`; R11 adds `roti`); `facilitatorActions(phase, board): FacilitatorAction[]` in `facilitator-dock.tsx` (brief 02 §4.1 table).
 
 **Browser tests changed:**
@@ -2708,6 +2747,8 @@ public function store(Request $request, Retro $retro, ScheduleIcebreakerExpiry $
 **Commit:** `feat(retro): session shell`
 
 ### Task R4: Writing phase
+
+**Places left (feature roadmap):** the typing indicator in the help banner and on the avatars (RT-1); "Pause" in the FacilitatorBar, before "+2 min" (RT-2): `facilitatorActions` is a list.
 
 **Read first:** brief 02 §3.2 rows 30–39, §3.3 rows 40–48 and 67; §4.3 adapters `RetroColumn`, `RetroCard`.
 
@@ -2761,6 +2802,8 @@ public function store(Request $request, Retro $retro, ScheduleIcebreakerExpiry $
 
 ### Task R7: Grouping phase
 
+**Places left (feature roadmap):** the "is moving a card…" indicator (RT-1).
+
 **Read first:** brief 02 §3.3 rows 49–54, 61–66; notes-for-18e "Group markup changed".
 
 **Files:**
@@ -2777,6 +2820,8 @@ public function store(Request $request, Retro $retro, ScheduleIcebreakerExpiry $
 **Commit:** `feat(retro): grouping phase`
 
 ### Task R8: Voting phase
+
+**Places left (feature roadmap):** in the vote bar, "x/y have finished" and the participant's "I have finished voting" (RT-4); the per-card cap in `VoteBudget` (RT-3).
 
 **Read first:** brief 02 §3.3 rows 55–57.
 
@@ -2842,6 +2887,8 @@ export function ItemDeleteConfirm(props: { item: ActionItem | null; onCancel: ()
 
 ### Task R9: Discussing phase
 
+**Places left (feature roadmap):** in the focus banner, the per-topic timer (RT-5); in the right column, above the actions, the shared notes panel (RT-6); on a topic row, the "discussed" mark and the action count (RT-7, RT-8). The right column is a stack of panels taken from a list.
+
 **Read first:** brief 02 §3.3 rows 58–60, §3.4 rows 73–82; §6. ScreenRetroDiscussion README and `preview.html`: left Topics list, centre focus banner and focused group, right topic actions. The owner's answer 2-D9: topics list only, and no feature of the discussing board lost.
 
 **Files:**
@@ -2874,6 +2921,8 @@ export function ItemDeleteConfirm(props: { item: ActionItem | null; onCancel: ()
 
 ### Task R10: Actions phase (B1)
 
+**Places left (feature roadmap):** "Export to Jira" in the header of the actions card (RT-10); the topic an item belongs to (RT-8).
+
 It implements the matrix of spec §9.1, which the owner approved (BLOCK-1). The matrix wins over the text below.
 
 **Read first:** spec §9 B1 and §9.1; brief 02 §7.1 (file and line of each guard), §8 "Tests that MUST change".
@@ -2901,6 +2950,8 @@ It implements the matrix of spec §9.1, which the owner approved (BLOCK-1). The 
 
 ### Task R11: ROTI phase (B2)
 
+**Places left (feature roadmap):** "Reveal ROTI" and "Nudge" in the FacilitatorBar (RT-9).
+
 **Read first:** spec §9 B2 and §9.1 (the owner approved both, BLOCK-1 and BLOCK-2); brief 02 §7.2, rows 84–85; ScreenRetroROTI, ROTI frame.
 
 **Files (back end):**
@@ -2926,7 +2977,7 @@ It implements the matrix of spec §9.1, which the owner approved (BLOCK-1). The 
 
 ### Task R12a: Start time, duration and session-end statistics (B3, B19) — back end
 
-**Read first:** spec §9 B3 and §9.2 B19, criterion 16, §15 point 2; `app/Actions/Retros/BuildResults.php`, `ChangeRetroPhase.php`, `app/Http/Controllers/Retros/CardsController.php` (`store`), `HealthCheckAnswersController.php`, `RetroTimersController.php`, `app/Actions/HealthCheck/SummarizeHealthCheck.php`, `BuildHealthTrend.php`; `tests/Feature/Retros/ResultsTest.php`, `HealthCheckSummaryTest.php`.
+**Read first:** spec §9 B3 and §9.2 B19, criterion 16; `app/Actions/Retros/BuildResults.php`, `ChangeRetroPhase.php`, `app/Http/Controllers/Retros/CardsController.php` (`store`), `HealthCheckAnswersController.php`, `RetroTimersController.php`, `app/Actions/HealthCheck/SummarizeHealthCheck.php`, `BuildHealthTrend.php`; `tests/Feature/Retros/ResultsTest.php`, `HealthCheckSummaryTest.php`.
 
 **Files:**
 - Create: a migration `add_started_at_to_retros_table` (up only: `timestamp('started_at')->nullable()`, no backfill), `app/Actions/Retros/MarkRetroStarted.php`, `tests/Feature/Retros/RetroStartTest.php`
@@ -2963,6 +3014,8 @@ Call sites of `MarkRetroStarted`: `CardsController@store` (after the card is cre
 **Consumed by:** R12. **Run:** `vendor/bin/sail artisan test --compact tests/Feature/Retros`. **Commit:** `feat(retro): start time, duration and session-end statistics (B3, B19)`
 
 ### Task R12: Session end (B3)
+
+**Places left (feature roadmap):** none requested: the Export menu and the ROTI trend stay backlog.
 
 **Read first:** brief 02 §3.5 rows 86–98, §7.3; spec §9 B3, ruling 37; ScreenRetroROTI, end frame: header "Session ended · 58 min · date", Back to the team, "Email the recap", five stats, actions list, ROTI block, health check, frozen confetti.
 
@@ -3008,6 +3061,8 @@ Brief: `18e-briefs/08-surveys.md`.
 
 ### Task S1: Surveys column, answer and results cards, editor dialog and AI draft
 
+**Places left (feature roadmap):** none in the retro: the standalone survey, its builder and its question kinds are new pages of plan 19 (SV-1 to SV-4). The health-check phase is untouched by this plan (SV-5).
+
 **Read first:** brief 08 §1 (the three mount points), §3 rows 1–35, 37–38, §4, §9 (G1–G4).
 
 **Files:**
@@ -3018,7 +3073,7 @@ Brief: `18e-briefs/08-surveys.md`.
 
 **Interfaces:**
 - Consumes: `useBoard()` (`run`, `apply`, `invalidateSurvey`, `isEditable`, `sessionExpired`), `CommentThreadList`, `ReactionChips`, `EmojiPicker` (R7 exports), `lib/retro/survey-api.ts`, `SurveyQuestion`, `ConfirmDialog`.
-- Produces: `toSurveyQuestionProps(survey: SurveyPayload, context: { participants; mode: 'answer' | 'results' }): SurveyQuestionProps`; `useSurveyEditor(): { open; survey; openCreate(); openEdit(survey); close() }`; `SurveyPhases` (`writing`, `grouping`, `voting`, `discussing`: unchanged, spec §9.1). `useSurveyIntent` (1.4) now calls `openCreate()`, so a poll still opens on its first question.
+- Produces: `toSurveyQuestionProps(survey: SurveyPayload, context: { participants; mode: 'answer' | 'results' }): SurveyQuestionProps`; `useSurveyEditor(): { open; survey; openCreate(); openEdit(survey); close() }`; `SurveyPhases` (`writing`, `grouping`, `voting`, `discussing`: unchanged, spec §9.1).
 
 **Browser tests changed:**
 - `Plan08cSurveysTest.php` `P08c-01` and `Plan08eLlmTest.php` `P08e-02a`, `05a`, `05b`: open the settings popover before `click('Add survey')` — imposed by `SessionSettingsPopover/README.md` (8-D2).
@@ -3027,7 +3082,7 @@ Brief: `18e-briefs/08-surveys.md`.
 - `P08c-02c`, `04a`: the text answer field is `article textarea` (named by the question) instead of `[aria-label="Your answer"]`; `P08c-07`, `03`: a closed text survey shows the field disabled instead of absent.
 - Unchanged and checked: `article[aria-label="<question>"]`, `section[aria-label="Surveys"]`, `button[role="checkbox"]`, `ul[aria-label="Answers"] li`, `[aria-label="Survey actions"]`, `[role="menuitemcheckbox"]`, `[aria-label^="Comments"]`, `[aria-label="Add a reaction"]`, `#survey-kind`, `#survey-question`, `#survey-description`, `#survey-show-voters`, `#survey-draft-prompt`, `[aria-label="Option n"]`, "Close survey", "Reopen survey", "Withdraw my answer", "Submit", "Update answer", "n response(s)", "Answer to join the discussion".
 
-**New tests:** `[P18e-08-01]` "Add survey" is offered to the facilitator only, in the survey phases, below ten surveys; a poll created from the team page (1.4) still opens the editor; `[P18e-08-02]` digits 1–3 answer a single-choice survey inside the card and send no flying reaction (spec ruling 21); `[P18e-08-03]` each group of options is named by its question. Vitest: the adapter never produces a count when results are hidden; voters and author names mapped only when present.
+**New tests:** `[P18e-08-01]` "Add survey" is offered to the facilitator only, in the survey phases, below ten surveys; `[P18e-08-02]` digits 1–3 answer a single-choice survey inside the card and send no flying reaction (spec ruling 21); `[P18e-08-03]` each group of options is named by its question. Vitest: the adapter never produces a count when results are hidden; voters and author names mapped only when present.
 
 **Run:** `npm run test -- resources/js/lib/retro/survey-question-adapter.test.ts resources/js/components/skrum/survey-question.test.tsx`; browser `Plan08cSurveysTest.php`, `Plan08eLlmTest.php`, `Plan18eSurveysTest.php`.
 
@@ -3051,7 +3106,7 @@ Brief: `18e-briefs/08-surveys.md`.
 
 ## Lane P — Group 3, poker
 
-Brief: `18e-briefs/03-poker.md`. Seven tasks; 3.0a and 3.0b are back-end tasks. The saved decks are a page (1.5); the brief's commit 3.4 is dropped. What the owner changed in this lane: "Reveal cards" (3-D7), the facilitator's actions in the dock (3-D8), one timer list (X5), the guest link in the Share dialog only (7-D2), the spectator switch of the join page (3-D10). What rule 13 added: M14, M15, M28.
+Brief: `18e-briefs/03-poker.md`. Eight tasks; 3.0a, 3.0b and 3.0c are back-end tasks. The saved decks are a page (1.5); the brief's commit 3.4 is dropped. What the owner changed in this lane: "Reveal cards" (3-D7), the facilitator's actions in the dock (3-D8), one timer list (X5), the guest link in the Share dialog only (7-D2), the spectator switch of the join page (3-D10). What rule 13 added: M14, M15, M28.
 
 ### Task 3.0a: Median, spread, agreement and outliers of a revealed round (B39) — back end
 
@@ -3086,7 +3141,21 @@ Before the reveal the four keys are `null` / empty, in the same branch that retu
 
 **Consumed by:** 3.3. **Run:** `vendor/bin/sail artisan test --compact tests/Feature/Poker/PokerEstimatesPageTest.php`. **Commit:** `feat(poker): deck and voters on estimation history rows (B40)`
 
+### Task 3.0c: "+2 min" on a poker round timer (B20) — back end
+
+**Read first:** spec §9.2 B20 (Poker row), criterion 17; `app/Http/Controllers/Poker/PokerTimersController.php` (whole file: the guards before and inside the lock, the event, the delayed job), `app/Jobs/RevealPokerRoundOnTimer.php` (it acts only when the stored end equals the end it was dispatched for), Task R2b (the retro controller this one mirrors), `tests/Feature/Poker/PokerTimerTest.php`, `routes/web.php:488`.
+
+**Files:** create `app/Http/Controllers/Poker/PokerTimerExtensionsController.php` (`store`), `tests/Feature/Poker/PokerTimerExtensionTest.php`; modify `routes/web.php` (`Route::post('rounds/{round}/timer/extension', [PokerTimerExtensionsController::class, 'store'])->name('poker.rounds.timer.extension.store')->whereUuid('round');`), `PokerTimersController.php` (constant `MaxSeconds = 3600`, used by its own rule).
+
+**What it does:** as R2b, on `poker_rounds.timer_ends_at`: `PokerGuard::notEnded` and `PokerGuard::facilitator` before the lock; inside the transaction, lock the game and the round, repeat the two guards and `PokerGuard::openRound`; 422 on `timer` when no timer runs or when more than `PokerTimersController::MaxSeconds` would remain; add `ExtensionSeconds = 120`; `(new PokerTimerChanged($game->id, $round->id, $endsAt->toIso8601String()))->sendToOthers()`; dispatch `new RevealPokerRoundOnTimer($round->id, $endsAt->toIso8601String())` delayed to the new end, `afterCommit`. The job of the old end is not cancelled: it finds another stored end and returns.
+
+**Feature tests (written first):** the end moves by 120 seconds and the event carries it; **the job dispatched for the old end does not reveal the round, and the job for the new end does** (run both with the clock set after each end); 422 without a running timer and beyond one hour; 403 for a player who is not the facilitator; refused on an ended game and on a revealed round.
+
+**Consumed by:** 3.1a. **Run:** `vendor/bin/sail artisan test --compact tests/Feature/Poker/PokerTimerExtensionTest.php tests/Feature/Poker/PokerTimerTest.php`; `php artisan wayfinder:generate`. **Commit:** `feat(poker): extend a running round timer by two minutes (B20)`
+
 ### Task 3.1a: Room on the table model — shell, table, dock, queue
+
+**Places left (feature roadmap):** in the story card, under the title: type and label chips, description, acceptance criteria (PK-1). The card takes a `details` slot.
 
 **Read first:** brief 03 §3 rows 1–10, 14, 20–26, 32–52; §4 (containers and adapters); §9.
 
@@ -3096,7 +3165,7 @@ Before the reveal the four keys are `null` / empty, in the same branch that retu
 - Delete: the old view files of `components/poker/` replaced by the above (`game.tsx`, `game-header.tsx`, `players-grid.tsx`, `poker-card.tsx`, `hand.tsx`, `tasks-pane.tsx`, `task-detail.tsx`, `facilitator-toolbar.tsx`, `result-panel.tsx`, `anonymous-values-row.tsx`, `round-history.tsx`, `round-timer-control.tsx`, `spectator-toggle.tsx`, `take-control-button.tsx`, `game-cursors.tsx`, `game-reactions.tsx`, `game-gone.tsx` and their private helpers). Kept: `game-context.tsx`, `auto-reveal-triggers.tsx` (logic only), and until 3.1b / 3.1c the dialogs and the import files, mounted from the new room.
 
 **Interfaces:**
-- Consumes: `SessionShell` (`kind="poker"`), `SessionTitle`, `SessionPresence`, `SessionTimer` (the Timer's own list 1, 3, 5, 10 — no `presets` — and `onCustom`, which opens the custom-duration dialog poker has today, D-02; no `onExtend`), `CursorToggle`, `LiveCursors`, `SessionReactions` (`variant="inline"`), `PokerTable`, `PokerDeck selection="toggle"`, `PokerRounds`, `VoteDrawer`, `FacilitatorBar`, `usePokerGame`, `GameProvider`; the statistics of 3.0a.
+- Consumes: `SessionShell` (`kind="poker"`), `SessionTitle`, `SessionPresence`, `SessionTimer` (the Timer's own list 1, 3, 5, 10 — no `presets` — and `onCustom`, which opens the custom-duration dialog poker has today; `onExtend` posts to `poker.rounds.timer.extension.store` of 3.0c), `CursorToggle`, `LiveCursors`, `SessionReactions` (`variant="inline"`), `PokerTable`, `PokerDeck selection="toggle"`, `PokerRounds`, `VoteDrawer`, `FacilitatorBar`, `usePokerGame`, `GameProvider`; the statistics of 3.0a.
 
 **Composition changed by the answers and by rule 13:** the reveal button is "Reveal cards" (3-D7). After the reveal, Re-vote, the Estimate select, "Save estimate" and "Next task" are in the dock, where the deck was (3-D8, ScreenPokerQueue); the result panel of the table shows the figures: average, median, spread "3 → 13", agreement "50 % on 5", the distribution, and, when the round is not anonymous and has outliers, the line naming them ("Lucas and Malik open the discussion") (M14). The observers box of the table lists who watches.
 - Produces: `seatsFrom(snapshot, onlineIds): PokerSeat[]`, `storyFrom(task)`, `nextUnestimatedTask` (kept) in `lib/poker/room-adapters.ts`.
@@ -3110,7 +3179,7 @@ Before the reveal the four keys are `null` / empty, in the same branch that retu
 - `P10b-11`: the second press uses the banner's "Join the vote" (the "Watch only" switch keeps its label when on) — imposed by ScreenPokerQueue (observer banner), 3-D9. Confirm by reading the test before editing.
 - Unchanged and checked: `[aria-label="Play 5"]`, `[aria-label="Your cards"]`, `[role="img"][aria-label="Bob: Voted"]`, `section[aria-label="Players"]` (no "5", "8" or task key before the reveal — task titles and "n of m voted" live in that section: see notes-for-18e), "Estimate: 5", `[data-test="poker-task-row"]`, `#poker-tasks`, "Hide tasks" / "Show tasks", `[aria-label="Drag to reorder"]`, the `ol li` order of `Smoke/KeyboardDragTest.php` (the queue is the first `ol` of the page: check `PokerRounds` and `PokerTable` markup), `[aria-label="Timer"]`, `#poker-timer-minutes` (the custom dialog), `.lc-overlay`, `[role="toolbar"][aria-label="Reactions"]`, "You're watching — switch to Play to vote", "Reconnecting…", "This game was deleted.", `[data-realtime]`.
 
-**New tests:** `[P18e-03-06]` after a reveal of 3, 5, 5, 8 the panel shows median 5, "3 → 8", "50 % on 5" and names the two extremes; an anonymous round names nobody; `[P18e-03-07]` the timer menu offers 1, 3, 5, 10 minutes and "Custom…", and no "30 s"; `[P18e-03-01]` at 390 the queue drawer opens and a vote goes through the vote drawer; `[P18e-03-02]` "Join the vote" brings the deck back; `[P18e-03-03]` "Hide tasks" collapses `#poker-tasks` (`aria-pressed`); `[P18e-03-04]` the reaction bar sits above the deck with no overlap, and the page has one `[data-realtime]` (Review Focus 2). Vitest: `seatsFrom` (offline voter kept, offline non-voter dropped, spectator who voted before a named reveal is `voted`).
+**New tests:** `[P18e-03-06]` after a reveal of 3, 5, 5, 8 the panel shows median 5, "3 → 8", "50 % on 5" and names the two extremes; an anonymous round names nobody; `[P18e-03-07]` the timer menu offers 1, 3, 5, 10 minutes and "Custom…", and no "30 s"; "+2 min" moves the countdown for a player in a second browser; `[P18e-03-01]` at 390 the queue drawer opens and a vote goes through the vote drawer; `[P18e-03-02]` "Join the vote" brings the deck back; `[P18e-03-03]` "Hide tasks" collapses `#poker-tasks` (`aria-pressed`); `[P18e-03-04]` the reaction bar sits above the deck with no overlap, and the page has one `[data-realtime]` (Review Focus 2). Vitest: `seatsFrom` (offline voter kept, offline non-voter dropped, spectator who voted before a named reveal is `voted`).
 
 **Run:** browser `Plan10aPokerCoreTest.php`, `Plan10bPokerAdditionsTest.php`, `Smoke/KeyboardDragTest.php`, `Smoke/RealtimeTest.php`, `Smoke/QueuedBroadcastTest.php`, `Plan18ePokerTest.php`.
 
@@ -3217,7 +3286,7 @@ public function show(Request $request): RedirectResponse
 
 ### Task 4.0b: Team mood and ROTI trend (B23) — back end
 
-**Read first:** spec §9.2 B23, criterion 20, §15 point 10; `app/Actions/HealthCheck/BuildHealthTrend.php` (whole file), `SummarizeHealthCheck.php` (`scoreOf`), `app/Mcp/Tools/Retro/GetRoti.php:85-100` (`withAvg('rotiVotes', 'score')`), `resources/js/components/skrum/mood-trend-chart.tsx` (`MoodPoint`), `tests/Feature/Retros/HealthTrendTest.php`.
+**Read first:** spec §9.2 B23, criterion 20; `app/Actions/HealthCheck/BuildHealthTrend.php` (whole file), `SummarizeHealthCheck.php` (`scoreOf`), `app/Mcp/Tools/Retro/GetRoti.php:85-100` (`withAvg('rotiVotes', 'score')`), `resources/js/components/skrum/mood-trend-chart.tsx` (`MoodPoint`), `tests/Feature/Retros/HealthTrendTest.php`.
 
 **Files:**
 - Create: `app/Actions/Teams/BuildTeamMoodTrend.php`, `tests/Feature/Teams/TeamMoodTrendTest.php`
@@ -3263,6 +3332,8 @@ The query: the team's retros in phase `Completed` with a `completed_at`, `withAv
 **Consumed by:** 4.1. **Run:** `vendor/bin/sail artisan test --compact tests/Feature/Teams tests/Feature/Poker/TeamPokerSectionTest.php`. **Commit:** `feat(teams): template, facilitator and ROTI on retro cards, players online on games (B41)`
 
 ### Task 4.1: Team page on the new layout — sessions, members, settings
+
+**Places left (feature roadmap):** "Invite" in the members card (IN-4); the member's role badge (TM-6); under the team name, the sprint and the next retro (TM-1); the regions of the dashboard for the recent sessions table, the aggregated open actions and the activity feed (TM-2, TM-3, TM-4), which are named grid areas of `team-page.tsx`; participant, card and action counts in the footer of a retro card (TM-5); the thumbnail of a whiteboard row (TM-7).
 
 **Read first:** brief 04 §1 (anchors), §3 rows 1–23, 32–41, §4, §8; ScreenTeam and ScreenDashboard READMEs and previews; the answers 1-D2, 4-D4, 4-D5, 4-D6.
 
@@ -3331,6 +3402,8 @@ The query: the team's retros in phase `Completed` with a `completed_at`, `withAv
 
 ### Task 5.2: Action items page on the new table, sheet and filters (needs R12, 4.1 and 5.0)
 
+**Places left (feature roadmap):** the first table column for the selection checkboxes and the floating bulk bar (AI-1); the Priority, Due date and Source facets of the filter toolbar, which takes its facets from a list (AI-2); the "In progress" value of the status filter and badge (AI-3); "Export" in the topbar, before "New action item" (AI-4); "Sprint" in "Group by" (TM-1).
+
 Brief: `18e-briefs/05-action-items.md`. Its commit 5.1 is Task R8b.
 
 **Read first:** brief 05 §1 (prop collision), §3 all rows, §4, §5, §8; ScreenActions README and preview: topbar ("New action"), header with counters and "Group by", faceted filter bar, table; the answers 5-D1 to 5-D7.
@@ -3375,11 +3448,11 @@ Before editing, confirm in `action-sheet.tsx` (around lines 480–720) that the 
 
 ## Lane G — Group 6, games
 
-Brief: `18e-briefs/06-games.md`. Nine tasks; G0a, G0b and G0c are back-end tasks and come first. G1 and G2 are independent; G3 → G4 → G5; G6 runs on lane S after S2. What the owner changed in this lane: eight ink colours (6-D2), the reaction bar in a room (6-D3), status and avatars in the rooms list (6-D6), the full Share dialog (6-D7), one timer list (X5). What rule 13 added: M19, M20, M28.
+Brief: `18e-briefs/06-games.md`. Eleven tasks; G0a to G0e are back-end tasks and come first. G1 and G2 are independent; G3 → G4 → G5; G6 runs on lane S after S2. What the owner changed in this lane: eight ink colours (6-D2), the reaction bar in a room (6-D3), status and avatars in the rooms list (6-D6), the full Share dialog (6-D7), one timer list (X5). What rule 13 added: M19, M20, M28.
 
 ### Task G0a: Drawing ink — black and the eight theme colours (B26) — back end and palette
 
-**Read first:** spec §9.2 B26, criterion 23, ruling 36, §15 point 7; `app/Support/Games/DrawingOp.php`, `resources/js/lib/games/drawing.ts` (`DrawingColors`, `Palette`, `PaletteIndex`, `EraserColor`), `resources/js/lib/games/types.ts` (`DrawingColor`), `resources/css/app.css:263-290` (the light values of `--skrum-col-*-text`), `tests/Feature/Games/DrawingOpTest.php`, `DrawingTest.php`.
+**Read first:** spec §9.2 B26, criterion 23, ruling 36; `app/Support/Games/DrawingOp.php`, `resources/js/lib/games/drawing.ts` (`DrawingColors`, `Palette`, `PaletteIndex`, `EraserColor`), `resources/js/lib/games/types.ts` (`DrawingColor`), `resources/css/app.css:263-290` (the light values of `--skrum-col-*-text`), `tests/Feature/Games/DrawingOpTest.php`, `DrawingTest.php`.
 
 **Files:** modify `DrawingOp.php`, `app/Support/Branding/BrandPalette.php` (`oklchToHex` becomes `public static`), `lib/games/drawing.ts`, `lib/games/types.ts`, `lib/games/drawing.test.ts`; tests `DrawingOpTest.php`, new `DrawingInkPaletteTest.php`.
 
@@ -3417,7 +3490,7 @@ export const DrawingColors: DrawingColor[] = ['black', 'sun', 'apricot', 'coral'
 
 ### Task G0c: Status and players of a room in the rooms list (B28) — back end
 
-**Read first:** spec §9.2 B28, criterion 25, §15 point 8; `app/Actions/Games/PresentGameRoomSummary.php`, `PresentGamePlayer.php`, `app/Models/GameRound.php` (`isActive()`, its start column), `tests/Feature/Games/GamePagesTest.php`.
+**Read first:** spec §9.2 B28, criterion 25; `app/Actions/Games/PresentGameRoomSummary.php`, `PresentGamePlayer.php`, `app/Models/GameRound.php` (`isActive()`, its start column), `tests/Feature/Games/GamePagesTest.php`.
 
 **Files:** modify `PresentGameRoomSummary.php` (`query()` eager-loads `currentRound` and the first five `players.user`; `handle()` adds the keys), `resources/js/types/games.ts`; tests in `GamePagesTest.php`.
 
@@ -3427,17 +3500,54 @@ export const DrawingColors: DrawingColor[] = ['black', 'sun', 'apricot', 'coral'
 
 **Consumed by:** G1. **Run:** `vendor/bin/sail artisan test --compact tests/Feature/Games`. **Commit:** `feat(games): status and players of a room in the rooms list (B28)`
 
+### Task G0d: Team-level games channel — a live rooms list (B28) — back end
+
+**Read first:** spec §9.2 B28 (the channel and its two events), criterion 25, §15 point 2; `app/Events/ActionItems/TeamActionItemsBroadcastEvent.php` (the team channel this one copies: a private channel `team-action-items.{teamId}`), `app/Http/Controllers/BroadcastAuthorizationsController.php` (the branch that authorises `private-team-action-items.`: copy its rule), `app/Events/Games/GameBroadcastEvent.php`, `GameRoomChanged.php`, `GameRoomDeleted.php`, `GameRoundStarted.php`, `GameRoundEnded.php` and the places that dispatch them (`grep -rn "GameRoomChanged\|GameRoomDeleted\|GameRoundStarted\|GameRoundEnded" app`), `app/Actions/Games/CreateGameRoom.php`, `FindGamePlayer.php` and `GameJoinsController@store` (where a player row is created), `tests/Feature/Games/GameEventsTest.php`, `GameBroadcastAuthorizationTest.php`, `PayloadLeakHelperTest.php`.
+
+**Files:**
+- Create: `app/Events/Games/TeamGamesBroadcastEvent.php` (abstract, `PrivateChannel("team-games.{$this->teamId}")`), `TeamGameRoomChanged.php` (`broadcastAs` `team.game-room.changed`; payload `room` = `PresentGameRoomSummary::handle()`), `TeamGameRoomDeleted.php` (`team.game-room.deleted`; payload `roomId`), `app/Actions/Games/AnnounceTeamGameRoom.php`, `tests/Feature/Games/TeamGamesChannelTest.php`
+- Modify: `BroadcastAuthorizationsController.php` (a branch for `private-team-games.`), the dispatch points, `resources/js/types/games.ts`
+
+**Interfaces — produces:**
+
+```php
+// App\Actions\Games\AnnounceTeamGameRoom
+/** Reloads the room's summary and sends it to the team's games channel. Does nothing for an icebreaker room. */
+public function changed(GameRoom $room): void;
+public function deleted(GameRoom $room): void;
+```
+
+`changed()` is called, after commit, where a standalone room is created, where `GameRoomChanged` is dispatched (rename, access, language, game switch, host change), where a round starts and where it ends (every path that dispatches `GameRoundEnded`: end, expiry, pass), and where a new player row is created. `deleted()` where `GameRoomDeleted` is dispatched. Both events go to others (`sendToOthers()` in a request; the queued paths have no socket to exclude). The authorisation branch accepts a signed-in user who can `view` the team of the channel's id, and refuses everyone else, a room's guest included.
+
+**Feature tests (written first):** creating, renaming, deleting a room, starting and ending a round, and a new player joining each send one event on `private-team-games.{teamId}` with the room's current summary (`status`, `players`, `playersCount`, `roundStartedAt`); **an icebreaker room of a retro sends nothing**; the payload passes the leak helper of `PayloadLeakHelperTest` (no word, drawing op, clue or answer); the channel is authorised for a team member, refused (403) for a member of another team of the workspace who cannot view this one, for a room's guest and for an unauthenticated socket (Review Focus 7).
+
+**Consumed by:** G1. **Run:** `vendor/bin/sail artisan test --compact tests/Feature/Games`. **Commit:** `feat(games): team-level games channel for a live rooms list (B28)`
+
+### Task G0e: "+2 min" on a game room timer (B20) — back end
+
+**Read first:** spec §9.2 B20 (Game room row), criterion 17; `app/Http/Controllers/Games/GameTimersController.php` (whole file), `app/Actions/Games/ScheduleRoundExpiry.php`, `app/Jobs/CloseExpiredGameRound.php` (it belongs to one end time), `app/Models/GameRoom.php` (`effectiveTimerEndsAt()`), Task R2b, `tests/Feature/Games/GameTimerTest.php`, `routes/web.php:551`.
+
+**Files:** create `app/Http/Controllers/Games/GameTimerExtensionsController.php` (`store`), `tests/Feature/Games/GameTimerExtensionTest.php`; modify `routes/web.php` (`Route::post('timer/extension', [GameTimerExtensionsController::class, 'store'])->name('games.timer.extension.store');`), `GameTimersController.php` (constant `MaxSeconds = 7200`).
+
+**What it does:** as R2b, on `game_rooms.timer_ends_at`: `GameGuard::standalone` and `GameGuard::host` before the lock, `GameGuard::host` again inside it; 422 on `timer` when no timer runs or beyond the maximum; `(new GameTimerChanged($room, $endsAt->toIso8601String()))->sendToOthers()`; when the room has an active round, `ScheduleRoundExpiry::handle($room, $round)`, which schedules the close at the new end. An icebreaker room is refused by `GameGuard::standalone`: its timer is the retro's (R2b).
+
+**Feature tests (written first):** the end moves by 120 seconds and the event carries it; **the round is closed by the job of the new end and not by the job of the old one**; 422 without a running timer and beyond two hours; 403 for a player who is not the host and for a guest; refused on an icebreaker room.
+
+**Consumed by:** G3. **Run:** `vendor/bin/sail artisan test --compact tests/Feature/Games/GameTimerExtensionTest.php tests/Feature/Games/GameTimerTest.php`; `php artisan wayfinder:generate`. **Commit:** `feat(games): extend a running room timer by two minutes (B20)`
+
 ### Task G1: Team games page
+
+**Places left (feature roadmap):** none beyond the deviations of D-20 that stay backlog.
 
 **Read first:** brief 06 §3 rows 1–12, §4.1; brief 01 §3 rows 47–52 (the "New room" dialog; K9); risk R6.
 
 **Files:** create `components/games/team-games.tsx`, its test, `tests/Browser/Walkthroughs/Plan18eGamesTest.php`, `tests/Browser/Visual/GamesPagesVisualTest.php`; rewrite `resources/js/pages/games/index.tsx` (`AppLayout active="games"`); add `games/index` to `page-layouts.ts`; delete `components/games/new-room-dialog.tsx`, `room-card.tsx`, `team-leaderboard.tsx`.
 
-**Interfaces — consumes:** `GamesLeaderboard` (rooms with `status`, the avatar stack of `players` and "started n min ago" from `roundStartedAt`, G0c, M19; leaderboard with the podium streak of 0.10, embedded `NewGameRoomDialog` with ids `new-room-name`, `new-room-game`, `new-room-access`; `onCreate` resolves `false` on a server error so the dialog stays open). Search the Inertia v3 docs for the error state of a deferred prop before choosing between `leaderboardError` and rendering `Leaderboard` inside `<Deferred>`.
+**Interfaces — consumes:** `GamesLeaderboard` (rooms with `status`, the avatar stack of `players` and "started n min ago" from `roundStartedAt`, G0c, M19; the list is live: a new hook `use-team-games-channel.ts` in `components/games/` subscribes to `private-team-games.{team.id}` and replaces, adds or removes a room in the list on `team.game-room.changed` / `team.game-room.deleted` (G0d), with the page's one `[data-realtime]` on its root, as `action-items/index` does; leaderboard with the podium streak of 0.10, embedded `NewGameRoomDialog` with ids `new-room-name`, `new-room-game`, `new-room-access`; `onCreate` resolves `false` on a server error so the dialog stays open). Search the Inertia v3 docs for the error state of a deferred prop before choosing between `leaderboardError` and rendering `Leaderboard` inside `<Deferred>`.
 
 **Browser tests changed** (imposed by `GamesLeaderboard/README.md`: podium for the first three, tabs for the period): `Plan13dIcebreakerScoresInvitesTest.php` `P13d-09a`, `10a`, `10b` — `section[aria-labelledby="team-leaderboard"] ol > li …` → `[data-slot="podium-place"]` / `[data-slot="leaderboard-row"]`; `[data-state="on"]` → `[data-state="active"]`. Unchanged: "New room", `#new-room-*`, "Create room", "Back to the team", "No game rooms yet.", "No games played yet.", `[aria-label="Period"]`, "Last 30 days", "All time", "2-week streak".
 
-**New tests:** `[P18e-06-01]` podium with a streak on a top-three player and the current user marked; `[P18e-06-02]` room links and order; `[P18e-06-07]` a room with a round in play shows "Playing", its players' avatars and "started … ago"; a room without a round shows "Waiting".
+**New tests:** `[P18e-06-01]` podium with a streak on a top-three player and the current user marked; `[P18e-06-02]` room links and order; `[P18e-06-07]` a room with a round in play shows "Playing", its players' avatars and "started … ago"; a room without a round shows "Waiting"; `[P18e-06-11]` two browsers on the page: a room created, renamed, started and deleted in one appears, changes and disappears in the other without a reload.
 
 **Commit:** `feat(games): team games page`
 
@@ -3457,11 +3567,13 @@ export const DrawingColors: DrawingColor[] = ['black', 'sun', 'apricot', 'coral'
 
 ### Task G3: Room shell and hangman
 
+**Places left (feature roadmap):** in the left column, under the game cards, the settings card (GM-1); in the right column, the turn order, and in the stage header "Round n of m" (GM-2); the four other game cards of the picker (GM-4), which lists whatever `gameOptions` holds.
+
 **Read first:** brief 06 §3 rows 16–43, 55–56, §4.3; R4, R7, R9; the answers 6-D1, 6-D3, 6-D7, 6-D8 and X5; ScreenIcebreaker and ScreenIcebreakerDraw (standalone frame: topbar with Invite and Game settings, ReactionBar on the stage).
 
 **Files:** create in `components/games/`: `game-room.tsx` (new body), `game-layout.tsx`, room header, menu, settings / delete / reset dialogs, sidebar with `player-row.tsx` and scores, end card, start controls, leader picker, pass button, history sheet, round detail, `room-full.tsx`, `room-gone.tsx`, `hangman-board.tsx`, `hangman-figure.tsx`, `word-mask.tsx`, `letter-keyboard.tsx` (new bodies), Vitest for `player-row` and the keyboard layouts; rewrite `resources/js/pages/games/show.tsx`. Delete the 28 old files the brief lists for G3. Kept: `room-context.tsx`.
 
-**Interfaces — consumes:** `SessionShell` (`kind="game"`), `SessionTitle` (`badges` = the game badge), `SessionPresence`, `SessionTimer` (`alarm={false}`, the Timer's own list 1, 3, 5, 10 — the 2-minute entry goes, X5 —, host only), `TimeUpBadge` (in `<main>`, next to the stage title), `IcebreakerGameGrid` / `IcebreakerGameCard`, `Sheet`, `FormDialog`, `ConfirmDialog`, `EmptyState`; `ShareDialog` (the full dialog, 6-D7: guest switch, link, copy, "Create a new link" with confirmation, QR code, and `channelsExtra` = `post-link-section`), opened by "Invite" in the header; `SessionReactions` on the room's presence channel, mounted only while `room.reactionsEnabled` (G0b, 6-D3), `shortcuts={false}` while the hangman keyboard or a guess field is on screen (the digits and letters belong to the game); the room settings dialog gains the switch `#room-reactions`; `useGameRoom(initial, { subscribe: true })`.
+**Interfaces — consumes:** `SessionShell` (`kind="game"`), `SessionTitle` (`badges` = the game badge), `SessionPresence`, `SessionTimer` (`alarm={false}`, the Timer's own list 1, 3, 5, 10 — the 2-minute entry goes, X5 —, host only, `onExtend` posts to `games.timer.extension.store` of G0e), `TimeUpBadge` (in `<main>`, next to the stage title), `IcebreakerGameGrid` / `IcebreakerGameCard`, `Sheet`, `FormDialog`, `ConfirmDialog`, `EmptyState`; `ShareDialog` (the full dialog, 6-D7: guest switch, link, copy, "Create a new link" with confirmation, QR code, and `channelsExtra` = `post-link-section`), opened by "Invite" in the header; `SessionReactions` on the room's presence channel, mounted only while `room.reactionsEnabled` (G0b, 6-D3), `shortcuts={false}` while the hangman keyboard or a guess field is on screen (the digits and letters belong to the game); the room settings dialog gains the switch `#room-reactions`; `useGameRoom(initial, { subscribe: true })`.
 - Produces: `GameLayout({ left, stage, right })` — the three-column grid without a topbar, reused by G6.
 
 **Browser tests changed:**
@@ -3496,6 +3608,8 @@ export const DrawingColors: DrawingColor[] = ['black', 'sun', 'apricot', 'coral'
 
 ### Task G5: Sprint in one GIF
 
+**Places left (feature roadmap):** the caption field under the chosen GIF and the podium of the results (GM-3).
+
 **Read first:** brief 06 §3 rows 49–54, §4.5.
 
 **Files:** new bodies for `sprint-gif-board.tsx`, `gif-question-banner.tsx`, `gif-answer-stage.tsx`, `gif-voting-stage.tsx`, `gif-round-results.tsx`; delete `game-gif-picker.tsx`; `gif-tile.tsx` rewritten in place (same export).
@@ -3524,7 +3638,7 @@ export const DrawingColors: DrawingColor[] = ['black', 'sun', 'apricot', 'coral'
 
 ## Lane W — Group 7, whiteboard
 
-Brief: `18e-briefs/07-whiteboard.md`. Six tasks; 7.0 is a data task. What the owner changed in this lane: the eight colours and the regenerated templates (7-D1), the guest link in the Share dialog only (7-D2), the colour bar everywhere (7-D3), the phone read mode (7-D7). What rule 13 added: M21, M28.
+Brief: `18e-briefs/07-whiteboard.md`. Seven tasks; 7.0 is a data task and 7.0b a back-end task. What the owner changed in this lane: the eight colours and the regenerated templates (7-D1), the guest link in the Share dialog only (7-D2), the colour bar everywhere (7-D3), the phone read mode (7-D7). What rule 13 added: M21, M28.
 
 ### Task 7.0: Built-in whiteboard templates with the eight sticky colours (B29) — data
 
@@ -3547,6 +3661,18 @@ Brief: `18e-briefs/07-whiteboard.md`. Six tasks; 7.0 is a data task. What the ow
 
 **Consumed by:** 7.4 (the colour bar shows the right swatch on a template note). **Browser tests changed:** `Plan17bWhiteboardTemplatesTest.php` where it reads the colour of a note created from a built-in template (`grep -n "#a5d8ff\|#b2f2bb\|#fff3bf\|#ffc9c9" tests/Browser`): the new fill. **Run:** `vendor/bin/sail artisan test --compact tests/Feature/Whiteboards`; browser `Plan17bWhiteboardTemplatesTest.php`. **Commit:** `feat(whiteboard): built-in templates on the eight sticky colours (B29)`
 
+### Task 7.0b: "+2 min" on a whiteboard timer (B20) — back end
+
+**Read first:** spec §9.2 B20 (Whiteboard row), criterion 17; `app/Http/Controllers/Whiteboards/WhiteboardTimersController.php` (whole file; no expiry job), Task R2b, `tests/Feature/Whiteboards/WhiteboardFacilitationTest.php` (the timer tests), `routes/web.php:524`.
+
+**Files:** create `app/Http/Controllers/Whiteboards/WhiteboardTimerExtensionsController.php` (`store`), `tests/Feature/Whiteboards/WhiteboardTimerExtensionTest.php`; modify `routes/web.php` (`Route::post('timer/extension', [WhiteboardTimerExtensionsController::class, 'store'])->name('whiteboards.timer.extension.store');`), `WhiteboardTimersController.php` (constant `MaxSeconds = 3600`).
+
+**What it does:** as R2b, on `whiteboards.timer_ends_at`: `WhiteboardGuard::facilitator` before and inside the lock; 422 on `timer` when no timer runs or beyond one hour; `(new WhiteboardTimerChanged($board->id, $endsAt->toIso8601String()))->sendToOthers()`. No job.
+
+**Feature tests (written first):** the end moves by 120 seconds and the event carries it; 422 without a running timer and beyond one hour; 403 for a member who is not the facilitator and for a guest.
+
+**Consumed by:** 7.2. **Run:** `vendor/bin/sail artisan test --compact tests/Feature/Whiteboards`; `php artisan wayfinder:generate`. **Commit:** `feat(whiteboard): extend a running timer by two minutes (B20)`
+
 ### Task 7.1: Guest join
 
 **Files:** rewrite `resources/js/pages/whiteboards/join.tsx`; add `whiteboards/join` to `page-layouts.ts`. **Consumes:** `GuestJoinPage` (`kind="whiteboard"`, `invalidTitle={t('Join a whiteboard')}`, `session` = the prop of R2a). The brief's `guest-join-form.tsx` is not written (K2).
@@ -3557,11 +3683,13 @@ Brief: `18e-briefs/07-whiteboard.md`. Six tasks; 7.0 is a data task. What the ow
 
 ### Task 7.2: Board chrome on the session shell
 
+**Places left (feature roadmap):** "Comments" in the header, before "Export" (WB-2); the "Follow :name" pill in the presence stack's popover (WB-3). The rebuilt tool bar, selection bar, zoom and minimap replace Excalidraw's own in plan WB-1: the canvas wrapper keeps the full area, so nothing of this plan's chrome moves then.
+
 **Read first:** brief 07 §3 rows 1–5, 14–16, 30–43, 53, §4.1; R2, R3, R4, R9, R10.
 
 **Files:** rewrite `components/whiteboard/board.tsx` (every hook and effect kept verbatim), `pages/whiteboards/show.tsx`; create `board-header.tsx`, `board-timer.tsx`, `board-facilitation.tsx`, `board-notices.tsx`, `board-share.tsx`, `board-gone.tsx`, `lib/whiteboard/presence-slot.ts`; rewrite `board-reactions.tsx`; modify `resources/css/app.css` (the three reaction rules of the Excalidraw block, on `[data-slot="reaction-bar"]`, offsets recomputed); delete `top-bar.tsx`, `status-bar.tsx`, `facilitator-bar.tsx`; `tests/Browser/Walkthroughs/Plan18eWhiteboardTest.php`, `tests/Browser/Visual/WhiteboardVisualTest.php`.
 
-**Interfaces — consumes:** `SessionShell` (`kind="whiteboard"`, `rootRef` for `data-scene`, set by `setAttribute` in `onChange` as today), `SessionTitle` (the title is renamed in place, as the mockup's editable breadcrumb: a press on it, or `F2`, turns it into a field named "Board name", `↵` saves through the existing rename endpoint and `Esc` cancels, for who may rename; the "Rename" entry of the board menu stays, M21), an "Export" button in the header that opens the existing export dialog (`scene-export.tsx`), `SessionPresence` (`presenceFor` from `presence-slot.ts`; cursor colours from the presence tokens, 7-D6), `SessionTimer` (in the `start` slot of `FacilitatorBar` for the facilitator, in the header for the others, 7-D5), `FacilitatorBar` (toggles "Lock the board" / "Unlock the board", "Bring everyone to me"), `SessionReactions` (`toolbarProps={{ className: 'whiteboard-reactions' }}`, `shortcuts={false}`, `compact` on a phone), `ShareDialog` (the only place of the guest-link controls, 7-D2: "Allow guests", the link, "Copy guest link", "Create a new link" with its confirmation, the QR code). The `.whiteboard-canvas` element keeps `data-facilitator` and a sized parent (`min-h-0 flex-1` chain down from `main`).
+**Interfaces — consumes:** `SessionShell` (`kind="whiteboard"`, `rootRef` for `data-scene`, set by `setAttribute` in `onChange` as today), `SessionTitle` (the title is renamed in place, as the mockup's editable breadcrumb: a press on it, or `F2`, turns it into a field named "Board name", `↵` saves through the existing rename endpoint and `Esc` cancels, for who may rename; the "Rename" entry of the board menu stays, M21), an "Export" button in the header that opens the existing export dialog (`scene-export.tsx`), `SessionPresence` (`presenceFor` from `presence-slot.ts`; cursor colours from the presence tokens, 7-D6), `SessionTimer` (in the `start` slot of `FacilitatorBar` for the facilitator, in the header for the others, 7-D5; `onExtend` posts to `whiteboards.timer.extension.store` of 7.0b), `FacilitatorBar` (toggles "Lock the board" / "Unlock the board", "Bring everyone to me"), `SessionReactions` (`toolbarProps={{ className: 'whiteboard-reactions' }}`, `shortcuts={false}`, `compact` on a phone), `ShareDialog` (the only place of the guest-link controls, 7-D2: "Allow guests", the link, "Copy guest link", "Create a new link" with its confirmation, the QR code). The `.whiteboard-canvas` element keeps `data-facilitator` and a sized parent (`min-h-0 flex-1` chain down from `main`).
 
 **Browser tests changed:** `Plan17cWhiteboardFacilitationTest.php:130,133,152` (`P17c-01c`): `assertAttribute('[role="timer"]', 'aria-label', "Time's up!")` (Task 0.5); the toast assertion stays. "Reconnecting…" (X3): the 9 uses of `Plan17aWhiteboardCoreTest.php`, the 5 of `Plan17bWhiteboardTemplatesTest.php` and the 1 of `Support/InteractsWithWhiteboards.php` are read; those scoped to `header` are rescoped to the banner. Guest link (7-D2): `Plan17aWhiteboardCoreTest.php` :357, :358 (the two menu items are present) → the Share dialog shows "Create a new link" and "Copy guest link"; :369, :370 (absent for a non-facilitator) → the Share dialog shows no guest control to that viewer; :408 (`click` on "Replace the guest link") → open "Share", "Create a new link", confirm; `P17b-16` likewise. Unchanged and checked: `[role="toolbar"][aria-label="Facilitation tools"] [aria-label="Timer"]`, five menu items, `[aria-label="Lock the board"][aria-pressed="false"]`, `div[role="status"]:has-text("This board is locked.")`, "Resume", `.whiteboard-reactions[role="toolbar"][aria-label="Reactions"]`, `.lr-overlay` with the sender name, `[data-scene^="N:"]`, `[data-realtime="connected"]`, `a[aria-label="Back to the team"]`, `header img[data-presence-id][alt]`, "This board was deleted.".
 
@@ -3587,6 +3715,8 @@ Brief: `18e-briefs/07-whiteboard.md`. Six tasks; 7.0 is a data task. What the ow
 
 ### Task 7.4: Eight-colour sticky notes and colour bar
 
+**Places left (feature roadmap):** the author of a sticky (WB-4) and "Convert to actions" on a selection (WB-5).
+
 **Read first:** brief 07 §3 rows 8–9, 54, §4.3, risk R7; the answers 7-D1, 7-D3, 7-D4; `ExcalidrawTheme/README.md` (the colour bar and the rule `skrum-whiteboard--fallback-colors` that hides Excalidraw's native quick picks).
 
 **Files:** rewrite `components/whiteboard/sticky-tool.tsx`; create `components/whiteboard/canvas-colors.tsx` (the colour bar shown for every tool and every selection that has a fill, 7-D3); modify `board.tsx` (`initialData.appState`; the class `skrum-whiteboard--fallback-colors` on the canvas wrapper, which hides the native quick picks and keeps the "more colours" picker), `scene-export.tsx` (restyle), `lib/whiteboard/excalidraw.ts` (dead exports removed), `tests/Browser/Support/InteractsWithWhiteboards.php` (`addWhiteboardSticky`).
@@ -3603,7 +3733,7 @@ Brief: `18e-briefs/07-whiteboard.md`. Six tasks; 7.0 is a data task. What the ow
 
 ### Task 7.5: Read mode on a phone
 
-**Read first:** the answer 7-D7; spec §6.4 (whiteboard), §15 point 13; ScreenWhiteboard README, the phone frame ("Lecture / Modifier"); brief 07 §6 (how `viewModeEnabled` is driven by the board lock today), `components/whiteboard/board.tsx`.
+**Read first:** the answer 7-D7; spec §6.4 (whiteboard); ScreenWhiteboard README, the phone frame ("Lecture / Modifier"); brief 07 §6 (how `viewModeEnabled` is driven by the board lock today), `components/whiteboard/board.tsx`.
 
 **Files:** create `components/whiteboard/use-read-mode.ts`, `read-mode-toggle.tsx` and their tests; modify `board.tsx` (`viewModeEnabled`), `board-header.tsx` (the toggle); extend `Plan18eWhiteboardTest.php`, `WhiteboardVisualTest.php`.
 
@@ -3629,7 +3759,7 @@ export function ReadModeToggle(props: { reading: boolean; onChange: (reading: bo
 
 ## Lane K — Group 9, workspace (needs R1)
 
-Brief: `18e-briefs/09-workspace.md`. Five tasks; 9.0a and 9.0b are back-end tasks. What the owner changed in this lane: "Use" and the Poker / Whiteboard tabs (9-D1), the built-in templates on the page (9-D2), the confirmation before revoking an invitation (9-D5), the component's deletion sentence (9-D7). What rule 13 added: M22, M23, M24.
+Brief: `18e-briefs/09-workspace.md`. Five tasks; 9.0a and 9.0b are back-end tasks. What the owner changed in this lane: "Use" and the Poker / Whiteboard tabs (9-D1), workspace-level decks in the Poker tab (third round), the built-in templates on the page (9-D2), the confirmation before revoking an invitation (9-D5), the component's deletion sentence (9-D7). What rule 13 added: M22, M23, M24.
 
 ### Task 9.0a: Counts, roles and members of the workspace page and switcher (B42) — back end
 
@@ -3643,19 +3773,21 @@ Brief: `18e-briefs/09-workspace.md`. Five tasks; 9.0a and 9.0b are back-end task
 
 **Consumed by:** 9a. **Run:** `vendor/bin/sail artisan test --compact tests/Feature/Workspaces tests/Feature/SharedPropsTest.php`. **Commit:** `feat(workspaces): member and team counts, roles and member stacks (B42)`
 
-### Task 9.0b: Data of the templates page — whiteboard templates, saved decks, authors (B30) — back end
+### Task 9.0b: Data of the templates page — whiteboard templates, workspace decks, authors (B30) — back end
 
-**Read first:** spec §9.2 B30, criterion 27, §15 points 6 and 16; `app/Http/Controllers/WorkspaceTemplatesController.php` (`index`, `present`), `app/Actions/Whiteboards/BuildWhiteboardGallery.php` (how a workspace whiteboard template is presented with its preview), `app/Policies/WhiteboardTemplatePolicy.php`, `PokerDeckPolicy.php`, `TeamsController::pokerDecks()` (the shape of a saved deck and its `canManage`), `tests/Feature/Workspaces/WorkspaceTemplatesTest.php`.
+**Read first:** spec §9.2 B30 ("Templates page"), criterion 27; `app/Http/Controllers/WorkspaceTemplatesController.php` (`index`, `present`), `app/Actions/Whiteboards/BuildWhiteboardGallery.php` (how a workspace whiteboard template is presented with its preview), `app/Policies/WhiteboardTemplatePolicy.php`, `PokerDeckPolicy.php`, `TeamsController::pokerDecks()` (the shape of a saved deck and its `canManage`), `tests/Feature/Workspaces/WorkspaceTemplatesTest.php`.
 
 **Files:** modify `WorkspaceTemplatesController.php` (`whiteboardTemplates`, `pokerDecks`, `author` in `present()` with `->with('creator')` — confirm the relation name on `WorkspaceTemplate`), `resources/js/types/workspaces.ts`; tests in `WorkspaceTemplatesTest.php`.
 
-**Interfaces — produces:** `whiteboardTemplates` (`id`, `name`, `description`, `preview`, `canManage`), `pokerDecks` (`id`, `name`, `cards`, `team` (`id`, `name`), `canManage`: the saved decks of `$workspace->teamsVisibleTo($user)`, ordered by team name then deck name), and `author` (`?string`) on each entry of `templates`. The built-in retro templates come from the `catalogue` prop the page already has.
+**Interfaces — produces:** `whiteboardTemplates` (`id`, `name`, `description`, `preview`, `canManage`), `pokerDecks` (`id`, `name`, `cards`, `usageCount`, `canManage`: the workspace's decks of 1.0e, by name; `usageCount` counts the games of the teams the user can view), `canCreatePokerDeck` (the `createForWorkspace` ability), and `author` (`?string`) on each entry of `templates`. The built-in retro templates come from the `catalogue` prop the page already has.
 
-**Feature tests (written first):** the whiteboard templates of the workspace with their preview and `canManage` for the creator and for a workspace admin; the decks of two visible teams, grouped data in order, and **no deck of a team the user cannot view**; `canManage` of a deck as `PokerDeckPolicy` decides; `author` is the creator's name and `null` when the creator's account is gone; the page stays reachable for whoever reaches it today.
+**Feature tests (written first):** the whiteboard templates of the workspace with their preview and `canManage` for the creator and for a workspace admin; the workspace's decks in name order, **no team deck and no deck of another workspace**; `canManage` and `canCreatePokerDeck` true for a workspace manager only; `usageCount` ignores the games of a team the user cannot view; `author` is the creator's name and `null` when the creator's account is gone; the page stays reachable for whoever reaches it today.
 
 **Consumed by:** 9c. **Run:** `vendor/bin/sail artisan test --compact tests/Feature/Workspaces/WorkspaceTemplatesTest.php`. **Commit:** `feat(workspaces): whiteboard templates, saved decks and authors on the templates page (B30)`
 
 ### Task 9a: Workspace page and workspace creation
+
+**Places left (feature roadmap):** on a team tile, the description line and the three activity lines (WS-1, TM-4).
 
 **Read first:** brief 09 §3 rows 1–10, §4; R4, R7.
 
@@ -3673,6 +3805,8 @@ Brief: `18e-briefs/09-workspace.md`. Five tasks; 9.0a and 9.0b are back-end task
 
 ### Task 9b: Members, roles and invitations
 
+**Places left (feature roadmap):** the message field of the invite form (IN-2); team invitations (IN-1).
+
 **Read first:** brief 09 §3 rows 11–20.
 
 **Files:** create `members-table.tsx`, `invite-form.tsx`, `invitations-table.tsx`, `delete-workspace-section.tsx`; rewrite `pages/workspaces/members.tsx`; add to `page-layouts.ts`.
@@ -3687,25 +3821,27 @@ Revoking an invitation asks for confirmation (9-D5): `ConfirmDialog`, "Revoke th
 
 ### Task 9c: Templates page — full picker, "Use", Poker and Whiteboard tabs
 
+**Places left (feature roadmap):** on a template card, "used n×" and the visibility badge (WS-2).
+
 **Read first:** brief 09 §3 rows 21–38; R3, R5; ScreenWorkspace, templates frames: tabs with counts, search, "New template", retro template cards (column preview, author, "Use"), poker cards (deck preview, "Use"), the whiteboard empty state; the answers 9-D1, 9-D2, 9-D7; spec §9.2 B30.
 
 **Files:** create `components/workspaces/templates-page.tsx`, `retro-templates-tab.tsx`, `poker-decks-tab.tsx`, `whiteboard-templates-tab.tsx`, `template-editor-sheet.tsx`, `lib/workspaces/use-template.ts` and their tests; rewrite `pages/workspaces/templates.tsx`; add to `page-layouts.ts`; modify `lang/{en,fr,es,de}.json` (the sentence of 9-D7).
 
 **Interfaces:**
 - Consumes: `RetroTemplatePicker` (the full picker: search, categories, tabs Built-in / My workspace, detail with the mini-board; `onUse`, `onDuplicate`), `TemplateEditor` (`ids` defaults `template-name`, `template-source`, `template-category`; `colors` = the eight colours of R1; `startFrom`, `onStartFrom`, `onDuplicate`, `onDelete`), `columnColorClass`, `DeckPicker` cards (read-only), the preview renderer of 1.3 (`whiteboard-template-preview.tsx`, mounted, not edited), `Tabs`; props `catalogue`, `templates` with `author`, `whiteboardTemplates`, `pokerDecks` (9.0b); the shared `currentTeam`.
-- Produces: `useTemplateHref(kind, key, team): string | null` in `lib/workspaces/use-template.ts` — the URL of `teams.show` with `?new=retro&template=<key>`, `?new=whiteboard&template=workspace:<id>` or `?new=poker&deck=<id>`, read on the other side by `useNewSessionIntent` (1.1); `null` without a team.
+- Produces: `useTemplateHref(kind, key, team): string | null` in `lib/workspaces/use-template.ts` — the URL of `teams.show` of the current team with `?new=retro&template=<key>`, `?new=whiteboard&template=workspace:<id>` or `?new=poker&deck=<id>`, read on the other side by `useNewSessionIntent` (1.1); `null` without a team.
 
 **Composition:**
 - Tabs "Retro · n", "Poker · n", "Whiteboard · n" (the mockup's "All" tab lists the three kinds one under the other).
 - Retro (9-D2): the full picker. A built-in template is read-only, with "Use" and "Duplicate" (which opens the editor prefilled, saved through the existing `workspaces.templates.store`). A workspace template shows its author, "Use", and, for a manager, Edit and "Delete template".
-- Poker (§15 point 6): the saved decks, one group per team, each with its value preview and "Use" (the deck's team); "Manage decks" links to that team's `poker/decks`. No workspace-level poker template (D-24).
+- Poker: the workspace's decks (1.0e), each with its value preview, its usage and "Use" (the current team); a workspace manager has "Create a deck", "Edit :name" and "Delete :name" here, through `workspaces.pokerDecks.*` and `DeckEditor`, the deletion confirmed in a dialog. The mockup's per-template timer and auto-reveal settings are not built (D-24).
 - Whiteboard: the workspace's whiteboard templates with their preview, "Use", and, when `canManage`, rename and delete through the existing `workspaces.whiteboardTemplates.update` / `.destroy`, the deletion confirmed in a dialog; the mockup's empty state when there is none.
 - "Use" is a link built by `useTemplateHref`; it is disabled, with the hint "Pick a team first", when the user has no current team.
 - Deleting a retro template says the component's sentence, "Retros already created from it are not affected." (9-D7): the component is not modified; the sentence is translated in `fr`, `es` and `de`, and the old key "Retrospectives created from it keep their columns." is removed from the four files once `grep -rn` finds no other use.
 
 **Browser tests changed** (imposed by `TemplateEditor/README.md`, ScreenWorkspace frame c, and the answers 9-D2, 9-D7): `Plan08aFlowAndTemplatesTest.php` `P08a-07a`: `li:has-text("Team pulse")` → the picker's radio of that template on the tab "My workspace" (`[role="radio"]:has-text("Team pulse")`); `P08a-07b`: `[aria-label="Column title"]` → "Column 1 title" …, "Move down" → keyboard reorder on the handle (Space, ArrowDown, Space), `[aria-label="Remove column"]` and `fieldset > div:nth-of-type(n)` → "Delete column “…”", "Add column" → "Add a column"; `P08a-07d`: Edit → "Delete template" → `[role="alertdialog"]` → confirm, and line 418: `'Retrospectives created from it keep their columns.'` → `'Retros already created from it are not affected.'`, read in `[role="alertdialog"]`. Unchanged: `#template-name`, `#template-source`, `#template-category`, `[role="dialog"] button[type="submit"]`, "Template saved.", "Template deleted.", "No workspace templates yet.", "New template".
 
-**New tests:** `[P18e-09-07]` duplicate, edit, delete a workspace template; `[P18e-09-09]` a built-in template has "Use" and "Duplicate" and no Edit or Delete; "Use" lands on the team page with the "New session" dialog open on that template; `[P18e-09-10]` the Poker tab groups the decks by team and "Use" opens the dialog of the deck's team with the deck selected; `[P18e-09-11]` the Whiteboard tab: preview, "Use", rename, delete with confirmation, and the empty state; `[P18e-09-12]` without a current team "Use" is disabled with its hint. Vitest: `useTemplateHref` for the three kinds and without a team.
+**New tests:** `[P18e-09-07]` duplicate, edit, delete a workspace template; `[P18e-09-09]` a built-in template has "Use" and "Duplicate" and no Edit or Delete; "Use" lands on the team page with the "New session" dialog open on that template; `[P18e-09-10]` the Poker tab lists the workspace's decks; a manager creates, edits and deletes one, a member sees no such control; "Use" opens the dialog of the current team with the deck selected; `[P18e-09-11]` the Whiteboard tab: preview, "Use", rename, delete with confirmation, and the empty state; `[P18e-09-12]` without a current team "Use" is disabled with its hint. Vitest: `useTemplateHref` for the three kinds and without a team.
 
 **Run:** `tests/Feature/Workspaces/WorkspaceTemplatesTest.php`, `tests/Feature/TranslationKeysTest.php`; browser `Plan08aFlowAndTemplatesTest.php`, `Plan18eWorkspaceTest.php`, `Visual/WorkspacePagesVisualTest.php`; group gate; G-visual-9.
 
@@ -3731,6 +3867,8 @@ export function AuthAside(): ReactElement; // decorative, aria-hidden and inert
 **Browser tests changed:** none. **Commit:** `feat(auth): shared auth components`
 
 ### Task 11.2: Login and register
+
+**Places left (feature roadmap):** the magic-link button and the phone's tab strip (plan 18f, B12).
 
 **Read first:** brief 11 §3 rows 1–14.
 
@@ -3764,9 +3902,9 @@ export function AuthAside(): ReactElement; // decorative, aria-hidden and inert
 
 ### Task 11.5a: Invitation page data — SSO providers, inviter, role, expiry, members (B31, B44) — back end
 
-**Read first:** spec §9.2 B31, §9.3 B44, criteria 28 and 43, §15 point 17; `app/Http/Controllers/InvitationLinksController.php`, `SsoCallbacksController.php`, `app/Actions/Auth/ResolveSsoUser.php`, `SignupGate.php`, `app/Enums/SsoProvider.php` (`options()`), `app/Models/WorkspaceInvitation.php` (`role`, `invited_by_id`, `expires_at`, `isPending`), `app/Providers/FortifyServiceProvider.php:58,83` (how the login page gets `ssoProviders`), `tests/Feature/Auth/SsoLoginTest.php` (how Socialite is faked), `ResolveSsoUserTest.php`, `InvitationRegistrationTest.php`.
+**Read first:** spec §9.2 B31 ("Ownership"), §9.3 B44, criteria 28 and 43; `app/Http/Controllers/InvitationLinksController.php`, `SsoCallbacksController.php`, `app/Actions/Auth/ResolveSsoUser.php`, `SignupGate.php`, `app/Enums/SsoProvider.php` (`options()`), `app/Models/WorkspaceInvitation.php` (`role`, `invited_by_id`, `expires_at`, `isPending`), `app/Providers/FortifyServiceProvider.php:58,83` (how the login page gets `ssoProviders`), `tests/Feature/Auth/SsoLoginTest.php` (how Socialite is faked), `ResolveSsoUserTest.php`, `InvitationRegistrationTest.php`.
 
-**This task adds props and tests. It does not change `ResolveSsoUser`, `SsoCallbacksController` or `SignupGate`.** If a pinning test below fails, the behaviour of the sign-in code is not what the spec describes: stop and report. A change to those three classes is authentication work and belongs to plan 18f, whose security review covers this flow (spec B31).
+**This task adds props and tests. It does not change `ResolveSsoUser`, `SsoCallbacksController` or `SignupGate`.** If a pinning test below fails, the behaviour of the sign-in code is not what the spec describes: stop and report. The owner decided one change to that code — an SSO address the provider does not mark verified is refused even with a matching invitation — and gave it to plan 18f, under its security rules. This task therefore writes no test on the unverified case, in either direction: a test that pins today's behaviour would have to be deleted by 18f, and a test of the new rule would fail until 18f.
 
 **Files:** modify `InvitationLinksController.php`, the props type of `invitations/show`; create `tests/Feature/Auth/InvitationPagePropsTest.php`, `InvitationSsoTest.php`.
 
@@ -3783,11 +3921,13 @@ export function AuthAside(): ReactElement; // decorative, aria-hidden and inert
 
 The invalid branch (`isInvalid: true`, 404) sends none of them. An expired invitation sends `inviter` and `expiresAt` (the page says who to ask) and an empty `ssoProviders`, and no `members`.
 
-**Feature tests (written first):** props — a logged-out visitor of a pending invitation gets one entry per enabled provider; a signed-in visitor, an expired invitation and an invalid token get none; the inviter's name and avatar, `null` when the inviter's account was deleted; the role value, the expiry, the member count and five members; **an invalid token gets none of the new props, and no prop ever carries an e-mail other than the invited one** (Review Focus 7). SSO flow, pinned — a new person who signs in through SSO with the invited, verified address gets an account, belongs to the workspace, and the session's `invitation_token` is cleared; with another address the invitation stays pending, and in `invite` sign-up mode the sign-in is refused with the existing message; an existing verified account that signs in through SSO is not auto-accepted, lands back on the invitation page (the intended URL) and accepts with `invitations.acceptance.store`; a user with a confirmed second factor is sent to the challenge and joins nothing before passing it; an SSO address that the provider does not mark verified, with a matching invitation, creates the account (today's behaviour, recorded for the review of plan 18f).
+**Feature tests (written first):** props — a logged-out visitor of a pending invitation gets one entry per enabled provider; a signed-in visitor, an expired invitation and an invalid token get none; the inviter's name and avatar, `null` when the inviter's account was deleted; the role value, the expiry, the member count and five members; **an invalid token gets none of the new props, and no prop ever carries an e-mail other than the invited one** (Review Focus 7). SSO flow, pinned — a new person who signs in through SSO with the invited, verified address gets an account, belongs to the workspace, and the session's `invitation_token` is cleared; with another address the invitation stays pending, and in `invite` sign-up mode the sign-in is refused with the existing message; an existing verified account that signs in through SSO is not auto-accepted, lands back on the invitation page (the intended URL) and accepts with `invitations.acceptance.store`; a user with a confirmed second factor is sent to the challenge and joins nothing before passing it. Not pinned here: the unverified address (plan 18f).
 
 **Consumed by:** 11.5. **Run:** `vendor/bin/sail artisan test --compact tests/Feature/Auth`. **Commit:** `feat(invitations): SSO providers, inviter, role, expiry and members on the invitation page (B31, B44)`
 
 ### Task 11.5: Accept-invitation card
+
+**Places left (feature roadmap):** the inviter's message under the sentence (IN-2); "Decline" beside the main action (IN-3); the team's name and colour (IN-1).
 
 **Read first:** brief 11 §3 rows 26–31; ScreenOnboarding, accept-invitation frame and its variants (signed in, expired). **Files:** `invitation-card.tsx`, `pages/invitations/show.tsx` rewritten (`AuthLayout variant="centered"`), `page-layouts.ts`.
 
@@ -3801,7 +3941,7 @@ The invalid branch (`isInvalid: true`, 404) sends none of them. An expired invit
 
 ### Task 11.6: Request id per request (B36) — back end
 
-**Read first:** spec §9.2 B36, criterion 33, §15 point 15; `bootstrap/app.php` (`withMiddleware`), `app/Http/Middleware/TrustProxies.php` (a sibling global middleware), Laravel's `Illuminate\Support\Facades\Context` (search the docs: "context", "log context"), `tests/Feature/RequestIsolationTest.php`.
+**Read first:** spec §9.2 B36, criterion 33; `bootstrap/app.php` (`withMiddleware`), `app/Http/Middleware/TrustProxies.php` (a sibling global middleware), Laravel's `Illuminate\Support\Facades\Context` (search the docs: "context", "log context"), `tests/Feature/RequestIsolationTest.php`.
 
 **Files:** create `app/Http/Middleware/AssignRequestId.php`, `tests/Feature/RequestIdTest.php`; modify `bootstrap/app.php` (`$middleware->prepend(AssignRequestId::class);`).
 
@@ -3833,7 +3973,9 @@ class AssignRequestId
 
 ### Task 11.7: Error pages — 403, 404, 419, 429, 500 and the static 503 (B15)
 
-**Read first:** brief 11 §7, §9 (first two risks); spec §9 B15 and B36, criterion 34, §15 point 14; ScreenErrors README and preview (404, 403, 500 with "Copy error ID" and "Try again", 503 with "Retry now"); the answers 11-D3, 11-D7, 11-D10; Inertia v3's error handling (search the docs: "error pages", `handleExceptionsUsing`).
+**Places left (feature roadmap):** the header links "Instance status" (AD-3) and the version in the footer (AD-2); the access-request form of the 403 page (AD-4); the "Back at" block and the admin's message of the 503 page (AD-5).
+
+**Read first:** brief 11 §7, §9 (first two risks); spec §9 B15 and B36, criterion 34; ScreenErrors README and preview (404, 403, 500 with "Copy error ID" and "Try again", 503 with "Retry now"); the answers 11-D3, 11-D7, 11-D10; Inertia v3's error handling (search the docs: "error pages", `handleExceptionsUsing`).
 
 **Files:** modify `bootstrap/app.php` (`Inertia::handleExceptionsUsing` or the `respond` hook the docs give for v3); create `resources/js/pages/errors/error.tsx`, `resources/js/components/auth/error-page.tsx` and its test, `resources/views/errors/503.blade.php`, `tests/Feature/ErrorPagesTest.php`; add `errors/error` to `page-layouts.ts`.
 
@@ -3867,6 +4009,8 @@ Brief: `18e-briefs/10-settings.md`. Nine tasks; 10.0 is a back-end task. Shells 
 
 ### Task 10.1: Settings shell and profile
 
+**Places left (feature roadmap):** in the profile card, the photo block (AC-1) and the presence colours (AC-4).
+
 **Read first:** brief 10 §3.1 rows 1–9, §4 (shells); ScreenUserSettings: sticky sub-navigation (Profile, Security, Appearance, Notifications, API tokens), stacked cards, the destructive "Delete account" card (10-D1).
 
 **Files:**
@@ -3893,6 +4037,8 @@ Consumes `PasswordField` (11.1) in the delete-account confirmation.
 
 ### Task 10.2: Security — password, two-factor, passkeys
 
+**Places left (feature roadmap):** under the passkeys card, the cards Active sessions and Linked accounts (AC-2, AC-3); the breach line of the password card (AC-6).
+
 **Read first:** brief 10 §3 rows 10–27; ScreenSecurity: cards Password (show / hide, strength meter), 2FA (setup with QR and manual key, six-box code, recovery codes with Download and Copy, the "enabled" state with its dates), then Active sessions and Linked accounts (not built); the answer 10-D3 (inline steps, no Print).
 
 **Files:**
@@ -3913,6 +4059,8 @@ Consumes `PasswordField` (11.1) in the delete-account confirmation.
 **Commit:** `feat(settings): security (password, two-factor, passkeys)`
 
 ### Task 10.3: Appearance and notifications
+
+**Places left (feature roadmap):** "Reduce animations" in the appearance card (AC-5); the "Accessibility" card of `single_key_shortcuts` (plan 18f, B35); the notification rows of plan 18f (`recap_emails`) and of MN-1.
 
 **Read first:** brief 10 §3 rows 28–34; ScreenUserSettings: theme radio cards System / Light / Dark, language, the notification table with In-app and Email switches per event; the answer 10-D6 (explicit Save).
 
@@ -3953,6 +4101,8 @@ Consumes `PasswordField` (11.1) in the delete-account confirmation.
 **Commit:** `feat(settings): API tokens with the inline creation form`
 
 ### Task 10.5: Team settings shell, provider card, chat channels
+
+**Places left (feature roadmap):** the other entries of the sub-navigation (WS-3): it takes its entries from a list.
 
 **Read first:** brief 10 §3 rows 53–64; ScreenSettings frame a (tabs; integration cards with a switch and Configure / Connect); the answer 10-D4 (sub-navigation "Team" and "Integrations").
 
@@ -4074,7 +4224,7 @@ What F1 leaves to 18g: every row of `old-components-for-18g.md` (rewritten there
 
 **Files:** create `docs/superpowers/research/front-rewrite/18e-report.md`, assembled from `18e-report/<group>.md`.
 
-Content (spec §12): what is done, per group; the parity table "action in the old front end → control in the new one" per screen (spec §8 and criterion 2), with the old features the owner's answers changed or removed marked as decided (spec §8, last list); every browser test that changed, with the mockup or the answer that imposed it (criterion 3); the side-by-side comparison of each screen with its mockup and the differences that remain (criterion 35); the table "Deviations from the mockup" with the owner's decision on each row (gate G-deviations); back-end changes made, item by item (B1 … B45 of this plan), with their feature tests; code deleted; tokens or components found missing; the open points of spec §15 and what the owner answered; the six decisions that stayed unanswered and their defaults; `old-components-for-18g.md`; what 18f needs (the places left for the magic link, the notification row for `recap_emails`, the shortcut handlers of B35 and the single-key shortcuts `P` and `E` of the drawing toolbar, the security review of B31) and what 18g needs. Commit: `docs(front-rewrite): phase report of plan 18e`.
+Content (spec §12): what is done, per group; the parity table "action in the old front end → control in the new one" per screen (spec §8 and criterion 2), with the old features the owner's answers changed or removed marked as decided (spec §8, last list); every browser test that changed, with the mockup or the answer that imposed it (criterion 3); the side-by-side comparison of each screen with its mockup and the differences that remain (criterion 35); the table "Deviations from the mockup" with the owner's decision on each row (gate G-deviations); back-end changes made, item by item (B1 … B45 of this plan), with their feature tests; code deleted; tokens or components found missing; the four open points of spec §15 and what the owner answered; the "Places left" of every screen, with the slot names, for the plans of the feature roadmap; the six decisions that stayed unanswered and their defaults; `old-components-for-18g.md`; what 18f needs (the places left for the magic link, the notification row for `recap_emails`, the shortcut handlers of B35 and the single-key shortcuts `P` and `E` of the drawing toolbar, the security review of B31) and what 18g needs. Commit: `docs(front-rewrite): phase report of plan 18e`.
 
 ---
 
@@ -4085,18 +4235,18 @@ Content (spec §12): what is done, per group; the parity table "action in the ol
 | Answer | Spec | Task |
 |---|---|---|
 | BLOCK-3 / 12-D1 redirect | B32 | 12.1 |
-| X3 banner | §6.3, §15 point 9 | 0.3, 0.14; R3, 3.1a, G3, 7.2 |
+| X3 banner | §6.3 | 0.3, 0.14; R3, 3.1a, G3, 7.2 |
 | X5 one timer list | ruling 19 | 0.5; 3.1a, G3 |
 | 1-D2 one trigger | §6.4 | 1.1, 1.2, 1.3, 4.1 |
 | 1-D3 shortcuts and Browse | B17 | 1.0a, 1.1 |
-| 1-D4 five types | B18 | 1.0b, 1.4 |
+| 1-D4 four types now, Poll with plan 19 | B18 | 1.0b, 1.4 |
 | 1-D8 dialog confirmation | §6.4 | 1.3 |
 | 2-D6 duration | B3, B19 | R12a, R12 |
-| 2-D8 "+2 min" | B20, ruling 19 | R2b, 0.5, R3 |
+| 2-D8 "+2 min", on every timer (third round) | B20, ruling 19 | 0.5; R2b, R3; 3.0c, 3.1a; G0e, G3; 7.0b, 7.2 |
 | 2-D9 topics only | §6.4 | R9 |
 | 7-D2 guest link in Share only | §6.4 | R3, 3.1b, 7.2, 7.3 |
 | 2-D13 confetti | ruling 37 | R12 |
-| 3-D3 saved decks page | B21 | 1.0c, 1.5 |
+| 3-D3 saved decks page; usage without backfill | B21 | 1.0c, 1.5 |
 | 3-D7 "Reveal cards" | §6.4 | 3.1a |
 | 3-D8 actions in the dock | §6.4 | 3.1a |
 | 3-D10 spectator switch | — (a control) | 3.2 |
@@ -4111,30 +4261,31 @@ Content (spec §12): what is done, per group; the parity table "action in the ol
 | 5-D7 "(Guest)" | §6.4 | R8b, R9, 5.2 |
 | 6-D2 eight ink colours | B26, ruling 36 | G0a, G4 |
 | 6-D3 reaction bar in a room | B27 | G0b, G3 |
-| 6-D6 status and avatars | B28 | G0c, G1 |
+| 6-D6 status and avatars; live list (third round) | B28 | G0c, G0d, G1 |
 | 6-D7 full Share dialog | — (a component) | G3 |
 | 7-D1 palette and template JSON | B29 | 7.0, 7.4 |
 | 7-D3 colour bar everywhere | §6.4 | 7.4 |
-| 7-D7 phone read mode | §6.4, §15 point 13 | 7.5 |
-| 9-D1 / 9-D2 templates page | B30 | 9.0b, 9c |
+| 7-D7 phone read mode | §6.4 | 7.5 |
+| 9-D1 / 9-D2 templates page; workspace-level decks (third round) | B30 | 1.0e, 9.0b, 9c |
 | 9-D5 revoke confirmation | §6.4 | 9b |
 | 9-D7 deletion sentence | §6.4 | 9c |
 | 10-D2 inline token form | — (a layout) | 10.4 |
-| 11-D2 SSO on the invitation | B31 | 11.5a, 11.5 |
+| 11-D2 SSO on the invitation; unverified address refused (third round) | B31 | 11.5a, 11.5; the refusal: plan 18f |
 | 11-D3 request id | B36 | 11.6, 11.7 |
 | 11-D7 / 11-D10 503, 419, 429 | B15 | 11.7 |
 | 18f: forced SSO, recap unsubscribe, shortcuts | B33, B34, B35 | plan 18f (not this plan) |
 | 18g boundary | §12 row 18g | F1 step 4, F3 |
 | Rule 13 (standing rule) | §5 rule 13, criterion 35, B37 to B45 | procedure step 7; the two tables; 0.15; 1.0d, R2a, R2c, 3.0a, 3.0b, 4.0d, 9.0a, 10.0, 11.5a |
+| "Rewrite first, features after" (third round) | §5 rule 13, §10 | procedure step 3b; the "Places left" line of each screen task; the last column of the deviations table; `feature-roadmap.md` |
 
-**Spec coverage.** §7 rows 1 to 12: groups 1 to 12 (row 10's Admin › Branding was 18d and is brought in line by 0.15; row 12 is a redirect). §9: B1 → R10; B2 → R11; B3 → R12a, R12; B10 → R1; B15 → 11.7; B16 renames → 0.9 and 5.0; B17 → 1.0a; B18 → 1.0b; B19 → R12a; B20 → R2b; B21 → 1.0c, 1.5; B22 → 4.0a; B23 → 4.0b; B24 → 4.0c; B25 → 5.0; B26 → G0a; B27 → G0b; B28 → G0c; B29 → 7.0; B30 → 9.0b; B31 → 11.5a; B32 → 12.1; B36 → 11.6; B37 → 1.0d; B38 → R2c; B39 → 3.0a; B40 → 3.0b; B41 → 4.0d; B42 → 9.0a; B43 → 10.0; B44 → 11.5a; B45 → R2a. B33, B34, B35 are plan 18f. §8 parity list: each line is a parity row of a brief; step 4 of the procedure checks them and F3 publishes the tables. §11: Vitest, feature, browser and visual tests are named per task; §13 criterion 9 → `[P18e-02-01]`; criterion 12 → `[P18e-02-07]`; criteria 5 and 8 → F2; criteria 14 to 29 and 33 to 44 → the feature tests of the back-end tasks; criterion 35 → procedure step 7 and F2. Not covered here by design: criteria 6 (`knip`) and 7 (starter kit) are 18g; criteria 30 to 32 are 18f.
+**Spec coverage.** §7 rows 1 to 12: groups 1 to 12 (row 10's Admin › Branding was 18d and is brought in line by 0.15; row 12 is a redirect). §9: B1 → R10; B2 → R11; B3 → R12a, R12; B10 → R1; B15 → 11.7; B16 renames → 0.9 and 5.0; B17 → 1.0a; B18 → 1.0b; B19 → R12a; B20 → R2b, 3.0c, G0e, 7.0b; B21 → 1.0c, 1.5; B22 → 4.0a; B23 → 4.0b; B24 → 4.0c; B25 → 5.0; B26 → G0a; B27 → G0b; B28 → G0c, G0d; B29 → 7.0; B30 → 1.0e, 9.0b; B31 → 11.5a; B32 → 12.1; B36 → 11.6; B37 → 1.0d; B38 → R2c; B39 → 3.0a; B40 → 3.0b; B41 → 4.0d; B42 → 9.0a; B43 → 10.0; B44 → 11.5a; B45 → R2a. B33, B34, B35 are plan 18f. §8 parity list: each line is a parity row of a brief; step 4 of the procedure checks them and F3 publishes the tables. §11: Vitest, feature, browser and visual tests are named per task; §13 criterion 9 → `[P18e-02-01]`; criterion 12 → `[P18e-02-07]`; criteria 5 and 8 → F2; criteria 14 to 29 and 33 to 44 → the feature tests of the back-end tasks; criterion 35 → procedure step 7 and F2. Not covered here by design: criteria 6 (`knip`) and 7 (starter kit) are 18g; criteria 30 to 32 are 18f.
 
-**Names used on both sides.** Spec and plan agree on: `topTemplates`, `TemplateCatalogue::Shortcuts`, `poll`, `gameOptions`, `canCreateGameRoom`, `roomLimit`, `retros.started_at`, `MarkRetroStarted`, `results.stats` (`votesCast`, `votesAvailable`, `participation`, `durationSeconds`), `previousAverage`, `retros.timer.extension.store`, `teams.default_poker_deck`, `teams.default_saved_poker_deck_id`, `poker_games.saved_deck_id`, `teams.pokerDecks.index`, `teams.defaultPokerDeck.update`, `teams.pokerDecks.duplicate.store`, `defaultPokerDeck`, `moodTrend`, `avatarUrl`, `counts` (`open`, `overdue`, `completed`, `mine`, `rituals`), `filterTeams`, `teamGroups`, `DrawingOp::Colors` / `LegacyColors`, `game_rooms.reactions_enabled`, `reactionsEnabled`, `status` / `players` / `roundStartedAt`, `whiteboardTemplates`, `pokerDecks`, `author`, `ssoProviders`, `inviter` / `role` / `expiresAt` / `membersCount` / `members`, `AssignRequestId`, `X-Request-Id`, `requestId`, `writersCount`, `roti.voterIds`, `median` / `spread` / `agreement` / `outliers`, `deck` / `voters` / `votersCount`, `templateName` / `facilitator` / `rotiAverage`, `pokerPresence`, `adminsCount`, `teamsCount`, `twoFactor`, `session` (`facilitatorName`, `participantsCount`, `isLive`). The three names of plan 18f are only quoted here: `sso_required`, `recap_emails`, `single_key_shortcuts`.
+**Names used on both sides.** Spec and plan agree on: `topTemplates`, `TemplateCatalogue::Shortcuts`, `gameOptions`, `canCreateGameRoom`, `roomLimit`, `retros.started_at`, `MarkRetroStarted`, `results.stats` (`votesCast`, `votesAvailable`, `participation`, `durationSeconds`), `previousAverage`, `retros.timer.extension.store`, `poker.rounds.timer.extension.store`, `games.timer.extension.store`, `whiteboards.timer.extension.store`, `poker_decks.workspace_id`, `workspaces.pokerDecks.store|update|destroy`, `scope`, `team-games.{teamId}`, `TeamGameRoomChanged`, `TeamGameRoomDeleted`, `teams.default_poker_deck`, `teams.default_saved_poker_deck_id`, `poker_games.saved_deck_id`, `teams.pokerDecks.index`, `teams.defaultPokerDeck.update`, `teams.pokerDecks.duplicate.store`, `defaultPokerDeck`, `moodTrend`, `avatarUrl`, `counts` (`open`, `overdue`, `completed`, `mine`, `rituals`), `filterTeams`, `teamGroups`, `DrawingOp::Colors` / `LegacyColors`, `game_rooms.reactions_enabled`, `reactionsEnabled`, `status` / `players` / `roundStartedAt`, `whiteboardTemplates`, `pokerDecks`, `author`, `ssoProviders`, `inviter` / `role` / `expiresAt` / `membersCount` / `members`, `AssignRequestId`, `X-Request-Id`, `requestId`, `writersCount`, `roti.voterIds`, `median` / `spread` / `agreement` / `outliers`, `deck` / `voters` / `votersCount`, `templateName` / `facilitator` / `rotiAverage`, `pokerPresence`, `adminsCount`, `teamsCount`, `twoFactor`, `session` (`facilitatorName`, `participantsCount`, `isLive`). The three names of plan 18f are only quoted here: `sso_required`, `recap_emails`, `single_key_shortcuts`.
 
 **Type consistency.** `SessionShell` (with `kind`), `SessionTitle`, `SessionPresence`, `SessionTimer` (with `onExtend`), `TimeUpBadge`, `CursorToggle`, `useHideMyCursor`, `LiveCursors`, `SessionReactions`, `SessionReactionPicker`, `useFlyingReactions`, `GuestJoinPage`, `AccessNotice`, `GifSearchDialog`, `usesOwnLayout` / `ownLayoutPages`, `NewSessionDialog`, `useNewSessionIntent`, `topicsFrom`, `ItemDeleteConfirm`, `AppLayout actions` are named the same in the task that produces them and in every task that consumes them. `idPrefix="deck-custom"` is used in 1.2 and 3.1b, `"deck-new"` in 1.5.
 
-**Not verified by this plan's author** (each is a "read before editing" or "confirm" instruction in its task): the message shape and overlay class of `live-reactions` (0.6); the exact roles and names inside `GifPicker` (0.13); whether the "+" control of `Timer` is a button or a menu item (0.5); whether `HealthCheckForm` renders `ol > li` and the old names (R5); the announcement text of `HealthStatementsManager` (4.2); whether the due-date control of `ActionSheet` is a native input (5.2); the label of the saved group in `DeckPicker` (3.1b); the list of old poker view files (3.1a names them from the brief, the agent lists the folder); Inertia v3's handling of a failed deferred prop (G1) and of `handleExceptionsUsing` for non-Inertia HTML requests, 419 and 429 (11.7); that `TemplateCatalogue::Custom` has no column (1.0b); the name of the author column of `cards` and of the facilitator relation of `Retro` (R2c, 4.0d); the `creator` relation of `WorkspaceTemplate` (9.0b); how the timer tests bring a timer to zero (3.1a); which uses of "Reconnecting…" and of `retro-column-` are scoped in a way the new markup breaks (R3, R9, 3.1a, 7.2); the lines of `Plan18dBrandingTest.php` that 0.15 changes; the sRGB values of the eight inks (G0a computes them; G4 reads them). The mockups were read through `design-system-digest.md` and the briefs, not opened one by one: step 1 of each screen task is where a mockup element missed by both would surface. Nothing was run.
+**Not verified by this plan's author** (each is a "read before editing" or "confirm" instruction in its task): the message shape and overlay class of `live-reactions` (0.6); the exact roles and names inside `GifPicker` (0.13); whether the "+" control of `Timer` is a button or a menu item (0.5); whether `HealthCheckForm` renders `ol > li` and the old names (R5); the announcement text of `HealthStatementsManager` (4.2); whether the due-date control of `ActionSheet` is a native input (5.2); the label of the saved group in `DeckPicker` (3.1b); the list of old poker view files (3.1a names them from the brief, the agent lists the folder); Inertia v3's handling of a failed deferred prop (G1) and of `handleExceptionsUsing` for non-Inertia HTML requests, 419 and 429 (11.7); the name of the author column of `cards` and of the facilitator relation of `Retro` (R2c, 4.0d); the `creator` relation of `WorkspaceTemplate` (9.0b); how the timer tests bring a timer to zero (3.1a); which uses of "Reconnecting…" and of `retro-column-` are scoped in a way the new markup breaks (R3, R9, 3.1a, 7.2); the lines of `Plan18dBrandingTest.php` that 0.15 changes; the sRGB values of the eight inks (G0a computes them; G4 reads them). The mockups were read through `design-system-digest.md` and the briefs, not opened one by one: step 1 of each screen task is where a mockup element missed by both would surface. Nothing was run.
 
 ## Execution handoff
 
-Plan saved as `docs/superpowers/plans/2026-10-16-plan-18e-front-rewrite-screens.md`. Execution is subagent-driven through the Workflow tool: one agent per task, a review after each, one writer in Step A, one worktree per lane in Step B. Before Task 0.1 the owner reads three short things: the table "Deviations from the mockup" (gate G-deviations), the table "Defaults flipped to the mockup", and spec §15 (open points, starting with the reading of rule 13).
+Plan saved as `docs/superpowers/plans/2026-10-16-plan-18e-front-rewrite-screens.md`. Execution is subagent-driven through the Workflow tool: one agent per task, a review after each, one writer in Step A, one worktree per lane in Step B. The owner has read the deviations table and answered the first open points (third round). What is left to read before Task 0.1: the four points of spec §15, and `feature-roadmap.md`, whose order of plans 19 and after is a proposal.
