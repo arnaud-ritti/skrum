@@ -1,14 +1,20 @@
 import {
+    ArrowRightLeft,
+    CircleStop,
     Eye,
     Hand as HandIcon,
     Link2,
     ListTodo,
     PanelRightClose,
     PanelRightOpen,
+    RotateCcw,
+    Settings2,
+    Share2,
     Spade,
+    Trash2,
 } from 'lucide-react';
 import { useRef, useState } from 'react';
-import type { FormEvent, KeyboardEvent } from 'react';
+import type { KeyboardEvent } from 'react';
 import { toast } from 'sonner';
 import PokerFacilitatorsController from '@/actions/App/Http/Controllers/Poker/PokerFacilitatorsController';
 import PokerSettingsController from '@/actions/App/Http/Controllers/Poker/PokerSettingsController';
@@ -19,13 +25,13 @@ import { SessionTitle } from '@/components/session/session-title';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-    Dialog,
-    DialogContent,
-    DialogFooter,
-    DialogTitle,
-} from '@/components/ui/dialog';
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import {
     Tooltip,
@@ -33,11 +39,15 @@ import {
     TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { useCountdown } from '@/hooks/use-countdown';
+import { useMinWidth } from '@/hooks/use-min-width';
 import { useTrans } from '@/hooks/use-trans';
+import { hasShareChannel } from '@/lib/integrations';
 import { retroRequest } from '@/lib/retro/api';
 import { cn } from '@/lib/utils';
 import { useGame } from './game-context';
-import { useSetSpectator } from './use-round-actions';
+import { CustomTimerDialog } from './room-dialogs';
+import type { RoomDialog } from './room-dialogs';
+import { useSetEnded, useSetSpectator } from './use-round-actions';
 
 /** The game's name: edited in place by the facilitator, saved on blur or Enter, Escape cancels. */
 function TitleEditor() {
@@ -183,9 +193,7 @@ export function RoomStateBadges({ className }: { className?: string }) {
  */
 export function RoomTimer() {
     const { snapshot, serverOffset, run, apply } = useGame();
-    const { t } = useTrans();
     const [customOpen, setCustomOpen] = useState(false);
-    const [minutes, setMinutes] = useState('5');
     const [started, setStarted] = useState<{
         endsAt: string;
         seconds: number;
@@ -247,19 +255,6 @@ export function RoomTimer() {
         });
     };
 
-    const startCustom = (event: FormEvent) => {
-        event.preventDefault();
-
-        const value = Number(minutes);
-
-        if (!Number.isInteger(value) || value < 1 || value > 60) {
-            return;
-        }
-
-        setCustomOpen(false);
-        void set(value * 60);
-    };
-
     return (
         <>
             <SessionTimer
@@ -283,38 +278,11 @@ export function RoomTimer() {
                 className="shrink-0"
             />
             {canControl && (
-                <Dialog open={customOpen} onOpenChange={setCustomOpen}>
-                    <DialogContent aria-describedby={undefined}>
-                        <DialogTitle>{t('Custom minutes')}</DialogTitle>
-                        <form
-                            onSubmit={startCustom}
-                            className="flex flex-col gap-4"
-                        >
-                            <div className="grid gap-2">
-                                <Label htmlFor="poker-timer-minutes">
-                                    {t('Minutes')}
-                                </Label>
-                                <Input
-                                    id="poker-timer-minutes"
-                                    type="number"
-                                    min={1}
-                                    max={60}
-                                    step={1}
-                                    required
-                                    value={minutes}
-                                    onChange={(event) =>
-                                        setMinutes(event.target.value)
-                                    }
-                                />
-                            </div>
-                            <DialogFooter>
-                                <Button type="submit">
-                                    {t('Start timer')}
-                                </Button>
-                            </DialogFooter>
-                        </form>
-                    </DialogContent>
-                </Dialog>
+                <CustomTimerDialog
+                    open={customOpen}
+                    onOpenChange={setCustomOpen}
+                    onStart={set}
+                />
             )}
         </>
     );
@@ -443,7 +411,7 @@ export function TakeControlButton() {
     );
 }
 
-/** A member who does not facilitate copies the guest link from here; the facilitator has it in the menu. */
+/** A member who does not facilitate copies the guest link from here; the facilitator has it in the Share dialog. */
 export function CopyGuestLinkButton() {
     const { snapshot } = useGame();
     const { t } = useTrans();
@@ -479,5 +447,148 @@ export function CopyGuestLinkButton() {
             </TooltipTrigger>
             <TooltipContent>{t('Copy guest link')}</TooltipContent>
         </Tooltip>
+    );
+}
+
+/** The header's Share button shows its label from this width. */
+const ShareLabelFrom = 1536;
+
+/**
+ * "Share" of the header: the guest link and the channels. The facilitator's,
+ * while the game runs. Its label shows from 96rem: below, the header keeps the
+ * room for the state of the round.
+ */
+export function ShareButton({ onClick }: { onClick: () => void }) {
+    const { snapshot } = useGame();
+    const { t } = useTrans();
+    const isRoomy = useMinWidth(ShareLabelFrom);
+
+    if (!snapshot.me.isFacilitator || snapshot.game.endedAt !== null) {
+        return null;
+    }
+
+    if (isRoomy) {
+        return (
+            <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="shrink-0"
+                aria-label={t('Share')}
+                data-slot="poker-share"
+                onClick={onClick}
+            >
+                <Share2 aria-hidden />
+                <span>{t('Share')}</span>
+            </Button>
+        );
+    }
+
+    return (
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <Button
+                    type="button"
+                    size="icon-sm"
+                    variant="outline"
+                    className="shrink-0"
+                    aria-label={t('Share')}
+                    data-slot="poker-share"
+                    onClick={onClick}
+                >
+                    <Share2 aria-hidden />
+                </Button>
+            </TooltipTrigger>
+            <TooltipContent>{t('Share')}</TooltipContent>
+        </Tooltip>
+    );
+}
+
+/**
+ * The facilitator's menu. The guest link is in the Share dialog only; "Share…"
+ * is listed when a channel is connected, and where the header has no room for
+ * its Share button.
+ */
+export function FacilitatorMenu({
+    shareInMenu,
+    onChoose,
+}: {
+    shareInMenu: boolean;
+    onChoose: (dialog: RoomDialog) => void;
+}) {
+    const { snapshot } = useGame();
+    const { t } = useTrans();
+    const { busy, setEnded } = useSetEnded();
+    const { game, me, share } = snapshot;
+    const isEnded = game.endedAt !== null;
+    const offersShare =
+        hasShareChannel(share) || (shareInMenu && me.isFacilitator && !isEnded);
+
+    if (!me.isFacilitator && !me.canDelete) {
+        return null;
+    }
+
+    return (
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button
+                    type="button"
+                    size="icon-sm"
+                    variant="outline"
+                    className="shrink-0"
+                    aria-label={t('Facilitator menu')}
+                >
+                    <Settings2 aria-hidden />
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+                {offersShare && (
+                    <>
+                        <DropdownMenuItem onSelect={() => onChoose('share')}>
+                            <Share2 aria-hidden />
+                            {t('Share…')}
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                    </>
+                )}
+                {me.isFacilitator && !isEnded && (
+                    <>
+                        <DropdownMenuItem onSelect={() => onChoose('settings')}>
+                            <Settings2 aria-hidden />
+                            {t('Settings…')}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => onChoose('transfer')}>
+                            <ArrowRightLeft aria-hidden />
+                            {t('Hand over facilitation…')}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => onChoose('end')}>
+                            <CircleStop aria-hidden />
+                            {t('End game')}
+                        </DropdownMenuItem>
+                    </>
+                )}
+                {me.isFacilitator && isEnded && (
+                    <DropdownMenuItem
+                        disabled={busy}
+                        onSelect={() => void setEnded(false)}
+                    >
+                        <RotateCcw aria-hidden />
+                        {t('Reopen game')}
+                    </DropdownMenuItem>
+                )}
+                {me.canDelete && (
+                    <>
+                        {me.isFacilitator && <DropdownMenuSeparator />}
+                        <DropdownMenuItem
+                            variant="destructive"
+                            onSelect={() => onChoose('delete')}
+                        >
+                            <Trash2 aria-hidden />
+                            {t('Delete game…')}
+                        </DropdownMenuItem>
+                    </>
+                )}
+            </DropdownMenuContent>
+        </DropdownMenu>
     );
 }

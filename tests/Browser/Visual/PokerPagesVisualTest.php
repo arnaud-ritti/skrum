@@ -7,6 +7,7 @@ use App\Models\PokerGame;
 use App\Models\PokerPlayer;
 use App\Models\PokerRound;
 use App\Models\PokerTask;
+use App\Models\SavedPokerDeck;
 use App\Models\Team;
 use App\Models\User;
 use App\Models\Workspace;
@@ -149,5 +150,48 @@ it('[P18e-03-09] renders the revealed poker room of a facilitator who watches wi
             ->assertPresent('[data-slot="poker-watching"]')
             ->assertPresent('[data-slot="poker-deckbar"] [data-slot="facilitator-bar"]')
             ->assertCount('[data-slot="poker-seat-card"][data-outlier]', 2),
+    );
+});
+
+it('[P18e-03-10] renders the game settings with the deck picker without overflow', function () {
+    ['game' => $game, 'task' => $task, 'facilitator' => $facilitator] = pokerVisualGame();
+    openPokerRound($game, $task);
+    SavedPokerDeck::factory()->create([
+        'team_id' => $game->team_id,
+        'name' => 'Atlas scale',
+        'cards' => ['1', '2', '4', '8', '16', '?'],
+        'created_by_user_id' => $facilitator->id,
+    ]);
+
+    $this->captureVisuals(
+        'poker-room-settings',
+        "/poker/{$game->id}",
+        function (string $path, array $options) use ($facilitator) {
+            $french = str_starts_with($options['locale'], 'fr');
+
+            return pokerVisualRoom($facilitator, $path, $options)
+                ->click($french ? '[aria-label="Menu de l\'animateur"]' : '[aria-label="Facilitator menu"]')
+                ->click($french ? 'Paramètres…' : 'Settings…')
+                ->assertPresent('[data-slot="poker-settings"] #poker-auto-reveal')
+                ->assertPresent('[data-slot="poker-settings"] [role="radio"]:has-text("Atlas scale")')
+                ->assertAttribute('[data-slot="poker-settings"] [role="radio"][value="fibonacci"]', 'aria-checked', 'true');
+        },
+    );
+});
+
+/**
+ * Guest access is off: the link and its QR code hold the port of the test server, which changes at every run.
+ */
+it('[P18e-03-11] renders the share dialog of the facilitator without overflow', function () {
+    ['game' => $game, 'task' => $task, 'facilitator' => $facilitator] = pokerVisualGame();
+    openPokerRound($game, $task);
+
+    $this->captureVisuals(
+        'poker-room-share',
+        "/poker/{$game->id}",
+        fn (string $path, array $options) => pokerVisualRoom($facilitator, $path, $options)
+            ->click('[data-slot="poker-share"]')
+            ->assertPresent('[data-slot="share-dialog"] #poker-guest-link-access')
+            ->assertNotPresent('[data-slot="share-dialog"] input[aria-label]'),
     );
 });

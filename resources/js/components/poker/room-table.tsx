@@ -15,7 +15,7 @@ import { useTrans } from '@/hooks/use-trans';
 import { seatsFrom, storyFrom } from '@/lib/poker/room-adapters';
 import type { PokerTask } from '@/lib/poker/types';
 import { useGame } from './game-context';
-import { TaskFormDialog } from './task-form-dialog';
+import { TaskFormDialog } from './room-dialogs';
 import { useSetSpectator } from './use-round-actions';
 import type { RoundActions } from './use-round-actions';
 

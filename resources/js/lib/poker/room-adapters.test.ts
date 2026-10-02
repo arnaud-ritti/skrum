@@ -94,7 +94,10 @@ function snapshot(overrides: Partial<PokerSnapshot> = {}): PokerSnapshot {
         players: [player('ada'), player('bob'), player('cleo')],
         tasks: [task('t1')],
         current: { taskId: 't1', round: round() },
-        links: { team: '/w/nordlys/teams/atlas' },
+        links: {
+            team: '/w/nordlys/teams/atlas',
+            decks: '/w/nordlys/teams/atlas/poker-decks',
+        },
         share: {} as PokerSnapshot['share'],
         deliveries: [],
         integrations: null,

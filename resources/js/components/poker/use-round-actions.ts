@@ -3,6 +3,7 @@ import PokerCurrentTasksController from '@/actions/App/Http/Controllers/Poker/Po
 import PokerRevealsController from '@/actions/App/Http/Controllers/Poker/PokerRevealsController';
 import PokerRoundsController from '@/actions/App/Http/Controllers/Poker/PokerRoundsController';
 import PokerSpectatorsController from '@/actions/App/Http/Controllers/Poker/PokerSpectatorsController';
+import PokerStatusesController from '@/actions/App/Http/Controllers/Poker/PokerStatusesController';
 import PokerTaskEstimatesController from '@/actions/App/Http/Controllers/Poker/PokerTaskEstimatesController';
 import PokerVotesController from '@/actions/App/Http/Controllers/Poker/PokerVotesController';
 import { nextUnestimatedTask } from '@/lib/poker/room-adapters';
@@ -206,4 +207,35 @@ export function useSetSpectator(): {
     };
 
     return { busy, setSpectator };
+}
+
+/** Ends the game or reopens it. Resolves to false when the server refused. */
+export function useSetEnded(): {
+    busy: boolean;
+    setEnded: (ended: boolean) => Promise<boolean>;
+} {
+    const { snapshot, run, refetch } = useGame();
+    const [busy, setBusy] = useState(false);
+
+    const setEnded = async (ended: boolean): Promise<boolean> => {
+        setBusy(true);
+
+        const result = await run(
+            retroRequest(PokerStatusesController.update(snapshot.game.id), {
+                ended,
+            }),
+        );
+
+        setBusy(false);
+
+        if (result === undefined) {
+            return false;
+        }
+
+        await refetch();
+
+        return true;
+    };
+
+    return { busy, setEnded };
 }

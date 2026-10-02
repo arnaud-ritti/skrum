@@ -46,7 +46,7 @@ import {
 import { retroRequest } from '@/lib/retro/api';
 import { useGame } from './game-context';
 import { ImportTasksDialog } from './import-tasks-dialog';
-import { TaskFormDialog } from './task-form-dialog';
+import { TaskFormDialog } from './room-dialogs';
 import { TaskRow } from './task-row';
 
 type Props = {

@@ -232,8 +232,11 @@ it('[P10a-05] lets the facilitator allow guests and gives a working guest link',
 
     $facilitator->assertVisible('[aria-label="Facilitator menu"]')
         ->click('[aria-label="Facilitator menu"]')
-        ->assertSee('Guest link…')
-        ->click('Guest link…')
+        ->assertSee('Settings…')
+        ->assertDontSee('Guest link…')
+        ->keys('[role="menu"]', 'Escape')
+        ->assertNotPresent('[role="menu"]')
+        ->click('[aria-label="Share"]')
         ->assertVisible('#poker-guest-link-access')
         ->click('#poker-guest-link-access')
         ->assertVisible('input[aria-label="Guest link"]')
@@ -512,7 +515,7 @@ it('[P10a-12] makes an ended game read-only for everyone and editable again once
         ->assertSee('End game')
         ->click('End game')
         ->assertSee('End this game?')
-        ->click('[role="dialog"] button:has-text("End game")');
+        ->click('[role="alertdialog"] button:has-text("End game")');
 
     $facilitator->assertSee('Game ended')
         ->assertDontSee('Add task')
@@ -617,15 +620,16 @@ it('[P10a-14] ends the access of guests when the guest link is regenerated', fun
     $facilitator = $this->awaitRealtime($this->signIn($ada, "/poker/{$game->id}"));
     $guest = $this->awaitRealtime($this->joinAsGuest("/poker/join/{$oldToken}", 'Visitor'));
 
-    $facilitator->assertVisible('[aria-label="Facilitator menu"]')
-        ->click('[aria-label="Facilitator menu"]')
-        ->assertSee('Guest link…')
-        ->click('Guest link…')
+    $facilitator->assertVisible('[aria-label="Share"]')
+        ->click('[aria-label="Share"]')
         ->assertVisible('input[aria-label="Guest link"]');
 
     $oldUrl = $facilitator->value('input[aria-label="Guest link"]');
 
     $facilitator->click('Create a new link')
+        ->assertSeeIn('[role="alertdialog"]', 'Create a new link?')
+        ->click('[role="alertdialog"] button:has-text("Create a new link")')
+        ->assertNotPresent('[role="alertdialog"]')
         ->assertValueIsNot('input[aria-label="Guest link"]', $oldUrl);
 
     $guest->assertSee('Your access to this game has ended.')
@@ -707,7 +711,7 @@ it('[P10a-16] deletes the game, sends the facilitator to the team page and tells
         ->assertSee('Delete game…')
         ->click('Delete game…')
         ->assertSee('Delete this game?')
-        ->click('[role="dialog"] button:has-text("Delete")');
+        ->click('[role="alertdialog"] button:has-text("Delete")');
 
     $facilitator->assertPathIs($teamPath)
         ->assertSee('Planning poker')

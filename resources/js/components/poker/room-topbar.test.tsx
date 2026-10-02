@@ -1,9 +1,11 @@
 import { act, fireEvent, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+    FacilitatorMenu,
     RoomStateBadges,
     RoomTimer,
     RoomTitle,
+    ShareButton,
     TakeControlButton,
     TasksToggle,
     WatchSwitch,
@@ -57,7 +59,7 @@ describe('RoomTitle', () => {
             <RoomTitle showDeck={false} />,
             pokerSnapshot({
                 me: { isFacilitator: false, isGuest: true },
-                links: { team: null },
+                links: { team: null, decks: null },
             }),
         );
 
@@ -346,5 +348,131 @@ describe('TakeControlButton', () => {
 
         expect(mocks.request.mock.calls[0][1]).toEqual({ user_id: 'user-ada' });
         expect(ctx.refetch).toHaveBeenCalledTimes(1);
+    });
+});
+
+async function menuItems(): Promise<(string | null)[]> {
+    fireEvent.keyDown(
+        screen.getByRole('button', { name: 'Facilitator menu' }),
+        {
+            key: 'Enter',
+        },
+    );
+
+    return (await screen.findAllByRole('menuitem')).map(
+        (item) => item.textContent,
+    );
+}
+
+const slackOnly = {
+    slack: true,
+    telegram: false,
+    msteams: false,
+    mattermost: false,
+    webhook: false,
+};
+
+describe('FacilitatorMenu', () => {
+    it('lists settings, hand-over, end and delete, and no guest link entry', async () => {
+        const onChoose = vi.fn();
+
+        renderInRoom(
+            <FacilitatorMenu shareInMenu={false} onChoose={onChoose} />,
+        );
+
+        expect(await menuItems()).toEqual([
+            'Settings…',
+            'Hand over facilitation…',
+            'End game',
+            'Delete game…',
+        ]);
+
+        fireEvent.click(screen.getByRole('menuitem', { name: 'Settings…' }));
+
+        expect(onChoose).toHaveBeenCalledWith('settings');
+    });
+
+    it('lists "Share…" when a channel is connected, or where the header has no Share button', async () => {
+        const { unmount } = renderInRoom(
+            <FacilitatorMenu shareInMenu={false} onChoose={vi.fn()} />,
+            pokerSnapshot({ share: slackOnly }),
+        );
+
+        expect((await menuItems())[0]).toBe('Share…');
+        unmount();
+
+        const onChoose = vi.fn();
+
+        renderInRoom(<FacilitatorMenu shareInMenu onChoose={onChoose} />);
+
+        expect((await menuItems())[0]).toBe('Share…');
+
+        fireEvent.click(screen.getByRole('menuitem', { name: 'Share…' }));
+
+        expect(onChoose).toHaveBeenCalledWith('share');
+    });
+
+    it('reopens an ended game from the menu, which then offers nothing else but delete', async () => {
+        mocks.request.mockResolvedValue(null);
+
+        const { ctx } = renderInRoom(
+            <FacilitatorMenu shareInMenu onChoose={vi.fn()} />,
+            pokerSnapshot({ game: { endedAt: '2026-10-02T10:00:00Z' } }),
+        );
+
+        expect(await menuItems()).toEqual(['Reopen game', 'Delete game…']);
+
+        await act(async () => {
+            fireEvent.click(
+                screen.getByRole('menuitem', { name: 'Reopen game' }),
+            );
+        });
+
+        expect(mocks.request.mock.calls[0][1]).toEqual({ ended: false });
+        expect(ctx.refetch).toHaveBeenCalledTimes(1);
+    });
+
+    it('gives a workspace admin who does not facilitate the delete entry only, and nobody else a menu', async () => {
+        const { unmount } = renderInRoom(
+            <FacilitatorMenu shareInMenu={false} onChoose={vi.fn()} />,
+            pokerSnapshot({ me: { isFacilitator: false, canDelete: true } }),
+        );
+
+        expect(await menuItems()).toEqual(['Delete game…']);
+        unmount();
+
+        const { container } = renderInRoom(
+            <FacilitatorMenu shareInMenu={false} onChoose={vi.fn()} />,
+            pokerSnapshot({ me: { isFacilitator: false, canDelete: false } }),
+        );
+
+        expect(container.firstChild).toBeNull();
+    });
+});
+
+describe('ShareButton', () => {
+    it("is the facilitator's, while the game runs", () => {
+        const onClick = vi.fn();
+        const { unmount } = renderInRoom(<ShareButton onClick={onClick} />);
+
+        fireEvent.click(screen.getByRole('button', { name: 'Share' }));
+
+        expect(onClick).toHaveBeenCalledTimes(1);
+        unmount();
+
+        const ended = renderInRoom(
+            <ShareButton onClick={onClick} />,
+            pokerSnapshot({ game: { endedAt: '2026-10-02T10:00:00Z' } }),
+        );
+
+        expect(ended.container.firstChild).toBeNull();
+        ended.unmount();
+
+        const { container } = renderInRoom(
+            <ShareButton onClick={onClick} />,
+            pokerSnapshot({ me: { isFacilitator: false } }),
+        );
+
+        expect(container.firstChild).toBeNull();
     });
 });

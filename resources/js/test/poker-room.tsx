@@ -120,7 +120,10 @@ export function pokerSnapshot(
             pokerTask('t2', 'Password reset', { position: 2 }),
         ],
         current: { taskId: 't1', round: pokerRound() },
-        links: { team: '/w/nordlys/teams/atlas' },
+        links: {
+            team: '/w/nordlys/teams/atlas',
+            decks: '/w/nordlys/teams/atlas/poker-decks',
+        },
         share: {} as PokerSnapshot['share'],
         deliveries: [],
         integrations: null,

@@ -21,7 +21,7 @@ import { retroRequest } from '@/lib/retro/api';
 import { cn } from '@/lib/utils';
 import { useGame } from './game-context';
 import { MarkdownClasses } from './markdown-classes';
-import { TaskFormDialog } from './task-form-dialog';
+import { TaskFormDialog } from './room-dialogs';
 import { TaskSourceDetails } from './task-source-details';
 
 type LoadedRounds =

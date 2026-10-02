@@ -173,7 +173,7 @@ function snapshot(
         players,
         tasks: queue({ roundsCount: 1 }),
         current: null,
-        links: { team: '/dev/design-system' },
+        links: { team: '/dev/design-system', decks: '/dev/design-system' },
         share: {} as PokerSnapshot['share'],
         deliveries: [],
         integrations: null,

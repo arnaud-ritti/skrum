@@ -211,8 +211,8 @@ it('[P10b-02c] offers saved decks to the facilitator only, never to a guest', fu
     $guest = $this->awaitRealtime($this->joinAsGuest(route('poker.join.show', $game->guest_token, false), 'Casey'));
 
     p10bOpenSettings($a)
-        ->assertSee("Your team's decks")
-        ->assertSee('Team scale');
+        ->assertSeeIn('[aria-label="Deck"] [role="radio"]:has-text("Team scale")', 'Saved')
+        ->assertSee('Manage decks');
 
     $guest->assertPresent('[aria-label="Language"]')
         ->assertNotPresent('[aria-label="Facilitator menu"]')
@@ -225,9 +225,8 @@ it('[P10b-03] lets a guest join as a spectator who watches without a hand', func
 
     $a = $this->awaitRealtime($this->signIn($ada, "/poker/{$game->id}"));
 
-    $a->click('[aria-label="Facilitator menu"]')
-        ->assertSee('Guest link…')
-        ->click('Guest link…')
+    $a->assertVisible('[aria-label="Share"]')
+        ->click('[aria-label="Share"]')
         ->assertVisible('#poker-guest-link-access')
         ->click('#poker-guest-link-access')
         ->assertVisible('input[aria-label="Guest link"]');
@@ -351,7 +350,7 @@ it('[P10b-10a] reveals an anonymous round as values without names', function () 
         ->assertSee("With two voters, each can work out the other's vote from their own.")
         ->click('#poker-anonymous-votes')
         ->assertAriaAttribute('#poker-anonymous-votes', 'checked', 'true')
-        ->click('Save');
+        ->click('[data-slot="poker-settings"] button:has-text("Apply (1)")');
 
     $b->assertSee('Anonymous votes');
 
@@ -402,7 +401,7 @@ it('[P10b-10b] keeps a revealed anonymous round anonymous in the history after a
     p10bOpenSettings($a)
         ->click('#poker-anonymous-votes')
         ->assertSee('Applies from the next round.')
-        ->click('Save')
+        ->click('[data-slot="poker-settings"] button:has-text("Apply (1)")')
         ->assertScript('document.querySelector("header").textContent.includes("Anonymous votes")', false)
         ->assertPresent('section[aria-label="Anonymous votes"]')
         ->assertSee('3 × 1')
@@ -433,7 +432,7 @@ it('[P10b-12] shows the four switches to the facilitator and removes the cursor 
         ->assertSee('Show flying reactions')
         ->click('#poker-cursors')
         ->click('#poker-reactions')
-        ->click('Save');
+        ->click('[data-slot="poker-settings"] button:has-text("Apply (2)")');
 
     foreach ([$a, $b] as $page) {
         $page->assertNotPresent('.lc-overlay')
@@ -446,7 +445,7 @@ it('[P10b-12] shows the four switches to the facilitator and removes the cursor 
         ->assertAriaAttribute('#poker-reactions', 'checked', 'false')
         ->click('#poker-cursors')
         ->click('#poker-reactions')
-        ->click('Save');
+        ->click('[data-slot="poker-settings"] button:has-text("Apply (2)")');
 
     foreach ([$a, $b] as $page) {
         $page->assertPresent('.lc-overlay')
@@ -472,7 +471,7 @@ it('[P10b-13] removes cursors, reactions and the watch toggle on an ended game a
         ->assertVisible('[role="menuitem"]:has-text("End game")')
         ->click('[role="menuitem"]:has-text("End game")')
         ->assertSee('End this game?')
-        ->click('[role="dialog"] button:has-text("End game")');
+        ->click('[role="alertdialog"] button:has-text("End game")');
 
     foreach ([$a, $b] as $page) {
         $page->assertSee('Game ended')
@@ -561,9 +560,9 @@ it('[P10b-15c] still labels cursors "Participant" and sends unnamed reactions on
 });
 
 dataset('p10bLocales', [
-    'fr' => ['fr', 'Français', 'Révélation automatique', 'Votes anonymes', 'Vous observez — passez en mode Jouer pour voter', 'Observateurs', 'Révélé automatiquement — tout le monde a voté', 'Minuteur', 'Arrêter le minuteur', "Menu de l'animateur", 'Paramètres…', 'Les jeux de cartes de votre équipe', 'Révéler automatiquement quand tout le monde a voté ou à la fin du minuteur'],
-    'es' => ['es', 'Español', 'Revelado automático', 'Votos anónimos', 'Estás observando: cambia a Jugar para votar', 'Observando', 'Revelado automáticamente — todos votaron', 'Temporizador', 'Detener temporizador', 'Menú del facilitador', 'Ajustes…', 'Las barajas de tu equipo', 'Revelar automáticamente cuando todos hayan votado o termine el temporizador'],
-    'de' => ['de', 'Deutsch', 'Automatisch aufdecken', 'Anonyme Stimmen', 'Du schaust zu – wechsle zu Spielen, um abzustimmen', 'Zuschauer', 'Automatisch aufgedeckt — alle haben abgestimmt', 'Timer', 'Timer stoppen', 'Moderationsmenü', 'Einstellungen…', 'Kartensätze deines Teams', 'Automatisch aufdecken, wenn alle abgestimmt haben oder der Timer abläuft'],
+    'fr' => ['fr', 'Français', 'Révélation automatique', 'Votes anonymes', 'Vous observez — passez en mode Jouer pour voter', 'Observateurs', 'Révélé automatiquement — tout le monde a voté', 'Minuteur', 'Arrêter le minuteur', "Menu de l'animateur", 'Paramètres…', 'Enregistré', 'Révéler automatiquement quand tout le monde a voté ou à la fin du minuteur'],
+    'es' => ['es', 'Español', 'Revelado automático', 'Votos anónimos', 'Estás observando: cambia a Jugar para votar', 'Observando', 'Revelado automáticamente — todos votaron', 'Temporizador', 'Detener temporizador', 'Menú del facilitador', 'Ajustes…', 'Guardado', 'Revelar automáticamente cuando todos hayan votado o termine el temporizador'],
+    'de' => ['de', 'Deutsch', 'Automatisch aufdecken', 'Anonyme Stimmen', 'Du schaust zu – wechsle zu Spielen, um abzustimmen', 'Zuschauer', 'Automatisch aufgedeckt — alle haben abgestimmt', 'Timer', 'Timer stoppen', 'Moderationsmenü', 'Einstellungen…', 'Gespeichert', 'Automatisch aufdecken, wenn alle abgestimmt haben oder der Timer abläuft'],
 ]);
 
 it('[P10b-16a] translates the spectator, auto-reveal and anonymous strings after a guest switches language', function (string $locale, string $languageName, string $autoReveal, string $anonymousVotes, string $watchingNote, string $watching, string $revealedNote) {
@@ -595,7 +594,7 @@ it('[P10b-16a] translates the spectator, auto-reveal and anonymous strings after
         ->assertNotPresent('section[aria-label="Anonymous votes"]');
 })->with('p10bLocales');
 
-it('[P10b-16b] translates the timer menu, the auto-reveal note and the saved decks for a facilitator in their language', function (string $locale, string $languageName, string $autoReveal, string $anonymousVotes, string $watchingNote, string $watching, string $revealedNote, string $timer, string $stopTimer, string $facilitatorMenu, string $settings, string $teamDecks, string $autoRevealNote) {
+it('[P10b-16b] translates the timer menu, the auto-reveal note and the saved decks for a facilitator in their language', function (string $locale, string $languageName, string $autoReveal, string $anonymousVotes, string $watchingNote, string $watching, string $revealedNote, string $timer, string $stopTimer, string $facilitatorMenu, string $settings, string $savedDeck, string $autoRevealNote) {
     ['game' => $game, 'ada' => $ada] = p10bTable(['auto_reveal' => true]);
     openPokerRound($game);
     SavedPokerDeck::factory()->create([
@@ -617,10 +616,9 @@ it('[P10b-16b] translates the timer menu, the auto-reveal note and the saved dec
         ->click("[aria-label=\"{$facilitatorMenu}\"]")
         ->assertSee($settings)
         ->click($settings)
-        ->assertSee($teamDecks)
+        ->assertSeeIn('[role="radio"]:has-text("Team scale")', $savedDeck)
         ->assertSee($autoRevealNote)
-        ->assertSee('Team scale')
-        ->assertDontSee("Your team's decks")
+        ->assertDontSeeIn('[role="radio"]:has-text("Team scale")', 'Saved')
         ->assertDontSee('Reveal automatically when everyone has voted or the timer ends');
 })->with('p10bLocales');
 
@@ -711,7 +709,7 @@ it('[P10b-06] reveals by itself when the last online player votes, without waiti
     p10bOpenSettings($a)
         ->click('#poker-auto-reveal')
         ->assertAriaAttribute('#poker-auto-reveal', 'checked', 'true')
-        ->click('Save');
+        ->click('[data-slot="poker-settings"] button:has-text("Apply (1)")');
 
     foreach ([$a, $b, $c] as $page) {
         $page->assertSee('Auto-reveal');

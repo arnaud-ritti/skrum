@@ -20,8 +20,9 @@ import { realtimeState } from '@/lib/realtime/realtime-state';
 import type { PokerDeckOption } from '@/types';
 import { AutoRevealTriggers } from './auto-reveal-triggers';
 import { GameProvider, useGame, type GameContextValue } from './game-context';
-import { GameMenu } from './game-menu';
 import { RoomCursors } from './room-cursors';
+import { RoomDialogs } from './room-dialogs';
+import type { RoomDialog } from './room-dialogs';
 import { RoomDock } from './room-dock';
 import { RoomGone } from './room-gone';
 import { RoomReactions } from './room-reactions';
@@ -29,9 +30,11 @@ import { RoomTable } from './room-table';
 import {
     CopyGuestLinkButton,
     DeckBadge,
+    FacilitatorMenu,
     RoomStateBadges,
     RoomTimer,
     RoomTitle,
+    ShareButton,
     TakeControlButton,
     TasksToggle,
     WatchSwitch,
@@ -138,6 +141,7 @@ export function RoomView({
     const [hideMyCursor, setHideMyCursor] = useHideMyCursor();
     const [tasksCollapsed, setTasksCollapsed] = useState(false);
     const [tasksOpen, setTasksOpen] = useState(false);
+    const [dialog, setDialog] = useState<RoomDialog | null>(null);
     const restoreFocus = useRestoreFocus(tasksOpen);
     const actions = useRoundActions();
     const { game, me, current } = snapshot;
@@ -188,9 +192,13 @@ export function RoomView({
                                     onChange={setHideMyCursor}
                                 />
                             )}
+                            <ShareButton onClick={() => setDialog('share')} />
                         </>
                     )}
-                    {(me.isFacilitator || me.canDelete) && <GameMenu />}
+                    <FacilitatorMenu
+                        shareInMenu={isPhone}
+                        onChoose={setDialog}
+                    />
                     {me.isGuest && <LanguageSwitcher />}
                 </>
             }
@@ -270,6 +278,7 @@ export function RoomView({
                     )}
                 </div>
             </div>
+            <RoomDialogs dialog={dialog} onClose={() => setDialog(null)} />
             {!isWide && (
                 <Drawer open={tasksOpen} onOpenChange={setTasksOpen}>
                     <DrawerContent

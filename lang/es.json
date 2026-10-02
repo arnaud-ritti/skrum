@@ -3996,5 +3996,7 @@
     "Every other task has an estimate.": "Todas las demás tareas tienen una estimación.",
     "Round :number · voting": "Ronda :number · votación en curso",
     "Round :number · revealed": "Ronda :number · revelada",
-    "Join the vote": "Unirse a la votación"
+    "Join the vote": "Unirse a la votación",
+    "Manage decks": "Gestionar las barajas",
+    "Choose the new facilitator.": "Elige al nuevo facilitador."
 }
