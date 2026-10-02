@@ -20,6 +20,9 @@ const marks: Record<SsoProviderKey, ReactNode> = {
     ),
 };
 
+/** The company's own sign-on leads, as on a self-hosted instance. */
+const order: SsoProviderKey[] = ['oidc', 'entra', 'google', 'github'];
+
 function redirectUrl(provider: SsoProviderOption): string {
     return SsoRedirectsController.show.url({ provider: provider.key });
 }
@@ -31,7 +34,9 @@ export function SsoButtons({ providers }: { providers: SsoProviderOption[] }) {
         return null;
     }
 
-    const [first, ...others] = providers;
+    const [first, ...others] = [...providers].sort(
+        (left, right) => order.indexOf(left.key) - order.indexOf(right.key),
+    );
 
     return (
         <div data-slot="sso-buttons" className="flex min-w-0 flex-col gap-4">

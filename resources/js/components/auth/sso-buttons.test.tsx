@@ -39,9 +39,9 @@ describe('SsoButtons', () => {
 
         expect(links.map((link) => link.getAttribute('href'))).toEqual([
             '/auth/oidc/redirect',
+            '/auth/entra/redirect',
             '/auth/google/redirect',
             '/auth/github/redirect',
-            '/auth/entra/redirect',
         ]);
         expect(
             screen.getByRole('link', { name: 'Continue with Nordlys SSO' }),
@@ -55,6 +55,30 @@ describe('SsoButtons', () => {
         expect(
             screen.getByRole('link', { name: 'Continue with Microsoft' }),
         ).toBeTruthy();
+    });
+
+    it('puts the company sign-on first, whatever order the server sends', () => {
+        renderWithProviders(
+            <SsoButtons
+                providers={[
+                    { key: 'google', label: 'Google' },
+                    { key: 'github', label: 'GitHub' },
+                    { key: 'entra', label: 'Microsoft' },
+                    { key: 'oidc', label: 'Nordlys SSO' },
+                ]}
+            />,
+        );
+
+        expect(
+            screen
+                .getAllByRole('link')
+                .map((link) => link.getAttribute('href')),
+        ).toEqual([
+            '/auth/oidc/redirect',
+            '/auth/entra/redirect',
+            '/auth/google/redirect',
+            '/auth/github/redirect',
+        ]);
     });
 
     it('gives the first provider the full width and pairs the others', () => {
