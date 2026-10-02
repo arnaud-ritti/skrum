@@ -3727,5 +3727,11 @@
     "save": "save",
     "Drag a card onto another to group them. Click a title to rename it.": "Drag a card onto another to group them. Click a title to rename it.",
     ":count group": ":count group",
-    ":count groups": ":count groups"
+    ":count groups": ":count groups",
+    "Delete this action item?": "Delete this action item?",
+    "“:title” is removed for everyone, with its sub-tasks and comments.": "“:title” is removed for everyone, with its sub-tasks and comments.",
+    "Create the ticket in :provider": "Create the ticket in :provider",
+    "to create": "to create",
+    "Ticket": "Ticket",
+    "No ticket": "No ticket"
 }

@@ -449,3 +449,64 @@ None. New: `[P18e-02-11]` in `Plan18eRetroTest.php`; capture `retro-board-voting
 Component changes, in their own commits: `VoteBudget` (`detail`; "1 vote left"), `CardVotes` (`disabledReason`, `hiddenTotalNote`, focus after the last vote is taken back), `RetroCard` (`canUnvote`: before, a spent budget removed "Remove a vote"), `CardGroup` (`voteControls`).
 
 No test was removed.
+
+## Task R8b — Shared action-item containers
+
+No screen changes: the retro panels and the action items page still mount the twelve old files of `components/action-items/`, which stay until 5.2. The new files sit beside them under new names and are used from R9 on.
+
+| File | What it gives |
+|---|---|
+| `action-item-adapters.ts` | `toActionItemData` (server item → props of `ActionItem` and `ActionSheet`, with `canComplete`), `patchToPayload` (only what changed), `newItemToPayload`, `ownerOptions`, `toActionItemOwner`; types `NewActionItem`, `ActionItemContext` |
+| `use-action-item-mutations.ts` | `useActionItemMutations(endpoints, onSaved, options?)` → `busyId`, `patch`, `setStatus`, `remove`, `retrySync`, `run`, `value`; `ActionItemMutationsContext`; type `RunMutation` |
+| `item-subtasks.tsx` | `ItemSubtasks` (slot `children` of `ActionItem` and `ActionSheet`) |
+| `item-comments.tsx` | `ItemComments` (slot `comments`) |
+| `item-export.tsx` | `ItemExport` (slot `actions`), `ItemExportDialog`, type `IntegrationScope` |
+| `item-create-form.tsx` | `ItemCreateForm` |
+| `item-delete-confirm.tsx` | `ItemDeleteConfirm` |
+| `item-parts.tsx` | `useInlineEscape` (Escape cancels an inline edit and leaves the sheet or dialog open), `AnonymousNote` |
+| `test/action-items.ts` | fixtures of the Vitest files of R9, R10, R12 and 5.2 |
+
+How a container wires them: `const mutations = useActionItemMutations(endpoints, onSaved, { run, resync, onRemoved, onCommentCount })`, then `<ActionItemMutationsContext value={mutations.value}>` around the list. `ItemSubtasks`, `ItemComments`, `ItemExport` and `ItemExportDialog` read `run`, `onSaved`, `onCommentCount` and the endpoints of the export from that context and throw without it. On the board, `options.run` is `ctx.run` (it knows the locked board and the expired session); on the page, `options.resync` is the partial reload.
+
+### Parity (brief 05 §3 rows 12–40; brief 02 §3.4 rows 74–82)
+
+"Done" is for the container; the row is done on a screen when R9, R10, R12 or 5.2 mounts it.
+
+| Row | Feature | Now | Done |
+|---|---|---|---|
+| 05-12, 02-74 | Create: content (500, required), priority (medium), due date (2000-01-01 to 2100-12-31), recurrence (off without a date), assignee | `ItemCreateForm`: "Add an action item…", "Assignee", "Due date" (native date input, a browser test fills it), "Priority", "Repeat"; `newItemToPayload` writes the body of both store endpoints | yes |
+| 05-13, 02-75 | Complete, reopen | `setStatus(item, status)`; `canComplete` from `toActionItemData` | yes |
+| 05-14 to 18, 02-76 | Edit content, priority, due date, recurrence, assignee | `patch(item, patch)` over `patchToPayload`: an unchanged or empty title sends nothing; clearing the date also stops the recurrence; a member travels as a user, a guest as a participant | yes |
+| 05-19, 02-77 | Delete | `ItemDeleteConfirm` ("Delete this action item?", destructive, icon and label), then `remove(item)` (5-D3) | yes |
+| 05-20 to 24, 02-78 | Sub-tasks: add (200, hidden at 20), tick, rename, move up and down, delete | `ItemSubtasks`: `ul` "Sub-tasks", a checkbox named by its text, "Add a sub-task", "Move up", "Move down", "Edit sub-task", "Delete sub-task" | yes |
+| 05-25 | "n of m sub-tasks done" | printed by `ActionItem` and `ActionSheet` from `subtasks` (off-screen sentence beside `n/m`), not by the checklist | yes |
+| 05-26 to 31, 02-79 | Comments: load, retry, add (500), edit by the author, delete by the author or a manager, "Former member", date, refetch on a comment event | `ItemComments` (`revision`); the toggle and `#action-item-{id}-comments` are `ActionItem`'s | yes |
+| 05-32, 02-80 | Export: one tracker = a button "Export to :provider", several = a menu "Export"; a tracker already used is left out | `ItemExport` | yes |
+| 05-33 to 38 | Export dialog: targets, search after 300 ms, "No project found.", the selected project kept in the options, preview lines, "Manage people" for a workspace manager, 45 s, "Exported as :key.", warnings | `ItemExportDialog`, a port of the old dialog on `Dialog`, `Alert`, `Label`, `LoadingButton` | yes |
+| 05-39, 02-81 | Tracker chip | `ActionItem links` (from `toActionItemData`) | yes |
+| 05-40, 02-81 | Retry the sync | `retrySync(item, link)`, toast "Sync requested." | yes |
+| 02-82 | Anonymous notice | `AnonymousNote` in the create form and above the comment field (`showAnonymousNotice`) | yes |
+| 05-49 | Toast and resync on a failed request | `run` of the hook: timeout sentence, message of the server, generic sentence; then `options.resync` | yes |
+| 05-50 | Manager, assignee, reviewer | `canComplete` in `toActionItemData`; the container passes `onChange`, `onDelete`, `members`, `ItemExport` only to a manager (`canManageActionItem`) | yes |
+| M6 | "Create the ticket in :provider" | `ItemCreateForm exportSources onCreatedWithTicket`: a checkbox for one tracker, a select "Ticket" for several; the item is created, then handed over with its source so that the container opens `ItemExportDialog` on it | yes |
+
+### Places left
+
+| Slot | Where | Roadmap |
+|---|---|---|
+| `linkedTo` of `ItemCreateForm` | first line of the form: "Linked to #2 · topic" | RT-8 |
+
+### Differences with the mockup
+
+No capture: no screen mounts these files yet, and the task has no bench section. The create form was written against the "New action" block of `ScreenRetroDiscussion` and the quick form of `ScreenRetroActions` and has not been looked at in a browser; R9 captures it.
+
+| Difference | Covered by |
+|---|---|
+| The due date is a native date input, not the select-like date picker | brief 05 R5 (the suite fills `[aria-label="Due date"]`); `ActionItem` and `ActionSheet` do the same |
+| A "Repeat" select beside the three fields of the mockup | parity rows 05-12, 05-17 |
+| The ticket is a checkbox "Create the ticket in :provider", not a key field "ATLAS-…" | plan R9 (create, then the existing export) |
+| No "⌘ J creates the Jira ticket too" hint or shortcut (`ScreenRetroActions`) | no row — reported for R10 |
+
+### Browser tests changed
+
+None. No test was removed.

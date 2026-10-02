@@ -3951,5 +3951,11 @@
     "save": "guardar",
     "Drag a card onto another to group them. Click a title to rename it.": "Arrastra una tarjeta sobre otra para agruparlas. Haz clic en un título para cambiarlo.",
     ":count group": ":count grupo",
-    ":count groups": ":count grupos"
+    ":count groups": ":count grupos",
+    "Delete this action item?": "¿Eliminar esta acción?",
+    "“:title” is removed for everyone, with its sub-tasks and comments.": "«:title» se elimina para todos, con sus subtareas y comentarios.",
+    "Create the ticket in :provider": "Crear el ticket en :provider",
+    "to create": "para crear",
+    "Ticket": "Ticket",
+    "No ticket": "Sin ticket"
 }
