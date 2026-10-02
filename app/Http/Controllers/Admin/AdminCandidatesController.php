@@ -15,9 +15,14 @@ class AdminCandidatesController extends Controller
 
     private const int RowsPerRead = 100;
 
+    public const int MaxRowsRead = 200;
+
     /**
      * A term holding a wildcard character gets near misses from SQL: rows are read until the list
-     * is full of exact matches, so a near miss never takes the place of a match.
+     * is full of exact matches, so a near miss never takes the place of a match, and never past
+     * MaxRowsRead. The address is searched through its login key, which folds case the full way
+     * (final sigma, dotted capital I) while the term is folded letter by letter: an address
+     * holding such a letter is found by its name only.
      */
     public function index(AdminCandidatesRequest $request): JsonResponse
     {
@@ -30,7 +35,9 @@ class AdminCandidatesController extends Controller
                 ->orWhereLike('email_key', SearchText::pattern($term), caseSensitive: true))
             ->orderBy('name')
             ->orderBy('id')
+            ->select(['id', 'name', 'email', 'avatar_style'])
             ->lazy(self::RowsPerRead)
+            ->take(self::MaxRowsRead)
             ->filter(fn (User $user): bool => SearchText::contains($user->name, $term) || SearchText::contains($user->email, $term))
             ->take(self::MaxResults)
             ->values()

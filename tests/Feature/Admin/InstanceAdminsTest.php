@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\Admin\RevokeInstanceAdmin;
+use App\Http\Controllers\Admin\AdminCandidatesController;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia;
@@ -238,6 +239,16 @@ it('finds a literal match that sorts after more near misses than the list holds'
         ->assertOk()
         ->assertJsonCount(1, 'candidates')
         ->assertJsonPath('candidates.0.id', $literal->id);
+});
+
+it('stops reading near misses after a fixed number of accounts', function () {
+    actingAsInstanceAdmin($this);
+    User::factory()->count(AdminCandidatesController::MaxRowsRead)->sequence(fn ($sequence): array => ['name' => "Aa {$sequence->index}"])->create();
+    User::factory()->create(['name' => 'Zed 100%_sure']);
+
+    $this->getJson(route('admin.adminCandidates.index', ['query' => '%_']))
+        ->assertOk()
+        ->assertExactJson(['candidates' => []]);
 });
 
 it('keeps the candidate search away from non-admins', function () {
