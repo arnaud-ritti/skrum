@@ -46,8 +46,8 @@ function p08aTemplate(Workspace $workspace): WorkspaceTemplate
     ]);
 
     $columns = [
-        ['Energy', 'How much energy the sprint left us', ColumnColor::Green],
-        ['Blockers', 'What kept slowing us down', ColumnColor::Red],
+        ['Energy', 'How much energy the sprint left us', ColumnColor::Moss],
+        ['Blockers', 'What kept slowing us down', ColumnColor::Coral],
     ];
 
     foreach ($columns as $position => [$title, $description, $color]) {
@@ -65,7 +65,7 @@ function p08aTemplate(Workspace $workspace): WorkspaceTemplate
 
 function p08aPhaseOrder(): string
 {
-    return "[...document.querySelectorAll('header ol[aria-label=\"Phases\"] li')].map((step) => step.textContent).join(' > ')";
+    return "[...document.querySelectorAll('header ol[aria-label=\"Phases\"] [data-slot=\"phase-step\"]')].map((step) => step.querySelector('.truncate').textContent).join(' > ')";
 }
 
 /**
@@ -90,7 +90,7 @@ function p08aCardsSent(array $snapshot): array
 
 function p08aColumnTitles(): string
 {
-    return "[...document.querySelectorAll('[data-test^=\"retro-column-\"] h2')].map((title) => title.textContent).join(' | ')";
+    return "[...document.querySelectorAll('[data-test^=\"retro-column-\"] h3')].map((title) => title.textContent).join(' | ')";
 }
 
 /**
@@ -245,9 +245,9 @@ it('[P08a-01b] starts a retro in the Icebreaker phase with the automatic vote li
         ->assertVisible('#new-retro-icebreaker-game')
         ->click('[role="dialog"] button[type="submit"]')
         ->assertPathBeginsWith('/retros/')
-        ->assertSeeIn('header > h1', 'Sprint 14 retro')
+        ->assertSeeIn('header >> h1', 'Sprint 14 retro')
         ->assertSeeIn('[aria-current="step"]', 'Icebreaker')
-        ->assertScript(p08aPhaseOrder(), 'Icebreaker > Writing > Grouping > Voting > Discussing > Completed')
+        ->assertScript(p08aPhaseOrder(), 'Icebreaker > Writing > Grouping > Voting > Discussing')
         ->assertPresent('section[aria-label="Icebreaker game"]')
         ->assertPresent('[aria-label="Facilitator menu"]');
 
@@ -273,11 +273,13 @@ it('[P08a-01b] starts a retro in the Icebreaker phase with the automatic vote li
         ]);
 });
 
-it('[P08a-07a] shows the workspace templates to a member as a read-only list', function () {
+it('[P08a-07a] shows the workspace templates to a member as read-only cards, and in the full picker', function () {
     $team = Team::factory()->create();
     $alice = p08aMember($team);
-    p08aTemplate($team->workspace);
-    $row = 'li:has-text("Team pulse")';
+    $template = p08aTemplate($team->workspace);
+    $card = '[data-test="workspace-template-'.$template->id.'"]';
+    $radio = '[data-slot="retro-template-picker"] [role="radio"]:has-text("Team pulse")';
+    $preview = 'section[aria-label="Template preview"]';
 
     $page = $this->signIn($alice, p08aTeamPath($team));
 
@@ -285,12 +287,22 @@ it('[P08a-07a] shows the workspace templates to a member as a read-only list', f
         ->click('a[href$="/templates"]')
         ->assertPathIs("/w/{$team->workspace->slug}/templates")
         ->assertSee('Templates shared by every team of this workspace')
-        ->assertSeeIn($row, 'Team pulse')
-        ->assertSeeIn($row, 'Team & mood')
-        ->assertSeeIn($row, 'Energy')
-        ->assertSeeIn($row, 'Blockers')
-        ->assertNotPresent("{$row} button")
-        ->assertNotPresent('button:has-text("New template")');
+        ->assertSeeIn($card, 'Team pulse')
+        ->assertSeeIn($card, 'Energy')
+        ->assertSeeIn($card, 'Blockers')
+        ->assertSeeIn($card, '2 columns · used 0×')
+        ->assertPresent("{$card} a:has-text(\"Use\")")
+        ->assertNotPresent("{$card} button")
+        ->assertNotPresent('button:has-text("New template")')
+        ->click('[role="tab"]:has-text("Retro")')
+        ->click('[data-slot="retro-template-picker"] [role="tab"]:has-text("My workspace")')
+        ->click($radio)
+        ->assertAttribute($radio, 'aria-checked', 'true')
+        ->assertSeeIn($preview, 'Team & mood')
+        ->assertSeeIn($preview, 'How much energy the sprint left us')
+        ->assertPresent("{$preview} button:has-text(\"Use this template\")")
+        ->assertNotPresent("{$preview} button:text-is(\"Edit\")")
+        ->assertNotPresent("{$preview} button:has-text(\"Duplicate\")");
 
     expect(WorkspaceTemplate::query()->count())->toBe(1);
 });
@@ -298,10 +310,9 @@ it('[P08a-07a] shows the workspace templates to a member as a read-only list', f
 it('[P08a-07b] lets an Owner create a workspace template from a built-in one', function () {
     $team = Team::factory()->create();
     $olivia = p08aOwner($team);
-    $row = 'li:has-text("Team pulse")';
-    $titles = "[...document.querySelectorAll('[role=\"dialog\"] [aria-label=\"Column title\"]')].map((input) => input.value).join(' | ')";
-    $moveFirstDown = '[role="dialog"] fieldset > div:nth-of-type(1) [aria-label="Move down"]';
-    $removeThird = '[role="dialog"] fieldset > div:nth-of-type(3) [aria-label="Remove column"]';
+    $card = '[data-slot="template-card"]:has(h3:text-is("Team pulse"))';
+    $titles = "[...document.querySelectorAll('[role=\"dialog\"] input[aria-label^=\"Column \"][aria-label$=\" title\"]')].map((input) => input.value).join(' | ')";
+    $firstHandle = '[role="dialog"] button[aria-label^="Reorder “Start”"]';
 
     $page = $this->signIn($olivia, "/w/{$team->workspace->slug}/templates");
 
@@ -314,6 +325,7 @@ it('[P08a-07b] lets an Owner create a workspace template from a built-in one', f
         ->click('[role="option"]:has-text("Start, Stop, Continue")')
         ->assertNotPresent('[role="listbox"]')
         ->assertValue('#template-name', 'Start, Stop, Continue')
+        ->assertValue('[role="dialog"] [aria-label="Column 1 title"]', 'Start')
         ->assertScript($titles, 'Start | Stop | Continue');
 
     $page->fill('#template-name', 'Team pulse')
@@ -321,20 +333,26 @@ it('[P08a-07b] lets an Owner create a workspace template from a built-in one', f
         ->assertPresent('[role="listbox"]')
         ->click('[role="option"]:has-text("Team & mood")')
         ->assertNotPresent('[role="listbox"]')
-        ->assertSeeIn('#template-category', 'Team & mood')
-        ->click($moveFirstDown)
-        ->assertScript($titles, 'Stop | Start | Continue')
-        ->click($removeThird)
+        ->assertSeeIn('#template-category', 'Team & mood');
+
+    $this->dragWithKeyboard($page, $firstHandle, ['Space', 'ArrowDown', 'Space']);
+
+    $page->assertScript($titles, 'Stop | Start | Continue')
+        ->assertPresent('[role="dialog"] button:has-text("Add a column")')
+        ->click('[role="dialog"] [aria-label="Delete column “Continue”"]')
         ->assertScript($titles, 'Stop | Start')
-        ->click('[role="dialog"] button[type="submit"]')
+        ->assertPresent('[role="dialog"] button[type="submit"]')
+        ->keys('#template-name', 'Enter')
         ->assertSee('Template saved.')
         ->assertNotPresent('[role="dialog"]')
-        ->assertSeeIn($row, 'Team & mood')
-        ->assertSeeIn($row, 'Stop')
-        ->assertSeeIn($row, 'Start')
-        ->assertDontSeeIn($row, 'Continue')
-        ->assertPresent("{$row} button:has-text(\"Edit\")")
-        ->assertPresent("{$row} button:has-text(\"Delete\")");
+        ->assertSeeIn($card, 'Stop')
+        ->assertSeeIn($card, 'Start')
+        ->assertDontSeeIn($card, 'Continue')
+        ->assertSeeIn($card, 'By Olivia Owner')
+        ->click("{$card} [data-slot=\"template-card-menu\"]")
+        ->assertPresent('[role="menuitem"]:has-text("Edit")')
+        ->assertPresent('[role="menuitem"]:has-text("Duplicate")')
+        ->assertPresent('[role="menuitem"]:has-text("Delete")');
 
     $template = WorkspaceTemplate::query()->where('name', 'Team pulse')->firstOrFail();
 
@@ -374,7 +392,7 @@ it('[P08a-07c] starts a retro from a workspace template found under its category
         ->assertSeeIn($preview, 'What kept slowing us down')
         ->click('[role="dialog"] button[type="submit"]')
         ->assertPathBeginsWith('/retros/')
-        ->assertSeeIn('header > h1', 'Pulse check')
+        ->assertSeeIn('header >> h1', 'Pulse check')
         ->assertCount('[data-test^="retro-column-"]', 2)
         ->assertScript(p08aColumnTitles(), 'Energy | Blockers')
         ->assertSee('How much energy the sprint left us')
@@ -412,19 +430,24 @@ it('[P08a-07d] keeps the columns of a retro when its workspace template is delet
     }
 
     retroFacilitator($retro);
-    $row = 'li:has-text("Team pulse")';
+    $card = '[data-test="workspace-template-'.$template->id.'"]';
 
     $page = $this->signIn($olivia, "/w/{$team->workspace->slug}/templates");
 
-    $page->assertSeeIn($row, 'Energy')
-        ->click("{$row} button:has-text(\"Delete\")")
-        ->assertSeeIn('[role="dialog"]', 'Delete this template?')
-        ->assertSeeIn('[role="dialog"]', 'Retrospectives created from it keep their columns.')
-        ->click('[role="dialog"] button:has-text("Delete")')
+    $page->assertSeeIn($card, 'Energy')
+        ->assertSeeIn($card, '2 columns · used 1×')
+        ->click("{$card} [data-slot=\"template-card-menu\"]")
+        ->click('[role="menuitem"]:has-text("Edit")')
+        ->assertValue('#template-name', 'Team pulse')
+        ->click('[role="dialog"] button:has-text("Delete template")')
+        ->assertSeeIn('[role="alertdialog"]', 'Delete this template?')
+        ->assertSeeIn('[role="alertdialog"]', 'Retros already created from it are not affected.')
+        ->click('[role="alertdialog"] button:has-text("Delete template")')
         ->assertSee('Template deleted.')
         ->assertSee('No workspace templates yet.')
+        ->assertNotPresent('[role="dialog"]')
         ->navigate("/retros/{$retro->id}")
-        ->assertSeeIn('header > h1', 'Pulse check')
+        ->assertSeeIn('header >> h1', 'Pulse check')
         ->assertCount('[data-test^="retro-column-"]', 2)
         ->assertScript(p08aColumnTitles(), 'Energy | Blockers');
 
@@ -445,7 +468,7 @@ it('[P08a-02a] shows the Icebreaker phase with its game and the shared timer to 
 
     foreach ([$alicePage, $carolPage] as $page) {
         $page->assertSeeIn('[aria-current="step"]', 'Icebreaker')
-            ->assertScript(p08aPhaseOrder(), 'Icebreaker > Writing > Grouping > Voting > Discussing > Completed')
+            ->assertScript(p08aPhaseOrder(), 'Icebreaker > Writing > Grouping > Voting > Discussing')
             ->assertPresent($stage)
             ->assertNotPresent('[data-test^="retro-column-"]')
             ->assertNotPresent('[role="timer"]');
@@ -453,7 +476,7 @@ it('[P08a-02a] shows the Icebreaker phase with its game and the shared timer to 
 
     $alicePage->assertSeeIn('[aria-label="Game"]', 'Draw & Guess')
         ->assertPresent('header button:has-text("Next")')
-        ->assertNotPresent('header button:has-text("Previous")');
+        ->assertPresent('header button[aria-disabled="true"]:has-text("Previous")');
     $carolPage->assertSeeIn($stage, 'Draw & Guess')
         ->assertNotPresent('[aria-label="Game"]')
         ->assertNotPresent('header button:has-text("Next")');
@@ -490,7 +513,7 @@ it('[P08a-02b] shows a column and its description added by the facilitator to a 
     $kudos = p08aColumn($column);
 
     $carolPage->assertCount($columns, 4)
-        ->assertSeeIn("{$kudos} h2", 'Kudos');
+        ->assertSeeIn("{$kudos} h3", 'Kudos');
 
     $alicePage->click("{$kudos} [aria-label=\"Column menu\"]")
         ->assertPresent('[role="menu"]')
@@ -533,13 +556,13 @@ it('[P08a-03] hides the cards of others again each time the retro moves back to 
     $alicePage->fill($composer, $aliceCard)
         ->click($add)
         ->assertSee($aliceCard);
-    $carolPage->assertSee('Hidden until writing ends')
+    $carolPage->assertSee('Hidden until the reveal')
         ->fill($composer, $carolCard)
         ->click($add)
         ->assertSee($carolCard)
         ->assertDontSee($aliceCard);
     $alicePage->assertCount('article[id^="card-"]', 2)
-        ->assertSee('Hidden until writing ends')
+        ->assertSee('Hidden until the reveal')
         ->assertDontSee($carolCard);
 
     $alicePage->click($next)
@@ -547,16 +570,16 @@ it('[P08a-03] hides the cards of others again each time the retro moves back to 
         ->assertSee($carolCard);
     $carolPage->assertSeeIn($current, 'Grouping')
         ->assertSee($aliceCard)
-        ->assertDontSee('Hidden until writing ends');
+        ->assertDontSee('Hidden until the reveal');
 
     $alicePage->click($previous)
         ->assertSeeIn($current, 'Writing')
-        ->assertSee('Hidden until writing ends')
+        ->assertSee('Hidden until the reveal')
         ->assertSee($aliceCard)
         ->assertDontSee($carolCard)
         ->assertScript($inDocument($carolCard), false);
     $carolPage->assertSeeIn($current, 'Writing')
-        ->assertSee('Hidden until writing ends')
+        ->assertSee('Hidden until the reveal')
         ->assertSee($carolCard)
         ->assertDontSee($aliceCard)
         ->assertScript($inDocument($aliceCard), false);
@@ -589,11 +612,11 @@ it('[P08a-03] hides the cards of others again each time the retro moves back to 
     $alicePage->click($next)
         ->assertSeeIn($current, 'Writing')
         ->assertSee($aliceCard)
-        ->assertSee('Hidden until writing ends')
+        ->assertSee('Hidden until the reveal')
         ->assertDontSee($carolCard);
     $carolPage->assertSeeIn($current, 'Writing')
         ->assertSee($carolCard)
-        ->assertSee('Hidden until writing ends')
+        ->assertSee('Hidden until the reveal')
         ->assertDontSee($aliceCard);
 
     expect($retro->cards()->count())->toBe(2)
@@ -625,7 +648,7 @@ it('[P08a-04b] shows the refusal of the server when the Icebreaker is turned off
 
     $retro->update(['phase' => RetroPhase::Icebreaker]);
 
-    $page->click('[role="dialog"] button[type="submit"]')
+    $page->click('[role="dialog"] button:has-text("Apply")')
         ->assertSeeIn('[role="dialog"]', 'Move to another phase before turning this phase off.');
 
     expect($retro->fresh()->icebreaker_enabled)->toBeTrue();
@@ -638,18 +661,20 @@ it('[P08a-04c] drops the Icebreaker step for everyone when it is turned off duri
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
     $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
 
-    $bobPage->assertScript(p08aPhaseOrder(), 'Icebreaker > Writing > Grouping > Voting > Discussing > Completed');
-    $alicePage->assertPresent('header button:has-text("Previous")');
+    $bobPage->assertScript(p08aPhaseOrder(), 'Icebreaker > Writing > Grouping > Voting > Discussing');
+    $alicePage->assertPresent('header button:not([aria-disabled]):has-text("Previous")');
 
     p08aOpenSettings($alicePage)
         ->click('#retro-icebreaker')
         ->assertAttribute('#retro-icebreaker', 'aria-checked', 'false')
-        ->click('[role="dialog"] button[type="submit"]')
+        ->click('[role="dialog"] button:has-text("Apply")')
+        ->assertSeeIn('[role="dialog"]', 'No changes')
+        ->keys('[role="dialog"]', 'Escape')
         ->assertNotPresent('[role="dialog"]')
-        ->assertScript(p08aPhaseOrder(), 'Writing > Grouping > Voting > Discussing > Completed')
-        ->assertNotPresent('header button:has-text("Previous")');
+        ->assertScript(p08aPhaseOrder(), 'Writing > Grouping > Voting > Discussing')
+        ->assertPresent('header button[aria-disabled="true"]:has-text("Previous")');
 
-    $bobPage->assertScript(p08aPhaseOrder(), 'Writing > Grouping > Voting > Discussing > Completed')
+    $bobPage->assertScript(p08aPhaseOrder(), 'Writing > Grouping > Voting > Discussing')
         ->assertDontSeeIn($stepper, 'Icebreaker')
         ->assertSeeIn('[aria-current="step"]', 'Writing');
 
@@ -683,7 +708,7 @@ it('[P08a-05] sets the automatic vote limit to the number of top-level cards plu
         ->assertAttribute('#retro-votes-auto', 'aria-checked', 'true')
         ->assertEnabled('#retro-votes-auto')
         ->assertSeeIn('[role="dialog"]', 'Automatic: number of cards plus 3, at most 10.')
-        ->click('[role="dialog"] button:has-text("Cancel")')
+        ->keys('[role="dialog"]', 'Escape')
         ->assertNotPresent('[role="dialog"]');
 
     $alicePage->click('header button:has-text("Next")')
@@ -726,7 +751,7 @@ it('[P08a-06] edits the description of a column that has cards and keeps Rename 
         ->assertSeeIn($start, 'What we should begin doing next sprint');
 
     $bobPage->assertSeeIn($start, 'What we should begin doing next sprint')
-        ->assertSeeIn("{$start} h2", 'Start')
+        ->assertSeeIn("{$start} h3", 'Start')
         ->assertNotPresent('[aria-label="Column menu"]');
 
     expect($columns[0]->fresh()->description)->toBe('What we should begin doing next sprint')

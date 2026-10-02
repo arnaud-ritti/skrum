@@ -41,6 +41,8 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { useTrans } from '@/hooks/use-trans';
+import { markColorClass } from '@/lib/mark-color';
+import { cn } from '@/lib/utils';
 import type { BrandIdentity } from '@/types';
 
 export type NavKey =
@@ -68,7 +70,14 @@ export type AppSidebarProps = {
     } | null;
     teams: { id: string; name: string; href: NavHref }[];
     workspace: { id: string; name: string } | null;
-    workspaces: { id: string; name: string; href: NavHref }[];
+    workspaces: {
+        id: string;
+        name: string;
+        href: NavHref;
+        /** Teams of the workspace the user can see. */
+        teamsCount?: number;
+        role?: 'owner' | 'admin' | 'member';
+    }[];
     newWorkspaceHref: NavHref;
     newTeamHref?: NavHref;
     homeHref: NavHref;
@@ -175,6 +184,11 @@ function TeamSwitcher({
     | 'newTeamHref'
 >) {
     const { t } = useTrans();
+    const roleLabels = {
+        owner: t('Owner'),
+        admin: t('Admin'),
+        member: t('Member'),
+    };
 
     return (
         <DropdownMenu>
@@ -207,7 +221,7 @@ function TeamSwitcher({
                     <ChevronsUpDown className="size-4 shrink-0" />
                 </SidebarMenuButton>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-64">
+            <DropdownMenuContent align="start" className="w-70">
                 {teams.length > 0 && (
                     <>
                         <DropdownMenuLabel
@@ -244,18 +258,72 @@ function TeamSwitcher({
                 <DropdownMenuLabel variant="overline" className="truncate">
                     {t('Workspaces')}
                 </DropdownMenuLabel>
-                {workspaces.map((entry) => (
-                    <DropdownMenuItem key={entry.id} asChild>
-                        <Link href={entry.href}>
-                            <span className="min-w-0 flex-1 truncate">
-                                {entry.name}
-                            </span>
-                            {entry.id === workspace?.id && (
-                                <Check className="size-4 shrink-0" />
-                            )}
-                        </Link>
-                    </DropdownMenuItem>
-                ))}
+                {workspaces.map((entry) => {
+                    const isCurrent = entry.id === workspace?.id;
+                    const details = [
+                        entry.teamsCount === undefined
+                            ? undefined
+                            : entry.teamsCount === 1
+                              ? t('1 team')
+                              : t(':count teams', { count: entry.teamsCount }),
+                        entry.role === undefined
+                            ? undefined
+                            : roleLabels[entry.role],
+                    ].filter((detail) => detail !== undefined);
+
+                    return (
+                        <DropdownMenuItem
+                            key={entry.id}
+                            asChild
+                            className="min-h-11"
+                        >
+                            <Link
+                                href={entry.href}
+                                aria-current={isCurrent ? 'true' : undefined}
+                            >
+                                <span
+                                    aria-hidden
+                                    data-slot="workspace-mark"
+                                    className={cn(
+                                        'flex size-7 shrink-0 items-center justify-center rounded-md border text-xs font-bold',
+                                        isCurrent
+                                            ? 'border-transparent bg-sidebar-primary text-sidebar-primary-foreground'
+                                            : [
+                                                  'border-(--col-border) bg-(--col) text-(--col-text)',
+                                                  markColorClass(entry.id),
+                                              ],
+                                    )}
+                                >
+                                    {entry.name.trim().charAt(0).toUpperCase()}
+                                </span>
+                                <span className="grid min-w-0 flex-1">
+                                    <span
+                                        className={cn(
+                                            'truncate',
+                                            isCurrent && 'font-semibold',
+                                        )}
+                                    >
+                                        {entry.name}
+                                    </span>
+                                    {details.length > 0 && (
+                                        <span
+                                            data-slot="workspace-details"
+                                            className="truncate text-xs text-muted-foreground"
+                                        >
+                                            {details.join(' · ')}
+                                        </span>
+                                    )}
+                                </span>
+                                {isCurrent && (
+                                    <Check
+                                        aria-hidden
+                                        className="size-4 shrink-0 text-skrum-primary-text"
+                                    />
+                                )}
+                            </Link>
+                        </DropdownMenuItem>
+                    );
+                })}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
                     <Link href={newWorkspaceHref}>

@@ -1,10 +1,6 @@
-import { Form, Head } from '@inertiajs/react';
+import { Head } from '@inertiajs/react';
 import RetroJoinsController from '@/actions/App/Http/Controllers/RetroJoinsController';
-import Heading from '@/components/heading';
-import InputError from '@/components/input-error';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { GuestJoinPage } from '@/components/session/guest-join-page';
 import { useTrans } from '@/hooks/use-trans';
 import type { JoinSession } from '@/types';
 
@@ -25,9 +21,11 @@ export default function JoinRetro(props: Props) {
         return (
             <>
                 <Head title={t('Join a retrospective')} />
-                <Heading
-                    title={t('Join a retrospective')}
-                    description={t('This guest link is no longer valid.')}
+                <GuestJoinPage
+                    kind="retro"
+                    invalidTitle={t('Join a retrospective')}
+                    session={null}
+                    storeUrl={null}
                 />
             </>
         );
@@ -35,41 +33,14 @@ export default function JoinRetro(props: Props) {
 
     return (
         <>
-            <Head title={props.retroTitle} />
-            <div className="space-y-6">
-                <Heading
-                    title={props.retroTitle}
-                    description={t(
-                        'Choose the name other participants will see.',
-                    )}
-                />
-                <Form
-                    {...RetroJoinsController.store.form(props.guestToken)}
-                    className="space-y-4"
-                >
-                    {({ processing, errors }) => (
-                        <>
-                            <div className="grid gap-2">
-                                <Label htmlFor="name">
-                                    {t('Display name')}
-                                </Label>
-                                <Input
-                                    id="name"
-                                    name="name"
-                                    required
-                                    maxLength={50}
-                                    autoFocus
-                                    defaultValue={props.suggestedName ?? ''}
-                                />
-                                <InputError message={errors.name} />
-                            </div>
-                            <Button className="w-full" disabled={processing}>
-                                {t('Join')}
-                            </Button>
-                        </>
-                    )}
-                </Form>
-            </div>
+            <Head title={props.session.title} />
+            <GuestJoinPage
+                kind="retro"
+                invalidTitle={t('Join a retrospective')}
+                session={props.session}
+                storeUrl={RetroJoinsController.store.url(props.guestToken)}
+                suggestedName={props.suggestedName}
+            />
         </>
     );
 }

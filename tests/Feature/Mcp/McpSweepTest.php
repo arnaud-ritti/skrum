@@ -59,7 +59,7 @@ function mcpSweepMarkers(): array
         'retro.board.actions.list' => fn (array $w): string => 'Sweep agreement',
         'retro.board.insights.list' => fn (array $w): string => 'Promote me',
         'retro.board.health.get' => fn (array $w): string => 'not_run',
-        'retro.board.roti.get' => fn (array $w): string => 'collecting',
+        'retro.board.roti.get' => fn (array $w): string => 'not_started',
         'poker.games.list' => fn (array $w): string => $w['game']->title,
         'poker.game.get' => fn (array $w): string => $w['game']->title,
         'poker.game.tasks.list' => fn (array $w): string => $w['current']->title,

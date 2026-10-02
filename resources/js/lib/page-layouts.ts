@@ -16,6 +16,8 @@ export const ownLayoutPages: readonly string[] = [
     'errors/error',
     'teams/show',
     'retros/show',
+    'retros/join',
+    'retros/session-ended',
     'poker/show',
     'poker/decks',
     'games/index',
@@ -32,6 +34,10 @@ export const ownLayoutPages: readonly string[] = [
     'settings/api-tokens',
     'teams/integrations',
     'teams/health-check',
+    'workspaces/show',
+    'workspaces/create',
+    'workspaces/members',
+    'workspaces/templates',
 ];
 
 const ownLayoutPrefixes: readonly string[] = ['admin/', 'dev/'];

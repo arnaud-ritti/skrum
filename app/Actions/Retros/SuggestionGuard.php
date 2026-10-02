@@ -13,7 +13,7 @@ use Illuminate\Validation\ValidationException;
 class SuggestionGuard
 {
     /**
-     * While discussing, whoever may create action items; once completed,
+     * While the board takes action items, whoever may create them; once completed,
      * only the facilitator and workspace Owners/Admins.
      */
     public function allows(Retro $retro, Participant $participant): bool
@@ -32,9 +32,9 @@ class SuggestionGuard
      */
     public function authorizeUser(Retro $retro, ?User $user, ?Participant $existing): void
     {
-        RetroGuard::phase($retro, RetroPhase::Discussing, RetroPhase::Completed);
+        RetroGuard::phase($retro, RetroPhase::Discussing, RetroPhase::Actions, RetroPhase::Roti, RetroPhase::Completed);
 
-        if ($retro->phase === RetroPhase::Discussing) {
+        if ($retro->phase->takesActionItems()) {
             RetroGuard::unlocked($retro);
         }
 
@@ -45,7 +45,7 @@ class SuggestionGuard
 
     private function allowsUser(Retro $retro, ?User $user, ?Participant $participant): bool
     {
-        if ($retro->phase === RetroPhase::Discussing) {
+        if ($retro->phase->takesActionItems()) {
             return ! $retro->is_locked;
         }
 

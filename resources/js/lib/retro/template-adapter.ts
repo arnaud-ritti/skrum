@@ -1,8 +1,8 @@
 import type {
     RetroTemplate,
     RetroTemplateColumn,
-    ServerColumnColor,
 } from '@/components/skrum/retro-template-picker';
+import type { ColumnColor } from '@/lib/retro/types';
 import type { CatalogueTemplate } from '@/types';
 
 export const MaxShortcuts = 5;
@@ -12,7 +12,7 @@ export type DraftColumn = {
     id: string;
     title: string;
     description: string | null;
-    color: ServerColumnColor;
+    color: ColumnColor;
 };
 
 export function toRetroTemplate(item: CatalogueTemplate): RetroTemplate {
@@ -84,7 +84,7 @@ export function draftColumns(
         id: newDraftColumnId(),
         title: column.title,
         description: column.description ?? null,
-        color: column.color as ServerColumnColor,
+        color: column.color,
     }));
 }
 

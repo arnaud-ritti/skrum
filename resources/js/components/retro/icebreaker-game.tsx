@@ -171,7 +171,7 @@ export function IcebreakerGame({ snapshot }: { snapshot: GameSnapshot }) {
                         <HistoryDrawer />
                     </div>
                 </div>
-                <GamePanel />
+                <GamePanel landmark={false} />
             </section>
         </RoomProvider>
     );

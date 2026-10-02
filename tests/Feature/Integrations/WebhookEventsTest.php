@@ -201,14 +201,14 @@ it('hides guest actors but still sends their events', function () {
 });
 
 it('sends retro.completed on each completion with the recap rules', function () {
-    [$retro, , $facilitatorParticipant] = webhookEventRetro(anonymous: true);
+    [$retro, , $facilitatorParticipant] = webhookEventRetro(RetroPhase::Roti, anonymous: true);
     subscribedWebhook($retro->team, ['retro.completed']);
     [$carla, $carlaParticipant] = retroMember($retro);
     $carla->forceFill(['name' => 'Carla Author'])->save();
     webhookTopCard($retro, $carlaParticipant, $facilitatorParticipant);
 
     resolve(ChangeRetroPhase::class)->handle($retro->fresh(), RetroPhase::Completed);
-    resolve(ChangeRetroPhase::class)->handle($retro->fresh(), RetroPhase::Discussing);
+    resolve(ChangeRetroPhase::class)->handle($retro->fresh(), RetroPhase::Roti);
     resolve(ChangeRetroPhase::class)->handle($retro->fresh(), RetroPhase::Completed);
 
     $jobs = pushedWebhookEvents();

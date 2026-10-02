@@ -287,7 +287,8 @@ class BuildBoardSnapshot
      * @return array{
      *     myScore: ?int,
      *     respondents: int,
-     *     voterIds: array<int, string>
+     *     voterIds: array<int, string>,
+     *     canVote: bool
      * }
      */
     private function roti(Retro $retro, Participant $viewer): array
@@ -300,6 +301,7 @@ class BuildBoardSnapshot
             'myScore' => $myScore === null ? null : (int) $myScore,
             'respondents' => count($voterIds),
             'voterIds' => $voterIds,
+            'canVote' => $retro->takesRotiVotes(),
         ];
     }
 

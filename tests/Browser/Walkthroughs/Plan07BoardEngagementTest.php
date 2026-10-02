@@ -116,7 +116,9 @@ function plan07OpenSettings(mixed $page): mixed
 
 function plan07SaveSettings(mixed $page): mixed
 {
-    return $page->click('[role="dialog"] button[type="submit"]')
+    return $page->click('[role="dialog"] button:has-text("Apply")')
+        ->assertSeeIn('[role="dialog"]', 'No changes')
+        ->keys('[role="dialog"]', 'Escape')
         ->assertNotPresent('[role="dialog"]')
         ->assertNotPresent('[role="menu"]');
 }
@@ -243,12 +245,12 @@ it('[P07-03a] toggles card reactions with any emoji, counts them live and names 
 
     $alicePage->assertAriaAttribute(plan07Chip($card, '👍', 2), 'pressed', 'true');
 
-    $bobPage->hover('header > h1')
+    $bobPage->hover('header >> h1')
         ->hover(plan07Chip($card, '👍', 2))
         ->assertSeeIn($tooltip, 'Alice Martin')
         ->assertSeeIn($tooltip, 'Bob Stone');
 
-    $bobPage->hover('header > h1')
+    $bobPage->hover('header >> h1')
         ->click("#card-{$card->id} [aria-label=\"Add a reaction\"]")
         ->assertVisible('[role="menuitem"]:has-text("🎉")')
         ->click('[role="menuitem"]:has-text("🎉")')
@@ -528,7 +530,7 @@ it('[P07-06a] shows no name on reaction chips, comments or notification toasts o
         ->assertNotPresent($tooltip)
         ->click(plan07Chip($card, '👍', 1))
         ->assertAriaAttribute(plan07Chip($card, '👍', 2), 'pressed', 'true')
-        ->hover('header > h1')
+        ->hover('header >> h1')
         ->hover(plan07Chip($card, '👍', 2))
         ->assertNotPresent($tooltip);
 
@@ -693,6 +695,7 @@ it('[P07-08a] closes the board for editing in every phase while the facilitator 
 
     $bobPage->assertDontSee('Board closed for editing')
         ->assertEnabled('[aria-label="Add an action item…"]')
+        ->click('[data-test="retro-topics"] li:has-text("Slow CI")')
         ->assertEnabled(plan07Chip($slow, '👍', 1));
 
     expect($retro->fresh()->is_locked)->toBeFalse();
@@ -758,7 +761,7 @@ it('[P07-09] presents the highlighted card to everyone, lets a participant close
 
     foreach ([$alicePage, $bobPage] as $page) {
         $page->assertSeeIn($overlay, 'Slow CI')
-            ->assertSeeIn($overlay, 'Bob Stone')
+            ->assertAttribute("{$overlay} [data-slot=\"retro-card-author\"]", 'title', 'Bob Stone')
             ->assertSeeIn($overlay, '2 votes')
             ->assertPresent($presentedChip)
             ->assertPresent("{$overlay} button[aria-label=\"Comments (1)\"]");
@@ -784,7 +787,7 @@ it('[P07-09] presents the highlighted card to everyone, lets a participant close
 
     expect($retro->fresh()->highlighted_card_id)->toBeNull();
 
-    $alicePage->click($discuss($flaky));
+    $alicePage->click('[data-test="retro-topics"] li:has-text("Flaky tests")');
 
     $bobPage->assertSeeIn($overlay, 'Flaky tests');
 
@@ -808,7 +811,7 @@ it('[P07-01a] shows a named cursor over the same card on another page and keeps 
     ] = plan07Board();
     $first = plan07Card($retro, $columns[0], $aliceParticipant, 'Slow CI');
     $third = plan07Card($retro, $columns[2], $aliceParticipant, 'Keep the demo on Fridays');
-    $board = 'document.querySelector("main:has([data-test^=\"retro-column-\"])")';
+    $board = 'document.querySelector("[data-slot=\"retro-columns\"]")';
 
     $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
     $carolPage = $this->awaitRealtime($this->signIn($carol, "/retros/{$retro->id}"));
@@ -1027,7 +1030,7 @@ it('[P07-05a] searches GIFs and shows them on cards through skrum, without any r
     $bobPage->assertAttribute("#card-{$card->id} button[aria-label=\"GIF\"] img", 'src', '/gifs/party1/preview')
         ->assertScript(plan07ImageLoaded("#card-{$card->id} button[aria-label=\"GIF\"] img"), true);
 
-    $carolPage->assertSeeIn("#card-{$card->id}", 'Hidden until writing ends')
+    $carolPage->assertSeeIn("#card-{$card->id}", 'Hidden until the reveal')
         ->assertNotPresent("#card-{$card->id} img");
 
     $alicePage->press('Next')->assertSeeIn('[aria-current="step"]', 'Grouping');

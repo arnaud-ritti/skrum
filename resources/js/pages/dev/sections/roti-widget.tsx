@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 import type { BenchGroup } from '@/components/dev/bench';
-import { ROTIWidget } from '@/components/skrum/roti-widget';
+import {
+    ROTIHiddenDistribution,
+    ROTIWidget,
+} from '@/components/skrum/roti-widget';
 import type { ROTIResult, Roti } from '@/components/skrum/roti-widget';
 import { useTrans } from '@/hooks/use-trans';
 
@@ -42,6 +45,29 @@ export default function ROTIWidgetSection() {
             </State>
             <State label={t('Vote, selected and sent')}>
                 <ROTIWidget mode="vote" value={4} />
+            </State>
+            <State
+                label={t(
+                    'Vote, a row of five scores with an eyebrow and the hidden distribution',
+                )}
+            >
+                <ROTIWidget
+                    mode="vote"
+                    layout="row"
+                    value={4}
+                    eyebrow={t('Last step · ROTI (return on time invested)')}
+                    labels={{
+                        saved: t(
+                            'Vote saved · you can change it until the session ends',
+                        ),
+                    }}
+                    footer={
+                        <ROTIHiddenDistribution
+                            title={t('Votes hidden until the end')}
+                            note={t('Anonymous · nobody sees who voted what')}
+                        />
+                    }
+                />
             </State>
             <State label={t('Result, 11 votes with trend')}>
                 <ROTIWidget mode="result" result={result} />

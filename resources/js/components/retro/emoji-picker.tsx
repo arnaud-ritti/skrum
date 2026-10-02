@@ -6,6 +6,7 @@ import {
     type EmojiPickerListComponents,
     type EmojiPickerListEmojiProps,
 } from 'frimousse';
+import { Search } from 'lucide-react';
 import { useCallback, useState, type ReactNode } from 'react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import {
@@ -35,7 +36,7 @@ function CategoryHeader({
 }: EmojiPickerListCategoryHeaderProps) {
     return (
         <div
-            className="bg-background px-1 pt-2 pb-1 text-xs font-medium text-muted-foreground"
+            className="bg-popover px-1 pt-2 pb-1 text-overline text-muted-foreground"
             {...props}
         >
             {category.label}
@@ -46,7 +47,7 @@ function CategoryHeader({
 function Emoji({ emoji, ...props }: EmojiPickerListEmojiProps) {
     return (
         <button
-            className="flex size-8 items-center justify-center rounded text-lg data-[active]:bg-accent"
+            className="grid size-9 place-items-center rounded-md text-xl outline-none data-[active]:bg-accent"
             {...props}
         >
             {emoji.emoji}
@@ -123,13 +124,16 @@ export function EmojiSearchDialog({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent
                 {...dragIsolation}
+                size="sm"
                 aria-describedby={undefined}
                 onCloseAutoFocus={onCloseAutoFocus}
-                className="max-w-sm"
             >
                 <DialogTitle>{label}</DialogTitle>
                 {unavailable && (
-                    <p role="alert" className="text-sm text-destructive">
+                    <p
+                        role="alert"
+                        className="text-body-sm text-skrum-destructive-text"
+                    >
                         {t('Emoji list unavailable')}
                     </p>
                 )}
@@ -144,7 +148,7 @@ export function EmojiSearchDialog({
                     }}
                 >
                     <Frimousse.Search
-                        className="mb-2 rounded-md border bg-background px-2 py-1 text-sm"
+                        className="mb-2 h-9 w-full rounded-md border border-input bg-card px-3 text-sm shadow-xs outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring"
                         placeholder={t('Search emoji…')}
                         aria-label={t('Search emoji…')}
                     />
@@ -181,12 +185,13 @@ export function EmojiPicker({ onPick, label, children, emojiData }: Props) {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
                     {...dragIsolation}
-                    className="flex flex-wrap gap-1 p-1"
+                    data-slot="emoji-quick-list"
+                    className="grid grid-cols-6 gap-1 p-2"
                 >
                     {QuickEmoji.map((emoji) => (
                         <DropdownMenuItem
                             key={emoji}
-                            className="px-2 text-lg"
+                            className="size-9 justify-center rounded-md p-0 text-xl"
                             onSelect={() => onPick(emoji)}
                         >
                             {emoji}
@@ -194,12 +199,15 @@ export function EmojiPicker({ onPick, label, children, emojiData }: Props) {
                     ))}
                     {data !== null && (
                         <>
-                            <DropdownMenuSeparator className="w-full" />
+                            <DropdownMenuSeparator className="col-span-full" />
                             <DropdownMenuItem
-                                className="w-full"
+                                className="col-span-full"
                                 onSelect={() => setBrowsing(true)}
                             >
-                                {t('More emoji…')}
+                                <Search aria-hidden />
+                                <span className="truncate">
+                                    {t('More emoji…')}
+                                </span>
                             </DropdownMenuItem>
                         </>
                     )}

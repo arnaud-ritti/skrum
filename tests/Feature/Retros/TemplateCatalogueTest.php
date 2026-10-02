@@ -56,7 +56,7 @@ it('keeps the five original templates, names and columns', function () {
         ->and($titles('four_ls'))->toBe(['Liked', 'Learned', 'Lacked', 'Longed for'])
         ->and($titles('went_well_to_improve_actions'))->toBe(['Went well', 'To improve', 'Action ideas'])
         ->and(array_column(TemplateCatalogue::find('mad_sad_glad')?->translatedColumns() ?? [], 'color'))
-        ->toBe([ColumnColor::Red, ColumnColor::Blue, ColumnColor::Green]);
+        ->toBe([ColumnColor::Coral, ColumnColor::Sky, ColumnColor::Moss]);
 });
 
 it('puts the column emoji in front of the title', function () {

@@ -199,6 +199,27 @@ describe('CardGroup', () => {
         expect(screen.queryByText(/votes in total/)).toBeNull();
     });
 
+    it('puts the vote controls of the group on a "Group vote" line, in place of the total', () => {
+        const { container, rerender } = renderWithProviders(
+            group({
+                votes: { total: 11, mine: 2 },
+                voteControls: <button type="button">Add a vote</button>,
+            }),
+        );
+        const line = container.querySelector('[data-slot="card-group-votes"]');
+
+        expect(line?.textContent).toContain('Group vote');
+        expect(line?.querySelector('button')?.textContent).toBe('Add a vote');
+        expect(screen.queryByText(/votes in total/)).toBeNull();
+        expect(line?.closest('article')).toBeNull();
+
+        rerender(group({ votes: { total: 11, mine: 2 } }));
+
+        expect(
+            container.querySelector('[data-slot="card-group-votes"]'),
+        ).toBeNull();
+    });
+
     it('never uses the text of a masked card in the title or the labels', () => {
         const secret = 'A secret nobody may read';
         const { container } = renderWithProviders(
@@ -359,7 +380,7 @@ describe('CardGroup', () => {
         const thirty = Array.from({ length: 30 }, (_, index) => ({
             id: `c${index}`,
             text: `Card number ${index + 1}`,
-            color: 'red' as const,
+            color: 'coral' as const,
             author: { id: `u${index % 14}`, name: `Person ${index % 14}` },
         }));
 
@@ -398,7 +419,10 @@ describe('CardGroup', () => {
             const text = 'word '.repeat(56);
 
             renderWithProviders(
-                group({ title: '', cards: [{ id: '1', text, color: 'red' }] }),
+                group({
+                    title: '',
+                    cards: [{ id: '1', text, color: 'coral' }],
+                }),
             );
 
             expect(text).toHaveLength(280);
@@ -502,5 +526,125 @@ describe('CardGroup', () => {
         expect(
             screen.queryByRole('button', { name: 'Use "Reviews"' }),
         ).toBeNull();
+    });
+
+    it('opens the title field on a suggested name, and keeps it even unchanged', () => {
+        const onRename = vi.fn();
+        const onEditingTitleChange = vi.fn();
+        const { rerender } = renderWithProviders(
+            group({ title: '', canEdit: true, onRename, onEditingTitleChange }),
+        );
+
+        rerender(
+            group({
+                title: '',
+                canEdit: true,
+                editingTitle: true,
+                titleDraft: 'Review habits',
+                onRename,
+                onEditingTitleChange,
+            }),
+        );
+
+        const input = screen.getByRole('textbox', { name: 'Group name' });
+
+        expect((input as HTMLInputElement).value).toBe('Review habits');
+        expect(onEditingTitleChange).toHaveBeenLastCalledWith(true);
+
+        fireEvent.keyDown(input, { key: 'Enter' });
+
+        expect(onRename).toHaveBeenCalledWith('Review habits');
+        expect(onEditingTitleChange).toHaveBeenLastCalledWith(false);
+    });
+
+    it('tells its host when the title field is opened by a click and closed by Escape', () => {
+        const onEditingTitleChange = vi.fn();
+
+        renderWithProviders(group({ canEdit: true, onEditingTitleChange }));
+
+        expect(onEditingTitleChange).not.toHaveBeenCalled();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Rename group' }));
+
+        expect(onEditingTitleChange).toHaveBeenLastCalledWith(true);
+
+        fireEvent.keyDown(screen.getByRole('textbox', { name: 'Group name' }), {
+            key: 'Escape',
+        });
+
+        expect(onEditingTitleChange).toHaveBeenLastCalledWith(false);
+    });
+
+    it('shows the keys of the title field while it is open', () => {
+        const { container } = renderWithProviders(
+            group({ canEdit: true, editingTitle: true }),
+        );
+
+        expect(
+            container.querySelector('[data-slot="card-group-title-keys"]')
+                ?.textContent,
+        ).toBe('↵save ·Esccancel');
+    });
+
+    it('opens a slot for the card about to be dropped on it', () => {
+        const { container, rerender } = renderWithProviders(group());
+
+        expect(
+            container.querySelector('[data-slot="card-group-drop-slot"]'),
+        ).toBeNull();
+
+        rerender(group({ dropTarget: true }));
+
+        expect(
+            container.querySelector('[data-slot="card-group-drop-slot"]')
+                ?.textContent,
+        ).toBe('Drop to add to the group');
+    });
+
+    it('lets its host draw each card, with the ungroup button in the footer it hands over', () => {
+        const onUngroup = vi.fn();
+
+        renderWithProviders(
+            group({
+                canEdit: true,
+                onUngroup,
+                renderCard: (card, index) => (
+                    <div data-testid={`host-${card.id}`} data-index={index}>
+                        <span>{card.className}</span>
+                        {card.footer}
+                    </div>
+                ),
+            }),
+        );
+
+        expect(document.getElementById('card-1')).toBeNull();
+        expect(screen.getByTestId('host-1').textContent).toContain(
+            'shadow-none',
+        );
+        expect(
+            screen
+                .getByTestId('host-1')
+                .querySelector('[data-slot="card-group-ungroup"]'),
+        ).toBeNull();
+
+        fireEvent.click(
+            screen
+                .getByTestId('host-3')
+                .querySelector('[data-slot="card-group-ungroup"]') as Element,
+        );
+
+        expect(onUngroup).toHaveBeenCalledWith('3');
+    });
+
+    it('draws the first card through its host when collapsed', () => {
+        renderWithProviders(
+            group({
+                collapsed: true,
+                renderCard: (card) => <div data-testid={`host-${card.id}`} />,
+            }),
+        );
+
+        expect(screen.getByTestId('host-1')).toBeTruthy();
+        expect(screen.queryByTestId('host-2')).toBeNull();
     });
 });

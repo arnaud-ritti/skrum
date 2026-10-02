@@ -156,4 +156,40 @@ describe('useSidebarModel', () => {
             );
         },
     );
+
+    it('hands the team count and the role of each workspace to the switcher', () => {
+        const model = modelFor({
+            currentWorkspace: { ...workspace, role: 'admin' },
+            workspaces: [
+                { ...workspace, teamsCount: 2, role: 'admin' },
+                {
+                    id: 'w2',
+                    name: 'Kestrel Labs',
+                    slug: 'kestrel-labs',
+                    teamsCount: 1,
+                    role: 'member',
+                },
+            ],
+        });
+
+        expect(
+            model.workspaces.map(({ name, teamsCount, role }) => ({
+                name,
+                teamsCount,
+                role,
+            })),
+        ).toEqual([
+            { name: 'Nordlys', teamsCount: 2, role: 'admin' },
+            { name: 'Kestrel Labs', teamsCount: 1, role: 'member' },
+        ]);
+    });
+
+    it('still offers a new workspace to a user who has none', () => {
+        const model = modelFor({ auth: { user: { id: 'u1' } } });
+
+        expect(model.team).toBeNull();
+        expect(model.workspace).toBeNull();
+        expect(model.workspaces).toEqual([]);
+        expect(hrefOf(model.newWorkspaceHref)).toBe('/workspaces/create');
+    });
 });

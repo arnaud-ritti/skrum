@@ -37,7 +37,7 @@ it('moves to adjacent phases only', function () {
 });
 
 it('completes and reopens a retro', function () {
-    [$retro, $user] = facilitatedRetro(RetroPhase::Discussing);
+    [$retro, $user] = facilitatedRetro(RetroPhase::Roti);
     $retro->update(['timer_ends_at' => now()->addMinutes(5)]);
 
     $this->actingAs($user)->putJson(route('retros.phase.update', $retro), ['phase' => 'completed'])->assertOk();
@@ -45,7 +45,7 @@ it('completes and reopens a retro', function () {
     expect($retro->fresh()->completed_at)->not->toBeNull()
         ->and($retro->fresh()->timer_ends_at)->toBeNull();
 
-    $this->actingAs($user)->putJson(route('retros.phase.update', $retro), ['phase' => 'discussing'])->assertOk();
+    $this->actingAs($user)->putJson(route('retros.phase.update', $retro), ['phase' => 'roti'])->assertOk();
 
     expect($retro->fresh()->completed_at)->toBeNull();
 });

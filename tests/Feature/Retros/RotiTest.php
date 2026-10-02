@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\Retros\BuildBoardSnapshot;
+use App\Actions\Retros\ChangeRetroPhase;
 use App\Enums\RetroPhase;
 use App\Events\Retros\RotiChanged;
 use App\Models\Participant;
@@ -12,7 +13,7 @@ beforeEach(function () {
     Event::fake();
 });
 
-function rotiRetro(RetroPhase $phase = RetroPhase::Discussing, array $attributes = []): array
+function rotiRetro(RetroPhase $phase = RetroPhase::Roti, array $attributes = []): array
 {
     $retro = Retro::factory()->inPhase($phase)->create($attributes);
     [$user, $participant] = retroMember($retro);
@@ -51,19 +52,106 @@ it('broadcasts the respondent count and never a score', function () {
         && ! array_key_exists('score', $event->broadcastWith()));
 });
 
-it('accepts ratings in discussing and completed even when locked', function (RetroPhase $phase) {
-    [$retro, $user] = rotiRetro($phase, ['is_locked' => true]);
+it('accepts ratings in the ROTI phase even when locked', function () {
+    [$retro, $user] = rotiRetro(RetroPhase::Roti, ['is_locked' => true]);
 
     $this->actingAs($user)->putJson(route('retros.roti.update', $retro), ['score' => 3])->assertOk();
     $this->actingAs($user)->deleteJson(route('retros.roti.destroy', $retro))->assertOk();
-})->with([RetroPhase::Discussing, RetroPhase::Completed]);
+});
 
 it('refuses ratings in the other phases', function (RetroPhase $phase) {
     [$retro, $user] = rotiRetro($phase);
 
     $this->actingAs($user)->putJson(route('retros.roti.update', $retro), ['score' => 3])->assertForbidden();
     $this->actingAs($user)->deleteJson(route('retros.roti.destroy', $retro))->assertForbidden();
-})->with([RetroPhase::HealthCheck, RetroPhase::Icebreaker, RetroPhase::Writing, RetroPhase::Grouping, RetroPhase::Voting]);
+})->with([RetroPhase::HealthCheck, RetroPhase::Icebreaker, RetroPhase::Writing, RetroPhase::Grouping, RetroPhase::Voting, RetroPhase::Discussing, RetroPhase::Actions]);
+
+it('refuses ratings once completed', function () {
+    [$retro, $user] = rotiRetro(RetroPhase::Completed);
+
+    $this->actingAs($user)->putJson(route('retros.roti.update', $retro), ['score' => 3])->assertForbidden();
+    $this->actingAs($user)->deleteJson(route('retros.roti.destroy', $retro))->assertForbidden();
+
+    expect(RotiVote::count())->toBe(0);
+});
+
+it('still accepts ratings on a retro that was completed before the ROTI phase existed', function () {
+    $retro = Retro::factory()->inPhase(RetroPhase::Completed)->legacyRoti()->create(['is_locked' => true]);
+    [$user] = retroMember($retro);
+
+    $this->actingAs($user)->putJson(route('retros.roti.update', $retro), ['score' => 3])->assertOk();
+    $this->actingAs($user)->deleteJson(route('retros.roti.destroy', $retro))->assertOk();
+});
+
+it('takes no rating on a legacy retro while it is reopened, and keeps its mark when completed again', function () {
+    $retro = Retro::factory()->inPhase(RetroPhase::Completed)->legacyRoti()->create();
+    [$user] = retroFacilitator($retro);
+
+    resolve(ChangeRetroPhase::class)->handle($retro, RetroPhase::Roti);
+    resolve(ChangeRetroPhase::class)->handle($retro->fresh(), RetroPhase::Actions);
+
+    $this->actingAs($user)->putJson(route('retros.roti.update', $retro), ['score' => 3])->assertForbidden();
+
+    resolve(ChangeRetroPhase::class)->handle($retro->fresh(), RetroPhase::Roti);
+    resolve(ChangeRetroPhase::class)->handle($retro->fresh(), RetroPhase::Completed);
+
+    expect($retro->fresh()->roti_votable_when_completed)->toBeTrue();
+
+    $this->actingAs($user)->putJson(route('retros.roti.update', $retro), ['score' => 3])->assertOk();
+});
+
+it('marks exactly the completed retros when the migration runs', function () {
+    $completed = Retro::factory()->inPhase(RetroPhase::Completed)->create();
+    $open = collect([RetroPhase::Writing, RetroPhase::Discussing, RetroPhase::Actions, RetroPhase::Roti])
+        ->map(fn (RetroPhase $phase) => Retro::factory()->inPhase($phase)->create());
+
+    expect($completed->fresh()->roti_votable_when_completed)->toBeFalse();
+
+    (require database_path('migrations/2026_10_15_100500_mark_completed_retros_as_roti_votable.php'))->up();
+
+    expect($completed->fresh()->roti_votable_when_completed)->toBeTrue()
+        ->and($open->map(fn (Retro $retro) => $retro->fresh()->roti_votable_when_completed)->all())->toBe([false, false, false, false]);
+});
+
+it('keeps the ratings given in discussing through actions into the ROTI phase, where the voter changes the score', function () {
+    [$retro, $user, $participant] = rotiRetro(RetroPhase::Discussing);
+    retroFacilitator($retro);
+    RotiVote::factory()->create(['retro_id' => $retro->id, 'participant_id' => $participant->id, 'score' => 2]);
+    RotiVote::factory()->create(['retro_id' => $retro->id, 'score' => 5]);
+
+    $this->actingAs($user)->putJson(route('retros.roti.update', $retro), ['score' => 4])->assertForbidden();
+
+    resolve(ChangeRetroPhase::class)->handle($retro, RetroPhase::Actions);
+
+    $this->actingAs($user)->putJson(route('retros.roti.update', $retro), ['score' => 4])->assertForbidden();
+
+    expect(RotiVote::query()->where('retro_id', $retro->id)->count())->toBe(2);
+
+    resolve(ChangeRetroPhase::class)->handle($retro->fresh(), RetroPhase::Roti);
+
+    expect(resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $participant)['roti'])
+        ->toMatchArray(['myScore' => 2, 'respondents' => 2, 'canVote' => true]);
+
+    $this->actingAs($user)->putJson(route('retros.roti.update', $retro), ['score' => 4])
+        ->assertOk()
+        ->assertJson(['myScore' => 4, 'respondents' => 2]);
+
+    expect(RotiVote::query()->where('participant_id', $participant->id)->sole()->score)->toBe(4);
+});
+
+it('says in the snapshot whether the viewer may rate', function (RetroPhase $phase, bool $isLegacy, bool $canVote) {
+    $retro = Retro::factory()->inPhase($phase)->create(['roti_votable_when_completed' => $isLegacy]);
+    [, $viewer] = retroMember($retro);
+
+    expect(resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $viewer)['roti']['canVote'])->toBe($canVote);
+})->with([
+    'discussing' => [RetroPhase::Discussing, false, false],
+    'actions' => [RetroPhase::Actions, false, false],
+    'roti' => [RetroPhase::Roti, false, true],
+    'completed' => [RetroPhase::Completed, false, false],
+    'completed, legacy' => [RetroPhase::Completed, true, true],
+    'discussing, legacy retro reopened' => [RetroPhase::Discussing, true, false],
+]);
 
 it('validates the score', function (mixed $score) {
     [$retro, $user] = rotiRetro();
@@ -74,7 +162,7 @@ it('validates the score', function (mixed $score) {
 })->with([0, 6, 'great', null]);
 
 it('accepts ratings from guests', function () {
-    $retro = Retro::factory()->inPhase(RetroPhase::Completed)->withGuestAccess()->create();
+    $retro = Retro::factory()->inPhase(RetroPhase::Roti)->withGuestAccess()->create();
     $guest = Participant::factory()->guest()->create(['retro_id' => $retro->id]);
 
     $this->withCredentials()->withCookies(retroGuestCookie($guest))
@@ -132,7 +220,7 @@ it('lists the voters in the event and the snapshot, and drops a voter who retrac
 
     $roti = resolve(BuildBoardSnapshot::class)->handle($retro->fresh(), $participant)['roti'];
 
-    expect(array_keys($roti))->toBe(['myScore', 'respondents', 'voterIds'])
+    expect(array_keys($roti))->toBe(['myScore', 'respondents', 'voterIds', 'canVote'])
         ->and($roti['voterIds'])->toContain($participant->id, $other->id);
 
     $this->actingAs($user)->deleteJson(route('retros.roti.destroy', $retro))->assertOk();

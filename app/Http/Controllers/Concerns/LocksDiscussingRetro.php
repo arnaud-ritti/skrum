@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Concerns;
 
 use App\Actions\Retros\RetroGuard;
-use App\Enums\RetroPhase;
 use App\Models\ActionItem;
 use App\Models\Retro;
 
@@ -11,7 +10,7 @@ trait LocksDiscussingRetro
 {
     private function guardDiscussing(Retro $retro): void
     {
-        RetroGuard::phase($retro, RetroPhase::Discussing);
+        RetroGuard::takesActionItems($retro);
         RetroGuard::unlocked($retro);
     }
 

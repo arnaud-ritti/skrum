@@ -10,15 +10,6 @@ import { useTrans } from '@/hooks/use-trans';
 
 export const group: BenchGroup = 'skrum';
 
-const serverColors: ColumnColor[] = [
-    'green',
-    'red',
-    'blue',
-    'amber',
-    'purple',
-    'slate',
-];
-
 const noop = (): void => {};
 
 function Example({ label, children }: { label: string; children: ReactNode }) {
@@ -62,7 +53,7 @@ function Cards({
 function FacilitatorColumn() {
     const { t } = useTrans();
     const [title, setTitle] = useState(t('What went well'));
-    const [color, setColor] = useState<ColumnColor>('green');
+    const [color, setColor] = useState<ColumnColor>('moss');
     const [description, setDescription] = useState<string | null>(
         t('Write what worked well during the sprint.'),
     );
@@ -102,14 +93,14 @@ function SortableColumn({ texts }: { texts: string[] }) {
         <RetroColumn
             id="b-sorted"
             title={t('To improve')}
-            color="red"
+            color="coral"
             count={texts.length}
             canAdd={false}
             sortedByVotes={sorted}
             onSortByVotesChange={setSorted}
         >
             <Cards
-                color="red"
+                color="coral"
                 scope="sorted"
                 texts={sorted ? [...texts].reverse() : texts}
             />
@@ -239,7 +230,7 @@ export default function RetroColumnSection() {
                         <RetroColumn
                             id="b-slots"
                             title={t('Questions')}
-                            color="purple"
+                            color="plum"
                             count={1}
                             canAdd={false}
                             headerAction={
@@ -260,10 +251,7 @@ export default function RetroColumnSection() {
                                 </p>
                             }
                         >
-                            <Cards
-                                color="purple"
-                                texts={wellTexts.slice(0, 1)}
-                            />
+                            <Cards color="plum" texts={wellTexts.slice(0, 1)} />
                         </RetroColumn>
                     </Example>
                 </div>
@@ -277,13 +265,13 @@ export default function RetroColumnSection() {
                             <RetroColumn
                                 id="b-many"
                                 title={t('What went well')}
-                                color="blue"
+                                color="sky"
                                 count={200}
                                 sortedByVotes
                                 onAdd={noop}
                                 onSortByVotesChange={noop}
                             >
-                                <Cards color="blue" texts={manyTexts} />
+                                <Cards color="sky" texts={manyTexts} />
                             </RetroColumn>
                         </div>
                     </Example>
@@ -295,49 +283,28 @@ export default function RetroColumnSection() {
                         <RetroColumn
                             id="b-long"
                             title={longTitle}
-                            color="amber"
+                            color="sun"
                             count={1}
                             description={longDescription}
                             onAdd={noop}
                             onRename={noop}
                             onDescriptionChange={noop}
                         >
-                            <Cards
-                                color="amber"
-                                texts={wellTexts.slice(0, 1)}
-                            />
+                            <Cards color="sun" texts={wellTexts.slice(0, 1)} />
                         </RetroColumn>
                     </Example>
                     <Example label={t('One card')}>
                         <RetroColumn
                             id="b-one"
                             title={t('Ideas')}
-                            color="slate"
+                            color="iris"
                             count={1}
                             onAdd={noop}
                         >
-                            <Cards
-                                color="slate"
-                                texts={wellTexts.slice(0, 1)}
-                            />
+                            <Cards color="iris" texts={wellTexts.slice(0, 1)} />
                         </RetroColumn>
                     </Example>
                 </div>
-                <Example label={t('Colors sent by the server today')}>
-                    <div className="flex items-start gap-5 overflow-x-auto pb-2">
-                        {serverColors.map((value, index) => (
-                            <RetroColumn
-                                key={value}
-                                id={`b-${value}`}
-                                title={paletteTitles[index]}
-                                color={value}
-                                count={0}
-                                canAdd={false}
-                                emptyHint={value}
-                            />
-                        ))}
-                    </div>
-                </Example>
                 <Example label={t('Palette of the eight colours')}>
                     <div className="flex items-start gap-5 overflow-x-auto pb-2">
                         {columnColors.map((value, index) => (

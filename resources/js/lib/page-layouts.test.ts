@@ -13,6 +13,8 @@ describe('page layouts', () => {
             'admin/admins',
             'dev/design-system',
             'retros/show',
+            'retros/join',
+            'retros/session-ended',
             'poker/show',
             'poker/decks',
             'games/index',

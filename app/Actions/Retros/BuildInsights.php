@@ -27,7 +27,7 @@ class BuildInsights
             return null;
         }
 
-        if (! in_array($retro->phase, [RetroPhase::Discussing, RetroPhase::Completed], true)) {
+        if (! $retro->phase->takesActionItems() && $retro->phase !== RetroPhase::Completed) {
             return null;
         }
 

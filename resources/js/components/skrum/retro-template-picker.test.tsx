@@ -23,7 +23,7 @@ function makeTemplate(
         description: `Description ${index}`,
         source: 'builtin',
         columns: [
-            { title: 'Went well', color: 'green', description: 'Good things' },
+            { title: 'Went well', color: 'moss', description: 'Good things' },
             { title: 'To improve', color: 'sky' },
         ],
         ...extra,
@@ -82,16 +82,17 @@ afterEach(() => {
 });
 
 describe('columnColorClass', () => {
-    it('maps both colour sets to the col-* context class', () => {
-        expect(columnColorClass('green')).toBe('col-moss');
-        expect(columnColorClass('red')).toBe('col-coral');
-        expect(columnColorClass('blue')).toBe('col-sky');
-        expect(columnColorClass('amber')).toBe('col-sun');
-        expect(columnColorClass('purple')).toBe('col-plum');
-        expect(columnColorClass('slate')).toBe('col-iris');
+    it('maps the eight colours to the col-* context class, and an unknown one to iris', () => {
+        expect(columnColorClass('moss')).toBe('col-moss');
+        expect(columnColorClass('coral')).toBe('col-coral');
+        expect(columnColorClass('sky')).toBe('col-sky');
+        expect(columnColorClass('sun')).toBe('col-sun');
+        expect(columnColorClass('plum')).toBe('col-plum');
+        expect(columnColorClass('iris')).toBe('col-iris');
         expect(columnColorClass('lagoon')).toBe('col-lagoon');
         expect(columnColorClass('apricot')).toBe('col-apricot');
         expect(columnColorClass('unknown')).toBe('col-iris');
+        expect(columnColorClass('green')).toBe('col-iris');
     });
 });
 
@@ -232,6 +233,55 @@ describe('RetroTemplatePicker', () => {
             screen.getByRole('button', { name: 'Duplicate and edit' }),
         );
         expect(onDuplicate).toHaveBeenCalledWith('tpl-1');
+    });
+
+    it('offers Edit on a workspace template only, and names its author', () => {
+        const onEdit = vi.fn();
+        const withAuthor = templates.map((template) =>
+            template.id === 'tpl-5'
+                ? { ...template, author: 'Ada Lovelace' }
+                : template,
+        );
+
+        const view = renderPicker({ onEdit, templates: withAuthor });
+
+        expect(screen.queryByRole('button', { name: 'Edit' })).toBeNull();
+        expect(screen.queryByText('By Ada Lovelace')).toBeNull();
+
+        view.rerender(
+            <RetroTemplatePicker
+                value="tpl-5"
+                onValueChange={vi.fn()}
+                templates={withAuthor}
+                tab="workspace"
+                onEdit={onEdit}
+            />,
+        );
+
+        expect(screen.getByText('By Ada Lovelace')).toBeTruthy();
+        fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
+        expect(onEdit).toHaveBeenCalledWith('tpl-5');
+    });
+
+    it('keeps "Use this template" in place, inert, with the reason it cannot be used', () => {
+        const onUse = vi.fn();
+
+        renderPicker({ onUse, useDisabledReason: 'Pick a team first' });
+
+        const use = screen.getByRole('button', { name: 'Use this template' });
+
+        expect(use.getAttribute('aria-disabled')).toBe('true');
+        expect(screen.getByText('Pick a team first').id).toBe(
+            use.getAttribute('aria-describedby'),
+        );
+
+        fireEvent.click(use);
+        fireEvent.keyDown(
+            screen.getByRole('radio', { name: 'Start Stop Continue' }),
+            { key: 'Enter' },
+        );
+
+        expect(onUse).not.toHaveBeenCalled();
     });
 
     it('does not re-register the Escape listener of the search on an unrelated render', () => {
