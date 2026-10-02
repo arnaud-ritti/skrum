@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
     cardEngagement,
+    cardVoting,
     groupingProgress,
     toCardProps,
     toColumnProps,
     toGroupProps,
     toHealthStatements,
+    votingProgress,
     writingProgress,
 } from '@/lib/retro/adapters';
 import type { BoardCard, BoardColumn } from '@/lib/retro/types';
@@ -458,5 +460,104 @@ describe('cardEngagement', () => {
             showsComments: false,
             canComment: false,
         });
+    });
+});
+
+describe('cardVoting', () => {
+    const voting = (
+        overrides: Parameters<typeof retroSnapshot>[0] = {},
+        voted: Partial<BoardCard> = {},
+    ) => {
+        const mine = card({ votes: 3, myVotes: 1, ...voted });
+        const { retro, ...rest } = overrides;
+
+        return cardVoting(
+            mine,
+            retroSnapshot({
+                columns,
+                cards: [mine],
+                retro: { phase: 'voting', ...retro },
+                ...rest,
+            }),
+        );
+    };
+
+    it('gives the total and my votes, and opens both ways while votes are left', () => {
+        expect(voting()).toEqual({
+            votes: { total: 3, mine: 1 },
+            canVote: true,
+            canUnvote: true,
+            blocked: null,
+        });
+    });
+
+    it('keeps the total hidden when the server sends none', () => {
+        expect(voting({}, { votes: null })?.votes).toEqual({
+            total: null,
+            mine: 1,
+        });
+    });
+
+    it('adds no vote once the budget is spent, and still takes one back', () => {
+        expect(voting({ viewer: { remainingVotes: 0 } })).toMatchObject({
+            canVote: false,
+            canUnvote: true,
+            blocked: 'spent',
+        });
+    });
+
+    it('takes nothing back from a card I did not vote for', () => {
+        expect(voting({}, { myVotes: 0 })).toMatchObject({
+            canVote: true,
+            canUnvote: false,
+        });
+    });
+
+    it('is closed both ways on a closed board', () => {
+        expect(voting({ retro: { isLocked: true } })).toMatchObject({
+            canVote: false,
+            canUnvote: false,
+            blocked: 'locked',
+        });
+    });
+
+    it('is nothing outside Voting, on a card inside a group, and on a hidden card', () => {
+        for (const phase of ['grouping', 'discussing', 'completed'] as const) {
+            expect(voting({ retro: { phase } })).toBeNull();
+        }
+
+        expect(voting({}, { parentCardId: 'lead' })).toBeNull();
+        expect(voting({}, { hidden: true })).toBeNull();
+    });
+});
+
+describe('votingProgress', () => {
+    it('counts the votes cast over the votes of everyone', () => {
+        expect(
+            votingProgress(
+                retroSnapshot({
+                    retro: { votesPerParticipant: 2 },
+                    participants: [
+                        {
+                            id: 'me',
+                            name: 'Alice Martin',
+                            avatarUrl: '/a.svg',
+                            isGuest: false,
+                        },
+                        {
+                            id: 'bob',
+                            name: 'Bob Stone',
+                            avatarUrl: '/a.svg',
+                            isGuest: false,
+                        },
+                    ],
+                    votesCast: 3,
+                }),
+            ),
+        ).toEqual({ cast: 3, total: 4 });
+    });
+
+    it('starts at zero before the first vote', () => {
+        expect(votingProgress(retroSnapshot())).toEqual({ cast: 0, total: 5 });
     });
 });

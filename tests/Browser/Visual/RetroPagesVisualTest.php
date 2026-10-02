@@ -17,6 +17,7 @@ use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\Team;
 use App\Models\User;
+use App\Models\Vote;
 use App\Models\Workspace;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Support\Facades\RateLimiter;
@@ -118,7 +119,7 @@ function p18eRetroVisualBoard(RetroPhase $phase, bool $icebreakerRound = false):
         }
     }
 
-    if ($phase === RetroPhase::Grouping) {
+    if (in_array($phase, [RetroPhase::Grouping, RetroPhase::Voting], true)) {
         $groups = [
             ['Went well', 'Client demo', 'The client signed off the flow without a single change.'],
             ['To improve', null, 'Requirements keep moving while we build.'],
@@ -156,6 +157,25 @@ function p18eRetroVisualBoard(RetroPhase $phase, bool $icebreakerRound = false):
             'participant_id' => $people[1][1]->id,
             'content' => 'Thursday is the day of the sprint review, Wednesday would be easier.',
         ]);
+    }
+
+    if ($phase === RetroPhase::Voting) {
+        $votes = [
+            ['The client demo%', $people[0][1], 1],
+            ['We discover scope changes%', $people[0][1], 2],
+            ['We discover scope changes%', $people[1][1], 1],
+            ['A “no meeting”%', $people[1][1], 2],
+        ];
+
+        foreach ($votes as [$content, $participant, $count]) {
+            $card = Card::query()->where('retro_id', $retro->id)->where('content', 'like', $content)->sole();
+
+            Vote::factory()->count($count)->create([
+                'retro_id' => $retro->id,
+                'card_id' => $card->id,
+                'participant_id' => $participant->id,
+            ]);
+        }
     }
 
     if ($phase === RetroPhase::HealthCheck) {
@@ -199,11 +219,11 @@ function p18eRetroVisualBoard(RetroPhase $phase, bool $icebreakerRound = false):
     return [$retro->fresh(), $people[0][0], $people[1][0]];
 }
 
-it('[P18e-R3-01] renders the board in its session shell without overflow', function (string $name, RetroPhase $phase, bool $asFacilitator, bool $isLocked, bool $isAnonymous = false, bool $icebreakerRound = false) {
+it('[P18e-R3-01] renders the board in its session shell without overflow', function (string $name, RetroPhase $phase, bool $asFacilitator, bool $isLocked, bool $isAnonymous = false, bool $icebreakerRound = false, bool $hideVoteCounts = false) {
     config(['app.name' => 'Skrum', 'app.key' => 'base64:'.base64_encode(str_repeat('v', 32))]);
 
     [$retro, $facilitator, $member] = p18eRetroVisualBoard($phase, $icebreakerRound);
-    $retro->update(['is_locked' => $isLocked, 'is_anonymous' => $isAnonymous]);
+    $retro->update(['is_locked' => $isLocked, 'is_anonymous' => $isAnonymous, 'hide_vote_counts' => $hideVoteCounts]);
     $viewer = $asFacilitator ? $facilitator : $member;
 
     RateLimiter::for('login', fn (): Limit => Limit::none());
@@ -250,6 +270,7 @@ it('[P18e-R3-01] renders the board in its session shell without overflow', funct
     'facilitator, writing, anonymous' => ['retro-board-anonymous', RetroPhase::Writing, true, false, true],
     'facilitator, grouping' => ['retro-board-grouping', RetroPhase::Grouping, true, false],
     'participant, grouping, anonymous, locked' => ['retro-board-grouping-locked', RetroPhase::Grouping, false, true, true],
+    'facilitator, voting, totals hidden' => ['retro-board-voting', RetroPhase::Voting, true, false, false, false, true],
     'participant, voting, locked' => ['retro-board-participant', RetroPhase::Voting, false, true],
     'facilitator, completed' => ['retro-board-completed', RetroPhase::Completed, true, false],
 ]);

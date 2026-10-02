@@ -2,9 +2,11 @@
 
 use App\Enums\ColumnColor;
 use App\Enums\RetroPhase;
+use App\Models\Card;
 use App\Models\Column;
 use App\Models\Retro;
 use App\Models\User;
+use App\Models\Vote;
 use Illuminate\Support\Facades\DB;
 use Tests\Browser\Support\ReverbServer;
 
@@ -247,3 +249,71 @@ it('[P18e-02-10] counts the cards and who has written in the Writing banner, liv
     'named retro' => false,
     'anonymous retro' => true,
 ]);
+
+it('[P18e-02-11] reveals the votes from the facilitator bar: the totals show to a guest in a second browser and the switch of the settings follows', function () {
+    $retro = Retro::factory()->inPhase(RetroPhase::Voting)->create([
+        'title' => 'Sprint 42',
+        'guest_access_enabled' => true,
+        'hide_vote_counts' => true,
+        'votes_per_participant' => 3,
+    ]);
+    $column = Column::factory()->create(['retro_id' => $retro->id, 'title' => 'Start', 'position' => 0]);
+    [$alice, $aliceParticipant] = retroFacilitator($retro);
+    $alice->update(['name' => 'Alice Martin', 'locale' => 'en']);
+    $card = Card::factory()->create([
+        'retro_id' => $retro->id,
+        'column_id' => $column->id,
+        'participant_id' => $aliceParticipant->id,
+        'content' => 'Slow CI',
+        'position' => 0,
+    ]);
+    Vote::factory()->create(['retro_id' => $retro->id, 'card_id' => $card->id, 'participant_id' => $aliceParticipant->id]);
+    $retro = $retro->fresh();
+    $bar = '[data-slot="facilitator-bar"]';
+    $showsTotal = "[...document.querySelectorAll('#card-{$card->id} [aria-label]')].some((element) => /^\\d+ votes?$/.test(element.getAttribute('aria-label')))";
+
+    $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
+    $carolPage = $this->awaitRealtime($this->joinAsGuest("/join/{$retro->guest_token}", 'Carol Guest'));
+
+    foreach ([$alicePage, $carolPage] as $page) {
+        $page->assertSee('Votes hidden until the reveal')
+            ->assertPresent("#card-{$card->id} [aria-label=\"Add a vote\"]")
+            ->assertScript($showsTotal, false);
+    }
+
+    $alicePage->assertSeeIn($bar, '3 votes / person')
+        ->assertPresent("#card-{$card->id} [aria-label=\"Your votes: 1\"]")
+        ->assertNotPresent("{$bar} button[aria-label=\"Hide the votes\"]")
+        ->click("{$bar} button[aria-label=\"Reveal the votes\"]");
+
+    $carolPage->assertPresent("#card-{$card->id} [aria-label=\"1 vote\"]")
+        ->assertDontSee('Votes hidden until the reveal')
+        ->assertNotPresent($bar)
+        ->click("#card-{$card->id} [aria-label=\"Add a vote\"]")
+        ->assertPresent("#card-{$card->id} [aria-label=\"2 votes\"]");
+
+    $alicePage->assertPresent("#card-{$card->id} [aria-label=\"2 votes\"]")
+        ->assertDontSee('Votes hidden until the reveal')
+        ->assertPresent("{$bar} button[aria-label=\"Hide the votes\"]")
+        ->assertNotPresent("{$bar} button[aria-label=\"Reveal the votes\"]");
+
+    expect($retro->fresh()->hide_vote_counts)->toBeFalse();
+
+    $alicePage->click('[aria-label="Facilitator menu"]')
+        ->click('Settings…')
+        ->assertSee('Retrospective settings')
+        ->assertAriaAttribute('#retro-hide-vote-counts', 'checked', 'false')
+        ->keys('[role="dialog"]', 'Escape')
+        ->assertNotPresent('[role="dialog"]')
+        ->click("{$bar} button[aria-label=\"Hide the votes\"]");
+
+    $carolPage->assertSee('Votes hidden until the reveal')
+        ->assertScript($showsTotal, false);
+
+    $alicePage->assertScript($showsTotal, false)
+        ->click('[aria-label="Facilitator menu"]')
+        ->click('Settings…')
+        ->assertAriaAttribute('#retro-hide-vote-counts', 'checked', 'true');
+
+    expect($retro->fresh()->hide_vote_counts)->toBeTrue();
+});

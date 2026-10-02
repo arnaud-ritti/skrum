@@ -387,3 +387,65 @@ Not listed:
 Component fixes, in their own commits: `CardGroup` (`renderCard`, `titleDraft`, `onEditingTitleChange`, drop slot, keys of the title field); `RetroCard` (native `disabled` on chips nobody may press, as `P07-08a` and `P07-08b` read; the names tooltip keeps `data-slot="tooltip-content"`, as `P07-03a` reads).
 
 No test was removed.
+
+## Task R8 — Voting phase
+
+The vote is on the props of `RetroCard` (`votes`, `canVote`, `canUnvote`, `onVote`) and, for a group, on the "Group vote" line of `CardGroup` (`voteControls` = `CardVotes`). `components/retro/phase-voting-bar.tsx` holds the bar above the columns (`PhaseVotingBar`), the request of a vote (`useCardVote`) and the reason of a closed vote; `cardVoting` and `votingProgress` of `lib/retro/adapters.ts` say what a card takes. `vote-controls.tsx` and `vote-progress.tsx` are deleted.
+
+### Parity (brief 02 §3.3 rows 55–57)
+
+| Row | Feature | Now | Done |
+|---|---|---|---|
+| 55 | Add a vote on a card | `RetroCard onVote(1)`: the thumb button "Add a vote", or `V` on the card; shown at once (`votes.tally`), then the answer of the server | yes |
+| 55 | Take a vote back | "Remove a vote" beside my dots, or `Shift+V`; offered on the cards that hold one of my votes, also when the budget is spent (`canUnvote`) | yes |
+| 55 | My votes on a card | dots named "Your votes: n" | yes |
+| 55 | Budget spent: no vote added | "Add a vote" natively `disabled`; its wrapper says "You have used all your votes" | yes |
+| 55 | Closed board: no vote either way | "Add a vote" `disabled` with "Board closed for editing"; no "Remove a vote" | yes |
+| 55 | Vote on a group (the lead card on the server) | the line "Group vote" of the group: my dots, "Remove a vote", "Add a vote"; the cards of a group have no vote button | yes |
+| 55 | A press made while the last one is on its way | dropped (the old buttons were disabled meanwhile) | yes |
+| 56 | Total of a card, live | in the vote button; named "n vote(s)" for assistive technology and the suite (`[aria-label="2 votes"]` inside `#card-{id}`) | yes |
+| 56 | Totals hidden (`hide_vote_counts`) | no number, no named total; the bar says "Votes hidden until the reveal" | yes |
+| 56 | Totals in Discussing and Completed | unchanged: the badge of the card (R9, R12) | yes |
+| 57 | Votes left | `VoteBudget`: "n votes left", one dot per vote, "of n"; the sentence "Votes left: n" stays for the suite, off screen | yes |
+| 57 | Progress of the room | "n of m vote(s) cast" over a progress bar named "Votes cast" (`aria-valuenow`, `aria-valuemax`) | yes |
+| M5 | "n votes / person" in the FacilitatorBar | a state, not a control (the server locks the limit once voting has started) | yes |
+| M5 | "Reveal the votes" / "Hide the votes" in the FacilitatorBar | writes `hide_vote_counts`, as `#retro-hide-vote-counts` of the settings does | yes |
+| — | "Lock board" in the FacilitatorBar | unchanged | yes |
+| — | Group names in Voting (rename, AI suggestions) | unchanged (R7) | yes |
+| — | Live cursors | off in Voting, as before: a pointer over a card tells a vote | yes |
+
+### Places left
+
+| Slot | Where | Roadmap |
+|---|---|---|
+| `finished` of `PhaseVotingBar` | end of the vote bar, after the progress: "x/y have finished" | RT-4 |
+| `done` of `PhaseVotingBar` | end of the vote bar: the participant's "I have finished voting" | RT-4 |
+| `cap` of `PhaseVotingBar` | inside the budget, after "of n": "· max n per card" (`VoteBudget detail`); `CardVotes maxPerCard` already exists for the group line, `RetroCard labels.voteBlocked` takes the reason on a card | RT-3 |
+
+### Differences with the mockup
+
+Captures `retro-board-voting-*` (facilitator, totals hidden, two groups, 3 of 5 votes spent) and `retro-board-participant-*` (participant, closed board, totals shown) against `ScreenRetroVote`, `VoteDots`, `RetroCard`, `CardGroup` and `FacilitatorBar`. Compared by the implementer on light 1440 EN (both names) and dark 390 FR (both names).
+
+| Difference | Covered by |
+|---|---|
+| No "max 2 per card", no "5/8 have finished", no "I have finished voting" | D-11 (RT-3, RT-4) |
+| At the end of the bar, where the mockup has "5/8 have finished": "n of m votes cast" over a progress bar | parity row 57 (the suite reads the sentence and the progress bar). No row — reported |
+| The vote button is the thumb with the total (`RetroCard` and `VoteDots` mockups); the screen mockup draws "+ Vote" | the component mockups. No row — reported |
+| The budget is drawn as `VoteDots` draws it (icon, "n votes left", dots), then "of 5"; the screen mockup puts the dots first | the component mockup |
+| "n votes / person" is a state with the vote icon, not a settings button | plan M5 (read-only) |
+| "Reveal the votes" is a ghost action of `FacilitatorBar`; the mockup draws it outlined | `FacilitatorBar` has one style of action |
+| No live cursor | existing rule: cursors are off in Voting (secrecy of the vote). No row — reported |
+| A group line has a "Remove a vote" button beside the dots; the mockup removes a vote by pressing a dot | `VoteDots` mockup (button "−") |
+| Every card has "Comments (n)" and, where reacting is open, "Add a reaction" | reported in R7 |
+| "+2 min" beside the countdown; "Lock board" in the bar | reported in R3 |
+| "Add survey" above the bar | transitional (S1) |
+| The header rail shows the current label only at 1440 for the facilitator | reported in R3 |
+| Phone: the budget is not stuck to the top, columns scroll sideways, the vote button is not 44 px | R13 |
+
+### Browser tests changed
+
+None. New: `[P18e-02-11]` in `Plan18eRetroTest.php`; capture `retro-board-voting` in `RetroPagesVisualTest.php` (its board has groups and votes in Voting, which redraws `retro-board-participant`).
+
+Component changes, in their own commits: `VoteBudget` (`detail`; "1 vote left"), `CardVotes` (`disabledReason`, `hiddenTotalNote`, focus after the last vote is taken back), `RetroCard` (`canUnvote`: before, a spent budget removed "Remove a vote"), `CardGroup` (`voteControls`).
+
+No test was removed.

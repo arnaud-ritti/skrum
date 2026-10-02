@@ -44,8 +44,22 @@ describe('facilitatorActions', () => {
         }
     });
 
-    it('adds the vote counts toggle while voting', () => {
-        expect(ids('voting')).toEqual(['lock', 'hide-vote-counts']);
+    it('adds the reveal of the votes while voting', () => {
+        expect(ids('voting')).toEqual(['lock', 'reveal-votes']);
+    });
+
+    it('names the reveal after what it does: "Reveal the votes" while they are hidden, "Hide the votes" while they show', () => {
+        const reveal = (hideVoteCounts: boolean) =>
+            facilitatorActions(
+                'voting',
+                retroSnapshot({ retro: { phase: 'voting', hideVoteCounts } }),
+                tools(),
+            )[1];
+
+        expect(reveal(true).label).toBe('Reveal the votes');
+        expect(reveal(false).label).toBe('Hide the votes');
+        expect(reveal(true).kind).toBeUndefined();
+        expect(reveal(true).pressed).toBeUndefined();
     });
 
     it('offers the presentation mode while discussing', () => {
@@ -198,6 +212,71 @@ describe('FacilitatorDock', () => {
             screen.getByRole('toolbar', { name: 'Facilitation tools' })
                 .textContent,
         ).not.toContain('Anonymity');
+    });
+
+    it('says the vote limit in Voting, as a state, and reveals the votes from the bar', async () => {
+        const voting = renderInBoard(
+            <FacilitatorDock />,
+            boardContext(
+                retroSnapshot({
+                    retro: {
+                        phase: 'voting',
+                        hideVoteCounts: true,
+                        votesPerParticipant: 3,
+                    },
+                }),
+            ),
+        );
+        const bar = screen.getByRole('toolbar', { name: 'Facilitation tools' });
+
+        expect(
+            bar.querySelector('[data-slot="facilitator-vote-limit"]')
+                ?.textContent,
+        ).toBe('3 votes / person');
+        expect(
+            screen.queryByRole('button', { name: '3 votes / person' }),
+        ).toBeNull();
+
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Reveal the votes' }),
+        );
+
+        await waitFor(() =>
+            expect(retroRequest).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    url: expect.stringContaining('/retros/retro-1/settings'),
+                }),
+                { hide_vote_counts: false },
+            ),
+        );
+        voting.unmount();
+
+        renderInBoard(
+            <FacilitatorDock />,
+            boardContext(
+                retroSnapshot({
+                    retro: { phase: 'voting', votesPerParticipant: 1 },
+                }),
+            ),
+        );
+
+        expect(
+            screen
+                .getByRole('toolbar', { name: 'Facilitation tools' })
+                .querySelector('[data-slot="facilitator-vote-limit"]')
+                ?.textContent,
+        ).toBe('1 vote / person');
+        expect(
+            screen.getByRole('button', { name: 'Hide the votes' }),
+        ).toBeTruthy();
+    });
+
+    it('has no vote limit in the bar outside Voting', () => {
+        renderInBoard(<FacilitatorDock />, boardContext());
+
+        expect(
+            document.querySelector('[data-slot="facilitator-vote-limit"]'),
+        ).toBeNull();
     });
 
     it('has no bar for a participant, nor on a completed retro', () => {

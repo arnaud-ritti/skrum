@@ -22,6 +22,7 @@ import type { GameGifSearchResult } from '@/lib/games/types';
 import {
     cardEngagement,
     CardMaxLength,
+    cardVoting,
     toCardProps,
 } from '@/lib/retro/adapters';
 import { retroRequest } from '@/lib/retro/api';
@@ -37,8 +38,8 @@ import { cn } from '@/lib/utils';
 import { useBoard } from './board-context';
 import { CommentThreadList, type CommentThreadActions } from './comment-thread';
 import { dragIsolation, type CardDragState } from './dnd';
+import { useCardVote, useVoteBlockedLabel } from './phase-voting-bar';
 import { AddReaction, optimisticReactions } from './reaction-chips';
-import { VoteControls } from './vote-controls';
 
 /**
  * The place a dragged card or group leaves behind: the dashed ghost of the
@@ -508,6 +509,10 @@ export function BoardCard({
     const engagement = cardEngagement(card, ctx.board);
     const toggleReaction = useCardReactionToggle(card);
     const comments = useCardComments(card);
+    const vote = useCardVote(card);
+    const voteBlockedLabel = useVoteBlockedLabel();
+    // The vote of a group is on the line of the group, not on its cards.
+    const voting = inGroup ? null : cardVoting(card, ctx.board);
     const isChild = card.parentCardId !== null;
     const { retro, viewer } = ctx.board;
     const { phase } = retro;
@@ -685,22 +690,28 @@ export function BoardCard({
 
     const isEditing = editing && props.canEdit;
     const showsTotal =
-        !isChild &&
-        ((phase === 'voting' && card.votes !== null) ||
-            phase === 'discussing' ||
-            phase === 'completed');
+        !isChild && (phase === 'discussing' || phase === 'completed');
+    const votingTotal = voting?.votes.total ?? null;
     const canHighlight =
         !isChild && phase === 'discussing' && viewer.isFacilitator;
 
     const canDrag =
         drag !== undefined && phase === 'grouping' && ctx.isEditable;
 
-    // Votes keep their old controls here until R8 moves them onto the card's
-    // own props.
     const footer: ReactNode = (
         <>
             {card.isMine && phase === 'writing' && <OnlyYouNote />}
-            {!isChild && phase === 'voting' && <VoteControls card={card} />}
+            {votingTotal !== null && (
+                <span
+                    role="img"
+                    data-slot="retro-card-vote-total"
+                    className="sr-only"
+                    aria-label={t(
+                        votingTotal === 1 ? ':count vote' : ':count votes',
+                        { count: votingTotal },
+                    )}
+                />
+            )}
             {showsTotal && (
                 <Badge
                     variant="secondary"
@@ -745,6 +756,13 @@ export function BoardCard({
                         <AddReaction onPick={toggleReaction} />
                     ) : undefined
                 }
+                {...(voting && {
+                    votes: voting.votes,
+                    canVote: voting.canVote,
+                    canUnvote: voting.canUnvote,
+                    labels: { voteBlocked: voteBlockedLabel(voting.blocked) },
+                    onVote: vote,
+                })}
                 commentCount={card.commentCount}
                 commentsOpen={
                     engagement.showsComments ? comments.open : undefined

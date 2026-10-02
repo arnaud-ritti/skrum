@@ -1,12 +1,14 @@
 import {
     ArrowRight,
     Crown,
+    Eye,
     EyeOff,
     Flag,
     Lock,
     LockOpen,
     ScanEye,
     VenetianMask,
+    Vote,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
@@ -62,12 +64,14 @@ export function facilitatorActions(
     if (phase === 'voting') {
         return [
             lock,
+            // The "Hide vote counts" switch of the settings, named after what
+            // a press does.
             {
-                id: 'hide-vote-counts',
-                kind: 'toggle',
-                label: t('Hide vote counts'),
-                icon: EyeOff,
-                pressed: retro.hideVoteCounts,
+                id: 'reveal-votes',
+                label: retro.hideVoteCounts
+                    ? t('Reveal the votes')
+                    : t('Hide the votes'),
+                icon: retro.hideVoteCounts ? Eye : EyeOff,
                 onSelect: () =>
                     onSetting({ hide_vote_counts: !retro.hideVoteCounts }),
             },
@@ -139,6 +143,37 @@ function AnonymityState({ compact }: { compact: boolean }) {
             <VenetianMask className="size-4 shrink-0" aria-hidden />
             <span className={cn('truncate', compact && 'sr-only')}>
                 {t('Anonymity: on')}
+            </span>
+        </span>
+    );
+}
+
+/**
+ * "5 votes / person" of the Voting mockup. A state, not a control: the server
+ * locks the vote limit once voting has started.
+ */
+function VoteLimitState({
+    count,
+    compact,
+}: {
+    count: number;
+    compact: boolean;
+}) {
+    const { t } = useTrans();
+    const label = t(
+        count === 1 ? ':count vote / person' : ':count votes / person',
+        { count },
+    );
+
+    return (
+        <span
+            data-slot="facilitator-vote-limit"
+            className="inline-flex h-8 min-w-0 shrink items-center gap-1.5 px-2 text-sm font-medium"
+        >
+            <Vote className="size-4 shrink-0" aria-hidden />
+            {compact && <span aria-hidden>{count}</span>}
+            <span className={cn('truncate', compact && 'sr-only')}>
+                {label}
             </span>
         </span>
     );
@@ -252,6 +287,12 @@ export function FacilitatorDock({ start }: { start?: ReactNode }) {
                                     </span>
                                 </span>
                                 {start}
+                                {phase === 'voting' && (
+                                    <VoteLimitState
+                                        count={board.retro.votesPerParticipant}
+                                        compact={isMobile}
+                                    />
+                                )}
                             </>
                         }
                         actions={facilitatorActions(phase, board, tools)}

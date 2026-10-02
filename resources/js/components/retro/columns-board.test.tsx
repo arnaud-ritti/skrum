@@ -961,3 +961,268 @@ describe('ColumnsBoard reactions and comments', () => {
         ).toBeNull();
     });
 });
+
+describe('ColumnsBoard in Voting', () => {
+    const lead = card({
+        id: 'lead',
+        content: 'Slow CI',
+        isMine: false,
+        votes: 4,
+        myVotes: 1,
+    });
+    const child = card({
+        id: 'child',
+        parentCardId: 'lead',
+        content: 'Flaky tests',
+        isMine: false,
+    });
+    const alone = card({
+        id: 'alone',
+        position: 1,
+        content: 'Pairing works',
+        isMine: false,
+        votes: 2,
+        myVotes: 0,
+    });
+
+    function voting(
+        overrides: Parameters<typeof retroSnapshot>[0] = {},
+        cards: BoardCard[] = [lead, child, alone],
+    ) {
+        const { retro, ...rest } = overrides;
+
+        return renderInBoard(
+            <GroupNameSuggestionsProvider>
+                <ColumnsBoard hideMyCursor />
+            </GroupNameSuggestionsProvider>,
+            boardContext(
+                retroSnapshot({
+                    columns,
+                    cards,
+                    votesCast: 6,
+                    retro: { phase: 'voting', ...retro },
+                    ...rest,
+                }),
+            ),
+        );
+    }
+
+    const within = (container: HTMLElement, selector: string) =>
+        container.querySelector(selector) as HTMLElement;
+
+    it('shows the vote bar above the columns, in Voting only', () => {
+        const { container, unmount } = voting();
+
+        expect(
+            container.querySelector('[data-slot="retro-voting-bar"]'),
+        ).not.toBeNull();
+        unmount();
+
+        expect(
+            board({ retro: { phase: 'grouping' } }).container.querySelector(
+                '[data-slot="retro-voting-bar"]',
+            ),
+        ).toBeNull();
+    });
+
+    it('votes on a card: shown at once, sent, then set to the answer of the server', async () => {
+        retroRequest.mockResolvedValueOnce({
+            cardId: 'alone',
+            myVotes: 1,
+            remainingVotes: 4,
+            votesCast: 7,
+            votesVersion: 9,
+            total: 3,
+        });
+
+        const { container, ctx } = voting();
+
+        fireEvent.click(
+            within(container, '#card-alone [aria-label="Add a vote"]'),
+        );
+
+        expect(ctx.dispatch).toHaveBeenCalledWith({
+            type: 'votes.tally',
+            cardId: 'alone',
+            myVotes: 1,
+            remainingVotes: 4,
+        });
+        await waitFor(() =>
+            expect(ctx.apply).toHaveBeenCalledWith({
+                type: 'votes.cast',
+                votesCast: 7,
+                votesVersion: 9,
+                cardId: 'alone',
+                total: 3,
+            }),
+        );
+        expect(ctx.apply).toHaveBeenCalledWith({
+            type: 'votes.tally',
+            cardId: 'alone',
+            myVotes: 1,
+            remainingVotes: 4,
+            votesVersion: 9,
+        });
+        expect(retroRequest).toHaveBeenCalledWith(
+            expect.objectContaining({
+                method: 'post',
+                url: expect.stringContaining('/cards/alone/votes'),
+            }),
+        );
+    });
+
+    it('takes a vote back from the card that has one of mine', async () => {
+        const { container } = voting({}, [
+            lead,
+            child,
+            { ...alone, myVotes: 2 },
+        ]);
+
+        expect(
+            within(container, '#card-alone [aria-label="Your votes: 2"]'),
+        ).not.toBeNull();
+
+        fireEvent.click(
+            within(container, '#card-alone [aria-label="Remove a vote"]'),
+        );
+
+        await waitFor(() =>
+            expect(retroRequest).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    method: 'delete',
+                    url: expect.stringContaining('/cards/alone/votes'),
+                }),
+            ),
+        );
+    });
+
+    it('names the total of a card for the browser suite, and has none while the totals are hidden', () => {
+        const shown = voting();
+
+        expect(
+            within(shown.container, '#card-alone [aria-label="2 votes"]'),
+        ).not.toBeNull();
+        shown.unmount();
+
+        const { container } = voting({}, [
+            { ...lead, votes: null },
+            child,
+            { ...alone, votes: null },
+        ]);
+
+        // The vote bar says that the totals are hidden; the group does not say it again.
+        expect(
+            container.querySelector('#group-lead [data-slot="hidden-total"]'),
+        ).toBeNull();
+
+        const labels = Array.from(
+            container.querySelectorAll('#card-alone [aria-label]'),
+        ).map((element) => element.getAttribute('aria-label'));
+
+        expect(labels.some((label) => /^\d+ votes?$/.test(label ?? ''))).toBe(
+            false,
+        );
+    });
+
+    it('says "1 vote" for a single vote', () => {
+        const { container } = voting({}, [{ ...alone, votes: 1 }]);
+
+        expect(
+            within(container, '#card-alone [aria-label="1 vote"]'),
+        ).not.toBeNull();
+    });
+
+    it('disables "Add a vote" once the budget is spent, says why, and still takes a vote back', () => {
+        const { container } = voting({ viewer: { remainingVotes: 0 } }, [
+            lead,
+            child,
+            { ...alone, myVotes: 1 },
+        ]);
+        const add = within(
+            container,
+            '#card-alone [aria-label="Add a vote"]',
+        ) as HTMLButtonElement;
+
+        expect(add.disabled).toBe(true);
+        expect(add.closest('[role="group"]')?.getAttribute('aria-label')).toBe(
+            'You have used all your votes',
+        );
+        expect(
+            (
+                within(
+                    container,
+                    '#card-alone [aria-label="Remove a vote"]',
+                ) as HTMLButtonElement
+            ).disabled,
+        ).toBe(false);
+    });
+
+    it('closes the votes of a closed board, with its reason', () => {
+        const { container } = voting({ retro: { isLocked: true } }, [
+            { ...lead, myVotes: 1 },
+            child,
+            { ...alone, myVotes: 1 },
+        ]);
+
+        for (const scope of ['#card-alone', '#group-lead']) {
+            const add = within(
+                container,
+                `${scope} [aria-label="Add a vote"]`,
+            ) as HTMLButtonElement;
+
+            expect(add.disabled).toBe(true);
+            expect(
+                add.closest('[role="group"]')?.getAttribute('aria-label'),
+            ).toBe('Board closed for editing');
+            expect(
+                container.querySelector(
+                    `${scope} [aria-label="Remove a vote"]`,
+                ),
+            ).toBeNull();
+        }
+    });
+
+    it('votes on a group from its "Group vote" line, not from its cards', async () => {
+        const { container } = voting();
+        const line = within(
+            container,
+            '#group-lead [data-slot="card-group-votes"]',
+        );
+
+        expect(line.textContent).toContain('Group vote');
+        expect(
+            container.querySelector('#card-lead [aria-label="Add a vote"]'),
+        ).toBeNull();
+        expect(
+            container.querySelector('#card-child [aria-label="Add a vote"]'),
+        ).toBeNull();
+        expect(
+            line.querySelector('[aria-label="Your votes: 1"]'),
+        ).not.toBeNull();
+        expect(
+            line.querySelector('[data-slot="vote-total"]')?.textContent,
+        ).toBe('4 votes');
+
+        fireEvent.click(
+            line.querySelector('[aria-label="Add a vote"]') as HTMLElement,
+        );
+
+        await waitFor(() =>
+            expect(retroRequest).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    method: 'post',
+                    url: expect.stringContaining('/cards/lead/votes'),
+                }),
+            ),
+        );
+    });
+
+    it('has no vote control outside Voting', () => {
+        const { container } = voting({ retro: { phase: 'discussing' } });
+
+        expect(container.querySelector('[aria-label="Add a vote"]')).toBeNull();
+        expect(
+            container.querySelector('[data-slot="card-group-votes"]'),
+        ).toBeNull();
+    });
+});

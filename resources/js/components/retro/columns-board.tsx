@@ -36,6 +36,7 @@ import { useBoard } from './board-context';
 import { BoardCursors } from './board-cursors';
 import { GroupingBanner } from './board-group';
 import { parseDndId, useDragAccessibility } from './dnd';
+import { PhaseVotingBar } from './phase-voting-bar';
 import { SurveysColumn } from './surveys-column';
 
 const DefaultColor: ColumnColor = 'moss';
@@ -288,6 +289,7 @@ export function ColumnsBoard({
             <div className="flex min-w-0 flex-1 flex-col">
                 {phase === 'writing' && <WritingBanner typing={typing} />}
                 {phase === 'grouping' && <GroupingBanner />}
+                {phase === 'voting' && <PhaseVotingBar />}
                 <div
                     ref={setBoardElement}
                     data-slot="retro-columns"

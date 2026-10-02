@@ -37,12 +37,11 @@ import {
 import { ResultsView } from './results/results-view';
 import { SuggestionsPanel } from './suggestions-panel';
 import { AddSurveyButton } from './surveys-column';
-import { VoteProgress } from './vote-progress';
 
 /**
  * What the old board header held beside the chrome, until the task of each
- * phase gives it its place: vote progress (R8), carried action items (R10),
- * group name suggestions outside Grouping (R8, R9), "Add survey" (S1).
+ * phase gives it its place: carried action items (R10), group name
+ * suggestions outside Grouping (R9), "Add survey" (S1).
  */
 function PhaseTools() {
     const { board } = useBoard();
@@ -52,7 +51,6 @@ function PhaseTools() {
             data-slot="retro-phase-tools"
             className="flex flex-wrap items-center gap-3 px-4 pt-3 empty:hidden"
         >
-            {board.retro.phase === 'voting' && <VoteProgress />}
             <CarriedActionItemsPanel />
             {board.retro.phase !== 'grouping' && <SuggestGroupNames />}
             <AddSurveyButton />

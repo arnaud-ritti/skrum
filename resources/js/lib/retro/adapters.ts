@@ -102,6 +102,17 @@ export type CardEngagement = {
     canComment: boolean;
 };
 
+/** What a card, or a group through its lead card, shows and takes of votes. */
+export type CardVoting = {
+    /** `total` is null while the facilitator hides the totals. */
+    votes: { total: number | null; mine: number };
+    canVote: boolean;
+    /** A spent budget adds no vote and still takes one back. */
+    canUnvote: boolean;
+    /** Why no vote can be added, when none can. */
+    blocked: 'locked' | 'spent' | null;
+};
+
 export function isBoardEditable(board: Pick<Snapshot, 'retro'>): boolean {
     return !board.retro.isLocked;
 }
@@ -196,6 +207,44 @@ export function toGroupProps(
         canEdit: editable && GroupNamingPhases.includes(board.retro.phase),
         canUngroup: editable && board.retro.phase === 'grouping',
         titleMaxLength: GroupNameMaxLength,
+    };
+}
+
+/**
+ * The votes of a card in Voting. A card inside a group has none: the vote
+ * goes to the group, through its lead card.
+ */
+export function cardVoting(
+    card: BoardCard,
+    board: Pick<Snapshot, 'retro' | 'viewer'>,
+): CardVoting | null {
+    if (board.retro.phase !== 'voting') {
+        return null;
+    }
+
+    if (card.parentCardId !== null || card.hidden) {
+        return null;
+    }
+
+    const editable = isBoardEditable(board);
+    const hasBudget = board.viewer.remainingVotes > 0;
+    const spent = hasBudget ? null : 'spent';
+
+    return {
+        votes: { total: card.votes, mine: card.myVotes },
+        canVote: editable && hasBudget,
+        canUnvote: editable && card.myVotes > 0,
+        blocked: editable ? spent : 'locked',
+    };
+}
+
+/** The progress of the vote bar: the votes cast, over the votes of everyone. */
+export function votingProgress(
+    board: Pick<Snapshot, 'retro' | 'participants' | 'votesCast'>,
+): { cast: number; total: number } {
+    return {
+        cast: board.votesCast ?? 0,
+        total: board.participants.length * board.retro.votesPerParticipant,
     };
 }
 

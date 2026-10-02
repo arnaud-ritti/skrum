@@ -12,10 +12,12 @@ import CardGroupNamesController from '@/actions/App/Http/Controllers/Retros/Card
 import CardGroupsController from '@/actions/App/Http/Controllers/Retros/CardGroupsController';
 import GroupNameSuggestionsController from '@/actions/App/Http/Controllers/Retros/GroupNameSuggestionsController';
 import { CardGroup } from '@/components/skrum/card-group';
+import { CardVotes } from '@/components/skrum/vote-dots';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useTrans } from '@/hooks/use-trans';
 import {
+    cardVoting,
     GroupNamingPhases,
     groupingProgress,
     toGroupProps,
@@ -28,6 +30,7 @@ import type {
 import { BoardCard, DraggedCardClass } from './board-card';
 import { useBoard } from './board-context';
 import type { CardDragState } from './dnd';
+import { useCardVote, useVoteBlockedLabel } from './phase-voting-bar';
 
 type GroupNameResponse = { cardId: string; groupName: string | null };
 
@@ -324,7 +327,10 @@ export function BoardGroup({
     const ctx = useBoard();
     const suggestions = useContext(GroupNameSuggestionsContext);
     const [suggestedDraft, setSuggestedDraft] = useState<string | null>(null);
+    const vote = useCardVote(lead);
+    const voteBlockedLabel = useVoteBlockedLabel();
     const group = toGroupProps(lead, ctx.board);
+    const voting = cardVoting(lead, ctx.board);
     const retroId = ctx.board.retro.id;
 
     if (group === null) {
@@ -379,6 +385,24 @@ export function BoardGroup({
     return (
         <CardGroup
             {...groupProps}
+            votes={voting?.votes}
+            voteControls={
+                voting ? (
+                    <CardVotes
+                        mine={voting.votes.mine}
+                        total={voting.votes.total}
+                        budgetLeft={ctx.board.viewer.remainingVotes}
+                        hiddenTotalNote={false}
+                        disabledReason={
+                            voting.blocked === 'locked'
+                                ? voteBlockedLabel(voting.blocked)
+                                : undefined
+                        }
+                        onVote={() => vote(1)}
+                        onUnvote={() => vote(-1)}
+                    />
+                ) : undefined
+            }
             dropTarget={drag?.isDropTarget}
             className={drag?.isDragging ? DraggedCardClass : undefined}
             editingTitle={suggestedDraft !== null}
