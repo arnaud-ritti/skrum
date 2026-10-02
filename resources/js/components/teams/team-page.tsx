@@ -13,6 +13,7 @@ import { whiteboardSessionForm } from '@/components/teams/session-create/whitebo
 import { TeamHeader } from '@/components/teams/team-header';
 import { TeamHealthCard } from '@/components/teams/team-health-card';
 import { TeamMembersCard } from '@/components/teams/team-members-card';
+import { TeamMoodCard } from '@/components/teams/team-mood-card';
 import { TeamPokerSection } from '@/components/teams/team-poker-section';
 import { TeamRetrosSection } from '@/components/teams/team-retros-section';
 import { TeamSettingsCard } from '@/components/teams/team-settings-card';
@@ -202,6 +203,7 @@ export function TeamPage({
                         id="mood"
                         className="flex min-w-0 scroll-mt-20 flex-col gap-8"
                     >
+                        <TeamMoodCard key={team.id} trend={props.moodTrend} />
                         <TeamHealthCard
                             workspaceSlug={workspace.slug}
                             teamId={team.id}

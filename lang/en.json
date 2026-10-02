@@ -3835,5 +3835,11 @@
     "Team page, for a manager": "Team page, for a manager",
     "Team page sections, for a member of a team without sessions": "Team page sections, for a member of a team without sessions",
     "Health check card, for a member who cannot manage": "Health check card, for a member who cannot manage",
-    "Planning poker section, while the presence loads": "Planning poker section, while the presence loads"
+    "Planning poker section, while the presence loads": "Planning poker section, while the presence loads",
+    "Mood trend": "Mood trend",
+    "No health check results yet.": "No health check results yet.",
+    "Value shown": "Value shown",
+    "Mood card, for a team that only has ROTI votes": "Mood card, for a team that only has ROTI votes",
+    "Mood card, for a team without results": "Mood card, for a team without results",
+    "Mood card, while the trend loads": "Mood card, while the trend loads"
 }

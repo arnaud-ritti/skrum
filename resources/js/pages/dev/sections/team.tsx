@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import type { BenchGroup } from '@/components/dev/bench';
 import { TeamHealthCard } from '@/components/teams/team-health-card';
 import { TeamMembersCard } from '@/components/teams/team-members-card';
+import { TeamMoodCard } from '@/components/teams/team-mood-card';
 import { TeamPage } from '@/components/teams/team-page';
 import type { TeamPageProps } from '@/components/teams/team-page';
 import { TeamPokerSection } from '@/components/teams/team-poker-section';
@@ -12,6 +13,7 @@ import type {
     PokerGameSummary,
     TeamHealthStatement,
     TeamMember,
+    TeamMoodPoint,
 } from '@/types';
 
 export const group: BenchGroup = 'layouts';
@@ -111,6 +113,23 @@ const games: PokerGameSummary[] = [
         lastActivityAt: minutesAgo(60 * 26),
     },
 ];
+
+const moodTrend: TeamMoodPoint[] = [
+    [37, 6.4, 7, 3.6, 8],
+    [38, 6.9, 8, 3.9, 8],
+    [39, null, 0, 3.4, 6],
+    [40, 7.1, 8, 3.8, 9],
+    [41, 7.8, 9, 4.1, 9],
+].map(([sprint, mood, moodVoters, roti, rotiVoters]) => ({
+    retroId: `retro-sprint-${sprint}`,
+    title: `Sprint ${sprint} retrospective`,
+    completedAt: '2026-09-18T08:00:00+00:00',
+    url: `/retros/retro-sprint-${sprint}`,
+    mood,
+    moodVoters: moodVoters ?? 0,
+    roti,
+    rotiVoters: rotiVoters ?? 0,
+}));
 
 const page: TeamPageProps = {
     workspace: { id: 'nordlys', name: 'Nordlys', slug: 'nordlys' },
@@ -212,6 +231,7 @@ const page: TeamPageProps = {
     whiteboardTemplates: [],
     whiteboardGallery: [],
     pokerPresence: { 'game-1': 4, 'game-2': 0 },
+    moodTrend,
 };
 
 function Example({
@@ -283,6 +303,34 @@ export default function TeamSection() {
                         statements={healthStatements}
                         canManage={false}
                     />
+                </div>
+            </Example>
+            <Example
+                name="mood-roti"
+                label={t('Mood card, for a team that only has ROTI votes')}
+            >
+                <div className="max-w-90">
+                    <TeamMoodCard
+                        trend={moodTrend
+                            .slice(-2)
+                            .map((point) => ({ ...point, mood: null }))}
+                    />
+                </div>
+            </Example>
+            <Example
+                name="mood-empty"
+                label={t('Mood card, for a team without results')}
+            >
+                <div className="max-w-90">
+                    <TeamMoodCard trend={[]} />
+                </div>
+            </Example>
+            <Example
+                name="mood-loading"
+                label={t('Mood card, while the trend loads')}
+            >
+                <div className="max-w-90">
+                    <TeamMoodCard />
                 </div>
             </Example>
             <Example

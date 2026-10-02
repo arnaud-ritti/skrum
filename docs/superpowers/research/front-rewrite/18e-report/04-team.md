@@ -102,4 +102,41 @@ None in this card.
 | Title "Health check statements", not "Health check" | to report: browser contract (P08b-01a, 01b) and `HealthCheck/README.md` |
 | No sentence "6 statements asked at the end of each retro, scored 1–5" | F: the count varies, the phase comes first and the scale is 1 to 10 (as D-44) |
 | The note "Changes apply…" is above the list, the "Built-in" badge is outlined, the statement is on its own line under the label | `HealthCheck/README.md` (the component's anatomy) |
-| The trend card is not above this card yet | Task 4.3 |
+
+## Task 4.3 — Mood and ROTI trend card
+
+`TeamMoodCard` (`components/teams/team-mood-card.tsx`) is the first card of `#mood`, above the health check statements. It draws `MoodTrendChart` (`period="retro"`, heading of level 2) from the deferred prop `moodTrend` through `lib/teams/mood-adapter.ts`. The tabs "Mood" / "ROTI" sit in the card header, before the period tabs (new `controls` slot of the chart).
+
+### Parity
+
+No row of brief 04: the card is new (owner answer 4-D3, spec B23, criterion 20).
+
+| Element | Control | Done |
+|---|---|---|
+| Mood of the last retros | tab "Mood": one point per retro with a health check score, on 0 to 10, "x/10" | yes |
+| ROTI of the last retros | tab "ROTI": one point per retro with ROTI votes, on the chart's ROTI scale (1 to 5, "okay" threshold) | yes |
+| Change | badge ":delta since the previous retro" (last point against the one before), absent under two points | yes |
+| Open a retro | each point and each table row links to the retro | yes |
+| Table view | "View as table" of the chart, same values and voters | yes |
+| Loading | pulsing skeleton card (`data-slot="team-mood-loading"`, status "Loading chart") until the prop arrives | yes |
+| No data | "No health check results yet." / "No ROTI results yet." | yes |
+
+The card opens on "Mood", or on "ROTI" when no retro of the trend has a health check score. During a later visit to the same page (a member added, a statement saved) the deferred prop is fetched again: the last trend stays on screen, no skeleton.
+
+### Places left
+
+None in this card.
+
+### Differences with the mockup (ScreenDashboard, "Tendance du moral")
+
+| Difference | Covered by |
+|---|---|
+| Two tabs "Mood" / "ROTI"; the mockup draws the ROTI only | owner answer 4-D3 and third round, point 10 ("Health-check score + ROTI"); plan Task 4.3 |
+| The chart is `MoodTrendChart`: KPI and its retro in the header, period tabs, legend, "View as table", ROTI levels as coloured dots, "okay" threshold; no fill under the line, no value bubble on the last point | `MoodTrendChart/README.md` (anatomy; "avoid gradients under the line, labelling each point") |
+| Subtitle "Last 8 retros · Voters per retro: n", not "Average end-of-retro ROTI, out of 5" | `MoodTrendChart` (its subtitle); the metric is named in the legend and the table |
+| Badge "since the previous retro", not "since S35" | plan Task 4.3 (P18e-04-09), spec B23: there is no sprint |
+| The x axis shows retro titles and leaves out those that would overlap (one label in the 22.5rem column) | `MoodTrendChart` (label collision rule); there is no sprint number (D-18, TM-1) |
+| The mood axis goes from 0 to 10 (answers go from 1 to 10) | to report: whole-number ticks, as the health trend of the chart's bench |
+| The card is in the side column, above the health check, not in the main column beside the open actions | brief 04 §1 (the page follows ScreenTeam; `#mood` is the aside); spec §6.3 |
+| Under three points: dots without a line and "Not enough data for a trend yet. It appears from 3 retros." | `MoodTrendChart/README.md` (state "little data") |
+

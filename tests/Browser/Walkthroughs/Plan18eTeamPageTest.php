@@ -1,7 +1,9 @@
 <?php
 
+use App\Actions\HealthCheck\FreezeHealthStatements;
 use App\Enums\RetroPhase;
 use App\Enums\WorkspaceRole;
+use App\Models\HealthCheckAnswer;
 use App\Models\Participant;
 use App\Models\PokerGame;
 use App\Models\PokerTask;
@@ -26,6 +28,39 @@ function p18eTeamUser(Team $team, string $name, WorkspaceRole $role = WorkspaceR
 function p18eTeamPagePath(Team $team): string
 {
     return route('teams.show', [$team->workspace, $team], false);
+}
+
+/**
+ * @param  list<array<string, int>>  $healthScoresByVoter
+ * @param  list<int>  $rotiScores
+ */
+function p18eCompletedRetro(Team $team, string $title, int $daysAgo, array $healthScoresByVoter, array $rotiScores): Retro
+{
+    $retro = Retro::factory()->for($team)->withHealthCheck()->inPhase(RetroPhase::Completed)->create([
+        'title' => $title,
+        'completed_at' => now()->subDays($daysAgo),
+    ]);
+
+    resolve(FreezeHealthStatements::class)->handle($retro);
+
+    foreach ($healthScoresByVoter as $scores) {
+        $participant = Participant::factory()->create(['retro_id' => $retro->id]);
+
+        foreach ($scores as $statement => $score) {
+            HealthCheckAnswer::factory()->create([
+                'retro_id' => $retro->id,
+                'participant_id' => $participant->id,
+                'statement' => $statement,
+                'score' => $score,
+            ]);
+        }
+    }
+
+    foreach ($rotiScores as $score) {
+        RotiVote::factory()->create(['retro_id' => $retro->id, 'score' => $score]);
+    }
+
+    return $retro;
 }
 
 it('[P18e-04-01] lands on the sessions, the mood and the members of the team from the sidebar, and marks the entry in use', function () {
@@ -247,4 +282,63 @@ it('[P18e-04-08] opens the "…" menu of a section with the keyboard, on its ent
     $page->keys('[aria-label="Planning poker actions"]', 'Enter')
         ->keys('[role="menuitem"]', 'Enter')
         ->assertPathEndsWith('/poker-decks');
+});
+
+it('[P18e-04-09] draws the mood and the ROTI of the last retros, as a chart and as a table, after a skeleton, and says when a team has none', function () {
+    $team = Team::factory()->create(['name' => 'Atlas']);
+    $empty = Team::factory()->for($team->workspace)->create(['name' => 'Borealis']);
+    $alice = p18eTeamUser($team, 'Alice Martin');
+    $empty->members()->attach($alice);
+    $older = p18eCompletedRetro($team, 'Sprint 41 retrospective', 10, [['vision' => 6, 'motivation' => 8], ['vision' => 8, 'motivation' => 8]], [4, 4, 3]);
+    $newer = p18eCompletedRetro($team, 'Sprint 42 retrospective', 3, [['vision' => 8, 'motivation' => 9]], [4, 5, 5, 4]);
+    $card = '#mood [data-slot="team-mood"]';
+    $tab = fn (string $name): string => "{$card} [role=\"tab\"]:has-text(\"{$name}\")";
+    $rows = "Array.from(document.querySelectorAll('#mood [data-slot=\"mood-trend-table\"] tbody tr')).map((row) => Array.from(row.children).map((cell) => cell.textContent.trim()).join(' | ')).join(' / ')";
+
+    $page = $this->signIn($alice, "/w/{$team->workspace->slug}");
+
+    $page->script(<<<'JS'
+        (() => {
+            window.__sawMoodSkeleton = false;
+            new MutationObserver(() => {
+                if (document.querySelector('#mood [data-slot="team-mood-loading"]')) {
+                    window.__sawMoodSkeleton = true;
+                }
+            }).observe(document.body, { childList: true, subtree: true });
+        })()
+    JS);
+
+    $page->click('main a[href="'.p18eTeamPagePath($team).'"]')
+        ->assertPathIs(p18eTeamPagePath($team))
+        ->assertSeeIn("{$card} h2", 'Mood trend')
+        ->assertNotPresent('#mood [data-slot="team-mood-loading"]')
+        ->assertScript('window.__sawMoodSkeleton', true)
+        ->assertScript('document.querySelector(\'#mood\').firstElementChild.dataset.slot', 'team-mood')
+        ->assertAttribute($tab('Mood'), 'aria-selected', 'true')
+        ->assertCount("{$card} [data-slot=\"mood-trend-point\"]", 2)
+        ->assertSeeIn("{$card} [data-slot=\"mood-trend-kpi\"]", '8.5/10')
+        ->assertSeeIn("{$card} [data-slot=\"mood-trend-delta\"]", '+1.0 since the previous retro')
+        ->assertSeeIn($card, 'Not enough data for a trend yet. It appears from 3 retros.')
+        ->assertPresent("{$card} a[data-slot=\"mood-trend-link\"][href$=\"/retros/{$newer->id}\"]")
+        ->click($tab('ROTI'))
+        ->assertAttribute($tab('ROTI'), 'aria-selected', 'true')
+        ->assertCount("{$card} [data-slot=\"mood-trend-point\"]", 2)
+        ->assertSeeIn("{$card} [data-slot=\"mood-trend-kpi\"]", '4.5')
+        ->assertDontSeeIn("{$card} [data-slot=\"mood-trend-kpi\"]", '/10')
+        ->assertSeeIn("{$card} [data-slot=\"mood-trend-delta\"]", '+0.8 since the previous retro')
+        ->click("{$card} button:has-text(\"View as table\")")
+        ->assertScript($rows, 'Sprint 41 retrospective | 3.7 | 3 / Sprint 42 retrospective | 4.5 | 4')
+        ->click($tab('Mood'))
+        ->assertScript($rows, 'Sprint 41 retrospective | 7.5/10 | 2 / Sprint 42 retrospective | 8.5/10 | 1')
+        ->assertScript('document.documentElement.scrollWidth <= window.innerWidth', true)
+        ->click("{$card} [data-slot=\"mood-trend-table\"] a:text-is(\"Sprint 41 retrospective\")")
+        ->assertPathIs("/retros/{$older->id}");
+
+    $page->navigate(p18eTeamPagePath($empty))
+        ->assertSeeIn("{$card} h2", 'Mood trend')
+        ->assertNotPresent("{$card} [data-slot=\"mood-trend-point\"]")
+        ->assertNotPresent("{$card} [data-slot=\"mood-trend-kpi\"]")
+        ->assertSeeIn("{$card} [data-slot=\"mood-trend-empty\"]", 'No health check results yet.')
+        ->click($tab('ROTI'))
+        ->assertSeeIn("{$card} [data-slot=\"mood-trend-empty\"]", 'No ROTI results yet.');
 });

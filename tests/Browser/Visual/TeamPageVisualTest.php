@@ -1,7 +1,9 @@
 <?php
 
+use App\Actions\HealthCheck\FreezeHealthStatements;
 use App\Enums\RetroPhase;
 use App\Enums\WorkspaceRole;
+use App\Models\HealthCheckAnswer;
 use App\Models\Participant;
 use App\Models\PokerGame;
 use App\Models\PokerTask;
@@ -61,9 +63,28 @@ it('[P18e-04-02] renders the team page of a manager without overflow', function 
     $closed = $retro('Sprint 41 retrospective', 'start_stop_continue', RetroPhase::Completed, 14);
     $older = $retro('Sprint 40 retrospective', 'sailboat', RetroPhase::Completed, 28);
 
-    foreach ([[$closed, [4, 4, 5, 4]], [$older, [4, 3, 4, 4]]] as [$voted, $scores]) {
-        foreach ($scores as $score) {
+    $trend = [
+        [$closed, [4, 4, 5, 4], [8, 7, 8]],
+        [$older, [4, 3, 4, 4], [7, 7, 7]],
+        [$retro('Sprint 39 retrospective', 'four_ls', RetroPhase::Completed, 42), [3, 4, 3, 3], []],
+        [$retro('Sprint 38 retrospective', 'mad_sad_glad', RetroPhase::Completed, 56), [4, 4, 4, 3], [7, 6, 8]],
+        [$retro('Sprint 37 retrospective', 'start_stop_continue', RetroPhase::Completed, 70), [3, 4, 4, 3], [6, 6, 7]],
+    ];
+
+    foreach ($trend as [$voted, $rotiScores, $healthScores]) {
+        foreach ($rotiScores as $score) {
             RotiVote::factory()->create(['retro_id' => $voted->id, 'score' => $score]);
+        }
+
+        resolve(FreezeHealthStatements::class)->handle($voted);
+
+        foreach ($healthScores as $score) {
+            HealthCheckAnswer::factory()->create([
+                'retro_id' => $voted->id,
+                'participant_id' => Participant::factory()->create(['retro_id' => $voted->id])->id,
+                'statement' => 'vision',
+                'score' => $score,
+            ]);
         }
     }
 
@@ -98,13 +119,16 @@ it('[P18e-04-02] renders the team page of a manager without overflow', function 
             ->assertPathIsNot('/login');
 
         return $page->navigate($path)
-            ->assertCount('[data-slot="team-retros"] [data-slot="card"]', 4)
+            ->assertCount('[data-slot="team-retros"] [data-slot="card"]', 7)
             ->assertCount('[data-slot="team-poker-game"]', 3)
             ->assertCount('[data-slot="team-whiteboards"] [data-slot="card"]', 3)
             ->assertCount('#members [data-slot="team-members"] li', 6)
             ->assertPresent('[data-slot="team-settings"]')
             ->assertCount('#mood [data-slot="health-statements-active"] [data-action="reorder"]', 6)
             ->assertNotPresent('[data-slot="poker-presence-loading"]')
+            ->assertNotPresent('[data-slot="team-mood-loading"]')
+            ->assertCount('#mood [data-slot="team-mood"] [data-slot="mood-trend-point"]', 4)
+            ->assertPresent('#mood [data-slot="team-mood"] [data-slot="mood-trend-line"]')
             ->assertScript('document.querySelectorAll(\'[data-slot="person-avatar"] .animate-pulse\').length', 0);
     });
 });
@@ -120,6 +144,11 @@ it('[P18e-04-02b] renders the states of the team page on the bench without overf
             ->assertCount('[data-state="manager"] #mood [data-slot="health-statement"] [data-action="archive"]', 6)
             ->assertCount('[data-state="health-member"] [data-slot="health-statement"]', 6)
             ->assertNotPresent('[data-state="health-member"] [data-action="reorder"]')
+            ->assertCount('[data-state="manager"] #mood [data-slot="mood-trend-point"]', 4)
+            ->assertAttribute('[data-state="mood-roti"] [data-slot="team-mood"]', 'data-metric', 'roti')
+            ->assertCount('[data-state="mood-roti"] [data-slot="mood-trend-point"]', 2)
+            ->assertPresent('[data-state="mood-empty"] [data-slot="mood-trend-empty"]')
+            ->assertPresent('[data-state="mood-loading"] [data-slot="team-mood-loading"]')
             ->assertCount('[data-state="presence-loading"] [data-slot="poker-presence-loading"]', 2),
     );
 });

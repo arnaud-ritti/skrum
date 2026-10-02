@@ -4058,5 +4058,11 @@
     "Team page, for a manager": "Página del equipo, para un gestor",
     "Team page sections, for a member of a team without sessions": "Secciones de la página del equipo, para un miembro de un equipo sin sesiones",
     "Health check card, for a member who cannot manage": "Tarjeta del chequeo de salud, para un miembro que no puede gestionarla",
-    "Planning poker section, while the presence loads": "Sección de planning poker, mientras carga la presencia"
+    "Planning poker section, while the presence loads": "Sección de planning poker, mientras carga la presencia",
+    "Mood trend": "Tendencia del ánimo",
+    "No health check results yet.": "Aún no hay resultados del chequeo de salud.",
+    "Value shown": "Valor mostrado",
+    "Mood card, for a team that only has ROTI votes": "Tarjeta de ánimo, para un equipo que solo tiene votos de ROTI",
+    "Mood card, for a team without results": "Tarjeta de ánimo, para un equipo sin resultados",
+    "Mood card, while the trend loads": "Tarjeta de ánimo, mientras carga la tendencia"
 }

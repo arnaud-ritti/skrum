@@ -107,6 +107,46 @@ describe('the team page', () => {
         ).toEqual(['Retrospectives0', 'Planning poker', 'Whiteboards0']);
     });
 
+    it('opens the mood region with the trend card, a skeleton until the trend arrives', () => {
+        const { container, rerender } = renderWithProviders(
+            <TeamPage {...base} />,
+        );
+        const first = () =>
+            container
+                .querySelector('#mood')
+                ?.firstElementChild?.getAttribute('data-slot');
+
+        expect(first()).toBe('team-mood-loading');
+
+        rerender(
+            <TeamPage
+                {...base}
+                moodTrend={[
+                    {
+                        retroId: 'retro-1',
+                        title: 'Sprint 41',
+                        completedAt: '2026-09-18T08:00:00+00:00',
+                        url: '/retros/retro-1',
+                        mood: 7.2,
+                        moodVoters: 4,
+                        roti: 4.1,
+                        rotiVoters: 4,
+                    },
+                ]}
+            />,
+        );
+
+        expect(first()).toBe('team-mood');
+        expect(
+            container.querySelectorAll('#mood [data-slot="mood-trend-point"]'),
+        ).toHaveLength(1);
+        expect(
+            container.querySelector(
+                '#mood [data-slot="team-mood"] ~ [data-slot="health-statements"]',
+            ),
+        ).not.toBeNull();
+    });
+
     it('has one "New session" trigger and no trigger per type', () => {
         renderWithProviders(<TeamPage {...base} />);
 
