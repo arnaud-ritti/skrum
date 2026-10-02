@@ -136,7 +136,13 @@ export function PasskeysCard({ passkeys }: PasskeysCardProps): ReactElement {
         setRemoveError(undefined);
 
         try {
-            await deleteVisit(destroy.url(passkey.id));
+            // Wayfinder types the key from the package model, whose key is a number; ours is a UUID.
+            await deleteVisit(
+                destroy.definition.url.replace(
+                    '{passkey}',
+                    encodeURIComponent(passkey.id),
+                ),
+            );
         } catch (failure) {
             setRemoveError(t('Something went wrong. Please try again.'));
 
