@@ -277,7 +277,11 @@ function TemplateCard({
             </span>
             <span id={metaId} className="flex min-w-0 flex-col gap-1.5">
                 <span className="block truncate text-xs text-muted-foreground">
-                    {t(':count columns', { count: template.columns.length })}
+                    {template.columns.length === 1
+                        ? t('1 column')
+                        : t(':count columns', {
+                              count: template.columns.length,
+                          })}
                 </span>
                 {template.description ? (
                     <span className="line-clamp-2 text-xs text-muted-foreground">

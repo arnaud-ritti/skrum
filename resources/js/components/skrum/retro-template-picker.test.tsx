@@ -97,6 +97,19 @@ describe('columnColorClass', () => {
 });
 
 describe('RetroTemplatePicker', () => {
+    it('counts one column in the singular', () => {
+        renderPicker({
+            templates: [
+                makeTemplate(1, {
+                    columns: [{ title: 'Votes', color: 'sky' }],
+                }),
+            ],
+        });
+
+        expect(screen.getByText('1 column')).toBeDefined();
+        expect(screen.queryByText('1 columns')).toBeNull();
+    });
+
     it('lists built-in templates then the blank card, with the value checked', () => {
         renderPicker();
 
