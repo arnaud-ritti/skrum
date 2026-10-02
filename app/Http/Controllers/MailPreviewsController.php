@@ -2,11 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\HealthCheck\SummarizeHealthCheck;
+use App\Actions\Integrations\BuildRetroRecap;
 use App\Enums\ActionItemReminderKind;
+use App\Enums\RetroPhase;
 use App\Mail\WorkspaceInvitationMail;
 use App\Models\ActionItem;
+use App\Models\Retro;
 use App\Models\User;
 use App\Notifications\ActionItemReminderDigestNotification;
+use App\Support\Integrations\Messages\RetroRecapMail;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -49,6 +54,12 @@ class MailPreviewsController extends Controller
                     ActionItem::query()->whereIn('team_id', $user->teams()->select('teams.id'))->limit(3)->pluck('id')
                         ->map(fn (string $id): array => ['actionItemId' => $id, 'kind' => ActionItemReminderKind::Overdue->value])->all(),
                 ))->toMail($user),
+            'retro-recap' => fn (): ?Mailable => ($retro = Retro::query()->where('phase', RetroPhase::Completed)->latest()->first()) === null
+                ? null
+                : resolve(RetroRecapMail::class)->build(
+                    resolve(BuildRetroRecap::class)->handle($retro),
+                    resolve(SummarizeHealthCheck::class)->handle($retro),
+                ),
         ];
     }
 }

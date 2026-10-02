@@ -3665,5 +3665,6 @@
     "Unsubscribe": "Unsubscribe",
     "Reminder e-mails": "Reminder e-mails",
     "Stop the action item reminders sent by e-mail?": "Stop the action item reminders sent by e-mail?",
-    "You no longer receive action item reminders by e-mail.": "You no longer receive action item reminders by e-mail."
+    "You no longer receive action item reminders by e-mail.": "You no longer receive action item reminders by e-mail.",
+    "You receive this e-mail because you took part in this retrospective or belong to its team.": "You receive this e-mail because you took part in this retrospective or belong to its team."
 }

@@ -6,13 +6,13 @@ use App\Actions\HealthCheck\SummarizeHealthCheck;
 use App\Actions\Integrations\BuildRetroRecap;
 use App\Actions\Integrations\RetroResultsRecipients;
 use App\Enums\RetroPhase;
+use App\Mail\RetroResultsMail;
 use App\Models\Retro;
 use App\Models\User;
 use App\Support\Integrations\Messages\RetroRecapMail;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeEncrypted;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 /**
@@ -47,13 +47,13 @@ class RetroResultsNotification extends Notification implements ShouldBeEncrypted
         return resolve(RetroResultsRecipients::class)->isRecipient($retro, $notifiable);
     }
 
-    public function toMail(object $notifiable): MailMessage
+    public function toMail(User $notifiable): RetroResultsMail
     {
         $retro = Retro::query()->with('team')->findOrFail($this->retroId);
 
         return resolve(RetroRecapMail::class)->build(
             resolve(BuildRetroRecap::class)->handle($retro),
             resolve(SummarizeHealthCheck::class)->handle($retro),
-        );
+        )->forNotifiable($notifiable);
     }
 }

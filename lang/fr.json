@@ -3890,5 +3890,6 @@
     "Unsubscribe from reminders": "Se désabonner des rappels",
     "Reminder e-mails": "E-mails de rappel",
     "Stop the action item reminders sent by e-mail?": "Arrêter les rappels d'actions envoyés par e-mail ?",
-    "You no longer receive action item reminders by e-mail.": "Vous ne recevez plus les rappels d'actions par e-mail."
+    "You no longer receive action item reminders by e-mail.": "Vous ne recevez plus les rappels d'actions par e-mail.",
+    "You receive this e-mail because you took part in this retrospective or belong to its team.": "Vous recevez cet e-mail parce que vous avez participé à cette rétrospective ou faites partie de son équipe."
 }

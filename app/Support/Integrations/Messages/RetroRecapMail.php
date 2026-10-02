@@ -2,79 +2,61 @@
 
 namespace App\Support\Integrations\Messages;
 
-use Illuminate\Notifications\Messages\MailMessage;
+use App\Mail\RetroResultsMail;
+use Illuminate\Support\Str;
 
 /**
- * The recap as a Markdown mail. User text has its Markdown characters escaped so that it can never
- * become a link or formatting; the mail template already escapes HTML, so
- * angle brackets are left alone to avoid double escaping.
+ * The recap as the data of a branded mail. Every string is plain text: the
+ * Blade views escape it, so user text can never become markup.
  */
 class RetroRecapMail
 {
     /**
      * @param  array{score: float, participation: array{respondents: int, participants: int}}|null  $health
      */
-    public function build(RetroRecap $recap, ?array $health): MailMessage
+    public function build(RetroRecap $recap, ?array $health): RetroResultsMail
     {
-        $mail = (new MailMessage)
-            ->subject(RecapText::heading($recap))
-            ->line($this->escape(RecapText::context($recap)))
-            ->line($this->escape(RecapText::participants($recap)))
-            ->line($this->escape(RecapText::cards($recap)));
-
-        $roti = RecapText::roti($recap);
-
-        if ($roti !== null) {
-            $mail->line($this->escape($roti));
-        }
-
-        if ($health !== null) {
-            $mail->line($this->escape(__('Health check: :score/10 (:respondents of :participants participants answered)', [
+        $facts = array_filter([
+            RecapText::context($recap),
+            RecapText::participants($recap),
+            RecapText::cards($recap),
+            RecapText::roti($recap),
+            $health === null ? null : __('Health check: :score/10 (:respondents of :participants participants answered)', [
                 'score' => number_format($health['score'], 1),
                 'respondents' => $health['participation']['respondents'],
                 'participants' => $health['participation']['participants'],
-            ])));
-        }
+            ]),
+        ]);
 
-        if ($recap->summary !== null) {
-            $mail->line('**'.$this->escape(__('Summary')).'**');
+        $sections = array_filter([
+            $this->section(__('Action items'), array_map(RecapText::actionItem(...), $recap->actionItems), $recap->hiddenActionItems),
+            $this->section(__('Suggested actions'), $recap->suggestedActions, $recap->hiddenSuggestedActions),
+            $this->section(__('Top card per column'), array_map(RecapText::topCard(...), $recap->topCards), 0),
+        ]);
 
-            foreach (preg_split('/\R{2,}/u', $recap->summary) ?: [] as $paragraph) {
-                $mail->line($this->escape($paragraph));
-            }
-        }
-
-        $this->list($mail, __('Action items'), array_map(RecapText::actionItem(...), $recap->actionItems), $recap->hiddenActionItems);
-        $this->list($mail, __('Suggested actions'), $recap->suggestedActions, $recap->hiddenSuggestedActions);
-        $this->list($mail, __('Top card per column'), array_map(RecapText::topCard(...), $recap->topCards), 0);
-
-        return $mail->action(__('View the results'), $recap->url);
+        return (new RetroResultsMail(
+            array_values(array_map(Str::squish(...), $facts)),
+            $recap->summary === null ? [] : array_values(array_map(Str::squish(...), preg_split('/\R{2,}/u', $recap->summary) ?: [])),
+            array_values($sections),
+            $recap->url,
+            route('notificationPreferences.edit'),
+        ))->subject(Str::squish(RecapText::heading($recap)));
     }
 
     /**
      * @param  array<int, string>  $lines
+     * @return array{heading: string, lines: array<int, string>, more: ?string}|null
      */
-    private function list(MailMessage $mail, string $heading, array $lines, int $hidden): void
+    private function section(string $heading, array $lines, int $hidden): ?array
     {
         if ($lines === []) {
-            return;
+            return null;
         }
 
-        $mail->line('**'.$this->escape($heading).'**');
-
-        foreach ($lines as $line) {
-            $mail->line('• '.$this->escape($line));
-        }
-
-        if ($hidden > 0) {
-            $mail->line($this->escape(RecapText::more($hidden)));
-        }
-    }
-
-    private function escape(string $text): string
-    {
-        $singleLine = preg_replace('/\s+/u', ' ', $text) ?? $text;
-
-        return addcslashes($singleLine, '\\`*_{}[]()#+-.!|');
+        return [
+            'heading' => $heading,
+            'lines' => array_values(array_map(Str::squish(...), $lines)),
+            'more' => $hidden > 0 ? RecapText::more($hidden) : null,
+        ];
     }
 }
