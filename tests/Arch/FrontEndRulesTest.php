@@ -45,7 +45,6 @@ const FrontEndRuleBaseline = [
         'resources/js/components/nav-main.tsx',
         'resources/js/components/notification-bell.tsx',
         'resources/js/components/session/live-cursors.tsx',
-        'resources/js/components/user-info.tsx',
         'resources/js/layouts/auth/auth-simple-layout.tsx',
         'resources/js/lib/whiteboard/presence-slot.ts',
         'resources/js/pages/dev/sections/session-create-whiteboard.tsx',
