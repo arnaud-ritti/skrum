@@ -55,6 +55,40 @@ describe('BoardShare', () => {
         });
     });
 
+    it('asks before it closes guest access while a guest is on the board', async () => {
+        const guest = {
+            id: 'member-gia',
+            name: 'Guest Gia',
+            avatarUrl: null,
+            isGuest: true,
+        };
+        const state = boardState({
+            online: [guest] as ReturnType<typeof boardState>['online'],
+        });
+
+        renderWithProviders(<BoardShare state={state} />);
+        openShare();
+        fireEvent.click(document.getElementById(GuestAccessSwitchId)!);
+
+        expect(retroRequest).not.toHaveBeenCalled();
+
+        const confirmation = within(screen.getByRole('alertdialog'));
+
+        expect(
+            confirmation.getByText('Guests on this board lose access.'),
+        ).toBeTruthy();
+
+        fireEvent.click(
+            confirmation.getByRole('button', { name: 'Turn off guest access' }),
+        );
+
+        await waitFor(() => expect(state.refetch).toHaveBeenCalledTimes(1));
+
+        expect(vi.mocked(retroRequest).mock.calls[0][1]).toEqual({
+            guest_access_enabled: false,
+        });
+    });
+
     it('asks before it replaces the link, then posts and refetches', async () => {
         const state = boardState();
 

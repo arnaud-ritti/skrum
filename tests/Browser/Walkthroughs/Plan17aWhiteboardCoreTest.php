@@ -360,7 +360,9 @@ it('[P17a-06a] ends the guest\'s access and invalidates the guest link when the 
         ->assertPresent("{$share} button:has-text(\"Create a new link\")")
         ->assertPresent("{$share} input[aria-label=\"Guest link\"]")
         ->assertPresent("{$share} button:has-text(\"Copy link\")")
-        ->click($guestSwitch);
+        ->click($guestSwitch)
+        ->assertSeeIn('[role="alertdialog"]', 'Guests on this board lose access.')
+        ->click('[role="alertdialog"] button:has-text("Turn off guest access")');
 
     $guestPage->assertSee('Your access to this board has ended.')
         ->assertNotPresent('[data-realtime]');
