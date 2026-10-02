@@ -1,0 +1,254 @@
+import { fireEvent, screen } from '@testing-library/react';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
+import { ReactionBar } from '@/components/skrum/reaction-bar';
+import type { IncomingReaction } from '@/components/skrum/reaction-bar';
+import { renderWithProviders } from '@/test/render';
+
+function burst(count: number, emoji = '🎉'): IncomingReaction[] {
+    return Array.from({ length: count }, (_, index) => ({
+        id: `r${index}`,
+        emoji,
+        userName: `User ${index}`,
+        presence: (index % 12) + 1,
+    }));
+}
+
+describe('ReactionBar', () => {
+    beforeAll(() => {
+        vi.stubGlobal(
+            'ResizeObserver',
+            class {
+                observe(): void {}
+                unobserve(): void {}
+                disconnect(): void {}
+            },
+        );
+    });
+
+    it('is a toolbar named Reactions with six emoji buttons', () => {
+        renderWithProviders(<ReactionBar onReact={vi.fn()} />);
+
+        const toolbar = screen.getByRole('toolbar', { name: 'Reactions' });
+
+        expect(
+            toolbar.querySelectorAll('[aria-label^="Send a reaction "]'),
+        ).toHaveLength(6);
+        expect(
+            screen.getByRole('button', { name: 'Send a reaction 🎉' }),
+        ).toBeTruthy();
+    });
+
+    it('calls onReact with the clicked emoji', () => {
+        const onReact = vi.fn();
+
+        renderWithProviders(<ReactionBar onReact={onReact} />);
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Send a reaction ❤️' }),
+        );
+
+        expect(onReact).toHaveBeenCalledWith('❤️');
+    });
+
+    it('keeps one tab stop and moves with the arrow keys', () => {
+        renderWithProviders(
+            <ReactionBar onReact={vi.fn()} onOpenPicker={vi.fn()} />,
+        );
+
+        const first = screen.getByRole('button', {
+            name: 'Send a reaction 👍',
+        });
+        const second = screen.getByRole('button', {
+            name: 'Send a reaction ❤️',
+        });
+
+        expect(first.tabIndex).toBe(0);
+        expect(second.tabIndex).toBe(-1);
+
+        first.focus();
+        fireEvent.keyDown(first, { key: 'ArrowRight' });
+
+        expect(document.activeElement).toBe(second);
+        expect(second.tabIndex).toBe(0);
+        expect(first.tabIndex).toBe(-1);
+
+        fireEvent.keyDown(second, { key: 'End' });
+
+        expect(document.activeElement).toBe(
+            screen.getByRole('button', { name: 'Send a reaction' }),
+        );
+    });
+
+    it('reacts to keys 1 to 6 only when shortcuts is true', () => {
+        const onReact = vi.fn();
+        const { rerender } = renderWithProviders(
+            <ReactionBar onReact={onReact} />,
+        );
+
+        fireEvent.keyDown(document.body, { key: '4' });
+
+        expect(onReact).not.toHaveBeenCalled();
+
+        rerender(<ReactionBar onReact={onReact} shortcuts />);
+        fireEvent.keyDown(document.body, { key: '4' });
+        fireEvent.keyDown(document.body, { key: '7' });
+
+        expect(onReact).toHaveBeenCalledTimes(1);
+        expect(onReact).toHaveBeenCalledWith('🎉');
+    });
+
+    it('ignores shortcuts typed in a text field', () => {
+        const onReact = vi.fn();
+
+        renderWithProviders(
+            <>
+                <input aria-label="Note" />
+                <ReactionBar onReact={onReact} shortcuts />
+            </>,
+        );
+        fireEvent.keyDown(screen.getByLabelText('Note'), { key: '1' });
+
+        expect(onReact).not.toHaveBeenCalled();
+    });
+
+    it('does not emit while disabled and shows the reason', () => {
+        const onReact = vi.fn();
+
+        renderWithProviders(
+            <ReactionBar
+                onReact={onReact}
+                shortcuts
+                disabled
+                disabledReason="Facilitator locked reactions."
+            />,
+        );
+
+        const button = screen.getByRole('button', {
+            name: 'Send a reaction 👍',
+        });
+
+        fireEvent.click(button);
+        fireEvent.keyDown(document.body, { key: '1' });
+
+        expect(onReact).not.toHaveBeenCalled();
+        expect(button.getAttribute('aria-disabled')).toBe('true');
+        expect(button.hasAttribute('disabled')).toBe(false);
+        expect(screen.getByText('Facilitator locked reactions.')).toBeTruthy();
+    });
+
+    it('shows three emojis and a more button when compact', () => {
+        renderWithProviders(<ReactionBar onReact={vi.fn()} compact />);
+
+        const toolbar = screen.getByRole('toolbar', { name: 'Reactions' });
+
+        expect(
+            toolbar.querySelectorAll('[aria-label^="Send a reaction "]'),
+        ).toHaveLength(3);
+        expect(
+            screen.getByRole('button', { name: 'More reactions' }),
+        ).toBeTruthy();
+    });
+
+    it('opens the picker through onOpenPicker and reflects pickerOpen', () => {
+        const onOpenPicker = vi.fn();
+        const { rerender } = renderWithProviders(
+            <ReactionBar onReact={vi.fn()} onOpenPicker={onOpenPicker} />,
+        );
+        const add = screen.getByRole('button', { name: 'Send a reaction' });
+
+        expect(add.getAttribute('aria-expanded')).toBe('false');
+
+        fireEvent.click(add);
+
+        expect(onOpenPicker).toHaveBeenCalledTimes(1);
+
+        rerender(
+            <ReactionBar
+                onReact={vi.fn()}
+                onOpenPicker={onOpenPicker}
+                pickerOpen
+                picker={<div data-testid="slot" />}
+            />,
+        );
+
+        expect(add.getAttribute('aria-expanded')).toBe('true');
+        expect(screen.getByTestId('slot')).toBeTruthy();
+    });
+
+    it('renders a picker slot alone as the last toolbar item', () => {
+        renderWithProviders(
+            <ReactionBar
+                onReact={vi.fn()}
+                picker={<button type="button">Custom picker</button>}
+            />,
+        );
+
+        expect(
+            screen
+                .getByRole('toolbar', { name: 'Reactions' })
+                .contains(screen.getByText('Custom picker')),
+        ).toBe(true);
+    });
+
+    it('caps flying reactions at 12 and aggregates the rest', () => {
+        const { container, rerender } = renderWithProviders(
+            <ReactionBar onReact={vi.fn()} incoming={burst(20)} />,
+        );
+
+        expect(
+            container.querySelectorAll('[data-slot="reaction-fly"]'),
+        ).toHaveLength(12);
+        expect(
+            container.querySelector('[data-slot="reaction-aggregate"]')
+                ?.textContent,
+        ).toContain('🎉 ×8');
+        expect(
+            container.querySelector('[data-slot="reaction-aggregate"]')
+                ?.textContent,
+        ).toContain('User 0 and 7 others');
+
+        rerender(<ReactionBar onReact={vi.fn()} incoming={burst(3)} />);
+
+        expect(
+            container.querySelectorAll('[data-slot="reaction-fly"]'),
+        ).toHaveLength(3);
+        expect(
+            container.querySelector('[data-slot="reaction-aggregate"]'),
+        ).toBeNull();
+    });
+
+    it('hides flying emojis from assistive tech and pulses under reduced motion', () => {
+        const { container } = renderWithProviders(
+            <ReactionBar onReact={vi.fn()} incoming={burst(1)} />,
+        );
+
+        expect(
+            container
+                .querySelector('[data-slot="reaction-incoming"]')
+                ?.getAttribute('aria-hidden'),
+        ).toBe('true');
+        expect(
+            container.querySelector('[data-slot="reaction-fly"]')?.className,
+        ).toContain('motion-reduce:animate-pulse');
+    });
+
+    it('stacks above a panel through offsetBottom', () => {
+        const { container } = renderWithProviders(
+            <ReactionBar onReact={vi.fn()} offsetBottom={9} />,
+        );
+        const root = container.querySelector(
+            '[data-slot="reaction-bar"]',
+        ) as HTMLElement;
+
+        expect(root.style.getPropertyValue('--reaction-offset')).toBe(
+            'calc(9rem + 0.75rem)',
+        );
+    });
+
+    it('has no shadow pill when inline', () => {
+        renderWithProviders(<ReactionBar onReact={vi.fn()} variant="inline" />);
+
+        expect(
+            screen.getByRole('toolbar', { name: 'Reactions' }).className,
+        ).not.toContain('shadow-raised');
+    });
+});
