@@ -14,6 +14,7 @@ public/frankenphp-worker.php
 bootstrap/cache/*.php
 bootstrap/ssr
 storage
+database/*.sqlite*
 tests
 docs
 .superpowers
