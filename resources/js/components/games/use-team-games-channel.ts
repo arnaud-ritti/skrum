@@ -9,15 +9,29 @@ import type {
     TeamGameRoomDeletedPayload,
 } from '@/types';
 
+function changedAt(room: GameRoomSummary): number {
+    return room.updatedAt === null ? 0 : Date.parse(room.updatedAt);
+}
+
+/** The order of the server: a room in play first, then the latest changed. */
+function byServerOrder(
+    first: GameRoomSummary,
+    second: GameRoomSummary,
+): number {
+    const playing =
+        Number(second.status === 'playing') -
+        Number(first.status === 'playing');
+
+    return playing !== 0 ? playing : changedAt(second) - changedAt(first);
+}
+
 export function upsertTeamGameRoom(
     rooms: GameRoomSummary[],
     room: GameRoomSummary,
 ): GameRoomSummary[] {
-    if (!rooms.some((current) => current.id === room.id)) {
-        return [room, ...rooms];
-    }
+    const others = rooms.filter((current) => current.id !== room.id);
 
-    return rooms.map((current) => (current.id === room.id ? room : current));
+    return [room, ...others].sort(byServerOrder);
 }
 
 export function removeTeamGameRoom(
@@ -35,6 +49,8 @@ export type TeamGamesChannelHandlers = {
     /** A round of a listed room has ended: its points are in the leaderboard. */
     onRoundEnded?: () => void;
     onRoomDeleted?: () => void;
+    /** The channel is back after a drop: what happened meanwhile was not heard. */
+    onResubscribed?: () => void;
 };
 
 /**
@@ -67,10 +83,18 @@ export function useTeamGamesChannel(
         }
 
         const name = `team-games.${teamId}`;
+        let subscriptions = 0;
 
         echo<'reverb'>()
             .private(name)
-            .subscribed(() => setSubscribed([name]))
+            .subscribed(() => {
+                subscriptions += 1;
+                setSubscribed([name]);
+
+                if (subscriptions > 1) {
+                    handlers.current.onResubscribed?.();
+                }
+            })
             .listen(
                 '.team.game-room.changed',
                 ({ room }: TeamGameRoomChangedPayload) => {

@@ -150,17 +150,46 @@ afterEach(() => {
 });
 
 describe('room list helpers', () => {
-    it('replaces a known room in place and puts a new one first', () => {
+    it('puts a changed or new room first among the rooms of its status', () => {
         const rooms = [room({ id: 'a' }), room({ id: 'b' })];
 
         expect(
             upsertTeamGameRoom(rooms, room({ id: 'b', name: 'Renamed' })).map(
                 (item) => `${item.id}:${item.name}`,
             ),
-        ).toEqual(['a:Daily warm-up', 'b:Renamed']);
+        ).toEqual(['b:Renamed', 'a:Daily warm-up']);
         expect(
             upsertTeamGameRoom(rooms, room({ id: 'c' })).map((item) => item.id),
         ).toEqual(['c', 'a', 'b']);
+    });
+
+    it('keeps the order of the server: a room in play first, then the latest changed', () => {
+        const rooms = [
+            room({
+                id: 'live',
+                status: 'playing',
+                updatedAt: '2026-10-01T10:00:00Z',
+            }),
+            room({ id: 'recent', updatedAt: '2026-10-02T09:00:00Z' }),
+            room({ id: 'old', updatedAt: '2026-09-30T09:00:00Z' }),
+        ];
+
+        expect(
+            upsertTeamGameRoom(
+                rooms,
+                room({ id: 'new', updatedAt: '2026-10-02T10:00:00Z' }),
+            ).map((item) => item.id),
+        ).toEqual(['live', 'new', 'recent', 'old']);
+        expect(
+            upsertTeamGameRoom(
+                rooms,
+                room({
+                    id: 'old',
+                    status: 'playing',
+                    updatedAt: '2026-10-02T10:00:00Z',
+                }),
+            ).map((item) => item.id),
+        ).toEqual(['old', 'live', 'recent']);
     });
 
     it('removes a room and leaves the list alone for an unknown id', () => {
@@ -351,7 +380,9 @@ describe('TeamGames', () => {
             screen.getByRole('button', { name: 'Try again' }),
         );
 
-        expect(inertia.reload).toHaveBeenCalledWith({ only: ['leaderboard'] });
+        expect(inertia.reload).toHaveBeenCalledWith(
+            expect.objectContaining({ only: ['leaderboard'] }),
+        );
     });
 
     it('asks the server for the other period without losing the scroll', async () => {
@@ -359,10 +390,70 @@ describe('TeamGames', () => {
 
         await userEvent.click(screen.getByRole('tab', { name: 'All time' }));
 
+        expect(inertia.reload).toHaveBeenCalledWith(
+            expect.objectContaining({
+                data: { period: 'all' },
+                only: ['period', 'leaderboard'],
+            }),
+        );
+    });
+
+    it('marks the leaderboard as busy while the other period loads', async () => {
+        renderWithProviders(
+            <TeamGames {...props({ leaderboard: [row('u1', 'Ada', 9)] })} />,
+        );
+
+        const panel = () =>
+            document.querySelector(
+                '[data-slot="leaderboard"] [role="tabpanel"]',
+            );
+
+        expect(panel()?.getAttribute('aria-busy')).toBe('false');
+
+        await userEvent.click(screen.getByRole('tab', { name: 'All time' }));
+
+        const visit = inertia.reload.mock.calls[0][0] as {
+            onStart: () => void;
+            onFinish: () => void;
+        };
+
+        act(() => visit.onStart());
+
+        expect(panel()?.getAttribute('aria-busy')).toBe('true');
+
+        act(() => visit.onFinish());
+
+        expect(panel()?.getAttribute('aria-busy')).toBe('false');
+    });
+
+    it('asks the server for the rooms again when the team channel comes back after a drop', () => {
+        renderWithProviders(<TeamGames {...props()} />);
+
+        act(() => realtime.subscribed.get(Channel)?.());
+
+        expect(inertia.reload).not.toHaveBeenCalled();
+
+        act(() => realtime.subscribed.get(Channel)?.());
+
+        expect(inertia.reload).toHaveBeenCalledTimes(1);
         expect(inertia.reload).toHaveBeenCalledWith({
-            data: { period: 'all' },
-            only: ['period', 'leaderboard'],
+            only: ['rooms', 'canCreate', 'leaderboard'],
         });
+    });
+
+    it('asks whether a room can be created again when a room is deleted at the limit, not below it', () => {
+        const { unmount } = renderWithProviders(<TeamGames {...props()} />);
+
+        send('.team.game-room.deleted', { roomId: 'r1' });
+
+        expect(inertia.reload).not.toHaveBeenCalled();
+
+        unmount();
+        renderWithProviders(<TeamGames {...props({ canCreate: false })} />);
+
+        send('.team.game-room.deleted', { roomId: 'r1' });
+
+        expect(inertia.reload).toHaveBeenCalledWith({ only: ['canCreate'] });
     });
 
     it('creates a room, and keeps the dialog open with the message of the server when it is refused', async () => {

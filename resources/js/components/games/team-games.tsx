@@ -65,6 +65,11 @@ export function TeamGames({
     const page = usePage();
     const [createErrors, setCreateErrors] = useState<NewGameRoomErrors>({});
     const [creating, setCreating] = useState(false);
+    const [leaderboardLoading, setLeaderboardLoading] = useState(false);
+    const trackLeaderboard = {
+        onStart: () => setLeaderboardLoading(true),
+        onFinish: () => setLeaderboardLoading(false),
+    };
     const reloadLeaderboard = (): void => {
         router.reload({ only: ['leaderboard'] });
     };
@@ -74,6 +79,9 @@ export function TeamGames({
             if (!canCreate) {
                 router.reload({ only: ['canCreate'] });
             }
+        },
+        onResubscribed: () => {
+            router.reload({ only: ['rooms', 'canCreate', 'leaderboard'] });
         },
     });
     const now = useClock(rooms.some((room) => room.status === 'playing'));
@@ -151,6 +159,7 @@ export function TeamGames({
                     router.reload({
                         data: { period: next },
                         only: ['period', 'leaderboard'],
+                        ...trackLeaderboard,
                     })
                 }
                 leaderboard={leaderboard?.map((row) => ({
@@ -163,7 +172,13 @@ export function TeamGames({
                     streak: row.streak,
                 }))}
                 leaderboardError={page.rescuedProps?.includes('leaderboard')}
-                onRetryLeaderboard={reloadLeaderboard}
+                leaderboardLoading={leaderboardLoading}
+                onRetryLeaderboard={() =>
+                    router.reload({
+                        only: ['leaderboard'],
+                        ...trackLeaderboard,
+                    })
+                }
                 currentUserId={page.props.auth.user?.id}
                 canCreateRoom={canCreate && rooms.length < roomLimit}
                 roomLimit={roomLimit}
