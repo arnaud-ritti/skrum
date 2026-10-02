@@ -19,7 +19,7 @@ import { useTrans } from '@/hooks/use-trans';
 import type { WhiteboardState } from '@/hooks/use-whiteboard';
 import { RetroRequestError, retroRequest } from '@/lib/retro/api';
 
-const TitleMaxLength = 120;
+export const TitleMaxLength = 120;
 const TemplateNameMaxLength = 80;
 const TemplateDescriptionMaxLength = 300;
 const NewFacilitatorId = 'whiteboard-new-facilitator';

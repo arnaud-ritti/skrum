@@ -14,8 +14,8 @@ import { presenceFor } from '@/lib/whiteboard/presence-slot';
 import { BoardFacilitation } from './board-facilitation';
 import { BoardMenu } from './board-menu';
 import { BoardShare } from './board-share';
+import { TitleMaxLength } from '@/components/whiteboard/board-dialogs';
 
-const TitleMaxLength = 120;
 const FromMd = '(min-width: 768px)';
 const FromXl = '(min-width: 1280px)';
 

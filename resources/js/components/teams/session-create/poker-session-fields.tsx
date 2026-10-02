@@ -34,6 +34,7 @@ import {
 } from '@/lib/poker/deck-adapter';
 import type { DefaultPokerDeck } from '@/lib/poker/deck-adapter';
 import type { PokerDeckOption, SavedPokerDeck } from '@/types';
+import { FieldError } from '@/components/teams/session-create/field-error';
 
 export type PokerSessionFormProps = {
     workspaceSlug: string;
@@ -77,18 +78,6 @@ export function pokerSessionForm(
 
 function emptyDeckDraft(): DeckDraft {
     return { name: '', values: [], unknownCard: true, breakCard: true };
-}
-
-function FieldError({ id, message }: { id?: string; message?: string }) {
-    if (message === undefined) {
-        return null;
-    }
-
-    return (
-        <p id={id} role="alert" className="text-xs text-skrum-destructive-text">
-            {message}
-        </p>
-    );
 }
 
 function tasksError(errors: Errors): string | undefined {

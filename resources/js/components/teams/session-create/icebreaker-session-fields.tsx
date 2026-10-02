@@ -25,6 +25,7 @@ import {
 import { useTrans } from '@/hooks/use-trans';
 import type { GameKind, GameRoomAccess } from '@/lib/games/types';
 import type { GameOption } from '@/types';
+import { FieldError } from '@/components/teams/session-create/field-error';
 
 export type IcebreakerSessionFormProps = {
     workspaceSlug: string;
@@ -78,18 +79,6 @@ function usePitches(): Record<GameKind, string> {
         gif: t('Sum up the sprint with a single GIF.'),
         decoded: t('One writes it in emojis, the others guess.'),
     };
-}
-
-function FieldError({ id, message }: { id?: string; message?: string }) {
-    if (message === undefined) {
-        return null;
-    }
-
-    return (
-        <p id={id} role="alert" className="text-xs text-skrum-destructive-text">
-            {message}
-        </p>
-    );
 }
 
 export function IcebreakerSessionFields({

@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useTrans } from '@/hooks/use-trans';
 import type { WhiteboardGalleryItem } from '@/types';
+import { FieldError } from '@/components/teams/session-create/field-error';
 
 export type WhiteboardSessionFormProps = {
     workspaceSlug: string;
@@ -62,18 +63,6 @@ export function initialTemplateKey(
         gallery.find((item) => item.key === BlankKey)?.key ??
         gallery[0]?.key ??
         null
-    );
-}
-
-function FieldError({ id, message }: { id?: string; message?: string }) {
-    if (message === undefined) {
-        return null;
-    }
-
-    return (
-        <p id={id} role="alert" className="text-xs text-skrum-destructive-text">
-            {message}
-        </p>
     );
 }
 

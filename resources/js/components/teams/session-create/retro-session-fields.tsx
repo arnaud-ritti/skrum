@@ -63,6 +63,7 @@ import type {
     CategoryOption,
     LlmAvailability,
 } from '@/types';
+import { FieldError } from '@/components/teams/session-create/field-error';
 
 export type RetroSessionFormProps = {
     workspaceSlug: string;
@@ -99,18 +100,6 @@ export function retroSessionForm(
             <RetroSessionFields {...props} context={context} />
         ),
     };
-}
-
-function FieldError({ id, message }: { id?: string; message?: string }) {
-    if (message === undefined) {
-        return null;
-    }
-
-    return (
-        <p id={id} role="alert" className="text-xs text-skrum-destructive-text">
-            {message}
-        </p>
-    );
 }
 
 function VotesStepper({
