@@ -28,6 +28,18 @@ it('records the tables whose rows a transaction locked, in order, with the trans
     ]);
 })->skip(fn () => ! SqlProbe::rowLocksExist(), 'This engine has no row lock: its write transactions are serialised instead.');
 
+it('names the locked table, not a table read inside the same query', function () {
+    $team = Team::factory()->create();
+    $user = User::factory()->create();
+    $team->members()->attach($user);
+
+    $tables = SqlProbe::lockedTables(function () use ($user): void {
+        DB::transaction(fn () => User::query()->whereKey($user->id)->whereHas('teams')->lockForUpdate()->first());
+    });
+
+    expect($tables)->toBe(['users']);
+})->skip(fn () => ! SqlProbe::rowLocksExist(), 'This engine has no row lock: its write transactions are serialised instead.');
+
 it('records nothing once its closure has returned', function () {
     $user = User::factory()->create();
 

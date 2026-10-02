@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Schema;
 /**
  * Tells which tables a piece of code locked for update, and in which order. It knows no SQL of
  * its own: the lock clause and the quoting of a table come from the grammar of the connection.
+ * The locked table is the first one the query reads from; it only sees the default connection.
  */
 class SqlProbe
 {
@@ -29,12 +30,15 @@ class SqlProbe
                 return;
             }
 
-            foreach ($tables as $table) {
-                if (str_contains($query->sql, 'from '.$grammar->wrapTable($table).' ')) {
-                    $recorded[] = ['table' => $table, 'level' => DB::transactionLevel()];
+            $firstRead = collect($tables)
+                ->mapWithKeys(fn (string $table): array => [$table => strpos($query->sql, "from {$grammar->wrapTable($table)} ")])
+                ->reject(fn (int|false $position): bool => $position === false)
+                ->sort()
+                ->keys()
+                ->first();
 
-                    return;
-                }
+            if ($firstRead !== null) {
+                $recorded[] = ['table' => $firstRead, 'level' => DB::transactionLevel()];
             }
         });
 

@@ -32,7 +32,9 @@ class MissingTables
 
     /**
      * Runs the closure while the table of one model cannot be found and every other table can:
-     * the queries of that model look for a table that does not exist. Still no DDL.
+     * the queries of that model look for a table that does not exist. Still no DDL. It hides the
+     * reads, updates and deletes made through the model; an insert, DB::table() and a query
+     * without global scopes still reach the table. The scope stays on the model, inert, afterwards.
      *
      * @param  class-string<Model>  $model
      */
