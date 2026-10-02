@@ -3947,6 +3947,13 @@ git commit -m "feat(database): a busy database answers 503 with a retry delay, a
 
 From revision 1, unchanged: its code uses models, `lockForUpdate()` and HTTP requests only. It also carries the proof of the three lock-order tests of Task 11 on every engine, SQLite included. Run it on one engine at a time, and only on engines whose `bin/test-db` preflight passes.
 
+**Carried from the review of Task 13** (spec §6.6, "What the 503 covers"):
+
+- `tests/Feature/Database/RetriedTransactionsTest.php` only counts `Transactions::Attempts` in the source, and under `RefreshDatabase` every transaction is nested, so nothing there proves a retry. This suite must exercise at least one real retry per engine on an outermost transaction (for example a forced deadlock on `CardVotesController::store`) and assert the single resulting write and the single broadcast.
+- A busy `BEGIN IMMEDIATE` on SQLite is a bare `PDOException` thrown outside Laravel's retry loop: it is not retried, only the 5 s `busy_timeout` applies. The C3 case on `sqlite-file` asserts the 503 (with `Retry-After: 1` and the `X-Database-Busy` header) through a real second connection holding the write lock, not through a hand-built exception.
+- `WorkspaceTemplatesController::update` is now retried: it reads the template again under `lockForUpdate()` inside the closure.
+- On MySQL and MariaDB a retried transaction blocked by a lock wait can hold its worker for 3 × 50 s before the 503. Accepted in the spec; measure the ordinary contention here and report if a case comes near the lock wait.
+
 **Files:**
 - Create: `tests/Concurrency/Support/Race.php`, `tests/Concurrency/HarnessTest.php`, `tests/Concurrency/LastInstanceAdminTest.php`, `tests/Concurrency/VoteLimitTest.php`, `tests/Concurrency/SavedDeckLimitsTest.php`, `tests/Concurrency/WhiteboardTemplateLimitTest.php`, `tests/Concurrency/ReactionUniquenessTest.php`, `tests/Concurrency/FirstIntegrationTest.php`, `tests/Concurrency/MagicLinkSingleUseTest.php` [18f]
 - Modify: `tests/Pest.php`, `app/Actions/Poker/SavedPokerDeckRules.php`, `app/Http/Controllers/PokerDecksController.php:117-121`, `app/Http/Controllers/WorkspacePokerDecksController.php:17-21`, `app/Http/Controllers/WorkspaceTemplatesController.php:44-50`, `app/Http/Requests/WorkspaceTemplateRequest.php`, `app/Actions/Integrations/SaveTeamIntegration.php:44`

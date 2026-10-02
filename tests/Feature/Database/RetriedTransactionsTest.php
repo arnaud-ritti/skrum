@@ -12,7 +12,7 @@ it('retries the transactions that touch nothing but the database', function (str
     ['app/Http/Controllers/PokerDecksController.php', 1],
     ['app/Http/Controllers/WorkspacePokerDecksController.php', 1],
     ['app/Http/Controllers/PokerDeckDuplicatesController.php', 1],
-    ['app/Http/Controllers/WorkspaceTemplatesController.php', 1],
+    ['app/Http/Controllers/WorkspaceTemplatesController.php', 2],
 ]);
 
 it('never retries a transaction that copies files or calls a provider', function (string $file) {

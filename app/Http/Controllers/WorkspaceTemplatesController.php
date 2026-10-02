@@ -66,10 +66,12 @@ class WorkspaceTemplatesController extends Controller
     public function update(WorkspaceTemplateRequest $request, Workspace $workspace, WorkspaceTemplate $template): RedirectResponse
     {
         DB::transaction(function () use ($request, $template): void {
-            $template->update($request->templateAttributes());
+            $lockedTemplate = WorkspaceTemplate::query()->whereKey($template->id)->lockForUpdate()->firstOrFail();
 
-            $this->replaceColumns($template, $request->templateColumns());
-        });
+            $lockedTemplate->update($request->templateAttributes());
+
+            $this->replaceColumns($lockedTemplate, $request->templateColumns());
+        }, Transactions::Attempts);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Template saved.')]);
 

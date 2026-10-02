@@ -270,6 +270,17 @@ Not expressible by an option, and therefore not set: a lock wait timeout on MySQ
 
 **Retry policy (P8)**, **503 with `Retry-After: 1`** for a concurrency error that survives its retries, and the **concurrency suite C0 to C8** with two real connections are unchanged from revision 1 §6.6, including the two fixes it found on PostgreSQL too (C5: the name is checked again once the owner is locked; C8: the team row is locked first). `App\Support\Database\Transactions` holds the retry count and delegates the error test to Laravel's detector; it wraps no SQL. Row locks are `lockForUpdate()` and `sharedLock()`, builder methods on the four engines (SQLite compiles nothing and serialises instead).
 
+**What the 503 covers, and what each client gets** (review of Task 13):
+
+- The mapping is registered on `PDOException`, the parent of `QueryException` and `DeadlockException`. A failure outside a statement is a bare `PDOException`: `BEGIN IMMEDIATE` on a busy SQLite file, and `COMMIT` (PostgreSQL 40001, a Galera conflict). Both are answered 503 as well.
+- Only the error of the driver is read. The message of a `QueryException` holds the statement and the text bound to it, so `Transactions::isConcurrencyError()` passes its previous exception to the detector: a card whose body says "database is locked" does not turn another failure into a 503.
+- A busy `BEGIN` on SQLite is **not retried** by `Transactions::Attempts`: Laravel opens the transaction outside its retry loop. Only the 5 s `busy_timeout` applies, then the 503. The same holds for a failure at `COMMIT`.
+- Laravel's detector also retries `Lock wait timeout exceeded`. MySQL and MariaDB keep their 50 s lock wait (no option sets it), so a retried transaction stuck behind another one holds its PHP worker for up to 3 × 50 s before the 503; on SQLite a busy statement inside the closure costs up to 3 × 5 s. Accepted: a lock held that long is an incident of its own, and Task 14 measures the ordinary case.
+- The busy 503 carries the header `X-Database-Busy` (`Transactions::BusyHeader`) with the translated message URL-encoded. Nothing in this answer reads the database, the cache or the session.
+  - **JSON request**: `{"message": "The database is busy. Try again."}`.
+  - **Inertia request** (most retried call sites are Inertia form posts): `resources/js/lib/maintenance-reload.ts` reloads the document on any other 503; on this header it keeps the page, with what the user typed, and shows the message as an error toast. The action is not replayed: the user submits again.
+  - **Plain browser request**: the static `errors.503` view, with the busy message as its title and heading and without the maintenance wording, the reload line and the 30 s probe.
+
 ### 6.7 WP7 — The 18 test sites that read SQL or branch on the driver
 
 | Site | Today | Design |
@@ -418,7 +429,7 @@ Rule learnt in Task 1, part of the plan's constraints: **until the migrations pa
 11. On each driver: an action item due tomorrow is reminded once, and a second run the same day reminds nobody.
 12. On each driver: the five model rules refuse the row with `ModelInvariantViolation`.
 13. **[18f]** On each driver: an account is found by its address in any case; two legacy accounts that share an address once normalised are refused by SSO sign-in and by the magic link; a new account cannot take an address a legacy row uses.
-14. A deadlock or a busy database that survives its retries is answered 503 with `Retry-After`, in JSON for a JSON request.
+14. A deadlock or a busy database that survives its retries is answered 503 with `Retry-After`, in JSON for a JSON request, as a toast on the page for an Inertia request, and as the static 503 page with the busy message for a plain browser request.
 15. `php artisan skrum:check-database` exits 0 on the four configurations, and non-zero, with a sentence naming the setting, when the MariaDB connection is configured with `utf8mb4_unicode_ci`, without READ COMMITTED, and when the SQLite connection has `journal_mode` `delete`.
 16. The CI workflow has the jobs of §13; the required ones pass on the plan's branch.
 17. `docs/database.md` has the sections of §12; `README.md` links to it; `.env.example` has the four blocks.
