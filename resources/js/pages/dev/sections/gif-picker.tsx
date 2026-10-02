@@ -68,6 +68,22 @@ export default function GifPickerSection() {
                     onSelect={(gif) => setSelectedId(gif.id)}
                 />
             </State>
+            <State
+                label={t(
+                    'Open on a stage: no focus taken, as wide as its container',
+                )}
+            >
+                <GifPicker
+                    open
+                    inline
+                    lang={lang}
+                    reducedMotion={false}
+                    results={results}
+                    selectedId={selectedId}
+                    onOpenChange={noop}
+                    onSelect={(gif) => setSelectedId(gif.id)}
+                />
+            </State>
             <State label={t('Loading: skeletons')}>
                 <GifPicker
                     open

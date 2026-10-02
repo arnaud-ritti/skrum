@@ -488,6 +488,29 @@ describe('GifPicker', () => {
         opener.remove();
     });
 
+    it('stands inline on a stage: a labelled group, no focus taken, Escape left to the page', () => {
+        const opener = document.createElement('button');
+        document.body.append(opener);
+        opener.focus();
+
+        const { onOpenChange, unmount } = setup({ inline: true });
+        const picker = screen.getByRole('group', { name: 'Choose a GIF' });
+
+        expect(screen.queryByRole('dialog')).toBeNull();
+        expect(picker.getAttribute('data-inline')).toBe('true');
+        expect(document.activeElement).toBe(opener);
+
+        fireEvent.keyDown(picker, { key: 'Escape' });
+
+        expect(onOpenChange).not.toHaveBeenCalled();
+
+        screen.getByRole('searchbox').focus();
+        unmount();
+
+        expect(document.activeElement).not.toBe(opener);
+        opener.remove();
+    });
+
     it('hides retry when no handler is given', () => {
         setup({ status: 'error' });
 
