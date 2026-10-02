@@ -2,6 +2,13 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { RetroRequestError } from '@/lib/retro/api';
+import {
+    dialogOverPanel,
+    providerButtons,
+    providerPanel,
+    providerStatus,
+    renderProvider,
+} from '@/test/integrations';
 import { renderWithProviders } from '@/test/render';
 import type {
     IntegrationProviderCard,
@@ -74,18 +81,11 @@ function card(
     };
 }
 
-function region(name: string): HTMLElement {
-    return screen.getByRole('region', { name });
-}
-
-function statusOf(name: string): string | null | undefined {
-    return region(name).querySelector('[data-slot="badge"]')?.textContent;
-}
+const region = providerPanel;
+const statusOf = providerStatus;
 
 function buttons(name: string): (string | null)[] {
-    return within(region(name))
-        .getAllByRole('button')
-        .map((button) => button.textContent);
+    return providerButtons(region(name)).map((button) => button.textContent);
 }
 
 beforeEach(() => {
@@ -99,7 +99,7 @@ beforeEach(() => {
 
 describe('SlackIntegration', () => {
     it('offers to connect through a plain link while Slack is not connected', () => {
-        renderWithProviders(
+        renderProvider(
             <SlackIntegration card={card('slack', 'Slack')} scope={scope} />,
         );
 
@@ -116,7 +116,7 @@ describe('SlackIntegration', () => {
     });
 
     it('shows the workspace and the channel, then reconnect, test and disconnect', () => {
-        renderWithProviders(
+        renderProvider(
             <SlackIntegration
                 card={card(
                     'slack',
@@ -149,7 +149,7 @@ describe('SlackIntegration', () => {
     });
 
     it('has no test message while the connection must be made again, and shows why', () => {
-        renderWithProviders(
+        renderProvider(
             <SlackIntegration
                 card={card(
                     'slack',
@@ -174,7 +174,7 @@ describe('SlackIntegration', () => {
     it('sends a test message, then reloads the providers', async () => {
         request.mockResolvedValue(undefined);
 
-        renderWithProviders(
+        renderProvider(
             <SlackIntegration
                 card={card('slack', 'Slack', connection('slack'))}
                 scope={scope}
@@ -196,7 +196,7 @@ describe('SlackIntegration', () => {
             new RetroRequestError(502, 'Slack did not answer.'),
         );
 
-        renderWithProviders(
+        renderProvider(
             <SlackIntegration
                 card={card('slack', 'Slack', connection('slack'))}
                 scope={scope}
@@ -216,7 +216,7 @@ describe('SlackIntegration', () => {
     it('confirms the disconnection in a dialog that names the provider', async () => {
         request.mockResolvedValue(undefined);
 
-        renderWithProviders(
+        renderProvider(
             <SlackIntegration
                 card={card(
                     'slack',
@@ -249,15 +249,61 @@ describe('SlackIntegration', () => {
             within(dialog).getByRole('button', { name: 'Disconnect' }),
         );
 
-        await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+        await waitFor(() => expect(dialogOverPanel()).toBeNull());
         expect(toast.success).toHaveBeenCalledWith('Slack disconnected.');
+        expect(router.reload).toHaveBeenCalledWith({ only: ['providers'] });
+    });
+
+    it('asks to disconnect when the switch of the row is turned off, without opening the sheet', async () => {
+        request.mockResolvedValue(undefined);
+
+        renderWithProviders(
+            <SlackIntegration
+                card={card('slack', 'Slack', connection('slack'))}
+                scope={scope}
+            />,
+        );
+
+        const toggle = screen.getByRole('switch', { name: 'Slack' });
+
+        expect(screen.queryByRole('button', { name: 'Disconnect' })).toBeNull();
+
+        await userEvent.click(toggle);
+
+        const dialog = screen.getByRole('dialog', {
+            name: 'Disconnect Slack?',
+        });
+
+        expect(
+            document.querySelector('[data-slot="sheet-content"]'),
+        ).toBeNull();
+        expect(request).not.toHaveBeenCalled();
+
+        await userEvent.click(
+            within(dialog).getByRole('button', { name: 'Cancel' }),
+        );
+
+        await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+        expect(document.activeElement).toBe(toggle);
+        expect(toggle.getAttribute('aria-checked')).toBe('true');
+
+        await userEvent.click(toggle);
+        await userEvent.click(
+            within(screen.getByRole('dialog')).getByRole('button', {
+                name: 'Disconnect',
+            }),
+        );
+
+        await waitFor(() =>
+            expect(toast.success).toHaveBeenCalledWith('Slack disconnected.'),
+        );
         expect(router.reload).toHaveBeenCalledWith({ only: ['providers'] });
     });
 
     it('keeps the dialog open when the disconnection is refused', async () => {
         request.mockRejectedValue(new RetroRequestError(500, 'Server error.'));
 
-        renderWithProviders(
+        renderProvider(
             <SlackIntegration
                 card={card('slack', 'Slack', connection('slack'))}
                 scope={scope}
@@ -292,7 +338,7 @@ describe('TelegramIntegration', () => {
             expiresAt: new Date(Date.now() + 600_000).toISOString(),
         });
 
-        renderWithProviders(
+        renderProvider(
             <TelegramIntegration
                 card={card('telegram', 'Telegram')}
                 scope={scope}
@@ -333,7 +379,7 @@ describe('TelegramIntegration', () => {
             expiresAt: new Date(Date.now() - 1_000).toISOString(),
         });
 
-        renderWithProviders(
+        renderProvider(
             <TelegramIntegration
                 card={card('telegram', 'Telegram')}
                 scope={scope}
@@ -352,7 +398,7 @@ describe('TelegramIntegration', () => {
     });
 
     it('cannot connect while Telegram does not answer, and says so', () => {
-        renderWithProviders(
+        renderProvider(
             <TelegramIntegration
                 card={card('telegram', 'Telegram')}
                 scope={scope}
@@ -371,7 +417,7 @@ describe('TelegramIntegration', () => {
     });
 
     it('warns when the bot is used elsewhere', () => {
-        renderWithProviders(
+        renderProvider(
             <TelegramIntegration
                 card={card('telegram', 'Telegram')}
                 scope={scope}
@@ -384,8 +430,42 @@ describe('TelegramIntegration', () => {
         );
     });
 
-    it('shows the chat and offers another chat, a test and the disconnection once connected', () => {
+    it('reports the trouble of the bot on the row, before the sheet is opened', () => {
+        const { unmount } = renderWithProviders(
+            <TelegramIntegration
+                card={card('telegram', 'Telegram')}
+                scope={scope}
+                telegram={{ botUsername: 'skrum_test_bot', conflict: true }}
+            />,
+        );
+
+        const notice = () =>
+            document.querySelector('[data-slot="provider-row-notice"]')
+                ?.textContent;
+
+        expect(notice()).toBe(
+            'The Telegram bot is used elsewhere. Remove its webhook or use a dedicated bot.',
+        );
+
+        unmount();
+
         renderWithProviders(
+            <TelegramIntegration
+                card={card('telegram', 'Telegram')}
+                scope={scope}
+                telegram={{ botUsername: null, conflict: false }}
+            />,
+        );
+
+        expect(notice()).toBe(
+            'Telegram did not answer. Check the bot token of this instance.',
+        );
+
+        unmount();
+    });
+
+    it('shows the chat and offers another chat, a test and the disconnection once connected', () => {
+        renderProvider(
             <TelegramIntegration
                 card={card(
                     'telegram',
@@ -413,7 +493,7 @@ describe('UrlChannelIntegration', () => {
     it('connects Microsoft Teams from a dialog with the URL and an optional label', async () => {
         request.mockResolvedValue(undefined);
 
-        renderWithProviders(
+        renderProvider(
             <UrlChannelIntegration
                 card={card('msteams', 'Microsoft Teams')}
                 scope={scope}
@@ -444,7 +524,7 @@ describe('UrlChannelIntegration', () => {
             within(dialog).getByRole('button', { name: 'Connect' }),
         );
 
-        await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+        await waitFor(() => expect(dialogOverPanel()).toBeNull());
         expect(request.mock.calls[0][1]).toEqual({
             url: 'https://example.com/workflows/abc',
             channel_label: 'Retro channel',
@@ -462,7 +542,7 @@ describe('UrlChannelIntegration', () => {
             }),
         );
 
-        renderWithProviders(
+        renderProvider(
             <UrlChannelIntegration
                 card={card('msteams', 'Microsoft Teams')}
                 scope={scope}
@@ -496,7 +576,7 @@ describe('UrlChannelIntegration', () => {
             new RetroRequestError(422, 'Invalid.', { url: ['Refused.'] }),
         );
 
-        renderWithProviders(
+        renderProvider(
             <UrlChannelIntegration
                 card={card('mattermost', 'Mattermost')}
                 scope={scope}
@@ -525,7 +605,7 @@ describe('UrlChannelIntegration', () => {
         );
 
         await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
-        await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+        await waitFor(() => expect(dialogOverPanel()).toBeNull());
         await userEvent.click(screen.getByRole('button', { name: 'Connect' }));
 
         expect(document.querySelector('[data-slot="field-error"]')).toBeNull();
@@ -537,7 +617,7 @@ describe('UrlChannelIntegration', () => {
     it('replaces the URL of a connection without ever showing the old one, and keeps its label', async () => {
         request.mockResolvedValue(undefined);
 
-        renderWithProviders(
+        renderProvider(
             <UrlChannelIntegration
                 card={card(
                     'msteams',
@@ -586,13 +666,44 @@ describe('UrlChannelIntegration', () => {
             within(dialog).getByRole('button', { name: 'Save' }),
         );
 
-        await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+        await waitFor(() => expect(dialogOverPanel()).toBeNull());
         expect(request.mock.calls[0][1]).toEqual({ channel_label: '#retros' });
         expect(toast.success).toHaveBeenCalledWith('Connection saved.');
     });
 
+    it('closes only the form above the sheet on Escape, the sheet staying open', async () => {
+        renderProvider(
+            <UrlChannelIntegration
+                card={card(
+                    'mattermost',
+                    'Mattermost',
+                    connection('mattermost', {
+                        settings: { host: 'chat.example.com' },
+                    }),
+                )}
+                scope={scope}
+                mattermost={null}
+            />,
+        );
+
+        await userEvent.click(
+            screen.getByRole('button', { name: 'Replace URL' }),
+        );
+
+        expect(
+            screen.getByRole('dialog', { name: 'Replace the URL' }),
+        ).not.toBeNull();
+
+        await userEvent.keyboard('{Escape}');
+
+        await waitFor(() => expect(dialogOverPanel()).toBeNull());
+        expect(
+            screen.getByRole('dialog', { name: 'Mattermost' }),
+        ).not.toBeNull();
+    });
+
     it('shows a dash for a connection without label', () => {
-        renderWithProviders(
+        renderProvider(
             <UrlChannelIntegration
                 card={card(
                     'mattermost',

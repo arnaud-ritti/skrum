@@ -8,6 +8,7 @@ import {
     ProviderDetails,
     providerCardProps,
 } from './provider-card';
+import type { DisconnectControl } from './provider-card';
 
 type Props = {
     card: IntegrationProviderCard;
@@ -41,9 +42,23 @@ export function SlackIntegration({ card, scope }: Props) {
 
     const { settings } = connection;
 
+    const disconnect = (control?: DisconnectControl) => (
+        <DisconnectIntegrationDialog
+            scope={scope}
+            card={card}
+            connection={connection}
+            description={t(
+                'Posting to :channel stops and the Slack access is revoked.',
+                { channel: settings.channelName ?? '' },
+            )}
+            control={control}
+        />
+    );
+
     return (
         <ProviderCard
             {...providerCardProps(card, Hash, t)}
+            disconnect={disconnect}
             details={
                 <ProviderDetails
                     connection={connection}
@@ -92,15 +107,7 @@ export function SlackIntegration({ card, scope }: Props) {
                             successMessage={t('Test message sent.')}
                         />
                     )}
-                    <DisconnectIntegrationDialog
-                        scope={scope}
-                        card={card}
-                        connection={connection}
-                        description={t(
-                            'Posting to :channel stops and the Slack access is revoked.',
-                            { channel: settings.channelName ?? '' },
-                        )}
-                    />
+                    {disconnect()}
                 </>
             }
         />

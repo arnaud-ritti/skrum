@@ -15,6 +15,7 @@ import {
     DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog';
+import { useRestoreFocus } from '@/components/ui/use-restore-focus';
 import { useTrans } from '@/hooks/use-trans';
 import { integrationErrorMessage } from '@/lib/integrations';
 import { retroRequest } from '@/lib/retro/api';
@@ -23,6 +24,7 @@ import type {
     IntegrationScope,
     TeamIntegration,
 } from '@/types';
+import type { DisconnectControl } from './provider-card';
 
 type Props = {
     scope: IntegrationScope;
@@ -31,6 +33,8 @@ type Props = {
     description: string;
     label?: string;
     title?: string;
+    /** Opened from outside, by the switch of the row: no trigger of its own. */
+    control?: DisconnectControl;
 };
 
 /**
@@ -44,9 +48,13 @@ export function DisconnectIntegrationDialog({
     description,
     label,
     title,
+    control,
 }: Props) {
     const { t } = useTrans();
-    const [open, setOpen] = useState(false);
+    const [ownOpen, setOwnOpen] = useState(false);
+    const open = control?.open ?? ownOpen;
+    const setOpen = control?.onOpenChange ?? setOwnOpen;
+    const restoreFocus = useRestoreFocus(open);
     const [busy, setBusy] = useState(false);
     const cancelRef = useRef<HTMLButtonElement>(null);
     const action = label ?? t('Disconnect');
@@ -85,17 +93,19 @@ export function DisconnectIntegrationDialog({
 
     return (
         <Dialog open={open} onOpenChange={changeOpen}>
-            <DialogTrigger asChild>
-                <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="ms-auto max-w-full border-[color-mix(in_oklch,var(--destructive)_45%,var(--input))] text-skrum-destructive-text hover:text-skrum-destructive-text"
-                >
-                    <Unplug aria-hidden="true" />
-                    <span className="truncate">{action}</span>
-                </Button>
-            </DialogTrigger>
+            {control === undefined && (
+                <DialogTrigger asChild>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="ms-auto max-w-full border-[color-mix(in_oklch,var(--destructive)_45%,var(--input))] text-skrum-destructive-text hover:text-skrum-destructive-text"
+                    >
+                        <Unplug aria-hidden="true" />
+                        <span className="truncate">{action}</span>
+                    </Button>
+                </DialogTrigger>
+            )}
             <DialogContent
                 size="sm"
                 showCloseButton={false}
@@ -109,6 +119,9 @@ export function DisconnectIntegrationDialog({
                     }
                 }}
                 onInteractOutside={(event) => event.preventDefault()}
+                onCloseAutoFocus={
+                    control === undefined ? undefined : restoreFocus
+                }
             >
                 <DialogHeader>
                     <DialogIcon className="bg-skrum-destructive-soft text-skrum-destructive-text">

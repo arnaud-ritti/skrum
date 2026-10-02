@@ -6,6 +6,7 @@ import {
     ProviderDetails,
 } from '@/components/integrations/provider-card';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { useTrans } from '@/hooks/use-trans';
 import type { TeamIntegration } from '@/types';
 
@@ -74,7 +75,7 @@ export default function SettingsIntegrationsSection() {
                     'Provider card: not connected, connected, setup required, reconnect required',
                 )}
             >
-                <div className="flex max-w-200 min-w-0 flex-col gap-6">
+                <Card className="max-w-200 min-w-0 divide-y">
                     <ProviderCard
                         provider={{
                             key: 'telegram',
@@ -91,6 +92,7 @@ export default function SettingsIntegrationsSection() {
                     <ProviderCard
                         provider={{ key: 'slack', label: 'Slack', icon: Hash }}
                         status={{ label: t('Connected'), tone: 'active' }}
+                        summary="Nordlys · #atlas-retros"
                         details={
                             <ProviderDetails
                                 rows={[
@@ -167,7 +169,7 @@ export default function SettingsIntegrationsSection() {
                             </>
                         }
                     />
-                </div>
+                </Card>
             </Example>
         </div>
     );

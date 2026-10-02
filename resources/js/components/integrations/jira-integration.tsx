@@ -13,11 +13,7 @@ import {
 import { useTrans } from '@/hooks/use-trans';
 import { integrationErrorMessage } from '@/lib/integrations';
 import { retroRequest } from '@/lib/retro/api';
-import type {
-    IntegrationProviderCard,
-    IntegrationScope,
-    TeamIntegration,
-} from '@/types';
+import type { IntegrationProviderCard, IntegrationScope } from '@/types';
 import { DisconnectIntegrationDialog } from './disconnect-integration-dialog';
 import { ConnectLink, TestConnectionButton } from './integration-actions';
 import {
@@ -25,6 +21,7 @@ import {
     ProviderDetails,
     providerCardProps,
 } from './provider-card';
+import type { DisconnectControl } from './provider-card';
 import { PeoplePanel } from './people-panel';
 import { PrioritiesPanel } from './priorities-panel';
 import { StatusSyncSection } from './status-sync-section';
@@ -36,8 +33,13 @@ type Props = {
     scope: IntegrationScope;
 };
 
+/**
+ * Both states return the same `ProviderCard`: the row, its switch and its open
+ * sheet outlive a connection that appears or goes.
+ */
 export function JiraIntegration({ card, scope }: Props) {
     const { t } = useTrans();
+    const [busy, setBusy] = useState(false);
     const connection = card.connection;
 
     if (connection === null) {
@@ -71,16 +73,6 @@ export function JiraIntegration({ card, scope }: Props) {
         );
     }
 
-    return <ConnectedJira card={card} scope={scope} connection={connection} />;
-}
-
-function ConnectedJira({
-    card,
-    scope,
-    connection,
-}: Props & { connection: TeamIntegration }) {
-    const { t } = useTrans();
-    const [busy, setBusy] = useState(false);
     const { settings } = connection;
     const sites = settings.sites ?? [];
     const target = { ...scope, integration: connection.id };
@@ -110,9 +102,22 @@ function ConnectedJira({
             t('Jira connected.'),
         );
 
+    const disconnect = (control?: DisconnectControl) => (
+        <DisconnectIntegrationDialog
+            scope={scope}
+            card={card}
+            connection={connection}
+            description={t(
+                'Imported tasks and exported issues keep their links but are no longer synced, and the people and priority mappings are deleted. Atlassian does not let skrum revoke its access: remove the app under "Connected apps" in your Atlassian account settings.',
+            )}
+            control={control}
+        />
+    );
+
     return (
         <ProviderCard
             {...providerCardProps(card, ListChecks, t)}
+            disconnect={disconnect}
             details={
                 !isSetup && (
                     <ProviderDetails
@@ -165,14 +170,7 @@ function ConnectedJira({
                             successMessage={t('The connection works.')}
                         />
                     )}
-                    <DisconnectIntegrationDialog
-                        scope={scope}
-                        card={card}
-                        connection={connection}
-                        description={t(
-                            'Imported tasks and exported issues keep their links but are no longer synced, and the people and priority mappings are deleted. Atlassian does not let skrum revoke its access: remove the app under "Connected apps" in your Atlassian account settings.',
-                        )}
-                    />
+                    {disconnect()}
                 </>
             }
         >
