@@ -52,6 +52,22 @@ const members: ShareMember[] = [
 ];
 
 describe('ShareDialog', () => {
+    it('counts one person present with the singular key', () => {
+        const props = baseProps();
+
+        renderWithProviders(
+            <ShareDialog
+                {...props}
+                session={{ ...props.session, presentCount: 1 }}
+            />,
+        );
+
+        const dialog = screen.getByRole('dialog');
+
+        expect(dialog.textContent).toContain('Atlas · 1 present');
+        expect(dialog.textContent).not.toContain(':count');
+    });
+
     it('shows the link, the code and the QR and focuses the copy button', async () => {
         renderWithProviders(<ShareDialog {...baseProps()} />);
 

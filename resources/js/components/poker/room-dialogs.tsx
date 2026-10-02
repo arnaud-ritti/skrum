@@ -682,7 +682,11 @@ function ShareGameDialog({ open, onOpenChange }: DialogProps) {
                 onRegenerate={regenerate}
                 channels={ShareChannels.filter((channel) => share[channel])}
                 onShareToChannel={post}
-                channelsExtra={<DeliveryLines deliveries={deliveries} />}
+                channelsExtra={
+                    deliveries.length > 0 ? (
+                        <DeliveryLines deliveries={deliveries} />
+                    ) : undefined
+                }
                 isMobile={isMobile}
                 guestSwitchId="poker-guest-link-access"
             />

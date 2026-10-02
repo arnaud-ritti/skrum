@@ -215,3 +215,38 @@ Compared with frames c and d of `ScreenPokerQueue/preview.html` on `poker-estima
 - "Copy guest link" is in the phone bar; the story card is keyed by its task; the role menu reads the player's role; `N` is live after the reveal only; "Hide tasks" carries `aria-expanded`; the custom timer dialog stays open when refused and says the range; "Delete this task?" is an alert dialog.
 - Browser tests changed: `P18e-03-01` (member at 390 reads "Copy guest link"), `P18e-03-03` (`aria-expanded`, no `aria-controls` once collapsed), `P10a-10` (`[role="alertdialog"]` for the task deletion).
 - Read against the mockup and not a difference: a queue row of ScreenPokerQueue holds the ticket and the title, no description line.
+
+## Integration of wave 2b
+
+Captures opened after the merge, light 1440 and dark 390: room voting, room revealed, source and conflict, import, settings, share, join, estimation history (list and rounds). Compared with renderings of `ScreenPokerQueue`, `ScreenPokerBefore`, `ScreenPokerAfter`, `MobilePoker` and `GuestJoin` (`preview.html` with `_preview-bundle.css`, files in `/tmp` only; the renderings lack the fonts and the tokens, so structure and content were compared, not colours or spacing).
+
+Fixed at the integration:
+
+| Difference | Fix |
+|---|---|
+| The join page showed the logo twice | merged with `550323e9` of wave 2a: one logo; the 16 `poker-join-*` captures are regenerated |
+| The join page had no document title (the old page had one) | `<Head>`: the game title, or "Join a planning poker game" for a dead link |
+| The Share dialog showed a "Post a link" heading with nothing under it when the team has no channel | the block is passed only when a delivery exists |
+| The Share dialog read "1 présents" | new key "1 present" in the four languages, used by every Share dialog |
+| Closing guest access with a guest in the game cut the guest off at once | asks first ("Turn off guest access?"), as the games room and the whiteboard do |
+
+Remaining, all with a row:
+
+| Difference | Row |
+|---|---|
+| Result panel under the fold at 1440 × 900, and behind the reactions strip at 390 until the reveal scrolls it into view | D-64 |
+| No final-estimate cards | D-65 |
+| Watchers box in the flow, full names on the seats, phone grid under the story | D-66 |
+| Rounds closed by default, "name: value" | D-67 |
+| Bare estimate in a queue row, "Votes: n" on the current task only, the long auto-reveal sentence | D-68 |
+| No overline, no user avatar, "Share" as an icon below 96rem | D-69 |
+| Settings as a dialog | D-70 |
+| Import, source and conflict have no mockup | D-71 |
+| Estimation history: game title under the task, no "across n games", "Search" button, chevrons | D-72 |
+| No deck or period filter, no "Re-voted only", no "Export CSV" | D-17 |
+
+Fix later (defects, not deviations):
+
+- The voter avatars of the estimation history sit about 2 px above their count.
+- In a real-page capture only the viewer is online, so the other seats read "Offline" and their "…" menu shows under the name; at 1440 the bottom seats' menu is cut by the reactions strip until the stage is scrolled.
+- The settings dialog names itself twice to a screen reader (hidden dialog title, then the panel heading).

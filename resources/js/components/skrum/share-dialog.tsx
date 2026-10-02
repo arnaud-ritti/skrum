@@ -1267,7 +1267,9 @@ export function ShareDialog(props: ShareDialogProps) {
         session.teamName,
         session.presentCount === undefined
             ? undefined
-            : t(':count present', { count: session.presentCount }),
+            : session.presentCount === 1
+              ? t('1 present')
+              : t(':count present', { count: session.presentCount }),
     ]
         .filter((part) => part !== undefined && part !== '')
         .join(' · ');

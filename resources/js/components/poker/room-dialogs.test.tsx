@@ -340,6 +340,7 @@ describe('share', () => {
             }),
         ).toBeTruthy();
         expect(within(dialog).queryByLabelText('Guest link')).toBeNull();
+        expect(within(dialog).queryByText('Post a link')).toBeNull();
 
         await act(async () => {
             fireEvent.click(dialog.querySelector('#poker-guest-link-access')!);

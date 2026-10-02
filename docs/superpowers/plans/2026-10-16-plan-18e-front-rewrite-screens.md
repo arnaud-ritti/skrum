@@ -362,7 +362,7 @@ Rows D-37 to D-46 were added by the review of Group 1, D-47 to D-51 by the revie
 
 Not a deviation: the type tiles use `layers` (Retro) and `sparkles` (Icebreaker), which is what the tiles of `ScreenSessionCreate/preview.html` and the table of `SessionTypePicker/README.md` show. `sticky-note` and `party-popper` appear in that mockup only in the session rows behind the dialog, in the "Games" entry of the sidebar and in the "Icebreaker at the start" row.
 
-Rows added in the review of lane P (poker), from the differences of `18e-report/03-poker.md`. None was read by the owner: each "to approve" awaits the owner's word (gate G-deviations). The numbers follow the rows the integration branch holds (D-37 to D-63) and may be renumbered at the merge.
+Rows added in the review of lane P (poker), from the differences of `18e-report/03-poker.md`. None was read by the owner: each "to approve" awaits the owner's word (gate G-deviations). The numbers follow the rows of wave 2a (D-37 to D-63); they did not clash at the merge and are unchanged.
 
 | # | Screen | Mockup element not built, or built differently | Reason | Later |
 |---|---|---|---|---|

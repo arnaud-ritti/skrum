@@ -3233,6 +3233,7 @@
     "Create a new link?": "Créer un nouveau lien ?",
     "The old link and its QR code stop working.": "L'ancien lien et son QR code cessent de fonctionner.",
     ":count present": ":count présents",
+    "1 present": "1 présent",
     "Close the dialog, then pick another state to open it.": "Fermez la dialog, puis choisissez un autre état pour l'ouvrir.",
     "Active link (desktop dialog)": "Lien actif (dialog bureau)",
     "Members tab with combobox": "Onglet Membres avec combobox",

@@ -3005,6 +3005,7 @@
     "Create a new link?": "Create a new link?",
     "The old link and its QR code stop working.": "The old link and its QR code stop working.",
     ":count present": ":count present",
+    "1 present": "1 present",
     "Close the dialog, then pick another state to open it.": "Close the dialog, then pick another state to open it.",
     "Active link (desktop dialog)": "Active link (desktop dialog)",
     "Members tab with combobox": "Members tab with combobox",
