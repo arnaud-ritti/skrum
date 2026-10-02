@@ -1,9 +1,16 @@
 import { screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { ReconnectingHints } from '@/components/session/reconnecting-hints';
 import { SessionShell } from '@/components/session/session-shell';
 import { SessionTitle } from '@/components/session/session-title';
 import { renderWithProviders } from '@/test/render';
+
+const ReconnectingHints = {
+    retro: 'Live updates are paused. What you see may be out of date.',
+    poker: 'Live updates are paused. What you see may be out of date.',
+    game: 'Live updates are paused. The round may have moved on.',
+    whiteboard:
+        "Live updates are paused. Other people's changes appear when the connection returns.",
+} as const;
 
 function renderShell(
     connection = { reconnecting: false, expired: false },

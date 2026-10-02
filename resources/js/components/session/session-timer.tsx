@@ -6,7 +6,7 @@ import { useIsMounted } from '@/hooks/use-is-mounted';
 import { useTrans } from '@/hooks/use-trans';
 import { useTimerAlarm } from './use-timer-alarm';
 
-export type SessionTimerProps = {
+type SessionTimerProps = {
     endsAt: string | null;
     /** Server clock offset in milliseconds. */
     offset: number;

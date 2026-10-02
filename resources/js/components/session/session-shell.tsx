@@ -15,7 +15,7 @@ export type SessionConnection = { reconnecting: boolean; expired: boolean };
 /** The four live session types; picks the sentence of the reconnecting banner. */
 export type SessionKind = 'retro' | 'poker' | 'game' | 'whiteboard';
 
-export type SessionShellProps = {
+type SessionShellProps = {
     /** Session type: the reconnecting banner says what is true for it. */
     kind: SessionKind;
     /** Left of the header: usually <SessionTitle>. */

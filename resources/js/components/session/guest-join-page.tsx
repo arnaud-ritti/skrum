@@ -13,7 +13,7 @@ import { useTrans } from '@/hooks/use-trans';
 import AuthLayout from '@/layouts/skrum/auth-layout';
 import { login } from '@/routes';
 
-export type GuestJoinPageProps = {
+type GuestJoinPageProps = {
     kind: GuestJoinSessionKind;
     /** Title of the page when the link is invalid: "Join a retrospective", … */
     invalidTitle: string;

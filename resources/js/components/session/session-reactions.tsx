@@ -12,7 +12,7 @@ import { SessionReactionPicker } from './session-reaction-picker';
 import { useFlyingReactions } from './use-flying-reactions';
 import type { FlyingReactionsOptions } from './use-flying-reactions';
 
-export type SessionReactionsProps = FlyingReactionsOptions & {
+type SessionReactionsProps = FlyingReactionsOptions & {
     /** Name shown under a flying emoji; null hides it (anonymous retro). */
     labelFor: (senderId: string) => string | null;
     variant?: 'floating' | 'inline';
