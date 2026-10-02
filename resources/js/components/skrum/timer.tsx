@@ -326,10 +326,9 @@ export function Timer({
                                 <DropdownMenuItem
                                     key={preset.seconds}
                                     onSelect={() => onStart(preset.seconds)}
+                                    className="whitespace-nowrap"
                                 >
-                                    <span className="truncate">
-                                        {presetLabel(preset)}
-                                    </span>
+                                    {presetLabel(preset)}
                                 </DropdownMenuItem>
                             ))}
                         {onCustom && (
