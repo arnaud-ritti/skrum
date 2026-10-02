@@ -540,6 +540,7 @@ it('strips bidirectional controls, the zero-width space and the byte-order mark 
     'embeddings and pop' => ["\u{202A}Skr\u{202B}ü\u{202C}m\u{202D}"],
     'isolates' => ["\u{2066}Skr\u{2067}ü\u{2068}m\u{2069}"],
     'byte-order mark' => ["\u{FEFF}Skrüm"],
+    'arabic letter mark' => ["Skr\u{061C}üm"],
 ]);
 
 it('keeps the joiners of a display name', function (string $typed) {
@@ -571,6 +572,38 @@ it('returns to the configured name when the name holds nothing but joiners', fun
         ->assertSessionHasNoErrors();
 
     expect(storedBrandingSettings()->displayName())->toBe('Configured Name');
+});
+
+it('returns to the configured name when the name holds no visible character', function (string $typed) {
+    brandingAdmin($this);
+    storedBrandingSettings()->set('display_name', 'Acme');
+
+    $this->put(route('admin.branding.update'), brandingPayload(['display_name' => $typed]))
+        ->assertSessionHasNoErrors();
+
+    expect(storedBrandingSettings()->displayName())->toBe('Configured Name');
+})->with([
+    'word joiner' => ["\u{2060}\u{2060}"],
+    'soft hyphen' => ["\u{00AD}"],
+    'hangul filler' => ["\u{3164}"],
+    'tag characters' => ["\u{E0041}\u{E0042}"],
+    'arabic letter mark alone' => ["\u{061C}"],
+    'joiners next to a word joiner' => ["\u{200D}\u{2060}"],
+]);
+
+it('refuses an update that omits fields instead of deleting them', function () {
+    brandingAdmin($this);
+    storedBrandingSettings()->setMany(['display_name' => 'Acme', 'brand_radius' => 8]);
+
+    $this->putJson(route('admin.branding.update'), ['brand_color' => '#2b63b0'])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['brand_radius', 'display_name', 'powered_by', 'avatar_style', 'avatar_member_choice', 'gif_provider', 'gif_enabled', 'gif_rating'])
+        ->assertJsonMissingValidationErrors('brand_color');
+
+    $settings = storedBrandingSettings();
+    expect($settings->displayName())->toBe('Acme');
+    $this->assertDatabaseMissing('instance_settings', ['key' => 'brand_color']);
+    $this->assertDatabaseHas('instance_settings', ['key' => 'brand_radius']);
 });
 
 it('stores nothing when the untouched form of a fresh instance is saved', function () {
@@ -654,6 +687,19 @@ it('keeps the toast of a save for the page when a helper request of that page re
         ->assertInertia(fn (AssertableInertia $page) => $page->hasFlash('toast.message', 'Branding saved.'));
 })->with([
     'colour preview' => [fn (User $admin): string => route('admin.brandingPreview.show', ['color' => 'ffd600'])],
-    'avatar preview' => [fn (User $admin): string => route('admin.avatarPreviews.show', ['style' => 'thumbs', 'seed' => $admin->avatarSeed()])],
     'candidate search' => [fn (User $admin): string => route('admin.adminCandidates.index', ['query' => 'ada'])],
 ]);
+
+it('drops the toast of a save on the request after the page that showed it', function () {
+    brandingAdmin($this);
+
+    $this->put(route('admin.branding.update'), brandingPayload(['brand_color' => '#2b63b0']))
+        ->assertInertiaFlash('toast.message', 'Branding saved.');
+
+    $this->get(route('admin.branding.edit'))
+        ->assertInertia(fn (AssertableInertia $page) => $page->hasFlash('toast.message', 'Branding saved.'));
+
+    $this->get(route('admin.branding.edit'))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->missingFlash('toast'));
+});

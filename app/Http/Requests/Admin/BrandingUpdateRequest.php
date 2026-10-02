@@ -17,15 +17,15 @@ class BrandingUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'brand_color' => ['nullable', 'string', 'regex:/^#[0-9a-f]{6}$/D'],
-            'brand_radius' => ['nullable', 'integer', 'between:'.InstanceSettings::MinRadius.','.InstanceSettings::MaxRadius],
-            'display_name' => ['nullable', 'string', 'max:60'],
-            'powered_by' => ['nullable', 'boolean'],
-            'avatar_style' => ['nullable', 'string', Rule::in(resolve(AvatarStyleCatalogue::class)->selectable())],
-            'avatar_member_choice' => ['nullable', 'boolean'],
-            'gif_provider' => ['nullable', 'string', Rule::in(InstanceSettings::GifProviders)],
-            'gif_enabled' => ['nullable', 'boolean'],
-            'gif_rating' => ['nullable', 'string', Rule::in(InstanceSettings::GifRatings)],
+            'brand_color' => ['present', 'nullable', 'string', 'regex:/^#[0-9a-f]{6}$/D'],
+            'brand_radius' => ['present', 'nullable', 'integer', 'between:'.InstanceSettings::MinRadius.','.InstanceSettings::MaxRadius],
+            'display_name' => ['present', 'nullable', 'string', 'max:60'],
+            'powered_by' => ['present', 'nullable', 'boolean'],
+            'avatar_style' => ['present', 'nullable', 'string', Rule::in(resolve(AvatarStyleCatalogue::class)->selectable())],
+            'avatar_member_choice' => ['present', 'nullable', 'boolean'],
+            'gif_provider' => ['present', 'nullable', 'string', Rule::in(InstanceSettings::GifProviders)],
+            'gif_enabled' => ['present', 'nullable', 'boolean'],
+            'gif_rating' => ['present', 'nullable', 'string', Rule::in(InstanceSettings::GifRatings)],
             'gif_key' => ['nullable', 'string', 'max:255'],
             'gif_key_clear' => ['sometimes', 'boolean'],
         ];
@@ -78,10 +78,17 @@ class BrandingUpdateRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        $this->merge([
-            'brand_color' => $this->normalisedColor($this->input('brand_color')),
-            'display_name' => $this->withoutInvisibleCharacters($this->input('display_name')),
-        ]);
+        $normalised = [];
+
+        if ($this->exists('brand_color')) {
+            $normalised['brand_color'] = $this->normalisedColor($this->input('brand_color'));
+        }
+
+        if ($this->exists('display_name')) {
+            $normalised['display_name'] = $this->withoutInvisibleCharacters($this->input('display_name'));
+        }
+
+        $this->merge($normalised);
     }
 
     private function nullableBoolean(string $field): ?bool
@@ -119,8 +126,9 @@ class BrandingUpdateRequest extends FormRequest
     }
 
     /**
-     * Control characters, bidirectional controls, the zero-width space and the byte-order mark go; the zero-width
+     * Control characters, bidirectional controls, the zero-width space, the Arabic letter mark and the byte-order mark go; the zero-width
      * joiner and non-joiner stay, because joined emoji and Persian or Indic spellings need them.
+     * A name with no letter, number, symbol or punctuation mark left is empty.
      */
     private function withoutInvisibleCharacters(mixed $name): mixed
     {
@@ -128,8 +136,8 @@ class BrandingUpdateRequest extends FormRequest
             return $name;
         }
 
-        $name = trim((string) preg_replace('/[\p{Cc}\x{200B}\x{200E}\x{200F}\x{202A}-\x{202E}\x{2066}-\x{2069}\x{FEFF}]+/u', '', $name));
+        $name = trim((string) preg_replace('/[\p{Cc}\x{200B}\x{200E}\x{200F}\x{202A}-\x{202E}\x{061C}\x{2066}-\x{2069}\x{FEFF}]+/u', '', $name));
 
-        return preg_match('/^[\x{200C}\x{200D}\s]*$/u', $name) === 1 ? null : $name;
+        return preg_match('/[\p{L}\p{N}\p{S}\p{P}]/u', $name) === 1 ? $name : null;
     }
 }

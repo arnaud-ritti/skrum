@@ -19,7 +19,6 @@ Route::middleware(['auth', 'verified', 'can:manageInstance'])->group(function ()
 
     Route::get('admin/avatar-previews/{style}/{seed}.svg', [AvatarPreviewsController::class, 'show'])
         ->where(['style' => '[a-z0-9-]+', 'seed' => '[a-f0-9]{32}'])
-        ->middleware(KeepFlashedSessionData::class)
         ->name('admin.avatarPreviews.show');
 
     Route::middleware(RequirePassword::class)->group(function (): void {
