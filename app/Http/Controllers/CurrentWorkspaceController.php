@@ -18,6 +18,13 @@ class CurrentWorkspaceController extends Controller
             return to_route('workspaces.create');
         }
 
-        return to_route('workspaces.show', $workspace);
+        $teams = $workspace->teamsVisibleTo($user)->sortBy('name')->values();
+        $team = $teams->firstWhere('id', $request->session()->get('current_team_id')) ?? $teams->first();
+
+        if ($team === null) {
+            return to_route('workspaces.show', $workspace);
+        }
+
+        return to_route('teams.show', [$workspace, $team]);
     }
 }
