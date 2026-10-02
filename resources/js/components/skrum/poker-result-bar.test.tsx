@@ -74,7 +74,7 @@ describe('PokerResultBar, what everyone reads', () => {
         ).toBe('poker-result');
     });
 
-    it('shows the agreement, the distribution and who opens the discussion, and leaves the average to the oval', () => {
+    it('shows the average, the median, the agreement, the distribution and who opens the discussion', () => {
         const { container } = renderBar();
         const stats = Array.from(container.querySelectorAll('dl > div')).map(
             (stat) =>
@@ -86,13 +86,15 @@ describe('PokerResultBar, what everyone reads', () => {
             return `${spans[0].textContent} x${spans[2].textContent}`;
         });
 
-        expect(stats).toEqual(['Agreement=50 % on 5']);
+        expect(stats).toEqual([
+            'Average=5.3',
+            'Median=5',
+            'Agreement=50 % on 5',
+        ]);
         expect(rows).toEqual(['3 x1', '5 x2', '8 x1']);
         expect(
             screen.getByText('Lucas (3) and Malik (8) open the discussion.'),
         ).toBeTruthy();
-        expect(screen.queryByText('Average')).toBeNull();
-        expect(screen.queryByText('Median')).toBeNull();
     });
 
     it('names nobody on an anonymous round', () => {
@@ -314,6 +316,23 @@ describe('PokerResultBar, the facilitator', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Re-vote' }));
 
         expect(onRevote).toHaveBeenCalledTimes(1);
+    });
+
+    it('hints at the keyboard shortcut of the validate button in the bar, not in the foot of a phone', async () => {
+        const { unmount } = renderBar(facilitator());
+
+        fireEvent.focus(screen.getByRole('button', { name: 'Validate 5' }));
+
+        expect((await screen.findByRole('tooltip')).textContent).toContain('↵');
+
+        unmount();
+        renderBar(facilitator({ layout: 'foot' }));
+        fireEvent.focus(screen.getByRole('button', { name: 'Validate 5' }));
+
+        const tooltip = await screen.findByRole('tooltip');
+
+        expect(tooltip.textContent).toContain('Validate 5');
+        expect(tooltip.textContent).not.toContain('↵');
     });
 
     it('has no foot for a participant', () => {

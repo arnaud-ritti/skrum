@@ -374,7 +374,7 @@ describe('PokerTable while voting', () => {
         ).toBeTruthy();
     });
 
-    it('shows the watchers in a box before the seats and crowns a watching facilitator', () => {
+    it('shows the watchers in a box after the seats, which keeps the oval near the story, and crowns a watching facilitator', () => {
         const { container } = renderTable({
             facilitatorId: 'u2',
             seats: [
@@ -389,7 +389,7 @@ describe('PokerTable while voting', () => {
             within(watching).getByRole('img', { name: 'Facilitator' }),
         ).toBeTruthy();
         expect(
-            watching.compareDocumentPosition(players) &
+            players.compareDocumentPosition(watching) &
                 Node.DOCUMENT_POSITION_FOLLOWING,
         ).toBeTruthy();
         expect(
@@ -1223,7 +1223,9 @@ describe('PokerTable, the row of a phone', () => {
         renderTable({ seatsLayout: 'row', facilitatorId: 'u0' });
 
         const region = screen.getByRole('region', { name: 'Players' });
-        const row = within(region).getByRole('group', { name: 'Players' });
+        const row = within(region).getByRole('group', {
+            name: 'Players, scrolls sideways',
+        });
 
         expect(region.getAttribute('data-layout')).toBe('row');
         expect(row.getAttribute('tabindex')).toBe('0');

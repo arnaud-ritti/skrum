@@ -4122,6 +4122,7 @@
     "The cards are revealed.": "Die Karten sind aufgedeckt.",
     "you can change it until the reveal": "bis zum Aufdecken änderbar",
     ":deck deck": "Kartensatz :deck",
+    ":label, scrolls sideways": ":label, seitlich scrollbar",
     "All deck": "Alle Karten",
     "Choose an estimate first.": "Wähle zuerst eine Schätzung.",
     "Every other task has an estimate.": "Alle anderen Aufgaben haben eine Schätzung.",

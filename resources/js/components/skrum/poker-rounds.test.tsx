@@ -410,7 +410,7 @@ describe('PokerRounds, a list that scrolls', () => {
 
         expect(list.getAttribute('tabindex')).toBe('0');
         expect(list.className).toContain('overflow-y-auto');
-        expect(list.className).toContain('max-h-52');
+        expect(list.className).toContain('max-h-32');
         expect(
             list.querySelectorAll(':scope > [data-slot="poker-round"]'),
         ).toHaveLength(2);

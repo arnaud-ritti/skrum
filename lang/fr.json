@@ -4122,6 +4122,7 @@
     "The cards are revealed.": "Les cartes sont révélées.",
     "you can change it until the reveal": "modifiable jusqu'à la révélation",
     ":deck deck": "Jeu de cartes :deck",
+    ":label, scrolls sideways": ":label, défilement horizontal",
     "All deck": "Tout le jeu",
     "Choose an estimate first.": "Choisissez d'abord une estimation.",
     "Every other task has an estimate.": "Toutes les autres tâches ont une estimation.",

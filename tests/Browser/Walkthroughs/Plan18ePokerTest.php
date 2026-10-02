@@ -74,6 +74,16 @@ const P18ePokerResult = '[aria-labelledby="poker-result"]';
 
 const P18ePokerOval = '[data-slot="poker-oval"]';
 
+const P18ePokerOvalInView = <<<'JS'
+(() => {
+    const oval = document.querySelector('[data-slot="poker-oval"]').getBoundingClientRect();
+    const stage = document.querySelector('[data-slot="poker-stage"]').parentElement.getBoundingClientRect();
+    const dock = document.querySelector('[data-slot="poker-dock"]').getBoundingClientRect();
+
+    return oval.height > 0 && oval.top >= stage.top && oval.bottom <= stage.bottom && oval.bottom <= dock.top;
+})()
+JS;
+
 it('[P18e-03-01] opens the queue in a drawer and votes through the vote drawer on a phone', function () {
     $table = p18ePokerTable(['guest_access_enabled' => true]);
     PokerTask::factory()->create(['poker_game_id' => $table['game']->id, 'title' => 'Password reset']);
@@ -240,7 +250,7 @@ it('[P18e-03-05] shows the deck, the voters and the rounds of each row of the es
         ->assertSee('Median: 5');
 });
 
-it('[P18e-03-06] shows the average, the median and the spread of a reveal in the oval, and the agreement, the distribution and the two extremes in the dock', function () {
+it('[P18e-03-06] shows the average, the median and the spread of a reveal in the oval, and the average, the median, the agreement, the distribution and the two extremes in the dock', function () {
     $table = p18ePokerTable();
     p18ePokerReveal($table);
 
@@ -253,7 +263,7 @@ it('[P18e-03-06] shows the average, the median and the spread of a reveal in the
         ->assertNotPresent('[data-slot="poker-table"] [data-slot="poker-result"]')
         ->assertVisible('[data-slot="poker-dock"] '.P18ePokerResult)
         ->assertSeeIn(P18ePokerResult, 'Result · 4 votes')
-        ->assertScript('Array.from(document.querySelectorAll(\''.P18ePokerResult.' dl > div\')).map((stat) => stat.querySelector("dt").textContent + "=" + stat.querySelector("dd").textContent).join(" / ")', 'Agreement=50 % on 5')
+        ->assertScript('Array.from(document.querySelectorAll(\''.P18ePokerResult.' dl > div\')).map((stat) => stat.querySelector("dt").textContent + "=" + stat.querySelector("dd").textContent).join(" / ")', 'Average=5.3 / Median=5 / Agreement=50 % on 5')
         ->assertScript('Array.from(document.querySelectorAll(\''.P18ePokerResult.' li\')).map((row) => row.querySelectorAll("span")[0].textContent + " x" + row.querySelectorAll("span")[2].textContent).join(" / ")', '3 x1 / 5 x2 / 8 x1')
         ->assertSeeIn(P18ePokerResult, 'Bob (3) and Dan (8) open the discussion.')
         ->assertCount('[data-slot="poker-seat-card"][data-outlier]', 2)
@@ -264,6 +274,34 @@ it('[P18e-03-06] shows the average, the median and the spread of a reveal in the
         ->assertNotPresent('button:has-text("Save estimate")')
         ->assertNotPresent('[data-slot="poker-dock"] button:has-text("Next task")');
 });
+
+it('[P18e-03-06d] keeps the oval and its figures in view above the reactions at 1440 × 900 after a reveal', function (bool $facilitatorWatches) {
+    $table = p18ePokerTable();
+    p18ePokerReveal($table);
+
+    if ($facilitatorWatches) {
+        $table['adaPlayer']->forceFill(['is_spectator' => true])->save();
+        $second = openPokerRound($table['game'], $table['round']->task);
+
+        foreach (['bobPlayer' => '3', 'cleoPlayer' => '5', 'danPlayer' => '8'] as $player => $value) {
+            pokerVote($second, $table[$player], $value);
+        }
+
+        $second->forceFill(['revealed_at' => now(), 'reveal_reason' => PokerRevealReason::Manual])->save();
+    }
+
+    $page = $this->awaitRealtime($this->signIn($table['ada'], "/poker/{$table['game']->id}"));
+
+    $page->resize(1440, 900)
+        ->assertSeeIn(P18ePokerOval, 'Average')
+        ->assertSeeIn(P18ePokerOval, 'Median')
+        ->assertCount('[data-slot="poker-watching"]', $facilitatorWatches ? 1 : 0)
+        ->assertCount('[data-slot="story-rounds"] [data-slot="poker-round"]', $facilitatorWatches ? 2 : 1)
+        ->assertScript(P18ePokerOvalInView, true);
+})->with([
+    'a facilitator who votes' => [false],
+    'a facilitator who watches, on a second round' => [true],
+]);
 
 it('[P18e-03-06b] names nobody on an anonymous round', function () {
     $table = p18ePokerTable(['anonymous_votes' => true]);

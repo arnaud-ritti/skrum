@@ -148,7 +148,9 @@ describe('RoomTable with a round', () => {
             <RoomTable task={task} actions={roundActions()} compact />,
         );
         const players = screen.getByRole('region', { name: 'Players' });
-        const row = within(players).getByRole('group', { name: 'Players' });
+        const row = within(players).getByRole('group', {
+            name: 'Players, scrolls sideways',
+        });
 
         expect(players.getAttribute('data-layout')).toBe('row');
         expect(row.querySelectorAll('[data-slot="poker-seat"]')).toHaveLength(

@@ -350,7 +350,7 @@ export function PokerRounds({
                         className={cn(
                             'mt-2 flex min-w-0 flex-col gap-2',
                             scrollable &&
-                                'max-h-52 overflow-y-auto overscroll-y-contain rounded-lg outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
+                                'max-h-32 overflow-y-auto overscroll-y-contain rounded-lg outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
                         )}
                     >
                         {rounds.map((round) => (

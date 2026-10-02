@@ -151,7 +151,7 @@ type Translate = (
     replacements?: Record<string, string | number>,
 ) => string;
 
-function formatNumber(value: number, locale?: string): string {
+export function formatNumber(value: number, locale?: string): string {
     return new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(
         value,
     );
@@ -173,7 +173,10 @@ export function hasCountableVotes(result: PokerResult): boolean {
     return result.average !== null || result.mode.length > 0;
 }
 
-function showsAverage(result: PokerResult, isNumeric?: boolean): boolean {
+export function showsAverage(
+    result: PokerResult,
+    isNumeric?: boolean,
+): boolean {
     return isNumeric !== false && result.average !== null;
 }
 
@@ -1269,7 +1272,10 @@ function AnonymousValues({ result }: { result: PokerResult }) {
     );
 }
 
-/** Who watches without a seat: the dashed box beside the table. */
+/**
+ * Who watches without a seat: the dashed box under the seats, so that the
+ * oval stays near the story.
+ */
 function WatchingRow({
     watchers,
     facilitatorId,
@@ -1516,13 +1522,6 @@ export function PokerTable({
             >
                 {announcement()}
             </p>
-            {watchers.length > 0 && (
-                <WatchingRow
-                    watchers={watchers}
-                    facilitatorId={facilitatorId}
-                    seatMenu={seatMenu}
-                />
-            )}
             {isRow && (
                 <section
                     ref={seatsRef}
@@ -1537,7 +1536,9 @@ export function PokerTable({
                     <div
                         role="group"
                         tabIndex={0}
-                        aria-label={seatsLabel}
+                        aria-label={t(':label, scrolls sideways', {
+                            label: seatsLabel,
+                        })}
                         data-slot="poker-seats-row"
                         className="flex min-w-0 gap-3 overflow-x-auto overscroll-x-contain rounded-lg px-1 pt-1 pb-2 outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                     >
@@ -1593,6 +1594,13 @@ export function PokerTable({
                     </div>
                     {players.map((_, index) => renderSeat(index))}
                 </section>
+            )}
+            {watchers.length > 0 && (
+                <WatchingRow
+                    watchers={watchers}
+                    facilitatorId={facilitatorId}
+                    seatMenu={seatMenu}
+                />
             )}
             {!revealed && isFacilitator && (votingTools || onNext) && (
                 <div

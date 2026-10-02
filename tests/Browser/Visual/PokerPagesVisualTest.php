@@ -17,6 +17,16 @@ use App\Models\Workspace;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Support\Facades\RateLimiter;
 
+const PokerVisualOvalInView = <<<'JS'
+(() => {
+    const oval = document.querySelector('[data-slot="poker-oval"]').getBoundingClientRect();
+    const stage = document.querySelector('[data-slot="poker-stage"]').parentElement.getBoundingClientRect();
+    const dock = document.querySelector('[data-slot="poker-dock"]').getBoundingClientRect();
+
+    return oval.height > 0 && oval.top >= stage.top && oval.bottom <= stage.bottom && oval.bottom <= dock.top;
+})()
+JS;
+
 /**
  * The game of the ScreenPoker mockups: eight people of the Atlas team, six tasks, the third one being estimated.
  *
@@ -165,7 +175,9 @@ it('[P18e-03-09] renders the revealed poker room of a facilitator who watches wi
     $this->captureVisuals(
         'poker-room-revealed',
         "/poker/{$game->id}",
-        fn (string $path, array $options) => pokerVisualRoom($facilitator, $path, $options)
+        fn (string $path, array $options, int $width) => pokerVisualRoom($facilitator, $path, $options)
+            ->resize(1440, 900)
+            ->assertScript($width === 1440 ? PokerVisualOvalInView : 'true', true)
             ->assertPresent('[aria-labelledby="poker-result"]')
             ->assertPresent('[data-slot="poker-watching-banner"]')
             ->assertPresent('[data-slot="poker-watching"]')

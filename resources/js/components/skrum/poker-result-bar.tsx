@@ -5,8 +5,10 @@ import { PokerDeck } from '@/components/skrum/poker-card';
 import {
     agreementOf,
     discussionSentence,
+    formatNumber,
     hasCountableVotes,
     PokerDistribution,
+    showsAverage,
 } from '@/components/skrum/poker-table';
 import type {
     PokerResult,
@@ -135,7 +137,9 @@ function ResultButtons({
                             )}
                         </Button>
                     </TooltipTrigger>
-                    <TooltipContent shortcut={['⌘/Ctrl', '↵']}>
+                    <TooltipContent
+                        shortcut={inline ? undefined : ['⌘/Ctrl', '↵']}
+                    >
                         {validateLabel}
                     </TooltipContent>
                 </Tooltip>
@@ -177,8 +181,8 @@ function ResultButtons({
  * The result of a revealed round where the deck was (ScreenPokerAfter): the
  * agreement, the distribution and who opens the discussion, then, for the
  * facilitator, the final-estimate cards and the button that validates the
- * estimate. The average, the median and the spread are in the oval of
- * `PokerTable`.
+ * estimate. The average and the median of the oval of `PokerTable` are
+ * repeated here, as the mockup does; the spread stays in the oval.
  */
 export function PokerResultBar({
     layout = 'bar',
@@ -214,6 +218,30 @@ export function PokerResultBar({
     );
     const countable = !!result && hasCountableVotes(result);
     const agreement = result ? agreementOf(t, result) : null;
+    // The oval of the table holds the average and the median too: the dock
+    // repeats them because the oval can be under the fold of a short screen.
+    const stats: { label: string; value: string }[] = [];
+
+    if (result && countable) {
+        if (showsAverage(result, isNumeric) && result.average !== null) {
+            stats.push({
+                label: t('Average'),
+                value: formatNumber(result.average, locale),
+            });
+        }
+
+        if (result.median !== undefined && result.median !== null) {
+            stats.push({
+                label: t('Median'),
+                value: formatNumber(result.median, locale),
+            });
+        }
+
+        if (agreement !== null) {
+            stats.push({ label: t('Agreement'), value: agreement });
+        }
+    }
+
     const sentence =
         result && countable
             ? discussionSentence(t, result, seats, story, anonymous, locale)
@@ -352,16 +380,21 @@ export function PokerResultBar({
                             !isCard && 'max-w-xs flex-1 basis-48',
                         )}
                     >
-                        {countable && agreement !== null && (
-                            <dl className="flex min-w-0">
-                                <div className="flex max-w-full min-w-0 flex-col">
-                                    <dd className="order-1 truncate font-display text-xl font-bold text-foreground">
-                                        {agreement}
-                                    </dd>
-                                    <dt className="order-2 text-xs text-muted-foreground">
-                                        {t('Agreement')}
-                                    </dt>
-                                </div>
+                        {stats.length > 0 && (
+                            <dl className="flex min-w-0 flex-wrap gap-x-5 gap-y-1">
+                                {stats.map((stat) => (
+                                    <div
+                                        key={stat.label}
+                                        className="flex max-w-full min-w-0 flex-col"
+                                    >
+                                        <dd className="order-1 truncate font-display text-xl font-bold text-foreground">
+                                            {stat.value}
+                                        </dd>
+                                        <dt className="order-2 text-xs text-muted-foreground">
+                                            {stat.label}
+                                        </dt>
+                                    </div>
+                                ))}
                             </dl>
                         )}
                         {!countable && (

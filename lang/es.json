@@ -4122,6 +4122,7 @@
     "The cards are revealed.": "Las cartas están reveladas.",
     "you can change it until the reveal": "puedes cambiarla hasta la revelación",
     ":deck deck": "Baraja :deck",
+    ":label, scrolls sideways": ":label, desplazamiento lateral",
     "All deck": "Toda la baraja",
     "Choose an estimate first.": "Elige primero una estimación.",
     "Every other task has an estimate.": "Todas las demás tareas tienen una estimación.",
