@@ -1,12 +1,14 @@
 <?php
 
-namespace App\Support\Games;
+namespace App\Support\Sessions;
 
+use App\Support\Locales;
 use Illuminate\Support\Arr;
 
 /**
- * "Adjective Animal" suggestions for guests, with the adjective agreeing
- * with the animal's grammatical gender where the language needs it.
+ * "Adjective Animal" suggestions for guests of every session type, with the
+ * adjective agreeing with the animal's grammatical gender where the language
+ * needs it.
  */
 class GuestNames
 {
@@ -15,7 +17,7 @@ class GuestNames
 
     public static function random(string $locale): string
     {
-        $locale = GameWordBook::supported($locale);
+        $locale = Locales::supported($locale);
 
         /** @var array{pattern: string, animals: array<int, array{name: string, gender: string}>, adjectives: array<int, array<string, string>>} $data */
         $data = self::$files[$locale] ??= require resource_path("games/guest-names/{$locale}.php");

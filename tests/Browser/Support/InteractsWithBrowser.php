@@ -29,7 +29,7 @@ trait InteractsWithBrowser
         $page = visit($joinUrl);
 
         $page->fill('#name', $name)
-            ->click('Join')
+            ->click('Join the session')
             ->assertPathIsNot($joinPath);
 
         return $page;

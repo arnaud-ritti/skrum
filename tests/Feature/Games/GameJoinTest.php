@@ -17,8 +17,34 @@ it('shows the join form of a link room with a suggested name', function () {
             ->where('guestToken', $room->guest_token)
             ->where('roomName', 'Coffee games')
             ->where('gameLabel', __('Hangman'))
-            ->where('suggestedName', fn (string $name) => $name !== ''));
+            ->where('suggestedName', fn (string $name) => $name !== '')
+            ->missing('randomName')
+            ->reloadOnly('randomName', fn (Assert $reload) => $reload
+                ->where('randomName', fn (string $name) => $name !== '' && mb_strlen($name) <= 50)));
 });
+
+it('prefills the name of a signed-in outsider', function () {
+    $room = GameRoom::factory()->linkAccess()->create();
+    $outsider = User::factory()->create(['name' => 'Olga Outside']);
+
+    $this->actingAs($outsider)
+        ->get(route('games.join.show', $room->guest_token))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->where('suggestedName', 'Olga Outside'));
+});
+
+it('cuts the prefilled name of a signed-in outsider to what the join accepts', function (string $name, string $prefilled) {
+    $room = GameRoom::factory()->linkAccess()->create();
+    $outsider = User::factory()->create(['name' => $name]);
+
+    $this->actingAs($outsider)
+        ->get(route('games.join.show', $room->guest_token))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->where('suggestedName', $prefilled));
+})->with([
+    'longer than the limit' => [str_repeat('é', 60), str_repeat('é', 50)],
+    'cut on a space' => [str_repeat('a', 49).' Outside', str_repeat('a', 49)],
+]);
 
 it('joins as a guest and resumes with the cookie', function () {
     $room = GameRoom::factory()->linkAccess()->create();

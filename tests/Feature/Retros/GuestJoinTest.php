@@ -16,8 +16,26 @@ it('shows the join form for an enabled guest link', function () {
             ->component('retros/join')
             ->where('isInvalid', false)
             ->where('retroTitle', 'Sprint 42')
-            ->where('suggestedName', null));
+            ->where('suggestedName', fn (string $name) => $name !== '' && mb_strlen($name) <= 50)
+            ->missing('randomName'));
 });
+
+it('draws another random nickname when the join form asks for one', function () {
+    $retro = Retro::factory()->withGuestAccess()->create();
+
+    $this->get(route('retros.join.show', $retro->guest_token))
+        ->assertInertia(fn (Assert $page) => $page
+            ->reloadOnly('randomName', fn (Assert $reload) => $reload
+                ->where('randomName', fn (string $name) => $name !== '' && mb_strlen($name) <= 50)
+                ->missing('suggestedName')));
+});
+
+it('tells the join form whether the cards of the retro are anonymous', function (bool $isAnonymous) {
+    $retro = Retro::factory()->withGuestAccess()->create(['is_anonymous' => $isAnonymous]);
+
+    $this->get(route('retros.join.show', $retro->guest_token))
+        ->assertInertia(fn (Assert $page) => $page->where('session.hasAnonymousCards', $isAnonymous));
+})->with([true, false]);
 
 it('joins as a guest and resumes with the cookie', function () {
     $retro = Retro::factory()->withGuestAccess()->create();

@@ -87,7 +87,9 @@ describe('games/join', () => {
             screen.getByLabelText<HTMLInputElement>('Your nickname').value,
         ).toBe('Happy Otter');
 
-        fireEvent.click(screen.getByRole('button', { name: 'Join' }));
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Join the session' }),
+        );
 
         expect(post).toHaveBeenCalledWith(
             GameJoinsController.store.url('abc'),

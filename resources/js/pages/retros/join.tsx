@@ -2,16 +2,16 @@ import { Head } from '@inertiajs/react';
 import RetroJoinsController from '@/actions/App/Http/Controllers/RetroJoinsController';
 import { GuestJoinPage } from '@/components/session/guest-join-page';
 import { useTrans } from '@/hooks/use-trans';
-import type { JoinSession } from '@/types';
+import type { RetroJoinSession } from '@/types';
 
 type Props =
     | { isInvalid: true }
     | {
           isInvalid: false;
           guestToken: string;
-          session: JoinSession;
+          session: RetroJoinSession;
           retroTitle: string;
-          suggestedName: string | null;
+          suggestedName: string;
       };
 
 export default function JoinRetro(props: Props) {

@@ -30,7 +30,7 @@ class WhiteboardJoinsController extends Controller
             'guestToken' => $guestToken,
             'boardTitle' => $board->title,
             'session' => $presentJoinSession->whiteboard($board),
-            'suggestedName' => $request->user()?->name,
+            ...$presentJoinSession->nickname($request->user()),
         ])->toResponse($request);
     }
 

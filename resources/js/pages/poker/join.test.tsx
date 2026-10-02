@@ -91,7 +91,9 @@ describe('poker join page', () => {
     it('joins as a player when the switch is left off', () => {
         renderWithProviders(<JoinPokerGame {...valid} />);
 
-        fireEvent.click(screen.getByRole('button', { name: 'Join' }));
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Join the session' }),
+        );
 
         expect(post).toHaveBeenCalledWith(
             '/poker/join/abc',
@@ -104,7 +106,9 @@ describe('poker join page', () => {
         renderWithProviders(<JoinPokerGame {...valid} />);
 
         fireEvent.click(screen.getByRole('switch'));
-        fireEvent.click(screen.getByRole('button', { name: 'Join' }));
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Join the session' }),
+        );
 
         expect(post).toHaveBeenCalledWith(
             '/poker/join/abc',

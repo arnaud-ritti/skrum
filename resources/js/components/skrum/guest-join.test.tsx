@@ -25,13 +25,15 @@ function setup(props: Partial<GuestJoinProps> = {}) {
 }
 
 describe('GuestJoin', () => {
-    it('keeps the name field id and the Join button name', () => {
+    it('keeps the name field id and names the button "Join the session"', () => {
         setup();
 
         expect(document.getElementById('name')).toBe(
             screen.getByLabelText('Your nickname'),
         );
-        expect(screen.getByRole('button', { name: 'Join' })).toBeTruthy();
+        expect(
+            screen.getByRole('button', { name: 'Join the session' }),
+        ).toBeTruthy();
     });
 
     it('submits the typed name and the chosen colour', () => {
@@ -41,7 +43,9 @@ describe('GuestJoin', () => {
             target: { value: '  Nadia ' },
         });
         fireEvent.click(screen.getByRole('radio', { name: 'Colour 5' }));
-        fireEvent.submit(screen.getByRole('button', { name: 'Join' }));
+        fireEvent.submit(
+            screen.getByRole('button', { name: 'Join the session' }),
+        );
 
         expect(onSubmit).toHaveBeenCalledWith(
             { name: 'Nadia', presence: 5 },
@@ -54,7 +58,9 @@ describe('GuestJoin', () => {
 
         expect(screen.getByText('Thoughtful otter')).toBeTruthy();
 
-        fireEvent.submit(screen.getByRole('button', { name: 'Join' }));
+        fireEvent.submit(
+            screen.getByRole('button', { name: 'Join the session' }),
+        );
 
         expect(onSubmit).toHaveBeenCalledWith(
             { name: 'Thoughtful otter' },
@@ -67,7 +73,9 @@ describe('GuestJoin', () => {
 
         expect(screen.queryByRole('radiogroup')).toBeNull();
 
-        fireEvent.submit(screen.getByRole('button', { name: 'Join' }));
+        fireEvent.submit(
+            screen.getByRole('button', { name: 'Join the session' }),
+        );
 
         expect(onSubmit).toHaveBeenCalledWith(
             { name: 'Nadia' },
@@ -99,7 +107,9 @@ describe('GuestJoin', () => {
         fireEvent.keyDown(screen.getByRole('radio', { name: 'Colour 3' }), {
             key: 'ArrowLeft',
         });
-        fireEvent.submit(screen.getByRole('button', { name: 'Join' }));
+        fireEvent.submit(
+            screen.getByRole('button', { name: 'Join the session' }),
+        );
 
         expect(onSubmit).toHaveBeenCalledWith(
             { name: 'Nadia', presence: 1 },
@@ -130,7 +140,7 @@ describe('GuestJoin', () => {
         );
 
         const button = screen.getByRole('button', {
-            name: 'Join',
+            name: 'Join the session',
         }) as HTMLButtonElement;
 
         expect(button.disabled).toBe(true);
@@ -161,7 +171,7 @@ describe('GuestJoin', () => {
         expect(onSubmit).not.toHaveBeenCalled();
     });
 
-    it('offers a random name only when the field is empty', () => {
+    it('offers another random name, with the field empty or filled', () => {
         const onRandomName = vi.fn();
 
         setup({ defaultName: 'Otter', onRandomName });
@@ -174,11 +184,150 @@ describe('GuestJoin', () => {
         fireEvent.change(screen.getByLabelText('Your nickname'), {
             target: { value: 'Nadia' },
         });
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Another random nickname' }),
+        );
+
+        expect(onRandomName).toHaveBeenCalledTimes(2);
+        expect(screen.getByText('Guest')).toBeTruthy();
+    });
+
+    it('offers no random name without a way to draw one', () => {
+        setup({ initialName: 'Nadia' });
 
         expect(
             screen.queryByRole('button', { name: 'Another random nickname' }),
         ).toBeNull();
-        expect(screen.getByText('Guest')).toBeTruthy();
+    });
+
+    it('replaces the nickname, typed or not, when another one is drawn, and releases the error', () => {
+        const onSubmit = vi.fn();
+        const error = { field: 'name' as const, message: 'Already here.' };
+        const { rerender } = renderWithProviders(
+            <GuestJoin
+                session={session}
+                onSubmit={onSubmit}
+                loginUrl="/login"
+                initialName="Thoughtful otter"
+                error={error}
+            />,
+        );
+        const input = screen.getByLabelText<HTMLInputElement>('Your nickname');
+
+        expect(input.value).toBe('Thoughtful otter');
+        expect(screen.getByText('Already here.')).toBeTruthy();
+
+        rerender(
+            <GuestJoin
+                session={session}
+                onSubmit={onSubmit}
+                loginUrl="/login"
+                initialName="Brave heron"
+                error={error}
+            />,
+        );
+
+        expect(input.value).toBe('Brave heron');
+        expect(screen.queryByText('Already here.')).toBeNull();
+
+        fireEvent.change(input, { target: { value: 'Nadia' } });
+        rerender(
+            <GuestJoin
+                session={session}
+                onSubmit={onSubmit}
+                loginUrl="/login"
+                initialName="Calm lynx"
+                error={error}
+            />,
+        );
+
+        expect(input.value).toBe('Calm lynx');
+
+        fireEvent.submit(
+            screen.getByRole('button', { name: 'Join the session' }),
+        );
+
+        expect(onSubmit).toHaveBeenCalledWith(
+            { name: 'Calm lynx' },
+            expect.any(FormData),
+        );
+    });
+
+    it('keeps what was typed when the proposed nickname does not change', () => {
+        const onSubmit = vi.fn();
+        const { rerender } = renderWithProviders(
+            <GuestJoin
+                session={session}
+                onSubmit={onSubmit}
+                loginUrl="/login"
+                initialName="Thoughtful otter"
+            />,
+        );
+        const input = screen.getByLabelText<HTMLInputElement>('Your nickname');
+
+        fireEvent.change(input, { target: { value: 'Nadia' } });
+        rerender(
+            <GuestJoin
+                session={session}
+                onSubmit={onSubmit}
+                loginUrl="/login"
+                initialName="Thoughtful otter"
+                processing
+            />,
+        );
+
+        expect(input.value).toBe('Nadia');
+    });
+
+    it('says only what is true of a guest: no account, a nickname the others see', () => {
+        setup({ session: { kind: 'poker', title: 'Sprint 12 estimates' } });
+
+        const privacy = document.querySelector(
+            '[data-slot="guest-join-privacy"]',
+        );
+
+        expect(privacy?.textContent).toBe(
+            'No account and no e-mail needed. The others see your nickname.',
+        );
+        expect(document.body.textContent).not.toContain('deleted');
+    });
+
+    it('adds that the cards are anonymous in a retro where they are, and nowhere else', () => {
+        const { unmount } = renderWithProviders(
+            <GuestJoin
+                session={{ ...session, anonymousCards: true }}
+                onSubmit={vi.fn()}
+                loginUrl="/login"
+            />,
+        );
+
+        expect(
+            document.querySelector('[data-slot="guest-join-privacy"]')
+                ?.textContent,
+        ).toBe(
+            'No account and no e-mail needed. The others see your nickname. Cards are anonymous in this retro.',
+        );
+
+        unmount();
+        setup();
+
+        expect(
+            screen.queryByText(/Cards are anonymous in this retro\./),
+        ).toBeNull();
+    });
+
+    it('never mentions cards outside a retro', () => {
+        setup({
+            session: {
+                kind: 'whiteboard',
+                title: 'Sprint board',
+                anonymousCards: true,
+            },
+        });
+
+        expect(
+            screen.queryByText(/Cards are anonymous in this retro\./),
+        ).toBeNull();
     });
 
     it('promises no suggested nickname when none is proposed', () => {
@@ -264,7 +413,9 @@ describe('GuestJoin', () => {
             initialName: longName,
         });
 
-        fireEvent.submit(screen.getByRole('button', { name: 'Join' }));
+        fireEvent.submit(
+            screen.getByRole('button', { name: 'Join the session' }),
+        );
 
         expect(onSubmit).toHaveBeenCalledWith(
             { name: longName },
@@ -288,7 +439,7 @@ describe('GuestJoin', () => {
             ),
         });
         const spectator = screen.getByLabelText('Join as spectator');
-        const join = screen.getByRole('button', { name: 'Join' });
+        const join = screen.getByRole('button', { name: 'Join the session' });
 
         expect(spectator.id).toBe('spectator');
         expect(
@@ -318,7 +469,9 @@ describe('GuestJoin', () => {
 
         expect(wrapper?.classList.contains('sticky')).toBe(false);
         expect(
-            wrapper?.contains(screen.getByRole('button', { name: 'Join' })),
+            wrapper?.contains(
+                screen.getByRole('button', { name: 'Join the session' }),
+            ),
         ).toBe(true);
     });
 
@@ -332,7 +485,9 @@ describe('GuestJoin', () => {
         expect(wrapper?.classList.contains('sticky')).toBe(true);
         expect(wrapper?.classList.contains('bottom-0')).toBe(true);
         expect(
-            wrapper?.contains(screen.getByRole('button', { name: 'Join' })),
+            wrapper?.contains(
+                screen.getByRole('button', { name: 'Join the session' }),
+            ),
         ).toBe(true);
     });
 
