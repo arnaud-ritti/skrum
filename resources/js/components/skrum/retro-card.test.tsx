@@ -1,5 +1,6 @@
 import { fireEvent, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { createRef } from 'react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { RetroCard } from '@/components/skrum/retro-card';
 import type { RetroCardProps } from '@/components/skrum/retro-card';
 import { renderWithProviders } from '@/test/render';
@@ -7,7 +8,6 @@ import { renderWithProviders } from '@/test/render';
 const author = {
     id: 'u1',
     name: 'Camille Roux',
-    initials: 'CR',
     presence: 4,
 } as const;
 
@@ -53,6 +53,25 @@ describe('RetroCard', () => {
         ).toBeTruthy();
         expect(screen.getByText('Hidden until the reveal')).toBeTruthy();
         expect(screen.queryByRole('button', { name: /Vote/ })).toBeNull();
+    });
+
+    it('never puts the text or the GIF of a masked card in the DOM', () => {
+        const { container } = renderWithProviders(
+            card({
+                masked: true,
+                text: 'A secret nobody may read',
+                gif: { previewUrl: '/secret-preview.gif', url: '/secret.gif' },
+                insight: { sentiment: 'negative', category: 'Secret topic' },
+                commentCount: 2,
+            }),
+        );
+
+        expect(screen.queryByText('A secret nobody may read')).toBeNull();
+        expect(container.textContent).not.toContain('secret');
+        expect(container.innerHTML).not.toContain('A secret nobody may read');
+        expect(container.innerHTML).not.toContain('secret-preview.gif');
+        expect(container.innerHTML).not.toContain('Secret topic');
+        expect(container.querySelector('img')).toBeNull();
     });
 
     it('hides the vote total when null and shows my votes', () => {
@@ -265,5 +284,370 @@ describe('RetroCard', () => {
         expect(article?.dataset.dragging).toBe('true');
         expect(article?.dataset.selected).toBe('true');
         expect(screen.getByText('Everyone is looking here')).toBeTruthy();
+    });
+
+    describe('back-end card shape', () => {
+        afterEach(() => {
+            vi.unstubAllGlobals();
+        });
+
+        it('renders a GIF card without text and opens the GIF', () => {
+            const onGifOpen = vi.fn();
+            const { container } = renderWithProviders(
+                card({
+                    text: null,
+                    gif: { previewUrl: '/preview.gif', url: '/full.gif' },
+                    onGifOpen,
+                }),
+            );
+
+            expect(
+                screen.getByRole('article', { name: 'GIF, Camille Roux' }),
+            ).toBeTruthy();
+            expect(
+                container.querySelector('[data-slot="retro-card-text"]'),
+            ).toBeNull();
+            expect(
+                container
+                    .querySelector('[data-slot="retro-card-gif"] img')
+                    ?.getAttribute('src'),
+            ).toBe('/preview.gif');
+
+            fireEvent.click(screen.getByRole('button', { name: 'GIF' }));
+
+            expect(onGifOpen).toHaveBeenCalledTimes(1);
+        });
+
+        it('shows the GIF as an image when it cannot be opened', () => {
+            renderWithProviders(
+                card({ gif: { previewUrl: '/preview.gif', url: '/full.gif' } }),
+            );
+
+            expect(screen.getByRole('img', { name: 'GIF' })).toBeTruthy();
+            expect(screen.queryByRole('button', { name: 'GIF' })).toBeNull();
+        });
+
+        it('publishes an empty text only when the card keeps a GIF', () => {
+            const onEdit = vi.fn();
+            const { rerender } = renderWithProviders(
+                card({ editing: true, onEdit }),
+            );
+
+            fireEvent.change(screen.getByRole('textbox'), {
+                target: { value: ' ' },
+            });
+            fireEvent.keyDown(screen.getByRole('textbox'), { key: 'Enter' });
+            expect(onEdit).not.toHaveBeenCalled();
+
+            rerender(
+                card({
+                    editing: true,
+                    onEdit,
+                    gif: { previewUrl: '/preview.gif', url: '/full.gif' },
+                }),
+            );
+            fireEvent.keyDown(screen.getByRole('textbox'), { key: 'Enter' });
+
+            expect(onEdit).toHaveBeenCalledWith('');
+        });
+
+        it('uses the avatar URL of the author as image source', async () => {
+            class LoadedImage extends EventTarget {
+                complete = true;
+                naturalWidth = 1;
+                onload: (() => void) | null = null;
+                onerror: (() => void) | null = null;
+                referrerPolicy = '';
+                crossOrigin: string | null = null;
+
+                set src(_value: string) {
+                    setTimeout(() => {
+                        this.onload?.();
+                        this.dispatchEvent(new Event('load'));
+                    }, 0);
+                }
+            }
+
+            vi.stubGlobal('Image', LoadedImage);
+
+            const { container } = renderWithProviders(
+                card({
+                    author: { ...author, avatarUrl: '/avatars/camille.png' },
+                }),
+            );
+
+            await vi.waitFor(() =>
+                expect(
+                    container
+                        .querySelector('[data-slot="avatar-image"]')
+                        ?.getAttribute('src'),
+                ).toBe('/avatars/camille.png'),
+            );
+        });
+
+        it('accepts the colours the server sends today', () => {
+            const { rerender } = renderWithProviders(card({ color: 'green' }));
+
+            expect(
+                screen.getByRole('article').classList.contains('col-moss'),
+            ).toBe(true);
+
+            rerender(card({ color: 'slate' }));
+
+            expect(
+                screen.getByRole('article').classList.contains('col-iris'),
+            ).toBe(true);
+        });
+
+        it('marks my own card with the You badge', () => {
+            const { rerender } = renderWithProviders(card());
+
+            expect(screen.queryByText('You')).toBeNull();
+
+            rerender(card({ isMine: true }));
+
+            expect(screen.getByText('You')).toBeTruthy();
+        });
+
+        it('shows the insight of a card', () => {
+            renderWithProviders(
+                card({
+                    insight: { sentiment: 'positive', category: 'Delivery' },
+                }),
+            );
+
+            expect(screen.getByRole('img', { name: 'Positive' })).toBeTruthy();
+            expect(screen.getByText('Delivery')).toBeTruthy();
+        });
+
+        it('opens the comments from the counter', () => {
+            const onOpenComments = vi.fn();
+
+            renderWithProviders(
+                card({ commentCount: 3, commentsOpen: false, onOpenComments }),
+            );
+            const trigger = screen.getByRole('button', {
+                name: 'Comments (3)',
+            });
+
+            expect(trigger.getAttribute('aria-expanded')).toBe('false');
+
+            fireEvent.click(trigger);
+
+            expect(onOpenComments).toHaveBeenCalledTimes(1);
+        });
+
+        it('shows a read-only comment count without a callback', () => {
+            const { rerender } = renderWithProviders(card({ commentCount: 4 }));
+
+            expect(
+                screen.getByRole('img', { name: 'Comments (4)' }),
+            ).toBeTruthy();
+
+            rerender(card({ commentCount: 0 }));
+
+            expect(screen.queryByRole('img', { name: /Comments/ })).toBeNull();
+        });
+
+        it('toggles the discussion highlight for the facilitator', () => {
+            const onFocusToggle = vi.fn();
+            const { rerender } = renderWithProviders(card({ onFocusToggle }));
+            const discuss = screen.getByRole('button', { name: 'Discuss' });
+
+            expect(discuss.getAttribute('aria-pressed')).toBe('false');
+
+            fireEvent.click(discuss);
+            expect(onFocusToggle).toHaveBeenCalledTimes(1);
+
+            rerender(card({ onFocusToggle, focused: true }));
+
+            expect(
+                screen
+                    .getByRole('button', { name: 'Discuss' })
+                    .getAttribute('aria-pressed'),
+            ).toBe('true');
+        });
+
+        it('offers edit and delete buttons to pointer and touch users', () => {
+            const onEditStart = vi.fn();
+            const onDelete = vi.fn();
+            const { rerender } = renderWithProviders(
+                card({ canEdit: true, onEditStart, onDelete }),
+            );
+
+            fireEvent.click(screen.getByRole('button', { name: 'Edit card' }));
+            fireEvent.click(
+                screen.getByRole('button', { name: 'Delete card' }),
+            );
+
+            expect(onEditStart).toHaveBeenCalledTimes(1);
+            expect(onDelete).toHaveBeenCalledTimes(1);
+
+            rerender(card({ canEdit: false, onEditStart, onDelete }));
+
+            expect(
+                screen.queryByRole('button', { name: 'Edit card' }),
+            ).toBeNull();
+            expect(
+                screen.queryByRole('button', { name: 'Delete card' }),
+            ).toBeNull();
+        });
+
+        it('renders the generic menu entries', async () => {
+            const onSelect = vi.fn();
+
+            renderWithProviders(
+                card({
+                    menuEntries: [
+                        { type: 'item', label: 'Create an action', onSelect },
+                    ],
+                }),
+            );
+
+            fireEvent.pointerDown(
+                screen.getByRole('button', { name: 'Card options' }),
+                { button: 0, ctrlKey: false },
+            );
+            fireEvent.click(
+                await screen.findByRole('menuitem', {
+                    name: 'Create an action',
+                }),
+            );
+
+            expect(onSelect).toHaveBeenCalledTimes(1);
+        });
+
+        it('renders the footer slot and the children', () => {
+            renderWithProviders(
+                card({
+                    footer: <button type="button">Ungroup</button>,
+                    children: <div>Comment thread</div>,
+                }),
+            );
+
+            expect(
+                screen
+                    .getByRole('button', { name: 'Ungroup' })
+                    .closest('[data-slot="retro-card-footer"]'),
+            ).not.toBeNull();
+            expect(screen.getByText('Comment thread')).toBeTruthy();
+        });
+
+        it('forwards the ref, rest props and key handler dnd-kit needs', () => {
+            const ref = createRef<HTMLElement>();
+            const onKeyDown = vi.fn();
+            const onVote = vi.fn();
+
+            renderWithProviders(
+                card({
+                    ref,
+                    onKeyDown,
+                    onVote,
+                    canVote: true,
+                    votes: { total: 0, mine: 0 },
+                    style: { opacity: 0.5 },
+                    'aria-roledescription': 'sortable',
+                    'data-test': 'retro-card-c1',
+                } as Partial<RetroCardProps>),
+            );
+            const article = screen.getByRole('article');
+
+            expect(ref.current).toBe(article);
+            expect(article.getAttribute('data-test')).toBe('retro-card-c1');
+            expect(article.getAttribute('aria-roledescription')).toBe(
+                'sortable',
+            );
+            expect(article.style.opacity).toBe('0.5');
+
+            fireEvent.keyDown(article, { key: 'v' });
+
+            expect(onKeyDown).toHaveBeenCalledTimes(1);
+            expect(onVote).toHaveBeenCalledWith(1);
+        });
+    });
+
+    describe('focus', () => {
+        it('returns to the card when the inline editor closes', () => {
+            const { rerender } = renderWithProviders(
+                card({ editing: true, canEdit: true }),
+            );
+
+            expect(document.activeElement).toBe(screen.getByRole('textbox'));
+
+            rerender(card({ editing: false, canEdit: true }));
+
+            expect(document.activeElement).toBe(screen.getByRole('article'));
+        });
+
+        it('does not take focus when the editor closes while focus is elsewhere', () => {
+            const { rerender } = renderWithProviders(
+                <>
+                    <button type="button">Elsewhere</button>
+                    {card({ editing: true })}
+                </>,
+            );
+            const elsewhere = screen.getByRole('button', { name: 'Elsewhere' });
+
+            elsewhere.focus();
+            rerender(
+                <>
+                    <button type="button">Elsewhere</button>
+                    {card({ editing: false })}
+                </>,
+            );
+
+            expect(document.activeElement).toBe(elsewhere);
+        });
+
+        it('stays on the reaction opener after a quick reaction is picked', () => {
+            renderWithProviders(card({ onReact: vi.fn() }));
+            const opener = screen.getByRole('button', {
+                name: 'Add a reaction',
+            });
+
+            fireEvent.click(opener);
+            const quick = screen.getByRole('button', { name: 'React with 💡' });
+
+            quick.focus();
+            fireEvent.click(quick);
+
+            expect(
+                screen.queryByRole('button', { name: 'React with 💡' }),
+            ).toBeNull();
+            expect(document.activeElement).toBe(opener);
+        });
+    });
+
+    describe('extreme data', () => {
+        it.each([280, 1000])(
+            'renders a %i-character card in full',
+            (length) => {
+                const text = 'word '.repeat(length / 5).slice(0, length);
+
+                renderWithProviders(card({ text }));
+
+                expect(text).toHaveLength(length);
+                expect(
+                    document.querySelector('[data-slot="retro-card-text"]')
+                        ?.textContent,
+                ).toBe(text);
+            },
+        );
+
+        it('keeps a 60-character author name on one truncated line', () => {
+            const name =
+                'Maximilienne-Alexandrine de la Rochefoucauld-Montmorency III';
+
+            renderWithProviders(card({ author: { id: 'long', name } }));
+            const authorSlot = document.querySelector(
+                '[data-slot="retro-card-author"]',
+            );
+
+            expect(name).toHaveLength(60);
+            expect(authorSlot?.getAttribute('title')).toBe(name);
+            expect(authorSlot?.querySelector('.truncate')?.textContent).toBe(
+                'Maximilienne-Alexandrine',
+            );
+        });
     });
 });

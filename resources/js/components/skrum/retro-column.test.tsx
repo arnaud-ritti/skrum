@@ -1,4 +1,5 @@
-import { fireEvent, screen } from '@testing-library/react';
+import { act, fireEvent, screen, within } from '@testing-library/react';
+import { createRef } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { RetroColumn } from '@/components/skrum/retro-column';
 import type { RetroColumnProps } from '@/components/skrum/retro-column';
@@ -201,30 +202,424 @@ describe('RetroColumn', () => {
         ).toBeNull();
     });
 
-    it('sorts through the menu', async () => {
-        const onSort = vi.fn();
-
-        renderWithProviders(column({ onSort }));
-        fireEvent.pointerDown(
-            screen.getByRole('button', { name: 'Column options' }),
-            { button: 0, ctrlKey: false },
+    it('toggles the sort by votes and keeps the browser-suite hook', () => {
+        const onSortByVotesChange = vi.fn();
+        const { rerender, container } = renderWithProviders(
+            column({ onSortByVotesChange, sortedByVotes: true }),
         );
-        fireEvent.keyDown(
-            await screen.findByRole('menuitem', { name: 'Sort by' }),
-            {
-                key: 'ArrowRight',
-            },
-        );
-        fireEvent.click(
-            await screen.findByRole('menuitem', { name: 'Sort by votes' }),
+        const toggle = container.querySelector<HTMLElement>(
+            '[data-test="retro-sort-by-votes"]',
         );
 
-        expect(onSort).toHaveBeenCalledWith('votes');
+        expect(toggle?.getAttribute('aria-pressed')).toBe('true');
+        expect(toggle?.textContent).toBe('Sort by votes');
+
+        fireEvent.click(toggle as HTMLElement);
+        expect(onSortByVotesChange).toHaveBeenCalledWith(false);
+
+        rerender(column({ onSortByVotesChange, sortedByVotes: false }));
+        expect(
+            screen
+                .getByRole('button', { name: 'Sort by votes' })
+                .getAttribute('aria-pressed'),
+        ).toBe('false');
+
+        rerender(column());
+        expect(
+            container.querySelector('[data-test="retro-sort-by-votes"]'),
+        ).toBeNull();
     });
 
-    it('links the description to the title for assistive tech', () => {
-        renderWithProviders(column({ description: 'Write what worked' }));
+    it('shows the description under the title and describes the column with it', () => {
+        const { rerender } = renderWithProviders(
+            column({ description: 'Write what worked' }),
+        );
+        const description = screen.getByText('Write what worked');
 
-        expect(screen.getByText('Write what worked').id).not.toBe('');
+        expect(description.id).not.toBe('');
+        expect(
+            screen.getByRole('region').getAttribute('aria-describedby'),
+        ).toBe(description.id);
+
+        rerender(column({ description: null }));
+
+        expect(
+            screen.getByRole('region').getAttribute('aria-describedby'),
+        ).toBeNull();
+    });
+
+    describe('column menu', () => {
+        const openMenu = () =>
+            fireEvent.pointerDown(
+                screen.getByRole('button', { name: 'Column options' }),
+                { button: 0, ctrlKey: false },
+            );
+        const settle = () =>
+            act(async () => {
+                await new Promise((resolve) => setTimeout(resolve, 30));
+            });
+
+        it('keeps the rename editor open after the menu has closed', async () => {
+            const onRename = vi.fn();
+
+            renderWithProviders(column({ onRename }));
+            openMenu();
+            fireEvent.click(
+                await screen.findByRole('menuitem', { name: 'Rename' }),
+            );
+            await settle();
+
+            const input = screen.getByRole('textbox', { name: 'Column title' });
+
+            expect(screen.queryByRole('menu')).toBeNull();
+            expect(document.activeElement).toBe(input);
+            expect(onRename).not.toHaveBeenCalled();
+
+            fireEvent.change(input, { target: { value: 'Went great' } });
+            fireEvent.keyDown(input, { key: 'Enter' });
+
+            expect(onRename).toHaveBeenCalledWith('Went great');
+            expect(document.activeElement).toBe(
+                screen.getByRole('button', { name: 'Column options' }),
+            );
+        });
+
+        it('returns focus to the menu button when a rename is cancelled', async () => {
+            renderWithProviders(column({ onRename: vi.fn() }));
+            openMenu();
+            fireEvent.click(
+                await screen.findByRole('menuitem', { name: 'Rename' }),
+            );
+            await settle();
+            fireEvent.keyDown(screen.getByRole('textbox'), { key: 'Escape' });
+
+            expect(screen.queryByRole('textbox')).toBeNull();
+            expect(document.activeElement).toBe(
+                screen.getByRole('button', { name: 'Column options' }),
+            );
+        });
+
+        it('commits a rename on blur without taking focus back', async () => {
+            const onRename = vi.fn();
+
+            renderWithProviders(
+                <>
+                    <button type="button">Elsewhere</button>
+                    {column({ onRename })}
+                </>,
+            );
+            openMenu();
+            fireEvent.click(
+                await screen.findByRole('menuitem', { name: 'Rename' }),
+            );
+            await settle();
+
+            const input = screen.getByRole('textbox', { name: 'Column title' });
+            const elsewhere = screen.getByRole('button', { name: 'Elsewhere' });
+
+            fireEvent.change(input, { target: { value: 'Blurred' } });
+            act(() => elsewhere.focus());
+
+            expect(onRename).toHaveBeenCalledTimes(1);
+            expect(onRename).toHaveBeenCalledWith('Blurred');
+            expect(document.activeElement).toBe(elsewhere);
+        });
+
+        it('limits the title to the length the server accepts', async () => {
+            renderWithProviders(column({ onRename: vi.fn() }));
+            openMenu();
+            fireEvent.click(
+                await screen.findByRole('menuitem', { name: 'Rename' }),
+            );
+            await settle();
+
+            expect(screen.getByRole('textbox').getAttribute('maxlength')).toBe(
+                '100',
+            );
+        });
+
+        it('edits the description in a dialog limited to 200 characters', async () => {
+            const onDescriptionChange = vi.fn();
+
+            renderWithProviders(
+                column({ onDescriptionChange, description: 'Old text' }),
+            );
+            openMenu();
+            fireEvent.click(
+                await screen.findByRole('menuitem', {
+                    name: 'Edit description',
+                }),
+            );
+            await settle();
+
+            const dialog = screen.getByRole('dialog', {
+                name: 'Column description',
+            });
+            const field = within(dialog).getByRole('textbox', {
+                name: 'Column description',
+            }) as HTMLTextAreaElement;
+
+            expect(field.value).toBe('Old text');
+            expect(field.getAttribute('maxlength')).toBe('200');
+            expect(within(dialog).getByText('8/200')).toBeTruthy();
+
+            fireEvent.change(field, { target: { value: '  New guidance ' } });
+            fireEvent.click(
+                within(dialog).getByRole('button', { name: 'Save' }),
+            );
+            await settle();
+
+            expect(onDescriptionChange).toHaveBeenCalledWith('New guidance');
+            expect(screen.queryByRole('dialog')).toBeNull();
+        });
+
+        it('clears the description when it is saved empty', async () => {
+            const onDescriptionChange = vi.fn();
+
+            renderWithProviders(
+                column({ onDescriptionChange, description: 'Old text' }),
+            );
+            openMenu();
+            fireEvent.click(
+                await screen.findByRole('menuitem', {
+                    name: 'Edit description',
+                }),
+            );
+            await settle();
+            fireEvent.change(
+                screen.getByRole('textbox', { name: 'Column description' }),
+                { target: { value: '   ' } },
+            );
+            fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+            await settle();
+
+            expect(onDescriptionChange).toHaveBeenCalledWith(null);
+        });
+
+        it('moves the column left and right, within its bounds', async () => {
+            const onMove = vi.fn();
+
+            renderWithProviders(column({ onMove, canMoveLeft: false }));
+            openMenu();
+
+            expect(
+                (
+                    await screen.findByRole('menuitem', { name: 'Move left' })
+                ).getAttribute('aria-disabled'),
+            ).toBe('true');
+
+            fireEvent.click(
+                screen.getByRole('menuitem', { name: 'Move right' }),
+            );
+
+            expect(onMove).toHaveBeenCalledTimes(1);
+            expect(onMove).toHaveBeenCalledWith(1);
+        });
+
+        it('deletes only after confirmation', async () => {
+            const onDelete = vi.fn();
+
+            renderWithProviders(column({ onDelete }));
+            openMenu();
+            fireEvent.click(
+                await screen.findByRole('menuitem', { name: 'Delete column' }),
+            );
+            await settle();
+
+            const dialog = screen.getByRole('alertdialog', {
+                name: 'Delete column',
+            });
+
+            expect(onDelete).not.toHaveBeenCalled();
+            expect(
+                within(dialog).getByText('Delete the column What went well?'),
+            ).toBeTruthy();
+
+            fireEvent.click(
+                within(dialog).getByRole('button', { name: 'Delete' }),
+            );
+            await settle();
+
+            expect(onDelete).toHaveBeenCalledTimes(1);
+            expect(screen.queryByRole('alertdialog')).toBeNull();
+        });
+
+        it('keeps the column when the deletion is cancelled', async () => {
+            const onDelete = vi.fn();
+
+            renderWithProviders(column({ onDelete }));
+            openMenu();
+            fireEvent.click(
+                await screen.findByRole('menuitem', { name: 'Delete column' }),
+            );
+            await settle();
+            fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+            await settle();
+
+            expect(onDelete).not.toHaveBeenCalled();
+            expect(screen.queryByRole('alertdialog')).toBeNull();
+            expect(document.activeElement).toBe(
+                screen.getByRole('button', { name: 'Column options' }),
+            );
+        });
+
+        it('disables rename, colour and delete with the reason when the column has cards', async () => {
+            const reason =
+                'Only empty columns can be renamed, recoloured or deleted.';
+
+            renderWithProviders(
+                column({
+                    onRename: vi.fn(),
+                    onColorChange: vi.fn(),
+                    onDescriptionChange: vi.fn(),
+                    onMove: vi.fn(),
+                    onDelete: vi.fn(),
+                    editDisabledReason: reason,
+                }),
+            );
+            openMenu();
+
+            const disabled = async (name: string) =>
+                (await screen.findByRole('menuitem', { name })).getAttribute(
+                    'aria-disabled',
+                );
+
+            expect(await disabled('Rename')).toBe('true');
+            expect(await disabled('Color')).toBe('true');
+            expect(await disabled('Delete column')).toBe('true');
+            expect(await disabled('Edit description')).toBeNull();
+            expect(await disabled('Move left')).toBeNull();
+            expect(screen.getByText(reason)).toBeTruthy();
+        });
+
+        it('offers the colours of the set the column uses', async () => {
+            const onColorChange = vi.fn();
+            const { rerender } = renderWithProviders(
+                column({ onColorChange, color: 'green' }),
+            );
+
+            openMenu();
+            fireEvent.keyDown(
+                await screen.findByRole('menuitem', { name: 'Color' }),
+                { key: 'ArrowRight' },
+            );
+
+            expect(
+                (await screen.findAllByRole('menuitemradio')).map(
+                    (item) => item.textContent,
+                ),
+            ).toEqual(['Green', 'Red', 'Blue', 'Amber', 'Purple', 'Slate']);
+            expect(
+                screen
+                    .getByRole('menuitemradio', { name: 'Green' })
+                    .getAttribute('aria-checked'),
+            ).toBe('true');
+
+            fireEvent.click(screen.getByRole('menuitemradio', { name: 'Red' }));
+            expect(onColorChange).toHaveBeenCalledWith('red');
+
+            await settle();
+            rerender(column({ onColorChange, color: 'moss' }));
+            openMenu();
+            fireEvent.keyDown(
+                await screen.findByRole('menuitem', { name: 'Color' }),
+                { key: 'ArrowRight' },
+            );
+
+            expect(await screen.findAllByRole('menuitemradio')).toHaveLength(8);
+        });
+
+        it('does not add a card when N is typed inside the menu', async () => {
+            const onAdd = vi.fn();
+
+            renderWithProviders(column({ onAdd, onRename: vi.fn() }));
+            openMenu();
+            fireEvent.keyDown(
+                await screen.findByRole('menuitem', { name: 'Rename' }),
+                { key: 'n' },
+            );
+
+            expect(onAdd).not.toHaveBeenCalled();
+        });
+    });
+
+    it('can start with its menu open for the bench', async () => {
+        renderWithProviders(
+            column({ onRename: vi.fn(), defaultMenuOpen: true }),
+        );
+
+        expect(
+            await screen.findByRole('menuitem', { name: 'Rename' }),
+        ).toBeTruthy();
+    });
+
+    it('maps the server colours to the column context', () => {
+        renderWithProviders(column({ color: 'amber' }));
+
+        expect(screen.getByRole('region').classList.contains('col-sun')).toBe(
+            true,
+        );
+    });
+
+    it('renders the header action, notice and footer slots', () => {
+        renderWithProviders(
+            column({
+                headerAction: <button type="button">New survey</button>,
+                notice: <p>Drag cards onto each other to group them.</p>,
+                footer: <form aria-label="Composer" />,
+            }),
+        );
+
+        expect(screen.getByRole('button', { name: 'New survey' })).toBeTruthy();
+        expect(
+            screen.getByText('Drag cards onto each other to group them.'),
+        ).toBeTruthy();
+        expect(screen.getByRole('form', { name: 'Composer' })).toBeTruthy();
+    });
+
+    it('forwards the ref and rest props to the section', () => {
+        const ref = createRef<HTMLElement>();
+        const onKeyDown = vi.fn();
+
+        renderWithProviders(
+            column({
+                ref,
+                onKeyDown,
+                'data-test': 'retro-column-col-1',
+            } as Partial<RetroColumnProps>),
+        );
+        const section = screen.getByRole('region');
+
+        fireEvent.keyDown(section, { key: 'x' });
+
+        expect(ref.current).toBe(section);
+        expect(section.getAttribute('data-test')).toBe('retro-column-col-1');
+        expect(onKeyDown).toHaveBeenCalledTimes(1);
+    });
+
+    it('keeps 200 cards inside its own scroller', () => {
+        const { container } = renderWithProviders(
+            <RetroColumn id="big" title="Everything" color="blue" count={200}>
+                {Array.from({ length: 200 }, (_, index) => (
+                    <article key={index} data-slot="retro-card" tabIndex={0}>
+                        {`Card ${index + 1}`}
+                    </article>
+                ))}
+            </RetroColumn>,
+        );
+        const scroller = container.querySelector(
+            '[data-slot="retro-column-cards"]',
+        );
+
+        expect(scroller?.querySelectorAll('article')).toHaveLength(200);
+        expect(scroller?.classList.contains('overflow-y-auto')).toBe(true);
+        expect(screen.getByText('200 cards')).toBeTruthy();
+        expect(
+            screen.getByRole('button', { name: 'Add a card' }).parentElement,
+        ).toBe(screen.getByRole('region'));
+
+        fireEvent.keyDown(screen.getByRole('region'), { key: 'ArrowUp' });
+
+        expect(document.activeElement?.textContent).toBe('Card 200');
     });
 });

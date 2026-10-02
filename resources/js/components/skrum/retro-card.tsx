@@ -1,35 +1,40 @@
 import {
     Check,
     Crosshair,
+    Ellipsis,
     EyeOff,
+    Frown,
+    Meh,
+    MessageSquare,
     Minus,
     Pencil,
+    Smile,
     SmilePlus,
     ThumbsUp,
     Trash2,
     VenetianMask,
 } from 'lucide-react';
-import { useState } from 'react';
-import type { KeyboardEvent } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import type { ComponentProps, KeyboardEvent, ReactNode, Ref } from 'react';
+import type { ColumnColor as DesignColumnColor } from '@/components/skrum/column-color-picker';
+import { columnColorClass } from '@/components/skrum/retro-template-picker';
 import { PersonAvatar } from '@/components/ui/avatar';
 import type { AvatarPresence } from '@/components/ui/avatar';
+import { CardMenu } from '@/components/ui/dropdown-menu';
+import type { MenuEntry } from '@/components/ui/dropdown-menu';
 import {
     Tooltip,
     TooltipContent,
     TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { useTrans } from '@/hooks/use-trans';
+import type {
+    CardSentiment,
+    ColumnColor as ServerColumnColor,
+} from '@/lib/retro/types';
 import { cn } from '@/lib/utils';
 
-export type ColumnColor =
-    | 'sun'
-    | 'apricot'
-    | 'coral'
-    | 'plum'
-    | 'iris'
-    | 'sky'
-    | 'lagoon'
-    | 'moss';
+export type ColumnColor = DesignColumnColor | ServerColumnColor;
 
 export type RetroCardReaction = {
     emoji: string;
@@ -37,20 +42,37 @@ export type RetroCardReaction = {
     mine: boolean;
 };
 
-export type RetroCardProps = {
+export type RetroCardAuthor = {
     id: string;
-    text: string;
+    name: string;
+    avatarUrl?: string | null;
+    presence?: AvatarPresence;
+};
+
+export type RetroCardGif = { previewUrl: string; url: string };
+
+export type RetroCardInsight = {
+    sentiment?: CardSentiment | null;
+    category?: string | null;
+};
+
+export type RetroCardProps = Omit<
+    ComponentProps<'article'>,
+    'id' | 'color' | 'children'
+> & {
+    id: string;
+    text: string | null;
     color: ColumnColor;
-    author?: {
-        id: string;
-        name: string;
-        initials: string;
-        presence: AvatarPresence;
-    } | null;
+    gif?: RetroCardGif | null;
+    author?: RetroCardAuthor | null;
+    isMine?: boolean;
     masked?: boolean;
+    insight?: RetroCardInsight | null;
     reactions?: RetroCardReaction[];
     votes?: { total: number | null; mine: number };
-    lockedBy?: { name: string; presence: number } | null;
+    commentCount?: number;
+    commentsOpen?: boolean;
+    lockedBy?: { name: string; presence?: number } | null;
     editing?: boolean;
     selected?: boolean;
     focused?: boolean;
@@ -60,25 +82,19 @@ export type RetroCardProps = {
     canEdit?: boolean;
     maxLength?: number;
     quickReactions?: string[];
+    menuEntries?: MenuEntry[];
+    footer?: ReactNode;
+    editorTools?: ReactNode;
+    children?: ReactNode;
     onVote?: (delta: 1 | -1) => void;
     onReact?: (emoji: string) => void;
     onEdit?: (text: string) => void;
     onEditStart?: () => void;
     onEditCancel?: () => void;
     onDelete?: () => void;
-    className?: string;
-};
-
-const columnClasses: Record<ColumnColor, string> = {
-    sun: '[--c:var(--skrum-col-sun)] [--c-b:var(--skrum-col-sun-border)] [--c-t:var(--skrum-col-sun-text)]',
-    apricot:
-        '[--c:var(--skrum-col-apricot)] [--c-b:var(--skrum-col-apricot-border)] [--c-t:var(--skrum-col-apricot-text)]',
-    coral: '[--c:var(--skrum-col-coral)] [--c-b:var(--skrum-col-coral-border)] [--c-t:var(--skrum-col-coral-text)]',
-    plum: '[--c:var(--skrum-col-plum)] [--c-b:var(--skrum-col-plum-border)] [--c-t:var(--skrum-col-plum-text)]',
-    iris: '[--c:var(--skrum-col-iris)] [--c-b:var(--skrum-col-iris-border)] [--c-t:var(--skrum-col-iris-text)]',
-    sky: '[--c:var(--skrum-col-sky)] [--c-b:var(--skrum-col-sky-border)] [--c-t:var(--skrum-col-sky-text)]',
-    lagoon: '[--c:var(--skrum-col-lagoon)] [--c-b:var(--skrum-col-lagoon-border)] [--c-t:var(--skrum-col-lagoon-text)]',
-    moss: '[--c:var(--skrum-col-moss)] [--c-b:var(--skrum-col-moss-border)] [--c-t:var(--skrum-col-moss-text)]',
+    onGifOpen?: () => void;
+    onOpenComments?: () => void;
+    onFocusToggle?: () => void;
 };
 
 const lockRingClasses: Record<number, string> = {
@@ -111,20 +127,51 @@ const lockTagClasses: Record<number, string> = {
     12: 'bg-skrum-presence-12 text-skrum-presence-12-foreground',
 };
 
+const sentimentIcons = {
+    positive: Smile,
+    neutral: Meh,
+    negative: Frown,
+} as const;
+
 const defaultQuickReactions = ['👍', '🎉', '💡', '❤️', '😂'];
+
+const maskPlaceholder = '••••• ••••• •••• •••';
+
+const iconButtonClass =
+    'inline-flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground outline-none hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring';
+
+const revealOnHoverClass =
+    'opacity-0 group-focus-within/card:opacity-100 group-hover/card:opacity-100 pointer-coarse:opacity-100';
 
 function firstName(name: string): string {
     return name.trim().split(/\s+/)[0] ?? name;
+}
+
+function assignRef<T>(ref: Ref<T> | undefined, value: T | null): void {
+    if (typeof ref === 'function') {
+        ref(value);
+
+        return;
+    }
+
+    if (ref) {
+        ref.current = value;
+    }
 }
 
 export function RetroCard({
     id,
     text,
     color,
+    gif = null,
     author = null,
+    isMine = false,
     masked = false,
+    insight = null,
     reactions = [],
     votes,
+    commentCount,
+    commentsOpen,
     lockedBy = null,
     editing = false,
     selected = false,
@@ -135,16 +182,29 @@ export function RetroCard({
     canEdit = false,
     maxLength = 1000,
     quickReactions = defaultQuickReactions,
+    menuEntries,
+    footer,
+    editorTools,
+    children,
     onVote,
     onReact,
     onEdit,
     onEditStart,
     onEditCancel,
     onDelete,
+    onGifOpen,
+    onOpenComments,
+    onFocusToggle,
     className,
+    ref,
+    onKeyDown,
+    ...rest
 }: RetroCardProps) {
     const { t } = useTrans();
-    const [draft, setDraft] = useState(text);
+    const articleRef = useRef<HTMLElement | null>(null);
+    const addReactionRef = useRef<HTMLButtonElement>(null);
+    const editorHadFocus = useRef(false);
+    const [draft, setDraft] = useState(text ?? '');
     const [wasEditing, setWasEditing] = useState(editing);
     const [pickerOpen, setPickerOpen] = useState(false);
 
@@ -152,22 +212,58 @@ export function RetroCard({
         setWasEditing(editing);
 
         if (editing) {
-            setDraft(text);
+            setDraft(text ?? '');
         }
     }
+
+    useEffect(() => {
+        if (editing || !editorHadFocus.current) {
+            return;
+        }
+
+        editorHadFocus.current = false;
+
+        const active = document.activeElement;
+        const focusWasLost =
+            active === null ||
+            active === document.body ||
+            articleRef.current?.contains(active);
+
+        if (focusWasLost) {
+            articleRef.current?.focus();
+        }
+    }, [editing]);
 
     const isLocked = lockedBy !== null;
     const isEditing = editing;
     const mineVotes = votes?.mine ?? 0;
     const isAnonymous = author === null;
+    const hasGif = gif !== null && !masked;
+    const hasText = text !== null && text !== '';
     const showVoteControls = !masked && votes !== undefined && !ghost;
     const lockPresence = lockedBy?.presence ?? 0;
+    const sentiment = insight?.sentiment ?? null;
+    const category = insight?.category ?? null;
+    const showInsight =
+        !masked && !isEditing && (sentiment !== null || category !== null);
+    const showComments =
+        !masked &&
+        (onOpenComments !== undefined || (commentCount ?? 0) > 0) &&
+        !ghost;
+    const hasMenu = menuEntries !== undefined && menuEntries.length > 0;
+    const sentimentLabels: Record<CardSentiment, string> = {
+        positive: t('Positive'),
+        neutral: t('Neutral'),
+        negative: t('Negative'),
+    };
+    const SentimentIcon = sentiment === null ? null : sentimentIcons[sentiment];
 
     const authorLabel = isAnonymous ? t('Anonymous') : author.name;
     const label = masked
         ? t('Card hidden until the reveal')
         : [
-              text,
+              hasText ? text : null,
+              hasGif ? t('GIF') : null,
               authorLabel,
               votes && votes.total !== null
                   ? t(':count votes', { count: votes.total })
@@ -175,11 +271,16 @@ export function RetroCard({
           ]
               .filter(Boolean)
               .join(', ');
+    const commentsLabel = t('Comments (:count)', { count: commentCount ?? 0 });
 
     function submit(): void {
         const content = draft.trim();
 
-        if (isLocked || content === '' || content.length > maxLength) {
+        if (isLocked || content.length > maxLength) {
+            return;
+        }
+
+        if (content === '' && gif === null) {
             return;
         }
 
@@ -199,6 +300,12 @@ export function RetroCard({
     }
 
     function handleArticleKeyDown(event: KeyboardEvent<HTMLElement>): void {
+        onKeyDown?.(event);
+
+        if (event.defaultPrevented) {
+            return;
+        }
+
         if (event.target !== event.currentTarget || isEditing || masked) {
             return;
         }
@@ -250,6 +357,12 @@ export function RetroCard({
         submit();
     }
 
+    function pickReaction(emoji: string): void {
+        onReact?.(emoji);
+        setPickerOpen(false);
+        addReactionRef.current?.focus();
+    }
+
     const voteButton = showVoteControls && (
         <Tooltip>
             <TooltipTrigger asChild>
@@ -278,15 +391,51 @@ export function RetroCard({
                     )}
                 </button>
             </TooltipTrigger>
-            <TooltipContent>{`${t('Vote')} (V)`}</TooltipContent>
+            <TooltipContent shortcut={['V']}>{t('Vote')}</TooltipContent>
         </Tooltip>
+    );
+
+    const gifImage = hasGif && (
+        <img
+            src={gif.previewUrl}
+            alt={onGifOpen ? '' : t('GIF')}
+            loading="lazy"
+            className="h-auto w-full"
+        />
+    );
+
+    const menu = hasMenu && !ghost && (
+        <CardMenu
+            label={t('Card options')}
+            entries={menuEntries}
+            trigger={
+                <button
+                    type="button"
+                    data-slot="retro-card-menu"
+                    aria-label={t('Card options')}
+                    className={iconButtonClass}
+                >
+                    <Ellipsis className="size-4" aria-hidden />
+                </button>
+            }
+        />
     );
 
     return (
         <article
+            tabIndex={ghost ? -1 : 0}
+            aria-label={label}
+            aria-hidden={ghost || undefined}
+            aria-selected={selected || undefined}
+            {...rest}
+            ref={(node) => {
+                articleRef.current = node;
+                assignRef(ref, node);
+            }}
             data-slot="retro-card"
             data-card-id={id}
             data-color={color}
+            data-mine={isMine || undefined}
             data-masked={masked || undefined}
             data-locked={isLocked || undefined}
             data-editing={isEditing || undefined}
@@ -294,14 +443,10 @@ export function RetroCard({
             data-focused={focused || undefined}
             data-dragging={dragging || undefined}
             data-ghost={ghost || undefined}
-            tabIndex={ghost ? -1 : 0}
-            aria-label={label}
-            aria-hidden={ghost || undefined}
-            aria-selected={selected || undefined}
             onKeyDown={handleArticleKeyDown}
             className={cn(
-                columnClasses[color],
-                'group/card @container/card relative flex w-full min-w-0 flex-col gap-3 rounded-lg border border-(--c-b) bg-(--c) p-3 text-foreground shadow-card transition-shadow duration-140 ease-standard outline-none motion-reduce:transition-none',
+                columnColorClass(color),
+                'group/card @container/card relative flex w-full min-w-0 flex-col gap-3 rounded-lg border border-(--col-border) bg-(--col) p-3 text-foreground shadow-card transition-shadow duration-140 ease-standard outline-none motion-reduce:transition-none',
                 'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
                 selected && 'ring-2 ring-primary',
                 focused && 'ring-2 ring-skrum-info',
@@ -320,7 +465,7 @@ export function RetroCard({
                     data-slot="retro-card-lock"
                     role="status"
                     className={cn(
-                        'absolute -top-2.5 left-3 inline-flex max-w-[calc(100%-1.5rem)] items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-semibold',
+                        'absolute -top-2.5 right-3 left-3 inline-flex w-fit items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-semibold',
                         lockTagClasses[lockPresence] ??
                             'bg-primary text-primary-foreground',
                     )}
@@ -341,6 +486,46 @@ export function RetroCard({
                 </span>
             )}
 
+            {showInsight && (
+                <div
+                    data-slot="retro-card-insight"
+                    className="flex min-w-0 items-center gap-1.5 text-(--col-text)"
+                >
+                    {SentimentIcon && sentiment !== null && (
+                        <SentimentIcon
+                            role="img"
+                            aria-label={sentimentLabels[sentiment]}
+                            className="size-3.5 shrink-0"
+                        />
+                    )}
+                    {category !== null && (
+                        <span className="min-w-0 truncate rounded-full border border-(--col-border) bg-card px-2 text-xs/5 font-medium">
+                            {category}
+                        </span>
+                    )}
+                </div>
+            )}
+
+            {hasGif &&
+                (onGifOpen && !isEditing ? (
+                    <button
+                        type="button"
+                        data-slot="retro-card-gif"
+                        aria-label={t('GIF')}
+                        onClick={onGifOpen}
+                        className="block w-full overflow-hidden rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                        {gifImage}
+                    </button>
+                ) : (
+                    <div
+                        data-slot="retro-card-gif"
+                        className="w-full overflow-hidden rounded-md"
+                    >
+                        {gifImage}
+                    </div>
+                ))}
+
             {isEditing ? (
                 <textarea
                     data-slot="retro-card-input"
@@ -351,38 +536,47 @@ export function RetroCard({
                     readOnly={isLocked}
                     onChange={(event) => setDraft(event.target.value)}
                     onKeyDown={handleTextareaKeyDown}
+                    onFocus={() => {
+                        editorHadFocus.current = true;
+                    }}
+                    onBlur={() => {
+                        editorHadFocus.current = false;
+                    }}
                     className="field-sizing-content min-h-16 w-full resize-none bg-transparent text-sm/snug text-foreground outline-none"
                 />
             ) : (
-                <div className="flex items-start gap-2">
-                    {masked ? (
-                        <div
-                            data-slot="retro-card-masked-text"
-                            aria-hidden
-                            className="min-w-0 flex-1 rounded-sm bg-[repeating-linear-gradient(135deg,color-mix(in_oklab,var(--c-t)_22%,transparent)_0_0.375rem,transparent_0.375rem_0.75rem)] p-1"
-                        >
-                            <p className="text-sm/snug break-words blur-sm select-none">
-                                {text || '••••• ••••• •••• •••'}
+                (masked || hasText || isLocked) && (
+                    <div className="flex items-start gap-2">
+                        {masked && (
+                            <div
+                                data-slot="retro-card-masked-text"
+                                aria-hidden
+                                className="min-w-0 flex-1 rounded-sm bg-[repeating-linear-gradient(135deg,color-mix(in_oklab,var(--col-text)_22%,transparent)_0_0.375rem,transparent_0.375rem_0.75rem)] p-1"
+                            >
+                                <p className="text-sm/snug break-words blur-sm select-none">
+                                    {maskPlaceholder}
+                                </p>
+                            </div>
+                        )}
+                        {!masked && (
+                            <p
+                                data-slot="retro-card-text"
+                                className="min-w-0 flex-1 text-sm/snug break-words whitespace-pre-wrap"
+                            >
+                                {text}
                             </p>
-                        </div>
-                    ) : (
-                        <p
-                            data-slot="retro-card-text"
-                            className="min-w-0 flex-1 text-sm/snug break-words whitespace-pre-wrap"
-                        >
-                            {text}
-                        </p>
-                    )}
-                    {isLocked && (
-                        <span
-                            aria-hidden
-                            className="mt-1.5 flex shrink-0 items-center gap-px text-(--c-t)"
-                        >
-                            <i className="size-1 animate-trema rounded-full bg-current motion-reduce:animate-none" />
-                            <i className="size-1 animate-trema rounded-full bg-current [animation-delay:180ms] motion-reduce:animate-none" />
-                        </span>
-                    )}
-                </div>
+                        )}
+                        {isLocked && (
+                            <span
+                                aria-hidden
+                                className="mt-1.5 flex shrink-0 items-center gap-px text-(--col-text)"
+                            >
+                                <i className="size-1 animate-trema rounded-full bg-current motion-reduce:animate-none" />
+                                <i className="size-1 animate-trema rounded-full bg-current [animation-delay:180ms] motion-reduce:animate-none" />
+                            </span>
+                        )}
+                    </div>
+                )
             )}
 
             {!masked && !isEditing && (reactions.length > 0 || onReact) && (
@@ -417,6 +611,7 @@ export function RetroCard({
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                     <button
+                                        ref={addReactionRef}
                                         type="button"
                                         aria-label={t('Add a reaction')}
                                         aria-expanded={pickerOpen}
@@ -443,10 +638,7 @@ export function RetroCard({
                                         aria-label={t('React with :emoji', {
                                             emoji,
                                         })}
-                                        onClick={() => {
-                                            onReact(emoji);
-                                            setPickerOpen(false);
-                                        }}
+                                        onClick={() => pickReaction(emoji)}
                                         className="inline-flex h-6 items-center rounded-full border border-input bg-card px-2 text-xs outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
                                     >
                                         <span aria-hidden>{emoji}</span>
@@ -474,6 +666,7 @@ export function RetroCard({
                             {t('cancel')}
                         </span>
                         <span className="grow" />
+                        {editorTools}
                         <span
                             data-slot="retro-card-counter"
                             aria-live="polite"
@@ -490,15 +683,28 @@ export function RetroCard({
                 )}
 
                 {!isEditing && masked && (
-                    <span
-                        data-slot="retro-card-mask-note"
-                        className="inline-flex min-w-0 items-center gap-1.5 text-xs font-medium text-muted-foreground"
-                    >
-                        <EyeOff className="size-3.5 shrink-0" aria-hidden />
-                        <span className="truncate">
-                            {t('Hidden until the reveal')}
+                    <>
+                        <span
+                            data-slot="retro-card-mask-note"
+                            className="inline-flex min-w-0 items-center gap-1.5 text-xs font-medium text-muted-foreground"
+                        >
+                            <EyeOff className="size-3.5 shrink-0" aria-hidden />
+                            <span className="truncate">
+                                {t('Hidden until the reveal')}
+                            </span>
                         </span>
-                    </span>
+                        {isMine && (
+                            <span
+                                data-slot="retro-card-mine"
+                                className="shrink-0 rounded-full bg-card px-2 py-0.5 text-xs font-semibold text-muted-foreground"
+                            >
+                                {t('You')}
+                            </span>
+                        )}
+                        <span className="grow" />
+                        {footer}
+                        {menu}
+                    </>
                 )}
 
                 {!isEditing && !masked && (
@@ -519,10 +725,12 @@ export function RetroCard({
                         ) : (
                             <span
                                 data-slot="retro-card-author"
+                                title={author.name}
                                 className="inline-flex min-w-0 items-center gap-1.5 text-xs font-medium"
                             >
                                 <PersonAvatar
                                     name={author.name}
+                                    src={author.avatarUrl}
                                     presence={author.presence}
                                     size="xs"
                                     decorative
@@ -530,6 +738,14 @@ export function RetroCard({
                                 <span className="truncate">
                                     {firstName(author.name)}
                                 </span>
+                            </span>
+                        )}
+                        {isMine && (
+                            <span
+                                data-slot="retro-card-mine"
+                                className="shrink-0 rounded-full bg-card px-2 py-0.5 text-xs font-semibold text-muted-foreground"
+                            >
+                                {t('You')}
                             </span>
                         )}
                         {focused && (
@@ -547,14 +763,94 @@ export function RetroCard({
                             </span>
                         )}
                         <span className="grow" />
+                        {footer}
+                        {showComments &&
+                            (onOpenComments ? (
+                                <button
+                                    type="button"
+                                    data-slot="retro-card-comments"
+                                    aria-label={commentsLabel}
+                                    aria-expanded={commentsOpen}
+                                    onClick={onOpenComments}
+                                    className="inline-flex h-8 shrink-0 items-center gap-1 rounded-md px-2 text-xs font-semibold text-muted-foreground outline-none hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                                >
+                                    <MessageSquare
+                                        className="size-4"
+                                        aria-hidden
+                                    />
+                                    <span aria-hidden>{commentCount ?? 0}</span>
+                                </button>
+                            ) : (
+                                <span
+                                    data-slot="retro-card-comments"
+                                    role="img"
+                                    aria-label={commentsLabel}
+                                    className="inline-flex h-8 shrink-0 items-center gap-1 px-2 text-xs font-semibold text-muted-foreground"
+                                >
+                                    <MessageSquare
+                                        className="size-4"
+                                        aria-hidden
+                                    />
+                                    <span aria-hidden>{commentCount}</span>
+                                </span>
+                            ))}
+                        {onFocusToggle && (
+                            <button
+                                type="button"
+                                data-slot="retro-card-discuss"
+                                aria-pressed={focused}
+                                onClick={onFocusToggle}
+                                className={cn(
+                                    'inline-flex h-8 max-w-full min-w-0 items-center gap-1.5 rounded-md px-2 text-xs font-semibold outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                                    focused
+                                        ? 'bg-skrum-info-soft text-skrum-info-text'
+                                        : 'text-muted-foreground hover:bg-accent hover:text-foreground',
+                                )}
+                            >
+                                <Crosshair
+                                    className="size-4 shrink-0"
+                                    aria-hidden
+                                />
+                                <span className="truncate">{t('Discuss')}</span>
+                            </button>
+                        )}
+                        {canEdit && onEditStart && !isLocked && (
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <button
+                                        type="button"
+                                        data-slot="retro-card-edit"
+                                        aria-label={t('Edit card')}
+                                        onClick={onEditStart}
+                                        className={cn(
+                                            iconButtonClass,
+                                            revealOnHoverClass,
+                                        )}
+                                    >
+                                        <Pencil
+                                            className="size-4"
+                                            aria-hidden
+                                        />
+                                    </button>
+                                </TooltipTrigger>
+                                <TooltipContent shortcut={['↵']}>
+                                    {t('Edit card')}
+                                </TooltipContent>
+                            </Tooltip>
+                        )}
                         {canEdit && onDelete && !isLocked && (
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                     <button
                                         type="button"
-                                        aria-label={t('Delete')}
+                                        data-slot="retro-card-delete"
+                                        aria-label={t('Delete card')}
                                         onClick={onDelete}
-                                        className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground opacity-0 outline-none group-focus-within/card:opacity-100 group-hover/card:opacity-100 hover:text-skrum-destructive-text focus-visible:ring-2 focus-visible:ring-ring"
+                                        className={cn(
+                                            iconButtonClass,
+                                            revealOnHoverClass,
+                                            'hover:text-skrum-destructive-text',
+                                        )}
                                     >
                                         <Trash2
                                             className="size-4"
@@ -562,9 +858,12 @@ export function RetroCard({
                                         />
                                     </button>
                                 </TooltipTrigger>
-                                <TooltipContent>{`${t('Delete')} (Del)`}</TooltipContent>
+                                <TooltipContent shortcut={['Del']}>
+                                    {t('Delete card')}
+                                </TooltipContent>
                             </Tooltip>
                         )}
+                        {menu}
                         {mineVotes > 0 && (
                             <span
                                 data-slot="retro-card-my-votes"
@@ -590,18 +889,21 @@ export function RetroCard({
                                         type="button"
                                         aria-label={t('Remove a vote')}
                                         onClick={() => vote(-1)}
-                                        className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
+                                        className={iconButtonClass}
                                     >
                                         <Minus className="size-4" aria-hidden />
                                     </button>
                                 </TooltipTrigger>
-                                <TooltipContent>{`${t('Remove a vote')} (Shift+V)`}</TooltipContent>
+                                <TooltipContent shortcut={['Shift', 'V']}>
+                                    {t('Remove a vote')}
+                                </TooltipContent>
                             </Tooltip>
                         )}
                         {voteButton}
                     </>
                 )}
             </div>
+            {!masked && !ghost && children}
         </article>
     );
 }

@@ -18,6 +18,8 @@ function Example({ label, children }: { label: string; children: ReactNode }) {
     );
 }
 
+const sampleNames = ['Inès Bernard', 'Lucas Durand', 'Camille Roux'];
+
 function useSampleCards(
     color: RetroCardProps['color'],
 ): [RetroCardProps[], RetroCardProps[]] {
@@ -25,13 +27,11 @@ function useSampleCards(
     const ines = {
         id: 'ines',
         name: 'Inès Bernard',
-        initials: 'IB',
         presence: 9,
     } as const;
     const lucas = {
         id: 'lucas',
         name: 'Lucas Durand',
-        initials: 'LD',
         presence: 5,
     } as const;
 
@@ -73,7 +73,7 @@ function Interactive() {
             cards={items}
             canEdit
             votes={{ total: 11, mine: 2 }}
-            onRename={setTitle}
+            onRename={(next) => setTitle(next ?? '')}
             onUngroup={(cardId) =>
                 setItems((current) =>
                     current.filter((card) => card.id !== cardId),
@@ -88,6 +88,32 @@ export default function CardGroupSection() {
     const [coral, coralTwo] = useSampleCards('coral');
     const [sky] = useSampleCards('sky');
     const [moss] = useSampleCards('moss');
+    const longText = `${t('Code reviews happen too late.')} `
+        .repeat(12)
+        .slice(0, 280);
+    const thirty: RetroCardProps[] = Array.from({ length: 30 }, (_, index) => ({
+        id: `thirty-${index}`,
+        color: 'amber',
+        text:
+            index === 1
+                ? longText
+                : `${t('Nobody is assigned to reviews.')} (${index + 1})`,
+        author:
+            index % 5 === 0
+                ? null
+                : {
+                      id: `author-${index % 14}`,
+                      name:
+                          index === 2
+                              ? 'Maximilienne-Alexandrine de la Rochefoucauld-Montmorency III'
+                              : `${sampleNames[index % sampleNames.length]} ${(index % 14) + 1}`,
+                      avatarUrl:
+                          index % 3 === 0
+                              ? `/avatars/${String(index % 10).repeat(32)}.svg`
+                              : null,
+                  },
+        votes: { total: index % 7, mine: 0 },
+    }));
 
     return (
         <div className="flex flex-col gap-6 p-4 md:p-6">
@@ -165,6 +191,74 @@ export default function CardGroupSection() {
                     />
                 </Example>
             </div>
+            <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-3">
+                <Example
+                    label={t('Ungroup beside the vote and delete controls')}
+                >
+                    <CardGroup
+                        id="controls"
+                        title={t('Code review quality')}
+                        color="red"
+                        cards={coral.map((card) => ({
+                            ...card,
+                            color: 'red',
+                            canEdit: true,
+                            canVote: true,
+                            isMine: true,
+                            votes: { total: 3, mine: 1 },
+                            onVote: noop,
+                            onDelete: noop,
+                            onEditStart: noop,
+                        }))}
+                        canEdit
+                        votes={{ total: 9, mine: 3 }}
+                        onRename={noop}
+                        onUngroup={noop}
+                    />
+                </Example>
+                <Example label={t('Masked cards: no text in title or labels')}>
+                    <CardGroup
+                        id="masked"
+                        title=""
+                        color="blue"
+                        cards={coralTwo.map((card) => ({
+                            ...card,
+                            color: 'blue',
+                            text: null,
+                            masked: true,
+                        }))}
+                        canEdit
+                        onUngroup={noop}
+                    />
+                </Example>
+                <Example label={t('Group of 30 cards, collapsed')}>
+                    <CardGroup
+                        id="thirty-collapsed"
+                        title={t('Everything about deployments')}
+                        color="amber"
+                        cards={thirty}
+                        collapsed
+                        votes={{ total: 200, mine: 5 }}
+                    />
+                </Example>
+            </div>
+            <Example label={t('Group of 30 cards, expanded (20rem)')}>
+                <div className="w-80 max-w-full">
+                    <CardGroup
+                        id="thirty"
+                        title={t('Everything about deployments')}
+                        color="green"
+                        cards={thirty.map((card) => ({
+                            ...card,
+                            color: 'green',
+                        }))}
+                        canEdit
+                        votes={{ total: 200, mine: 5 }}
+                        onRename={noop}
+                        onUngroup={noop}
+                    />
+                </div>
+            </Example>
             <Example
                 label={t('Interactive: click the title, collapse, ungroup')}
             >

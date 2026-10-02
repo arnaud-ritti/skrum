@@ -1,11 +1,12 @@
 import { ChevronDown, ChevronRight, ThumbsUp, Unlink } from 'lucide-react';
-import { useState } from 'react';
-import type { KeyboardEvent } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import type { ComponentProps, KeyboardEvent } from 'react';
 import { RetroCard } from '@/components/skrum/retro-card';
 import type {
     ColumnColor,
     RetroCardProps,
 } from '@/components/skrum/retro-card';
+import { columnColorClass } from '@/components/skrum/retro-template-picker';
 import { PersonAvatar } from '@/components/ui/avatar';
 import {
     Tooltip,
@@ -15,7 +16,10 @@ import {
 import { useTrans } from '@/hooks/use-trans';
 import { cn } from '@/lib/utils';
 
-export type CardGroupProps = {
+export type CardGroupProps = Omit<
+    ComponentProps<'section'>,
+    'id' | 'title' | 'color' | 'children'
+> & {
     id: string;
     title: string;
     color: ColumnColor;
@@ -25,22 +29,11 @@ export type CardGroupProps = {
     votes?: { total: number | null; mine: number };
     canEdit?: boolean;
     dropTarget?: boolean;
+    titleMaxLength?: number;
     onToggle?: (collapsed: boolean) => void;
-    onRename?: (title: string) => void;
+    /** `null` clears the name, which the server accepts. */
+    onRename?: (title: string | null) => void;
     onUngroup?: (cardId: string) => void;
-    className?: string;
-};
-
-const columnClasses: Record<ColumnColor, string> = {
-    sun: '[--c:var(--skrum-col-sun)] [--c-b:var(--skrum-col-sun-border)] [--c-t:var(--skrum-col-sun-text)]',
-    apricot:
-        '[--c:var(--skrum-col-apricot)] [--c-b:var(--skrum-col-apricot-border)] [--c-t:var(--skrum-col-apricot-text)]',
-    coral: '[--c:var(--skrum-col-coral)] [--c-b:var(--skrum-col-coral-border)] [--c-t:var(--skrum-col-coral-text)]',
-    plum: '[--c:var(--skrum-col-plum)] [--c-b:var(--skrum-col-plum-border)] [--c-t:var(--skrum-col-plum-text)]',
-    iris: '[--c:var(--skrum-col-iris)] [--c-b:var(--skrum-col-iris-border)] [--c-t:var(--skrum-col-iris-text)]',
-    sky: '[--c:var(--skrum-col-sky)] [--c-b:var(--skrum-col-sky-border)] [--c-t:var(--skrum-col-sky-text)]',
-    lagoon: '[--c:var(--skrum-col-lagoon)] [--c-b:var(--skrum-col-lagoon-border)] [--c-t:var(--skrum-col-lagoon-text)]',
-    moss: '[--c:var(--skrum-col-moss)] [--c-b:var(--skrum-col-moss-border)] [--c-t:var(--skrum-col-moss-text)]',
 };
 
 const defaultTitleLength = 40;
@@ -64,12 +57,17 @@ export function CardGroup({
     votes,
     canEdit = false,
     dropTarget = false,
+    titleMaxLength = 60,
     onToggle,
     onRename,
     onUngroup,
     className,
+    ...rest
 }: CardGroupProps) {
     const { t } = useTrans();
+    const titleRef = useRef<HTMLButtonElement>(null);
+    const restoreFocus = useRef(false);
+    const settled = useRef(true);
     const [isCollapsed, setIsCollapsed] = useState(collapsed ?? false);
     const [seenCollapsed, setSeenCollapsed] = useState(collapsed);
     const [isEditing, setIsEditing] = useState(editingTitle);
@@ -94,12 +92,46 @@ export function CardGroup({
     }
 
     const firstCard = cards[0];
+    const editing = canEdit && isEditing;
+
+    useEffect(() => {
+        if (editing) {
+            settled.current = false;
+
+            return;
+        }
+
+        if (!restoreFocus.current) {
+            return;
+        }
+
+        restoreFocus.current = false;
+        titleRef.current?.focus();
+    }, [editing]);
+
+    function readableText(card: RetroCardProps | undefined): string {
+        if (!card) {
+            return '';
+        }
+
+        if (card.masked) {
+            return t('Card hidden until the reveal');
+        }
+
+        if (card.text !== null && card.text.trim() !== '') {
+            return card.text;
+        }
+
+        return card.gif ? t('GIF') : '';
+    }
+
+    const fallbackTitle = firstCard?.masked
+        ? ''
+        : truncate(readableText(firstCard), defaultTitleLength);
     const displayTitle =
         title.trim() !== ''
             ? title.trim()
-            : truncate(firstCard?.text ?? '', defaultTitleLength) ||
-              t('Untitled group');
-    const editing = canEdit && isEditing;
+            : fallbackTitle || t('Untitled group');
     const hiddenCards = cards.slice(1);
     const sliceCount = Math.min(hiddenCards.length, 2);
     const authors = cards
@@ -123,26 +155,34 @@ export function CardGroup({
             return;
         }
 
-        setDraft(title.trim() !== '' ? title : displayTitle);
+        setDraft(title.trim() !== '' ? title : '');
         setIsEditing(true);
     }
 
-    function commit(): void {
-        const next = draft.trim();
-
-        setIsEditing(false);
-
-        if (next === '' || next === title.trim()) {
+    function commit(viaKeyboard: boolean): void {
+        if (settled.current) {
             return;
         }
 
-        onRename?.(next);
+        const next = draft.trim();
+
+        settled.current = true;
+        restoreFocus.current = viaKeyboard;
+        setIsEditing(false);
+
+        if (next === title.trim()) {
+            return;
+        }
+
+        onRename?.(next === '' ? null : next);
     }
 
     function handleTitleKeyDown(event: KeyboardEvent<HTMLInputElement>): void {
         if (event.key === 'Escape') {
             event.preventDefault();
             event.stopPropagation();
+            settled.current = true;
+            restoreFocus.current = true;
             setIsEditing(false);
 
             return;
@@ -150,7 +190,7 @@ export function CardGroup({
 
         if (event.key === 'Enter' && !event.nativeEvent.isComposing) {
             event.preventDefault();
-            commit();
+            commit(true);
         }
     }
 
@@ -171,6 +211,7 @@ export function CardGroup({
                         >
                             <PersonAvatar
                                 name={author.name}
+                                src={author.avatarUrl}
                                 presence={author.presence}
                                 size="xs"
                                 decorative
@@ -210,21 +251,22 @@ export function CardGroup({
 
     return (
         <section
+            aria-label={t('Group: :title, :count cards', {
+                title: displayTitle,
+                count: cards.length,
+            })}
+            {...rest}
             data-slot="card-group"
             data-group-id={id}
             data-color={color}
             data-collapsed={isCollapsed || undefined}
             data-editing={editing || undefined}
             data-drop-target={dropTarget || undefined}
-            aria-label={t('Group: :title, :count cards', {
-                title: displayTitle,
-                count: cards.length,
-            })}
             className={cn(
-                columnClasses[color],
-                '@container/card relative flex w-full min-w-0 flex-col gap-2 rounded-xl border-[1.5px] border-(--c-b) bg-[color-mix(in_oklab,var(--c)_55%,var(--card))] p-3 text-foreground shadow-card transition-shadow duration-140 ease-standard motion-reduce:transition-none',
+                columnColorClass(color),
+                '@container/card relative flex w-full min-w-0 flex-col gap-2 rounded-xl border-[1.5px] border-(--col-border) bg-[color-mix(in_oklab,var(--col)_55%,var(--card))] p-3 text-foreground shadow-card transition-shadow duration-140 ease-standard motion-reduce:transition-none',
                 dropTarget &&
-                    'outline-2 outline-offset-2 outline-(--c-t) outline-dashed',
+                    'outline-2 outline-offset-2 outline-(--col-text) outline-dashed',
                 className,
             )}
         >
@@ -237,7 +279,7 @@ export function CardGroup({
                             aria-expanded={!isCollapsed}
                             aria-label={toggleLabel}
                             onClick={toggle}
-                            className="inline-flex size-8 shrink-0 items-center justify-center rounded-md text-(--c-t) transition-colors duration-140 ease-standard outline-none hover:bg-card/70 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none"
+                            className="inline-flex size-8 shrink-0 items-center justify-center rounded-md text-(--col-text) transition-colors duration-140 ease-standard outline-none hover:bg-card/70 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none"
                         >
                             <Chevron className="size-4" aria-hidden />
                         </button>
@@ -251,13 +293,15 @@ export function CardGroup({
                         aria-label={t('Group title')}
                         autoFocus
                         value={draft}
+                        maxLength={titleMaxLength}
                         onChange={(event) => setDraft(event.target.value)}
                         onKeyDown={handleTitleKeyDown}
-                        onBlur={commit}
+                        onBlur={() => commit(false)}
                         className="h-7 min-w-0 flex-1 rounded-sm bg-card px-1.5 text-sm font-semibold text-foreground ring-2 ring-ring outline-none"
                     />
                 ) : canEdit ? (
                     <button
+                        ref={titleRef}
                         type="button"
                         data-slot="card-group-title"
                         title={t('Click to rename')}
@@ -278,7 +322,7 @@ export function CardGroup({
                 <span
                     data-slot="card-group-count"
                     aria-hidden
-                    className="shrink-0 rounded-full border border-(--c-b) bg-card px-2 text-xs/5 font-bold text-(--c-t)"
+                    className="shrink-0 rounded-full border border-(--col-border) bg-card px-2 text-xs/5 font-bold text-(--col-text)"
                 >
                     {cards.length}
                 </span>
@@ -290,19 +334,22 @@ export function CardGroup({
                         data-slot="card-group-stack"
                         className="relative isolate mb-3"
                     >
-                        <RetroCard {...firstCard} className="shadow-none" />
+                        <RetroCard
+                            {...firstCard}
+                            className={cn('shadow-none', firstCard.className)}
+                        />
                         {sliceCount > 0 && (
                             <div
                                 aria-hidden
                                 data-slot="card-group-slice"
-                                className="absolute inset-0 -z-10 translate-x-1 translate-y-1.5 rotate-1 rounded-lg border border-(--c-b) bg-(--c)"
+                                className="absolute inset-0 -z-10 translate-x-1 translate-y-1.5 rotate-1 rounded-lg border border-(--col-border) bg-(--col)"
                             />
                         )}
                         {sliceCount > 1 && (
                             <div
                                 aria-hidden
                                 data-slot="card-group-slice"
-                                className="absolute inset-0 -z-20 translate-x-2 translate-y-3 rotate-2 rounded-lg border border-(--c-b) bg-(--c)"
+                                className="absolute inset-0 -z-20 translate-x-2 translate-y-3 rotate-2 rounded-lg border border-(--col-border) bg-(--col)"
                             />
                         )}
                         {hiddenCards.length > 0 && (
@@ -311,11 +358,7 @@ export function CardGroup({
                                 className="sr-only"
                             >
                                 {hiddenCards.map((card) => (
-                                    <li key={card.id}>
-                                        {card.masked
-                                            ? t('Card hidden until the reveal')
-                                            : card.text}
-                                    </li>
+                                    <li key={card.id}>{readableText(card)}</li>
                                 ))}
                             </ul>
                         )}
@@ -327,40 +370,49 @@ export function CardGroup({
                     className="flex min-w-0 flex-col gap-2"
                 >
                     {cards.map((card) => (
-                        <li
-                            key={card.id}
-                            className="group/item relative min-w-0"
-                        >
-                            <RetroCard {...card} className="shadow-none" />
-                            {canEdit && onUngroup && (
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <button
-                                            type="button"
-                                            data-slot="card-group-ungroup"
-                                            aria-label={t(
-                                                'Remove from group: :text',
-                                                {
-                                                    text: truncate(
-                                                        card.text,
-                                                        40,
-                                                    ),
-                                                },
-                                            )}
-                                            onClick={() => onUngroup(card.id)}
-                                            className="absolute right-1.5 bottom-1.5 inline-flex size-7 items-center justify-center rounded-md bg-card text-muted-foreground opacity-0 transition-opacity duration-140 ease-standard outline-none group-focus-within/item:opacity-100 group-hover/item:opacity-100 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none"
-                                        >
-                                            <Unlink
-                                                className="size-4"
-                                                aria-hidden
-                                            />
-                                        </button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                        {t('Remove from group')}
-                                    </TooltipContent>
-                                </Tooltip>
-                            )}
+                        <li key={card.id} className="min-w-0">
+                            <RetroCard
+                                {...card}
+                                className={cn('shadow-none', card.className)}
+                                footer={
+                                    <>
+                                        {card.footer}
+                                        {canEdit && onUngroup && (
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <button
+                                                        type="button"
+                                                        data-slot="card-group-ungroup"
+                                                        aria-label={t(
+                                                            'Remove from group: :text',
+                                                            {
+                                                                text: truncate(
+                                                                    readableText(
+                                                                        card,
+                                                                    ),
+                                                                    40,
+                                                                ),
+                                                            },
+                                                        )}
+                                                        onClick={() =>
+                                                            onUngroup(card.id)
+                                                        }
+                                                        className="inline-flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground outline-none hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                                                    >
+                                                        <Unlink
+                                                            className="size-4"
+                                                            aria-hidden
+                                                        />
+                                                    </button>
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    {t('Remove from group')}
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        )}
+                                    </>
+                                }
+                            />
                         </li>
                     ))}
                 </ul>

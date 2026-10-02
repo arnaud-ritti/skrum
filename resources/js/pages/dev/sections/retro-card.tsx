@@ -29,6 +29,32 @@ const colors: ColumnColor[] = [
     'moss',
 ];
 
+const serverColors: ColumnColor[] = [
+    'green',
+    'red',
+    'blue',
+    'amber',
+    'purple',
+    'slate',
+];
+
+function DiscussExample() {
+    const { t } = useTrans();
+    const [focused, setFocused] = useState(true);
+
+    return (
+        <RetroCard
+            id="discuss"
+            color="lagoon"
+            text={t('E2E tests break one time out of three in CI.')}
+            author={{ id: 'b', name: 'Theo Martin', presence: 2 }}
+            focused={focused}
+            votes={{ total: 9, mine: 0 }}
+            onFocusToggle={() => setFocused((value) => !value)}
+        />
+    );
+}
+
 function Interactive() {
     const { t } = useTrans();
     const [text, setText] = useState(t('Too many meetings on Monday morning'));
@@ -46,7 +72,6 @@ function Interactive() {
             author={{
                 id: 'a',
                 name: 'Camille Roux',
-                initials: 'CR',
                 presence: 4,
             }}
             editing={editing}
@@ -72,6 +97,8 @@ function Interactive() {
                         : [...current, { emoji, count: 1, mine: true }],
                 )
             }
+            isMine
+            onDelete={noop}
             onEditStart={() => setEditing(true)}
             onEditCancel={() => setEditing(false)}
             onEdit={(value) => {
@@ -87,21 +114,30 @@ export default function RetroCardSection() {
     const camille = {
         id: 'a',
         name: 'Camille Roux',
-        initials: 'CR',
         presence: 4,
     } as const;
     const theo = {
         id: 'b',
         name: 'Theo Martin',
-        initials: 'TM',
         presence: 2,
     } as const;
     const ines = {
         id: 'c',
         name: 'Ines Blanc',
-        initials: 'IB',
         presence: 9,
     } as const;
+    const withAvatar = {
+        id: 'd',
+        name: 'Lucas Durand',
+        avatarUrl: `/avatars/${'3'.repeat(32)}.svg`,
+    };
+    const sampleGif = {
+        previewUrl: `/avatars/${'7'.repeat(32)}.svg`,
+        url: `/avatars/${'7'.repeat(32)}.svg`,
+    };
+    const sentence = `${t('E2E tests break one time out of three in CI.')} `;
+    const text280 = sentence.repeat(10).slice(0, 280);
+    const text1000 = sentence.repeat(40).slice(0, 1000);
 
     return (
         <div className="flex flex-col gap-8 p-4 md:p-6">
@@ -251,6 +287,179 @@ export default function RetroCardSection() {
                     <Interactive />
                 </Example>
             </div>
+            <div className="grid grid-cols-1 gap-x-5 gap-y-8 sm:grid-cols-2 xl:grid-cols-4">
+                <Example label={t('My card: You badge, edit and delete')}>
+                    <RetroCard
+                        id="mine"
+                        color="green"
+                        text={t('Code review happens too late')}
+                        author={withAvatar}
+                        isMine
+                        canEdit
+                        onEditStart={noop}
+                        onDelete={noop}
+                    />
+                </Example>
+                <Example label={t('GIF with text, comments')}>
+                    <RetroCard
+                        id="gif-text"
+                        color="blue"
+                        text={t('The release on Friday, in one picture.')}
+                        gif={sampleGif}
+                        author={withAvatar}
+                        commentCount={3}
+                        commentsOpen={false}
+                        onGifOpen={noop}
+                        onOpenComments={noop}
+                        onReact={noop}
+                    />
+                </Example>
+                <Example label={t('GIF only, no text')}>
+                    <RetroCard
+                        id="gif-only"
+                        color="amber"
+                        text={null}
+                        gif={sampleGif}
+                        author={null}
+                        onGifOpen={noop}
+                    />
+                </Example>
+                <Example label={t('Insight: sentiment and category')}>
+                    <RetroCard
+                        id="insight"
+                        color="red"
+                        text={t(
+                            'We find out about scope changes in the middle of the sprint.',
+                        )}
+                        author={theo}
+                        insight={{
+                            sentiment: 'negative',
+                            category: t('Planning'),
+                        }}
+                        votes={{ total: 5, mine: 0 }}
+                    />
+                </Example>
+                <Example label={t('Discussion: facilitator highlight toggle')}>
+                    <DiscussExample />
+                </Example>
+                <Example label={t('Comments open, thread in the card')}>
+                    <RetroCard
+                        id="thread"
+                        color="purple"
+                        text={t('Previous retros had no follow-up on actions')}
+                        author={ines}
+                        commentCount={1}
+                        commentsOpen
+                        onOpenComments={noop}
+                    >
+                        <p className="rounded-md bg-card p-2 text-xs text-muted-foreground">
+                            {t('Slot for the comment thread')}
+                        </p>
+                    </RetroCard>
+                </Example>
+                <Example label={t('Menu and footer slot')}>
+                    <RetroCard
+                        id="menu"
+                        color="slate"
+                        text={t('E2E tests break one time out of three in CI.')}
+                        author={camille}
+                        votes={{ total: 4, mine: 0 }}
+                        menuEntries={[
+                            {
+                                type: 'item',
+                                label: t('Create an action'),
+                                onSelect: noop,
+                            },
+                            {
+                                type: 'item',
+                                label: t('Copy link'),
+                                onSelect: noop,
+                            },
+                        ]}
+                        footer={
+                            <span className="truncate rounded-full bg-card px-2 py-0.5 text-xs text-muted-foreground">
+                                {t('Footer slot')}
+                            </span>
+                        }
+                    />
+                </Example>
+                <Example label={t('Masked, my own card')}>
+                    <RetroCard
+                        id="masked-mine"
+                        color="sky"
+                        masked
+                        isMine
+                        text={null}
+                        author={null}
+                    />
+                </Example>
+            </div>
+            <Example label={t('Extreme data in a 20rem container')}>
+                <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                    <div className="w-80 max-w-full">
+                        <RetroCard
+                            id="extreme-280"
+                            color="moss"
+                            text={text280}
+                            author={{
+                                id: 'long',
+                                name: 'Maximilienne-Alexandrine de la Rochefoucauld-Montmorency III',
+                            }}
+                            isMine
+                            canEdit
+                            canVote
+                            commentCount={128}
+                            reactions={[
+                                { emoji: '🎉', count: 200, mine: true },
+                                { emoji: '💡', count: 99, mine: false },
+                                { emoji: '❤️', count: 12, mine: false },
+                            ]}
+                            votes={{ total: 200, mine: 5 }}
+                            onVote={noop}
+                            onReact={noop}
+                            onEditStart={noop}
+                            onDelete={noop}
+                            onOpenComments={noop}
+                            onFocusToggle={noop}
+                        />
+                    </div>
+                    <div className="w-80 max-w-full">
+                        <RetroCard
+                            id="extreme-1000"
+                            color="coral"
+                            text={text1000}
+                            author={{
+                                id: 'long-2',
+                                name: 'Maximilienne-Alexandrine-de-la-Rochefoucauld-Montmorency-III',
+                            }}
+                            votes={{ total: 3, mine: 0 }}
+                        />
+                    </div>
+                    <div className="w-80 max-w-full">
+                        <RetroCard
+                            id="extreme-unbroken"
+                            color="iris"
+                            text={'a'.repeat(280)}
+                            author={null}
+                            votes={{ total: 0, mine: 0 }}
+                        />
+                    </div>
+                </div>
+            </Example>
+            <Example label={t('Colors sent by the server today')}>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                    {serverColors.map((color) => (
+                        <RetroCard
+                            key={color}
+                            id={color}
+                            color={color}
+                            text={t('Sample card text')}
+                            author={camille}
+                            votes={{ total: 2, mine: 0 }}
+                        />
+                    ))}
+                </div>
+            </Example>
             <Example label={t('All column colors')}>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
                     {colors.map((color) => (
