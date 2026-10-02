@@ -37,3 +37,9 @@ export type SsoProviderOption = {
     key: SsoProviderKey;
     label: string;
 };
+
+export type TwoFactorSummary = {
+    confirmedAt: string | null;
+    recoveryCodesRemaining: number | null;
+    recoveryCodesTotal: number;
+};
