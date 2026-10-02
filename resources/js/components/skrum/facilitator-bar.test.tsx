@@ -1,0 +1,210 @@
+import { fireEvent, screen, within } from '@testing-library/react';
+import { Eye, Lock, Trash2, ArrowRight } from 'lucide-react';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
+import { FacilitatorBar } from '@/components/skrum/facilitator-bar';
+import type { FacilitatorAction } from '@/components/skrum/facilitator-bar';
+import { renderWithProviders } from '@/test/render';
+
+function makeActions(overrides: Partial<FacilitatorAction>[] = []) {
+    const base: FacilitatorAction[] = [
+        {
+            id: 'reveal',
+            label: 'Reveal cards',
+            icon: Eye,
+            onSelect: vi.fn(),
+            kind: 'toggle',
+            pressed: false,
+            shortcut: 'R',
+        },
+        {
+            id: 'lock',
+            label: 'Lock board',
+            icon: Lock,
+            onSelect: vi.fn(),
+            kind: 'toggle',
+            pressed: true,
+        },
+        {
+            id: 'clear',
+            label: 'Clear board',
+            icon: Trash2,
+            onSelect: vi.fn(),
+            tone: 'destructive',
+        },
+    ];
+
+    return base.map((action, index) => ({ ...action, ...overrides[index] }));
+}
+
+const next: FacilitatorAction = {
+    id: 'next',
+    label: 'Grouping',
+    icon: ArrowRight,
+    onSelect: vi.fn(),
+};
+
+beforeAll(() => {
+    vi.stubGlobal(
+        'ResizeObserver',
+        class {
+            observe(): void {}
+            unobserve(): void {}
+            disconnect(): void {}
+        },
+    );
+});
+
+describe('FacilitatorBar', () => {
+    it('renders a toolbar with toggles reflecting pressed state', () => {
+        renderWithProviders(<FacilitatorBar actions={makeActions()} />);
+
+        expect(
+            screen.getByRole('toolbar', { name: 'Facilitator tools' }),
+        ).toBeTruthy();
+        expect(
+            screen
+                .getByRole('button', { name: 'Reveal cards' })
+                .getAttribute('aria-pressed'),
+        ).toBe('false');
+        expect(
+            screen
+                .getByRole('button', { name: 'Lock board' })
+                .getAttribute('aria-pressed'),
+        ).toBe('true');
+        expect(
+            screen
+                .getByRole('button', { name: 'Clear board' })
+                .hasAttribute('aria-pressed'),
+        ).toBe(false);
+    });
+
+    it('calls onSelect for actions and the primary button', () => {
+        const actions = makeActions();
+        const onNext = vi.fn();
+        renderWithProviders(
+            <FacilitatorBar
+                actions={actions}
+                primary={{ ...next, onSelect: onNext }}
+            />,
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'Reveal cards' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Grouping' }));
+
+        expect(actions[0].onSelect).toHaveBeenCalledTimes(1);
+        expect(onNext).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not fire a disabled action and exposes its reason', () => {
+        const actions = makeActions([
+            { disabled: true, disabledReason: 'Nobody has written yet' },
+        ]);
+        renderWithProviders(<FacilitatorBar actions={actions} />);
+
+        const button = screen.getByRole('button', { name: 'Reveal cards' });
+        fireEvent.click(button);
+
+        expect(actions[0].onSelect).not.toHaveBeenCalled();
+        expect(button.getAttribute('aria-disabled')).toBe('true');
+        expect(button.getAttribute('aria-describedby')).toBeTruthy();
+        expect(
+            document.getElementById(
+                button.getAttribute('aria-describedby') ?? '',
+            )?.textContent,
+        ).toBe('Nobody has written yet');
+    });
+
+    it('shows destructive actions with icon and label', () => {
+        renderWithProviders(<FacilitatorBar actions={makeActions()} />);
+
+        const button = screen.getByRole('button', { name: 'Clear board' });
+
+        expect(button.querySelector('svg')).not.toBeNull();
+        expect(button.textContent).toContain('Clear board');
+    });
+
+    it('moves focus with arrow keys, wrapping, and keeps one tab stop', () => {
+        renderWithProviders(
+            <FacilitatorBar actions={makeActions()} primary={next} />,
+        );
+
+        const buttons = screen.getAllByRole('button');
+        expect(buttons.filter((b) => b.tabIndex === 0)).toHaveLength(1);
+
+        buttons[0].focus();
+        fireEvent.keyDown(buttons[0], { key: 'ArrowRight' });
+        expect(document.activeElement).toBe(buttons[1]);
+        expect(buttons[1].tabIndex).toBe(0);
+        expect(buttons[0].tabIndex).toBe(-1);
+
+        fireEvent.keyDown(buttons[1], { key: 'End' });
+        expect(document.activeElement).toBe(buttons[3]);
+
+        fireEvent.keyDown(buttons[3], { key: 'ArrowRight' });
+        expect(document.activeElement).toBe(buttons[0]);
+
+        fireEvent.keyDown(buttons[0], { key: 'ArrowLeft' });
+        expect(document.activeElement).toBe(buttons[3]);
+    });
+
+    it('renders start and end slots', () => {
+        renderWithProviders(
+            <FacilitatorBar
+                actions={makeActions()}
+                start={<span>05:00</span>}
+                end={<span>Done</span>}
+            />,
+        );
+
+        expect(screen.getByText('05:00')).toBeTruthy();
+        expect(screen.getByText('Done')).toBeTruthy();
+    });
+
+    it('compact mode shows icon-only named buttons and a More menu', async () => {
+        const actions = makeActions();
+        renderWithProviders(<FacilitatorBar actions={actions} compact />);
+
+        const reveal = screen.getByRole('button', { name: 'Reveal cards' });
+        expect(reveal.textContent).toBe('');
+        expect(
+            screen.queryByRole('button', { name: 'Clear board' }),
+        ).toBeNull();
+
+        const more = screen.getByRole('button', { name: 'More' });
+        fireEvent.keyDown(more, { key: 'Enter' });
+
+        const item = await screen.findByRole('menuitem', {
+            name: /Clear board/,
+        });
+        expect(within(item).getByText('Clear board')).toBeTruthy();
+        fireEvent.click(item);
+
+        expect(actions[2].onSelect).toHaveBeenCalledTimes(1);
+    });
+
+    it('updates when props change', () => {
+        const actions = makeActions();
+        const { rerender } = renderWithProviders(
+            <FacilitatorBar actions={actions} />,
+        );
+
+        rerender(
+            <FacilitatorBar
+                actions={makeActions([{ pressed: true, label: 'Hide cards' }])}
+            />,
+        );
+
+        expect(
+            screen
+                .getByRole('button', { name: 'Hide cards' })
+                .getAttribute('aria-pressed'),
+        ).toBe('true');
+    });
+
+    it('handles an empty action list', () => {
+        renderWithProviders(<FacilitatorBar actions={[]} />);
+
+        expect(screen.getByRole('toolbar')).toBeTruthy();
+        expect(screen.queryAllByRole('button')).toHaveLength(0);
+    });
+});
