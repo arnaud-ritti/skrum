@@ -1,5 +1,5 @@
 import { Command as CommandPrimitive } from "cmdk"
-import { SearchIcon } from "lucide-react"
+import { ChevronDownIcon, SearchIcon } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 import * as React from "react"
 
@@ -10,8 +10,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { Badge } from "@/components/ui/badge"
 import { Spinner } from "@/components/ui/spinner"
 import { useRestoreFocus } from "@/components/ui/use-restore-focus"
+import { matchesShortcut, useShortcut } from "@/hooks/use-shortcut"
 import { useTrans } from "@/hooks/use-trans"
 import { cn } from "@/lib/utils"
 
@@ -256,10 +258,12 @@ function CommandFooter({ className, ...props }: React.ComponentProps<"div">) {
 
 export interface CommandPaletteItem {
   id: string
-  group: "actions" | "recent" | "goto"
+  group: "actions" | "recent" | "results" | "goto"
   label: string
   icon: LucideIcon
   meta?: string
+  /** A status beside the label, such as "Live" on a session in progress. */
+  badge?: string
   shortcut?: string[]
   keywords?: string[]
   onSelect: () => void
@@ -271,10 +275,18 @@ export interface CommandPaletteProps {
   items: CommandPaletteItem[]
   placeholder?: string
   emptyText?: string
+  /** True while the items of the group "results" are being fetched. */
   loading?: boolean
+  /** Told what is typed, and an empty query when the palette closes. */
+  onSearchChange?: (value: string) => void
 }
 
-const paletteGroups = ["actions", "recent", "goto"] as const
+const paletteGroups = ["actions", "recent", "results", "goto"] as const
+
+type PaletteGroup = (typeof paletteGroups)[number]
+
+/** Items of a group shown before "Show more" (Command README). */
+const GroupLimit = 5
 
 function normalize(value: string): string {
   return value
@@ -317,40 +329,17 @@ function HighlightedLabel({ label, query }: { label: string; query: string }) {
   )
 }
 
-function isEditingTarget(target: EventTarget | null): boolean {
-  if (!(target instanceof HTMLElement)) {
-    return false
-  }
-
-  return (
-    target.isContentEditable ||
-    ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName)
-  )
-}
-
+/**
+ * `mod+K` and `/` open the palette, except from a field being edited and,
+ * for `/`, while another dialog or menu is open. The palette closes on
+ * `mod+K` from its own field (see `CommandPalette`).
+ */
 function useCommandPaletteShortcut(
   open: boolean,
   onOpenChange: (open: boolean) => void
 ): void {
-  React.useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key.toLowerCase() === "k" && (event.metaKey || event.ctrlKey)) {
-        event.preventDefault()
-        onOpenChange(!open)
-
-        return
-      }
-
-      if (event.key === "/" && !open && !isEditingTarget(event.target)) {
-        event.preventDefault()
-        onOpenChange(true)
-      }
-    }
-
-    document.addEventListener("keydown", onKeyDown)
-
-    return () => document.removeEventListener("keydown", onKeyDown)
-  }, [open, onOpenChange])
+  useShortcut("mod+k", () => onOpenChange(!open), { enableInOverlays: true })
+  useShortcut("/", () => onOpenChange(true), { enabled: !open })
 }
 
 function CommandPalette({
@@ -360,11 +349,18 @@ function CommandPalette({
   placeholder,
   emptyText,
   loading = false,
+  onSearchChange,
 }: CommandPaletteProps) {
   const { t } = useTrans()
   const [search, setSearch] = React.useState("")
+  const [expanded, setExpanded] = React.useState<PaletteGroup[]>([])
+  const reportSearch = React.useRef(onSearchChange)
 
   useCommandPaletteShortcut(open, onOpenChange)
+
+  React.useEffect(() => {
+    reportSearch.current = onSearchChange
+  })
 
   React.useEffect(() => {
     if (!open) {
@@ -372,12 +368,29 @@ function CommandPalette({
     }
   }, [open])
 
+  React.useEffect(() => {
+    setExpanded([])
+    reportSearch.current?.(search)
+  }, [search])
+
   const query = normalize(search.trim())
-  const visible = items.filter((item) => matches(item, query))
+  const visible = items.filter(
+    (item) => matches(item, query) && !(loading && item.group === "results")
+  )
   const headings = {
     actions: t("Actions"),
     recent: t("Recent sessions"),
+    results: t("Results"),
     goto: t("Go to"),
+  }
+
+  const closeFromOwnField = (event: React.KeyboardEvent): void => {
+    if (!matchesShortcut(event.nativeEvent, "mod+k")) {
+      return
+    }
+
+    event.preventDefault()
+    onOpenChange(false)
   }
 
   const select = (item: CommandPaletteItem) => {
@@ -391,7 +404,11 @@ function CommandPalette({
       onOpenChange={onOpenChange}
       title={t("Command palette")}
       description={t("Search, run an action or open a session")}
-      commandProps={{ shouldFilter: false, loop: true }}
+      commandProps={{
+        shouldFilter: false,
+        loop: true,
+        onKeyDown: closeFromOwnField,
+      }}
     >
       <CommandInput
         value={search}
@@ -399,12 +416,6 @@ function CommandPalette({
         placeholder={placeholder ?? t("Search or run a command...")}
       />
       <CommandList>
-        {loading && (
-          <CommandLoading label={t("Searching...")} className="flex items-center justify-center gap-2">
-            <Spinner aria-label={t("Loading")} className="size-4" />
-            {t("Searching...")}
-          </CommandLoading>
-        )}
         {!loading && visible.length === 0 && (
           <div
             data-slot="command-empty"
@@ -419,45 +430,86 @@ function CommandPalette({
             <span className="text-xs">{t("Try a shorter or different word.")}</span>
           </div>
         )}
-        {!loading &&
-          paletteGroups.map((group) => {
-            const groupItems = visible.filter((item) => item.group === group)
-
-            if (groupItems.length === 0) {
-              return null
-            }
-
+        {paletteGroups.map((group) => {
+          if (group === "results" && loading) {
             return (
-              <CommandGroup key={group} heading={headings[group]}>
-                {groupItems.map((item) => (
-                  <CommandItem
-                    key={item.id}
-                    value={item.id}
-                    onSelect={() => select(item)}
-                  >
-                    <CommandItemIcon>
-                      <item.icon />
-                    </CommandItemIcon>
-                    <span className="min-w-0 flex-1 truncate">
-                      <HighlightedLabel label={item.label} query={query} />
-                    </span>
-                    {item.meta && (
-                      <span className="text-muted-foreground max-w-40 shrink-0 truncate text-xs">
-                        {item.meta}
-                      </span>
-                    )}
-                    {item.shortcut && item.shortcut.length > 0 && (
-                      <CommandShortcut className="ml-0">
-                        {item.shortcut.map((key, index) => (
-                          <CommandKbd key={`${key}-${index}`}>{key}</CommandKbd>
-                        ))}
-                      </CommandShortcut>
-                    )}
-                  </CommandItem>
-                ))}
-              </CommandGroup>
+              <CommandLoading
+                key={group}
+                label={t("Searching...")}
+                className="flex items-center justify-center gap-2"
+              >
+                <Spinner aria-label={t("Loading")} className="size-4" />
+                {t("Searching...")}
+              </CommandLoading>
             )
-          })}
+          }
+
+          const groupItems = visible.filter((item) => item.group === group)
+
+          if (groupItems.length === 0) {
+            return null
+          }
+
+          const isFolded =
+            groupItems.length > GroupLimit && !expanded.includes(group)
+          const shown = isFolded ? groupItems.slice(0, GroupLimit) : groupItems
+
+          return (
+            <CommandGroup key={group} heading={headings[group]}>
+              {shown.map((item) => (
+                <CommandItem
+                  key={item.id}
+                  value={item.id}
+                  onSelect={() => select(item)}
+                >
+                  <CommandItemIcon>
+                    <item.icon />
+                  </CommandItemIcon>
+                  <span className="min-w-0 flex-1 truncate">
+                    <HighlightedLabel label={item.label} query={query} />
+                  </span>
+                  {item.badge && (
+                    <Badge variant="success">
+                      <span
+                        aria-hidden="true"
+                        className="bg-skrum-success size-2 shrink-0 rounded-full"
+                      />
+                      {item.badge}
+                    </Badge>
+                  )}
+                  {item.meta && (
+                    <span className="text-muted-foreground max-w-40 shrink-0 truncate text-xs">
+                      {item.meta}
+                    </span>
+                  )}
+                  {item.shortcut && item.shortcut.length > 0 && (
+                    <CommandShortcut className="ml-0">
+                      {item.shortcut.map((key, index) => (
+                        <CommandKbd key={`${key}-${index}`}>{key}</CommandKbd>
+                      ))}
+                    </CommandShortcut>
+                  )}
+                </CommandItem>
+              ))}
+              {isFolded && (
+                <CommandItem
+                  value={`${group}-more`}
+                  onSelect={() => setExpanded([...expanded, group])}
+                  className="text-muted-foreground"
+                >
+                  <CommandItemIcon>
+                    <ChevronDownIcon />
+                  </CommandItemIcon>
+                  <span className="min-w-0 flex-1 truncate">
+                    {t("Show :count more", {
+                      count: groupItems.length - GroupLimit,
+                    })}
+                  </span>
+                </CommandItem>
+              )}
+            </CommandGroup>
+          )
+        })}
       </CommandList>
       <CommandFooter>
         <span className="inline-flex items-center gap-1.5">

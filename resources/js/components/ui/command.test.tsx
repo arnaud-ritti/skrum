@@ -1,5 +1,5 @@
 import { fireEvent, screen } from '@testing-library/react';
-import { Plus, Settings } from 'lucide-react';
+import { Plus, Search, Settings } from 'lucide-react';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { CommandPalette } from '@/components/ui/command';
 import type { CommandPaletteItem } from '@/components/ui/command';
@@ -61,11 +61,22 @@ describe('CommandPalette', () => {
         expect(screen.getByText('No results for “zzz”')).toBeTruthy();
     });
 
-    it('shows a loading status instead of the items', () => {
-        renderWithProviders(<CommandPalette open onOpenChange={vi.fn()} items={makeItems()} loading />);
+    it('shows a loading status in place of the results, and keeps the other groups', () => {
+        renderWithProviders(
+            <CommandPalette
+                open
+                onOpenChange={vi.fn()}
+                items={[
+                    ...makeItems(),
+                    { id: 'r1', group: 'results', label: 'Kraken retro', icon: Search, onSelect: vi.fn() },
+                ]}
+                loading
+            />,
+        );
 
         expect(screen.getByRole('progressbar')).toBeTruthy();
-        expect(screen.queryAllByRole('option')).toHaveLength(0);
+        expect(screen.getAllByRole('option')).toHaveLength(3);
+        expect(screen.queryByText('Kraken retro')).toBeNull();
     });
 
     it('runs the active item on Enter and closes', () => {
@@ -99,7 +110,7 @@ describe('CommandPalette', () => {
         expect(onOpenChange).toHaveBeenCalledTimes(2);
     });
 
-    it('ignores / while typing in a field', () => {
+    it('ignores / and Ctrl+K while typing in a field', () => {
         const onOpenChange = vi.fn();
         renderWithProviders(
             <>
@@ -109,7 +120,86 @@ describe('CommandPalette', () => {
         );
 
         fireEvent.keyDown(screen.getByLabelText('field'), { key: '/' });
+        fireEvent.keyDown(screen.getByLabelText('field'), { key: 'k', ctrlKey: true });
+        fireEvent.keyDown(screen.getByLabelText('field'), { key: 'k', metaKey: true });
 
+        expect(onOpenChange).not.toHaveBeenCalled();
+    });
+
+    it('closes on Ctrl+K from its own search field', () => {
+        const onOpenChange = vi.fn();
+        renderWithProviders(<CommandPalette open onOpenChange={onOpenChange} items={makeItems()} />);
+
+        fireEvent.keyDown(screen.getByRole('combobox'), { key: 'k', ctrlKey: true });
+
+        expect(onOpenChange).toHaveBeenCalledTimes(1);
+        expect(onOpenChange).toHaveBeenCalledWith(false);
+    });
+
+    it('does not open on "/" while another dialog is open', () => {
+        const onOpenChange = vi.fn();
+        renderWithProviders(<CommandPalette open={false} onOpenChange={onOpenChange} items={[]} />);
+        const dialog = document.createElement('div');
+        const button = document.createElement('button');
+        dialog.setAttribute('role', 'dialog');
+        dialog.append(button);
+        document.body.append(dialog);
+
+        fireEvent.keyDown(button, { key: '/' });
+
+        expect(onOpenChange).not.toHaveBeenCalled();
+        dialog.remove();
+    });
+
+    it('reports what is typed and an empty query when it closes', () => {
+        const onSearchChange = vi.fn();
+        const { rerender } = renderWithProviders(
+            <CommandPalette open onOpenChange={() => {}} items={[]} onSearchChange={onSearchChange} />,
+        );
+
+        fireEvent.change(screen.getByRole('combobox'), { target: { value: 'kraken' } });
+        expect(onSearchChange).toHaveBeenLastCalledWith('kraken');
+
+        rerender(<CommandPalette open={false} onOpenChange={() => {}} items={[]} onSearchChange={onSearchChange} />);
+        expect(onSearchChange).toHaveBeenLastCalledWith('');
+    });
+
+    it('shows a results group between the recent sessions and "Go to"', () => {
+        renderWithProviders(
+            <CommandPalette
+                open
+                onOpenChange={() => {}}
+                items={[
+                    ...makeItems(),
+                    { id: 'r1', group: 'results', label: 'Kraken retro', icon: Search, onSelect: () => {} },
+                    { id: 's1', group: 'recent', label: 'Sprint 42', icon: Search, badge: 'Live', onSelect: () => {} },
+                ]}
+            />,
+        );
+
+        expect(
+            Array.from(document.querySelectorAll('[cmdk-group-heading]')).map((heading) => heading.textContent),
+        ).toEqual(['Actions', 'Recent sessions', 'Results', 'Go to']);
+        expect(screen.getByText('Live')).toBeTruthy();
+    });
+
+    it('shows five items of a group, then the rest on "Show more"', () => {
+        const results: CommandPaletteItem[] = Array.from({ length: 7 }, (_, index) => ({
+            id: `r${index}`,
+            group: 'results',
+            label: `Retro ${index}`,
+            icon: Search,
+            onSelect: vi.fn(),
+        }));
+        const onOpenChange = vi.fn();
+        renderWithProviders(<CommandPalette open onOpenChange={onOpenChange} items={results} />);
+
+        expect(screen.getAllByRole('option')).toHaveLength(6);
+        expect(screen.getByText('7 results')).toBeTruthy();
+
+        fireEvent.click(screen.getByText('Show 2 more'));
+
+        expect(screen.getAllByRole('option')).toHaveLength(7);
         expect(onOpenChange).not.toHaveBeenCalled();
     });
 });
