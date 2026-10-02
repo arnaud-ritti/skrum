@@ -304,6 +304,17 @@ it('writes the mail in the language of the account', function () {
     Mail::assertSent(MagicLinkMail::class, fn (MagicLinkMail $mail): bool => $mail->locale === 'fr');
 });
 
+it('limits opening and confirming a link to twenty a minute for one address of origin', function () {
+    $url = route('magicLinks.show', str_repeat('a', 64));
+
+    foreach (range(1, 20) as $attempt) {
+        $this->get($url)->assertOk();
+    }
+
+    $this->get($url)->assertTooManyRequests();
+    $this->post(consumeUrl($url))->assertTooManyRequests();
+});
+
 it('previews the magic link mail', function () {
     $this->get('/dev/mail/magic-link')->assertOk()->assertSee('Sign in');
 });

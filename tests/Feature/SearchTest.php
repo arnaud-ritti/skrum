@@ -104,7 +104,7 @@ it('returns nothing without a current workspace', function () {
     expect(searchTitles($user, 'kraken'))->toBe([]);
 });
 
-it('never searches card text', function () {
+it('does not find the card of someone else while the retro still hides cards', function () {
     [$user, $team] = searcher();
     $retro = Retro::factory()->for($team)->create(['title' => 'Sprint 12']);
     Card::factory()->create(['retro_id' => $retro->id, 'content' => 'kraken on a card']);
