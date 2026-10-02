@@ -1,6 +1,6 @@
 import { EyeOff, Lock } from 'lucide-react';
 import { useId, useState } from 'react';
-import type { KeyboardEvent, ReactNode } from 'react';
+import type { ComponentProps, KeyboardEvent, ReactNode } from 'react';
 import { PersonAvatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -55,7 +55,7 @@ export type SurveyQuestionResults = {
     quotes?: string[];
 };
 
-export type SurveyQuestionProps = {
+type SurveyQuestionOwnProps = {
     id: string;
     kind: SurveyQuestionKind;
     label: string;
@@ -70,10 +70,16 @@ export type SurveyQuestionProps = {
     required?: boolean;
     invalid?: boolean;
     closed?: boolean;
+    /** Answering is not possible here, though the survey is still open. */
+    disabled?: boolean;
     busy?: boolean;
     hasAnswered?: boolean;
+    /** The draft holds nothing new to send. */
+    submitDisabled?: boolean;
     maxLength?: number;
     value?: SurveyQuestionValue;
+    /** The answer the server holds, when `value` is a draft of it. */
+    savedValue?: SurveyQuestionValue;
     results?: SurveyQuestionResults;
     onChange?: (value: SurveyQuestionValue) => void;
     onSubmit?: () => void;
@@ -82,6 +88,13 @@ export type SurveyQuestionProps = {
     footer?: ReactNode;
     className?: string;
 };
+
+/** The other props (`aria-label`, `data-test`…) go to the `<article>`. */
+export type SurveyQuestionProps = SurveyQuestionOwnProps &
+    Omit<
+        ComponentProps<'article'>,
+        keyof SurveyQuestionOwnProps | 'children' | 'onKeyDown'
+    >;
 
 const collapsedAnswerCount = 5;
 const npsValues = Array.from({ length: 11 }, (_, value) => value);
@@ -141,6 +154,8 @@ function Voters({ voters }: { voters: SurveyQuestionVoter[] }) {
                         name={voter.name}
                         src={voter.avatarUrl}
                         size="xs"
+                        title={voter.name}
+                        imgProps={{ alt: voter.name }}
                     />
                 </li>
             ))}
@@ -431,7 +446,7 @@ function Results({
             }))}
             total={results.responses}
             selectedKeys={selected}
-            asCount={kind === 'multiple'}
+            asCount
         />
     );
 }
@@ -516,10 +531,13 @@ export function SurveyQuestion({
     required = false,
     invalid = false,
     closed = false,
+    disabled: blocked = false,
     busy = false,
     hasAnswered = false,
+    submitDisabled = false,
     maxLength = 500,
     value = null,
+    savedValue,
     results,
     onChange,
     onSubmit,
@@ -527,13 +545,15 @@ export function SurveyQuestion({
     actions,
     footer,
     className,
+    ...props
 }: SurveyQuestionProps) {
     const { t } = useTrans();
     const generatedId = useId();
     const labelId = `${generatedId}-label`;
     const scaleLabelsId = `${generatedId}-scale`;
     const errorId = `${generatedId}-error`;
-    const disabled = closed || busy;
+    const isInert = closed || blocked;
+    const disabled = isInert || busy;
     const isAnswer = mode === 'answer';
     const selectedIds = Array.isArray(value)
         ? value
@@ -547,7 +567,7 @@ export function SurveyQuestion({
 
     const kindLabels: Record<SurveyQuestionKind, string> = {
         single: t('Single choice'),
-        multiple: t('Several answers allowed'),
+        multiple: t('Multiple choice'),
         text: t('Free text'),
         scale5: t('Scale 1 to 5'),
         nps: t('NPS 0 to 10'),
@@ -622,6 +642,7 @@ export function SurveyQuestion({
             data-kind={kind}
             data-mode={mode}
             aria-labelledby={labelId}
+            {...props}
             onKeyDown={handleDigitKey}
             className={cn(
                 'flex min-w-0 flex-col gap-3 rounded-lg border border-border bg-card p-4 text-card-foreground shadow-card',
@@ -809,12 +830,12 @@ export function SurveyQuestion({
                 </p>
             )}
 
-            {isAnswer && needsSubmit && onSubmit && !closed && (
+            {isAnswer && needsSubmit && onSubmit && !isInert && (
                 <div className="flex justify-end">
                     <Button
                         type="button"
                         size="sm"
-                        disabled={busy || !canSubmit}
+                        disabled={busy || !canSubmit || submitDisabled}
                         onClick={onSubmit}
                     >
                         <span className="truncate">
@@ -829,7 +850,7 @@ export function SurveyQuestion({
                     kind={kind}
                     options={options}
                     results={results}
-                    value={value}
+                    value={savedValue === undefined ? value : savedValue}
                 />
             )}
 
@@ -846,7 +867,7 @@ export function SurveyQuestion({
                     ) : (
                         <span />
                     )}
-                    {isAnswer && hasAnswered && onWithdraw && !closed && (
+                    {isAnswer && hasAnswered && onWithdraw && !isInert && (
                         <Button
                             type="button"
                             size="sm"
