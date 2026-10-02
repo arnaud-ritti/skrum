@@ -28,6 +28,8 @@ export type SessionCardKind =
 
 export type SessionCardStatus = 'live' | 'scheduled' | 'ended';
 
+export type SessionCardStatusTone = 'success' | 'info' | 'warning' | 'muted';
+
 export type SessionCardPerson = {
     name: string;
     avatarUrl?: string | null;
@@ -42,6 +44,10 @@ export type SessionCardProps = {
     status: SessionCardStatus;
     /** Replaces the default status word (the server's own phase name, for example). */
     statusLabel?: string;
+    /** Colour of the status badge when the status alone does not say it (a phase, for example). */
+    statusTone?: SessionCardStatusTone;
+    /** The live dot of the badge; by default a live session has it. */
+    statusDot?: boolean;
     /** Extra line inside the link: text and icons only, nothing interactive. */
     meta?: ReactNode;
     /** Rendered outside the link, so it may hold buttons or a menu. */
@@ -74,10 +80,29 @@ const kinds: Record<SessionCardKind, { icon: LucideIcon; tone: string }> = {
     },
 };
 
-const statusTones: Record<SessionCardStatus, string> = {
-    live: 'bg-skrum-success-soft text-skrum-success-text',
-    scheduled: 'bg-skrum-info-soft text-skrum-info-text',
-    ended: 'bg-muted text-muted-foreground',
+const statusTones: Record<SessionCardStatus, SessionCardStatusTone> = {
+    live: 'success',
+    scheduled: 'info',
+    ended: 'muted',
+};
+
+const tones: Record<SessionCardStatusTone, { badge: string; dot: string }> = {
+    success: {
+        badge: 'bg-skrum-success-soft text-skrum-success-text',
+        dot: 'bg-skrum-success',
+    },
+    info: {
+        badge: 'bg-skrum-info-soft text-skrum-info-text',
+        dot: 'bg-skrum-info',
+    },
+    warning: {
+        badge: 'bg-skrum-warning-soft text-skrum-warning-text',
+        dot: 'bg-skrum-warning',
+    },
+    muted: {
+        badge: 'bg-muted text-muted-foreground',
+        dot: 'bg-muted-foreground',
+    },
 };
 
 const maxVisiblePeople = 3;
@@ -90,6 +115,8 @@ export function SessionCard({
     when,
     status,
     statusLabel,
+    statusTone,
+    statusDot,
     meta,
     action,
     stats,
@@ -98,13 +125,15 @@ export function SessionCard({
 }: SessionCardProps) {
     const { t } = useTrans();
     const getInitials = useInitials();
-    const { icon: KindIcon, tone } = kinds[kind];
+    const { icon: KindIcon, tone: kindTone } = kinds[kind];
     const statusLabels: Record<SessionCardStatus, string> = {
         live: t('Live'),
         scheduled: t('Scheduled'),
         ended: t('Ended'),
     };
     const isLive = status === 'live';
+    const tone = tones[statusTone ?? statusTones[status]];
+    const hasDot = statusDot ?? isLive;
     const showPresence = isLive && people.length > 0;
     const visiblePeople = people.slice(0, maxVisiblePeople);
     const hiddenPeople = people.length - visiblePeople.length;
@@ -117,7 +146,7 @@ export function SessionCard({
                     aria-hidden
                     className={cn(
                         'row-span-2 flex size-8 items-center justify-center rounded-md @max-card-compact/card:hidden @card-wide/card:row-span-1',
-                        tone,
+                        kindTone,
                     )}
                 >
                     <KindIcon className="size-4" />
@@ -133,13 +162,16 @@ export function SessionCard({
                 <Badge
                     className={cn(
                         'col-start-2 max-w-full min-w-0 justify-self-start rounded-full border-transparent @max-card-compact/card:col-start-1 @card-wide/card:col-start-3 @card-wide/card:row-start-1',
-                        statusTones[status],
+                        tone.badge,
                     )}
+                    data-slot="session-card-status"
+                    data-tone={statusTone ?? statusTones[status]}
                 >
-                    {isLive && (
+                    {hasDot && (
                         <span
                             aria-hidden
-                            className="size-1.5 rounded-full bg-skrum-success"
+                            data-slot="session-card-dot"
+                            className={cn('size-1.5 rounded-full', tone.dot)}
                         />
                     )}
                     <span className="truncate">
