@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
+use Tests\Support\SqlProbe;
 
 /** @param array<int, string> $migrations */
 function runAddressMigrations(array $migrations): void
@@ -51,6 +52,30 @@ it('gives every existing account the key of its address and leaves the address a
         ->and(DB::table('users')->where('id', $legacyTwin)->value('email_key'))->toBe('grace@example.test')
         ->and(DB::table('users')->where('email', 'person500@example.test')->value('email_key'))->toBe('person500@example.test')
         ->and(Schema::hasIndex('users', ['email_key']))->toBeTrue();
+});
+
+it('can run a second time, and then writes no account that already has its key', function () {
+    migrateUpToEmailKey();
+    $account = accountBeforeEmailKey('Grace@Example.TEST');
+    runAddressMigrations(['2026_10_19_100200_add_email_key_to_users_table.php']);
+    DB::table('migrations')->where('migration', '2026_10_19_100200_add_email_key_to_users_table')->delete();
+
+    $updates = SqlProbe::updateConditions('users', fn () => runAddressMigrations(['2026_10_19_100200_add_email_key_to_users_table.php']));
+
+    $column = collect(Schema::getColumns('users'))->firstWhere('name', 'email_key');
+    $indexes = collect(Schema::getIndexes('users'))->filter(fn (array $index): bool => $index['columns'] === ['email_key']);
+
+    expect($updates)->toBe([])
+        ->and(DB::table('users')->where('id', $account)->value('email_key'))->toBe('grace@example.test')
+        ->and($column['nullable'])->toBeFalse()
+        ->and($indexes)->toHaveCount(1)
+        ->and(DB::table('migrations')->where('migration', '2026_10_19_100200_add_email_key_to_users_table')->exists())->toBeTrue();
+});
+
+it('fills the keys outside a transaction, so the accounts table is not locked meanwhile', function () {
+    $migration = require database_path('migrations/2026_10_19_100200_add_email_key_to_users_table.php');
+
+    expect($migration->withinTransaction)->toBeFalse();
 });
 
 it('stores the address of every existing invitation in the form it is looked up by', function () {

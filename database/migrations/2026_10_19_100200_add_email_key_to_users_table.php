@@ -9,10 +9,16 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
+     * Off, so that the accounts table is not locked while its rows are filled. The work can then
+     * stop midway: up() adds only what is missing and can be run again.
+     *
+     * @var bool
+     */
+    public $withinTransaction = false;
+
+    /**
      * The form an address is looked up by, stored so that every engine compares it the same way.
-     * Not unique: accounts from before addresses were normalised may share a key. Each step looks
-     * at what is already there, so a run that stopped midway on an engine without transactional
-     * DDL can be run again.
+     * Not unique: accounts from before addresses were normalised may share a key.
      */
     public function up(): void
     {
@@ -22,9 +28,11 @@ return new class extends Migration
             });
         }
 
-        foreach (DB::table('users')->select(['id', 'email'])->lazyById(500) as $user) {
-            DB::table('users')->where('id', $user->id)->update(['email_key' => LoginAddress::normalise((string) $user->email)]);
-        }
+        DB::table('users')
+            ->whereNull('email_key')
+            ->select(['id', 'email'])
+            ->lazyById(500)
+            ->each(fn (object $user) => DB::table('users')->where('id', $user->id)->update(['email_key' => LoginAddress::normalise((string) $user->email)]));
 
         $hasIndex = Schema::hasIndex('users', ['email_key']);
 
