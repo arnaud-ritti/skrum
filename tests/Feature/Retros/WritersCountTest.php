@@ -55,7 +55,7 @@ it('carries the new count on card creation and no author on an anonymous retro',
         ->postJson(route('retros.cards.store', $retro), ['column_id' => $column->id, 'content' => 'Mine'])
         ->assertCreated();
 
-    Event::assertDispatched(function (CardCreated $event) use ($viewer, $other) {
+    Event::assertDispatched(function (CardCreated $event) use ($viewer, $other): bool {
         $payload = $event->broadcastWith();
 
         return array_keys($payload) === ['card', 'writersCount']

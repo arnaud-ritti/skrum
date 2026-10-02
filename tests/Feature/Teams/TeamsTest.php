@@ -198,7 +198,7 @@ it('carries the game options of the games page on the team page', function () {
     $this->actingAs($member)
         ->get(route('teams.show', [$workspace, $team]))
         ->assertInertia(fn (Assert $page) => $page
-            ->where('gameOptions', app(GameRulesRegistry::class)->options(new GameRoom(['team_id' => $team->id])))
+            ->where('gameOptions', resolve(GameRulesRegistry::class)->options(new GameRoom(['team_id' => $team->id])))
             ->where('gameOptions.2', ['value' => 'hangman', 'label' => __('Hangman'), 'available' => true])
             ->where('canCreateGameRoom', true)
             ->where('roomLimit', GameRoom::MaxRoomsPerTeam));

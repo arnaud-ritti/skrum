@@ -103,7 +103,7 @@ class SummarizeHealthCheck
             ->where('health_check_enabled', true)
             ->where('completed_at', '<', $retro->completed_at)
             ->whereHas('healthCheckAnswers')
-            ->orderByDesc('completed_at')
+            ->latest('completed_at')
             ->first(['id']);
 
         if ($previous === null) {
