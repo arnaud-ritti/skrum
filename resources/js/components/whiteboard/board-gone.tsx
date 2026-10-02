@@ -16,7 +16,11 @@ export function BoardGone({
     const { t } = useTrans();
 
     return (
-        <SessionLayout title={<SessionTitle>{title}</SessionTitle>}>
+        <SessionLayout
+            chrome="logo"
+            homeHref={teamUrl}
+            title={<SessionTitle>{title}</SessionTitle>}
+        >
             <div className="flex h-full items-center justify-center overflow-y-auto p-6">
                 <EmptyState
                     module="whiteboard"

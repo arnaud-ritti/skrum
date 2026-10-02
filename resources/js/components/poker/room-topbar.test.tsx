@@ -38,6 +38,7 @@ describe('RoomTitle', () => {
 
         expect((field as HTMLInputElement).value).toBe('Sprint 43 refinement');
         expect(screen.getByText('Fibonacci')).toBeTruthy();
+        expect(screen.getByText('Atlas · Planning poker')).toBeTruthy();
         expect(
             screen
                 .getByRole('link', { name: 'Back to the team' })

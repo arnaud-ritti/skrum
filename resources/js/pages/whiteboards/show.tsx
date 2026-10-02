@@ -48,13 +48,19 @@ class ChunkBoundary extends Component<
 /** The frame of the board while its canvas is not there: loading, or failed. */
 function BoardFrame({
     title,
+    teamUrl,
     children,
 }: {
     title: string;
+    teamUrl: string | null;
     children: ReactNode;
 }) {
     return (
-        <SessionLayout title={<SessionTitle>{title}</SessionTitle>}>
+        <SessionLayout
+            chrome="logo"
+            homeHref={teamUrl}
+            title={<SessionTitle>{title}</SessionTitle>}
+        >
             {children}
         </SessionLayout>
     );
@@ -96,14 +102,14 @@ export default function ShowWhiteboard({ snapshot }: Props) {
             <ChunkBoundary
                 key={attempt}
                 fallback={
-                    <BoardFrame title={title}>
+                    <BoardFrame title={title} teamUrl={snapshot.links.team}>
                         <CanvasError onRetry={retry} />
                     </BoardFrame>
                 }
             >
                 <Suspense
                     fallback={
-                        <BoardFrame title={title}>
+                        <BoardFrame title={title} teamUrl={snapshot.links.team}>
                             <Skeleton className="size-full rounded-none" />
                         </BoardFrame>
                     }

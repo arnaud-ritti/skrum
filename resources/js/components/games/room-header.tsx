@@ -24,10 +24,14 @@ const gameIcons: Record<GameKind, LucideIcon> = {
 
 const ExtensionSeconds = 120;
 
-/** The room's name with its way back to the team and the game in play. */
+/** The room's name under "team · Games", with its way back to the team and the game in play. */
 export function RoomTitle() {
     const { snapshot } = useRoom();
+    const { t } = useTrans();
     const { room, games, links } = snapshot;
+    const kind = room.isIcebreaker ? t('Icebreaker') : t('Games');
+    const overline =
+        room.teamName === null ? kind : `${room.teamName} · ${kind}`;
     const gameLabel =
         games.find((option) => option.value === room.game)?.label ?? room.game;
     const GameIcon = gameIcons[room.game];
@@ -35,6 +39,7 @@ export function RoomTitle() {
     return (
         <SessionTitle
             backHref={links.team}
+            overline={overline}
             badges={
                 <Badge
                     variant="soft"

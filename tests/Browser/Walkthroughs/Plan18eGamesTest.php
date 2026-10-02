@@ -678,3 +678,31 @@ it('[P18e-06-10b] replays a round drawn in red before the eight theme colours wi
         ->assertScript(p18eGamesPixel('Drawing of rocket', 400, 200), '255 255 255 255')
         ->assertNotPresent('[role="dialog"] [role="toolbar"]');
 });
+
+it('[P18e-06-12] writes "team · Games" above the name of the room, shows "Synced" and the viewer at the end of the header, and keeps the name on a phone', function () {
+    [$room, $ada] = p18eGamesRoom();
+    $room->team->update(['name' => 'Atlas']);
+    $hidden = fn (string $selector): string => "getComputedStyle(document.querySelector('{$selector}')).display";
+    // Whole, or cut after six rem at least: never down to a few letters.
+    $titleKeepsItsRoom = "(({ scrollWidth, clientWidth }) => clientWidth > 0 && (scrollWidth <= clientWidth || clientWidth / parseFloat(getComputedStyle(document.documentElement).fontSize) >= 6))(document.querySelector('header h1'))";
+
+    $host = $this->awaitRealtime($this->signIn($ada, "/games/{$room->id}"))->resize(1440, 900);
+
+    $host->assertSeeIn('header [data-slot="session-overline"]', 'Atlas · Games')
+        ->assertSeeIn('header span > h1', 'Lunch')
+        ->assertSeeIn('header [data-slot="session-synced"]', 'Synced')
+        ->assertVisible('header > [data-slot="session-self"]:last-child [aria-label="Ada Host"]')
+        ->assertCount('[data-realtime]', 1);
+
+    $guest = $this->awaitRealtime($this->joinAsGuest("/play/{$room->guest_token}", 'Visitor'))->resize(1440, 900);
+
+    $guest->assertSeeIn('header [data-slot="session-overline"]', 'Games')
+        ->assertDontSeeIn('header', 'Atlas')
+        ->assertVisible('header [data-slot="session-self"] [aria-label="Visitor (Guest)"]')
+        ->resize(390, 844)
+        ->assertScript($hidden('header [data-slot="session-overline"]'), 'none')
+        ->assertScript($hidden('header [data-slot="session-synced"]'), 'none')
+        ->assertScript($hidden('header [data-slot="session-self"]'), 'none')
+        ->assertScript($titleKeepsItsRoom, true)
+        ->assertCount('[data-realtime]', 1);
+});

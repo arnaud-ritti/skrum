@@ -43,3 +43,33 @@ What the header holds at its worst case (120-character title, two badges, nine p
 | The topbar connection state is hidden from assistive technology, and hidden below `md` | D-05; below `md` the banner alone fits |
 | "Time's up!" is announced twice to screen readers (the timer's live region and the toast) | none. For the owner |
 | The GIF search is a modal dialog around `GifPicker`, not a popover (desktop) and a drawer (phone) | none. R4 and G5 may revisit it |
+
+## Rework RW-C2 (owner round 4): session header
+
+Built on every session screen of this branch (poker room, game room, whiteboard; the retro picks it at its merge):
+
+| Element of the mockups | Where | Done |
+|---|---|---|
+| "team · session type" above the title | `SessionTitle` `overline`; poker "Atlas · Planning poker", game room "Atlas · Games" ("Atlas · Icebreaker" for the room of a retro) | done |
+| User avatar at the end of the topbar; a guest's avatar for a guest | `SessionShell` `self`, drawn by `SessionLayout` (falls back to the signed-in user) | done |
+| "Synced" while connected | `SessionShell`, `ConnectionState status="synced"`, in the new `status` slot of `SessionFrame`, before the timer; never carries `data-realtime` | done |
+| Whiteboard: logo, breadcrumb "team › Whiteboards › name", rename in place | `SessionShell chrome="logo" homeHref`, `SessionTitle crumbs`; no application rail on this screen | done |
+| Team name in the snapshots | `game.teamName` (poker), `board.teamName` (whiteboard), null for a guest as `room.teamName` already was | done |
+
+New props, all optional (nothing existing changed): `SessionFrame` `logo`, `status`, `avatar`; `SessionLayout` `status`, `chrome`, `homeHref`, `self`; `SessionShell` `chrome`, `homeHref`, `self`; `SessionTitle` `overline`, `crumbs`; `ConnectionState` status `synced` and `labelClassName`; `PresenceStack` marks its guests badge `data-slot="presence-stack-guests"`.
+
+Header budget, as built: below 48rem the overline, the breadcrumb, "Synced", the viewer's avatar, the guests badge and a guest's logo are not shown; from 48rem to 80rem "Synced" is its dot (label for screen readers); the whiteboard's facilitation tools show labels from 96rem.
+
+### Differences with the mockup
+
+| Difference | Row |
+|---|---|
+| A guest reads the session type alone ("Planning poker", "Games", "Whiteboards › name"): no team name | D-47, D-69 |
+| "Synced" is a dot between 48rem and 80rem, absent on a phone | D-48 |
+| The mockups of the retro and of the first poker screens show no "Synced" and no avatar at the end; the owner asked for both on every session screen (round 4) | owner answer |
+| Whiteboard: the current crumb is 0.875rem in the header, 1rem on a phone and in its rename field | fix later |
+| Whiteboard: no "Comments" button (place WB-2), facilitation tools kept | D-50 |
+| Whiteboard at 390: logo, name, counter, Share and the menu; the mockup's phone header has a subtitle "Whiteboard · n online" | D-63, `07-whiteboard.md` |
+| Poker: "Share" is an icon below 96rem | D-69 |
+| Game room: "Back to the team", not "Back to games" | D-57 (RW-G1) |
+| The viewer's avatar at the end is not a menu; on the whiteboard, which has no rail, the account menu is reached from the team page | to report: no row yet |

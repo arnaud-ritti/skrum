@@ -4,20 +4,22 @@ import type { KeyboardEvent, ReactNode } from 'react';
 import WhiteboardSettingsController from '@/actions/App/Http/Controllers/Whiteboards/WhiteboardSettingsController';
 import { SessionPresence } from '@/components/session/session-presence';
 import { SessionTitle } from '@/components/session/session-title';
+import type { SessionCrumb } from '@/components/session/session-title';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useTrans } from '@/hooks/use-trans';
 import type { WhiteboardState } from '@/hooks/use-whiteboard';
 import { useWhiteboardRequest } from '@/hooks/use-whiteboard-request';
 import { retroRequest } from '@/lib/retro/api';
-import { presenceFor } from '@/lib/whiteboard/presence-slot';
+import { presenceFor, presenceSlot } from '@/lib/whiteboard/presence-slot';
 import { BoardFacilitation } from './board-facilitation';
 import { BoardMenu } from './board-menu';
 import { BoardShare } from './board-share';
 import { TitleMaxLength } from '@/components/whiteboard/board-dialogs';
 
 const FromMd = '(min-width: 768px)';
-const FromXl = '(min-width: 1280px)';
+/** The facilitation tools show their labels from here: below, the breadcrumb and the name keep the room. */
+const From2xl = '(min-width: 1536px)';
 
 function useMatches(query: string): boolean {
     return useSyncExternalStore(
@@ -38,8 +40,40 @@ export function useFacilitationInHeader(): boolean {
     return useMatches(FromMd);
 }
 
+type BoardSnapshot = Pick<
+    WhiteboardState['snapshot'],
+    'board' | 'me' | 'links'
+>;
+
+/** The viewer as the end of the header shows them, in their colour on the board. */
+export function boardSelf(snapshot: BoardSnapshot) {
+    const { me } = snapshot;
+
+    return {
+        name: me.name,
+        avatarUrl: me.avatarUrl,
+        isGuest: me.isGuest,
+        presence: presenceSlot(me.id),
+    };
+}
+
+/** "team › Whiteboards", before the name. A guest is not told the team and follows no link. */
+export function useBoardCrumbs(snapshot: BoardSnapshot): SessionCrumb[] {
+    const { t } = useTrans();
+    const { board, links } = snapshot;
+    const boards: SessionCrumb = {
+        label: t('Whiteboards'),
+        href: links.team === null ? null : `${links.team}#sessions`,
+    };
+
+    return board.teamName === null
+        ? [boards]
+        : [{ label: board.teamName, href: links.team }, boards];
+}
+
 /**
- * The board's name, renamed in place by who may rename it (the facilitator):
+ * The board's name at the end of its breadcrumb (the logo of the header leads
+ * back to the team), renamed in place by who may rename it (the facilitator):
  * a press on it, or F2, turns it into a field; Enter saves, and so does
  * leaving the field with a changed name; Escape cancels. While it saves the
  * field is read-only, not disabled, so it keeps the focus if the save fails.
@@ -47,7 +81,8 @@ export function useFacilitationInHeader(): boolean {
 export function BoardTitle({ state }: { state: WhiteboardState }) {
     const { t } = useTrans();
     const request = useWhiteboardRequest();
-    const { board, me, links } = state.snapshot;
+    const { board, me } = state.snapshot;
+    const crumbs = useBoardCrumbs(state.snapshot);
     const [draft, setDraft] = useState<string | null>(null);
     const [saving, setSaving] = useState(false);
     const trigger = useRef<HTMLButtonElement>(null);
@@ -129,12 +164,12 @@ export function BoardTitle({ state }: { state: WhiteboardState }) {
     };
 
     if (!me.isFacilitator) {
-        return <SessionTitle backHref={links.team}>{board.title}</SessionTitle>;
+        return <SessionTitle crumbs={crumbs}>{board.title}</SessionTitle>;
     }
 
     return (
         <SessionTitle
-            backHref={links.team}
+            crumbs={crumbs}
             badges={
                 !isEditing && (
                     <Button
@@ -237,7 +272,7 @@ export function BoardActions({
     const { t } = useTrans();
     const { me } = state.snapshot;
     const facilitationInHeader = useFacilitationInHeader();
-    const hasRoomForLabels = useMatches(FromXl);
+    const hasRoomForLabels = useMatches(From2xl);
 
     return (
         <>

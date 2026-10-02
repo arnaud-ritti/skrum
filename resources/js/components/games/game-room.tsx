@@ -86,6 +86,15 @@ export function GameRoom({
         <RoomProvider value={ctx}>
             <SessionShell
                 kind="game"
+                self={
+                    me
+                        ? {
+                              name: me.name,
+                              avatarUrl: me.avatarUrl,
+                              isGuest: me.isGuest,
+                          }
+                        : null
+                }
                 title={<RoomTitle />}
                 timer={<RoomTimer />}
                 presence={

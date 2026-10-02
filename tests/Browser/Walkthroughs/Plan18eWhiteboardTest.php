@@ -465,3 +465,40 @@ it('[P18e-07-08] opens the board in read mode on a phone, switches to edit mode 
         ->assertNotPresent($tools)
         ->assertPresent('.whiteboard-canvas .excalidraw--view-mode');
 });
+
+it('[P18e-07-09] opens the header with the logo and the breadcrumb "team › Whiteboards › name", shows "Synced" and the viewer, and keeps the title on a phone', function () {
+    ['board' => $board, 'fran' => $fran] = whiteboardWithFacilitator();
+    $board->team->update(['name' => 'Atlas']);
+    $crumbs = 'header nav[aria-label="Breadcrumb"]';
+    $hidden = fn (string $selector): string => "getComputedStyle(document.querySelector('{$selector}')).display";
+    // Whole, or cut after six rem at least: never down to a few letters.
+    $titleKeepsItsRoom = "(({ scrollWidth, clientWidth }) => clientWidth > 0 && (scrollWidth <= clientWidth || clientWidth / parseFloat(getComputedStyle(document.documentElement).fontSize) >= 6))(document.querySelector('header h1'))";
+
+    $franPage = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)))->resize(1440, 900);
+
+    $franPage->assertPresent('header > a[data-slot="session-logo"][aria-label="Back to the team"]:first-child')
+        ->assertNotPresent('[data-slot="sidebar"]')
+        ->assertSeeIn("{$crumbs} li:nth-child(1) a", 'Atlas')
+        ->assertSeeIn("{$crumbs} li:nth-child(2) a", 'Whiteboards')
+        ->assertSeeIn('header span > h1', 'Sprint board')
+        ->assertSeeIn('header [data-slot="session-synced"]', 'Synced')
+        ->assertVisible('header > [data-slot="session-self"]:last-child [aria-label="Fran Facilitator"]')
+        ->assertCount('[data-realtime]', 1)
+        ->click("{$crumbs} li:nth-child(1) a")
+        ->assertPathIs(route('teams.show', [$board->team->workspace, $board->team], absolute: false));
+
+    $guestPage = $this->awaitRealtime($this->joinAsGuest($this->whiteboardJoinPath($board), 'Guest Gia'))->resize(1440, 900);
+
+    $guestPage->assertSeeIn($crumbs, 'Whiteboards')
+        ->assertDontSeeIn('header', 'Atlas')
+        ->assertNotPresent('header a')
+        ->assertPresent('header > [data-slot="session-logo"]:first-child')
+        ->assertSeeIn('header [data-slot="session-synced"]', 'Synced')
+        ->assertVisible('header [data-slot="session-self"] [aria-label="Guest Gia (Guest)"]')
+        ->resize(390, 844)
+        ->assertScript($hidden($crumbs), 'none')
+        ->assertScript($hidden('header [data-slot="session-synced"]'), 'none')
+        ->assertScript($hidden('header [data-slot="session-self"]'), 'none')
+        ->assertScript($titleKeepsItsRoom, true)
+        ->assertCount('[data-realtime]', 1);
+});

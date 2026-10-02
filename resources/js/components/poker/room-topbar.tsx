@@ -99,7 +99,7 @@ function TitleEditor() {
             value={value}
             maxLength={120}
             aria-label={t('Game title')}
-            className="h-8 w-full min-w-0 border-transparent bg-transparent px-2 text-base font-semibold shadow-none hover:border-input md:text-base"
+            className="h-8 w-full min-w-0 border-transparent bg-transparent px-2 text-base font-semibold shadow-none hover:border-input md:-ml-2 md:h-7 md:text-base"
             onChange={(event) => setValue(event.target.value)}
             onBlur={() => void save()}
             onKeyDown={onKeyDown}
@@ -123,21 +123,34 @@ export function DeckBadge() {
     );
 }
 
-/** Back link, name and, beside it, the deck. The name is capped so that the rest of the header keeps its room. */
+/** "team · Planning poker"; a guest is not told the team. */
+export function useRoomOverline(): string {
+    const { snapshot } = useGame();
+    const { t } = useTrans();
+    const { teamName } = snapshot.game;
+
+    return teamName === null
+        ? t('Planning poker')
+        : `${teamName} · ${t('Planning poker')}`;
+}
+
+/** Back link, the team line, the name and, beside it, the deck. From `md` the name is capped so that the rest of the header keeps its room; on a phone it has what the counter and the menu leave. */
 export function RoomTitle({ showDeck }: { showDeck: boolean }) {
     const { snapshot } = useGame();
+    const overline = useRoomOverline();
     const { game, me, links } = snapshot;
     const canRename = me.isFacilitator && game.endedAt === null;
 
     return (
         <div
             className={cn(
-                'max-w-36 md:max-w-64 xl:max-w-96',
+                'md:max-w-64 xl:max-w-96',
                 canRename && 'w-36 md:w-64 xl:w-96',
             )}
         >
             <SessionTitle
                 backHref={links.team}
+                overline={overline}
                 badges={showDeck ? <DeckBadge /> : undefined}
             >
                 {canRename ? <TitleEditor key={game.title} /> : game.title}

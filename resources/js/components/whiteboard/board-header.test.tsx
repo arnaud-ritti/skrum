@@ -19,17 +19,43 @@ function sentBodies(): unknown[] {
 }
 
 describe('BoardTitle', () => {
-    it('shows the name in the page heading with the link back to the team', () => {
+    it('shows the name in the page heading, at the end of "team › Whiteboards"', () => {
         renderWithProviders(<BoardTitle state={boardState()} />);
 
         expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(
             'Sprint board',
         );
         expect(
-            screen
-                .getByRole('link', { name: 'Back to the team' })
-                .getAttribute('href'),
+            screen.getByRole('navigation', { name: 'Breadcrumb' }).textContent,
+        ).toBe('AtlasWhiteboards');
+        expect(
+            screen.getByRole('link', { name: 'Atlas' }).getAttribute('href'),
         ).toBe('/workspaces/w/teams/t');
+        expect(
+            screen
+                .getByRole('link', { name: 'Whiteboards' })
+                .getAttribute('href'),
+        ).toBe('/workspaces/w/teams/t#sessions');
+    });
+
+    it('shows a guest "Whiteboards" and the name, without the team and without a link', () => {
+        renderWithProviders(
+            <BoardTitle
+                state={boardState({
+                    board: { teamName: null },
+                    me: { isGuest: true, isFacilitator: false },
+                    links: { team: null },
+                })}
+            />,
+        );
+
+        expect(
+            screen.getByRole('navigation', { name: 'Breadcrumb' }).textContent,
+        ).toBe('Whiteboards');
+        expect(screen.queryByRole('link')).toBeNull();
+        expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(
+            'Sprint board',
+        );
     });
 
     it('turns the name into the "Board name" field on a press, saves on Enter and refetches', async () => {

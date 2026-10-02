@@ -148,6 +148,16 @@ export function RoomView({
     const currentTask = current
         ? (snapshot.tasks.find((task) => task.id === current.taskId) ?? null)
         : null;
+    const player = snapshot.players.find(
+        (candidate) => candidate.id === me.playerId,
+    );
+    const self = player
+        ? {
+              name: player.name,
+              avatarUrl: player.avatarUrl,
+              isGuest: player.isGuest,
+          }
+        : null;
     const showsQueue = isWide && !tasksCollapsed;
     const tasksToggle = (
         <TasksToggle
@@ -161,6 +171,7 @@ export function RoomView({
     return (
         <SessionShell
             kind="poker"
+            self={self}
             realtime={realtimeState(connected, online)}
             connection={{ reconnecting, expired: sessionExpired }}
             title={<RoomTitle showDeck={!isPhone} />}

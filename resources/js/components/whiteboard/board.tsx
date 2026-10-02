@@ -50,6 +50,7 @@ import {
     BoardActions,
     BoardPresence,
     BoardTitle,
+    boardSelf,
     useFacilitationInHeader,
 } from './board-header';
 import { BoardNotices } from './board-notices';
@@ -215,6 +216,9 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
     return (
         <SessionShell
             kind="whiteboard"
+            chrome="logo"
+            homeHref={state.snapshot.links.team}
+            self={boardSelf(state.snapshot)}
             title={<BoardTitle state={state} />}
             timer={!me.isFacilitator && <BoardTimer state={state} />}
             presence={<BoardPresence state={state} />}
