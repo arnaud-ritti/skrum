@@ -27,7 +27,14 @@ function redirectUrl(provider: SsoProviderOption): string {
     return SsoRedirectsController.show.url({ provider: provider.key });
 }
 
-export function SsoButtons({ providers }: { providers: SsoProviderOption[] }) {
+export function SsoButtons({
+    providers,
+    separator = true,
+}: {
+    providers: SsoProviderOption[];
+    /** False when what follows carries the separator itself. */
+    separator?: boolean;
+}) {
     const { t } = useTrans();
 
     if (providers.length === 0) {
@@ -77,11 +84,7 @@ export function SsoButtons({ providers }: { providers: SsoProviderOption[] }) {
                     ))}
                 </div>
             )}
-            {/* A passkey button placed right after carries the separator itself. */}
-            <AuthSeparator
-                label={t('or with your e-mail')}
-                className="in-[[data-slot=sso-buttons]:has(+[data-slot=passkey-sign-in])]:hidden"
-            />
+            {separator && <AuthSeparator label={t('or with your e-mail')} />}
         </div>
     );
 }

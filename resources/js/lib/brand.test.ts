@@ -13,6 +13,7 @@ const skrum: Brand = {
 describe('showsPoweredBy', () => {
     it('stays silent for the product under its own name and logo', () => {
         expect(showsPoweredBy(skrum)).toBe(false);
+        expect(showsPoweredBy({ ...skrum, name: 'Skrum' })).toBe(false);
         expect(showsPoweredBy(undefined)).toBe(false);
     });
 

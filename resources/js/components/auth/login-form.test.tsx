@@ -45,6 +45,28 @@ function renderForm(props: Partial<Parameters<typeof LoginForm>[0]> = {}) {
 }
 
 describe('LoginForm', () => {
+    it.each([
+        ['providers and a passkey', true, true, 1],
+        ['providers only', true, false, 1],
+        ['a passkey only', false, true, 1],
+        ['neither', false, false, 0],
+    ])(
+        'introduces the e-mail form once with %s',
+        (_, withProviders, withPasskey, separators) => {
+            passkey.isSupported = withPasskey;
+
+            renderForm({
+                ssoProviders: withProviders
+                    ? [{ key: 'google', label: 'Google' }]
+                    : [],
+            });
+
+            expect(screen.queryAllByText('or with your e-mail')).toHaveLength(
+                separators,
+            );
+        },
+    );
+
     it('keeps the ids, the names and the submit hook the walkthroughs sign in with', () => {
         const { container } = renderForm();
 

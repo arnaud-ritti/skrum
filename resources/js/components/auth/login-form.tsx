@@ -1,5 +1,6 @@
 import { Form, Link } from '@inertiajs/react';
 import type { ReactNode } from 'react';
+import { AuthSeparator } from '@/components/auth/auth-separator';
 import { PasskeySignIn } from '@/components/auth/passkey-sign-in';
 import { PasswordField } from '@/components/auth/password-field';
 import { SsoButtons } from '@/components/auth/sso-buttons';
@@ -41,8 +42,14 @@ export function LoginForm({
         <div data-slot="login-form" className="flex min-w-0 flex-col gap-4">
             {status && <Alert variant="success" title={status} />}
 
-            <SsoButtons providers={ssoProviders} />
-            <PasskeySignIn />
+            <SsoButtons providers={ssoProviders} separator={false} />
+            <PasskeySignIn
+                whenUnsupported={
+                    ssoProviders.length > 0 ? (
+                        <AuthSeparator label={t('or with your e-mail')} />
+                    ) : null
+                }
+            />
 
             {methodTabs !== undefined && (
                 <div data-slot="login-method-tabs" className="min-w-0">

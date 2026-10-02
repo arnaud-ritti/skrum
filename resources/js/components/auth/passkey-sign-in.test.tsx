@@ -43,6 +43,19 @@ beforeEach(() => {
 });
 
 describe('PasskeySignIn', () => {
+    it('shows what it is given in a browser without WebAuthn', () => {
+        passkey.isSupported = false;
+
+        renderWithProviders(
+            <PasskeySignIn
+                whenUnsupported={<span>or with your e-mail</span>}
+            />,
+        );
+
+        expect(screen.getByText('or with your e-mail')).toBeTruthy();
+        expect(screen.queryByRole('button')).toBeNull();
+    });
+
     it('renders nothing when the browser has no WebAuthn', () => {
         passkey.isSupported = false;
 

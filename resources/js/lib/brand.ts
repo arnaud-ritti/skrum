@@ -26,9 +26,5 @@ export function isRebranded(brand: BrandIdentity | undefined): boolean {
 }
 
 export function showsPoweredBy(brand: Brand | undefined): boolean {
-    if (!brand?.poweredBy) {
-        return false;
-    }
-
-    return brand.logoLightUrl !== null || brand.name !== ProductName;
+    return brand?.poweredBy === true && isRebranded(brand);
 }

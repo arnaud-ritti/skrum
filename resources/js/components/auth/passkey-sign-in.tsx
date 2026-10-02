@@ -1,5 +1,6 @@
 import type { UrlMethodPair } from '@inertiajs/core';
 import { router } from '@inertiajs/react';
+import type { ReactNode } from 'react';
 import { usePasskeyVerify } from '@laravel/passkeys/react';
 import { CircleAlert, KeyRound } from 'lucide-react';
 import { AuthSeparator } from '@/components/auth/auth-separator';
@@ -16,11 +17,14 @@ export function PasskeySignIn({
     label,
     loadingLabel,
     separator,
+    whenUnsupported = null,
 }: {
     routes?: PasskeyRoutes;
     label?: string;
     loadingLabel?: string;
     separator?: string;
+    /** Shown in place of the button and its separator in a browser without WebAuthn. */
+    whenUnsupported?: ReactNode;
 }) {
     const { t } = useTrans();
     const { verify, isLoading, error, isSupported } = usePasskeyVerify({
@@ -36,7 +40,7 @@ export function PasskeySignIn({
     });
 
     if (!isSupported) {
-        return null;
+        return whenUnsupported;
     }
 
     return (
