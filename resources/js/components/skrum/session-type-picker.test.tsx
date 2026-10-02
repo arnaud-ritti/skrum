@@ -120,6 +120,33 @@ describe('SessionTypePicker', () => {
         expect(screen.getAllByRole('radio')).toHaveLength(3);
     });
 
+    it('renders the one-line tiles with the description, and the reason of a disabled type', () => {
+        const onValueChange = vi.fn();
+
+        render(
+            <SessionTypePicker
+                variant="inline"
+                value="retro"
+                onValueChange={onValueChange}
+                options={options}
+            />,
+        );
+
+        const group = screen.getByRole('radiogroup');
+        const poker = screen.getByRole('radio', { name: /Poker/ });
+
+        expect(group.dataset.variant).toBe('inline');
+        expect(screen.getAllByRole('radio')).toHaveLength(3);
+        expect(screen.queryByText('45 min')).toBeNull();
+        expect(poker.getAttribute('aria-disabled')).toBe('true');
+        expect(poker.textContent).toContain('Disabled by the admin');
+
+        fireEvent.click(poker);
+        fireEvent.click(screen.getByRole('radio', { name: /Survey/ }));
+
+        expect(onValueChange.mock.calls).toEqual([['survey']]);
+    });
+
     it('renders menu item radios inside a dropdown menu', () => {
         const onValueChange = vi.fn();
 

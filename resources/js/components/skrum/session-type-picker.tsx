@@ -38,7 +38,8 @@ export type SessionTypePickerProps = {
     value: SessionType;
     onValueChange: (value: SessionType) => void;
     options?: SessionTypeOption[];
-    variant?: 'tiles' | 'compact';
+    /** `inline`: the one-line tiles of the creation dialog, a scrolling row when narrow. */
+    variant?: 'tiles' | 'compact' | 'inline';
     label?: string;
     help?: string;
     as?: 'radiogroup' | 'menu';
@@ -166,6 +167,7 @@ export function SessionTypePicker({
     const reasonIdPrefix = useId();
     const refs = useRef<Record<string, HTMLButtonElement | null>>({});
     const compact = variant === 'compact';
+    const inline = variant === 'inline';
 
     const selectedIndex = items.findIndex(
         (item) => item.value === value && !item.disabledReason,
@@ -254,7 +256,13 @@ export function SessionTypePicker({
     }
 
     return (
-        <div className={cn('flex flex-col gap-2', className)}>
+        <div
+            className={cn(
+                'flex flex-col gap-2',
+                inline && '@container/types min-w-0',
+                className,
+            )}
+        >
             {heading}
             <div
                 role="radiogroup"
@@ -263,9 +271,12 @@ export function SessionTypePicker({
                 aria-describedby={help ? helpId : undefined}
                 data-variant={variant}
                 className={cn(
-                    compact
-                        ? 'flex flex-col gap-1'
-                        : 'grid grid-cols-[repeat(auto-fit,minmax(min(100%,--spacing(40)),1fr))] gap-2',
+                    compact && 'flex flex-col gap-1',
+                    inline &&
+                        '-m-1 flex gap-2 overflow-x-auto p-1 @2xl/types:grid @2xl/types:auto-cols-fr @2xl/types:grid-flow-col',
+                    !compact &&
+                        !inline &&
+                        'grid grid-cols-[repeat(auto-fit,minmax(min(100%,--spacing(40)),1fr))] gap-2',
                 )}
             >
                 {items.map((item, index) => {
@@ -296,9 +307,13 @@ export function SessionTypePicker({
                             onKeyDown={(event) => moveSelection(event, index)}
                             className={cn(
                                 'relative border border-input bg-card text-left transition-colors duration-140 outline-none hover:border-primary/35 hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 aria-disabled:cursor-not-allowed aria-disabled:border-dashed aria-disabled:bg-muted aria-disabled:hover:border-input aria-disabled:hover:bg-muted data-[state=checked]:border-primary data-[state=checked]:bg-skrum-primary-soft data-[state=checked]:ring-1 data-[state=checked]:ring-primary data-[state=checked]:ring-inset',
-                                compact
-                                    ? 'grid min-h-12 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-md px-2 py-1.5'
-                                    : 'flex flex-col items-start gap-1 rounded-lg p-3',
+                                compact &&
+                                    'grid min-h-12 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-md px-2 py-1.5',
+                                inline &&
+                                    'flex w-52 min-w-0 shrink-0 items-center gap-3 rounded-lg px-3 py-2.5 @2xl/types:w-auto',
+                                !compact &&
+                                    !inline &&
+                                    'flex flex-col items-start gap-1 rounded-lg p-3',
                             )}
                         >
                             <TypeSquare
@@ -306,7 +321,7 @@ export function SessionTypePicker({
                                 disabled={disabled}
                                 compact={compact}
                             />
-                            {compact ? (
+                            {compact || inline ? (
                                 <span className="min-w-0">
                                     <span className="block truncate text-sm font-title">
                                         {item.label}
@@ -370,13 +385,19 @@ export function SessionTypePicker({
                                     )}
                                 </span>
                             ) : null}
-                            {!compact && checked ? (
+                            {inline && disabled ? (
+                                <Lock
+                                    aria-hidden
+                                    className="ml-auto size-3.5 shrink-0 text-muted-foreground"
+                                />
+                            ) : null}
+                            {!compact && !inline && checked ? (
                                 <CircleCheck
                                     aria-hidden
                                     className="absolute top-3 right-3 size-4 text-primary"
                                 />
                             ) : null}
-                            {!compact && disabled ? (
+                            {!compact && !inline && disabled ? (
                                 <Lock
                                     aria-hidden
                                     className="absolute top-3 right-3 size-4 text-muted-foreground"
