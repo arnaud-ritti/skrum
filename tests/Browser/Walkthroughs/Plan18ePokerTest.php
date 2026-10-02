@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\PokerDeck;
 use App\Enums\PokerRevealReason;
 use App\Models\PokerGame;
 use App\Models\PokerPlayer;
@@ -162,6 +163,70 @@ it('[P18e-03-04] keeps the reaction bar above the deck without overlap, on a pag
         ->assertScript($gap, 12)
         ->assertScript($overlaps, '')
         ->assertCount('[data-realtime]', 1);
+});
+
+it('[P18e-03-05] shows the deck, the voters and the rounds of each row of the estimation history, and a count for an anonymous round', function () {
+    $table = p18ePokerTable();
+    $game = $table['game'];
+    $voted = PokerTask::factory()->estimated('5')->create(['poker_game_id' => $game->id, 'title' => 'Export invoices']);
+    $first = PokerRound::factory()->revealed()->create(['poker_task_id' => $voted->id]);
+    pokerVote($first, $table['adaPlayer'], '3');
+    pokerVote($first, $table['bobPlayer'], '8');
+    $second = PokerRound::factory()->revealed()->create(['poker_task_id' => $voted->id]);
+
+    foreach (['adaPlayer' => '3', 'bobPlayer' => '5', 'cleoPlayer' => '5', 'danPlayer' => '8'] as $player => $value) {
+        pokerVote($second, $table[$player], $value);
+    }
+
+    $sizing = PokerGame::factory()->deck(PokerDeck::Tshirt)->create(['team_id' => $game->team_id, 'title' => 'Sizing workshop']);
+    $secret = PokerTask::factory()->estimated('L')->create(['poker_game_id' => $sizing->id, 'title' => 'Billing proration', 'estimated_at' => now()->subDay()]);
+    $hidden = PokerRound::factory()->revealed()->create(['poker_task_id' => $secret->id, 'anonymous' => true]);
+
+    foreach (['Eve', 'Finn'] as $name) {
+        [$user, $player] = pokerMember($sizing);
+        p18ePokerNamed($user, $name);
+        pokerVote($hidden, $player, 'L');
+    }
+
+    $row = fn (string $title): string => '[data-slot="estimate-row"]:has-text("'.$title.'")';
+
+    $page = $this->signIn($table['ada'], route('teams.estimates.index', [$game->team->workspace, $game->team], false));
+
+    $page->assertSee('2 tasks estimated by')
+        ->assertCount('[data-slot="estimate-row"]', 2)
+        ->assertSeeIn($row('Export invoices'), 'Fibonacci')
+        ->assertSeeIn($row('Export invoices'), 'Sprint 43 refinement')
+        ->assertSeeIn($row('Export invoices').' [data-slot="estimate-value"]', '5')
+        ->assertCount($row('Export invoices').' [data-slot="estimate-voters"] [data-slot="person-avatar"]', 3)
+        ->assertSeeIn($row('Export invoices').' [data-slot="estimate-voters"]', '4 voters')
+        ->assertAttribute($row('Export invoices').' [data-slot="estimate-rounds"]', 'data-revoted', 'true')
+        ->assertSeeIn($row('Export invoices').' [data-slot="estimate-rounds"]', '2')
+        ->assertSeeIn($row('Billing proration'), 'T-shirt sizes')
+        ->assertCount($row('Billing proration').' [data-slot="estimate-voters"] [data-slot="person-avatar"]', 0)
+        ->assertSeeIn($row('Billing proration').' [data-slot="estimate-voters"]', '2 voters')
+        ->assertNotPresent($row('Billing proration').' [data-slot="estimate-rounds"][data-revoted]')
+        ->assertSee('1–2 of 2')
+        ->assertNotPresent('[aria-label="Pagination"]');
+
+    $page->click($row('Export invoices').' [aria-label="Show rounds"]')
+        ->assertSee('Round 2')
+        ->assertSee('3 × 1')
+        ->assertSee('5 × 2')
+        ->assertSee('Median: 5')
+        ->assertSee('Agreement: 50 % on 5')
+        ->click($row('Billing proration').' [aria-label="Show rounds"]')
+        ->assertDontSee('Round 2')
+        ->assertSee('Anonymous votes')
+        ->assertSee('L × 2')
+        ->assertDontSee('Eve')
+        ->assertNoJavaScriptErrors();
+
+    $page->resize(390, 844)
+        ->assertNotPresent('table')
+        ->assertCount('[data-slot="estimate-row"]', 2)
+        ->assertCount($row('Export invoices').' [data-slot="estimate-voters"] [data-slot="person-avatar"]', 3)
+        ->click($row('Export invoices').' [aria-label="Show rounds"]')
+        ->assertSee('Median: 5');
 });
 
 it('[P18e-03-06] shows the median, the spread and the agreement of a reveal and names the two extremes', function () {

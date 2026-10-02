@@ -328,3 +328,126 @@ it('[P18e-03-15] renders the notice of a guest link that is no longer valid with
             ->assertPresent('[data-slot="access-notice"]'),
     );
 });
+
+/**
+ * The history of the Atlas team: tasks of three games on three decks, one of them voted without names.
+ *
+ * @return array{facilitator: User, path: string}
+ */
+function pokerVisualHistory(): array
+{
+    ['game' => $game, 'facilitator' => $facilitator, 'players' => $players] = pokerVisualGame();
+    $team = Team::query()->findOrFail($game->team_id);
+    $everyone = array_keys($players);
+    $tshirt = PokerGame::factory()->deck(PokerDeck::Tshirt)->create(['team_id' => $team->id, 'title' => 'Billing sizing']);
+    $hours = PokerGame::factory()->customCards(['1 h', '2 h', '4 h', '8 h', '16 h', '?'])->create([
+        'team_id' => $team->id,
+        'title' => 'Spikes of the quarter',
+        'deck_name' => 'Hours (spikes)',
+    ]);
+    PokerTask::query()->where('poker_game_id', $game->id)->whereNotNull('estimated_at')->delete();
+
+    $rows = [
+        [$game, 'Email reminders for late action items', '8', '2026-09-30', false, [['3', '5', '8', '8', '13', '8', '5'], ['8', '8', '8', '5', '8', '8', '13']]],
+        [$game, 'Filter sessions by team', '3', '2026-09-30', false, [['3', '3', '3', '2', '3', '3', '5']]],
+        [$tshirt, 'Billing: proration on seat change', 'L', '2026-09-29', true, [['L', 'L', 'M', 'XL', 'L', 'L']]],
+        [$game, 'SSO login with Azure AD', '13', '2026-09-23', false, [['5', '21', '13', '8', '13', '?', '8', '13'], ['8', '13', '13', '13', '21', '13', '8', '13'], ['13', '13', '13', '13', '13', '13', '13', '13']]],
+        [$hours, 'Spike: offline mode for mobile', '16 h', '2026-09-22', false, [['16 h', '8 h', '16 h', '16 h', '?']]],
+        [$game, 'Reorder columns by drag and drop', '5', '2025-12-16', false, [['3', '5', '8', '5', '5', '2', '5', '8'], ['5', '5', '5', '5', '5', '5', '5', '5']]],
+    ];
+
+    foreach ($rows as [$of, $title, $estimate, $day, $anonymous, $rounds]) {
+        $task = PokerTask::factory()->estimated($estimate)->create([
+            'poker_game_id' => $of->id,
+            'title' => $title,
+            'estimated_at' => "{$day} 10:00:00",
+        ]);
+
+        foreach ($rounds as $values) {
+            $round = PokerRound::factory()->revealed()->create(['poker_task_id' => $task->id, 'anonymous' => $anonymous]);
+
+            foreach ($values as $index => $value) {
+                $voter = $players[$everyone[$index + 1] ?? $everyone[0]];
+
+                if ($of->isNot($game)) {
+                    $voter = PokerPlayer::query()->firstOrCreate(['poker_game_id' => $of->id, 'user_id' => $voter->user_id]);
+                }
+
+                pokerVote($round, $voter, $value);
+            }
+        }
+    }
+
+    return [
+        'facilitator' => $facilitator,
+        'path' => route('teams.estimates.index', [$team->workspace, $team], false),
+    ];
+}
+
+/**
+ * @param  array<string, string>  $options
+ */
+function pokerVisualPage(User $user, string $path, array $options): mixed
+{
+    User::query()->whereKey($user->id)->update(['locale' => str_starts_with($options['locale'], 'fr') ? 'fr' : 'en']);
+
+    $page = visit('/login', $options);
+
+    $page->fill('#email', $user->email)
+        ->fill('#password', 'password')
+        ->click('@login-button')
+        ->assertPathIsNot('/login');
+
+    return $page->navigate($path)
+        ->assertPresent('[data-slot="estimation-history"]')
+        ->assertScript('document.querySelectorAll(\'[data-slot="person-avatar"] .animate-pulse\').length', 0);
+}
+
+it('[P18e-03-16] renders the estimation history of the team without overflow', function () {
+    ['facilitator' => $facilitator, 'path' => $path] = pokerVisualHistory();
+
+    $this->captureVisuals(
+        'poker-estimates',
+        $path,
+        fn (string $path, array $options) => pokerVisualPage($facilitator, $path, $options)
+            ->assertCount('[data-slot="estimate-row"]', 6)
+            ->assertCount('[data-slot="estimate-rounds"][data-revoted]', 3)
+            ->assertCount('[data-slot="estimate-row"]:has-text("Billing: proration") [data-slot="person-avatar"]', 0),
+    );
+});
+
+it('[P18e-03-17] renders the rounds of a task of the estimation history without overflow', function () {
+    ['facilitator' => $facilitator, 'path' => $path] = pokerVisualHistory();
+
+    $this->captureVisuals(
+        'poker-estimates-rounds',
+        $path,
+        function (string $path, array $options, int $width) use ($facilitator) {
+            $french = str_starts_with($options['locale'], 'fr');
+            $page = pokerVisualPage($facilitator, $path, $options);
+
+            if ($width < 768) {
+                $page->resize($width, 844);
+            }
+
+            return $page
+                ->click('[data-slot="estimate-row"]:has-text("SSO login") [aria-label="'.($french ? 'Afficher les tours' : 'Show rounds').'"]')
+                ->assertCount('[data-slot="poker-round"]', 3)
+                ->assertCount('[data-slot="poker-round-figures"]', 3);
+        },
+    );
+});
+
+it('[P18e-03-18] renders the estimation history of a team that estimated nothing without overflow', function () {
+    ['game' => $game, 'facilitator' => $facilitator] = pokerVisualGame();
+    PokerTask::query()->where('poker_game_id', $game->id)->delete();
+    $team = Team::query()->findOrFail($game->team_id);
+
+    $this->captureVisuals(
+        'poker-estimates-empty',
+        route('teams.estimates.index', [$team->workspace, $team], false),
+        fn (string $path, array $options) => pokerVisualPage($facilitator, $path, $options)
+            ->assertPresent('[data-slot="estimation-history"] [data-slot="empty-state"]')
+            ->assertNotPresent('[data-slot="estimate-row"]'),
+    );
+});

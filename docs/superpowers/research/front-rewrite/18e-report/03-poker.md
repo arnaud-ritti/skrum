@@ -168,3 +168,41 @@ Compared with `GuestJoin/preview.html` on `poker-join-*` and `poker-join-invalid
 | The logo is shown twice, in the frame and in the card | shared component; fixed on the integration branch by `550323e9`, which this lane does not hold |
 | The mark of the session is the poker spade on the iris tone, the mockup shows the retro icon on the primary tone | `GuestJoin` picks icon and tone per session type |
 | The invalid link is a notice card; no mockup draws it | brief row 54 |
+
+## Task 3.3 — Estimation history
+
+### Parity (brief 03 §3, rows 55–60)
+
+| # | Action | New control | Done |
+|---|---|---|---|
+| 55 | Back to the team | "Back to the team" link above the heading; the team is also the first breadcrumb of `AppLayout` | yes |
+| 56 | Filter by game | `Select` (`button[aria-label="Game"]`, "All games"), query `game`, `preserveState`, `replace` | yes |
+| 57 | Search | `input[aria-label="Search tasks"]` with the search icon and the "Search" button, query `q`; the field shows the search of the server again after a visit (old bug fixed) | yes |
+| 58 | Rounds of a task | the Rounds cell: the count (warning pill when the task was voted again) and `[aria-label="Show rounds"]` / "Hide rounds" (`aria-expanded`); one task open at a time; `PokerRounds open statistics` under the row: "name: value", "Anonymous votes", "Former member", "Average", "Consensus", and per round the distribution ("5 × 2"), the median and the agreement (3.0a) | yes |
+| 59 | Pagination | `nav[aria-label="Pagination"]` with Previous / Next (`preserveScroll`), only when there is more than one page; the range "1–50 of 64" always | yes |
+| 60 | Empty | `EmptyState` "No estimated tasks yet.", also for an empty filter result, then with "Clear filters" | yes |
+
+The Game column of the old table is the second line of the Task cell. Added by the mockup and B40: Deck column, voters as avatars (three and the count; the count alone for an anonymous round), the estimate pill, the summary ":count tasks estimated by :team". Below 768 px the table is a list of cards (README, "Mobile").
+
+### Places left
+
+| Mockup element | Slot | Later |
+|---|---|---|
+| "Export CSV" at the end of the heading | `actions` of `EstimationHistory` (`components/poker/estimation-history.tsx`) | backlog (D-17) |
+| Deck and period filters, "Re-voted only" | `extraFilters` of `EstimationHistory`, after the game filter | backlog (D-17) |
+
+### Differences with the mockup
+
+Compared with frames c and d of `ScreenPokerQueue/preview.html` on `poker-estimates-*`, `poker-estimates-rounds-*` and `poker-estimates-empty-*` (light and dark, 390 and 1440).
+
+| Difference | Row |
+|---|---|
+| No deck filter, period filter, "Re-voted only", "Export CSV" | D-17 |
+| The page is under `AppLayout` (sidebar, breadcrumb in the topbar), not a panel with its own bar; the saved decks page is a page of its own, not a second panel | plan, 3.3 and 1.5 |
+| Under the title of a task: the name of its game, not a ticket key. The row does not carry the key of an imported task | no row: reported |
+| The summary reads "6 tasks estimated by Atlas", without "across 12 games": the page knows the games of the team, not how many of them hold an estimate; with a filter it reads the team name only | no row: reason F |
+| A "Search" button after the field; the placeholder is "Search tasks" (the search reads titles only) | browser contract (`P10a-15`); reason F |
+| The Rounds cell has a chevron button beside the count, and the row opens on the rounds; the mockup's rows do not open | parity row 58 |
+| Previous / Next carry chevrons (`Pagination`), the mockup arrows; absent on a single page | component; parity row 59 |
+| The date reads "Sep 30" in English (the locale's order) and carries the year when it is not the current one | no row: reported |
+| The avatars of the voters sit about 2 px above the line of the count | no row: reported |
