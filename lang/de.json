@@ -4257,5 +4257,11 @@
     "ROTI card, while the trend loads": "ROTI-Karte, während der Trend lädt",
     "ROTI card, when the trend could not be loaded": "ROTI-Karte, wenn der Trend nicht geladen werden konnte",
     "Health check page, for a manager": "Gesundheitscheck-Seite, für eine verwaltende Person",
-    "Health check page, for a member of a team without results": "Gesundheitscheck-Seite, für ein Mitglied eines Teams ohne Ergebnisse"
+    "Health check page, for a member of a team without results": "Gesundheitscheck-Seite, für ein Mitglied eines Teams ohne Ergebnisse",
+    "Only :count recovery codes left": "Nur noch :count Wiederherstellungscodes übrig",
+    "Only one recovery code left": "Nur noch ein Wiederherstellungscode übrig",
+    "No recovery codes left": "Kein Wiederherstellungscode mehr übrig",
+    "Regenerate your codes to get :total new ones. The old ones stop working.": "Generieren Sie Ihre Codes neu, um :total neue zu erhalten. Die alten werden ungültig.",
+    "If you lose your phone, you may not be able to sign in. Regenerate your codes now.": "Wenn Sie Ihr Telefon verlieren, können Sie sich möglicherweise nicht mehr anmelden. Generieren Sie Ihre Codes jetzt neu.",
+    "New recovery codes generated.": "Neue Wiederherstellungscodes wurden generiert."
 }

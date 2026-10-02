@@ -4035,5 +4035,11 @@
     "ROTI card, when the trend could not be loaded": "ROTI card, when the trend could not be loaded",
     "Health check page, for a manager": "Health check page, for a manager",
     "Health check page, for a member of a team without results": "Health check page, for a member of a team without results",
-    "Details": "Details"
+    "Details": "Details",
+    "Only :count recovery codes left": "Only :count recovery codes left",
+    "Only one recovery code left": "Only one recovery code left",
+    "No recovery codes left": "No recovery codes left",
+    "Regenerate your codes to get :total new ones. The old ones stop working.": "Regenerate your codes to get :total new ones. The old ones stop working.",
+    "If you lose your phone, you may not be able to sign in. Regenerate your codes now.": "If you lose your phone, you may not be able to sign in. Regenerate your codes now.",
+    "New recovery codes generated.": "New recovery codes generated."
 }
