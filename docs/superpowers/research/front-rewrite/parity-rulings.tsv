@@ -1,0 +1,6 @@
+# Verdicts written by hand for the parity table (plan 18g Task 10). Read by bin/front-parity.mjs.
+# One line per row: kind<TAB>key<TAB>ruling
+#   kind    route, page, action, feature or file
+#   key     the text the script prints after the kind and before the last ": " (node bin/front-parity.mjs <routes.json> --check)
+#   ruling  starts with "kept: ", "changed: ", "moved: " or "gap: "; anything but a gap names a file that exists
+# No verdict is written yet: the screens of 18e are still being merged.
