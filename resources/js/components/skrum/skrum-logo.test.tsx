@@ -13,6 +13,18 @@ describe('SkrumLogo', () => {
         },
     );
 
+    it('is hidden from assistive technology when decorative', () => {
+        const { container } = renderWithProviders(<SkrumLogo decorative />);
+
+        expect(screen.queryByRole('img')).toBeNull();
+        expect(
+            container.querySelector('svg')?.getAttribute('aria-hidden'),
+        ).toBe('true');
+        expect(container.querySelector('svg')?.hasAttribute('aria-label')).toBe(
+            false,
+        );
+    });
+
     it('paints with tokens only', () => {
         const { container } = renderWithProviders(<SkrumLogo />);
 

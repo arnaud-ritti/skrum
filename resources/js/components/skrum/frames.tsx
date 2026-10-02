@@ -33,13 +33,14 @@ function Inset({
 }
 
 function TabBar({ sidebar }: { sidebar: AppSidebarProps }) {
-    const { toggleSidebar } = useSidebar();
+    const { toggleSidebar, openMobile } = useSidebar();
 
     return (
         <MobileTabBar
             active={sidebar.active}
             links={sidebar.links}
             onMore={toggleSidebar}
+            moreOpen={openMobile}
         />
     );
 }

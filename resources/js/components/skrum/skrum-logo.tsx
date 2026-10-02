@@ -72,16 +72,19 @@ function WordmarkPart() {
 export function SkrumLogo({
     variant = 'horizontal',
     className,
+    decorative = false,
 }: {
     variant?: Variant;
     className?: string;
+    decorative?: boolean;
 }) {
     return (
         <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox={ViewBoxes[variant]}
-            role="img"
-            aria-label="Skrüm"
+            role={decorative ? undefined : 'img'}
+            aria-label={decorative ? undefined : 'Skrüm'}
+            aria-hidden={decorative ? true : undefined}
             className={cn('shrink-0', className)}
         >
             {variant === 'symbol' && <SymbolPart />}

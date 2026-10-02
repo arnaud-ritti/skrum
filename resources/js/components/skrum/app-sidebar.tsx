@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { SkrumLogo } from '@/components/skrum/skrum-logo';
+import { UserCard, type UserCardUser } from '@/components/skrum/user-card';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -66,10 +67,12 @@ export type AppSidebarProps = {
     workspace: { id: string; name: string } | null;
     workspaces: { id: string; name: string; href: NavHref }[];
     newWorkspaceHref: NavHref;
+    newTeamHref?: NavHref;
     homeHref: NavHref;
     links: Partial<Record<NavKey, NavHref>>;
     overdueActions?: number;
     footer?: ReactNode;
+    user?: UserCardUser & { menu?: ReactNode };
 };
 
 type Entry = { key: NavKey; label: string; icon: LucideIcon };
@@ -97,18 +100,25 @@ function NavEntries({
                 }
 
                 const isActive = active === key;
+                const hasOverdue = key === 'actions' && overdueActions > 0;
+                const overdueLabel = hasOverdue
+                    ? t(':count overdue', { count: overdueActions })
+                    : null;
+                const accessibleLabel =
+                    overdueLabel === null ? label : `${label}, ${overdueLabel}`;
 
                 return (
                     <SidebarMenuItem key={key}>
                         <SidebarMenuButton
                             asChild
                             isActive={isActive}
-                            tooltip={{ children: label }}
+                            tooltip={{ children: accessibleLabel }}
                             className="data-[active=true]:font-semibold"
                         >
                             <Link
                                 href={href}
                                 prefetch
+                                aria-label={accessibleLabel}
                                 aria-current={isActive ? 'page' : undefined}
                             >
                                 <Icon
@@ -121,18 +131,21 @@ function NavEntries({
                                 <span className="truncate">{label}</span>
                             </Link>
                         </SidebarMenuButton>
-                        {key === 'actions' && overdueActions > 0 && (
+                        {hasOverdue && (
+                            <span
+                                aria-hidden
+                                data-slot="overdue-dot"
+                                className="pointer-events-none absolute top-1 right-1 hidden size-2 rounded-full bg-destructive group-data-[collapsible=icon]:block"
+                            />
+                        )}
+                        {hasOverdue && (
                             <SidebarMenuBadge className="rounded-full bg-destructive px-1.5 text-destructive-foreground tabular-nums peer-hover/menu-button:text-destructive-foreground">
                                 <span aria-hidden>
                                     {overdueActions > 99
                                         ? '99+'
                                         : overdueActions}
                                 </span>
-                                <span className="sr-only">
-                                    {t(':count overdue', {
-                                        count: overdueActions,
-                                    })}
-                                </span>
+                                <span className="sr-only">{overdueLabel}</span>
                             </SidebarMenuBadge>
                         )}
                     </SidebarMenuItem>
@@ -148,9 +161,15 @@ function TeamSwitcher({
     workspace,
     workspaces,
     newWorkspaceHref,
+    newTeamHref,
 }: Pick<
     AppSidebarProps,
-    'team' | 'teams' | 'workspace' | 'workspaces' | 'newWorkspaceHref'
+    | 'team'
+    | 'teams'
+    | 'workspace'
+    | 'workspaces'
+    | 'newWorkspaceHref'
+    | 'newTeamHref'
 >) {
     const { t } = useTrans();
 
@@ -201,8 +220,18 @@ function TeamSwitcher({
                                 </Link>
                             </DropdownMenuItem>
                         ))}
-                        <DropdownMenuSeparator />
                     </>
+                )}
+                {newTeamHref !== undefined && (
+                    <DropdownMenuItem asChild>
+                        <Link href={newTeamHref}>
+                            <Plus className="size-4 shrink-0" />
+                            <span className="truncate">{t('New team')}</span>
+                        </Link>
+                    </DropdownMenuItem>
+                )}
+                {(teams.length > 0 || newTeamHref !== undefined) && (
+                    <DropdownMenuSeparator />
                 )}
                 <DropdownMenuLabel className="truncate">
                     {t('Workspaces')}
@@ -238,10 +267,12 @@ export function AppSidebar({
     workspace,
     workspaces,
     newWorkspaceHref,
+    newTeamHref,
     homeHref,
     links,
     overdueActions,
     footer,
+    user,
 }: AppSidebarProps) {
     const { t } = useTrans();
 
@@ -273,12 +304,19 @@ export function AppSidebar({
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton asChild>
-                            <Link href={homeHref} prefetch>
+                            <Link
+                                href={homeHref}
+                                prefetch
+                                aria-label="Skrüm"
+                                className="group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0!"
+                            >
                                 <SkrumLogo
+                                    decorative
                                     variant="symbol"
                                     className="size-6!"
                                 />
                                 <SkrumLogo
+                                    decorative
                                     variant="wordmark"
                                     className="h-5! w-auto! group-data-[collapsible=icon]:hidden"
                                 />
@@ -292,6 +330,7 @@ export function AppSidebar({
                             workspace={workspace}
                             workspaces={workspaces}
                             newWorkspaceHref={newWorkspaceHref}
+                            newTeamHref={newTeamHref}
                         />
                     </SidebarMenuItem>
                 </SidebarMenu>
@@ -342,7 +381,10 @@ export function AppSidebar({
                         />
                     </nav>
                 )}
-                {footer}
+                {footer ??
+                    (user !== undefined && (
+                        <UserCard user={user} menu={user.menu} />
+                    ))}
             </SidebarFooter>
         </Sidebar>
     );

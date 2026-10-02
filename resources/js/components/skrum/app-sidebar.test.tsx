@@ -1,4 +1,5 @@
 import { screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { renderWithProviders } from '@/test/render';
 import {
@@ -144,6 +145,68 @@ describe('AppSidebar', () => {
         ).toBeNull();
     });
 
+    it('draws a destructive dot on the Actions entry for the collapsed rail', () => {
+        const { container } = renderSidebar({ overdueActions: 3 });
+
+        const dot = container.querySelector('[data-slot="overdue-dot"]');
+
+        expect(dot?.className).toContain('bg-destructive');
+        expect(
+            screen.getByRole('link', { name: 'Actions, 3 overdue' }),
+        ).toBeTruthy();
+    });
+
+    it('draws no dot when nothing is overdue', () => {
+        const { container } = renderSidebar();
+
+        expect(container.querySelector('[data-slot="overdue-dot"]')).toBeNull();
+    });
+
+    it('gives the brand link a single accessible name', () => {
+        renderSidebar();
+
+        expect(screen.getByRole('link', { name: 'Skrüm' })).toBeTruthy();
+        expect(screen.queryByRole('img', { name: 'Skrüm' })).toBeNull();
+    });
+
+    it('offers New team in the switcher only with a href', async () => {
+        const user = userEvent.setup();
+        const { unmount } = renderSidebar({ newTeamHref: '/teams/create' });
+
+        await user.click(screen.getByRole('button', { name: /Atlas/ }));
+
+        expect(
+            screen
+                .getByRole('menuitem', { name: 'New team' })
+                .getAttribute('href'),
+        ).toBe('/teams/create');
+
+        unmount();
+        renderSidebar();
+        await user.click(screen.getByRole('button', { name: /Atlas/ }));
+
+        expect(screen.queryByRole('menuitem', { name: 'New team' })).toBeNull();
+    });
+
+    it('renders the user card in the footer when no footer is given', () => {
+        renderSidebar({
+            user: { name: 'Ada Lovelace', role: 'Admin', avatarUrl: null },
+        });
+
+        expect(screen.getByText('Ada Lovelace')).toBeTruthy();
+        expect(screen.getByText('Admin')).toBeTruthy();
+    });
+
+    it('prefers an explicit footer over the user card', () => {
+        renderSidebar({
+            footer: <p>Old footer</p>,
+            user: { name: 'Ada Lovelace', role: 'Admin' },
+        });
+
+        expect(screen.getByText('Old footer')).toBeTruthy();
+        expect(screen.queryByText('Ada Lovelace')).toBeNull();
+    });
+
     it('is a labelled navigation landmark', () => {
         renderSidebar();
 
@@ -163,5 +226,31 @@ describe('MobileTabBar', () => {
             screen.getAllByRole('link').map((link) => link.textContent?.trim()),
         ).toEqual(['Home', 'Sessions', 'Actions', 'Mood']);
         expect(screen.getByRole('button', { name: 'More' })).toBeTruthy();
+    });
+
+    it('has its own landmark name', () => {
+        renderWithProviders(
+            <MobileTabBar links={base.links} onMore={() => {}} />,
+        );
+
+        expect(
+            screen.getByRole('navigation', { name: 'Tab bar' }),
+        ).toBeTruthy();
+    });
+
+    it('exposes the open state of the More dialog', () => {
+        const { rerender } = renderWithProviders(
+            <MobileTabBar links={base.links} onMore={() => {}} />,
+        );
+        const more = screen.getByRole('button', { name: 'More' });
+
+        expect(more.getAttribute('aria-haspopup')).toBe('dialog');
+        expect(more.getAttribute('aria-expanded')).toBe('false');
+
+        rerender(
+            <MobileTabBar links={base.links} onMore={() => {}} moreOpen />,
+        );
+
+        expect(more.getAttribute('aria-expanded')).toBe('true');
     });
 });

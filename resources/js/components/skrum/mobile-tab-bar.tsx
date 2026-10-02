@@ -17,10 +17,12 @@ export function MobileTabBar({
     active,
     links,
     onMore,
+    moreOpen = false,
 }: {
     active?: NavKey;
     links: Partial<Record<NavKey, NavHref>>;
     onMore: () => void;
+    moreOpen?: boolean;
 }) {
     const { t } = useTrans();
 
@@ -33,7 +35,7 @@ export function MobileTabBar({
 
     return (
         <nav
-            aria-label={t('Navigation')}
+            aria-label={t('Tab bar')}
             className="fixed inset-x-0 bottom-0 z-40 flex border-t bg-sidebar pb-[env(safe-area-inset-bottom)] md:hidden"
         >
             {tabs.map(({ key, label, icon: Icon }) => {
@@ -55,7 +57,13 @@ export function MobileTabBar({
                     </Link>
                 );
             })}
-            <button type="button" onClick={onMore} className={itemClass}>
+            <button
+                type="button"
+                onClick={onMore}
+                aria-expanded={moreOpen}
+                aria-haspopup="dialog"
+                className={itemClass}
+            >
                 <Ellipsis className="size-5" />
                 <span className="max-w-full truncate">{t('More')}</span>
             </button>
