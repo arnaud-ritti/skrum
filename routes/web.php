@@ -132,6 +132,7 @@ use App\Http\Controllers\Retros\SurveyDraftsController;
 use App\Http\Controllers\Retros\SurveyReactionsController;
 use App\Http\Controllers\Retros\SurveyResponsesController;
 use App\Http\Controllers\Retros\SurveysController;
+use App\Http\Controllers\SearchResultsController;
 use App\Http\Controllers\SsoCallbacksController;
 use App\Http\Controllers\SsoRedirectsController;
 use App\Http\Controllers\StyledAvatarsController;
@@ -244,6 +245,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('notifications', [NotificationsController::class, 'index'])->name('notifications.index');
     Route::post('notifications/read-all', [ReadAllNotificationsController::class, 'store'])->name('notifications.readAll');
     Route::patch('notifications/{notification}', [NotificationsController::class, 'update'])->name('notifications.update')->whereUuid('notification');
+    Route::get('search', [SearchResultsController::class, 'index'])->middleware('throttle:60,1,search')->name('search.index');
 
     Route::get('integrations/jira-dc/callback', [IntegrationCallbacksController::class, 'show'])
         ->defaults('provider', 'jira_dc')

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Mcp\Support;
+namespace App\Support;
 
 class LikePattern
 {
