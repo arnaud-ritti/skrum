@@ -24,6 +24,7 @@ $mysql = [
     'engine' => null,
     'timezone' => '+00:00',
     'isolation_level' => 'READ COMMITTED',
+    'minimum_version' => '8.4.0',
     'options' => $mysqlOptions,
 ];
 
@@ -31,6 +32,7 @@ $mariadb = [
     ...$mysql,
     'driver' => 'mariadb',
     'collation' => env('DB_COLLATION', 'utf8mb4_nopad_bin'),
+    'minimum_version' => '10.11.0',
 ];
 
 $pgsql = [
@@ -46,6 +48,7 @@ $pgsql = [
     'prefix_indexes' => true,
     'search_path' => 'public',
     'sslmode' => env('DB_SSLMODE', 'prefer'),
+    'minimum_version' => '14.0',
 ];
 
 return [
@@ -87,6 +90,7 @@ return [
             'journal_mode' => 'wal',
             'synchronous' => 'normal',
             'transaction_mode' => 'IMMEDIATE',
+            'minimum_version' => '3.35.0',
         ],
 
         'mysql' => $mysql,

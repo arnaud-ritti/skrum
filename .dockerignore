@@ -20,6 +20,8 @@ docs
 frankenphp
 compose.yaml
 compose.production.yaml
+compose.production.mariadb.yaml
+compose.production.sqlite.yaml
 .claude
 .agents
 .junie

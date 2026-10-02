@@ -1,0 +1,91 @@
+<?php
+
+use App\Support\Database\DatabaseRequirements;
+use Illuminate\Support\Facades\DB;
+
+function problemsOfConnection(string $name, array $overrides, ?string $from = null): string
+{
+    $from ??= config('database.default');
+
+    config(["database.connections.{$name}" => [...config("database.connections.{$from}"), ...$overrides]]);
+
+    $problems = implode("\n", DatabaseRequirements::problems(DB::connection($name)));
+
+    DB::purge($name);
+
+    return $problems;
+}
+
+it('finds nothing wrong with the database the suite runs on', function () {
+    expect(DatabaseRequirements::problems(DB::connection()))->toBe([]);
+
+    $this->artisan('skrum:check-database')
+        ->expectsOutputToContain('The database is ready.')
+        ->assertSuccessful();
+});
+
+it('refuses a connection configured to ignore case or to read repeatable snapshots', function () {
+    $problems = problemsOfConnection('loose', [
+        'collation' => 'utf8mb4_unicode_ci',
+        'isolation_level' => 'REPEATABLE READ',
+    ]);
+
+    expect($problems)->toContain('utf8mb4_unicode_ci')
+        ->toContain('READ COMMITTED');
+})->skip(fn () => ! array_key_exists('isolation_level', config('database.connections.'.config('database.default'))), 'Applies to connections that have an isolation level option.');
+
+it('refuses a sqlite file that is not in write-ahead mode or does not take the write lock at begin', function () {
+    $path = tempnam(sys_get_temp_dir(), 'skrum-check-');
+
+    $problems = problemsOfConnection('plain_file', [
+        'database' => $path,
+        'journal_mode' => 'delete',
+        'transaction_mode' => 'DEFERRED',
+        'foreign_key_constraints' => false,
+    ], 'sqlite');
+
+    unlink($path);
+
+    expect($problems)->toContain('journal_mode')
+        ->toContain('IMMEDIATE')
+        ->toContain('DB_FOREIGN_KEYS');
+});
+
+it('accepts a sqlite file opened with the settings of the application', function () {
+    $path = tempnam(sys_get_temp_dir(), 'skrum-check-');
+
+    $problems = problemsOfConnection('wal_file', ['database' => $path], 'sqlite');
+
+    array_map(unlink(...), glob("{$path}*"));
+
+    expect($problems)->toBe('');
+});
+
+it('refuses a server older than the minimum of its connection', function () {
+    $problems = problemsOfConnection('too_old', ['minimum_version' => '999.0.0']);
+
+    expect($problems)->toContain('older than the minimum, 999.0.0');
+});
+
+it('refuses a connection that declares no minimum version', function () {
+    $problems = problemsOfConnection('undeclared', ['minimum_version' => null]);
+
+    expect($problems)->toContain('minimum_version');
+});
+
+it('fails the command and names the problem', function () {
+    $path = tempnam(sys_get_temp_dir(), 'skrum-check-');
+
+    config(['database.connections.plain_file' => [
+        ...config('database.connections.sqlite'),
+        'database' => $path,
+        'journal_mode' => 'delete',
+    ]]);
+
+    $this->artisan('skrum:check-database', ['--database' => 'plain_file'])
+        ->expectsOutputToContain('journal_mode')
+        ->assertFailed();
+
+    DB::purge('plain_file');
+    unlink($path);
+});
