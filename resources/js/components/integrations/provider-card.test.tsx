@@ -1,4 +1,5 @@
-import { fireEvent, screen, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { Hash } from 'lucide-react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders } from '@/test/render';
@@ -206,10 +207,12 @@ describe('ProviderCard', () => {
                 .getAttribute('aria-checked'),
         ).toBe('false');
         expect(
-            within(row('slack')).getByRole('button', { name: 'Configure' }),
+            within(row('slack')).getByRole('button', {
+                name: 'Configure Slack',
+            }),
         ).not.toBeNull();
         expect(
-            within(row('jira')).getByRole('button', { name: 'Connect' }),
+            within(row('jira')).getByRole('button', { name: 'Connect Jira' }),
         ).not.toBeNull();
     });
 
@@ -226,7 +229,7 @@ describe('ProviderCard', () => {
             </ProviderCard>,
         );
 
-        fireEvent.click(screen.getByRole('button', { name: 'Configure' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Configure Jira' }));
 
         const panel = screen.getByRole('dialog', { name: 'Jira' });
 
@@ -294,6 +297,125 @@ describe('ProviderCard', () => {
         expect(screen.queryByRole('dialog')).toBeNull();
     });
 
+    it('calls for the pending step on the row of a connection that delivers nothing, its switch off', () => {
+        renderWithProviders(
+            <>
+                <ProviderCard
+                    provider={{ key: 'jira', label: 'Jira', icon: Hash }}
+                    status={{ label: 'Setup required', tone: 'setup' }}
+                    disconnect={() => null}
+                >
+                    <p>Choose the Jira site</p>
+                </ProviderCard>
+                <ProviderCard
+                    provider={{ key: 'slack', label: 'Slack', icon: Hash }}
+                    status={{ label: 'Reconnect required', tone: 'reconnect' }}
+                    disconnect={() => null}
+                />
+            </>,
+        );
+
+        const finish = within(row('jira')).getByRole('button', {
+            name: 'Finish setup Jira',
+        });
+        const reconnect = within(row('slack')).getByRole('button', {
+            name: 'Reconnect Slack',
+        });
+
+        expect(finish.textContent).toBe('Finish setup');
+        expect(finish.className).toContain('bg-primary');
+        expect(reconnect.textContent).toBe('Reconnect');
+        expect(reconnect.className).toContain('bg-primary');
+
+        const toggle = screen.getByRole('switch', { name: 'Jira' });
+
+        expect(toggle.getAttribute('aria-checked')).toBe('false');
+        expect(
+            screen
+                .getByRole('switch', { name: 'Slack' })
+                .getAttribute('aria-checked'),
+        ).toBe('false');
+
+        fireEvent.click(toggle);
+
+        expect(
+            within(screen.getByRole('dialog', { name: 'Jira' })).getByText(
+                'Choose the Jira site',
+            ),
+        ).not.toBeNull();
+    });
+
+    it('shows a notice of the provider on its row, connected or not', () => {
+        renderWithProviders(
+            <ProviderCard
+                provider={{ key: 'telegram', label: 'Telegram', icon: Hash }}
+                status={{ label: 'Not connected', tone: 'none' }}
+                notice="The bot is used elsewhere."
+            />,
+        );
+
+        const notice = row('telegram').querySelector(
+            '[data-slot="provider-row-notice"]',
+        );
+
+        expect(notice?.textContent).toBe('The bot is used elsewhere.');
+        expect(notice?.className).toContain('text-skrum-warning-text');
+    });
+
+    it('says on the switch of a working connection that turning it off disconnects', () => {
+        renderWithProviders(
+            <>
+                <ProviderCard
+                    provider={{ key: 'slack', label: 'Slack', icon: Hash }}
+                    status={{ label: 'Connected', tone: 'active' }}
+                    disconnect={() => null}
+                />
+                <ProviderCard
+                    provider={{ key: 'jira', label: 'Jira', icon: Hash }}
+                    status={{ label: 'Not connected', tone: 'none' }}
+                />
+            </>,
+        );
+
+        const hint = screen
+            .getByRole('switch', { name: 'Slack' })
+            .getAttribute('aria-describedby');
+
+        expect(document.getElementById(hint ?? '')?.textContent).toBe(
+            'Turning this off disconnects the integration.',
+        );
+        expect(
+            screen
+                .getByRole('switch', { name: 'Jira' })
+                .getAttribute('aria-describedby'),
+        ).toBeNull();
+    });
+
+    it('opens the sheet from the keyboard and gives focus back to its button on Escape', async () => {
+        renderWithProviders(
+            <ProviderCard
+                provider={{ key: 'slack', label: 'Slack', icon: Hash }}
+                status={{ label: 'Connected', tone: 'active' }}
+            >
+                <p>body</p>
+            </ProviderCard>,
+        );
+
+        const configure = screen.getByRole('button', {
+            name: 'Configure Slack',
+        });
+
+        configure.focus();
+        await userEvent.keyboard('{Enter}');
+
+        expect(screen.getByRole('dialog', { name: 'Slack' })).not.toBeNull();
+
+        await userEvent.keyboard('{Escape}');
+
+        await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+        expect(document.activeElement).toBe(configure);
+    });
+
     it('shows the error of a broken connection as an alert in the panel, and its tone on the row', () => {
         renderWithProviders(
             <ProviderCard
@@ -308,7 +430,9 @@ describe('ProviderCard', () => {
             row().querySelector('[data-slot="provider-row-status"]')?.className,
         ).toContain('text-skrum-destructive-text');
 
-        fireEvent.click(screen.getByRole('button', { name: 'Configure' }));
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Reconnect Slack' }),
+        );
 
         expect(screen.getByRole('alert').textContent).toBe('token_revoked');
     });
@@ -324,7 +448,9 @@ describe('ProviderCard', () => {
             </ProviderCard>,
         );
 
-        fireEvent.click(screen.getByRole('button', { name: 'Configure' }));
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Configure Slack' }),
+        );
 
         expect(screen.getByText('body')).not.toBeNull();
         expect(screen.queryByRole('alert')).toBeNull();

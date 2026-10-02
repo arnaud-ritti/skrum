@@ -836,6 +836,8 @@
     "Connected by": "Connected by",
     "Last checked": "Last checked",
     "Configure": "Configure",
+    "Finish setup": "Finish setup",
+    "Turning this off disconnects the integration.": "Turning this off disconnects the integration.",
     "Connect": "Connect",
     "Reconnect": "Reconnect",
     "Disconnect": "Disconnect",

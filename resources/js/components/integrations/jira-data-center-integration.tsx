@@ -3,11 +3,7 @@ import { ServerCog } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Alert } from '@/components/ui/alert';
 import { useTrans } from '@/hooks/use-trans';
-import type {
-    IntegrationProviderCard,
-    IntegrationScope,
-    TeamIntegration,
-} from '@/types';
+import type { IntegrationProviderCard, IntegrationScope } from '@/types';
 import { DisconnectIntegrationDialog } from './disconnect-integration-dialog';
 import { ConnectLink, TestConnectionButton } from './integration-actions';
 import {
@@ -31,7 +27,8 @@ type Props = {
 /**
  * Spec 8 §4.1: OAuth is the primary way in; a personal access token is
  * the fallback for older servers and is clearly labelled as acting as its
- * owner.
+ * owner. Both states return the same `ProviderCard`: the row, its switch and
+ * its open sheet outlive a connection that appears or goes.
  */
 export function JiraDataCenterIntegration({
     card,
@@ -39,6 +36,7 @@ export function JiraDataCenterIntegration({
     statusSection,
 }: Props) {
     const { t } = useTrans();
+    const { locale } = usePage().props;
     const connection = card.connection;
     const allowsOAuth = card.authMethods.includes('oauth');
     const allowsToken = card.authMethods.includes('pat');
@@ -91,28 +89,8 @@ export function JiraDataCenterIntegration({
         );
     }
 
-    return (
-        <ConnectedJiraDataCenter
-            card={card}
-            scope={scope}
-            connection={connection}
-            statusSection={statusSection}
-        />
-    );
-}
-
-function ConnectedJiraDataCenter({
-    card,
-    scope,
-    connection,
-    statusSection,
-}: Props & { connection: TeamIntegration }) {
-    const { t } = useTrans();
-    const { locale } = usePage().props;
     const { settings } = connection;
     const usesToken = settings.authMethod === 'pat';
-    const allowsOAuth = card.authMethods.includes('oauth');
-    const allowsToken = card.authMethods.includes('pat');
     const owner = settings.tokenOwner ?? '';
     const active = connection.status === 'active';
     const savedOn = settings.tokenSavedAt

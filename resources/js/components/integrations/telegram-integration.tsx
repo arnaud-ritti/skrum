@@ -115,6 +115,7 @@ export function TelegramIntegration({ card, scope, telegram }: Props) {
             size="sm"
             variant={connection === null ? 'default' : 'outline'}
             className="max-w-full"
+            data-test="integration-connect"
             loading={busy}
             disabled={telegram?.botUsername === null}
             onClick={() => void createCode()}
@@ -141,9 +142,23 @@ export function TelegramIntegration({ card, scope, telegram }: Props) {
                   />
               );
 
+    const botTroubles = [
+        telegram?.conflict
+            ? t(
+                  'The Telegram bot is used elsewhere. Remove its webhook or use a dedicated bot.',
+              )
+            : null,
+        telegram?.botUsername === null
+            ? t(
+                  'Telegram did not answer. Check the bot token of this instance.',
+              )
+            : null,
+    ].filter((trouble): trouble is string => trouble !== null);
+
     return (
         <ProviderCard
             {...providerCardProps(card, Send, t)}
+            notice={botTroubles.length === 0 ? null : botTroubles.join(' ')}
             disconnect={disconnect}
             details={
                 connection !== null && (
@@ -177,22 +192,9 @@ export function TelegramIntegration({ card, scope, telegram }: Props) {
                 )
             }
         >
-            {telegram?.conflict && (
-                <Alert
-                    variant="warning"
-                    title={t(
-                        'The Telegram bot is used elsewhere. Remove its webhook or use a dedicated bot.',
-                    )}
-                />
-            )}
-            {telegram?.botUsername === null && (
-                <Alert
-                    variant="warning"
-                    title={t(
-                        'Telegram did not answer. Check the bot token of this instance.',
-                    )}
-                />
-            )}
+            {botTroubles.map((trouble) => (
+                <Alert key={trouble} variant="warning" title={trouble} />
+            ))}
             {connection === null && (
                 <p className="text-sm text-muted-foreground">
                     {t(

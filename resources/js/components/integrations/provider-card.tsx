@@ -15,6 +15,7 @@ import {
     SheetTitle,
 } from '@/components/ui/sheet';
 import { Switch } from '@/components/ui/switch';
+import { useRestoreFocus } from '@/components/ui/use-restore-focus';
 import { useTrans } from '@/hooks/use-trans';
 import { cn } from '@/lib/utils';
 import type {
@@ -46,6 +47,8 @@ type ProviderCardProps = {
     summary?: string | null;
     /** Why the connection stopped working. */
     error?: string | null;
+    /** A trouble of the provider itself, said on the row whatever the connection. */
+    notice?: string | null;
     /** What is connected: a `ProviderDetails` list. */
     details?: ReactNode;
     /** Buttons of the footer of the panel. */
@@ -61,6 +64,36 @@ const statusClasses: Record<ProviderStatusTone, string> = {
     active: 'text-skrum-success-text',
     setup: 'text-skrum-warning-text',
     reconnect: 'text-skrum-destructive-text',
+};
+
+/** What the button of the row asks for, per status. */
+function actionLabel(
+    tone: ProviderStatusTone,
+    t: (key: string) => string,
+): string {
+    if (tone === 'none') {
+        return t('Connect');
+    }
+
+    if (tone === 'setup') {
+        return t('Finish setup');
+    }
+
+    if (tone === 'reconnect') {
+        return t('Reconnect');
+    }
+
+    return t('Configure');
+}
+
+const buttonVariants: Record<
+    ProviderStatusTone,
+    'default' | 'ghost' | 'outline'
+> = {
+    none: 'outline',
+    active: 'ghost',
+    setup: 'default',
+    reconnect: 'default',
 };
 
 function toneOf(connection: TeamIntegration): ProviderStatusTone {
@@ -143,15 +176,17 @@ function isRendered(node: ReactNode): boolean {
 /**
  * One provider of the integrations card: a row with its status line, a
  * switch and the button that opens its details, panels and actions in a sheet.
- * A connection has no "off" state: the switch is on while the provider is
- * connected, turning it off asks to disconnect, turning it on opens the sheet
- * where the provider is connected.
+ * A connection has no "off" state: the switch is on while the connection
+ * works, turning it off asks to disconnect, turning it on opens the sheet where
+ * the provider is connected, set up or connected again. A connection waiting
+ * for a step says so on the button of its row.
  */
 export function ProviderCard({
     provider,
     status,
     summary,
     error,
+    notice,
     details,
     actions,
     disconnect,
@@ -159,9 +194,15 @@ export function ProviderCard({
 }: ProviderCardProps): ReactElement {
     const { t } = useTrans();
     const titleId = useId();
+    const buttonId = useId();
+    const hintId = useId();
     const [open, setOpen] = useState(false);
     const [confirming, setConfirming] = useState(false);
+    const restoreFocus = useRestoreFocus(open);
     const connected = status.tone !== 'none';
+    const working = status.tone === 'active';
+    const disconnects = working && disconnect !== undefined;
+    const hasNotice = notice !== undefined && notice !== null && notice !== '';
     const hasError = error !== undefined && error !== null && error !== '';
     const hasSummary =
         summary !== undefined && summary !== null && summary !== '';
@@ -208,27 +249,43 @@ export function ProviderCard({
                 >
                     {statusLine}
                 </p>
+                {hasNotice && (
+                    <p
+                        data-slot="provider-row-notice"
+                        className="text-xs break-words text-skrum-warning-text"
+                    >
+                        {notice}
+                    </p>
+                )}
             </div>
             <Button
+                id={buttonId}
                 type="button"
-                variant={connected ? 'ghost' : 'outline'}
+                variant={buttonVariants[status.tone]}
                 size="sm"
                 data-slot="provider-row-configure"
-                aria-describedby={titleId}
+                aria-labelledby={`${buttonId} ${titleId}`}
                 aria-haspopup="dialog"
                 onClick={() => setOpen(true)}
             >
-                {connected ? t('Configure') : t('Connect')}
+                {actionLabel(status.tone, t)}
             </Button>
             <Switch
-                checked={connected}
+                checked={working}
                 onCheckedChange={toggle}
                 aria-labelledby={titleId}
+                aria-describedby={disconnects ? hintId : undefined}
             />
+            {disconnects && (
+                <span id={hintId} className="sr-only">
+                    {t('Turning this off disconnects the integration.')}
+                </span>
+            )}
             <Sheet open={open} onOpenChange={setOpen}>
                 <SheetContent
                     data-test={`integration-panel-${provider.key}`}
                     className="sm:max-w-2xl"
+                    onCloseAutoFocus={restoreFocus}
                 >
                     <SheetHeader>
                         <SheetTitle>{provider.label}</SheetTitle>

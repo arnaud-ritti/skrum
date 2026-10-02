@@ -608,11 +608,11 @@ it('renders the dialog that connects a channel by its URL, with a refused URL, w
             $options,
             '[data-slot="team-settings-shell"] [data-test="integration-card-mattermost"]',
         )->click('[data-test="integration-card-mattermost"] [data-slot="provider-row-configure"]')
-            ->click('[data-test="integration-panel-mattermost"] [data-slot="sheet-footer"] button')
-            ->fill('[role="dialog"] input[type="url"]', 'https://other.example.com/hooks/abcdefghijklmnopqrstuvwxyz')
-            ->fill('[role="dialog"] input[maxlength="80"]', 'town-square')
-            ->click('[role="dialog"] button[type="submit"]')
-            ->assertPresent('[role="dialog"] [data-slot="field-error"]'),
+            ->click('[data-test="integration-panel-mattermost"] [data-test="integration-connect"]')
+            ->fill('[role="dialog"]:not([data-slot="sheet-content"]) input[type="url"]', 'https://other.example.com/hooks/abcdefghijklmnopqrstuvwxyz')
+            ->fill('[role="dialog"]:not([data-slot="sheet-content"]) input[maxlength="80"]', 'town-square')
+            ->click('[role="dialog"]:not([data-slot="sheet-content"]) button[type="submit"]')
+            ->assertPresent('[role="dialog"]:not([data-slot="sheet-content"]) [data-slot="field-error"]'),
     );
 });
 
@@ -632,7 +632,7 @@ it('renders the Telegram command of a pending connection without overflow', func
                 $options,
                 '[data-slot="team-settings-shell"] [data-test="integration-card-telegram"]',
             )->click('[data-test="integration-card-telegram"] [data-slot="provider-row-configure"]')
-                ->click('[data-test="integration-panel-telegram"] [data-slot="sheet-footer"] button')
+                ->click('[data-test="integration-panel-telegram"] [data-test="integration-connect"]')
                 ->assertPresent('[data-slot="telegram-pending-code"] code');
 
             $page->script(<<<'JS'
@@ -1103,10 +1103,10 @@ it('renders the personal access token dialog of Jira Data Center without overflo
             $options,
             '[data-slot="team-settings-shell"] [data-test="integration-card-jira_dc"]',
         )->click('[data-test="integration-card-jira_dc"] [data-slot="provider-row-configure"]')
-            ->click('[data-test="integration-panel-jira_dc"] [data-slot="sheet-footer"] button')
-            ->fill('[role="dialog"] input[type="password"]', 'pasted-jira-token-abcdefghijklmnop')
-            ->click('[role="dialog"] label button[role="checkbox"]')
-            ->assertPresent('[role="dialog"] button[type="submit"]:not([disabled])'),
+            ->click('[data-test="integration-panel-jira_dc"] [data-test="integration-connect"]')
+            ->fill('[role="dialog"]:not([data-slot="sheet-content"]) input[type="password"]', 'pasted-jira-token-abcdefghijklmnop')
+            ->click('[role="dialog"]:not([data-slot="sheet-content"]) label button[role="checkbox"]')
+            ->assertPresent('[role="dialog"]:not([data-slot="sheet-content"]) button[type="submit"]:not([disabled])'),
     );
 });
 

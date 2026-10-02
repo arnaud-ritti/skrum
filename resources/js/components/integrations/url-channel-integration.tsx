@@ -182,6 +182,7 @@ export function UrlChannelIntegration({ card, scope, mattermost }: Props) {
                             type="button"
                             size="sm"
                             className="max-w-full"
+                            data-test="integration-connect"
                             onClick={() => changeOpen(true)}
                         >
                             <span className="truncate">{t('Connect')}</span>

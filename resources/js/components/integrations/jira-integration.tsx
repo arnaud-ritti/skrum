@@ -13,11 +13,7 @@ import {
 import { useTrans } from '@/hooks/use-trans';
 import { integrationErrorMessage } from '@/lib/integrations';
 import { retroRequest } from '@/lib/retro/api';
-import type {
-    IntegrationProviderCard,
-    IntegrationScope,
-    TeamIntegration,
-} from '@/types';
+import type { IntegrationProviderCard, IntegrationScope } from '@/types';
 import { DisconnectIntegrationDialog } from './disconnect-integration-dialog';
 import { ConnectLink, TestConnectionButton } from './integration-actions';
 import {
@@ -37,8 +33,13 @@ type Props = {
     scope: IntegrationScope;
 };
 
+/**
+ * Both states return the same `ProviderCard`: the row, its switch and its open
+ * sheet outlive a connection that appears or goes.
+ */
 export function JiraIntegration({ card, scope }: Props) {
     const { t } = useTrans();
+    const [busy, setBusy] = useState(false);
     const connection = card.connection;
 
     if (connection === null) {
@@ -72,16 +73,6 @@ export function JiraIntegration({ card, scope }: Props) {
         );
     }
 
-    return <ConnectedJira card={card} scope={scope} connection={connection} />;
-}
-
-function ConnectedJira({
-    card,
-    scope,
-    connection,
-}: Props & { connection: TeamIntegration }) {
-    const { t } = useTrans();
-    const [busy, setBusy] = useState(false);
     const { settings } = connection;
     const sites = settings.sites ?? [];
     const target = { ...scope, integration: connection.id };

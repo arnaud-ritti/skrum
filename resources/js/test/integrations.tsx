@@ -3,18 +3,44 @@ import type { RenderResult } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { renderWithProviders } from './render';
 
-/** Opens the sheet of every provider row on the page, as "Configure" does. */
-export function openProviderPanels(): void {
-    document
-        .querySelectorAll('[data-slot="provider-row-configure"]')
-        .forEach((button) => fireEvent.click(button));
+function providerRow(name: string): Element | undefined {
+    return Array.from(
+        document.querySelectorAll('[data-slot="provider-row"]'),
+    ).find((candidate) => candidate.querySelector('h3')?.textContent === name);
+}
+
+/**
+ * Opens the sheet of one provider, as the button of its row does. A sheet is
+ * modal: only one can be open, so a page with several rows must name the one.
+ */
+export function openProviderPanel(name?: string): void {
+    const buttons =
+        name === undefined
+            ? Array.from(
+                  document.querySelectorAll(
+                      '[data-slot="provider-row-configure"]',
+                  ),
+              )
+            : Array.from(
+                  providerRow(name)?.querySelectorAll(
+                      '[data-slot="provider-row-configure"]',
+                  ) ?? [],
+              );
+
+    if (buttons.length !== 1) {
+        throw new Error(
+            `Expected one provider row to open, found ${buttons.length}.`,
+        );
+    }
+
+    fireEvent.click(buttons[0]);
 }
 
 /** Renders a provider and opens its sheet: details, panels and actions live there. */
-export function renderProvider(ui: ReactElement): RenderResult {
+export function renderProvider(ui: ReactElement, name?: string): RenderResult {
     const result = renderWithProviders(ui);
 
-    openProviderPanels();
+    openProviderPanel(name);
 
     return result;
 }
@@ -26,9 +52,7 @@ export function providerPanel(name: string): HTMLElement {
 
 /** The status of a provider as its row says it, without what it points to. */
 export function providerStatus(name: string): string | undefined {
-    const row = Array.from(
-        document.querySelectorAll('[data-slot="provider-row"]'),
-    ).find((candidate) => candidate.querySelector('h3')?.textContent === name);
+    const row = providerRow(name);
 
     return row
         ?.querySelector('[data-slot="provider-row-status"]')

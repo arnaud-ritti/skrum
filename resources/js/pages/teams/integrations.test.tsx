@@ -80,10 +80,20 @@ describe('team integrations page', () => {
             ).toBe('Not connected');
             expect(within(row).getByRole('switch')).not.toBeNull();
             expect(
-                within(row).getByRole('button', { name: 'Connect' }),
+                within(row).getByRole('button', { name: /^Connect / }),
             ).not.toBeNull();
         }
 
+        expect(
+            rows.map(
+                (row) =>
+                    within(row).getByRole('button', { name: /^Connect / })
+                        .textContent,
+            ),
+        ).toEqual(['Connect', 'Connect', 'Connect']);
+        expect(
+            within(rows[1]).getByRole('button', { name: 'Connect Jira' }),
+        ).not.toBeNull();
         expect(screen.queryByRole('dialog')).toBeNull();
     });
 });

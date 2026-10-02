@@ -57,6 +57,8 @@
     "Confirming...": "Confirmation...",
     "Conflict": "Conflit",
     "Configure": "Configurer",
+    "Finish setup": "Terminer la configuration",
+    "Turning this off disconnects the integration.": "Désactiver cet interrupteur déconnecte l’intégration.",
     "Connect": "Connecter",
     "Connection Closed Without Response": "Connexion fermée sans réponse",
     "Connection Timed Out": "La connexion a expiré",

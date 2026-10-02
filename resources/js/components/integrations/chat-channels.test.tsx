@@ -430,6 +430,40 @@ describe('TelegramIntegration', () => {
         );
     });
 
+    it('reports the trouble of the bot on the row, before the sheet is opened', () => {
+        const { unmount } = renderWithProviders(
+            <TelegramIntegration
+                card={card('telegram', 'Telegram')}
+                scope={scope}
+                telegram={{ botUsername: 'skrum_test_bot', conflict: true }}
+            />,
+        );
+
+        const notice = () =>
+            document.querySelector('[data-slot="provider-row-notice"]')
+                ?.textContent;
+
+        expect(notice()).toBe(
+            'The Telegram bot is used elsewhere. Remove its webhook or use a dedicated bot.',
+        );
+
+        unmount();
+
+        renderWithProviders(
+            <TelegramIntegration
+                card={card('telegram', 'Telegram')}
+                scope={scope}
+                telegram={{ botUsername: null, conflict: false }}
+            />,
+        );
+
+        expect(notice()).toBe(
+            'Telegram did not answer. Check the bot token of this instance.',
+        );
+
+        unmount();
+    });
+
     it('shows the chat and offers another chat, a test and the disconnection once connected', () => {
         renderProvider(
             <TelegramIntegration
@@ -635,6 +669,37 @@ describe('UrlChannelIntegration', () => {
         await waitFor(() => expect(dialogOverPanel()).toBeNull());
         expect(request.mock.calls[0][1]).toEqual({ channel_label: '#retros' });
         expect(toast.success).toHaveBeenCalledWith('Connection saved.');
+    });
+
+    it('closes only the form above the sheet on Escape, the sheet staying open', async () => {
+        renderProvider(
+            <UrlChannelIntegration
+                card={card(
+                    'mattermost',
+                    'Mattermost',
+                    connection('mattermost', {
+                        settings: { host: 'chat.example.com' },
+                    }),
+                )}
+                scope={scope}
+                mattermost={null}
+            />,
+        );
+
+        await userEvent.click(
+            screen.getByRole('button', { name: 'Replace URL' }),
+        );
+
+        expect(
+            screen.getByRole('dialog', { name: 'Replace the URL' }),
+        ).not.toBeNull();
+
+        await userEvent.keyboard('{Escape}');
+
+        await waitFor(() => expect(dialogOverPanel()).toBeNull());
+        expect(
+            screen.getByRole('dialog', { name: 'Mattermost' }),
+        ).not.toBeNull();
     });
 
     it('shows a dash for a connection without label', () => {

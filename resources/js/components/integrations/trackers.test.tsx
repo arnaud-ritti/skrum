@@ -1098,6 +1098,107 @@ describe('tracker cards', () => {
         ]);
     });
 
+    it('keeps the Jira row, its switch and the focus when the connection is removed from the switch', async () => {
+        request.mockResolvedValue(undefined);
+
+        const { rerender } = renderWithProviders(
+            <JiraIntegration
+                card={card('jira', connection('jira'))}
+                scope={scope}
+            />,
+        );
+
+        const toggle = screen.getByRole('switch', { name: 'Jira' });
+
+        await userEvent.click(toggle);
+        await userEvent.click(
+            within(screen.getByRole('dialog')).getByRole('button', {
+                name: 'Disconnect',
+            }),
+        );
+
+        await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+        expect(router.reload).toHaveBeenCalledWith({ only: ['providers'] });
+
+        rerender(<JiraIntegration card={card('jira')} scope={scope} />);
+
+        expect(screen.getByRole('switch', { name: 'Jira' })).toBe(toggle);
+        expect(toggle.getAttribute('aria-checked')).toBe('false');
+        expect(document.activeElement).toBe(toggle);
+    });
+
+    it('keeps the sheet of Jira open when the connection is removed from its footer', async () => {
+        request.mockResolvedValue(undefined);
+
+        const { rerender } = renderProvider(
+            <JiraIntegration
+                card={card(
+                    'jira',
+                    connection('jira', {
+                        status: 'setup_required',
+                        statusLabel: 'Setup required',
+                    }),
+                )}
+                scope={scope}
+            />,
+        );
+
+        const panel = providerPanel('Jira');
+
+        await userEvent.click(
+            within(panel).getByRole('button', { name: 'Disconnect' }),
+        );
+        await userEvent.click(
+            within(
+                screen.getByRole('dialog', { name: 'Disconnect Jira?' }),
+            ).getByRole('button', { name: 'Disconnect' }),
+        );
+
+        await waitFor(() =>
+            expect(toast.success).toHaveBeenCalledWith('Jira disconnected.'),
+        );
+
+        rerender(<JiraIntegration card={card('jira')} scope={scope} />);
+
+        expect(providerPanel('Jira')).toBe(panel);
+        expect(linkTexts(panel)).toEqual([
+            'Connect (read only)',
+            'Connect (read and write)',
+        ]);
+    });
+
+    it('keeps the sheet of Jira Data Center open once a token connects it', () => {
+        const { rerender } = renderProvider(
+            <JiraDataCenterIntegration
+                card={card('jira_dc', null, ['pat'])}
+                scope={scope}
+            />,
+        );
+
+        const panel = providerPanel('Jira Data Center');
+        const toggle = document.querySelector('[role="switch"]');
+
+        rerender(
+            <JiraDataCenterIntegration
+                card={card(
+                    'jira_dc',
+                    connection('jira_dc', {
+                        access: 'read',
+                        settings: { authMethod: 'pat', tokenOwner: 'Ada' },
+                    } as Partial<TeamIntegration>),
+                    ['pat'],
+                )}
+                scope={scope}
+            />,
+        );
+
+        expect(providerPanel('Jira Data Center')).toBe(panel);
+        expect(document.querySelector('[role="switch"]')).toBe(toggle);
+        expect(
+            within(panel).getByRole('button', { name: 'Replace token' }),
+        ).toBeTruthy();
+    });
+
     it('asks for the Jira site while the setup is not finished, without the story points', () => {
         const setup = connection('jira', {
             status: 'setup_required',
