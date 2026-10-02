@@ -10,9 +10,12 @@ export default function AuthLayout({
     description = '',
     aside,
     variant = 'split',
+    literalTitle = false,
     children,
 }: {
     title?: string;
+    /** The title is content written by a user (a session name), not a label. */
+    literalTitle?: boolean;
     description?: string;
     aside?: ReactNode;
     variant?: 'split' | 'centered';
@@ -29,7 +32,7 @@ export default function AuthLayout({
                     ? t('Powered by :provider', { provider: 'Skrüm' })
                     : undefined
             }
-            title={t(title)}
+            title={literalTitle ? title : t(title)}
             description={t(description)}
             aside={aside}
             variant={variant}

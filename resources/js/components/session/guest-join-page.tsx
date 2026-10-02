@@ -107,7 +107,7 @@ export function GuestJoinPage({
     };
 
     return (
-        <AuthLayout variant="centered" title={session.title}>
+        <AuthLayout variant="centered" title={session.title} literalTitle>
             <GuestJoin
                 session={toCardSession(kind, session)}
                 initialName={suggestedName ?? undefined}

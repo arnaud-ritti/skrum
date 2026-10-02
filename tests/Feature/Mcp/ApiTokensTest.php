@@ -59,7 +59,7 @@ it('lists the user tokens without their secrets', function () {
             ->has('expirationOptions', 4)
             ->has('teamGroups', 1)
             ->where('teamGroups.0.teams.0.name', 'Platform')
-            ->where('teams', fn ($teams): bool => collect($teams)->every(fn (array $team): bool => array_keys($team) === ['id', 'name'])));
+            ->where('teams', fn ($teams): bool => collect($teams)->isNotEmpty() && collect($teams)->every(fn (array $team): bool => array_keys($team) === ['id', 'name'])));
 
     $tokens = collect($response->viewData('page')['props']['tokens'])->keyBy('name');
 

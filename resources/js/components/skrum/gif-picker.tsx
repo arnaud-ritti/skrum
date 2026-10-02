@@ -776,9 +776,13 @@ function GifPickerPanel({
                 {status === 'empty' && (
                     <StateBlock
                         icon={SearchX}
-                        title={t('No GIF for “:query”', {
-                            query: trimmedQuery,
-                        })}
+                        title={
+                            trimmedQuery === ''
+                                ? t('No GIFs found.')
+                                : t('No GIF for “:query”', {
+                                      query: trimmedQuery,
+                                  })
+                        }
                         description={t(
                             'Check the spelling or try a broader word.',
                         )}

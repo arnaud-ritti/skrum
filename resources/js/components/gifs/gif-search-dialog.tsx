@@ -1,6 +1,11 @@
 import type { HTMLAttributes, ReactElement } from 'react';
 import { GifPicker } from '@/components/skrum/gif-picker';
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import {
+    Dialog,
+    DialogClose,
+    DialogContent,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { useTrans } from '@/hooks/use-trans';
 import type { GameGifSearchResult } from '@/lib/games/types';
 import { useGifSearch } from './use-gif-search';
@@ -64,6 +69,7 @@ export function GifSearchDialog({
                     onQueryChange={setQuery}
                     onRetry={retry}
                 />
+                <DialogClose className="sr-only">{t('Close')}</DialogClose>
             </DialogContent>
         </Dialog>
     );

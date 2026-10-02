@@ -366,6 +366,13 @@ describe('GifPicker', () => {
         expect(screen.queryByRole('listbox')).toBeNull();
     });
 
+    it('does not quote an empty search when nothing is trending', () => {
+        setup({ status: 'empty', results: [] });
+
+        expect(screen.getByText('No GIFs found.')).toBeTruthy();
+        expect(screen.queryByText('No GIF for “”')).toBeNull();
+    });
+
     it('offers three suggestions when the search is empty-handed', () => {
         const { onQueryChange } = setup({
             status: 'empty',
