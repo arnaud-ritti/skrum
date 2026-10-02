@@ -398,13 +398,18 @@ class InstanceSettings
 
     /**
      * Null when the table cannot be read, as between a deploy and its migration.
+     * Inside a transaction the read runs under a savepoint: PostgreSQL aborts
+     * the whole transaction on a failed query, and the caller's must survive.
      *
      * @return ?array<string, mixed>
      */
     private function rows(): ?array
     {
+        $connection = InstanceSetting::query()->getConnection();
+        $read = fn (): array => InstanceSetting::query()->get()->pluck('value', 'key')->all();
+
         try {
-            return InstanceSetting::query()->get()->pluck('value', 'key')->all();
+            return $connection->transactionLevel() > 0 ? $connection->transaction($read) : $read();
         } catch (QueryException) {
             return null;
         }
