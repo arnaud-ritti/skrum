@@ -3697,5 +3697,14 @@
     "A single provider": "A single provider",
     "Two providers": "Two providers",
     "Passkey, password confirmation": "Passkey, password confirmation",
-    "The provided password is incorrect.": "The provided password is incorrect."
+    "The provided password is incorrect.": "The provided password is incorrect.",
+    "Welcome back": "Welcome back",
+    "Log in to find your teams' sessions and actions.": "Log in to find your teams' sessions and actions.",
+    "Work email": "Work email",
+    "Create your account": "Create your account",
+    "First and last name": "First and last name",
+    "The invitation was sent to this address.": "The invitation was sent to this address.",
+    ":count characters minimum": ":count characters minimum",
+    "Create my account": "Create my account",
+    "Already registered?": "Already registered?"
 }

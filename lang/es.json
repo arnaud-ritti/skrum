@@ -3922,5 +3922,14 @@
     "A single provider": "Un solo proveedor",
     "Two providers": "Dos proveedores",
     "Passkey, password confirmation": "Clave de acceso, confirmación de contraseña",
-    "The provided password is incorrect.": "La contraseña proporcionada es incorrecta."
+    "The provided password is incorrect.": "La contraseña proporcionada es incorrecta.",
+    "Welcome back": "Qué bueno verte de nuevo",
+    "Log in to find your teams' sessions and actions.": "Inicia sesión para encontrar las sesiones y las acciones de tus equipos.",
+    "Work email": "Correo profesional",
+    "Create your account": "Crea tu cuenta",
+    "First and last name": "Nombre y apellido",
+    "The invitation was sent to this address.": "La invitación se envió a esta dirección.",
+    ":count characters minimum": ":count caracteres como mínimo",
+    "Create my account": "Crear mi cuenta",
+    "Already registered?": "¿Ya tienes cuenta?"
 }

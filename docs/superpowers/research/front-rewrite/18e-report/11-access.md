@@ -29,3 +29,53 @@ None in these components. The magic-link places (D-29) belong to the login form 
 | Notes are tilted by whole degrees (-2, 2, -1) where the mockup has -2.5, 1.5, -1: no arbitrary value (rule 3) | Global Constraints, rule 3 |
 | The second card's vote button is not in its "mine" state: `RetroCard` then also shows the "your votes" dot and the remove button, which the mockup does not | none: reported |
 | The sample action is the real `ActionItem`: completed state strikes the title and adds the priority and the "Done" badge; the ticket chip reads "Jira · ATLAS-1302" | none: reported |
+
+## Task 11.2 — login and register
+
+Pages `auth/login` and `auth/register` render `AuthLayout` (split) themselves and are in `ownLayoutPages`. Containers: `LoginForm`, `RegisterForm`, `BrandAside` (`resources/js/components/auth/`). Captures: `access-login-page-*`, `access-register-page-*`.
+
+### Parity (brief 11 §3, rows 1–14)
+
+| # | Behaviour | Control | Done |
+|---|---|---|---|
+| 1 | E-mail, password and remember sign-in | `LoginForm`: `#email`, `#password`, `#remember`, `data-test="login-button"` named "Log in"; `resetOnSuccess=['password']`; errors under the field | yes |
+| 2 | Show / hide password | `PasswordField` | yes |
+| 3 | Forgot link when `canResetPassword` | "Forgot your password?" at the end of the password label row; after the field in the tab order | yes |
+| 4 | Remember label | checkbox "Remember me" (11-D5) | yes |
+| 5 | Sign in with a passkey | `PasskeySignIn` under the SSO buttons | yes |
+| 6 | SSO buttons per provider | `SsoButtons`; the company sign-on (OIDC, Entra) comes first | yes |
+| 7 | Separator | "or with your e-mail" | yes |
+| 8 | Sign-up link when `canRegister` | "Don't have an account?" / "Create an account" | yes |
+| 9 | `status` flash | success alert above the buttons and the form | yes |
+| 10 | Language switcher | `AuthLayout` header | yes |
+| 11 | Register: name, e-mail, password, confirmation | `RegisterForm`: `#name`, `#email`, `#password`, `#password_confirmation`, `data-test="register-user-button"`; `resetOnSuccess`, `disableWhileProcessing` | yes |
+| 12 | E-mail of a pending invitation prefilled and read-only | read-only field and "The invitation was sent to this address." | yes |
+| 13 | `passwordrules` attribute | on both password fields | yes |
+| 14 | Register SSO and login link | `SsoButtons`; "Already registered?" / "Log in" | yes |
+
+### Places left
+
+| Mockup element | Slot | Later |
+|---|---|---|
+| "Receive a magic link instead" button (ScreenAuth) | `LoginForm` prop `magicLink`, rendered in `[data-slot="login-magic-link"]` between the form and the sign-up line | plan 18f, B12 |
+| "Magic link / Password" tab strip of the phone (MobileAccess) | `LoginForm` prop `methodTabs`, rendered in `[data-slot="login-method-tabs"]` between the separator and the form | plan 18f, B12 |
+
+Nothing is rendered while the props are undefined.
+
+### Differences with the mockup (ScreenAuth, MobileAccess)
+
+| Difference | Covered by |
+|---|---|
+| "Remember me", not "30 days" | D-28, 11-D5 |
+| No magic-link button, no tab strip | D-29 |
+| No "Instance … · v1.8.2" and "Privacy · Terms" footer; the footer is the "Powered by Skrüm" line of `AuthLayout` | D-28 |
+| Register: no "Team name" field, so the name takes the full row; no "Free up to 10 participants" sentence; no terms sentence | D-28 |
+| Register title "Create your account", not "Create your workspace": registering creates a user, no workspace | F (false statement): to add to D-28 |
+| Register keeps "Confirm password", which the mockup does not show | parity row 11 (the server validates the confirmation): reported |
+| Password placeholder ":count characters minimum" is read from the server rule; none when the rule has no minimum | F: the mockup's fixed "12" is false outside production |
+| The passkey button, absent from the mockup | brief row 5 (existing feature kept) |
+| Register is a full split page with `lg` first SSO button and `lg` submit; the mockup draws it as a compact variant card | none: reported |
+| Form column 24rem (`max-w-sm` of `AuthFrame`) for 23.75rem; title `text-2xl`; dot grid over the whole right pane | `AuthFrame` (not in this task's files): reported |
+| 390: logo at the left of the header with the language switcher, not a centred 3.5rem logo with a back button; no "instance of the team" subtitle; the sign-up line is not pushed to the bottom | `AuthFrame`; N (no landing page behind, D-34): reported |
+| 390: fields are 3rem high with 1rem text, as the mockup | — |
+| Rebranded instance: the right pane shows the brand logo (or its name) only | 11-D4 |

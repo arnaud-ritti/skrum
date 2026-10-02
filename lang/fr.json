@@ -84,7 +84,7 @@
     "Disable": "Désactiver",
     "Disable 2FA": "Désactiver la 2FA",
     "Discard": "Jeter",
-    "Don't have an account?": "Vous n'avez pas de compte ?",
+    "Don't have an account?": "Pas encore de compte ?",
     "Done": "Terminé",
     "Down": "Descendre",
     "Duplicate": "Dupliquer",
@@ -266,7 +266,7 @@
     "Register": "S'inscrire",
     "Register passkey": "Enregistrer la clé d'accès",
     "Registering...": "Enregistrement...",
-    "Remember me": "Se souvenir de moi",
+    "Remember me": "Rester connecté",
     "Remove": "Supprimer",
     "Remove passkey": "Supprimer la clé d'accès",
     "Removing...": "Suppression...",
@@ -3922,5 +3922,14 @@
     "A single provider": "Un seul fournisseur",
     "Two providers": "Deux fournisseurs",
     "Passkey, password confirmation": "Clé d'accès, confirmation du mot de passe",
-    "The provided password is incorrect.": "Le mot de passe fourni est incorrect."
+    "The provided password is incorrect.": "Le mot de passe fourni est incorrect.",
+    "Welcome back": "Bon retour parmi nous",
+    "Log in to find your teams' sessions and actions.": "Connectez-vous pour retrouver les sessions et les actions de vos équipes.",
+    "Work email": "E-mail professionnel",
+    "Create your account": "Créer votre compte",
+    "First and last name": "Prénom et nom",
+    "The invitation was sent to this address.": "L'invitation a été envoyée à cette adresse.",
+    ":count characters minimum": ":count caractères minimum",
+    "Create my account": "Créer mon compte",
+    "Already registered?": "Déjà inscrit ?"
 }

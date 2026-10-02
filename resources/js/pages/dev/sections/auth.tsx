@@ -1,12 +1,11 @@
 import type { ReactNode } from 'react';
 import { AuthAside } from '@/components/auth/auth-aside';
+import { LoginForm } from '@/components/auth/login-form';
 import { PasskeySignIn } from '@/components/auth/passkey-sign-in';
 import { PasswordField } from '@/components/auth/password-field';
 import { SsoButtons } from '@/components/auth/sso-buttons';
 import type { BenchGroup } from '@/components/dev/bench';
 import { AuthFrame } from '@/components/skrum/frames';
-import { TextField } from '@/components/skrum/text-field';
-import { Button } from '@/components/ui/button';
 import { useTrans } from '@/hooks/use-trans';
 import type { SsoProviderOption } from '@/types';
 
@@ -33,24 +32,17 @@ export default function AuthSection() {
     return (
         <>
             <AuthFrame
-                title={t('Log in to your account')}
-                description={t('Enter your email and password below to log in')}
+                title={t('Welcome back')}
+                description={t(
+                    "Log in to find your teams' sessions and actions.",
+                )}
                 aside={<AuthAside />}
             >
-                <div className="flex min-w-0 flex-col gap-4">
-                    <SsoButtons providers={providers} />
-                    <PasskeySignIn />
-                    <TextField
-                        id="email"
-                        type="email"
-                        label={t('Email address')}
-                        placeholder={t('email@example.com')}
-                    />
-                    <PasswordField id="password" label={t('Password')} />
-                    <Button size="lg" className="w-full">
-                        {t('Log in')}
-                    </Button>
-                </div>
+                <LoginForm
+                    canResetPassword
+                    canRegister
+                    ssoProviders={providers}
+                />
             </AuthFrame>
             <div className="grid items-start gap-6 p-6 md:grid-cols-2 md:p-10 lg:grid-cols-3">
                 <State label={t('A single provider')}>
