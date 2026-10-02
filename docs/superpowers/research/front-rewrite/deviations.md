@@ -8,7 +8,7 @@ One place to find every recorded difference between the application and the mock
 |---|---|---|
 | D-01 to D-127 | `docs/superpowers/plans/2026-10-16-plan-18e-front-rewrite-screens.md`, "Deviations from the mockup" | See the 18e phase report (`18e-report/README.md`): approved by the owner, ruled under the autonomy mandate, or open |
 | V1 to V32 | `docs/superpowers/plans/2026-10-16-plan-18f-front-rewrite-auth-mail-search.md`, "Deviations" | See `18f-report.md` §5 |
-| D-128 to D-131 | this file | New in plan 18g, **to approve by the owner** |
+| D-128 to D-131 | this file | New in plan 18g. D-128 fixed and D-130 reworked in rework 3 (owner rounds 7 and 8); D-129 and D-131 still **to approve by the owner** |
 
 The rows were not copied here: two copies of 159 rows would drift. Plan 18g Task 8 asked for one renumbered table; that was not done.
 
