@@ -26,6 +26,19 @@ describe('page layouts', () => {
         expect(usesOwnLayout('not/a-page')).toBe(false);
     });
 
+    it('lets every admin page render its own layout', () => {
+        const adminPages = pageFiles.filter(
+            (name) => name.startsWith('admin/') && !name.endsWith('.test'),
+        );
+
+        expect(adminPages.length).toBeGreaterThan(0);
+        expect(usesOwnLayout('admin/a-future-page')).toBe(true);
+
+        for (const name of adminPages) {
+            expect(usesOwnLayout(name), name).toBe(true);
+        }
+    });
+
     it('lists only pages that exist', () => {
         for (const name of ownLayoutPages) {
             expect(pageFiles, name).toContain(name);

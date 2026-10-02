@@ -24,7 +24,9 @@ export type SessionShellProps = {
     connection: SessionConnection;
     /** The realtime root; the whiteboard sets `data-scene` on it. */
     rootRef?: Ref<HTMLDivElement>;
-    rootProps?: Omit<HTMLAttributes<HTMLDivElement>, 'children'>;
+    rootProps?: Omit<HTMLAttributes<HTMLDivElement>, 'children'> & {
+        [key: `data-${string}`]: string | undefined;
+    };
     children: ReactNode;
 };
 

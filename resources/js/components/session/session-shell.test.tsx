@@ -15,7 +15,7 @@ function renderShell(
             title={<SessionTitle backHref="/teams/t1">Sprint 42</SessionTitle>}
             realtime="connected"
             connection={connection}
-            rootProps={{ 'data-scene': '3:abc' } as never}
+            rootProps={{ 'data-scene': '3:abc' }}
         >
             <p>board</p>
         </SessionShell>,

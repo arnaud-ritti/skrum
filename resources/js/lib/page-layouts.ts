@@ -6,15 +6,13 @@
 export const ownLayoutPages: readonly string[] = [
     'welcome',
     'about',
-    'admin/branding',
-    'admin/admins',
     'retros/show',
     'poker/show',
     'games/show',
     'whiteboards/show',
 ];
 
-const ownLayoutPrefixes: readonly string[] = ['dev/'];
+const ownLayoutPrefixes: readonly string[] = ['admin/', 'dev/'];
 
 export function usesOwnLayout(name: string): boolean {
     return (
