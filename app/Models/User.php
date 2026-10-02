@@ -53,7 +53,7 @@ use SensitiveParameter;
  * @property Carbon|null $updated_at
  */
 #[Fillable(['name', 'email', 'password', 'locale', 'avatar_style', 'action_item_reminders_by_email', 'action_item_reminders_in_app', 'recap_emails', 'recap_in_app', 'single_key_shortcuts'])]
-#[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
+#[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'two_factor_confirmed_at', 'two_factor_email_enabled_at', 'remember_token'])]
 class User extends Authenticatable implements HasLocalePreference, MustVerifyEmail, PasskeyUser
 {
     use HasApiTokens;

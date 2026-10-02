@@ -194,7 +194,7 @@ it('writes nothing when one field of the form is refused', function () {
 it('shows the new brand to another user on the request that follows the save', function () {
     $member = User::factory()->create();
 
-    $before = $this->actingAs($member)->get(route('profile.edit'))->assertOk()->getContent();
+    $before = $this->actingAs($member)->get(route('settings.edit'))->assertOk()->getContent();
 
     expect($before)->not->toContain('skrum-brand');
 
@@ -204,7 +204,7 @@ it('shows the new brand to another user on the request that follows the save', f
         ->assertRedirect();
     app()->forgetScopedInstances();
 
-    $after = $this->actingAs($member)->get(route('profile.edit'))->assertOk();
+    $after = $this->actingAs($member)->get(route('settings.edit'))->assertOk();
 
     expect($after->getContent())
         ->toContain('<style id="skrum-brand">'.BrandPalette::derive('#2b63b0', 10)->css().'</style>')

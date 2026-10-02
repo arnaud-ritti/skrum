@@ -5,6 +5,7 @@ import type { FormEvent, ReactElement } from 'react';
 import EmailSecondFactorCodesController from '@/actions/App/Http/Controllers/Settings/EmailSecondFactorCodesController';
 import EmailSecondFactorsController from '@/actions/App/Http/Controllers/Settings/EmailSecondFactorsController';
 import { CodeField } from '@/components/auth/two-factor-form';
+import { usePasswordGate } from '@/components/settings/password-gate';
 import {
     turnOffButtonClass,
     TwoFactorRow,
@@ -40,6 +41,7 @@ export function EmailCodeRow({
 }: EmailCodeRowProps): ReactElement {
     const { t } = useTrans();
     const { locale } = usePage().props;
+    const { guard } = usePasswordGate();
     const [code, setCode] = useState('');
     const [enrolling, setEnrolling] = useState(!enabled && resendIn > 0);
     const [justRequested, setJustRequested] = useState(false);
@@ -125,7 +127,7 @@ export function EmailCodeRow({
                     variant="outline"
                     size="sm"
                     className={turnOffButtonClass}
-                    onClick={() => setTurnOffOpen(true)}
+                    onClick={() => guard(() => setTurnOffOpen(true))}
                 >
                     <ShieldOff aria-hidden="true" />
                     <span className="truncate">
@@ -145,7 +147,7 @@ export function EmailCodeRow({
                 size="sm"
                 loading={sending}
                 className="max-w-full"
-                onClick={requestCode}
+                onClick={() => guard(requestCode)}
             >
                 <Mail aria-hidden="true" />
                 <span className="truncate">{t('Send me a code')}</span>
@@ -206,7 +208,7 @@ export function EmailCodeRow({
                     <ResendCode
                         cooldownSeconds={CooldownSeconds}
                         remaining={remaining}
-                        onResend={requestCode}
+                        onResend={() => guard(requestCode)}
                         sentTo={address}
                         locale={locale}
                     />

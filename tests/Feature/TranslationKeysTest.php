@@ -124,6 +124,17 @@ it('keeps every english key in every other locale', function (string $locale) {
     expect(array_values(array_diff($englishKeys, $localeKeys)))->toBeEmpty();
 })->with(['fr', 'es', 'de']);
 
+it('words an english key differently from its text only where that is meant', function () {
+    $english = json_decode(File::get(lang_path('en.json')), true);
+
+    $reworded = array_filter($english, fn (string $text, string $key): bool => $text !== $key, ARRAY_FILTER_USE_BOTH);
+
+    expect($reworded)->toBe([
+        'Two-factor on' => 'On',
+        'Two-factor off' => 'Off',
+    ]);
+});
+
 it('keeps every template line in every other locale', function (string $locale) {
     $english = array_keys(Arr::dot(require lang_path('en/templates.php')));
     $translated = array_keys(Arr::dot(require lang_path("{$locale}/templates.php")));

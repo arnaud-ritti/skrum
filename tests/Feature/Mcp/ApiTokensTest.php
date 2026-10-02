@@ -50,19 +50,19 @@ it('lists the user tokens without their secrets', function () {
 
     $response = $this->actingAs($user)
         ->withSession(['auth.password_confirmed_at' => time()])
-        ->get(route('apiTokens.index'))
+        ->get(route('settings.edit'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
-            ->component('settings/api-tokens')
-            ->has('tokens', 2)
-            ->where('mcpUrl', url('/mcp'))
-            ->where('defaultExpiration', '90_days')
-            ->has('expirationOptions', 4)
-            ->has('teamGroups', 1)
-            ->where('teamGroups.0.teams.0.name', 'Platform')
+            ->component('settings/account')
+            ->has('apiTokens.protected.tokens', 2)
+            ->where('apiTokens.protected.mcpUrl', url('/mcp'))
+            ->where('apiTokens.defaultExpiration', '90_days')
+            ->has('apiTokens.expirationOptions', 4)
+            ->has('apiTokens.protected.teamGroups', 1)
+            ->where('apiTokens.protected.teamGroups.0.teams.0.name', 'Platform')
             ->where('teams', [['id' => $team->id, 'name' => 'Platform']]));
 
-    $tokens = collect($response->viewData('page')['props']['tokens'])->keyBy('name');
+    $tokens = collect($response->viewData('page')['props']['apiTokens']['protected']['tokens'])->keyBy('name');
 
     expect($tokens['Claude Code'])->toMatchArray([
         'id' => $active->id,
@@ -82,7 +82,7 @@ it('lists the user tokens without their secrets', function () {
         expect($props)->not->toContain($storedHash);
     }
 
-    expect($response->viewData('page')['props']['tokens'])->each->not->toHaveKeys(['token', 'plainText', 'plainTextToken']);
+    expect($response->viewData('page')['props']['apiTokens']['protected']['tokens'])->each->not->toHaveKeys(['token', 'plainText', 'plainTextToken']);
 });
 
 it('throttles token creation to ten attempts a minute', function () {
@@ -105,10 +105,10 @@ it('flags tokens bound to a team the user can no longer see', function () {
 
     $this->actingAs($user)
         ->withSession(['auth.password_confirmed_at' => time()])
-        ->get(route('apiTokens.index'))
+        ->get(route('settings.edit'))
         ->assertInertia(fn (Assert $page) => $page
-            ->where('tokens.0.name', 'Former team')
-            ->where('tokens.0.teamAccessible', false));
+            ->where('apiTokens.protected.tokens.0.name', 'Former team')
+            ->where('apiTokens.protected.tokens.0.teamAccessible', false));
 });
 
 it('creates a token and shows it only once', function () {
@@ -140,7 +140,7 @@ it('creates a token and shows it only once', function () {
 
     $this->actingAs($user)
         ->withSession(['auth.password_confirmed_at' => now()->timestamp])
-        ->get(route('apiTokens.index'))
+        ->get(route('settings.edit'))
         ->assertInertiaFlashMissing('newToken');
 });
 
@@ -247,16 +247,24 @@ it('binds tokens only to teams the user can see', function () {
     expect(PersonalAccessToken::query()->sole()->team_id)->toBe($managedTeam->id);
 });
 
-it('revokes only the user own tokens', function () {
+it('revokes only the user own tokens, behind a confirmed password', function () {
     $user = apiTokenOwner();
     $own = PersonalAccessToken::factory()->forUser($user)->create();
     $other = PersonalAccessToken::factory()->create();
 
     $this->actingAs($user)
+        ->delete(route('apiTokens.destroy', $own->id))
+        ->assertRedirect(route('password.confirm'));
+
+    expect(PersonalAccessToken::query()->whereKey($own->id)->exists())->toBeTrue();
+
+    $this->actingAs($user)
+        ->withSession(['auth.password_confirmed_at' => time()])
         ->delete(route('apiTokens.destroy', $other->id))
         ->assertNotFound();
 
     $this->actingAs($user)
+        ->withSession(['auth.password_confirmed_at' => time()])
         ->delete(route('apiTokens.destroy', $own->id))
         ->assertRedirect();
 
@@ -277,12 +285,12 @@ it('hides the api tokens pages when mcp is disabled', function () {
         ->delete(route('apiTokens.destroy', $token->id))->assertNotFound();
 
     $this->actingAs($user)
-        ->get(route('profile.edit'))
+        ->get(route('settings.edit'))
         ->assertInertia(fn (Assert $page) => $page->where('features.mcp', false));
 });
 
 it('shares that mcp is enabled', function () {
     $this->actingAs(apiTokenOwner())
-        ->get(route('profile.edit'))
+        ->get(route('settings.edit'))
         ->assertInertia(fn (Assert $page) => $page->where('features.mcp', true));
 });

@@ -95,6 +95,6 @@ it('lets no other file decide whether a challenge is due', function () {
     expect($offenders)->toBe([
         'Actions/Auth/RevokeLoginSecrets.php',
         'Http/Controllers/Settings/EmailSecondFactorsController.php',
-        'Http/Controllers/Settings/SecurityController.php',
+        'Support/Settings/SecuritySettings.php',
     ]);
 });

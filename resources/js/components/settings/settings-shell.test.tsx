@@ -1,9 +1,13 @@
-import { screen, within } from '@testing-library/react';
+import { fireEvent, screen, within } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders } from '@/test/render';
 import type { BreadcrumbItem } from '@/types';
-import { SettingsShell } from './settings-shell';
+import {
+    SettingsSection,
+    SettingsSections,
+    SettingsShell,
+} from './settings-shell';
 
 const page = vi.hoisted(() => ({ props: {} as Record<string, unknown> }));
 const layout = vi.hoisted(() => ({
@@ -33,10 +37,12 @@ vi.mock('@/layouts/skrum/app-layout', () => ({
     },
 }));
 
+const onSelect = vi.fn();
+
 beforeEach(() => {
+    onSelect.mockClear();
     page.props = {
         translations: {},
-        features: { mcp: true, integrations: false },
         auth: { user: { name: 'Mona Member' } },
     };
 });
@@ -48,9 +54,13 @@ function links(): HTMLElement[] {
 }
 
 describe('SettingsShell', () => {
-    it('lists the five sections in a navigation named Settings and marks the current one', () => {
+    it('lists the five sections as anchors of the page, in a navigation named Settings, and marks the one in view', () => {
         renderWithProviders(
-            <SettingsShell active="security">
+            <SettingsShell
+                sections={SettingsSections}
+                current="security"
+                onSelect={onSelect}
+            >
                 <p>content</p>
             </SettingsShell>,
         );
@@ -63,20 +73,24 @@ describe('SettingsShell', () => {
             'API tokens',
         ]);
         expect(links().map((link) => link.getAttribute('href'))).toEqual([
-            '/settings/profile',
-            '/settings/security',
-            '/settings/appearance',
-            '/settings/notifications',
-            '/settings/api-tokens',
+            '#profile',
+            '#security',
+            '#appearance',
+            '#notifications',
+            '#api-tokens',
         ]);
         expect(
             links().map((link) => link.getAttribute('aria-current')),
-        ).toEqual([null, 'page', null, null, null]);
+        ).toEqual([null, 'location', null, null, null]);
     });
 
     it('gives every entry an icon', () => {
         renderWithProviders(
-            <SettingsShell active="profile">
+            <SettingsShell
+                sections={SettingsSections}
+                current="profile"
+                onSelect={onSelect}
+            >
                 <p>content</p>
             </SettingsShell>,
         );
@@ -88,26 +102,75 @@ describe('SettingsShell', () => {
         }
     });
 
-    it('leaves API tokens out when the MCP server is off', () => {
-        page.props.features = { mcp: false };
-
+    it('lists only the sections the page holds, in the order of the page', () => {
         renderWithProviders(
-            <SettingsShell active="profile">
+            <SettingsShell
+                sections={['notifications', 'profile']}
+                current="profile"
+                onSelect={onSelect}
+            >
                 <p>content</p>
             </SettingsShell>,
         );
 
         expect(links().map((link) => link.textContent)).toEqual([
             'Profile',
-            'Security',
-            'Appearance',
             'Notifications',
         ]);
     });
 
+    it('keeps the navigation under the top bar on a phone, and stops each section under both', () => {
+        renderWithProviders(
+            <SettingsShell
+                sections={SettingsSections}
+                current="profile"
+                onSelect={onSelect}
+            >
+                <SettingsSection id="profile">
+                    <p>content</p>
+                </SettingsSection>
+            </SettingsShell>,
+        );
+
+        expect(
+            screen
+                .getByRole('navigation', { name: 'Settings' })
+                .hasAttribute('data-stuck'),
+        ).toBe(true);
+        expect(document.getElementById('profile')?.className).toContain(
+            'scroll-mt-27 ',
+        );
+        expect(document.getElementById('profile')?.className).toContain(
+            'lg:scroll-mt-20',
+        );
+    });
+
+    it('hands the chosen section to the page instead of leaving it', () => {
+        renderWithProviders(
+            <SettingsShell
+                sections={SettingsSections}
+                current="profile"
+                onSelect={onSelect}
+            >
+                <p>content</p>
+            </SettingsShell>,
+        );
+
+        const followed = fireEvent.click(
+            screen.getByRole('link', { name: 'Notifications' }),
+        );
+
+        expect(followed).toBe(false);
+        expect(onSelect).toHaveBeenCalledWith('notifications');
+    });
+
     it('titles the page Settings, with the sentence of the mockup, around the content', () => {
         renderWithProviders(
-            <SettingsShell active="profile">
+            <SettingsShell
+                sections={SettingsSections}
+                current="profile"
+                onSelect={onSelect}
+            >
                 <p>content</p>
             </SettingsShell>,
         );
@@ -123,7 +186,11 @@ describe('SettingsShell', () => {
 
     it('sets the breadcrumb to the member then Settings, and no sidebar entry as active', () => {
         renderWithProviders(
-            <SettingsShell active="appearance">
+            <SettingsShell
+                sections={SettingsSections}
+                current="appearance"
+                onSelect={onSelect}
+            >
                 <p>content</p>
             </SettingsShell>,
         );
@@ -134,30 +201,23 @@ describe('SettingsShell', () => {
         ]);
         expect(layout.active).toBeUndefined();
     });
+});
 
-    it('gives a section its own page title, its sentence and a third crumb', () => {
+describe('SettingsSection', () => {
+    it('is the place its anchor reaches, can take the focus and says its name there, without a landmark around its cards', () => {
         renderWithProviders(
-            <SettingsShell
-                active="security"
-                title="Security"
-                description="Password, two-factor authentication and passkeys."
-            >
+            <SettingsSection id="api-tokens">
                 <p>content</p>
-            </SettingsShell>,
+            </SettingsSection>,
         );
 
-        expect(
-            screen.getByRole('heading', { level: 1, name: 'Security' }),
-        ).toBeTruthy();
-        expect(
-            screen.getByText(
-                'Password, two-factor authentication and passkeys.',
-            ),
-        ).toBeTruthy();
-        expect(layout.breadcrumbs.map((crumb) => crumb.title)).toEqual([
-            'Mona Member',
-            'Settings',
-            'Security',
-        ]);
+        const section = screen.getByRole('group', { name: 'API tokens' });
+
+        expect(section.id).toBe('api-tokens');
+        expect(section.dataset.slot).toBe('settings-section');
+        expect(section.tabIndex).toBe(-1);
+        expect(section.textContent).toBe('content');
+        expect(section.className).toContain('focus-visible:ring-3');
+        expect(screen.queryByRole('region')).toBeNull();
     });
 });

@@ -9,39 +9,15 @@ use App\Http\Requests\Settings\ProfileUpdateRequest;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Support\Auth\LoginAddress;
-use App\Support\Avatars\AvatarStyleCatalogue;
-use App\Support\Avatars\AvatarUrl;
-use App\Support\InstanceSettings;
-use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
-use Inertia\Response;
 
 class ProfileController extends Controller
 {
-    /**
-     * Show the user's profile settings page.
-     */
-    public function edit(Request $request, InstanceSettings $settings, AvatarStyleCatalogue $catalogue, AvatarUrl $avatarUrl): Response
-    {
-        $user = $request->user();
-        $allowsMemberStyles = $settings->avatarMemberChoice();
-
-        return Inertia::render('settings/profile', [
-            'mustVerifyEmail' => $user instanceof MustVerifyEmail,
-            'status' => $request->session()->get('status'),
-            'avatarMemberChoice' => $allowsMemberStyles,
-            'avatarStyle' => $allowsMemberStyles ? $user->avatar_style : null,
-            'instanceAvatarStyle' => $avatarUrl->instanceStyle(),
-            'avatarStyles' => $allowsMemberStyles ? $this->avatarStyles($catalogue, $avatarUrl, $user) : [],
-        ]);
-    }
-
     /**
      * Update the user's profile information.
      */
@@ -65,7 +41,7 @@ class ProfileController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Profile updated.')]);
 
-        return to_route('profile.edit');
+        return to_route('settings.edit');
     }
 
     /**
@@ -118,23 +94,5 @@ class ProfileController extends Controller
         throw ValidationException::withMessages([
             'password' => __('Name another instance admin before deleting your account.'),
         ]);
-    }
-
-    /**
-     * @return array<int, array{
-     *     value: string,
-     *     name: string,
-     *     license: string,
-     *     attribution: ?string,
-     *     attributionRequired: bool,
-     *     sampleUrls: array<int, string>
-     * }>
-     */
-    private function avatarStyles(AvatarStyleCatalogue $catalogue, AvatarUrl $avatarUrl, User $user): array
-    {
-        return array_map(fn (array $style): array => [
-            ...$style,
-            'sampleUrls' => [$avatarUrl->url($style['value'], $user->avatarSeed(), fn (): string => $user->name)],
-        ], $catalogue->styles());
     }
 }

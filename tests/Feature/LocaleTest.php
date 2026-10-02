@@ -24,7 +24,7 @@ it('prefers the user locale over the cookie', function () {
 
     $this->actingAs($user)
         ->withCookie('locale', 'es')
-        ->get(route('appearance.edit'))
+        ->get(route('settings.edit'))
         ->assertInertia(fn (Assert $page) => $page->where('locale', 'fr'));
 });
 
@@ -33,7 +33,7 @@ it('falls back to english for unsupported values', function () {
 
     $this->actingAs($user)
         ->withCookie('locale', 'zz')
-        ->get(route('appearance.edit'), ['Accept-Language' => 'ja-JP'])
+        ->get(route('settings.edit'), ['Accept-Language' => 'ja-JP'])
         ->assertInertia(fn (Assert $page) => $page->where('locale', 'en'));
 });
 

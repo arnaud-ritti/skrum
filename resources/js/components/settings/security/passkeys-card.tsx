@@ -1,9 +1,10 @@
 import { router } from '@inertiajs/react';
 import { usePasskeyRegister } from '@laravel/passkeys/react';
-import { KeyRound, Plus, Trash2 } from 'lucide-react';
+import { Eye, KeyRound, Plus, Trash2 } from 'lucide-react';
 import { useRef, useState } from 'react';
 import type { ReactElement } from 'react';
 import { destroy } from '@/actions/Laravel/Passkeys/Http/Controllers/PasskeyRegistrationController';
+import { usePasswordGate } from '@/components/settings/password-gate';
 import { SettingsCard } from '@/components/settings/settings-card';
 import { ConfirmDialog, FormDialog } from '@/components/skrum/confirm-dialog';
 import { TextField } from '@/components/skrum/text-field';
@@ -91,11 +92,13 @@ function PasskeyRow({
 }
 
 type PasskeysCardProps = {
-    passkeys: Passkey[];
+    /** Absent while the password is not confirmed: the server keeps the list back. */
+    passkeys: Passkey[] | null;
 };
 
 export function PasskeysCard({ passkeys }: PasskeysCardProps): ReactElement {
     const { t } = useTrans();
+    const { guard } = usePasswordGate();
     const [adding, setAdding] = useState(false);
     const [removing, setRemoving] = useState(false);
     const [removeError, setRemoveError] = useState<string>();
@@ -176,7 +179,7 @@ export function PasskeysCard({ passkeys }: PasskeysCardProps): ReactElement {
                         variant="outline"
                         size="sm"
                         className="max-w-full"
-                        onClick={() => changeAdding(true)}
+                        onClick={() => guard(() => changeAdding(true))}
                     >
                         <Plus aria-hidden="true" />
                         <span className="truncate">{t('Add passkey')}</span>
@@ -184,7 +187,32 @@ export function PasskeysCard({ passkeys }: PasskeysCardProps): ReactElement {
                 ) : undefined
             }
         >
-            {passkeys.length === 0 ? (
+            {passkeys === null && (
+                <div
+                    data-slot="passkeys-concealed"
+                    className="flex flex-col items-center gap-3 px-5 py-8 text-center"
+                >
+                    <span className="grid size-10 place-items-center rounded-full bg-muted text-muted-foreground">
+                        <KeyRound aria-hidden="true" className="size-5" />
+                    </span>
+                    <p className="text-sm text-muted-foreground">
+                        {t('Confirm your password to see your passkeys.')}
+                    </p>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="max-w-full"
+                        onClick={() => guard(() => undefined)}
+                    >
+                        <Eye aria-hidden="true" />
+                        <span className="truncate">
+                            {t('Show my passkeys')}
+                        </span>
+                    </Button>
+                </div>
+            )}
+            {passkeys !== null && passkeys.length === 0 && (
                 <div
                     data-slot="passkeys-empty"
                     className="flex flex-col items-center gap-1 px-5 py-8 text-center"
@@ -199,16 +227,19 @@ export function PasskeysCard({ passkeys }: PasskeysCardProps): ReactElement {
                         {t('Add a passkey to sign in without a password')}
                     </p>
                 </div>
-            ) : (
+            )}
+            {passkeys !== null && passkeys.length > 0 && (
                 <ul aria-label={t('Passkeys')} className="flex flex-col">
                     {passkeys.map((passkey) => (
                         <PasskeyRow
                             key={passkey.id}
                             passkey={passkey}
-                            onRemove={() => {
-                                setTarget(passkey);
-                                setRemoving(true);
-                            }}
+                            onRemove={() =>
+                                guard(() => {
+                                    setTarget(passkey);
+                                    setRemoving(true);
+                                })
+                            }
                         />
                     ))}
                 </ul>
