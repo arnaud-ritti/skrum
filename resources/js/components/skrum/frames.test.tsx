@@ -283,3 +283,22 @@ describe('OnboardingFrame', () => {
         expect(screen.getByRole('main').textContent).toContain('step');
     });
 });
+
+describe('AuthFrame centred', () => {
+    it('has one column, a hidden page heading and no aside', () => {
+        const { container } = renderWithProviders(
+            <AuthFrame variant="centered" title="Sprint 42 retro">
+                <h2>Join as a guest</h2>
+            </AuthFrame>,
+        );
+
+        const heading = screen.getByRole('heading', { level: 1 });
+
+        expect(heading.textContent).toBe('Sprint 42 retro');
+        expect(heading.classList.contains('sr-only')).toBe(true);
+        expect(container.querySelector('aside')).toBeNull();
+        expect(screen.getByRole('main').textContent).toContain(
+            'Join as a guest',
+        );
+    });
+});

@@ -172,6 +172,7 @@ export function AuthFrame({
     aside,
     headerEnd,
     footer,
+    variant = 'split',
     children,
 }: {
     brand?: BrandIdentity;
@@ -180,8 +181,34 @@ export function AuthFrame({
     aside?: ReactNode;
     headerEnd?: ReactNode;
     footer?: ReactNode;
+    /** `centered`: one column, the title only for screen readers, no aside. */
+    variant?: 'split' | 'centered';
     children: ReactNode;
 }) {
+    if (variant === 'centered') {
+        return (
+            <div className="flex min-h-svh min-w-0 flex-col gap-8 p-6 md:p-10">
+                <header className="flex items-center justify-between gap-4">
+                    <BrandLogo
+                        brand={brand}
+                        className="h-12"
+                        fallback={<SkrumLogo className="h-7 w-auto" />}
+                    />
+                    {headerEnd}
+                </header>
+                <main className="mx-auto flex w-full max-w-120 flex-1 flex-col justify-center gap-6">
+                    <h1 className="sr-only">{title}</h1>
+                    {children}
+                </main>
+                {footer && (
+                    <footer className="text-center text-xs text-muted-foreground">
+                        {footer}
+                    </footer>
+                )}
+            </div>
+        );
+    }
+
     return (
         <div className="grid min-h-svh lg:grid-cols-2">
             <div className="flex min-w-0 flex-col gap-8 p-6 md:p-10">

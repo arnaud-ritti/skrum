@@ -72,6 +72,24 @@ describe('AuthLayout', () => {
     });
 });
 
+describe('AuthLayout centred', () => {
+    it('passes the variant to the frame', () => {
+        withBrand(skrum);
+        const { container } = renderWithProviders(
+            <AuthLayout variant="centered" title="Sprint 42 retro">
+                <p>card</p>
+            </AuthLayout>,
+        );
+
+        expect(
+            screen
+                .getByRole('heading', { level: 1, name: 'Sprint 42 retro' })
+                .classList.contains('sr-only'),
+        ).toBe(true);
+        expect(container.querySelector('aside')).toBeNull();
+    });
+});
+
 describe('OnboardingLayout', () => {
     it('shows the instance logo in the header', () => {
         withBrand({

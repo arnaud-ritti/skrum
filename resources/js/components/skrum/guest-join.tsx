@@ -62,6 +62,8 @@ export type GuestJoinProps = {
     /** Extra controls rendered between the nickname and the join button. */
     children?: ReactNode;
     onRandomName?: () => void;
+    /** Pins the join button to the bottom of the viewport (phone). */
+    stickyAction?: boolean;
     loginUrl: string;
     className?: string;
 };
@@ -136,6 +138,7 @@ export function GuestJoin({
     onSubmit,
     children,
     onRandomName,
+    stickyAction = false,
     loginUrl,
     className,
 }: GuestJoinProps) {
@@ -508,21 +511,29 @@ export function GuestJoin({
 
                 {children}
 
-                <LoadingButton
-                    type="submit"
-                    size="lg"
-                    className="w-full"
-                    loading={processing}
-                    loader="trema"
-                    disabled={activeError !== null}
+                <div
+                    data-slot="guest-join-action"
+                    className={cn(
+                        stickyAction &&
+                            'sticky bottom-0 -mx-6 border-t bg-card px-6 py-3',
+                    )}
                 >
-                    <span className="truncate">
-                        {processing
-                            ? t('Connecting to the session…')
-                            : t('Join')}
-                    </span>
-                    {!processing && <ArrowRight aria-hidden />}
-                </LoadingButton>
+                    <LoadingButton
+                        type="submit"
+                        size="lg"
+                        className="w-full"
+                        loading={processing}
+                        loader="trema"
+                        disabled={activeError !== null}
+                    >
+                        <span className="truncate">
+                            {processing
+                                ? t('Connecting to the session…')
+                                : t('Join')}
+                        </span>
+                        {!processing && <ArrowRight aria-hidden />}
+                    </LoadingButton>
+                </div>
 
                 <p className="flex items-start gap-2 text-xs text-muted-foreground">
                     <ShieldCheck
