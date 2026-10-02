@@ -147,3 +147,27 @@ it('refuses on a revealed round', function () {
         ->assertUnprocessable()
         ->assertJsonPath('message', 'Voting is closed for this round.');
 });
+
+it('refuses a user who is not a player of the game', function () {
+    [$game, , $round] = extendableTable(60);
+    $outsider = User::factory()->create();
+
+    $status = $this->actingAs($outsider)
+        ->postJson(route('poker.rounds.timer.extension.store', [$game, $round]))
+        ->status();
+
+    expect($status)->toBeIn([403, 404])
+        ->and($round->fresh()->timer_ends_at->toIso8601String())->toBe('2026-10-05T10:01:00+00:00');
+});
+
+it('refuses a round that belongs to another game', function () {
+    [$game, $user] = extendableTable(60);
+    [, , $roundOfOtherGame] = extendableTable(60);
+
+    $status = $this->actingAs($user)
+        ->postJson(route('poker.rounds.timer.extension.store', [$game, $roundOfOtherGame]))
+        ->status();
+
+    expect($status)->toBeIn([403, 404, 422])
+        ->and($roundOfOtherGame->fresh()->timer_ends_at->toIso8601String())->toBe('2026-10-05T10:01:00+00:00');
+});
