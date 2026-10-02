@@ -346,4 +346,29 @@ describe('FormDialog', () => {
             'destructive',
         );
     });
+
+    it('has no submit button and closes on Cancel when it cannot be submitted', async () => {
+        const onOpenChange = vi.fn();
+
+        render(
+            <FormDialog
+                open
+                onOpenChange={onOpenChange}
+                title="Hand over facilitation"
+            >
+                <p>No one else can facilitate this board yet.</p>
+            </FormDialog>,
+        );
+
+        const dialog = screen.getByRole('dialog');
+
+        expect(dialog.textContent).toContain(
+            'No one else can facilitate this board yet.',
+        );
+        expect(dialog.querySelector('button[type="submit"]')).toBeNull();
+
+        await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+
+        expect(onOpenChange).toHaveBeenCalledWith(false);
+    });
 });
