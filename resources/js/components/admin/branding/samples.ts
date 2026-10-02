@@ -97,7 +97,13 @@ export function sampleProps(
             gifEnabled: true,
             gifRating: 'g',
         },
-        assets: { logoLightUrl: null, logoDarkUrl: null, faviconUrl: null },
+        assets: {
+            logoLightUrl: null,
+            logoDarkUrl: null,
+            faviconUrl: null,
+            logoMailUrl: null,
+            mailShowsName: false,
+        },
         palette: samplePalette,
         avatarStyles: [
             {

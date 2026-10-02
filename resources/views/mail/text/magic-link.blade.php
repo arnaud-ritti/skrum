@@ -1,5 +1,11 @@
-{!! __('Use the button to sign in as') !!} {!! $email !!}. {!! __('The link works once and expires in :minutes minutes.', ['minutes' => $expiresInMinutes]) !!}
+{!! __('Sign in to :app', ['app' => $brand->name()]) !!}
 
+{!! __('Use the button below to sign in as') !!} {!! $email !!}. {!! __('The link works once and expires in :minutes minutes.', ['minutes' => $expiresInMinutes]) !!}
+
+{!! __('Button not working? Paste this link into your browser:') !!}
 {!! $url !!}
 
-{!! __('You did not ask for this? Ignore this e-mail: nobody can sign in without the link.') !!}
+{!! __("Didn't ask for this? Ignore this email — nobody can sign in without the link.") !!}
+
+{!! __('You get this email because you have an account on this instance.') !!}
+{!! $brand->name() !!} · {!! $brand->host() !!}

@@ -1,4 +1,10 @@
-import { CircleAlert, ImageOff, Trash2, Upload } from 'lucide-react';
+import {
+    CircleAlert,
+    ImageOff,
+    Trash2,
+    TriangleAlert,
+    Upload,
+} from 'lucide-react';
 import { useId, useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
 import { ConfirmDialog } from '@/components/skrum/confirm-dialog';
@@ -12,6 +18,10 @@ import type { AssetRejection, ThemeName } from './branding';
 export type AssetUploaderProps = {
     label: string;
     description?: string;
+    /** Replaces the line about the accepted formats. */
+    hint?: string;
+    /** What the missing image costs, shown until one is stored. */
+    warning?: string;
     /** Current image, always shown through `<img>`. */
     url: string | null;
     /** Theme of the surface the image is meant for. */
@@ -27,6 +37,8 @@ export type AssetUploaderProps = {
 export function AssetUploader({
     label,
     description,
+    hint,
+    warning,
     url,
     surface = 'light',
     busy = false,
@@ -110,8 +122,20 @@ export function AssetUploader({
                 </div>
             </div>
             <p id={`${id}-hint`} className="text-xs text-muted-foreground">
-                {t('PNG, JPEG, WebP or SVG, 512 KB at most.')}
+                {hint ?? t('PNG, JPEG, WebP or SVG, 512 KB at most.')}
             </p>
+            {warning && (
+                <p
+                    data-slot="asset-warning"
+                    className="flex items-start gap-1.5 text-body-sm text-skrum-warning-text"
+                >
+                    <TriangleAlert
+                        aria-hidden="true"
+                        className="mt-0.5 size-4 shrink-0"
+                    />
+                    <span className="min-w-0">{warning}</span>
+                </p>
+            )}
             <input
                 ref={inputRef}
                 type="file"

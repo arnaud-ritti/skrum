@@ -10,8 +10,10 @@ use App\Models\Card;
 use App\Models\Column;
 use App\Models\Participant;
 use App\Models\Retro;
+use App\Support\Avatars\AvatarUrl;
 use App\Support\Integrations\Messages\RetroRecap;
 use App\Support\Integrations\Messages\RetroRecapContent;
+use App\Support\Mail\MailBrand;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
@@ -28,13 +30,15 @@ class BuildRetroRecap
 
     public const CardContentLimit = 300;
 
+    public const RotiBarsMinimumVotes = 3;
+
     private const string MachineGuestSuffix = '(guest)';
 
-    public function __construct(private SummarizeRoti $summarizeRoti) {}
+    public function __construct(private SummarizeRoti $summarizeRoti, private AvatarUrl $avatarUrl) {}
 
     public function handle(Retro $retro): RetroRecap
     {
-        $retro->loadMissing(['team', 'participants.user']);
+        $retro->loadMissing(['team', 'participants.user', 'facilitator.user']);
 
         $roti = $this->summarizeRoti->handle($retro);
         $actionItems = $this->actionItems($retro);
@@ -59,6 +63,9 @@ class BuildRetroRecap
             suggestedActions: $suggestedActions->take(self::SuggestedActionLimit)->values()->all(),
             hiddenSuggestedActions: max(0, $suggestedActions->count() - self::SuggestedActionLimit),
             topCards: $this->topCards($retro),
+            facilitatorName: $retro->is_anonymous ? null : $retro->facilitator?->displayName(),
+            rotiCounts: $this->rotiCounts($roti),
+            completedDay: ($retro->completed_at ?? now())->copy()->locale(app()->getLocale())->isoFormat('dddd D MMMM'),
         );
     }
 
@@ -111,18 +118,55 @@ class BuildRetroRecap
     }
 
     /**
-     * @return Collection<int, array{content: string, assignee: ?string, dueOn: ?string, isCompleted: bool}>
+     * The bars would show who voted what in a very small group.
+     *
+     * @param  array{distribution: array<int, array{score: int, count: int}>, average: ?float, respondents: int}  $roti
+     * @return array{1: int, 2: int, 3: int, 4: int, 5: int}|null
+     */
+    private function rotiCounts(array $roti): ?array
+    {
+        if ($roti['respondents'] < self::RotiBarsMinimumVotes) {
+            return null;
+        }
+
+        /** @var array{1: int, 2: int, 3: int, 4: int, 5: int} */
+        return array_column($roti['distribution'], 'count', 'score');
+    }
+
+    /**
+     * @return Collection<int, array{content: string, assignee: ?string, dueOn: ?string, isCompleted: bool, assigneeInitials: ?string, assigneePresence: ?int, dueDay: ?string}>
      */
     private function actionItems(Retro $retro): Collection
     {
         return $this->sortedActionItems($retro)
-            ->map(fn (ActionItem $item): array => [
-                'content' => Str::squish($item->content),
-                'assignee' => $this->assignee($item),
-                'dueOn' => $item->due_on === null ? null : $this->date($item->due_on),
-                'isCompleted' => $item->isCompleted(),
-            ])
+            ->map(function (ActionItem $item): array {
+                $assignee = $this->assignee($item);
+
+                return [
+                    'content' => Str::squish($item->content),
+                    'assignee' => $assignee,
+                    'dueOn' => $item->due_on === null ? null : $this->date($item->due_on),
+                    'isCompleted' => $item->isCompleted(),
+                    'assigneeInitials' => $this->assigneeInitials($item),
+                    'assigneePresence' => $this->assigneePresence($item),
+                    'dueDay' => $item->due_on?->copy()->locale(app()->getLocale())->isoFormat('D MMM'),
+                ];
+            })
             ->values();
+    }
+
+    private function assigneeInitials(ActionItem $item): ?string
+    {
+        $name = $item->assigneeUser?->name ?? $item->assigneeParticipant?->displayName();
+
+        return $name === null ? null : $this->avatarUrl->initials($name);
+    }
+
+    private function assigneePresence(ActionItem $item): ?int
+    {
+        $seed = $item->assigneeUser?->avatarSeed() ?? $item->assigneeParticipant?->avatarSeed();
+
+        return $seed === null ? null : MailBrand::presence($seed);
     }
 
     /**

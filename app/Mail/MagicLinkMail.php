@@ -18,17 +18,24 @@ class MagicLinkMail extends BrandedMail implements ShouldBeEncrypted
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: __('Your sign-in link for :app', ['app' => resolve(MailBrand::class)->name()]));
+        return new Envelope(subject: $this->subjectLine());
     }
 
     public function content(): Content
     {
-        $title = __('Sign in to :app', ['app' => resolve(MailBrand::class)->name()]);
-
         return new Content(
             view: 'mail.magic-link',
             text: 'mail.text.magic-link',
-            with: [...$this->brandData(), 'title' => $title, 'preheader' => __('The link works once and expires in :minutes minutes.', ['minutes' => $this->expiresInMinutes])],
+            with: [
+                ...$this->brandData(),
+                'title' => $this->subjectLine(),
+                'preheader' => __('Valid for :minutes minutes, works once.', ['minutes' => $this->expiresInMinutes]),
+            ],
         );
+    }
+
+    private function subjectLine(): string
+    {
+        return __('Your sign-in link for :app', ['app' => resolve(MailBrand::class)->name()]);
     }
 }

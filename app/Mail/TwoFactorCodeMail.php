@@ -14,14 +14,12 @@ class TwoFactorCodeMail extends BrandedMail implements ShouldBeEncrypted
         #[SensitiveParameter] public string $code,
         public int $expiresInMinutes,
         public ?string $device,
+        public string $requestedAt,
     ) {}
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: __(':code is your :app verification code', [
-            'code' => $this->code,
-            'app' => resolve(MailBrand::class)->name(),
-        ]));
+        return new Envelope(subject: $this->subjectLine());
     }
 
     public function content(): Content
@@ -31,11 +29,19 @@ class TwoFactorCodeMail extends BrandedMail implements ShouldBeEncrypted
             text: 'mail.text.two-factor-code',
             with: [
                 ...$this->brandData(),
-                'title' => __('Your verification code'),
+                'title' => $this->subjectLine(),
                 'preheader' => __('It expires in :minutes minutes.', ['minutes' => $this->expiresInMinutes]),
                 'groups' => str_split($this->code, 3),
                 'passwordUrl' => route('security.edit'),
             ],
         );
+    }
+
+    private function subjectLine(): string
+    {
+        return __('Your :app verification code: :code', [
+            'app' => resolve(MailBrand::class)->name(),
+            'code' => implode(' ', str_split($this->code, 3)),
+        ]);
     }
 }

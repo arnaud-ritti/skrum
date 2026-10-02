@@ -2,8 +2,9 @@
 
 namespace App\Mail;
 
-use Carbon\CarbonInterface;
+use App\Support\Mail\MailBrand;
 use Illuminate\Mail\Mailables\Content;
+use Illuminate\Support\Str;
 
 class WorkspaceInvitationMail extends BrandedMail
 {
@@ -11,7 +12,13 @@ class WorkspaceInvitationMail extends BrandedMail
         public string $workspaceName,
         public string $inviterName,
         public string $url,
-        public CarbonInterface $expiresAt,
+        public string $inviterInitials,
+        public int $inviterPresence,
+        public ?int $teamsCount,
+        public ?int $membersCount,
+        public bool $canUseSso,
+        public bool $canRegister,
+        public int $validDays,
     ) {}
 
     public function content(): Content
@@ -22,11 +29,26 @@ class WorkspaceInvitationMail extends BrandedMail
             with: [
                 ...$this->brandData(),
                 'title' => $this->subject,
-                'preheader' => __(':inviter invited you to join the :workspace workspace.', [
-                    'inviter' => $this->inviterName,
+                'preheader' => __(':workspace runs its retros, planning poker and icebreakers on :app.', [
                     'workspace' => $this->workspaceName,
+                    'app' => resolve(MailBrand::class)->name(),
                 ]),
+                'inviterFirstName' => Str::before($this->inviterName, ' '),
+                'joinSentence' => $this->joinSentence(),
             ],
         );
+    }
+
+    private function joinSentence(): string
+    {
+        if ($this->canUseSso && $this->canRegister) {
+            return __('Join with your company SSO or create an account in a minute.');
+        }
+
+        if ($this->canUseSso) {
+            return __('Join with your company SSO.');
+        }
+
+        return __('Create an account in a minute.');
     }
 }

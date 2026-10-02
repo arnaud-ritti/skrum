@@ -8,8 +8,8 @@ use Illuminate\Mail\Mailables\Headers;
 class ActionItemReminderMail extends BrandedMail
 {
     /**
-     * @param  array<int, array{content: string, url: string, team: string, source: string, due: string}>  $overdue
-     * @param  array<int, array{content: string, url: string, team: string, source: string, due: string}>  $dueSoon
+     * @param  array<int, array{content: string, url: string, team: string, due: string, daysLate: int, ticket: ?string}>  $overdue
+     * @param  array<int, array{content: string, url: string, team: string, due: string, daysLate: int, ticket: ?string}>  $dueSoon
      */
     public function __construct(
         public array $overdue,
@@ -25,7 +25,11 @@ class ActionItemReminderMail extends BrandedMail
         return new Content(
             view: 'mail.action-item-reminder',
             text: 'mail.text.action-item-reminder',
-            with: [...$this->brandData(), 'title' => $this->subject, 'preheader' => $this->subject],
+            with: [
+                ...$this->brandData(),
+                'title' => $this->subject,
+                'preheader' => __('Agreed by your team in retro. Mark them done, change the due date, or hand them over.'),
+            ],
         );
     }
 

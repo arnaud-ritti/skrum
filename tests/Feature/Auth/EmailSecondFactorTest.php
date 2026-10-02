@@ -126,7 +126,7 @@ it('stores an HMAC, not the code', function () {
         ->and($row->code_hash)->toBe(hash_hmac('sha256', "{$user->id}|login|{$code}", (string) config('app.key')))
         ->and($row->code_hash)->not->toBe(hash('sha256', $code))
         ->and((string) json_encode($row->getAttributes()))->not->toContain("\"{$code}\"")
-        ->and(new TwoFactorCodeMail($code, 10, null))->toBeInstanceOf(ShouldBeEncrypted::class);
+        ->and(new TwoFactorCodeMail($code, 10, null, '1 Oct, 2:02 pm (UTC)'))->toBeInstanceOf(ShouldBeEncrypted::class);
 });
 
 it('expires after 10 minutes', function () {
@@ -325,20 +325,20 @@ it('gives the security page the state of the e-mail factor', function () {
 });
 
 it('writes the code mail with the code in the subject, grouped, without an unsubscribe header', function () {
-    $mail = new TwoFactorCodeMail('042917', 10, 'Firefox · macOS');
+    $mail = new TwoFactorCodeMail('042917', 10, 'Firefox on macOS', '1 Oct, 2:02 pm (UTC)');
 
-    $mail->assertHasSubject('042917 is your '.config('app.name').' verification code');
+    $mail->assertHasSubject('Your '.config('app.name').' verification code: 042 917');
     $mail->assertSeeInHtml('042&nbsp;917', false);
-    $mail->assertSeeInHtml('Firefox · macOS');
+    $mail->assertSeeInHtml('Requested from Firefox on macOS · 1 Oct, 2:02 pm (UTC)');
     expect(method_exists($mail, 'headers'))->toBeFalse();
 });
 
 it('reduces a user agent to fixed labels', function (?string $userAgent, ?string $expected) {
     expect(UserAgentSummary::describe($userAgent))->toBe($expected);
 })->with([
-    ['Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:131.0) Gecko/20100101 Firefox/131.0', 'Firefox · macOS'],
-    ['Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36 Edg/129.0.0.0', 'Edge · Windows'],
-    ['Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1', 'Safari · iOS'],
+    ['Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:131.0) Gecko/20100101 Firefox/131.0', 'Firefox on macOS'],
+    ['Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36 Edg/129.0.0.0', 'Edge on Windows'],
+    ['Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1', 'Safari on iOS'],
     ['<script>alert(1)</script>', null],
     [null, null],
 ]);

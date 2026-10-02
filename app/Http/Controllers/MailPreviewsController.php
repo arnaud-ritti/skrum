@@ -8,18 +8,20 @@ use App\Enums\ActionItemReminderKind;
 use App\Enums\RetroPhase;
 use App\Mail\MagicLinkMail;
 use App\Mail\TwoFactorCodeMail;
-use App\Mail\WorkspaceInvitationMail;
 use App\Models\ActionItem;
 use App\Models\EmailTwoFactorCode;
 use App\Models\MagicLink;
 use App\Models\Retro;
 use App\Models\User;
 use App\Notifications\ActionItemReminderDigestNotification;
+use App\Notifications\WorkspaceInvitationNotification;
+use App\Support\Auth\UserAgentSummary;
 use App\Support\Integrations\Messages\RetroRecapMail;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Mail\Mailable;
+use Illuminate\Notifications\AnonymousNotifiable;
 
 class MailPreviewsController extends Controller
 {
@@ -31,15 +33,17 @@ class MailPreviewsController extends Controller
 
         abort_if($sample === null, 404);
 
+        $locale = $request->query('locale');
+
+        if (in_array($locale, config('skrum.locales'), true)) {
+            app()->setLocale($locale);
+        }
+
         $mailable = $sample();
 
         abort_if($mailable === null, 404);
 
-        $locale = $request->query('locale');
-
-        if (in_array($locale, config('skrum.locales'), true)) {
-            $mailable->locale($locale);
-        }
+        $mailable->locale(app()->getLocale());
 
         return response($mailable->render());
     }
@@ -50,8 +54,8 @@ class MailPreviewsController extends Controller
     private function samples(): array
     {
         return [
-            'invitation' => fn (): Mailable => (new WorkspaceInvitationMail('Nordlys', 'Fran Facilitator', url('/invitations/sample'), now()->addDays(7)))
-                ->subject(__('You are invited to join :workspace', ['workspace' => 'Nordlys'])),
+            'invitation' => fn (): Mailable => (new WorkspaceInvitationNotification('Atlas', 'Camille Roux', url('/invitations/sample'), now()->addDays(7)))
+                ->toMail((new AnonymousNotifiable)->route('mail', 'ada@example.com')),
             'action-reminder' => fn (): ?Mailable => ($user = User::query()->whereHas('teams')->first()) === null
                 ? null
                 : (new ActionItemReminderDigestNotification(
@@ -65,7 +69,7 @@ class MailPreviewsController extends Controller
                     resolve(SummarizeHealthCheck::class)->handle($retro),
                 ),
             'magic-link' => fn (): Mailable => new MagicLinkMail(url('/magic-link/'.str_repeat('a', 64).'?expires=0&signature=sample'), 'ada@example.com', MagicLink::LifetimeMinutes),
-            'two-factor-code' => fn (): Mailable => new TwoFactorCodeMail('042917', EmailTwoFactorCode::LifetimeMinutes, 'Firefox · macOS'),
+            'two-factor-code' => fn (): Mailable => new TwoFactorCodeMail('042917', EmailTwoFactorCode::LifetimeMinutes, UserAgentSummary::describe('Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:131.0) Gecko/20100101 Firefox/131.0'), '1 Oct, 2:02 pm (UTC)'),
         ];
     }
 }

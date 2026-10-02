@@ -5,6 +5,7 @@ namespace App\Support\Branding;
 use App\Enums\InstanceSettingKey;
 use App\Exceptions\InvalidBrandAsset;
 use App\Support\InstanceSettings;
+use ErrorException;
 use finfo;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Http\UploadedFile;
@@ -22,7 +23,11 @@ class BrandAssets
     public const int MaxBytes = 512 * 1024;
 
     /** @var array<int, string> */
-    public const array Names = ['logo-light', 'logo-dark', 'favicon'];
+    public const array Names = ['logo-light', 'logo-dark', 'favicon', 'logo-mail'];
+
+    public const string RoutePattern = 'logo-light|logo-dark|favicon|logo-mail';
+
+    public const int MinMailLogoWidth = 128;
 
     /** @var array<string, string> */
     public const array MimeTypes = [
@@ -34,6 +39,9 @@ class BrandAssets
 
     /** @var array<int, string> */
     private const array RasterMimeTypes = ['image/png', 'image/jpeg', 'image/webp'];
+
+    /** @var array<int, string> Most mail clients draw neither SVG nor WebP. */
+    private const array MailMimeTypes = ['image/png', 'image/jpeg'];
 
     /** @var array<int, string> */
     private const array MarkupMimeTypes = ['image/svg+xml', 'text/xml', 'application/xml', 'text/plain', 'text/html'];
@@ -50,7 +58,13 @@ class BrandAssets
     public function store(string $asset, UploadedFile $file): void
     {
         $key = $this->key($asset);
-        $extension = array_search($this->contentType($file), self::MimeTypes, true);
+        $contentType = $this->contentType($file);
+
+        if ($key === InstanceSettingKey::LogoMail && ! $this->isDrawnByMailClients($file, $contentType)) {
+            throw InvalidBrandAsset::notDrawnByMailClients();
+        }
+
+        $extension = array_search($contentType, self::MimeTypes, true);
         $previousPath = $this->storedPath($key);
         $name = Str::lower(Str::random(40)).".{$extension}";
 
@@ -98,6 +112,25 @@ class BrandAssets
     }
 
     /**
+     * Pixel size of a stored raster image.
+     *
+     * @return array{
+     *     width: int,
+     *     height: int
+     * }|null
+     */
+    public function size(string $asset): ?array
+    {
+        $path = $this->existingPath($asset);
+
+        if ($path === null) {
+            return null;
+        }
+
+        return $this->pixelSize((string) $this->disk()->get($path));
+    }
+
+    /**
      * @return array{
      *     contents: string,
      *     mime: string,
@@ -136,6 +169,7 @@ class BrandAssets
             'logo-light' => InstanceSettingKey::LogoLight,
             'logo-dark' => InstanceSettingKey::LogoDark,
             'favicon' => InstanceSettingKey::Favicon,
+            'logo-mail' => InstanceSettingKey::LogoMail,
             default => throw new InvalidArgumentException("Unknown brand asset [{$asset}]."),
         };
     }
@@ -148,6 +182,7 @@ class BrandAssets
         $path = match ($key) {
             InstanceSettingKey::LogoLight => $this->settings->logoLight(),
             InstanceSettingKey::LogoDark => $this->settings->logoDark(),
+            InstanceSettingKey::LogoMail => $this->settings->logoMail(),
             default => $this->settings->favicon(),
         };
 
@@ -210,6 +245,38 @@ class BrandAssets
         }
 
         return 'image/svg+xml';
+    }
+
+    private function isDrawnByMailClients(UploadedFile $file, string $contentType): bool
+    {
+        if (! in_array($contentType, self::MailMimeTypes, true)) {
+            return false;
+        }
+
+        $size = $this->pixelSize((string) file_get_contents((string) $file->getRealPath()));
+
+        return $size !== null && $size['width'] >= self::MinMailLogoWidth;
+    }
+
+    /**
+     * @return array{
+     *     width: int,
+     *     height: int
+     * }|null
+     */
+    private function pixelSize(string $contents): ?array
+    {
+        try {
+            $size = getimagesizefromstring($contents);
+        } catch (ErrorException) {
+            return null;
+        }
+
+        if ($size === false || $size[0] < 1 || $size[1] < 1) {
+            return null;
+        }
+
+        return ['width' => $size[0], 'height' => $size[1]];
     }
 
     private function isSvg(string $contents): bool

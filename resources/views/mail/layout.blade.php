@@ -19,6 +19,7 @@
 @include('mail.partials.dark', ['prefix' => '[data-ogsb] '])
 </style>
 </head>
+@php($logo = $brand->logo())
 <body class="m-bg" style="margin:0;padding:0;background-color:{{ $colors['light']['muted'] }};">
 <div style="display:none;max-height:0;overflow:hidden;">{{ $preheader }}</div>
 <table role="presentation" class="m-bg" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:{{ $colors['light']['muted'] }};">
@@ -26,20 +27,29 @@
 <td align="center" class="m-pad" style="padding:32px 24px;">
 <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;">
 <tr>
-<td class="m-card m-pad" style="padding:24px;background-color:{{ $colors['light']['card'] }};border:1px solid {{ $colors['light']['border'] }};border-radius:10px;font-family:Figtree,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
-@if($brand->logoUrl() !== null)
-<img src="{{ $brand->logoUrl() }}" alt="{{ $brand->name() }}" height="28" style="display:block;border:0;height:28px;width:auto;">
-@else
-<p class="m-text" style="margin:0;font-size:18px;line-height:28px;font-weight:bold;color:{{ $colors['light']['foreground'] }};">{{ $brand->name() }}</p>
+<td class="m-card m-pad" style="padding:20px 24px 24px;background-color:{{ $colors['light']['card'] }};border:1px solid {{ $colors['light']['border'] }};border-radius:10px;font-family:Figtree,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+@if($logo !== null)
+<img class="m-logo-light" src="{{ $logo['light'] }}" alt="{{ $brand->name() }}" width="{{ $logo['width'] }}" height="{{ $logo['height'] }}" style="display:block;border:0;width:{{ $logo['width'] }}px;height:{{ $logo['height'] }}px;">
+@if($logo['dark'] !== $logo['light'])
+<!--[if !mso]><!-->
+<div class="m-logo-dark" style="display:none;max-height:0;overflow:hidden;mso-hide:all;"><img src="{{ $logo['dark'] }}" alt="{{ $brand->name() }}" width="{{ $logo['width'] }}" height="{{ $logo['height'] }}" style="display:block;border:0;width:{{ $logo['width'] }}px;height:{{ $logo['height'] }}px;"></div>
+<!--<![endif]-->
 @endif
-<h1 class="m-text" style="margin:24px 0 12px;font-size:20px;line-height:28px;font-weight:bold;color:{{ $colors['light']['foreground'] }};">{{ $title }}</h1>
+@else
+<p class="m-text" style="margin:0;font-size:16px;line-height:28px;font-weight:bold;color:{{ $colors['light']['foreground'] }};">{{ $brand->name() }}</p>
+@endif
+@yield('lead')
+<h1 class="m-text" style="margin:16px 0 12px;font-size:20px;line-height:28px;font-weight:bold;color:{{ $colors['light']['foreground'] }};">@yield('heading')</h1>
 @yield('content')
 </td>
 </tr>
 <tr>
 <td align="center" class="m-muted m-pad" style="padding:16px 24px;font-family:Figtree,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:12px;line-height:18px;color:{{ $colors['light']['muted-foreground'] }};">
 @yield('footer')
-<p style="margin:8px 0 0;"><a class="m-muted" href="{{ $brand->instanceUrl() }}" style="color:{{ $colors['light']['muted-foreground'] }};">{{ $brand->name() }}</a>@if($brand->poweredBy()) · {{ __('Powered by Skrüm') }}@endif</p>
+<p style="margin:4px 0 0;">{{ $brand->name() }} · {{ $brand->host() }}</p>
+@if($brand->poweredBy())
+<p style="margin:4px 0 0;">{{ __('Powered by Skrüm') }}</p>
+@endif
 </td>
 </tr>
 </table>

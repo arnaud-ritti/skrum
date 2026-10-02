@@ -172,6 +172,7 @@ use App\Http\Middleware\ResolveGamePlayer;
 use App\Http\Middleware\ResolvePokerPlayer;
 use App\Http\Middleware\ResolveRetroParticipant;
 use App\Http\Middleware\ResolveWhiteboardMember;
+use App\Support\Branding\BrandAssets;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -199,7 +200,7 @@ Route::get('avatars/{style}/{seed}.svg', [StyledAvatarsController::class, 'show'
     ->withoutMiddleware('web')
     ->name('styledAvatars.show');
 // Outside the web group: a public, immutable response must not carry a session cookie.
-Route::get('brand/{asset}', [BrandAssetsController::class, 'show'])->where('asset', 'logo-light|logo-dark|favicon')
+Route::get('brand/{asset}', [BrandAssetsController::class, 'show'])->where('asset', BrandAssets::RoutePattern)
     ->withoutMiddleware('web')
     ->name('brand.show');
 Route::get('emoji-data/{version}/{locale}/{file}', [EmojiDataController::class, 'show'])

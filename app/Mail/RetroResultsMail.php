@@ -10,14 +10,24 @@ class RetroResultsMail extends BrandedMail
     public ?string $unsubscribeUrl = null;
 
     /**
-     * @param  array<int, string>  $facts
+     * @param  array<int, array{value: string, label: string}>  $stats
+     * @param  array<int, array{content: string, meta: string, initials: ?string, presence: ?int}>  $actions
+     * @param  array{label: string, rows: array<int, array{score: int, count: int, width: int}>}|null  $roti
      * @param  array<int, string>  $summary
      * @param  array<int, array{heading: string, lines: array<int, string>, more: ?string}>  $sections
      */
     public function __construct(
-        public array $facts,
+        public string $heading,
+        public string $lead,
+        public string $preheader,
+        public array $stats,
+        public array $actions,
+        public ?string $moreActions,
+        public ?array $roti,
+        public ?string $participantsLine,
         public array $summary,
         public array $sections,
+        public ?string $healthLine,
         public string $url,
         public string $settingsUrl,
     ) {}
@@ -49,7 +59,6 @@ class RetroResultsMail extends BrandedMail
             with: [
                 ...$this->brandData(),
                 'title' => $this->subject,
-                'preheader' => $this->facts[0] ?? $this->subject,
                 'unsubscribeUrl' => $this->unsubscribeUrl,
             ],
         );

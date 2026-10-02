@@ -3,6 +3,7 @@
 namespace App\Support\Integrations\Messages;
 
 use App\Mail\RetroResultsMail;
+use Illuminate\Support\Number;
 use Illuminate\Support\Str;
 
 /**
@@ -16,31 +17,143 @@ class RetroRecapMail
      */
     public function build(RetroRecap $recap, ?array $health): RetroResultsMail
     {
-        $facts = array_filter([
-            RecapText::context($recap),
-            RecapText::participants($recap),
-            RecapText::cards($recap),
-            RecapText::roti($recap),
-            $health === null ? null : __('Health check: :score/10 (:respondents of :participants participants answered)', [
-                'score' => number_format($health['score'], 1),
-                'respondents' => $health['participation']['respondents'],
-                'participants' => $health['participation']['participants'],
-            ]),
-        ]);
+        $title = Str::squish($recap->title);
+        $facilitator = $recap->facilitatorName === null ? null : Str::squish($recap->facilitatorName);
+        $actionsCount = count($recap->actionItems) + $recap->hiddenActionItems;
+        $roti = $recap->rotiCounts === null || $recap->rotiAverage === null
+            ? null
+            : (string) Number::format($recap->rotiAverage, 1, locale: app()->getLocale());
 
         $sections = array_filter([
-            $this->section(__('Action items'), array_map(RecapText::actionItem(...), $recap->actionItems), $recap->hiddenActionItems),
             $this->section(__('Suggested actions'), $recap->suggestedActions, $recap->hiddenSuggestedActions),
             $this->section(__('Top card per column'), array_map(RecapText::topCard(...), $recap->topCards), 0),
         ]);
 
         return (new RetroResultsMail(
-            array_values(array_map(Str::squish(...), $facts)),
-            $recap->summary === null ? [] : array_values(array_map(Str::squish(...), preg_split('/\R{2,}/u', $recap->summary) ?: [])),
-            array_values($sections),
-            $recap->url,
-            route('notificationPreferences.edit'),
-        ))->subject(Str::squish(RecapText::heading($recap)));
+            heading: __(':title is done', ['title' => $title]),
+            lead: $this->lead($recap, $facilitator),
+            preheader: $this->preheader($recap, $facilitator),
+            stats: $this->stats($recap, $actionsCount, $roti),
+            actions: array_map($this->action(...), $recap->actionItems),
+            moreActions: $recap->hiddenActionItems > 0 ? RecapText::more($recap->hiddenActionItems) : null,
+            roti: $roti === null ? null : $this->roti($recap),
+            participantsLine: $recap->participantNames === null ? null : Str::squish(RecapText::participants($recap)),
+            summary: $recap->summary === null ? [] : array_values(array_map(Str::squish(...), preg_split('/\R{2,}/u', $recap->summary) ?: [])),
+            sections: array_values($sections),
+            healthLine: $health === null ? null : __('Health check: :score/10 (:respondents of :participants participants answered)', [
+                'score' => number_format($health['score'], 1),
+                'respondents' => $health['participation']['respondents'],
+                'participants' => $health['participation']['participants'],
+            ]),
+            url: $recap->url,
+            settingsUrl: route('notificationPreferences.edit'),
+        ))->subject($this->subject($recap, $title, $actionsCount, $roti));
+    }
+
+    private function subject(RetroRecap $recap, string $title, int $actionsCount, ?string $roti): string
+    {
+        $replace = [
+            'title' => $title,
+            'team' => Str::squish($recap->teamName),
+            'actions' => trans_choice('{0} no action|{1} :count action|[2,*] :count actions', $actionsCount),
+        ];
+
+        if ($roti === null) {
+            return __(':title · :team — :actions', $replace);
+        }
+
+        return __(':title · :team — :actions, ROTI :roti', [...$replace, 'roti' => $roti]);
+    }
+
+    private function lead(RetroRecap $recap, ?string $facilitator): string
+    {
+        $date = $recap->completedDay ?? $recap->completedOn;
+
+        if ($facilitator === null) {
+            return __('Completed on :date. Here is what the team decided.', ['date' => $date]);
+        }
+
+        return __('Facilitated by :name on :date. Here is what the team decided.', ['name' => $facilitator, 'date' => $date]);
+    }
+
+    private function preheader(RetroRecap $recap, ?string $facilitator): string
+    {
+        $counts = ['participants' => $recap->participantCount, 'cards' => $recap->cardCount];
+
+        if ($facilitator === null) {
+            return __(':participants participants, :cards cards.', $counts);
+        }
+
+        return __(':participants participants, :cards cards, facilitated by :name.', [...$counts, 'name' => $facilitator]);
+    }
+
+    /**
+     * @return array<int, array{value: string, label: string}>
+     */
+    private function stats(RetroRecap $recap, int $actionsCount, ?string $roti): array
+    {
+        $stats = [
+            ['value' => (string) $recap->participantCount, 'label' => __('Participants')],
+            ['value' => (string) $recap->cardCount, 'label' => __('Cards')],
+            ['value' => (string) $actionsCount, 'label' => __('Actions')],
+        ];
+
+        if ($roti === null) {
+            return $stats;
+        }
+
+        return [...$stats, ['value' => $roti, 'label' => __('ROTI /5')]];
+    }
+
+    /**
+     * @param  array{content: string, assignee: ?string, dueOn: ?string, isCompleted: bool, assigneeInitials?: ?string, assigneePresence?: ?int, dueDay?: ?string}  $item
+     * @return array{content: string, meta: string, initials: ?string, presence: ?int}
+     */
+    private function action(array $item): array
+    {
+        return [
+            'content' => Str::squish(($item['isCompleted'] ? '✓ ' : '').$item['content']),
+            'meta' => Str::squish($this->actionMeta($item['assignee'], $item['dueDay'] ?? $item['dueOn'])),
+            'initials' => $item['assigneeInitials'] ?? null,
+            'presence' => $item['assigneePresence'] ?? null,
+        ];
+    }
+
+    private function actionMeta(?string $assignee, ?string $due): string
+    {
+        if ($assignee === null && $due === null) {
+            return __('Unassigned');
+        }
+
+        if ($assignee === null) {
+            return __('Unassigned · due :date', ['date' => $due]);
+        }
+
+        if ($due === null) {
+            return $assignee;
+        }
+
+        return __(':name · due :date', ['name' => $assignee, 'date' => $due]);
+    }
+
+    /**
+     * Widths are percentages of the widest bar: no calc, no CSS variable.
+     *
+     * @return array{label: string, rows: array<int, array{score: int, count: int, width: int}>}
+     */
+    private function roti(RetroRecap $recap): array
+    {
+        $counts = $recap->rotiCounts ?? [];
+        $widest = max(1, ...array_values($counts));
+
+        return [
+            'label' => __('Return on time invested · :count votes', ['count' => $recap->rotiRespondents]),
+            'rows' => array_map(fn (int $score): array => [
+                'score' => $score,
+                'count' => $counts[$score] ?? 0,
+                'width' => (int) round(($counts[$score] ?? 0) * 100 / $widest),
+            ], range(1, 5)),
+        ];
     }
 
     /**

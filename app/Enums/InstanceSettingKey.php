@@ -11,6 +11,7 @@ enum InstanceSettingKey: string
     case LogoLight = 'logo_light';
     case LogoDark = 'logo_dark';
     case Favicon = 'favicon';
+    case LogoMail = 'logo_mail';
     case AvatarStyle = 'avatar_style';
     case AvatarMemberChoice = 'avatar_member_choice';
     case GifProvider = 'gif_provider';

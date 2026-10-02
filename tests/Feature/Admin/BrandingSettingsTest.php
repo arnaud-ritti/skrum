@@ -85,7 +85,7 @@ it('shows no stored value and the effective defaults when nothing is stored', fu
                 'gifEnabled' => true,
                 'gifRating' => 'g',
             ])
-            ->where('assets', ['logoLightUrl' => null, 'logoDarkUrl' => null, 'faviconUrl' => null])
+            ->where('assets', ['logoLightUrl' => null, 'logoDarkUrl' => null, 'faviconUrl' => null, 'logoMailUrl' => null, 'mailShowsName' => false])
             ->where('palette', null)
             ->has('avatarStyles', count(resolve(AvatarStyleCatalogue::class)->selectable()))
             ->where('avatarStyles', fn ($styles) => collect($styles)->firstWhere('value', 'fun-emoji') == [
@@ -520,7 +520,7 @@ it('resets every setting and removes the images', function () {
             ->where('displayName', null)
             ->where('defaults.displayName', 'Configured Name')
             ->where('hasGifKey', false)
-            ->where('assets', ['logoLightUrl' => null, 'logoDarkUrl' => null, 'faviconUrl' => null])
+            ->where('assets', ['logoLightUrl' => null, 'logoDarkUrl' => null, 'faviconUrl' => null, 'logoMailUrl' => null, 'mailShowsName' => false])
             ->where('palette', null))
         ->getContent();
 

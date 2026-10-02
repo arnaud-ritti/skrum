@@ -125,7 +125,7 @@ The only places where a screen or a mail of this plan differs from its mockup, a
 | V6 | Emails · Reminder | "Sent on Mondays and the day after a due date." | Left out of the reason line | false (reminders go out daily at the configured time, for items due soon and overdue) |
 | V7 | Emails · Reminder | Overdue items only | A second list, "Due soon", in the same row style | owner goal 2 (feature parity) and B14: the existing reminder covers both, and its triggers do not change |
 | V8 | Emails · Recap | "because you took part in this retro" | "…or belong to its team" | false (the recap can be sent to the whole team) |
-| V9 | Emails · Recap | Only stats, actions and ROTI | The same, followed by the summary, suggested actions, top card per column and health-check line the product already sends | B14 (content of an existing mail is kept); nothing of the mockup is removed |
+| V9 | Emails · Recap | Only stats, actions and ROTI | The same, followed by the participants' names (named retros), the summary, suggested actions, top card per column and health-check line the product already sends | B14 (content of an existing mail is kept); nothing of the mockup is removed |
 | V10 | Emails · all | Two languages, `lang/{fr,en}/mail.php` | Four languages through the JSON files | the product has four languages (spec §5) |
 | V11 | Emails · header | PNG logo always | The display name as text when the instance has a logo mail clients cannot draw (SVG, WebP) and no mail logo was uploaded; the Branding page says so | false otherwise (the Skrüm logo on a rebranded instance) |
 | V12 | ScreenAuth · link sent | "Nous avons envoyé un lien de connexion à …" | "If an account exists for …, a sign-in link is on its way." | unsafe (S8: the answer must not say whether the address has an account) |
@@ -141,6 +141,8 @@ The only places where a screen or a mail of this plan differs from its mockup, a
 | V22 | ScreenUserSettings | "Réglages › Accessibilité" as a page | A card "Accessibility" on the Appearance page | spec §15 point 12 |
 | V23 | ScreenSecurity | Active sessions, linked accounts | Not rendered (18e) | roadmap (Account: active sessions, linked accounts) |
 | V24 | ScreenAuth | With SSO forced, "le formulaire e-mail disparaît" | The form is folded under "Administrator sign-in", for every visitor | owner (third round: instance admins sign in with password and second factor) and unsafe otherwise (showing it to admins only would need to know who is asking) |
+| V25 | Emails · Invitation | Logo of the workspace in its block, and the tile beside the inviter's avatar | The avatar alone; the block holds the name and the counts | false (a workspace has no logo in this product; the tile is the team tile of V3) |
+| V26 | Emails · Invitation | No reason line in the footer (Task 14 listed one for "the three account mails") | No reason line, as the mockup | false (the invited person may have no account) |
 
 The two-factor challenge in e-mail mode and the e-mail card of Security have no mockup: they are composed from the library components the Security mockup uses (`InputOTP` 3 + 3, the badge "On" / "Off", the destructive outline button), in the anatomy of its TOTP block.
 

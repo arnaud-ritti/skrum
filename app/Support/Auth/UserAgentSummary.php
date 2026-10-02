@@ -26,7 +26,7 @@ class UserAgentSummary
             return null;
         }
 
-        return "{$browser} · {$system}";
+        return __(':browser on :system', ['browser' => $browser, 'system' => $system]);
     }
 
     /**

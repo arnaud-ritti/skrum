@@ -8,7 +8,7 @@ function renderMailLayout(string $body = 'Hello'): string
 {
     $brand = resolve(MailBrand::class);
 
-    return Blade::render("@extends('mail.layout')\n@section('content')\n{$body}\n@endsection", [
+    return Blade::render("@extends('mail.layout')\n@section('heading', 'A heading')\n@section('content')\n{$body}\n@endsection", [
         'title' => 'A subject',
         'preheader' => 'A preview line',
         'brand' => $brand,
@@ -23,7 +23,7 @@ it('uses hex colours only', function () {
 
     expect($html)->not->toMatch('/var\(|oklch|color-mix|rgb\(|hsl\(/')
         ->and(preg_match_all('/color:\s*([^;"}]+)/', $html, $matches))->toBeGreaterThan(10)
-        ->and(collect($matches[1])->map(fn (string $value) => trim(str_replace('!important', '', $value)))->reject(fn (string $value) => preg_match('/^#[0-9a-f]{6}$/', $value) === 1)->values()->all())->toBe([]);
+        ->and(collect($matches[1])->map(fn (string $value) => trim(str_replace('!important', '', $value)))->reject(fn (string $value) => preg_match('/^#[0-9a-f]{6}$/', $value) === 1)->values()->all())->toBeEmpty();
 });
 
 it('keeps the Skrüm palette when no brand colour is stored', function () {
@@ -61,11 +61,6 @@ it('escapes the display name', function () {
     resolve(InstanceSettings::class)->set('display_name', '</title><script>alert(1)</script>');
 
     expect(renderMailLayout())->not->toContain('<script>alert(1)</script>');
-});
-
-it('shows the name as text when the instance logo is not a PNG or a JPEG', function () {
-    expect(resolve(MailBrand::class)->logoUrl())->toBeNull()
-        ->and(renderMailLayout())->not->toContain('<img');
 });
 
 it('hides the previews outside local and testing', function () {

@@ -14,8 +14,8 @@ it('returns the branded mailable with the facts of the retro', function () {
 
     expect($mail)->toBeInstanceOf(RetroResultsMail::class)
         ->and($mail->hasTo($facilitator->email))->toBeTrue()
-        ->and($mail->subject)->toBe('Results of the retrospective "Sprint 42"');
-    $mail->assertSeeInHtml('View the results');
+        ->and($mail->subject)->toBe("Sprint 42 · {$retro->team->name} — no action");
+    $mail->assertSeeInHtml('Open the full summary');
 });
 
 it('escapes user text and shows no backslash', function () {

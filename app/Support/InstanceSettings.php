@@ -112,6 +112,11 @@ class InstanceSettings
         return $this->storedString(InstanceSettingKey::Favicon);
     }
 
+    public function logoMail(): ?string
+    {
+        return $this->storedString(InstanceSettingKey::LogoMail);
+    }
+
     public function avatarStyle(): string
     {
         return $this->storedAvatarStyle() ?? $this->defaultAvatarStyle();

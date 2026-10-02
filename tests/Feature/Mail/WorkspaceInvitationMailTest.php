@@ -15,7 +15,7 @@ it('returns the branded mailable addressed to the invited person', function () {
 
     expect($mail)->toBeInstanceOf(WorkspaceInvitationMail::class)
         ->and($mail->hasTo('new@example.test'))->toBeTrue()
-        ->and($mail->subject)->toBe('You are invited to join Nordlys');
+        ->and($mail->subject)->toBe('Fran invited you to join Nordlys');
 });
 
 it('escapes user text in the html part and keeps it literal in the text part', function () {
@@ -43,7 +43,7 @@ it('is written in the language given to the notification', function () {
 it('carries no unsubscribe header', function () {
     $mail = invitationNotification()->toMail(new User);
 
-    $mail->assertHasSubject('You are invited to join Nordlys');
+    $mail->assertHasSubject('Fran invited you to join Nordlys');
     expect(method_exists($mail, 'headers'))->toBeFalse();
 });
 

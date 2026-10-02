@@ -12,7 +12,11 @@ export type Palette = {
     warnings: PaletteWarning[];
 };
 
-export type BrandAssetName = 'logo-light' | 'logo-dark' | 'favicon';
+export type BrandAssetName =
+    | 'logo-light'
+    | 'logo-dark'
+    | 'favicon'
+    | 'logo-mail';
 
 export type GifProvider = 'giphy' | 'tenor';
 
@@ -57,6 +61,9 @@ export type BrandingPageProps = {
         logoLightUrl: string | null;
         logoDarkUrl: string | null;
         faviconUrl: string | null;
+        logoMailUrl: string | null;
+        /** The instance logo is one mail clients cannot draw, and no mail logo is stored. */
+        mailShowsName: boolean;
     };
     palette: Palette | null;
     avatarStyles: AdminAvatarStyle[];

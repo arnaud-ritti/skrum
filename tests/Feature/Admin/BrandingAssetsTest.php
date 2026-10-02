@@ -16,6 +16,14 @@ function adminAssetUpload(string $name, string $contents): UploadedFile
     return UploadedFile::fake()->createWithContent($name, $contents);
 }
 
+function adminAssetWidePng(int $width = 128): string
+{
+    ob_start();
+    imagepng(imagecreatetruecolor($width, 28));
+
+    return (string) ob_get_clean();
+}
+
 function adminAssetSettings(): InstanceSettings
 {
     app()->forgetScopedInstances();
@@ -31,7 +39,7 @@ beforeEach(function () {
 });
 
 it('stores an uploaded png which the brand route then serves', function (string $asset, string $getter) {
-    $png = base64_decode(AdminAssetPng);
+    $png = adminAssetWidePng();
 
     $this->post(route('admin.brandingAssets.store', $asset), ['file' => adminAssetUpload('logo.png', $png)])
         ->assertRedirect(route('admin.branding.edit'))
@@ -51,7 +59,37 @@ it('stores an uploaded png which the brand route then serves', function (string 
     'light logo' => ['logo-light', 'logoLight'],
     'dark logo' => ['logo-dark', 'logoDark'],
     'favicon' => ['favicon', 'favicon'],
+    'mail logo' => ['logo-mail', 'logoMail'],
 ]);
+
+it('refuses a logo for e-mails that mail clients cannot draw', function (string $name, Closure $contents) {
+    $this->postJson(route('admin.brandingAssets.store', 'logo-mail'), ['file' => adminAssetUpload($name, $contents())])
+        ->assertUnprocessable()
+        ->assertJsonPath('errors.file.0', 'The logo for e-mails must be a PNG or JPEG image at least 128 px wide.');
+
+    expect(adminAssetSettings()->logoMail())->toBeNull()
+        ->and(Storage::disk('local')->allFiles())->toBeEmpty();
+})->with([
+    'svg' => ['logo.svg', fn (): string => '<svg xmlns="http://www.w3.org/2000/svg"><rect width="1" height="1"/></svg>'],
+    'webp' => ['logo.webp', fn (): string => "RIFF\x1A\x00\x00\x00WEBPVP8L\x0D\x00\x00\x00\x2F\x00\x00\x00\x10\x07\x10\x11\x11\x88\x88\xFE\x07\x00"],
+    'png 127 px wide' => ['logo.png', fn (): string => adminAssetWidePng(127)],
+]);
+
+it('tells the branding page when e-mails show the name instead of the logo', function () {
+    $this->post(route('admin.brandingAssets.store', 'logo-light'), ['file' => adminAssetUpload('logo.svg', '<svg xmlns="http://www.w3.org/2000/svg"><rect width="1" height="1"/></svg>')]);
+
+    app()->forgetScopedInstances();
+    $this->get(route('admin.branding.edit'))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('assets.mailShowsName', true)->where('assets.logoMailUrl', null));
+
+    $this->post(route('admin.brandingAssets.store', 'logo-mail'), ['file' => adminAssetUpload('logo.png', adminAssetWidePng())]);
+
+    app()->forgetScopedInstances();
+    $this->get(route('admin.branding.edit'))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('assets.mailShowsName', false)
+            ->where('assets.logoMailUrl', resolve(BrandAssets::class)->url('logo-mail')));
+});
 
 it('shows the uploaded images on the branding page', function () {
     $this->post(route('admin.brandingAssets.store', 'logo-light'), ['file' => adminAssetUpload('logo.png', base64_decode(AdminAssetPng))]);

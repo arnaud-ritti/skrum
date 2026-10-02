@@ -45,7 +45,7 @@ class WorkspaceInvitationsController extends Controller
             ->value('locale');
 
         Notification::route('mail', $validated['email'])->notify(
-            (new WorkspaceInvitationNotification($workspace->name, $inviter->name, $url, $issued->invitation->expires_at))
+            (new WorkspaceInvitationNotification($workspace->name, $inviter->name, $url, $issued->invitation->expires_at, $issued->invitation->id))
                 ->locale($recipientLocale ?? app()->getLocale()),
         );
 

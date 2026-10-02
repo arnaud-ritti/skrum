@@ -11,9 +11,12 @@ use App\Support\Integrations\IntegrationAvailability;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Traits\Localizable;
 
 class SendEmailTwoFactorCode
 {
+    use Localizable;
+
     public const int CooldownSeconds = 60;
 
     public const int HourlyCap = 5;
@@ -60,9 +63,24 @@ class SendEmailTwoFactorCode
             ]);
         });
 
-        Mail::to($user)->queue(new TwoFactorCodeMail($code, EmailTwoFactorCode::LifetimeMinutes, UserAgentSummary::describe($userAgent)));
+        Mail::to($user)->queue($this->withLocale($user->preferredLocale(), fn (): TwoFactorCodeMail => new TwoFactorCodeMail(
+            $code,
+            EmailTwoFactorCode::LifetimeMinutes,
+            UserAgentSummary::describe($userAgent),
+            $this->requestTime(),
+        )));
 
         return true;
+    }
+
+    /**
+     * Browser and time only: no city, no country and no address are read.
+     */
+    private function requestTime(): string
+    {
+        $now = now()->setTimezone((string) config('app.timezone'))->locale(app()->getLocale());
+
+        return "{$now->isoFormat('D MMM')}, ".mb_strtolower($now->isoFormat('LT'))." ({$now->format('T')})";
     }
 
     public function secondsUntilResend(User $user, EmailCodePurpose $purpose): int

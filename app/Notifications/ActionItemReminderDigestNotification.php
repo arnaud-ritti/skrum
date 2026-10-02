@@ -40,7 +40,7 @@ class ActionItemReminderDigestNotification extends Notification implements Shoul
     {
         /** @var Collection<string, ActionItem> $items */
         $items = ActionItem::query()
-            ->with(['team.workspace', 'retro'])
+            ->with(['team.workspace', 'externalLinks'])
             ->whereKey(array_column($this->reminders, 'actionItemId'))
             ->get()
             ->keyBy('id');
@@ -67,17 +67,27 @@ class ActionItemReminderDigestNotification extends Notification implements Shoul
     }
 
     /**
-     * @return array{content: string, url: string, team: string, source: string, due: string}
+     * @return array{content: string, url: string, team: string, due: string, daysLate: int, ticket: ?string}
      */
     private function present(ActionItem $item): array
     {
+        $dueOn = CarbonImmutable::parse((string) $item->due_on?->toDateString(), (string) config('app.timezone'));
+
         return [
             'content' => Str::squish($item->content),
             'url' => route('workspaces.actionItems.index', ['workspace' => $item->team->workspace, 'item' => $item->id]),
             'team' => Str::squish($item->team->name),
-            'source' => Str::squish($item->retro === null ? __('Added outside a retro') : $item->retro->title),
-            'due' => $this->dueWording($item),
+            'due' => $dueOn->locale(app()->getLocale())->isoFormat('D MMM'),
+            'daysLate' => max(0, (int) $dueOn->diffInDays(ActionItem::today()->startOfDay())),
+            'ticket' => $this->ticket($item),
         ];
+    }
+
+    private function ticket(ActionItem $item): ?string
+    {
+        $key = $item->externalLinks->first()?->external_key;
+
+        return blank($key) ? null : Str::squish($key);
     }
 
     /**
@@ -90,22 +100,6 @@ class ActionItemReminderDigestNotification extends Notification implements Shoul
             ->filter(fn (array $reminder): bool => $reminder['kind'] === $kind->value && $items->has($reminder['actionItemId']))
             ->map(fn (array $reminder): ActionItem => $items[$reminder['actionItemId']])
             ->values();
-    }
-
-    private function dueWording(ActionItem $item): string
-    {
-        $dueOn = (string) $item->due_on?->toDateString();
-        $today = ActionItem::today();
-
-        if ($dueOn === $today->toDateString()) {
-            return __('Due today');
-        }
-
-        if ($dueOn === $today->addDay()->toDateString()) {
-            return __('Due tomorrow');
-        }
-
-        return __('Due :date', ['date' => CarbonImmutable::parse($dueOn)->settings(['locale' => app()->getLocale()])->isoFormat('LL')]);
     }
 
     private function subject(int $overdue, int $dueSoon): string

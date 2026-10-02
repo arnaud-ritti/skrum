@@ -179,7 +179,9 @@ export function BrandingForm({
     const uploaders: Array<{
         asset: BrandAssetName;
         label: string;
-        description: string;
+        description?: string;
+        hint?: string;
+        warning?: string;
         url: string | null;
         surface: 'light' | 'dark';
     }> = [
@@ -202,6 +204,20 @@ export function BrandingForm({
             label: t('Favicon'),
             description: t('The icon of the browser tab.'),
             url: props.assets.faviconUrl,
+            surface: 'light',
+        },
+        {
+            asset: 'logo-mail',
+            label: t('Logo for e-mails'),
+            hint: t(
+                'PNG or JPEG, at least 128 px wide. Mail clients do not draw SVG.',
+            ),
+            warning: props.assets.mailShowsName
+                ? t(
+                      'E-mails show the name as text until a PNG or JPEG logo is added.',
+                  )
+                : undefined,
+            url: props.assets.logoMailUrl,
             surface: 'light',
         },
     ];
@@ -276,6 +292,8 @@ export function BrandingForm({
                                         key={uploader.asset}
                                         label={uploader.label}
                                         description={uploader.description}
+                                        hint={uploader.hint}
+                                        warning={uploader.warning}
                                         url={uploader.url}
                                         surface={uploader.surface}
                                         busy={uploading === uploader.asset}

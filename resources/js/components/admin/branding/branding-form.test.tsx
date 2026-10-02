@@ -162,6 +162,41 @@ describe('BrandingForm images', () => {
         expect(status()).toBe('No unsaved changes');
     });
 
+    it('offers a logo for e-mails with its own format line', () => {
+        const { container } = setup();
+        const file = new File(['x'], 'logo.png', { type: 'image/png' });
+
+        fireEvent.change(fileInputs(container)[3], {
+            target: { files: [file] },
+        });
+
+        expect(uploadAsset).toHaveBeenCalledExactlyOnceWith('logo-mail', file);
+        expect(
+            screen.getByText(
+                'PNG or JPEG, at least 128 px wide. Mail clients do not draw SVG.',
+            ),
+        ).toBeTruthy();
+        expect(container.querySelector('[data-slot=asset-warning]')).toBeNull();
+    });
+
+    it('warns that e-mails show the name while the instance logo cannot be drawn in a mail', () => {
+        const { container } = setup({
+            assets: {
+                logoLightUrl: '/brand/logo-light?v=1',
+                logoDarkUrl: null,
+                faviconUrl: null,
+                logoMailUrl: null,
+                mailShowsName: true,
+            },
+        });
+
+        expect(
+            container.querySelector('[data-slot=asset-warning]')?.textContent,
+        ).toBe(
+            'E-mails show the name as text until a PNG or JPEG logo is added.',
+        );
+    });
+
     it('uploads nothing for a 600 KB file or a GIF', () => {
         const { container } = setup();
         const [light] = fileInputs(container);

@@ -99,7 +99,7 @@ it('writes the recap, the health score and the link in the mail', function () {
     $mail = (new RetroResultsNotification($retro->id))->toMail($facilitator);
     $html = (string) $mail->render();
 
-    expect($mail->subject)->toBe('Results of the retrospective "Sprint 42"')
+    expect($mail->subject)->toBe("Sprint 42 · {$retro->team->name} — no action")
         ->and($html)->toContain('Health check: 7.0/10')
         ->and($html)->toContain(route('retros.show', $retro))
         ->and($html)->toContain('Participants (');
