@@ -42,7 +42,6 @@ const FrontEndRuleBaseline = [
         'resources/js/components/action-items/external-link-chips.tsx',
         'resources/js/components/action-items/priority-select.tsx',
         'resources/js/components/app-logo.tsx',
-        'resources/js/components/input-error.tsx',
         'resources/js/components/nav-main.tsx',
         'resources/js/components/notification-bell.tsx',
         'resources/js/components/session/live-cursors.tsx',
