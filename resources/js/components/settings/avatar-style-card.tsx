@@ -1,7 +1,7 @@
 import { router } from '@inertiajs/react';
 import { useState } from 'react';
 import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
-import Heading from '@/components/heading';
+import { SettingsCard } from '@/components/settings/settings-card';
 import { AvatarStylePicker } from '@/components/skrum/avatar-style-picker';
 import type { AvatarStyleOption } from '@/components/skrum/avatar-style-picker';
 import { LoadingButton } from '@/components/skrum/loading-button';
@@ -80,48 +80,57 @@ export function AvatarStyleCard({
     };
 
     return (
-        <section data-slot="avatar-style-card" className="space-y-6">
-            <Heading
-                variant="small"
+        <div data-slot="avatar-style-card" className="min-w-0">
+            <SettingsCard
                 title={t('Avatar style')}
                 description={t('Choose how your avatar is drawn everywhere.')}
-            />
-            <AvatarStylePicker
-                value={selected}
-                onChange={setSelected}
-                options={styles.map(toOption)}
-                sampleNames={[user.name]}
-            />
-            {error && (
-                <p role="alert" className="text-sm text-skrum-destructive-text">
-                    {error}
-                </p>
-            )}
-            <div className="flex flex-wrap items-center gap-2">
-                <LoadingButton
-                    type="button"
-                    loading={processing}
-                    disabled={selected === (style ?? instanceStyle)}
-                    onClick={() => save(selected)}
-                    data-test="update-avatar-style-button"
-                    className="max-w-full"
-                >
-                    <span className="truncate">{t('Save avatar style')}</span>
-                </LoadingButton>
-                {style !== null && (
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        disabled={processing}
-                        onClick={() => save(null)}
-                        className="max-w-full"
+                footer={
+                    <>
+                        {style !== null && (
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                disabled={processing}
+                                onClick={() => save(null)}
+                                className="max-w-full"
+                            >
+                                <span className="truncate">
+                                    {t('Use the instance style')}
+                                </span>
+                            </Button>
+                        )}
+                        <LoadingButton
+                            type="button"
+                            size="sm"
+                            loading={processing}
+                            disabled={selected === (style ?? instanceStyle)}
+                            onClick={() => save(selected)}
+                            data-test="update-avatar-style-button"
+                            className="max-w-full"
+                        >
+                            <span className="truncate">
+                                {t('Save avatar style')}
+                            </span>
+                        </LoadingButton>
+                    </>
+                }
+            >
+                <AvatarStylePicker
+                    value={selected}
+                    onChange={setSelected}
+                    options={styles.map(toOption)}
+                    sampleNames={[user.name]}
+                />
+                {error && (
+                    <p
+                        role="alert"
+                        className="text-sm text-skrum-destructive-text"
                     >
-                        <span className="truncate">
-                            {t('Use the instance style')}
-                        </span>
-                    </Button>
+                        {error}
+                    </p>
                 )}
-            </div>
-        </section>
+            </SettingsCard>
+        </div>
     );
 }

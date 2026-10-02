@@ -93,6 +93,9 @@ describe('AvatarStyleCard', () => {
         ).toBe('true');
         expect(saveButton().disabled).toBe(true);
         expect(
+            screen.getByRole('heading', { level: 2, name: 'Avatar style' }),
+        ).toBeTruthy();
+        expect(
             screen.queryByRole('button', { name: 'Use the instance style' }),
         ).toBeNull();
         expect(screen.queryByRole('switch')).toBeNull();
