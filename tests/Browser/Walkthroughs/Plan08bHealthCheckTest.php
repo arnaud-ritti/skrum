@@ -94,6 +94,11 @@ function p08bTeamStatements(): string
     return "[...[...document.querySelectorAll('section')].find((section) => section.querySelector('h2')?.textContent === 'Health check statements').querySelectorAll('ol > li')].map((row) => row.querySelector('p').textContent).join(' | ')";
 }
 
+function p08bTeamSummary(): string
+{
+    return "[...document.querySelectorAll('[data-slot=\"health-check-summary-statement\"]')].map((row) => row.lastElementChild.textContent).join(' | ')";
+}
+
 function p08bBoardStatements(): string
 {
     return "[...document.querySelectorAll('ol > li > [role=\"radiogroup\"]')].map((group) => group.getAttribute('aria-label')).join(' | ')";
@@ -135,7 +140,7 @@ function p08bOpenSettings(mixed $page): mixed
     return $page;
 }
 
-it('[P08b-01a] lets an Owner add, archive, reorder, reword and restore the health check statements of a team', function () {
+it('[P08b-01a] lets an Owner add, archive, reorder, reword and restore the health check statements of a team, on the page the team card leads to', function () {
     $team = Team::factory()->create();
     $olivia = workspaceManager($team->workspace, WorkspaceRole::Owner);
     $olivia->update(['name' => 'Olivia Owner', 'locale' => 'en']);
@@ -148,6 +153,15 @@ it('[P08b-01a] lets an Owner add, archive, reorder, reword and restore the healt
     $announcement = "document.querySelector('[id^=\"DndLiveRegion\"]').textContent";
 
     $page = $this->signIn($olivia, route('teams.show', [$team->workspace, $team], false));
+
+    $page->assertSeeIn('[data-slot="health-check-summary"] h2', 'Health check')
+        ->assertSeeIn('[data-slot="health-check-summary-facts"]', '6 statements asked at the end of each retro, scored 1–10.')
+        ->assertScript(p08bTeamSummary(), p08bBuiltIns())
+        ->assertNotPresent('[aria-label="Drag to reorder"]')
+        ->assertNotPresent('[aria-label="Statement"]')
+        ->assertSeeIn('[data-slot="health-check-manage"]', 'Manage')
+        ->click('[data-slot="health-check-manage"]')
+        ->assertPathIs(route('teams.healthCheck.show', [$team->workspace, $team], false));
 
     $page->assertSee('Health check statements')
         ->assertSee('Changes apply to retros that have not collected answers yet.')
@@ -211,12 +225,21 @@ it('[P08b-01a] lets an Owner add, archive, reorder, reword and restore the healt
         ->and($statements->whereNull('archived_at')->first()->builtin)->toBe(HealthStatement::TaskClarity);
 });
 
-it('[P08b-01b] shows the health check statements to a plain member as a read-only list', function () {
+it('[P08b-01b] shows the health check statements to a plain member as a read-only list, on the team page and on the health check page', function () {
     $team = Team::factory()->create();
     $bob = teamMember($team);
     $bob->update(['name' => 'Bob Stone', 'locale' => 'en']);
 
     $page = $this->signIn($bob, route('teams.show', [$team->workspace, $team], false));
+
+    $page->assertSeeIn('[data-slot="health-check-summary"] h2', 'Health check')
+        ->assertSee('Changes apply to retros that have not collected answers yet.')
+        ->assertScript(p08bTeamSummary(), p08bBuiltIns())
+        ->assertNotPresent('[aria-label="Drag to reorder"]')
+        ->assertNotPresent('button:has-text("Archive")')
+        ->assertSeeIn('[data-slot="health-check-manage"]', 'Details')
+        ->click('[data-slot="health-check-manage"]')
+        ->assertPathIs(route('teams.healthCheck.show', [$team->workspace, $team], false));
 
     $page->assertSee('Health check statements')
         ->assertSee('Changes apply to retros that have not collected answers yet.')
@@ -490,7 +513,7 @@ it('[P08b-07] keeps the statements a retro froze once it has answers', function 
     $stepper = 'header ol[aria-label="Phases"]';
     $frozenKeys = ['interaction', 'task_clarity', 'manager_support', 'vision', 'processes', 'motivation'];
 
-    $teamPage = $this->signIn($olivia, route('teams.show', [$retro->team->workspace, $retro->team], false));
+    $teamPage = $this->signIn($olivia, route('teams.healthCheck.show', [$retro->team->workspace, $retro->team], false));
 
     $teamPage->assertVisible('[aria-label="Statement"]')
         ->fill('[aria-label="Statement"]', 'We shipped what we promised')

@@ -3,8 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Actions\Games\IcebreakerGameOptions;
-use App\Actions\HealthCheck\PresentHealthStatement;
-use App\Actions\HealthCheck\TeamHealthStatements;
+use App\Actions\HealthCheck\PresentTeamHealthStatements;
 use App\Actions\Poker\PresentPokerGameSummary;
 use App\Actions\Retros\BuildTemplateCatalogue;
 use App\Actions\Retros\PresentTeamRetro;
@@ -21,7 +20,6 @@ use App\Models\PokerGame;
 use App\Models\Retro;
 use App\Models\SavedPokerDeck;
 use App\Models\Team;
-use App\Models\TeamHealthStatement;
 use App\Models\User;
 use App\Models\Whiteboard;
 use App\Models\WhiteboardTemplate;
@@ -38,8 +36,6 @@ use Inertia\Response;
 class TeamsController extends Controller
 {
     public function __construct(
-        private TeamHealthStatements $teamHealthStatements,
-        private PresentHealthStatement $presentHealthStatement,
         private PresentPokerGameSummary $presentPokerGameSummary,
         private PresentTeamRetro $presentTeamRetro,
         private PokerPresenceRoster $pokerPresenceRoster,
@@ -70,6 +66,7 @@ class TeamsController extends Controller
         TopTeamTemplates $topTeamTemplates,
         GameRulesRegistry $gameRulesRegistry,
         BuildTeamMoodTrend $buildTeamMoodTrend,
+        PresentTeamHealthStatements $presentTeamHealthStatements,
     ): Response {
         Gate::authorize('view', $team);
 
@@ -107,11 +104,7 @@ class TeamsController extends Controller
             'canCreateGameRoom' => $request->user()->can('createGameRoom', $team)
                 && $team->gameRooms()->whereNull('retro_id')->count() < GameRoom::MaxRoomsPerTeam,
             'roomLimit' => GameRoom::MaxRoomsPerTeam,
-            'healthStatements' => $this->teamHealthStatements->all($team)->map(fn (TeamHealthStatement $statement): array => [
-                'id' => $statement->id ?? $statement->key(),
-                ...$this->presentHealthStatement->handle($statement),
-                'isArchived' => $statement->isArchived(),
-            ])->values(),
+            'healthStatements' => $presentTeamHealthStatements->handle($team),
             'canManageHealthStatements' => $request->user()->can('update', $team),
             'pokerGames' => PresentPokerGameSummary::withCounts($team->pokerGames())
                 ->latest('updated_at')
@@ -141,7 +134,7 @@ class TeamsController extends Controller
                     'canManage' => $managesWorkspace || $template->created_by_user_id === $request->user()->id,
                 ]),
             'whiteboardGallery' => Inertia::optional(fn (): array => $buildWhiteboardGallery->handle($workspace)),
-            'moodTrend' => Inertia::defer(fn (): array => $buildTeamMoodTrend->handle($team), 'trend'),
+            'moodTrend' => Inertia::defer(fn (): array => $buildTeamMoodTrend->handle($team), 'trend', rescue: true),
             'canManageIntegrations' => IntegrationProvider::anyEnabled() && $request->user()->can('manageIntegrations', $team),
         ]);
     }

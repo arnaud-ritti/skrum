@@ -31,6 +31,7 @@ export const ownLayoutPages: readonly string[] = [
     'settings/notifications',
     'settings/api-tokens',
     'teams/integrations',
+    'teams/health-check',
 ];
 
 const ownLayoutPrefixes: readonly string[] = ['admin/', 'dev/'];

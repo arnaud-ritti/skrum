@@ -4024,5 +4024,14 @@
     "Remove from team": "Remove from team",
     ":count statements asked at the end of each retro, scored 1–10.": ":count statements asked at the end of each retro, scored 1–10.",
     "Average ROTI at the end of the retro, out of 5": "Average ROTI at the end of the retro, out of 5",
-    "Average ROTI per retro, from :first (:firstLabel) to :last (:lastLabel)": "Average ROTI per retro, from :first (:firstLabel) to :last (:lastLabel)"
+    "Average ROTI per retro, from :first (:firstLabel) to :last (:lastLabel)": "Average ROTI per retro, from :first (:firstLabel) to :last (:lastLabel)",
+    "The trend could not be loaded.": "The trend could not be loaded.",
+    "The statements :team scores from 1 to 10 in a retro, and the mood they give.": "The statements :team scores from 1 to 10 in a retro, and the mood they give.",
+    "ROTI card, for a team with one closed retro": "ROTI card, for a team with one closed retro",
+    "ROTI card, for a team without results": "ROTI card, for a team without results",
+    "ROTI card, while the trend loads": "ROTI card, while the trend loads",
+    "ROTI card, when the trend could not be loaded": "ROTI card, when the trend could not be loaded",
+    "Health check page, for a manager": "Health check page, for a manager",
+    "Health check page, for a member of a team without results": "Health check page, for a member of a team without results",
+    "Details": "Details"
 }

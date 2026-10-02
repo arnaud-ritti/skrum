@@ -27,6 +27,9 @@ vi.mock('@inertiajs/react', async (importOriginal) => {
     return {
         ...original,
         usePage: () => ({ props: mocks.props }),
+        Deferred: ({ fallback }: { fallback: () => React.ReactNode }) => (
+            <>{fallback()}</>
+        ),
         Link: ({
             href,
             children,
@@ -107,16 +110,17 @@ describe('the team page', () => {
         ).toEqual(['Retrospectives0', 'Planning poker', 'Whiteboards0']);
     });
 
-    it('opens the mood region with the trend card, a skeleton until the trend arrives', () => {
+    it('draws the ROTI curve alone in the main column, under the sessions, a skeleton until the trend arrives', () => {
         const { container, rerender } = renderWithProviders(
             <TeamPage {...base} />,
         );
-        const first = () =>
-            container
-                .querySelector('#mood')
-                ?.firstElementChild?.getAttribute('data-slot');
+        const mood = () => container.querySelector('#mood');
 
-        expect(first()).toBe('team-mood-loading');
+        expect(mood()?.firstElementChild?.getAttribute('data-slot')).toBe(
+            'team-trend-loading',
+        );
+        expect(mood()?.closest('aside')).toBeNull();
+        expect(mood()?.previousElementSibling?.id).toBe('sessions');
 
         rerender(
             <TeamPage
@@ -136,15 +140,59 @@ describe('the team page', () => {
             />,
         );
 
-        expect(first()).toBe('team-mood');
+        expect(mood()?.firstElementChild?.getAttribute('data-slot')).toBe(
+            'team-roti',
+        );
         expect(
-            container.querySelectorAll('#mood [data-slot="mood-trend-point"]'),
+            container.querySelectorAll('#mood [data-slot="roti-trend-point"]'),
         ).toHaveLength(1);
+        expect(screen.queryByRole('tab', { name: 'Mood' })).toBeNull();
+        expect(screen.queryByRole('tab', { name: 'ROTI' })).toBeNull();
         expect(
-            container.querySelector(
-                '#mood [data-slot="team-mood"] ~ [data-slot="health-statements"]',
-            ),
-        ).not.toBeNull();
+            container.querySelector('[data-slot="mood-trend-chart"]'),
+        ).toBeNull();
+    });
+
+    it('reads a trend the server gave as null as a trend not received, not as an empty one', () => {
+        const { container } = renderWithProviders(
+            <TeamPage {...base} moodTrend={null} />,
+        );
+
+        expect(
+            container
+                .querySelector('#mood')
+                ?.firstElementChild?.getAttribute('data-slot'),
+        ).toBe('team-trend-loading');
+    });
+
+    it('shows the health check as a compact card in the side column, with the way to its page', () => {
+        const { container } = renderWithProviders(
+            <TeamPage
+                {...base}
+                canManageHealthStatements
+                healthStatements={[
+                    {
+                        id: 'interaction',
+                        key: 'interaction',
+                        label: 'Interaction',
+                        text: 'Interaction with colleagues was productive',
+                        isBuiltin: true,
+                        isArchived: false,
+                    },
+                ]}
+            />,
+        );
+        const card = container.querySelector(
+            'aside [data-slot="health-check-summary"]',
+        );
+
+        expect(card).not.toBeNull();
+        expect(
+            container.querySelector('[data-slot="health-statements"]'),
+        ).toBeNull();
+        expect(
+            screen.getByRole('link', { name: 'Manage' }).getAttribute('href'),
+        ).toBe('/w/nordlys/teams/team-1/health-check');
     });
 
     it('has one "New session" trigger and no trigger per type', () => {
@@ -253,9 +301,11 @@ describe('the team page', () => {
         expect(sessions.firstElementChild?.getAttribute('data-place')).toBe(
             'recent',
         );
-        expect(sessions.lastElementChild?.getAttribute('data-place')).toBe(
-            'activity',
-        );
+        expect(
+            sessions.parentElement?.lastElementChild?.getAttribute(
+                'data-place',
+            ),
+        ).toBe('activity');
         expect(
             container
                 .querySelector('aside')

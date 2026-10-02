@@ -4247,5 +4247,13 @@
     "Remove from team": "Quitar",
     ":count statements asked at the end of each retro, scored 1–10.": ":count enunciados planteados al final de cada retro, puntuados de 1 a 10.",
     "Average ROTI at the end of the retro, out of 5": "ROTI medio al final de la retro, sobre 5",
-    "Average ROTI per retro, from :first (:firstLabel) to :last (:lastLabel)": "ROTI medio por retro, de :first (:firstLabel) a :last (:lastLabel)"
+    "Average ROTI per retro, from :first (:firstLabel) to :last (:lastLabel)": "ROTI medio por retro, de :first (:firstLabel) a :last (:lastLabel)",
+    "The trend could not be loaded.": "No se pudo cargar la tendencia.",
+    "The statements :team scores from 1 to 10 in a retro, and the mood they give.": "Los enunciados que :team puntúa de 1 a 10 en una retro, y el ánimo que reflejan.",
+    "ROTI card, for a team with one closed retro": "Tarjeta de ROTI, para un equipo con una sola retro cerrada",
+    "ROTI card, for a team without results": "Tarjeta de ROTI, para un equipo sin resultados",
+    "ROTI card, while the trend loads": "Tarjeta de ROTI, mientras se carga la tendencia",
+    "ROTI card, when the trend could not be loaded": "Tarjeta de ROTI, cuando no se pudo cargar la tendencia",
+    "Health check page, for a manager": "Página del chequeo de salud, para un gestor",
+    "Health check page, for a member of a team without results": "Página del chequeo de salud, para un miembro de un equipo sin resultados"
 }

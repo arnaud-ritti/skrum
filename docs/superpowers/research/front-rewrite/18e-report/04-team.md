@@ -179,3 +179,26 @@ Differences with the mockup that remain:
 Tests written or changed, not run (owner's rule): `TeamRetroCardsTest` (two tests added), `team-header.test.tsx`, `team-page.test.tsx`, `team-retros-section.test.tsx`, `team-members-card.test.tsx`; browser `[P12a-01a]` (clicks the gear), `[P18e-04-03]`, `[P18e-04-03b]` (new), `[P18e-04-05]`, `[P18e-04-06]`. Captures not regenerated.
 
 The "Fix later" line above about "Supprimer" on the member row is done by this task.
+
+## RW-T2 — Health check card compact, a management page, ROTI curve in the main column (second rework run)
+
+Built:
+
+- Side column: `TeamHealthCard` is the mockup's compact list (`skrum/health-check-summary.tsx`): title "Health check", link at the end of the heading row, the sentence ":count statements asked at the end of each retro, scored 1–10." with the number of active statements, one row per active statement (short label, "Built-in" or "Custom" badge, statement), the note "Changes apply to retros that have not collected answers yet." in its muted box. No control on the team page.
+- Page `teams/health-check` (`GET /w/{workspace}/teams/{team}/health-check`, `teams.healthCheck.show`, `TeamHealthChecksController@show`): `AppLayout` (sidebar entry "Mood & ROTI" in use, breadcrumb workspace › Teams › team › Health check), the full manager (`TeamHealthManager`, the former `TeamHealthCard`, unchanged: reorder, add, reword, archive, restore, "Archived (n)") and the Mood trend (health score on 0 to 10, period tabs, legend, "View as table", links to the retros). Authorisation as on the team page before: `view` on the team opens the page, `update` on the team (`canManageHealthStatements`) gives the controls; a member reads the same list without them. The five write routes are unchanged.
+- Main column: `TeamRotiCard` → `skrum/roti-trend-card.tsx`, the ScreenDashboard card: "Mood trend", "Average ROTI at the end of the retro, out of 5", badge "+0.9 since :first" (change from the first to the last point), grid 1 to 5, filled curve, hollow dots (the last one larger), dark bubble "4.1 / 5" on the last point. No tabs, no legend, no table. It sits under the three session sections, before the place left for the activity feed, and carries `id="mood"` (the sidebar entry lands on it). The "Mood" / "ROTI" tabs are gone; `preferredMetric` and `moodScale` left `lib/teams/mood-adapter.ts` with them.
+- Deferred prop: both pages read `moodTrend` through `<Deferred>` (`components/teams/trend-states.tsx`, `DeferredTrend`). The prop is sent with `rescue: true`: a trend the server fails to build is reported and gives the page its error state ("The trend could not be loaded." and "Retry", which reloads `moodTrend` alone) instead of an endless skeleton. The last trend received stays on screen while a later visit fetches it again, as before.
+
+Parity (rows 24–29 of the brief): every control of the statements is on the health check page; row 29 (read-only list for a member) holds on both pages.
+
+Differences with the mockup that remain:
+
+| Difference | Row |
+|---|---|
+| Health card: "scored 1–10" and the real count (owner answer); a "Custom" badge for a team's own statement; the link reads "Details" for a member who cannot manage (the page is read-only for them); French title "Bilan de santé" (the product's translation; the mockup keeps "Health check" in French) | D-76 (reworded) |
+| ROTI card: the x axis shows the day the retro closed, and the badge reads "since :day" (no sprint number); labels are thinned out when they would collide; the card is under the session sections of the team page, the mockup shows it in the right column of ScreenDashboard beside "Open actions" (owner answer: main column) | D-77 (reworded) |
+| The health check page has no mockup: built from the manager and the chart, two columns from 80rem | new row |
+
+Tests written or changed, not run (owner's rule): feature `TeamHealthCheckPageTest` (new, 7 cases with the dataset); Vitest `roti-trend-card.test.tsx`, `health-check-summary.test.tsx`, `team-health-card.test.tsx`, `team-roti-card.test.tsx`, `trend-states.test.tsx`, `team-health-check-page.test.tsx` (new), `team-health-manager.test.tsx` (the former `team-health-card.test.tsx`, renamed with its component, cases unchanged), `team-mood-card.test.tsx`, `team-page.test.tsx`, `mood-adapter.test.ts` (rewritten for the new elements); browser `[P08b-01a]`, `[P08b-01b]` (start on the team card, follow its link), `[P08b-07]` (opens the health check page), `[P18e-04-09]` (ROTI on the team page, mood on the health check page), `[P18e-04-02]`, `[P18e-04-02b]` (new selectors and bench states). Captures not regenerated.
+
+The "Fix later" line above about the failed deferred fetch is done by this task for a failure on the server; a request that never gets an answer (network) still leaves the skeleton.
