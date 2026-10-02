@@ -37,7 +37,7 @@ it('links the team page to its games', function () {
         ->get(route('teams.show', [$team->workspace, $team]))
         ->assertOk();
 
-    expect(file_get_contents(resource_path('js/pages/teams/show.tsx')))->toContain('TeamGameRoomsController.index');
+    expect(file_get_contents(resource_path('js/components/teams/team-header.tsx')))->toContain('TeamGameRoomsController.index');
 });
 
 function gamesIndexRooms(Team $team, $user): array
