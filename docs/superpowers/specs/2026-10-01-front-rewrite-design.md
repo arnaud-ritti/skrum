@@ -318,7 +318,7 @@ Principle: `actions` behaves like `discussing` for everything that touches cards
 | Timer, settings, lock, guest link, hand-over, delete | guards based on `RetroPhase::isOpen()` | yes | yes | yes | as today |
 | Cards: write, edit, move, group, vote | guards naming `writing`, `grouping`, `voting` | as today | no | no | no |
 | Live cursors (front rule `showsCursors`) | `components/session` container | on | on | off (a pointer on a score reveals a vote, as in voting) | off |
-| Flying reactions (front rule) | retro container | on | on | on | off |
+| Flying reactions (front rule) | retro container | on | on | on | on: the bar is docked under the results of the session end (owner, 2026-10-02, D-112). They stay whispers, never stored: the board itself stays read-only |
 
 `LocksDiscussingRetro` keeps its name in plan 18e (the rename is left to 18g); it reads a new `RetroPhase::takesActionItems(): bool` (`Discussing`, `Actions`, `Roti`).
 

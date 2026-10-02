@@ -257,6 +257,103 @@ describe('SessionEnd', () => {
         ).toBe('true');
     });
 
+    describe('reactions', () => {
+        const channel = () => ({
+            presence: {
+                whisper: vi.fn(),
+                listen: vi.fn(),
+                stopListening: vi.fn(),
+            } as never,
+        });
+
+        it('docks the reaction bar under the results, which keep room for it', () => {
+            show(ended(), {}, channel());
+
+            expect(
+                screen.getByRole('toolbar', { name: 'Reactions' }),
+            ).toBeTruthy();
+            expect(
+                screen.getByRole('button', { name: 'Send a reaction 🎉' }),
+            ).toBeTruthy();
+            expect(
+                document
+                    .querySelector('[data-slot="reaction-bar"]')
+                    ?.getAttribute('data-variant'),
+            ).toBe('floating');
+            expect(
+                document
+                    .querySelector('[data-slot="retro-session-end"]')
+                    ?.getAttribute('data-reactions'),
+            ).toBe('true');
+        });
+
+        it('sends a reaction as a whisper, nothing to the server', async () => {
+            const context = channel();
+
+            show(ended(), {}, context);
+            await userEvent.click(
+                screen.getByRole('button', { name: 'Send a reaction 🎉' }),
+            );
+
+            expect(
+                (context.presence as { whisper: ReturnType<typeof vi.fn> })
+                    .whisper,
+            ).toHaveBeenCalled();
+            expect(retroRequest).not.toHaveBeenCalled();
+        });
+
+        it('has no bar when the reactions are off, nor without a channel', () => {
+            const off = show(
+                ended({}, { reactionsEnabled: false }),
+                {},
+                channel(),
+            );
+
+            expect(screen.queryByRole('toolbar')).toBeNull();
+            expect(
+                document
+                    .querySelector('[data-slot="retro-session-end"]')
+                    ?.hasAttribute('data-reactions'),
+            ).toBe(false);
+            off.unmount();
+
+            show();
+
+            expect(screen.queryByRole('toolbar')).toBeNull();
+        });
+
+        it('is compact on a phone, above the sticky actions', () => {
+            mobile.value = true;
+
+            const rect = vi
+                .spyOn(HTMLElement.prototype, 'getBoundingClientRect')
+                .mockReturnValue({ height: 64 } as DOMRect);
+
+            try {
+                show(ended(), {}, channel());
+
+                expect(
+                    screen.getByRole('button', { name: 'More reactions' }),
+                ).toBeTruthy();
+                expect(
+                    document.querySelector(
+                        '[data-slot="retro-session-end-actions"]',
+                    ),
+                ).not.toBeNull();
+                expect(
+                    (
+                        document.querySelector(
+                            '[data-slot="reaction-bar"]',
+                        ) as HTMLElement
+                    ).style.getPropertyValue('--reaction-offset'),
+                ).toBe('calc(4rem + 0.75rem)');
+            } finally {
+                rect.mockRestore();
+                mobile.value = false;
+            }
+        });
+    });
+
     it('has the Results and Board tabs under the header, with their ids', () => {
         const onViewChange = vi.fn();
 

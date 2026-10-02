@@ -450,7 +450,7 @@ describe('FacilitatorDock', () => {
         expect(screen.queryByRole('toolbar')).toBeNull();
     });
 
-    it('has no reaction bar at the session end (spec §9.1)', () => {
+    it('leaves the reaction bar of the session end to that screen', () => {
         renderInBoard(
             <FacilitatorDock />,
             boardContext(retroSnapshot({ retro: { phase: 'completed' } }), {
