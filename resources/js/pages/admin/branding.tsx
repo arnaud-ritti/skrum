@@ -1,4 +1,5 @@
 import { Head, usePage } from '@inertiajs/react';
+import { useRef } from 'react';
 import { AdminShell } from '@/components/admin/admin-shell';
 import { formSignature } from '@/components/admin/branding/branding';
 import type { BrandingPageProps } from '@/components/admin/branding/branding';
@@ -8,12 +9,15 @@ import { useTrans } from '@/hooks/use-trans';
 export default function AdminBranding(props: BrandingPageProps) {
     const { t } = useTrans();
     const { auth } = usePage().props;
+    const signature = formSignature(props);
+    const firstSignature = useRef(signature);
 
     return (
         <AdminShell active="branding">
             <Head title={t('Branding')} />
             <BrandingForm
-                key={formSignature(props)}
+                key={signature}
+                focusOnMount={signature !== firstSignature.current}
                 adminName={auth.user.name}
                 brandColor={props.brandColor}
                 brandRadius={props.brandRadius}

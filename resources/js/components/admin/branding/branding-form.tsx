@@ -7,7 +7,7 @@ import {
     Type,
     UserRound,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import BrandingController from '@/actions/App/Http/Controllers/Admin/BrandingController';
 import { AvatarStylePicker } from '@/components/skrum/avatar-style-picker';
@@ -51,10 +51,17 @@ type AssetState = Partial<Record<BrandAssetName, string>>;
 export type BrandingFormProps = BrandingPageProps & {
     /** The admin's own name: their avatar is the first sample of each style. */
     adminName: string;
+    /** Moves the focus to the form on mount, for the remount that follows a save. */
+    focusOnMount?: boolean;
 };
 
-export function BrandingForm({ adminName, ...props }: BrandingFormProps) {
+export function BrandingForm({
+    adminName,
+    focusOnMount = false,
+    ...props
+}: BrandingFormProps) {
     const { t } = useTrans();
+    const container = useRef<HTMLDivElement>(null);
     const initial = initialFormData(props);
     const form = useForm<BrandingFormData>(initial);
     const [fieldsVersion, setFieldsVersion] = useState(0);
@@ -63,6 +70,12 @@ export function BrandingForm({ adminName, ...props }: BrandingFormProps) {
     const [resetting, setResetting] = useState(false);
     const [resetError, setResetError] = useState<string>();
     const { data, errors } = form;
+
+    useEffect(() => {
+        if (focusOnMount) {
+            container.current?.focus();
+        }
+    }, [focusOnMount]);
     const preview = usePalettePreview({
         color: data.brand_color,
         fallbackColor: props.defaults.brandColor,
@@ -195,8 +208,10 @@ export function BrandingForm({ adminName, ...props }: BrandingFormProps) {
 
     return (
         <div
+            ref={container}
+            tabIndex={-1}
             data-slot="branding-form"
-            className="@container flex min-w-0 flex-col gap-6"
+            className="@container flex min-w-0 flex-col gap-6 outline-none"
         >
             <form
                 onSubmit={save}
