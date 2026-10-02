@@ -8,6 +8,7 @@ use App\Models\Retro;
 use App\Models\Team;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Schema;
@@ -130,4 +131,40 @@ it('stores the rank when model events are faked or muted', function () {
     $item->saveQuietly();
 
     expect($item->refresh()->sort_rank)->toBe(ActionItem::CompletedSortRank);
+});
+
+it('keeps the rank of an item read without its state and saved', function () {
+    $item = ActionItem::factory()->create(['due_on' => '2026-10-05', 'priority' => ActionItemPriority::High]);
+
+    ActionItem::query()->select(['id', 'content'])->findOrFail($item->id)->update(['content' => 'reworded']);
+
+    expect((int) DB::table('action_items')->where('id', $item->id)->value('sort_rank'))->toBe(202610050);
+});
+
+it('ranks a new item saved without a priority as the medium one it is stored as', function () {
+    $item = ActionItem::query()->create(Arr::except(ActionItem::factory()->raw(['due_on' => null]), ['priority']));
+
+    expect($item->refresh()->priority)->toBe(ActionItemPriority::Medium)
+        ->and($item->sort_rank)->toBe(1_000_000_001);
+});
+
+it('lists items of the same rank newest first, then by id', function () {
+    $team = Team::factory()->create();
+    $member = teamMember($team);
+    $item = fn (string $id, string $content, string $createdAt, array $attributes = []) => ActionItem::factory()->withoutRetro($team, $member)->create([
+        'id' => $id,
+        'content' => $content,
+        'due_on' => '2026-10-11',
+        'created_at' => $createdAt,
+        ...$attributes,
+    ]);
+    $completed = ['completed_at' => '2026-10-12 09:00:00'];
+
+    $item('01a00000-0000-7000-8000-00000000000b', 'older, later id', '2026-10-01 10:00:00');
+    $item('01a00000-0000-7000-8000-00000000000a', 'older, earlier id', '2026-10-01 10:00:00');
+    $item('01a00000-0000-7000-8000-000000000001', 'newer', '2026-10-02 10:00:00');
+    $item('01a00000-0000-7000-8000-00000000000d', 'completed, later id', '2026-10-01 10:00:00', $completed);
+    $item('01a00000-0000-7000-8000-00000000000c', 'completed, earlier id', '2026-10-01 10:00:00', $completed);
+
+    expect(orderedTitles($team))->toBe(['newer', 'older, earlier id', 'older, later id', 'completed, earlier id', 'completed, later id']);
 });

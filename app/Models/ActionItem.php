@@ -35,6 +35,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $theme_name
  * @property ActionItemRecurrence|null $recurrence
  * @property string|null $previous_occurrence_id
+ * @property int $sort_rank
  * @property int|null $comments_count
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
@@ -62,6 +63,13 @@ class ActionItem extends Model
     public const int CompletedSortRank = 2_000_000_000;
 
     private const int UndatedSortRank = 1_000_000_000;
+
+    /**
+     * The same priority the column defaults to, so a new item is ranked as it is stored.
+     *
+     * @var array<string, mixed>
+     */
+    protected $attributes = ['priority' => ActionItemPriority::Medium->value];
 
     public static function today(): CarbonImmutable
     {
@@ -182,12 +190,16 @@ class ActionItem extends Model
     /**
      * The rank is set here and not in a `saving` listener: a faked or muted event dispatcher
      * (Event::fake, saveQuietly) would skip the listener and leave the row without its rank.
+     * A stored row keeps its rank unless one of the three columns it comes from changes: a model
+     * read without them knows nothing about its state.
      *
      * @param  array<string, mixed>  $options
      */
     public function save(array $options = []): bool
     {
-        $this->sort_rank = self::sortRankFor($this->completed_at !== null, $this->due_on?->toDateString(), $this->priority);
+        if (! $this->exists || $this->isDirty(['completed_at', 'due_on', 'priority'])) {
+            $this->sort_rank = self::sortRankFor($this->completed_at !== null, $this->due_on?->toDateString(), $this->priority);
+        }
 
         return parent::save($options);
     }
