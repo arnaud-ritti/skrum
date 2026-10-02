@@ -87,25 +87,22 @@ describe('InvitationCard', () => {
         );
     });
 
-    it('names the workspace, the inviter and the last day of an expired invitation', () => {
+    it('names the workspace and the inviter of an expired invitation, from a name alone', () => {
         renderWithProviders(
             <InvitationCard
                 isInvalid={false}
                 isExpired
                 workspaceName="Nordlys"
-                inviter={{ name: 'Ada Lovelace', avatarUrl: '' }}
-                expiresAt="2026-09-24T12:00:00+00:00"
+                inviter={{ name: 'Ada Lovelace' }}
             />,
         );
 
         expect(
-            screen.getByRole('heading', {
-                name: 'This invitation has expired',
-            }),
+            screen.getByRole('heading', { name: 'Invitation' }),
         ).toBeTruthy();
         expect(
             screen.getByText(
-                'Your invitation to join Nordlys was valid until September 24.',
+                'Your invitation to join Nordlys has expired or was already used.',
             ),
         ).toBeTruthy();
         expect(
@@ -118,11 +115,12 @@ describe('InvitationCard', () => {
                 .querySelector('[data-slot="access-notice-mark"]')
                 ?.classList.contains('bg-skrum-warning-soft'),
         ).toBe(true);
+        expect(document.querySelector('img')).toBeNull();
         expect(screen.queryByRole('link')).toBeNull();
         expect(screen.queryByRole('button')).toBeNull();
     });
 
-    it('gives the year of an invitation that expired another year', () => {
+    it('gives no date of an expired invitation, even when one is passed', () => {
         renderWithProviders(
             <InvitationCard
                 {...pending}
@@ -131,11 +129,8 @@ describe('InvitationCard', () => {
             />,
         );
 
-        expect(
-            screen.getByText(
-                'Your invitation to join Nordlys was valid until September 24, 2025.',
-            ),
-        ).toBeTruthy();
+        expect(screen.queryByText(/was valid until/)).toBeNull();
+        expect(screen.queryByText(/2025/)).toBeNull();
     });
 
     it('does not call a used invitation expired, and asks an administrator when the inviter is gone', () => {

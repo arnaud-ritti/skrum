@@ -43,8 +43,7 @@ class InvitationLinksController extends Controller
                 'isInvalid' => false,
                 'isExpired' => true,
                 'workspaceName' => $invitation->workspace->name,
-                'inviter' => $this->person($invitation->invitedBy),
-                'expiresAt' => $invitation->expires_at->toIso8601String(),
+                'inviter' => $invitation->invitedBy === null ? null : ['name' => $invitation->invitedBy->name],
             ]);
         }
 

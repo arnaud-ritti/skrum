@@ -1,6 +1,6 @@
 import { Form, Link, usePage } from '@inertiajs/react';
 import { Clock, Link2Off, Lock, LogOut } from 'lucide-react';
-import { Fragment, useState } from 'react';
+import { Fragment } from 'react';
 import type { ReactNode } from 'react';
 import InvitationAcceptancesController from '@/actions/App/Http/Controllers/InvitationAcceptancesController';
 import InvitationAccountsController from '@/actions/App/Http/Controllers/InvitationAccountsController';
@@ -30,7 +30,7 @@ export type InvitationRole = 'owner' | 'admin' | 'member';
 
 /**
  * Props of the page `invitations/show`. An invalid token sends `isInvalid` alone; an expired or
- * used invitation sends `isExpired`, `workspaceName`, `inviter` and `expiresAt`, nothing else.
+ * used invitation sends `isExpired`, `workspaceName` and the name of the `inviter`, nothing else.
  */
 export type InvitationProps = {
     isInvalid: boolean;
@@ -46,7 +46,7 @@ export type InvitationProps = {
     /** Only single sign-on signs in: no account form, no link to the password page. */
     ssoRequired?: boolean;
     ssoProviders?: SsoProviderOption[];
-    inviter?: InvitationPerson | null;
+    inviter?: (Pick<InvitationPerson, 'name'> & { avatarUrl?: string }) | null;
     role?: InvitationRole;
     expiresAt?: string;
     membersCount?: number;
@@ -67,19 +67,6 @@ export type InvitationState = 'logged-out' | 'accept' | 'wrong-account';
 const ShownMembers = 3;
 
 const Marker = /(\{\{(?:inviter|workspace)\}\})/;
-
-function lastDay(expiresAt: string, locale: string, now: number): string {
-    const date = new Date(expiresAt);
-
-    return new Intl.DateTimeFormat(locale, {
-        day: 'numeric',
-        month: 'long',
-        year:
-            date.getFullYear() === new Date(now).getFullYear()
-                ? undefined
-                : 'numeric',
-    }).format(date);
-}
 
 function stateOf(isLoggedIn: boolean, emailMatches: boolean): InvitationState {
     if (!isLoggedIn) {
@@ -111,8 +98,7 @@ export function InvitationCard({
     decline,
 }: InvitationCardProps) {
     const { t } = useTrans();
-    const { auth, locale } = usePage().props;
-    const [now] = useState(() => Date.now());
+    const { auth } = usePage().props;
     const user = auth?.user ?? null;
     const minimum = minimumLength(passwordRules ?? '');
 
@@ -127,32 +113,15 @@ export function InvitationCard({
     }
 
     if (isExpired) {
-        const isPastLastDay =
-            expiresAt !== undefined && new Date(expiresAt).getTime() <= now;
-
         return (
             <AccessNotice
                 icon={Clock}
                 tone="warning"
-                title={
-                    isPastLastDay
-                        ? t('This invitation has expired')
-                        : t('Invitation')
-                }
-                description={
-                    isPastLastDay
-                        ? t(
-                              'Your invitation to join :workspace was valid until :date.',
-                              {
-                                  workspace: workspaceName,
-                                  date: lastDay(expiresAt, locale, now),
-                              },
-                          )
-                        : t(
-                              'Your invitation to join :workspace has expired or was already used.',
-                              { workspace: workspaceName },
-                          )
-                }
+                title={t('Invitation')}
+                description={t(
+                    'Your invitation to join :workspace has expired or was already used.',
+                    { workspace: workspaceName },
+                )}
                 hint={
                     inviter === null
                         ? t(

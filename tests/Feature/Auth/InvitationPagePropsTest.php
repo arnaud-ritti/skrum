@@ -95,7 +95,7 @@ it('sends the role, the expiry, the member count and the first five members by n
             ->has('members.0', fn (Assert $member) => $member->hasAll(['name', 'avatarUrl'])));
 });
 
-it('sends the workspace name, the inviter and the expiry of an expired invitation, and nothing else', function (string $state) {
+it('sends the workspace name and the name of the inviter of an expired invitation, and nothing else', function (string $state) {
     $workspace = Workspace::factory()->create(['name' => 'Nordlys']);
     $inviter = User::factory()->create(['name' => 'Ada Lovelace']);
     WorkspaceInvitation::factory()->{$state}()->withToken('secret-token')->create([
@@ -107,19 +107,20 @@ it('sends the workspace name, the inviter and the expiry of an expired invitatio
     $response = $this->get(route('invitations.show', 'secret-token'))->assertOk();
 
     expect(array_values(array_diff(array_keys($response->inertiaProps()), $sharedProps)))
-        ->toEqualCanonicalizing(['isExpired', 'workspaceName', 'inviter', 'expiresAt']);
+        ->toEqualCanonicalizing(['isExpired', 'workspaceName', 'inviter']);
 
     $response->assertInertia(fn (Assert $page) => $page
         ->where('isInvalid', false)
         ->where('isExpired', true)
         ->where('workspaceName', 'Nordlys')
-        ->where('inviter', ['name' => 'Ada Lovelace', 'avatarUrl' => $inviter->avatarUrl()])
-        ->has('expiresAt'));
+        ->where('inviter', ['name' => 'Ada Lovelace']));
+
+    expect(json_encode($response->inertiaProps()))->not->toContain(trim(json_encode($inviter->avatarUrl()), '"'));
 })->with(['expired', 'accepted']);
 
 it('sends the same expired props to a signed in visitor', function () {
     $workspace = Workspace::factory()->create(['name' => 'Nordlys']);
-    $invitation = WorkspaceInvitation::factory()->expired()->withToken('secret-token')->create([
+    WorkspaceInvitation::factory()->expired()->withToken('secret-token')->create([
         'workspace_id' => $workspace->id,
         'email' => 'invited@example.com',
     ]);
@@ -128,7 +129,7 @@ it('sends the same expired props to a signed in visitor', function () {
         ->get(route('invitations.show', 'secret-token'))
         ->assertInertia(fn (Assert $page) => $page
             ->where('workspaceName', 'Nordlys')
-            ->where('expiresAt', $invitation->expires_at->toIso8601String())
+            ->missing('expiresAt')
             ->missing('token')
             ->missing('email')
             ->missing('emailMatches')
