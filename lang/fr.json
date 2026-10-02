@@ -4040,5 +4040,10 @@
     "Any values, emoji allowed": "Valeurs libres, emoji acceptés",
     "Set as default": "Définir par défaut",
     "Set :name as default": "Définir :name par défaut",
-    "Deck duplicated.": "Deck dupliqué."
+    "Deck duplicated.": "Deck dupliqué.",
+    "Your account, applied in every workspace": "Votre compte, appliqué dans tous les espaces de travail",
+    "How teammates see you in sessions and on cards.": "Comment vos coéquipiers vous voient dans les sessions et sur les cartes.",
+    "Verified": "Vérifié",
+    "A changed email address has to be verified again.": "Une adresse e-mail modifiée doit être vérifiée à nouveau.",
+    "Permanently removes your profile and tokens. Cards you wrote stay, shown as \"Former member\".": "Supprime définitivement votre profil et vos jetons. Les cartes que vous avez écrites restent, affichées comme « Ancien membre »."
 }

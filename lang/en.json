@@ -3817,5 +3817,10 @@
     "Set as default": "Set as default",
     "Set :name as default": "Set :name as default",
     "Duplicate :name": "Duplicate :name",
-    "Deck duplicated.": "Deck duplicated."
+    "Deck duplicated.": "Deck duplicated.",
+    "Your account, applied in every workspace": "Your account, applied in every workspace",
+    "How teammates see you in sessions and on cards.": "How teammates see you in sessions and on cards.",
+    "Verified": "Verified",
+    "A changed email address has to be verified again.": "A changed email address has to be verified again.",
+    "Permanently removes your profile and tokens. Cards you wrote stay, shown as \"Former member\".": "Permanently removes your profile and tokens. Cards you wrote stay, shown as \"Former member\"."
 }

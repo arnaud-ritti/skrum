@@ -4040,5 +4040,10 @@
     "Any values, emoji allowed": "Valores libres, se admiten emojis",
     "Set as default": "Usar por defecto",
     "Set :name as default": "Usar :name por defecto",
-    "Deck duplicated.": "Baraja duplicada."
+    "Deck duplicated.": "Baraja duplicada.",
+    "Your account, applied in every workspace": "Tu cuenta, aplicada en todos los espacios de trabajo",
+    "How teammates see you in sessions and on cards.": "Cómo te ven tus compañeros en las sesiones y en las tarjetas.",
+    "Verified": "Verificado",
+    "A changed email address has to be verified again.": "Una dirección de correo modificada debe verificarse de nuevo.",
+    "Permanently removes your profile and tokens. Cards you wrote stay, shown as \"Former member\".": "Elimina de forma permanente tu perfil y tus tokens. Las tarjetas que escribiste se conservan, mostradas como «Antiguo miembro»."
 }
