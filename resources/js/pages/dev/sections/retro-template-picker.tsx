@@ -50,17 +50,17 @@ function useSamples() {
         [
             {
                 title: t('Start'),
-                color: 'green',
+                color: 'moss',
                 description: t('What should we start doing?'),
             },
             {
                 title: t('Stop'),
-                color: 'red',
+                color: 'coral',
                 description: t('What should we stop doing?'),
             },
             {
                 title: t('Continue'),
-                color: 'blue',
+                color: 'sky',
                 description: t('What works and we keep?'),
             },
         ],
@@ -111,16 +111,16 @@ function useSamples() {
         ],
     );
     const kalm = builtin('kalm', t('KALM'), t('Keep, Add, Less, More.'), [
-        { title: t('Keep'), color: 'green' },
-        { title: t('Add'), color: 'blue' },
-        { title: t('Less'), color: 'amber' },
-        { title: t('More'), color: 'purple' },
+        { title: t('Keep'), color: 'moss' },
+        { title: t('Add'), color: 'sky' },
+        { title: t('Less'), color: 'sun' },
+        { title: t('More'), color: 'plum' },
     ]);
     const daki = builtin('daki', t('DAKI'), t('Drop, Add, Keep, Improve.'), [
-        { title: t('Drop'), color: 'slate' },
-        { title: t('Add'), color: 'blue' },
-        { title: t('Keep'), color: 'green' },
-        { title: t('Improve'), color: 'amber' },
+        { title: t('Drop'), color: 'iris' },
+        { title: t('Add'), color: 'sky' },
+        { title: t('Keep'), color: 'moss' },
+        { title: t('Improve'), color: 'sun' },
     ]);
     const long = builtin(
         'long',

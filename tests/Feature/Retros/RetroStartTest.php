@@ -83,13 +83,13 @@ it('keeps the first start time when a later event happens', function () {
 
 it('keeps the start time when the retro is reopened and completed again', function () {
     $this->freezeTime();
-    $retro = Retro::factory()->inPhase(RetroPhase::Discussing)->create();
+    $retro = Retro::factory()->inPhase(RetroPhase::Roti)->create();
     [$user] = retroFacilitator($retro);
     $firstStart = now();
 
     $this->actingAs($user)->putJson(route('retros.phase.update', $retro), ['phase' => 'completed'])->assertOk();
     $this->travel(5)->minutes();
-    $this->actingAs($user)->putJson(route('retros.phase.update', $retro), ['phase' => 'discussing'])->assertOk();
+    $this->actingAs($user)->putJson(route('retros.phase.update', $retro), ['phase' => 'roti'])->assertOk();
     $this->travel(5)->minutes();
     $this->actingAs($user)->putJson(route('retros.phase.update', $retro), ['phase' => 'completed'])->assertOk();
 

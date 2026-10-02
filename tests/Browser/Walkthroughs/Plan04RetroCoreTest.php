@@ -85,7 +85,7 @@ it('[P04-01] creates a Start, Stop, Continue retro from the team page', function
         ->assertSeeIn('[role="dialog"] [role="radiogroup"][aria-label="Retrospective template"] [role="radio"][aria-checked="true"]', 'Start, Stop, Continue')
         ->click('[role="dialog"] button[type="submit"]')
         ->assertPathBeginsWith('/retros/')
-        ->assertSeeIn('header > h1', 'Sprint 12 retro')
+        ->assertSeeIn('header >> h1', 'Sprint 12 retro')
         ->assertSeeIn('[aria-current="step"]', 'Writing')
         ->assertCount('[data-test^="retro-column-"]', 3)
         ->assertSeeIn('main:has([data-test^="retro-column-"])', 'Start')
@@ -106,7 +106,7 @@ it('[P04-02] hides the cards of other participants behind placeholders during Wr
     $start = plan04Column($columns[0]);
     $composer = "{$start} textarea";
     $add = "{$start} form button:not([type=\"button\"])";
-    $placeholders = "[...document.querySelectorAll('article[id^=\"card-\"]')].filter((card) => card.innerText.includes('Hidden until writing ends')).length";
+    $placeholders = "[...document.querySelectorAll('article[id^=\"card-\"]')].filter((card) => card.innerText.includes('Hidden until the reveal')).length";
 
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
     $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
@@ -159,18 +159,18 @@ it('[P04-03] groups, ungroups and moves a card during Grouping', function () {
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
     $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
 
-    $bobPage->assertSee('Drag cards onto each other to group them.')
+    $bobPage->assertSee('Drag a card onto another to group them. Click a title to rename it.')
         ->assertPresent($handle);
 
     $this->dragWithKeyboard($bobPage, $handle, ['Space', 'ArrowDown', 'Space'], handleRemains: false);
 
-    $alicePage->assertPresent("#card-{$slow->id} #card-{$flaky->id}");
+    $alicePage->assertPresent("#group-{$slow->id} #card-{$flaky->id}");
     expect($flaky->fresh()->parent_card_id)->toBe($slow->id);
 
     $bobPage->assertPresent("#card-{$flaky->id} [aria-label=\"Ungroup\"]")
         ->click("#card-{$flaky->id} [aria-label=\"Ungroup\"]");
 
-    $alicePage->assertNotPresent("#card-{$slow->id} #card-{$flaky->id}")
+    $alicePage->assertNotPresent("#group-{$slow->id} #card-{$flaky->id}")
         ->assertPresent("#card-{$flaky->id}");
     expect($flaky->fresh()->parent_card_id)->toBeNull();
 
@@ -212,8 +212,8 @@ it('[P04-04] enforces the vote limit, shows the progress and hides per-card tota
         ->assertScript($showsTotal($flaky), false);
 
     $alicePage->assertSee('2 of 4 votes cast')
-        ->assertAttribute('[role="progressbar"]', 'aria-valuenow', '2')
-        ->assertAttribute('[role="progressbar"]', 'aria-valuemax', '4')
+        ->assertAttribute('[role="progressbar"][aria-label="Votes cast"]', 'aria-valuenow', '2')
+        ->assertAttribute('[role="progressbar"][aria-label="Votes cast"]', 'aria-valuemax', '4')
         ->assertSee('Votes left: 2')
         ->assertScript($showsTotal($slow), false)
         ->assertScript($showsTotal($flaky), false);
@@ -225,27 +225,33 @@ it('[P04-04] enforces the vote limit, shows the progress and hides per-card tota
     expect($retro->votes()->count())->toBe(1);
 });
 
-it('[P04-05a] shows the vote totals and sorts the cards by votes during Discussing', function () {
+it('[P04-05a] shows the vote totals and lists the topics by votes during Discussing', function () {
     [$retro, $columns, , $bob, $aliceParticipant, $bobParticipant] = plan04Board(RetroPhase::Discussing);
     $flaky = plan04Card($retro, $columns[0], $aliceParticipant, 'Flaky tests', 0);
     $slow = plan04Card($retro, $columns[0], $aliceParticipant, 'Slow CI', 1);
+    $quiet = plan04Card($retro, $columns[1], $aliceParticipant, 'Quiet standups', 0);
     Vote::factory()->create(['retro_id' => $retro->id, 'card_id' => $flaky->id, 'participant_id' => $aliceParticipant->id]);
     Vote::factory()->count(3)->create(['retro_id' => $retro->id, 'card_id' => $slow->id, 'participant_id' => $bobParticipant->id]);
-    $sort = plan04Column($columns[0]).' [data-test="retro-sort-by-votes"]';
+    $topics = '[data-test="retro-topics"]';
+    $topicOrder = "[...document.querySelectorAll('{$topics} > li')].map((topic) => topic.dataset.topicId).join(',')";
 
     $page = $this->signIn($bob, "/retros/{$retro->id}");
 
-    $page->assertPresent("#card-{$slow->id} [aria-label=\"3 votes\"]")
-        ->assertPresent("#card-{$flaky->id} [aria-label=\"1 vote\"]")
+    $page->assertScript($topicOrder, "{$slow->id},{$flaky->id},{$quiet->id}")
+        ->assertSeeIn("{$topics} > li:first-child", 'Slow CI')
+        ->assertSeeIn("{$topics} > li:first-child", '3 votes')
+        ->assertSeeIn("{$topics} > li:last-child", 'Quiet standups')
+        ->assertSeeIn("{$topics} > li:last-child", '0 votes')
+        ->assertNotPresent('[data-test="retro-sort-by-votes"]')
+        ->assertNotPresent('[data-test^="retro-column-"]')
+        ->assertPresent("#card-{$slow->id} [aria-label=\"3 votes\"]")
         ->assertNotPresent('[aria-label="Add a vote"]')
-        ->assertScript(plan04CardOrder($columns[0]), "card-{$slow->id},card-{$flaky->id}")
-        ->assertAriaAttribute($sort, 'pressed', 'true')
-        ->click($sort)
-        ->assertAriaAttribute($sort, 'pressed', 'false')
-        ->assertScript(plan04CardOrder($columns[0]), "card-{$flaky->id},card-{$slow->id}");
+        ->click("{$topics} li:has-text(\"Flaky tests\")")
+        ->assertPresent("#card-{$flaky->id} [aria-label=\"1 vote\"]")
+        ->assertNotPresent("#card-{$slow->id}");
 });
 
-it('[P04-05b] scrolls the highlighted card into view for everyone during Discussing', function () {
+it('[P04-05b] brings the highlighted topic in front of everyone during Discussing', function () {
     [$retro, $columns, $alice, $bob, $aliceParticipant] = plan04Board(RetroPhase::Discussing);
     $cards = [];
 
@@ -260,13 +266,14 @@ it('[P04-05b] scrolls the highlighted card into view for everyone during Discuss
     $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
 
     $bobPage->resize(1280, 600)
-        ->assertPresent("#card-{$target->id}")
-        ->assertScript($inView, false);
+        ->assertPresent("#card-{$cards[0]->id}")
+        ->assertNotPresent("#card-{$target->id}");
 
-    $alicePage->click("#card-{$target->id} button[aria-pressed=\"false\"]")
+    $alicePage->click('[data-test="retro-topics"] li:has-text("Topic 13")')
+        ->click("#card-{$target->id} button[aria-pressed=\"false\"]")
         ->assertPresent("#card-{$target->id} button[aria-pressed=\"true\"]");
 
-    $bobPage->assertAttributeContains("#card-{$target->id}", 'class', 'ring-primary')
+    $bobPage->assertAttribute("#card-{$target->id}", 'data-focused', 'true')
         ->assertScript($inView, true);
 
     expect($retro->fresh()->highlighted_card_id)->toBe($target->id);
@@ -296,7 +303,10 @@ it('[P04-05c] lets a guest and a member add, complete and delete action items du
     $bobPage->assertPresent("#action-item-{$guestItem->id} [aria-label=\"Reopen\"]");
     expect($guestItem->fresh()->completed_at)->not->toBeNull();
 
-    $carolPage->click("#action-item-{$guestItem->id} [aria-label=\"Delete action item\"]");
+    $carolPage->click("#action-item-{$guestItem->id} [aria-label=\"Delete action item\"]")
+        ->assertSeeIn('[role="alertdialog"]', 'Delete this action item?')
+        ->click('[role="alertdialog"] button:has-text("Delete")')
+        ->assertNotPresent('[role="alertdialog"]');
     $bobPage->assertNotPresent("#action-item-{$guestItem->id}")
         ->assertSeeIn('[data-test="retro-action-items-panel"]', 'Rotate the on-call');
 
@@ -343,12 +353,12 @@ it('[P04-07] follows the facilitator through every phase, a reopen and a second 
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
     $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
 
-    $alicePage->assertSeeIn($current, 'Writing')->assertSee('Hidden until writing ends');
+    $alicePage->assertSeeIn($current, 'Writing')->assertSee('Hidden until the reveal');
     $bobPage->assertSeeIn($current, 'Writing')->assertCount('[aria-label="Add a card…"]', 3);
 
     $alicePage->press('Next')->assertSeeIn($current, 'Grouping')->assertSee('Pair on reviews');
     $bobPage->assertSeeIn($current, 'Grouping')
-        ->assertSee('Drag cards onto each other to group them.')
+        ->assertSee('Drag a card onto another to group them. Click a title to rename it.')
         ->assertNotPresent('[aria-label="Add a card…"]');
 
     $alicePage->press('Next')->assertSeeIn($current, 'Voting');
@@ -361,16 +371,32 @@ it('[P04-07] follows the facilitator through every phase, a reopen and a second 
         ->assertNotPresent('[aria-label="Add a vote"]')
         ->assertPresent('[aria-label="Add an action item…"]');
 
+    $alicePage->press('Next')->assertSeeIn($current, 'Actions');
+    $bobPage->assertSeeIn($current, 'Actions')
+        ->assertSee('Most voted topics')
+        ->assertSeeIn('[data-test="retro-topics"]', 'Pair on reviews')
+        ->assertPresent('[data-test="retro-action-items-panel"] [aria-label="Add an action item…"]');
+
+    $alicePage->press('Next')->assertSeeIn($current, 'ROTI');
+    $bobPage->assertSeeIn($current, 'ROTI')
+        ->assertNotPresent('[aria-label="Add an action item…"]');
+
     $alicePage->press('Complete')->assertSeeIn($current, 'Completed');
     $bobPage->assertSeeIn($current, 'Completed')
         ->assertSee('Top topics')
         ->assertNotPresent('[aria-label="Add an action item…"]');
     expect($retro->fresh()->completed_at)->not->toBeNull();
 
-    $alicePage->press('Reopen')->assertSeeIn($current, 'Discussing');
-    $bobPage->assertSeeIn($current, 'Discussing')
-        ->assertPresent('[aria-label="Add an action item…"]');
+    $alicePage->press('Reopen')->assertSeeIn($current, 'ROTI');
+    $bobPage->assertSeeIn($current, 'ROTI')
+        ->assertDontSee('Top topics');
     expect($retro->fresh()->completed_at)->toBeNull();
+
+    $alicePage->press('Previous')->assertSeeIn($current, 'Actions');
+    $bobPage->assertSeeIn($current, 'Actions')
+        ->assertPresent('[aria-label="Add an action item…"]');
+
+    $alicePage->press('Next')->assertSeeIn($current, 'ROTI');
 
     $alicePage->press('Complete')->assertSeeIn($current, 'Completed');
     $bobPage->assertSeeIn($current, 'Completed')->assertSee('Top topics');
@@ -416,7 +442,7 @@ it('[P04-08b] tells the participant when the timer reaches zero', function () {
 
     $page = $this->signIn($bob, "/retros/{$retro->id}");
 
-    $page->assertSeeIn('[role="timer"]', "Time's up!");
+    $page->assertAttribute('[role="timer"]', 'aria-label', "Time's up!");
 });
 
 it('[P04-09] never shows the author of another participant\'s card on an anonymous retro', function (string $phase) {
@@ -433,12 +459,23 @@ it('[P04-09] never shows the author of another participant\'s card on an anonymo
         $page->click('#completed-tab-board');
     }
 
+    $focusTopic = function (string $content) use ($page, $phase): void {
+        if ($phase === RetroPhase::Discussing->value) {
+            $page->click("[data-test=\"retro-topics\"] li:has-text(\"{$content}\")");
+        }
+    };
+
+    $focusTopic('Pairing works well');
+
     $page->assertSeeIn("#card-{$mine->id}", 'Pairing works well')
-        ->assertSeeIn("#card-{$mine->id}", 'Bob Stone')
-        ->assertDontSeeIn("#card-{$theirs->id}", 'Alice Martin');
+        ->assertAttribute("#card-{$mine->id} [data-slot=\"retro-card-author\"]", 'title', 'Bob Stone');
+
+    $focusTopic('Too many meetings');
+
+    $page->assertDontSeeIn("#card-{$theirs->id}", 'Alice Martin');
 
     if ($phase === RetroPhase::Writing->value) {
-        $page->assertSeeIn("#card-{$theirs->id}", 'Hidden until writing ends');
+        $page->assertSeeIn("#card-{$theirs->id}", 'Hidden until the reveal');
 
         return;
     }
@@ -454,14 +491,19 @@ it('[P04-10] ends a guest\'s access when the facilitator creates a new guest lin
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
     $carolPage = $this->awaitRealtime($this->joinAsGuest("/join/{$oldToken}", 'Carol Guest'));
 
-    $carolPage->assertSeeIn('header > h1', 'Sprint 12');
+    $carolPage->assertSeeIn('header >> h1', 'Sprint 12');
 
     $alicePage->click('[aria-label="Facilitator menu"]')
-        ->assertSee('Guest link…')
-        ->click('Guest link…')
+        ->assertSee('Settings…')
+        ->assertDontSee('Guest link…')
+        ->keys('[role="menu"]', 'Escape')
+        ->click('Share')
         ->assertVisible($link)
         ->assertScript("document.querySelector('{$link}').value.includes('{$oldToken}')", true)
-        ->press('Create a new link');
+        ->press('Create a new link')
+        ->assertSeeIn('[role="alertdialog"]', 'Create a new link?')
+        ->click('[role="alertdialog"] button:has-text("Create a new link")')
+        ->assertNotPresent('[role="alertdialog"]');
 
     $carolPage->assertSee('Your access to this retrospective has ended.')
         ->assertNotPresent('[aria-label="Add a card…"]');
@@ -478,7 +520,7 @@ it('[P04-10] ends a guest\'s access when the facilitator creates a new guest lin
 
     $davePage = $this->joinAsGuest("/join/{$newToken}", 'Dave Guest');
 
-    $davePage->assertSeeIn('header > h1', 'Sprint 12')
+    $davePage->assertSeeIn('header >> h1', 'Sprint 12')
         ->assertCount('[aria-label="Add a card…"]', 3);
 });
 
@@ -542,7 +584,7 @@ it('[P04-14a] writes a card with the keyboard only', function () {
         ->assertValue($composer, '');
 
     $alicePage->assertCount('article[id^="card-"]', 1)
-        ->assertSee('Hidden until writing ends');
+        ->assertSee('Hidden until the reveal');
 
     expect($retro->cards()->where('content', 'Typed without a mouse')->exists())->toBeTrue();
 });
@@ -587,22 +629,26 @@ it('[P04-14c] reorders a card with the keyboard sensor during Writing', function
 it('[P04-14d] opens every facilitator dialog with the keyboard only', function () {
     [$retro, , $alice] = plan04Board();
     $dialogs = [
-        1 => 'Retrospective settings',
-        2 => 'Guest link',
-        3 => 'Hand over facilitation',
-        5 => 'Delete retrospective',
+        1 => ['[role="dialog"]', 'Retrospective settings'],
+        2 => ['[role="dialog"]', 'Hand over facilitation'],
+        4 => ['[role="alertdialog"]', 'Delete retrospective'],
     ];
 
     $page = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
 
-    foreach ($dialogs as $position => $title) {
+    foreach ($dialogs as $position => [$dialog, $title]) {
         $page->keys('[aria-label="Facilitator menu"]', 'Enter')
             ->assertPresent('[role="menu"]')
             ->keys("[role=\"menu\"] > :nth-child({$position})", 'Enter')
-            ->assertSeeIn('[role="dialog"]', $title)
-            ->keys('[role="dialog"]', 'Escape')
-            ->assertNotPresent('[role="dialog"]');
+            ->assertSeeIn($dialog, $title)
+            ->keys($dialog, 'Escape')
+            ->assertNotPresent($dialog);
     }
+
+    $page->keys('button:has-text("Share")', 'Enter')
+        ->assertVisible('[role="dialog"] input[aria-label="Guest link"]')
+        ->keys('[role="dialog"]', 'Escape')
+        ->assertNotPresent('[role="dialog"]');
 
     $page->keys('[aria-label="Timer"]', 'Enter')
         ->assertSeeIn('[role="menu"]', '1 min')
@@ -614,26 +660,30 @@ it('[P04-14d] opens every facilitator dialog with the keyboard only', function (
 it('[P04-15a] reflows the board between 375px and 1440px', function () {
     [$retro, $columns, , $bob, $aliceParticipant] = plan04Board(RetroPhase::Discussing);
     plan04Card($retro, $columns[0], $aliceParticipant, 'Slow CI');
-    $board = 'main:has([data-test^="retro-column-"])';
+    $topics = '[data-test="retro-topics"]';
     $panel = '[data-test="retro-action-items-panel"]';
-    $columnsScroll = "(() => { const board = document.querySelector('{$board}'); return board.scrollWidth > board.clientWidth; })()";
-    $stepperWrapsBelowTitle = "document.querySelector('header ol[aria-label=\"Phases\"]').getBoundingClientRect().top >= document.querySelector('header h1').getBoundingClientRect().bottom";
-    $panelIsBelowBoard = "document.querySelector('{$panel}').getBoundingClientRect().top >= document.querySelector('{$board}').getBoundingClientRect().bottom";
-    $panelIsBesideBoard = "document.querySelector('{$panel}').getBoundingClientRect().left >= document.querySelector('{$board}').getBoundingClientRect().right";
+    $stepper = 'ol[aria-label="Phases"]';
+    $pageScrollsSideways = 'document.documentElement.scrollWidth > document.documentElement.clientWidth';
+    $stepperIsBelowTheHeader = "document.querySelector('header {$stepper}') === null && document.querySelector('{$stepper}').getBoundingClientRect().top >= document.querySelector('header').getBoundingClientRect().bottom";
+    $stepperIsInTheHeader = "document.querySelector('header {$stepper}') !== null";
+    $panelIsBelowTopics = "document.querySelector('{$panel}').getBoundingClientRect().top >= document.querySelector('{$topics}').getBoundingClientRect().bottom";
+    $panelIsBesideTopics = "document.querySelector('{$panel}').getBoundingClientRect().left >= document.querySelector('{$topics}').getBoundingClientRect().right";
 
     $page = $this->signIn($bob, "/retros/{$retro->id}");
 
     $page->resize(375, 812)
         ->assertPresent($panel)
-        ->assertScript($columnsScroll, true)
-        ->assertScript($stepperWrapsBelowTitle, true)
-        ->assertScript($panelIsBelowBoard, true)
-        ->assertScript($panelIsBesideBoard, false);
+        ->assertPresent("main {$topics}")
+        ->assertScript($pageScrollsSideways, false)
+        ->assertScript($stepperIsBelowTheHeader, true)
+        ->assertScript($panelIsBelowTopics, true)
+        ->assertScript($panelIsBesideTopics, false);
 
     $page->resize(1440, 900)
-        ->assertScript($stepperWrapsBelowTitle, false)
-        ->assertScript($panelIsBesideBoard, true)
-        ->assertScript($panelIsBelowBoard, false);
+        ->assertScript($stepperIsInTheHeader, true)
+        ->assertScript($pageScrollsSideways, false)
+        ->assertScript($panelIsBesideTopics, true)
+        ->assertScript($panelIsBelowTopics, false);
 });
 
 it('[P04-16a] keeps the dark appearance on the board', function () {
@@ -647,14 +697,14 @@ it('[P04-16a] keeps the dark appearance on the board', function () {
         ->assertScript($isDark, true)
         ->assertScript('localStorage.getItem("appearance")', 'dark')
         ->navigate("/retros/{$retro->id}")
-        ->assertSeeIn('header > h1', 'Sprint 12')
+        ->assertSeeIn('header >> h1', 'Sprint 12')
         ->assertScript($isDark, true);
 });
 
 dataset('plan04Locales', [
-    'fr' => ['fr', 'Français', 'Langue', 'Écriture', 'Regroupement', "Masquée jusqu'à la fin de la rédaction", 'Ajouter une carte…', 'Vous'],
-    'es' => ['es', 'Español', 'Idioma', 'Escritura', 'Agrupación', 'Oculta hasta que termine la escritura', 'Añadir una tarjeta…', 'Tú'],
-    'de' => ['de', 'Deutsch', 'Sprache', 'Schreiben', 'Gruppieren', 'Verborgen, bis die Schreibphase endet', 'Karte hinzufügen…', 'Du'],
+    'fr' => ['fr', 'Français', 'Langue', 'Écriture', 'Regroupement', "Masquée jusqu'à la révélation", 'Ajouter une carte…', 'Vous'],
+    'es' => ['es', 'Español', 'Idioma', 'Escritura', 'Agrupación', 'Oculta hasta la revelación', 'Añadir una tarjeta…', 'Tú'],
+    'de' => ['de', 'Deutsch', 'Sprache', 'Schreiben', 'Gruppieren', 'Verborgen bis zur Aufdeckung', 'Karte hinzufügen…', 'Du'],
 ]);
 
 it('[P04-17a] translates the board after a member changes language in the settings', function (string $locale, string $languageName, string $languageLabel, string $writing, string $grouping, string $hidden, string $composer, string $you) {
@@ -677,9 +727,9 @@ it('[P04-17a] translates the board after a member changes language in the settin
         ->assertSeeIn('[aria-current="step"]', $writing)
         ->assertSeeIn($stepper, $grouping)
         ->assertSeeIn("#card-{$theirs->id}", $hidden)
-        ->assertSeeIn("#card-{$mine->id}", $you)
+        ->assertSeeIn("#card-{$mine->id} [data-slot=\"retro-card-mine\"]", $you)
         ->assertCount("[aria-label=\"{$composer}\"]", 3)
-        ->assertDontSee('Hidden until writing ends')
+        ->assertDontSee('Hidden until the reveal')
         ->assertNotPresent('[aria-label="Add a card…"]')
         ->assertDontSeeIn($stepper, 'Writing');
 })->with('plan04Locales');
@@ -700,7 +750,7 @@ it('[P04-17b] translates the board after a guest changes language in the header'
         ->assertSeeIn($stepper, $grouping)
         ->assertSeeIn("#card-{$theirs->id}", $hidden)
         ->assertCount("[aria-label=\"{$composer}\"]", 3)
-        ->assertDontSee('Hidden until writing ends')
+        ->assertDontSee('Hidden until the reveal')
         ->assertNotPresent('[aria-label="Add a card…"]')
         ->assertDontSeeIn($stepper, 'Writing');
 })->with('plan04Locales');
@@ -715,7 +765,7 @@ it('[P04-12] shows the reconnecting banner and catches up when Reverb comes back
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
     $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
 
-    $bobPage->assertSee('Hidden until writing ends')
+    $bobPage->assertSee('Hidden until the reveal')
         ->assertDontSee('Reconnecting…');
 
     ReverbServer::stop();

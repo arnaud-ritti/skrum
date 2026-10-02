@@ -144,7 +144,7 @@ class CardCommentsController extends Controller
 
     private function guard(Retro $retro): void
     {
-        RetroGuard::phase($retro, RetroPhase::Grouping, RetroPhase::Voting, RetroPhase::Discussing);
+        RetroGuard::phase($retro, RetroPhase::Grouping, RetroPhase::Voting, RetroPhase::Discussing, RetroPhase::Actions);
         RetroGuard::unlocked($retro);
     }
 

@@ -5,6 +5,10 @@ import WorkspaceTemplatesController from '@/actions/App/Http/Controllers/Workspa
 import ConfirmFormDialog from '@/components/confirm-form-dialog';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
+import {
+    columnColors,
+    useColumnColorName,
+} from '@/components/skrum/column-color-picker';
 import { TemplateChips } from '@/components/templates/template-chips';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -25,7 +29,6 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useTrans } from '@/hooks/use-trans';
-import { ColumnColors, columnColorLabel } from '@/lib/retro/colors';
 import type { ColumnColor } from '@/lib/retro/types';
 import type {
     CatalogueTemplate,
@@ -188,11 +191,12 @@ function TemplateEditor({
     onClose,
 }: EditorProps) {
     const { t } = useTrans();
+    const colorName = useColumnColorName();
     const form = useForm<TemplateForm>({
         name: template?.name ?? '',
         category: template?.category ?? 'essentials',
         columns: template?.columns.map(toDraft) ?? [
-            { title: '', description: '', color: 'green' },
+            { title: '', description: '', color: 'moss' },
         ],
     });
     const errors = form.errors as Record<string, string | undefined>;
@@ -235,8 +239,8 @@ function TemplateEditor({
             {
                 title: '',
                 description: '',
-                color: ColumnColors[
-                    form.data.columns.length % ColumnColors.length
+                color: columnColors[
+                    form.data.columns.length % columnColors.length
                 ],
             },
         ]);
@@ -398,12 +402,12 @@ function TemplateEditor({
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {ColumnColors.map((color) => (
+                                            {columnColors.map((color) => (
                                                 <SelectItem
                                                     key={color}
                                                     value={color}
                                                 >
-                                                    {t(columnColorLabel[color])}
+                                                    {colorName(color)}
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>

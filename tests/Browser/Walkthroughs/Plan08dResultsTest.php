@@ -127,7 +127,7 @@ it('[P08d-01a] shows a group name typed by a guest to the member without reloadi
     [$retro, $columns, $alice, , , $bobParticipant] = p08dBoard(RetroPhase::Grouping);
     $lead = p08dCard($retro, $columns[0], $bobParticipant, 'Slow CI');
     p08dCard($retro, $columns[0], $bobParticipant, 'Flaky tests', ['parent_card_id' => $lead->id]);
-    $group = "#card-{$lead->id}";
+    $group = "#group-{$lead->id}";
     $editor = '[aria-label="Group name"]';
 
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
@@ -158,13 +158,13 @@ it('[P08d-01b] drops the group name in both browsers when the only grouped card 
     $carolPage = $this->awaitRealtime($this->joinAsGuest("/join/{$retro->guest_token}", 'Carol Guest'));
 
     foreach ([$alicePage, $carolPage] as $page) {
-        $page->assertSeeIn("#card-{$lead->id} [aria-label=\"Rename group\"]", 'Pipeline');
+        $page->assertSeeIn("#group-{$lead->id} [aria-label=\"Rename group\"]", 'Pipeline');
     }
 
     $carolPage->click("#card-{$child->id} [aria-label=\"Ungroup\"]");
 
     foreach ([$carolPage, $alicePage] as $page) {
-        $page->assertNotPresent("#card-{$lead->id} #card-{$child->id}")
+        $page->assertNotPresent("#group-{$lead->id} #card-{$child->id}")
             ->assertPresent("#card-{$child->id}")
             ->assertDontSee('Pipeline')
             ->assertNotPresent('[aria-label="Rename group"]')
@@ -186,16 +186,16 @@ it('[P08d-01c] keeps only the target name when a named group is grouped onto ano
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
     $bobPage = $this->awaitRealtime($this->signIn($bob, "/retros/{$retro->id}"));
 
-    $bobPage->assertSeeIn("#card-{$deploys->id} [aria-label=\"Rename group\"]", 'Deploys')
-        ->assertSeeIn("#card-{$quality->id} [aria-label=\"Rename group\"]", 'Quality')
+    $bobPage->assertSeeIn("#group-{$deploys->id} [aria-label=\"Rename group\"]", 'Deploys')
+        ->assertSeeIn("#group-{$quality->id} [aria-label=\"Rename group\"]", 'Quality')
         ->assertPresent($handle);
 
     $this->dragWithKeyboard($bobPage, $handle, ['Space', 'ArrowUp', 'Space'], handleRemains: false);
 
     foreach ([$bobPage, $alicePage] as $page) {
-        $page->assertPresent("#card-{$quality->id} #card-{$deploys->id}")
-            ->assertPresent("#card-{$quality->id} #card-{$deploysChild->id}")
-            ->assertSeeIn("#card-{$quality->id} [aria-label=\"Rename group\"]", 'Quality')
+        $page->assertPresent("#group-{$quality->id} #card-{$deploys->id}")
+            ->assertPresent("#group-{$quality->id} #card-{$deploysChild->id}")
+            ->assertSeeIn("#group-{$quality->id} [aria-label=\"Rename group\"]", 'Quality')
             ->assertCount('[aria-label="Rename group"]', 1)
             ->assertDontSee('Deploys');
     }
@@ -210,7 +210,7 @@ it('[P08d-02a] renames a group inline for everyone', function (string $phase) {
     [$retro, $columns, $alice, , , $bobParticipant] = p08dBoard(RetroPhase::from($phase));
     $lead = p08dCard($retro, $columns[0], $bobParticipant, 'Slow CI', ['group_name' => 'Pipeline']);
     p08dCard($retro, $columns[0], $bobParticipant, 'Flaky tests', ['parent_card_id' => $lead->id]);
-    $rename = "#card-{$lead->id} [aria-label=\"Rename group\"]";
+    $rename = "#group-{$lead->id} [aria-label=\"Rename group\"]";
     $editor = '[aria-label="Group name"]';
 
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
@@ -236,7 +236,7 @@ it('[P08d-02b] shows the group name above the card in presentation mode', functi
     [$retro, $columns, $alice, , , $bobParticipant] = p08dBoard(RetroPhase::Discussing, ['presentation_mode' => true]);
     $lead = p08dCard($retro, $columns[0], $bobParticipant, 'Slow CI', ['group_name' => 'Pipeline']);
     p08dCard($retro, $columns[0], $bobParticipant, 'Flaky tests', ['parent_card_id' => $lead->id]);
-    $firstLines = '[...document.querySelectorAll(\'[role="dialog"] p\')].slice(0, 2).map((line) => line.textContent).join(" > ")';
+    $firstLines = '[...document.querySelectorAll(\'[role="dialog"] [data-slot="card-group-title"], [role="dialog"] [data-slot="retro-card-text"]\')].slice(0, 2).map((line) => line.textContent).join(" > ")';
 
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
     $carolPage = $this->awaitRealtime($this->joinAsGuest("/join/{$retro->guest_token}", 'Carol Guest'));
@@ -254,36 +254,38 @@ it('[P08d-02b] shows the group name above the card in presentation mode', functi
     expect($retro->fresh()->highlighted_card_id)->toBe($lead->id);
 });
 
-it('[P08d-03] counts the ratings live during Discussing, shows no distribution and still takes a rating on a locked board', function () {
-    [$retro, , $alice] = p08dBoard();
+it('[P08d-03] counts who has voted live during the ROTI phase, shows no distribution and still takes a rating on a locked board', function () {
+    [$retro, , $alice] = p08dBoard(RetroPhase::Roti);
     $control = '[role="group"][aria-label="How was this retro?"]';
     $rate = fn (string $label): string => "{$control} button:has-text(\"{$label}\")";
+    $count = '[data-slot="retro-roti-count"]';
 
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
     $carolPage = $this->awaitRealtime($this->joinAsGuest("/join/{$retro->guest_token}", 'Carol Guest'));
 
     foreach ([$alicePage, $carolPage] as $page) {
         $page->assertPresent($control)
-            ->assertSee('0 ratings');
+            ->assertSeeIn($count, '0/2');
     }
 
     $carolPage->click($rate('Good use of time'))
         ->assertAriaAttribute($rate('Good use of time'), 'pressed', 'true')
-        ->assertSee('1 rating');
+        ->assertSeeIn($count, '1/2');
 
-    $alicePage->assertSee('1 rating')
+    $alicePage->assertSeeIn($count, '1/2')
         ->assertNotPresent("{$control} button[aria-pressed=\"true\"]");
 
     $alicePage->click($rate('Excellent use of time'))
         ->assertAriaAttribute($rate('Excellent use of time'), 'pressed', 'true')
-        ->assertSee('2 ratings');
+        ->assertSeeIn($count, '2/2');
 
-    $carolPage->assertSee('2 ratings')
+    $carolPage->assertSeeIn($count, '2/2')
         ->assertAriaAttribute($rate('Excellent use of time'), 'pressed', 'false');
 
     foreach ([$alicePage, $carolPage] as $page) {
         $page->assertDontSee('Average:')
-            ->assertDontSee('Return on time invested')
+            ->assertNotPresent(p08dSection('Return on time invested'))
+            ->assertPresent('[role="img"][aria-label="Distribution hidden"]')
             ->assertNotPresent('svg[aria-label="Team health radar"]');
     }
 
@@ -293,7 +295,9 @@ it('[P08d-03] counts the ratings live during Discussing, shows no distribution a
         ->assertVisible('#retro-locked')
         ->click('#retro-locked')
         ->assertAriaAttribute('#retro-locked', 'checked', 'true')
-        ->click('[role="dialog"] button[type="submit"]')
+        ->click('[role="dialog"] button:has-text("Apply")')
+        ->assertSeeIn('[role="dialog"]', 'No changes')
+        ->keys('[role="dialog"]', 'Escape')
         ->assertNotPresent('[role="dialog"]')
         ->assertSee('Board closed for editing');
 
@@ -301,15 +305,15 @@ it('[P08d-03] counts the ratings live during Discussing, shows no distribution a
         ->click($rate('Break-even'))
         ->assertAriaAttribute($rate('Break-even'), 'pressed', 'true')
         ->assertAriaAttribute($rate('Good use of time'), 'pressed', 'false')
-        ->assertSee('2 ratings');
+        ->assertSeeIn($count, '2/2');
 
     expect(RotiVote::query()->where('retro_id', $retro->id)->orderBy('score')->pluck('score')->all())->toBe([3, 5]);
 
     $carolPage->click($rate('Break-even'))
         ->assertAriaAttribute($rate('Break-even'), 'pressed', 'false')
-        ->assertSee('1 rating');
+        ->assertSeeIn($count, '1/2');
 
-    $alicePage->assertSee('1 rating');
+    $alicePage->assertSeeIn($count, '1/2');
 
     expect($retro->fresh()->is_locked)->toBeTrue()
         ->and(RotiVote::query()->where('retro_id', $retro->id)->pluck('score')->all())->toBe([5]);
@@ -324,7 +328,11 @@ it('[P08d-04a] lands a member and a guest on the Results tab when the retro is c
 
     $carolPage->assertNotPresent('#completed-tab-results');
 
-    $alicePage->press('Complete')
+    $alicePage->press('Next')
+        ->assertSeeIn('[aria-current="step"]', 'Actions')
+        ->press('Next')
+        ->assertSeeIn('[aria-current="step"]', 'ROTI')
+        ->press('Complete')
         ->assertSeeIn('[aria-current="step"]', 'Completed');
 
     foreach ([$alicePage, $carolPage] as $page) {
@@ -471,7 +479,7 @@ it('[P08d-04d] lists the top topics with their group name and grouped count, and
 });
 
 it('[P08d-04e] shows the ROTI average, distribution and respondent count in the Results view', function () {
-    [$retro, , , $bob, $aliceParticipant, $bobParticipant] = p08dBoard(RetroPhase::Completed);
+    [$retro, , , $bob, $aliceParticipant, $bobParticipant] = p08dBoard(RetroPhase::Completed, ['roti_votable_when_completed' => true]);
     RotiVote::factory()->create(['retro_id' => $retro->id, 'participant_id' => $aliceParticipant->id, 'score' => 4]);
     RotiVote::factory()->create(['retro_id' => $retro->id, 'participant_id' => $bobParticipant->id, 'score' => 5]);
     $roti = p08dSection('Return on time invested');
@@ -494,7 +502,7 @@ it('[P08d-04e] shows the ROTI average, distribution and respondent count in the 
 });
 
 it('[P08d-05a] refreshes the Results view of the other browser when a rating is given or changed', function () {
-    [$retro, , $alice] = p08dBoard(RetroPhase::Completed);
+    [$retro, , $alice] = p08dBoard(RetroPhase::Completed, ['roti_votable_when_completed' => true]);
     $roti = p08dSection('Return on time invested');
     $control = '[role="group"][aria-label="How was this retro?"]';
     $rate = fn (string $label): string => "{$control} button:has-text(\"{$label}\")";
@@ -555,13 +563,20 @@ it('[P08d-05b] switches between the Results and Board tabs and selects Results a
     }
 
     $alicePage->press('Reopen')
-        ->assertSeeIn('[aria-current="step"]', 'Discussing');
+        ->assertSeeIn('[aria-current="step"]', 'ROTI');
 
-    $carolPage->assertSeeIn('[aria-current="step"]', 'Discussing')
-        ->assertNotPresent('#completed-tab-results')
+    $carolPage->assertSeeIn('[aria-current="step"]', 'ROTI')
+        ->assertNotPresent('#completed-tab-results');
+
+    $alicePage->press('Previous')
+        ->assertSeeIn('[aria-current="step"]', 'Actions');
+
+    $carolPage->assertSeeIn('[aria-current="step"]', 'Actions')
         ->assertPresent('[aria-label="Add an action item…"]');
 
-    $alicePage->press('Complete')
+    $alicePage->press('Next')
+        ->assertSeeIn('[aria-current="step"]', 'ROTI')
+        ->press('Complete')
         ->assertSeeIn('[aria-current="step"]', 'Completed');
 
     foreach ([$alicePage, $carolPage] as $page) {

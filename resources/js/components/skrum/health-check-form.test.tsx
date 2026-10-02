@@ -45,21 +45,14 @@ describe('HealthCheckForm', () => {
     it('offers the server scale, 1 to 10, with the selected value checked', () => {
         setup({ a: 8 });
 
-        const group = screen.getByRole('radiogroup', { name: 'Interaction' });
+        const group = screen.getByRole('radiogroup', {
+            name: 'Interaction was productive',
+        });
 
         expect(screen.getAllByRole('radiogroup')).toHaveLength(2);
-        expect(radios('Interaction').map((r) => r.textContent)).toEqual([
-            '1',
-            '2',
-            '3',
-            '4',
-            '5',
-            '6',
-            '7',
-            '8',
-            '9',
-            '10',
-        ]);
+        expect(
+            radios('Interaction was productive').map((r) => r.textContent),
+        ).toEqual(['1', '2', '3', '4', '5', '6', '7', '8', '9', '10']);
         expect(
             screen
                 .getAllByRole('radio', { checked: true })
@@ -89,10 +82,10 @@ describe('HealthCheckForm', () => {
     it('answers by click and by the digit keys, 0 meaning 10', async () => {
         const { onAnswer } = setup();
 
-        await userEvent.click(radios('Interaction')[6]);
+        await userEvent.click(radios('Interaction was productive')[6]);
         expect(onAnswer).toHaveBeenLastCalledWith('a', 7);
 
-        radios('Vision')[0].focus();
+        radios('The vision is clear')[0].focus();
         await userEvent.keyboard('5');
         expect(onAnswer).toHaveBeenLastCalledWith('b', 5);
 
@@ -103,7 +96,7 @@ describe('HealthCheckForm', () => {
     it('moves the answer with the arrow keys and wraps', async () => {
         const { onAnswer } = setup({ a: 10 });
 
-        radios('Interaction')[9].focus();
+        radios('Interaction was productive')[9].focus();
         await userEvent.keyboard('{ArrowRight}');
 
         expect(onAnswer).toHaveBeenLastCalledWith('a', 1);
@@ -112,9 +105,9 @@ describe('HealthCheckForm', () => {
     it('keeps a 1 to 5 scale when asked', async () => {
         const { onAnswer } = setup({}, { scale: 5 });
 
-        expect(radios('Interaction')).toHaveLength(5);
+        expect(radios('Interaction was productive')).toHaveLength(5);
 
-        radios('Interaction')[0].focus();
+        radios('Interaction was productive')[0].focus();
         await userEvent.keyboard('7');
 
         expect(onAnswer).not.toHaveBeenCalled();
@@ -132,7 +125,9 @@ describe('HealthCheckForm', () => {
         );
 
         expect(onClear).toHaveBeenCalledWith('a');
-        expect(document.activeElement).toBe(radios('Interaction')[0]);
+        expect(document.activeElement).toBe(
+            radios('Interaction was productive')[0],
+        );
     });
 
     it('shows who answered and how many, from the realtime progress', () => {
@@ -157,9 +152,9 @@ describe('HealthCheckForm', () => {
         expect(screen.getByText('0 answered')).toBeTruthy();
         expect(screen.getByText('+6')).toBeTruthy();
         expect(
-            within(screen.getByRole('list', { name: 'Answered' })).getAllByRole(
-                'listitem',
-            ),
+            within(
+                screen.getByRole('list', { name: '14 answered' }),
+            ).getAllByRole('listitem'),
         ).toHaveLength(9);
     });
 
@@ -202,8 +197,8 @@ describe('HealthCheckForm', () => {
     it('is read-only once submitted', async () => {
         const { onAnswer } = setup({ a: 4, b: 2 }, { submitted: true });
 
-        await userEvent.click(radios('Interaction')[0]);
-        radios('Interaction')[3].focus();
+        await userEvent.click(radios('Interaction was productive')[0]);
+        radios('Interaction was productive')[3].focus();
         await userEvent.keyboard('2');
 
         expect(onAnswer).not.toHaveBeenCalled();
@@ -219,7 +214,7 @@ describe('HealthCheckForm', () => {
     it('ignores answers while disabled and reflects a remote progress change', async () => {
         const { onAnswer, rerender } = setup({ a: 4 }, { disabled: true });
 
-        await userEvent.click(radios('Vision')[2]);
+        await userEvent.click(radios('The vision is clear')[2]);
         expect(onAnswer).not.toHaveBeenCalled();
 
         rerender(
@@ -273,9 +268,12 @@ describe('HealthCheckForm', () => {
     it('prevents the default of a digit so a global reaction shortcut does not also fire', () => {
         const { onAnswer } = setup();
 
-        const notPrevented = fireEvent.keyDown(radios('Interaction')[0], {
-            key: '4',
-        });
+        const notPrevented = fireEvent.keyDown(
+            radios('Interaction was productive')[0],
+            {
+                key: '4',
+            },
+        );
 
         expect(notPrevented).toBe(false);
         expect(onAnswer).toHaveBeenCalledWith('a', 4);
@@ -283,7 +281,7 @@ describe('HealthCheckForm', () => {
 
     it('ignores a digit that another handler already took', () => {
         const { onAnswer } = setup();
-        const radio = radios('Interaction')[0];
+        const radio = radios('Interaction was productive')[0];
 
         radio.addEventListener('keydown', (event) => event.preventDefault(), {
             once: true,
@@ -315,5 +313,97 @@ describe('HealthCheckForm', () => {
 
         expect(avatars).toHaveLength(2);
         expect(avatars[0].querySelector('.size-6')).not.toBeNull();
+    });
+
+    it('lists the statements in order, each a fieldset in a list item', () => {
+        const { container } = setup();
+        const items = container.querySelectorAll(
+            'ol > li > fieldset[data-slot="health-question"]',
+        );
+
+        expect(items).toHaveLength(2);
+        expect(
+            [...container.querySelectorAll('ol > li [role="radiogroup"]')].map(
+                (group) => group.getAttribute('aria-label'),
+            ),
+        ).toEqual(['Interaction was productive', 'The vision is clear']);
+    });
+
+    it('marks the statements the viewer answered, and only those', () => {
+        const { container } = setup(
+            { a: 4 },
+            {
+                statements: [
+                    statements[0],
+                    {
+                        ...statements[1],
+                        count: 1,
+                        answeredBy: [{ id: '1', name: 'Tess Martin' }],
+                    },
+                ],
+            },
+        );
+        const marks = container.querySelectorAll('[aria-label="Answered"]');
+
+        expect(marks).toHaveLength(1);
+        expect(
+            marks[0].closest('fieldset')?.getAttribute('data-statement-key'),
+        ).toBe('a');
+    });
+
+    it('draws the picture of a respondent with their name as its text', () => {
+        const { container } = setup(
+            {},
+            {
+                statements: [
+                    {
+                        ...statements[0],
+                        count: 2,
+                        answeredBy: [
+                            {
+                                id: '1',
+                                name: 'Tess Martin',
+                                avatarUrl: '/avatars/tess.svg',
+                            },
+                            { id: '2', name: 'Noa Kim' },
+                        ],
+                    },
+                ],
+            },
+        );
+
+        expect(
+            container
+                .querySelector('img[alt="Tess Martin"]')
+                ?.getAttribute('src'),
+        ).toBe('/avatars/tess.svg');
+        expect(container.querySelectorAll('img')).toHaveLength(1);
+        expect(screen.getByRole('img', { name: 'Noa Kim' })).toBeTruthy();
+    });
+
+    it('disables every score when the board is closed, and keeps a sent form focusable', () => {
+        const { container, rerender } = setup({ a: 4 }, { disabled: true });
+
+        expect(
+            container.querySelectorAll('[role="radio"]:disabled'),
+        ).toHaveLength(20);
+        expect(screen.queryByRole('button', { name: /^Clear/ })).toBeNull();
+
+        rerender(
+            <HealthCheckForm
+                retroTitle="Sprint 42"
+                statements={statements}
+                answers={{ a: 4 }}
+                onAnswer={vi.fn()}
+                submitted
+            />,
+        );
+
+        expect(
+            container.querySelectorAll('[role="radio"]:disabled'),
+        ).toHaveLength(0);
+        expect(
+            container.querySelectorAll('[role="radio"][aria-disabled="true"]'),
+        ).toHaveLength(20);
     });
 });

@@ -16,7 +16,6 @@ import {
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import type { ComponentProps, KeyboardEvent, ReactNode, Ref } from 'react';
-import type { ColumnColor as DesignColumnColor } from '@/components/skrum/column-color-picker';
 import { columnColorClass } from '@/components/skrum/retro-template-picker';
 import { PersonAvatar } from '@/components/ui/avatar';
 import type { AvatarPresence } from '@/components/ui/avatar';
@@ -28,13 +27,10 @@ import {
     TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { useTrans } from '@/hooks/use-trans';
-import type {
-    CardSentiment,
-    ColumnColor as ServerColumnColor,
-} from '@/lib/retro/types';
+import type { CardSentiment, ColumnColor } from '@/lib/retro/types';
 import { cn } from '@/lib/utils';
 
-export type ColumnColor = DesignColumnColor | ServerColumnColor;
+export type { ColumnColor };
 
 export type RetroCardReaction = {
     emoji: string;
@@ -83,6 +79,11 @@ export type RetroCardProps = Omit<
     dragging?: boolean;
     ghost?: boolean;
     canVote?: boolean;
+    /**
+     * A vote can be taken back. Defaults to `canVote`; a host sets it apart
+     * when the budget is spent: no vote can be added, one can still be removed.
+     */
+    canUnvote?: boolean;
     canEdit?: boolean;
     maxLength?: number;
     quickReactions?: string[];
@@ -91,8 +92,14 @@ export type RetroCardProps = Omit<
     editorTools?: ReactNode;
     /** Replaces the built-in "Add a reaction" button and quick list (full emoji picker). */
     reactionPicker?: ReactNode;
-    /** `voteBlocked` is the reason read next to the vote button when `canVote` is false. */
-    labels?: { vote?: string; voteBlocked?: string };
+    /**
+     * `voteBlocked` is the reason read next to the vote button when `canVote`
+     * is false. `editor` names the editing field ("Card text" by default) and
+     * is then its placeholder too.
+     */
+    labels?: { vote?: string; voteBlocked?: string; editor?: string };
+    /** False when the editing field is always shown, as a composer is. */
+    autoFocusEditor?: boolean;
     children?: ReactNode;
     onVote?: (delta: 1 | -1) => void;
     onReact?: (emoji: string) => void;
@@ -190,6 +197,7 @@ export function RetroCard({
     dragging = false,
     ghost = false,
     canVote = false,
+    canUnvote,
     canEdit = false,
     maxLength = 1000,
     quickReactions = defaultQuickReactions,
@@ -198,6 +206,7 @@ export function RetroCard({
     editorTools,
     reactionPicker,
     labels,
+    autoFocusEditor = true,
     children,
     onVote,
     onReact,
@@ -272,6 +281,7 @@ export function RetroCard({
     const isLocked = lockedBy !== null;
     const isEditing = editing;
     const mineVotes = votes?.mine ?? 0;
+    const mayUnvote = (canUnvote ?? canVote) && mineVotes > 0;
     const isAnonymous = author === null;
     const hasGif = gif !== null && !masked;
     const hasText = text !== null && text !== '';
@@ -323,15 +333,33 @@ export function RetroCard({
     }
 
     function vote(delta: 1 | -1): void {
-        if (!canVote) {
+        if (delta === 1 && !canVote) {
             return;
         }
 
-        if (delta === -1 && mineVotes <= 0) {
+        if (delta === -1 && !mayUnvote) {
             return;
         }
 
         onVote?.(delta);
+    }
+
+    /**
+     * Taking the last vote back removes the button that was pressed. Focus
+     * goes to the vote button, or to the card while that button is disabled.
+     */
+    function unvoteFromButton(): void {
+        vote(-1);
+
+        if (mineVotes > 1) {
+            return;
+        }
+
+        const target = voteButtonRef.current?.disabled
+            ? articleRef.current
+            : voteButtonRef.current;
+
+        target?.focus();
     }
 
     function handleArticleKeyDown(event: KeyboardEvent<HTMLElement>): void {
@@ -577,8 +605,9 @@ export function RetroCard({
             {isEditing ? (
                 <textarea
                     data-slot="retro-card-input"
-                    aria-label={t('Card text')}
-                    autoFocus
+                    aria-label={labels?.editor ?? t('Card text')}
+                    placeholder={labels?.editor}
+                    autoFocus={autoFocusEditor}
                     value={draft}
                     maxLength={maxLength}
                     readOnly={isLocked}
@@ -590,7 +619,7 @@ export function RetroCard({
                     onBlur={() => {
                         editorHadFocus.current = false;
                     }}
-                    className="field-sizing-content min-h-16 w-full resize-none bg-transparent text-sm/snug text-foreground outline-none"
+                    className="field-sizing-content min-h-16 w-full resize-none bg-transparent text-sm/snug text-foreground outline-none placeholder:text-muted-foreground"
                 />
             ) : (
                 (masked || hasText || isLocked) && (
@@ -654,10 +683,10 @@ export function RetroCard({
                                                   count: reaction.count,
                                               })
                                     }
-                                    aria-disabled={!onReact || undefined}
+                                    disabled={!onReact}
                                     onClick={() => onReact?.(reaction.emoji)}
                                     className={cn(
-                                        'inline-flex h-6 items-center gap-1 rounded-full border px-2 text-xs font-semibold outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                                        'inline-flex h-6 items-center gap-1 rounded-full border px-2 text-xs font-semibold outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed',
                                         reaction.mine
                                             ? 'border-transparent bg-skrum-primary-soft text-skrum-primary-text'
                                             : 'border-input bg-card text-foreground',
@@ -675,9 +704,22 @@ export function RetroCard({
                             return (
                                 <Tooltip key={reaction.emoji}>
                                     <TooltipTrigger asChild>
-                                        {chip}
+                                        {onReact ? (
+                                            chip
+                                        ) : (
+                                            // A disabled button takes no
+                                            // focus: the names stay reachable
+                                            // on the wrapper.
+                                            <span
+                                                tabIndex={0}
+                                                data-slot="retro-card-reaction-reader"
+                                                className="inline-flex rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                            >
+                                                {chip}
+                                            </span>
+                                        )}
                                     </TooltipTrigger>
-                                    <TooltipContent data-slot="retro-card-reaction-names">
+                                    <TooltipContent>
                                         {names.join(', ')}
                                     </TooltipContent>
                                 </Tooltip>
@@ -971,13 +1013,13 @@ export function RetroCard({
                                 ))}
                             </span>
                         )}
-                        {mineVotes > 0 && canVote && (
+                        {mayUnvote && (
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                     <button
                                         type="button"
                                         aria-label={t('Remove a vote')}
-                                        onClick={() => vote(-1)}
+                                        onClick={unvoteFromButton}
                                         className={iconButtonClass}
                                     >
                                         <Minus className="size-4" aria-hidden />

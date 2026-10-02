@@ -18,10 +18,10 @@ import { useEffect, useRef, useState } from 'react';
 import type { KeyboardEvent, ReactElement } from 'react';
 import {
     ColumnColorOptions,
-    serverColumnColors,
+    columnColors,
 } from '@/components/skrum/column-color-picker';
 import { columnColorClass } from '@/components/skrum/retro-template-picker';
-import type { ServerColumnColor } from '@/components/skrum/retro-template-picker';
+import type { ColumnColor } from '@/lib/retro/types';
 import {
     MaxColumnTitleLength,
     firstFreeColor,
@@ -39,7 +39,7 @@ export type RetroColumnsEditorProps = {
     value: DraftColumn[];
     onChange: (columns: DraftColumn[]) => void;
     max: number;
-    colors?: readonly ServerColumnColor[];
+    colors?: readonly ColumnColor[];
     /** Server errors by field: `columns`, `columns.N.title`, `columns.N.color`. */
     errors?: Record<string, string>;
 };
@@ -177,7 +177,7 @@ export function RetroColumnsEditor({
     value,
     onChange,
     max,
-    colors = serverColumnColors,
+    colors = columnColors,
     errors = {},
 }: RetroColumnsEditorProps): ReactElement {
     const { t } = useTrans();
@@ -340,7 +340,7 @@ export function RetroColumnsEditor({
             id: newDraftColumnId(),
             title: '',
             description: null,
-            color: firstFreeColor(value, colors) as ServerColumnColor,
+            color: firstFreeColor(value, colors) as ColumnColor,
         };
 
         pendingFocus.current = column.id;
@@ -366,7 +366,7 @@ export function RetroColumnsEditor({
                 column.color,
                 column.title.trim() === '' ? t('Untitled') : column.title,
             ]),
-    ) as Partial<Record<ServerColumnColor, string>>;
+    ) as Partial<Record<ColumnColor, string>>;
     const columnErrors = Object.entries(errors).filter(([field]) =>
         field.startsWith('columns'),
     );

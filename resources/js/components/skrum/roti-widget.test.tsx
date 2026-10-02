@@ -1,6 +1,9 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { ROTIWidget } from '@/components/skrum/roti-widget';
+import {
+    ROTIHiddenDistribution,
+    ROTIWidget,
+} from '@/components/skrum/roti-widget';
 import type { ROTIResult } from '@/components/skrum/roti-widget';
 
 const result: ROTIResult = {
@@ -123,6 +126,83 @@ describe('ROTIWidget vote', () => {
         fireEvent.keyDown(buttons[4], { key: 'ArrowLeft' });
         expect(document.activeElement).toBe(buttons[3]);
         expect(onVote).not.toHaveBeenCalled();
+    });
+});
+
+describe('ROTIWidget vote, row layout', () => {
+    it('keeps the group, its five toggle buttons and the keys, under a heading and an eyebrow', () => {
+        const onVote = vi.fn();
+        render(
+            <ROTIWidget
+                mode="vote"
+                layout="row"
+                eyebrow="Last step"
+                onVote={onVote}
+            />,
+        );
+        const group = screen.getByRole('group', {
+            name: 'How was this retro?',
+        });
+
+        expect(group.getAttribute('data-layout')).toBe('row');
+        expect(
+            screen.getByRole('heading', { name: 'How was this retro?' }),
+        ).toBeTruthy();
+        expect(screen.getByText('Last step')).toBeTruthy();
+        expect(
+            group.querySelectorAll('button[aria-pressed="false"]'),
+        ).toHaveLength(5);
+
+        fireEvent.keyDown(screen.getAllByRole('button')[0], { key: '2' });
+        fireEvent.click(screen.getByRole('button', { name: /Break-even/ }));
+
+        expect(onVote.mock.calls).toEqual([[2], [3]]);
+    });
+
+    it('says the sentence of its host once voted, then the footer', () => {
+        render(
+            <ROTIWidget
+                mode="vote"
+                layout="row"
+                value={4}
+                labels={{ saved: 'Vote saved' }}
+                footer={<p>After the vote</p>}
+            />,
+        );
+
+        expect(screen.getByRole('status').textContent).toBe('Vote saved');
+        expect(
+            screen
+                .getByRole('status')
+                .compareDocumentPosition(screen.getByText('After the vote')) &
+                Node.DOCUMENT_POSITION_FOLLOWING,
+        ).toBeTruthy();
+    });
+
+    it('has no heading in the list layout', () => {
+        render(<ROTIWidget mode="vote" />);
+
+        expect(screen.queryByRole('heading')).toBeNull();
+    });
+});
+
+describe('ROTIHiddenDistribution', () => {
+    it('names the hidden bar and holds no count', () => {
+        const { container } = render(
+            <ROTIHiddenDistribution
+                title="Votes hidden until the end"
+                note="Anonymous"
+            />,
+        );
+
+        expect(
+            screen.getByRole('img', { name: 'Distribution hidden' }),
+        ).toBeTruthy();
+        expect(screen.getByText('Votes hidden until the end')).toBeTruthy();
+        expect(screen.getByText('Anonymous')).toBeTruthy();
+        expect(
+            container.querySelector('[aria-hidden="true"].grid')?.textContent,
+        ).toBe('1?2?3?4?5?');
     });
 });
 

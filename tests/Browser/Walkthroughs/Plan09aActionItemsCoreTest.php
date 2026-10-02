@@ -129,13 +129,13 @@ it('[P09a-01a] creates action items with each priority, a due date chip and an o
     $mediumCard = p09aCard($medium);
 
     foreach ([$alicePage, $bobPage] as $page) {
-        $page->assertSeeIn("{$highCard} [aria-label=\"Priority\"]", 'High')
+        $page->assertSeeIn("{$highCard} [data-slot=\"action-item-priority\"]", 'High')
             ->assertScript(p09aCardShows($high, "Due {$dueSoonLabel}"), true)
             ->assertNotPresent("{$highCard} [data-slot=\"badge\"].bg-skrum-destructive-soft")
-            ->assertSeeIn("{$lowCard} [aria-label=\"Priority\"]", 'Low')
+            ->assertSeeIn("{$lowCard} [data-slot=\"action-item-priority\"]", 'Low')
             ->assertScript(p09aCardShows($low, "Overdue · {$pastDueLabel}"), true)
             ->assertPresent("{$lowCard} [data-slot=\"badge\"].bg-skrum-destructive-soft")
-            ->assertSeeIn("{$mediumCard} [aria-label=\"Priority\"]", 'Medium')
+            ->assertSeeIn("{$mediumCard} [data-slot=\"action-item-priority\"]", 'Medium')
             ->assertScript(p09aCardShows($medium, 'Alice Martin'), true);
     }
 
@@ -154,32 +154,45 @@ it('[P09a-01b] assigns items to a team member outside the retro, a joined member
     $forDan = p09aItem($retro, $aliceParticipant, 'Rotate the on-call');
     $forBob = p09aItem($retro, $aliceParticipant, 'Automate the release notes');
     $forCarol = p09aItem($retro, $aliceParticipant, 'Tidy the backlog');
-    $assignee = fn (ActionItem $item): string => "#action-item-{$item->id} [aria-label=\"Assignee\"]";
+    $card = fn (ActionItem $item): string => "#action-item-{$item->id}";
+    $assignee = fn (ActionItem $item): string => "{$card($item)} [aria-label=\"Assignee\"]";
+    $owner = fn (ActionItem $item): string => "{$card($item)} [data-slot=\"action-item-owner-name\"]";
+    $edit = fn (ActionItem $item): string => "{$card($item)} button[aria-label=\"Edit action item\"]";
+    $save = fn (ActionItem $item): string => "{$card($item)} button:has-text(\"Save\")";
     $joined = '[role="listbox"] [role="group"]:has-text("In this retro")';
     $others = '[role="listbox"] [role="group"]:has-text("Team")';
 
     $carolPage = $this->awaitRealtime($this->joinAsGuest("/join/{$retro->guest_token}", 'Carol Guest'));
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
 
-    $alicePage->assertSeeIn($assignee($forDan), 'Unassigned')
+    $alicePage->assertPresent("{$card($forDan)} [aria-label=\"Unassigned\"]")
+        ->assertNotPresent($owner($forDan))
+        ->click($edit($forDan))
+        ->assertSeeIn($assignee($forDan), 'Unassigned')
         ->click($assignee($forDan))
         ->assertSeeIn($joined, 'Bob Stone')
-        ->assertSeeIn($joined, 'Carol Guest (guest)')
+        ->assertSeeIn($joined, 'Carol Guest (Guest)')
         ->assertSeeIn($others, 'Dan Rivers')
         ->assertDontSeeIn($joined, 'Dan Rivers')
         ->click('[role="option"]:has-text("Dan Rivers")')
         ->assertNotPresent('[role="listbox"]')
-        ->assertSeeIn($assignee($forDan), 'Dan Rivers');
+        ->click($save($forDan))
+        ->assertSeeIn($owner($forDan), 'Dan Rivers');
 
+    $alicePage->click($edit($forBob));
     p09aChoose($alicePage, $assignee($forBob), 'Bob Stone');
-    $alicePage->assertSeeIn($assignee($forBob), 'Bob Stone');
+    $alicePage->click($save($forBob))
+        ->assertSeeIn($owner($forBob), 'Bob Stone');
 
-    p09aChoose($alicePage, $assignee($forCarol), 'Carol Guest (guest)');
-    $alicePage->assertSeeIn($assignee($forCarol), 'Carol Guest (guest)');
+    $alicePage->click($edit($forCarol));
+    p09aChoose($alicePage, $assignee($forCarol), 'Carol Guest (Guest)');
+    $alicePage->click($save($forCarol))
+        ->assertSeeIn($owner($forCarol), 'Carol Guest (Guest)');
 
-    $carolPage->assertSeeIn($assignee($forDan), 'Dan Rivers')
-        ->assertSeeIn($assignee($forBob), 'Bob Stone')
-        ->assertSeeIn($assignee($forCarol), 'Carol Guest (guest)');
+    $carolPage->assertSeeIn($owner($forDan), 'Dan Rivers')
+        ->assertSeeIn($owner($forBob), 'Bob Stone')
+        ->assertSeeIn($owner($forCarol), 'Carol Guest (Guest)')
+        ->assertNotPresent($edit($forCarol));
 
     expect($forDan->fresh()->assignee_user_id)->toBe($dan->id)
         ->and($forBob->fresh()->assignee_user_id)->toBe($bob->id)
@@ -193,7 +206,7 @@ it('[P09a-01c] lets the guest tick only their own item and shows edit and delete
     $delete = '[aria-label="Delete action item"]';
 
     $carolPage = $this->joinAsGuest("/join/{$retro->guest_token}", 'Carol Guest');
-    $carolPage->assertSeeIn('header > h1', 'Sprint 12');
+    $carolPage->assertSeeIn('header >> h1', 'Sprint 12');
 
     $hers = p09aItem($retro, $aliceParticipant, 'Tidy the backlog', ['assignee_participant_id' => p09aGuest($retro)->id]);
     $his = p09aItem($retro, $aliceParticipant, 'Automate the release notes', ['assignee_user_id' => $bob->id]);
@@ -207,7 +220,7 @@ it('[P09a-01c] lets the guest tick only their own item and shows edit and delete
 
     $carolPage->assertEnabled("{$hersCard} [aria-label=\"Mark as done\"]")
         ->assertDisabled("{$hisCard} [aria-label=\"Mark as done\"]")
-        ->assertDisabled("{$hersCard} [aria-label=\"Priority\"]")
+        ->assertNotPresent("{$hersCard} [aria-label=\"Priority\"]")
         ->assertCount($edit, 0)
         ->assertCount($delete, 0)
         ->click("{$hersCard} [aria-label=\"Mark as done\"]")
@@ -304,7 +317,9 @@ it('[P09a-03a] disables the action item controls for everyone when the facilitat
         ->assertVisible('#retro-locked')
         ->click('#retro-locked')
         ->assertAttribute('#retro-locked', 'aria-checked', 'true')
-        ->press('Save')
+        ->click('[role="dialog"] button:has-text("Apply")')
+        ->assertSeeIn('[role="dialog"]', 'No changes')
+        ->keys('[role="dialog"]', 'Escape')
         ->assertNotPresent('[role="dialog"]')
         ->assertSee('Board closed for editing')
         ->assertDisabled($input);
@@ -345,7 +360,7 @@ it('[P09a-03c] lists priority, due date, overdue badge, assignee, status and the
     $dueSoonLabel = p09aDueLabel($dueSoon);
 
     $carolPage = $this->joinAsGuest("/join/{$retro->guest_token}", 'Carol Guest');
-    $carolPage->assertSeeIn('header > h1', 'Sprint 12');
+    $carolPage->assertSeeIn('header >> h1', 'Sprint 12');
 
     $open = p09aItem($retro, $aliceParticipant, 'Rotate the on-call', [
         'priority' => ActionItemPriority::High,
@@ -446,8 +461,8 @@ it('[P09a-05] warns how many open action items are deleted with the retro', func
     $page->click('[aria-label="Facilitator menu"]')
         ->assertSee('Delete retrospective…')
         ->click('Delete retrospective…')
-        ->assertSeeIn('[role="dialog"]', $warning)
-        ->press('Delete')
+        ->assertSeeIn('[role="alertdialog"]', $warning)
+        ->click('[role="alertdialog"] button:has-text("Delete")')
         ->assertPathIs($teamPath);
 
     expect(Retro::query()->whereKey($retro->id)->exists())->toBeFalse()

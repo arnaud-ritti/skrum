@@ -37,9 +37,9 @@ import type { FormEvent, KeyboardEvent, ReactNode } from 'react';
 import { toast } from 'sonner';
 import {
     ColumnColorPicker,
-    serverColumnColors,
+    columnColors,
 } from '@/components/skrum/column-color-picker';
-import type { AnyColumnColor } from '@/components/skrum/column-color-picker';
+import type { ColumnColor } from '@/components/skrum/column-color-picker';
 import { ConfirmDialog } from '@/components/skrum/confirm-dialog';
 import { columnColorClass } from '@/components/skrum/retro-template-picker';
 import { Badge } from '@/components/ui/badge';
@@ -66,10 +66,7 @@ import { isEditableTarget } from '@/hooks/use-shortcut';
 import { useTrans } from '@/hooks/use-trans';
 import { cn } from '@/lib/utils';
 
-export type {
-    AnyColumnColor,
-    ColumnColor,
-} from '@/components/skrum/column-color-picker';
+export type { ColumnColor } from '@/components/skrum/column-color-picker';
 
 export type TemplateVisibility = 'personal' | 'team' | 'workspace';
 
@@ -79,7 +76,7 @@ export type TemplateColumnDraft = {
     id: string;
     title: string;
     description?: string | null;
-    color: AnyColumnColor;
+    color: ColumnColor;
 };
 
 export type TemplateDefaults = {
@@ -120,7 +117,7 @@ export type TemplateEditorProps = {
     onChange: (draft: TemplateDraft) => void;
     errors?: TemplateEditorErrors;
     categories?: TemplateCategoryOption[];
-    colors?: readonly AnyColumnColor[];
+    colors?: readonly ColumnColor[];
     startFrom?: TemplateStartOption[];
     onStartFrom?: (key: string) => void;
     canShareWorkspace?: boolean;
@@ -183,8 +180,8 @@ export function findColumnProblems(
 
 export function firstFreeColor(
     columns: TemplateColumnDraft[],
-    colors: readonly AnyColumnColor[] = serverColumnColors,
-): AnyColumnColor {
+    colors: readonly ColumnColor[] = columnColors,
+): ColumnColor {
     const used = new Set(columns.map((column) => column.color));
 
     return (
@@ -201,7 +198,7 @@ export function firstFreeColor(
 function soleOwner(
     columns: TemplateColumnDraft[],
     index: number,
-    color: AnyColumnColor,
+    color: ColumnColor,
 ): number | null {
     const owners = columns
         .map((column, position) => (column.color === color ? position : -1))
@@ -213,7 +210,7 @@ function soleOwner(
 export function swapColumnColor(
     columns: TemplateColumnDraft[],
     index: number,
-    color: AnyColumnColor,
+    color: ColumnColor,
 ): TemplateColumnDraft[] {
     const previous = columns[index].color;
 
@@ -450,8 +447,8 @@ type RowProps = {
     column: TemplateColumnDraft;
     index: number;
     total: number;
-    colors: readonly AnyColumnColor[];
-    usedBy: Partial<Record<AnyColumnColor, string>>;
+    colors: readonly ColumnColor[];
+    usedBy: Partial<Record<ColumnColor, string>>;
     error?: string;
     /** Shown under the title without marking the field invalid. */
     warning?: string;
@@ -462,7 +459,7 @@ type RowProps = {
     onTitleChange: (title: string) => void;
     onTitleBlur: () => void;
     onDescriptionChange: (description: string) => void;
-    onColorChange: (color: AnyColumnColor) => void;
+    onColorChange: (color: ColumnColor) => void;
     onDelete: () => void;
 };
 
@@ -680,7 +677,7 @@ export function TemplateEditor({
     onChange,
     errors,
     categories,
-    colors = serverColumnColors,
+    colors = columnColors,
     startFrom,
     onStartFrom,
     canShareWorkspace = true,
@@ -932,7 +929,7 @@ export function TemplateEditor({
         );
 
     const usedByFor = (index: number) => {
-        const used: Partial<Record<AnyColumnColor, string>> = {};
+        const used: Partial<Record<ColumnColor, string>> = {};
 
         for (const color of colors) {
             const owner = soleOwner(value.columns, index, color);

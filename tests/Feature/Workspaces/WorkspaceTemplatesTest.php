@@ -27,8 +27,8 @@ function templatePayload(array $overrides = []): array
         'name' => 'Team pulse',
         'category' => 'team_mood',
         'columns' => [
-            ['title' => 'Energy', 'description' => 'How charged you feel', 'color' => 'green'],
-            ['title' => 'Blockers', 'color' => 'red'],
+            ['title' => 'Energy', 'description' => 'How charged you feel', 'color' => 'moss'],
+            ['title' => 'Blockers', 'color' => 'coral'],
         ],
         ...$overrides,
     ];
@@ -81,7 +81,7 @@ it('replaces the columns when a template is updated', function () {
     $this->actingAs($admin)
         ->patch(route('workspaces.templates.update', [$workspace, $template]), templatePayload([
             'name' => $template->name,
-            'columns' => [['title' => 'Only one', 'color' => 'blue']],
+            'columns' => [['title' => 'Only one', 'color' => 'sky']],
         ]))
         ->assertSessionHasNoErrors();
 
@@ -133,9 +133,10 @@ it('validates templates', function (array $overrides, string $field) {
     'long name' => [['name' => str_repeat('a', 81)], 'name'],
     'unknown category' => [['category' => 'fun'], 'category'],
     'no columns' => [['columns' => []], 'columns'],
-    'eleven columns' => [['columns' => array_fill(0, 11, ['title' => 'X', 'color' => 'green'])], 'columns'],
-    'long title' => [['columns' => [['title' => str_repeat('a', 101), 'color' => 'green']]], 'columns.0.title'],
-    'long description' => [['columns' => [['title' => 'X', 'description' => str_repeat('a', 201), 'color' => 'green']]], 'columns.0.description'],
+    'eleven columns' => [['columns' => array_fill(0, 11, ['title' => 'X', 'color' => 'moss'])], 'columns'],
+    'long title' => [['columns' => [['title' => str_repeat('a', 101), 'color' => 'moss']]], 'columns.0.title'],
+    'old color name' => [['columns' => [['title' => 'X', 'color' => 'green']]], 'columns.0.color'],
+    'long description' => [['columns' => [['title' => 'X', 'description' => str_repeat('a', 201), 'color' => 'moss']]], 'columns.0.description'],
     'unknown color' => [['columns' => [['title' => 'X', 'color' => 'pink']]], 'columns.0.color'],
 ]);
 

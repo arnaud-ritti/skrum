@@ -5,12 +5,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
     ColumnColorPicker,
     columnColors,
-    serverColumnColors,
 } from '@/components/skrum/column-color-picker';
-import type {
-    AnyColumnColor,
-    ColumnColor,
-} from '@/components/skrum/column-color-picker';
+import type { ColumnColor } from '@/components/skrum/column-color-picker';
 import {
     MaxTemplateColumns,
     TemplateEditor,
@@ -58,10 +54,10 @@ const serverDraft: TemplateDraft = {
             id: 'a',
             title: 'Mad',
             description: 'What annoyed us?',
-            color: 'red',
+            color: 'coral',
         },
-        { id: 'b', title: 'Sad', description: null, color: 'blue' },
-        { id: 'c', title: 'Glad', color: 'green' },
+        { id: 'b', title: 'Sad', description: null, color: 'sky' },
+        { id: 'c', title: 'Glad', color: 'moss' },
     ],
 };
 
@@ -77,7 +73,7 @@ function manyColumns(count: number, title = 'Column'): TemplateColumnDraft[] {
     return Array.from({ length: count }, (_, index) => ({
         id: `c${index}`,
         title: `${title} ${index}`,
-        color: serverColumnColors[index % serverColumnColors.length],
+        color: columnColors[index % columnColors.length],
     }));
 }
 
@@ -146,27 +142,20 @@ describe('colour helpers', () => {
         expect(firstFreeColor(draft.columns, columnColors)).toBe('sun');
     });
 
-    it('proposes the colours the server stores by default, then cycles', () => {
-        expect(serverColumnColors).toEqual([
-            'green',
-            'red',
-            'blue',
-            'amber',
-            'purple',
-            'slate',
-        ]);
-        expect(firstFreeColor(serverDraft.columns)).toBe('amber');
-        expect(firstFreeColor(manyColumns(6))).toBe('green');
-        expect(firstFreeColor(manyColumns(7))).toBe('red');
+    it('proposes the eight colours by default, then cycles', () => {
+        expect(firstFreeColor(serverDraft.columns)).toBe('sun');
+        expect(firstFreeColor(manyColumns(7))).toBe('moss');
+        expect(firstFreeColor(manyColumns(8))).toBe('sun');
+        expect(firstFreeColor(manyColumns(9))).toBe('apricot');
     });
 
     it('sets the colour without a swap when several columns already share it', () => {
-        const columns = manyColumns(8);
-        const changed = swapColumnColor(columns, 2, 'green');
+        const columns = manyColumns(10);
+        const changed = swapColumnColor(columns, 2, 'sun');
 
-        expect(changed[2].color).toBe('green');
-        expect(changed[0].color).toBe('green');
-        expect(changed[6].color).toBe('green');
+        expect(changed[2].color).toBe('sun');
+        expect(changed[0].color).toBe('sun');
+        expect(changed[8].color).toBe('sun');
     });
 
     it('swaps colours when the chosen one is used by another column', () => {
@@ -329,7 +318,9 @@ describe('TemplateEditor server fit', () => {
                 ) as HTMLInputElement
             ).value,
         ).toBe('What annoyed us?');
-        expect(screen.getByRole('button', { name: 'Color: Red' })).toBeTruthy();
+        expect(
+            screen.getByRole('button', { name: 'Color: Coral' }),
+        ).toBeTruthy();
     });
 
     it('changes the category', async () => {
@@ -956,17 +947,17 @@ describe('ColumnColorPicker', () => {
         ).toBeTruthy();
     });
 
-    it('offers the six colours the server stores, under their names', async () => {
+    it('offers only the colours it is given, under their names', async () => {
         const onValueChange = vi.fn();
         const user = userEvent.setup();
 
         function ServerPicker() {
-            const [value, setValue] = useState<AnyColumnColor>('green');
+            const [value, setValue] = useState<ColumnColor>('moss');
 
             return (
                 <ColumnColorPicker
                     value={value}
-                    colors={serverColumnColors}
+                    colors={['moss', 'coral', 'sky']}
                     columnTitle="Glad"
                     onValueChange={(color) => {
                         setValue(color);
@@ -978,22 +969,22 @@ describe('ColumnColorPicker', () => {
 
         renderWithProviders(<ServerPicker />);
 
-        await user.click(screen.getByRole('button', { name: 'Color: Green' }));
+        await user.click(screen.getByRole('button', { name: 'Color: Moss' }));
 
         expect(
             screen.getAllByRole('radio').map((radio) => radio.textContent),
-        ).toEqual(['Green', 'Red', 'Blue', 'Amber', 'Purple', 'Slate']);
+        ).toEqual(['Moss', 'Coral', 'Sky']);
 
         await user.keyboard('{End}{Enter}');
 
-        expect(onValueChange).toHaveBeenCalledWith('slate');
+        expect(onValueChange).toHaveBeenCalledWith('sky');
     });
 
     it('is open from the start when asked, and keeps a colour outside the list reachable', () => {
         renderWithProviders(
             <ColumnColorPicker
-                value={'sky' as AnyColumnColor}
-                colors={serverColumnColors}
+                value="lagoon"
+                colors={['moss', 'coral', 'sky']}
                 columnTitle="Ideas"
                 defaultOpen
                 onValueChange={() => undefined}
@@ -1002,7 +993,7 @@ describe('ColumnColorPicker', () => {
 
         const radios = screen.getAllByRole('radio');
 
-        expect(radios).toHaveLength(6);
+        expect(radios).toHaveLength(3);
         expect(radios[0].tabIndex).toBe(0);
         expect(
             radios.filter(

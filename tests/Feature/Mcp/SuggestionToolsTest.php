@@ -32,8 +32,8 @@ it('offers suggestion tools to write tokens when a provider is configured', func
         ->and(mcpToolNames(actingAsMcp($user)))->not->toContain('retro.board.suggested_actions.promote')->not->toContain('retro.board.suggested_actions.reject');
 });
 
-it('promotes a suggestion while discussing, keeping its wording and theme', function () {
-    $retro = Retro::factory()->inPhase(RetroPhase::Discussing)->create();
+it('promotes a suggestion while the board takes action items, keeping its wording and theme', function (RetroPhase $phase) {
+    $retro = Retro::factory()->inPhase($phase)->create();
     $user = teamMember($retro->team);
     $theme = RetroTheme::factory()->create(['retro_id' => $retro->id]);
     $suggestion = SuggestedAction::factory()->create(['retro_id' => $retro->id, 'theme_id' => $theme->id, 'content' => 'Timebox standups']);
@@ -52,7 +52,7 @@ it('promotes a suggestion while discussing, keeping its wording and theme', func
         ->and($result['actionItem']['id'])->toBe($item->id);
 
     Event::assertDispatched(InsightsChanged::class);
-});
+})->with([RetroPhase::Discussing, RetroPhase::Actions, RetroPhase::Roti]);
 
 it('refuses a suggestion that was already handled', function () {
     $retro = Retro::factory()->inPhase(RetroPhase::Discussing)->create();

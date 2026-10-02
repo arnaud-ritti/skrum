@@ -105,19 +105,19 @@ it('promotes a suggestion only once', function () {
     expect(ActionItem::count())->toBe(1);
 });
 
-it('lets every participant handle suggestions while discussing unless locked', function () {
-    [$retro, , $suggestion] = suggestingRetro();
+it('lets every participant handle suggestions while the board takes action items unless locked', function (RetroPhase $phase) {
+    [$retro, , $suggestion] = suggestingRetro($phase);
     $guest = Participant::factory()->guest()->create(['retro_id' => $retro->id]);
 
     $this->withCookies(retroGuestCookie($guest))->withCredentials()
         ->postJson(route('retros.suggested-actions.promotion.store', [$retro, $suggestion]))
         ->assertOk();
 
-    [$locked, , $other] = suggestingRetro(RetroPhase::Discussing, ['is_locked' => true]);
+    [$locked, , $other] = suggestingRetro($phase, ['is_locked' => true]);
     [$member] = retroMember($locked);
 
     $this->actingAs($member)->postJson(route('retros.suggested-actions.promotion.store', [$locked, $other]))->assertStatus(423);
-});
+})->with([RetroPhase::Discussing, RetroPhase::Actions, RetroPhase::Roti]);
 
 it('keeps completed suggestions to the facilitator and workspace managers', function () {
     [$retro, , $suggestion] = suggestingRetro(RetroPhase::Completed, ['is_locked' => true]);

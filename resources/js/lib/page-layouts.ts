@@ -16,6 +16,8 @@ export const ownLayoutPages: readonly string[] = [
     'errors/error',
     'teams/show',
     'retros/show',
+    'retros/join',
+    'retros/session-ended',
     'poker/show',
     'poker/decks',
     'games/index',

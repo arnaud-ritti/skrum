@@ -25,6 +25,15 @@ describe('VoteBudget', () => {
         expect(filledDots(container)).toBe(2);
     });
 
+    it('says "1 vote left" for a single vote', () => {
+        renderWithProviders(<VoteBudget total={5} remaining={1} />);
+
+        const budget = screen.getByRole('status');
+
+        expect(budget.textContent).toContain('1 vote left');
+        expect(budget.getAttribute('aria-label')).toBe('1 vote left of 5');
+    });
+
     it('says no votes left with all dots empty at zero', () => {
         const { container } = renderWithProviders(
             <VoteBudget total={5} remaining={0} />,
@@ -34,6 +43,23 @@ describe('VoteBudget', () => {
             'No votes left',
         );
         expect(filledDots(container)).toBe(0);
+    });
+
+    it('says a detail after the dots, and has none by default', () => {
+        const { container, rerender } = renderWithProviders(
+            <VoteBudget total={5} remaining={2} detail="of 5" />,
+        );
+
+        expect(
+            container.querySelector('[data-slot="vote-budget-detail"]')
+                ?.textContent,
+        ).toBe('of 5');
+
+        rerender(<VoteBudget total={5} remaining={2} />);
+
+        expect(
+            container.querySelector('[data-slot="vote-budget-detail"]'),
+        ).toBeNull();
     });
 
     it('clamps remaining to the budget', () => {
@@ -81,6 +107,79 @@ describe('CardVotes', () => {
 
         expect(onVote).toHaveBeenCalledTimes(1);
         expect(onUnvote).toHaveBeenCalledTimes(1);
+    });
+
+    it('says "Total hidden" for a null total, unless the host leaves it out', () => {
+        const votes = (hiddenTotalNote?: boolean) => (
+            <CardVotes
+                mine={1}
+                total={null}
+                budgetLeft={3}
+                hiddenTotalNote={hiddenTotalNote}
+                onVote={vi.fn()}
+                onUnvote={vi.fn()}
+            />
+        );
+        const { rerender } = renderWithProviders(votes());
+
+        expect(screen.getByText('Total hidden')).toBeTruthy();
+
+        rerender(votes(false));
+
+        expect(screen.queryByText('Total hidden')).toBeNull();
+    });
+
+    it('closes for a reason of the host: no vote added, none taken back', () => {
+        const onVote = vi.fn();
+        const onUnvote = vi.fn();
+        renderWithProviders(
+            <CardVotes
+                mine={1}
+                total={3}
+                budgetLeft={3}
+                disabledReason="Board closed for editing"
+                onVote={onVote}
+                onUnvote={onUnvote}
+            />,
+        );
+
+        const button = screen.getByRole('button', { name: 'Add a vote' });
+        const wrapper = screen.getByRole('group', {
+            name: 'Board closed for editing',
+        });
+
+        fireEvent.click(button);
+        fireEvent.keyDown(wrapper, { key: 'V', shiftKey: true });
+
+        expect((button as HTMLButtonElement).disabled).toBe(true);
+        expect(
+            screen.queryByRole('button', { name: 'Remove a vote' }),
+        ).toBeNull();
+        expect(screen.getByRole('img', { name: 'Your votes: 1' })).toBeTruthy();
+        expect(onVote).not.toHaveBeenCalled();
+        expect(onUnvote).not.toHaveBeenCalled();
+    });
+
+    it('keeps the focus on the vote button when the last vote is taken back', () => {
+        const votes = (mine: number) => (
+            <CardVotes
+                mine={mine}
+                total={mine}
+                budgetLeft={3}
+                onVote={vi.fn()}
+                onUnvote={vi.fn()}
+            />
+        );
+        const { rerender } = renderWithProviders(votes(1));
+        const remove = screen.getByRole('button', { name: 'Remove a vote' });
+
+        remove.focus();
+        fireEvent.click(remove);
+        rerender(votes(0));
+
+        expect(document.activeElement).toBe(
+            screen.getByRole('button', { name: 'Add a vote' }),
+        );
     });
 
     it('disables the vote button when no budget is left and keeps the reason reachable', () => {

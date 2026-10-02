@@ -47,7 +47,7 @@ export interface HealthCheckFormProps {
     /** Backlog: no submit endpoint; the button is rendered only when given. */
     onSubmit?: () => void;
     submitted?: boolean;
-    /** The retro is not editable or a request is running. */
+    /** The board is closed for editing: every score is disabled. */
     disabled?: boolean;
     className?: string;
 }
@@ -60,6 +60,7 @@ function ScaleQuestion({
     scale,
     endsId,
     readOnly,
+    disabled,
     onAnswer,
     onClear,
 }: {
@@ -67,7 +68,9 @@ function ScaleQuestion({
     value: HealthScore | undefined;
     scale: number;
     endsId: string;
+    /** Sent: the scores stay focusable and can no longer change. */
     readOnly: boolean;
+    disabled: boolean;
     onAnswer: (value: HealthScore) => void;
     onClear?: () => void;
 }) {
@@ -75,11 +78,15 @@ function ScaleQuestion({
     const refs = useRef<Record<number, HTMLButtonElement | null>>({});
     const scores = Array.from({ length: scale }, (_, index) => index + 1);
     const focusable: HealthScore = value ?? 1;
-    const todo = value === undefined && !readOnly;
+    const locked = readOnly || disabled;
+    const todo = value === undefined && !locked;
     const respondents = statement.answeredBy ?? [];
     const hiddenRespondents = respondents.length - visibleRespondents;
     const hasProgress = statement.count !== undefined || respondents.length > 0;
-    const canClear = value !== undefined && onClear !== undefined && !readOnly;
+    const canClear = value !== undefined && onClear !== undefined && !locked;
+    const answeredLabel = t(':count answered', {
+        count: statement.count ?? respondents.length,
+    });
 
     function choose(next: HealthScore) {
         refs.current[next]?.focus();
@@ -88,7 +95,7 @@ function ScaleQuestion({
 
     function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
         if (
-            readOnly ||
+            locked ||
             event.defaultPrevented ||
             event.metaKey ||
             event.ctrlKey ||
@@ -143,8 +150,17 @@ function ScaleQuestion({
             className="flex min-w-0 flex-col gap-2"
         >
             <legend className="mb-2 flex min-w-0 flex-col gap-0.5">
-                <span className="text-sm font-bold break-words">
-                    {statement.label}
+                <span className="flex min-w-0 items-start gap-1.5">
+                    <span className="min-w-0 text-sm font-bold break-words">
+                        {statement.label}
+                    </span>
+                    {value !== undefined ? (
+                        <CircleCheckIcon
+                            role="img"
+                            aria-label={t('Answered')}
+                            className="mt-0.5 size-4 shrink-0 text-skrum-success-text"
+                        />
+                    ) : null}
                 </span>
                 <span className="text-body-sm break-words text-muted-foreground">
                     {statement.text}
@@ -152,7 +168,7 @@ function ScaleQuestion({
             </legend>
             <div
                 role="radiogroup"
-                aria-label={statement.label}
+                aria-label={statement.text}
                 aria-describedby={endsId}
                 aria-readonly={readOnly || undefined}
                 onKeyDown={handleKeyDown}
@@ -178,20 +194,21 @@ function ScaleQuestion({
                             aria-checked={checked}
                             aria-label={t('Score :score', { score })}
                             aria-disabled={readOnly || undefined}
+                            disabled={disabled}
                             tabIndex={score === focusable ? 0 : -1}
                             data-score={score}
                             data-state={checked ? 'on' : 'off'}
                             onClick={() => {
-                                if (!readOnly) {
+                                if (!locked) {
                                     onAnswer(score);
                                 }
                             }}
                             className={cn(
-                                'h-11 min-w-0 rounded-md border bg-card font-bold tabular-nums transition-colors duration-140 ease-standard outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none',
+                                'h-11 min-w-0 rounded-md border bg-card font-bold tabular-nums transition-colors duration-140 ease-standard outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none',
                                 todo
                                     ? 'border-dashed border-input'
                                     : 'border-input',
-                                !readOnly && 'hover:bg-accent',
+                                !locked && 'hover:bg-accent',
                                 readOnly && 'cursor-default',
                                 checked &&
                                     'border-primary bg-primary text-primary-foreground hover:bg-primary',
@@ -210,7 +227,7 @@ function ScaleQuestion({
                     >
                         {respondents.length > 0 ? (
                             <ul
-                                aria-label={t('Answered')}
+                                aria-label={answeredLabel}
                                 className="flex -space-x-1"
                             >
                                 {respondents
@@ -221,6 +238,13 @@ function ScaleQuestion({
                                                 size="sm"
                                                 name={respondent.name}
                                                 src={respondent.avatarUrl}
+                                                imgProps={
+                                                    respondent.avatarUrl
+                                                        ? {
+                                                              alt: respondent.name,
+                                                          }
+                                                        : undefined
+                                                }
                                                 className="ring-2 ring-card"
                                             />
                                         </li>
@@ -238,9 +262,7 @@ function ScaleQuestion({
                                     statement.count === 0 && 'opacity-70',
                                 )}
                             >
-                                {t(':count answered', {
-                                    count: statement.count,
-                                })}
+                                {answeredLabel}
                             </span>
                         ) : null}
                     </div>
@@ -344,22 +366,28 @@ export function HealthCheckForm({
                         {t('No statements to answer.')}
                     </p>
                 ) : (
-                    statements.map((statement) => (
-                        <ScaleQuestion
-                            key={statement.key}
-                            statement={statement}
-                            value={valueOf(statement)}
-                            scale={scale}
-                            endsId={endsId}
-                            readOnly={submitted || disabled}
-                            onAnswer={(value) => onAnswer(statement.key, value)}
-                            onClear={
-                                onClear
-                                    ? () => onClear(statement.key)
-                                    : undefined
-                            }
-                        />
-                    ))
+                    <ol className="flex flex-col gap-5">
+                        {statements.map((statement) => (
+                            <li key={statement.key} className="min-w-0">
+                                <ScaleQuestion
+                                    statement={statement}
+                                    value={valueOf(statement)}
+                                    scale={scale}
+                                    endsId={endsId}
+                                    readOnly={submitted}
+                                    disabled={disabled}
+                                    onAnswer={(value) =>
+                                        onAnswer(statement.key, value)
+                                    }
+                                    onClear={
+                                        onClear
+                                            ? () => onClear(statement.key)
+                                            : undefined
+                                    }
+                                />
+                            </li>
+                        ))}
+                    </ol>
                 )}
             </div>
             <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 border-t px-5 py-4 @max-card-narrow/card:px-4">

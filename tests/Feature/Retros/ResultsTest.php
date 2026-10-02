@@ -38,7 +38,7 @@ it('only builds results once the retro is completed', function (RetroPhase $phas
     [, $viewer] = retroMember($retro);
 
     expect(resultsOf($retro, $viewer))->toBeNull();
-})->with([RetroPhase::Writing, RetroPhase::Voting, RetroPhase::Discussing]);
+})->with([RetroPhase::Writing, RetroPhase::Voting, RetroPhase::Discussing, RetroPhase::Actions, RetroPhase::Roti]);
 
 it('lists every participant and leaves games and summary empty', function () {
     $retro = Retro::factory()->inPhase(RetroPhase::Completed)->anonymous()->create();

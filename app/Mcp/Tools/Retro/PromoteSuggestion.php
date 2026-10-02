@@ -26,7 +26,7 @@ class PromoteSuggestion extends SkrumTool
 {
     protected string $name = 'retro.board.suggested_actions.promote';
 
-    protected string $description = 'Turn a suggested action of a retrospective into an action item, keeping its wording and theme. While the board is discussing any participant may do it (not while locked); once completed only its facilitator or a workspace admin. Each suggestion can be handled once.';
+    protected string $description = 'Turn a suggested action of a retrospective into an action item, keeping its wording and theme. While the board is in the Discussing, Actions or ROTI phase any participant may do it (not while locked); once completed only its facilitator or a workspace admin. Each suggestion can be handled once.';
 
     public function __construct(
         private McpContext $context,
