@@ -1,7 +1,10 @@
 <?php
 
+use App\Actions\Whiteboards\CreateWhiteboard;
 use App\Models\User;
+use App\Models\WhiteboardElement;
 use App\Models\WhiteboardMember;
+use App\Support\WhiteboardTemplates\BuiltInTemplates;
 
 it('[P18e-07-01] prefills the name on the guest-join page, lets the visitor in with "Join", and shows the notice for an invalid link', function () {
     ['board' => $board] = whiteboardWithFacilitator();
@@ -167,4 +170,88 @@ it('[P18e-07-06] renames the board in place for everyone, gives a guest no field
 
     $guestPage->click('header button[aria-label="Export"]')
         ->assertSee('Download board data');
+});
+
+it('[P18e-07-07] recolours a selected rectangle and a selected sticky from the colour bar, hides the canvas\'s quick picks but keeps its colour picker, and checks the colour of a template note', function () {
+    ['board' => $board, 'fran' => $fran] = whiteboardWithFacilitator();
+    $bar = '.whiteboard-canvas [data-slot="canvas-colors"] [role="radiogroup"][aria-label="Fill colour"]';
+    $quickPicksHidden = <<<'JS'
+        (() => {
+            const picks = [...document.querySelectorAll('.whiteboard-canvas .color-picker__top-picks')];
+
+            return picks.length > 0 && picks.every((pick) => getComputedStyle(pick).display === 'none');
+        })()
+        JS;
+
+    $page = $this->awaitRealtime($this->signIn($fran, $this->whiteboardPath($board)));
+
+    $page->assertNotPresent($bar);
+
+    $this->selectWhiteboardTool($page, 'rectangle');
+
+    $page->assertCount("{$bar} [role=\"radio\"]", 8)
+        ->assertPresent("{$bar} [role=\"radio\"][aria-label=\"Sun\"][aria-checked=\"true\"]");
+
+    $this->dragOnWhiteboard($page, [420, 320], [580, 420]);
+    $this->awaitWhiteboardStored($page, $board, 1);
+    $this->awaitWhiteboardScene($page, $board);
+
+    $rectangle = WhiteboardElement::query()->where('whiteboard_id', $board->id)->sole();
+
+    expect($rectangle->data['backgroundColor'])->toBe('#fdf1c2')
+        ->and($rectangle->data['strokeColor'])->toBe('#ddc362')
+        ->and($rectangle->is_sticky)->toBeFalse();
+
+    $page->assertPresent("{$bar} [role=\"radio\"][aria-label=\"Sun\"][aria-checked=\"true\"]")
+        ->assertScript($quickPicksHidden, true)
+        ->click("{$bar} [role=\"radio\"][aria-label=\"Sky\"]")
+        ->assertPresent("{$bar} [role=\"radio\"][aria-label=\"Sky\"][aria-checked=\"true\"]");
+
+    $this->awaitWhiteboardScene($page, $board);
+
+    expect($rectangle->fresh()->data['backgroundColor'])->toBe('#e2f3ff')
+        ->and($rectangle->fresh()->data['strokeColor'])->toBe('#8dccf9');
+
+    $page->click('.whiteboard-canvas button.color-picker__button.active-color[aria-label="Background"]')
+        ->assertPresent('.color-picker-content')
+        ->keys('.color-picker-content', 'Escape')
+        ->assertNotPresent('.color-picker-content');
+
+    $this->addWhiteboardSticky($page, 'Coral');
+    $this->awaitWhiteboardStored($page, $board, 2);
+    $this->awaitWhiteboardScene($page, $board);
+
+    $sticky = WhiteboardElement::query()->where('whiteboard_id', $board->id)->where('is_sticky', true)->sole();
+
+    expect($sticky->data['backgroundColor'])->toBe('#ffebe8')
+        ->and($sticky->data['strokeColor'])->toBe('#f9aea4');
+
+    $page->assertPresent("{$bar} [role=\"radio\"][aria-label=\"Coral\"][aria-checked=\"true\"]")
+        ->click("{$bar} [role=\"radio\"][aria-label=\"Moss\"]");
+
+    $this->awaitWhiteboardScene($page, $board);
+
+    expect($sticky->fresh()->data['backgroundColor'])->toBe('#e1f8dc')
+        ->and($sticky->fresh()->data['strokeColor'])->toBe('#a5d39b')
+        ->and($sticky->fresh()->is_sticky)->toBeTrue()
+        ->and($rectangle->fresh()->data['backgroundColor'])->toBe('#e2f3ff');
+
+    $fromTemplate = resolve(CreateWhiteboard::class)->handle($board->team, $fran, 'SWOT of the quarter', [
+        'elements' => resolve(BuiltInTemplates::class)->elements('swot'),
+        'files' => [],
+    ]);
+    $note = WhiteboardElement::query()
+        ->where('whiteboard_id', $fromTemplate->id)
+        ->get()
+        ->first(fn (WhiteboardElement $element): bool => $element->data['backgroundColor'] === '#ffebe8');
+    $middle = [$note->data['x'] + $note->data['width'] / 2, $note->data['y'] + 20];
+
+    $templatePage = $this->awaitRealtime($page->navigate($this->whiteboardPath($fromTemplate)));
+
+    $templatePage->assertNotPresent($bar);
+
+    $this->dragOnWhiteboard($templatePage, $middle, $middle, 1);
+
+    $templatePage->assertPresent("{$bar} [role=\"radio\"][aria-label=\"Coral\"][aria-checked=\"true\"]")
+        ->assertCount("{$bar} [role=\"radio\"][aria-checked=\"true\"]", 1);
 });

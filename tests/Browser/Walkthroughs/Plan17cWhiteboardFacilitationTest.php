@@ -210,7 +210,7 @@ it('[P17c-02a] puts a guest in view mode on a locked board, refuses the guest\'s
     $guestPage->assertPresent('[data-realtime="connected"]')
         ->assertDontSee('Your access to this board has ended.');
 
-    $this->addWhiteboardSticky($franPage, 'Yellow');
+    $this->addWhiteboardSticky($franPage, 'Sun');
     $this->awaitWhiteboardElements($guestPage, 2);
 
     $moved = $this->writeWhiteboardElements($franPage, $board, [[...$shape, 'version' => 2, 'versionNonce' => 7001, 'x' => 250]]);
@@ -235,7 +235,7 @@ it('[P17c-02a] puts a guest in view mode on a locked board, refuses the guest\'s
         ->assertPresent($stickyTool)
         ->assertPresent($shapesTool);
 
-    $this->addWhiteboardSticky($guestPage, 'Blue');
+    $this->addWhiteboardSticky($guestPage, 'Sky');
     $this->awaitWhiteboardStored($guestPage, $board, 3);
     $this->awaitWhiteboardScene($guestPage, $board);
     $this->awaitWhiteboardElements($franPage, 3);
@@ -259,7 +259,7 @@ it('[P17c-02b] drops the note a guest adds on a board that was locked behind the
     $guestPage->assertPresent('button[aria-label="Sticky note"]')
         ->assertNotPresent(P17cViewMode);
 
-    $this->addWhiteboardSticky($guestPage, 'Green');
+    $this->addWhiteboardSticky($guestPage, 'Moss');
 
     $guestPage->assertPresent(P17cLockedToast)
         ->assertPresent(P17cLockedNotice)

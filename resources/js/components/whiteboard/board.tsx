@@ -16,12 +16,24 @@ import {
     subscribeToTheme,
 } from '@/lib/whiteboard/appearance';
 import {
+    HiddenColorBar,
+    colorBarState,
+    strokeForTool,
+    type ColorBarState,
+} from '@/lib/whiteboard/canvas-colors';
+import {
+    CaptureUpdateAction,
     Excalidraw,
     HiddenSaveToDiskAction,
     MainMenu,
     closeTextEditor,
     type ExcalidrawImperativeAPI,
 } from '@/lib/whiteboard/excalidraw';
+import {
+    CANVAS_LIGHT,
+    DEFAULT_POSTIT_COLOR,
+    POSTIT,
+} from '@/lib/whiteboard/palette';
 import { restoreScene } from '@/lib/whiteboard/restore';
 import { sceneStamp } from '@/lib/whiteboard/scene-stamp';
 import { createSceneSync, type SceneSync } from '@/lib/whiteboard/scene-sync';
@@ -41,10 +53,23 @@ import {
 import { BoardNotices } from './board-notices';
 import { BoardReactions } from './board-reactions';
 import { BoardTimer } from './board-timer';
+import { CanvasColors } from './canvas-colors';
 import { SceneExport } from './scene-export';
 import { StickyTool } from './sticky-tool';
 
 const PollMs = 5000;
+
+/**
+ * Local to this browser, never synced: the paper is the light value of the
+ * canvas token (the library inverts it in the dark theme) and a new shape is
+ * a Sun note. The stroke is left to `strokeForTool`.
+ */
+const InitialAppState = {
+    viewBackgroundColor: CANVAS_LIGHT,
+    currentItemBackgroundColor: POSTIT[DEFAULT_POSTIT_COLOR].bg,
+    currentItemFillStyle: 'solid',
+    currentItemRoughness: 1,
+} as const;
 
 export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
     const { t } = useTrans();
@@ -54,6 +79,8 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
     const viewOnly = board.locked && !me.isFacilitator;
     const [api, setApi] = useState<ExcalidrawImperativeAPI | null>(null);
     const [offline, setOffline] = useState(false);
+    const [colors, setColors] = useState<ColorBarState>(HiddenColorBar);
+    const [stickyOpen, setStickyOpen] = useState(false);
     const [hideMyCursor, setHideMyCursor] = useHideMyCursor();
     const facilitationInHeader = useFacilitationInHeader();
     const sync = useRef<SceneSync | null>(null);
@@ -198,7 +225,12 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
                     sticky={
                         api &&
                         !toolbarSlot &&
-                        !viewOnly && <StickyTool api={api} />
+                        !viewOnly && (
+                            <StickyTool
+                                api={api}
+                                onOpenChange={setStickyOpen}
+                            />
+                        )
                     }
                 />
             }
@@ -229,18 +261,25 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
                 {api &&
                     toolbarSlot &&
                     createPortal(
-                        <StickyTool api={api} inToolbar />,
+                        <StickyTool
+                            api={api}
+                            inToolbar
+                            onOpenChange={setStickyOpen}
+                        />,
                         toolbarSlot,
                     )}
                 <div
                     ref={canvas}
-                    className="whiteboard-canvas relative min-h-0 flex-1"
+                    className="whiteboard-canvas skrum-whiteboard--fallback-colors relative min-h-0 flex-1"
                     data-facilitator={me.isFacilitator}
                 >
                     <Excalidraw
                         viewModeEnabled={viewOnly ? true : undefined}
                         excalidrawAPI={setApi}
-                        initialData={{ elements: initialElements as never }}
+                        initialData={{
+                            elements: initialElements as never,
+                            appState: InitialAppState,
+                        }}
                         name={board.title}
                         onChange={(elements, appState) => {
                             const reported =
@@ -254,6 +293,30 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
                                 reported,
                                 appState.editingTextElement?.id ?? null,
                             );
+
+                            const bar = colorBarState(elements, appState);
+
+                            setColors((shown) =>
+                                shown.visible === bar.visible &&
+                                shown.value === bar.value
+                                    ? shown
+                                    : bar,
+                            );
+
+                            const stroke = strokeForTool(appState);
+
+                            if (stroke !== null) {
+                                // Outside the library's own update, which reports this change.
+                                queueMicrotask(() =>
+                                    api?.updateScene({
+                                        appState: {
+                                            currentItemStrokeColor: stroke,
+                                        },
+                                        captureUpdate:
+                                            CaptureUpdateAction.NEVER,
+                                    }),
+                                );
+                            }
                         }}
                         onPointerUpdate={cursors.onPointerUpdate}
                         langCode={CanvasLocales[locale as string] ?? 'en'}
@@ -294,6 +357,9 @@ export default function Board({ snapshot }: { snapshot: WhiteboardSnapshot }) {
                             <MainMenu.DefaultItems.ChangeCanvasBackground />
                         </MainMenu>
                     </Excalidraw>
+                    {api && !viewOnly && !stickyOpen && (
+                        <CanvasColors api={api} state={colors} />
+                    )}
                 </div>
                 <BoardReactions state={state} />
             </div>

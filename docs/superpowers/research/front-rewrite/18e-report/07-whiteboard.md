@@ -136,3 +136,44 @@ None: the mockup has no element in the menu or in these dialogs that a later pla
 ### Captures
 
 `tests/Browser/Visual/WhiteboardVisualTest.php`: `whiteboard-board-menu-*`, `whiteboard-board-save-template-*`, `whiteboard-board-hand-over-*`, `whiteboard-board-delete-*` (the facilitator, light and dark, 390 and 1440, EN and FR), taken on the real page. The `whiteboard-board-*` captures change by the menu trigger's icon only.
+
+## Task 7.4 — Eight-colour sticky notes and colour bar
+
+### Parity (brief 07 §3, rows 8–9, 11, 50, 52, 54)
+
+| # | Action | New control | Done |
+|---|---|---|---|
+| 8 | Add a sticky note, with its colour | `StickyTool`: the trigger `button[aria-label="Sticky note"]` in the canvas's shapes toolbar opens the eight colours (`WhiteboardColorBar`, radiogroup "Fill colour", Sun … Moss) as the sub-bar of the tool. A press on a colour adds a 200 × 200 note in the middle of the view, selected; the arrow keys move the choice without adding, and the choice is kept for the next note. Fill and border are the literal light values of the colour (7-D1, 7-D4); the marker `customData.skrum.kind = 'sticky'` is unchanged | yes |
+| 9 | Sticky button when the toolbar slot is absent | same condition in `board.tsx`: the outline button "Sticky note" in the header actions, hidden in view mode | yes |
+| 11 | Export dialog "Download board data" | `scene-export.tsx`: same file and name, shown as a card (icon, sentence, button) | yes |
+| 50 | Canvas background | `initialData.appState.viewBackgroundColor = CANVAS_LIGHT`, local to the browser, not synced; the library inverts it in the dark theme | yes |
+| 52 | Sticky tool in the shapes toolbar | `use-whiteboard-toolbar-slot`, unchanged | yes |
+| 54 | Colour bar for new shapes and for the selection (7-D3) | `CanvasColors` under the tool bar: shown for the rectangle, diamond and ellipse tools and for a selection that holds such a shape. A colour recolours the selected filled shapes (fill and border, version bumped, one undo step) and becomes the fill of the next ones. The checked radio is the colour of the selection, or of the next shape; none is checked for a fill outside the eight or a selection of several colours. Hidden in view mode, while a dialog of the canvas is open, and while the sticky tool's colours are open (one radiogroup at a time). The wrapper class `skrum-whiteboard--fallback-colors` hides the canvas's quick picks; its colour picker ("more colours") stays | yes |
+
+A new filled shape is a Sun note with the Sun border (`ExcalidrawTheme` README). The current stroke follows the tool (`strokeForTool`): the border of the fill for rectangle, diamond and ellipse, Excalidraw's default stroke for every other tool. A stroke the user chose in the picker is left alone.
+
+Dead code removed: `StickyColors` (the six old hex), `CanvasDarkFilterClass`, `RequiredApi`, `RequiredProps` and the unused type re-exports of `lib/whiteboard/excalidraw.ts`.
+
+### Places left
+
+| Mockup element | Slot | Later |
+|---|---|---|
+| "Convert to actions" on a selection (and the other actions of the mockup's selection bar) | `selectionActions` of `CanvasColors` (`canvas-colors.tsx`), rendered after the colours in the same floating row | WB-5 |
+| Author of a sticky | no region of this plan's chrome: the author is drawn on the note by the canvas. The server already stores `author_member_id` per element, and `stickyAt` (`sticky-tool.tsx`) is the one place a note is built | WB-4 |
+
+### Differences with the mockup
+
+| Difference | Row |
+|---|---|
+| The colour bar is alone under the tool bar: no "n elements" counter, no group / align / lock / convert / delete beside it (the canvas's own panel has them) | D-21 |
+| The colour bar sits under the canvas's hint line, 6rem from the top of the canvas, not right under the tool bar: the library writes its hint there | D-21 (the library's tool bar is kept) |
+| The canvas's property panel keeps its "Stroke" and "Background" rows, each reduced to its picker button (and the library's separator before it); the picker still offers the library's own colours. The mockup shows the eight swatches inside the panel | no row: answer 7-D3 and the README's fallback ("hide the native picks and show the sub-bar"). Reported |
+| The mockup's sub-bar of the sticky tool shows five colours; built: the eight | answer 7-D1 |
+| A new filled shape has the border of its colour and lines, arrows, pencil and text keep the default stroke. The README's snippet sets the Sun border as the current stroke for every tool, which would write text and lines in a pale yellow that cannot be read | A (contrast); the README's own line "free strokes: `--foreground`". Reported |
+| `currentItemFontFamily: 5` is not set: it is the library's default in 0.18.1 | none needed |
+| The swatches of the bar are the theme tokens; in the dark theme the canvas shows the stored light colours through the library's filter, so a swatch and its note differ slightly | `ExcalidrawTheme` README ("the dark canvas is derived") |
+| Sticky notes keep sharp corners and no author | D-21 (WB-4) |
+
+### Captures
+
+`tests/Browser/Visual/WhiteboardVisualTest.php`: `whiteboard-board-colors-*` (the rectangle tool: the colour bar and the canvas's panel without its quick picks) and `whiteboard-board-sticky-colors-*` (the colours of the sticky tool) and `whiteboard-board-export-*` (the export card; at 390 in French its button label is cut with an ellipsis), the facilitator, light and dark, 390 and 1440, EN and FR, taken on the real page. The earlier `whiteboard-board-*` captures change by the canvas background.

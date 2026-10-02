@@ -199,3 +199,52 @@ it('[P18e-07-05] renders the board menu and its dialogs to the facilitator witho
     'hand over' => ['whiteboard-board-hand-over', 'Hand over facilitation', '[role="dialog"] #whiteboard-new-facilitator'],
     'delete' => ['whiteboard-board-delete', 'Delete this board', '[role="alertdialog"]'],
 ]);
+
+it('[P18e-07-05] renders the colour bar of the canvas, the colours of the sticky tool and the export card without overflow', function (string $name, string $surface) {
+    ['board' => $board, 'fran' => $fran] = p18eVisualBoard();
+
+    RateLimiter::for('login', fn (): Limit => Limit::none());
+
+    $this->captureVisuals(
+        $name,
+        $this->whiteboardPath($board),
+        function (string $path, array $options) use ($fran, $name, $surface) {
+            User::query()->whereKey($fran->id)->update(['locale' => str_starts_with($options['locale'], 'fr') ? 'fr' : 'en']);
+
+            $page = visit('/login', $options);
+
+            $page->fill('#email', $fran->email)
+                ->fill('#password', 'password')
+                ->click('@login-button')
+                ->assertPathIsNot('/login');
+
+            $page = $this->awaitRealtime($page->navigate($path))
+                ->assertPresent('[data-scene^="3:"]')
+                ->assertScript('document.querySelectorAll(\'[data-slot="person-avatar"] .animate-pulse\').length', 0);
+
+            p18eVisualLeaveCanvasToolbarOut($page);
+
+            if ($name === 'whiteboard-board-colors') {
+                $this->selectWhiteboardTool($page, 'rectangle');
+            }
+
+            if ($name === 'whiteboard-board-sticky-colors') {
+                $page->click('.whiteboard-canvas .App-toolbar [data-slot="popover-trigger"]');
+            }
+
+            if ($name === 'whiteboard-board-export') {
+                $page->click('.whiteboard-canvas [data-testid="main-menu-trigger"]')
+                    ->click('[data-testid="dropdown-menu"] [data-testid="json-export-button"]');
+
+                return $page->assertPresent($surface);
+            }
+
+            return $page->assertPresent($surface)
+                ->assertCount('[role="radiogroup"]', 1);
+        },
+    );
+})->with([
+    'colour bar' => ['whiteboard-board-colors', '.whiteboard-canvas [data-slot="canvas-colors"] [role="radiogroup"]'],
+    'sticky colours' => ['whiteboard-board-sticky-colors', '[data-slot="popover-content"] [role="radiogroup"]'],
+    'export card' => ['whiteboard-board-export', '.ExportDialog--json [data-slot="scene-export"]'],
+]);

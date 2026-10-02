@@ -12,7 +12,7 @@ it('[P17d-00c] types a note into a sticky note by double-click, stores the text 
     $this->awaitWhiteboardElements($franPage, 0);
     $this->awaitWhiteboardElements($guestPage, 0);
 
-    $this->addWhiteboardSticky($franPage, 'Yellow');
+    $this->addWhiteboardSticky($franPage, 'Sun');
 
     $this->awaitWhiteboardStored($franPage, $board, 1);
     $this->awaitWhiteboardElements($guestPage, 1);
