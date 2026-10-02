@@ -217,7 +217,7 @@ it('[P11b-17] hides the API tokens entry and page and answers 404 on the MCP end
         ->assertSeeIn('nav[aria-label="Settings"]', 'Security')
         ->assertDontSeeIn('nav[aria-label="Settings"]', 'API tokens')
         ->navigate('/settings/api-tokens')
-        ->assertSee('Not Found')
+        ->assertSeeIn('[data-slot="error-page"][data-status="404"]', 'ERROR 404')
         ->assertNotPresent('#mcp-url');
 
     p11bPostMcp($plainText)->assertNotFound();

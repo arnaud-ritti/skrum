@@ -34,7 +34,7 @@ Shared components extended, each in its own commit: `SubNav` entries take an `ic
 | Difference | Covered by |
 |---|---|
 | No presence colours, no "Upload photo", no "Use initials": the avatar stands alone on its row | D-25 |
-| The footer sentence is "A changed email address has to be verified again.", shown only when the instance verifies addresses; the mockup says "Changing your email sends a confirmation link.", which is false: the server clears the verification and sends nothing until the member asks | rule 13, false statement: no row yet, reported |
+| The footer sentence is "A changed email address has to be verified again.", shown only when the instance verifies addresses; the mockup says "Changing your email sends a confirmation link.", which is false: the server clears the verification and sends nothing until the member asks | D-47 |
 | One page per section; the mockup stacks Profile, Appearance, Notifications and API tokens on one long page for review | README of the mockup ("une page par sous-nav") |
 | The sub-navigation is named "Settings" (the mockup of this screen says "Settings sections") | Task 0.8, `Plan11bApiTokensTest`, ScreenSecurity |
 | The "Avatar style" group (18d, no mockup on this screen) sits under the Profile group, in its 18d form without a card | brief 10 §1 (excluded from this lane) |
@@ -78,7 +78,7 @@ Components extended: `SettingsCard` takes `header` (a row above the body) and `f
 |---|---|---|
 | Active sessions card, under the passkeys | `SecurityStack` prop `activeSessions` | AC-2 |
 | Linked accounts card, under the sessions | `SecurityStack` prop `linkedAccounts` | AC-3 |
-| "Not found in known data breaches", in the rule list of the password card | `PasswordCard` prop `breachCheck` (an `li`, last of `[data-slot="password-rules"]`) | AC-6 |
+| "Not found in known data breaches" as a live result, in the rule list of the password card | `PasswordCard` prop `breachCheck` (an `li`, last of `[data-slot="password-rules"]`); today it holds `PasswordBreachCheck` ("Checked against known data breaches when you save") when the server's rule has the check (prop `checksCompromisedPasswords`), D-48 | AC-6 |
 
 Nothing is rendered while they are undefined.
 
@@ -87,23 +87,23 @@ Nothing is rendered while they are undefined.
 | Difference | Covered by |
 |---|---|
 | No "Last changed 8 months ago": the description of the Password group is the sentence of the old page | D-25 |
-| No "Other sessions are signed out when you change it." in the footer of the password card: the application does not sign the other sessions out | rule 13, false statement: no row yet, reported |
+| No "Other sessions are signed out when you change it." in the footer of the password card: the application does not sign the other sessions out | D-47 |
 | The rule list is the server's rule (`passwordRules`), each part marked as the typed password meets it; not "12 characters / not found in leaks / different from your email" | plan, Task 10.2 (D-28's reason); the breach line is a place left |
 | The meter has three levels (Weak, Good, Strong) on four segments; "Weak" is in the destructive colour; its hint says "more characters", not a count | plan, Task 10.2 (client-side estimate) |
 | The match mark of the confirmation sits before the show / hide button, which the field keeps | none needed (the mockup draws one state) |
 | The QR code is Fortify's picture: no logo in its centre | N: the server draws it |
 | The six boxes are the `InputOTP` of the design system (two joined groups of three), not six separate boxes | `InputOTP/README.md` |
 | The recovery codes card replaces the setup card after the code is accepted; the mockup stacks the three states for review | README of the mockup ("étape 3, juste après l'activation") |
-| The warning says "Keep these codes somewhere safe." and does not say they are shown once: the member can view them again (parity row 17) | rule 13, false statement: no row yet, reported |
+| The warning says "Keep these codes somewhere safe." and does not say they are shown once: the member can view them again (parity row 17) | D-47 |
 | 8 codes of 21 characters (Fortify's), so three columns at 1440 and one at 390, where the mockup has 10 short codes and two columns on a phone | N: the product's codes |
 | No Print button | D-26 |
 | Enabled state: no "last used", no "Change device", no "generated on"; the codes row has "View recovery codes" and, once shown, "Regenerate codes" | D-25; parity rows 17, 18 |
-| "Turn off 2FA" does not ask for a code and its sentence does not say so | brief row 19 (the server asks for none): F |
+| "Turn off 2FA" does not ask for a code and its sentence does not say so | D-49 |
 | A card for the "Off" state before the setup (sentence of the old page, "Enable 2FA" in the footer): the mockup starts at the setup | parity row 11 |
 | A Passkeys group, which the mockup does not have | parity rows 21–26 |
 | No Active sessions, no Linked accounts | D-25; places left |
 | The description under "Security" names what the page has ("Password, two-factor authentication and passkeys."), not "signed-in devices and linked accounts" | D-25 (F) |
-| French badge "Activé" / "Désactivé", where the mockup has the feminine "Activée" / "Désactivée": the keys "On" and "Off" are shared | none: reported |
+| French badge "Activé" / "Désactivé", where the mockup has the feminine "Activée" / "Désactivée": the keys "On" and "Off" are shared | D-50 |
 | Width of the page and place of the sub-navigation: those of the settings shell of 10.1 | Task 10.1 |
 
 ## Task 10.3 — appearance and notifications
@@ -136,14 +136,14 @@ Nothing is rendered while the two slots are undefined.
 
 | Difference | Covered by |
 |---|---|
-| The sentence under "Appearance" is "The theme is kept on this device. The language is saved on your account.", not "Stored on this account, synced across devices.": the theme lives in the browser (local storage and a cookie) | rule 13, false statement: no row yet, reported |
+| The sentence under "Appearance" is "The theme is kept on this device. The language is saved on your account.", not "Stored on this account, synced across devices.": the theme lives in the browser (local storage and a cookie) | D-47 |
 | No "Reduce animations" row | D-25; place left |
 | Four languages (English, Français, Español, Deutsch), the mockup has two; at 390 the control goes under its label | brief row 29 |
 | The checked theme card has the outer 2px ring of `RadioGroupCardItem` around its border; the mockup has a 1px inner line. The card keeps the card background (not the soft primary of the component) as the mockup | `RadioGroupCardItem` (18c); the 2px focus ring of rule 5 shares that ring |
 | At 390 the previews are 3.5rem high and the theme icon is hidden, so that "Système" and its radio fit a third of the card | README of the mockup ("3 colonnes compactes (aperçu réduit)") |
 | One event, "Action item reminders", with the time of the reminders under it; the mockup has six events | D-25 |
 | A "Save" footer under the table; the switches of the mockup save themselves | O: 10-D6 |
-| At 390 the table keeps its head and its two columns (4rem each) instead of "label + 2 switches" rows without a head: with one event the columns fit | none: reported |
+| At 390 the table keeps its head and its two columns (4rem each) instead of "label + 2 switches" rows without a head: with one event the columns fit | D-53 |
 | An info alert above the table when the instance sends no reminders | parity row 34 |
 | One page per section, the "Settings" title and the sub-navigation of 10.1 | Task 10.1 |
 
@@ -182,13 +182,13 @@ None: the task has no "Places left" line.
 
 | Difference | Covered by |
 |---|---|
-| The table has eight columns (Name, Scopes, Team, Created, Expires, Last used, Status, action), not the mockup's four (Token with its scope codes, Last used, Expires, action); in the 50rem column the dates take two lines | plan, Task 10.4 ("eight columns in the same order", `Plan11bApiTokensTest`): no row, reported |
-| Dates are absolute ("Sep 14, 2026"), not relative ("2 h ago", "in 90 days") | `Plan11bApiTokensTest` (`p11bCellShowsDate`): no row, reported |
-| The scopes of a token are badges with their label ("Read"), not mono codes; the codes are in the form | `Plan11bApiTokensTest` (badges of the second cell): no row, reported |
+| The table has eight columns (Name, Scopes, Team, Created, Expires, Last used, Status, action), not the mockup's four (Token with its scope codes, Last used, Expires, action); in the 50rem column the dates take two lines | plan, Task 10.4 ("eight columns in the same order", `Plan11bApiTokensTest`): D-51 |
+| Dates are absolute ("Sep 14, 2026"), not relative ("2 h ago", "in 90 days") | `Plan11bApiTokensTest` (`p11bCellShowsDate`): D-51 |
+| The scopes of a token are badges with their label ("Read"), not mono codes; the codes are in the form | `Plan11bApiTokensTest` (badges of the second cell): D-51 |
 | No struck-through "revoked" row | D-25 |
 | A "Team" field beside name and expiration; three scopes (`mcp:read`, `mcp:write`, `mcp:delete`), reading always ticked | parity rows 39, 40 (N: the product's scopes) |
-| The sentence under the title is "Connect an AI assistant that supports MCP to skrum with a personal token.", not "Personal tokens for the Skrüm REST API and MCP server. They act as you.": there is no REST API | rule 13, false statement: no row yet, reported |
-| The success box says "Copy your token now. You won't be able to see it again." (the mockup: "Token created — copy it now, you won't see it again.") | `Plan11bApiTokensTest` P11b-02, P11b-18a: no row, reported |
+| The sentence under the title is "Connect an AI assistant that supports MCP to skrum with a personal token.", not "Personal tokens for the Skrüm REST API and MCP server. They act as you.": there is no REST API | D-47 |
+| The success box says "Copy your token now. You won't be able to see it again." (the mockup: "Token created — copy it now, you won't see it again.") | `Plan11bApiTokensTest` P11b-02, P11b-18a: D-52 |
 | While the new token is shown the footer and "Create token" are replaced by the panel, which also holds the client configuration tabs, "Copy configuration" and "Done"; the mockup shows the box and the footer together | plan, Task 10.4; parity rows 44, 45 |
 | `role="status"` is on the sentence of the box, not on the box (it holds a field and a button) | A |
 | "Revoke" has a trash icon; the mockup's is a label alone | A: rule 6 |
@@ -231,14 +231,14 @@ Page `teams/integrations` renders `TeamSettingsShell` itself and is in `ownLayou
 |---|---|
 | A sub-navigation "Team" and "Integrations" on the left (a horizontal list below `lg`), not the segmented tabs at the right of the head | O: 10-D4, 10-D5 |
 | No "General", "Members & rituals", "Data & export" and nothing of what they hold | D-27 |
-| Under the name of the team: ":count members" only, not "Product team · 11 members · created in March 2025". The team has no description (D-24); **its creation date is held by the server and not sent to this page** | D-24 for the description; the date: no row, reported |
-| Three crumbs (team › Team settings › Integrations), the mockup has two | none: reported (brief 10 row 53) |
-| No "Changes saved" indicator in the topbar: nothing on this page saves by itself | none: reported |
+| Under the name of the team: ":count members" only, not "Product team · 11 members · created in March 2025". The team has no description (D-24); **its creation date is held by the server and not sent to this page** | D-24 for the description; the date: D-57 (open: needs a §9 item) |
+| Three crumbs (team › Team settings › Integrations), the mockup has two | D-56 |
+| No "Changes saved" indicator in the topbar: nothing on this page saves by itself | D-56 |
 | The mark of the team in the head has one letter ("A", as the mockup); the sidebar of 18b shows two ("AT") | none: reported |
-| One card per provider (head with the logo box, the name and the status; body; footer band with the actions), not one row per provider in a single card: a connection has up to four details and three actions, and the trackers hold whole panels | brief 10 §6 ("no mockup: designed from `.st-card` / `.st-int`"); no row, reported |
-| The status is a badge at the end of the head ("Connected" in the success colours), not a coloured line under the name with the workspace and the channel; those are in the details list | `Plan12a`, `Plan14a` (the first badge of the card is the status); no row, reported |
-| No switch per integration and no "Configure": a connection is connected or not, it has no "off" state; the actions are "Connect", "Reconnect", "Replace URL", "Send a test message", "Disconnect" | N proposed (the product has no disabled connection): no row, reported |
-| Slack has the `hash` icon, not `slack`: lucide marks its brand icons deprecated, and no dependency may be added for the official kits | none: reported |
+| One card per provider (head with the logo box, the name and the status; body; footer band with the actions), not one row per provider in a single card: a connection has up to four details and three actions, and the trackers hold whole panels | brief 10 §6 ("no mockup: designed from `.st-card` / `.st-int`"); D-54 |
+| The status is a badge at the end of the head ("Connected" in the success colours), not a coloured line under the name with the workspace and the channel; those are in the details list | `Plan12a`, `Plan14a` (the first badge of the card is the status); D-54 |
+| No switch per integration and no "Configure": a connection is connected or not, it has no "off" state; the actions are "Connect", "Reconnect", "Replace URL", "Send a test message", "Disconnect" | N proposed (the product has no disabled connection): D-54 |
+| Slack has the `hash` icon, not `slack`: lucide marks its brand icons deprecated, and no dependency may be added for the official kits | D-55 |
 | "Disconnect" has an icon and the destructive colour | A: rule 6 |
 | The disconnect confirmation is a `dialog`, not an `alertdialog` (so not `ConfirmDialog`): `P12a-07a` clicks `[role="dialog"] button:has-text("Disconnect")` and waits for no `[role="dialog"]`, and the task lists no test change | plan, Task 10.5 ("Browser tests changed: none") |
 | Telegram and Mattermost cards, the Telegram command box, the URL dialog: no mockup | brief 10 §6 |
