@@ -24,6 +24,7 @@ import {
     ProviderDetails,
     providerCardProps,
 } from './provider-card';
+import type { DisconnectControl } from './provider-card';
 
 type Props = {
     card: IntegrationProviderCard;
@@ -124,9 +125,26 @@ export function TelegramIntegration({ card, scope, telegram }: Props) {
         </LoadingButton>
     );
 
+    const disconnect =
+        connection === null
+            ? undefined
+            : (control?: DisconnectControl) => (
+                  <DisconnectIntegrationDialog
+                      scope={scope}
+                      card={card}
+                      connection={connection}
+                      description={t(
+                          'The bot leaves :chat and nothing is posted there anymore.',
+                          { chat: connection.settings.chatTitle ?? '' },
+                      )}
+                      control={control}
+                  />
+              );
+
     return (
         <ProviderCard
             {...providerCardProps(card, Send, t)}
+            disconnect={disconnect}
             details={
                 connection !== null && (
                     <ProviderDetails
@@ -154,15 +172,7 @@ export function TelegramIntegration({ card, scope, telegram }: Props) {
                                 successMessage={t('Test message sent.')}
                             />
                         )}
-                        <DisconnectIntegrationDialog
-                            scope={scope}
-                            card={card}
-                            connection={connection}
-                            description={t(
-                                'The bot leaves :chat and nothing is posted there anymore.',
-                                { chat: connection.settings.chatTitle ?? '' },
-                            )}
-                        />
+                        {disconnect?.()}
                     </>
                 )
             }

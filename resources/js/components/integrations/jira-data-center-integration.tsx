@@ -15,6 +15,7 @@ import {
     ProviderDetails,
     providerCardProps,
 } from './provider-card';
+import type { DisconnectControl } from './provider-card';
 import { JiraTokenDialog } from './jira-token-dialog';
 import { PeoplePanel } from './people-panel';
 import { PrioritiesPanel } from './priorities-panel';
@@ -120,9 +121,31 @@ function ConnectedJiraDataCenter({
           )
         : '';
 
+    const disconnect = (control?: DisconnectControl) => (
+        <DisconnectIntegrationDialog
+            scope={scope}
+            card={card}
+            connection={connection}
+            label={usesToken ? t('Remove token') : undefined}
+            title={usesToken ? t('Remove the token?') : undefined}
+            description={
+                usesToken
+                    ? t(
+                          'skrum deletes the token. Ask :name to also revoke it in Jira under Profile → Personal Access Tokens.',
+                          { name: owner },
+                      )
+                    : t(
+                          'Imported tasks and exported issues keep their links but are no longer synced, and the people and priority mappings are deleted. Also revoke skrum under "Authorized applications" in your Jira profile.',
+                      )
+            }
+            control={control}
+        />
+    );
+
     return (
         <ProviderCard
             {...providerCardProps(card, ServerCog, t)}
+            disconnect={disconnect}
             actions={
                 <>
                     {usesToken && allowsToken && (
@@ -160,23 +183,7 @@ function ConnectedJiraDataCenter({
                             successMessage={t('The connection works.')}
                         />
                     )}
-                    <DisconnectIntegrationDialog
-                        scope={scope}
-                        card={card}
-                        connection={connection}
-                        label={usesToken ? t('Remove token') : undefined}
-                        title={usesToken ? t('Remove the token?') : undefined}
-                        description={
-                            usesToken
-                                ? t(
-                                      'skrum deletes the token. Ask :name to also revoke it in Jira under Profile → Personal Access Tokens.',
-                                      { name: owner },
-                                  )
-                                : t(
-                                      'Imported tasks and exported issues keep their links but are no longer synced, and the people and priority mappings are deleted. Also revoke skrum under "Authorized applications" in your Jira profile.',
-                                  )
-                        }
-                    />
+                    {disconnect()}
                 </>
             }
         >

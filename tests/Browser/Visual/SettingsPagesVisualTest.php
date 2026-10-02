@@ -587,7 +587,7 @@ it('renders the team integrations without overflow', function () {
             $admin,
             $path,
             $options,
-            '[data-slot="team-settings-shell"] [data-test="integration-card-msteams"] [data-slot="alert"]',
+            '[data-slot="team-settings-shell"] [data-test="integration-card-msteams"][data-status="reconnect"]',
         )->assertPresent('nav[aria-label] a[aria-current="page"]')
             ->assertCount('[data-test^="integration-card-"]', 4),
     );
@@ -607,7 +607,8 @@ it('renders the dialog that connects a channel by its URL, with a refused URL, w
             $path,
             $options,
             '[data-slot="team-settings-shell"] [data-test="integration-card-mattermost"]',
-        )->click('[data-test="integration-card-mattermost"] button')
+        )->click('[data-test="integration-card-mattermost"] [data-slot="provider-row-configure"]')
+            ->click('[data-test="integration-panel-mattermost"] [data-slot="sheet-footer"] button')
             ->fill('[role="dialog"] input[type="url"]', 'https://other.example.com/hooks/abcdefghijklmnopqrstuvwxyz')
             ->fill('[role="dialog"] input[maxlength="80"]', 'town-square')
             ->click('[role="dialog"] button[type="submit"]')
@@ -630,7 +631,8 @@ it('renders the Telegram command of a pending connection without overflow', func
                 $path,
                 $options,
                 '[data-slot="team-settings-shell"] [data-test="integration-card-telegram"]',
-            )->click('[data-test="integration-card-telegram"] button')
+            )->click('[data-test="integration-card-telegram"] [data-slot="provider-row-configure"]')
+                ->click('[data-test="integration-panel-telegram"] [data-slot="sheet-footer"] button')
                 ->assertPresent('[data-slot="telegram-pending-code"] code');
 
             $page->script(<<<'JS'
@@ -767,8 +769,10 @@ function p18eWebhookDeliveries(User $admin, string $path, array $options): mixed
         $admin,
         $path,
         $options,
-        '[data-slot="team-settings-shell"] [data-test="integration-card-webhook"] [data-slot="webhook-events"]',
-    )->click('[data-slot="webhook-deliveries"] button[aria-expanded="false"]')
+        '[data-slot="team-settings-shell"] [data-test="integration-card-webhook"]',
+    )->click('[data-test="integration-card-webhook"] [data-slot="provider-row-configure"]')
+        ->assertPresent('[data-test="integration-panel-webhook"] [data-slot="webhook-events"]')
+        ->click('[data-slot="webhook-deliveries"] button[aria-expanded="false"]')
         ->assertCount('table[aria-label] tbody tr', 4);
 }
 
@@ -814,14 +818,15 @@ it('renders the signing secret of a webhook, shown once, without overflow', func
                 $admin,
                 $path,
                 $options,
-                '[data-slot="team-settings-shell"] [data-test="integration-card-webhook"] [data-slot="webhook-events"]',
-            )->click('@rotate-webhook-secret')
-                ->click('[role="dialog"] button:last-child')
-                ->assertPresent('[role="dialog"] input[readonly]');
+                '[data-slot="team-settings-shell"] [data-test="integration-card-webhook"]',
+            )->click('[data-test="integration-card-webhook"] [data-slot="provider-row-configure"]')
+                ->click('@rotate-webhook-secret')
+                ->click('[role="dialog"]:not([data-slot="sheet-content"]) button:last-child')
+                ->assertPresent('[role="dialog"]:not([data-slot="sheet-content"]) input[readonly]');
 
             $page->script(<<<'JS'
                 () => {
-                    document.querySelector('[role="dialog"] input[readonly]').value = 'whsec_4f1c2e9a8d3b4b8e9f512a7c0d6e5b13a7c0d6e5';
+                    document.querySelector('[role="dialog"]:not([data-slot="sheet-content"]) input[readonly]').value = 'whsec_4f1c2e9a8d3b4b8e9f512a7c0d6e5b13a7c0d6e5';
 
                     return true;
                 }
@@ -1050,13 +1055,15 @@ it('renders the connected trackers, their people, priorities and status sync, wi
             $admin,
             $path,
             $options,
-            '[data-slot="team-settings-shell"] [data-test="integration-card-jira"] [data-slot="status-sync"]',
-        )->assertCount('[data-test="integration-card-jira"] [data-slot="tracker-people"] li', 4)
-            ->assertPresent('[data-test="integration-card-jira"] [data-slot="tracker-priorities"] button[role="combobox"]')
-            ->click('[data-test="integration-card-jira"] [data-slot="status-mapping-container"] button')
-            ->assertPresent('[data-test="integration-card-jira"] [data-slot="status-mapping-container"] button[role="checkbox"]')
-            ->assertAttribute('[data-test="integration-card-jira"] label button[role="switch"]', 'aria-checked', 'true')
-            ->assertPresent('[data-test="integration-card-github"] [data-slot="alert"]')
+            '[data-slot="team-settings-shell"] [data-test="integration-card-jira"]',
+        )->assertPresent('[data-test="integration-card-github"]')
+            ->click('[data-test="integration-card-jira"] [data-slot="provider-row-configure"]')
+            ->assertPresent('[data-test="integration-panel-jira"] [data-slot="status-sync"]')
+            ->assertCount('[data-test="integration-panel-jira"] [data-slot="tracker-people"] li', 4)
+            ->assertPresent('[data-test="integration-panel-jira"] [data-slot="tracker-priorities"] button[role="combobox"]')
+            ->click('[data-test="integration-panel-jira"] [data-slot="status-mapping-container"] button')
+            ->assertPresent('[data-test="integration-panel-jira"] [data-slot="status-mapping-container"] button[role="checkbox"]')
+            ->assertAttribute('[data-test="integration-panel-jira"] label button[role="switch"]', 'aria-checked', 'true')
             ->assertScript('document.querySelectorAll(\'[data-slot="person-avatar"] .animate-pulse\').length', 0),
     );
 });
@@ -1074,9 +1081,10 @@ it('renders the dialog that turns the status sync on without overflow', function
             $admin,
             $path,
             $options,
-            '[data-slot="team-settings-shell"] [data-test="integration-card-github"] [data-slot="status-sync"]',
-        )->click('[data-test="integration-card-github"] label button[role="switch"]')
-            ->assertPresent('[role="dialog"] button:last-child'),
+            '[data-slot="team-settings-shell"] [data-test="integration-card-github"]',
+        )->click('[data-test="integration-card-github"] [data-slot="provider-row-configure"]')
+            ->click('[data-test="integration-panel-github"] label button[role="switch"]')
+            ->assertPresent('[role="dialog"]:not([data-slot="sheet-content"]) button:last-child'),
     );
 });
 
@@ -1094,7 +1102,8 @@ it('renders the personal access token dialog of Jira Data Center without overflo
             $path,
             $options,
             '[data-slot="team-settings-shell"] [data-test="integration-card-jira_dc"]',
-        )->click('[data-test="integration-card-jira_dc"] button')
+        )->click('[data-test="integration-card-jira_dc"] [data-slot="provider-row-configure"]')
+            ->click('[data-test="integration-panel-jira_dc"] [data-slot="sheet-footer"] button')
             ->fill('[role="dialog"] input[type="password"]', 'pasted-jira-token-abcdefghijklmnop')
             ->click('[role="dialog"] label button[role="checkbox"]')
             ->assertPresent('[role="dialog"] button[type="submit"]:not([disabled])'),
@@ -1115,8 +1124,10 @@ it('renders Jira Data Center connected with a token and its manual webhook witho
                 $admin,
                 $path,
                 $options,
-                '[data-slot="team-settings-shell"] [data-test="integration-card-jira_dc"] [data-slot="jira-token-owner"]',
-            )->assertCount('[data-test="integration-card-jira_dc"] [data-slot="tracker-people"] li', 4)
+                '[data-slot="team-settings-shell"] [data-test="integration-card-jira_dc"]',
+            )->click('[data-test="integration-card-jira_dc"] [data-slot="provider-row-configure"]')
+                ->assertPresent('[data-test="integration-panel-jira_dc"] [data-slot="jira-token-owner"]')
+                ->assertCount('[data-test="integration-panel-jira_dc"] [data-slot="tracker-people"] li', 4)
                 ->click('[data-slot="tracker-webhook"] button:first-child')
                 ->assertCount('[data-slot="tracker-webhook"] dd code', 4)
                 ->assertPresent('[data-slot="status-mapping-container"]')
@@ -1194,8 +1205,10 @@ it('renders a tracker that waits for its site, the "Setup required" status, with
             $admin,
             $path,
             $options,
-            '[data-slot="team-settings-shell"] [data-test="integration-card-jira"][data-status="setup"] button[role="combobox"]',
+            '[data-slot="team-settings-shell"] [data-test="integration-card-jira"][data-status="setup"]',
         )->assertPresent('[data-test="integration-card-linear"][data-status="none"]')
-            ->assertNotPresent('[data-test="integration-card-jira"] [data-slot="status-sync"]'),
+            ->click('[data-test="integration-card-jira"] [data-slot="provider-row-configure"]')
+            ->assertPresent('[data-test="integration-panel-jira"] button[role="combobox"]')
+            ->assertNotPresent('[data-test="integration-panel-jira"] [data-slot="status-sync"]'),
     );
 });

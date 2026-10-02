@@ -1,13 +1,22 @@
 import { usePage } from '@inertiajs/react';
 import { CircleAlert } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { Children, Fragment, useId } from 'react';
+import { Fragment, useId, useState } from 'react';
 import type { ReactElement, ReactNode } from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
-import type { BadgeProps } from '@/components/ui/badge';
-import { Card, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import {
+    Sheet,
+    SheetBody,
+    SheetContent,
+    SheetDescription,
+    SheetFooter,
+    SheetHeader,
+    SheetTitle,
+} from '@/components/ui/sheet';
+import { Switch } from '@/components/ui/switch';
 import { useTrans } from '@/hooks/use-trans';
+import { cn } from '@/lib/utils';
 import type {
     IntegrationProviderCard,
     IntegrationProviderKey,
@@ -24,25 +33,34 @@ type ProviderStatusTone = 'none' | 'active' | 'setup' | 'reconnect';
 
 type ProviderStatus = { label: string; tone: ProviderStatusTone };
 
+/** The confirmation of a disconnection, opened by the switch of the row. */
+export type DisconnectControl = {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+};
+
 type ProviderCardProps = {
     provider: ProviderIdentity;
-    /** The first badge of the card: the browser suite reads it as the status. */
     status: ProviderStatus;
+    /** What the connection points to, after the status on its line. */
+    summary?: string | null;
     /** Why the connection stopped working. */
     error?: string | null;
     /** What is connected: a `ProviderDetails` list. */
     details?: ReactNode;
-    /** Buttons of the footer band. */
+    /** Buttons of the footer of the panel. */
     actions?: ReactNode;
+    /** The confirmation shown when the switch of a connected provider is turned off. */
+    disconnect?: (control: DisconnectControl) => ReactNode;
     /** Panels and notes of the provider, under the details. */
     children?: ReactNode;
 };
 
-const statusVariants: Record<ProviderStatusTone, BadgeProps['variant']> = {
-    none: 'outline',
-    active: 'success',
-    setup: 'warning',
-    reconnect: 'destructive',
+const statusClasses: Record<ProviderStatusTone, string> = {
+    none: 'text-muted-foreground',
+    active: 'text-skrum-success-text',
+    setup: 'text-skrum-warning-text',
+    reconnect: 'text-skrum-destructive-text',
 };
 
 function toneOf(connection: TeamIntegration): ProviderStatusTone {
@@ -57,12 +75,44 @@ function toneOf(connection: TeamIntegration): ProviderStatusTone {
     return 'active';
 }
 
-/** Identity, status and error of a provider card, from the server's card. */
+function summaryParts(
+    connection: TeamIntegration,
+): (string | null | undefined)[] {
+    const { settings } = connection;
+
+    switch (connection.provider) {
+        case 'slack':
+            return [settings.teamName, settings.channelName];
+        case 'telegram':
+            return [settings.chatTitle];
+        case 'jira':
+            return [settings.siteName];
+        case 'linear':
+            return [settings.organizationName];
+        case 'jira_dc':
+            return [settings.serverTitle ?? settings.baseUrl];
+        case 'github':
+            return [settings.accountLogin];
+        default:
+            return [settings.host, settings.channelLabel];
+    }
+}
+
+/** The workspace, site, chat or host of a connection, for the status line. */
+export function providerSummary(connection: TeamIntegration): string | null {
+    const parts = summaryParts(connection).filter(
+        (part): part is string => typeof part === 'string' && part !== '',
+    );
+
+    return parts.length === 0 ? null : parts.join(' · ');
+}
+
+/** Identity, status and error of a provider row, from the server's card. */
 export function providerCardProps(
     card: IntegrationProviderCard,
     icon: LucideIcon,
     t: (key: string) => string,
-): Pick<ProviderCardProps, 'provider' | 'status' | 'error'> {
+): Pick<ProviderCardProps, 'provider' | 'status' | 'summary' | 'error'> {
     const provider = { key: card.provider, label: card.label, icon };
     const connection = card.connection;
 
@@ -70,6 +120,7 @@ export function providerCardProps(
         return {
             provider,
             status: { label: t('Not connected'), tone: 'none' },
+            summary: null,
             error: null,
         };
     }
@@ -77,6 +128,7 @@ export function providerCardProps(
     return {
         provider,
         status: { label: connection.statusLabel, tone: toneOf(connection) },
+        summary: providerSummary(connection),
         error:
             connection.status === 'reconnect_required'
                 ? connection.lastError
@@ -88,54 +140,108 @@ function isRendered(node: ReactNode): boolean {
     return node !== undefined && node !== null && typeof node !== 'boolean';
 }
 
+/**
+ * One provider of the integrations card: a row with its status line, a
+ * switch and the button that opens its details, panels and actions in a sheet.
+ * A connection has no "off" state: the switch is on while the provider is
+ * connected, turning it off asks to disconnect, turning it on opens the sheet
+ * where the provider is connected.
+ */
 export function ProviderCard({
     provider,
     status,
+    summary,
     error,
     details,
     actions,
+    disconnect,
     children,
 }: ProviderCardProps): ReactElement {
+    const { t } = useTrans();
     const titleId = useId();
+    const [open, setOpen] = useState(false);
+    const [confirming, setConfirming] = useState(false);
+    const connected = status.tone !== 'none';
     const hasError = error !== undefined && error !== null && error !== '';
-    const hasDetails = isRendered(details);
-    const hasChildren = Children.toArray(children).length > 0;
-    const hasActions = isRendered(actions);
+    const hasSummary =
+        summary !== undefined && summary !== null && summary !== '';
+    const statusLine = hasSummary
+        ? `${status.label} · ${summary}`
+        : status.label;
+
+    const toggle = (next: boolean) => {
+        if (next || disconnect === undefined) {
+            setOpen(true);
+
+            return;
+        }
+
+        setConfirming(true);
+    };
 
     return (
-        <Card asChild data-test={`integration-card-${provider.key}`}>
-            <section aria-labelledby={titleId} data-status={status.tone}>
-                <div
-                    data-slot="provider-card-header"
-                    className="flex min-w-0 flex-wrap items-center gap-3 px-5 py-4"
+        <section
+            aria-labelledby={titleId}
+            data-slot="provider-row"
+            data-test={`integration-card-${provider.key}`}
+            data-status={status.tone}
+            className="flex min-w-0 flex-wrap items-center gap-3 px-5 py-3"
+        >
+            <span
+                aria-hidden="true"
+                data-slot="provider-card-logo"
+                className="grid size-9 shrink-0 place-items-center rounded-md border bg-card text-muted-foreground"
+            >
+                <provider.icon className="size-4" />
+            </span>
+            <div className="flex min-w-0 flex-1 basis-40 flex-col gap-0.5">
+                <h3 id={titleId} className="truncate text-sm font-semibold">
+                    {provider.label}
+                </h3>
+                <p
+                    data-slot="provider-row-status"
+                    data-tone={status.tone}
+                    className={cn(
+                        'text-xs break-words',
+                        statusClasses[status.tone],
+                    )}
                 >
-                    <span
-                        aria-hidden="true"
-                        data-slot="provider-card-logo"
-                        className="grid size-9 shrink-0 place-items-center rounded-md border bg-card text-muted-foreground"
-                    >
-                        <provider.icon className="size-4" />
-                    </span>
-                    <CardTitle
-                        id={titleId}
-                        role="heading"
-                        aria-level={3}
-                        className="min-w-0 flex-1 basis-32 truncate"
-                    >
-                        {provider.label}
-                    </CardTitle>
-                    <Badge
-                        variant={statusVariants[status.tone]}
-                        data-tone={status.tone}
-                    >
-                        {status.label}
-                    </Badge>
-                </div>
-                {(hasError || hasDetails || hasChildren) && (
-                    <div
-                        data-slot="provider-card-body"
-                        className="flex min-w-0 flex-col gap-4 border-t p-5"
-                    >
+                    {statusLine}
+                </p>
+            </div>
+            <Button
+                type="button"
+                variant={connected ? 'ghost' : 'outline'}
+                size="sm"
+                data-slot="provider-row-configure"
+                aria-describedby={titleId}
+                aria-haspopup="dialog"
+                onClick={() => setOpen(true)}
+            >
+                {connected ? t('Configure') : t('Connect')}
+            </Button>
+            <Switch
+                checked={connected}
+                onCheckedChange={toggle}
+                aria-labelledby={titleId}
+            />
+            <Sheet open={open} onOpenChange={setOpen}>
+                <SheetContent
+                    data-test={`integration-panel-${provider.key}`}
+                    className="sm:max-w-2xl"
+                >
+                    <SheetHeader>
+                        <SheetTitle>{provider.label}</SheetTitle>
+                        <SheetDescription
+                            className={cn(
+                                'break-words',
+                                statusClasses[status.tone],
+                            )}
+                        >
+                            {statusLine}
+                        </SheetDescription>
+                    </SheetHeader>
+                    <SheetBody className="flex min-w-0 flex-col gap-4 space-y-0">
                         {hasError && (
                             <Alert variant="destructive">
                                 <CircleAlert aria-hidden="true" />
@@ -144,20 +250,19 @@ export function ProviderCard({
                                 </AlertDescription>
                             </Alert>
                         )}
-                        {hasDetails && details}
+                        {isRendered(details) && details}
                         {children}
-                    </div>
-                )}
-                {hasActions && (
-                    <div
-                        data-slot="provider-card-footer"
-                        className="flex min-w-0 flex-wrap items-center gap-2 rounded-b-xl border-t bg-muted/50 px-5 py-3"
-                    >
-                        {actions}
-                    </div>
-                )}
-            </section>
-        </Card>
+                    </SheetBody>
+                    {isRendered(actions) && (
+                        <SheetFooter className="min-w-0 flex-wrap items-center">
+                            {actions}
+                        </SheetFooter>
+                    )}
+                </SheetContent>
+            </Sheet>
+            {connected &&
+                disconnect?.({ open: confirming, onOpenChange: setConfirming })}
+        </section>
     );
 }
 

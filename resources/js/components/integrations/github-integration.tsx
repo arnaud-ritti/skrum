@@ -11,6 +11,7 @@ import {
     ProviderDetails,
     providerCardProps,
 } from './provider-card';
+import type { DisconnectControl } from './provider-card';
 import { PeoplePanel } from './people-panel';
 import { TrackerIntro, TrackerLink } from './tracker-parts';
 
@@ -58,9 +59,23 @@ export function GitHubIntegration({ card, scope, statusSection }: Props) {
             : `https://github.com/settings/installations/${settings.installationId}`;
     const active = connection.status === 'active';
 
+    const disconnect = (control?: DisconnectControl) => (
+        <DisconnectIntegrationDialog
+            scope={scope}
+            card={card}
+            connection={connection}
+            description={t(
+                'Imported tasks and exported issues keep their links but are no longer synced, and the people mappings are deleted. The GitHub App stays installed on :account: uninstall it there if no other team uses it.',
+                { account },
+            )}
+            control={control}
+        />
+    );
+
     return (
         <ProviderCard
             {...providerCardProps(card, GitBranch, t)}
+            disconnect={disconnect}
             details={
                 <ProviderDetails
                     connection={connection}
@@ -107,15 +122,7 @@ export function GitHubIntegration({ card, scope, statusSection }: Props) {
                             successMessage={t('The connection works.')}
                         />
                     )}
-                    <DisconnectIntegrationDialog
-                        scope={scope}
-                        card={card}
-                        connection={connection}
-                        description={t(
-                            'Imported tasks and exported issues keep their links but are no longer synced, and the people mappings are deleted. The GitHub App stays installed on :account: uninstall it there if no other team uses it.',
-                            { account },
-                        )}
-                    />
+                    {disconnect()}
                 </>
             }
         >

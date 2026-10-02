@@ -2,6 +2,12 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { RetroRequestError } from '@/lib/retro/api';
+import {
+    providerButtons,
+    providerPanel,
+    providerStatus,
+    renderProvider,
+} from '@/test/integrations';
 import { renderWithProviders } from '@/test/render';
 import type {
     IntegrationProviderCard,
@@ -1073,15 +1079,11 @@ describe('GitHubPriorityLabels', () => {
 
 describe('tracker cards', () => {
     it('offers both accesses while Jira is not connected', () => {
-        renderWithProviders(
-            <JiraIntegration card={card('jira')} scope={scope} />,
-        );
+        renderProvider(<JiraIntegration card={card('jira')} scope={scope} />);
 
-        const jira = screen.getByRole('region', { name: 'Jira' });
+        const jira = providerPanel('Jira');
 
-        expect(jira.querySelector('[data-slot="badge"]')?.textContent).toBe(
-            'Not connected',
-        );
+        expect(providerStatus('Jira')).toBe('Not connected');
         expect(linkTexts(jira)).toEqual([
             'Connect (read only)',
             'Connect (read and write)',
@@ -1111,7 +1113,7 @@ describe('tracker cards', () => {
             },
         } as Partial<TeamIntegration>);
 
-        renderWithProviders(
+        renderProvider(
             <JiraIntegration card={card('jira', setup)} scope={scope} />,
         );
 
@@ -1133,11 +1135,11 @@ describe('tracker cards', () => {
             },
         } as Partial<TeamIntegration>);
 
-        renderWithProviders(
+        renderProvider(
             <JiraIntegration card={card('jira', read)} scope={scope} />,
         );
 
-        const jira = screen.getByRole('region', { name: 'Jira' });
+        const jira = providerPanel('Jira');
 
         expect(
             within(jira)
@@ -1171,7 +1173,7 @@ describe('tracker cards', () => {
             },
         } as Partial<TeamIntegration>);
 
-        renderWithProviders(
+        renderProvider(
             <JiraDataCenterIntegration
                 card={card('jira_dc', token, ['oauth', 'pat'])}
                 scope={scope}
@@ -1179,9 +1181,7 @@ describe('tracker cards', () => {
             />,
         );
 
-        const dataCenter = screen.getByRole('region', {
-            name: 'Jira Data Center',
-        });
+        const dataCenter = providerPanel('Jira Data Center');
         const note = within(dataCenter).getByRole('note');
 
         expect(note.textContent).toContain('Acting as Jane Doe in Jira');
@@ -1193,9 +1193,7 @@ describe('tracker cards', () => {
         expect(dataCenter.textContent).toContain('8.20.1');
         expect(dataCenter.textContent).not.toContain('status section');
         expect(
-            within(dataCenter)
-                .getAllByRole('button')
-                .map((button) => button.textContent),
+            providerButtons(dataCenter).map((button) => button.textContent),
         ).toEqual(['Replace token', 'Remove token']);
         expect(
             within(dataCenter).queryByRole('link', { name: 'Reconnect' }),
@@ -1203,7 +1201,7 @@ describe('tracker cards', () => {
     });
 
     it('offers the token as a link beside OAuth, and alone as the main action', () => {
-        const { unmount } = renderWithProviders(
+        const { unmount } = renderProvider(
             <JiraDataCenterIntegration
                 card={card('jira_dc', null, ['oauth', 'pat'])}
                 scope={scope}
@@ -1219,7 +1217,7 @@ describe('tracker cards', () => {
 
         unmount();
 
-        renderWithProviders(
+        renderProvider(
             <JiraDataCenterIntegration
                 card={card('jira_dc', null, ['pat'])}
                 scope={scope}
@@ -1238,11 +1236,11 @@ describe('tracker cards', () => {
             settings: { organizationName: 'Acme' },
         } as Partial<TeamIntegration>);
 
-        renderWithProviders(
+        renderProvider(
             <LinearIntegration card={card('linear', linear)} scope={scope} />,
         );
 
-        const region = screen.getByRole('region', { name: 'Linear' });
+        const region = providerPanel('Linear');
 
         expect(region.textContent).toContain('Linear workspace');
         expect(region.textContent).toContain('Acme');
@@ -1262,7 +1260,7 @@ describe('tracker cards', () => {
             },
         } as Partial<TeamIntegration>);
 
-        renderWithProviders(
+        renderProvider(
             <GitHubIntegration
                 card={card('github', github)}
                 scope={scope}
@@ -1270,7 +1268,7 @@ describe('tracker cards', () => {
             />,
         );
 
-        const region = screen.getByRole('region', { name: 'GitHub' });
+        const region = providerPanel('GitHub');
 
         expect(
             within(region)
@@ -1292,12 +1290,12 @@ describe('tracker cards', () => {
     });
 
     it('offers to install the GitHub App while there is no installation', () => {
-        renderWithProviders(
+        renderProvider(
             <GitHubIntegration card={card('github')} scope={scope} />,
         );
 
-        expect(
-            linkTexts(screen.getByRole('region', { name: 'GitHub' })),
-        ).toEqual(['Install the GitHub App']);
+        expect(linkTexts(providerPanel('GitHub'))).toEqual([
+            'Install the GitHub App',
+        ]);
     });
 });

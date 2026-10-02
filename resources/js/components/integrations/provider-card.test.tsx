@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react';
+import { fireEvent, screen, within } from '@testing-library/react';
 import { Hash } from 'lucide-react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders } from '@/test/render';
@@ -7,6 +7,7 @@ import {
     ProviderCard,
     ProviderDetails,
     providerCardProps,
+    providerSummary,
 } from './provider-card';
 
 const page = vi.hoisted(() => ({ props: {} as Record<string, unknown> }));
@@ -61,6 +62,7 @@ describe('providerCardProps', () => {
         expect(providerCardProps(card(null), Hash, t)).toEqual({
             provider: { key: 'slack', label: 'Slack', icon: Hash },
             status: { label: 'Not connected', tone: 'none' },
+            summary: null,
             error: null,
         });
     });
@@ -113,12 +115,48 @@ describe('providerCardProps', () => {
     });
 });
 
+describe('providerSummary', () => {
+    it('names what a connection points to, per provider', () => {
+        expect(
+            providerSummary(
+                connection({
+                    settings: { teamName: 'Nordlys', channelName: '#retros' },
+                }),
+            ),
+        ).toBe('Nordlys · #retros');
+        expect(
+            providerSummary(
+                connection({
+                    provider: 'webhook',
+                    settings: { host: 'hooks.example.com' },
+                }),
+            ),
+        ).toBe('hooks.example.com');
+        expect(
+            providerSummary(
+                connection({
+                    provider: 'github',
+                    settings: { accountLogin: 'nordlys' },
+                }),
+            ),
+        ).toBe('nordlys');
+        expect(providerSummary(connection())).toBeNull();
+    });
+});
+
 describe('ProviderCard', () => {
-    it('is a region named by the provider, with the test hook of its key', () => {
+    function row(key = 'slack'): HTMLElement {
+        return document.querySelector(
+            `[data-test="integration-card-${key}"]`,
+        ) as HTMLElement;
+    }
+
+    it('is a row named by the provider, with the status line under the name', () => {
         renderWithProviders(
             <ProviderCard
                 provider={{ key: 'slack', label: 'Slack', icon: Hash }}
-                status={{ label: 'Not connected', tone: 'none' }}
+                status={{ label: 'Connected', tone: 'active' }}
+                summary="Nordlys · #retros"
             >
                 <p>Post links to Slack.</p>
             </ProviderCard>,
@@ -126,37 +164,137 @@ describe('ProviderCard', () => {
 
         const region = screen.getByRole('region', { name: 'Slack' });
 
-        expect(region.getAttribute('data-test')).toBe('integration-card-slack');
-        expect(
-            region.querySelector('[data-slot="card-title"]')?.textContent,
-        ).toBe('Slack');
+        expect(region).toBe(row());
+        expect(region.getAttribute('data-status')).toBe('active');
         expect(
             within(region).getByRole('heading', { level: 3, name: 'Slack' }),
         ).not.toBeNull();
-        expect(within(region).getByText('Post links to Slack.')).not.toBeNull();
+
+        const status = region.querySelector(
+            '[data-slot="provider-row-status"]',
+        );
+
+        expect(status?.textContent).toBe('Connected · Nordlys · #retros');
+        expect(status?.getAttribute('data-tone')).toBe('active');
+        expect(status?.className).toContain('text-skrum-success-text');
+        expect(screen.queryByText('Post links to Slack.')).toBeNull();
+        expect(screen.queryByRole('dialog')).toBeNull();
     });
 
-    it('puts the status first among the badges, whatever the body holds', () => {
+    it('has a switch per integration, on when the provider is connected', () => {
+        renderWithProviders(
+            <>
+                <ProviderCard
+                    provider={{ key: 'slack', label: 'Slack', icon: Hash }}
+                    status={{ label: 'Connected', tone: 'active' }}
+                />
+                <ProviderCard
+                    provider={{ key: 'jira', label: 'Jira', icon: Hash }}
+                    status={{ label: 'Not connected', tone: 'none' }}
+                />
+            </>,
+        );
+
+        expect(
+            screen
+                .getByRole('switch', { name: 'Slack' })
+                .getAttribute('aria-checked'),
+        ).toBe('true');
+        expect(
+            screen
+                .getByRole('switch', { name: 'Jira' })
+                .getAttribute('aria-checked'),
+        ).toBe('false');
+        expect(
+            within(row('slack')).getByRole('button', { name: 'Configure' }),
+        ).not.toBeNull();
+        expect(
+            within(row('jira')).getByRole('button', { name: 'Connect' }),
+        ).not.toBeNull();
+    });
+
+    it('opens the details, panels and actions of the provider with "Configure"', () => {
         renderWithProviders(
             <ProviderCard
                 provider={{ key: 'jira', label: 'Jira', icon: Hash }}
                 status={{ label: 'Connected', tone: 'active' }}
-                details={<span data-slot="badge">Read only</span>}
+                summary="nordlys.atlassian.net"
+                details={<span>Read only</span>}
                 actions={<button type="button">Disconnect</button>}
             >
-                <span data-slot="badge">Other</span>
+                <p>People mapping</p>
             </ProviderCard>,
         );
 
-        const first = document.querySelector(
-            '[data-test="integration-card-jira"] [data-slot="badge"]',
-        );
+        fireEvent.click(screen.getByRole('button', { name: 'Configure' }));
 
-        expect(first?.textContent).toBe('Connected');
-        expect(first?.getAttribute('data-tone')).toBe('active');
+        const panel = screen.getByRole('dialog', { name: 'Jira' });
+
+        expect(panel.getAttribute('data-test')).toBe('integration-panel-jira');
+        expect(
+            panel.querySelector('[data-slot="sheet-description"]')?.textContent,
+        ).toBe('Connected · nordlys.atlassian.net');
+        expect(within(panel).getByText('Read only')).not.toBeNull();
+        expect(within(panel).getByText('People mapping')).not.toBeNull();
+        expect(
+            within(
+                panel.querySelector(
+                    '[data-slot="sheet-footer"]',
+                ) as HTMLElement,
+            ).getByRole('button', { name: 'Disconnect' }),
+        ).not.toBeNull();
     });
 
-    it('shows the error of a broken connection as an alert in the card', () => {
+    it('opens the provider to connect it when its switch is turned on', () => {
+        renderWithProviders(
+            <ProviderCard
+                provider={{ key: 'slack', label: 'Slack', icon: Hash }}
+                status={{ label: 'Not connected', tone: 'none' }}
+                actions={<a href="/connect">Connect to Slack</a>}
+            />,
+        );
+
+        const toggle = screen.getByRole('switch', { name: 'Slack' });
+
+        fireEvent.click(toggle);
+
+        expect(
+            within(screen.getByRole('dialog', { name: 'Slack' })).getByRole(
+                'link',
+                { name: 'Connect to Slack' },
+            ),
+        ).not.toBeNull();
+        expect(toggle.getAttribute('aria-checked')).toBe('false');
+    });
+
+    it('asks to confirm the disconnection when the switch is turned off, and stays on until then', () => {
+        const disconnect = vi.fn(
+            ({ open }: { open: boolean }) =>
+                open && <p role="alertdialog">Disconnect Slack?</p>,
+        );
+
+        renderWithProviders(
+            <ProviderCard
+                provider={{ key: 'slack', label: 'Slack', icon: Hash }}
+                status={{ label: 'Connected', tone: 'active' }}
+                disconnect={disconnect}
+            />,
+        );
+
+        expect(screen.queryByRole('alertdialog')).toBeNull();
+
+        const toggle = screen.getByRole('switch', { name: 'Slack' });
+
+        fireEvent.click(toggle);
+
+        expect(screen.getByRole('alertdialog').textContent).toBe(
+            'Disconnect Slack?',
+        );
+        expect(toggle.getAttribute('aria-checked')).toBe('true');
+        expect(screen.queryByRole('dialog')).toBeNull();
+    });
+
+    it('shows the error of a broken connection as an alert in the panel, and its tone on the row', () => {
         renderWithProviders(
             <ProviderCard
                 provider={{ key: 'slack', label: 'Slack', icon: Hash }}
@@ -164,6 +302,13 @@ describe('ProviderCard', () => {
                 error="token_revoked"
             />,
         );
+
+        expect(screen.queryByRole('alert')).toBeNull();
+        expect(
+            row().querySelector('[data-slot="provider-row-status"]')?.className,
+        ).toContain('text-skrum-destructive-text');
+
+        fireEvent.click(screen.getByRole('button', { name: 'Configure' }));
 
         expect(screen.getByRole('alert').textContent).toBe('token_revoked');
     });
@@ -179,31 +324,11 @@ describe('ProviderCard', () => {
             </ProviderCard>,
         );
 
+        fireEvent.click(screen.getByRole('button', { name: 'Configure' }));
+
+        expect(screen.getByText('body')).not.toBeNull();
         expect(screen.queryByRole('alert')).toBeNull();
-        expect(
-            document.querySelector('[data-slot="provider-card-footer"]'),
-        ).toBeNull();
-    });
-
-    it('has no body when it has neither error, details nor children', () => {
-        renderWithProviders(
-            <ProviderCard
-                provider={{ key: 'slack', label: 'Slack', icon: Hash }}
-                status={{ label: 'Not connected', tone: 'none' }}
-                actions={<button type="button">Connect</button>}
-            />,
-        );
-
-        expect(
-            document.querySelector('[data-slot="provider-card-body"]'),
-        ).toBeNull();
-        expect(
-            within(
-                document.querySelector(
-                    '[data-slot="provider-card-footer"]',
-                ) as HTMLElement,
-            ).getByRole('button', { name: 'Connect' }),
-        ).not.toBeNull();
+        expect(document.querySelector('[data-slot="sheet-footer"]')).toBeNull();
     });
 
     it('hides the provider icon from assistive technology', () => {

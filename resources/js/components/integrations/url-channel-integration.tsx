@@ -22,6 +22,7 @@ import {
     ProviderDetails,
     providerCardProps,
 } from './provider-card';
+import type { DisconnectControl } from './provider-card';
 
 type Props = {
     card: IntegrationProviderCard;
@@ -129,6 +130,25 @@ export function UrlChannelIntegration({ card, scope, mattermost }: Props) {
     const destination =
         connection?.settings.channelLabel ?? connection?.settings.host ?? '';
 
+    const disconnect =
+        connection === null
+            ? undefined
+            : (control?: DisconnectControl) => (
+                  <DisconnectIntegrationDialog
+                      scope={scope}
+                      card={card}
+                      connection={connection}
+                      description={t(
+                          'Nothing is posted to :channel anymore. Delete the webhook in :provider if you no longer need it.',
+                          {
+                              channel: destination,
+                              provider: card.label,
+                          },
+                      )}
+                      control={control}
+                  />
+              );
+
     return (
         <>
             <ProviderCard
@@ -137,6 +157,7 @@ export function UrlChannelIntegration({ card, scope, mattermost }: Props) {
                     isTeams ? MessagesSquare : MessageCircle,
                     t,
                 )}
+                disconnect={disconnect}
                 details={
                     connection !== null && (
                         <ProviderDetails
@@ -186,18 +207,7 @@ export function UrlChannelIntegration({ card, scope, mattermost }: Props) {
                                     successMessage={t('Test message sent.')}
                                 />
                             )}
-                            <DisconnectIntegrationDialog
-                                scope={scope}
-                                card={card}
-                                connection={connection}
-                                description={t(
-                                    'Nothing is posted to :channel anymore. Delete the webhook in :provider if you no longer need it.',
-                                    {
-                                        channel: destination,
-                                        provider: card.label,
-                                    },
-                                )}
-                            />
+                            {disconnect?.()}
                         </>
                     )
                 }

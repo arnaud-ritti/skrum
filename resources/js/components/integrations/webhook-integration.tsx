@@ -25,6 +25,7 @@ import {
     ProviderDetails,
     providerCardProps,
 } from './provider-card';
+import type { DisconnectControl } from './provider-card';
 import { WebhookDeliveriesPanel } from './webhook-deliveries-panel';
 import { WebhookEventsPanel } from './webhook-events-panel';
 import {
@@ -132,10 +133,27 @@ export function WebhookIntegration({ card, scope, events }: Props) {
         router.reload({ only: ['providers'] });
     };
 
+    const disconnect =
+        connection === null
+            ? undefined
+            : (control?: DisconnectControl) => (
+                  <DisconnectIntegrationDialog
+                      scope={scope}
+                      card={card}
+                      connection={connection}
+                      description={t(
+                          'Nothing is sent to :host anymore. Remove the endpoint on your side if you no longer need it.',
+                          { host: connection.settings.host ?? '' },
+                      )}
+                      control={control}
+                  />
+              );
+
     return (
         <>
             <ProviderCard
                 {...providerCardProps(card, Webhook, t)}
+                disconnect={disconnect}
                 details={
                     connection !== null && (
                         <ProviderDetails
@@ -207,15 +225,7 @@ export function WebhookIntegration({ card, scope, events }: Props) {
                                 connection={connection}
                                 onRotated={setSecret}
                             />
-                            <DisconnectIntegrationDialog
-                                scope={scope}
-                                card={card}
-                                connection={connection}
-                                description={t(
-                                    'Nothing is sent to :host anymore. Remove the endpoint on your side if you no longer need it.',
-                                    { host: connection.settings.host ?? '' },
-                                )}
-                            />
+                            {disconnect?.()}
                         </>
                     )
                 }
