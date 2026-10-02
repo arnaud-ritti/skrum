@@ -67,6 +67,25 @@ describe('whiteboards/join', () => {
         expect(headTitles).toContain('Sprint board');
     });
 
+    it('promises no suggested nickname to a visitor with an empty name: the board has none', () => {
+        renderWithProviders(
+            <JoinWhiteboard
+                isInvalid={false}
+                guestToken="token-abc"
+                boardTitle="Sprint board"
+                session={session}
+                suggestedName={null}
+            />,
+        );
+
+        expect(
+            screen.queryByText('Suggested nickname if you leave it empty'),
+        ).toBeNull();
+        expect(
+            document.querySelector('[data-slot="guest-join-preview"]'),
+        ).toBeNull();
+    });
+
     it('prefills the name of a signed-in visitor and posts it to the join route of the board', () => {
         renderWithProviders(
             <JoinWhiteboard

@@ -181,6 +181,39 @@ describe('GuestJoin', () => {
         expect(screen.getByText('Guest')).toBeTruthy();
     });
 
+    it('promises no suggested nickname when none is proposed', () => {
+        setup();
+
+        expect(
+            document.querySelector('[data-slot="guest-join-preview"]'),
+        ).toBeNull();
+        expect(
+            screen.queryByText('Suggested nickname if you leave it empty'),
+        ).toBeNull();
+
+        fireEvent.change(screen.getByLabelText('Your nickname'), {
+            target: { value: 'Nadia' },
+        });
+
+        expect(
+            document.querySelector('[data-slot="guest-join-preview"]')
+                ?.textContent,
+        ).toContain('Nadia');
+    });
+
+    it('shows the proposed nickname with its hint while the field is empty', () => {
+        setup({ defaultName: 'Thoughtful otter' });
+
+        const preview = document.querySelector(
+            '[data-slot="guest-join-preview"]',
+        );
+
+        expect(preview?.textContent).toContain('Thoughtful otter');
+        expect(preview?.textContent).toContain(
+            'Suggested nickname if you leave it empty',
+        );
+    });
+
     it('renders with only the kind and the title the join pages receive', () => {
         setup();
 
