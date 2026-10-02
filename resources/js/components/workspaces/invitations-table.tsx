@@ -15,7 +15,7 @@ import { useClipboard } from '@/hooks/use-clipboard';
 import { useTrans } from '@/hooks/use-trans';
 import type { PendingInvitation } from '@/types';
 
-export function invitationDay(invitedAt: string, locale: string): string {
+function invitationDay(invitedAt: string, locale: string): string {
     return new Intl.DateTimeFormat(locale, {
         day: 'numeric',
         month: 'short',
@@ -261,7 +261,7 @@ export function useInvitationActions(workspaceSlug: string) {
     };
 }
 
-export type InvitationActions = ReturnType<typeof useInvitationActions>;
+type InvitationActions = ReturnType<typeof useInvitationActions>;
 
 /** The invitations that wait for an answer, as rows of the members table. */
 export function InvitationRows({

@@ -65,7 +65,7 @@ function ActivityLine({
     );
 }
 
-export type TeamTileProps = {
+type TeamTileProps = {
     team: WorkspaceTeamTile;
     href: NonNullable<InertiaLinkProps['href']>;
     locale: string;

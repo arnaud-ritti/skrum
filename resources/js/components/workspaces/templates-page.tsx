@@ -60,12 +60,12 @@ export type TemplatesPageProps = {
  * Places left for the features that come after the rewrite; nothing is
  * rendered while a slot is undefined.
  */
-export type TemplatesPageSlots = {
+type TemplatesPageSlots = {
     /** WS-2: the visibility badge of a retro template, beside its name. */
     templateVisibilityFor?: (template: WorkspaceTemplateSummary) => ReactNode;
 };
 
-export type TemplatesTab = 'all' | 'retro' | 'poker' | 'whiteboard';
+type TemplatesTab = 'all' | 'retro' | 'poker' | 'whiteboard';
 
 let editorOpenings = 0;
 

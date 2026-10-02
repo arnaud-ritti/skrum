@@ -11,7 +11,7 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
-export type SectionAction = {
+type SectionAction = {
     label: string;
     icon: LucideIcon;
 } & (

@@ -1,7 +1,7 @@
 import TeamsController from '@/actions/App/Http/Controllers/TeamsController';
 import TeamIntegrationsController from '@/actions/App/Http/Controllers/Integrations/TeamIntegrationsController';
 
-export type TeamSettingsScope = {
+type TeamSettingsScope = {
     workspace: string;
     team: string;
     /** The viewer can change the settings of the team. */

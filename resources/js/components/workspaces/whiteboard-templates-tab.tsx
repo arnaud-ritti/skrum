@@ -24,8 +24,8 @@ import { workspaceTemplateKey } from '@/lib/workspaces/use-template';
 import type { TemplateKind } from '@/lib/workspaces/use-template';
 import type { WorkspaceSummary, WorkspaceWhiteboardTemplate } from '@/types';
 
-export const WhiteboardTemplateNameMaxLength = 80;
-export const WhiteboardTemplateDescriptionMaxLength = 300;
+const WhiteboardTemplateNameMaxLength = 80;
+const WhiteboardTemplateDescriptionMaxLength = 300;
 
 /** The whiteboard templates of the workspace: saved from a board's menu. */
 export function WhiteboardTemplatesTab({

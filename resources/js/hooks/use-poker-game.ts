@@ -18,9 +18,9 @@ import { usePokerChannel, type PokerEvent } from './use-poker-channel';
 
 const SessionExpiredStatuses = [401, 419];
 
-export type GameStatus = 'active' | 'ended' | 'deleted';
+type GameStatus = 'active' | 'ended' | 'deleted';
 
-export type PokerGameState = {
+type PokerGameState = {
     snapshot: PokerSnapshot;
     dispatch: Dispatch<GameAction>;
     apply: (action: GameAction) => void;

@@ -32,7 +32,7 @@ export type ColorBarState = {
 
 export const HiddenColorBar: ColorBarState = { visible: false, value: null };
 
-export function hasFill(type: string): boolean {
+function hasFill(type: string): boolean {
     return FilledTypes.includes(type);
 }
 

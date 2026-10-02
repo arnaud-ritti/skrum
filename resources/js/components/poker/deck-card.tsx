@@ -19,7 +19,7 @@ export type DeckCardModel = {
     createdBy?: string | null;
 };
 
-export interface DeckCardProps {
+interface DeckCardProps {
     deck: DeckCardModel;
     /** An action is offered only when its handler is given. */
     onEdit?: () => void;

@@ -21,11 +21,11 @@ import { useTrans } from '@/hooks/use-trans';
 import { cn } from '@/lib/utils';
 import type { BreadcrumbItem as BreadcrumbItemType } from '@/types';
 
-export type BreadcrumbEntry = BreadcrumbItemType & {
+type BreadcrumbEntry = BreadcrumbItemType & {
     icon?: LucideIcon;
 };
 
-export type BreadcrumbsProps = {
+type BreadcrumbsProps = {
     breadcrumbs: BreadcrumbEntry[];
     maxItems?: number;
     separator?: 'chevron' | 'slash';

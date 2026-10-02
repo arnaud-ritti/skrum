@@ -23,7 +23,7 @@ import type {
 type HrefFor = (kind: TemplateKind, key: string) => string | null;
 
 /** What a manager may do with a workspace template; absent for a member. */
-export type RetroTemplateActions = {
+type RetroTemplateActions = {
     onEdit: (template: WorkspaceTemplateSummary) => void;
     onDuplicate: (template: WorkspaceTemplateSummary) => void;
     onDelete: (template: WorkspaceTemplateSummary) => void;

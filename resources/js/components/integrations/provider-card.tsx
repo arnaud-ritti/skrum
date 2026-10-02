@@ -14,17 +14,17 @@ import type {
     TeamIntegration,
 } from '@/types';
 
-export type ProviderIdentity = {
+type ProviderIdentity = {
     key: IntegrationProviderKey;
     label: string;
     icon: LucideIcon;
 };
 
-export type ProviderStatusTone = 'none' | 'active' | 'setup' | 'reconnect';
+type ProviderStatusTone = 'none' | 'active' | 'setup' | 'reconnect';
 
-export type ProviderStatus = { label: string; tone: ProviderStatusTone };
+type ProviderStatus = { label: string; tone: ProviderStatusTone };
 
-export type ProviderCardProps = {
+type ProviderCardProps = {
     provider: ProviderIdentity;
     /** The first badge of the card: the browser suite reads it as the status. */
     status: ProviderStatus;
@@ -161,7 +161,7 @@ export function ProviderCard({
     );
 }
 
-export type ProviderDetailRow = {
+type ProviderDetailRow = {
     label: string;
     value: ReactNode;
 };

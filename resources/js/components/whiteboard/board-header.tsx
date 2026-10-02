@@ -58,7 +58,7 @@ export function boardSelf(snapshot: BoardSnapshot) {
 }
 
 /** "team › Whiteboards", before the name. A guest is not told the team and follows no link. */
-export function useBoardCrumbs(snapshot: BoardSnapshot): SessionCrumb[] {
+function useBoardCrumbs(snapshot: BoardSnapshot): SessionCrumb[] {
     const { t } = useTrans();
     const { board, links } = snapshot;
     const boards: SessionCrumb = {
@@ -248,7 +248,7 @@ export function BoardPresence({
     );
 }
 
-export type BoardActionsProps = {
+type BoardActionsProps = {
     state: WhiteboardState;
     /** Opens the canvas's export dialog; absent until the canvas is ready. */
     onExport?: () => void;

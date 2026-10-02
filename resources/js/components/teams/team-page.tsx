@@ -79,7 +79,7 @@ export type TeamPageProps = {
  * Places left for the features that come after the rewrite. Each is a region
  * of the page; nothing is rendered while its slot is undefined.
  */
-export type TeamPageSlots = {
+type TeamPageSlots = {
     /** TM-1: sprint and next retro, under the team name. */
     schedule?: ReactNode;
     /** TM-2: the recent sessions table, first block of the main column. */

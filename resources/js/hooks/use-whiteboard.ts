@@ -12,11 +12,11 @@ import { useWhiteboardChannel } from './use-whiteboard-channel';
 
 const SessionExpiredStatuses = [401, 419];
 
-export type BoardStatus = 'active' | 'ended' | 'deleted';
+type BoardStatus = 'active' | 'ended' | 'deleted';
 
 type BoardMeta = Pick<WhiteboardSnapshot, 'board' | 'me' | 'members' | 'links'>;
 
-export type SceneListeners = {
+type SceneListeners = {
     onElementsChanged: (payload: ElementsChangedPayload) => void;
     onResync: () => void;
     onLeaving: (member: PresenceMember) => void;

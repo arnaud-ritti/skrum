@@ -34,7 +34,7 @@ export type WorkspaceOverviewProps = {
  * Places left for the features that come after the rewrite; nothing is
  * rendered while a slot is undefined.
  */
-export type WorkspaceOverviewSlots = {
+type WorkspaceOverviewSlots = {
     /** WS-1: the description of a team, under its name on the tile. */
     teamDescriptionFor?: (team: WorkspaceTeamTile) => ReactNode;
 };

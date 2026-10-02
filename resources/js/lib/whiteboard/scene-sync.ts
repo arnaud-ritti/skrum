@@ -25,7 +25,7 @@ const MaxIdleFetches = 3;
 const MaxRecoveryDelayMs = 30000;
 const FatalStatuses = [401, 403, 404, 419];
 
-export type SceneSyncDeps = {
+type SceneSyncDeps = {
     boardId: string;
     api: ExcalidrawImperativeAPI;
     initial: Pick<WhiteboardSnapshot, 'elements' | 'seq'>;

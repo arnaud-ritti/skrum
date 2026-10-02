@@ -124,7 +124,7 @@ export function DeckBadge() {
 }
 
 /** "team · Planning poker"; a guest is not told the team. */
-export function useRoomOverline(): string {
+function useRoomOverline(): string {
     const { snapshot } = useGame();
     const { t } = useTrans();
     const { teamName } = snapshot.game;
