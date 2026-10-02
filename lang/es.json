@@ -3885,5 +3885,8 @@
     "With attributions and a GIF provider": "Con atribuciones y un proveedor de GIF",
     "Nothing to attribute, no \"Powered by\" line": "Nada que atribuir, sin la línea «Con la tecnología de»",
     "Default: :name": "Predeterminado: :name",
-    "The style of the environment applies until you choose another one.": "Se aplica el estilo del entorno hasta que elija otro."
+    "The style of the environment applies until you choose another one.": "Se aplica el estilo del entorno hasta que elija otro.",
+    "Live updates are paused. What you see may be out of date.": "Las actualizaciones en directo están en pausa. Lo que ves puede estar desactualizado.",
+    "Live updates are paused. The round may have moved on.": "Las actualizaciones en directo están en pausa. Puede que la ronda haya avanzado.",
+    "Live updates are paused. Other people's changes appear when the connection returns.": "Las actualizaciones en directo están en pausa. Los cambios de los demás aparecerán cuando vuelva la conexión."
 }

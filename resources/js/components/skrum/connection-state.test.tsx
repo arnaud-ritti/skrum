@@ -143,6 +143,21 @@ describe('ConnectionState', () => {
         );
         expect(screen.queryByRole('button')).toBeNull();
     });
+
+    it('shows the given hint in place of the kept-locally sentence', () => {
+        render(
+            <ConnectionState
+                status="reconnecting"
+                variant="banner"
+                hint="Live updates are paused."
+            />,
+        );
+
+        expect(screen.getByRole('status').textContent).toContain(
+            'Live updates are paused.',
+        );
+        expect(screen.queryByText(/kept locally/)).toBeNull();
+    });
 });
 
 describe('EditingIndicator', () => {

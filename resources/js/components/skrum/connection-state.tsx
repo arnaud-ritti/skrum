@@ -27,6 +27,8 @@ export type ConnectionStateProps = {
     onRetry?: () => void;
     /** Shown as a "Reload" button when the status is `expired`. */
     onReload?: () => void;
+    /** Banner only: replaces the "kept locally" sentence. */
+    hint?: string;
     realtime?: string;
     className?: string;
 };
@@ -177,6 +179,7 @@ export function ConnectionState({
     variant = 'pill',
     onRetry,
     onReload,
+    hint,
     realtime,
     className,
 }: ConnectionStateProps) {
@@ -225,7 +228,9 @@ export function ConnectionState({
                             ? t('Connection to the server lost.')
                             : copy.label}
                     </span>
-                    {isOffline || status === 'reconnecting' ? (
+                    {hint !== undefined ? (
+                        <> {hint}</>
+                    ) : isOffline || status === 'reconnecting' ? (
                         <> {keptLocally}</>
                     ) : null}
                     {detail ? ` ${detail}` : null}
