@@ -1,0 +1,217 @@
+import { Link, router, usePage } from '@inertiajs/react';
+import { LayoutTemplate, PenTool, Trash2, TriangleAlert } from 'lucide-react';
+import { useRef, useState } from 'react';
+import type { ReactNode } from 'react';
+import { toast } from 'sonner';
+import WhiteboardsController from '@/actions/App/Http/Controllers/Whiteboards/WhiteboardsController';
+import { EmptyState } from '@/components/skrum/empty-state';
+import { SectionActionsMenu } from '@/components/teams/section-actions-menu';
+import { TeamSection } from '@/components/teams/team-section';
+import { WhiteboardTemplatesDialog } from '@/components/teams/whiteboard-templates-dialog';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogIcon,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Spinner } from '@/components/ui/spinner';
+import { useTrans } from '@/hooks/use-trans';
+import { RetroRequestError, retroRequest } from '@/lib/retro/api';
+import type { WhiteboardSummary, WhiteboardTemplateSummary } from '@/types';
+
+type Props = {
+    workspaceSlug: string;
+    boards: WhiteboardSummary[];
+    templates: WhiteboardTemplateSummary[];
+    /** Place left (TM-7): the thumbnail of a board, above its name. */
+    thumbnailFor?: (board: WhiteboardSummary) => ReactNode;
+};
+
+export function TeamWhiteboardsSection({
+    workspaceSlug,
+    boards,
+    templates,
+    thumbnailFor,
+}: Props) {
+    const { t } = useTrans();
+    const { locale } = usePage().props;
+    const [deleting, setDeleting] = useState<WhiteboardSummary | null>(null);
+    const [processing, setProcessing] = useState(false);
+    const [managing, setManaging] = useState(false);
+    const menuRef = useRef<HTMLButtonElement>(null);
+    const formatDate = new Intl.DateTimeFormat(locale, {
+        dateStyle: 'medium',
+    });
+
+    const confirmDelete = async (): Promise<void> => {
+        if (deleting === null) {
+            return;
+        }
+
+        setProcessing(true);
+
+        try {
+            await retroRequest(WhiteboardsController.destroy(deleting.id));
+            router.reload({ only: ['whiteboards'] });
+            setDeleting(null);
+        } catch (error) {
+            toast.error(
+                error instanceof RetroRequestError && error.status > 0
+                    ? error.message
+                    : t('Something went wrong. Please try again.'),
+            );
+        } finally {
+            setProcessing(false);
+        }
+    };
+
+    return (
+        <TeamSection
+            icon={PenTool}
+            title={t('Whiteboards')}
+            count={boards.length}
+            actions={
+                <SectionActionsMenu
+                    label={t('Whiteboards actions')}
+                    triggerRef={menuRef}
+                    items={[
+                        {
+                            label: t('Whiteboard templates'),
+                            icon: LayoutTemplate,
+                            onSelect: () => setManaging(true),
+                        },
+                    ]}
+                />
+            }
+        >
+            {boards.length === 0 && (
+                <Card className="border-dashed shadow-none">
+                    <EmptyState
+                        module="whiteboard"
+                        headingLevel="h3"
+                        illustration={false}
+                        title={t('No whiteboards yet.')}
+                        description={t(
+                            'Draw and map together: pick Whiteboard in New session.',
+                        )}
+                        className="py-6"
+                    />
+                </Card>
+            )}
+            {boards.length > 0 && (
+                <ul
+                    data-slot="team-whiteboards"
+                    className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,13.5rem),1fr))] gap-3"
+                >
+                    {boards.map((board) => (
+                        <li key={board.id} className="flex min-w-0">
+                            <Card className="relative w-full overflow-hidden transition-shadow duration-140 hover:shadow-raised has-[a:focus-visible]:ring-2 has-[a:focus-visible]:ring-ring motion-reduce:transition-none">
+                                <Link
+                                    href={WhiteboardsController.show(board.id)}
+                                    className="flex min-w-0 flex-1 flex-col outline-none after:absolute after:inset-0 after:rounded-xl"
+                                >
+                                    {thumbnailFor?.(board)}
+                                    <span
+                                        className={
+                                            board.canDelete
+                                                ? 'flex min-w-0 flex-col gap-0.5 py-3 pr-12 pl-4'
+                                                : 'flex min-w-0 flex-col gap-0.5 px-4 py-3'
+                                        }
+                                    >
+                                        <span className="truncate text-sm font-semibold">
+                                            {board.title}
+                                        </span>
+                                        <span className="truncate text-xs text-muted-foreground">
+                                            {board.facilitatorName &&
+                                                t('Facilitated by :name', {
+                                                    name: board.facilitatorName,
+                                                })}
+                                            {board.facilitatorName &&
+                                                board.updatedAt &&
+                                                ' · '}
+                                            {board.updatedAt &&
+                                                formatDate.format(
+                                                    new Date(board.updatedAt),
+                                                )}
+                                        </span>
+                                    </span>
+                                </Link>
+                                {board.canDelete && (
+                                    <Button
+                                        variant="ghost"
+                                        size="icon-sm"
+                                        className="absolute right-2 bottom-2.5 z-10"
+                                        aria-label={t('Delete :title', {
+                                            title: board.title,
+                                        })}
+                                        onClick={() => setDeleting(board)}
+                                    >
+                                        <Trash2 aria-hidden />
+                                    </Button>
+                                )}
+                            </Card>
+                        </li>
+                    ))}
+                </ul>
+            )}
+
+            <WhiteboardTemplatesDialog
+                open={managing}
+                onOpenChange={setManaging}
+                onCloseAutoFocus={(event) => {
+                    event.preventDefault();
+                    menuRef.current?.focus();
+                }}
+                workspaceSlug={workspaceSlug}
+                templates={templates}
+            />
+
+            <Dialog
+                open={deleting !== null}
+                onOpenChange={(open) => {
+                    if (!open && !processing) {
+                        setDeleting(null);
+                    }
+                }}
+            >
+                <DialogContent size="sm" showCloseButton={false}>
+                    <DialogHeader>
+                        <DialogIcon className="bg-skrum-destructive-soft text-skrum-destructive-text">
+                            <TriangleAlert />
+                        </DialogIcon>
+                        <DialogTitle>{t('Delete this board?')}</DialogTitle>
+                        <DialogDescription>
+                            {t('Everything on it is removed for everyone.')}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button
+                            variant="outline"
+                            disabled={processing}
+                            onClick={() => setDeleting(null)}
+                        >
+                            {t('Cancel')}
+                        </Button>
+                        <Button
+                            variant="destructive"
+                            disabled={processing}
+                            onClick={confirmDelete}
+                        >
+                            {processing ? (
+                                <Spinner aria-label={t('Loading')} />
+                            ) : (
+                                <Trash2 aria-hidden />
+                            )}
+                            {t('Delete this board')}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        </TeamSection>
+    );
+}

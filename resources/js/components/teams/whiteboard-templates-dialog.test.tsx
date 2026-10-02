@@ -45,11 +45,12 @@ const templates: WhiteboardTemplateSummary[] = [
 
 function open(list: WhiteboardTemplateSummary[] = templates): HTMLElement {
     renderWithProviders(
-        <WhiteboardTemplatesDialog workspaceSlug="acme" templates={list} />,
-    );
-
-    fireEvent.click(
-        screen.getByRole('button', { name: 'Whiteboard templates' }),
+        <WhiteboardTemplatesDialog
+            open
+            onOpenChange={() => {}}
+            workspaceSlug="acme"
+            templates={list}
+        />,
     );
 
     return screen.getByRole('dialog');

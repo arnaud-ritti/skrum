@@ -3817,5 +3817,22 @@
     "Set as default": "Set as default",
     "Set :name as default": "Set :name as default",
     "Duplicate :name": "Duplicate :name",
-    "Deck duplicated.": "Deck duplicated."
+    "Deck duplicated.": "Deck duplicated.",
+    "Planning poker actions": "Planning poker actions",
+    "Whiteboards actions": "Whiteboards actions",
+    "Points": "Points",
+    "Last activity": "Last activity",
+    ":count in the room": ":count in the room",
+    "Show :count more": "Show :count more",
+    ":name workspace": ":name workspace",
+    ":points pts": ":points pts",
+    "ROTI :score / 5": "ROTI :score / 5",
+    "Remove :name from :team?": "Remove :name from :team?",
+    "They stay in the workspace and can be added back to the team.": "They stay in the workspace and can be added back to the team.",
+    "Start one with the New session button.": "Start one with the New session button.",
+    "Estimate a backlog together: pick Planning poker in New session.": "Estimate a backlog together: pick Planning poker in New session.",
+    "Draw and map together: pick Whiteboard in New session.": "Draw and map together: pick Whiteboard in New session.",
+    "Team page, for a manager": "Team page, for a manager",
+    "Team page sections, for a member of a team without sessions": "Team page sections, for a member of a team without sessions",
+    "Planning poker section, while the presence loads": "Planning poker section, while the presence loads"
 }

@@ -4040,5 +4040,22 @@
     "Any values, emoji allowed": "Valores libres, se admiten emojis",
     "Set as default": "Usar por defecto",
     "Set :name as default": "Usar :name por defecto",
-    "Deck duplicated.": "Baraja duplicada."
+    "Deck duplicated.": "Baraja duplicada.",
+    "Planning poker actions": "Acciones de planning poker",
+    "Whiteboards actions": "Acciones de las pizarras",
+    "Points": "Puntos",
+    "Last activity": "Última actividad",
+    ":count in the room": ":count en la sala",
+    "Show :count more": "Mostrar :count más",
+    ":name workspace": "Espacio de trabajo :name",
+    ":points pts": ":points pts",
+    "ROTI :score / 5": "ROTI :score / 5",
+    "Remove :name from :team?": "¿Quitar a :name de :team?",
+    "They stay in the workspace and can be added back to the team.": "Esta persona sigue en el espacio de trabajo y se puede volver a añadir al equipo.",
+    "Start one with the New session button.": "Inicia una con el botón Nueva sesión.",
+    "Estimate a backlog together: pick Planning poker in New session.": "Estimad un backlog juntos: elige Planning poker en Nueva sesión.",
+    "Draw and map together: pick Whiteboard in New session.": "Dibujad y esquematizad juntos: elige Pizarra en Nueva sesión.",
+    "Team page, for a manager": "Página del equipo, para un gestor",
+    "Team page sections, for a member of a team without sessions": "Secciones de la página del equipo, para un miembro de un equipo sin sesiones",
+    "Planning poker section, while the presence loads": "Sección de planning poker, mientras carga la presencia"
 }

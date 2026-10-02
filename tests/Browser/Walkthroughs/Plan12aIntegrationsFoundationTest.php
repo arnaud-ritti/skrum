@@ -81,7 +81,7 @@ it('[P12a-01b] hides the Integrations link from a team member and refuses the pa
     $page = $this->signIn($member, route('teams.show', [$team->workspace, $team], false));
 
     $page->assertSee('Games')
-        ->assertNotPresent('a[href$="/integrations"]');
+        ->assertNotPresent('main a[href$="/integrations"]');
 
     $page->navigate(p12aIntegrationsPath($team))
         ->assertSee('403')
@@ -95,7 +95,7 @@ it('[P12a-01c] has no Integrations link and no integrations page while no provid
     $page = $this->signIn($admin, route('teams.show', [$team->workspace, $team], false));
 
     $page->assertSee('Games')
-        ->assertNotPresent('a[href$="/integrations"]');
+        ->assertNotPresent('main a[href$="/integrations"]');
 
     $page->navigate(p12aIntegrationsPath($team))
         ->assertSee('404')

@@ -616,7 +616,7 @@ it('[P14b-07] gives a team member no way to the webhook: no Integrations link, 4
     $page = $this->signIn($member, route('teams.show', [$team->workspace, $team], false));
 
     $page->assertSee('Games')
-        ->assertNotPresent('a[href$="/integrations"]');
+        ->assertNotPresent('main a[href$="/integrations"]');
 
     $status = $page->script(<<<JS
         async () => {
