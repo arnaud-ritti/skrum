@@ -137,7 +137,7 @@ it('refuses to delete the account of the last instance admin', function (string 
         ->and($admin->fresh()->is_instance_admin)->toBeTrue();
 })->with([
     'en' => ['en', 'Name another instance admin before deleting your account.'],
-    'fr' => ['fr', 'Nommez un autre administrateur de l’instance avant de supprimer votre compte.'],
+    'fr' => ['fr', 'Nomme un autre administrateur de l’instance avant de supprimer ton compte.'],
     'es' => ['es', 'Nombra a otro administrador de la instancia antes de eliminar tu cuenta.'],
     'de' => ['de', 'Ernenne einen weiteren Instanz-Administrator, bevor du dein Konto löschst.'],
 ]);

@@ -140,7 +140,7 @@ it('fails at once when Telegram removed the bot', function () {
 
     runDeliveryJob(new DeliverToTelegram($delivery->id, 'hi', 'fr'))->assertFailed();
 
-    expect($delivery->fresh()->error)->toBe("Reconnectez Telegram dans les paramètres de l'équipe.")
+    expect($delivery->fresh()->error)->toBe("Reconnecte Telegram dans les paramètres de l'équipe.")
         ->and(TeamIntegration::query()->sole()->status)->toBe(IntegrationStatus::ReconnectRequired);
 });
 
