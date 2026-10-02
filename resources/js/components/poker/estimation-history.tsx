@@ -337,7 +337,7 @@ export function EstimationHistory({
             });
         }
 
-        return summary.gamesCount === 1
+        return summary.gamesCount <= 1
             ? t(':count tasks estimated by :team in 1 game', {
                   count: pagination.total,
                   team: team.name,

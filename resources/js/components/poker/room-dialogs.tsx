@@ -165,7 +165,9 @@ function SettingsTrigger({
                     <Settings2 aria-hidden />
                 </Button>
             </TooltipTrigger>
-            <TooltipContent>{t('Game settings')}</TooltipContent>
+            <TooltipContent shortcut={[',']}>
+                {t('Game settings')}
+            </TooltipContent>
         </Tooltip>
     );
 }
@@ -207,7 +209,7 @@ export function GameSettings() {
     }, [open]);
 
     useShortcut(',', () => setIsOpen(true), {
-        enabled: !open && game.endedAt === null,
+        enabled: !open && !ctx.sessionExpired && game.endedAt === null,
     });
 
     useEffect(() => {
