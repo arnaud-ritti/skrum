@@ -2,6 +2,8 @@
 
 namespace App\Support\Games;
 
+use App\Support\Locales;
+
 /**
  * Word and GIF-question lists per locale, read from resources/games. The
  * files are immutable, so one copy per process is safe under Octane.
@@ -71,9 +73,6 @@ class GameWordBook
 
     public static function supported(string $locale): string
     {
-        /** @var array<int, string> $locales */
-        $locales = config('skrum.locales');
-
-        return in_array($locale, $locales, true) ? $locale : 'en';
+        return Locales::supported($locale);
     }
 }

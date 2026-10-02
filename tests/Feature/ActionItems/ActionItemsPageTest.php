@@ -300,7 +300,7 @@ it('loads the counts lazily with the items', function () {
     $url = route('workspaces.actionItems.index', $team->workspace);
     $partial = fn (string $only) => $this->actingAs($user)->get($url, [
         'X-Inertia' => 'true',
-        'X-Inertia-Version' => app(HandleInertiaRequests::class)->version(request()),
+        'X-Inertia-Version' => resolve(HandleInertiaRequests::class)->version(request()),
         'X-Inertia-Partial-Component' => 'action-items/index',
         'X-Inertia-Partial-Data' => $only,
     ])->assertOk()->json('props');

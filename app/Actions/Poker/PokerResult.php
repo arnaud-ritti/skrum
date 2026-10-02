@@ -236,7 +236,7 @@ class PokerResult
             return $outliers;
         }
 
-        $modeValues = array_map(fn (string $card): ?float => PokerDeck::numericValue($card), $mode);
+        $modeValues = array_map(PokerDeck::numericValue(...), $mode);
         $ends = ['low' => $sortedVotes[0], 'high' => $sortedVotes[count($sortedVotes) - 1]];
 
         foreach ($ends as $side => $end) {

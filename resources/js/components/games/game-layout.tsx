@@ -50,6 +50,11 @@ export function useHasRightColumn(): boolean {
 const LeftColumnFromRem = 80;
 const PhoneUnderRem = 48;
 
+/** False where the left column is a sheet: the stage of a retro shows the game cards to a player only beside the stage. */
+export function useHasLeftColumn(): boolean {
+    return useMinWidth(LeftColumnFromRem);
+}
+
 const StageFooterContext = createContext<HTMLElement | null>(null);
 
 /**

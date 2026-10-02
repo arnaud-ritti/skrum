@@ -114,10 +114,22 @@ it('answers the team page and the health check page when their trend cannot be b
     [$member, $workspace, $team] = healthCheckPageTeam(WorkspaceRole::Member);
     $this->mock(BuildTeamMoodTrend::class)->shouldReceive('handle')->andThrow(new RuntimeException('The trend failed.'));
 
-    $this->actingAs($member)
-        ->get(route($routeName, [$workspace, $team]))
-        ->assertInertia(fn (Assert $page) => $page
-            ->missing('moodTrend')
-            ->loadDeferredProps('trend', fn (Assert $reload) => $reload
-                ->missing('moodTrend')));
+    $url = route($routeName, [$workspace, $team]);
+
+    $page = $this->actingAs($member)
+        ->get($url)
+        ->assertInertia(fn (Assert $page) => $page->missing('moodTrend'))
+        ->viewData('page');
+
+    expect($page['deferredProps']['trend'])->toBe(['moodTrend']);
+
+    $this->get($url, [
+        'X-Inertia' => 'true',
+        'X-Inertia-Version' => $page['version'],
+        'X-Inertia-Partial-Component' => $page['component'],
+        'X-Inertia-Partial-Data' => 'moodTrend',
+    ])
+        ->assertOk()
+        ->assertJsonMissingPath('props.moodTrend')
+        ->assertJsonPath('rescuedProps', ['moodTrend']);
 })->with(['teams.show', 'teams.healthCheck.show']);

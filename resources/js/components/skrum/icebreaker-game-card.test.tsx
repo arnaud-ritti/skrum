@@ -150,6 +150,27 @@ describe('IcebreakerGameCard', () => {
         expect(onSelect).toHaveBeenCalledWith('hangman');
     });
 
+    it('takes no click when read-only, and keeps its full colour', () => {
+        const onSelect = vi.fn();
+        render(
+            <IcebreakerGameCard
+                {...base}
+                selected
+                readOnly
+                onSelect={onSelect}
+            />,
+        );
+        const radio = screen.getByRole('radio');
+
+        fireEvent.click(radio);
+
+        expect(onSelect).not.toHaveBeenCalled();
+        expect(radio.getAttribute('aria-disabled')).toBe('true');
+        expect(radio.getAttribute('aria-checked')).toBe('true');
+        expect(radio.getAttribute('data-unavailable')).toBe('false');
+        expect(radio.className).not.toContain('opacity-55');
+    });
+
     it('is unavailable with a readable reason when too few players', () => {
         const onSelect = vi.fn();
         render(

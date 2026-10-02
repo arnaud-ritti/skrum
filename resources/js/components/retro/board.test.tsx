@@ -10,39 +10,40 @@ vi.mock('@/hooks/use-retro-board', () => ({
     useRetroBoard: () => state.value,
 }));
 
-vi.mock('@/components/retro/icebreaker-game', async () => {
-    const { GamePanel } = await import('@/components/games/game-panel');
-    const { RoomProvider } = await import('@/components/games/room-context');
-
-    return {
-        IcebreakerGame: ({
-            snapshot,
-        }: {
-            snapshot: { room: { id: string } };
-        }) => (
-            <RoomProvider value={{ snapshot, lastEnded: null } as never}>
-                <section
-                    aria-label="Icebreaker game"
-                    data-room={snapshot.room.id}
-                >
-                    <GamePanel landmark={false} />
-                </section>
-            </RoomProvider>
-        ),
-    };
-});
-
-vi.mock('@/components/games/round-end-card', () => ({
-    RoundEndCard: () => <p>Ready to play?</p>,
+vi.mock('@/hooks/use-game-room', () => ({
+    useGameRoom: (snapshot: unknown) => ({
+        state: { snapshot, lastEnded: null },
+        dispatch: () => undefined,
+        apply: () => undefined,
+        run: async () => undefined,
+        handleError: () => null,
+        handleEvent: () => undefined,
+        refetch: async () => undefined,
+        serverOffset: 0,
+        sessionExpired: false,
+    }),
 }));
 
-vi.mock('@/components/games/room-sidebar', () => ({
+vi.mock('@/components/games/game-stage', () => ({
+    GameStage: () => <p>Ready to play?</p>,
+}));
+
+vi.mock('@/components/games/room-sidebar', async (importOriginal) => ({
+    ...(await importOriginal<
+        typeof import('@/components/games/room-sidebar')
+    >()),
     RoomSidebar: () => <p>Players</p>,
 }));
 
-function icebreakerSnapshot(
-    icebreaker: unknown = { room: { id: 'room-1' }, round: null },
-) {
+const icebreakerRoom = {
+    room: { id: 'room-1', game: 'hangman', isHost: true, timerEndsAt: null },
+    games: [{ value: 'hangman', label: 'Hangman', available: true }],
+    players: [],
+    leaderboard: [],
+    round: null,
+};
+
+function icebreakerSnapshot(icebreaker: unknown = icebreakerRoom) {
     return retroSnapshot({
         retro: {
             phase: 'icebreaker',
@@ -177,8 +178,10 @@ describe('Board', () => {
                 name: 'Icebreaker game',
             });
 
-            expect(stage.getAttribute('data-room')).toBe('room-1');
             expect(stage.textContent).toContain('Ready to play?');
+            expect(
+                within(stage).getByRole('button', { name: 'Choose a game' }),
+            ).toBeTruthy();
             expect(screen.getAllByRole('main')).toHaveLength(1);
             expect(
                 container

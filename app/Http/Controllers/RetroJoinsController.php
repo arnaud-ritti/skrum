@@ -30,7 +30,7 @@ class RetroJoinsController extends Controller
             'guestToken' => $guestToken,
             'retroTitle' => $retro->title,
             'session' => $presentJoinSession->retro($retro),
-            'suggestedName' => $request->user()?->name,
+            ...$presentJoinSession->nickname($request->user()),
         ])->toResponse($request);
     }
 

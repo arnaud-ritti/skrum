@@ -11,7 +11,7 @@ type Props =
           guestToken: string;
           session: JoinSession;
           boardTitle: string;
-          suggestedName: string | null;
+          suggestedName: string;
       };
 
 export default function JoinWhiteboard(props: Props) {

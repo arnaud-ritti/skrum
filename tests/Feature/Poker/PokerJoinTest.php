@@ -15,7 +15,10 @@ it('shows the join form for an enabled guest link', function () {
             ->where('isInvalid', false)
             ->where('guestToken', $game->guest_token)
             ->where('gameTitle', 'Sprint 12 sizing')
-            ->where('suggestedName', null));
+            ->where('suggestedName', fn (string $name) => $name !== '' && mb_strlen($name) <= 50)
+            ->missing('randomName')
+            ->reloadOnly('randomName', fn (Assert $reload) => $reload
+                ->where('randomName', fn (string $name) => $name !== '' && mb_strlen($name) <= 50)));
 });
 
 it('joins as a guest and resumes with the cookie', function () {

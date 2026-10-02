@@ -13,7 +13,7 @@ use App\Models\Workspace;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -99,7 +99,7 @@ class WorkspacesController extends Controller
                     'openRetroTitle' => $openRetroTitles->get($team->id),
                     'lastRetroAt' => $team->last_retro_at === null
                         ? null
-                        : Carbon::parse($team->last_retro_at)->toIso8601String(),
+                        : Date::parse($team->last_retro_at)->toIso8601String(),
                     'openPokerGames' => $team->open_poker_games_count,
                     'openActionItems' => $team->open_action_items_count,
                     'overdueActionItems' => $team->overdue_action_items_count,

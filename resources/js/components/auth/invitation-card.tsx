@@ -5,7 +5,7 @@ import type { ReactNode } from 'react';
 import InvitationAcceptancesController from '@/actions/App/Http/Controllers/InvitationAcceptancesController';
 import InvitationAccountsController from '@/actions/App/Http/Controllers/InvitationAccountsController';
 import { AccessNotice } from '@/components/auth/access-notice';
-import { authLinkClass } from '@/components/auth/login-form';
+import { authLinkClass } from '@/components/auth/auth-link';
 import { PasswordField } from '@/components/auth/password-field';
 import { minimumLength } from '@/components/auth/register-form';
 import { SsoButtons } from '@/components/auth/sso-buttons';
@@ -90,7 +90,6 @@ export function InvitationCard({
     ssoProviders = [],
     inviter = null,
     role,
-    expiresAt,
     membersCount,
     members = [],
     team,

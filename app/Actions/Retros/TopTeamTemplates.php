@@ -37,7 +37,7 @@ class TopTeamTemplates
             ->selectRaw('template, workspace_template_id, count(*) as uses, max(created_at) as last_used_at')
             ->groupBy('template', 'workspace_template_id')
             ->orderByDesc('uses')
-            ->orderByDesc('last_used_at')
+            ->latest('last_used_at')
             ->get()
             ->map(function (Retro $row) use ($workspaceTemplateIds): ?string {
                 if ($row->workspace_template_id !== null) {

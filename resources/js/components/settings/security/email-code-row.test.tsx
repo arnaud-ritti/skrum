@@ -20,7 +20,9 @@ vi.mock('@inertiajs/react', async (importOriginal) => ({
 }));
 
 beforeAll(() => {
-    document.elementFromPoint ??= () => null;
+    if (!('elementFromPoint' in document)) {
+        Object.assign(document, { elementFromPoint: () => null });
+    }
 });
 
 const off = {

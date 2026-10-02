@@ -177,6 +177,81 @@ describe('SurveyQuestion answer mode', () => {
         ).toBeNull();
     });
 
+    it('disabled blocks answering without saying the survey is closed', () => {
+        const onChange = vi.fn();
+        setup({
+            disabled: true,
+            onChange,
+            hasAnswered: true,
+            onWithdraw: vi.fn(),
+        });
+
+        fireEvent.keyDown(screen.getByRole('radio', { name: 'Alpha' }), {
+            key: '1',
+        });
+
+        expect(
+            screen
+                .getByRole('radio', { name: 'Alpha' })
+                .hasAttribute('disabled'),
+        ).toBe(true);
+        expect(onChange).not.toHaveBeenCalled();
+        expect(screen.queryByText('Closed')).toBeNull();
+        expect(
+            screen.queryByRole('button', { name: 'Withdraw my answer' }),
+        ).toBeNull();
+    });
+
+    it('disabled keeps the text field, without its submit button', () => {
+        setup({
+            kind: 'text',
+            value: 'hi',
+            disabled: true,
+            onSubmit: vi.fn(),
+        });
+
+        expect(screen.getByRole('textbox').hasAttribute('disabled')).toBe(true);
+        expect(screen.queryByRole('button', { name: 'Submit' })).toBeNull();
+    });
+
+    it('submitDisabled disables the submit button of a draft with nothing new', () => {
+        setup({
+            kind: 'multiple',
+            value: ['a'],
+            hasAnswered: true,
+            submitDisabled: true,
+            onSubmit: vi.fn(),
+        });
+
+        expect(
+            screen
+                .getByRole('button', { name: 'Update answer' })
+                .hasAttribute('disabled'),
+        ).toBe(true);
+    });
+
+    it('passes its other props to the article and says the kind', () => {
+        renderWithProviders(
+            <SurveyQuestion
+                id="q1"
+                kind="multiple"
+                label="Pick one"
+                mode="answer"
+                options={options}
+                aria-label="Pick one"
+                data-test="survey"
+            />,
+        );
+
+        const article = document.querySelector('[data-test="survey"]');
+
+        expect(article?.tagName).toBe('ARTICLE');
+        expect(article?.getAttribute('aria-label')).toBe('Pick one');
+        expect(article?.getAttribute('data-slot')).toBe('survey-question');
+        expect(screen.getByText('Multiple choice')).toBeTruthy();
+        expect(screen.getByRole('group', { name: 'Pick one' })).toBeTruthy();
+    });
+
     it('withdraws, shows anonymous, required, error and slots', () => {
         const onWithdraw = vi.fn();
         setup({
@@ -368,11 +443,25 @@ describe('SurveyQuestion results mode', () => {
             results: { responses: 4 },
         });
 
-        expect(screen.getByText('75% · 3')).toBeTruthy();
-        expect(screen.getByText('25% · 1')).toBeTruthy();
+        expect(screen.getByText('3 · 75%')).toBeTruthy();
+        expect(screen.getByText('1 · 25%')).toBeTruthy();
         expect(screen.getByText('4 responses')).toBeTruthy();
         expect(screen.getByText('Your answer')).toBeTruthy();
         expect(screen.getByLabelText('Ada Lovelace')).toBeTruthy();
+        expect(
+            document.querySelector('img[alt="Ada Lovelace"]'),
+        ).not.toBeNull();
+    });
+
+    it('marks the saved answer, not the draft, on the results', () => {
+        setup({
+            kind: 'multiple',
+            value: ['a', 'b'],
+            savedValue: ['a'],
+            results: { responses: 4 },
+        });
+
+        expect(screen.getAllByText('Your answer')).toHaveLength(1);
     });
 
     it('multiple shows count first and handles zero responses', () => {
@@ -384,6 +473,28 @@ describe('SurveyQuestion results mode', () => {
         });
 
         expect(screen.getByText('0 · 0%')).toBeTruthy();
+    });
+
+    it('lists an option whose count is null without a figure or a bar', () => {
+        const { container } = setup({
+            mode: 'results',
+            results: { responses: 2 },
+            options: [
+                { id: 'a', label: 'Alpha', count: null },
+                { id: 'b', label: 'Beta', count: null },
+            ],
+        });
+
+        expect(
+            [...container.querySelectorAll('[data-slot="survey-result"]')].map(
+                (row) => row.textContent,
+            ),
+        ).toEqual(['Alpha', 'Beta']);
+        expect(
+            container.querySelector('[data-slot="survey-result-bar"]'),
+        ).toBeNull();
+        expect(container.textContent).not.toContain('%');
+        expect(screen.getByText('2 responses')).toBeTruthy();
     });
 
     it('hidden results never put counts in the DOM', () => {

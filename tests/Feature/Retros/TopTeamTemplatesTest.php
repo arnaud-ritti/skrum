@@ -19,7 +19,7 @@ function retrosOn(Team $team, string $template, int $count, array $attributes = 
 it('gives the shortcuts in order to a team without a retro', function () {
     $team = Team::factory()->create();
 
-    expect(app(TopTeamTemplates::class)->handle($team))->toBe(TemplateCatalogue::Shortcuts);
+    expect(resolve(TopTeamTemplates::class)->handle($team))->toBe(TemplateCatalogue::Shortcuts);
 });
 
 it('ranks used templates first and completes from the shortcuts without duplicates', function () {
@@ -28,7 +28,7 @@ it('ranks used templates first and completes from the shortcuts without duplicat
     retrosOn($team, 'sailboat', 3);
     retrosOn($team, TemplateCatalogue::Workspace, 1, ['workspace_template_id' => $workspaceTemplate->id]);
 
-    expect(app(TopTeamTemplates::class)->handle($team))->toBe([
+    expect(resolve(TopTeamTemplates::class)->handle($team))->toBe([
         'sailboat',
         $workspaceTemplate->catalogueKey(),
         'went_well_to_improve_actions',
@@ -46,7 +46,7 @@ it('puts the most recently used template first on equal counts', function () {
     retrosOn($team, 'kanban', 1);
     $this->travelBack();
 
-    $keys = app(TopTeamTemplates::class)->handle($team);
+    $keys = resolve(TopTeamTemplates::class)->handle($team);
 
     expect($keys[0])->toBe('kanban')
         ->and($keys[1])->toBe('swot');
@@ -59,7 +59,7 @@ it('ignores blank retros and retros whose workspace template is gone', function 
     retrosOn($team, TemplateCatalogue::Workspace, 2, ['workspace_template_id' => $workspaceTemplate->id]);
     $workspaceTemplate->delete();
 
-    expect(app(TopTeamTemplates::class)->handle($team))->toBe(TemplateCatalogue::Shortcuts);
+    expect(resolve(TopTeamTemplates::class)->handle($team))->toBe(TemplateCatalogue::Shortcuts);
 });
 
 it('ignores a workspace template of another workspace', function () {
@@ -67,21 +67,21 @@ it('ignores a workspace template of another workspace', function () {
     $foreign = WorkspaceTemplate::factory()->create();
     retrosOn($team, TemplateCatalogue::Workspace, 2, ['workspace_template_id' => $foreign->id]);
 
-    expect(app(TopTeamTemplates::class)->handle($team))->toBe(TemplateCatalogue::Shortcuts);
+    expect(resolve(TopTeamTemplates::class)->handle($team))->toBe(TemplateCatalogue::Shortcuts);
 });
 
 it('ignores a built-in key that left the catalogue', function () {
     $team = Team::factory()->create();
     retrosOn($team, 'retired_template', 3);
 
-    expect(app(TopTeamTemplates::class)->handle($team))->toBe(TemplateCatalogue::Shortcuts);
+    expect(resolve(TopTeamTemplates::class)->handle($team))->toBe(TemplateCatalogue::Shortcuts);
 });
 
 it('does not count the retros of another team', function () {
     $team = Team::factory()->create();
     retrosOn(Team::factory()->create(), 'swot', 5);
 
-    expect(app(TopTeamTemplates::class)->handle($team))->toBe(TemplateCatalogue::Shortcuts);
+    expect(resolve(TopTeamTemplates::class)->handle($team))->toBe(TemplateCatalogue::Shortcuts);
 });
 
 it('always holds five distinct keys', function () {
@@ -90,7 +90,7 @@ it('always holds five distinct keys', function () {
         retrosOn($team, $template, 1);
     }
 
-    $keys = app(TopTeamTemplates::class)->handle($team);
+    $keys = resolve(TopTeamTemplates::class)->handle($team);
 
     expect($keys)->toHaveCount(5)
         ->and(array_unique($keys))->toHaveCount(5);

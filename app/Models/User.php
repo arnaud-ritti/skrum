@@ -212,6 +212,6 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
             'two_factor_recovery_codes' => Fortify::currentEncrypter()->encrypt(json_encode($remainingCodes)),
         ])->save();
 
-        RecoveryCodeReplaced::dispatch($this, $code);
+        event(new RecoveryCodeReplaced($this, $code));
     }
 }

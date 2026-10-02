@@ -5,12 +5,13 @@ import { renderWithProviders } from '@/test/render';
 
 const page = vi.hoisted(() => ({ props: {} as Record<string, unknown> }));
 const post = vi.hoisted(() => vi.fn());
+const reload = vi.hoisted(() => vi.fn());
 const isMobile = vi.hoisted(() => ({ value: false }));
 
 vi.mock('@inertiajs/react', async (importOriginal) => ({
     ...(await importOriginal<typeof import('@inertiajs/react')>()),
     usePage: () => page,
-    router: { post },
+    router: { post, reload },
 }));
 
 vi.mock('@/hooks/use-mobile', () => ({
@@ -19,6 +20,7 @@ vi.mock('@/hooks/use-mobile', () => ({
 
 beforeEach(() => {
     post.mockClear();
+    reload.mockReset();
     isMobile.value = false;
     page.props = {
         translations: {},
@@ -51,13 +53,198 @@ describe('GuestJoinPage', () => {
 
         expect(field?.value).toBe('Guest Gia');
 
-        fireEvent.click(screen.getByRole('button', { name: 'Join' }));
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Join the session' }),
+        );
 
         expect(post).toHaveBeenCalledWith(
             '/join/abc',
             { name: 'Guest Gia' },
             expect.anything(),
         );
+    });
+
+    it('asks the server for another random nickname and puts it in the field', () => {
+        reload.mockImplementation(
+            (options: {
+                onSuccess: (page: { props: Record<string, unknown> }) => void;
+            }) => options.onSuccess({ props: { randomName: 'Brave heron' } }),
+        );
+
+        renderWithProviders(
+            <GuestJoinPage
+                kind="whiteboard"
+                invalidTitle="Join a whiteboard"
+                session={{ title: 'Sprint board' }}
+                storeUrl="/whiteboards/join/abc"
+                suggestedName="Thoughtful otter"
+            />,
+        );
+
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Another random nickname' }),
+        );
+
+        expect(reload).toHaveBeenCalledWith(
+            expect.objectContaining({ only: ['randomName'] }),
+        );
+        expect(document.querySelector<HTMLInputElement>('#name')?.value).toBe(
+            'Brave heron',
+        );
+
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Join the session' }),
+        );
+
+        expect(post).toHaveBeenCalledWith(
+            '/whiteboards/join/abc',
+            { name: 'Brave heron' },
+            expect.anything(),
+        );
+    });
+
+    it('keeps the nickname when the server sends no other one', () => {
+        reload.mockImplementation(
+            (options: {
+                onSuccess: (page: { props: Record<string, unknown> }) => void;
+            }) => options.onSuccess({ props: {} }),
+        );
+
+        renderWithProviders(
+            <GuestJoinPage
+                kind="poker"
+                invalidTitle="Join a planning poker game"
+                session={{ title: 'Sprint 12 estimates' }}
+                storeUrl="/poker/join/abc"
+                suggestedName="Thoughtful otter"
+            />,
+        );
+
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Another random nickname' }),
+        );
+
+        expect(document.querySelector<HTMLInputElement>('#name')?.value).toBe(
+            'Thoughtful otter',
+        );
+    });
+
+    it('keeps what was typed and shows the error when a refused join comes back with another suggested nickname', () => {
+        const props = {
+            kind: 'retro',
+            invalidTitle: 'Join a retrospective',
+            session: { title: 'Sprint 42 retro' },
+            storeUrl: '/join/abc',
+        } as const;
+
+        const { rerender } = renderWithProviders(
+            <GuestJoinPage {...props} suggestedName="Thoughtful otter" />,
+        );
+
+        fireEvent.change(screen.getByLabelText('Your nickname'), {
+            target: { value: 'Théo' },
+        });
+
+        page.props = {
+            ...page.props,
+            errors: { name: 'The name has already been taken.' },
+        };
+
+        rerender(<GuestJoinPage {...props} suggestedName="Brave heron" />);
+
+        expect(document.querySelector<HTMLInputElement>('#name')?.value).toBe(
+            'Théo',
+        );
+        expect(
+            screen.getByText('The name has already been taken.'),
+        ).toBeTruthy();
+    });
+
+    it('announces the drawn nickname to screen readers', () => {
+        reload.mockImplementation(
+            (options: {
+                onSuccess: (page: { props: Record<string, unknown> }) => void;
+            }) => options.onSuccess({ props: { randomName: 'Brave heron' } }),
+        );
+
+        renderWithProviders(
+            <GuestJoinPage
+                kind="retro"
+                invalidTitle="Join a retrospective"
+                session={{ title: 'Sprint 42 retro' }}
+                storeUrl="/join/abc"
+                suggestedName="Thoughtful otter"
+            />,
+        );
+
+        expect(screen.getByRole('status').textContent).toBe('');
+
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Another random nickname' }),
+        );
+
+        expect(screen.getByRole('status').textContent).toBe('Brave heron');
+    });
+
+    it('draws one nickname at a time', () => {
+        reload.mockImplementation((options: { onStart: () => void }) =>
+            options.onStart(),
+        );
+
+        renderWithProviders(
+            <GuestJoinPage
+                kind="retro"
+                invalidTitle="Join a retrospective"
+                session={{ title: 'Sprint 42 retro' }}
+                storeUrl="/join/abc"
+                suggestedName="Thoughtful otter"
+            />,
+        );
+
+        const draw = screen.getByRole('button', {
+            name: 'Another random nickname',
+        });
+
+        fireEvent.click(draw);
+        fireEvent.click(draw);
+
+        expect(reload).toHaveBeenCalledTimes(1);
+        expect(draw.getAttribute('aria-disabled')).toBe('true');
+    });
+
+    it('says that cards are anonymous only for a retro that has anonymous cards', () => {
+        const { unmount } = renderWithProviders(
+            <GuestJoinPage
+                kind="retro"
+                invalidTitle="Join a retrospective"
+                session={{ title: 'Sprint 42 retro', hasAnonymousCards: true }}
+                storeUrl="/join/abc"
+            />,
+        );
+
+        expect(
+            screen.getByText(/Cards are anonymous in this retro\./),
+        ).toBeTruthy();
+
+        unmount();
+
+        renderWithProviders(
+            <GuestJoinPage
+                kind="retro"
+                invalidTitle="Join a retrospective"
+                session={{ title: 'Sprint 42 retro', hasAnonymousCards: false }}
+                storeUrl="/join/abc"
+            />,
+        );
+
+        expect(
+            screen.queryByText(/Cards are anonymous in this retro\./),
+        ).toBeNull();
+        expect(
+            screen.getByText(
+                'No account and no e-mail needed. The others see your nickname.',
+            ),
+        ).toBeTruthy();
     });
 
     it('sends the extra fields of the form, such as the poker spectator choice', () => {
@@ -80,7 +267,9 @@ describe('GuestJoinPage', () => {
             </GuestJoinPage>,
         );
 
-        fireEvent.click(screen.getByRole('button', { name: 'Join' }));
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Join the session' }),
+        );
 
         expect(post).toHaveBeenCalledWith(
             '/poker/join/abc',
@@ -131,7 +320,9 @@ describe('GuestJoinPage', () => {
             screen.queryByText('The name has already been taken.'),
         ).toBeNull();
 
-        fireEvent.click(screen.getByRole('button', { name: 'Join' }));
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Join the session' }),
+        );
 
         expect(post).toHaveBeenCalledWith(
             '/join/abc',
@@ -154,7 +345,9 @@ describe('GuestJoinPage', () => {
             screen.getByText('This guest link is no longer valid.'),
         ).toBeTruthy();
         expect(document.querySelector('#name')).toBeNull();
-        expect(screen.queryByRole('button', { name: 'Join' })).toBeNull();
+        expect(
+            screen.queryByRole('button', { name: 'Join the session' }),
+        ).toBeNull();
     });
 
     it('titles the page with the session, or with the invalid title', () => {

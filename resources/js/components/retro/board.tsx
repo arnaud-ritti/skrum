@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { IcebreakerStage } from '@/components/games/icebreaker-stage';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { useHideMyCursor } from '@/components/session/cursor-preference';
 import { SessionShell } from '@/components/session/session-shell';
@@ -25,7 +26,6 @@ import { CarriedItemsSheet } from './carried-items-sheet';
 import { ColumnsBoard } from './columns-board';
 import { FacilitatorDock } from './facilitator-dock';
 import { GroupNameSuggestionsProvider, SuggestGroupNames } from './board-group';
-import { IcebreakerStage } from './icebreaker-stage';
 import {
     DiscussionProvider,
     PhaseDiscussing,
@@ -35,7 +35,6 @@ import { PhaseActions } from './phase-actions';
 import { PhaseHealth } from './phase-health';
 import { PhaseRoti } from './phase-roti';
 import { SessionEnd, type CompletedView } from './session-end';
-import { AddSurveyButton } from './surveys-column';
 
 /**
  * Grouping has its own banner for the suggestions; in Actions and ROTI the
@@ -44,8 +43,7 @@ import { AddSurveyButton } from './surveys-column';
 const WithoutGroupNameTool: RetroPhase[] = ['grouping', 'actions', 'roti'];
 
 /**
- * What the old board header held beside the chrome, until the task of each
- * phase gives it its place: "Add survey" (S1). The carried action items
+ * What the old board header held beside the chrome. The carried action items
  * have no mockup: their button stays here on every phase.
  * Group name suggestions outside Grouping stay here: Voting and Discussing
  * have no banner of their own for them.
@@ -62,7 +60,6 @@ function PhaseTools() {
             {!WithoutGroupNameTool.includes(board.retro.phase) && (
                 <SuggestGroupNames />
             )}
-            <AddSurveyButton />
         </div>
     );
 }

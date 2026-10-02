@@ -272,6 +272,7 @@ it('reads the activity of the teams with the same number of queries for one team
     };
 
     $busyTeam();
+    $this->actingAs($owner)->get(route('workspaces.show', $workspace))->assertOk();
     $withOne = $countQueries();
     $busyTeam();
     $busyTeam();

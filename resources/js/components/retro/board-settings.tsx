@@ -9,8 +9,13 @@ import {
 import type { RetroSettingsValues } from '@/components/skrum/session-settings-popover';
 import { useTrans } from '@/hooks/use-trans';
 import { RetroRequestError, retroRequest } from '@/lib/retro/api';
+import { MaxSurveys, SurveyPhases } from '@/lib/retro/survey-api';
 import type { Snapshot } from '@/lib/retro/types';
 import { useBoard } from './board-context';
+import {
+    SurveyEditorDialog,
+    useSurveyEditor,
+} from './surveys/survey-editor-dialog';
 
 /** The retro as the settings endpoint names its fields. */
 export function retroSettingsValues(
@@ -55,6 +60,12 @@ export function BoardSettings({
     const { retro } = board;
     const [draft, setDraft] = useState<Partial<RetroSettingsValues>>({});
     const [errors, setErrors] = useState<Record<string, string>>({});
+    const surveyEditor = useSurveyEditor();
+    const canAddSurvey =
+        board.viewer.isFacilitator &&
+        SurveyPhases.includes(retro.phase) &&
+        ctx.isEditable &&
+        board.surveys.length < MaxSurveys;
 
     const groups = useRetroSettingGroups({
         phase: retro.phase,
@@ -106,27 +117,41 @@ export function BoardSettings({
         await ctx.refetch();
     };
 
+    // The survey dialog takes the place of the panel: a draft of the
+    // settings is kept for when the panel opens again. The dialog gives the
+    // keyboard back to what had it at its opening, and "Add survey" is gone
+    // with the panel: the settings button takes it first.
+    const addSurvey = () => {
+        onOpenChange(false);
+        anchorRef?.current?.focus();
+        surveyEditor.openCreate();
+    };
+
     return (
-        <SessionSettingsPopover<RetroSettingsValues>
-            open={open && !ctx.sessionExpired}
-            onOpenChange={onOpenChange}
-            title={t('Retrospective settings')}
-            sessionTitle={retro.title}
-            phase={retro.phase}
-            groups={groups}
-            value={retroSettingsValues(retro)}
-            draft={draft}
-            onDraftChange={setDraft}
-            errors={errors}
-            readOnly={!board.viewer.isFacilitator}
-            facilitatorName={facilitator?.name}
-            onApply={apply}
-            onReset={() => {
-                setDraft({});
-                setErrors({});
-            }}
-            variant={variant}
-            anchorRef={anchorRef}
-        />
+        <>
+            <SessionSettingsPopover<RetroSettingsValues>
+                open={open && !ctx.sessionExpired}
+                onOpenChange={onOpenChange}
+                title={t('Retrospective settings')}
+                sessionTitle={retro.title}
+                phase={retro.phase}
+                groups={groups}
+                value={retroSettingsValues(retro)}
+                draft={draft}
+                onDraftChange={setDraft}
+                errors={errors}
+                readOnly={!board.viewer.isFacilitator}
+                facilitatorName={facilitator?.name}
+                onApply={apply}
+                onReset={() => {
+                    setDraft({});
+                    setErrors({});
+                }}
+                variant={variant}
+                anchorRef={anchorRef}
+                onAddSurvey={canAddSurvey ? addSurvey : undefined}
+            />
+            <SurveyEditorDialog editor={surveyEditor} />
+        </>
     );
 }
