@@ -155,6 +155,7 @@ function snapshot(
             anonymousVotes: false,
             cursorsEnabled: false,
             reactionsEnabled: true,
+            teamName: 'Atlas',
             ...game,
         },
         me: {

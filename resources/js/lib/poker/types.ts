@@ -153,6 +153,8 @@ export type PokerGame = {
     anonymousVotes: boolean;
     cursorsEnabled: boolean;
     reactionsEnabled: boolean;
+    /** Null for a guest. */
+    teamName: string | null;
 };
 
 export type PokerMe = {

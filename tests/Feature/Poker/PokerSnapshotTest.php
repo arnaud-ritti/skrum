@@ -112,6 +112,15 @@ it('orders voters by join order', function () {
         ->and(array_column($snapshot['players'], 'id'))->toBe([$first->id, $second->id, $third->id]);
 });
 
+it('names the team of the game for a member and not for a guest', function () {
+    $game = PokerGame::factory()->withGuestAccess()->create();
+    [, $facilitator] = pokerFacilitator($game);
+    $guest = pokerGuest($game);
+
+    expect(pokerSnapshot($game, $facilitator)['game']['teamName'])->toBe($game->team->name)
+        ->and(pokerSnapshot($game, $guest)['game']['teamName'])->toBeNull();
+});
+
 it('gives guests no guest url, team link or transfer candidates', function () {
     $game = PokerGame::factory()->withGuestAccess()->create();
     pokerFacilitator($game);

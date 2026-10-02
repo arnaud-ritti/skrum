@@ -22,7 +22,8 @@ use Illuminate\Contracts\Database\Query\Builder;
  *         reactionsEnabled: bool,
  *         locked: bool,
  *         followEnabled: bool,
- *         timerEndsAt: ?string
+ *         timerEndsAt: ?string,
+ *         teamName: ?string
  *     },
  *     me: array{
  *         id: string,
@@ -76,6 +77,7 @@ class BuildWhiteboardSnapshot
                 'locked' => $board->locked,
                 'followEnabled' => $board->follow_enabled,
                 'timerEndsAt' => $this->timerEndsAt($board),
+                'teamName' => $isGuest ? null : $board->team->name,
             ],
             'me' => [
                 'id' => $viewer->id,

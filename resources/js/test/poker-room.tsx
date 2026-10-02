@@ -95,6 +95,7 @@ export function pokerSnapshot(
             anonymousVotes: false,
             cursorsEnabled: true,
             reactionsEnabled: true,
+            teamName: 'Atlas',
             ...game,
         },
         me: {

@@ -78,6 +78,7 @@ function snapshot(overrides: Partial<PokerSnapshot> = {}): PokerSnapshot {
             anonymousVotes: false,
             cursorsEnabled: true,
             reactionsEnabled: true,
+            teamName: 'Atlas',
         },
         me: {
             playerId: 'ada',

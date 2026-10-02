@@ -40,7 +40,8 @@ use Illuminate\Contracts\Database\Query\Builder;
  *         autoReveal: bool,
  *         anonymousVotes: bool,
  *         cursorsEnabled: bool,
- *         reactionsEnabled: bool
+ *         reactionsEnabled: bool,
+ *         teamName: ?string
  *     },
  *     me: array{
  *         playerId: string,
@@ -117,6 +118,7 @@ class BuildPokerSnapshot
                 'anonymousVotes' => $game->anonymous_votes,
                 'cursorsEnabled' => $game->cursors_enabled,
                 'reactionsEnabled' => $game->reactions_enabled,
+                'teamName' => $isGuest ? null : $team->name,
             ],
             'me' => [
                 'playerId' => $viewer->id,

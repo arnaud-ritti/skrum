@@ -31,6 +31,7 @@ export function boardState(overrides: Overrides = {}): WhiteboardState {
                 locked: false,
                 followEnabled: false,
                 timerEndsAt: null,
+                teamName: 'Atlas',
                 ...overrides.board,
             },
             me: {
