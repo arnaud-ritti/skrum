@@ -19,6 +19,7 @@ import {
     BoardPresence,
     BoardTimer,
     BoardTitle,
+    boardSelf,
 } from './board-topbar';
 import { CarriedItemsSheet } from './carried-items-sheet';
 import { ColumnsBoard } from './columns-board';
@@ -195,6 +196,7 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
                 <DiscussionProvider>
                     <SessionShell
                         kind="retro"
+                        self={boardSelf(board)}
                         title={<BoardTitle />}
                         phases={isMobile ? undefined : <BoardPhases />}
                         timer={

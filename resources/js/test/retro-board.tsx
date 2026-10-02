@@ -22,6 +22,7 @@ export function retroSnapshot({
         retro: {
             id: 'retro-1',
             teamId: 'team-1',
+            teamName: 'Atlas',
             title: 'Sprint 42',
             template: 'start_stop_continue',
             phase: 'writing',

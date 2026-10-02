@@ -6,6 +6,7 @@ import {
     BoardPhases,
     BoardTimer,
     BoardTitle,
+    boardSelf,
 } from '@/components/retro/board-topbar';
 import { boardContext, renderInBoard, retroSnapshot } from '@/test/retro-board';
 
@@ -55,6 +56,56 @@ describe('BoardTitle', () => {
 
         expect(screen.getByText('Board closed for editing')).toBeTruthy();
         expect(screen.queryByRole('link')).toBeNull();
+    });
+
+    it('names the team above the title, and only the kind of session for a guest', () => {
+        const { container, unmount } = renderInBoard(
+            <BoardTitle />,
+            boardContext(),
+        );
+
+        expect(
+            container.querySelector('[data-slot="session-overline"]')
+                ?.textContent,
+        ).toBe('Atlas · Retrospective');
+
+        unmount();
+
+        const guest = renderInBoard(
+            <BoardTitle />,
+            boardContext(retroSnapshot({ retro: { teamName: null } })),
+        );
+
+        expect(
+            guest.container.querySelector('[data-slot="session-overline"]')
+                ?.textContent,
+        ).toBe('Retrospective');
+    });
+});
+
+describe('boardSelf', () => {
+    it('is the viewer among the participants, a guest included', () => {
+        expect(boardSelf(retroSnapshot())).toEqual({
+            name: 'Alice Martin',
+            avatarUrl: '/a.svg',
+            isGuest: false,
+        });
+        expect(
+            boardSelf(
+                retroSnapshot({
+                    viewer: { participantId: 'guest-1', isGuest: true },
+                    participants: [
+                        {
+                            id: 'guest-1',
+                            name: 'Visitor',
+                            avatarUrl: '/g.svg',
+                            isGuest: true,
+                        },
+                    ],
+                }),
+            ),
+        ).toEqual({ name: 'Visitor', avatarUrl: '/g.svg', isGuest: true });
+        expect(boardSelf(retroSnapshot({ participants: [] }))).toBeNull();
     });
 });
 

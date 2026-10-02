@@ -89,6 +89,51 @@ describe('BoardShare', () => {
         );
     });
 
+    it('asks before turning guest access off while a guest is on the board', async () => {
+        const { ctx } = renderInBoard(
+            <BoardShare open onOpenChange={vi.fn()} />,
+            boardContext(retroSnapshot(), {
+                online: [
+                    {
+                        id: 'me',
+                        name: 'Alice Martin',
+                        avatarUrl: '/a.svg',
+                        isGuest: false,
+                    },
+                    {
+                        id: 'guest-1',
+                        name: 'Visitor',
+                        avatarUrl: '/g.svg',
+                        isGuest: true,
+                    },
+                ],
+            }),
+        );
+
+        fireEvent.click(screen.getByRole('switch', { name: 'Allow guests' }));
+
+        const question = await screen.findByRole('alertdialog');
+
+        expect(
+            within(question).getByText('Turn off guest access?'),
+        ).toBeTruthy();
+        expect(retroRequest).not.toHaveBeenCalled();
+
+        fireEvent.click(
+            within(question).getByRole('button', {
+                name: 'Turn off guest access',
+            }),
+        );
+
+        await waitFor(() => expect(ctx.refetch).toHaveBeenCalled());
+        expect(retroRequest).toHaveBeenCalledWith(
+            expect.objectContaining({
+                url: expect.stringContaining('/retros/retro-1/settings'),
+            }),
+            { guest_access_enabled: false },
+        );
+    });
+
     it('creates a new link only after a confirmation', async () => {
         const { ctx } = renderInBoard(
             <BoardShare open onOpenChange={vi.fn()} />,

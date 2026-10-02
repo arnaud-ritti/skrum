@@ -18,7 +18,11 @@ export function BoardEnded({ reason, title, teamUrl }: Props) {
     return (
         <SessionShell
             kind="retro"
-            title={<SessionTitle backHref={teamUrl}>{title}</SessionTitle>}
+            title={
+                <SessionTitle backHref={teamUrl} overline={t('Retrospective')}>
+                    {title}
+                </SessionTitle>
+            }
             realtime="connecting"
             connection={{ reconnecting: false, expired: false }}
         >

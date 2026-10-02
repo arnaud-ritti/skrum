@@ -91,6 +91,7 @@ class BuildBoardSnapshot
             'retro' => [
                 'id' => $retro->id,
                 'teamId' => $retro->team_id,
+                'teamName' => $viewer->isGuest() ? null : $retro->team->name,
                 'title' => $retro->title,
                 'template' => $retro->template,
                 'phase' => $retro->phase->value,

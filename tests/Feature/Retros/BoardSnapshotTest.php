@@ -115,6 +115,8 @@ it('describes the viewer, participants, columns and links', function () {
         ->and(collect($snapshot['participants'])->firstWhere('id', $guest->id))->toMatchArray(['name' => 'Visitor', 'isGuest' => true, 'avatarUrl' => $guest->avatarUrl()])
         ->and($snapshot['links']['team'])->toBe(route('teams.show', [$retro->team->workspace, $retro->team]))
         ->and($guestSnapshot['links']['team'])->toBeNull()
+        ->and($snapshot['retro']['teamName'])->toBe($retro->team->name)
+        ->and($guestSnapshot['retro']['teamName'])->toBeNull()
         ->and(json_encode($snapshot))->not->toContain($retro->guest_token);
 });
 

@@ -34,9 +34,10 @@ import {
 } from '@/components/ui/tooltip';
 import { useServerOffset } from '@/hooks/use-countdown';
 import { useTrans } from '@/hooks/use-trans';
+import type { SessionSelf } from '@/layouts/skrum/session-layout';
 import { retroRequest } from '@/lib/retro/api';
 import { PhaseLabels, reopenPhase, stepperPhases } from '@/lib/retro/phases';
-import type { RetroPhase } from '@/lib/retro/types';
+import type { RetroPhase, Snapshot } from '@/lib/retro/types';
 import { useBoard } from './board-context';
 import { showsRetroCursors } from './board-cursors';
 import { DeleteRetroDialog, HandoverDialog } from './board-dialogs';
@@ -53,10 +54,16 @@ const ExtensionSeconds = 120;
 export function BoardTitle() {
     const { board } = useBoard();
     const { t } = useTrans();
+    const { teamName } = board.retro;
+    const overline =
+        teamName === null
+            ? t('Retrospective')
+            : `${teamName} · ${t('Retrospective')}`;
 
     return (
         <SessionTitle
             backHref={board.links.team}
+            overline={overline}
             badges={
                 board.retro.isLocked && (
                     <Badge variant="secondary" className="shrink-0 gap-1">
@@ -73,6 +80,17 @@ export function BoardTitle() {
             </span>
         </SessionTitle>
     );
+}
+
+/** The viewer, for the end of the header: a guest has no account to read it from. */
+export function boardSelf(board: Snapshot): SessionSelf | null {
+    const me = board.participants.find(
+        (participant) => participant.id === board.viewer.participantId,
+    );
+
+    return me
+        ? { name: me.name, avatarUrl: me.avatarUrl, isGuest: me.isGuest }
+        : null;
 }
 
 export function BoardPhases({ mobile = false }: { mobile?: boolean }) {

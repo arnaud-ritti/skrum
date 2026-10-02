@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { toast } from 'sonner';
 import RetroSharesController from '@/actions/App/Http/Controllers/Integrations/RetroSharesController';
 import RetroGuestTokensController from '@/actions/App/Http/Controllers/Retros/RetroGuestTokensController';
 import RetroSettingsController from '@/actions/App/Http/Controllers/Retros/RetroSettingsController';
 import { DeliveryLines } from '@/components/integrations/share/delivery-lines';
+import { ConfirmDialog } from '@/components/skrum/confirm-dialog';
 import { ShareDialog } from '@/components/skrum/share-dialog';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTrans } from '@/hooks/use-trans';
@@ -40,6 +42,7 @@ export function BoardShare({ open, onOpenChange }: Props) {
     const ctx = useBoard();
     const { t } = useTrans();
     const isMobile = useIsMobile();
+    const [confirmingGuestsOff, setConfirmingGuestsOff] = useState(false);
     const { board } = ctx;
     const { retro } = board;
     const channels = linkChannels(board);
@@ -97,49 +100,79 @@ export function BoardShare({ open, onOpenChange }: Props) {
         return posted;
     };
 
-    return (
-        <ShareDialog
-            open={open && !ctx.sessionExpired}
-            onOpenChange={onOpenChange}
-            session={{
-                id: retro.id,
-                kind: 'retro',
-                title: retro.title,
-                presentCount: ctx.online.length,
-            }}
-            invite={{
-                url: retro.guestUrl,
-                allowGuests: retro.guestAccessEnabled,
-            }}
-            canManage={board.viewer.isFacilitator}
-            guestSwitchId="guest-access"
-            isMobile={isMobile}
-            onCopy={copy}
-            onChange={(patch) => {
-                if (patch.allowGuests === undefined) {
-                    return;
-                }
+    const setGuestAccess = (allowGuests: boolean): Promise<boolean> =>
+        send(
+            retroRequest(RetroSettingsController.update(retro.id), {
+                guest_access_enabled: allowGuests,
+            }),
+        );
 
-                void send(
-                    retroRequest(RetroSettingsController.update(retro.id), {
-                        guest_access_enabled: patch.allowGuests,
-                    }),
-                );
-            }}
-            onRegenerate={async () => {
-                await send(
-                    retroRequest<{ guestUrl: string }>(
-                        RetroGuestTokensController.store(retro.id),
-                    ),
-                );
-            }}
-            channels={channels}
-            onShareToChannel={canPost ? post : undefined}
-            channelsExtra={
-                deliveries.length > 0 ? (
-                    <DeliveryLines deliveries={deliveries} />
-                ) : undefined
-            }
-        />
+    const turnGuestsOff = async () => {
+        if (!(await setGuestAccess(false))) {
+            throw new Error('Guest access was not turned off.');
+        }
+    };
+
+    return (
+        <>
+            <ShareDialog
+                open={open && !ctx.sessionExpired}
+                onOpenChange={onOpenChange}
+                session={{
+                    id: retro.id,
+                    kind: 'retro',
+                    title: retro.title,
+                    teamName: retro.teamName ?? undefined,
+                    presentCount: ctx.online.length,
+                }}
+                invite={{
+                    url: retro.guestUrl,
+                    allowGuests: retro.guestAccessEnabled,
+                }}
+                canManage={board.viewer.isFacilitator}
+                guestSwitchId="guest-access"
+                isMobile={isMobile}
+                onCopy={copy}
+                onChange={(patch) => {
+                    if (patch.allowGuests === undefined) {
+                        return;
+                    }
+
+                    if (
+                        !patch.allowGuests &&
+                        ctx.online.some((member) => member.isGuest)
+                    ) {
+                        setConfirmingGuestsOff(true);
+
+                        return;
+                    }
+
+                    void setGuestAccess(patch.allowGuests);
+                }}
+                onRegenerate={async () => {
+                    await send(
+                        retroRequest<{ guestUrl: string }>(
+                            RetroGuestTokensController.store(retro.id),
+                        ),
+                    );
+                }}
+                channels={channels}
+                onShareToChannel={canPost ? post : undefined}
+                channelsExtra={
+                    deliveries.length > 0 ? (
+                        <DeliveryLines deliveries={deliveries} />
+                    ) : undefined
+                }
+            />
+            <ConfirmDialog
+                open={confirmingGuestsOff && !ctx.sessionExpired}
+                onOpenChange={setConfirmingGuestsOff}
+                tone="destructive"
+                title={t('Turn off guest access?')}
+                description={t('Guests on this board lose access.')}
+                confirmLabel={t('Turn off guest access')}
+                onConfirm={turnGuestsOff}
+            />
+        </>
     );
 }

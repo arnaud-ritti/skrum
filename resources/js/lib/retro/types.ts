@@ -274,6 +274,8 @@ export type Snapshot = {
     retro: {
         id: string;
         teamId: string;
+        /** Null for a guest, who is not told the team. */
+        teamName: string | null;
         title: string;
         template: string;
         phase: RetroPhase;
