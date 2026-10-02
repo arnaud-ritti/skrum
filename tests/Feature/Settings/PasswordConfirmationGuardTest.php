@@ -1,11 +1,13 @@
 <?php
 
+use App\Http\Middleware\HandleInertiaRequests;
 use App\Models\PersonalAccessToken;
 use App\Models\SocialAccount;
 use App\Models\User;
 use App\Support\InstanceSettings;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
+use Inertia\Testing\AssertableInertia as Assert;
 use Laravel\Fortify\Features;
 
 /*
@@ -216,4 +218,91 @@ it('still asks an unverified account to verify its address before any of the act
     'turn the e-mail code off' => ['delete', 'emailSecondFactor.destroy', []],
     'create a token' => ['post', 'apiTokens.store', ['name' => 'Laptop', 'expiration' => '90_days']],
     'revoke a token' => ['delete', 'apiTokens.destroy', []],
+]);
+
+/*
+ * Ways around the confirmation someone could try from the page itself.
+ */
+
+it('keeps the protected props back whatever a partial reload asks for', function (array $partial) {
+    $user = User::factory()->withTwoFactor()->withEmailSecondFactor()->create();
+    PersonalAccessToken::factory()->forUser($user)->create(['name' => 'Claude of Mona']);
+
+    $response = $this->actingAs($user)->get(route('settings.edit'), [
+        'X-Inertia' => 'true',
+        'X-Inertia-Version' => (string) resolve(HandleInertiaRequests::class)->version(request()),
+        'X-Inertia-Partial-Component' => 'settings/account',
+        'Referer' => route('settings.edit'),
+        ...$partial,
+    ])->assertOk();
+
+    expect($response->json('props.security.protected'))->toBeNull()
+        ->and($response->json('props.apiTokens.protected'))->toBeNull()
+        ->and($response->getContent())->not->toContain('Claude of Mona')
+        ->not->toContain('twoFactorEnabled')
+        ->not->toContain('two_factor')
+        ->not->toContain('recovery-code-1');
+})->with([
+    'the two sections' => [['X-Inertia-Partial-Data' => 'security,apiTokens']],
+    'the protected part by its path' => [['X-Inertia-Partial-Data' => 'security.protected,apiTokens.protected,apiTokens.protected.tokens']],
+    'everything but the profile' => [['X-Inertia-Partial-Except' => 'profile']],
+]);
+
+it('does not take the word of the page for how long a confirmation lasts', function () {
+    $user = User::factory()->withTwoFactor()->create();
+    $stale = ['auth.password_confirmed_at' => time() - config('auth.password_timeout') - 60];
+
+    $this->actingAs($user)->withSession($stale)
+        ->getJson(route('password.confirmation', ['seconds' => 999_999_999]))
+        ->assertExactJson(['confirmed' => true]);
+
+    $this->actingAs($user)->withSession($stale)->get(route('settings.edit'))
+        ->assertInertia(fn (Assert $page) => $page->where('security.protected', null)->where('apiTokens.protected', null));
+
+    $this->actingAs($user)->withSession($stale)
+        ->getJson(route('two-factor.recovery-codes'))
+        ->assertStatus(423);
+
+    $this->actingAs($user)->withSession($stale)
+        ->post(route('apiTokens.store'), ['name' => 'Laptop', 'expiration' => '90_days'])
+        ->assertRedirect(route('password.confirm'));
+
+    expect($user->tokens()->count())->toBe(0);
+});
+
+it('does not confirm an account that knows no password, whatever the dialog sends', function (array $payload) {
+    $user = User::factory()->withTwoFactor()->create(['password' => Str::password(64)]);
+    SocialAccount::factory()->for($user)->create();
+
+    $this->actingAs($user)->postJson(route('password.confirm.store'), $payload)->assertUnprocessable();
+
+    expect(session('auth.password_confirmed_at'))->toBeNull();
+
+    $this->actingAs($user)->getJson(route('two-factor.recovery-codes'))->assertStatus(423);
+    $this->actingAs($user)->get(route('settings.edit'))
+        ->assertInertia(fn (Assert $page) => $page->where('security.protected', null)->where('apiTokens.protected', null));
+})->with([
+    'nothing' => [[]],
+    'an empty password' => [['password' => '']],
+    'a guess' => [['password' => 'password']],
+]);
+
+it('revokes only the tokens of the account, even with a confirmed password', function () {
+    $user = User::factory()->create();
+    $tokenOfSomeoneElse = PersonalAccessToken::factory()->forUser(User::factory()->create())->create();
+
+    $this->actingAs($user)
+        ->withSession(['auth.password_confirmed_at' => time()])
+        ->delete(route('apiTokens.destroy', $tokenOfSomeoneElse->id))
+        ->assertNotFound();
+
+    expect(PersonalAccessToken::query()->whereKey($tokenOfSomeoneElse->id)->exists())->toBeTrue();
+});
+
+it('asks a guest to sign in before anything about a confirmation', function (string $method, string $route) {
+    $this->json($method, route($route))->assertUnauthorized();
+})->with([
+    'the state of the confirmation' => ['get', 'password.confirmation'],
+    'a confirmation' => ['post', 'password.confirm.store'],
+    'the recovery codes' => ['get', 'two-factor.recovery-codes'],
 ]);
