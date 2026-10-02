@@ -142,3 +142,38 @@ Answers given by the product owner to the decisions of plans 18e, 18f and 18g. I
 | `@testing-library/user-event` | Declare it as a dev dependency. |
 | Capture languages | FR and EN. |
 | Manual accessibility checklist | Run by an agent with a real browser; the owner reads the report. |
+
+## Second round (same day)
+
+Decisions the first round had left on their default. **≠ default** as above.
+
+| Id | Answer |
+|---|---|
+| X6 | Sidebar footer landmark renamed "Team and administration". |
+| 1-D5 | Both: `Deck.source: 'custom'` badge "This game only"; `@theme` token for the always-white whiteboard preview paper. |
+| 1-D7 | Mockup labels: "Create a deck", "Edit :name", "Delete :name" (on the full page of 3-D3). |
+| 1-D8 | **≠ default**: whiteboard templates manager confirms deletion in a dialog. |
+| 2-D12 | Keep "Add a card…" (label override; no test change). |
+| 2-D14 | "Send the recap by e-mail" as primary button. |
+| 3-D9 | "Watch only" stays the label when on. |
+| 3-D10 | **≠ default**: spectator control on the join page is a switch. |
+| 4-D6 | **≠ default**: "Saved decks" and "Whiteboard templates" live in a "…" actions menu of their section, not ghost buttons. |
+| 5-D2 | Jira export icon in the row and in the sheet footer. |
+| 5-D7 | **≠ default**: "(Guest)" with a capital; assertions change. |
+| 7-D6 | Cursor colours from the presence tokens. |
+| 7-D7 | **≠ default**: build the phone read / edit mode (read by default on a phone, "Modifier" button to edit). |
+| 8-D3 | No "Anonymous" badge. |
+| 8-D4 | "n · p%". |
+| 9-D2 | **≠ default**: workspace templates page includes the built-in templates (full picker), with "Use" and the Poker / Whiteboard tabs (9-D1). |
+| 9-D5 | **≠ default**: revoking an invitation asks for confirmation. |
+| 9-D6 | Members page stays manager-only. |
+| 9-D7 | **≠ default**: the component's sentence "Retros already created from it are not affected."; translations and test redone. |
+| 10-D4 | Team settings sub-navigation "Team" + "Integrations". |
+| 11-D3 | **≠ default**: request id on the 500 page (generated per request, written to the log, shown on the page). |
+| 11-D5 | "Remember me". |
+| 11-D7 / 11-D10 | **≠ default**: redesign 503 (static Blade, no database), 419 and 429 as design-system error pages. |
+| 18f lifetimes | Magic link 15 min, e-mail code 10 min; 60 s cooldown, 5 per hour per address. |
+| 18f cross-device | Allowed: the link signs in the device that opens it, after the confirmation page. |
+| 18f remember | Normal session, no long-lived cookie. |
+| 18f code mail context | Browser and time, no location. |
+| 18g boundary | **≠ default**: old view components still imported after 18e are rewritten in 18g; none remains at the end. |
