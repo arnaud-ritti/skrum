@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Storage;
 
 const P18dColorInput = '[data-slot="color-field"] [data-slot="text-field"] input';
 
-const P18dSidebarAdminLink = 'nav[aria-label="Settings"] a[aria-label="Administration"]';
+const P18dSidebarAdminLink = 'nav[aria-label="Team and administration"] a[aria-label="Administration"]';
 
 function p18dMember(string $name, bool $admin = false): User
 {
