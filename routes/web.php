@@ -98,6 +98,7 @@ use App\Http\Controllers\PokerDecksController;
 use App\Http\Controllers\PokerJoinsController;
 use App\Http\Controllers\ReadAllNotificationsController;
 use App\Http\Controllers\RecapUnsubscribesController;
+use App\Http\Controllers\RecentSessionsController;
 use App\Http\Controllers\ReminderUnsubscribesController;
 use App\Http\Controllers\RetroJoinsController;
 use App\Http\Controllers\Retros\ActionItemCommentsController;
@@ -250,6 +251,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::post('notifications/read-all', [ReadAllNotificationsController::class, 'store'])->name('notifications.readAll');
     Route::patch('notifications/{notification}', [NotificationsController::class, 'update'])->name('notifications.update')->whereUuid('notification');
     Route::get('search', [SearchResultsController::class, 'index'])->middleware('throttle:60,1,search')->name('search.index');
+    Route::get('recent-sessions', [RecentSessionsController::class, 'index'])->middleware('throttle:60,1,recent-sessions')->name('recentSessions.index');
 
     Route::get('integrations/jira-dc/callback', [IntegrationCallbacksController::class, 'show'])
         ->defaults('provider', 'jira_dc')

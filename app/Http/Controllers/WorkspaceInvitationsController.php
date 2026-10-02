@@ -8,6 +8,8 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceInvitation;
 use App\Notifications\WorkspaceInvitationNotification;
+use App\Notifications\WorkspaceInvitationReceivedNotification;
+use App\Support\Auth\LoginAddress;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -16,6 +18,7 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
+use SensitiveParameter;
 
 class WorkspaceInvitationsController extends Controller
 {
@@ -49,11 +52,33 @@ class WorkspaceInvitationsController extends Controller
                 ->locale($recipientLocale ?? app()->getLocale()),
         );
 
+        $this->notifyExistingAccount($validated['email'], $issued->invitation, $url);
+
         if (config('mail.default') === 'log') {
             Inertia::flash('invitationUrl', $url);
         }
 
         return back();
+    }
+
+    /**
+     * The bell of the one verified account that owns the invited address
+     * gets a link to the invitation page. The inviter's answer is the same
+     * whether or not such an account exists.
+     */
+    private function notifyExistingAccount(string $email, WorkspaceInvitation $invitation, #[SensitiveParameter] string $url): void
+    {
+        $accounts = User::query()
+            ->whereRaw('lower(email) = ?', [LoginAddress::normalise($email)])
+            ->whereNotNull('email_verified_at')
+            ->limit(2)
+            ->get();
+
+        if ($accounts->count() !== 1) {
+            return;
+        }
+
+        $accounts->sole()->notify(new WorkspaceInvitationReceivedNotification($invitation->id, $url));
     }
 
     public function destroy(Workspace $workspace, WorkspaceInvitation $invitation): RedirectResponse

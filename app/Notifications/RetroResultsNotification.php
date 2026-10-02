@@ -19,18 +19,21 @@ use Illuminate\Support\Facades\URL;
 /**
  * Carries the retro id only: the recap is written when the mail is sent,
  * in the recipient's locale, and nobody who left the team receives it,
- * nor anyone once the retro has been reopened.
+ * nor anyone once the retro has been reopened. The bell reads the retro
+ * live from the same id.
  */
 class RetroResultsNotification extends Notification implements ShouldBeEncrypted, ShouldQueue
 {
     use Queueable;
+
+    public const string Kind = 'recap_ready';
 
     public function __construct(public string $retroId) {}
 
     /** @return array<int, string> */
     public function via(object $notifiable): array
     {
-        return ['mail'];
+        return ['mail', 'database'];
     }
 
     public function shouldSend(object $notifiable, string $channel): bool
@@ -58,5 +61,16 @@ class RetroResultsNotification extends Notification implements ShouldBeEncrypted
         )
             ->unsubscribeVia(URL::signedRoute('recapUnsubscribes.show', ['user' => $notifiable->id]))
             ->forNotifiable($notifiable);
+    }
+
+    /**
+     * @return array{
+     *     kind: string,
+     *     retroId: string
+     * }
+     */
+    public function toArray(object $notifiable): array
+    {
+        return ['kind' => self::Kind, 'retroId' => $this->retroId];
     }
 }
