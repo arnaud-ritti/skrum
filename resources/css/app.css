@@ -571,5 +571,15 @@
             opacity: 0;
         }
     }
+
+    /*
+     * Named sizes the scale does not have (no arbitrary size in components).
+     * Dialog and Drawer READMEs: the panel keeps 1rem of viewport above and
+     * below, the drawer stops at 85 % of the dynamic viewport. Popovers
+     * anchored near an edge keep a 1rem gutter on each side of the viewport.
+     */
+    --max-height-dialog: calc(100dvh - 2rem);
+    --max-height-drawer: 85dvh;
+    --max-width-viewport-gutter: calc(100vw - 2rem);
 }
 /* ===== End of plan 18b+18c additions ===== */
