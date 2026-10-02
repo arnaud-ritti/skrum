@@ -43,16 +43,20 @@ export function RadiusControl({
 }: RadiusControlProps) {
     const { t } = useTrans();
     const id = useId();
+    const errorId = useId();
     const [typed, setTyped] = useState<string | null>(null);
 
     function type(text: string): void {
-        setTyped(text);
-
         if (text.trim() === '' || Number.isNaN(Number(text))) {
+            setTyped(text);
+
             return;
         }
 
-        onChange(clampRadius(Number(text)));
+        const radius = clampRadius(Number(text));
+
+        setTyped(radius === Number(text) ? text : null);
+        onChange(radius);
     }
 
     return (
@@ -93,6 +97,7 @@ export function RadiusControl({
                             step={1}
                             aria-label={t('Exact radius in pixels')}
                             aria-invalid={error ? true : undefined}
+                            aria-describedby={error ? errorId : undefined}
                             value={typed ?? String(value)}
                             onChange={(event) => type(event.target.value)}
                             onBlur={() => setTyped(null)}
@@ -109,6 +114,7 @@ export function RadiusControl({
             </div>
             {error && (
                 <span
+                    id={errorId}
                     data-slot="field-error"
                     className="text-body-sm text-skrum-destructive-text"
                 >

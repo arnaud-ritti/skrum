@@ -121,7 +121,14 @@ describe('RadiusControl', () => {
         fireEvent.change(field, { target: { value: '40' } });
 
         expect(onChange).toHaveBeenLastCalledWith(16);
+        expect(field.value).toBe('16');
 
+        fireEvent.change(field, { target: { value: '6.5' } });
+
+        expect(onChange).toHaveBeenLastCalledWith(7);
+        expect(field.value).toBe('7');
+
+        fireEvent.change(field, { target: { value: '40' } });
         fireEvent.blur(field);
 
         expect(field.value).toBe('16');
@@ -145,5 +152,21 @@ describe('RadiusControl', () => {
         );
 
         expect(screen.getByText('Too round.')).toBeTruthy();
+    });
+
+    it('ties the server error to the exact value field', () => {
+        renderWithProviders(
+            <RadiusControl
+                value={6}
+                exact
+                onChange={vi.fn()}
+                error="Too round."
+            />,
+        );
+
+        expect(
+            screen.getByRole('spinbutton').getAttribute('aria-describedby'),
+        ).toBe(screen.getByText('Too round.').id);
+        expect(screen.getByText('Too round.').id).not.toBe('');
     });
 });
