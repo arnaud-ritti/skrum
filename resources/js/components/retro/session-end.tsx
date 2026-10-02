@@ -225,7 +225,7 @@ function Stats() {
 
     const participation = t(':count of :total', {
         count: stats.participants,
-        total: stats.teamMembers,
+        total: stats.expected,
     });
 
     return (

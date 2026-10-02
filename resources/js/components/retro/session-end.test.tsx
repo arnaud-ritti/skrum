@@ -93,7 +93,7 @@ function results(overrides: Partial<Results> = {}): Results {
         stats: {
             votesCast: 3,
             votesAvailable: 10,
-            participation: { participants: 2, teamMembers: 3 },
+            participation: { participants: 2, expected: 3 },
             durationSeconds: 3480,
         },
         ...overrides,

@@ -290,7 +290,7 @@ describe('Board', () => {
                     stats: {
                         votesCast: 0,
                         votesAvailable: 5,
-                        participation: { participants: 1, teamMembers: 1 },
+                        participation: { participants: 1, expected: 1 },
                         durationSeconds: null,
                     },
                 },

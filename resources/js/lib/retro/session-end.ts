@@ -9,8 +9,8 @@ import type { ActionItem, HealthResults, RotiResults, Snapshot } from './types';
 type SessionEndStats = {
     actions: number;
     participants: number;
-    teamMembers: number;
-    /** Between 0 and 1; `null` for a team without members. */
+    expected: number;
+    /** Between 0 and 1; `null` when nobody is expected. */
     participationRatio: number | null;
     cards: number;
     groups: number;
@@ -30,7 +30,7 @@ export function sessionEndStats(
     }
 
     const { stats } = board.results;
-    const { participants, teamMembers } = stats.participation;
+    const { participants, expected } = stats.participation;
     const leads = new Set(
         board.cards.flatMap((card) =>
             card.parentCardId === null ? [] : [card.parentCardId],
@@ -40,9 +40,9 @@ export function sessionEndStats(
     return {
         actions: board.actionItems.length,
         participants,
-        teamMembers,
+        expected,
         participationRatio:
-            teamMembers === 0 ? null : Math.min(1, participants / teamMembers),
+            expected === 0 ? null : Math.min(1, participants / expected),
         cards: board.cards.length,
         groups: leads.size,
         votesCast: stats.votesCast,

@@ -196,25 +196,27 @@ it('counts the votes cast and the votes available', function () {
     expect(resultsOf($retro, $viewer)['stats'])->toMatchArray(['votesCast' => 4, 'votesAvailable' => 10]);
 });
 
-it('reports the team members who took part against the team members', function () {
+it('reports the people who joined against the people expected', function () {
     $retro = Retro::factory()->inPhase(RetroPhase::Completed)->withGuestAccess()->create();
     [, $viewer] = retroMember($retro);
     retroMember($retro);
     $retro->team->members()->attach(User::factory()->create());
 
-    expect(resultsOf($retro, $viewer)['stats']['participation'])->toBe(['participants' => 2, 'teamMembers' => 3]);
+    expect(resultsOf($retro, $viewer)['stats']['participation'])->toBe(['participants' => 2, 'expected' => 3]);
 });
 
-it('leaves guests and people outside the team out of the participation, so it never exceeds the team', function () {
+it('counts guests and people outside the team as participants and as expected, so the participation never exceeds the whole', function () {
     $retro = Retro::factory()->inPhase(RetroPhase::Completed)->withGuestAccess()->create(['votes_per_participant' => 3]);
     [, $viewer] = retroMember($retro);
     retroMember($retro);
     Participant::factory()->guest()->create(['retro_id' => $retro->id]);
     Participant::factory()->create(['retro_id' => $retro->id]);
 
+    $retro->team->members()->attach(User::factory()->create());
+
     $results = resultsOf($retro, $viewer);
 
-    expect($results['stats']['participation'])->toBe(['participants' => 2, 'teamMembers' => 2])
+    expect($results['stats']['participation'])->toBe(['participants' => 4, 'expected' => 5])
         ->and($results['participants'])->toHaveCount(4)
         ->and($results['stats']['votesAvailable'])->toBe(12);
 });

@@ -46,7 +46,7 @@ class BuildResults
      *     stats: array{
      *         votesCast: int,
      *         votesAvailable: int,
-     *         participation: array{participants: int, teamMembers: int},
+     *         participation: array{participants: int, expected: int},
      *         durationSeconds: ?int
      *     }
      * }|null
@@ -79,13 +79,13 @@ class BuildResults
     }
 
     /**
-     * The participation is the share of the team that took part: a guest or a person
-     * outside the team votes, but is not counted against the size of the team.
+     * The participation is everyone who joined out of everyone expected. A guest or a
+     * person outside the team who joined counts on both sides, so the share never exceeds the whole.
      *
      * @return array{
      *     votesCast: int,
      *     votesAvailable: int,
-     *     participation: array{participants: int, teamMembers: int},
+     *     participation: array{participants: int, expected: int},
      *     durationSeconds: ?int
      * }
      */
@@ -98,8 +98,8 @@ class BuildResults
             'votesCast' => $retro->votes()->count(),
             'votesAvailable' => $participantCount * $retro->voteLimit(),
             'participation' => [
-                'participants' => $retro->participants->whereIn('user_id', $teamMemberIds)->count(),
-                'teamMembers' => $teamMemberIds->count(),
+                'participants' => $participantCount,
+                'expected' => $teamMemberIds->count() + $retro->participants->whereNotIn('user_id', $teamMemberIds)->count(),
             ],
             'durationSeconds' => $this->durationSeconds($retro),
         ];
