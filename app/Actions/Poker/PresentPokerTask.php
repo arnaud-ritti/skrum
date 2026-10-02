@@ -33,6 +33,7 @@ use Illuminate\Support\Facades\Cache;
  *     estimate: ?string,
  *     estimatedAt: ?string,
  *     roundsCount: int,
+ *     votesCount: int,
  *     external: ?TaskExternal
  * }
  */
@@ -43,7 +44,8 @@ class PresentPokerTask
     /**
      * Without a PokerTaskSync (broadcasts, guests) an imported task only
      * shows its source, key and link: assignee names and sync errors stay
-     * with the team (spec 6 §6.6).
+     * with the team (spec 6 §6.6). `votesCount` is the number of votes of
+     * the task's last round, never their values.
      *
      * @return Task
      */
@@ -60,8 +62,26 @@ class PresentPokerTask
             'estimate' => $task->estimate,
             'estimatedAt' => $task->estimated_at?->toIso8601String(),
             'roundsCount' => $roundsCount === null ? $task->rounds()->count() : (int) $roundsCount,
+            'votesCount' => $this->votesCount($task),
             'external' => $this->external($task, $sync),
         ];
+    }
+
+    private function votesCount(PokerTask $task): int
+    {
+        $latestRound = $task->latestRound;
+
+        if ($latestRound === null) {
+            return 0;
+        }
+
+        if ($latestRound->relationLoaded('votes')) {
+            return $latestRound->votes->count();
+        }
+
+        $votesCount = $latestRound->getAttribute('votes_count');
+
+        return $votesCount === null ? $latestRound->votes()->count() : (int) $votesCount;
     }
 
     /**
