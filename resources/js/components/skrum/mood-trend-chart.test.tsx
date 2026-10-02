@@ -398,6 +398,49 @@ describe('MoodTrendChart', () => {
         });
     });
 
+    it('titles the card with a heading of the level asked, the third by default', () => {
+        const { rerender } = renderWithProviders(
+            <MoodTrendChart title="Mood trend" points={makePoints(3)} />,
+        );
+
+        expect(
+            screen.getByRole('heading', { level: 3, name: 'Mood trend' }),
+        ).toBeTruthy();
+
+        rerender(
+            <MoodTrendChart
+                title="Mood trend"
+                headingLevel={2}
+                points={makePoints(3)}
+            />,
+        );
+
+        expect(
+            screen.getByRole('heading', { level: 2, name: 'Mood trend' }),
+        ).toBeTruthy();
+        expect(screen.queryByRole('heading', { level: 3 })).toBeNull();
+    });
+
+    it('places the controls it is given before its period tabs', () => {
+        const { container } = renderWithProviders(
+            <MoodTrendChart
+                points={makePoints(3)}
+                controls={<button type="button">Metric</button>}
+            />,
+        );
+
+        const metric = screen.getByRole('button', { name: 'Metric' });
+        const period = screen.getByRole('tablist', { name: 'Period' });
+
+        expect(
+            container.querySelector('[data-slot="mood-trend-controls"]'),
+        ).toBe(metric.parentElement);
+        expect(
+            metric.compareDocumentPosition(period) &
+                Node.DOCUMENT_POSITION_FOLLOWING,
+        ).toBeTruthy();
+    });
+
     it('copes with one point, 200 points and 60-character labels', () => {
         const name =
             'Quarterly platform reliability retrospective number '.padEnd(

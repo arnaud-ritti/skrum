@@ -8,7 +8,7 @@ import {
     TrendingUp,
 } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
-import type { KeyboardEvent } from 'react';
+import type { KeyboardEvent, ReactNode } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -51,6 +51,10 @@ export type MoodTrendChartProps = {
     points: MoodPoint[];
     /** Heading; defaults to the ROTI title. */
     title?: string;
+    /** Level of the heading in the page outline; defaults to 3. */
+    headingLevel?: 2 | 3;
+    /** Controls of the host (a metric switch), before the period tabs. */
+    controls?: ReactNode;
     /** Name of the plotted value; defaults to "Average ROTI". */
     metricLabel?: string;
     /** Defaults to the ROTI scale, 1 to 5, with its coloured levels. */
@@ -167,6 +171,8 @@ export function MoodTrendChart({
     team,
     points,
     title,
+    headingLevel = 3,
+    controls,
     metricLabel,
     scale,
     period = 'sprint',
@@ -337,6 +343,7 @@ export function MoodTrendChart({
             ? t('Average ROTI per sprint')
             : t('Average ROTI per sprint · :team', { team });
     const heading = title ?? defaultTitle;
+    const HeadingTag = headingLevel === 2 ? 'h2' : 'h3';
     const empty =
         emptyLabel ??
         (title === undefined
@@ -519,9 +526,9 @@ export function MoodTrendChart({
         >
             <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
                 <div className="flex min-w-0 flex-col gap-1">
-                    <h3 className="font-display text-base font-semibold break-words">
+                    <HeadingTag className="font-display text-base font-semibold break-words">
                         {heading}
-                    </h3>
+                    </HeadingTag>
                     <p className="text-xs text-muted-foreground">
                         {subtitle}
                         {votersLabel ? ` · ${votersLabel}` : ''}
@@ -564,6 +571,14 @@ export function MoodTrendChart({
                                       })}
                             </span>
                         </Badge>
+                    )}
+                    {controls !== undefined && (
+                        <div
+                            data-slot="mood-trend-controls"
+                            className="flex max-w-full min-w-0 items-center gap-2"
+                        >
+                            {controls}
+                        </div>
                     )}
                     <Tabs
                         value={effectiveRange}
