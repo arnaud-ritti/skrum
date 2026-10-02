@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Testing\AssertableInertia as Assert;
+use Tests\Support\UnreachableDatabase;
 
 function brokenSharedPropsRoute(): void
 {
@@ -35,7 +36,7 @@ function withUnreachableDatabase(Closure $callback): void
     $default = config('database.default');
 
     config([
-        'database.connections.unreachable' => [...config("database.connections.{$default}"), 'host' => '127.0.0.1', 'port' => 1],
+        'database.connections.unreachable' => UnreachableDatabase::config(),
         'database.default' => 'unreachable',
     ]);
 

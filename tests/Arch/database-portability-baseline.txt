@@ -35,17 +35,5 @@ app/Http/Controllers/WorkspaceTemplatesController.php|selectRaw|1
 app/Http/Requests/WorkspaceTemplateRequest.php|whereRaw|1
 app/Mcp/Presenters/McpMessage.php|selectRaw|1
 app/Mcp/Tools/Retro/SearchBoards.php|ilike|4
-tests/Feature/Admin/InstanceAdminsTest.php|lock syntax|1
-tests/Feature/Admin/InstanceAdminsTest.php|reads sql text|2
-tests/Feature/Branding/BrandInPageTest.php|ddl in a test|1
-tests/Feature/Games/GameAccessTest.php|reads sql text|2
-tests/Feature/Games/IcebreakerRoomTest.php|lock syntax|1
-tests/Feature/Games/IcebreakerRoomTest.php|reads sql text|1
-tests/Feature/InstanceSettingsTest.php|ddl in a test|1
-tests/Feature/Integrations/ActionItemExportTest.php|lock syntax|1
-tests/Feature/Integrations/ActionItemExportTest.php|reads sql text|1
-tests/Feature/Integrations/WebhookEventsTest.php|sql error as a failure|1
-tests/Feature/Integrations/WebhookRedeliveryTest.php|reads sql text|2
-tests/Feature/Integrations/WebhookSharesTest.php|sql error as a failure|1
 tests/Feature/Poker/WorkspacePokerDecksTest.php|driver branch|1
 tests/Feature/Retros/HealthStatementModelsTest.php|driver branch|1

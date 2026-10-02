@@ -17,7 +17,6 @@ use App\Models\TeamIntegration;
 use App\Models\User;
 use Database\Factories\TeamIntegrationFactory;
 use Illuminate\Contracts\Bus\Dispatcher;
-use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -526,10 +525,9 @@ it('reads the stored message once per attempt', function () {
     [, $admin, $integration, $delivery] = redeliverableWebhookDelivery();
     resolve(RequestWebhookRedelivery::class)->handle($integration, $delivery, $admin);
     $payloadReads = 0;
-    DB::listen(function (QueryExecuted $query) use (&$payloadReads) {
-        if (str_starts_with($query->sql, 'select') && str_contains($query->sql, '"integration_delivery_payloads"')) {
-            $payloadReads++;
-        }
+
+    IntegrationDeliveryPayload::retrieved(function () use (&$payloadReads): void {
+        $payloadReads++;
     });
 
     runOutgoingWebhookJob(Queue::pushed(RedeliverWebhook::class)->sole())->assertNotFailed();

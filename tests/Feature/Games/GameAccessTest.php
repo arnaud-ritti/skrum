@@ -181,9 +181,14 @@ it('survives a concurrent first visit of the same member', function () {
     $room = GameRoom::factory()->create();
     $user = teamMember($room->team);
     $raced = false;
+    $attemptedInserts = 0;
 
-    DB::listen(function ($query) use (&$raced, $room, $user) {
-        if ($raced || ! str_starts_with($query->sql, 'select') || ! str_contains($query->sql, '"game_players"')) {
+    GamePlayer::creating(function () use (&$attemptedInserts): void {
+        $attemptedInserts++;
+    });
+
+    DB::connection()->beforeStartingTransaction(function () use (&$raced, $room, $user): void {
+        if ($raced) {
             return;
         }
 
@@ -203,5 +208,6 @@ it('survives a concurrent first visit of the same member', function () {
         ->assertJsonPath('me.userId', $user->id);
 
     expect($raced)->toBeTrue()
+        ->and($attemptedInserts)->toBe(1)
         ->and($room->players()->where('user_id', $user->id)->count())->toBe(1);
 });

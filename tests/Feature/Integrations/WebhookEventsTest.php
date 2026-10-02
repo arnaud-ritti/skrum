@@ -30,10 +30,10 @@ use App\Support\Integrations\Webhook\WebhookHealth;
 use Illuminate\Contracts\Bus\Dispatcher;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Exceptions;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
+use Tests\Support\DatabaseFailure;
 
 beforeEach(function () {
     Http::preventStrayRequests();
@@ -461,7 +461,7 @@ it('still sends an event whose message cannot be kept, without leaving a row nob
     Exceptions::fake();
     [$retro, , $participant] = webhookEventRetro();
     subscribedWebhook($retro->team, ['action_item.created']);
-    IntegrationDeliveryPayload::creating(fn () => DB::statement('select 1 / 0'));
+    IntegrationDeliveryPayload::creating(fn () => DatabaseFailure::provoke());
 
     $item = resolve(CreateActionItem::class)->handle($retro->team, $retro, ActionItemActor::forParticipant($participant), ['content' => 'Fix the deploy']);
 
