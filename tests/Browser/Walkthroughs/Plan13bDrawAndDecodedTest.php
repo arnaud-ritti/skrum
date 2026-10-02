@@ -176,7 +176,13 @@ it('[P13b-01] waits for another player when the host switches to Draw & Guess al
     $host->assertSee('Ready to play?')
         ->assertButtonEnabled('Start')
         ->click('[role="radiogroup"][aria-label="Choose an icebreaker"] [role="radio"]:has-text("Draw & Guess")')
-        ->assertAriaAttribute('[role="radiogroup"][aria-label="Choose an icebreaker"] [role="radio"]:has-text("Draw & Guess")', 'checked', 'true')
+        ->assertSeeIn('#game-stage-title', 'Draw & Guess')
+        ->assertNotPresent('[data-slot="game-left"] [role="radiogroup"]')
+        ->click('[data-slot="game-left"] button:has-text("Choose a game")')
+        ->assertAriaAttribute('[role="dialog"] [role="radiogroup"][aria-label="Choose an icebreaker"] [role="radio"]:has-text("Draw & Guess")', 'checked', 'true')
+        ->assertSeeIn('[role="dialog"] [role="radiogroup"][aria-label="Choose an icebreaker"] [role="radio"]:has-text("Draw & Guess")', 'In play')
+        ->keys('[role="dialog"]', 'Escape')
+        ->assertNotPresent('[role="dialog"]')
         ->assertSee('Waiting for another player')
         ->assertButtonDisabled('Start')
         ->assertNotPresent('button[aria-label="Who draws?"]');
@@ -537,9 +543,9 @@ it('[P13b-09] ends the turn on a correct guess typed with other capitals and acc
             ->assertSeeIn('[aria-label="Points of this round"]', '+5 Bob Leader')
             ->assertDontSee('LÀNTERN')
             ->assertNotPresent('section[aria-labelledby="game-guesses"]')
-            ->click('[role="tab"]:has-text("Scores")')
-            ->assertPresent('[aria-label="10 points"]')
-            ->assertPresent('[aria-label="5 points"]');
+            ->assertNotPresent('[role="tab"]')
+            ->assertPresent('[data-slot="game-left"] section[aria-labelledby="game-players"] li:has-text("Ada Host") [aria-label="10 points"]')
+            ->assertPresent('[data-slot="game-left"] section[aria-labelledby="game-players"] li:has-text("Bob Leader") [aria-label="5 points"]');
     }
 
     expect($round->fresh()->outcome)->toBe(GameRoundOutcome::Guessed)

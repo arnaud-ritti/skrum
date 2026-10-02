@@ -4227,5 +4227,14 @@
     "Provider card: not connected, connected, setup required, reconnect required": "Tarjeta de proveedor: no conectado, conectado, configuración requerida, reconexión requerida",
     "A passkey needs a name.": "Una llave de acceso necesita un nombre.",
     "Checked against known data breaches when you save": "Se comprueba en las filtraciones de datos conocidas al guardar",
-    "Verification example": "Ejemplo de verificación"
+    "Verification example": "Ejemplo de verificación",
+    "In play": "En juego",
+    "guessing…": "adivinando…",
+    "drawing": "dibujando",
+    "giving clues": "dando pistas",
+    "Open on a stage: no focus taken, as wide as its container": "Abierto en un escenario: no toma el foco, tan ancho como su contenedor",
+    "Send my GIF": "Enviar mi GIF",
+    "Change": "Cambiar",
+    "Only you are told when you are close.": "Solo tú sabes cuándo casi aciertas.",
+    "Your GIF is not sent yet: send it before the reveal.": "Tu GIF aún no se ha enviado: envíalo antes de la revelación."
 }

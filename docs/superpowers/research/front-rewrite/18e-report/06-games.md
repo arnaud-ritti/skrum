@@ -251,8 +251,8 @@ Remaining differences:
 | Room rows with rounds and access, "n rounds · n wins", streak badges | D-56 |
 | Shell: Players / Scores tabs, columns, "Back to the team", check on the selected card | D-57 |
 | Reaction bar in its own strip | D-58 |
-| Hangman: no whole-word field; keyboard in the flow on a phone | D-59 |
-| Draw: "Fill", pencil tag colour, guesses on the stage on a phone | D-60 |
+| Hangman: no whole-word field (keyboard docked on a phone since RW-G3) | D-59 |
+| Draw: "Fill", pencil tag colour (guesses in a drawer on a phone since RW-G3) | D-60 |
 | GIF: dialog picker, immediate send, voting on the results gallery, labels | D-61 |
 | GIF: `<img alt="">`, no reduced-motion still (spec §5 rule 8) | D-62, owner decision |
 | No turn banner, turn order, round counter, per-turn timer, settings card, caption, podium of a GIF round | D-20 |
@@ -260,3 +260,121 @@ Remaining differences:
 | Room header at 390: the title is cut to "Monday w…" | fix later, with the header budget of Task 0 |
 | The aria-labels ":count points" and ":count letters left to find" have no singular (the browser suite binds "1 letters left to find") | fix later, with the test |
 | At 390 the floating reaction bar of the room overlays the end of a long guesses list while it scrolls | not verified in a browser; fix later if confirmed |
+
+## Rework RW-G1 (owner round 4, row D-57): each game on its mockup layout
+
+`GameLayout` takes panels (`left`, `right`, `chooser`: `{ id, label, icon, content }`), a `variant` (`choice`: 21.25rem · stage · 20rem, Hangman and Decoded; `players`: 18.75rem · stage · 21.25rem, Draw & Guess and Sprint in one GIF) and `summaryFor` (the panel the chips stand for while it is in a sheet). `RoomPlayers` (`room-players.tsx`) is the one list of a room: rank, avatar, name, "(guest)", "(you)", "Host", what the player does in the round, the winner check, points, "No points yet.", "Reset scores". The Players / Scores tabs and `room-scores.tsx` are gone.
+
+| Game | Left (from 80rem) | Right (from 64rem) |
+|---|---|---|
+| Hangman | game cards (host), the selected one says "In play" | "Scores" (`#game-players`), turn order (place left), last letters |
+| Decoded | game cards (host) | "Scores" with "giving clues" / "guessing…", guesses |
+| Draw & Guess | "Players" (`#game-players`) with points and "drawing" / "guessing…", drawing order (place left), settings (place left), "Choose a game" (host, opens the cards in a sheet) | guesses, during a round |
+| Sprint in one GIF | "Participants" (`#game-players`) with the "Ready" bar and each status, "How it works", settings (place left), "Choose a game" (host) | "Scores" (`#game-scores`), podium (place left) |
+
+Under 80rem the left panel is a sheet opened from the bar above the stage, under 64rem the right one too; the game choice of Draw & Guess and Sprint in one GIF is then a third button of that bar. The retro icebreaker (`game-panel.tsx`, old frame until G6) stacks the same pieces in its one side column.
+
+Places left: `turnOrder` (under the Scores of Hangman and Decoded, under the Players of Draw & Guess), `settingsCard` (foot of the game cards, or foot of the players column), `gifPodium` (under the Scores of Sprint in one GIF).
+
+### Browser tests changed
+
+| Test | Change | Why |
+|---|---|---|
+| `P13b-01` | after the switch to Draw & Guess: the stage title, no cards in the left column, the cards open from "Choose a game" with the game checked and "In play" | players hold the left column (mockup) |
+| `P13b-09` | no "Scores" tab; points read in `[data-slot="game-left"] section[aria-labelledby="game-players"]` | one list |
+| `P13c-01` | as `P13b-01` | players hold the left column |
+| `P13c-06` | no tab; `[data-slot="game-right"] [data-slot="room-scores"]`, and no points among the participants | one Scores list on the right |
+| `P13d-09a`, `P13d-09b` | no tab; `[data-slot="room-scores"]`; after a reset "No points yet." and every player at "0 points" without a rank | one list of every player |
+| `P18e-06-04` | added: "In play" on the selected card only, no tab, the right heading reads "Scores" | new behaviour |
+
+No test removed. Vitest: `room-sidebar.test.tsx` rewritten for `RoomPlayersSide` / `RoomSidebar`; new `room-players.test.tsx`, `game-layout.test.tsx`.
+
+### Differences with the mockup that remain
+
+| Difference | Row |
+|---|---|
+| "Back to the team", no "Atlas · Games" overline, no avatar at the end of the topbar | D-57 (RW-C2) |
+| Decoded: game cards on the left, not the "Rounds" list; "Scores" and guesses on the right, not a round leaderboard and totals | D-57 |
+| Draw & Guess, Sprint in one GIF: "Choose a game" at the foot of the left column (host) | D-57 |
+| "Host" badge in the list; no "found · 0:18"; no guesses column between two rounds of Draw & Guess | D-57 |
+| Sprint in one GIF: "Scores" on the right, "Your pick" still on the stage | done in RW-G2, below |
+| Turn order, settings card, podium | D-20 |
+| Left column of the players variant is 18.75rem wide; a long name is cut next to "(you)" and "Host" | fix later if the owner asks: the badge could go to the second line |
+
+## Rework RW-G2 (owner round 4, row D-61): picker on the stage, draft then send
+
+While the players pick, the stage holds the question and the `GifPicker` open in the page (`inline`: a `group` as wide as the 40rem stage column, no focus taken, Escape left to the page, tiles of 10rem at most). A click on a tile is a draft: it is ticked in the picker and shown in "Your pick" with the badge "Draft", "Send my GIF" and "Change". Nothing reaches the server before "Send my GIF" (`PUT games.answers.update`); "Change" drops the draft and gives the keyboard back to the search. A sent GIF reads "Sent" with "Change GIF" (keyboard to the search; the next pick is a draft over the sent GIF, which stays sent until "Send my GIF") and "Remove GIF".
+
+"Your pick" (`gif-your-pick.tsx`) heads the right column from 64rem, above "Already sent · n" (hidden tiles: eye-off and the avatar; the name is read by a screen reader and shown when a player has no avatar) and the "Scores" list. Under 64rem, and in the retro icebreaker under its `lg` column, it is a card under the picker, scrolled into view after a pick. The draft is shared by the two columns through `gif-draft.tsx` (`GifDraftProvider`, mounted by `RoomProvider`; `useGifDraft(roundId)`); it never leaves the browser.
+
+The retro keeps `GifSearchDialog` for the GIF of a card; the games no longer import it.
+
+| Place | Slot | Feature |
+|---|---|---|
+| "Your pick", under "Your GIF stays hidden until the reveal." | `GameRoom gifCaption` → `RoomSidebar gifCaption` (right column) and `GameStage gifCaption` → … → `GifAnswerStage caption` (card on the stage) → `GifYourPick caption` | caption of a GIF (GM-3) |
+
+### Parity (row 50, rewritten)
+
+| # | Action | New control | Done |
+|---|---|---|---|
+| 50 | Choose a GIF | picker open on the stage: search, categories, tiles; a click is a draft | done |
+| 50 | Send | "Send my GIF" in "Your pick" | done |
+| 50 | Change | "Change" (draft) / "Change GIF" (sent), then another tile | done |
+| 50 | Remove | "Remove GIF" (sent) | done |
+| 50 | Who has sent | "Already sent · n", `ul[aria-label="Answers"]`, ":name answered"; "No GIFs yet." | done |
+| 51 | Reveal | "Reveal the GIFs" (host), under the picker | done |
+
+### Browser tests changed
+
+| Test | Change | Why |
+|---|---|---|
+| `Plan13cSprintGifTest` helper `p13cPick` | no opener and no dialog: searches in `[data-slot="gif-answer-stage"] [data-slot="gif-picker"]`, clicks the tile, reads "Draft" and the tile "Your GIF" in `[data-slot="gif-your-pick"]`, clicks "Send my GIF", reads "Sent" (new helper `p13cDraft` for the first half) | picker on the stage, draft then send (mockup, D-61) |
+| `P13c-01`, `P13c-02` | call the new helper | same |
+| `P13c-02` | added: a draft is ticked, sends nothing (no answer in the database, the other player still reads "No GIFs yet."), "Change" drops it and focuses the search; "Change GIF" focuses the search, and the sent GIF stays the answer until the new draft is sent; after "Remove GIF", "Choose a GIF" is read in "Your pick" | draft |
+| `P13c-06` | `assertNotPresent('[role="tab"]')` is scoped to the two side columns (the categories of the picker are tabs, per the README of GifPicker); added: "Your pick" is in the right column | picker on the stage |
+| `GamesPagesVisualTest`, "picking a GIF" | the viewer has sent nothing and clicks the first tile (a draft, as the mockup); three players have sent; eight GIFs in the fake search | the capture shows the mockup's state |
+
+No test removed. Vitest: new `gif-your-pick.test.tsx`, `gif-answer-stage.test.tsx`; one more case in `room-sidebar.test.tsx` and in `skrum/gif-picker.test.tsx`.
+
+### Differences with the mockup that remain
+
+| Difference | Row |
+|---|---|
+| "Scores" list under "Already sent" in the right column | D-61 (no feature lost) |
+| No title, duration, "loops" under the preview; the tile reads "Your GIF" | D-62 |
+| No caption field and counter | D-20 (place left) |
+| "Sent" state with "Change GIF" / "Remove GIF"; "Reveal the GIFs" under the picker (host); "Pass" and "History" in the stage head | D-61 |
+| Hint "Pick a GIF that answers the question. GIFs stay hidden until the reveal."; the mockup adds "A short caption helps people vote." | D-20 |
+| No "to pick" timer on the stage; no settings card | D-20, one room timer in the header |
+| Tiles are the proxied pictures (4:3 in the fake provider), stills are placeholders under reduced motion; no duration pill, no title on hover | D-62 |
+| The picker is a `group`, the mockup a `dialog` | D-61 (A) |
+| Phone: picker in the flow of the stage (16rem body), "Your pick" under it; the mockup asks for a full-screen drawer | D-61 |
+
+## RW-G3 — games on a phone (owner round 4b, D-59 and D-60)
+
+`GameLayout` holds a footer under the stage and under the strip of the reaction bar, on a phone only (under 48rem): `[data-slot="game-footer"]`, read by a game through `useStageFooter()` (null on a wider screen and outside a `GameLayout`, such as the retro stage of `game-panel.tsx`, where the game keeps everything in its flow). A docked panel pads the inset of the home indicator (`dockedPanelClass`).
+
+- **Hangman**: the keyboard is docked in the footer, on the muted ground of the mockup; the gallows, the misses, the word and the last three letters stay on the stage above it. From 48rem on, nothing changes.
+- **Draw & Guess**: the footer holds the latest guess (announced, `aria-live`), a "Guesses" button with the count, and the guess field of who may guess; the button opens a `Drawer` with the whole list (`role="log"`). Who draws has the line and the button, no field; the drawer says why. From 48rem to 64rem the guesses stay on the stage as before; from 64rem on, in their column.
+
+### Browser tests changed
+
+| Test | Change | Why |
+|---|---|---|
+| `P18e-06-05` | at 390 the keyboard is in the footer, at the bottom of the viewport, the gallows and the word above it and in view; the assertion "keyboard above the last letters" is gone (the last letters stay in the board, asserted) | docked keyboard |
+| `P18e-06-08` | at 390 the reaction bar is above the keyboard, without overlap; at 1440 the keyboard is above the bar, as before | docked keyboard, D-58 |
+| `P18e-06-08b` | renamed; at 390 the field is in the footer at the bottom of the viewport, under the bar and the drawing; a guess shows in the line above the field and in the drawer, which has no field and closes on Escape; back at 1440 the guess is in the right column | guesses drawer |
+| `GamesPagesVisualTest` | new captures `games-room-draw-guesses-*`: the drawer open at 390 (the 1440 ones are the guesser's room) | capture of the drawer |
+
+No test removed. Vitest: new `hangman-board.test.tsx`, `guess-dock.test.tsx`; one more case in `game-layout.test.tsx`.
+
+### Differences with the mockup that remain
+
+| Difference | Row |
+|---|---|
+| Hangman: the reaction bar's strip between the stage and the keyboard | D-58 |
+| Hangman: no "Guess the word" button in the last row of keys; gallows centred above the word, no "tries left" and hint beside them; players as chips in the bar with a sheet | D-59, D-20 |
+| Draw & Guess: the drawer's toolbar is in the flow under the drawing, not docked; the secret word is a card, not a band | D-60 |
+| Decoded: the guesses stay on the stage on a phone | D-60 |
+| The page does not declare `viewport-fit=cover`, so the inset of the home indicator is zero today; the panels already pad it | none (blade shared, not changed) |
+

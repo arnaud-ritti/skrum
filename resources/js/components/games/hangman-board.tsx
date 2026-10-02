@@ -1,19 +1,25 @@
 import { usePage } from '@inertiajs/react';
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import GameLettersController from '@/actions/App/Http/Controllers/Games/GameLettersController';
 import { Badge } from '@/components/ui/badge';
 import { useTrans } from '@/hooks/use-trans';
 import { hitLetters, keyboardLayoutFor } from '@/lib/games/hangman';
 import type { GameLetterResponse, GameRound } from '@/lib/games/types';
 import { retroRequest } from '@/lib/retro/api';
-import { useHasRightColumn } from './game-layout';
+import { cn } from '@/lib/utils';
+import {
+    dockedPanelClass,
+    useHasRightColumn,
+    useStageFooter,
+} from './game-layout';
 import { HangmanFeed } from './hangman-feed';
 import { HangmanFigure } from './hangman-figure';
 import { LetterKeyboard } from './letter-keyboard';
 import { useRoom } from './room-context';
 import { WordMask } from './word-mask';
 
-/** How many of the last letters stand under the keyboard where the right column is a sheet. */
+/** How many of the last letters stand on the stage where the right column is a sheet. */
 const StagePicks = 3;
 
 export function HangmanBoard({ round }: { round: GameRound }) {
@@ -22,6 +28,7 @@ export function HangmanBoard({ round }: { round: GameRound }) {
     const { locale } = usePage().props;
     const [pending, setPending] = useState(false);
     const hasRightColumn = useHasRightColumn();
+    const footer = useStageFooter();
     const misses = round.misses ?? 0;
     const maxMisses = round.maxMisses ?? 6;
     const mask = round.mask ?? [];
@@ -58,6 +65,16 @@ export function HangmanBoard({ round }: { round: GameRound }) {
         }
     };
 
+    const keyboard = (
+        <LetterKeyboard
+            layout={keyboardLayoutFor(locale)}
+            picked={picked}
+            hits={hits}
+            disabled={pending}
+            onPick={(letter) => void pick(letter)}
+        />
+    );
+
     return (
         <div
             data-slot="hangman-board"
@@ -83,13 +100,7 @@ export function HangmanBoard({ round }: { round: GameRound }) {
                 )}
             </div>
             <WordMask mask={mask} size="lg" />
-            <LetterKeyboard
-                layout={keyboardLayoutFor(locale)}
-                picked={picked}
-                hits={hits}
-                disabled={pending}
-                onPick={(letter) => void pick(letter)}
-            />
+            {footer === null && keyboard}
             {!hasRightColumn && (
                 <HangmanFeed
                     round={round}
@@ -97,6 +108,19 @@ export function HangmanBoard({ round }: { round: GameRound }) {
                     className="w-full max-w-136"
                 />
             )}
+            {footer !== null &&
+                createPortal(
+                    <div
+                        data-slot="keyboard-dock"
+                        className={cn(
+                            'flex justify-center bg-muted px-1.5',
+                            dockedPanelClass,
+                        )}
+                    >
+                        {keyboard}
+                    </div>,
+                    footer,
+                )}
         </div>
     );
 }

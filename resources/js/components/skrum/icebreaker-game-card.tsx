@@ -46,6 +46,8 @@ export type IcebreakerGameCardProps = {
     players?: { min: number; max: number };
     participants?: number;
     selected?: boolean;
+    /** In a room the selected game is the one in play: the card says so, in place of the check. */
+    inPlay?: boolean;
     /** For a narrow two-column picker: the game's icon alone stands for the illustration. */
     compact?: boolean;
     onSelect?: (game: IcebreakerGame) => void;
@@ -258,6 +260,7 @@ export function IcebreakerGameCard({
     players,
     participants,
     selected = false,
+    inPlay = false,
     compact = false,
     onSelect,
     className,
@@ -269,6 +272,7 @@ export function IcebreakerGameCard({
             ? (unavailableReason ?? t('Not available'))
             : unavailabilityReason(players, participants, t);
     const unavailable = reason !== null;
+    const isInPlay = selected && inPlay;
     const hasMeta = durationMin !== undefined || players !== undefined;
     const CornerIcon = cornerIcons[game];
     const classes = colorClasses[color];
@@ -277,6 +281,7 @@ export function IcebreakerGameCard({
         pitch !== undefined ? `${id}-pitch` : null,
         hasMeta ? `${id}-meta` : null,
         unavailable ? `${id}-reason` : null,
+        isInPlay ? `${id}-in-play` : null,
     ]
         .filter(Boolean)
         .join(' ');
@@ -313,7 +318,7 @@ export function IcebreakerGameCard({
                 className,
             )}
         >
-            {selected && (
+            {selected && !inPlay && (
                 <span
                     data-slot="icebreaker-game-check"
                     aria-hidden
@@ -392,6 +397,19 @@ export function IcebreakerGameCard({
                                 </span>
                             </span>
                         )}
+                    </span>
+                )}
+                {isInPlay && (
+                    <span
+                        id={`${id}-in-play`}
+                        data-slot="icebreaker-game-in-play"
+                        className="mt-1 inline-flex h-5 max-w-full items-center gap-1 self-start rounded-full bg-primary px-2 text-xs font-semibold text-primary-foreground"
+                    >
+                        <span
+                            aria-hidden
+                            className="size-1.5 shrink-0 rounded-full bg-primary-foreground"
+                        />
+                        <span className="truncate">{t('In play')}</span>
                     </span>
                 )}
             </div>

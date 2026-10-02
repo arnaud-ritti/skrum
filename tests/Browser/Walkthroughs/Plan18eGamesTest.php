@@ -245,6 +245,10 @@ it('[P18e-06-04] lets the host pick a game from the cards, shows a non-host its 
     $host->assertPresent('[role="group"][aria-label="2 online"]')
         ->assertCount('[role="radiogroup"][aria-label="Choose an icebreaker"] [role="radio"]', 4)
         ->assertAriaAttribute(p18eGamesCard('Hangman'), 'checked', 'true')
+        ->assertSeeIn(p18eGamesCard('Hangman'), 'In play')
+        ->assertDontSeeIn(p18eGamesCard('Decoded'), 'In play')
+        ->assertNotPresent('[role="tab"]')
+        ->assertSeeIn('[data-slot="game-right"] section[aria-labelledby="game-players"] h2', 'Scores')
         ->assertAriaAttribute(p18eGamesCard('Sprint in one GIF'), 'disabled', 'true')
         ->assertSeeIn(p18eGamesCard('Sprint in one GIF'), 'Not available')
         ->assertSeeIn('header [data-slot="room-game"]', 'Hangman');
@@ -262,6 +266,20 @@ it('[P18e-06-04] lets the host pick a game from the cards, shows a non-host its 
         ->assertSeeIn('#game-stage-title', 'Decoded');
 
     expect($room->fresh()->game)->toBe(GameKind::Decoded);
+
+    $host->resize(1440, 900)
+        ->keys(p18eGamesCard('Draw & Guess'), 'Enter')
+        ->assertSeeIn('#game-stage-title', 'Draw & Guess')
+        ->assertNotPresent('[data-slot="game-left"] [role="radio"]')
+        ->assertPresent('[data-slot="game-left"] [data-slot="game-chooser"]:focus')
+        ->keys('[data-slot="game-chooser"]', 'Enter')
+        ->keys('[role="dialog"] '.p18eGamesCard('Hangman'), 'Enter')
+        ->assertSeeIn('#game-stage-title', 'Hangman')
+        ->assertNotPresent('[role="dialog"]')
+        ->assertPresent('[data-slot="game-left"] [role="radio"][aria-checked="true"]:focus')
+        ->assertSeeIn('[data-slot="game-left"] [role="radio"]:focus', 'Hangman');
+
+    expect($room->fresh()->game)->toBe(GameKind::Hangman);
 });
 
 it('[P18e-06-05] lays the hangman keyboard out for the language of the player, plays at 390 pixels, and freezes under one banner when the session expires', function () {
@@ -289,7 +307,16 @@ it('[P18e-06-05] lays the hangman keyboard out for the language of the player, p
         ->assertSeeIn('[data-slot="hangman-missed"]', 'X')
         ->assertVisible('[data-slot="hangman-board"] ul[aria-label="Dernières lettres"]')
         ->assertSeeIn('[data-slot="hangman-board"] ul[aria-label="Dernières lettres"]', 'X')
-        ->assertScript(p18eGamesAbove('[data-layout]', 'ul[aria-label="Dernières lettres"]'), true)
+        ->assertPresent('[data-slot="game-footer"] [data-layout]')
+        ->assertNotPresent('[data-slot="hangman-board"] [data-layout]')
+        ->assertScript("Math.abs(document.querySelector('[data-slot=\"game-footer\"]').getBoundingClientRect().bottom - window.innerHeight) <= 1", true)
+        ->assertScript(p18eGamesAbove('[data-slot="hangman-figure"]', '[data-layout]'), true)
+        ->assertScript(p18eGamesAbove('[data-slot="word-mask"]', '[data-layout]'), true)
+        ->assertScript("document.querySelector('[data-slot=\"hangman-figure\"]').getBoundingClientRect().top >= 0", true)
+        ->resize(375, 667)
+        ->assertScript(p18eGamesAbove('[data-slot="game-bar"]', '[data-slot="word-mask"]'), true)
+        ->assertScript(p18eGamesAbove('[data-slot="word-mask"]', '[data-slot="game-dock"]'), true)
+        ->resize(390, 844)
         ->assertAriaAttribute(p18eGamesKey('q'), 'label', 'q, dans le mot')
         ->assertAriaAttribute(p18eGamesKey('x'), 'label', 'x, pas dans le mot')
         ->click('[aria-label="Joueurs et scores"]')
@@ -333,12 +360,16 @@ it('[P18e-06-08] flies a reaction of a guest on the screen of the host, never ov
     $host->assertSeeIn('.lr-overlay', '❤️')
         ->assertSeeIn('.lr-overlay', 'Visitor');
 
-    foreach ([[1440, 900], [390, 844]] as [$width, $height]) {
-        $host->resize($width, $height)
-            ->assertVisible($bar)
-            ->assertScript(p18eGamesAbove($keyboard, $bar), true)
-            ->assertScript('document.documentElement.scrollWidth <= window.innerWidth', true);
-    }
+    $host->resize(1440, 900)
+        ->assertVisible($bar)
+        ->assertScript(p18eGamesAbove($keyboard, $bar), true)
+        ->assertScript('document.documentElement.scrollWidth <= window.innerWidth', true);
+
+    $host->resize(390, 844)
+        ->assertVisible($bar)
+        ->assertPresent("[data-slot=\"game-footer\"] {$keyboard}")
+        ->assertScript(p18eGamesAbove($bar, $keyboard), true)
+        ->assertScript('document.documentElement.scrollWidth <= window.innerWidth', true);
 
     $host->resize(1440, 900);
     $host->script("() => { document.body.dispatchEvent(new KeyboardEvent('keydown', { key: '1', bubbles: true })); return true; }");
@@ -366,7 +397,7 @@ it('[P18e-06-08] flies a reaction of a guest on the screen of the host, never ov
     expect($room->fresh()->reactions_enabled)->toBeFalse();
 });
 
-it('[P18e-06-08b] keeps the reaction bar under the guess field of a drawing at 390 pixels', function () {
+it('[P18e-06-08b] docks the guess field of a drawing under the reaction bar at 390 pixels, and opens the guesses in a drawer', function () {
     [$room, $ada] = p18eGamesDrawing();
     $bar = '[role="toolbar"][aria-label="Reactions"]';
     $field = 'input[aria-label="Your guess"]';
@@ -375,9 +406,25 @@ it('[P18e-06-08b] keeps the reaction bar under the guess field of a drawing at 3
 
     $guesser->resize(390, 844)
         ->assertVisible($bar)
-        ->assertPresent($field)
-        ->assertScript(p18eGamesAbove($field, $bar), true)
-        ->assertScript('document.documentElement.scrollWidth <= window.innerWidth', true);
+        ->assertVisible("[data-slot=\"game-footer\"] {$field}")
+        ->assertScript(p18eGamesAbove($bar, $field), true)
+        ->assertScript(p18eGamesAbove('canvas[aria-label="The drawing"]', $field), true)
+        ->assertScript("Math.abs(document.querySelector('[data-slot=\"game-footer\"]').getBoundingClientRect().bottom - window.innerHeight) <= 1", true)
+        ->assertNotPresent('[role="log"]')
+        ->assertScript('document.documentElement.scrollWidth <= window.innerWidth', true)
+        ->fill($field, 'zebra')
+        ->click('[data-slot="guess-dock"] button[type="submit"]')
+        ->assertSeeIn('[data-slot="last-guess"]', 'zebra')
+        ->click('[data-slot="guess-dock"] button[aria-haspopup="dialog"]')
+        ->assertSeeIn('[role="dialog"] [role="log"]', 'zebra')
+        ->assertNotPresent('[role="dialog"] input')
+        ->keys('[role="dialog"]', 'Escape')
+        ->assertNotPresent('[role="dialog"]')
+        ->assertVisible($field);
+
+    $guesser->resize(1440, 900)
+        ->assertNotPresent('[data-slot="game-footer"]')
+        ->assertSeeIn('[data-slot="game-right"] [role="log"]', 'zebra');
 });
 
 it('[P18e-06-09] opens the Share dialog from "Invite": the guest switch, the link, its QR code, and a new link after a confirmation', function () {

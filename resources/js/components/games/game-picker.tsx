@@ -16,6 +16,36 @@ export type GamePickerProps = {
 };
 
 /**
+ * The columns of a room change with the game, and the card or the sheet the
+ * host switched from may be gone: the keyboard goes to the game in play where
+ * the cards have a column, else to "Choose a game", else to the stage.
+ */
+function focusAfterSwitch(): void {
+    const column = document.querySelector('[data-slot="game-left"]');
+    const inPlay = column?.querySelector<HTMLElement>(
+        '[data-slot="icebreaker-game-card"][data-selected="true"]',
+    );
+
+    if (inPlay) {
+        inPlay.focus();
+
+        return;
+    }
+
+    const focused = document.activeElement;
+
+    if (focused instanceof HTMLElement && focused !== document.body) {
+        return;
+    }
+
+    const chooser = column?.querySelector<HTMLElement>(
+        '[data-slot="game-chooser"]',
+    );
+
+    (chooser ?? document.getElementById('game-stage-title'))?.focus();
+}
+
+/**
  * The host's choice of game, one card per game the server lists. Switching
  * mid-round abandons the round for everyone (spec §4).
  */
@@ -44,6 +74,7 @@ export function GamePicker({ settings }: GamePickerProps) {
 
         if (result !== undefined) {
             await ctx.refetch();
+            requestAnimationFrame(focusAfterSwitch);
         }
     };
 
@@ -67,6 +98,7 @@ export function GamePicker({ settings }: GamePickerProps) {
                         compact
                         available={option.available}
                         selected={option.value === room.game}
+                        inPlay
                         onSelect={(game) => void change(game)}
                     />
                 ))}

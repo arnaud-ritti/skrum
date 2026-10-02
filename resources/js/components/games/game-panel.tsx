@@ -1,7 +1,7 @@
 import { RoundBoard, RoundStatus } from './game-stage';
 import { PassRoundButton } from './pass-round-button';
 import { useRoom } from './room-context';
-import { RoomSidebar } from './room-sidebar';
+import { hasPlayersOnLeft, RoomPlayersSide, RoomSidebar } from './room-sidebar';
 import { RoundEndCard } from './round-end-card';
 
 /**
@@ -11,6 +11,7 @@ import { RoundEndCard } from './round-end-card';
 export function GamePanel() {
     const { snapshot, lastEnded } = useRoom();
     const { round } = snapshot;
+    const winnerPlayerId = round ? null : (lastEnded?.winnerPlayerId ?? null);
 
     return (
         <div className="flex flex-1 flex-col gap-6 p-4 lg:flex-row">
@@ -28,11 +29,10 @@ export function GamePanel() {
                 )}
             </main>
             <aside className="flex w-full shrink-0 flex-col gap-5 lg:w-64">
-                <RoomSidebar
-                    highlightPlayerId={
-                        round ? null : (lastEnded?.winnerPlayerId ?? null)
-                    }
-                />
+                {hasPlayersOnLeft(snapshot.room.game) && (
+                    <RoomPlayersSide highlightPlayerId={winnerPlayerId} />
+                )}
+                <RoomSidebar highlightPlayerId={winnerPlayerId} />
             </aside>
         </div>
     );

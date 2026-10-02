@@ -4004,5 +4004,14 @@
     "Provider card: not connected, connected, setup required, reconnect required": "Provider card: not connected, connected, setup required, reconnect required",
     "A passkey needs a name.": "A passkey needs a name.",
     "Checked against known data breaches when you save": "Checked against known data breaches when you save",
-    "Verification example": "Verification example"
+    "Verification example": "Verification example",
+    "In play": "In play",
+    "guessing…": "guessing…",
+    "drawing": "drawing",
+    "giving clues": "giving clues",
+    "Open on a stage: no focus taken, as wide as its container": "Open on a stage: no focus taken, as wide as its container",
+    "Send my GIF": "Send my GIF",
+    "Change": "Change",
+    "Only you are told when you are close.": "Only you are told when you are close.",
+    "Your GIF is not sent yet: send it before the reveal.": "Your GIF is not sent yet: send it before the reveal."
 }
