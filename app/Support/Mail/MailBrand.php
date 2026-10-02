@@ -146,6 +146,7 @@ class MailBrand
      *     light: string,
      *     dark: string,
      *     width: int,
+     *     darkWidth: int,
      *     height: int
      * }|null
      */
@@ -154,13 +155,15 @@ class MailBrand
         $mailLogo = $this->drawable('logo-mail');
 
         if ($mailLogo !== null) {
-            return ['light' => $mailLogo['url'], 'dark' => $mailLogo['url'], 'width' => $mailLogo['width'], 'height' => self::LogoHeight];
+            return ['light' => $mailLogo['url'], 'dark' => $mailLogo['url'], 'width' => $mailLogo['width'], 'darkWidth' => $mailLogo['width'], 'height' => self::LogoHeight];
         }
 
         $light = $this->drawable('logo-light');
 
         if ($light !== null) {
-            return ['light' => $light['url'], 'dark' => $this->drawable('logo-dark')['url'] ?? $light['url'], 'width' => $light['width'], 'height' => self::LogoHeight];
+            $dark = $this->drawable('logo-dark') ?? $light;
+
+            return ['light' => $light['url'], 'dark' => $dark['url'], 'width' => $light['width'], 'darkWidth' => $dark['width'], 'height' => self::LogoHeight];
         }
 
         if ($this->assets->mime('logo-light') !== null) {
@@ -175,6 +178,7 @@ class MailBrand
             'light' => asset('brand/skrum-logo-mail-light.png'),
             'dark' => asset('brand/skrum-logo-mail-dark.png'),
             'width' => self::DefaultLogoWidth,
+            'darkWidth' => self::DefaultLogoWidth,
             'height' => self::LogoHeight,
         ];
     }

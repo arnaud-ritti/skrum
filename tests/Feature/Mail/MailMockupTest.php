@@ -198,9 +198,10 @@ it('shows the mail logo of the instance, then its PNG or JPEG logo, then the nam
     expect($render())->toContain('src="'.url($assets->url('logo-light')).'" alt="Atlas Corp Retro" width="112" height="28"')
         ->not->toContain('m-logo-dark"');
 
-    $assets->store('logo-dark', UploadedFile::fake()->createWithContent('logo.png', mockupPng(200, 50)));
+    $assets->store('logo-dark', UploadedFile::fake()->createWithContent('logo.png', mockupPng(100, 50)));
 
-    expect($render())->toContain('<img src="'.url($assets->url('logo-dark')).'"');
+    expect($render())->toContain('<img src="'.url($assets->url('logo-dark')).'" alt="Atlas Corp Retro" width="56" height="28"')
+        ->toContain('src="'.url($assets->url('logo-light')).'" alt="Atlas Corp Retro" width="112" height="28"');
 
     $assets->store('logo-mail', UploadedFile::fake()->createWithContent('logo.png', mockupPng(256)));
 

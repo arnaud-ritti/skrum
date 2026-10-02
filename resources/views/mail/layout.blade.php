@@ -32,7 +32,7 @@
 <img class="m-logo-light" src="{{ $logo['light'] }}" alt="{{ $brand->name() }}" width="{{ $logo['width'] }}" height="{{ $logo['height'] }}" style="display:block;border:0;width:{{ $logo['width'] }}px;height:{{ $logo['height'] }}px;">
 @if($logo['dark'] !== $logo['light'])
 <!--[if !mso]><!-->
-<div class="m-logo-dark" style="display:none;max-height:0;overflow:hidden;mso-hide:all;"><img src="{{ $logo['dark'] }}" alt="{{ $brand->name() }}" width="{{ $logo['width'] }}" height="{{ $logo['height'] }}" style="display:block;border:0;width:{{ $logo['width'] }}px;height:{{ $logo['height'] }}px;"></div>
+<div class="m-logo-dark" style="display:none;max-height:0;overflow:hidden;mso-hide:all;"><img src="{{ $logo['dark'] }}" alt="{{ $brand->name() }}" width="{{ $logo['darkWidth'] }}" height="{{ $logo['height'] }}" style="display:block;border:0;width:{{ $logo['darkWidth'] }}px;height:{{ $logo['height'] }}px;"></div>
 <!--<![endif]-->
 @endif
 @else
