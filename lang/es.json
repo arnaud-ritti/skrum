@@ -4039,6 +4039,7 @@
     ":name is being updated": ":name se está actualizando",
     "Nothing is lost: sessions pick up exactly where they stopped.": "No se pierde nada: las sesiones se reanudan exactamente donde se quedaron.",
     "Retry now": "Reintentar ahora",
+    "This page reloads by itself as soon as the instance answers.": "Esta página se recarga sola en cuanto la instancia responde.",
     "Create & open": "Crear y abrir",
     "Icebreaker at the start": "Rompehielos al inicio",
     "Columns · :count": "Columnas · :count",

@@ -3814,6 +3814,7 @@
     ":name is being updated": ":name is being updated",
     "Nothing is lost: sessions pick up exactly where they stopped.": "Nothing is lost: sessions pick up exactly where they stopped.",
     "Retry now": "Retry now",
+    "This page reloads by itself as soon as the instance answers.": "This page reloads by itself as soon as the instance answers.",
     "Create & open": "Create & open",
     "Icebreaker at the start": "Icebreaker at the start",
     "Columns · :count": "Columns · :count",

@@ -282,7 +282,9 @@ it('renders the static maintenance page without overflow, in the theme of the sy
                     'reducedMotion' => 'reduce',
                 ]);
 
-                $page->assertPresent('[data-slot="maintenance-page"]')->resize($width, $height);
+                $page->assertPresent('[data-slot="maintenance-page"]')
+                    ->assertVisible('[data-slot="maintenance-reload"]')
+                    ->resize($width, $height);
 
                 $appearance = json_decode((string) $page->script(<<<'JS'
                     () => JSON.stringify({
@@ -292,7 +294,7 @@ it('renders the static maintenance page without overflow, in the theme of the sy
                     })
                     JS), true, flags: JSON_THROW_ON_ERROR);
 
-                expect($appearance)->toBe(['lang' => $locale, 'dark' => $theme === 'dark', 'scripts' => 0], $label)
+                expect($appearance)->toBe(['lang' => $locale, 'dark' => $theme === 'dark', 'scripts' => 1], $label)
                     ->and($this->overflowingElements($page))->toBe([], "Horizontal overflow in {$label}");
 
                 $page->screenshot(fullPage: true, filename: "{$label}.candidate");

@@ -304,3 +304,50 @@ it('[P18e-11-10] "Reload" on the 419 page of a log out that expired goes back to
         ->assertAttribute('[data-slot="invitation-card"]', 'data-state', 'wrong-account')
         ->assertNotPresent('[data-slot="error-page"]');
 });
+
+it('[P18e-11-11] a link followed during maintenance loads the static 503 page, which loads the page again once the instance answers', function () {
+    config(['app.maintenance.driver' => 'cache', 'app.maintenance.store' => 'array']);
+
+    $askNow = <<<'JS'
+        () => {
+            window.maintenancePageKept = true;
+            new Function('setTimeout', document.scripts[0].textContent)((callback) => window.setTimeout(callback, 50));
+
+            return true;
+        }
+        JS;
+
+    $page = visit('/login');
+
+    $page->assertSee('Welcome back');
+
+    $this->artisan('down')->assertSuccessful();
+
+    try {
+        $page->click('Forgot your password?')
+            ->assertPresent('body[data-slot="maintenance-page"]')
+            ->assertPathIs('/forgot-password')
+            ->assertSeeIn('[data-slot="maintenance-reload"]', 'This page reloads by itself as soon as the instance answers.')
+            ->assertNotPresent('dialog')
+            ->assertNotPresent('iframe');
+
+        $page->script($askNow);
+
+        $keptWhileDown = $page->script(<<<'JS'
+            () => new Promise((resolve) => window.setTimeout(
+                () => resolve(window.maintenancePageKept === true && document.body.dataset.slot === 'maintenance-page'),
+                600,
+            ))
+            JS);
+
+        expect($keptWhileDown)->toBeTrue();
+    } finally {
+        $this->artisan('up');
+    }
+
+    $page->script($askNow);
+
+    $page->assertPresent('#email')
+        ->assertPathIs('/forgot-password')
+        ->assertNotPresent('[data-slot="maintenance-page"]');
+});

@@ -1,9 +1,11 @@
 {{--
     Static maintenance page: `php artisan down` and every other 503.
-    It reads no database, cache or session and loads no script and no asset, so
-    it cannot use app.css: the colours below are copied from
+    It reads no database, cache or session and loads no asset, so it cannot use
+    app.css: the colours below are copied from
     docs/design-system/tokens.json (light theme, then dark). This file is
-    outside the token rule of the front end for that reason.
+    outside the token rule of the front end for that reason. Its only script is
+    inline: it asks the instance every 30 seconds and loads the page again once
+    the answer is no longer a 503.
 --}}
 @php
     $appearance = in_array(request()->cookie('appearance'), ['light', 'dark'], true) ? request()->cookie('appearance') : null;
@@ -155,13 +157,74 @@
                 text-wrap: pretty;
             }
 
+            .actions {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: center;
+                justify-content: center;
+                gap: 0.5rem;
+                margin-top: 0.25rem;
+            }
+
+            .reload {
+                display: inline-flex;
+                align-items: center;
+                gap: 0.5rem;
+                font-size: 0.75rem;
+                line-height: 1rem;
+                color: var(--muted-foreground);
+                text-align: left;
+            }
+
+            .reload[hidden] {
+                display: none;
+            }
+
+            .trema {
+                display: inline-flex;
+                align-items: center;
+                gap: 0.1875rem;
+                flex: none;
+                color: var(--primary);
+            }
+
+            .trema i {
+                display: block;
+                width: 0.3125rem;
+                height: 0.3125rem;
+                border-radius: 50%;
+                background: currentColor;
+                animation: trema 1s cubic-bezier(0.2, 0, 0, 1) infinite;
+            }
+
+            .trema i:nth-child(2) {
+                animation-delay: 0.18s;
+            }
+
+            @keyframes trema {
+                0%, 100% {
+                    transform: translateY(0);
+                    opacity: 1;
+                }
+
+                40% {
+                    transform: translateY(-0.25rem);
+                    opacity: 0.6;
+                }
+            }
+
+            @media (prefers-reduced-motion: reduce) {
+                .trema i {
+                    animation: none;
+                }
+            }
+
             .retry {
                 display: inline-flex;
                 align-items: center;
                 justify-content: center;
                 gap: 0.5rem;
                 height: 2rem;
-                margin-top: 0.25rem;
                 padding: 0 0.75rem 0 0.625rem;
                 border: 1px solid var(--input);
                 border-radius: 0.5rem;
@@ -202,6 +265,10 @@
             }
 
             @media (max-width: 39.999rem) {
+                .actions {
+                    width: 100%;
+                }
+
                 .retry {
                     width: 100%;
                     height: 2.75rem;
@@ -236,19 +303,47 @@
             <h1>{{ __(':name is being updated', ['name' => $instance], $locale) }}</h1>
             <p class="description">{{ __('Nothing is lost: sessions pick up exactly where they stopped.', [], $locale) }}</p>
             {{-- Place left (AD-5): the "Back at" block, then the message of the instance admin. --}}
-            <a class="retry" href="/{{ ltrim(request()->getRequestUri(), '/') }}">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
-                    <path d="M21 3v5h-5"/>
-                    <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
-                    <path d="M8 16H3v5"/>
-                </svg>
-                <span>{{ __('Retry now', [], $locale) }}</span>
-            </a>
+            <div class="actions">
+                <span class="reload" data-slot="maintenance-reload" hidden>
+                    <span class="trema" aria-hidden="true"><i></i><i></i></span>
+                    <span>{{ __('This page reloads by itself as soon as the instance answers.', [], $locale) }}</span>
+                </span>
+                <a class="retry" href="/{{ ltrim(request()->getRequestUri(), '/') }}">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+                        <path d="M21 3v5h-5"/>
+                        <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+                        <path d="M8 16H3v5"/>
+                    </svg>
+                    <span>{{ __('Retry now', [], $locale) }}</span>
+                </a>
+            </div>
         </main>
         <footer>
             {{ $instance }}
             {{-- Place left (AD-2): the version, after the name of the instance. --}}
         </footer>
+        <script>
+            (function () {
+                var wait = function () {
+                    setTimeout(ask, 30000);
+                };
+
+                var ask = function () {
+                    fetch(location.href, { method: 'HEAD', cache: 'no-store', credentials: 'same-origin' }).then(function (answer) {
+                        if (answer.status === 503) {
+                            wait();
+
+                            return;
+                        }
+
+                        location.replace(location.href);
+                    }, wait);
+                };
+
+                document.querySelector('[data-slot="maintenance-reload"]').hidden = false;
+                wait();
+            })();
+        </script>
     </body>
 </html>
