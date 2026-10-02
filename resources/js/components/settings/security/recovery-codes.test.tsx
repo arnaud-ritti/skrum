@@ -91,12 +91,26 @@ describe('RecoveryCodes', () => {
     });
 
     it('shows a placeholder and disables its actions while the codes are fetched', () => {
-        renderWithProviders(<RecoveryCodes codes={[]} placeholders={8} />);
+        renderWithProviders(
+            <RecoveryCodes codes={[]} loading placeholders={8} />,
+        );
 
         expect(
             screen.getByRole('status', { name: 'Loading recovery codes' })
                 .children.length,
         ).toBe(8);
+        expect(screen.queryByRole('list')).toBeNull();
+        expect(
+            screen
+                .getAllByRole('button')
+                .every((button) => button.hasAttribute('disabled')),
+        ).toBe(true);
+    });
+
+    it('does not announce a loading that is over when the answer holds no code', () => {
+        renderWithProviders(<RecoveryCodes codes={[]} />);
+
+        expect(screen.queryByRole('status')).toBeNull();
         expect(screen.queryByRole('list')).toBeNull();
         expect(
             screen

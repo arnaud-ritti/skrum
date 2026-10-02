@@ -19,18 +19,21 @@ function downloadText(name: string, text: string): void {
 
 type RecoveryCodesProps = {
     codes: string[];
+    /** The codes are being fetched: a placeholder stands for them. */
+    loading?: boolean;
     /** Lines of the placeholder shown while the codes are fetched. */
     placeholders?: number;
 };
 
 export function RecoveryCodes({
     codes,
+    loading = false,
     placeholders = 8,
 }: RecoveryCodesProps): ReactElement {
     const { t } = useTrans();
     const [copied, copy] = useClipboard();
     const text = codes.join('\n');
-    const loading = codes.length === 0;
+    const unavailable = loading || codes.length === 0;
 
     return (
         <div data-slot="recovery-codes" className="flex min-w-0 flex-col gap-3">
@@ -48,7 +51,7 @@ export function RecoveryCodes({
                         />
                     ))}
                 </div>
-            ) : (
+            ) : codes.length === 0 ? null : (
                 <ol
                     aria-label={t('Recovery codes')}
                     className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,14rem),1fr))] gap-x-6 gap-y-2 rounded-lg border border-dashed border-input bg-muted p-4"
@@ -76,7 +79,7 @@ export function RecoveryCodes({
                     type="button"
                     variant="outline"
                     size="sm"
-                    disabled={loading}
+                    disabled={unavailable}
                     className="max-w-full"
                     onClick={() =>
                         downloadText(RecoveryCodesFileName, `${text}\n`)
@@ -89,17 +92,19 @@ export function RecoveryCodes({
                     type="button"
                     variant="outline"
                     size="sm"
-                    disabled={loading}
+                    disabled={unavailable}
                     className="max-w-full"
                     onClick={() => void copy(text)}
                 >
-                    {copied === text && !loading ? (
+                    {copied === text && !unavailable ? (
                         <Check aria-hidden="true" />
                     ) : (
                         <Copy aria-hidden="true" />
                     )}
                     <span className="truncate">
-                        {copied === text && !loading ? t('Copied') : t('Copy')}
+                        {copied === text && !unavailable
+                            ? t('Copied')
+                            : t('Copy')}
                     </span>
                 </Button>
             </div>

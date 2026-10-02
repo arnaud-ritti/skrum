@@ -5,7 +5,11 @@ import { renderWithProviders } from '@/test/render';
 import type { Passkey } from '@/types/auth';
 import { defaultPasskeyName, PasskeysCard } from './passkeys-card';
 
-type VisitOptions = { onSuccess?: () => void; onError?: () => void };
+type VisitOptions = {
+    onSuccess?: () => void;
+    onError?: () => void;
+    onFinish?: () => void;
+};
 
 const router = vi.hoisted(() => ({ delete: vi.fn(), reload: vi.fn() }));
 const passkey = vi.hoisted(() => ({
@@ -157,6 +161,33 @@ describe('PasskeysCard', () => {
 
         expect(passkey.register).not.toHaveBeenCalled();
         expect(screen.getByRole('dialog')).toBeTruthy();
+        expect(document.getElementById('passkey-name-error')?.textContent).toBe(
+            'A passkey needs a name.',
+        );
+    });
+
+    it('does not show the refusal of an earlier attempt when the dialog opens again', async () => {
+        passkey.succeeds = false;
+        passkey.error = 'The operation was cancelled.';
+        renderWithProviders(<PasskeysCard passkeys={[]} />);
+
+        await userEvent.click(
+            screen.getByRole('button', { name: 'Add passkey' }),
+        );
+        await userEvent.type(screen.getByLabelText('Passkey name'), 'Key');
+        await userEvent.click(
+            screen.getByRole('button', { name: 'Register passkey' }),
+        );
+        await waitFor(() => expect(screen.getByRole('alert')).toBeTruthy());
+        await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+        await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+
+        await userEvent.click(
+            screen.getByRole('button', { name: 'Add passkey' }),
+        );
+
+        expect(screen.getByRole('dialog')).toBeTruthy();
+        expect(screen.queryByRole('alert')).toBeNull();
     });
 
     it('says so, and offers no button, in a browser without passkeys', () => {
@@ -205,5 +236,35 @@ describe('PasskeysCard', () => {
         await waitFor(() =>
             expect(screen.queryByRole('alertdialog')).toBeNull(),
         );
+    });
+
+    it('gives the dialog back, with a message, when the removal ends without an answer', async () => {
+        router.delete.mockImplementation(
+            (_url: string, options: VisitOptions) => options.onFinish?.(),
+        );
+        renderWithProviders(<PasskeysCard passkeys={[laptop]} />);
+
+        await userEvent.click(
+            screen.getByRole('button', { name: 'Remove Chrome on Mac' }),
+        );
+
+        const dialog = within(screen.getByRole('alertdialog'));
+
+        await userEvent.click(
+            dialog.getByRole('button', { name: 'Remove passkey' }),
+        );
+
+        await waitFor(() =>
+            expect(dialog.getByRole('alert').textContent).toBe(
+                'Something went wrong. Please try again.',
+            ),
+        );
+        expect(
+            (
+                dialog.getByRole('button', {
+                    name: 'Cancel',
+                }) as HTMLButtonElement
+            ).disabled,
+        ).toBe(false);
     });
 });

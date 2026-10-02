@@ -1,4 +1,3 @@
-import { router } from '@inertiajs/react';
 import { Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import type { ReactElement } from 'react';
@@ -8,6 +7,7 @@ import { SettingsCard } from '@/components/settings/settings-card';
 import { FormDialog } from '@/components/skrum/confirm-dialog';
 import { Button } from '@/components/ui/button';
 import { useTrans } from '@/hooks/use-trans';
+import { DeleteVisitError, deleteVisit } from '@/lib/delete-visit';
 
 const PasswordFieldId = 'password';
 
@@ -24,30 +24,29 @@ export function DeleteAccountCard(): ReactElement {
         }
     };
 
-    const deleteAccount = (data: FormData): Promise<void> =>
-        new Promise((resolve, reject) => {
-            const password = data.get('password');
+    const deleteAccount = async (data: FormData): Promise<void> => {
+        const password = data.get('password');
 
-            setError(undefined);
+        setError(undefined);
 
-            router.delete(ProfileController.destroy.url(), {
-                data: {
-                    password: typeof password === 'string' ? password : '',
-                },
-                preserveScroll: true,
-                onSuccess: () => resolve(),
-                onError: (errors) => {
-                    setError(
-                        errors.password ??
-                            t('Something went wrong. Please try again.'),
-                    );
-                    reject(new Error('The account was not deleted.'));
-                    requestAnimationFrame(() =>
-                        document.getElementById(PasswordFieldId)?.focus(),
-                    );
-                },
+        try {
+            await deleteVisit(ProfileController.destroy.url(), {
+                password: typeof password === 'string' ? password : '',
             });
-        });
+        } catch (failure) {
+            setError(
+                (failure instanceof DeleteVisitError
+                    ? failure.errors.password
+                    : undefined) ??
+                    t('Something went wrong. Please try again.'),
+            );
+            requestAnimationFrame(() =>
+                document.getElementById(PasswordFieldId)?.focus(),
+            );
+
+            throw failure;
+        }
+    };
 
     return (
         <SettingsCard

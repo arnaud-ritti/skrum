@@ -8,6 +8,7 @@ type VisitOptions = {
     data?: Record<string, unknown>;
     onSuccess?: () => void;
     onError?: (errors: Record<string, string>) => void;
+    onFinish?: () => void;
 };
 
 const router = vi.hoisted(() => ({ delete: vi.fn() }));
@@ -146,6 +147,36 @@ describe('DeleteAccountCard', () => {
         await openDialog();
 
         expect(document.getElementById('password-error')).toBeNull();
+    });
+
+    it('gives the dialog back, with a message under the field, when the visit ends without an answer', async () => {
+        router.delete.mockImplementation(
+            (_url: string, options: VisitOptions) => options.onFinish?.(),
+        );
+        renderWithProviders(<DeleteAccountCard />);
+
+        const dialog = await openDialog();
+
+        await userEvent.type(
+            within(dialog).getByLabelText('Password'),
+            'secret',
+        );
+        await userEvent.click(
+            within(dialog).getByRole('button', { name: 'Delete account' }),
+        );
+
+        await waitFor(() =>
+            expect(document.getElementById('password-error')?.textContent).toBe(
+                'Something went wrong. Please try again.',
+            ),
+        );
+        expect(
+            (
+                within(dialog).getByRole('button', {
+                    name: 'Cancel',
+                }) as HTMLButtonElement
+            ).disabled,
+        ).toBe(false);
     });
 
     it('closes once the account is deleted', async () => {

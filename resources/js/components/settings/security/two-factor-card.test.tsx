@@ -237,7 +237,7 @@ describe('TwoFactorCard, off', () => {
         await startSetup();
 
         twoFactor.recoveryCodesList = codes;
-        act(() => (form.props.onSuccess as () => void)());
+        await act(async () => (form.props.onSuccess as () => void)());
         view.rerender(
             <TwoFactorCard enabled requiresConfirmation summary={on} />,
         );
@@ -313,6 +313,96 @@ describe('TwoFactorCard, off', () => {
             'Failed to fetch QR code',
         );
     });
+
+    it('offers to fetch the setup again, and no way forward, when it cannot be fetched and no code is asked', async () => {
+        router.post.mockImplementation(
+            (_url: string, _data: unknown, options: VisitOptions) => {
+                twoFactor.errors = ['Failed to fetch QR code'];
+                options.onSuccess?.();
+                options.onFinish?.();
+            },
+        );
+        renderWithProviders(
+            <TwoFactorCard
+                enabled={false}
+                requiresConfirmation={false}
+                summary={off}
+            />,
+        );
+
+        await userEvent.click(
+            screen.getByRole('button', { name: 'Enable 2FA' }),
+        );
+
+        expect(
+            (
+                screen.getByRole('button', {
+                    name: 'Continue',
+                }) as HTMLButtonElement
+            ).disabled,
+        ).toBe(true);
+        expect(twoFactor.fetchSetupData).toHaveBeenCalledTimes(1);
+
+        await userEvent.click(
+            within(screen.getByRole('alert')).getByRole('button', {
+                name: 'Retry',
+            }),
+        );
+
+        expect(twoFactor.fetchSetupData).toHaveBeenCalledTimes(2);
+
+        await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+
+        expect(screen.getByRole('button', { name: 'Enable 2FA' })).toBeTruthy();
+    });
+
+    it('keeps the checkbox and "Finish" off, and offers to retry, while there is no recovery code', async () => {
+        const view = renderWithProviders(
+            <TwoFactorCard
+                enabled={false}
+                requiresConfirmation={false}
+                summary={off}
+            />,
+        );
+
+        await startSetup();
+        view.rerender(
+            <TwoFactorCard
+                enabled
+                requiresConfirmation={false}
+                summary={{ ...off, recoveryCodesRemaining: 8 }}
+            />,
+        );
+        await userEvent.click(screen.getByRole('button', { name: 'Continue' }));
+
+        const alert = await screen.findByRole('alert');
+
+        expect(alert.textContent).toContain('Failed to fetch recovery codes');
+        expect(
+            screen.queryByRole('status', { name: 'Loading recovery codes' }),
+        ).toBeNull();
+        expect(
+            (
+                screen.getByLabelText(
+                    'I have saved my recovery codes',
+                ) as HTMLButtonElement
+            ).disabled,
+        ).toBe(true);
+        expect(
+            (
+                screen.getByRole('button', {
+                    name: 'Finish',
+                }) as HTMLButtonElement
+            ).disabled,
+        ).toBe(true);
+        expect(twoFactor.fetchRecoveryCodes).toHaveBeenCalledTimes(1);
+
+        await userEvent.click(
+            within(alert).getByRole('button', { name: 'Retry' }),
+        );
+
+        expect(twoFactor.fetchRecoveryCodes).toHaveBeenCalledTimes(2);
+    });
 });
 
 describe('TwoFactorCard, on', () => {
@@ -333,6 +423,14 @@ describe('TwoFactorCard, on', () => {
     });
 
     it('fetches and shows the recovery codes on demand, then hides them', async () => {
+        let answer = (): void => undefined;
+
+        twoFactor.fetchRecoveryCodes.mockReturnValue(
+            new Promise<void>((resolve) => {
+                answer = resolve;
+            }),
+        );
+
         const view = renderWithProviders(
             <TwoFactorCard enabled requiresConfirmation summary={on} />,
         );
@@ -353,6 +451,7 @@ describe('TwoFactorCard, on', () => {
         ).toBeTruthy();
 
         twoFactor.recoveryCodesList = codes.slice(0, 7);
+        await act(async () => answer());
         view.rerender(
             <TwoFactorCard enabled requiresConfirmation summary={on} />,
         );
@@ -435,6 +534,38 @@ describe('TwoFactorCard, on', () => {
         await waitFor(() =>
             expect(screen.queryByRole('alertdialog')).toBeNull(),
         );
+    });
+
+    it('gives the dialog back, with a message, when turning off ends without an answer', async () => {
+        router.delete.mockImplementation(
+            (_url: string, options: VisitOptions) => options.onFinish?.(),
+        );
+        renderWithProviders(
+            <TwoFactorCard enabled requiresConfirmation summary={on} />,
+        );
+
+        await userEvent.click(
+            screen.getByRole('button', { name: 'Turn off 2FA' }),
+        );
+
+        const dialog = within(screen.getByRole('alertdialog'));
+
+        await userEvent.click(
+            dialog.getByRole('button', { name: 'Turn off 2FA' }),
+        );
+
+        await waitFor(() =>
+            expect(dialog.getByRole('alert').textContent).toBe(
+                'Something went wrong. Please try again.',
+            ),
+        );
+        expect(
+            (
+                dialog.getByRole('button', {
+                    name: 'Cancel',
+                }) as HTMLButtonElement
+            ).disabled,
+        ).toBe(false);
     });
 
     it('forgets the codes it held once the second factor is off', () => {

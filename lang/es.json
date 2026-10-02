@@ -4107,5 +4107,8 @@
     "Theme picker: System, Light, Dark": "Selector de tema: Sistema, Claro, Oscuro",
     "API tokens: the table, and the cards of a narrow list": "Tokens de API: la tabla, y las tarjetas de una lista estrecha",
     "New token, shown once": "Token nuevo, mostrado una sola vez",
-    "Provider card: not connected, connected, setup required, reconnect required": "Tarjeta de proveedor: no conectado, conectado, configuración requerida, reconexión requerida"
+    "Provider card: not connected, connected, setup required, reconnect required": "Tarjeta de proveedor: no conectado, conectado, configuración requerida, reconexión requerida",
+    "A passkey needs a name.": "Una llave de acceso necesita un nombre.",
+    "Checked against known data breaches when you save": "Se comprueba en las filtraciones de datos conocidas al guardar",
+    "Verification example": "Ejemplo de verificación"
 }

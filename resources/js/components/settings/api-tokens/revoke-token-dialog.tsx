@@ -1,8 +1,9 @@
-import { router } from '@inertiajs/react';
+import { useState } from 'react';
 import type { ReactElement } from 'react';
 import ApiTokensController from '@/actions/App/Http/Controllers/Settings/ApiTokensController';
 import { ConfirmDialog } from '@/components/skrum/confirm-dialog';
 import { useTrans } from '@/hooks/use-trans';
+import { deleteVisit } from '@/lib/delete-visit';
 import type { ApiToken } from '@/types';
 
 type RevokeTokenDialogProps = {
@@ -19,19 +20,33 @@ export function RevokeTokenDialog({
 }: RevokeTokenDialogProps): ReactElement {
     const { t } = useTrans();
 
-    const revoke = (target: ApiToken): Promise<void> =>
-        new Promise((resolve, reject) => {
-            router.delete(ApiTokensController.destroy.url(target.id), {
-                preserveScroll: true,
-                onSuccess: () => resolve(),
-                onError: () => reject(new Error('The token is still here.')),
-            });
-        });
+    const [error, setError] = useState<string>();
+
+    const revoke = async (target: ApiToken): Promise<void> => {
+        setError(undefined);
+
+        try {
+            await deleteVisit(ApiTokensController.destroy.url(target.id));
+        } catch (failure) {
+            setError(t('Something went wrong. Please try again.'));
+
+            throw failure;
+        }
+    };
+
+    const changeOpen = (next: boolean): void => {
+        if (!next) {
+            setError(undefined);
+        }
+
+        onOpenChange(next);
+    };
 
     return (
         <ConfirmDialog
             open={open && token !== null}
-            onOpenChange={onOpenChange}
+            onOpenChange={changeOpen}
+            error={error}
             tone="destructive"
             title={t('Revoke this token?')}
             description={t(

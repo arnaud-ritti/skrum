@@ -11,6 +11,7 @@ import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useTrans } from '@/hooks/use-trans';
+import { deleteVisit } from '@/lib/delete-visit';
 import type { Passkey } from '@/types/auth';
 
 /** "Chrome on Mac": the name offered for a new passkey. */
@@ -97,6 +98,9 @@ export function PasskeysCard({ passkeys }: PasskeysCardProps): ReactElement {
     const { t } = useTrans();
     const [adding, setAdding] = useState(false);
     const [removing, setRemoving] = useState(false);
+    const [removeError, setRemoveError] = useState<string>();
+    const [attempted, setAttempted] = useState(false);
+    const [nameError, setNameError] = useState<string>();
     const [target, setTarget] = useState<Passkey | null>(null);
     const registered = useRef(false);
     const { register, error, isSupported } = usePasskeyRegister({
@@ -110,11 +114,14 @@ export function PasskeysCard({ passkeys }: PasskeysCardProps): ReactElement {
         const name = typeof entry === 'string' ? entry.trim() : '';
 
         if (name === '') {
+            setNameError(t('A passkey needs a name.'));
             document.getElementById('passkey-name')?.focus();
 
             throw new Error('A passkey needs a name.');
         }
 
+        setNameError(undefined);
+        setAttempted(true);
         registered.current = false;
         await register(name);
 
@@ -125,14 +132,31 @@ export function PasskeysCard({ passkeys }: PasskeysCardProps): ReactElement {
         router.reload();
     };
 
-    const remove = (passkey: Passkey): Promise<void> =>
-        new Promise((resolve, reject) => {
-            router.delete(destroy.url(passkey.id), {
-                preserveScroll: true,
-                onSuccess: () => resolve(),
-                onError: () => reject(new Error('The passkey is still here.')),
-            });
-        });
+    const remove = async (passkey: Passkey): Promise<void> => {
+        setRemoveError(undefined);
+
+        try {
+            await deleteVisit(destroy.url(passkey.id));
+        } catch (failure) {
+            setRemoveError(t('Something went wrong. Please try again.'));
+
+            throw failure;
+        }
+    };
+
+    const changeAdding = (open: boolean): void => {
+        setAttempted(false);
+        setNameError(undefined);
+        setAdding(open);
+    };
+
+    const changeRemoving = (open: boolean): void => {
+        if (!open) {
+            setRemoveError(undefined);
+        }
+
+        setRemoving(open);
+    };
 
     return (
         <SettingsCard
@@ -146,7 +170,7 @@ export function PasskeysCard({ passkeys }: PasskeysCardProps): ReactElement {
                         variant="outline"
                         size="sm"
                         className="max-w-full"
-                        onClick={() => setAdding(true)}
+                        onClick={() => changeAdding(true)}
                     >
                         <Plus aria-hidden="true" />
                         <span className="truncate">{t('Add passkey')}</span>
@@ -195,11 +219,11 @@ export function PasskeysCard({ passkeys }: PasskeysCardProps): ReactElement {
 
             <FormDialog
                 open={adding}
-                onOpenChange={setAdding}
+                onOpenChange={changeAdding}
                 title={t('Add passkey')}
                 submitLabel={t('Register passkey')}
                 onSubmit={add}
-                error={adding ? (error ?? undefined) : undefined}
+                error={adding && attempted ? (error ?? undefined) : undefined}
             >
                 <TextField
                     id="passkey-name"
@@ -212,12 +236,14 @@ export function PasskeysCard({ passkeys }: PasskeysCardProps): ReactElement {
                     )}
                     autoComplete="off"
                     autoFocus
+                    error={nameError}
                 />
             </FormDialog>
 
             <ConfirmDialog
                 open={removing}
-                onOpenChange={setRemoving}
+                onOpenChange={changeRemoving}
+                error={removeError}
                 tone="destructive"
                 title={t('Remove passkey')}
                 description={t(

@@ -26,6 +26,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useTrans } from '@/hooks/use-trans';
 import { OTP_MAX_LENGTH, useTwoFactorAuth } from '@/hooks/use-two-factor-auth';
+import { deleteVisit } from '@/lib/delete-visit';
 import { cn } from '@/lib/utils';
 import {
     confirm,
@@ -134,7 +135,9 @@ export function TwoFactorCard({
     const [code, setCode] = useState('');
     const [saved, setSaved] = useState(false);
     const [codesVisible, setCodesVisible] = useState(false);
+    const [codesLoading, setCodesLoading] = useState(false);
     const [turnOffOpen, setTurnOffOpen] = useState(false);
+    const [turnOffError, setTurnOffError] = useState<string>();
     const wasEnabled = useRef(enabled);
     const codesId = useId();
 
@@ -152,24 +155,61 @@ export function TwoFactorCard({
         'A 6-digit code from an authenticator app, on top of your password.',
     );
 
-    const failures = fetchErrors.length > 0 && (
-        <Alert
-            variant="destructive"
-            title={t('Something went wrong.')}
-            description={
-                <ul className="list-inside list-disc">
-                    {Array.from(new Set(fetchErrors)).map((error) => (
-                        <li key={error}>{t(error)}</li>
-                    ))}
-                </ul>
-            }
-        />
+    const loadCodes = async (): Promise<void> => {
+        setCodesLoading(true);
+
+        try {
+            await fetchRecoveryCodes();
+        } finally {
+            setCodesLoading(false);
+        }
+    };
+
+    const hasCodes = recoveryCodesList.length > 0;
+
+    const failureAlert = (messages: string[], retry: () => void): ReactNode =>
+        messages.length > 0 && (
+            <Alert
+                variant="destructive"
+                title={t('Something went wrong.')}
+                description={
+                    <ul className="list-inside list-disc">
+                        {Array.from(new Set(messages)).map((error) => (
+                            <li key={error}>{t(error)}</li>
+                        ))}
+                    </ul>
+                }
+                action={
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="max-w-full"
+                        onClick={retry}
+                    >
+                        <span className="truncate">{t('Retry')}</span>
+                    </Button>
+                }
+            />
+        );
+
+    const setupFailures = failureAlert(
+        fetchErrors,
+        () => void fetchSetupData(),
+    );
+
+    /** An answer without a code is a failed fetch, not an endless wait. */
+    const codesFailures = failureAlert(
+        fetchErrors.length === 0 && !codesLoading && !hasCodes
+            ? ['Failed to fetch recovery codes']
+            : fetchErrors,
+        () => void loadCodes(),
     );
 
     const showCodes = (): void => {
         setSaved(false);
         setStep('codes');
-        void fetchRecoveryCodes();
+        void loadCodes();
     };
 
     const start = (): void => {
@@ -201,19 +241,29 @@ export function TwoFactorCard({
         setStep(null);
     };
 
-    const turnOff = (): Promise<void> =>
-        new Promise((resolve, reject) => {
-            router.delete(disable.url(), {
-                preserveScroll: true,
-                onSuccess: () => resolve(),
-                onError: () =>
-                    reject(new Error('The second factor is still on.')),
-            });
-        });
+    const turnOff = async (): Promise<void> => {
+        setTurnOffError(undefined);
+
+        try {
+            await deleteVisit(disable.url());
+        } catch (failure) {
+            setTurnOffError(t('Something went wrong. Please try again.'));
+
+            throw failure;
+        }
+    };
+
+    const changeTurnOffOpen = (open: boolean): void => {
+        if (!open) {
+            setTurnOffError(undefined);
+        }
+
+        setTurnOffOpen(open);
+    };
 
     const toggleCodes = (): void => {
-        if (!codesVisible && recoveryCodesList.length === 0) {
-            void fetchRecoveryCodes();
+        if (!codesVisible && !hasCodes) {
+            void loadCodes();
         }
 
         setCodesVisible((visible) => !visible);
@@ -245,6 +295,7 @@ export function TwoFactorCard({
                             <Checkbox
                                 id="recovery-codes-saved"
                                 checked={saved}
+                                disabled={!hasCodes}
                                 onCheckedChange={(checked) =>
                                     setSaved(checked === true)
                                 }
@@ -254,7 +305,7 @@ export function TwoFactorCard({
                         <Button
                             type="button"
                             size="sm"
-                            disabled={!saved}
+                            disabled={!saved || !hasCodes}
                             className="max-w-full"
                             onClick={finish}
                         >
@@ -263,7 +314,7 @@ export function TwoFactorCard({
                     </>
                 }
             >
-                {failures || (
+                {codesFailures || (
                     <>
                         <Alert
                             variant="warning"
@@ -274,6 +325,7 @@ export function TwoFactorCard({
                         />
                         <RecoveryCodes
                             codes={recoveryCodesList}
+                            loading={codesLoading}
                             placeholders={summary.recoveryCodesTotal}
                         />
                     </>
@@ -308,17 +360,31 @@ export function TwoFactorCard({
                     description={description}
                     header={header}
                     footer={
-                        <Button
-                            type="button"
-                            size="sm"
-                            className="max-w-full"
-                            onClick={showCodes}
-                        >
-                            <span className="truncate">{t('Continue')}</span>
-                        </Button>
+                        <>
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="max-w-full"
+                                onClick={() => setStep(null)}
+                            >
+                                <span className="truncate">{t('Cancel')}</span>
+                            </Button>
+                            <Button
+                                type="button"
+                                size="sm"
+                                disabled={!hasSetupData}
+                                className="max-w-full"
+                                onClick={showCodes}
+                            >
+                                <span className="truncate">
+                                    {t('Continue')}
+                                </span>
+                            </Button>
+                        </>
                     }
                 >
-                    {failures || (
+                    {setupFailures || (
                         <TwoFactorSetup
                             qrCodeSvg={qrCodeSvg}
                             manualSetupKey={manualSetupKey}
@@ -383,7 +449,7 @@ export function TwoFactorCard({
                             </>
                         }
                     >
-                        {failures || (
+                        {setupFailures || (
                             <TwoFactorSetup
                                 qrCodeSvg={qrCodeSvg}
                                 manualSetupKey={manualSetupKey}
@@ -511,10 +577,11 @@ export function TwoFactorCard({
             >
                 {codesVisible && (
                     <div id={codesId} className="flex min-w-0 flex-col gap-3">
-                        {failures || (
+                        {codesFailures || (
                             <>
                                 <RecoveryCodes
                                     codes={recoveryCodesList}
+                                    loading={codesLoading}
                                     placeholders={
                                         summary.recoveryCodesRemaining ??
                                         summary.recoveryCodesTotal
@@ -529,9 +596,7 @@ export function TwoFactorCard({
                                     <Form
                                         {...regenerateRecoveryCodes.form()}
                                         options={{ preserveScroll: true }}
-                                        onSuccess={() =>
-                                            void fetchRecoveryCodes()
-                                        }
+                                        onSuccess={() => void loadCodes()}
                                     >
                                         {({ processing }) => (
                                             <LoadingButton
@@ -576,7 +641,8 @@ export function TwoFactorCard({
             />
             <ConfirmDialog
                 open={turnOffOpen}
-                onOpenChange={setTurnOffOpen}
+                onOpenChange={changeTurnOffOpen}
+                error={turnOffError}
                 tone="destructive"
                 title={t('Turn off two-factor authentication?')}
                 description={t(

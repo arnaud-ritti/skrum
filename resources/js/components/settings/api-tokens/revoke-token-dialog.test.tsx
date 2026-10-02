@@ -9,6 +9,7 @@ type VisitOptions = {
     preserveScroll?: boolean;
     onSuccess?: () => void;
     onError?: () => void;
+    onFinish?: () => void;
 };
 
 const router = vi.hoisted(() => ({ delete: vi.fn() }));
@@ -108,6 +109,38 @@ describe('RevokeTokenDialog', () => {
                 ).disabled,
             ).toBe(false),
         );
+        expect(onOpenChange).not.toHaveBeenCalledWith(false);
+    });
+
+    it('gives the dialog back, with a message, when the visit ends without an answer', async () => {
+        const onOpenChange = vi.fn();
+
+        renderWithProviders(
+            <RevokeTokenDialog
+                token={activeToken}
+                open
+                onOpenChange={onOpenChange}
+            />,
+        );
+
+        const dialog = within(screen.getByRole('alertdialog'));
+
+        await userEvent.click(dialog.getByRole('button', { name: 'Revoke' }));
+
+        (router.delete.mock.calls[0][1] as VisitOptions).onFinish?.();
+
+        await waitFor(() =>
+            expect(dialog.getByRole('alert').textContent).toBe(
+                'Something went wrong. Please try again.',
+            ),
+        );
+        expect(
+            (
+                dialog.getByRole('button', {
+                    name: 'Cancel',
+                }) as HTMLButtonElement
+            ).disabled,
+        ).toBe(false);
         expect(onOpenChange).not.toHaveBeenCalledWith(false);
     });
 
