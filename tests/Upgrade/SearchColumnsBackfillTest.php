@@ -73,6 +73,7 @@ function rowsBeforeSearchColumns(): array
             'retro_id' => $retro,
             'team_id' => $team,
             'content' => 'Écrire le RUNBOOK',
+            'sort_rank' => 1_000_000_001,
         ]),
         'pokerTask' => rowBeforeSearchColumns('poker_tasks', ['poker_game_id' => $game, 'title' => 'Page de CONNEXION', 'position' => 0]),
         'user' => $user,

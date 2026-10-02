@@ -2,7 +2,6 @@
 
 use App\Actions\ActionItems\ActionItemQuery;
 use App\Models\ActionItem;
-use App\Models\Team;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -16,10 +15,13 @@ it('ranks the rows that existed before the column, by running the migration itse
 
     Artisan::call('migrate:fresh', ['--path' => $earlier, '--realpath' => true]);
 
-    $team = Team::factory()->create();
+    $workspace = (string) Str::uuid7();
+    $team = (string) Str::uuid7();
+    DB::table('workspaces')->insert(['id' => $workspace, 'name' => 'Acme', 'slug' => 'acme', 'created_at' => now(), 'updated_at' => now()]);
+    DB::table('teams')->insert(['id' => $team, 'workspace_id' => $workspace, 'name' => 'Platform', 'created_at' => now(), 'updated_at' => now()]);
     $row = fn (string $content, array $values) => DB::table('action_items')->insert([
         'id' => (string) Str::uuid7(),
-        'team_id' => $team->id,
+        'team_id' => $team,
         'content' => $content,
         'priority' => 'medium',
         'created_at' => '2026-09-01 10:00:00',

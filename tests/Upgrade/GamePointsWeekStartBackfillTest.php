@@ -1,8 +1,5 @@
 <?php
 
-use App\Models\GamePlayer;
-use App\Models\GameRoom;
-use App\Models\Team;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -17,9 +14,17 @@ it('gives every existing points row the monday of its week by running the migrat
 
     Artisan::call('migrate:fresh', ['--path' => $earlier, '--realpath' => true]);
 
-    $team = Team::factory()->create();
-    $room = GameRoom::factory()->create(['team_id' => $team->id]);
-    $player = GamePlayer::factory()->create(['game_room_id' => $room->id]);
+    $row = function (string $table, array $values): string {
+        $id = (string) Str::uuid7();
+
+        DB::table($table)->insert(['id' => $id, 'created_at' => now(), 'updated_at' => now(), ...$values]);
+
+        return $id;
+    };
+    $workspace = $row('workspaces', ['name' => 'Acme', 'slug' => 'acme']);
+    $team = $row('teams', ['workspace_id' => $workspace, 'name' => 'Platform']);
+    $room = $row('game_rooms', ['team_id' => $team, 'locale' => 'en', 'guest_token' => Str::random(40)]);
+    $player = $row('game_players', ['game_room_id' => $room, 'guest_name' => 'Grace']);
     $mondayByCreatedAt = [
         '2026-09-28 00:00:00' => '2026-09-28',
         '2026-10-04 23:59:59' => '2026-09-28',
@@ -34,9 +39,9 @@ it('gives every existing points row the monday of its week by running the migrat
 
         DB::table('game_points')->insert([
             'id' => $idByCreatedAt[$createdAt],
-            'team_id' => $team->id,
-            'game_room_id' => $room->id,
-            'player_id' => $player->id,
+            'team_id' => $team,
+            'game_room_id' => $room,
+            'player_id' => $player,
             'game' => 'hangman',
             'points' => 1,
             'is_win' => false,
