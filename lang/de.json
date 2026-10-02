@@ -4578,5 +4578,9 @@
     "Pause or resume the timer": "Timer pausieren oder fortsetzen",
     "The whiteboard uses the shortcuts of its own toolbar.": "Das Whiteboard verwendet die Tastenkürzel seiner eigenen Werkzeugleiste.",
     "The poker deck, the ROTI, the health check and a survey take the digits while they have the focus.": "Das Poker-Deck, der ROTI, der Health Check und eine Umfrage erhalten die Ziffern, solange sie den Fokus haben.",
-    "Wired in the application": "In der Anwendung verdrahtet"
+    "Wired in the application": "In der Anwendung verdrahtet",
+    "Single-key shortcuts are off. Shortcuts with ⌘ or Ctrl still work.": "Ein-Tasten-Kürzel sind ausgeschaltet. Kürzel mit ⌘ oder Strg funktionieren weiter.",
+    "Keyboard settings": "Tastatureinstellungen",
+    "Group with another card": "Mit einer anderen Karte gruppieren",
+    "Focus the selected card": "Ausgewählte Karte hervorheben"
 }

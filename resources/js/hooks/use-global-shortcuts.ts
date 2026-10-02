@@ -2,6 +2,7 @@ import { usePage } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import type { ShortcutSectionId } from '@/components/skrum/keyboard-shortcuts';
 import { useShortcut } from '@/hooks/use-shortcut';
+import { useSingleKeyShortcuts } from '@/hooks/use-single-key-shortcuts';
 import { openKeyboardShortcutsEvent } from '@/lib/shortcuts/events';
 import { contextOfPage } from '@/lib/shortcuts/sections';
 
@@ -19,17 +20,21 @@ export type GlobalShortcuts = {
     open: boolean;
     setOpen: (open: boolean) => void;
     context: ShortcutSectionId | undefined;
+    /** Shortcuts made of one character key answer. */
+    singleKey: boolean;
+    setSingleKey: (enabled: boolean) => void;
 };
 
 /**
  * "?" opens the shortcuts dialog outside fields, the whiteboard canvas, the
  * poker deck and other overlays; mod+/ opens it from a field too, for when
- * "?" is being typed. The palette entry and the visible buttons ask for it
- * through a window event.
+ * "?" is being typed or single-key shortcuts are off. The palette entry and
+ * the visible buttons ask for it through a window event.
  */
 export function useGlobalShortcuts(): GlobalShortcuts {
     const { component } = usePage();
     const [open, setOpen] = useState(false);
+    const [singleKey, setSingleKey] = useSingleKeyShortcuts();
 
     useEffect(() => {
         const show = () => setOpen(true);
@@ -57,5 +62,11 @@ export function useGlobalShortcuts(): GlobalShortcuts {
         enableOnFormTags: true,
     });
 
-    return { open, setOpen, context: contextOfPage(component) };
+    return {
+        open,
+        setOpen,
+        context: contextOfPage(component),
+        singleKey,
+        setSingleKey,
+    };
 }

@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { useGlobalShortcuts } from '@/hooks/use-global-shortcuts';
 import { openKeyboardShortcutsEvent } from '@/lib/shortcuts/events';
+import { setSingleKeyShortcuts } from '@/lib/shortcuts/preference';
 
 let component = 'teams/show';
 
@@ -94,6 +95,21 @@ describe('useGlobalShortcuts', () => {
         act(() => {
             window.dispatchEvent(new Event(openKeyboardShortcutsEvent));
         });
+
+        expect(screen.getByTestId('state').textContent).toContain('true');
+    });
+
+    it('leaves "?" alone while single-key shortcuts are off, and still opens with mod+/', () => {
+        window.localStorage.setItem('skrum.single-key-shortcuts', 'false');
+        render(<Probe />);
+        window.localStorage.removeItem('skrum.single-key-shortcuts');
+
+        fireEvent.keyDown(document.body, { key: '?', shiftKey: true });
+
+        expect(screen.getByTestId('state').textContent).toContain('false');
+
+        fireEvent.keyDown(document.body, { key: '/', metaKey: true });
+        setSingleKeyShortcuts(true);
 
         expect(screen.getByTestId('state').textContent).toContain('true');
     });

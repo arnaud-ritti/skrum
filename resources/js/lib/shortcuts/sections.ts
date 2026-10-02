@@ -26,8 +26,9 @@ export function contextOfPage(
 }
 
 /**
- * The shortcuts that have a handler in the application. One list feeds the
- * dialog; a shortcut without a handler is not listed, and neither is one
+ * The shortcuts that have a handler in the application, the five of spec B35
+ * included. One list feeds the dialog; a shortcut without a handler is not
+ * listed, and neither is one
  * whose control is absent from the screen (a session has no palette, a guest
  * no sidebar).
  */
@@ -72,6 +73,23 @@ export function shortcutSections(
                     keywords: [t('vote')],
                 },
                 {
+                    id: 'group',
+                    label: t('Group with another card'),
+                    keys: ['G'],
+                },
+                {
+                    id: 'focus',
+                    label: t('Focus the selected card'),
+                    keys: ['F'],
+                    facilitatorOnly: true,
+                },
+                {
+                    id: 'next-phase',
+                    label: t('Next phase'),
+                    keys: ['mod', 'ArrowRight'],
+                    facilitatorOnly: true,
+                },
+                {
                     id: 'timer',
                     label: t('Pause or resume the timer'),
                     keys: ['T'],
@@ -91,10 +109,17 @@ export function shortcutSections(
                     range: ['0', '9'],
                     keywords: [t('vote'), t('estimate')],
                 },
+                { id: 'coffee', label: t('Coffee break'), keys: ['C'] },
                 {
                     id: 'reveal',
                     label: t('Reveal cards'),
                     keys: ['R'],
+                    facilitatorOnly: true,
+                },
+                {
+                    id: 'revote',
+                    label: t('Re-vote'),
+                    keys: ['shift', 'R'],
                     facilitatorOnly: true,
                 },
                 {

@@ -46,7 +46,7 @@ import type {
     ColumnColor,
 } from '@/lib/retro/types';
 import { cn } from '@/lib/utils';
-import { CardComposer, CardPreview } from './board-card';
+import { CardComposer, CardPreview, useGroupShortcut } from './board-card';
 import { BoardColumn } from './board-column';
 import { useBoard } from './board-context';
 import { BoardCursors } from './board-cursors';
@@ -425,6 +425,9 @@ export function ColumnsBoard({
         }),
     );
     const [activeCardId, setActiveCardId] = useState<string | null>(null);
+
+    useGroupShortcut();
+
     const [activeCardWidth, setActiveCardWidth] = useState<number>();
     const [boardElement, setBoardElement] = useState<HTMLElement | null>(null);
     const dragAccessibility = useDragAccessibility(board);

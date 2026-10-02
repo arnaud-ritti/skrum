@@ -4357,5 +4357,9 @@
     "Pause or resume the timer": "Pause or resume the timer",
     "The whiteboard uses the shortcuts of its own toolbar.": "The whiteboard uses the shortcuts of its own toolbar.",
     "The poker deck, the ROTI, the health check and a survey take the digits while they have the focus.": "The poker deck, the ROTI, the health check and a survey take the digits while they have the focus.",
-    "Wired in the application": "Wired in the application"
+    "Wired in the application": "Wired in the application",
+    "Single-key shortcuts are off. Shortcuts with ⌘ or Ctrl still work.": "Single-key shortcuts are off. Shortcuts with ⌘ or Ctrl still work.",
+    "Keyboard settings": "Keyboard settings",
+    "Group with another card": "Group with another card",
+    "Focus the selected card": "Focus the selected card"
 }

@@ -41,14 +41,28 @@ describe('shortcutSections', () => {
         }
     });
 
-    it('does not list the shortcuts that have no handler', () => {
-        const listed = ids(shortcutSections(t));
+    it('lists the five shortcuts of spec B35 in their sections', () => {
+        expect(ids(shortcutSections(t))).toEqual(
+            expect.arrayContaining([
+                'retro.group',
+                'retro.focus',
+                'retro.next-phase',
+                'poker.coffee',
+                'poker.revote',
+            ]),
+        );
+    });
 
-        expect(listed).not.toContain('retro.group');
-        expect(listed).not.toContain('retro.focus');
-        expect(listed).not.toContain('retro.next');
-        expect(listed).not.toContain('poker.coffee');
-        expect(listed).not.toContain('poker.revote');
+    it('marks the facilitator shortcuts', () => {
+        const items = shortcutSections(t).flatMap((section) => section.items);
+        const facilitatorOnly = (id: string) =>
+            items.find((item) => item.id === id)?.facilitatorOnly === true;
+
+        expect(['focus', 'next-phase', 'revote'].every(facilitatorOnly)).toBe(
+            true,
+        );
+        expect(facilitatorOnly('group')).toBe(false);
+        expect(facilitatorOnly('coffee')).toBe(false);
     });
 
     it('shows the six quick reactions under their digits', () => {

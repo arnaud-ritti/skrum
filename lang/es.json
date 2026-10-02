@@ -4578,5 +4578,9 @@
     "Pause or resume the timer": "Pausar o reanudar el temporizador",
     "The whiteboard uses the shortcuts of its own toolbar.": "La pizarra usa los atajos de su propia barra de herramientas.",
     "The poker deck, the ROTI, the health check and a survey take the digits while they have the focus.": "La baraja del póker, el ROTI, el chequeo de salud y una encuesta reciben los dígitos mientras tienen el foco.",
-    "Wired in the application": "Conectado en la aplicación"
+    "Wired in the application": "Conectado en la aplicación",
+    "Single-key shortcuts are off. Shortcuts with ⌘ or Ctrl still work.": "Los atajos de una sola tecla están desactivados. Los atajos con ⌘ o Ctrl siguen funcionando.",
+    "Keyboard settings": "Ajustes del teclado",
+    "Group with another card": "Agrupar con otra tarjeta",
+    "Focus the selected card": "Destacar la tarjeta seleccionada"
 }

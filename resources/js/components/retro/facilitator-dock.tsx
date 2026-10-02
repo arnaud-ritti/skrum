@@ -18,7 +18,9 @@ import RetroPhasesController from '@/actions/App/Http/Controllers/Retros/RetroPh
 import RetroSettingsController from '@/actions/App/Http/Controllers/Retros/RetroSettingsController';
 import { FacilitatorBar } from '@/components/skrum/facilitator-bar';
 import type { FacilitatorAction } from '@/components/skrum/facilitator-bar';
+import { detectPlatform } from '@/components/skrum/keyboard-shortcuts';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useShortcut } from '@/hooks/use-shortcut';
 import { useTrans } from '@/hooks/use-trans';
 import { retroRequest } from '@/lib/retro/api';
 import { nextPhase, PhaseLabels } from '@/lib/retro/phases';
@@ -36,6 +38,8 @@ export type FacilitatorTools = {
     onSetting: (patch: Record<string, boolean>) => void;
     onPhase: (phase: RetroPhase) => void;
     busy?: boolean;
+    /** How the key of the main button is written on this system: "⌘→" or "Ctrl+→". */
+    phaseShortcut?: string;
     /** The topics of the discussion: moving between them, and bringing everyone along. */
     topics?: {
         canPrevious: boolean;
@@ -166,7 +170,7 @@ export function facilitatorActions(
 export function facilitatorPrimary(
     phase: RetroPhase,
     board: DockBoard,
-    { t, onPhase, busy = false }: FacilitatorTools,
+    { t, onPhase, busy = false, phaseShortcut }: FacilitatorTools,
 ): FacilitatorAction | undefined {
     const target = nextPhase(board.retro.phases, phase);
 
@@ -180,6 +184,7 @@ export function facilitatorPrimary(
             label: t('End session'),
             icon: Flag,
             disabled: busy,
+            shortcut: phaseShortcut,
             onSelect: () => onPhase(target),
         };
     }
@@ -192,6 +197,7 @@ export function facilitatorPrimary(
         icon: ArrowRight,
         iconPosition: 'end',
         disabled: busy,
+        shortcut: phaseShortcut,
         onSelect: () => onPhase(target),
     };
 }
@@ -300,6 +306,7 @@ export function FacilitatorDock({
     const { t } = useTrans();
     const isMobile = useIsMobile();
     const [busy, setBusy] = useState(false);
+    const [platform] = useState(detectPlatform);
     const [barRef, barHeight] = useHeightInRem();
     const discussion = useOptionalDiscussion();
     const { board } = ctx;
@@ -327,6 +334,7 @@ export function FacilitatorDock({
     const tools: FacilitatorTools = {
         t,
         busy,
+        phaseShortcut: platform === 'mac' ? '⌘→' : 'Ctrl+→',
         roti,
         topics:
             discussion && (phase === 'discussing' || phase === 'actions')
@@ -358,6 +366,17 @@ export function FacilitatorDock({
                 ),
             ),
     };
+
+    const primary = hasBar
+        ? facilitatorPrimary(phase, board, tools)
+        : undefined;
+
+    // The main button from the keyboard. Never from a field, where the key
+    // moves the caret; elsewhere it would be "forward" in the history of
+    // the browser, which `useShortcut` prevents.
+    useShortcut('mod+arrowright', () => primary?.onSelect(), {
+        enabled: primary !== undefined && !primary.disabled,
+    });
 
     return (
         <>
@@ -400,7 +419,7 @@ export function FacilitatorDock({
                                 <AnonymityState compact={isMobile} />
                             ) : undefined
                         }
-                        primary={facilitatorPrimary(phase, board, tools)}
+                        primary={primary}
                     />
                 </div>
             )}

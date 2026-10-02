@@ -91,6 +91,38 @@ export function useDragAccessibility(board: Snapshot): {
     };
 }
 
+/** The element of a card that starts its drag: what Space is pressed on. */
+export const DragHandleSelector = '[data-drag-handle]';
+
+/**
+ * Starts the keyboard move of the card a key was pressed on, exactly as
+ * Space on its drag handle: the handle takes the focus and receives the key
+ * the keyboard sensor of the board listens to.
+ */
+export function startKeyboardDrag(target: EventTarget | null): boolean {
+    if (!(target instanceof Element)) {
+        return false;
+    }
+
+    const handle = target.closest<HTMLElement>(DragHandleSelector);
+
+    if (handle === null) {
+        return false;
+    }
+
+    handle.focus();
+    handle.dispatchEvent(
+        new KeyboardEvent('keydown', {
+            key: ' ',
+            code: 'Space',
+            bubbles: true,
+            cancelable: true,
+        }),
+    );
+
+    return true;
+}
+
 export function SortableCard({
     id,
     disabled,
@@ -117,6 +149,7 @@ export function SortableCard({
             ref={setNodeRef}
             data-test={`retro-card-handle-${id}`}
             style={{ transform: CSS.Transform.toString(transform), transition }}
+            data-drag-handle={disabled ? undefined : ''}
             className={cn(handleClass, !disabled && 'cursor-grab')}
             {...attributes}
             {...listeners}
@@ -156,6 +189,7 @@ export function GroupableCard({
                 drop.setNodeRef(node);
             }}
             data-test={`retro-card-handle-${id}`}
+            data-drag-handle={disabled ? undefined : ''}
             className={cn(handleClass, !disabled && 'cursor-grab')}
             {...drag.attributes}
             {...drag.listeners}

@@ -18,6 +18,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useShortcut } from '@/hooks/use-shortcut';
 import { useTrans } from '@/hooks/use-trans';
 import type { GameGifSearchResult } from '@/lib/games/types';
 import {
@@ -40,7 +41,7 @@ import { cn } from '@/lib/utils';
 import { useBoard } from './board-context';
 import { GroupTargetDrawer } from './group-target-drawer';
 import { CommentThreadList, type CommentThreadActions } from './comment-thread';
-import { dragIsolation, type CardDragState } from './dnd';
+import { dragIsolation, startKeyboardDrag, type CardDragState } from './dnd';
 import { useCardVote, useVoteBlockedLabel } from './phase-voting-bar';
 import { AddReaction, optimisticReactions } from './reaction-chips';
 
@@ -280,6 +281,27 @@ export function CardComposer({
                 }
             />
         </form>
+    );
+}
+
+/**
+ * G on the focused card while grouping: its keyboard move starts, as with
+ * Space on its drag handle. One listener for the board, mounted where the
+ * drag is set up.
+ */
+export function useGroupShortcut(): void {
+    const ctx = useBoard();
+
+    useShortcut(
+        'g',
+        (event) => {
+            if (!event.repeat) {
+                startKeyboardDrag(event.target);
+            }
+        },
+        {
+            enabled: ctx.board.retro.phase === 'grouping' && ctx.isEditable,
+        },
     );
 }
 

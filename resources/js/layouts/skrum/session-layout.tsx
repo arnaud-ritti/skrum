@@ -149,6 +149,7 @@ export default function SessionLayout({
             shortcuts={shortcuts}
             palette={false}
             sidebar={hasRail}
+            preference="switch"
         />
     );
 

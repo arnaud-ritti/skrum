@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { GroupNameSuggestionsProvider } from '@/components/retro/board-group';
 import { ColumnsBoard } from '@/components/retro/columns-board';
 import type { BoardCard, BoardColumn } from '@/lib/retro/types';
+import { setSingleKeyShortcuts } from '@/lib/shortcuts/preference';
 import type { BoardContextValue } from '@/components/retro/board-context';
 import { boardContext, renderInBoard, retroSnapshot } from '@/test/retro-board';
 
@@ -436,6 +437,58 @@ describe('ColumnsBoard in Grouping', () => {
         expect(
             container.querySelector('[data-slot="retro-writing-banner"]'),
         ).toBeNull();
+    });
+
+    it('starts the keyboard move of the focused card with G: its handle takes the focus and the Space key', () => {
+        const { container } = grouping();
+        const handle = container.querySelector(
+            '[data-test="retro-card-handle-alone"]',
+        ) as HTMLElement;
+        const article = handle.querySelector(
+            '[data-card-id="alone"]',
+        ) as HTMLElement;
+        const received: string[] = [];
+
+        handle.addEventListener('keydown', (event) => {
+            if (event.target === handle) {
+                received.push(event.code);
+            }
+        });
+
+        expect(handle.hasAttribute('data-drag-handle')).toBe(true);
+
+        fireEvent.keyDown(article, { key: 'g' });
+
+        expect(document.activeElement).toBe(handle);
+        expect(received).toEqual(['Space']);
+    });
+
+    it('leaves G alone on a locked board, away from a card, and while single-key shortcuts are off', () => {
+        const received: string[] = [];
+        const listen = (container: HTMLElement) =>
+            container.addEventListener('keydown', (event) => {
+                if (event.code === 'Space') {
+                    received.push(event.code);
+                }
+            });
+        const cardOf = (container: HTMLElement) =>
+            container.querySelector('[data-card-id="alone"]') as HTMLElement;
+
+        const locked = grouping({ retro: { isLocked: true } });
+
+        listen(locked.container);
+        fireEvent.keyDown(cardOf(locked.container), { key: 'g' });
+        locked.unmount();
+
+        const open = grouping();
+
+        listen(open.container);
+        fireEvent.keyDown(document.body, { key: 'g' });
+        setSingleKeyShortcuts(false);
+        fireEvent.keyDown(cardOf(open.container), { key: 'g' });
+        setSingleKeyShortcuts(true);
+
+        expect(received).toEqual([]);
     });
 
     it('draws a group as a section around its cards, dragged by its lead', () => {
