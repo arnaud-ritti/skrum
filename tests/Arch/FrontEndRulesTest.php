@@ -21,6 +21,7 @@ const FrontEndRuleExemptions = [
         'resources/js/components/skrum/empty-state.tsx' => 'illustration of the design system',
         'resources/js/components/skrum/icebreaker-game-card.tsx' => 'illustration of the design system',
         'resources/js/components/skrum/mood-trend-chart.tsx' => 'chart drawn by hand on the chart tokens',
+        'resources/js/components/skrum/roti-trend-card.tsx' => 'line chart of the ROTI trend, drawn by hand on the chart tokens',
         'resources/js/components/skrum/stat-card.tsx' => 'sparkline of the stat card',
         'resources/js/components/skrum/timer.tsx' => 'progress ring of the timer',
         'resources/js/components/skrum/live-cursor.tsx' => 'cursor arrow coloured per participant',
