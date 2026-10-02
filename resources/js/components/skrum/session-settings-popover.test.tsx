@@ -266,6 +266,17 @@ describe('SessionSettingsPopover', () => {
         );
     });
 
+    it('keeps the apply bar in view while a long panel scrolls', () => {
+        renderWithProviders(<Harness />);
+
+        const footer = screen
+            .getByRole('button', { name: 'Apply' })
+            .closest('[data-slot="session-settings-footer"]');
+
+        expect(footer?.classList.contains('sticky')).toBe(true);
+        expect(footer?.classList.contains('bottom-0')).toBe(true);
+    });
+
     it('puts the given id on each control', () => {
         renderWithProviders(<Harness />);
 
