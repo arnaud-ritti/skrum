@@ -23,9 +23,22 @@ export type WorkspaceTeamMember = {
     avatarUrl: string;
 };
 
+export type WorkspaceTeamActivity = {
+    /** Title of the newest retro that is not completed. */
+    openRetroTitle: string | null;
+    /** When the last completed retro ended. */
+    lastRetroAt: string | null;
+    openPokerGames: number;
+    openActionItems: number;
+    overdueActionItems: number;
+};
+
 export type WorkspaceTeamTile = TeamSummary & {
     membersCount: number;
     members: WorkspaceTeamMember[];
+    /** A manager sees every team; this is true for the ones they belong to. */
+    isMember: boolean;
+    activity: WorkspaceTeamActivity;
 };
 
 export type TeamSummary = {
