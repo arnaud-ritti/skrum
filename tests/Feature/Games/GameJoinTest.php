@@ -33,6 +33,19 @@ it('prefills the name of a signed-in outsider', function () {
         ->assertInertia(fn (Assert $page) => $page->where('suggestedName', 'Olga Outside'));
 });
 
+it('cuts the prefilled name of a signed-in outsider to what the join accepts', function (string $name, string $prefilled) {
+    $room = GameRoom::factory()->linkAccess()->create();
+    $outsider = User::factory()->create(['name' => $name]);
+
+    $this->actingAs($outsider)
+        ->get(route('games.join.show', $room->guest_token))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->where('suggestedName', $prefilled));
+})->with([
+    'longer than the limit' => [str_repeat('é', 60), str_repeat('é', 50)],
+    'cut on a space' => [str_repeat('a', 49).' Outside', str_repeat('a', 49)],
+]);
+
 it('joins as a guest and resumes with the cookie', function () {
     $room = GameRoom::factory()->linkAccess()->create();
     $cookieName = GuestCookie::name(GuestCookie::GameScope, $room->id);

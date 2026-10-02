@@ -129,6 +129,89 @@ describe('GuestJoinPage', () => {
         );
     });
 
+    it('keeps what was typed and shows the error when a refused join comes back with another suggested nickname', () => {
+        const props = {
+            kind: 'retro',
+            invalidTitle: 'Join a retrospective',
+            session: { title: 'Sprint 42 retro' },
+            storeUrl: '/join/abc',
+        } as const;
+
+        const { rerender } = renderWithProviders(
+            <GuestJoinPage {...props} suggestedName="Thoughtful otter" />,
+        );
+
+        fireEvent.change(screen.getByLabelText('Your nickname'), {
+            target: { value: 'Théo' },
+        });
+
+        page.props = {
+            ...page.props,
+            errors: { name: 'The name has already been taken.' },
+        };
+
+        rerender(<GuestJoinPage {...props} suggestedName="Brave heron" />);
+
+        expect(document.querySelector<HTMLInputElement>('#name')?.value).toBe(
+            'Théo',
+        );
+        expect(
+            screen.getByText('The name has already been taken.'),
+        ).toBeTruthy();
+    });
+
+    it('announces the drawn nickname to screen readers', () => {
+        reload.mockImplementation(
+            (options: {
+                onSuccess: (page: { props: Record<string, unknown> }) => void;
+            }) => options.onSuccess({ props: { randomName: 'Brave heron' } }),
+        );
+
+        renderWithProviders(
+            <GuestJoinPage
+                kind="retro"
+                invalidTitle="Join a retrospective"
+                session={{ title: 'Sprint 42 retro' }}
+                storeUrl="/join/abc"
+                suggestedName="Thoughtful otter"
+            />,
+        );
+
+        expect(screen.getByRole('status').textContent).toBe('');
+
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Another random nickname' }),
+        );
+
+        expect(screen.getByRole('status').textContent).toBe('Brave heron');
+    });
+
+    it('draws one nickname at a time', () => {
+        reload.mockImplementation((options: { onStart: () => void }) =>
+            options.onStart(),
+        );
+
+        renderWithProviders(
+            <GuestJoinPage
+                kind="retro"
+                invalidTitle="Join a retrospective"
+                session={{ title: 'Sprint 42 retro' }}
+                storeUrl="/join/abc"
+                suggestedName="Thoughtful otter"
+            />,
+        );
+
+        const draw = screen.getByRole('button', {
+            name: 'Another random nickname',
+        });
+
+        fireEvent.click(draw);
+        fireEvent.click(draw);
+
+        expect(reload).toHaveBeenCalledTimes(1);
+        expect(draw.getAttribute('aria-disabled')).toBe('true');
+    });
+
     it('says that cards are anonymous only for a retro that has anonymous cards', () => {
         const { unmount } = renderWithProviders(
             <GuestJoinPage

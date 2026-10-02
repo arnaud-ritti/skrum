@@ -8,14 +8,18 @@ use App\Models\Retro;
 use App\Models\User;
 use App\Models\Whiteboard;
 use App\Support\Sessions\GuestNames;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\OptionalProp;
 
 class PresentJoinSession
 {
+    /** The longest nickname the four join `store` actions accept. */
+    public const MaxNicknameLength = 50;
+
     /**
-     * The nickname the join form opens with: the name of a signed-in visitor,
-     * a random one otherwise. `randomName` is only computed when the page asks
+     * The nickname the join form opens with: the name of a signed-in visitor
+     * cut to what the join accepts, a random one otherwise. `randomName` is only computed when the page asks
      * for another one.
      *
      * @return array{
@@ -28,7 +32,9 @@ class PresentJoinSession
         $locale = app()->getLocale();
 
         return [
-            'suggestedName' => $visitor?->name ?? GuestNames::random($locale),
+            'suggestedName' => $visitor === null
+                ? GuestNames::random($locale)
+                : rtrim(Str::substr($visitor->name, 0, self::MaxNicknameLength)),
             'randomName' => Inertia::optional(fn (): string => GuestNames::random($locale)),
         ];
     }
