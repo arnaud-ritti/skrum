@@ -3659,5 +3659,7 @@
     "With attributions and a GIF provider": "With attributions and a GIF provider",
     "Nothing to attribute, no \"Powered by\" line": "Nothing to attribute, no \"Powered by\" line",
     "Default: :name": "Default: :name",
-    "The style of the environment applies until you choose another one.": "The style of the environment applies until you choose another one."
+    "The style of the environment applies until you choose another one.": "The style of the environment applies until you choose another one.",
+    "No timer is running.": "No timer is running.",
+    "A timer cannot run longer than two hours.": "A timer cannot run longer than two hours."
 }

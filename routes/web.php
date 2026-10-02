@@ -31,6 +31,7 @@ use App\Http\Controllers\Games\GameScoresController;
 use App\Http\Controllers\Games\GameSharesController;
 use App\Http\Controllers\Games\GameSnapshotsController;
 use App\Http\Controllers\Games\GameSwitchesController;
+use App\Http\Controllers\Games\GameTimerExtensionsController;
 use App\Http\Controllers\Games\GameTimersController;
 use App\Http\Controllers\Games\GameVotesController;
 use App\Http\Controllers\GifsController;
@@ -549,6 +550,7 @@ Route::prefix('games/{room}')
         Route::get('rounds', [GameRoundsController::class, 'index'])->name('games.rounds.index');
         Route::get('rounds/{round}', [GameRoundsController::class, 'show'])->name('games.rounds.show')->whereUuid('round');
         Route::put('timer', [GameTimersController::class, 'update'])->name('games.timer.update');
+        Route::post('timer/extension', [GameTimerExtensionsController::class, 'store'])->name('games.timer.extension.store');
         Route::delete('scores', [GameScoresController::class, 'destroy'])->name('games.scores.destroy');
         Route::post('shares', [GameSharesController::class, 'store'])->middleware('throttle:5,1,shares')->name('games.shares.store');
         Route::post('rounds/{round}/pass', [GameRoundPassesController::class, 'store'])->name('games.rounds.pass.store')->whereUuid('round');

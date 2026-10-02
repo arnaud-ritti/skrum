@@ -3885,5 +3885,7 @@
     "With attributions and a GIF provider": "Con atribuciones y un proveedor de GIF",
     "Nothing to attribute, no \"Powered by\" line": "Nada que atribuir, sin la línea «Con la tecnología de»",
     "Default: :name": "Predeterminado: :name",
-    "The style of the environment applies until you choose another one.": "Se aplica el estilo del entorno hasta que elija otro."
+    "The style of the environment applies until you choose another one.": "Se aplica el estilo del entorno hasta que elija otro.",
+    "No timer is running.": "No hay ningún temporizador en marcha.",
+    "A timer cannot run longer than two hours.": "Un temporizador no puede durar más de dos horas."
 }

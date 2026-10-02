@@ -3885,5 +3885,7 @@
     "With attributions and a GIF provider": "Avec attributions et un fournisseur de GIF",
     "Nothing to attribute, no \"Powered by\" line": "Rien à attribuer, sans ligne « Propulsé par »",
     "Default: :name": "Par défaut : :name",
-    "The style of the environment applies until you choose another one.": "Le style de l'environnement s'applique tant que vous n'en choisissez pas un autre."
+    "The style of the environment applies until you choose another one.": "Le style de l'environnement s'applique tant que vous n'en choisissez pas un autre.",
+    "No timer is running.": "Aucun minuteur n'est en cours.",
+    "A timer cannot run longer than two hours.": "Un minuteur ne peut pas durer plus de deux heures."
 }
