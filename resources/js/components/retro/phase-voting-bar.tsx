@@ -9,6 +9,7 @@ import { useTrans } from '@/hooks/use-trans';
 import { votingProgress, type CardVoting } from '@/lib/retro/adapters';
 import { retroRequest } from '@/lib/retro/api';
 import type { BoardCard } from '@/lib/retro/types';
+import { cn } from '@/lib/utils';
 import { useBoard } from './board-context';
 
 type Tally = {
@@ -105,38 +106,58 @@ export type PhaseVotingBarProps = {
     finished?: ReactNode;
     /** Place of the participant's "I have finished voting" (RT-4). */
     done?: ReactNode;
+    /**
+     * On a phone the bar is cut in two: the budget stays stuck above the
+     * column tabs, the rest scrolls with the cards.
+     */
+    part?: 'all' | 'budget' | 'progress';
 };
 
 /**
  * The line above the columns in Voting: the votes I have left, whether the
  * totals are hidden, and how far the room is.
  */
-export function PhaseVotingBar({ cap, finished, done }: PhaseVotingBarProps) {
+export function PhaseVotingBar({
+    cap,
+    finished,
+    done,
+    part = 'all',
+}: PhaseVotingBarProps) {
     const { board } = useBoard();
     const { t } = useTrans();
     const { cast, total } = votingProgress(board);
     const budget = board.retro.votesPerParticipant;
     const remaining = board.viewer.remainingVotes;
+    const showsBudget = part !== 'progress';
+    const showsProgress = part !== 'budget';
 
     return (
         <div
             data-slot="retro-voting-bar"
-            className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-2 px-4 pt-3 md:px-6"
+            data-part={part}
+            className={cn(
+                'flex shrink-0 flex-wrap items-center gap-x-3 gap-y-2 px-4 md:px-6',
+                part !== 'budget' && 'pt-3',
+            )}
         >
-            <VoteBudget
-                total={budget}
-                remaining={remaining}
-                detail={
-                    <>
-                        {t('of :total', { total: budget })}
-                        {cap}
-                    </>
-                }
-            />
-            <span className="sr-only">
-                {t('Votes left: :count', { count: remaining })}
-            </span>
-            {board.retro.hideVoteCounts && (
+            {showsBudget && (
+                <>
+                    <VoteBudget
+                        total={budget}
+                        remaining={remaining}
+                        detail={
+                            <>
+                                {t('of :total', { total: budget })}
+                                {cap}
+                            </>
+                        }
+                    />
+                    <span className="sr-only">
+                        {t('Votes left: :count', { count: remaining })}
+                    </span>
+                </>
+            )}
+            {showsProgress && board.retro.hideVoteCounts && (
                 <Badge
                     variant="info"
                     shape="pill"
@@ -149,29 +170,33 @@ export function PhaseVotingBar({ cap, finished, done }: PhaseVotingBarProps) {
                     </span>
                 </Badge>
             )}
-            <span className="grow" />
-            <div
-                data-slot="retro-voting-progress"
-                className="w-72 max-w-full min-w-0"
-            >
-                <Progress
-                    value={cast}
-                    max={total}
-                    aria-label={t('Votes cast')}
-                    valueLabel={t(
-                        cast === 1
-                            ? ':cast of :total vote cast'
-                            : ':cast of :total votes cast',
-                        { cast, total },
-                    )}
-                />
-            </div>
-            {finished !== undefined && finished !== null && (
+            {showsProgress && (
+                <>
+                    <span className="grow" />
+                    <div
+                        data-slot="retro-voting-progress"
+                        className="w-72 max-w-full min-w-0"
+                    >
+                        <Progress
+                            value={cast}
+                            max={total}
+                            aria-label={t('Votes cast')}
+                            valueLabel={t(
+                                cast === 1
+                                    ? ':cast of :total vote cast'
+                                    : ':cast of :total votes cast',
+                                { cast, total },
+                            )}
+                        />
+                    </div>
+                </>
+            )}
+            {showsProgress && finished !== undefined && finished !== null && (
                 <div data-slot="retro-voting-finished" className="min-w-0">
                     {finished}
                 </div>
             )}
-            {done !== undefined && done !== null && (
+            {showsProgress && done !== undefined && done !== null && (
                 <div data-slot="retro-voting-done" className="min-w-0">
                     {done}
                 </div>

@@ -1,4 +1,4 @@
-import { EyeOff, GripVertical, ImageOff } from 'lucide-react';
+import { EyeOff, GripVertical, ImageOff, Layers } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
 import { toast } from 'sonner';
@@ -17,6 +17,7 @@ import { columnColorClass } from '@/components/skrum/retro-template-picker';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useTrans } from '@/hooks/use-trans';
 import type { GameGifSearchResult } from '@/lib/games/types';
 import {
@@ -37,6 +38,7 @@ import type {
 } from '@/lib/retro/types';
 import { cn } from '@/lib/utils';
 import { useBoard } from './board-context';
+import { GroupTargetDrawer } from './group-target-drawer';
 import { CommentThreadList, type CommentThreadActions } from './comment-thread';
 import { dragIsolation, type CardDragState } from './dnd';
 import { useCardVote, useVoteBlockedLabel } from './phase-voting-bar';
@@ -169,9 +171,14 @@ function draftGif(gif: PickedGif | null) {
 export function CardComposer({
     columnId,
     color,
+    autoFocus = false,
+    onAdded,
 }: {
     columnId: string;
     color: ColumnColor;
+    /** The editor takes the focus as soon as it shows: the composer of a drawer. */
+    autoFocus?: boolean;
+    onAdded?: () => void;
 }) {
     const ctx = useBoard();
     const { t } = useTrans();
@@ -225,6 +232,7 @@ export function CardComposer({
             writersCount: response.writersCount,
         });
         reset();
+        onAdded?.();
     };
 
     return (
@@ -252,7 +260,7 @@ export function CardComposer({
                 color={color}
                 gif={draftGif(gif)}
                 editing
-                autoFocusEditor={round > 0}
+                autoFocusEditor={autoFocus || round > 0}
                 maxLength={CardMaxLength}
                 labels={{ editor: t('Add a card…') }}
                 className="not-focus-within:border-(--col-border) not-focus-within:ring-0"
@@ -492,6 +500,16 @@ export function BoardCard({
     const { retro, viewer } = ctx.board;
     const { phase } = retro;
     const articleRef = useRef<HTMLElement>(null);
+    const isMobile = useIsMobile();
+    const [choosingGroup, setChoosingGroup] = useState(false);
+    // On a phone a card is not dragged onto another: its menu groups it.
+    const offersGrouping =
+        isMobile &&
+        phase === 'grouping' &&
+        ctx.isEditable &&
+        !inGroup &&
+        !isChild &&
+        !card.hidden;
     const [editing, setEditing] = useState(false);
     const [wasEditable, setWasEditable] = useState(props.canEdit);
     const [gif, setGif] = useState<PickedGif | null>(null);
@@ -745,6 +763,18 @@ export function BoardCard({
                     engagement.showsComments ? comments.toggle : undefined
                 }
                 footer={footer}
+                menuEntries={
+                    offersGrouping
+                        ? [
+                              {
+                                  type: 'item',
+                                  label: t('Add to group…'),
+                                  icon: Layers,
+                                  onSelect: () => setChoosingGroup(true),
+                              },
+                          ]
+                        : undefined
+                }
                 editorTools={
                     <>
                         <GifTools gif={gif} onChange={setGif} />
@@ -792,6 +822,13 @@ export function BoardCard({
                     gif={card.gif}
                     open={gifOpen}
                     onOpenChange={setGifOpen}
+                />
+            )}
+            {offersGrouping && (
+                <GroupTargetDrawer
+                    card={card}
+                    open={choosingGroup}
+                    onOpenChange={setChoosingGroup}
                 />
             )}
         </>

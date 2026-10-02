@@ -17,6 +17,13 @@ import {
 import type { ActionItemOwner } from '@/components/skrum/action-item';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+    Drawer,
+    DrawerContent,
+    DrawerHeader,
+    DrawerTitle,
+} from '@/components/ui/drawer';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useTrans } from '@/hooks/use-trans';
 import { boardActionItemEndpoints } from '@/lib/action-items/endpoints';
 import { boardActionItemViewer } from '@/lib/action-items/permissions';
@@ -105,7 +112,9 @@ export function ActionItemsList({
     // Named by its heading: the suite finds the panel as the one aside
     // without an `aria-label`.
     const titleId = useId();
+    const isMobile = useIsMobile();
     const [creating, setCreating] = useState(true);
+    const [drawerOpen, setDrawerOpen] = useState(false);
     const [createdId, setCreatedId] = useState<string | null>(null);
     const [deleting, setDeleting] = useState<ActionItemPayload | null>(null);
     const [ticket, setTicket] = useState<{
@@ -188,13 +197,14 @@ export function ActionItemsList({
               ticket.item);
     const count = board.actionItems.length + (more?.count ?? 0);
 
-    const form = (isPhase || creating) && (
+    const form = (isMobile || isPhase || creating) && (
         <ItemCreateForm
+            layout={isMobile ? 'stacked' : 'inline'}
             members={members}
             disabled={!editable}
             showAnonymousNotice={board.retro.isAnonymous}
             linkedTo={
-                isPhase ? (
+                isPhase && !isMobile ? (
                     <>
                         <span className="truncate">{t('Quick add')}</span>
                         {linkedTo}
@@ -204,10 +214,59 @@ export function ActionItemsList({
                 )
             }
             exportSources={scope === null ? [] : board.exportSources}
-            onCreate={create}
+            onCreate={
+                isMobile
+                    ? async (values) => {
+                          const created = await create(values);
+
+                          if (created !== false) {
+                              setDrawerOpen(false);
+                          }
+
+                          return created;
+                      }
+                    : create
+            }
             onCreatedWithTicket={(item, source) => setTicket({ item, source })}
-            onCancel={isPhase ? undefined : () => setCreating(false)}
+            onCancel={
+                isPhase || isMobile ? undefined : () => setCreating(false)
+            }
         />
+    );
+    // On a phone the form is a drawer, opened from one button.
+    const formPlace = isMobile ? (
+        <>
+            {isPhase && (
+                <Button
+                    type="button"
+                    size="lg"
+                    aria-haspopup="dialog"
+                    aria-expanded={drawerOpen}
+                    className="w-full min-w-0"
+                    onClick={() => setDrawerOpen(true)}
+                >
+                    <Plus aria-hidden />
+                    <span className="truncate">{t('Create an action')}</span>
+                </Button>
+            )}
+            <Drawer
+                open={drawerOpen && !ctx.sessionExpired}
+                onOpenChange={setDrawerOpen}
+            >
+                <DrawerContent
+                    aria-describedby={undefined}
+                    data-slot="retro-action-drawer"
+                    className="overflow-y-auto"
+                >
+                    <DrawerHeader className="pr-10 text-left">
+                        <DrawerTitle>{t('New action item')}</DrawerTitle>
+                    </DrawerHeader>
+                    {form}
+                </DrawerContent>
+            </Drawer>
+        </>
+    ) : (
+        form
     );
 
     const items =
@@ -279,13 +338,20 @@ export function ActionItemsList({
                             type="button"
                             size="sm"
                             variant="outline"
-                            aria-expanded={creating}
+                            aria-haspopup={isMobile ? 'dialog' : undefined}
+                            aria-expanded={isMobile ? drawerOpen : creating}
                             className={cn(
                                 'max-w-full min-w-0',
-                                creating &&
+                                isMobile && 'h-11',
+                                !isMobile &&
+                                    creating &&
                                     'border-primary/45 bg-skrum-primary-soft text-skrum-primary-text hover:bg-skrum-primary-soft',
                             )}
-                            onClick={() => setCreating((current) => !current)}
+                            onClick={() =>
+                                isMobile
+                                    ? setDrawerOpen(true)
+                                    : setCreating((current) => !current)
+                            }
                         >
                             <Plus aria-hidden />
                             <span className="truncate">
@@ -303,9 +369,9 @@ export function ActionItemsList({
                 )}
             </div>
             <ActionItemMutationsContext value={mutations.value}>
-                {isPhase && form}
+                {isPhase && formPlace}
                 {items}
-                {!isPhase && form}
+                {!isPhase && formPlace}
                 {ticket !== null && ticketItem !== null && scope !== null && (
                     <ItemExportDialog
                         item={ticketItem}

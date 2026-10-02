@@ -15,6 +15,7 @@ import { CardGroup } from '@/components/skrum/card-group';
 import { CardVotes } from '@/components/skrum/vote-dots';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useTrans } from '@/hooks/use-trans';
 import {
     cardVoting,
@@ -176,6 +177,7 @@ export function SuggestGroupNames() {
 export function GroupingBanner() {
     const ctx = useBoard();
     const { t } = useTrans();
+    const isMobile = useIsMobile();
     const { groups, cards } = groupingProgress(ctx.board);
     const online = ctx.online.length;
 
@@ -187,9 +189,13 @@ export function GroupingBanner() {
             <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-body-sm text-muted-foreground">
                 <Combine className="size-4 shrink-0" aria-hidden />
                 <p className="min-w-48 flex-1">
-                    {t(
-                        'Drag a card onto another to group them. Click a title to rename it.',
-                    )}
+                    {isMobile
+                        ? t(
+                              'Open the menu of a card and choose “Add to group…”. Tap a title to rename it.',
+                          )
+                        : t(
+                              'Drag a card onto another to group them. Click a title to rename it.',
+                          )}
                 </p>
                 <Badge
                     variant="muted"

@@ -842,3 +842,63 @@ Not listed, imposed by the mockup, 2-D14 or the components the plan names:
 | `Plan13d` `P13d-11a` | order: Actions created, ROTI, Top topics, Games we played | mockup: actions, then ROTI |
 
 New: `[P18e-02-04]`, `[P18e-02-04b]`, `[P18e-02-07]`, `[P18e-02-15]`. No test was removed; the Vitest file `results/roti-section.test.tsx` went with its component and its two cases are in `session-end.test.tsx`.
+
+## Task R13 — Mobile board
+
+Below `md` (767 px, `useIsMobile`) the board is a phone board. Nothing changes from `md`.
+
+### Parity (brief 02, commit R13; every row of R4 to R12 keeps its control on a phone)
+
+| Feature | On a phone | Done |
+|---|---|---|
+| Columns (Health check, Writing, Grouping, Voting, the Board tab of a completed retro) | `ColumnTabs` (`skrum/column-tabs.tsx`): one tab per column with its colour and its count, the line of dots, one column on screen (`role="tabpanel"`, `[data-slot="retro-columns"]`). Arrows, Home and End move between tabs | yes |
+| Swipe between columns (M10) | `useSwipe` (`hooks/use-swipe.ts`) on the panel: past a quarter of its width, more horizontal than vertical; ignored while a card is dragged, from a text field and from a dialog opened from the panel. The new column slides in; no slide with `prefers-reduced-motion` | yes |
+| Column menu, description, lock, `data-test="retro-column-{id}"` | the `RetroColumn` of the tab keeps its header | yes |
+| Add a card | round button `[data-slot="retro-add-card"]`, "Add a card in :column", opens a drawer with the composer (GIF tools included); it closes on the card added. `N` on the column opens it too | yes |
+| Add a column (facilitator) | last tab "Add column" | yes |
+| Surveys column (old component until S1) | first tab "Surveys" when the retro has one | yes |
+| Group cards | a card alone has "Add to group…" in its menu: a drawer lists the groups, then the lone cards of its column (`group-target-drawer.tsx`, same request as a drop). The banner says so instead of "Drag a card…" | yes |
+| Votes | the budget stays stuck above the tabs; the hidden-totals pill and the progress scroll with the cards; the vote and its take-back are 44 px targets (`RetroCard`, `CardVotes`) | yes |
+| Highlighted card | its column comes in front | yes |
+| Discussing: topics list | a selector "n/m · title" stuck at the top opens the `TopicsList` in a drawer; a swipe on the topic goes to the next or the previous one; "Previous topic" / "Next topic" stay | yes |
+| Discussing and Actions: create an action item | "Create an action" opens a drawer: title, assignee as avatar chips (radios), priority as three segments, due date, repeat, ticket; it closes on the item created (M10) | yes |
+| Actions: topics | folded behind their heading (open at first) | yes |
+| Facilitator bar, reaction bar | `FacilitatorBar compact`, `SessionReactions compact` (R3) | yes |
+| Captures at 390 | every phase (`[P18e-R3-01]`), and the three drawers (`[P18e-R13-01]`, `retro-phone-*`) | yes |
+
+### Places left
+
+None new. The slots of R4 to R12 (`typing`, `moving`, `cap`, `finished`, `done`, `timer`, `notes`, `linkedTo`, `topicMeta`) are passed through unchanged; `PhoneColumns` takes the Writing and Grouping banners as its `banner`.
+
+### Differences with the mockup
+
+Captures `retro-board-*-390-*`, `retro-phone-add-card-*`, `retro-phone-topics-*`, `retro-phone-action-*` and `design-system-column-tabs-*` against `MobileRetro/preview.html` and the "Mobile" line of the README of each phase. Compared by the implementer on light 390 EN (Writing, Voting, Actions, the three drawers) and dark 390 FR (Writing, Grouping, Discussing, the topics drawer).
+
+| Difference | Covered by |
+|---|---|
+| Header: no phase subtitle under the title ("Atlas · 7 online"), the sidebar button of the frame shows, presence is the counter alone | Task 0.3 / 0.4 (`SessionTitle` takes one line, K17); no row — reported in R3 |
+| The stepper is the phone form of `PhaseStepper` ("Phase n/m", the label, Previous, Next, a progress bar) and not the compact rail of markers | `PhaseStepper/README.md` (the rail needs 36rem); the suite presses "Next". No row — reported in R3 |
+| The column of a tab keeps its own header (title, count, menu): the title is said twice | parity: column menu, description, lock |
+| No "… is writing" line, no typing ring on an avatar | D-10 |
+| The facilitator bar has no "Reveal"; its main button names the next phase | D-10; R3 |
+| Votes: a button with the total and a "−" beside it, both 44 px, not the "− n +" stepper; the budget is the `VoteBudget` pill, not a full-width bar; no "I have finished voting" | D-11 for the last; the first two: no row — the 18c components, reported |
+| "Totals hidden until the end of the vote" is a pill under the tabs, not a line above the footer | R8 |
+| Actions: the topics are the cards of R10 (rank, votes, excerpt), without the "n actions" badge | D-12 (action count per topic) |
+| Action drawer: no "From « topic » · n votes" line | D-12 (the `linkedTo` place) |
+| Action drawer: the title is a one-line field (Enter creates), the due date is a date field with "Repeat" beside it, not "End of sprint 43" with "Change" | N: no sprint (TM-1); parity rows of R8b |
+| Action drawer: the ticket is the checkbox or the select of R8b ("Create the ticket in :provider"), not a switch with the project | R8b; D-13 |
+| Action drawer: an "Unassigned" chip before the people | parity: an item may have no assignee |
+| Discussing: the notes and the action items are not in a tabbed drawer: the panels stay under the topic, only the form is a drawer | D-12 (no notes); the plan names the topics drawer and the action drawer |
+| Grouping: "Add to group…" is in the menu of the card, not behind a long press; no duplicate suggestion | D-10 for the suggestion; the long press: no row — a menu entry is reachable from the keyboard (rule 5) |
+| "Add survey" and "Previous action items" sit above the tabs | transitional (S1); no mockup for the carried items |
+| The reaction bar floats above the facilitator bar | ruling 27 |
+
+### Browser tests changed
+
+Not listed by the plan (it says "none: the suite runs at desktop width"), imposed by the topics drawer the plan asks for:
+
+| Test | Change | Cause |
+|---|---|---|
+| `Plan04` `P04-15a` | at 375 the topics are no longer in `main`: the test asserts the selector `[data-slot="retro-topics-selector"]`, the panel under it, and the list inside the drawer; at 1440 it also asserts the list is back in `main` and the selector gone | plan R13: "the topics list of R9 as a drawer"; `ScreenRetroDiscussion` README, "Mobile" |
+
+New: `[P18e-02-06]`, `[P18e-R13-01]`. No test was removed.

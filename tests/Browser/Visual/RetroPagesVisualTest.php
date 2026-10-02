@@ -23,7 +23,9 @@ use App\Models\User;
 use App\Models\Vote;
 use App\Models\Workspace;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\RateLimiter;
+use Tests\Browser\Support\CaptureFile;
 
 function p18eRetroVisualRetro(): Retro
 {
@@ -384,4 +386,54 @@ it('[P18e-R3-01] renders the board in its session shell without overflow', funct
     'facilitator, roti, has voted' => ['retro-board-roti', RetroPhase::Roti, true, false],
     'participant, roti, thinking, locked' => ['retro-board-roti-participant', RetroPhase::Roti, false, true],
     'facilitator, completed' => ['retro-board-completed', RetroPhase::Completed, true, false],
+]);
+
+it('[P18e-R13-01] renders the drawers of the phone board at 390 without overflow', function (string $name, RetroPhase $phase, string $trigger, string $drawer) {
+    config(['app.name' => 'Skrum', 'app.key' => 'base64:'.base64_encode(str_repeat('v', 32))]);
+
+    [$retro, $facilitator] = p18eRetroVisualBoard($phase);
+
+    RateLimiter::for('login', fn (): Limit => Limit::none());
+    File::ensureDirectoryExists(base_path('tests/visual/__screenshots__'));
+
+    $settle = '() => document.fonts.ready'
+        .'.then(() => Promise.allSettled(document.getAnimations().filter((animation) => Number.isFinite(animation.effect?.getComputedTiming().endTime)).map((animation) => animation.finished)))'
+        .'.then(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve(true)))))';
+
+    foreach (['light', 'dark'] as $theme) {
+        foreach (['en' => 'en-US', 'fr' => 'fr-FR'] as $locale => $browserLocale) {
+            User::query()->whereKey($facilitator->id)->update(['locale' => $locale]);
+
+            $page = visit('/login', ['colorScheme' => $theme, 'locale' => $browserLocale, 'reducedMotion' => 'reduce']);
+
+            $page->fill('#email', $facilitator->email)
+                ->fill('#password', 'password')
+                ->click('@login-button')
+                ->assertPathIsNot('/login');
+
+            $page->navigate("/retros/{$retro->id}");
+
+            $page->assertAttribute('[data-realtime]', 'data-realtime', 'connected')
+                ->resize(390, 844)
+                ->click($trigger)
+                ->assertPresent($drawer);
+
+            $page->script($settle);
+
+            $label = "{$name}-{$theme}-390-{$locale}";
+
+            expect($this->overflowingElements($page))->toBe([], "Horizontal overflow in {$label}");
+
+            $page->screenshot(fullPage: true, filename: "{$label}.candidate");
+
+            CaptureFile::replaceWhenPictureDiffers(
+                base_path("tests/Browser/Screenshots/{$label}.candidate"),
+                base_path("tests/visual/__screenshots__/{$label}.png"),
+            );
+        }
+    }
+})->with([
+    'the card of the round button, writing' => ['retro-phone-add-card', RetroPhase::Writing, '[data-slot="retro-add-card"]', '[data-slot="retro-add-card-drawer"] textarea'],
+    'the topics, discussing' => ['retro-phone-topics', RetroPhase::Discussing, '[data-slot="retro-topics-selector"] button', '[data-slot="retro-topics-drawer"] [data-test="retro-topics"]'],
+    'a new action, actions' => ['retro-phone-action', RetroPhase::Actions, '[data-test="retro-action-items-panel"] button[aria-haspopup="dialog"]', '[data-slot="retro-action-drawer"] [data-slot="assignee-chips"]'],
 ]);

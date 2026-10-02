@@ -15,6 +15,12 @@ import { boardContext, renderInBoard, retroSnapshot } from '@/test/retro-board';
 
 const retroRequest = vi.hoisted(() => vi.fn());
 
+const phone = vi.hoisted(() => ({ on: false }));
+
+vi.mock('@/hooks/use-mobile', () => ({
+    useIsMobile: () => phone.on,
+}));
+
 vi.mock('@/lib/retro/api', async (importOriginal) => ({
     ...(await importOriginal<typeof import('@/lib/retro/api')>()),
     retroRequest,
@@ -141,6 +147,7 @@ beforeAll(() => {
 });
 
 beforeEach(() => {
+    phone.on = false;
     retroRequest.mockReset();
     retroRequest.mockResolvedValue(null);
 });
@@ -512,5 +519,94 @@ describe('PresentationOverlay', () => {
         expect(screen.queryByRole('dialog')).toBeNull();
         expect(highlightCalls()).toHaveLength(0);
         expect(document.querySelector('#card-slow')).not.toBeNull();
+    });
+});
+
+describe('PhaseDiscussing on a phone', () => {
+    beforeEach(() => {
+        phone.on = true;
+    });
+
+    function swipe(container: HTMLElement, from: number, to: number): void {
+        const stage = container.querySelector(
+            '[data-slot="retro-topic-stage"]',
+        ) as HTMLElement;
+
+        stage.getBoundingClientRect = () =>
+            ({ width: 390, height: 600, left: 0, top: 0 }) as DOMRect;
+        fireEvent.pointerDown(stage, { clientX: from, clientY: 300 });
+        fireEvent.pointerUp(stage, { clientX: to, clientY: 300 });
+    }
+
+    it('shows the topic in front and keeps the list behind a selector that says where one is', () => {
+        const { container } = discussion();
+        const selector = screen.getByRole('button', {
+            name: /Topic 1 of 3\s*Slow CI/,
+        });
+
+        expect(selector.getAttribute('aria-expanded')).toBe('false');
+        expect(selector.textContent).toContain('1/3');
+        expect(
+            container.querySelector('[data-test="retro-topics"]'),
+        ).toBeNull();
+        expect(container.querySelector('#card-slow')).toBeTruthy();
+    });
+
+    it('opens the topics in a drawer, and closes it on the topic chosen', async () => {
+        const { container } = discussion({
+            viewer: { isFacilitator: false },
+        });
+
+        fireEvent.click(screen.getByRole('button', { name: /Topic 1 of 3/ }));
+
+        const drawer = await screen.findByRole('dialog', { name: 'Topics' });
+
+        expect(
+            [...drawer.querySelectorAll('[data-test="retro-topics"] > li')].map(
+                (item) => item.getAttribute('data-topic-id'),
+            ),
+        ).toEqual(['slow', 'scope', 'flaky']);
+
+        fireEvent.click(
+            drawer.querySelector(
+                '[data-test="retro-topics"] > li[data-topic-id="flaky"] button',
+            ) as HTMLElement,
+        );
+
+        await waitFor(() =>
+            expect(screen.queryByRole('dialog', { name: 'Topics' })).toBeNull(),
+        );
+        expect(
+            screen.getByRole('button', { name: /Topic 3 of 3\s*Flaky tests/ }),
+        ).toBeTruthy();
+        expect(container.querySelector('#card-flaky')).toBeTruthy();
+    });
+
+    it('moves to the next and the previous topic on a swipe', () => {
+        const { container } = discussion({
+            viewer: { isFacilitator: false },
+        });
+
+        swipe(container, 300, 150);
+        expect(
+            screen.getByRole('button', { name: /Topic 2 of 3/ }),
+        ).toBeTruthy();
+
+        swipe(container, 100, 250);
+        expect(
+            screen.getByRole('button', { name: /Topic 1 of 3/ }),
+        ).toBeTruthy();
+
+        swipe(container, 100, 250);
+        expect(
+            screen.getByRole('button', { name: /Topic 1 of 3/ }),
+        ).toBeTruthy();
+    });
+
+    it('has no selector when the retro has no card', () => {
+        discussion({ cards: [] });
+
+        expect(screen.queryByRole('button', { name: /^Topic/ })).toBeNull();
+        expect(screen.getByText('No topics to discuss.')).toBeTruthy();
     });
 });

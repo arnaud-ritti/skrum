@@ -668,18 +668,26 @@ it('[P04-15a] reflows the board between 375px and 1440px', function () {
     $stepperIsInTheHeader = "document.querySelector('header {$stepper}') !== null";
     $panelIsBelowTopics = "document.querySelector('{$panel}').getBoundingClientRect().top >= document.querySelector('{$topics}').getBoundingClientRect().bottom";
     $panelIsBesideTopics = "document.querySelector('{$panel}').getBoundingClientRect().left >= document.querySelector('{$topics}').getBoundingClientRect().right";
+    $selector = '[data-slot="retro-topics-selector"]';
+    $panelIsBelowSelector = "document.querySelector('{$panel}').getBoundingClientRect().top >= document.querySelector('{$selector}').getBoundingClientRect().bottom";
 
     $page = $this->signIn($bob, "/retros/{$retro->id}");
 
     $page->resize(375, 812)
         ->assertPresent($panel)
-        ->assertPresent("main {$topics}")
+        ->assertNotPresent("main {$topics}")
+        ->assertPresent("main {$selector}")
         ->assertScript($pageScrollsSideways, false)
         ->assertScript($stepperIsBelowTheHeader, true)
-        ->assertScript($panelIsBelowTopics, true)
-        ->assertScript($panelIsBesideTopics, false);
+        ->assertScript($panelIsBelowSelector, true)
+        ->click("{$selector} button")
+        ->assertPresent("[data-slot=\"retro-topics-drawer\"] {$topics}")
+        ->keys('[data-slot="retro-topics-drawer"]', 'Escape')
+        ->assertNotPresent('[data-slot="retro-topics-drawer"]');
 
     $page->resize(1440, 900)
+        ->assertPresent("main {$topics}")
+        ->assertNotPresent($selector)
         ->assertScript($stepperIsInTheHeader, true)
         ->assertScript($pageScrollsSideways, false)
         ->assertScript($panelIsBesideTopics, true)

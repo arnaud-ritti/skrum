@@ -1,9 +1,10 @@
-import { Crosshair } from 'lucide-react';
+import { ChevronDown, Crosshair } from 'lucide-react';
 import { useId, useState } from 'react';
 import type { ReactNode } from 'react';
 import { EmptyState } from '@/components/skrum/empty-state';
 import { columnColorClass } from '@/components/skrum/retro-template-picker';
 import { Badge } from '@/components/ui/badge';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useTrans } from '@/hooks/use-trans';
 import type { Topic } from '@/lib/retro/topics';
 import type {
@@ -156,8 +157,12 @@ export function PhaseActions({
     const { board } = useBoard();
     const { t } = useTrans();
     const { topics, shared, busy, goTo } = useDiscussion();
+    const isMobile = useIsMobile();
     const [stage, setStage] = useState<HTMLElement | null>(null);
+    const [topicsOpen, setTopicsOpen] = useState(true);
     const titleId = useId();
+    const listId = useId();
+    const showsTopics = !isMobile || topicsOpen;
     const { isFacilitator } = board.viewer;
     const carried = showsCarriedItems(board) ? board.carriedActionItems : [];
 
@@ -175,59 +180,94 @@ export function PhaseActions({
                 <div className="flex min-w-0 items-baseline justify-between gap-2">
                     <h2
                         id={titleId}
-                        className="min-w-0 truncate text-lg font-title"
+                        className={cn(
+                            'min-w-0 text-lg font-title',
+                            isMobile ? 'flex-1' : 'truncate',
+                        )}
                     >
-                        {t('Most voted topics')}
+                        {isMobile ? (
+                            <button
+                                type="button"
+                                aria-expanded={topicsOpen}
+                                aria-controls={listId}
+                                className="flex min-h-11 max-w-full min-w-0 items-center gap-2 rounded-md outline-ring focus-visible:outline-2 focus-visible:outline-offset-2"
+                                onClick={() =>
+                                    setTopicsOpen((current) => !current)
+                                }
+                            >
+                                <span className="truncate">
+                                    {t('Most voted topics')}
+                                </span>
+                                <ChevronDown
+                                    aria-hidden
+                                    className={cn(
+                                        'size-4 shrink-0 text-muted-foreground transition-transform duration-140 ease-standard motion-reduce:transition-none',
+                                        topicsOpen && 'rotate-180',
+                                    )}
+                                />
+                            </button>
+                        ) : (
+                            t('Most voted topics')
+                        )}
                     </h2>
                     <span className="shrink-0 text-xs text-muted-foreground">
                         {t('Sorted by votes')}
                     </span>
                 </div>
-                {topics.length === 0 ? (
-                    <EmptyState
-                        module="retro"
-                        illustration={false}
-                        title={t('No topics to discuss.')}
-                        description={t('Nobody wrote a card in this retro.')}
-                    />
-                ) : (
-                    <ol
-                        data-test="retro-topics"
-                        className="flex min-w-0 flex-col gap-2"
-                    >
-                        {topics.map((topic, index) => {
-                            const focused = topic.id === shared?.id;
+                <div id={listId} hidden={!showsTopics} className="min-w-0">
+                    {topics.length === 0 ? (
+                        <EmptyState
+                            module="retro"
+                            illustration={false}
+                            title={t('No topics to discuss.')}
+                            description={t(
+                                'Nobody wrote a card in this retro.',
+                            )}
+                        />
+                    ) : (
+                        <ol
+                            data-test="retro-topics"
+                            className="flex min-w-0 flex-col gap-2"
+                        >
+                            {topics.map((topic, index) => {
+                                const focused = topic.id === shared?.id;
 
-                            return (
-                                <li
-                                    key={topic.id}
-                                    data-topic-id={topic.id}
-                                    data-shared={focused || undefined}
-                                    aria-current={focused ? 'true' : undefined}
-                                    className="min-w-0"
-                                >
-                                    <TopicCard
-                                        topic={topic}
-                                        rank={index + 1}
-                                        color={topicColor(topic, board.columns)}
-                                        excerpt={topicExcerpt(
-                                            topic,
-                                            board.cards,
-                                        )}
-                                        focused={focused}
-                                        disabled={busy}
-                                        onSelect={
-                                            isFacilitator
-                                                ? () => goTo(topic)
-                                                : undefined
+                                return (
+                                    <li
+                                        key={topic.id}
+                                        data-topic-id={topic.id}
+                                        data-shared={focused || undefined}
+                                        aria-current={
+                                            focused ? 'true' : undefined
                                         }
-                                        meta={topicMeta?.(topic)}
-                                    />
-                                </li>
-                            );
-                        })}
-                    </ol>
-                )}
+                                        className="min-w-0"
+                                    >
+                                        <TopicCard
+                                            topic={topic}
+                                            rank={index + 1}
+                                            color={topicColor(
+                                                topic,
+                                                board.columns,
+                                            )}
+                                            excerpt={topicExcerpt(
+                                                topic,
+                                                board.cards,
+                                            )}
+                                            focused={focused}
+                                            disabled={busy}
+                                            onSelect={
+                                                isFacilitator
+                                                    ? () => goTo(topic)
+                                                    : undefined
+                                            }
+                                            meta={topicMeta?.(topic)}
+                                        />
+                                    </li>
+                                );
+                            })}
+                        </ol>
+                    )}
+                </div>
             </section>
             <div
                 data-slot="retro-actions-panels"

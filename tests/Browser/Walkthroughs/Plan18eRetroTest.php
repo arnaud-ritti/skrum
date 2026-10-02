@@ -926,6 +926,118 @@ it('[P18e-02-04b] shows no duration at the end of a retro without a start time',
     expect($retro->fresh()->started_at)->toBeNull();
 });
 
+it('[P18e-02-06] shows one column per tab at 390, changes it on a swipe and from the keyboard, adds a card from the round button, takes a vote, and opens the topics and the action item in a drawer', function () {
+    [$retro, $alice] = p18eShellBoard();
+    [$start, $stop, $continue] = $retro->columns()->orderBy('position')->get()->all();
+    $tabs = '[role="tablist"][aria-label="Columns"]';
+    $tab = fn (string $title): string => "{$tabs} [role=\"tab\"]:has-text(\"{$title}\")";
+    $shown = "[...document.querySelectorAll('[data-test^=\"retro-column-\"]')].map((column) => column.dataset.test).join(',')";
+    $swipe = fn (int $from, int $to): string => "() => { const area = document.querySelector('[data-slot=\"retro-columns\"]'); const fire = (type, x) => area.dispatchEvent(new PointerEvent(type, { bubbles: true, clientX: x, clientY: 420, pointerType: 'touch', isPrimary: true })); fire('pointerdown', {$from}); fire('pointerup', {$to}); return true; }";
+    $pageScrollsSideways = 'document.documentElement.scrollWidth > document.documentElement.clientWidth';
+    $heightOf = fn (string $selector): string => "Math.round(document.querySelector('{$selector}').getBoundingClientRect().height)";
+    $panel = '[data-test="retro-action-items-panel"]';
+
+    $page = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
+
+    $page->resize(390, 844)
+        ->assertCount("{$tabs} [role=\"tab\"]", 4)
+        ->assertAriaAttribute($tab('Start'), 'selected', 'true')
+        ->assertScript($shown, "retro-column-{$start->id}")
+        ->assertScript($pageScrollsSideways, false)
+        ->assertNotPresent('[data-slot="retro-card-composer"]');
+
+    $page->script($swipe(330, 120));
+    $page->assertAriaAttribute($tab('Stop'), 'selected', 'true')
+        ->assertScript($shown, "retro-column-{$stop->id}");
+
+    $page->script($swipe(330, 280));
+    $page->assertScript($shown, "retro-column-{$stop->id}");
+
+    $page->script($swipe(60, 300));
+    $page->assertAriaAttribute($tab('Start'), 'selected', 'true')
+        ->assertScript($shown, "retro-column-{$start->id}");
+
+    $page->keys($tab('Start'), 'ArrowRight')
+        ->assertAriaAttribute($tab('Stop'), 'selected', 'true')
+        ->keys($tab('Stop'), 'ArrowRight')
+        ->assertAriaAttribute($tab('Continue'), 'selected', 'true')
+        ->assertScript($shown, "retro-column-{$continue->id}")
+        ->assertScript("document.activeElement.textContent.includes('Continue')", true);
+
+    $page->click('[aria-label="Add a card in Continue"]')
+        ->assertSeeIn('[role="dialog"]', 'Add a card in Continue')
+        ->type('[role="dialog"] textarea', 'Keep the demo on Fridays')
+        ->keys('[role="dialog"] textarea', 'Enter')
+        ->assertNotPresent('[role="dialog"]')
+        ->assertSeeIn("[data-test=\"retro-column-{$continue->id}\"]", 'Keep the demo on Fridays')
+        ->assertSeeIn($tab('Continue'), '1 card');
+
+    $card = $retro->cards()->where('content', 'Keep the demo on Fridays')->sole();
+
+    expect($card->column_id)->toBe($continue->id);
+
+    $page->click('[aria-label="Add a card in Continue"]')
+        ->type('[role="dialog"] textarea', 'Keep pairing on reviews')
+        ->keys('[role="dialog"] textarea', 'Enter')
+        ->assertNotPresent('[role="dialog"]')
+        ->assertSeeIn($tab('Continue'), '2 cards');
+
+    $paired = $retro->cards()->where('content', 'Keep pairing on reviews')->sole();
+
+    $page->press('Next')
+        ->assertSeeIn('[aria-current="step"]', 'Grouping')
+        ->assertNotPresent('[aria-label^="Add a card in"]')
+        ->click($tab('Continue'))
+        ->click("#card-{$paired->id} [data-slot=\"retro-card-menu\"]")
+        ->click('[role="menuitem"]:has-text("Add to group…")')
+        ->assertSeeIn('[data-slot="retro-group-drawer"]', 'Add to a group')
+        ->click("[data-slot=\"retro-group-drawer\"] [data-target-id=\"{$card->id}\"]")
+        ->assertNotPresent('[data-slot="retro-group-drawer"]')
+        ->assertPresent("[data-slot=\"card-group\"] #card-{$paired->id}");
+
+    expect($paired->fresh()->parent_card_id)->toBe($card->id);
+
+    $vote = '[data-slot="card-group-votes"] [data-slot="vote-button"]';
+
+    $page->press('Next')
+        ->assertSeeIn('[aria-current="step"]', 'Voting')
+        ->assertPresent('[data-slot="retro-phone-columns-head"] [data-slot="vote-budget"]')
+        ->click($tab('Continue'))
+        ->assertScript($heightOf($vote), 44)
+        ->click($vote)
+        ->assertSeeIn('[data-slot="vote-budget"]', '4 votes left')
+        ->assertScript($pageScrollsSideways, false);
+
+    expect(Vote::query()->where('card_id', $card->id)->count())->toBe(1);
+
+    $page->press('Next')
+        ->assertSeeIn('[aria-current="step"]', 'Discussing')
+        ->assertNotPresent('main [data-test="retro-topics"]')
+        ->assertSeeIn('[data-slot="retro-topics-selector"]', '1/1')
+        ->assertSeeIn('[data-slot="retro-topics-selector"]', 'Keep the demo on Fridays')
+        ->click('[data-slot="retro-topics-selector"] button')
+        ->assertCount('[data-slot="retro-topics-drawer"] [data-test="retro-topics"] > li', 1)
+        ->click('[data-slot="retro-topics-drawer"] [data-test="retro-topics"] > li button')
+        ->assertNotPresent('[data-slot="retro-topics-drawer"]')
+        ->assertPresent("#card-{$card->id}")
+        ->assertNotPresent("{$panel} form");
+
+    $page->click("{$panel} button:has-text(\"Create an action\")")
+        ->assertSeeIn('[data-slot="retro-action-drawer"]', 'New action item')
+        ->fill('[data-slot="retro-action-drawer"] [aria-label="Add an action item…"]', 'Book the demo room')
+        ->click('[data-slot="retro-action-drawer"] [role="radiogroup"][aria-label="Assignee"] [role="radio"]:has-text("Bob Stone")')
+        ->assertAriaAttribute('[data-slot="retro-action-drawer"] [role="radio"]:has-text("Bob Stone")', 'checked', 'true')
+        ->click('[data-slot="retro-action-drawer"] button:has-text("Create")')
+        ->assertNotPresent('[data-slot="retro-action-drawer"]')
+        ->assertSeeIn($panel, 'Book the demo room')
+        ->assertSeeIn($panel, 'Bob Stone')
+        ->assertScript($pageScrollsSideways, false);
+
+    $item = ActionItem::query()->where('content', 'Book the demo room')->sole();
+
+    expect($item->assignee_user_id)->not->toBeNull();
+});
+
 it('[P18e-02-07] holds a reaction in place instead of flying it and throws no confetti for a viewer who prefers reduced motion, who reads that the session has ended in a toast', function () {
     [$retro, $alice, $bob] = p18eRotiBoard();
     $joinPath = "/join/{$retro->guest_token}";

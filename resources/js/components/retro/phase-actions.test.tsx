@@ -14,6 +14,12 @@ import { boardContext, renderInBoard, retroSnapshot } from '@/test/retro-board';
 
 const retroRequest = vi.hoisted(() => vi.fn());
 
+const phone = vi.hoisted(() => ({ on: false }));
+
+vi.mock('@/hooks/use-mobile', () => ({
+    useIsMobile: () => phone.on,
+}));
+
 vi.mock('@/lib/retro/api', async (importOriginal) => ({
     ...(await importOriginal<typeof import('@/lib/retro/api')>()),
     retroRequest,
@@ -136,6 +142,7 @@ beforeAll(() => {
 });
 
 beforeEach(() => {
+    phone.on = false;
     retroRequest.mockReset();
     retroRequest.mockResolvedValue(null);
     vi.mocked(toast.success).mockReset();
@@ -466,5 +473,58 @@ describe('the facilitator bar in Actions', () => {
             }),
             { phase: 'roti' },
         );
+    });
+});
+
+describe('PhaseActions on a phone', () => {
+    beforeEach(() => {
+        phone.on = true;
+    });
+
+    it('folds the topics behind their heading', () => {
+        const { container } = actions();
+        const toggle = screen.getByRole('button', {
+            name: 'Most voted topics',
+        });
+        const list = container.querySelector(
+            '[data-test="retro-topics"]',
+        ) as HTMLElement;
+
+        expect(toggle.getAttribute('aria-expanded')).toBe('true');
+        expect(toggle.closest('h2')).toBeTruthy();
+        expect(list.closest('[hidden]')).toBeNull();
+
+        fireEvent.click(toggle);
+
+        expect(toggle.getAttribute('aria-expanded')).toBe('false');
+        expect(list.closest('[hidden]')?.id).toBe(
+            toggle.getAttribute('aria-controls'),
+        );
+
+        fireEvent.click(toggle);
+
+        expect(list.closest('[hidden]')).toBeNull();
+    });
+
+    it('opens the form of a new action in a drawer', async () => {
+        const { container } = actions();
+
+        expect(
+            container.querySelector('[data-slot="item-create-form"]'),
+        ).toBeNull();
+
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Create an action' }),
+        );
+
+        const drawer = await screen.findByRole('dialog', {
+            name: 'New action item',
+        });
+
+        expect(
+            drawer
+                .querySelector('[data-slot="item-create-form"]')
+                ?.getAttribute('data-layout'),
+        ).toBe('stacked');
     });
 });
