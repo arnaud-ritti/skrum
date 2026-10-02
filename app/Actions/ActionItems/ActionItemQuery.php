@@ -2,7 +2,6 @@
 
 namespace App\Actions\ActionItems;
 
-use App\Enums\ActionItemPriority;
 use App\Models\ActionItem;
 use App\Models\User;
 use App\Models\Workspace;
@@ -103,24 +102,17 @@ class ActionItemQuery
     }
 
     /**
-     * Open before completed; overdue first, then by due date (none last),
-     * priority and newest; completed ones by completion, newest first.
+     * Open before completed; by due date (overdue ones are the earliest, undated ones last), then
+     * priority; completed ones by completion, newest first. The first key is stored on the row
+     * (ActionItem::sortRankFor), so every key is a plain column.
      *
      * @param  Builder<ActionItem>  $query
      * @return Builder<ActionItem>
      */
     public static function order(Builder $query): Builder
     {
-        $today = ActionItem::today()->toDateString();
-
         return $query
-            ->orderByRaw('(action_items.completed_at is not null)')
-            ->orderByRaw('case when action_items.completed_at is null and action_items.due_on < ? then 0 else 1 end', [$today])
-            ->orderByRaw('case when action_items.completed_at is null then action_items.due_on end asc nulls last')
-            ->orderByRaw(
-                'case when action_items.completed_at is null then (case action_items.priority when ? then 0 when ? then 1 else 2 end) end',
-                [ActionItemPriority::High->value, ActionItemPriority::Medium->value],
-            )
+            ->orderBy('action_items.sort_rank')
             ->latest('action_items.completed_at')
             ->latest('action_items.created_at')
             ->orderBy('action_items.id');
