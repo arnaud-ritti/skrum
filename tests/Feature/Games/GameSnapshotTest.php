@@ -36,6 +36,7 @@ it('builds the room for its host', function () {
         'game' => 'hangman',
         'locale' => 'fr',
         'access' => 'link',
+        'reactionsEnabled' => true,
         'timerEndsAt' => null,
         'isHost' => true,
         'canManage' => true,
@@ -59,6 +60,13 @@ it('builds the room for its host', function () {
         ->and($snapshot['history'])->toBe([])
         ->and($snapshot['links'])->toBe(['team' => route('teams.show', [$room->team->workspace, $room->team]), 'retro' => null])
         ->and($snapshot['serverTime'])->toBe('2026-10-06T10:00:00.000Z');
+});
+
+it('tells the players whether reactions are on', function () {
+    $room = GameRoom::factory()->create(['reactions_enabled' => false]);
+    [, $host] = gameRoomHost($room);
+
+    expect(gameSnapshotFor($room, $host)['room']['reactionsEnabled'])->toBeFalse();
 });
 
 it('hides management data from members and team data from guests', function () {

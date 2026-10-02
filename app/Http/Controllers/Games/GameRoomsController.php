@@ -43,11 +43,13 @@ class GameRoomsController extends Controller
                 'locale' => ['required', 'string', $locales],
                 'name' => ['prohibited'],
                 'access' => ['prohibited'],
+                'reactions_enabled' => ['prohibited'],
             ]
             : [
                 'name' => ['sometimes', 'required', 'string', 'max:60'],
                 'access' => ['sometimes', 'required', Rule::enum(GameRoomAccess::class)],
                 'locale' => ['sometimes', 'required', 'string', $locales],
+                'reactions_enabled' => ['sometimes', 'boolean'],
             ]);
 
         DB::transaction(function () use ($room, $player, $validated): void {

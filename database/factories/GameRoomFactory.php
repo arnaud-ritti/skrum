@@ -23,6 +23,7 @@ class GameRoomFactory extends Factory
             'game' => GameKind::Hangman,
             'locale' => 'en',
             'access' => GameRoomAccess::Team,
+            'reactions_enabled' => true,
             'guest_token' => Str::random(40),
         ];
     }
