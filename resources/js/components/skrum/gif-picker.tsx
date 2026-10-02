@@ -80,6 +80,8 @@ export type GifPickerProps = {
     onLoadMore?: () => void;
     onNotifyAdmin?: () => void;
     className?: string;
+    /** Replaces the `dialog` role when a modal dialog already wraps the picker. */
+    role?: 'dialog' | 'group';
 };
 
 const providerNames: Record<GifProvider, string> = {
@@ -249,6 +251,7 @@ function GifPickerPanel({
     onLoadMore,
     onNotifyAdmin,
     className,
+    role = 'dialog',
 }: Omit<GifPickerProps, 'open'>) {
     const { t } = useTrans();
     const bodyId = useId();
@@ -544,7 +547,7 @@ function GifPickerPanel({
 
         return (
             <div
-                role="dialog"
+                role={role}
                 aria-label={t('Choose a GIF')}
                 data-slot="gif-picker"
                 data-view="preview"
@@ -645,7 +648,7 @@ function GifPickerPanel({
 
     return (
         <div
-            role="dialog"
+            role={role}
             aria-label={t('Choose a GIF')}
             data-slot="gif-picker"
             data-view="grid"
