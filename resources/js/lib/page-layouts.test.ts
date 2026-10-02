@@ -24,6 +24,7 @@ describe('page layouts', () => {
             'games/show',
             'whiteboards/show',
             'whiteboards/join',
+            'action-items/index',
         ]) {
             expect(usesOwnLayout(name), name).toBe(true);
         }
