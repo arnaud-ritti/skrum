@@ -2,7 +2,7 @@
 
 use App\Support\Branding\BrandPalette;
 
-dataset('brandColours', ['#FFD600', '#22c55e', '#777777', '#0a0a0a', '#e11d48', '#2B63B0']);
+dataset('brandColours', ['#FFD600', '#22c55e', '#777777', '#0a0a0a', '#e11d48', '#2B63B0', '#ffffff', '#000000', '#ff0000', '#00ff00', '#0000ff']);
 
 function brandSweepColours(): array
 {
@@ -143,7 +143,7 @@ it('clamps the radius between 0 and 16', function (int $given, int $expected, st
 
 it('emits only numbers produced by the class in the css', function (string $hex) {
     $css = BrandPalette::derive($hex)->css();
-    $number = '-?\d+(?:\.\d+)?';
+    $number = '\d+(?:\.\d+)?';
     $lines = explode("\n", rtrim($css, "\n"));
 
     expect($lines[0])->toBe(':root {')
@@ -183,12 +183,14 @@ it('keeps the contrast through the hex round trip', function (string $hex) {
 })->with('brandColours');
 
 it('reports the two ratios of each theme', function () {
-    $ratios = BrandPalette::derive('#2B63B0')->ratios();
+    $palette = BrandPalette::derive('#2B63B0');
+    $ratios = $palette->ratios();
 
     expect(array_keys($ratios))->toBe(['light', 'dark'])
-        ->and(array_keys($ratios['light']))->toBe(['onPrimary', 'primaryOnBackground'])
-        ->and($ratios['light']['primaryOnBackground'])->toBeGreaterThanOrEqual(3.0)
-        ->and($ratios['dark']['primaryOnBackground'])->toBeGreaterThanOrEqual(3.0);
+        ->and(array_keys($ratios['light']))->toBe(['onPrimary', 'primaryOnSurface'])
+        ->and($ratios['light']['primaryOnSurface'])->toBeGreaterThanOrEqual(3.0)
+        ->and($ratios['dark']['primaryOnSurface'])->toBeGreaterThanOrEqual(3.0)
+        ->and($ratios['dark']['primaryOnSurface'])->toBe(BrandPalette::contrast($palette->dark['primary'], BrandPalette::DarkCard));
 });
 
 it('defines every warning key in every locale', function (string $locale) {
@@ -202,3 +204,24 @@ it('defines every warning key in every locale', function (string $locale) {
     expect(array_unique($keys))->toHaveCount(3)
         ->and(array_diff($keys, array_keys($translations)))->toBeEmpty();
 })->with(['en', 'fr', 'es', 'de']);
+
+it('writes css numbers with a dot whatever the numeric locale', function () {
+    $previous = setlocale(LC_NUMERIC, '0');
+    $applied = setlocale(LC_NUMERIC, 'de_DE.UTF-8', 'fr_FR.UTF-8', 'de_DE', 'fr_FR');
+
+    if ($applied === false) {
+        $this->markTestSkipped('No comma-decimal locale (de_DE or fr_FR) is installed on this system.');
+    }
+
+    try {
+        $css = BrandPalette::derive('#2B63B0', radiusPx: 10)->css();
+        $number = '\d+(?:\.\d+)?';
+        $lines = explode("\n", rtrim($css, "\n"));
+
+        expect($lines[1])->toMatch("/^  --radius: {$number}rem;$/")
+            ->and(array_slice($lines, 2))->each->toMatch("/^(  --[a-z0-9-]+: oklch\\({$number} {$number} {$number}\\);|\\}|\\.dark \\{)$/")
+            ->and($css)->not->toContain(',');
+    } finally {
+        setlocale(LC_NUMERIC, $previous);
+    }
+});

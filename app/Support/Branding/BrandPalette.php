@@ -107,8 +107,8 @@ class BrandPalette
 
     /**
      * @return array{
-     *     light: array{onPrimary: float, primaryOnBackground: float},
-     *     dark: array{onPrimary: float, primaryOnBackground: float}
+     *     light: array{onPrimary: float, primaryOnSurface: float},
+     *     dark: array{onPrimary: float, primaryOnSurface: float}
      * }
      */
     public function ratios(): array
@@ -116,11 +116,11 @@ class BrandPalette
         return [
             'light' => [
                 'onPrimary' => self::contrast($this->light['primary-foreground'], $this->light['primary']),
-                'primaryOnBackground' => self::contrast($this->light['primary'], self::LightBackground),
+                'primaryOnSurface' => self::contrast($this->light['primary'], self::LightBackground),
             ],
             'dark' => [
                 'onPrimary' => self::contrast($this->dark['primary-foreground'], $this->dark['primary']),
-                'primaryOnBackground' => self::contrast($this->dark['primary'], self::DarkBackground),
+                'primaryOnSurface' => self::contrast($this->dark['primary'], self::DarkCard),
             ],
         ];
     }
@@ -130,9 +130,10 @@ class BrandPalette
      */
     public static function hexToOklch(string $hex): array
     {
-        throw_unless(preg_match('/^#?([0-9a-f]{3}|[0-9a-f]{6})$/iD', $hex, $matches), InvalidArgumentException::class, 'The colour must be a 3 or 6 digit hex value.');
-
-        $digits = $matches[1];
+        $isHex = preg_match('/^#?([0-9a-f]{3}|[0-9a-f]{6})$/iD', $hex, $matches) === 1;
+        $digits = $isHex ?
+            $matches[1] :
+            throw new InvalidArgumentException('The colour must be a 3 or 6 digit hex value.');
 
         if (strlen($digits) === 3) {
             $digits = $digits[0].$digits[0].$digits[1].$digits[1].$digits[2].$digits[2];
@@ -263,7 +264,7 @@ class BrandPalette
         $lines = [];
 
         foreach ($tokens as $name => $color) {
-            $lines[] = sprintf('  --%s: oklch(%.3f %.3f %.1f);', $name, $color[0], $color[1], $color[2]);
+            $lines[] = sprintf('  --%s: oklch(%.3F %.3F %.1F);', $name, $color[0], $color[1], $color[2]);
         }
 
         return implode("\n", $lines);
