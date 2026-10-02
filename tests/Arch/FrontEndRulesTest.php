@@ -36,7 +36,6 @@ const FrontEndRuleExemptions = [
 const FrontEndRuleBaseline = [
     'arbitrary-size' => [
         'resources/js/components/notification-bell.tsx',
-        'resources/js/components/retro/card-insight.tsx',
     ],
     'colour' => [
         'resources/js/components/action-items/external-link-chips.tsx',
@@ -51,7 +50,6 @@ const FrontEndRuleBaseline = [
     ],
     'px' => [
         'resources/js/components/notification-bell.tsx',
-        'resources/js/components/retro/card-insight.tsx',
         'resources/js/components/session/session-presence.tsx',
         'resources/js/components/whiteboard/board-header.tsx',
     ],
