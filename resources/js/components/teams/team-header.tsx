@@ -80,7 +80,9 @@ export function TeamHeader({
                                     }))}
                             />
                         )}
-                        {t(':count members', { count: members.length })}
+                        {members.length === 1
+                            ? t('1 member')
+                            : t(':count members', { count: members.length })}
                     </span>
                     <span className="inline-flex min-w-0 items-center gap-1.5">
                         <Building2 aria-hidden className="size-3.5 shrink-0" />

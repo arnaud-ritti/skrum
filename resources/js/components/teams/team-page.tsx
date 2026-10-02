@@ -183,6 +183,7 @@ export function TeamPage({
                         statsFor={slots.retroStatsFor}
                     />
                     <TeamPokerSection
+                        key={team.id}
                         workspaceSlug={workspace.slug}
                         teamId={team.id}
                         games={props.pokerGames}

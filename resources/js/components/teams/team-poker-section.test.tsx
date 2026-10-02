@@ -145,6 +145,51 @@ describe('the planning poker section of a team', () => {
         ).toBeTruthy();
     });
 
+    it('folds the deck and the last activity into the line under the name, for the widths without columns', () => {
+        section();
+
+        const folded = within(rowOf('Sprint 43 refinement')).getByText(
+            '· Fibonacci · 12 minutes ago',
+        );
+
+        expect(folded.className).toContain('sm:hidden');
+    });
+
+    it('shows no points for a game with tasks and no estimate yet', () => {
+        section({
+            games: [{ ...untouched, totalPoints: 0 }],
+        });
+
+        const row = rowOf('Billing epic sizing');
+
+        expect(within(row).getByText('3 tasks · 0 estimated')).toBeTruthy();
+        expect(within(row).getByText('—')).toBeTruthy();
+        expect(within(row).queryByText(/0 pts/)).toBeNull();
+    });
+
+    it('keeps the players in the room while the presence is fetched again', () => {
+        const { rerender, container } = section({
+            presence: { 'game-1': 2 },
+        });
+
+        rerender(
+            <TeamPokerSection
+                workspaceSlug="nordlys"
+                teamId="team-1"
+                games={[active, untouched, ended]}
+            />,
+        );
+
+        expect(
+            container.querySelector('[data-slot="poker-presence-loading"]'),
+        ).toBeNull();
+        expect(
+            within(rowOf('Sprint 43 refinement')).getByRole('link', {
+                name: /^Join/,
+            }),
+        ).toBeTruthy();
+    });
+
     it('shows a skeleton while the presence is on its way, then the players in the room', () => {
         const { rerender, container } = section({ presence: undefined });
 

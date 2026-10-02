@@ -19,6 +19,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { useLastDefined } from '@/hooks/use-last-defined';
 import { useTrans } from '@/hooks/use-trans';
 import { formatRelativeTime } from '@/lib/action-items/format';
 import { formatPoints } from '@/lib/poker/format';
@@ -30,7 +31,8 @@ type Props = {
     games: PokerGameSummary[];
     /**
      * Players online per open game. `undefined` while the deferred prop is on
-     * its way, `null` when the presence server did not answer.
+     * its way (the last answer stays on screen meanwhile), `null` when the
+     * presence server did not answer.
      */
     presence?: Record<string, number | null> | null;
 };
@@ -42,6 +44,7 @@ export function TeamPokerSection({
     presence,
 }: Props) {
     const { t } = useTrans();
+    const shownPresence = useLastDefined(presence);
     const params = { workspace: workspaceSlug, team: teamId };
     const active = games.filter((game) => game.endedAt === null);
     const ended = games.filter((game) => game.endedAt !== null);
@@ -93,7 +96,7 @@ export function TeamPokerSection({
                         <GamesTable
                             title={t('Active games')}
                             games={active}
-                            presence={presence}
+                            presence={shownPresence}
                         />
                     )}
                     {ended.length > 0 && (
@@ -150,6 +153,15 @@ function GamesTable({
                     {games.map((game) => {
                         const online = presence?.[game.id] ?? 0;
                         const href = PokerGamesController.show(game.id);
+                        const points =
+                            game.totalPoints === 0 && game.estimatedCount === 0
+                                ? null
+                                : game.totalPoints;
+                        const lastActivity = formatRelativeTime(
+                            game.lastActivityAt,
+                            locale,
+                            now,
+                        );
 
                         return (
                             <TableRow
@@ -182,17 +194,22 @@ function GamesTable({
                                                                 game.estimatedCount,
                                                         },
                                                     )}
-                                                    {game.totalPoints !==
-                                                        null &&
+                                                    {points !== null &&
                                                         ` · ${t(
                                                             ':points points',
                                                             {
                                                                 points: formatPoints(
-                                                                    game.totalPoints,
+                                                                    points,
                                                                     locale,
                                                                 ),
                                                             },
                                                         )}`}
+                                                </span>
+                                                <span
+                                                    data-slot="poker-game-phone-meta"
+                                                    className="sm:hidden"
+                                                >
+                                                    {`· ${game.deckLabel} · ${lastActivity}`}
                                                 </span>
                                                 {presence === undefined && (
                                                     <Skeleton
@@ -222,21 +239,17 @@ function GamesTable({
                                     </Badge>
                                 </TableCell>
                                 <TableCell className="px-4 font-semibold whitespace-nowrap tabular-nums max-sm:hidden">
-                                    {game.totalPoints === null
+                                    {points === null
                                         ? '—'
                                         : t(':points pts', {
                                               points: formatPoints(
-                                                  game.totalPoints,
+                                                  points,
                                                   locale,
                                               ),
                                           })}
                                 </TableCell>
                                 <TableCell className="px-4 whitespace-nowrap text-muted-foreground max-sm:hidden">
-                                    {formatRelativeTime(
-                                        game.lastActivityAt,
-                                        locale,
-                                        now,
-                                    )}
+                                    {lastActivity}
                                 </TableCell>
                                 <TableCell className="px-4 text-right whitespace-nowrap max-sm:block max-sm:pl-0">
                                     <Button

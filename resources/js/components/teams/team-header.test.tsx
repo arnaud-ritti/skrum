@@ -85,6 +85,12 @@ describe('splitCount', () => {
 });
 
 describe('the team header', () => {
+    it('counts a single member in the singular', () => {
+        header({ members: members.slice(0, 1) });
+
+        expect(screen.getByText('1 member')).toBeTruthy();
+    });
+
     it('names the team, counts its members and names its workspace', () => {
         const { container } = header();
 

@@ -3,6 +3,7 @@ import { MoodTrendChart } from '@/components/skrum/mood-trend-chart';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs } from '@/components/ui/tabs';
+import { useLastDefined } from '@/hooks/use-last-defined';
 import { useTrans } from '@/hooks/use-trans';
 import {
     deltaSincePrevious,
@@ -21,16 +22,8 @@ type Props = {
 /** Mood (health check score) and ROTI of the team across its last retros. */
 export function TeamMoodCard({ trend }: Props) {
     const { t } = useTrans();
-    const [lastTrend, setLastTrend] = useState(trend);
     const [chosenMetric, setChosenMetric] = useState<MoodMetric>();
-
-    // A visit to the same page drops the deferred prop until it is fetched
-    // again: the last trend stays, so the cards under this one do not jump.
-    if (trend !== undefined && trend !== lastTrend) {
-        setLastTrend(trend);
-    }
-
-    const shownTrend = trend ?? lastTrend;
+    const shownTrend = useLastDefined(trend);
 
     if (shownTrend === undefined) {
         return <TeamMoodSkeleton />;
