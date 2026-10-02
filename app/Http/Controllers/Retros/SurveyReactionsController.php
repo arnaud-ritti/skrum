@@ -11,6 +11,7 @@ use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\Survey;
 use App\Rules\SingleEmoji;
+use App\Support\Database\Transactions;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -59,7 +60,7 @@ class SurveyReactionsController extends Controller
             (new SurveyDiscussionChanged($locked->id, $fresh->id, $fresh->commentCount()))->sendToOthers();
 
             return [$fresh, $locked];
-        });
+        }, Transactions::Attempts);
 
         return response()->json(['survey' => $this->presentSurvey->handle($fresh, $presentingRetro, $participant)]);
     }

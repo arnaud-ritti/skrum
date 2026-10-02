@@ -6,6 +6,7 @@ use App\Enums\McpScope;
 use App\Models\PersonalAccessToken;
 use App\Models\Team;
 use App\Models\User;
+use App\Support\Database\Transactions;
 use Carbon\CarbonInterface;
 use Illuminate\Contracts\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
@@ -40,7 +41,7 @@ class IssueMcpToken
             ])->save();
 
             return $newToken;
-        });
+        }, Transactions::Attempts);
     }
 
     private function ensureNameIsFree(User $user, string $name): void

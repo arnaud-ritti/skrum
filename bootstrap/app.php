@@ -6,7 +6,11 @@ use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\SetLocale;
 use App\Http\Middleware\TrustProxies;
+use App\Support\Database\Transactions;
+use Illuminate\Contracts\Debug\ExceptionHandler;
 use Illuminate\Contracts\Http\Kernel;
+use Illuminate\Database\DeadlockException;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -17,6 +21,7 @@ use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Route;
 use Inertia\ExceptionResponse;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\ServiceUnavailableHttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -53,6 +58,13 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request): bool => $request->is('api/*') || $request->expectsJson(),
         );
+
+        $busy = fn (Throwable $exception, Request $request): ?Response => Transactions::isConcurrencyError($exception)
+            ? resolve(ExceptionHandler::class)->render($request, new ServiceUnavailableHttpException(1, Transactions::busyMessage(), $exception))
+            : null;
+
+        $exceptions->render(fn (QueryException $exception, Request $request): ?Response => $busy($exception, $request));
+        $exceptions->render(fn (DeadlockException $exception, Request $request): ?Response => $busy($exception, $request));
 
         $exceptions->respond(fn (Response $response, Throwable $exception, Request $request): Response => resolve(ErrorPageResponder::class)(
             new ExceptionResponse($exception, $request, $response, resolve(Router::class), resolve(Kernel::class)),

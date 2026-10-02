@@ -3,6 +3,7 @@
 namespace App\Actions\Admin;
 
 use App\Models\User;
+use App\Support\Database\Transactions;
 use Illuminate\Support\Facades\DB;
 
 class RevokeInstanceAdmin
@@ -32,6 +33,6 @@ class RevokeInstanceAdmin
             User::query()->whereKey($user->id)->update(['is_instance_admin' => false]);
 
             return true;
-        });
+        }, Transactions::Attempts);
     }
 }

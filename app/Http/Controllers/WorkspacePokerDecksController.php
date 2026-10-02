@@ -6,6 +6,7 @@ use App\Actions\Poker\SavedPokerDeckRules;
 use App\Http\Requests\WorkspacePokerDeckRequest;
 use App\Models\SavedPokerDeck;
 use App\Models\Workspace;
+use App\Support\Database\Transactions;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -24,7 +25,7 @@ class WorkspacePokerDecksController extends Controller
                 'cards' => $request->deckCards(),
                 'created_by_user_id' => $request->user()->id,
             ]);
-        });
+        }, Transactions::Attempts);
 
         return back();
     }

@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Models\WhiteboardTemplate;
 use App\Models\Workspace;
 use App\Models\WorkspaceTemplate;
+use App\Support\Database\Transactions;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -55,7 +56,7 @@ class WorkspaceTemplatesController extends Controller
             ]);
 
             $this->replaceColumns($template, $request->templateColumns());
-        });
+        }, Transactions::Attempts);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Template saved.')]);
 

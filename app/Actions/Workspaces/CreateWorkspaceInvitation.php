@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceInvitation;
 use App\Support\Auth\LoginAddress;
+use App\Support\Database\Transactions;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -39,7 +40,7 @@ class CreateWorkspaceInvitation
                 'invited_by_id' => $inviter->id,
                 'expires_at' => now()->addDays(self::ValidForDays),
             ]);
-        });
+        }, Transactions::Attempts);
 
         return new IssuedInvitation($invitation, $token);
     }
