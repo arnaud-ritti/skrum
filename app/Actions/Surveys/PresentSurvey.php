@@ -4,6 +4,7 @@ namespace App\Actions\Surveys;
 
 use App\Actions\Retros\PresentComment;
 use App\Actions\Retros\SummarizeReactions;
+use App\Enums\RetroPhase;
 use App\Enums\SurveyKind;
 use App\Models\Participant;
 use App\Models\Retro;
@@ -43,7 +44,8 @@ class PresentSurvey
     /**
      * Counts, voters, text answers, reactions and comments are only sent to
      * viewers who answered or once the survey is closed, so the discussion
-     * cannot steer answers or reveal results early.
+     * cannot steer answers or reveal results early. A completed retro takes
+     * no answer any more: a survey left open there counts as closed.
      *
      * @return array{
      *     id: string,
@@ -72,7 +74,8 @@ class PresentSurvey
         $myResponseOptionIds = $survey->responses->where('participant_id', $viewer->id)->pluck('survey_option_id');
         $myOptionIds = $survey->options->pluck('id')->intersect($myResponseOptionIds)->values()->all();
         $myText = $survey->textAnswers->firstWhere('participant_id', $viewer->id)?->content;
-        $resultsVisible = $survey->is_closed || $myOptionIds !== [] || $myText !== null;
+        $isClosed = $survey->is_closed || $retro->phase === RetroPhase::Completed;
+        $resultsVisible = $isClosed || $myOptionIds !== [] || $myText !== null;
         $showsNames = $survey->show_voters && ! $retro->is_anonymous;
 
         return [
@@ -81,7 +84,7 @@ class PresentSurvey
             'question' => $survey->question,
             'description' => $survey->description,
             'position' => $survey->position,
-            'isClosed' => $survey->is_closed,
+            'isClosed' => $isClosed,
             'version' => $survey->version,
             'showVoters' => $showsNames,
             'responseCount' => $this->responseCount($survey),

@@ -504,15 +504,16 @@ describe('SurveyResultList', () => {
         expect(within(card()).getByText('1 response')).toBeTruthy();
     });
 
-    it('says "No answers yet." for a text survey the viewer never answered', () => {
+    it('says "No answers yet." for a text survey nobody answered', () => {
         renderInBoard(
             <SurveyResultList
                 surveys={[
                     survey({
                         kind: 'text',
                         options: [],
-                        resultsVisible: false,
-                        textAnswers: null,
+                        isClosed: true,
+                        resultsVisible: true,
+                        textAnswers: [],
                     }),
                 ]}
             />,
@@ -526,25 +527,64 @@ describe('SurveyResultList', () => {
         expect(within(card()).queryByRole('textbox')).toBeNull();
     });
 
-    it('lists the options without figures for a viewer who never answered', () => {
+    it('shows the results and the discussion to a viewer who never answered', () => {
         renderInBoard(
-            <SurveyResultList surveys={[survey({ responseCount: 3 })]} />,
+            <SurveyResultList
+                surveys={[
+                    answered({
+                        isClosed: true,
+                        myOptionIds: [],
+                        responseCount: 3,
+                        commentCount: 2,
+                        options: [
+                            {
+                                id: 'great',
+                                label: 'Great',
+                                position: 0,
+                                count: 2,
+                                voters: null,
+                            },
+                            {
+                                id: 'ok',
+                                label: 'OK',
+                                position: 1,
+                                count: 1,
+                                voters: null,
+                            },
+                        ],
+                    }),
+                ]}
+            />,
             completed(),
         );
 
+        expect(within(card()).getByText('2 · 67%')).toBeTruthy();
+        expect(within(card()).getByText('1 · 33%')).toBeTruthy();
+        expect(within(card()).getByText('3 responses')).toBeTruthy();
         expect(
-            [...card().querySelectorAll('[data-slot="survey-result"]')].map(
-                (row) => row.textContent,
-            ),
-        ).toEqual(['Great', 'OK']);
+            within(card()).getByRole('button', { name: 'Comments (2)' }),
+        ).toBeTruthy();
+        expect(card().textContent).not.toContain(
+            'Answer to join the discussion',
+        );
+    });
+
+    it('never asks for an answer once the retro is completed, whatever the payload holds', () => {
+        renderInBoard(
+            <SurveyResultList
+                surveys={[survey({ responseCount: 3, commentCount: 1 })]}
+            />,
+            completed(),
+        );
+
+        expect(card().textContent).not.toContain(
+            'Answer to join the discussion',
+        );
         expect(
-            card().querySelector('[data-slot="survey-result-bar"]'),
+            card().querySelector('[data-slot="survey-discussion"]'),
         ).toBeNull();
         expect(card().textContent).not.toContain('%');
         expect(within(card()).getByText('3 responses')).toBeTruthy();
-        expect(
-            within(card()).queryByText('Results are not visible yet.'),
-        ).toBeNull();
     });
 
     it('says "Closed" only on a survey the facilitator closed', () => {

@@ -85,5 +85,5 @@ Read from the code against `SurveyQuestion/preview.html` and `ScreenSurvey/previ
 |---|---|
 | The surveys of a completed retro are the cards of the board, read only, in a "Surveys" card of the session end: no results page with the tabs Summary / Free answers / Compare, no CSV, no "Send to whiteboard" | PB-29, D-22 |
 | The "Closed" badge shows only on a survey the facilitator closed before the end. Brief 08 row 36 asks for `closed` on every card; it is not forced, since the badge would be a new element on surveys nobody closed and results mode has no control to disable | none: as before the rewrite |
-| A viewer who never answered a survey still open at the end sees its option labels without bars or figures, and "No answers yet." for a text survey (the server keeps `resultsVisible` false for them). The foot still reads "Answer to join the discussion", though nobody can answer any more | D-123 (open: should the server show the results to everyone once the retro is completed, `PresentSurvey`?) |
+| Closed in rework 3 (R3-7): on a completed retro the server sends the results of every survey to every participant, answered or not, and the foot "Answer to join the discussion" is gone | D-123 (done) |
 | A result reads "n · p%" for single and multiple choice | PB-24 A (autonomy mandate), D-121 |

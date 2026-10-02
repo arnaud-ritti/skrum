@@ -14,7 +14,10 @@ import {
 } from '../comment-thread';
 import { optimisticReactions, ReactionChips } from '../reaction-chips';
 
-/** The foot of a survey: its reactions, and its comments once the viewer has answered. */
+/**
+ * The foot of a survey: its reactions, and its comments once the viewer has
+ * answered. A completed retro takes no answer, so it never asks for one.
+ */
 export function SurveyDiscussion({ survey }: { survey: SurveyPayload }) {
     const ctx = useBoard();
     const { t } = useTrans();
@@ -29,6 +32,10 @@ export function SurveyDiscussion({ survey }: { survey: SurveyPayload }) {
     const commentsLabel = t('Comments (:count)', {
         count: survey.commentCount,
     });
+
+    if (!survey.resultsVisible && retro.phase === 'completed') {
+        return null;
+    }
 
     if (!survey.resultsVisible) {
         return (
