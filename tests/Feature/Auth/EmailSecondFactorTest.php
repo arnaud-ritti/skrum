@@ -274,7 +274,7 @@ it('leaves no challenge state in the session once signed in', function (string $
     $user = $factor === 'totp' ? User::factory()->withTwoFactor()->create() : User::factory()->withEmailSecondFactor()->create();
     $this->post(route('login'), ['email' => $user->email, 'password' => 'password'])->assertRedirect(route('two-factor.login'));
 
-    expect(session('login.local'))->toBeTrue();
+    expect(session('login.entry'))->toBe('password');
 
     $factor === 'totp'
         ? $this->post(route('two-factor.login.store'), ['recovery_code' => 'recovery-code-1'])
@@ -282,7 +282,7 @@ it('leaves no challenge state in the session once signed in', function (string $
 
     $this->assertAuthenticatedAs($user);
 
-    expect(session()->has('login.local'))->toBeFalse()
+    expect(session()->has('login.entry'))->toBeFalse()
         ->and(session()->has('login.id'))->toBeFalse();
 })->with(['totp', 'email']);
 
@@ -372,3 +372,14 @@ it('reduces a user agent to fixed labels', function (?string $userAgent, ?string
     ['<script>alert(1)</script>', null],
     [null, null],
 ]);
+
+it('limits asking for a new code to six a minute', function () {
+    $user = User::factory()->withEmailSecondFactor()->create();
+    $this->post(route('login'), ['email' => $user->email, 'password' => 'password'])->assertRedirect(route('two-factor.login'));
+
+    foreach (range(1, 6) as $attempt) {
+        $this->post(route('twoFactor.emailCodes.store'))->assertRedirect(route('two-factor.login'));
+    }
+
+    $this->post(route('twoFactor.emailCodes.store'))->assertTooManyRequests();
+});

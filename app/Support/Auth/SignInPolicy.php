@@ -2,6 +2,7 @@
 
 namespace App\Support\Auth;
 
+use App\Enums\SignInEntry;
 use App\Enums\SsoProvider;
 use App\Models\User;
 use App\Support\InstanceSettings;
@@ -67,6 +68,20 @@ class SignInPolicy
         }
 
         return $this->secondFactors->requiredFor($user);
+    }
+
+    /**
+     * A second-factor challenge may end only while the way in that opened it
+     * is still accepted. A challenge of unknown origin is held to the
+     * strictest answer.
+     */
+    public function allowsCompleting(?SignInEntry $entry, User $user): bool
+    {
+        return match ($entry) {
+            SignInEntry::Sso => true,
+            SignInEntry::Password => $this->allowsPassword($user),
+            SignInEntry::MagicLink, null => $this->allowsLocalCredentials(),
+        };
     }
 
     public function allowsPasswordReset(User $user): bool

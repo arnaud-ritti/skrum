@@ -2,6 +2,7 @@
 
 namespace App\Actions\Auth;
 
+use App\Enums\SignInEntry;
 use App\Models\User;
 use App\Support\Auth\SecondFactors;
 use Illuminate\Http\RedirectResponse;
@@ -19,10 +20,10 @@ class CompleteLogin
         private StartSecondFactorChallenge $startChallenge,
     ) {}
 
-    public function handle(Request $request, User $user): RedirectResponse
+    public function handle(Request $request, User $user, SignInEntry $entry): RedirectResponse
     {
         if ($this->secondFactors->requiredFor($user)) {
-            $this->startChallenge->handle($request, $user, remember: false, local: false);
+            $this->startChallenge->handle($request, $user, remember: false, entry: $entry);
 
             return to_route('two-factor.login');
         }

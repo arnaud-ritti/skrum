@@ -3,6 +3,7 @@
 use App\Actions\Auth\CompleteLogin;
 use App\Actions\Auth\RedirectIfSecondFactorRequired;
 use App\Enums\SecondFactorMethod;
+use App\Enums\SignInEntry;
 use App\Models\SocialAccount;
 use App\Models\User;
 use App\Support\Auth\SecondFactors;
@@ -52,15 +53,15 @@ it('completes a login through the shared action', function () {
     $request = Request::create('/');
     $request->setLaravelSession(session()->driver());
 
-    $response = resolve(CompleteLogin::class)->handle($request, $protected);
+    $response = resolve(CompleteLogin::class)->handle($request, $protected, SignInEntry::Sso);
 
     expect($response->getTargetUrl())->toBe(route('two-factor.login'))
         ->and(auth()->check())->toBeFalse()
         ->and(session('login.id'))->toBe($protected->id)
         ->and(session('login.remember'))->toBeFalse()
-        ->and(session('login.local'))->toBeFalse();
+        ->and(session('login.entry'))->toBe('sso');
 
-    $response = resolve(CompleteLogin::class)->handle($request, $plain);
+    $response = resolve(CompleteLogin::class)->handle($request, $plain, SignInEntry::Sso);
 
     expect($response->getTargetUrl())->toBe(route('dashboard'))
         ->and(auth()->id())->toBe($plain->id)

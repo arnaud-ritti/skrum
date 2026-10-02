@@ -4513,7 +4513,7 @@ Owner's answers (2026-10-02, first and third rounds): the instance gets a settin
   - `InstanceSettingKey::SsoRequired = 'sso_required'`; `InstanceSettingKey::branding(): array<int, InstanceSettingKey>` (every key but `SsoRequired`)
   - `InstanceSettings::DefaultSsoRequired = false`, `InstanceSettings::ssoRequired(): bool` (the stored value)
   - `SignInPolicy::ssoRequired(): bool` (in force), `isIgnored(): bool` (stored, no provider), `allowsLocalCredentials(): bool` (magic link, form registration, passkey: `! ssoRequired()`), `allowsPassword(User $user): bool`, `allowsPasswordReset(User $user): bool`, `enablingBlockers(User $admin): array<int, string>` (values `no_provider`, `no_identity`, `no_second_factor`)
-  - Session key `login.local` (boolean), written by `StartSecondFactorChallenge`: true when a password started the challenge
+  - Session key `login.entry` (`SignInEntry`: `password`, `magic_link`, `sso`), written by `StartSecondFactorChallenge`: the way in that started the challenge, re-checked when it completes (fix pass of the Task 16 gate, M-2; it replaces the boolean `login.local` of the samples below)
   - Routes `admin.signIn.edit` (`GET admin/sign-in`), `admin.signIn.update` (`PUT admin/sign-in`)
   - Inertia page `admin/sign-in` with props `ssoRequired: boolean` (stored), `inForce: boolean`, `providers: {key: string, label: string}[]`, `blockers: string[]`, `accountsWithoutSso: number`, `adminsWithPasswordWayBack: number`
   - Shared Inertia prop `signInAlert: 'sso_required_ignored' | null`, non-null only for a user who can `manageInstance`

@@ -16,6 +16,6 @@ class ForgetSecondFactorChallengeListener
             return;
         }
 
-        request()->session()->forget('login.local');
+        request()->session()->forget('login.entry');
     }
 }

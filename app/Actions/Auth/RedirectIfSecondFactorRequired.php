@@ -2,6 +2,7 @@
 
 namespace App\Actions\Auth;
 
+use App\Enums\SignInEntry;
 use App\Models\User;
 use App\Support\Auth\SecondFactors;
 use App\Support\Auth\SignInPolicy;
@@ -32,7 +33,7 @@ class RedirectIfSecondFactorRequired extends RedirectIfTwoFactorAuthenticatable
 
     protected function twoFactorChallengeResponse($request, $user)
     {
-        resolve(StartSecondFactorChallenge::class)->handle($request, $user, $request->boolean('remember'), local: true);
+        resolve(StartSecondFactorChallenge::class)->handle($request, $user, $request->boolean('remember'), SignInEntry::Password);
 
         TwoFactorAuthenticationChallenged::dispatch($user);
 

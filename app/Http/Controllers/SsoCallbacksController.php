@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Actions\Auth\CompleteLogin;
 use App\Actions\Auth\ResolveSsoUser;
+use App\Enums\SignInEntry;
 use App\Enums\SsoProvider;
 use App\Exceptions\SsoLoginRefused;
 use App\Models\WorkspaceInvitation;
@@ -42,7 +43,7 @@ class SsoCallbacksController extends Controller
             $request->session()->forget(['invitation_token', 'url.intended']);
         }
 
-        return $completeLogin->handle($request, $user);
+        return $completeLogin->handle($request, $user, SignInEntry::Sso);
     }
 
     private function backToLogin(string $message): RedirectResponse

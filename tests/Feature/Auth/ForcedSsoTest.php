@@ -73,7 +73,7 @@ it('challenges an instance admin who has a second factor, and signs in after it'
         ->assertRedirect(route('two-factor.login'));
 
     $this->assertGuest();
-    expect(session('login.id'))->toBe($admin->id)->and(session('login.local'))->toBeTrue();
+    expect(session('login.id'))->toBe($admin->id)->and(session('login.entry'))->toBe('password');
 
     $this->post(route('two-factor.login.store'), ['recovery_code' => 'recovery-code-1'])
         ->assertRedirect(route('dashboard'));
@@ -132,7 +132,7 @@ it('still completes a challenge that single sign-on started for someone who is n
     Socialite::fake('google', SocialiteUser::fake(['id' => 'g-80']));
     $this->get(route('sso.callback', 'google'))->assertRedirect(route('two-factor.login'));
 
-    expect(session('login.local'))->toBeFalse();
+    expect(session('login.entry'))->toBe('sso');
 
     $this->post(route('two-factor.login.store'), ['recovery_code' => 'recovery-code-1'])->assertRedirect(route('dashboard'));
 
@@ -200,6 +200,22 @@ it('refuses a link issued before the setting was turned on', function () {
 
     $this->assertGuest();
 });
+
+it('refuses to complete a magic-link challenge once single sign-on is required', function (bool $isAdmin) {
+    $user = User::factory()->withTwoFactor()->create(['is_instance_admin' => $isAdmin]);
+    $url = resolve(IssueMagicLink::class)->handle($user);
+    $token = basename((string) parse_url($url, PHP_URL_PATH));
+    $this->post(route('magicLinks.sessions.store', $token))->assertRedirect(route('two-factor.login'));
+
+    requireSso();
+
+    $this->post(route('two-factor.login.store'), ['recovery_code' => 'recovery-code-1'])
+        ->assertRedirect(route('login'))
+        ->assertSessionHasErrors('email');
+
+    $this->assertGuest();
+    expect(session('login.id'))->toBeNull();
+})->with([false, true]);
 
 it('tells the login page what is offered', function () {
     $this->get(route('login'))->assertInertia(fn (Assert $page) => $page
