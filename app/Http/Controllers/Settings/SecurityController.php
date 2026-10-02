@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Settings;
 
+use App\Actions\Auth\RevokeLoginSecrets;
 use App\Actions\Auth\SendEmailTwoFactorCode;
 use App\Enums\EmailCodePurpose;
 use App\Http\Controllers\Controller;
@@ -63,11 +64,13 @@ class SecurityController extends Controller
     /**
      * Update the user's password.
      */
-    public function update(PasswordUpdateRequest $request): RedirectResponse
+    public function update(PasswordUpdateRequest $request, RevokeLoginSecrets $revoke): RedirectResponse
     {
         $request->user()->update([
             'password' => $request->password,
         ]);
+
+        $revoke->handle($request->user());
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Password updated.')]);
 

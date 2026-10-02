@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\MassPrunable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 use SensitiveParameter;
 
@@ -21,6 +22,7 @@ use SensitiveParameter;
  * @property Carbon $sent_at
  * @property Carbon $expires_at
  * @property Carbon|null $consumed_at
+ * @property-read User $user
  */
 class EmailTwoFactorCode extends Model
 {
@@ -43,6 +45,12 @@ class EmailTwoFactorCode extends Model
     public static function hashCode(string $userId, EmailCodePurpose $purpose, #[SensitiveParameter] string $code): string
     {
         return hash_hmac('sha256', "{$userId}|{$purpose->value}|{$code}", (string) config('app.key'));
+    }
+
+    /** @return BelongsTo<User, $this> */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 
     /** @return Builder<static> */
