@@ -9,6 +9,7 @@ export const ownLayoutPages: readonly string[] = [
     'poker/show',
     'games/show',
     'whiteboards/show',
+    'whiteboards/join',
 ];
 
 const ownLayoutPrefixes: readonly string[] = ['admin/', 'dev/'];

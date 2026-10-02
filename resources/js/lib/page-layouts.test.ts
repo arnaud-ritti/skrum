@@ -16,6 +16,7 @@ describe('page layouts', () => {
             'poker/show',
             'games/show',
             'whiteboards/show',
+            'whiteboards/join',
         ]) {
             expect(usesOwnLayout(name), name).toBe(true);
         }
