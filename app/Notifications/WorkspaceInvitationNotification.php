@@ -2,12 +2,15 @@
 
 namespace App\Notifications;
 
+use App\Mail\WorkspaceInvitationMail;
+use App\Models\User;
 use Carbon\CarbonInterface;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeEncrypted;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Notifications\Messages\MailMessage;
+use Illuminate\Notifications\AnonymousNotifiable;
 use Illuminate\Notifications\Notification;
+use Illuminate\Support\Str;
 
 class WorkspaceInvitationNotification extends Notification implements ShouldBeEncrypted, ShouldQueue
 {
@@ -26,15 +29,10 @@ class WorkspaceInvitationNotification extends Notification implements ShouldBeEn
         return ['mail'];
     }
 
-    public function toMail(object $notifiable): MailMessage
+    public function toMail(AnonymousNotifiable|User $notifiable): WorkspaceInvitationMail
     {
-        return (new MailMessage)
-            ->subject(__('You are invited to join :workspace', ['workspace' => $this->workspaceName]))
-            ->line(__(':inviter invited you to join the :workspace workspace.', [
-                'inviter' => $this->inviterName,
-                'workspace' => $this->workspaceName,
-            ]))
-            ->action(__('Accept invitation'), $this->url)
-            ->line(__('This invitation expires on :date.', ['date' => $this->expiresAt->isoFormat('LL')]));
+        return (new WorkspaceInvitationMail($this->workspaceName, $this->inviterName, $this->url, $this->expiresAt))
+            ->subject(Str::squish(__('You are invited to join :workspace', ['workspace' => $this->workspaceName])))
+            ->forNotifiable($notifiable);
     }
 }

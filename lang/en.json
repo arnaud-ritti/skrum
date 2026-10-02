@@ -199,6 +199,7 @@
     "You are invited to join :workspace": "You are invited to join :workspace",
     ":inviter invited you to join the :workspace workspace.": ":inviter invited you to join the :workspace workspace.",
     "This invitation expires on :date.": "This invitation expires on :date.",
+    "You do not know :inviter? Ignore this e-mail.": "You do not know :inviter? Ignore this e-mail.",
     "Leave workspace": "Leave workspace",
     "Transfer ownership of your workspaces before deleting your account.": "Transfer ownership of your workspaces before deleting your account.",
     "This invitation link is no longer valid.": "This invitation link is no longer valid.",

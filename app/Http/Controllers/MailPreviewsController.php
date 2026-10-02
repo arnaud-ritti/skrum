@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\WorkspaceInvitationMail;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -35,6 +36,9 @@ class MailPreviewsController extends Controller
      */
     private function samples(): array
     {
-        return [];
+        return [
+            'invitation' => fn (): Mailable => (new WorkspaceInvitationMail('Nordlys', 'Fran Facilitator', url('/invitations/sample'), now()->addDays(7)))
+                ->subject(__('You are invited to join :workspace', ['workspace' => 'Nordlys'])),
+        ];
     }
 }

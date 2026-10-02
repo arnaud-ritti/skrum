@@ -458,6 +458,7 @@
     "You are invited to join :workspace": "Has sido invitado a unirte a :workspace",
     ":inviter invited you to join the :workspace workspace.": ":inviter te ha invitado a unirte al espacio de trabajo :workspace.",
     "This invitation expires on :date.": "Esta invitación caduca el :date.",
+    "You do not know :inviter? Ignore this e-mail.": "¿No conoce a :inviter? Ignore este correo.",
     "Leave workspace": "Salir del espacio de trabajo",
     "Transfer ownership of your workspaces before deleting your account.": "Transfiere la propiedad de tus espacios de trabajo antes de eliminar tu cuenta.",
     "This invitation link is no longer valid.": "Este enlace de invitación ya no es válido.",
