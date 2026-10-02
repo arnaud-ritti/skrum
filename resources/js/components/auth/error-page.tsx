@@ -17,7 +17,7 @@ import { SkrumLogo } from '@/components/skrum/skrum-logo';
 import { Button } from '@/components/ui/button';
 import { useClipboard } from '@/hooks/use-clipboard';
 import { useTrans } from '@/hooks/use-trans';
-import { reloadDocument as reload } from '@/lib/reload-document';
+import { reloadDocument } from '@/lib/reload-document';
 import { dashboard, login, logout } from '@/routes';
 import type { Brand } from '@/types';
 
@@ -29,6 +29,8 @@ export type ErrorPageProps = {
     occurredAt?: string | null;
     /** 429 only: seconds, from the `Retry-After` header. */
     retryAfter?: number | null;
+    /** A failed request other than a GET: the page it came from. */
+    returnTo?: string | null;
     /** Place left: "Instance status" and "Help", at the end of the header. */
     headerLinks?: ReactNode;
     /** Place left: the search action of the 404 page, after "Back to my teams". */
@@ -66,14 +68,15 @@ function ErrorId({
     const { t } = useTrans();
     const labelId = useId();
     const [, copy] = useClipboard();
-    const [copied, setCopied] = useState(false);
+    const [outcome, setOutcome] = useState<'copied' | 'refused' | null>(null);
+    const copied = outcome === 'copied';
 
     useEffect(() => {
         if (!copied) {
             return;
         }
 
-        const timeout = window.setTimeout(() => setCopied(false), CopiedFor);
+        const timeout = window.setTimeout(() => setOutcome(null), CopiedFor);
 
         return () => window.clearTimeout(timeout);
     }, [copied]);
@@ -104,17 +107,30 @@ function ErrorId({
                     variant="outline"
                     size="sm"
                     className="shrink-0"
-                    aria-label={t('Copy error ID')}
+                    aria-label={copied ? t('Copied') : t('Copy error ID')}
                     onClick={() =>
-                        void copy(requestId).then((done) => setCopied(done))
+                        void copy(requestId).then((done) =>
+                            setOutcome(done ? 'copied' : 'refused'),
+                        )
                     }
                 >
                     {copied ? <Check /> : <Copy />}
                     <span>{copied ? t('Copied') : t('Copy')}</span>
                 </Button>
             </div>
-            <span role="status" className="sr-only">
-                {copied ? t('Copied') : ''}
+            <span
+                role="status"
+                className={
+                    outcome === 'refused'
+                        ? 'text-xs text-muted-foreground'
+                        : 'sr-only'
+                }
+            >
+                {copied && t('Copied')}
+                {outcome === 'refused' &&
+                    t(
+                        'The ID could not be copied. Select it and copy it by hand.',
+                    )}
             </span>
         </div>
     );
@@ -125,6 +141,7 @@ export function ErrorPage({
     requestId,
     occurredAt,
     retryAfter,
+    returnTo,
     headerLinks,
     search,
     accessRequest,
@@ -134,6 +151,7 @@ export function ErrorPage({
     const { auth, brand, name } = usePage().props as ErrorPageShared;
     const email = auth?.user?.email;
     const signedIn = email !== undefined;
+    const reload = () => reloadDocument(returnTo);
 
     const home = (variant: 'default' | 'outline' = 'default') => (
         <Button asChild variant={variant}>
@@ -240,9 +258,11 @@ export function ErrorPage({
                         <>
                             {' '}
                             <span data-slot="error-retry-after">
-                                {t('You can retry in :seconds seconds.', {
-                                    seconds: retryAfter,
-                                })}
+                                {retryAfter === 1
+                                    ? t('You can retry in 1 second.')
+                                    : t('You can retry in :seconds seconds.', {
+                                          seconds: retryAfter,
+                                      })}
                             </span>
                         </>
                     )}

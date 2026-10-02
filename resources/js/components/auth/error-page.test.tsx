@@ -109,7 +109,30 @@ describe('ErrorPage', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Reload' }));
 
         expect(reload).toHaveBeenCalledTimes(1);
+        expect(reload).toHaveBeenCalledWith(undefined);
     });
+
+    it.each([
+        [419, 'Reload'],
+        [429, 'Try again'],
+        [500, 'Try again'],
+    ])(
+        'goes back to the page a failed post came from on a %i, instead of reloading its url',
+        (status, action) => {
+            renderWithProviders(
+                <ErrorPage
+                    status={status}
+                    returnTo="http://localhost/settings/profile"
+                />,
+            );
+
+            fireEvent.click(screen.getByRole('button', { name: action }));
+
+            expect(reload).toHaveBeenCalledWith(
+                'http://localhost/settings/profile',
+            );
+        },
+    );
 
     it('says when a throttled request can be tried again', () => {
         renderWithProviders(<ErrorPage status={429} retryAfter={42} />);
@@ -119,6 +142,12 @@ describe('ErrorPage', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
 
         expect(reload).toHaveBeenCalledTimes(1);
+    });
+
+    it('counts a single second in the singular', () => {
+        renderWithProviders(<ErrorPage status={429} retryAfter={1} />);
+
+        expect(screen.getByText('You can retry in 1 second.')).toBeTruthy();
     });
 
     it('says nothing about the delay when the response gave none', () => {
@@ -160,6 +189,7 @@ describe('ErrorPage', () => {
             '0198c0de-0000-4000-8000-000000000001',
         );
         expect(copy.textContent).toBe('Copied');
+        expect(copy.getAttribute('aria-label')).toBe('Copied');
         expect(screen.getByRole('status').textContent).toBe('Copied');
 
         act(() => {
@@ -167,6 +197,29 @@ describe('ErrorPage', () => {
         });
 
         expect(copy.textContent).toBe('Copy');
+        expect(copy.getAttribute('aria-label')).toBe('Copy error ID');
+    });
+
+    it('says so when the browser refuses the copy', async () => {
+        writeText.mockRejectedValueOnce(new Error('Refused.'));
+        vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+        renderWithProviders(<ErrorPage status={500} requestId="0198c0de" />);
+
+        const copy = screen.getByRole('button', { name: 'Copy error ID' });
+
+        await act(async () => {
+            fireEvent.click(copy);
+            await Promise.resolve();
+        });
+
+        const status = screen.getByRole('status');
+
+        expect(copy.textContent).toBe('Copy');
+        expect(status.textContent).toBe(
+            'The ID could not be copied. Select it and copy it by hand.',
+        );
+        expect(status.className).not.toContain('sr-only');
     });
 
     it('renders a server error without any shared prop', () => {

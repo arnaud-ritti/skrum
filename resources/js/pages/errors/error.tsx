@@ -7,11 +7,13 @@ export default function ErrorStatusPage({
     requestId,
     occurredAt,
     retryAfter,
+    returnTo,
 }: {
     status: number;
     requestId?: string | null;
     occurredAt?: string | null;
     retryAfter?: number | null;
+    returnTo?: string | null;
 }) {
     const { t } = useTrans();
     const titles: Record<number, string> = {
@@ -30,6 +32,7 @@ export default function ErrorStatusPage({
                 requestId={requestId}
                 occurredAt={occurredAt}
                 retryAfter={retryAfter}
+                returnTo={returnTo}
             />
         </>
     );

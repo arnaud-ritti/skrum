@@ -5,6 +5,7 @@ use App\Models\Team;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceInvitation;
+use Illuminate\Session\TokenMismatchException;
 use Illuminate\Support\Facades\Route;
 
 function p18eAccessMember(): User
@@ -274,7 +275,32 @@ it('[P18e-11-09] the 500 page shows the id of the request and "Copy error ID" co
     $page->script('() => { navigator.clipboard.writeText = (text) => { window.copiedErrorId = text; return Promise.resolve(); }; return true; }');
 
     $page->click('[aria-label="Copy error ID"]')
-        ->assertSeeIn('[aria-label="Copy error ID"]', 'Copied');
+        ->assertSeeIn('[data-slot="error-id"] button[aria-label="Copied"]', 'Copied');
 
     expect($page->script('() => window.copiedErrorId'))->toBe($requestId);
+});
+
+it('[P18e-11-10] "Reload" on the 419 page of a log out that expired goes back to the page it was sent from', function () {
+    Route::middleware('web')->post('/logout', fn () => throw new TokenMismatchException('CSRF token mismatch.'));
+
+    $workspace = Workspace::factory()->create(['name' => 'Nordlys']);
+    $inviter = workspaceManager($workspace);
+    $otto = User::factory()->create(['name' => 'Otto Other', 'email' => 'otto@example.com', 'locale' => 'en']);
+
+    WorkspaceInvitation::factory()->withToken('pending-token')->create([
+        'workspace_id' => $workspace->id,
+        'email' => 'mona@example.com',
+        'invited_by_id' => $inviter->id,
+    ]);
+
+    $page = $this->signIn($otto, '/invitations/pending-token');
+
+    $page->assertAttribute('[data-slot="invitation-card"]', 'data-state', 'wrong-account')
+        ->click('Log out')
+        ->assertSeeIn('[data-slot="error-page"][data-status="419"]', 'ERROR 419')
+        ->assertPathIs('/logout')
+        ->click('Reload')
+        ->assertPathIs('/invitations/pending-token')
+        ->assertAttribute('[data-slot="invitation-card"]', 'data-state', 'wrong-account')
+        ->assertNotPresent('[data-slot="error-page"]');
 });

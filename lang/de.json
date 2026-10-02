@@ -3968,6 +3968,8 @@
     "Too many requests": "Zu viele Anfragen",
     "This went a little too fast for the server. Wait a moment, then try again.": "Das ging dem Server etwas zu schnell. Warten Sie einen Moment und versuchen Sie es noch einmal.",
     "You can retry in :seconds seconds.": "In :seconds Sekunden können Sie es erneut versuchen.",
+    "You can retry in 1 second.": "In 1 Sekunde können Sie es erneut versuchen.",
+    "The ID could not be copied. Select it and copy it by hand.": "Die ID konnte nicht kopiert werden. Markieren Sie sie und kopieren Sie sie von Hand.",
     "Error 500": "Fehler 500",
     "Something broke on our side": "Bei uns ist etwas kaputtgegangen",
     "Your cards and action items are safe. Try again in a moment; if it happens again, send this ID to your admin.": "Ihre Karten und Maßnahmen sind sicher. Versuchen Sie es gleich noch einmal; wenn es wieder passiert, senden Sie diese ID an Ihren Admin.",

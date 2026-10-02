@@ -29,13 +29,22 @@ class ErrorPageResponder
 
     /**
      * A request that matched no route went through no route middleware: these
-     * give its error page the session, the signed-in user and the locale.
+     * give its error page the session and the signed-in user.
      *
      * @var array<int, class-string>
      */
-    private const array UnroutedMiddleware = [
+    private const array SessionMiddleware = [
         EncryptCookies::class,
         StartSession::class,
+    ];
+
+    /**
+     * The web group runs these after the bindings, the CSRF check and the
+     * throttle, so an error thrown there has not been through them yet.
+     *
+     * @var array<int, class-string>
+     */
+    private const array PageMiddleware = [
         HandleAppearance::class,
         SetLocale::class,
     ];
@@ -59,7 +68,7 @@ class ErrorPageResponder
         }
 
         try {
-            return $this->throughUnroutedMiddleware($response->request, fn (): Response => $response
+            return $this->throughPageMiddleware($response->request, fn (): Response => $response
                 ->render(self::Component, $this->props($response))
                 ->usingMiddleware(HandleInertiaRequests::class)
                 ->withSharedData()
@@ -81,6 +90,7 @@ class ErrorPageResponder
             'status' => 500,
             'requestId' => Context::get(AssignRequestId::ContextKey),
             'occurredAt' => now('UTC')->format('Y-m-d H:i:s'),
+            ...$this->returnTo($response->request),
         ]);
     }
 
@@ -114,32 +124,73 @@ class ErrorPageResponder
     /**
      * @return array{
      *     status: int,
-     *     retryAfter?: int
+     *     retryAfter?: int,
+     *     returnTo?: string
      * }
      */
     private function props(ExceptionResponse $response): array
     {
+        $props = ['status' => $response->statusCode(), ...$this->returnTo($response->request)];
         $retryAfter = $response->response->headers->get('Retry-After');
 
         if ($response->statusCode() !== 429 || ! is_numeric($retryAfter)) {
-            return ['status' => $response->statusCode()];
+            return $props;
         }
 
-        return ['status' => 429, 'retryAfter' => (int) $retryAfter];
+        return [...$props, 'retryAfter' => (int) $retryAfter];
+    }
+
+    /**
+     * The page is shown at the URL of the failed request. When that request was
+     * not a GET, reloading it would ask for a URL that may only answer a POST:
+     * its actions go back to the page the request came from instead.
+     *
+     * @return array{returnTo?: string}
+     */
+    private function returnTo(Request $request): array
+    {
+        if ($request->isMethodSafe()) {
+            return [];
+        }
+
+        $root = $request->getSchemeAndHttpHost();
+        $previous = url()->previous();
+
+        if ($previous !== $root && ! str_starts_with($previous, "{$root}/")) {
+            return ['returnTo' => "{$root}/"];
+        }
+
+        return ['returnTo' => $previous];
     }
 
     /**
      * @param  callable(): Response  $render
      */
-    private function throughUnroutedMiddleware(Request $request, callable $render): Response
+    private function throughPageMiddleware(Request $request, callable $render): Response
     {
-        if ($request->route() !== null) {
-            return $render();
-        }
-
         return resolve(Pipeline::class)
             ->send($request)
-            ->through(self::UnroutedMiddleware)
+            ->through([
+                ...($this->shouldStartSession($request) ? self::SessionMiddleware : []),
+                ...self::PageMiddleware,
+            ])
             ->then(fn (): Response => $render());
+    }
+
+    /**
+     * Bots, missing assets and stale build chunks get their 404 without a
+     * session row, a cookie or the queries of a signed-in user.
+     */
+    private function shouldStartSession(Request $request): bool
+    {
+        if ($request->route() !== null) {
+            return false;
+        }
+
+        if (! $request->cookies->has(config('session.cookie'))) {
+            return false;
+        }
+
+        return str_contains((string) $request->header('Accept'), 'text/html');
     }
 }

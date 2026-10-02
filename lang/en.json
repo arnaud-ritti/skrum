@@ -3743,6 +3743,8 @@
     "Too many requests": "Too many requests",
     "This went a little too fast for the server. Wait a moment, then try again.": "This went a little too fast for the server. Wait a moment, then try again.",
     "You can retry in :seconds seconds.": "You can retry in :seconds seconds.",
+    "You can retry in 1 second.": "You can retry in 1 second.",
+    "The ID could not be copied. Select it and copy it by hand.": "The ID could not be copied. Select it and copy it by hand.",
     "Error 500": "Error 500",
     "Something broke on our side": "Something broke on our side",
     "Your cards and action items are safe. Try again in a moment; if it happens again, send this ID to your admin.": "Your cards and action items are safe. Try again in a moment; if it happens again, send this ID to your admin.",

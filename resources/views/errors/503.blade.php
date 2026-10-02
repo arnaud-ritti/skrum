@@ -8,14 +8,18 @@
 @php
     $appearance = in_array(request()->cookie('appearance'), ['light', 'dark'], true) ? request()->cookie('appearance') : null;
     $instance = (string) config('app.name');
+    // Maintenance mode answers before any route middleware: the locale is not set and its cookie is still encrypted.
+    $locale = request()->route() === null && filled(request()->header('Accept-Language'))
+        ? request()->getPreferredLanguage(array_unique([app()->getLocale(), ...config('skrum.locales')]))
+        : app()->getLocale();
 @endphp
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" @class([$appearance => $appearance !== null])>
+<html lang="{{ str_replace('_', '-', $locale) }}" @class([$appearance => $appearance !== null])>
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="robots" content="noindex">
-        <title>{{ __('Maintenance') }} - {{ $instance }}</title>
+        <title>{{ __('Maintenance', [], $locale) }} - {{ $instance }}</title>
         <style>
             :root {
                 color-scheme: light;
@@ -228,18 +232,18 @@
                 <circle cx="80" cy="56" r="2.5" fill="var(--sky-text)"/>
                 <ellipse cx="80" cy="103" rx="44" ry="4" fill="var(--muted)"/>
             </svg>
-            <p class="overline">{{ __('Maintenance') }}</p>
-            <h1>{{ __(':name is being updated', ['name' => $instance]) }}</h1>
-            <p class="description">{{ __('Nothing is lost: sessions pick up exactly where they stopped.') }}</p>
+            <p class="overline">{{ __('Maintenance', [], $locale) }}</p>
+            <h1>{{ __(':name is being updated', ['name' => $instance], $locale) }}</h1>
+            <p class="description">{{ __('Nothing is lost: sessions pick up exactly where they stopped.', [], $locale) }}</p>
             {{-- Place left (AD-5): the "Back at" block, then the message of the instance admin. --}}
-            <a class="retry" href="{{ request()->getRequestUri() }}">
+            <a class="retry" href="/{{ ltrim(request()->getRequestUri(), '/') }}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
                     <path d="M21 3v5h-5"/>
                     <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
                     <path d="M8 16H3v5"/>
                 </svg>
-                <span>{{ __('Retry now') }}</span>
+                <span>{{ __('Retry now', [], $locale) }}</span>
             </a>
         </main>
         <footer>

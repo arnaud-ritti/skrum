@@ -75,6 +75,45 @@ it('renders the 404 page in the language of the visitor', function () {
             ->where('locale', 'fr'));
 });
 
+it('keeps the language of the visitor when the url names a session that is gone', function (string $path) {
+    $user = teamMember(Team::factory()->create());
+    $user->forceFill(['locale' => 'fr'])->save();
+
+    $this->actingAs($user)
+        ->get($path)
+        ->assertNotFound()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('errors/error')
+            ->where('locale', 'fr')
+            ->where('translations.Language', 'Langue'));
+})->with([
+    'a retro' => fn () => '/retros/'.Str::uuid(),
+    'a workspace' => '/w/no-such-workspace',
+]);
+
+it('keeps the language of the visitor on a throttled request', function () {
+    Route::middleware(['web', 'throttle:1,1'])->get('/error-pages-probe/throttled-fr', fn () => 'ok');
+
+    $this->get('/error-pages-probe/throttled-fr', ['Accept-Language' => 'fr'])->assertOk();
+
+    app()->setLocale('en');
+
+    $this->get('/error-pages-probe/throttled-fr', ['Accept-Language' => 'fr'])
+        ->assertTooManyRequests()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('errors/error')
+            ->where('locale', 'fr'));
+});
+
+it('starts no session for an unknown url asked without one', function (array $headers) {
+    $this->get('/build/assets/gone-chunk.js', $headers)
+        ->assertNotFound()
+        ->assertCookieMissing(config('session.cookie'));
+})->with([
+    'a first visit' => [[]],
+    'an asset request' => [['Accept' => '*/*']],
+]);
+
 it('renders the 403 page when registration is closed', function () {
     config(['skrum.signup_mode' => 'invite']);
     User::factory()->create();
@@ -97,6 +136,27 @@ it('renders the 419 page for a post with a stale csrf token', function () {
             ->component('errors/error')
             ->where('status', 419)
             ->missing('requestId'));
+});
+
+it('gives the error page of a request that was not a get the page to go back to', function (?string $referer, string $returnTo) {
+    Route::middleware('web')->post('/error-pages-probe/expired', fn () => throw new TokenMismatchException('CSRF token mismatch.'));
+
+    $this->post('/error-pages-probe/expired', [], $referer === null ? [] : ['Referer' => $referer])
+        ->assertStatus(419)
+        ->assertInertia(fn (Assert $page) => $page->where('returnTo', $returnTo));
+})->with([
+    'the page it came from' => ['http://localhost/settings/profile?tab=1', 'http://localhost/settings/profile?tab=1'],
+    'no referer' => [null, 'http://localhost'],
+    'another site' => ['https://evil.example/x', 'http://localhost/'],
+    'a host that only starts like ours' => ['http://localhost.evil.example/x', 'http://localhost/'],
+]);
+
+it('leaves the error page of a get to reload its own url', function () {
+    Route::middleware('web')->get('/error-pages-probe/expired-get', fn () => throw new TokenMismatchException('CSRF token mismatch.'));
+
+    $this->get('/error-pages-probe/expired-get', ['Referer' => 'http://localhost/settings/profile'])
+        ->assertStatus(419)
+        ->assertInertia(fn (Assert $page) => $page->missing('returnTo'));
 });
 
 it('renders the 429 page with the delay of a throttled request', function () {
@@ -209,16 +269,33 @@ it('renders the static 503 view while the database is unreachable', function () 
     });
 });
 
+it('keeps the retry link of the 503 view on the instance', function () {
+    Route::middleware('web')->get('/{path}', fn () => abort(503))->where('path', '.*');
+
+    $response = $this->get('http://localhost//evil.example/x?from=probe')->assertServiceUnavailable();
+
+    expect($response->getContent())
+        ->toContain('href="/evil.example/x?from=probe"')
+        ->not->toContain('href="//');
+});
+
 it('renders the static 503 view in maintenance mode', function () {
     useProcessLocalMaintenanceMode();
 
     $this->artisan('down')->assertSuccessful();
 
     try {
-        $this->get('/')
+        $this->get('/', ['Accept-Language' => 'fr-FR,fr;q=0.9,en;q=0.8'])
             ->assertServiceUnavailable()
+            ->assertSee('lang="fr"', false)
+            ->assertSee('Réessayer maintenant')
             ->assertSee('data-slot="maintenance-page"', false)
             ->assertDontSee('<script', false);
+
+        $this->get('/')
+            ->assertServiceUnavailable()
+            ->assertSee('lang="en"', false)
+            ->assertSee('Retry now');
     } finally {
         $this->artisan('up');
     }
