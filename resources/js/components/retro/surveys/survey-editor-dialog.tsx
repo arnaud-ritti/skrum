@@ -1,15 +1,8 @@
 import { Plus, X } from 'lucide-react';
-import { useState, type FormEvent } from 'react';
+import { useState } from 'react';
 import SurveysController from '@/actions/App/Http/Controllers/Retros/SurveysController';
-import InputError from '@/components/input-error';
+import { FormDialog } from '@/components/skrum/confirm-dialog';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import {
-    Dialog,
-    DialogContent,
-    DialogFooter,
-    DialogTitle,
-} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -19,15 +12,17 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { useTrans } from '@/hooks/use-trans';
 import { retroRequest } from '@/lib/retro/api';
 import type { SurveyKind, SurveyPayload } from '@/lib/retro/types';
-import { useBoard } from './board-context';
+import { useBoard } from '../board-context';
 import { SurveyDraftField } from './survey-draft-field';
 
 const MinOptions = 2;
 const MaxOptions = 10;
+const SurveyKinds: SurveyKind[] = ['single', 'multiple', 'text'];
 
 export type SurveyDraft = {
     kind: SurveyKind;
@@ -36,11 +31,44 @@ export type SurveyDraft = {
     options: string[];
 };
 
-export const SurveyKindLabels: Record<SurveyKind, string> = {
-    single: 'Single choice',
-    multiple: 'Multiple choice',
-    text: 'Free text',
+export type SurveyEditor = {
+    open: boolean;
+    /** The survey being edited; none when a new one is written. */
+    survey: SurveyPayload | undefined;
+    /** Changes at each opening: the form starts again from it. */
+    session: number;
+    openCreate: () => void;
+    openEdit: (survey: SurveyPayload) => void;
+    close: () => void;
 };
+
+type EditorState = Pick<SurveyEditor, 'open' | 'survey' | 'session'>;
+
+/** The state of one survey dialog: closed, writing a new survey, or editing one. */
+export function useSurveyEditor(): SurveyEditor {
+    const [state, setState] = useState<EditorState>({
+        open: false,
+        survey: undefined,
+        session: 0,
+    });
+
+    return {
+        ...state,
+        openCreate: () =>
+            setState((current) => ({
+                open: true,
+                survey: undefined,
+                session: current.session + 1,
+            })),
+        openEdit: (survey) =>
+            setState((current) => ({
+                open: true,
+                survey,
+                session: current.session + 1,
+            })),
+        close: () => setState((current) => ({ ...current, open: false })),
+    };
+}
 
 function draftOf(survey?: SurveyPayload): SurveyDraft {
     if (!survey) {
@@ -63,33 +91,27 @@ function draftOf(survey?: SurveyPayload): SurveyDraft {
     };
 }
 
-type Props = {
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
-    survey?: SurveyPayload;
-};
+export function SurveyEditorDialog({ editor }: { editor: SurveyEditor }) {
+    const ctx = useBoard();
 
-export function SurveyDialog({ open, onOpenChange, survey }: Props) {
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent aria-describedby={undefined}>
-                {open && (
-                    <SurveyForm
-                        survey={survey}
-                        onDone={() => onOpenChange(false)}
-                    />
-                )}
-            </DialogContent>
-        </Dialog>
+        <SurveyEditorForm
+            key={editor.session}
+            open={editor.open && !ctx.sessionExpired}
+            survey={editor.survey}
+            onClose={editor.close}
+        />
     );
 }
 
-function SurveyForm({
+function SurveyEditorForm({
+    open,
     survey,
-    onDone,
+    onClose,
 }: {
+    open: boolean;
     survey?: SurveyPayload;
-    onDone: () => void;
+    onClose: () => void;
 }) {
     const ctx = useBoard();
     const { t } = useTrans();
@@ -97,8 +119,13 @@ function SurveyForm({
     const [draft, setDraft] = useState<SurveyDraft>(() => draftOf(survey));
     const [showVoters, setShowVoters] = useState(survey?.showVoters ?? false);
     const [error, setError] = useState<string | null>(null);
-    const [saving, setSaving] = useState(false);
     const isChoice = draft.kind !== 'text';
+
+    const kindLabels: Record<SurveyKind, string> = {
+        single: t('Single choice'),
+        multiple: t('Multiple choice'),
+        text: t('Free text'),
+    };
 
     const setOption = (index: number, label: string) =>
         setDraft((current) => ({
@@ -108,14 +135,7 @@ function SurveyForm({
             ),
         }));
 
-    const save = async (event: FormEvent) => {
-        event.preventDefault();
-
-        if (saving) {
-            return;
-        }
-
-        setSaving(true);
+    const save = async () => {
         setError(null);
 
         const description = draft.description.trim();
@@ -139,28 +159,33 @@ function SurveyForm({
 
             ctx.invalidateSurvey(response.survey.id);
             ctx.apply({ type: 'survey.upsert', survey: response.survey });
-            onDone();
         } catch (caught) {
             const message = ctx.handleError(caught);
 
+            // An expired session has its own banner: the dialog just closes.
             if (message === null) {
-                onDone();
-
                 return;
             }
 
             setError(message);
-        } finally {
-            setSaving(false);
+
+            throw caught;
         }
     };
 
     return (
-        <form onSubmit={(event) => void save(event)} className="space-y-4">
-            <DialogTitle>
-                {survey ? t('Edit survey') : t('New survey')}
-            </DialogTitle>
-
+        <FormDialog
+            open={open}
+            onOpenChange={(next) => {
+                if (!next) {
+                    onClose();
+                }
+            }}
+            title={survey ? t('Edit survey') : t('New survey')}
+            submitLabel={t('Save')}
+            onSubmit={save}
+            error={error ?? undefined}
+        >
             {!survey && (
                 <SurveyDraftField
                     kind={draft.kind}
@@ -178,7 +203,7 @@ function SurveyForm({
                 />
             )}
 
-            <div className="grid gap-2">
+            <div className="grid min-w-0 gap-2">
                 <Label htmlFor="survey-kind">{t('Answer type')}</Label>
                 <Select
                     value={draft.kind}
@@ -189,22 +214,20 @@ function SurveyForm({
                         }))
                     }
                 >
-                    <SelectTrigger id="survey-kind">
+                    <SelectTrigger id="survey-kind" className="w-full min-w-0">
                         <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                        {(Object.keys(SurveyKindLabels) as SurveyKind[]).map(
-                            (kind) => (
-                                <SelectItem key={kind} value={kind}>
-                                    {t(SurveyKindLabels[kind])}
-                                </SelectItem>
-                            ),
-                        )}
+                        {SurveyKinds.map((kind) => (
+                            <SelectItem key={kind} value={kind}>
+                                {kindLabels[kind]}
+                            </SelectItem>
+                        ))}
                     </SelectContent>
                 </Select>
             </div>
 
-            <div className="grid gap-2">
+            <div className="grid min-w-0 gap-2">
                 <Label htmlFor="survey-question">{t('Question')}</Label>
                 <Input
                     id="survey-question"
@@ -220,7 +243,7 @@ function SurveyForm({
                 />
             </div>
 
-            <div className="grid gap-2">
+            <div className="grid min-w-0 gap-2">
                 <Label htmlFor="survey-description">
                     {t('Description (optional)')}
                 </Label>
@@ -239,16 +262,20 @@ function SurveyForm({
             </div>
 
             {isChoice && (
-                <fieldset className="grid gap-2">
+                <fieldset className="grid min-w-0 gap-2">
                     <legend className="mb-2 text-sm font-medium">
                         {t('Options')}
                     </legend>
                     {draft.options.map((option, index) => (
-                        <div key={index} className="flex items-center gap-2">
+                        <div
+                            key={index}
+                            className="flex min-w-0 items-center gap-2"
+                        >
                             <Input
                                 value={option}
                                 maxLength={100}
                                 required
+                                className="min-w-0 flex-1"
                                 aria-label={t('Option :number', {
                                     number: index + 1,
                                 })}
@@ -260,6 +287,7 @@ function SurveyForm({
                                 type="button"
                                 size="icon"
                                 variant="ghost"
+                                className="shrink-0"
                                 aria-label={t('Remove option :number', {
                                     number: index + 1,
                                 })}
@@ -273,7 +301,7 @@ function SurveyForm({
                                     }))
                                 }
                             >
-                                <X className="size-4" />
+                                <X aria-hidden />
                             </Button>
                         </div>
                     ))}
@@ -281,7 +309,7 @@ function SurveyForm({
                         type="button"
                         size="sm"
                         variant="outline"
-                        className="justify-self-start"
+                        className="max-w-full min-w-0 justify-self-start"
                         disabled={draft.options.length >= MaxOptions}
                         onClick={() =>
                             setDraft((current) => ({
@@ -290,43 +318,24 @@ function SurveyForm({
                             }))
                         }
                     >
-                        <Plus className="size-4" />
-                        {t('Add option')}
+                        <Plus aria-hidden />
+                        <span className="truncate">{t('Add option')}</span>
                     </Button>
                 </fieldset>
             )}
 
-            <div className="grid gap-1">
-                <div className="flex items-center gap-2">
-                    <Checkbox
-                        id="survey-show-voters"
-                        checked={!retro.isAnonymous && showVoters}
-                        disabled={retro.isAnonymous}
-                        onCheckedChange={(checked) =>
-                            setShowVoters(checked === true)
-                        }
-                    />
-                    <Label htmlFor="survey-show-voters">
-                        {t('Show who answered')}
-                    </Label>
-                </div>
-                {retro.isAnonymous && (
-                    <p className="text-xs text-muted-foreground">
-                        {t('Names are never shown on anonymous retros.')}
-                    </p>
-                )}
-            </div>
-
-            <InputError message={error ?? undefined} />
-
-            <DialogFooter className="gap-2">
-                <Button type="button" variant="secondary" onClick={onDone}>
-                    {t('Cancel')}
-                </Button>
-                <Button type="submit" disabled={saving}>
-                    {t('Save')}
-                </Button>
-            </DialogFooter>
-        </form>
+            <Switch
+                id="survey-show-voters"
+                label={t('Show who answered')}
+                description={
+                    retro.isAnonymous
+                        ? t('Names are never shown on anonymous retros.')
+                        : undefined
+                }
+                checked={!retro.isAnonymous && showVoters}
+                disabled={retro.isAnonymous}
+                onCheckedChange={setShowVoters}
+            />
+        </FormDialog>
     );
 }

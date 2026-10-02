@@ -1,15 +1,9 @@
-import { Ellipsis } from 'lucide-react';
+import { Ellipsis, Lock, LockOpen, Pencil, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import SurveyClosuresController from '@/actions/App/Http/Controllers/Retros/SurveyClosuresController';
 import SurveysController from '@/actions/App/Http/Controllers/Retros/SurveysController';
+import { ConfirmDialog } from '@/components/skrum/confirm-dialog';
 import { Button } from '@/components/ui/button';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogTitle,
-} from '@/components/ui/dialog';
 import {
     DropdownMenu,
     DropdownMenuCheckboxItem,
@@ -22,13 +16,16 @@ import { useTrans } from '@/hooks/use-trans';
 import { retroRequest } from '@/lib/retro/api';
 import { SurveyPhases } from '@/lib/retro/survey-api';
 import type { SurveyPayload } from '@/lib/retro/types';
-import { useBoard } from './board-context';
-import { SurveyDialog } from './survey-dialog';
+import { useBoard } from '../board-context';
+import { SurveyEditorDialog, useSurveyEditor } from './survey-editor-dialog';
 
-export function SurveyMenu({ survey }: { survey: SurveyPayload }) {
+type SurveyResponse = { survey: SurveyPayload };
+
+/** What the facilitator does with a survey: edit, show names, close, delete. */
+export function SurveyActionsMenu({ survey }: { survey: SurveyPayload }) {
     const ctx = useBoard();
     const { t } = useTrans();
-    const [editing, setEditing] = useState(false);
+    const editor = useSurveyEditor();
     const [confirmingDelete, setConfirmingDelete] = useState(false);
     const [busy, setBusy] = useState(false);
     const { retro, viewer } = ctx.board;
@@ -40,7 +37,7 @@ export function SurveyMenu({ survey }: { survey: SurveyPayload }) {
     const canEdit = ctx.isEditable && SurveyPhases.includes(retro.phase);
     const route = { retro: retro.id, survey: survey.id };
 
-    const send = async (request: Promise<{ survey: SurveyPayload }>) => {
+    const send = async (request: Promise<SurveyResponse>) => {
         setBusy(true);
 
         const response = await ctx.run(request).finally(() => setBusy(false));
@@ -52,17 +49,14 @@ export function SurveyMenu({ survey }: { survey: SurveyPayload }) {
     };
 
     const destroy = async () => {
-        setBusy(true);
-
-        const result = await ctx
-            .run(retroRequest(SurveysController.destroy(route)))
-            .finally(() => setBusy(false));
+        const result = await ctx.run(
+            retroRequest(SurveysController.destroy(route)),
+        );
 
         if (result === undefined) {
-            return;
+            throw new Error('The survey was not deleted.');
         }
 
-        setConfirmingDelete(false);
         ctx.apply({ type: 'survey.remove', surveyId: survey.id });
     };
 
@@ -71,24 +65,25 @@ export function SurveyMenu({ survey }: { survey: SurveyPayload }) {
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button
-                        size="icon"
+                        size="icon-sm"
                         variant="ghost"
-                        className="size-6 shrink-0"
+                        className="-my-1 shrink-0"
                         aria-label={t('Survey actions')}
                         disabled={busy}
                     >
-                        <Ellipsis className="size-4" />
+                        <Ellipsis aria-hidden />
                     </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
+                <DropdownMenuContent align="end" className="max-w-64">
                     <DropdownMenuItem
                         disabled={!canEdit || survey.responseCount > 0}
-                        onSelect={() => setEditing(true)}
+                        onSelect={() => editor.openEdit(survey)}
                     >
-                        {t('Edit survey')}
+                        <Pencil aria-hidden />
+                        <span className="truncate">{t('Edit survey')}</span>
                     </DropdownMenuItem>
                     {survey.responseCount > 0 && (
-                        <p className="px-2 pb-1 text-xs text-muted-foreground">
+                        <p className="px-2 pb-1 text-xs/snug text-muted-foreground">
                             {t(
                                 'Edit is only possible before the first answer.',
                             )}
@@ -99,19 +94,21 @@ export function SurveyMenu({ survey }: { survey: SurveyPayload }) {
                         disabled={retro.isAnonymous}
                         onCheckedChange={(checked) =>
                             void send(
-                                retroRequest<{ survey: SurveyPayload }>(
+                                retroRequest<SurveyResponse>(
                                     SurveysController.update(route),
                                     { show_voters: checked === true },
                                 ),
                             )
                         }
                     >
-                        {t('Show who answered')}
+                        <span className="truncate">
+                            {t('Show who answered')}
+                        </span>
                     </DropdownMenuCheckboxItem>
                     <DropdownMenuItem
                         onSelect={() =>
                             void send(
-                                retroRequest<{ survey: SurveyPayload }>(
+                                retroRequest<SurveyResponse>(
                                     survey.isClosed
                                         ? SurveyClosuresController.destroy(
                                               route,
@@ -123,9 +120,16 @@ export function SurveyMenu({ survey }: { survey: SurveyPayload }) {
                             )
                         }
                     >
-                        {survey.isClosed
-                            ? t('Reopen survey')
-                            : t('Close survey')}
+                        {survey.isClosed ? (
+                            <LockOpen aria-hidden />
+                        ) : (
+                            <Lock aria-hidden />
+                        )}
+                        <span className="truncate">
+                            {survey.isClosed
+                                ? t('Reopen survey')
+                                : t('Close survey')}
+                        </span>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
@@ -133,43 +137,23 @@ export function SurveyMenu({ survey }: { survey: SurveyPayload }) {
                         disabled={!canEdit}
                         onSelect={() => setConfirmingDelete(true)}
                     >
-                        {t('Delete survey')}
+                        <Trash2 aria-hidden />
+                        <span className="truncate">{t('Delete survey')}</span>
                     </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
-            <SurveyDialog
-                open={editing && !ctx.sessionExpired}
-                onOpenChange={setEditing}
-                survey={survey}
-            />
-            <Dialog
+            <SurveyEditorDialog editor={editor} />
+            <ConfirmDialog
                 open={confirmingDelete && !ctx.sessionExpired}
                 onOpenChange={setConfirmingDelete}
-            >
-                <DialogContent>
-                    <DialogTitle>{t('Delete this survey?')}</DialogTitle>
-                    <DialogDescription>
-                        {t(
-                            'Its answers, reactions and comments are deleted too.',
-                        )}
-                    </DialogDescription>
-                    <DialogFooter className="gap-2">
-                        <Button
-                            variant="secondary"
-                            onClick={() => setConfirmingDelete(false)}
-                        >
-                            {t('Cancel')}
-                        </Button>
-                        <Button
-                            variant="destructive"
-                            disabled={busy}
-                            onClick={() => void destroy()}
-                        >
-                            {t('Delete')}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                tone="destructive"
+                title={t('Delete this survey?')}
+                description={t(
+                    'Its answers, reactions and comments are deleted too.',
+                )}
+                confirmLabel={t('Delete')}
+                onConfirm={destroy}
+            />
         </>
     );
 }

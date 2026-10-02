@@ -1,5 +1,5 @@
 import { MessageSquare } from 'lucide-react';
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import SurveyCommentsController from '@/actions/App/Http/Controllers/Retros/SurveyCommentsController';
 import SurveyReactionsController from '@/actions/App/Http/Controllers/Retros/SurveyReactionsController';
 import { Button } from '@/components/ui/button';
@@ -7,13 +7,18 @@ import { useTrans } from '@/hooks/use-trans';
 import { retroRequest } from '@/lib/retro/api';
 import { fetchSurvey, SurveyPhases } from '@/lib/retro/survey-api';
 import type { SurveyComment, SurveyPayload } from '@/lib/retro/types';
-import { useBoard } from './board-context';
-import { CommentThreadList, type CommentThreadActions } from './comment-thread';
-import { optimisticReactions, ReactionChips } from './reaction-chips';
+import { useBoard } from '../board-context';
+import {
+    CommentThreadList,
+    type CommentThreadActions,
+} from '../comment-thread';
+import { optimisticReactions, ReactionChips } from '../reaction-chips';
 
+/** The foot of a survey: its reactions, and its comments once the viewer has answered. */
 export function SurveyDiscussion({ survey }: { survey: SurveyPayload }) {
     const ctx = useBoard();
     const { t } = useTrans();
+    const threadsId = useId();
     const [open, setOpen] = useState(false);
     const { retro } = ctx.board;
     const route = { retro: retro.id, survey: survey.id };
@@ -27,12 +32,17 @@ export function SurveyDiscussion({ survey }: { survey: SurveyPayload }) {
 
     if (!survey.resultsVisible) {
         return (
-            <p className="flex items-center gap-1 text-xs text-muted-foreground">
+            <p
+                data-slot="survey-discussion"
+                className="flex min-w-0 items-start gap-1.5 border-t border-border pt-3 text-xs/snug text-muted-foreground"
+            >
                 <MessageSquare
-                    className="size-3.5"
+                    className="mt-0.5 size-3.5 shrink-0"
                     aria-label={commentsLabel}
                 />
-                {survey.commentCount} · {t('Answer to join the discussion')}
+                <span className="min-w-0">
+                    {survey.commentCount} · {t('Answer to join the discussion')}
+                </span>
             </p>
         );
     }
@@ -130,36 +140,45 @@ export function SurveyDiscussion({ survey }: { survey: SurveyPayload }) {
     };
 
     return (
-        <div className="space-y-1">
-            {retro.reactionsEnabled && (
-                <ReactionChips
-                    reactions={survey.reactions}
-                    canReact={canDiscuss}
-                    onToggle={(emoji) => void toggleReaction(emoji)}
-                />
-            )}
-            <Button
-                size="sm"
-                variant="ghost"
-                className="h-7 gap-1"
-                aria-expanded={open}
-                aria-label={commentsLabel}
-                onClick={() => setOpen(!open)}
-            >
-                <MessageSquare className="size-3.5" />
-                {survey.commentCount}
-            </Button>
+        <div
+            data-slot="survey-discussion"
+            className="flex min-w-0 flex-col gap-2 border-t border-border pt-3"
+        >
+            <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                {retro.reactionsEnabled && (
+                    <ReactionChips
+                        reactions={survey.reactions}
+                        canReact={canDiscuss}
+                        onToggle={(emoji) => void toggleReaction(emoji)}
+                    />
+                )}
+                <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="ms-auto shrink-0 gap-1.5 text-muted-foreground tabular-nums"
+                    aria-expanded={open}
+                    aria-controls={open ? threadsId : undefined}
+                    aria-label={commentsLabel}
+                    onClick={() => setOpen(!open)}
+                >
+                    <MessageSquare aria-hidden />
+                    {survey.commentCount}
+                </Button>
+            </div>
             {open && (
-                <CommentThreadList
-                    threads={survey.comments}
-                    canWrite={canDiscuss}
-                    actions={actions}
-                    composerNote={
-                        !survey.showVoters && !retro.isAnonymous
-                            ? t('Your name is shown with your comment.')
-                            : undefined
-                    }
-                />
+                <div id={threadsId} className="min-w-0">
+                    <CommentThreadList
+                        threads={survey.comments}
+                        canWrite={canDiscuss}
+                        actions={actions}
+                        composerNote={
+                            !survey.showVoters && !retro.isAnonymous
+                                ? t('Your name is shown with your comment.')
+                                : undefined
+                        }
+                    />
+                </div>
             )}
         </div>
     );

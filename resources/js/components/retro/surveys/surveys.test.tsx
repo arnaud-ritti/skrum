@@ -1,0 +1,406 @@
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { BoardProvider } from '@/components/retro/board-context';
+import { SurveyBoardCard } from '@/components/retro/surveys/survey-board-card';
+import { SurveysColumn } from '@/components/retro/surveys/surveys-column';
+import type { SurveyPayload } from '@/lib/retro/types';
+import { boardContext, renderInBoard, retroSnapshot } from '@/test/retro-board';
+
+const retroRequest = vi.hoisted(() => vi.fn());
+
+vi.mock('@/lib/retro/api', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('@/lib/retro/api')>()),
+    retroRequest,
+}));
+
+function survey(overrides: Partial<SurveyPayload> = {}): SurveyPayload {
+    return {
+        id: 'survey-1',
+        kind: 'single',
+        question: 'How was the sprint?',
+        description: null,
+        position: 0,
+        isClosed: false,
+        version: 1,
+        showVoters: false,
+        responseCount: 0,
+        myOptionIds: [],
+        myText: null,
+        resultsVisible: false,
+        options: [
+            {
+                id: 'great',
+                label: 'Great',
+                position: 0,
+                count: null,
+                voters: null,
+            },
+            { id: 'ok', label: 'OK', position: 1, count: null, voters: null },
+        ],
+        textAnswers: null,
+        reactions: [],
+        commentCount: 0,
+        comments: [],
+        ...overrides,
+    };
+}
+
+const answered = (overrides: Partial<SurveyPayload> = {}) =>
+    survey({
+        responseCount: 1,
+        myOptionIds: ['great'],
+        resultsVisible: true,
+        options: [
+            {
+                id: 'great',
+                label: 'Great',
+                position: 0,
+                count: 1,
+                voters: null,
+            },
+            { id: 'ok', label: 'OK', position: 1, count: 0, voters: null },
+        ],
+        ...overrides,
+    });
+
+const card = () => screen.getByRole('article', { name: 'How was the sprint?' });
+
+beforeEach(() => {
+    retroRequest.mockReset();
+});
+
+describe('SurveysColumn', () => {
+    it('is the "Surveys" region, with one card per survey named by its question', () => {
+        renderInBoard(
+            <SurveysColumn />,
+            boardContext(
+                retroSnapshot({
+                    surveys: [
+                        survey(),
+                        survey({
+                            id: 'survey-2',
+                            question: 'And the next one?',
+                        }),
+                    ],
+                }),
+            ),
+        );
+
+        const region = screen.getByRole('region', { name: 'Surveys' });
+
+        expect(within(region).getAllByRole('article')).toHaveLength(2);
+        expect(
+            document.querySelector('article[aria-label="And the next one?"]'),
+        ).not.toBeNull();
+        expect(
+            within(region).getByRole('heading', { level: 2, name: 'Surveys' }),
+        ).toBeTruthy();
+    });
+
+    it.each([
+        ['without a survey', retroSnapshot()],
+        [
+            'outside the survey phases',
+            retroSnapshot({ retro: { phase: 'actions' }, surveys: [survey()] }),
+        ],
+    ])('renders nothing %s', (_, board) => {
+        const { container } = renderInBoard(
+            <SurveysColumn />,
+            boardContext(board),
+        );
+
+        expect(container.querySelector('section')).toBeNull();
+    });
+});
+
+describe('SurveyBoardCard', () => {
+    it('answers a single-choice survey in one click and takes the survey the server returns', async () => {
+        const saved = answered();
+        retroRequest.mockResolvedValue({ survey: saved });
+
+        const { ctx } = renderInBoard(
+            <SurveyBoardCard survey={survey()} />,
+            boardContext(),
+        );
+
+        expect(
+            within(card()).getByRole('radiogroup', {
+                name: 'How was the sprint?',
+            }),
+        ).toBeTruthy();
+
+        fireEvent.click(within(card()).getByRole('radio', { name: 'Great' }));
+
+        await waitFor(() =>
+            expect(ctx.apply).toHaveBeenCalledWith({
+                type: 'survey.upsert',
+                survey: saved,
+            }),
+        );
+        expect(retroRequest).toHaveBeenCalledWith(
+            expect.objectContaining({
+                url: '/retros/retro-1/surveys/survey-1/response',
+                method: 'put',
+            }),
+            { optionId: 'great' },
+        );
+        expect(ctx.invalidateSurvey).toHaveBeenCalledWith('survey-1');
+    });
+
+    it('answers a single-choice survey with a digit typed in the card', () => {
+        retroRequest.mockResolvedValue({ survey: answered() });
+
+        renderInBoard(<SurveyBoardCard survey={survey()} />, boardContext());
+
+        const wasNotPrevented = fireEvent.keyDown(
+            within(card()).getByRole('radio', { name: 'Great' }),
+            { key: '2' },
+        );
+
+        // A prevented digit is not read by the reaction shortcuts of the session.
+        expect(wasNotPrevented).toBe(false);
+        expect(retroRequest).toHaveBeenCalledWith(expect.anything(), {
+            optionId: 'ok',
+        });
+    });
+
+    it('shows no figure while the results are hidden, and says how to join the discussion', () => {
+        renderInBoard(
+            <SurveyBoardCard
+                survey={survey({ responseCount: 3, commentCount: 1 })}
+            />,
+            boardContext(),
+        );
+
+        expect(card().textContent).not.toContain('%');
+        expect(within(card()).getByText('3 responses')).toBeTruthy();
+        expect(card().textContent).toContain(
+            '1 · Answer to join the discussion',
+        );
+        expect(
+            within(card()).queryByRole('button', { name: /^Comments/ }),
+        ).toBeNull();
+    });
+
+    it('shows the results as "count · percent" once answered, with "Withdraw my answer"', async () => {
+        retroRequest.mockResolvedValue({ survey: survey() });
+
+        renderInBoard(<SurveyBoardCard survey={answered()} />, boardContext());
+
+        expect(within(card()).getByText('1 · 100%')).toBeTruthy();
+        expect(within(card()).getByText('0 · 0%')).toBeTruthy();
+        expect(within(card()).getByText('1 response')).toBeTruthy();
+
+        fireEvent.click(
+            within(card()).getByRole('button', { name: 'Withdraw my answer' }),
+        );
+
+        await waitFor(() =>
+            expect(retroRequest).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    url: '/retros/retro-1/surveys/survey-1/response',
+                    method: 'delete',
+                }),
+            ),
+        );
+    });
+
+    it('sends the ticked options of a multiple-choice survey in the order of the survey, once something changed', async () => {
+        const multiple = answered({ kind: 'multiple' });
+        retroRequest.mockResolvedValue({ survey: multiple });
+
+        renderInBoard(<SurveyBoardCard survey={multiple} />, boardContext());
+
+        const update = within(card()).getByRole('button', {
+            name: 'Update answer',
+        });
+
+        expect(update.hasAttribute('disabled')).toBe(true);
+
+        fireEvent.click(within(card()).getByRole('checkbox', { name: 'OK' }));
+
+        expect(update.hasAttribute('disabled')).toBe(false);
+
+        fireEvent.click(update);
+
+        await waitFor(() =>
+            expect(retroRequest).toHaveBeenCalledWith(expect.anything(), {
+                optionIds: ['great', 'ok'],
+            }),
+        );
+    });
+
+    it('sends a trimmed text, in a field named by the question', async () => {
+        const text = survey({ kind: 'text', options: [] });
+        retroRequest.mockResolvedValue({ survey: text });
+
+        renderInBoard(<SurveyBoardCard survey={text} />, boardContext());
+
+        const field = within(card()).getByRole('textbox', {
+            name: 'How was the sprint?',
+        });
+        const submit = within(card()).getByRole('button', { name: 'Submit' });
+
+        expect(submit.hasAttribute('disabled')).toBe(true);
+
+        fireEvent.change(field, { target: { value: '  Fine  ' } });
+        fireEvent.click(submit);
+
+        await waitFor(() =>
+            expect(retroRequest).toHaveBeenCalledWith(expect.anything(), {
+                text: 'Fine',
+            }),
+        );
+    });
+
+    it('starts the draft again when the saved answer changes', () => {
+        const multiple = answered({ kind: 'multiple' });
+        const ctx = boardContext();
+        const { rerender } = renderInBoard(
+            <SurveyBoardCard survey={multiple} />,
+            ctx,
+        );
+
+        fireEvent.click(within(card()).getByRole('checkbox', { name: 'OK' }));
+
+        expect(
+            within(card())
+                .getByRole('checkbox', { name: 'OK' })
+                .getAttribute('aria-checked'),
+        ).toBe('true');
+
+        rerender(
+            <BoardProvider value={ctx}>
+                <SurveyBoardCard
+                    survey={{ ...multiple, myOptionIds: [], responseCount: 0 }}
+                />
+            </BoardProvider>,
+        );
+
+        expect(
+            within(card())
+                .getByRole('checkbox', { name: 'OK' })
+                .getAttribute('aria-checked'),
+        ).toBe('false');
+        expect(
+            within(card())
+                .getByRole('checkbox', { name: 'Great' })
+                .getAttribute('aria-checked'),
+        ).toBe('false');
+    });
+
+    it('keeps a closed survey readable with its controls disabled', () => {
+        renderInBoard(
+            <SurveyBoardCard survey={answered({ isClosed: true })} />,
+            boardContext(),
+        );
+
+        expect(within(card()).getByText('Closed')).toBeTruthy();
+        expect(
+            within(card())
+                .getByRole('radio', { name: 'Great' })
+                .hasAttribute('disabled'),
+        ).toBe(true);
+        expect(
+            within(card()).queryByRole('button', {
+                name: 'Withdraw my answer',
+            }),
+        ).toBeNull();
+    });
+
+    it('blocks answering on a locked board without calling the survey closed', () => {
+        renderInBoard(
+            <SurveyBoardCard survey={answered()} />,
+            boardContext(retroSnapshot({ retro: { isLocked: true } })),
+        );
+
+        expect(within(card()).queryByText('Closed')).toBeNull();
+        expect(
+            within(card())
+                .getByRole('radio', { name: 'OK' })
+                .hasAttribute('disabled'),
+        ).toBe(true);
+        expect(
+            within(card()).queryByRole('button', {
+                name: 'Withdraw my answer',
+            }),
+        ).toBeNull();
+    });
+
+    it('gives the survey actions to the facilitator only', () => {
+        const { unmount } = renderInBoard(
+            <SurveyBoardCard survey={survey()} />,
+            boardContext(),
+        );
+
+        expect(
+            within(card()).getByRole('button', { name: 'Survey actions' }),
+        ).toBeTruthy();
+
+        unmount();
+
+        renderInBoard(
+            <SurveyBoardCard survey={survey()} />,
+            boardContext(retroSnapshot({ viewer: { isFacilitator: false } })),
+        );
+
+        expect(
+            within(card()).queryByRole('button', { name: 'Survey actions' }),
+        ).toBeNull();
+    });
+
+    it('names who answered an option when the survey shows them', () => {
+        renderInBoard(
+            <SurveyBoardCard
+                survey={answered({
+                    showVoters: true,
+                    options: [
+                        {
+                            id: 'great',
+                            label: 'Great',
+                            position: 0,
+                            count: 1,
+                            voters: ['me'],
+                        },
+                        {
+                            id: 'ok',
+                            label: 'OK',
+                            position: 1,
+                            count: 0,
+                            voters: [],
+                        },
+                    ],
+                })}
+            />,
+            boardContext(),
+        );
+
+        expect(
+            card().querySelector('li img[alt="Alice Martin"]'),
+        ).not.toBeNull();
+    });
+
+    it('opens the comments of an answered survey', () => {
+        renderInBoard(
+            <SurveyBoardCard survey={answered({ commentCount: 0 })} />,
+            boardContext(),
+        );
+
+        const toggle = within(card()).getByRole('button', {
+            name: 'Comments (0)',
+        });
+
+        expect(toggle.getAttribute('aria-expanded')).toBe('false');
+
+        fireEvent.click(toggle);
+
+        expect(toggle.getAttribute('aria-expanded')).toBe('true');
+        expect(within(card()).getByLabelText('Write a comment…')).toBeTruthy();
+        expect(
+            within(card()).getByText('Your name is shown with your comment.'),
+        ).toBeTruthy();
+        expect(
+            within(card()).getByRole('button', { name: 'Add a reaction' }),
+        ).toBeTruthy();
+    });
+});

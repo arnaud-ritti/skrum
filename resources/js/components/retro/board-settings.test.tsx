@@ -136,6 +136,60 @@ describe('BoardSettings', () => {
         await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false));
     });
 
+    it('offers "Add survey" to the facilitator, and opens the survey dialog in place of the panel', () => {
+        const onOpenChange = vi.fn();
+
+        renderInBoard(
+            <BoardSettings
+                open
+                onOpenChange={onOpenChange}
+                variant="popover"
+            />,
+            boardContext(),
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'Add survey' }));
+
+        expect(onOpenChange).toHaveBeenCalledWith(false);
+        expect(screen.getByRole('dialog', { name: 'New survey' })).toBeTruthy();
+        expect(document.getElementById('survey-question')).not.toBeNull();
+    });
+
+    it.each([
+        ['a participant', retroSnapshot({ viewer: { isFacilitator: false } })],
+        ['the actions phase', retroSnapshot({ retro: { phase: 'actions' } })],
+        ['a locked board', retroSnapshot({ retro: { isLocked: true } })],
+        [
+            'ten surveys',
+            retroSnapshot({
+                surveys: Array.from({ length: 10 }, (_, index) => ({
+                    id: `survey-${index}`,
+                })) as never,
+            }),
+        ],
+    ])('does not offer "Add survey" with %s', (_, board) => {
+        renderInBoard(
+            <BoardSettings open onOpenChange={vi.fn()} variant="popover" />,
+            boardContext(board),
+        );
+
+        expect(screen.queryByRole('button', { name: 'Add survey' })).toBeNull();
+    });
+
+    it.each(['writing', 'grouping', 'voting', 'discussing'] as const)(
+        'offers "Add survey" in %s',
+        (phase) => {
+            renderInBoard(
+                <BoardSettings open onOpenChange={vi.fn()} variant="popover" />,
+                boardContext(retroSnapshot({ retro: { phase } })),
+            );
+
+            expect(
+                screen.getByRole('button', { name: 'Add survey' }),
+            ).toBeTruthy();
+        },
+    );
+
     it('is read-only for a participant and names the facilitator', () => {
         renderInBoard(
             <BoardSettings open onOpenChange={vi.fn()} variant="popover" />,
