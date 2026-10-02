@@ -1,0 +1,37 @@
+<?php
+
+namespace App\Actions\Auth;
+
+use App\Models\User;
+use App\Support\Auth\SecondFactors;
+use Laravel\Fortify\Actions\RedirectIfTwoFactorAuthenticatable;
+use Laravel\Fortify\Events\TwoFactorAuthenticationChallenged;
+
+class RedirectIfSecondFactorRequired extends RedirectIfTwoFactorAuthenticatable
+{
+    public function handle($request, $next)
+    {
+        $user = $this->validateCredentials($request);
+
+        if (! $user instanceof User) {
+            return $next($request);
+        }
+
+        if (! resolve(SecondFactors::class)->requiredFor($user)) {
+            return $next($request);
+        }
+
+        return $this->twoFactorChallengeResponse($request, $user);
+    }
+
+    protected function twoFactorChallengeResponse($request, $user)
+    {
+        resolve(StartSecondFactorChallenge::class)->handle($request, $user, $request->boolean('remember'));
+
+        TwoFactorAuthenticationChallenged::dispatch($user);
+
+        return $request->wantsJson()
+            ? response()->json(['two_factor' => true])
+            : redirect()->route('two-factor.login');
+    }
+}
