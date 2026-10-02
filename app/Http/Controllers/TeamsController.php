@@ -7,8 +7,8 @@ use App\Actions\HealthCheck\PresentHealthStatement;
 use App\Actions\HealthCheck\TeamHealthStatements;
 use App\Actions\Poker\PresentPokerGameSummary;
 use App\Actions\Retros\BuildTemplateCatalogue;
-use App\Actions\Retros\TopTeamTemplates;
 use App\Actions\Retros\PresentTeamRetro;
+use App\Actions\Retros\TopTeamTemplates;
 use App\Actions\Teams\BuildTeamMoodTrend;
 use App\Actions\Whiteboards\BuildWhiteboardGallery;
 use App\Actions\Whiteboards\PresentWhiteboardSummary;
@@ -28,6 +28,7 @@ use App\Models\WhiteboardTemplate;
 use App\Models\Workspace;
 use App\Support\Games\GameRulesRegistry;
 use App\Support\Llm\Llm;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -89,6 +90,7 @@ class TeamsController extends Controller
             'retros' => $team->retros()
                 ->with(['workspaceTemplate', 'facilitator.user'])
                 ->withAvg('rotiVotes', 'score')
+                ->withExists(['participants as viewer_has_joined' => fn (Builder $participants) => $participants->where('user_id', $request->user()->id)])
                 ->latest()
                 ->get()
                 ->map(fn (Retro $retro): array => $this->presentTeamRetro->handle($retro)),

@@ -155,6 +155,7 @@ const page: TeamPageProps = {
             templateName: '4L',
             facilitator: { name: 'Camille Roux', avatarUrl: avatar('1') },
             rotiAverage: null,
+            viewerHasJoined: false,
         },
         {
             id: 'retro-2',
@@ -165,6 +166,7 @@ const page: TeamPageProps = {
             templateName: 'Mad / Sad / Glad',
             facilitator: { name: 'Camille Roux', avatarUrl: avatar('1') },
             rotiAverage: null,
+            viewerHasJoined: true,
         },
         {
             id: 'retro-3',
@@ -175,6 +177,7 @@ const page: TeamPageProps = {
             templateName: 'Start / Stop / Continue',
             facilitator: { name: 'Arnaud Ritti', avatarUrl: avatar('0') },
             rotiAverage: 4.1,
+            viewerHasJoined: false,
         },
         {
             id: 'retro-4',
@@ -185,6 +188,7 @@ const page: TeamPageProps = {
             templateName: 'Sailboat',
             facilitator: null,
             rotiAverage: 3.8,
+            viewerHasJoined: false,
         },
     ],
     templateCategories: [],

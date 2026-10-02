@@ -1,6 +1,8 @@
 import { usePage } from '@inertiajs/react';
 import { Plus } from 'lucide-react';
 import type { ReactNode } from 'react';
+import TeamsController from '@/actions/App/Http/Controllers/TeamsController';
+import TeamIntegrationsController from '@/actions/App/Http/Controllers/Integrations/TeamIntegrationsController';
 import {
     icebreakerSessionForm,
     roomLimitReason,
@@ -95,6 +97,34 @@ export type TeamPageSlots = {
     whiteboardThumbnailFor?: (board: WhiteboardSummary) => ReactNode;
 };
 
+/**
+ * The gear of the header leads where the "Team settings" entry of the sidebar
+ * leads: the integrations page when the viewer manages them, the settings
+ * card of this page otherwise, and nowhere for a plain member.
+ */
+export function teamSettingsHref({
+    workspace,
+    team,
+    canManage,
+    canManageIntegrations,
+}: Pick<
+    TeamPageProps,
+    'workspace' | 'team' | 'canManage' | 'canManageIntegrations'
+>): string | undefined {
+    if (canManageIntegrations) {
+        return TeamIntegrationsController.index.url({
+            workspace: workspace.slug,
+            team: team.id,
+        });
+    }
+
+    if (!canManage) {
+        return undefined;
+    }
+
+    return `${TeamsController.show.url({ workspace: workspace.slug, team: team.id })}#settings`;
+}
+
 export function TeamPage({
     slots = {},
     ...props
@@ -114,7 +144,7 @@ export function TeamPage({
                 team={team}
                 members={props.members}
                 openActionItemCount={props.openActionItemCount}
-                canManageIntegrations={props.canManageIntegrations}
+                settingsHref={teamSettingsHref(props)}
                 schedule={slots.schedule}
                 newSession={
                     <NewSessionDialog

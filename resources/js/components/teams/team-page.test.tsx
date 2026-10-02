@@ -1,6 +1,6 @@
 import { screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { TeamPage } from '@/components/teams/team-page';
+import { TeamPage, teamSettingsHref } from '@/components/teams/team-page';
 import type { TeamPageProps } from '@/components/teams/team-page';
 import { renderWithProviders } from '@/test/render';
 
@@ -176,6 +176,50 @@ describe('the team page', () => {
         expect(
             screen.queryByRole('button', { name: 'Delete team' }),
         ).toBeNull();
+    });
+
+    it('leads the gear of the header where the "Team settings" entry of the sidebar leads', () => {
+        const { rerender } = renderWithProviders(<TeamPage {...base} />);
+        const gear = () =>
+            screen
+                .queryByRole('link', { name: 'Team settings' })
+                ?.getAttribute('href');
+
+        expect(gear()).toMatch(/\/teams\/team-1#settings$/);
+
+        rerender(<TeamPage {...base} canManageIntegrations />);
+
+        expect(gear()).toMatch(/\/teams\/team-1\/integrations$/);
+
+        rerender(<TeamPage {...base} canManage={false} />);
+
+        expect(gear()).toBeUndefined();
+    });
+
+    it('gives the settings address of a manager, of who manages the integrations, and none to a member', () => {
+        const scope = { workspace: base.workspace, team: base.team };
+
+        expect(
+            teamSettingsHref({
+                ...scope,
+                canManage: true,
+                canManageIntegrations: false,
+            }),
+        ).toMatch(/#settings$/);
+        expect(
+            teamSettingsHref({
+                ...scope,
+                canManage: false,
+                canManageIntegrations: true,
+            }),
+        ).toMatch(/\/integrations$/);
+        expect(
+            teamSettingsHref({
+                ...scope,
+                canManage: false,
+                canManageIntegrations: false,
+            }),
+        ).toBeUndefined();
     });
 
     it('renders nothing in the places left, and fills each from its slot', () => {

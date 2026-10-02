@@ -124,6 +124,8 @@ it('[P18e-04-03] shows the phase, the template and the facilitator of a retro, i
         ->assertAttribute("{$openCard} [data-slot=\"session-card-status\"]", 'data-tone', 'info')
         ->assertSeeIn($openCard, TemplateCatalogue::find('mad_sad_glad')->name())
         ->assertSeeIn($openCard, 'Facilitated by Camille Roux')
+        ->assertSeeIn($openCard, 'Join')
+        ->assertDontSeeIn($openCard, 'Resume')
         ->assertNotPresent("{$openCard} [data-slot=\"retro-roti\"]")
         ->assertSeeIn("{$closedCard} [data-slot=\"session-card-status\"]", 'Completed')
         ->assertSeeIn($closedCard, TemplateCatalogue::find('start_stop_continue')->name())
@@ -170,15 +172,38 @@ it('[P18e-04-04] lists active and ended games, says how many players are in the 
         ->assertPathIs("/poker/{$game->id}");
 });
 
+it('[P18e-04-03b] reads "Resume" on the open retro the viewer has joined and "Join" on the others', function () {
+    $team = Team::factory()->create(['name' => 'Atlas']);
+    $alice = p18eTeamUser($team, 'Alice Martin');
+    $camille = p18eTeamUser($team, 'Camille Roux');
+    $joined = Retro::factory()->for($team)->inPhase(RetroPhase::Voting)->create(['title' => 'Sprint 42 retrospective']);
+    $other = Retro::factory()->for($team)->inPhase(RetroPhase::Writing)->create(['title' => 'Q3 release post-mortem']);
+    Participant::factory()->create(['retro_id' => $joined->id, 'user_id' => $alice->id]);
+    Participant::factory()->create(['retro_id' => $other->id, 'user_id' => $camille->id]);
+
+    $joinedCard = "a[href=\"/retros/{$joined->id}\"]";
+    $otherCard = "a[href=\"/retros/{$other->id}\"]";
+
+    $page = $this->signIn($alice, p18eTeamPagePath($team));
+
+    $page->assertSeeIn($joinedCard, 'Resume')
+        ->assertDontSeeIn($joinedCard, 'Join')
+        ->assertSeeIn($otherCard, 'Join')
+        ->assertDontSeeIn($otherCard, 'Resume');
+});
+
 it('[P18e-04-05] lets a manager rename the team and gives a member no control over it', function () {
     $team = Team::factory()->create(['name' => 'Atlas']);
     $admin = p18eTeamUser($team, 'Camille Roux', WorkspaceRole::Admin);
     $member = p18eTeamUser($team, 'Alice Martin');
     $settings = '[data-slot="team-settings"]';
+    $gear = '[data-slot="team-header"] a[aria-label="Team settings"]';
 
     $page = $this->signIn($admin, p18eTeamPagePath($team));
 
-    $page->assertValue("{$settings} input[name=\"name\"]", 'Atlas')
+    $page->assertPresent($gear)
+        ->assertDontSeeIn('[data-slot="team-header"]', 'Integrations')
+        ->assertValue("{$settings} input[name=\"name\"]", 'Atlas')
         ->fill("{$settings} input[name=\"name\"]", 'Borealis')
         ->click("{$settings} button:has-text(\"Rename\")")
         ->assertSeeIn('[data-slot="team-header"] h1', 'Borealis')
@@ -190,6 +215,7 @@ it('[P18e-04-05] lets a manager rename the team and gives a member no control ov
 
     $memberPage->assertSeeIn('[data-slot="team-header"] h1', 'Borealis')
         ->assertNotPresent($settings)
+        ->assertNotPresent($gear)
         ->assertNotPresent('main input[name="name"]')
         ->assertDontSee('Delete team')
         ->assertNotPresent('#members button[aria-label^="Remove"]')
@@ -219,6 +245,7 @@ it('[P18e-04-06] adds a member, asks before removing one, and deletes the team a
 
     $page->click('#members button[aria-label="Remove Bob Member"]')
         ->assertSeeIn('[role="alertdialog"]', 'Remove Bob Member from Atlas?')
+        ->assertSeeIn('[role="alertdialog"]', 'Remove from team')
         ->click('[role="alertdialog"] button:has-text("Cancel")')
         ->assertNotPresent('[role="alertdialog"]')
         ->assertSeeIn($members, 'Bob Member');

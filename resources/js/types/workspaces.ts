@@ -67,6 +67,8 @@ export type RetroSummary = {
     templateName: string;
     facilitator: { name: string; avatarUrl: string } | null;
     rotiAverage: number | null;
+    /** The viewer is already a participant of this open retro. */
+    viewerHasJoined: boolean;
 };
 
 export type TemplateCategory =

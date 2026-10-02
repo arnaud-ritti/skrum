@@ -161,3 +161,21 @@ Fix later (defects, not deviations):
 - If the deferred fetch of `moodTrend` fails, the skeleton stays ("Loading chart"), with no message.
 - The sidebar entry "Team settings" points to the integrations page, which answers 404 while no provider is configured (`use-sidebar-model.ts`, outside this lane; `P12a-01c` asserts the link only inside `main`). For the settings lane.
 - At 390 the full-page capture shows the fixed tab bar across the page: an artefact of the capture.
+
+## RW-T1 — Team header gear, "Join" / "Resume", "Retirer" (second rework run)
+
+Built:
+
+- Header: an outline icon button (a link) named "Team settings" after "Games", as the mockup; the labelled "Integrations" link is gone. It leads where the sidebar entry leads: the integrations page for who manages them while a provider is configured, the settings card of the page (`#settings`) for a manager otherwise. A member who can change nothing of the team has no gear.
+- Retro cards: `retros[].viewerHasJoined` (one `exists` aggregate on the participants of the viewer, no query per retro); "Resume" on an open retro the viewer has joined, "Join" otherwise, "Summary" once closed.
+- Member removal: key "Remove from team" on the row and in the dialog — "Retirer" in French; "Remove" stays "Supprimer" on the other screens. The English label becomes "Remove from team" (key = English text); the accessible name of the row button stays "Remove :name".
+
+Differences with the mockup that remain:
+
+| Difference | Row |
+|---|---|
+| Phase tones: every open phase other than Voting is info with a dot; no gear for a plain member; "New session" after the gear | D-73 (reworded) |
+
+Tests written or changed, not run (owner's rule): `TeamRetroCardsTest` (two tests added), `team-header.test.tsx`, `team-page.test.tsx`, `team-retros-section.test.tsx`, `team-members-card.test.tsx`; browser `[P12a-01a]` (clicks the gear), `[P18e-04-03]`, `[P18e-04-03b]` (new), `[P18e-04-05]`, `[P18e-04-06]`. Captures not regenerated.
+
+The "Fix later" line above about "Supprimer" on the member row is done by this task.
