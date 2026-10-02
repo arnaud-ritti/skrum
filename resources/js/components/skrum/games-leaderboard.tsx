@@ -15,6 +15,7 @@ import {
     Trophy,
     Users,
     WholeWord,
+    CircleAlert,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useState } from 'react';
@@ -171,8 +172,37 @@ function formatNumber(value: number): string {
     return new Intl.NumberFormat().format(value);
 }
 
+export type NewGameRoomIds = { name: string; game: string; access: string };
+
+/** The ids existing pages and the browser suite bind to. */
+export const DefaultNewGameRoomIds: NewGameRoomIds = {
+    name: 'new-room-name',
+    game: 'new-room-game',
+    access: 'new-room-access',
+};
+
+function FieldError({ id, error }: { id: string; error?: string }) {
+    if (!error) {
+        return null;
+    }
+
+    return (
+        <p
+            id={id}
+            role="alert"
+            data-slot="field-error"
+            className="flex items-start gap-1.5 text-body-sm text-skrum-destructive-text"
+        >
+            <CircleAlert aria-hidden className="mt-0.5 size-4 shrink-0" />
+            <span className="min-w-0">{error}</span>
+        </p>
+    );
+}
+
 export type NewGameRoomDialogProps = {
     gameOptions: GameOption[];
+    /** Control ids; each defaults to the id of the existing dialog. */
+    ids?: Partial<NewGameRoomIds>;
     onCreate: (
         values: NewGameRoomValues,
     ) => boolean | void | Promise<boolean | void>;
@@ -184,6 +214,7 @@ export type NewGameRoomDialogProps = {
 
 export function NewGameRoomDialog({
     gameOptions,
+    ids,
     onCreate,
     errors,
     processing = false,
@@ -205,10 +236,11 @@ export function NewGameRoomDialog({
                     <span className="truncate">{t('New room')}</span>
                 </Button>
             </DialogTrigger>
-            <DialogContent aria-describedby={undefined}>
+            <DialogContent size="sm" aria-describedby={undefined}>
                 {open && (
                     <NewGameRoomForm
                         gameOptions={gameOptions}
+                        fieldIds={{ ...DefaultNewGameRoomIds, ...ids }}
                         errors={errors}
                         processing={processing}
                         onCancel={() => setOpen(false)}
@@ -228,12 +260,14 @@ export function NewGameRoomDialog({
 
 function NewGameRoomForm({
     gameOptions,
+    fieldIds,
     errors,
     processing,
     onCancel,
     onSubmit,
 }: {
     gameOptions: GameOption[];
+    fieldIds: NewGameRoomIds;
     errors?: NewGameRoomErrors;
     processing: boolean;
     onCancel: () => void;
@@ -262,30 +296,32 @@ function NewGameRoomForm({
             </DialogHeader>
 
             <div className="grid gap-2">
-                <Label htmlFor="games-new-room-name">{t('Name')}</Label>
+                <Label htmlFor={fieldIds.name}>{t('Name')}</Label>
                 <Input
-                    id="games-new-room-name"
+                    id={fieldIds.name}
                     value={name}
                     maxLength={NameMaxLength}
                     required
                     autoFocus
                     aria-invalid={errors?.name ? true : undefined}
+                    aria-describedby={
+                        errors?.name ? `${fieldIds.name}-error` : undefined
+                    }
                     onChange={(event) => setName(event.target.value)}
                 />
-                {errors?.name && (
-                    <p role="alert" className="text-sm text-destructive">
-                        {errors.name}
-                    </p>
-                )}
+                <FieldError
+                    id={`${fieldIds.name}-error`}
+                    error={errors?.name}
+                />
             </div>
 
             <div className="grid gap-2">
-                <Label htmlFor="games-new-room-game">{t('First game')}</Label>
+                <Label htmlFor={fieldIds.game}>{t('First game')}</Label>
                 <Select
                     value={game}
                     onValueChange={(value) => setGame(value as GameKind)}
                 >
-                    <SelectTrigger id="games-new-room-game">
+                    <SelectTrigger id={fieldIds.game}>
                         <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -296,24 +332,21 @@ function NewGameRoomForm({
                         ))}
                     </SelectContent>
                 </Select>
-                {errors?.game && (
-                    <p role="alert" className="text-sm text-destructive">
-                        {errors.game}
-                    </p>
-                )}
+                <FieldError
+                    id={`${fieldIds.game}-error`}
+                    error={errors?.game}
+                />
             </div>
 
             <div className="grid gap-2">
-                <Label htmlFor="games-new-room-access">
-                    {t('Who can join')}
-                </Label>
+                <Label htmlFor={fieldIds.access}>{t('Who can join')}</Label>
                 <Select
                     value={access}
                     onValueChange={(value) =>
                         setAccess(value as GameRoomAccess)
                     }
                 >
-                    <SelectTrigger id="games-new-room-access">
+                    <SelectTrigger id={fieldIds.access}>
                         <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -325,11 +358,10 @@ function NewGameRoomForm({
                         </SelectItem>
                     </SelectContent>
                 </Select>
-                {errors?.access && (
-                    <p role="alert" className="text-sm text-destructive">
-                        {errors.access}
-                    </p>
-                )}
+                <FieldError
+                    id={`${fieldIds.access}-error`}
+                    error={errors?.access}
+                />
             </div>
 
             <DialogFooter className="gap-2">
@@ -439,7 +471,7 @@ function RoomRow({ room, action }: { room: GamesRoom; action?: ReactNode }) {
             <Link
                 href={room.href}
                 aria-label={label}
-                className="duration-fast flex min-w-0 flex-1 items-center gap-3 rounded-lg border bg-card p-3 transition-shadow ease-standard outline-none hover:border-primary/35 hover:shadow-raised focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none"
+                className="flex min-w-0 flex-1 items-center gap-3 rounded-lg border bg-card p-3 transition-shadow duration-140 ease-standard outline-none hover:border-primary/35 hover:shadow-raised focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none"
             >
                 <span
                     aria-hidden

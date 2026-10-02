@@ -1,6 +1,6 @@
 import { CircleAlert } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { useId, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import type {
     ChangeEvent,
     ComponentProps,
@@ -35,8 +35,24 @@ export type TextareaFieldProps = Omit<ComponentProps<'textarea'>, 'maxLength'> &
         /** Defaults to 90% of maxLength. */
         warnAt?: number;
         onSubmitShortcut?: () => void;
+        /**
+         * Called on Escape. That Escape is claimed by the field: a dialog,
+         * sheet or popover hosting it stays open (see `claimEscape`).
+         */
         onCancel?: () => void;
     };
+
+const claimedEscapes = new WeakSet<Event>();
+
+/**
+ * Overlays listen for Escape on `document` in the capture phase, before any
+ * React handler runs. Marking the event as handled from `window`, which comes
+ * first, is what lets an inline edit be cancelled without closing its host.
+ */
+export function claimEscape(event: globalThis.KeyboardEvent): void {
+    claimedEscapes.add(event);
+    event.preventDefault();
+}
 
 function describedBy(
     ...ids: Array<string | undefined | false>
@@ -172,6 +188,28 @@ export function TextareaField({
     const threshold =
         limit === null ? null : (warnAt ?? Math.ceil(limit * DefaultWarnRatio));
     const near = threshold !== null && length >= threshold;
+    const cancels = onCancel !== undefined;
+
+    useEffect(() => {
+        if (!cancels) {
+            return;
+        }
+
+        const claimOwnEscape = (event: globalThis.KeyboardEvent): void => {
+            if (
+                event.key === 'Escape' &&
+                event.target instanceof HTMLElement &&
+                event.target.id === fieldId
+            ) {
+                claimEscape(event);
+            }
+        };
+
+        window.addEventListener('keydown', claimOwnEscape, true);
+
+        return () =>
+            window.removeEventListener('keydown', claimOwnEscape, true);
+    }, [cancels, fieldId]);
 
     const handleChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
         setUncontrolledLength(event.target.value.length);
@@ -180,6 +218,12 @@ export function TextareaField({
 
     const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
         onKeyDown?.(event);
+
+        if (event.key === 'Escape' && claimedEscapes.has(event.nativeEvent)) {
+            onCancel?.();
+
+            return;
+        }
 
         if (event.defaultPrevented) {
             return;

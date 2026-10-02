@@ -49,6 +49,12 @@ export default function ConnectionStateSection() {
                         target="card"
                     />
                 </Example>
+                <Example label={t('Session expired')}>
+                    <ConnectionState
+                        status="expired"
+                        onReload={() => undefined}
+                    />
+                </Example>
                 <Example label={t('Connected, nothing shown')}>
                     <ConnectionState status="connected" />
                 </Example>
@@ -68,6 +74,14 @@ export default function ConnectionStateSection() {
                     variant="banner"
                     attempt={3}
                     maxAttempts={5}
+                    className="w-full"
+                />
+            </Example>
+            <Example label={t('Banner, session expired')}>
+                <ConnectionState
+                    status="expired"
+                    variant="banner"
+                    onReload={() => undefined}
                     className="w-full"
                 />
             </Example>

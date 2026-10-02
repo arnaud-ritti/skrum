@@ -1,10 +1,12 @@
 import { Armchair, Keyboard, PenTool, Smile, Spade } from 'lucide-react';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
+import { BenchOverlayStage } from '@/components/dev/bench';
 import type { BenchGroup } from '@/components/dev/bench';
 import { useShortcut } from '@/hooks/use-shortcut';
 import {
     KeyboardShortcuts,
+    KeyboardShortcutsPanel,
     KeyboardShortcutsTrigger,
 } from '@/components/skrum/keyboard-shortcuts';
 import type {
@@ -207,49 +209,71 @@ function Launcher({
     );
 }
 
+function InlinePanel({
+    initialPlatform,
+    initialQuery,
+    context,
+    withPalette,
+}: {
+    initialPlatform: Platform;
+    initialQuery?: string;
+    context?: ShortcutSection['id'];
+    withPalette?: boolean;
+}) {
+    const sections = useSections();
+    const [platform, setPlatform] = useState<Platform>(initialPlatform);
+    const [query, setQuery] = useState(initialQuery ?? '');
+
+    return (
+        <KeyboardShortcutsPanel
+            sections={sections}
+            context={context}
+            platform={platform}
+            onPlatformChange={setPlatform}
+            query={query}
+            onQueryChange={setQuery}
+            onOpenCommandPalette={withPalette ? () => undefined : undefined}
+            className="w-full max-w-190"
+        />
+    );
+}
+
 export default function KeyboardShortcutsSection() {
     const { t } = useTrans();
 
     return (
         <div className="flex flex-col gap-8 p-4 md:p-6">
-            <Example
-                label={t('Default, macOS, open (opens with ? outside a field)')}
-            >
-                <Launcher
-                    label={t('Open the shortcuts')}
-                    initialPlatform="mac"
-                    opensWithQuestionMark
-                    defaultOpen
-                />
+            <Example label={t('Default, macOS')}>
+                <InlinePanel initialPlatform="mac" />
             </Example>
             <Example label={t('Windows · Linux')}>
-                <Launcher
-                    label={t('Open the shortcuts')}
-                    initialPlatform="other"
-                />
+                <InlinePanel initialPlatform="other" />
             </Example>
             <Example label={t('Poker context first')}>
-                <Launcher
-                    label={t('Open the shortcuts')}
-                    initialPlatform="mac"
-                    context="poker"
-                />
+                <InlinePanel initialPlatform="mac" context="poker" />
             </Example>
             <Example label={t('Filtered search')}>
-                <Launcher
-                    label={t('Open the shortcuts')}
-                    initialPlatform="mac"
-                    initialQuery={t('vote')}
-                />
+                <InlinePanel initialPlatform="mac" initialQuery={t('vote')} />
             </Example>
             <Example label={t('No result')}>
-                <Launcher
-                    label={t('Open the shortcuts')}
+                <InlinePanel
                     initialPlatform="mac"
                     initialQuery={t('export')}
                     withPalette
                 />
             </Example>
+            <BenchOverlayStage>
+                <Example
+                    label={t('Dialog, open (opens with ? outside a field)')}
+                >
+                    <Launcher
+                        label={t('Open the shortcuts')}
+                        initialPlatform="mac"
+                        opensWithQuestionMark
+                        defaultOpen
+                    />
+                </Example>
+            </BenchOverlayStage>
         </div>
     );
 }

@@ -718,7 +718,7 @@ export function MoodTrendChart({
                                             : 'fill-card stroke-chart-1',
                                         isLast &&
                                             justAdded &&
-                                            'motion-safe:animate-in motion-safe:duration-200 motion-safe:fade-in',
+                                            'motion-safe:animate-in motion-safe:duration-220 motion-safe:fade-in',
                                     )}
                                 />
                             );

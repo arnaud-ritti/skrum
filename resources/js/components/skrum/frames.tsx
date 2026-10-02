@@ -79,7 +79,8 @@ export function SessionFrame({
     actions,
     children,
 }: {
-    sidebar: AppSidebarProps;
+    /** Absent for a guest: no application sidebar and no trigger. */
+    sidebar?: AppSidebarProps;
     title: ReactNode;
     phases?: ReactNode;
     timer?: ReactNode;
@@ -87,24 +88,36 @@ export function SessionFrame({
     actions?: ReactNode;
     children: ReactNode;
 }) {
+    const inset = (
+        <Inset className="h-svh min-w-0 overflow-hidden bg-skrum-canvas">
+            <header className="z-30 flex h-14 shrink-0 items-center gap-3 border-b bg-background px-4">
+                {sidebar && <SidebarTrigger className="-ml-1 md:hidden" />}
+                <div className="min-w-0 truncate text-base font-semibold">
+                    {title}
+                </div>
+                <div className="flex min-w-0 flex-1 justify-center *:min-w-0 *:flex-1">
+                    {phases}
+                </div>
+                {timer}
+                {presence}
+                {actions}
+            </header>
+            <main className="relative min-h-0 flex-1">{children}</main>
+        </Inset>
+    );
+
+    if (!sidebar) {
+        return (
+            <div data-slot="session-frame" className="flex min-h-svh w-full">
+                {inset}
+            </div>
+        );
+    }
+
     return (
         <SidebarProvider defaultOpen={false}>
             <AppSidebar {...sidebar} />
-            <Inset className="h-svh min-w-0 overflow-hidden bg-skrum-canvas">
-                <header className="z-30 flex h-14 shrink-0 items-center gap-3 border-b bg-background px-4">
-                    <SidebarTrigger className="-ml-1 md:hidden" />
-                    <div className="min-w-0 truncate text-base font-semibold">
-                        {title}
-                    </div>
-                    <div className="flex min-w-0 flex-1 justify-center">
-                        {phases}
-                    </div>
-                    {timer}
-                    {presence}
-                    {actions}
-                </header>
-                <main className="relative min-h-0 flex-1">{children}</main>
-            </Inset>
+            {inset}
         </SidebarProvider>
     );
 }
@@ -209,7 +222,7 @@ export function OnboardingFrame({
         <div className="flex min-h-svh flex-col">
             <header className="flex h-14 shrink-0 items-center gap-4 border-b px-4 md:px-10">
                 <SkrumLogo className="h-6 w-auto" />
-                <div className="flex min-w-0 flex-1 justify-center">
+                <div className="flex min-w-0 flex-1 justify-center *:min-w-0 *:flex-1">
                     {stepper}
                 </div>
                 {headerEnd}

@@ -330,6 +330,7 @@ export function Combobox({
                 </PopoverTrigger>
                 <PopoverContent
                     align="start"
+                    aria-label={label}
                     className="max-h-(--radix-popover-content-available-height) w-(--radix-popover-trigger-width) min-w-48 overflow-hidden rounded-lg p-0 shadow-popover"
                 >
                     <Command defaultValue={value} filter={matchesQuery}>

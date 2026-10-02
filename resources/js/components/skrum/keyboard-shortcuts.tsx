@@ -1,7 +1,12 @@
 import { Keyboard, Search, SearchX, WandSparkles } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useId, useMemo, useRef, useState } from 'react';
-import type { ComponentProps, KeyboardEvent, ReactNode } from 'react';
+import type {
+    ComponentProps,
+    KeyboardEvent,
+    ReactNode,
+    RefObject,
+} from 'react';
 import { useShortcut } from '@/hooks/use-shortcut';
 import { Button } from '@/components/ui/button';
 import {
@@ -370,9 +375,15 @@ function SectionBlock({
     );
 }
 
-export function KeyboardShortcuts({
-    open,
-    onOpenChange,
+export type KeyboardShortcutsPanelProps = Omit<
+    KeyboardShortcutsProps,
+    'open' | 'onOpenChange'
+> & { className?: string };
+
+function ShortcutsContent({
+    title,
+    description,
+    searchRef,
     sections,
     context,
     platform: platformProp,
@@ -380,26 +391,16 @@ export function KeyboardShortcuts({
     query: queryProp,
     onQueryChange,
     onOpenCommandPalette,
-}: KeyboardShortcutsProps) {
+}: Omit<KeyboardShortcutsPanelProps, 'className'> & {
+    title: ReactNode;
+    description?: ReactNode;
+    searchRef: RefObject<HTMLInputElement | null>;
+}) {
     const { t } = useTrans();
-    const titleId = useId();
-    const searchRef = useRef<HTMLInputElement>(null);
     const bodyRef = useRef<HTMLDivElement>(null);
     const [detected] = useState<Platform>(detectPlatform);
     const [platformState, setPlatformState] = useState<Platform | null>(null);
     const [queryState, setQueryState] = useState('');
-    const [wasOpen, setWasOpen] = useState(open);
-    const [opener, setOpener] = useState<Element | null>(() =>
-        open && typeof document !== 'undefined' ? document.activeElement : null,
-    );
-
-    if (open !== wasOpen) {
-        setWasOpen(open);
-
-        if (open) {
-            setOpener(document.activeElement);
-        }
-    }
 
     const platform = platformProp ?? platformState ?? detected;
     const query = queryProp ?? queryState;
@@ -413,8 +414,6 @@ export function KeyboardShortcuts({
         0,
     );
     const searching = query.trim() !== '';
-
-    useShortcut('/', () => searchRef.current?.focus(), { enabled: open });
 
     const changePlatform = (next: Platform): void => {
         setPlatformState(next);
@@ -451,6 +450,187 @@ export function KeyboardShortcuts({
     };
 
     return (
+        <>
+            <header className="flex flex-wrap items-center gap-x-3 gap-y-2 pt-4 pr-14 pb-3 pl-5">
+                <Keyboard
+                    aria-hidden="true"
+                    className="size-5 shrink-0 text-skrum-primary-text"
+                />
+                {title}
+                <Tabs<Platform>
+                    aria-label={t('Platform')}
+                    value={platform}
+                    onValueChange={changePlatform}
+                    className="ml-auto"
+                    items={[
+                        { value: 'mac', label: t('macOS') },
+                        { value: 'other', label: t('Windows · Linux') },
+                    ]}
+                />
+            </header>
+            {description}
+
+            <div className="flex h-11 shrink-0 items-center gap-2 border-y px-5 text-ui-lg focus-within:border-b-2 focus-within:border-b-ring">
+                <Search
+                    aria-hidden="true"
+                    className="size-4 shrink-0 text-muted-foreground"
+                />
+                <Input
+                    ref={searchRef}
+                    type="search"
+                    value={query}
+                    aria-label={t('Search shortcuts')}
+                    placeholder={t('Search shortcuts')}
+                    onChange={(event) => changeQuery(event.target.value)}
+                    onKeyDown={scrollBody}
+                    className="h-full border-0 bg-transparent px-0 shadow-none focus-visible:ring-0"
+                />
+                {searching ? (
+                    <span
+                        role="status"
+                        aria-live="polite"
+                        className="shrink-0 text-xs whitespace-nowrap text-muted-foreground"
+                    >
+                        {resultCount === 1
+                            ? t('1 result')
+                            : t(':count results', { count: resultCount })}
+                    </span>
+                ) : (
+                    <Kbd aria-hidden="true">/</Kbd>
+                )}
+            </div>
+
+            <div
+                ref={bodyRef}
+                tabIndex={0}
+                aria-label={t('Keyboard shortcuts')}
+                onKeyDown={scrollBody}
+                data-slot="keyboard-shortcuts-body"
+                className="min-h-0 flex-1 columns-xs gap-8 overflow-y-auto px-5 pt-4 pb-5 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+            >
+                {visible.length === 0 ? (
+                    <div
+                        data-slot="keyboard-shortcuts-empty"
+                        className="flex flex-col items-center gap-3 py-10 text-center"
+                    >
+                        <SearchX
+                            aria-hidden="true"
+                            className="size-8 text-muted-foreground"
+                        />
+                        <p className="text-body-sm text-muted-foreground">
+                            {t('No shortcut for “:query”', {
+                                query: query.trim(),
+                            })}
+                        </p>
+                        {onOpenCommandPalette ? (
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={onOpenCommandPalette}
+                            >
+                                <span className="truncate">
+                                    {t('Open the command palette')}
+                                </span>
+                                <Kbd>{keyLabel('mod', platform).text}K</Kbd>
+                            </Button>
+                        ) : null}
+                    </div>
+                ) : (
+                    visible.map((section) => (
+                        <SectionBlock
+                            key={section.id}
+                            section={section}
+                            platform={platform}
+                            query={query}
+                        />
+                    ))
+                )}
+            </div>
+
+            <footer className="flex flex-wrap gap-x-4 gap-y-1 border-t bg-muted px-5 py-2 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1.5">
+                    <Kbd>?</Kbd>
+                    {t('at any time')}
+                </span>
+                <span className="flex items-center gap-1.5">
+                    <Kbd>↑</Kbd>
+                    <Kbd>↓</Kbd>
+                    {t('scroll')}
+                </span>
+                <span className="flex items-center gap-1.5">
+                    <Kbd>Esc</Kbd>
+                    {t('close')}
+                </span>
+                <span className="flex items-center gap-1.5">
+                    <WandSparkles
+                        aria-hidden="true"
+                        className="size-3.5 text-skrum-primary-text"
+                    />
+                    {t('facilitator only')}
+                </span>
+            </footer>
+        </>
+    );
+}
+
+/** The reference without its dialog shell, for a page or the bench. */
+export function KeyboardShortcutsPanel({
+    className,
+    ...props
+}: KeyboardShortcutsPanelProps) {
+    const { t } = useTrans();
+    const titleId = useId();
+    const searchRef = useRef<HTMLInputElement>(null);
+
+    return (
+        <section
+            aria-labelledby={titleId}
+            data-slot="keyboard-shortcuts-panel"
+            className={cn(
+                'flex min-w-0 flex-col overflow-hidden rounded-xl border bg-background shadow-card',
+                className,
+            )}
+        >
+            <ShortcutsContent
+                {...props}
+                searchRef={searchRef}
+                title={
+                    <h2
+                        id={titleId}
+                        className="min-w-0 truncate text-lg font-semibold"
+                    >
+                        {t('Keyboard shortcuts')}
+                    </h2>
+                }
+            />
+        </section>
+    );
+}
+
+export function KeyboardShortcuts({
+    open,
+    onOpenChange,
+    ...panel
+}: KeyboardShortcutsProps) {
+    const { t } = useTrans();
+    const titleId = useId();
+    const searchRef = useRef<HTMLInputElement>(null);
+    const [wasOpen, setWasOpen] = useState(open);
+    const [opener, setOpener] = useState<Element | null>(() =>
+        open && typeof document !== 'undefined' ? document.activeElement : null,
+    );
+
+    if (open !== wasOpen) {
+        setWasOpen(open);
+
+        if (open) {
+            setOpener(document.activeElement);
+        }
+    }
+
+    useShortcut('/', () => searchRef.current?.focus(), { enabled: open });
+
+    return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent
                 aria-labelledby={titleId}
@@ -470,128 +650,22 @@ export function KeyboardShortcuts({
                 }}
                 className="flex flex-col gap-0 overflow-hidden rounded-xl p-0 sm:max-w-190"
             >
-                <header className="flex flex-wrap items-center gap-x-3 gap-y-2 pt-4 pr-14 pb-3 pl-5">
-                    <Keyboard
-                        aria-hidden="true"
-                        className="size-5 shrink-0 text-skrum-primary-text"
-                    />
-                    <DialogTitle id={titleId} className="min-w-0 truncate">
-                        {t('Keyboard shortcuts')}
-                    </DialogTitle>
-                    <Tabs<Platform>
-                        aria-label={t('Platform')}
-                        value={platform}
-                        onValueChange={changePlatform}
-                        className="ml-auto"
-                        items={[
-                            { value: 'mac', label: t('macOS') },
-                            { value: 'other', label: t('Windows · Linux') },
-                        ]}
-                    />
-                </header>
-                <DialogDescription className="sr-only">
-                    {t('Reference of the keyboard shortcuts of the app')}
-                </DialogDescription>
-
-                <div className="flex h-11 shrink-0 items-center gap-2 border-y px-5 text-ui-lg focus-within:border-b-2 focus-within:border-b-ring">
-                    <Search
-                        aria-hidden="true"
-                        className="size-4 shrink-0 text-muted-foreground"
-                    />
-                    <Input
-                        ref={searchRef}
-                        type="search"
-                        value={query}
-                        aria-label={t('Search shortcuts')}
-                        placeholder={t('Search shortcuts')}
-                        onChange={(event) => changeQuery(event.target.value)}
-                        onKeyDown={scrollBody}
-                        className="h-full border-0 bg-transparent px-0 shadow-none focus-visible:ring-0"
-                    />
-                    {searching ? (
-                        <span
-                            role="status"
-                            aria-live="polite"
-                            className="shrink-0 text-xs whitespace-nowrap text-muted-foreground"
-                        >
-                            {resultCount === 1
-                                ? t('1 result')
-                                : t(':count results', { count: resultCount })}
-                        </span>
-                    ) : (
-                        <Kbd aria-hidden="true">/</Kbd>
-                    )}
-                </div>
-
-                <div
-                    ref={bodyRef}
-                    tabIndex={0}
-                    aria-label={t('Keyboard shortcuts')}
-                    onKeyDown={scrollBody}
-                    data-slot="keyboard-shortcuts-body"
-                    className="min-h-0 flex-1 columns-xs gap-8 overflow-y-auto px-5 pt-4 pb-5 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
-                >
-                    {visible.length === 0 ? (
-                        <div
-                            data-slot="keyboard-shortcuts-empty"
-                            className="flex flex-col items-center gap-3 py-10 text-center"
-                        >
-                            <SearchX
-                                aria-hidden="true"
-                                className="size-8 text-muted-foreground"
-                            />
-                            <p className="text-body-sm text-muted-foreground">
-                                {t('No shortcut for “:query”', {
-                                    query: query.trim(),
-                                })}
-                            </p>
-                            {onOpenCommandPalette ? (
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={onOpenCommandPalette}
-                                >
-                                    <span className="truncate">
-                                        {t('Open the command palette')}
-                                    </span>
-                                    <Kbd>{keyLabel('mod', platform).text}K</Kbd>
-                                </Button>
-                            ) : null}
-                        </div>
-                    ) : (
-                        visible.map((section) => (
-                            <SectionBlock
-                                key={section.id}
-                                section={section}
-                                platform={platform}
-                                query={query}
-                            />
-                        ))
-                    )}
-                </div>
-
-                <footer className="flex flex-wrap gap-x-4 gap-y-1 border-t bg-muted px-5 py-2 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1.5">
-                        <Kbd>?</Kbd>
-                        {t('at any time')}
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                        <Kbd>↑</Kbd>
-                        <Kbd>↓</Kbd>
-                        {t('scroll')}
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                        <Kbd>Esc</Kbd>
-                        {t('close')}
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                        <WandSparkles
-                            aria-hidden="true"
-                            className="size-3.5 text-skrum-primary-text"
-                        />
-                        {t('facilitator only')}
-                    </span>
-                </footer>
+                <ShortcutsContent
+                    {...panel}
+                    searchRef={searchRef}
+                    title={
+                        <DialogTitle id={titleId} className="min-w-0 truncate">
+                            {t('Keyboard shortcuts')}
+                        </DialogTitle>
+                    }
+                    description={
+                        <DialogDescription className="sr-only">
+                            {t(
+                                'Reference of the keyboard shortcuts of the app',
+                            )}
+                        </DialogDescription>
+                    }
+                />
             </DialogContent>
         </Dialog>
     );

@@ -120,9 +120,13 @@ function setup(overrides: Partial<NotificationsPanelProps> = {}) {
         ...overrides,
     };
 
-    render(<NotificationsPanel {...props} />);
+    const view = render(<NotificationsPanel {...props} />);
 
-    return props;
+    return {
+        ...props,
+        rerender: (next: Partial<NotificationsPanelProps>) =>
+            view.rerender(<NotificationsPanel {...props} {...next} />),
+    };
 }
 
 function setupWithView(overrides: Partial<NotificationsPanelProps>) {
@@ -332,12 +336,26 @@ describe('NotificationsPanel', () => {
         expect(onRetry).toHaveBeenCalledTimes(1);
     });
 
-    it('disables mark all read while the request runs', () => {
-        setup({ markingAllRead: true });
-
+    it('keeps mark all read focused and inert while the request runs', async () => {
+        const props = setup();
         const button = screen.getByRole('button', { name: 'Mark all as read' });
 
-        expect((button as HTMLButtonElement).disabled).toBe(true);
+        await userEvent.click(button);
+        expect(props.onMarkAllRead).toHaveBeenCalledTimes(1);
+
+        props.rerender({ markingAllRead: true });
+
+        expect(button.getAttribute('aria-disabled')).toBe('true');
+        expect(document.activeElement).toBe(button);
+
+        await userEvent.click(button);
+        await userEvent.keyboard('{Enter}');
+        expect(props.onMarkAllRead).toHaveBeenCalledTimes(1);
+
+        props.rerender({ markingAllRead: false, unreadCount: 0 });
+
+        expect(document.activeElement).toBe(button);
+        expect(button.getAttribute('aria-disabled')).toBe('true');
     });
 
     it('opens an item through its link and lets modified clicks through', () => {
@@ -371,11 +389,14 @@ describe('NotificationsPanel', () => {
     });
 
     it('disables mark all read at zero unread', () => {
-        setup({ unreadCount: 0 });
+        const props = setup({ unreadCount: 0 });
 
         const button = screen.getByRole('button', { name: 'Mark all as read' });
 
-        expect((button as HTMLButtonElement).disabled).toBe(true);
+        expect(button.getAttribute('aria-disabled')).toBe('true');
+
+        fireEvent.click(button);
+        expect(props.onMarkAllRead).not.toHaveBeenCalled();
     });
 
     it('switches tabs and shows counts', async () => {

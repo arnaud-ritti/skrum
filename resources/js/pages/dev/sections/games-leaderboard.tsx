@@ -17,12 +17,16 @@ export const group: BenchGroup = 'skrum';
 
 const noop = (): void => {};
 
-const gameOptions: GameOption[] = [
-    { value: 'hangman', label: 'Hangman', available: true },
-    { value: 'draw', label: 'Draw & Guess', available: true },
-    { value: 'gif', label: 'Sprint in one GIF', available: true },
-    { value: 'decoded', label: 'Decoded', available: true },
-];
+type Translate = ReturnType<typeof useTrans>['t'];
+
+function makeGameOptions(t: Translate): GameOption[] {
+    return [
+        { value: 'hangman', label: t('Hangman'), available: true },
+        { value: 'draw', label: t('Draw & Guess'), available: true },
+        { value: 'gif', label: t('Sprint in one GIF'), available: true },
+        { value: 'decoded', label: t('Decoded'), available: true },
+    ];
+}
 
 const names = [
     'Malik',
@@ -50,7 +54,7 @@ function makeEntries(count: number): GamesLeaderboardEntry[] {
     }));
 }
 
-function makeRooms(): GamesRoom[] {
+function makeRooms(t: Translate): GamesRoom[] {
     const players = names.slice(0, 5).map((name, index) => ({
         name,
         presence: ((index % 12) + 1) as 1,
@@ -59,7 +63,7 @@ function makeRooms(): GamesRoom[] {
     return [
         {
             id: 'a',
-            name: 'Friday fun',
+            name: t('Friday fun'),
             game: 'decoded',
             access: 'team',
             playersCount: 7,
@@ -70,7 +74,7 @@ function makeRooms(): GamesRoom[] {
         },
         {
             id: 'b',
-            name: 'Sprint 43 kick-off',
+            name: t('Sprint 43 kick-off'),
             game: 'draw',
             access: 'link',
             playersCount: 2,
@@ -82,7 +86,7 @@ function makeRooms(): GamesRoom[] {
         },
         {
             id: 'c',
-            name: 'Daily warm-up',
+            name: t('Daily warm-up'),
             game: 'hangman',
             access: 'team',
             playersCount: 5,
@@ -93,7 +97,9 @@ function makeRooms(): GamesRoom[] {
         },
         {
             id: 'd',
-            name: 'Retro icebreaker with a very long name that must truncate inside the card',
+            name: t(
+                'Retro icebreaker with a very long name that must truncate inside the card',
+            ),
             game: 'gif',
             access: 'team',
             playersCount: 4,
@@ -131,6 +137,7 @@ function Page({
     loading?: boolean;
     error?: boolean;
 }) {
+    const { t } = useTrans();
     const [period, setPeriod] = useState(initialPeriod);
 
     return (
@@ -138,7 +145,7 @@ function Page({
             teamName="Atlas"
             backHref="#"
             rooms={rooms}
-            gameOptions={gameOptions}
+            gameOptions={makeGameOptions(t)}
             canCreateRoom={canCreateRoom}
             roomLimit={20}
             onCreateRoom={noop}
@@ -155,7 +162,7 @@ function Page({
 
 export default function GamesLeaderboardSection() {
     const { t } = useTrans();
-    const rooms = makeRooms();
+    const rooms = makeRooms(t);
 
     return (
         <div className="flex flex-col gap-10 p-4 md:p-6">
@@ -227,7 +234,7 @@ export default function GamesLeaderboardSection() {
                     rooms={Array.from({ length: 200 }, (_, index) => ({
                         ...rooms[index % rooms.length],
                         id: `r${index}`,
-                        name: `Room ${index + 1}`,
+                        name: t('Room :number', { number: index + 1 }),
                     }))}
                     leaderboard={makeEntries(3)}
                 />

@@ -2,7 +2,10 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { Armchair, Keyboard, Spade } from 'lucide-react';
 import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { KeyboardShortcuts } from '@/components/skrum/keyboard-shortcuts';
+import {
+    KeyboardShortcuts,
+    KeyboardShortcutsPanel,
+} from '@/components/skrum/keyboard-shortcuts';
 import type {
     KeyboardShortcutsProps,
     ShortcutSection,
@@ -248,5 +251,29 @@ describe('KeyboardShortcuts', () => {
         renderWithProviders(<Harness open={false} />);
 
         expect(screen.queryByRole('dialog')).toBeNull();
+    });
+});
+
+describe('KeyboardShortcutsPanel', () => {
+    it('shows the reference inline, without a dialog, and filters on its own', () => {
+        renderWithProviders(
+            <KeyboardShortcutsPanel sections={sections} platform="mac" />,
+        );
+
+        expect(screen.queryByRole('dialog')).toBeNull();
+
+        const panel = screen.getByRole('region', {
+            name: 'Keyboard shortcuts',
+        });
+        const before = within(panel).getAllByRole('listitem').length;
+
+        fireEvent.change(
+            within(panel).getByRole('searchbox', { name: 'Search shortcuts' }),
+            { target: { value: 'zzzz' } },
+        );
+
+        expect(before).toBeGreaterThan(0);
+        expect(within(panel).queryAllByRole('listitem')).toHaveLength(0);
+        expect(within(panel).getByText('No shortcut for “zzzz”')).toBeTruthy();
     });
 });

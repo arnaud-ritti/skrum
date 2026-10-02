@@ -33,6 +33,8 @@ export interface PresenceStackProps {
     max?: number;
     size?: 'sm' | 'md';
     onInvite?: () => void;
+    /** Accessible names; the defaults are the ones existing pages expose. */
+    labels?: { group?: string; trigger?: string };
     className?: string;
 }
 
@@ -158,6 +160,7 @@ export function PresenceStack({
     max = 5,
     size = 'md',
     onInvite,
+    labels,
     className,
 }: PresenceStackProps) {
     const { t } = useTrans();
@@ -210,6 +213,10 @@ export function PresenceStack({
 
     return (
         <div
+            role="group"
+            aria-label={
+                labels?.group ?? t(':count online', { count: connected.length })
+            }
             data-slot="presence-stack"
             className={cn(
                 'inline-flex max-w-full min-w-0 flex-wrap items-center gap-x-3 gap-y-1',
@@ -220,10 +227,12 @@ export function PresenceStack({
                 <PopoverTrigger asChild>
                     <button
                         type="button"
-                        aria-label={t(
-                            ':count participants connected, view the list',
-                            { count: connected.length },
-                        )}
+                        aria-label={
+                            labels?.trigger ??
+                            t(':count participants connected, view the list', {
+                                count: connected.length,
+                            })
+                        }
                         className="inline-flex max-w-full items-center gap-2 rounded-full border bg-card py-0.5 pr-2.5 pl-0.5 text-body-sm font-semibold shadow-card outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
                     >
                         <span
@@ -238,7 +247,7 @@ export function PresenceStack({
                                     tracked
                                     className={cn(
                                         !initialIds.has(participant.id) &&
-                                            'duration-base animate-in ease-spring zoom-in-50 fade-in motion-reduce:animate-none',
+                                            'animate-in duration-220 ease-spring zoom-in-50 fade-in motion-reduce:animate-none',
                                     )}
                                 />
                             ))}
@@ -330,7 +339,9 @@ export function PresenceStack({
             </Popover>
             {guestCount > 0 && (
                 <Badge variant="secondary" shape="pill">
-                    {t(':count guests', { count: guestCount })}
+                    {guestCount === 1
+                        ? t(':count guest', { count: guestCount })
+                        : t(':count guests', { count: guestCount })}
                 </Badge>
             )}
             <span

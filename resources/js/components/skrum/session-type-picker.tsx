@@ -295,7 +295,7 @@ export function SessionTypePicker({
                             }}
                             onKeyDown={(event) => moveSelection(event, index)}
                             className={cn(
-                                'relative border border-input bg-card text-left transition-colors duration-150 outline-none hover:border-primary/35 hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 aria-disabled:cursor-not-allowed aria-disabled:border-dashed aria-disabled:bg-muted aria-disabled:hover:border-input aria-disabled:hover:bg-muted data-[state=checked]:border-primary data-[state=checked]:bg-skrum-primary-soft data-[state=checked]:ring-1 data-[state=checked]:ring-primary data-[state=checked]:ring-inset',
+                                'relative border border-input bg-card text-left transition-colors duration-140 outline-none hover:border-primary/35 hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 aria-disabled:cursor-not-allowed aria-disabled:border-dashed aria-disabled:bg-muted aria-disabled:hover:border-input aria-disabled:hover:bg-muted data-[state=checked]:border-primary data-[state=checked]:bg-skrum-primary-soft data-[state=checked]:ring-1 data-[state=checked]:ring-primary data-[state=checked]:ring-inset',
                                 compact
                                     ? 'grid min-h-12 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-md px-2 py-1.5'
                                     : 'flex flex-col items-start gap-1 rounded-lg p-3',

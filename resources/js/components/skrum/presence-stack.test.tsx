@@ -147,6 +147,26 @@ describe('PresenceStack', () => {
         ).toHaveLength(200);
     });
 
+    it('is a group named "N online" by default, as existing pages expose it', () => {
+        const { rerender } = renderWithProviders(
+            <PresenceStack participants={twelve} />,
+        );
+
+        expect(screen.getByRole('group', { name: '12 online' })).toBeTruthy();
+
+        rerender(
+            <PresenceStack
+                participants={twelve.slice(0, 2)}
+                labels={{ group: 'Players', trigger: 'Show players' }}
+            />,
+        );
+
+        expect(screen.getByRole('group', { name: 'Players' })).toBeTruthy();
+        expect(
+            screen.getByRole('button', { name: 'Show players' }),
+        ).toBeTruthy();
+    });
+
     it('exposes a dialog button and lists everyone in the popover', () => {
         renderWithProviders(<PresenceStack participants={twelve} />);
 
@@ -288,5 +308,15 @@ describe('PresenceStack', () => {
         );
 
         expect(screen.getByText('2 guests')).toBeTruthy();
+    });
+
+    it('uses the singular for one guest', () => {
+        renderWithProviders(
+            <PresenceStack
+                participants={[person(0), person(1, { role: 'guest' })]}
+            />,
+        );
+
+        expect(screen.getByText('1 guest')).toBeTruthy();
     });
 });

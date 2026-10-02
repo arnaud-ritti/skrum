@@ -540,7 +540,24 @@ function MembersPanel({
         }
     };
 
+    const activeOptionId =
+        isOpen && activeOption ? optionId(activeOption.id) : undefined;
+
+    useEffect(() => {
+        if (activeOptionId === undefined) {
+            return;
+        }
+
+        document
+            .getElementById(activeOptionId)
+            ?.scrollIntoView?.({ block: 'nearest' });
+    }, [activeOptionId]);
+
     const send = async (): Promise<void> => {
+        if (validSelected.length === 0 || pending) {
+            return;
+        }
+
         setPending(true);
 
         try {
@@ -620,11 +637,7 @@ function MembersPanel({
                         aria-expanded={isOpen}
                         aria-controls={listId}
                         aria-autocomplete="list"
-                        aria-activedescendant={
-                            isOpen && activeOption
-                                ? optionId(activeOption.id)
-                                : undefined
-                        }
+                        aria-activedescendant={activeOptionId}
                         value={query}
                         placeholder={
                             selected.length === 0
@@ -712,8 +725,9 @@ function MembersPanel({
                 />
                 <Button
                     type="button"
-                    disabled={count === 0 || pending}
+                    aria-disabled={count === 0 || pending || undefined}
                     onClick={() => void send()}
+                    className="max-w-full min-w-0 aria-disabled:cursor-not-allowed aria-disabled:opacity-50 aria-disabled:shadow-none"
                 >
                     <Send aria-hidden />
                     <span className="truncate">
@@ -804,8 +818,8 @@ function ShareBody({
     regenerating,
     onRegenerateNow,
 }: {
-    props: ShareDialogProps;
-    copyRef: React.Ref<HTMLButtonElement>;
+    props: ShareDialogContentProps;
+    copyRef?: React.Ref<HTMLButtonElement>;
     regenerating: boolean;
     onRegenerateNow: () => void;
 }) {
@@ -1084,6 +1098,97 @@ function ShareBody({
     );
 }
 
+export type ShareDialogContentProps = Omit<
+    ShareDialogProps,
+    'open' | 'onOpenChange'
+> & {
+    copyRef?: React.Ref<HTMLButtonElement>;
+    regenerating?: boolean;
+    onRegenerateNow?: () => void;
+};
+
+/** The body of the dialog without its overlay shell: tabs, link, QR, members. */
+export function ShareDialogContent(props: ShareDialogContentProps) {
+    const { t } = useTrans();
+    const {
+        invite,
+        canManage,
+        members,
+        onInvite,
+        copyRef,
+        regenerating = false,
+        onRegenerateNow,
+    } = props;
+    const [tab, setTab] = useState<ShareTab>(props.tab ?? 'link');
+    const [previousTabProp, setPreviousTabProp] = useState(props.tab);
+
+    if (props.tab !== previousTabProp) {
+        setPreviousTabProp(props.tab);
+
+        if (props.tab !== undefined) {
+            setTab(props.tab);
+        }
+    }
+
+    const changeTab = (next: ShareTab): void => {
+        setTab(next);
+        props.onTabChange?.(next);
+    };
+
+    const body = (
+        <ShareBody
+            props={props}
+            copyRef={copyRef}
+            regenerating={regenerating}
+            onRegenerateNow={() => onRegenerateNow?.()}
+        />
+    );
+
+    if (!canManage || members === undefined || onInvite === undefined) {
+        return body;
+    }
+
+    return (
+        <Tabs<ShareTab>
+            value={tab}
+            onValueChange={changeTab}
+            fullWidth
+            aria-label={t('Invitation method')}
+            items={[
+                { value: 'link', label: t('Link & QR') },
+                {
+                    value: 'members',
+                    label: t('Members'),
+                    count: members.filter((member) => !member.inSession).length,
+                },
+            ]}
+        >
+            <TabsContent value="link">{body}</TabsContent>
+            <TabsContent value="members">
+                <MembersPanel
+                    members={members}
+                    defaultRole={invite.defaultRole ?? 'participant'}
+                    onInvite={onInvite}
+                />
+            </TabsContent>
+        </Tabs>
+    );
+}
+
+/** The members listbox closes on Escape before the dialog that hosts it. */
+function keepOpenWhileListboxOpen(event: globalThis.KeyboardEvent): void {
+    const target = event.target;
+
+    if (
+        target instanceof HTMLElement &&
+        target.getAttribute('role') === 'combobox' &&
+        target.getAttribute('aria-expanded') === 'true' &&
+        target.closest('[data-slot="share-members"]') !== null
+    ) {
+        event.preventDefault();
+    }
+}
+
 export function ShareDialog(props: ShareDialogProps) {
     const { t } = useTrans();
     const {
@@ -1093,8 +1198,6 @@ export function ShareDialog(props: ShareDialogProps) {
         invite,
         canManage,
         isMobile = false,
-        members,
-        onInvite,
         onRegenerate,
     } = props;
     const copyRef = useRef<HTMLButtonElement>(null);
@@ -1122,8 +1225,6 @@ export function ShareDialog(props: ShareDialogProps) {
         }
     }
 
-    const showMembers =
-        canManage && members !== undefined && onInvite !== undefined;
     const isExpired = invite.status === 'expired';
     const canRegenerate =
         canManage &&
@@ -1162,41 +1263,15 @@ export function ShareDialog(props: ShareDialogProps) {
         .filter((part) => part !== undefined && part !== '')
         .join(' · ');
 
-    const body = (
-        <ShareBody
-            props={props}
+    const content = (
+        <ShareDialogContent
+            {...props}
+            tab={tab}
+            onTabChange={changeTab}
             copyRef={copyRef}
             regenerating={regenerating}
             onRegenerateNow={() => void regenerateNow()}
         />
-    );
-
-    const content = showMembers ? (
-        <Tabs<ShareTab>
-            value={tab}
-            onValueChange={changeTab}
-            fullWidth
-            aria-label={t('Invitation method')}
-            items={[
-                { value: 'link', label: t('Link & QR') },
-                {
-                    value: 'members',
-                    label: t('Members'),
-                    count: members.filter((member) => !member.inSession).length,
-                },
-            ]}
-        >
-            <TabsContent value="link">{body}</TabsContent>
-            <TabsContent value="members">
-                <MembersPanel
-                    members={members}
-                    defaultRole={invite.defaultRole ?? 'participant'}
-                    onInvite={onInvite}
-                />
-            </TabsContent>
-        </Tabs>
-    ) : (
-        body
     );
 
     const title = t('Invite to :title', { title: session.title });
@@ -1268,6 +1343,7 @@ export function ShareDialog(props: ShareDialogProps) {
                         closeLabel={t('Close')}
                         onOpenAutoFocus={focusCopy}
                         onCloseAutoFocus={restoreOpenerFocus}
+                        onEscapeKeyDown={keepOpenWhileListboxOpen}
                         data-slot="share-dialog"
                         className="overflow-y-auto"
                     >
@@ -1298,6 +1374,7 @@ export function ShareDialog(props: ShareDialogProps) {
                     closeLabel={t('Close')}
                     onOpenAutoFocus={focusCopy}
                     onCloseAutoFocus={restoreOpenerFocus}
+                    onEscapeKeyDown={keepOpenWhileListboxOpen}
                     data-slot="share-dialog"
                     className="sm:max-w-128"
                 >

@@ -2,6 +2,8 @@ import type { ReactNode } from 'react';
 import type { BenchGroup } from '@/components/dev/bench';
 import { GuestJoin } from '@/components/skrum/guest-join';
 import type { GuestJoinProps } from '@/components/skrum/guest-join';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import { useTrans } from '@/hooks/use-trans';
 
 export const group: BenchGroup = 'skrum';
@@ -102,6 +104,30 @@ export default function GuestJoinSection() {
                         initialName={t('Thoughtful otter')}
                         onSubmit={noop}
                     />
+                </State>
+                <State label={t('Planning poker, join as spectator')}>
+                    <GuestJoin
+                        {...common}
+                        session={{
+                            kind: 'poker',
+                            title: t('Sprint :number estimates', {
+                                number: 42,
+                            }),
+                        }}
+                        initialName="Nadia"
+                        onSubmit={noop}
+                    >
+                        <div className="flex items-center gap-2">
+                            <Checkbox
+                                id="spectator"
+                                name="spectator"
+                                value="1"
+                            />
+                            <Label htmlFor="spectator">
+                                {t('Join as spectator')}
+                            </Label>
+                        </div>
+                    </GuestJoin>
                 </State>
                 <State label={t('Game room')}>
                     <GuestJoin

@@ -389,8 +389,8 @@ export function useActionLinkSummary(link: ActionItemLink) {
     const { t } = useTrans();
     const provider = TrackerLabels[link.source];
     const syncState = link.syncState ?? 'off';
-    const trackerStatus =
-        link.statusName ?? t(link.state === 'done' ? 'Done' : 'Not done');
+    const stateLabel = link.state === 'done' ? t('Done') : t('Not done');
+    const trackerStatus = link.statusName ?? stateLabel;
     const summaries: Record<typeof syncState, string | null> = {
         off: null,
         synced: t(':status in :source', {

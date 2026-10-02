@@ -422,6 +422,12 @@ describe('GamesLeaderboard', () => {
             'Name taken',
         );
         expect(screen.getByLabelText('Name')).toBeTruthy();
+        expect(screen.getByLabelText('Name').id).toBe('new-room-name');
+        expect(
+            screen.getByLabelText('Name').getAttribute('aria-describedby'),
+        ).toBe(screen.getByRole('alert').id);
+        expect(document.getElementById('new-room-game')).not.toBeNull();
+        expect(document.getElementById('new-room-access')).not.toBeNull();
     });
 
     it('counts live rooms in the rooms card', () => {

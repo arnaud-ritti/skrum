@@ -1,5 +1,6 @@
 import { screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
+import SessionLayout from '@/layouts/skrum/session-layout';
 import { renderWithProviders } from '@/test/render';
 import type { AppSidebarProps } from '@/components/skrum/app-sidebar';
 import { AppTopbar } from '@/components/skrum/app-topbar';
@@ -63,6 +64,58 @@ describe('SessionFrame', () => {
         expect(screen.getByRole('banner').textContent).toContain('Sprint 42');
         expect(screen.getByRole('banner').textContent).toContain('phases');
         expect(screen.getByRole('banner').textContent).toContain('05:00');
+    });
+});
+
+describe('SessionFrame for a guest', () => {
+    it('has no application sidebar and no sidebar trigger without a sidebar', () => {
+        const { container } = renderWithProviders(
+            <SessionFrame
+                title="Sprint 42"
+                phases={<span>phases</span>}
+                presence={<span>2 online</span>}
+            >
+                <p>board</p>
+            </SessionFrame>,
+        );
+
+        expect(screen.queryByRole('navigation')).toBeNull();
+        expect(container.querySelector('[data-slot="sidebar"]')).toBeNull();
+        expect(
+            container.querySelector('[data-slot="sidebar-trigger"]'),
+        ).toBeNull();
+        expect(screen.queryByRole('button')).toBeNull();
+        expect(screen.getByRole('banner').textContent).toContain('Sprint 42');
+        expect(screen.getByRole('banner').textContent).toContain('2 online');
+        expect(screen.getByRole('main').textContent).toContain('board');
+    });
+
+    it('shows the trigger again when a sidebar is given', () => {
+        const { container } = renderWithProviders(
+            <SessionFrame sidebar={sidebar} title="Sprint 42">
+                <p>board</p>
+            </SessionFrame>,
+        );
+
+        expect(
+            container.querySelector('[data-slot="sidebar-trigger"]'),
+        ).not.toBeNull();
+    });
+});
+
+describe('SessionLayout', () => {
+    it('gives a guest, who has no signed-in user, a session without the sidebar', () => {
+        const { container } = renderWithProviders(
+            <SessionLayout title="Sprint 42">
+                <p>board</p>
+            </SessionLayout>,
+        );
+
+        expect(container.querySelector('[data-slot="sidebar"]')).toBeNull();
+        expect(
+            container.querySelector('[data-slot="sidebar-trigger"]'),
+        ).toBeNull();
+        expect(screen.getByRole('main').textContent).toContain('board');
     });
 });
 

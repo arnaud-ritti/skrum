@@ -1,4 +1,9 @@
-import { InfoIcon, Trash2Icon, TriangleAlertIcon } from 'lucide-react';
+import {
+    CircleAlertIcon,
+    InfoIcon,
+    Trash2Icon,
+    TriangleAlertIcon,
+} from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useRef, useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
@@ -24,6 +29,8 @@ type DialogShellProps = {
     onOpenChange: (open: boolean) => void;
     title: string;
     unavailableMessage?: string;
+    /** Server message shown after a rejected confirmation or submission. */
+    error?: string;
 };
 
 export type ConfirmDialogProps = DialogShellProps & {
@@ -37,6 +44,7 @@ export type ConfirmDialogProps = DialogShellProps & {
 export type FormDialogProps = DialogShellProps & {
     description?: string;
     submitLabel: string;
+    tone?: 'default' | 'destructive';
     onSubmit: (data: FormData) => Promise<void>;
     children: ReactNode;
 };
@@ -68,6 +76,26 @@ function usePendingGuard(onOpenChange: (open: boolean) => void) {
     return { pending, guardedOpenChange, run };
 }
 
+function DialogError({ error }: { error?: string }) {
+    if (!error) {
+        return null;
+    }
+
+    return (
+        <p
+            role="alert"
+            data-slot="dialog-error"
+            className="flex items-start gap-1.5 text-body-sm text-skrum-destructive-text"
+        >
+            <CircleAlertIcon
+                aria-hidden="true"
+                className="mt-0.5 size-4 shrink-0"
+            />
+            <span className="min-w-0">{error}</span>
+        </p>
+    );
+}
+
 function UnavailableDialog({
     open,
     onOpenChange,
@@ -86,6 +114,7 @@ function UnavailableDialog({
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent
+                size="sm"
                 showCloseButton={false}
                 closeLabel={t('Close')}
                 data-test="dialog-unavailable"
@@ -100,7 +129,9 @@ function UnavailableDialog({
                 </DialogHeader>
                 <DialogFooter>
                     <DialogClose asChild>
-                        <Button>{t('Close')}</Button>
+                        <Button className="max-w-full min-w-0">
+                            <span className="truncate">{t('Close')}</span>
+                        </Button>
                     </DialogClose>
                 </DialogFooter>
             </DialogContent>
@@ -118,6 +149,7 @@ export function ConfirmDialog({
     tone = 'default',
     onConfirm,
     unavailableMessage,
+    error,
 }: ConfirmDialogProps) {
     const { t } = useTrans();
     const cancelRef = useRef<HTMLButtonElement>(null);
@@ -140,6 +172,7 @@ export function ConfirmDialog({
     return (
         <Dialog open={open} onOpenChange={guardedOpenChange}>
             <DialogContent
+                size="sm"
                 role="alertdialog"
                 showCloseButton={false}
                 closeLabel={t('Close')}
@@ -184,6 +217,7 @@ export function ConfirmDialog({
                         ))}
                     </ul>
                 )}
+                <DialogError error={error} />
                 <DialogFooter>
                     <Button
                         ref={cancelRef}
@@ -220,12 +254,15 @@ export function FormDialog({
     description,
     submitLabel,
     onSubmit,
+    tone = 'default',
     children,
     unavailableMessage,
+    error,
 }: FormDialogProps) {
     const { t } = useTrans();
     const { pending, guardedOpenChange, run } = usePendingGuard(onOpenChange);
     const restoreFocus = useRestoreFocus(open);
+    const destructive = tone === 'destructive';
 
     if (unavailableMessage !== undefined) {
         return (
@@ -254,6 +291,7 @@ export function FormDialog({
     return (
         <Dialog open={open} onOpenChange={guardedOpenChange}>
             <DialogContent
+                size="sm"
                 closeLabel={t('Close')}
                 onCloseAutoFocus={restoreFocus}
                 {...(description === undefined
@@ -276,12 +314,18 @@ export function FormDialog({
                     className="grid gap-4"
                 >
                     <DialogHeader className="pr-8">
+                        {destructive && (
+                            <DialogIcon className="bg-skrum-destructive-soft text-skrum-destructive-text">
+                                <TriangleAlertIcon />
+                            </DialogIcon>
+                        )}
                         <DialogTitle>{title}</DialogTitle>
                         {description !== undefined && (
                             <DialogDescription>{description}</DialogDescription>
                         )}
                     </DialogHeader>
                     <div className="grid gap-4">{children}</div>
+                    <DialogError error={error} />
                     <DialogFooter>
                         <Button
                             type="button"
@@ -291,8 +335,16 @@ export function FormDialog({
                         >
                             <span className="truncate">{t('Cancel')}</span>
                         </Button>
-                        <Button type="submit" disabled={pending}>
-                            {pending && <Spinner aria-label={t('Loading')} />}
+                        <Button
+                            type="submit"
+                            variant={destructive ? 'destructive' : 'default'}
+                            disabled={pending}
+                        >
+                            {pending ? (
+                                <Spinner aria-label={t('Loading')} />
+                            ) : (
+                                destructive && <Trash2Icon aria-hidden="true" />
+                            )}
                             <span className="truncate">{submitLabel}</span>
                         </Button>
                     </DialogFooter>

@@ -1,4 +1,9 @@
-import { CheckIcon, RefreshCwIcon, WifiOffIcon } from 'lucide-react';
+import {
+    CheckIcon,
+    RefreshCwIcon,
+    TriangleAlertIcon,
+    WifiOffIcon,
+} from 'lucide-react';
 import type { ReactNode } from 'react';
 import { PersonAvatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -10,7 +15,8 @@ export type ConnectionStatus =
     | 'connecting'
     | 'reconnecting'
     | 'offline'
-    | 'resynced';
+    | 'resynced'
+    | 'expired';
 
 export type ConnectionStateProps = {
     status: ConnectionStatus;
@@ -19,12 +25,19 @@ export type ConnectionStateProps = {
     pendingChanges?: number;
     variant?: 'pill' | 'banner' | 'overlay';
     onRetry?: () => void;
+    /** Shown as a "Reload" button when the status is `expired`. */
+    onReload?: () => void;
     realtime?: string;
     className?: string;
 };
 
 export type EditingIndicatorProps = {
-    user: { name: string; initials: string; presence: number };
+    user: {
+        name: string;
+        initials: string;
+        presence: number;
+        avatarUrl?: string | null;
+    };
     target: 'card' | 'group' | 'column';
     className?: string;
 };
@@ -101,6 +114,13 @@ function useStatusCopy(
         return { tone: 'lost' as const, label: t('Offline') };
     }
 
+    if (status === 'expired') {
+        return {
+            tone: 'lost' as const,
+            label: t('Your session has expired.'),
+        };
+    }
+
     if (status === 'resynced') {
         const synced =
             pendingChanges && pendingChanges > 0
@@ -136,6 +156,12 @@ function Marker({
         return <WifiOffIcon aria-hidden="true" className="size-4 shrink-0" />;
     }
 
+    if (status === 'expired') {
+        return (
+            <TriangleAlertIcon aria-hidden="true" className="size-4 shrink-0" />
+        );
+    }
+
     if (status === 'resynced') {
         return <CheckIcon aria-hidden="true" className="size-4 shrink-0" />;
     }
@@ -150,6 +176,7 @@ export function ConnectionState({
     pendingChanges,
     variant = 'pill',
     onRetry,
+    onReload,
     realtime,
     className,
 }: ConnectionStateProps) {
@@ -163,6 +190,12 @@ export function ConnectionState({
     }
 
     const detail = 'detail' in copy ? copy.detail : null;
+    const isExpired = status === 'expired';
+    const recovery = isExpired
+        ? onReload && { label: t('Reload'), run: onReload }
+        : status === 'offline' && onRetry
+          ? { label: t('Retry'), run: onRetry }
+          : null;
 
     if (variant === 'banner') {
         const isOffline = status === 'offline';
@@ -172,7 +205,7 @@ export function ConnectionState({
 
         return (
             <div
-                role={isOffline ? 'alert' : 'status'}
+                role={isOffline || isExpired ? 'alert' : 'status'}
                 data-slot="connection-state"
                 data-variant="banner"
                 data-status={status}
@@ -205,16 +238,16 @@ export function ConnectionState({
                         </>
                     ) : null}
                 </span>
-                {isOffline && onRetry ? (
+                {recovery ? (
                     <Button
                         type="button"
                         variant="outline"
                         size="sm"
-                        onClick={onRetry}
-                        className="ml-auto shrink-0 bg-background"
+                        onClick={recovery.run}
+                        className="ml-auto max-w-full min-w-0 bg-background"
                     >
                         <RefreshCwIcon aria-hidden="true" />
-                        {t('Retry')}
+                        <span className="truncate">{recovery.label}</span>
                     </Button>
                 ) : null}
             </div>
@@ -223,8 +256,8 @@ export function ConnectionState({
 
     const pill = (
         <span
-            role="status"
-            aria-live="polite"
+            role={isExpired ? 'alert' : 'status'}
+            aria-live={isExpired ? undefined : 'polite'}
             data-slot="connection-state"
             data-variant={variant}
             data-status={status}
@@ -246,13 +279,13 @@ export function ConnectionState({
                     {detail}
                 </span>
             ) : null}
-            {status === 'offline' && onRetry ? (
+            {recovery ? (
                 <button
                     type="button"
-                    onClick={onRetry}
+                    onClick={recovery.run}
                     className="truncate rounded-xs underline underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
-                    {t('Retry')}
+                    {recovery.label}
                 </button>
             ) : null}
         </span>
@@ -300,6 +333,7 @@ export function EditingIndicator({
             <PersonAvatar
                 decorative
                 name={user.name}
+                src={user.avatarUrl}
                 presence={slot}
                 size="xs"
             />

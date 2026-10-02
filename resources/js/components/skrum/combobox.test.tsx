@@ -144,6 +144,20 @@ describe('Combobox', () => {
         );
     });
 
+    it('names its popover dialog after the field label', async () => {
+        const user = userEvent.setup();
+        const { trigger } = setup();
+
+        await user.click(trigger);
+
+        const dialog = await screen.findByRole('dialog');
+
+        expect(dialog.getAttribute('aria-label')).toBeTruthy();
+        expect(dialog.getAttribute('aria-label')).toBe(
+            document.querySelector(`label[for="${trigger.id}"]`)?.textContent,
+        );
+    });
+
     it('shows the empty text and offers to create the query', async () => {
         const user = userEvent.setup();
         const onCreate = vi.fn();

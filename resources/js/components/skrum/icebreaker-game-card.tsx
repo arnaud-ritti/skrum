@@ -301,7 +301,7 @@ export function IcebreakerGameCard({
             className={cn(
                 '@container/card relative flex w-full min-w-0 flex-col overflow-hidden rounded-xl border bg-card p-0 text-left text-card-foreground shadow-card',
                 'outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
-                'motion-safe:duration-fast motion-safe:transition-[box-shadow,transform] motion-safe:ease-standard',
+                'motion-safe:transition-[box-shadow,transform] motion-safe:duration-140 motion-safe:ease-standard',
                 unavailable
                     ? 'cursor-not-allowed opacity-55'
                     : 'cursor-pointer hover:-translate-y-0.5 hover:shadow-raised',

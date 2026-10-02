@@ -115,6 +115,34 @@ describe('ConnectionState', () => {
 
         expect(onRetry).toHaveBeenCalledOnce();
     });
+    it('says the session expired as an alert, with a reload button', () => {
+        const onReload = vi.fn();
+        const onRetry = vi.fn();
+        const { rerender } = render(
+            <ConnectionState
+                status="expired"
+                variant="banner"
+                onReload={onReload}
+                onRetry={onRetry}
+            />,
+        );
+
+        expect(screen.getByRole('alert').textContent).toContain(
+            'Your session has expired.',
+        );
+        expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Reload' }));
+
+        expect(onReload).toHaveBeenCalledOnce();
+
+        rerender(<ConnectionState status="expired" />);
+
+        expect(screen.getByRole('alert').textContent).toContain(
+            'Your session has expired.',
+        );
+        expect(screen.queryByRole('button')).toBeNull();
+    });
 });
 
 describe('EditingIndicator', () => {

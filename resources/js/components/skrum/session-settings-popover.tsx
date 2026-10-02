@@ -1169,12 +1169,15 @@ function SettingsPanel({
                                         shortcut: isMacLike() ? '⌘↵' : 'Ctrl ↵',
                                     })}
                                     onClick={() => void apply()}
+                                    className="min-w-0"
                                 >
-                                    {changeCount === 0
-                                        ? t('Apply')
-                                        : t('Apply (:count)', {
-                                              count: changeCount,
-                                          })}
+                                    <span className="truncate">
+                                        {changeCount === 0
+                                            ? t('Apply')
+                                            : t('Apply (:count)', {
+                                                  count: changeCount,
+                                              })}
+                                    </span>
                                 </LoadingButton>
                             </div>
                         </>

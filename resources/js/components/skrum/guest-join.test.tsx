@@ -43,7 +43,10 @@ describe('GuestJoin', () => {
         fireEvent.click(screen.getByRole('radio', { name: 'Colour 5' }));
         fireEvent.submit(screen.getByRole('button', { name: 'Join' }));
 
-        expect(onSubmit).toHaveBeenCalledWith({ name: 'Nadia', presence: 5 });
+        expect(onSubmit).toHaveBeenCalledWith(
+            { name: 'Nadia', presence: 5 },
+            expect.any(FormData),
+        );
     });
 
     it('submits the proposed name when the field is empty', () => {
@@ -53,7 +56,10 @@ describe('GuestJoin', () => {
 
         fireEvent.submit(screen.getByRole('button', { name: 'Join' }));
 
-        expect(onSubmit).toHaveBeenCalledWith({ name: 'Thoughtful otter' });
+        expect(onSubmit).toHaveBeenCalledWith(
+            { name: 'Thoughtful otter' },
+            expect.any(FormData),
+        );
     });
 
     it('omits the colour picker and the presence when takenColors is absent', () => {
@@ -63,7 +69,10 @@ describe('GuestJoin', () => {
 
         fireEvent.submit(screen.getByRole('button', { name: 'Join' }));
 
-        expect(onSubmit).toHaveBeenCalledWith({ name: 'Nadia' });
+        expect(onSubmit).toHaveBeenCalledWith(
+            { name: 'Nadia' },
+            expect.any(FormData),
+        );
     });
 
     it('disables taken colours and moves the selection with the arrow keys', () => {
@@ -92,7 +101,10 @@ describe('GuestJoin', () => {
         });
         fireEvent.submit(screen.getByRole('button', { name: 'Join' }));
 
-        expect(onSubmit).toHaveBeenCalledWith({ name: 'Nadia', presence: 1 });
+        expect(onSubmit).toHaveBeenCalledWith(
+            { name: 'Nadia', presence: 1 },
+            expect.any(FormData),
+        );
     });
 
     it('falls back to a free colour when the chosen one gets taken', () => {
@@ -130,7 +142,10 @@ describe('GuestJoin', () => {
 
         fireEvent.submit(button);
 
-        expect(onSubmit).toHaveBeenCalledWith({ name: 'Théo B.' });
+        expect(onSubmit).toHaveBeenCalledWith(
+            { name: 'Théo B.' },
+            expect.any(FormData),
+        );
     });
 
     it('shows the connecting state and does not submit while processing', () => {
@@ -218,7 +233,47 @@ describe('GuestJoin', () => {
 
         fireEvent.submit(screen.getByRole('button', { name: 'Join' }));
 
-        expect(onSubmit).toHaveBeenCalledWith({ name: longName });
+        expect(onSubmit).toHaveBeenCalledWith(
+            { name: longName },
+            expect.any(FormData),
+        );
+    });
+
+    it('renders extra controls before the join button and submits them as form data', () => {
+        const onSubmit = setup({
+            defaultName: 'Thoughtful otter',
+            children: (
+                <label>
+                    <input
+                        type="checkbox"
+                        id="spectator"
+                        name="spectator"
+                        value="1"
+                    />
+                    Join as spectator
+                </label>
+            ),
+        });
+        const spectator = screen.getByLabelText('Join as spectator');
+        const join = screen.getByRole('button', { name: 'Join' });
+
+        expect(spectator.id).toBe('spectator');
+        expect(
+            spectator.compareDocumentPosition(join) &
+                Node.DOCUMENT_POSITION_FOLLOWING,
+        ).toBeTruthy();
+
+        fireEvent.click(spectator);
+        fireEvent.submit(join);
+
+        const [data, formData] = onSubmit.mock.calls[0] as [
+            { name: string },
+            FormData,
+        ];
+
+        expect(data).toEqual({ name: 'Thoughtful otter' });
+        expect(formData.get('spectator')).toBe('1');
+        expect(formData.get('name')).toBe('Thoughtful otter');
     });
 
     it('links to the login page', () => {

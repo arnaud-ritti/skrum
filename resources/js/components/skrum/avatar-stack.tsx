@@ -52,7 +52,7 @@ export function AvatarStack({
                     size={size}
                     className={cn(
                         index >= initialCount &&
-                            'duration-base animate-in ease-spring zoom-in-50 fade-in motion-reduce:animate-none',
+                            'animate-in duration-220 ease-spring zoom-in-50 fade-in motion-reduce:animate-none',
                     )}
                 />
             ))}

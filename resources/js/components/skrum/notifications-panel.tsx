@@ -634,6 +634,7 @@ export function NotificationsPanel({
         next.focus();
     };
 
+    const cannotMarkAllRead = unreadCount === 0 || markingAllRead;
     const emptyTitle =
         tab === 'unread'
             ? t('You’re all caught up')
@@ -663,9 +664,15 @@ export function NotificationsPanel({
                 <Button
                     variant="ghost"
                     size="sm"
-                    className="min-w-0 text-skrum-primary-text"
-                    disabled={unreadCount === 0 || markingAllRead}
-                    onClick={onMarkAllRead}
+                    className="min-w-0 text-skrum-primary-text aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
+                    aria-disabled={cannotMarkAllRead || undefined}
+                    onClick={() => {
+                        if (cannotMarkAllRead) {
+                            return;
+                        }
+
+                        onMarkAllRead();
+                    }}
                 >
                     <CheckCheck aria-hidden="true" />
                     <span className="truncate">{t('Mark all as read')}</span>

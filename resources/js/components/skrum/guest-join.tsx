@@ -51,7 +51,16 @@ export type GuestJoinProps = {
     initialPresence?: number;
     error?: { field: 'name'; message: string } | null;
     processing?: boolean;
-    onSubmit: (data: { name: string; presence?: number }) => void;
+    /**
+     * `formData` holds every named control of the form, including the ones
+     * passed as `children` (for example the poker "Join as spectator" switch).
+     */
+    onSubmit: (
+        data: { name: string; presence?: number },
+        formData: FormData,
+    ) => void;
+    /** Extra controls rendered between the nickname and the join button. */
+    children?: ReactNode;
     onRandomName?: () => void;
     loginUrl: string;
     className?: string;
@@ -125,6 +134,7 @@ export function GuestJoin({
     error = null,
     processing = false,
     onSubmit,
+    children,
     onRandomName,
     loginUrl,
     className,
@@ -223,10 +233,18 @@ export function GuestJoin({
             return;
         }
 
-        onSubmit({
-            name: hasName ? trimmedName : (defaultName ?? ''),
-            ...(showColors && color !== null ? { presence: color } : {}),
-        });
+        const joinName = hasName ? trimmedName : (defaultName ?? '');
+        const formData = new FormData(event.currentTarget);
+
+        formData.set('name', joinName);
+
+        onSubmit(
+            {
+                name: joinName,
+                ...(showColors && color !== null ? { presence: color } : {}),
+            },
+            formData,
+        );
     };
 
     const chooseColor = (value: AvatarPresence) => {
@@ -487,6 +505,8 @@ export function GuestJoin({
                         </span>
                     </Button>
                 )}
+
+                {children}
 
                 <LoadingButton
                     type="submit"

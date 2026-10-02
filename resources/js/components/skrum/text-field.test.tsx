@@ -1,7 +1,14 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { Mail } from 'lucide-react';
+import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { TextareaField, TextField } from '@/components/skrum/text-field';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogTitle,
+} from '@/components/ui/dialog';
 
 describe('TextField', () => {
     it('links the label to the input', () => {
@@ -165,6 +172,41 @@ describe('TextareaField', () => {
         fireEvent.keyDown(screen.getByLabelText('Card'), { key: 'Escape' });
 
         expect(onCancel).toHaveBeenCalledOnce();
+    });
+
+    it('cancels the edit without closing the dialog that hosts it', async () => {
+        const user = userEvent.setup();
+        const onCancel = vi.fn();
+        const onOpenChange = vi.fn();
+
+        function Host({ editing }: { editing: boolean }) {
+            return (
+                <Dialog open onOpenChange={onOpenChange}>
+                    <DialogContent>
+                        <DialogTitle>Card</DialogTitle>
+                        <DialogDescription>Edit the card</DialogDescription>
+                        <TextareaField
+                            label="Text"
+                            onCancel={editing ? onCancel : undefined}
+                        />
+                    </DialogContent>
+                </Dialog>
+            );
+        }
+
+        const { rerender } = render(<Host editing />);
+
+        await user.click(screen.getByLabelText('Text'));
+        await user.keyboard('{Escape}');
+
+        expect(onCancel).toHaveBeenCalledOnce();
+        expect(onOpenChange).not.toHaveBeenCalled();
+
+        rerender(<Host editing={false} />);
+        await user.keyboard('{Escape}');
+
+        expect(onCancel).toHaveBeenCalledOnce();
+        expect(onOpenChange).toHaveBeenCalledWith(false);
     });
 
     it('still calls the caller onChange and onKeyDown', () => {

@@ -2,7 +2,10 @@ import { fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { ShareDialog } from '@/components/skrum/share-dialog';
+import {
+    ShareDialog,
+    ShareDialogContent,
+} from '@/components/skrum/share-dialog';
 import type {
     ShareDialogProps,
     ShareMember,
@@ -362,6 +365,27 @@ describe('ShareDialog', () => {
     });
 });
 
+describe('ShareDialogContent', () => {
+    it('renders the body inline, without a dialog around it', () => {
+        const {
+            open: _open,
+            onOpenChange: _change,
+            ...content
+        } = baseProps({
+            members,
+            onInvite: vi.fn().mockResolvedValue(undefined),
+        });
+
+        renderWithProviders(<ShareDialogContent {...content} />);
+
+        expect(screen.queryByRole('dialog')).toBeNull();
+        expect(
+            (screen.getByLabelText('Guest link') as HTMLInputElement).value,
+        ).toBe(url);
+        expect(screen.getByRole('tab', { name: /Members/ })).toBeTruthy();
+    });
+});
+
 describe('ShareDialog members tab', () => {
     function renderMembers(onInvite = vi.fn().mockResolvedValue(undefined)) {
         renderWithProviders(
@@ -435,13 +459,11 @@ describe('ShareDialog members tab', () => {
 
         renderMembers();
 
-        expect(
-            (
-                screen.getByRole('button', {
-                    name: 'Send 0 invitations',
-                }) as HTMLButtonElement
-            ).disabled,
-        ).toBe(true);
+        const send = screen.getByRole('button', {
+            name: 'Send 0 invitations',
+        });
+
+        expect(send.getAttribute('aria-disabled')).toBe('true');
 
         await user.type(
             screen.getByRole('combobox', { name: 'Add team members' }),
@@ -449,5 +471,132 @@ describe('ShareDialog members tab', () => {
         );
 
         expect(screen.getAllByRole('option')).toHaveLength(1);
+    });
+
+    it('does not invite anyone from the send button at zero', async () => {
+        const user = userEvent.setup();
+        const onInvite = renderMembers();
+
+        await user.click(
+            screen.getByRole('button', { name: 'Send 0 invitations' }),
+        );
+
+        expect(onInvite).not.toHaveBeenCalled();
+    });
+
+    it('keeps focus on the send button once the invitations are sent', async () => {
+        const user = userEvent.setup();
+        const onInvite = renderMembers();
+
+        await user.click(
+            screen.getByRole('combobox', { name: 'Add team members' }),
+        );
+        await user.keyboard('{Enter}');
+
+        const send = screen.getByRole('button', { name: 'Send 1 invitation' });
+
+        await user.click(send);
+
+        await waitFor(() => expect(onInvite).toHaveBeenCalledTimes(1));
+        await screen.findByRole('button', { name: 'Send 0 invitations' });
+        expect(document.activeElement).toBe(
+            screen.getByRole('button', { name: 'Send 0 invitations' }),
+        );
+        expect(document.activeElement).not.toBe(document.body);
+    });
+
+    it('closes the listbox, not the dialog, on the first Escape', async () => {
+        const user = userEvent.setup();
+        const onOpenChange = vi.fn();
+
+        renderWithProviders(
+            <ShareDialog
+                {...baseProps({
+                    members,
+                    onInvite: vi.fn().mockResolvedValue(undefined),
+                    tab: 'members',
+                    onOpenChange,
+                })}
+            />,
+        );
+
+        const input = screen.getByRole('combobox', {
+            name: 'Add team members',
+        });
+
+        await user.click(input);
+        expect(input.getAttribute('aria-expanded')).toBe('true');
+
+        await user.keyboard('{Escape}');
+
+        expect(input.getAttribute('aria-expanded')).toBe('false');
+        expect(onOpenChange).not.toHaveBeenCalled();
+        expect(document.activeElement).toBe(input);
+
+        await user.keyboard('{Escape}');
+
+        expect(onOpenChange).toHaveBeenCalledWith(false);
+    });
+
+    it('scrolls the active option into view while moving through 200 members', async () => {
+        const user = userEvent.setup();
+        const scrolled: string[] = [];
+        const original = Object.getOwnPropertyDescriptor(
+            Element.prototype,
+            'scrollIntoView',
+        );
+
+        Object.defineProperty(Element.prototype, 'scrollIntoView', {
+            configurable: true,
+            writable: true,
+            value(this: Element) {
+                scrolled.push(this.id);
+            },
+        });
+
+        try {
+            const many: ShareMember[] = Array.from(
+                { length: 200 },
+                (_, index) => ({
+                    id: `m${index}`,
+                    name: `Member ${index}`,
+                    email: `m${index}@x.io`,
+                    inSession: false,
+                }),
+            );
+
+            renderWithProviders(
+                <ShareDialog
+                    {...baseProps({
+                        members: many,
+                        onInvite: vi.fn().mockResolvedValue(undefined),
+                        tab: 'members',
+                    })}
+                />,
+            );
+
+            const input = screen.getByRole('combobox', {
+                name: 'Add team members',
+            });
+
+            await user.click(input);
+            await user.keyboard('{ArrowDown}{ArrowDown}{ArrowDown}');
+
+            const active = input.getAttribute('aria-activedescendant');
+
+            expect(active).toBe(screen.getAllByRole('option')[3].id);
+            expect(scrolled.at(-1)).toBe(active);
+            expect(new Set(scrolled).size).toBe(4);
+        } finally {
+            if (original) {
+                Object.defineProperty(
+                    Element.prototype,
+                    'scrollIntoView',
+                    original,
+                );
+            } else {
+                Reflect.deleteProperty(Element.prototype, 'scrollIntoView');
+            }
+        }
     });
 });

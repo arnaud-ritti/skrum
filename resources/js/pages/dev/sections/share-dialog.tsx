@@ -1,7 +1,11 @@
 import { UserPlus } from 'lucide-react';
 import { useState } from 'react';
+import { BenchOverlayStage } from '@/components/dev/bench';
 import type { BenchGroup } from '@/components/dev/bench';
-import { ShareDialog } from '@/components/skrum/share-dialog';
+import {
+    ShareDialog,
+    ShareDialogContent,
+} from '@/components/skrum/share-dialog';
 import type {
     ShareDialogProps,
     ShareMember,
@@ -183,27 +187,53 @@ export default function ShareDialogSection() {
         },
     };
 
+    const inline = states.filter((entry) => entry.key !== 'mobile');
+
     return (
-        <div className="flex max-w-2xl min-w-0 flex-col gap-4 p-4 md:p-6">
-            <p className="text-sm text-muted-foreground">
-                {t('Close the dialog, then pick another state to open it.')}
-            </p>
-            <div className="flex flex-wrap gap-2">
-                {states.map((entry) => (
-                    <Button
-                        key={entry.key}
-                        type="button"
-                        variant={state === entry.key ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => choose(entry.key)}
-                        className="max-w-full"
-                    >
-                        <UserPlus aria-hidden />
-                        <span className="truncate">{entry.label}</span>
-                    </Button>
-                ))}
+        <div className="flex min-w-0 flex-col gap-6 p-4 md:p-6">
+            {inline.map((entry) => (
+                <div key={entry.key} className="flex min-w-0 flex-col gap-2">
+                    <p className="text-sm font-medium text-muted-foreground">
+                        {entry.label}
+                    </p>
+                    <div className="grid w-full max-w-128 min-w-0 gap-4 rounded-lg border bg-background p-6 shadow-card">
+                        <ShareDialogContent {...byState[entry.key]} />
+                    </div>
+                </div>
+            ))}
+            <div className="flex min-w-0 flex-col gap-2">
+                <p className="text-sm font-medium text-muted-foreground">
+                    {t('Mobile drawer, body without the overlay')}
+                </p>
+                <div className="grid w-full max-w-sm min-w-0 gap-4 rounded-lg border bg-background p-4 shadow-card">
+                    <ShareDialogContent {...byState.mobile} />
+                </div>
             </div>
-            <ShareDialog key={state} {...byState[state]} />
+            <BenchOverlayStage>
+                <div className="flex min-w-0 flex-col gap-2">
+                    <p className="text-sm font-medium text-muted-foreground">
+                        {t('Real overlay, open: pick a state to reopen it')}
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                        {states.map((entry) => (
+                            <Button
+                                key={entry.key}
+                                type="button"
+                                variant={
+                                    state === entry.key ? 'default' : 'outline'
+                                }
+                                size="sm"
+                                onClick={() => choose(entry.key)}
+                                className="max-w-full"
+                            >
+                                <UserPlus aria-hidden />
+                                <span className="truncate">{entry.label}</span>
+                            </Button>
+                        ))}
+                    </div>
+                    <ShareDialog key={state} {...byState[state]} />
+                </div>
+            </BenchOverlayStage>
         </div>
     );
 }

@@ -199,6 +199,31 @@ describe('ConfirmDialog', () => {
         expect(onOpenChange).not.toHaveBeenCalled();
     });
 
+    it('shows the server error after a rejected confirmation', async () => {
+        const onOpenChange = vi.fn();
+        const props = {
+            ...base,
+            onOpenChange,
+            onConfirm: () => Promise.reject(new Error('nope')),
+        };
+        const { rerender } = render(<ConfirmDialog {...props} />);
+
+        expect(screen.queryByRole('alert')).toBeNull();
+
+        await userEvent.click(screen.getByRole('button', { name: 'Delete' }));
+        rerender(
+            <ConfirmDialog
+                {...props}
+                error="The session is locked by its facilitator."
+            />,
+        );
+
+        expect(screen.getByRole('alert').textContent).toBe(
+            'The session is locked by its facilitator.',
+        );
+        expect(onOpenChange).not.toHaveBeenCalled();
+    });
+
     it('swaps its content for a single Close button when unavailable', async () => {
         const onOpenChange = vi.fn();
 
@@ -278,5 +303,47 @@ describe('FormDialog', () => {
 
         pending.resolve();
         await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false));
+    });
+
+    it('shows a server error and a destructive submit with an icon and a label', () => {
+        const { rerender } = render(
+            <FormDialog
+                open
+                onOpenChange={() => {}}
+                title="Delete the team"
+                submitLabel="Delete"
+                onSubmit={async () => {}}
+            >
+                <input aria-label="Team name" name="name" />
+            </FormDialog>,
+        );
+
+        const submit = () => screen.getByRole('button', { name: 'Delete' });
+
+        expect(screen.queryByRole('alert')).toBeNull();
+        expect(submit().querySelector('svg')).toBeNull();
+
+        rerender(
+            <FormDialog
+                open
+                onOpenChange={() => {}}
+                title="Delete the team"
+                submitLabel="Delete"
+                tone="destructive"
+                error="The name does not match."
+                onSubmit={async () => {}}
+            >
+                <input aria-label="Team name" name="name" />
+            </FormDialog>,
+        );
+
+        expect(screen.getByRole('alert').textContent).toBe(
+            'The name does not match.',
+        );
+        expect(submit().querySelector('svg')).not.toBeNull();
+        expect(submit().textContent).toBe('Delete');
+        expect(submit().getAttribute('data-variant') ?? 'destructive').toBe(
+            'destructive',
+        );
     });
 });
