@@ -21,7 +21,7 @@ import type { PokerDeckOption } from '@/types';
 import { AutoRevealTriggers } from './auto-reveal-triggers';
 import { GameProvider, useGame, type GameContextValue } from './game-context';
 import { RoomCursors } from './room-cursors';
-import { RoomDialogs } from './room-dialogs';
+import { GameSettings, RoomDialogs } from './room-dialogs';
 import type { RoomDialog } from './room-dialogs';
 import { RoomDock } from './room-dock';
 import { RoomGone } from './room-gone';
@@ -205,6 +205,7 @@ export function RoomView({
                                 />
                             )}
                             <ShareButton onClick={() => setDialog('share')} />
+                            <GameSettings />
                         </>
                     )}
                     <FacilitatorMenu
@@ -235,6 +236,7 @@ export function RoomView({
                                 {tasksToggle}
                                 <TakeControlButton />
                                 <CopyGuestLinkButton />
+                                <GameSettings />
                             </>
                         )}
                     </div>

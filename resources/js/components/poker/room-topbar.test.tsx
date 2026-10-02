@@ -60,7 +60,8 @@ describe('RoomTitle', () => {
             <RoomTitle showDeck={false} />,
             pokerSnapshot({
                 me: { isFacilitator: false, isGuest: true },
-                links: { team: null, decks: null },
+                team: null,
+                links: { team: null },
             }),
         );
 
@@ -374,7 +375,7 @@ const slackOnly = {
 };
 
 describe('FacilitatorMenu', () => {
-    it('lists settings, hand-over, end and delete, and no guest link entry', async () => {
+    it('lists hand-over, end and delete, and neither a settings nor a guest link entry', async () => {
         const onChoose = vi.fn();
 
         renderInRoom(
@@ -382,15 +383,16 @@ describe('FacilitatorMenu', () => {
         );
 
         expect(await menuItems()).toEqual([
-            'Settings…',
             'Hand over facilitation…',
             'End game',
             'Delete game…',
         ]);
 
-        fireEvent.click(screen.getByRole('menuitem', { name: 'Settings…' }));
+        fireEvent.click(
+            screen.getByRole('menuitem', { name: 'Hand over facilitation…' }),
+        );
 
-        expect(onChoose).toHaveBeenCalledWith('settings');
+        expect(onChoose).toHaveBeenCalledWith('transfer');
     });
 
     it('lists "Share…" when a channel is connected, or where the header has no Share button', async () => {

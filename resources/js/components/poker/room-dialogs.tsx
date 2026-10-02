@@ -1,5 +1,7 @@
 import { Link, router } from '@inertiajs/react';
+import { Settings2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import type { ComponentProps } from 'react';
 import { toast } from 'sonner';
 import PokerSharesController from '@/actions/App/Http/Controllers/Integrations/PokerSharesController';
 import PokerFacilitatorsController from '@/actions/App/Http/Controllers/Poker/PokerFacilitatorsController';
@@ -18,14 +20,13 @@ import {
     deckCards,
     deckShapeFromCards,
 } from '@/components/skrum/deck-picker';
-import { SessionSettingsContent } from '@/components/skrum/session-settings-popover';
+import { SessionSettingsPopover } from '@/components/skrum/session-settings-popover';
 import type {
     SessionSettingGroup,
     SessionSettingsValues,
 } from '@/components/skrum/session-settings-popover';
 import { ShareDialog } from '@/components/skrum/share-dialog';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -37,7 +38,13 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useShortcut } from '@/hooks/use-shortcut';
 import { useTrans } from '@/hooks/use-trans';
 import { ShareChannels } from '@/lib/integrations';
 import {
@@ -52,6 +59,7 @@ import type { PokerTask } from '@/lib/poker/types';
 import { RetroRequestError, retroRequest } from '@/lib/retro/api';
 import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
+import { index as savedDecksPage } from '@/routes/teams/pokerDecks';
 import type {
     IntegrationDelivery,
     SavedPokerDeck,
@@ -62,7 +70,7 @@ import { MarkdownClasses } from './markdown-classes';
 import { useSetEnded } from './use-round-actions';
 
 /** The dialogs the facilitator menu and the header open. */
-export type RoomDialog = 'settings' | 'share' | 'transfer' | 'end' | 'delete';
+export type RoomDialog = 'share' | 'transfer' | 'end' | 'delete';
 
 type DialogProps = { open: boolean; onOpenChange: (open: boolean) => void };
 
@@ -136,12 +144,47 @@ function hasFieldFor(key: string): boolean {
     );
 }
 
-function SettingsForm({ onDone }: { onDone: () => void }) {
+/** The button of the settings: an icon, named by its label and its tooltip. */
+function SettingsTrigger({
+    className,
+    ...props
+}: ComponentProps<typeof Button>) {
+    const { t } = useTrans();
+
+    return (
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <Button
+                    type="button"
+                    size="icon-sm"
+                    variant="outline"
+                    aria-label={t('Game settings')}
+                    className={cn('shrink-0', className)}
+                    {...props}
+                >
+                    <Settings2 aria-hidden />
+                </Button>
+            </TooltipTrigger>
+            <TooltipContent>{t('Game settings')}</TooltipContent>
+        </Tooltip>
+    );
+}
+
+/**
+ * The settings of the game, in a popover anchored to their button (a drawer on
+ * a phone): the name, what a round does, presence, and the deck while nobody
+ * has voted. The facilitator applies them in one go; the others read them.
+ */
+export function GameSettings() {
     const ctx = useGame();
     const { t } = useTrans();
-    const { game, me, links } = ctx.snapshot;
+    const { game, me, team, players } = ctx.snapshot;
+    const readOnly = !me.isFacilitator;
     const deckLocked = game.hasVotes;
     const canPickDeck = me.isFacilitator && !deckLocked;
+    const [isOpen, setIsOpen] = useState(false);
+    const open = isOpen && !ctx.sessionExpired;
+    const isShown = useRef(open);
     const [draft, setDraft] = useState<Partial<SessionSettingsValues>>({});
     const [errors, setErrors] = useState<Record<string, string | undefined>>(
         {},
@@ -154,18 +197,21 @@ function SettingsForm({ onDone }: { onDone: () => void }) {
     } | null>(null);
     const [editorDraft, setEditorDraft] = useState<DeckDraft | null>(null);
     const typedDecks = useRef(new Map<string, DeckDraft>());
-    const isMounted = useRef(true);
 
     useEffect(() => {
-        isMounted.current = true;
+        isShown.current = open;
 
         return () => {
-            isMounted.current = false;
+            isShown.current = false;
         };
-    }, []);
+    }, [open]);
+
+    useShortcut(',', () => setIsOpen(true), {
+        enabled: !open && game.endedAt === null,
+    });
 
     useEffect(() => {
-        if (!canPickDeck) {
+        if (!open || !canPickDeck) {
             return;
         }
 
@@ -184,7 +230,23 @@ function SettingsForm({ onDone }: { onDone: () => void }) {
         return () => {
             cancelled = true;
         };
-    }, [canPickDeck, game.id]);
+    }, [open, canPickDeck, game.id]);
+
+    const reset = (): void => {
+        setDraft({});
+        setTyped(null);
+        setEditorDraft(null);
+        setErrors({});
+        setError(null);
+    };
+
+    const changeOpen = (next: boolean): void => {
+        if (!next) {
+            reset();
+        }
+
+        setIsOpen(next);
+    };
 
     const gameShape = deckShapeFromCards(game.cards);
     const isOwnDeck = game.deck === CustomDeckId;
@@ -279,8 +341,9 @@ function SettingsForm({ onDone }: { onDone: () => void }) {
     };
 
     /**
-     * Also called by the "Undo" of the confirmation toast, once the dialog is
-     * closed: a refusal is then a toast, and nothing is thrown at nobody.
+     * Also called by the "Undo" of the confirmation toast, which outlives the
+     * popover: once it is closed a refusal is a toast, and nothing is thrown
+     * at nobody.
      */
     const apply = async (
         patch: Partial<SessionSettingsValues>,
@@ -295,7 +358,7 @@ function SettingsForm({ onDone }: { onDone: () => void }) {
             return;
         }
 
-        if (isMounted.current) {
+        if (isShown.current) {
             setErrors({});
             setError(null);
         }
@@ -308,7 +371,7 @@ function SettingsForm({ onDone }: { onDone: () => void }) {
         } catch (caught) {
             const message = ctx.handleError(caught);
 
-            if (!isMounted.current) {
+            if (!isShown.current) {
                 if (message !== null) {
                     toast.error(message);
                 }
@@ -317,7 +380,7 @@ function SettingsForm({ onDone }: { onDone: () => void }) {
             }
 
             if (message === null) {
-                onDone();
+                changeOpen(false);
 
                 throw caught;
             }
@@ -347,10 +410,7 @@ function SettingsForm({ onDone }: { onDone: () => void }) {
         }
 
         await ctx.refetch();
-
-        if (isMounted.current) {
-            onDone();
-        }
+        setTyped(null);
     };
 
     const anonymous = draft.anonymous_votes ?? game.anonymousVotes;
@@ -424,16 +484,23 @@ function SettingsForm({ onDone }: { onDone: () => void }) {
         count: game.cards.length,
     });
 
+    const facilitator = players.find(
+        (player) => player.id === game.facilitatorPlayerId,
+    );
+
+    if (game.endedAt !== null) {
+        return null;
+    }
+
     return (
-        <SessionSettingsContent
-            open
-            onOpenChange={(next) => {
-                if (!next) {
-                    onDone();
-                }
-            }}
+        <SessionSettingsPopover
+            open={open}
+            onOpenChange={changeOpen}
+            trigger={<SettingsTrigger />}
             title={t('Game settings')}
             sessionTitle={game.title}
+            readOnly={readOnly}
+            facilitatorName={facilitator?.name}
             groups={groups}
             value={{
                 title: game.title,
@@ -447,11 +514,7 @@ function SettingsForm({ onDone }: { onDone: () => void }) {
             onDraftChange={setDraft}
             errors={errors}
             onApply={apply}
-            onReset={() => {
-                setDraft({});
-                setTyped(null);
-                setEditorDraft(null);
-            }}
+            onReset={reset}
         >
             <div
                 data-slot="poker-settings-deck"
@@ -461,14 +524,21 @@ function SettingsForm({ onDone }: { onDone: () => void }) {
                     <span className="truncate py-1 text-overline text-muted-foreground uppercase">
                         {t('Deck')}
                     </span>
-                    {links.decks !== null && (
+                    {team !== null && (
                         <Button
                             asChild
                             variant="link"
                             size="sm"
                             className="h-auto min-w-0 p-0"
                         >
-                            <Link href={links.decks}>
+                            <Link
+                                href={
+                                    savedDecksPage({
+                                        workspace: team.workspace,
+                                        team: team.id,
+                                    }).url
+                                }
+                            >
                                 <span className="truncate">
                                     {t('Manage decks')}
                                 </span>
@@ -476,7 +546,7 @@ function SettingsForm({ onDone }: { onDone: () => void }) {
                         </Button>
                     )}
                 </div>
-                {deckLocked && (
+                {!canPickDeck && (
                     <>
                         <span className="truncate text-xs font-semibold text-muted-foreground">
                             {deckSummary}
@@ -485,12 +555,14 @@ function SettingsForm({ onDone }: { onDone: () => void }) {
                             deck={gameShape}
                             label={deckSummary}
                         />
-                        <p className="text-xs text-muted-foreground">
-                            {t("The deck can't change once votes exist.")}
-                        </p>
+                        {!readOnly && (
+                            <p className="text-xs text-muted-foreground">
+                                {t("The deck can't change once votes exist.")}
+                            </p>
+                        )}
                     </>
                 )}
-                {!deckLocked && editorDraft === null && (
+                {canPickDeck && editorDraft === null && (
                     <DeckPicker
                         value={
                             pickedToken.startsWith(CustomDeckId)
@@ -513,7 +585,7 @@ function SettingsForm({ onDone }: { onDone: () => void }) {
                         }
                     />
                 )}
-                {!deckLocked && editorDraft !== null && (
+                {canPickDeck && editorDraft !== null && (
                     <DeckEditor
                         value={editorDraft}
                         onChange={(next) => {
@@ -539,28 +611,7 @@ function SettingsForm({ onDone }: { onDone: () => void }) {
                 )}
                 <FieldError message={error ?? undefined} />
             </div>
-        </SessionSettingsContent>
-    );
-}
-
-/** "Settings…": the name, what a round does, presence, and the deck while nobody has voted. */
-function SettingsDialog({ open, onOpenChange }: DialogProps) {
-    const { t } = useTrans();
-
-    return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent
-                showCloseButton={false}
-                aria-describedby={undefined}
-                data-slot="poker-settings"
-                className="flex flex-col gap-0 overflow-hidden p-0"
-            >
-                <DialogTitle className="sr-only">
-                    {t('Game settings')}
-                </DialogTitle>
-                {open && <SettingsForm onDone={() => onOpenChange(false)} />}
-            </DialogContent>
-        </Dialog>
+        </SessionSettingsPopover>
     );
 }
 
@@ -854,7 +905,6 @@ export function RoomDialogs({
 
     return (
         <>
-            <SettingsDialog open={open === 'settings'} onOpenChange={change} />
             <ShareGameDialog open={open === 'share'} onOpenChange={change} />
             <TransferDialog open={open === 'transfer'} onOpenChange={change} />
             <EndGameDialog open={open === 'end'} onOpenChange={change} />
