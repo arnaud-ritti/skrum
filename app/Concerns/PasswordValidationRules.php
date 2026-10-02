@@ -14,7 +14,17 @@ trait PasswordValidationRules
      */
     protected function passwordRules(): array
     {
-        return ['required', 'string', Password::default(), 'confirmed'];
+        return [...$this->unconfirmedPasswordRules(), 'confirmed'];
+    }
+
+    /**
+     * The same password rule for a form that asks for the password once.
+     *
+     * @return array<int, Password|ValidationRule|array<mixed>|string>
+     */
+    protected function unconfirmedPasswordRules(): array
+    {
+        return ['required', 'string', Password::default()];
     }
 
     /**

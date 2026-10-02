@@ -71,6 +71,7 @@ use App\Http\Controllers\Integrations\WorkspaceActionItemExportPreviewsControlle
 use App\Http\Controllers\Integrations\WorkspaceActionItemExportsController;
 use App\Http\Controllers\Integrations\WorkspaceActionItemLinkSyncsController;
 use App\Http\Controllers\InvitationAcceptancesController;
+use App\Http\Controllers\InvitationAccountsController;
 use App\Http\Controllers\InvitationLinksController;
 use App\Http\Controllers\LocalesController;
 use App\Http\Controllers\MagicLinksController;
@@ -226,6 +227,9 @@ Route::post('invitations/{token}/acceptance', [InvitationAcceptancesController::
     ->name('invitations.acceptance.store');
 
 Route::middleware('guest')->group(function (): void {
+    Route::post('invitations/{token}/account', [InvitationAccountsController::class, 'store'])
+        ->middleware('throttle:invitationAccounts')
+        ->name('invitations.account.store');
     Route::get('auth/{provider}/redirect', [SsoRedirectsController::class, 'show'])->name('sso.redirect');
     Route::get('auth/{provider}/callback', [SsoCallbacksController::class, 'show'])->name('sso.callback');
     Route::post('magic-link', [MagicLinksController::class, 'store'])->middleware('throttle:magicLinks')->name('magicLinks.store');

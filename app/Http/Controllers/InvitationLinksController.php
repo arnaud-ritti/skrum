@@ -8,8 +8,10 @@ use App\Models\User;
 use App\Models\WorkspaceInvitation;
 use App\Support\Auth\SignInPolicy;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
 use Inertia\Response;
+use Laravel\Fortify\Features;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 class InvitationLinksController extends Controller
@@ -46,6 +48,10 @@ class InvitationLinksController extends Controller
             ]);
         }
 
+        $canRegister = Features::enabled(Features::registration())
+            && $signInPolicy->allowsLocalCredentials()
+            && $signupGate->canShowRegistration($invitation);
+
         return Inertia::render('invitations/show', [
             'token' => $token,
             'isInvalid' => false,
@@ -54,7 +60,8 @@ class InvitationLinksController extends Controller
             'isExpired' => false,
             'isLoggedIn' => $user !== null,
             'emailMatches' => $user !== null && $invitation->matchesEmail($user->email),
-            'canRegister' => $signInPolicy->allowsLocalCredentials() && $signupGate->canShowRegistration($invitation),
+            'canRegister' => $canRegister,
+            'passwordRules' => $user === null && $canRegister ? Password::defaults()->toPasswordRulesString() : null,
             'ssoRequired' => $signInPolicy->ssoRequired(),
             'ssoProviders' => $user === null ? SsoProvider::options() : [],
             'inviter' => $this->person($invitation->invitedBy),

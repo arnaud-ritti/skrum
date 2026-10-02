@@ -187,6 +187,12 @@ class FortifyServiceProvider extends ServiceProvider
                 'email' => __('Too many attempts. Wait a minute and try again.'),
             ])));
 
+        RateLimiter::for('invitationAccounts', fn (Request $request) => Limit::perMinute(10)
+            ->by('invitation-account-ip:'.$request->ip())
+            ->response(fn (): RedirectResponse => back()->withErrors([
+                'email' => __('Too many attempts. Wait a minute and try again.'),
+            ])));
+
         RateLimiter::for('passkeys', fn (Request $request) => Limit::perMinute(10)->by(
             ($request->input('credential.id') ?: $request->session()->getId()).'|'.$request->ip(),
         ));
