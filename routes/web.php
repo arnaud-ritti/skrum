@@ -2,6 +2,7 @@
 
 use App\Actions\Auth\SignupGate;
 use App\Http\Controllers\AvatarsController;
+use App\Http\Controllers\BrandAssetsController;
 use App\Http\Controllers\BroadcastAuthorizationsController;
 use App\Http\Controllers\CurrentWorkspaceController;
 use App\Http\Controllers\DesignSystemPagesController;
@@ -174,6 +175,10 @@ Route::get('dev/design-system', [DesignSystemPagesController::class, 'index'])->
 Route::get('dev/design-system/{section}', [DesignSystemPagesController::class, 'show'])->name('dev.designSystem.show');
 
 Route::get('avatars/{seed}.svg', [AvatarsController::class, 'show'])->where('seed', '[a-f0-9]{32}')->name('avatars.show');
+// Outside the web group: a public, immutable response must not carry a session cookie.
+Route::get('brand/{asset}', [BrandAssetsController::class, 'show'])->where('asset', 'logo-light|logo-dark|favicon')
+    ->withoutMiddleware('web')
+    ->name('brand.show');
 Route::get('emoji-data/{version}/{locale}/{file}', [EmojiDataController::class, 'show'])
     ->where(['version' => '[0-9.]+', 'locale' => '[a-z-]+', 'file' => '[a-z]+\.json'])
     ->middleware('throttle:120,1')
