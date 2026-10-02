@@ -7,12 +7,16 @@ use Illuminate\Support\Str;
 
 /**
  * Alphabetical order decided in PHP: SQL order differs between engines and collations.
+ *
+ * Text with no Latin form (Chinese, emoji) keeps its own characters and sorts after the Latin text, by code point.
  */
 class Alphabetical
 {
     public static function key(string $value): string
     {
-        return Str::lower(Str::ascii($value));
+        $ascii = Str::ascii($value);
+
+        return Str::lower(trim($ascii) === '' ? $value : $ascii);
     }
 
     /**
@@ -28,12 +32,12 @@ class Alphabetical
     public static function sort(Collection $items, callable $by): Collection
     {
         return $items
-            ->sort(function (mixed $first, mixed $second) use ($by): int {
-                $firstValue = $by($first);
-                $secondValue = $by($second);
+            ->sortBy(function (mixed $item) use ($by): string {
+                $value = $by($item);
+                $key = self::key($value);
 
-                return [self::key($firstValue), $firstValue] <=> [self::key($secondValue), $secondValue];
-            })
+                return "{$key}\0{$value}";
+            }, SORT_STRING)
             ->values();
     }
 }

@@ -30,3 +30,35 @@ it('keeps an Eloquent collection an Eloquent collection', function () {
     expect($sorted)->toBeInstanceOf(EloquentCollection::class)
         ->and($sorted->pluck('name')->all())->toBe(['A', 'b']);
 });
+
+it('keeps values that are equal in the order they came in', function () {
+    $rows = collect([['id' => 2, 'name' => 'Sam'], ['id' => 1, 'name' => 'Sam'], ['id' => 3, 'name' => 'adam']]);
+
+    expect(Alphabetical::sort($rows, fn (array $row): string => $row['name'])->pluck('id')->all())->toBe([3, 2, 1]);
+});
+
+it('sorts names without a Latin form after the Latin ones, by code point', function () {
+    $names = collect(['王芳', 'Zoe', '🎉', '李雷', 'adam']);
+
+    expect(Alphabetical::key('李雷'))->toBe('李雷')
+        ->and(Alphabetical::sort($names, fn (string $name): string => $name)->all())->toBe(['adam', 'Zoe', '李雷', '王芳', '🎉']);
+});
+
+it('does not read digits as numbers', function () {
+    $names = collect(['1e3', '1000', '10']);
+
+    expect(Alphabetical::sort($names, fn (string $name): string => $name)->all())->toBe(['10', '1000', '1e3']);
+});
+
+it('folds each value once', function () {
+    $calls = 0;
+    $names = collect(range(1, 50))->map(fn (int $number): string => "name {$number}");
+
+    Alphabetical::sort($names, function (string $name) use (&$calls): string {
+        $calls++;
+
+        return $name;
+    });
+
+    expect($calls)->toBe(50);
+});
