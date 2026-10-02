@@ -99,3 +99,40 @@ Cursor colours come from the presence tokens (7-D6): `presenceCursorColor` reads
 ### Captures
 
 `tests/Browser/Visual/WhiteboardVisualTest.php`: `whiteboard-board-*` (the facilitator) and `whiteboard-board-locked-guest-*` (a guest, locked board, finished timer), light and dark, 390 and 1440, EN and FR, taken on the real page. The overflow check leaves out Excalidraw's own tool bar: at 390 px, with the sticky tool in it, its last trigger is clipped by the library's island (same before this task).
+
+## Task 7.3 — Board menu and dialogs
+
+### Parity (brief 07 §3, rows 17–29)
+
+| # | Action | New control | Done |
+|---|---|---|---|
+| 17 | Open the board menu | `BoardMenu`: outline icon button `[aria-label="Board menu"]` ("…") at the end of the header, `DropdownMenu` of the wide size; every action has its icon, groups are separated, the deletion is last | yes |
+| 18 | Hide my cursor | checkbox item, first entry, for everyone | yes |
+| 19 | Rename | menu item → `RenameBoardDialog` (`FormDialog`, "Save"): field "Title", `maxLength` 120, required, starts from the current title; closes on success only. The in-place rename of the header (M21) stays | yes |
+| 20 | Take control | menu item, for `canTakeControl` with a user id | yes |
+| 21 | Hand over facilitation | menu item → `HandOverDialog` (`FormDialog`, "Hand over"): select `#whiteboard-new-facilitator`; "Hand over" is disabled until someone is chosen; with no candidate the dialog has no submit button and says "No one else can facilitate this board yet." | yes |
+| 22 | Duplicate this board | menu item, not for a guest; opens the copy | yes |
+| 23 | Save as template | menu item, not for a guest → `SaveTemplateDialog` (`FormDialog`, "Save"): "Name" (80, required) and "Description" (300); a refused field shows its message under the field; toast "Template saved." | yes |
+| 24 | Show live cursors | checkbox item, facilitator | yes |
+| 25 | Show flying reactions | checkbox item, facilitator | yes |
+| 26–28 | Guest link | not in the menu (7-D2): the Share dialog of Task 7.2 | yes |
+| 29 | Delete this board | menu item, `canDelete` → `DeleteBoardDialog` (`ConfirmDialog`, destructive, `role="alertdialog"`): "Delete this board?", "Everything on it is removed for everyone."; then the team page | yes |
+
+Changed on purpose: a refusal of a dialog's request (rename, hand over, save as template when it is not about a field, delete) is shown inside the dialog, above its footer (`error` of `FormDialog` / `ConfirmDialog`, as the Dialog mockup's error state), not in a toast. The direct menu actions (take control, duplicate, the two settings) keep their toast.
+
+### Places left
+
+None: the mockup has no element in the menu or in these dialogs that a later plan builds.
+
+### Differences with the mockup
+
+| Difference | Row |
+|---|---|
+| The ScreenWhiteboard mockup has no board menu: its topbar ends with "Share". The menu holds existing features and follows the DropdownMenu mockup (icon on every action, separators edge to edge, destructive entry last) | brief 07 §6 "no mockup": existing features |
+| No section labels and no shortcuts in the menu | the DropdownMenu mockup shows them on a card menu; this menu has no shortcut and its groups are short. No row: reported |
+| Hand-over dialog: the select opens empty, without a placeholder | same as before; no mockup of this dialog |
+| At 390 the footer of a dialog stacks its buttons full width, the main action first | the Dialog primitive of plan 18c |
+
+### Captures
+
+`tests/Browser/Visual/WhiteboardVisualTest.php`: `whiteboard-board-menu-*`, `whiteboard-board-save-template-*`, `whiteboard-board-hand-over-*`, `whiteboard-board-delete-*` (the facilitator, light and dark, 390 and 1440, EN and FR), taken on the real page. The `whiteboard-board-*` captures change by the menu trigger's icon only.

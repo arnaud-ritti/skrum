@@ -155,3 +155,47 @@ it('[P18e-07-05] renders a locked board with a finished timer to a guest without
         },
     );
 });
+
+it('[P18e-07-05] renders the board menu and its dialogs to the facilitator without overflow', function (string $name, ?string $entry, string $surface) {
+    ['board' => $board, 'fran' => $fran] = p18eVisualBoard();
+    [$mia] = whiteboardMember($board);
+    renamedWhiteboardUser($mia, 'Mia Member');
+
+    RateLimiter::for('login', fn (): Limit => Limit::none());
+
+    $this->captureVisuals(
+        $name,
+        $this->whiteboardPath($board),
+        function (string $path, array $options) use ($fran, $entry, $surface) {
+            $locale = str_starts_with($options['locale'], 'fr') ? 'fr' : 'en';
+
+            User::query()->whereKey($fran->id)->update(['locale' => $locale]);
+
+            $page = visit('/login', $options);
+
+            $page->fill('#email', $fran->email)
+                ->fill('#password', 'password')
+                ->click('@login-button')
+                ->assertPathIsNot('/login');
+
+            $page = $this->awaitRealtime($page->navigate($path))
+                ->assertPresent('[data-scene^="3:"]')
+                ->assertScript('document.querySelectorAll(\'[data-slot="person-avatar"] .animate-pulse\').length', 0);
+
+            p18eVisualLeaveCanvasToolbarOut($page);
+
+            $this->openWhiteboardMenu($page, __('Board menu', [], $locale));
+
+            if ($entry !== null) {
+                $page->click('[role="menuitem"]:has-text("'.__($entry, [], $locale).'")');
+            }
+
+            return $page->assertPresent($surface);
+        },
+    );
+})->with([
+    'menu' => ['whiteboard-board-menu', null, '[role="menu"] [role="menuitem"][data-variant="destructive"]'],
+    'save as template' => ['whiteboard-board-save-template', 'Save as template', '[role="dialog"] input[maxlength="80"]'],
+    'hand over' => ['whiteboard-board-hand-over', 'Hand over facilitation', '[role="dialog"] #whiteboard-new-facilitator'],
+    'delete' => ['whiteboard-board-delete', 'Delete this board', '[role="alertdialog"]'],
+]);

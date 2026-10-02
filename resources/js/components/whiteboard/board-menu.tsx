@@ -1,18 +1,19 @@
 import { router } from '@inertiajs/react';
-import { Menu } from 'lucide-react';
-import { useState, type FormEvent } from 'react';
-import { toast } from 'sonner';
+import {
+    ArrowRightLeft,
+    Copy,
+    Crown,
+    Ellipsis,
+    LayoutTemplate,
+    Pencil,
+    Trash2,
+} from 'lucide-react';
+import { Fragment, useState } from 'react';
+import type { ReactNode } from 'react';
 import WhiteboardDuplicatesController from '@/actions/App/Http/Controllers/Whiteboards/WhiteboardDuplicatesController';
 import WhiteboardFacilitatorsController from '@/actions/App/Http/Controllers/Whiteboards/WhiteboardFacilitatorsController';
 import WhiteboardSettingsController from '@/actions/App/Http/Controllers/Whiteboards/WhiteboardSettingsController';
-import WhiteboardsController from '@/actions/App/Http/Controllers/Whiteboards/WhiteboardsController';
 import { Button } from '@/components/ui/button';
-import {
-    Dialog,
-    DialogContent,
-    DialogFooter,
-    DialogTitle,
-} from '@/components/ui/dialog';
 import {
     DropdownMenu,
     DropdownMenuCheckboxItem,
@@ -21,12 +22,16 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Input } from '@/components/ui/input';
-import { HandOverDialog } from '@/components/whiteboard/hand-over-dialog';
-import { SaveTemplateDialog } from '@/components/whiteboard/save-template-dialog';
 import { useTrans } from '@/hooks/use-trans';
 import type { WhiteboardState } from '@/hooks/use-whiteboard';
-import { RetroRequestError, retroRequest } from '@/lib/retro/api';
+import { useWhiteboardRequest } from '@/hooks/use-whiteboard-request';
+import { retroRequest } from '@/lib/retro/api';
+import {
+    DeleteBoardDialog,
+    HandOverDialog,
+    RenameBoardDialog,
+    SaveTemplateDialog,
+} from './board-dialogs';
 
 type Props = {
     state: WhiteboardState;
@@ -34,46 +39,27 @@ type Props = {
     onHideMyCursorChange: (hidden: boolean) => void;
 };
 
+type BoardDialog = 'rename' | 'template' | 'handOver' | 'delete';
+
 export function BoardMenu({
     state,
     hideMyCursor,
     onHideMyCursorChange,
 }: Props) {
     const { t } = useTrans();
-    const { board, me, links } = state.snapshot;
-    const [renaming, setRenaming] = useState(false);
-    const [confirmingDelete, setConfirmingDelete] = useState(false);
-    const [savingTemplate, setSavingTemplate] = useState(false);
-    const [handingOver, setHandingOver] = useState(false);
+    const request = useWhiteboardRequest();
+    const { board, me } = state.snapshot;
+    const [dialog, setDialog] = useState<BoardDialog | null>(null);
 
-    /** Resolves to whether the request went through; says why when it did not. */
-    const attempt = async (request: Promise<unknown>): Promise<boolean> => {
-        try {
-            await request;
-
-            return true;
-        } catch (error) {
-            toast.error(
-                error instanceof RetroRequestError && error.status > 0
-                    ? error.message
-                    : t('Something went wrong. Please try again.'),
-            );
-
-            return false;
-        }
-    };
-
-    const run = async (request: Promise<unknown>): Promise<boolean> => {
-        if (!(await attempt(request))) {
-            return false;
+    const run = async (pending: Promise<unknown>): Promise<void> => {
+        if ((await request(pending)) === undefined) {
+            return;
         }
 
         await state.refetch();
-
-        return true;
     };
 
-    const updateSettings = (settings: Record<string, unknown>) =>
+    const updateSettings = (settings: Record<string, unknown>): Promise<void> =>
         run(
             retroRequest(
                 WhiteboardSettingsController.update(board.id),
@@ -81,209 +67,145 @@ export function BoardMenu({
             ),
         );
 
-    const duplicate = async () => {
-        try {
-            const { url } = await retroRequest<{ url: string }>(
-                WhiteboardDuplicatesController.store(board.id),
-            );
-
-            router.visit(url);
-        } catch (error) {
-            toast.error(
-                error instanceof RetroRequestError && error.status > 0
-                    ? error.message
-                    : t('Something went wrong. Please try again.'),
-            );
-        }
-    };
-
-    const deleteBoard = async () => {
-        const deleted = await attempt(
-            retroRequest(WhiteboardsController.destroy(board.id)),
+    const takeControl = (): Promise<void> =>
+        run(
+            retroRequest(WhiteboardFacilitatorsController.update(board.id), {
+                user_id: me.userId,
+            }),
         );
 
-        if (!deleted) {
-            return;
-        }
+    const duplicate = async (): Promise<void> => {
+        const copy = await request(
+            retroRequest<{ url: string }>(
+                WhiteboardDuplicatesController.store(board.id),
+            ),
+        );
 
-        if (links.team) {
-            router.visit(links.team);
+        if (copy) {
+            router.visit(copy.url);
         }
     };
+
+    const dialogProps = (name: BoardDialog) => ({
+        open: dialog === name,
+        onOpenChange: (open: boolean) => setDialog(open ? name : null),
+    });
+
+    const groups: ReactNode[] = [
+        <DropdownMenuCheckboxItem
+            checked={hideMyCursor}
+            onCheckedChange={onHideMyCursorChange}
+        >
+            <span className="truncate">{t('Hide my cursor')}</span>
+        </DropdownMenuCheckboxItem>,
+        !me.isGuest && (
+            <>
+                {me.canTakeControl && me.userId && (
+                    <DropdownMenuItem onSelect={() => void takeControl()}>
+                        <Crown aria-hidden />
+                        <span className="truncate">{t('Take control')}</span>
+                    </DropdownMenuItem>
+                )}
+                <DropdownMenuItem onSelect={() => void duplicate()}>
+                    <Copy aria-hidden />
+                    <span className="truncate">
+                        {t('Duplicate this board')}
+                    </span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => setDialog('template')}>
+                    <LayoutTemplate aria-hidden />
+                    <span className="truncate">{t('Save as template')}</span>
+                </DropdownMenuItem>
+            </>
+        ),
+        me.isFacilitator && (
+            <>
+                <DropdownMenuItem onSelect={() => setDialog('rename')}>
+                    <Pencil aria-hidden />
+                    <span className="truncate">{t('Rename')}</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => setDialog('handOver')}>
+                    <ArrowRightLeft aria-hidden />
+                    <span className="truncate">
+                        {t('Hand over facilitation')}
+                    </span>
+                </DropdownMenuItem>
+                <DropdownMenuCheckboxItem
+                    checked={board.cursorsEnabled}
+                    onCheckedChange={(checked) =>
+                        void updateSettings({ cursors_enabled: checked })
+                    }
+                >
+                    <span className="truncate">{t('Show live cursors')}</span>
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem
+                    checked={board.reactionsEnabled}
+                    onCheckedChange={(checked) =>
+                        void updateSettings({ reactions_enabled: checked })
+                    }
+                >
+                    <span className="truncate">
+                        {t('Show flying reactions')}
+                    </span>
+                </DropdownMenuCheckboxItem>
+            </>
+        ),
+        me.canDelete && (
+            <DropdownMenuItem
+                variant="destructive"
+                onSelect={() => setDialog('delete')}
+            >
+                <Trash2 aria-hidden />
+                <span className="truncate">{t('Delete this board')}</span>
+            </DropdownMenuItem>
+        ),
+    ].filter(Boolean);
 
     return (
         <>
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button
+                        type="button"
                         size="icon"
                         variant="outline"
                         aria-label={t('Board menu')}
+                        className="shrink-0"
                     >
-                        <Menu className="size-4" />
+                        <Ellipsis aria-hidden />
                     </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                    <DropdownMenuCheckboxItem
-                        checked={hideMyCursor}
-                        onCheckedChange={onHideMyCursorChange}
-                    >
-                        {t('Hide my cursor')}
-                    </DropdownMenuCheckboxItem>
-                    {me.canTakeControl && me.userId && (
-                        <DropdownMenuItem
-                            onSelect={() =>
-                                run(
-                                    retroRequest(
-                                        WhiteboardFacilitatorsController.update(
-                                            board.id,
-                                        ),
-                                        { user_id: me.userId },
-                                    ),
-                                )
-                            }
-                        >
-                            {t('Take control')}
-                        </DropdownMenuItem>
-                    )}
-                    {!me.isGuest && (
-                        <>
-                            <DropdownMenuItem onSelect={duplicate}>
-                                {t('Duplicate this board')}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                                onSelect={() => setSavingTemplate(true)}
-                            >
-                                {t('Save as template')}
-                            </DropdownMenuItem>
-                        </>
-                    )}
-                    {me.isFacilitator && (
-                        <>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                                onSelect={() => setRenaming(true)}
-                            >
-                                {t('Rename')}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                                onSelect={() => setHandingOver(true)}
-                            >
-                                {t('Hand over facilitation')}
-                            </DropdownMenuItem>
-                            <DropdownMenuCheckboxItem
-                                checked={board.cursorsEnabled}
-                                onCheckedChange={(checked) =>
-                                    updateSettings({ cursors_enabled: checked })
-                                }
-                            >
-                                {t('Show live cursors')}
-                            </DropdownMenuCheckboxItem>
-                            <DropdownMenuCheckboxItem
-                                checked={board.reactionsEnabled}
-                                onCheckedChange={(checked) =>
-                                    updateSettings({
-                                        reactions_enabled: checked,
-                                    })
-                                }
-                            >
-                                {t('Show flying reactions')}
-                            </DropdownMenuCheckboxItem>
-                        </>
-                    )}
-                    {me.canDelete && (
-                        <>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                                variant="destructive"
-                                onSelect={() => setConfirmingDelete(true)}
-                            >
-                                {t('Delete this board')}
-                            </DropdownMenuItem>
-                        </>
-                    )}
+                <DropdownMenuContent align="end" size="wide">
+                    {groups.map((group, index) => (
+                        <Fragment key={index}>
+                            {index > 0 && <DropdownMenuSeparator />}
+                            {group}
+                        </Fragment>
+                    ))}
                 </DropdownMenuContent>
             </DropdownMenu>
 
-            <Dialog open={renaming} onOpenChange={setRenaming}>
-                <DialogContent aria-describedby={undefined}>
-                    {renaming && (
-                        <RenameForm
-                            title={board.title}
-                            onSubmit={async (title) => {
-                                if (await updateSettings({ title })) {
-                                    setRenaming(false);
-                                }
-                            }}
-                        />
-                    )}
-                </DialogContent>
-            </Dialog>
-
-            <SaveTemplateDialog
-                boardId={board.id}
-                open={savingTemplate}
-                onOpenChange={setSavingTemplate}
-            />
-
-            <HandOverDialog
-                state={state}
-                open={handingOver}
-                onOpenChange={setHandingOver}
-            />
-
-            <Dialog open={confirmingDelete} onOpenChange={setConfirmingDelete}>
-                <DialogContent aria-describedby={undefined}>
-                    <DialogTitle>{t('Delete this board?')}</DialogTitle>
-                    <p className="text-sm text-muted-foreground">
-                        {t('Everything on it is removed for everyone.')}
-                    </p>
-                    <DialogFooter>
-                        <Button
-                            variant="outline"
-                            onClick={() => setConfirmingDelete(false)}
-                        >
-                            {t('Cancel')}
-                        </Button>
-                        <Button variant="destructive" onClick={deleteBoard}>
-                            {t('Delete this board')}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            {me.isFacilitator && (
+                <>
+                    <RenameBoardDialog
+                        state={state}
+                        {...dialogProps('rename')}
+                    />
+                    <HandOverDialog
+                        state={state}
+                        {...dialogProps('handOver')}
+                    />
+                </>
+            )}
+            {!me.isGuest && (
+                <SaveTemplateDialog
+                    boardId={board.id}
+                    {...dialogProps('template')}
+                />
+            )}
+            {me.canDelete && (
+                <DeleteBoardDialog state={state} {...dialogProps('delete')} />
+            )}
         </>
-    );
-}
-
-function RenameForm({
-    title,
-    onSubmit,
-}: {
-    title: string;
-    onSubmit: (title: string) => Promise<void>;
-}) {
-    const { t } = useTrans();
-    const [value, setValue] = useState(title);
-
-    const submit = (event: FormEvent) => {
-        event.preventDefault();
-        void onSubmit(value);
-    };
-
-    return (
-        <form onSubmit={submit} className="space-y-4">
-            <DialogTitle>{t('Rename')}</DialogTitle>
-            <Input
-                required
-                maxLength={120}
-                autoFocus
-                value={value}
-                onChange={(event) => setValue(event.target.value)}
-                aria-label={t('Title')}
-            />
-            <DialogFooter>
-                <Button>{t('Save')}</Button>
-            </DialogFooter>
-        </form>
     );
 }
