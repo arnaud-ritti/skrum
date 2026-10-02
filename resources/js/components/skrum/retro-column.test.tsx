@@ -26,6 +26,27 @@ function column(props: Partial<RetroColumnProps> = {}) {
 }
 
 describe('RetroColumn', () => {
+    it('shows the composer of the host in place of the "Add a card" button, and only while cards can be added', () => {
+        const composer = <form aria-label="Composer" />;
+        const { rerender } = renderWithProviders(column({ composer }));
+
+        expect(screen.getByRole('form', { name: 'Composer' })).toBeTruthy();
+        expect(screen.queryByRole('button', { name: 'Add a card' })).toBeNull();
+
+        rerender(column({ composer, canAdd: false }));
+
+        expect(screen.queryByRole('form', { name: 'Composer' })).toBeNull();
+    });
+
+    it('still calls onAdd with N when the host has a composer', () => {
+        const onAdd = vi.fn();
+
+        renderWithProviders(column({ onAdd, composer: <form /> }));
+        fireEvent.keyDown(screen.getByRole('region'), { key: 'n' });
+
+        expect(onAdd).toHaveBeenCalledTimes(1);
+    });
+
     it('labels the section with its title and announces the count', () => {
         renderWithProviders(column());
 

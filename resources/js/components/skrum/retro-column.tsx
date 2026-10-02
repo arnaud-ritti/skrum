@@ -71,6 +71,11 @@ export type RetroColumnProps = Omit<
     headerAction?: ReactNode;
     notice?: ReactNode;
     footer?: ReactNode;
+    /**
+     * Takes the place of the "Add a card" button when the host keeps a card
+     * open for writing; `onAdd` (and N) then brings the focus to it.
+     */
+    composer?: ReactNode;
     onAdd?: () => void;
     onRename?: (title: string) => void;
     onColorChange?: (color: ColumnColor) => void;
@@ -162,6 +167,7 @@ export function RetroColumn({
     headerAction,
     notice,
     footer,
+    composer,
     onAdd,
     onRename,
     onColorChange,
@@ -679,7 +685,8 @@ export function RetroColumn({
                 )}
             </div>
 
-            {canAdd && (
+            {canAdd && composer}
+            {canAdd && composer === undefined && (
                 <button
                     type="button"
                     data-slot="retro-column-add"
