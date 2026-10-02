@@ -2,6 +2,7 @@ import { useSyncExternalStore } from 'react';
 import { PresenceStack } from '@/components/skrum/presence-stack';
 import type { Participant } from '@/components/skrum/presence-stack';
 import type { PresenceMember } from '@/lib/retro/types';
+import { cn } from '@/lib/utils';
 
 /** Below `sm` the mockups show the counter alone; above, the stack's own five avatars. */
 const VisibleOnPhone = 0;
@@ -71,7 +72,10 @@ export function SessionPresence({
                 presenceFor,
             )}
             max={isBelowSm ? VisibleOnPhone : undefined}
-            className={className}
+            className={cn(
+                'max-sm:[&_[data-slot=presence-stack-guests]]:hidden',
+                className,
+            )}
         />
     );
 }

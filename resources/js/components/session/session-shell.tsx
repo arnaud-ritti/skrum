@@ -1,7 +1,12 @@
 import type { HTMLAttributes, ReactNode, Ref } from 'react';
+import type { NavHref } from '@/components/skrum/app-sidebar';
 import { ConnectionState } from '@/components/skrum/connection-state';
 import { useTrans } from '@/hooks/use-trans';
 import SessionLayout from '@/layouts/skrum/session-layout';
+import type {
+    SessionChrome,
+    SessionSelf,
+} from '@/layouts/skrum/session-layout';
 import type { RealtimeState } from '@/lib/realtime/realtime-state';
 import { cn } from '@/lib/utils';
 
@@ -19,6 +24,12 @@ export type SessionShellProps = {
     timer?: ReactNode;
     presence?: ReactNode;
     actions?: ReactNode;
+    /** `logo`: no application rail, the logo opens the header (whiteboard). Default `rail`. */
+    chrome?: SessionChrome;
+    /** Where the logo of `chrome="logo"` leads; null for a guest. */
+    homeHref?: NavHref | null;
+    /** The viewer, shown at the end of the header; needed for a guest, who has no account. */
+    self?: SessionSelf | null;
     /** Value of the page's single `data-realtime` attribute. */
     realtime: RealtimeState;
     connection: SessionConnection;
@@ -54,6 +65,9 @@ export function SessionShell({
     timer,
     presence,
     actions,
+    chrome,
+    homeHref,
+    self,
     realtime,
     connection,
     rootRef,
@@ -62,6 +76,10 @@ export function SessionShell({
 }: SessionShellProps) {
     const { className, ...root } = rootProps ?? {};
     const isReconnecting = connection.reconnecting && !connection.expired;
+    const isSynced =
+        realtime === 'connected' &&
+        !connection.reconnecting &&
+        !connection.expired;
     const reconnectingHint = useReconnectingHint(kind);
 
     return (
@@ -70,13 +88,17 @@ export function SessionShell({
             phases={phases}
             timer={timer}
             presence={presence}
-            actions={
+            actions={actions}
+            chrome={chrome}
+            homeHref={homeHref}
+            self={self}
+            status={
                 <>
                     {isReconnecting && (
                         <span
                             aria-hidden="true"
                             data-slot="session-connection-pill"
-                            className="hidden md:flex"
+                            className="hidden shrink-0 md:flex"
                         >
                             <ConnectionState
                                 status="reconnecting"
@@ -84,7 +106,19 @@ export function SessionShell({
                             />
                         </span>
                     )}
-                    {actions}
+                    {isSynced && (
+                        <span
+                            data-slot="session-synced"
+                            className="hidden shrink-0 md:flex"
+                        >
+                            <ConnectionState
+                                status="synced"
+                                variant="pill"
+                                className="max-xl:px-2.5"
+                                labelClassName="max-xl:sr-only"
+                            />
+                        </span>
+                    )}
                 </>
             }
         >

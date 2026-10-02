@@ -35,6 +35,9 @@ export const group: BenchGroup = 'layouts';
 const LongTitle =
     'Sprint 42 retrospective of the Atlas team, with the platform guild and the three squads that shipped the billing migration';
 
+/** A team name is written by a user too. */
+const TeamName = 'Atlas platform and infrastructure';
+
 const Names = [
     'Fran Facilitator',
     'Ada Lovelace',
@@ -127,10 +130,12 @@ function WorstCaseShell({
             kind="retro"
             realtime="connected"
             connection={connection}
+            self={{ name: Online[1].name, avatarUrl: Online[1].avatarUrl }}
             title={
                 <div className="max-w-28 md:max-w-48 xl:max-w-80">
                     <SessionTitle
                         backHref="/dev/design-system"
+                        overline={`${TeamName} · ${t('Retrospective')}`}
                         badges={
                             <>
                                 <Badge
