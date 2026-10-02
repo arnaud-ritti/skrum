@@ -47,7 +47,7 @@ class GetRoti extends SkrumTool
         $validated = $request->validate(['board_id' => ['required', 'uuid']]);
         $retro = $this->context->retro($validated['board_id']);
 
-        if (! in_array($retro->phase, [RetroPhase::Discussing, RetroPhase::Completed], true)) {
+        if (! in_array($retro->phase, [RetroPhase::Roti, RetroPhase::Completed], true)) {
             return Response::structured(['status' => 'not_started']);
         }
 
@@ -55,7 +55,7 @@ class GetRoti extends SkrumTool
         $myScore = $viewer === null ? null : $retro->rotiVotes()->where('participant_id', $viewer->id)->value('score');
         $myScore = $myScore === null ? null : (int) $myScore;
 
-        if ($retro->phase === RetroPhase::Discussing) {
+        if ($retro->phase === RetroPhase::Roti) {
             return Response::structured([
                 'status' => 'collecting',
                 'respondents' => $retro->rotiVotes()->count(),

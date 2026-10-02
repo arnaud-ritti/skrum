@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Spinner } from '@/components/ui/spinner';
 import { useBoard } from './board-context';
+import { BoardCursors } from './board-cursors';
 import { IcebreakerGame } from './icebreaker-game';
-import { LiveCursorLayer } from './live-cursor-layer';
 
 /** The board area during the Icebreaker phase: the game instead of columns. */
 export function IcebreakerStage({ hideMyCursor }: { hideMyCursor: boolean }) {
@@ -18,12 +18,12 @@ export function IcebreakerStage({ hideMyCursor }: { hideMyCursor: boolean }) {
     }
 
     return (
-        <main ref={setElement} className="relative flex flex-1 flex-col">
+        <div ref={setElement} className="relative flex flex-1 flex-col">
             <IcebreakerGame
                 key={board.icebreaker.room.id}
                 snapshot={board.icebreaker}
             />
-            <LiveCursorLayer container={element} hidden={hideMyCursor} />
-        </main>
+            <BoardCursors container={element} hidden={hideMyCursor} />
+        </div>
     );
 }

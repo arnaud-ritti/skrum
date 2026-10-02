@@ -1,6 +1,7 @@
 import {
     ArrowRightLeft,
     CircleStop,
+    Ellipsis,
     Eye,
     Hand as HandIcon,
     Link2,
@@ -8,7 +9,6 @@ import {
     PanelRightClose,
     PanelRightOpen,
     RotateCcw,
-    Settings2,
     Share2,
     Spade,
     Trash2,
@@ -520,9 +520,9 @@ export function ShareButton({ onClick }: { onClick: () => void }) {
 }
 
 /**
- * The facilitator's menu. The guest link is in the Share dialog only; "Share…"
- * is listed when a channel is connected, and where the header has no room for
- * its Share button.
+ * The facilitator's menu. The settings have their own button beside it, and
+ * the guest link is in the Share dialog only; "Share…" is listed when a
+ * channel is connected, and where the header has no room for its Share button.
  */
 export function FacilitatorMenu({
     shareInMenu,
@@ -553,7 +553,7 @@ export function FacilitatorMenu({
                     className="shrink-0"
                     aria-label={t('Facilitator menu')}
                 >
-                    <Settings2 aria-hidden />
+                    <Ellipsis aria-hidden />
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
@@ -568,10 +568,6 @@ export function FacilitatorMenu({
                 )}
                 {me.isFacilitator && !isEnded && (
                     <>
-                        <DropdownMenuItem onSelect={() => onChoose('settings')}>
-                            <Settings2 aria-hidden />
-                            {t('Settings…')}
-                        </DropdownMenuItem>
                         <DropdownMenuItem onSelect={() => onChoose('transfer')}>
                             <ArrowRightLeft aria-hidden />
                             {t('Hand over facilitation…')}

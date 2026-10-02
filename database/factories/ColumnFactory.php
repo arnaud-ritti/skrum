@@ -17,7 +17,7 @@ class ColumnFactory extends Factory
         return [
             'retro_id' => Retro::factory(),
             'title' => fake()->word(),
-            'color' => ColumnColor::Green,
+            'color' => ColumnColor::Moss,
             'position' => 0,
         ];
     }

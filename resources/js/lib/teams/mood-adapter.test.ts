@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
     deltaSincePrevious,
-    moodScale,
-    preferredMetric,
+    healthScale,
     toMoodPoints,
+    toRotiPoints,
 } from '@/lib/teams/mood-adapter';
 import type { TeamMoodPoint } from '@/types';
 
@@ -25,14 +25,24 @@ function point(
 }
 
 const trend: TeamMoodPoint[] = [
-    point('a', { roti: 4, rotiVoters: 3 }),
-    point('b', { mood: 6, moodVoters: 1, roti: 2.5, rotiVoters: 2 }),
+    point('a', {
+        roti: 4,
+        rotiVoters: 3,
+        completedAt: '2026-08-04T10:00:00+00:00',
+    }),
+    point('b', {
+        mood: 6,
+        moodVoters: 1,
+        roti: 2.5,
+        rotiVoters: 2,
+        completedAt: '2026-08-18T10:00:00+00:00',
+    }),
     point('c', { mood: 7.5, moodVoters: 2 }),
 ];
 
 describe('toMoodPoints', () => {
     it('gives one point per retro that has a mood, in the order received', () => {
-        expect(toMoodPoints(trend, 'mood')).toEqual([
+        expect(toMoodPoints(trend)).toEqual([
             {
                 id: 'b',
                 sprint: 'Retro b',
@@ -50,41 +60,45 @@ describe('toMoodPoints', () => {
         ]);
     });
 
-    it('gives one point per retro that has a ROTI, in the order received', () => {
-        expect(toMoodPoints(trend, 'roti')).toEqual([
-            {
-                id: 'a',
-                sprint: 'Retro a',
-                mean: 4,
-                voters: 3,
-                href: '/retros/a',
-            },
-            {
-                id: 'b',
-                sprint: 'Retro b',
-                mean: 2.5,
-                voters: 2,
-                href: '/retros/b',
-            },
+    it('gives nothing for a team without a health score', () => {
+        expect(toMoodPoints([])).toEqual([]);
+        expect(toMoodPoints([point('a', { roti: 4 })])).toEqual([]);
+    });
+});
+
+describe('toRotiPoints', () => {
+    it('gives one point per retro that has a ROTI, in the order received, labelled by the day it closed', () => {
+        expect(toRotiPoints(trend, 'en')).toEqual([
+            { id: 'a', label: 'Aug 4', title: 'Retro a', mean: 4 },
+            { id: 'b', label: 'Aug 18', title: 'Retro b', mean: 2.5 },
         ]);
     });
 
-    it('gives nothing for a team without data', () => {
-        expect(toMoodPoints([], 'mood')).toEqual([]);
-        expect(toMoodPoints([point('a')], 'roti')).toEqual([]);
+    it('writes the day in the language of the page', () => {
+        expect(toRotiPoints(trend, 'fr')[0].label).toBe('4 août');
+    });
+
+    it('gives nothing for a team without a ROTI', () => {
+        expect(toRotiPoints([], 'en')).toEqual([]);
+        expect(toRotiPoints([point('a', { mood: 6 })], 'en')).toEqual([]);
     });
 });
 
 describe('deltaSincePrevious', () => {
     it('is the change of the last point since the one before, to one decimal', () => {
-        expect(deltaSincePrevious(toMoodPoints(trend, 'mood'))).toBe(1.5);
-        expect(deltaSincePrevious(toMoodPoints(trend, 'roti'))).toBe(-1.5);
+        expect(deltaSincePrevious(toMoodPoints(trend))).toBe(1.5);
         expect(
             deltaSincePrevious([
                 { sprint: 'a', mean: 4.1 },
                 { sprint: 'b', mean: 4.3 },
             ]),
         ).toBe(0.2);
+        expect(
+            deltaSincePrevious([
+                { sprint: 'a', mean: 4 },
+                { sprint: 'b', mean: 2.5 },
+            ]),
+        ).toBe(-1.5);
     });
 
     it('is null under two points', () => {
@@ -93,19 +107,8 @@ describe('deltaSincePrevious', () => {
     });
 });
 
-describe('moodScale', () => {
-    it('is the health check scale for the mood and the ROTI scale of the chart otherwise', () => {
-        expect(moodScale('mood')).toEqual({ min: 0, max: 10 });
-        expect(moodScale('roti')).toBeUndefined();
-    });
-});
-
-describe('preferredMetric', () => {
-    it('is the mood, unless only the ROTI has data', () => {
-        expect(preferredMetric(trend)).toBe('mood');
-        expect(preferredMetric([])).toBe('mood');
-        expect(preferredMetric([point('a', { roti: 4, rotiVoters: 3 })])).toBe(
-            'roti',
-        );
+describe('healthScale', () => {
+    it('starts at 0 so that the ticks of a score out of 10 are whole numbers', () => {
+        expect(healthScale).toEqual({ min: 0, max: 10 });
     });
 });

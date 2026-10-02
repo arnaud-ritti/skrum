@@ -60,7 +60,7 @@ function runSummaryJob(Retro $retro): void
 it('queues the summary when a retro with the summary on is completed', function () {
     Queue::fake();
     configureLlm();
-    $retro = Retro::factory()->inPhase(RetroPhase::Discussing)->create(['ai_summary_enabled' => true]);
+    $retro = Retro::factory()->inPhase(RetroPhase::Roti)->create(['ai_summary_enabled' => true]);
     [$user] = retroFacilitator($retro);
 
     $this->actingAs($user)->putJson(route('retros.phase.update', $retro), ['phase' => 'completed'])->assertOk();
@@ -85,8 +85,8 @@ it('does not queue the summary when opted out, without provider or on other phas
     Queue::assertNothingPushed();
     expect($retro->fresh()->summary_status)->toBeNull();
 })->with([
-    'opted out' => [false, true, RetroPhase::Discussing, 'completed'],
-    'no provider' => [true, false, RetroPhase::Discussing, 'completed'],
+    'opted out' => [false, true, RetroPhase::Roti, 'completed'],
+    'no provider' => [true, false, RetroPhase::Roti, 'completed'],
     'not completing' => [true, true, RetroPhase::Voting, 'discussing'],
 ]);
 
@@ -254,11 +254,11 @@ it('sends nothing when the retro is reopened, opted out and completed again befo
     Queue::fake();
     configureLlm();
     fakeLlmReply(summaryReply());
-    $retro = Retro::factory()->inPhase(RetroPhase::Discussing)->create(['ai_summary_enabled' => true]);
+    $retro = Retro::factory()->inPhase(RetroPhase::Roti)->create(['ai_summary_enabled' => true]);
     [$user] = retroFacilitator($retro);
 
     $this->actingAs($user)->putJson(route('retros.phase.update', $retro), ['phase' => 'completed'])->assertOk();
-    $this->actingAs($user)->putJson(route('retros.phase.update', $retro), ['phase' => 'discussing'])->assertOk();
+    $this->actingAs($user)->putJson(route('retros.phase.update', $retro), ['phase' => 'roti'])->assertOk();
     $this->actingAs($user)->patchJson(route('retros.settings.update', $retro), ['ai_summary_enabled' => false])->assertNoContent();
     $this->actingAs($user)->putJson(route('retros.phase.update', $retro), ['phase' => 'completed'])->assertOk();
 

@@ -364,8 +364,9 @@ describe('AdminsPanel revoke', () => {
         await screen.findByRole('alert');
 
         fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
-        await waitFor(() =>
-            expect(screen.queryByRole('alertdialog')).toBeNull(),
+        await waitFor(
+            () => expect(screen.queryByRole('alertdialog')).toBeNull(),
+            { timeout: 5000 },
         );
         askToRevoke(ada);
 

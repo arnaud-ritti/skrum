@@ -395,6 +395,7 @@ export function boardReducer(state: Snapshot, action: BoardAction): Snapshot {
             return {
                 ...state,
                 roti: {
+                    ...state.roti,
                     myScore:
                         action.myScore === undefined
                             ? state.roti.myScore

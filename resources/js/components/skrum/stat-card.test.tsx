@@ -99,4 +99,47 @@ describe('StatCard', () => {
             document.querySelector('[data-slot="stat-card-trend"]'),
         ).toBeNull();
     });
+
+    it('lays the icon, the value and the label in a row when inline, without trend or sparkline', () => {
+        render(
+            <StatCard
+                layout="inline"
+                emphasis
+                label="Actions created"
+                value="6"
+                icon={ListChecks}
+                trend={{ direction: 'up', label: '+2', good: true }}
+                series={[1, 2, 3]}
+            />,
+        );
+
+        const card = document.querySelector('[data-slot="stat-card"]');
+
+        expect(card?.getAttribute('data-layout')).toBe('inline');
+        expect(card?.textContent).toBe('Actions created6');
+        expect(
+            document.querySelector('[data-slot="stat-card-icon"]')?.className,
+        ).toContain('bg-skrum-primary-soft');
+        expect(
+            document.querySelector('[data-slot="stat-card-trend"]'),
+        ).toBeNull();
+        expect(
+            document.querySelector('[data-slot="stat-card-sparkline"]'),
+        ).toBeNull();
+    });
+
+    it('keeps the icon of an inline figure neutral without emphasis', () => {
+        render(
+            <StatCard
+                layout="inline"
+                label="Cards"
+                value="13"
+                icon={ListChecks}
+            />,
+        );
+
+        expect(
+            document.querySelector('[data-slot="stat-card-icon"]')?.className,
+        ).toContain('bg-muted');
+    });
 });

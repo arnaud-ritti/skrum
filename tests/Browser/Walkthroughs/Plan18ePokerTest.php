@@ -186,10 +186,10 @@ it('[P18e-03-04] keeps the reaction bar above the deck panel, which holds the re
         ->assertCount('[data-realtime]', 1);
 });
 
-it('[P18e-03-05] shows the deck, the voters and the rounds of each row of the estimation history, and a count for an anonymous round', function () {
+it('[P18e-03-05] shows the ticket key, the deck, the voters and the rounds of each row of the estimation history, the number of games in the summary, and a count for an anonymous round', function () {
     $table = p18ePokerTable();
     $game = $table['game'];
-    $voted = PokerTask::factory()->estimated('5')->create(['poker_game_id' => $game->id, 'title' => 'Export invoices']);
+    $voted = PokerTask::factory()->imported()->estimated('5')->create(['poker_game_id' => $game->id, 'title' => 'Export invoices']);
     $first = PokerRound::factory()->revealed()->create(['poker_task_id' => $voted->id]);
     pokerVote($first, $table['adaPlayer'], '3');
     pokerVote($first, $table['bobPlayer'], '8');
@@ -214,7 +214,10 @@ it('[P18e-03-05] shows the deck, the voters and the rounds of each row of the es
     $page = $this->signIn($table['ada'], route('teams.estimates.index', [$game->team->workspace, $game->team], false));
 
     $page->assertSee('2 tasks estimated by')
+        ->assertSee('across 2 games')
         ->assertCount('[data-slot="estimate-row"]', 2)
+        ->assertSeeIn($row('Export invoices').' [data-slot="estimate-ticket"]', $voted->external_key)
+        ->assertNotPresent($row('Billing proration').' [data-slot="estimate-ticket"]')
         ->assertSeeIn($row('Export invoices'), 'Fibonacci')
         ->assertSeeIn($row('Export invoices'), 'Sprint 43 refinement')
         ->assertSeeIn($row('Export invoices').' [data-slot="estimate-value"]', '5')
@@ -246,6 +249,7 @@ it('[P18e-03-05] shows the deck, the voters and the rounds of each row of the es
         ->assertNotPresent('table')
         ->assertCount('[data-slot="estimate-row"]', 2)
         ->assertCount($row('Export invoices').' [data-slot="estimate-voters"] [data-slot="person-avatar"]', 3)
+        ->assertSeeIn($row('Export invoices').' [data-slot="estimate-ticket"]', $voted->external_key)
         ->click($row('Export invoices').' [aria-label="Show rounds"]')
         ->assertSee('Median: 5');
 });
@@ -548,4 +552,43 @@ it('[P18e-03-19] writes "team · Planning poker" above the title, shows "Synced"
         ->assertScript($hidden('header [data-slot="session-self"]'), 'none')
         ->assertScript($titleKeepsItsRoom, true)
         ->assertCount('[data-realtime]', 1);
+});
+
+it('[P18e-03-20] opens the game settings in a popover under its header button, asks before dropping a change, and shows them as text to a player who does not facilitate', function () {
+    $table = p18ePokerTable();
+    $game = $table['game'];
+    $autoReveal = $game->auto_reveal;
+    $underItsButton = "(() => { const button = document.querySelector('header button[aria-label=\"Game settings\"]').getBoundingClientRect(); const panel = document.querySelector('[role=\"dialog\"]').getBoundingClientRect(); return panel.top >= button.bottom - 1 && panel.right <= window.innerWidth && panel.left >= 0; })()";
+
+    $ada = $this->awaitRealtime($this->signIn($table['ada'], "/poker/{$game->id}"))->resize(1440, 900);
+
+    $ada->click('[aria-label="Facilitator menu"]')
+        ->assertSee('Hand over facilitation…')
+        ->assertDontSee('Settings…')
+        ->keys('[role="menu"]', 'Escape')
+        ->assertNotPresent('[role="menu"]')
+        ->click('header button[aria-label="Game settings"]')
+        ->assertSeeIn('[role="dialog"]', 'Game settings')
+        ->assertScript($underItsButton, true)
+        ->assertPresent('[role="dialog"] #poker-title')
+        ->assertAttribute('[role="dialog"] a:has-text("Manage decks")', 'href', route('teams.pokerDecks.index', [$game->team->workspace, $game->team], false))
+        ->click('#poker-auto-reveal')
+        ->assertSee('1 unapplied change')
+        ->keys('[role="dialog"]', 'Escape')
+        ->assertSee('Discard 1 changes?')
+        ->click('[role="dialog"] button:has-text("Discard")')
+        ->assertPresent('header button[aria-label="Game settings"][aria-expanded="false"]');
+
+    expect($game->fresh()->auto_reveal)->toBe($autoReveal);
+
+    $bob = $this->awaitRealtime($this->signIn($table['bob'], "/poker/{$game->id}"))->resize(1440, 900);
+
+    $bob->assertNotPresent('[aria-label="Facilitator menu"]')
+        ->click('header button[aria-label="Game settings"]')
+        ->assertSeeIn('[role="dialog"]', 'Only the facilitator, Ada, can change these settings.')
+        ->assertNotPresent('[role="dialog"] [role="switch"]')
+        ->assertNotPresent('[role="dialog"] button:has-text("Apply")')
+        ->resize(390, 844)
+        ->assertNotPresent('header button[aria-label="Game settings"]')
+        ->assertVisible('[data-slot="poker-subbar"] button[aria-label="Game settings"]');
 });

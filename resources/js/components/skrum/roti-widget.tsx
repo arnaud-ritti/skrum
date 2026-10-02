@@ -1,6 +1,12 @@
-import { CircleCheck, Minus, TrendingDown, TrendingUp } from 'lucide-react';
+import {
+    CircleCheck,
+    EyeOff,
+    Minus,
+    TrendingDown,
+    TrendingUp,
+} from 'lucide-react';
 import { useRef } from 'react';
-import type { KeyboardEvent } from 'react';
+import type { KeyboardEvent, ReactNode } from 'react';
 import { AvatarStack } from '@/components/skrum/avatar-stack';
 import type { AvatarStackProps } from '@/components/skrum/avatar-stack';
 import { Badge } from '@/components/ui/badge';
@@ -31,7 +37,20 @@ export interface ROTIWidgetProps {
     onClose?: () => void;
     /** Results stay hidden below this number of votes. The server sends the average for any count. */
     minimumRespondents?: number;
-    labels?: { question?: string };
+    labels?: {
+        question?: string;
+        /** Said once the viewer has voted. */
+        saved?: string;
+    };
+    /**
+     * `row` is the vote of the ROTI screen: the five scores side by side,
+     * each number above its label. `list` stacks them, for a narrow panel.
+     */
+    layout?: 'list' | 'row';
+    /** Vote mode: a line above the question. */
+    eyebrow?: string;
+    /** Vote mode: what follows the confirmation, inside the card. */
+    footer?: ReactNode;
     className?: string;
 }
 
@@ -85,12 +104,19 @@ function VotePanel({
     value,
     onVote,
     labels: overrides,
-}: Pick<ROTIWidgetProps, 'value' | 'onVote' | 'labels'>) {
+    layout = 'list',
+    eyebrow,
+    footer,
+}: Pick<
+    ROTIWidgetProps,
+    'value' | 'onVote' | 'labels' | 'layout' | 'eyebrow' | 'footer'
+>) {
     const { t } = useTrans();
     const labels = useRotiLabels();
     const question = overrides?.question ?? t('How was this retro?');
     const optionRefs = useRef<Record<number, HTMLButtonElement | null>>({});
     const focusable: Roti = value ?? 1;
+    const isRow = layout === 'row';
 
     function choose(next: Roti) {
         optionRefs.current[next]?.focus();
@@ -144,15 +170,46 @@ function VotePanel({
 
     return (
         <>
-            <p className="text-ui-lg font-semibold text-card-foreground">
-                {question}
-            </p>
+            {isRow ? (
+                <div className="flex min-w-0 flex-col gap-2">
+                    {eyebrow && (
+                        <span
+                            data-slot="roti-eyebrow"
+                            className="text-overline text-muted-foreground uppercase"
+                        >
+                            {eyebrow}
+                        </span>
+                    )}
+                    <h2 className="font-display text-2xl font-title tracking-tight text-card-foreground">
+                        {question}
+                    </h2>
+                </div>
+            ) : (
+                <>
+                    {eyebrow && (
+                        <span
+                            data-slot="roti-eyebrow"
+                            className="text-overline text-muted-foreground uppercase"
+                        >
+                            {eyebrow}
+                        </span>
+                    )}
+                    <p className="text-ui-lg font-semibold text-card-foreground">
+                        {question}
+                    </p>
+                </>
+            )}
             <div
                 role="group"
                 aria-label={question}
                 data-slot="roti-options"
+                data-layout={layout}
                 onKeyDown={handleKeyDown}
-                className="flex flex-col gap-1.5"
+                className={
+                    isRow
+                        ? 'grid grid-cols-5 gap-1.5 @lg/card:gap-2'
+                        : 'flex flex-col gap-1.5'
+                }
             >
                 {scale.map((rating) => {
                     const pressed = value === rating;
@@ -169,13 +226,31 @@ function VotePanel({
                             data-rating={rating}
                             onClick={() => onVote?.(rating)}
                             className={cn(
-                                'flex min-w-0 items-center gap-3 rounded-lg border bg-card px-3 py-2 text-left text-sm font-medium transition-colors duration-140 ease-standard outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none',
+                                'flex min-w-0 rounded-lg border bg-card transition-colors duration-140 ease-standard outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none',
+                                isRow
+                                    ? 'min-h-11 flex-col items-center gap-2 px-0.5 pt-4 pb-3 text-center text-overline font-semibold tracking-normal text-muted-foreground @lg/card:px-1 @lg/card:text-body-sm/4'
+                                    : 'items-center gap-3 px-3 py-2 text-left text-sm font-medium',
                                 pressed &&
-                                    'border-foreground ring-1 ring-foreground',
+                                    'border-foreground text-foreground ring-1 ring-foreground',
                             )}
                         >
-                            <RotiBadge value={rating} />
-                            <span className="truncate">{labels[rating]}</span>
+                            <RotiBadge
+                                value={rating}
+                                className={
+                                    isRow
+                                        ? 'size-9 text-lg @card-narrow/card:size-12 @card-narrow/card:text-xl'
+                                        : undefined
+                                }
+                            />
+                            <span
+                                className={
+                                    isRow
+                                        ? 'max-w-full wrap-anywhere hyphens-auto'
+                                        : 'truncate'
+                                }
+                            >
+                                {labels[rating]}
+                            </span>
                         </button>
                     );
                 })}
@@ -187,13 +262,72 @@ function VotePanel({
                 >
                     <CircleCheck className="size-4 shrink-0" aria-hidden />
                     <span>
-                        {t(
-                            'Vote recorded. You can change it until the ROTI is closed.',
-                        )}
+                        {overrides?.saved ??
+                            t(
+                                'Vote recorded. You can change it until the ROTI is closed.',
+                            )}
                     </span>
                 </p>
             )}
+            {footer}
         </>
+    );
+}
+
+/**
+ * The distribution while nobody may see it: a striped bar and the five
+ * scores, each with a question mark. It never holds a number.
+ */
+export function ROTIHiddenDistribution({
+    title,
+    note,
+    className,
+}: {
+    title: string;
+    note?: string;
+    className?: string;
+}) {
+    const { t } = useTrans();
+
+    return (
+        <div
+            data-slot="roti-hidden-distribution"
+            className={cn(
+                'flex min-w-0 flex-col gap-3 rounded-lg border border-dashed border-input p-4',
+                className,
+            )}
+        >
+            <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                <span className="flex min-w-0 items-center gap-2 text-sm font-semibold">
+                    <EyeOff className="size-4 shrink-0" aria-hidden />
+                    <span className="min-w-0">{title}</span>
+                </span>
+                {note && (
+                    <span className="min-w-0 text-xs text-muted-foreground">
+                        {note}
+                    </span>
+                )}
+            </div>
+            <div
+                role="img"
+                aria-label={t('Distribution hidden')}
+                className="bg-stripes h-3.5 rounded-full"
+            />
+            <div aria-hidden className="grid grid-cols-5 gap-2">
+                {scale.map((rating) => (
+                    <span
+                        key={rating}
+                        className="flex h-7 min-w-0 items-center justify-center gap-1 rounded-sm bg-muted text-xs font-bold text-muted-foreground"
+                    >
+                        <RotiBadge
+                            value={rating}
+                            className="size-4.5 text-overline font-bold tracking-normal"
+                        />
+                        ?
+                    </span>
+                ))}
+            </div>
+        </div>
     );
 }
 
@@ -399,16 +533,29 @@ export function ROTIWidget({
     onClose,
     minimumRespondents,
     labels,
+    layout = 'list',
+    eyebrow,
+    footer,
     className,
 }: ROTIWidgetProps) {
     return (
         <Card
             data-slot="roti-widget"
             data-mode={mode}
-            className={cn('gap-4 p-5', className)}
+            className={cn(
+                mode === 'vote' && layout === 'row' ? 'gap-5 p-6' : 'gap-4 p-5',
+                className,
+            )}
         >
             {mode === 'vote' ? (
-                <VotePanel value={value} onVote={onVote} labels={labels} />
+                <VotePanel
+                    value={value}
+                    onVote={onVote}
+                    labels={labels}
+                    layout={layout}
+                    eyebrow={eyebrow}
+                    footer={footer}
+                />
             ) : (
                 <ResultPanel
                     result={result}

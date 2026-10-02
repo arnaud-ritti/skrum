@@ -45,7 +45,7 @@ function p12aFakeTelegramBot(): void
     ]);
 }
 
-it('[P12a-01a] shows a workspace admin the Integrations link and only the configured providers', function () {
+it('[P12a-01a] leads a workspace admin to the integrations from the gear of the team header and shows only the configured providers', function () {
     enableIntegrations(IntegrationProvider::Slack, IntegrationProvider::Telegram);
     p12aFakeTelegramBot();
     $team = Team::factory()->create(['name' => 'Platform']);
@@ -54,8 +54,11 @@ it('[P12a-01a] shows a workspace admin the Integrations link and only the config
 
     $page = $this->signIn($admin, route('teams.show', [$team->workspace, $team], false));
 
-    $page->assertSee('Integrations')
-        ->click('Integrations')
+    $gear = '[data-slot="team-header"] a[aria-label="Team settings"]';
+
+    $page->assertAttribute($gear, 'href', p12aIntegrationsPath($team))
+        ->assertDontSeeIn('[data-slot="team-header"]', 'Integrations')
+        ->click($gear)
         ->assertPathIs(p12aIntegrationsPath($team))
         ->assertSee('Connect Platform to the tools it already uses.')
         ->assertCount('[data-test^="integration-card-"]', 2)

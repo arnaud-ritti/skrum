@@ -10,6 +10,8 @@ enum RetroPhase: string
     case Grouping = 'grouping';
     case Voting = 'voting';
     case Discussing = 'discussing';
+    case Actions = 'actions';
+    case Roti = 'roti';
     case Completed = 'completed';
 
     public function isOpen(): bool
@@ -30,6 +32,16 @@ enum RetroPhase: string
         return in_array($this, self::hidingOthersCards(), true);
     }
 
+    public function takesActionItems(): bool
+    {
+        return in_array($this, [self::Discussing, self::Actions, self::Roti], true);
+    }
+
+    public function showsTopics(): bool
+    {
+        return in_array($this, [self::Discussing, self::Actions], true);
+    }
+
     public function label(): string
     {
         return match ($this) {
@@ -39,6 +51,8 @@ enum RetroPhase: string
             self::Grouping => __('Grouping'),
             self::Voting => __('Voting'),
             self::Discussing => __('Discussing'),
+            self::Actions => __('Actions'),
+            self::Roti => __('ROTI'),
             self::Completed => __('Completed'),
         };
     }

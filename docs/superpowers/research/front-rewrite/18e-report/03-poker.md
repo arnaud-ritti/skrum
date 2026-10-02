@@ -79,11 +79,11 @@ Added by the mockup: the place of the task ("3 / 6 in this game"), the points es
 
 | # | Action | New control | Done |
 |---|---|---|---|
-| 10 | Facilitator menu | `FacilitatorMenu`: "Share…" (when a channel is connected; always on a phone, where the header has no Share button), "Settings…", "Hand over facilitation…", "End game" / "Reopen game", "Delete game…". No "Guest link…" (7-D2). Nothing opens once the session has expired | yes |
+| 10 | Facilitator menu | `FacilitatorMenu`: "Share…" (when a channel is connected; always on a phone, where the header has no Share button), "Hand over facilitation…", "End game" / "Reopen game", "Delete game…". No "Guest link…" (7-D2). Nothing opens once the session has expired | yes |
 | 11 | Share to a channel | `ShareDialog` (`kind="poker"`): "Post link to Slack"…, toast "The message is on its way.", `DeliveryLines` under the buttons | yes |
 | 12 | Guest link: allow, copy | `ShareDialog`: switch `#poker-guest-link-access`, `input[aria-label="Guest link"]`, "Copy link", QR code with "Download the QR code" | yes |
 | 13 | Create a new guest link | "Create a new link", confirmed in an `alertdialog` ("Create a new link?") | yes |
-| 15 | Settings | `SessionSettingsContent` in a `Dialog` (`[data-slot="poker-settings"]`), "Game settings": `#poker-title`, `#poker-auto-reveal`, `#poker-anonymous-votes`, `#poker-cursors`, `#poker-reactions`; "Apply (n)"; server messages under their field; "Applies from the next round." when anonymity is turned off | yes |
+| 15 | Settings | `GameSettings`: the icon button "Game settings" of the header (in the bar under the header on a phone) opens `SessionSettingsPopover` (RW-P3; a drawer on a phone; read as text by a player who does not facilitate; absent once the game has ended), "Game settings": `#poker-title`, `#poker-auto-reveal`, `#poker-anonymous-votes`, `#poker-cursors`, `#poker-reactions`; "Apply (n)"; server messages under their field; "Applies from the next round." when anonymity is turned off | yes |
 | 16 | Deck of the game | `DeckPicker` (built-in, saved with the "Saved" / "Workspace" badge, "This game only") and `DeckEditor idPrefix="deck-custom"` behind "Create a deck"; "Manage decks" goes to the saved decks page; locked, with the cards shown, once votes exist | yes |
 | 17 | Hand over facilitation | `FormDialog`, `#poker-new-facilitator`, "Hand over"; "No one else can facilitate this game yet." with Cancel only | yes |
 | 18 | End game / Reopen | `ConfirmDialog` "End this game?"; "Reopen game" acts from the menu | yes |
@@ -106,7 +106,7 @@ These dialogs have no mockup of their own (brief §6): they follow `ShareDialog/
 | Share dialog: no session code, default role, expiry, members tab | D-16 (share roles), D-32 (short code) |
 | Share dialog: the description reads ":count present" without the team name (the room does not receive it) | D-69 |
 | The header's "Share" shows its label from 96rem; below it is an icon with a tooltip (the header also holds "Watch only" and "Hide tasks", which the mockup's header does not) | D-69 |
-| The game settings are a dialog, not a popover anchored to a header button: the entry is the facilitator menu (browser contract "Settings…") | D-70 |
+| The game settings: a popover anchored to the header button "Game settings" since RW-P3. On a phone the button is in the bar under the header; it is absent once the game has ended; no side sheet on a wide screen | D-70 |
 | The deck editor of the settings has no name field: the settings endpoint cannot save a deck | D-70 |
 | End and Delete are alert dialogs (`Dialog/README.md`) | — |
 
@@ -325,3 +325,21 @@ RW-P1, RW-P2 and their fix pass are merged with the RW-C2 header (`poker-room.ts
 The 28 `poker-room-*-1440-*` captures are the lane's files and predate the RW-C2 header; no capture was run at this integration, they are to regenerate at the end-of-phase run.
 
 Open for the owner: the N key after a reveal (moves on without saving, no visible control), and the row of players partly under the fold on a phone while the team votes.
+
+## Integration of wave 4 (2026-10-02)
+
+RW-P3 (settings popover) and RW-P4 (ticket key, games count) are merged. No test was run and no capture was opened: what follows is read from the code and the lane's review.
+
+Fixed at the integration (the lane had no fix pass): the tooltip of "Game settings" shows the comma key; the comma key does nothing on an expired session; the summary of the history never reads "across 0 games".
+
+Remaining differences with the mockup:
+
+| Screen | Difference | Row |
+|---|---|---|
+| Room, settings | the popover stays open after "Apply"; a player who does not facilitate reads the values; the button is in the bar under the header on a phone; no name field in the deck editor of the popover; no button once the game has ended; no side sheet on a wide screen | D-70 |
+| Room, settings | closing while "Apply" is pending asks "Discard n changes?" for a change being saved (shared `SessionSettingsPopover`, same on the retro) | none: to fix in the shared component |
+| Room, settings | after the popover closes, the tooltip "Game settings" shows until the button loses focus | none: cosmetic |
+| Room, settings | "Manage decks" leaves the room without the question when changes are pending; a reader sees the link too | none |
+| Estimation history | the game name after the ticket key; "in 1 game"; the team name alone under a filter; the search matches titles only; the chip is not a link | D-72 |
+
+Stale captures: `poker-room-settings-*` (popover at 1440, drawer at 390), `poker-estimates-*` (new summary; the seed has no imported task, so no chip shows).

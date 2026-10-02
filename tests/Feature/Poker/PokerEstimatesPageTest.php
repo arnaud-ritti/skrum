@@ -69,6 +69,50 @@ it('lists estimated tasks newest first', function () {
         ]);
 });
 
+it('carries the tracker key of an imported task, and none for a task written by hand', function () {
+    $game = PokerGame::factory()->create();
+    [$user] = pokerFacilitator($game);
+    $imported = PokerTask::factory()->imported()->estimated('5')->create(['poker_game_id' => $game->id, 'estimated_at' => '2026-09-20 10:00:00']);
+    $written = estimatedPokerTask($game, 'Written by hand', '2026-09-01 10:00:00');
+
+    $rows = collect(pokerEstimateRows(pokerEstimatesPage($this, $user, $game->team)))->pluck('ticketKey', 'id');
+
+    expect($imported->external_key)->toBeString()->not->toBeEmpty()
+        ->and($rows->all())->toBe([$imported->id => $imported->external_key, $written->id => null]);
+});
+
+it('counts the games of the team that hold an estimate, whatever the filters', function () {
+    $team = Team::factory()->create();
+    $first = PokerGame::factory()->create(['team_id' => $team->id]);
+    $second = PokerGame::factory()->create(['team_id' => $team->id]);
+    $withoutEstimate = PokerGame::factory()->create(['team_id' => $team->id]);
+    [$user] = pokerFacilitator($first);
+    estimatedPokerTask($first, 'Login page', '2026-09-01 10:00:00');
+    estimatedPokerTask($first, 'Search', '2026-09-02 10:00:00');
+    estimatedPokerTask($second, 'Export', '2026-09-03 10:00:00');
+    PokerTask::factory()->create(['poker_game_id' => $withoutEstimate->id]);
+    estimatedPokerTask(PokerGame::factory()->create(), 'Elsewhere', '2026-09-04 10:00:00');
+
+    pokerEstimatesPage($this, $user, $team)
+        ->assertInertia(fn (Assert $page) => $page->where('summary', ['gamesCount' => 2]));
+
+    pokerEstimatesPage($this, $user, $team, ['game' => $second->id, 'q' => 'export'])
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('pagination.total', 1)
+            ->where('summary', ['gamesCount' => 2]));
+});
+
+it('counts no game for a team without an estimate', function () {
+    $game = PokerGame::factory()->create();
+    [$user] = pokerFacilitator($game);
+    PokerTask::factory()->create(['poker_game_id' => $game->id]);
+
+    pokerEstimatesPage($this, $user, $game->team)
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('pagination.total', 0)
+            ->where('summary', ['gamesCount' => 0]));
+});
+
 it('filters by game and title', function () {
     $team = Team::factory()->create();
     $first = PokerGame::factory()->create(['team_id' => $team->id]);

@@ -8,6 +8,7 @@ import {
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
     CustomTimerDialog,
+    GameSettings,
     RoomDialogs,
     TaskFormDialog,
 } from '@/components/poker/room-dialogs';
@@ -79,6 +80,21 @@ function open(
     };
 }
 
+/** The settings button of the header, pressed: its popover is open. */
+async function openSettings(
+    snapshot = pokerSnapshot(),
+    overrides: Parameters<typeof renderInRoom>[2] = {},
+) {
+    const harness = renderInRoom(<GameSettings />, snapshot, overrides);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Game settings' }));
+
+    return {
+        ...harness,
+        dialog: await screen.findByRole('dialog', { name: 'Game settings' }),
+    };
+}
+
 const deckOptions = [
     { value: 'fibonacci', label: 'Fibonacci', cards: ['1', '2', '3', '?'] },
     { value: 'tshirt', label: 'T-shirt', cards: ['S', 'M', 'L'] },
@@ -103,12 +119,15 @@ beforeEach(() => {
 
 describe('game settings', () => {
     it('shows the title and the four switches, and no guest switch', async () => {
-        open('settings', pokerSnapshot({ game: { hasVotes: true } }));
+        const { dialog } = await openSettings(
+            pokerSnapshot({ game: { hasVotes: true } }),
+        );
 
-        const dialog = await screen.findByRole('dialog', {
-            name: 'Game settings',
-        });
-
+        expect(
+            screen
+                .getByRole('button', { name: 'Game settings' })
+                .getAttribute('aria-expanded'),
+        ).toBe('true');
         expect(within(dialog).getByText('Sprint 43 refinement')).toBeTruthy();
         expect(dialog.querySelector('#poker-title')).not.toBeNull();
 
@@ -126,12 +145,10 @@ describe('game settings', () => {
         expect(within(dialog).queryByText('Allow guests')).toBeNull();
     });
 
-    it('sends the changed settings only, reads the game again and closes', async () => {
-        const { ctx, onClose } = open(
-            'settings',
+    it('sends the changed settings only, reads the game again and stays open', async () => {
+        const { ctx, dialog } = await openSettings(
             pokerSnapshot({ game: { hasVotes: true } }),
         );
-        const dialog = await screen.findByRole('dialog');
 
         fireEvent.click(dialog.querySelector('#poker-anonymous-votes')!);
 
@@ -146,16 +163,15 @@ describe('game settings', () => {
             },
         ]);
         expect(ctx.refetch).toHaveBeenCalledTimes(1);
-        expect(onClose).toHaveBeenCalledTimes(1);
+        expect(mocks.toast.success.mock.calls[0][0]).toBe('Settings applied');
+        expect(screen.getByRole('dialog')).toBe(dialog);
+        expect(within(dialog).getByText('No changes')).toBeTruthy();
     });
 
     it('says that turning anonymity off applies from the next round', async () => {
-        open(
-            'settings',
+        const { dialog } = await openSettings(
             pokerSnapshot({ game: { hasVotes: true, anonymousVotes: true } }),
         );
-
-        const dialog = await screen.findByRole('dialog');
 
         expect(
             within(dialog).queryByText(/Applies from the next round\./),
@@ -168,19 +184,17 @@ describe('game settings', () => {
         ).toBeTruthy();
     });
 
-    it('keeps the dialog open and shows the server message under the field', async () => {
+    it('keeps the change and shows the server message under the field', async () => {
         mocks.request.mockRejectedValue(
             new RetroRequestError(422, 'The title is too long.', {
                 title: ['The title is too long.'],
             }),
         );
 
-        const { onClose } = open(
-            'settings',
+        const { dialog } = await openSettings(
             pokerSnapshot({ game: { hasVotes: true } }),
             { handleError: (error) => (error as Error).message },
         );
-        const dialog = await screen.findByRole('dialog');
 
         fireEvent.change(dialog.querySelector('#poker-title')!, {
             target: { value: 'Another name' },
@@ -191,15 +205,15 @@ describe('game settings', () => {
         });
 
         expect(within(dialog).getByText('The title is too long.')).toBeTruthy();
-        expect(onClose).not.toHaveBeenCalled();
+        expect(screen.getByRole('button', { name: 'Apply (1)' })).toBeTruthy();
+        expect(mocks.toast.success).not.toHaveBeenCalled();
     });
 
     it('locks the deck once votes exist and loads no saved deck', async () => {
-        open('settings', pokerSnapshot({ game: { hasVotes: true } }), {
-            deckOptions,
-        });
-
-        const dialog = await screen.findByRole('dialog');
+        const { dialog } = await openSettings(
+            pokerSnapshot({ game: { hasVotes: true } }),
+            { deckOptions },
+        );
 
         expect(
             within(dialog).getByText("The deck can't change once votes exist."),
@@ -208,17 +222,11 @@ describe('game settings', () => {
         expect(mocks.request).not.toHaveBeenCalled();
     });
 
-    it('offers the built-in and the saved decks, and links to the saved decks page', async () => {
+    it('offers the built-in and the saved decks, and builds the link to the saved decks page of the team', async () => {
         mocks.request.mockResolvedValueOnce([teamScale]);
 
-        open(
-            'settings',
-            pokerSnapshot({
-                links: {
-                    team: '/w/nordlys/teams/atlas',
-                    decks: '/w/nordlys/teams/atlas/poker-decks',
-                },
-            }),
+        await openSettings(
+            pokerSnapshot({ team: { id: 'atlas', workspace: 'nordlys' } }),
             { deckOptions },
         );
 
@@ -244,7 +252,7 @@ describe('game settings', () => {
     it('sends a saved deck by its id and a built-in deck by its key', async () => {
         mocks.request.mockResolvedValueOnce([teamScale]);
 
-        open('settings', pokerSnapshot(), { deckOptions });
+        await openSettings(pokerSnapshot(), { deckOptions });
 
         fireEvent.click(
             await screen.findByRole('radio', { name: 'Team scale, 3 cards' }),
@@ -263,7 +271,7 @@ describe('game settings', () => {
     it('types a deck for this game in the editor, without a name', async () => {
         mocks.request.mockResolvedValueOnce([]);
 
-        open('settings', pokerSnapshot(), { deckOptions });
+        await openSettings(pokerSnapshot(), { deckOptions });
 
         fireEvent.click(
             await screen.findByRole('button', { name: 'Create a deck' }),
@@ -302,8 +310,7 @@ describe('game settings', () => {
     it('selects the saved deck the game was created from', async () => {
         mocks.request.mockResolvedValueOnce([teamScale]);
 
-        open(
-            'settings',
+        await openSettings(
             pokerSnapshot({
                 game: {
                     deck: 'custom',
@@ -326,6 +333,99 @@ describe('game settings', () => {
             (screen.getByRole('button', { name: 'Apply' }) as HTMLButtonElement)
                 .disabled,
         ).toBe(true);
+    });
+});
+
+describe('game settings, for the others and at the edges', () => {
+    it('shows the settings as text to a player who does not facilitate, and loads no saved deck', async () => {
+        const { dialog } = await openSettings(
+            pokerSnapshot({
+                game: { autoReveal: true },
+                me: { isFacilitator: false, playerId: 'bob' },
+            }),
+            { deckOptions },
+        );
+
+        expect(
+            within(dialog).getByText(
+                'Only the facilitator, Ada, can change these settings.',
+            ),
+        ).toBeTruthy();
+        expect(dialog.querySelector('[role="switch"]')).toBeNull();
+        expect(dialog.querySelector('#poker-title')).toBeNull();
+        expect(within(dialog).queryByRole('radiogroup')).toBeNull();
+        expect(
+            within(dialog).queryByRole('button', { name: /Apply/ }),
+        ).toBeNull();
+        expect(within(dialog).getByText('Fibonacci, 7 cards')).toBeTruthy();
+        expect(
+            within(dialog).queryByText(
+                "The deck can't change once votes exist.",
+            ),
+        ).toBeNull();
+        expect(mocks.request).not.toHaveBeenCalled();
+    });
+
+    it('gives a guest no link to the saved decks page', async () => {
+        const { dialog } = await openSettings(
+            pokerSnapshot({
+                me: { isFacilitator: false, isGuest: true, playerId: 'bob' },
+                team: null,
+                links: { team: null },
+            }),
+        );
+
+        expect(within(dialog).queryByRole('link')).toBeNull();
+    });
+
+    it('asks before closing with a change left, and forgets it once discarded', async () => {
+        const { dialog } = await openSettings(
+            pokerSnapshot({ game: { hasVotes: true } }),
+        );
+
+        fireEvent.click(dialog.querySelector('#poker-auto-reveal')!);
+        fireEvent.click(within(dialog).getByRole('button', { name: 'Close' }));
+
+        expect(within(dialog).getByText('Discard 1 changes?')).toBeTruthy();
+
+        fireEvent.click(
+            within(dialog).getByRole('button', { name: 'Discard' }),
+        );
+
+        await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+
+        fireEvent.click(screen.getByRole('button', { name: 'Game settings' }));
+
+        const reopened = await screen.findByRole('dialog', {
+            name: 'Game settings',
+        });
+
+        expect(
+            reopened
+                .querySelector('#poker-auto-reveal')
+                ?.getAttribute('aria-checked'),
+        ).toBe('false');
+        expect(mocks.request).not.toHaveBeenCalled();
+    });
+
+    it('has no settings button once the game has ended, nor a popover once the session has expired', () => {
+        const { unmount } = renderInRoom(
+            <GameSettings />,
+            pokerSnapshot({ game: { endedAt: '2026-10-02T10:00:00Z' } }),
+        );
+
+        expect(
+            screen.queryByRole('button', { name: 'Game settings' }),
+        ).toBeNull();
+        unmount();
+
+        renderInRoom(<GameSettings />, pokerSnapshot(), {
+            sessionExpired: true,
+        });
+
+        fireEvent.click(screen.getByRole('button', { name: 'Game settings' }));
+
+        expect(screen.queryByRole('dialog')).toBeNull();
     });
 });
 

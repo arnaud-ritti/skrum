@@ -204,7 +204,7 @@ it('keeps closing to the facilitator and out of completed retros', function () {
 });
 
 it('closes every open survey at completion and keeps them closed after a reopen', function () {
-    $retro = Retro::factory()->inPhase(RetroPhase::Discussing)->create();
+    $retro = Retro::factory()->inPhase(RetroPhase::Roti)->create();
     [$user, $participant] = retroFacilitator($retro);
     $open = Survey::factory()->withOptions()->create(['retro_id' => $retro->id]);
     $closed = Survey::factory()->closed()->withOptions()->create(['retro_id' => $retro->id, 'position' => 1, 'version' => 4]);
@@ -215,7 +215,9 @@ it('closes every open survey at completion and keeps them closed after a reopen'
         ->and($open->fresh()->version)->toBe(2)
         ->and($closed->fresh()->version)->toBe(4);
 
-    $this->actingAs($user)->putJson(route('retros.phase.update', $retro), ['phase' => 'discussing'])->assertOk();
+    foreach (['roti', 'actions', 'discussing'] as $phase) {
+        $this->actingAs($user)->putJson(route('retros.phase.update', $retro), ['phase' => $phase])->assertOk();
+    }
 
     expect($open->fresh()->is_closed)->toBeTrue();
 

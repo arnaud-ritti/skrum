@@ -10,7 +10,6 @@ use App\Actions\ActionItems\ResolveActionItemAssignee;
 use App\Actions\Retros\RetroGuard;
 use App\Enums\ActionItemPriority;
 use App\Enums\McpScope;
-use App\Enums\RetroPhase;
 use App\Mcp\McpContext;
 use App\Mcp\McpGrant;
 use App\Mcp\Presenters\McpActionItem;
@@ -31,7 +30,7 @@ class CreateAction extends SkrumTool
 {
     protected string $name = 'retro.actions.create';
 
-    protected string $description = 'Create an action item (agreement). Pass board_id to add it to a retrospective (only while the board is in the Discussing phase and not locked; the item is created under your name even on anonymous boards), or team_id to add it to a team outside any retrospective. Assign a team member with assignee_user_id, or a guest of that board with assignee_participant_id.';
+    protected string $description = 'Create an action item (agreement). Pass board_id to add it to a retrospective (only while the board is in the Discussing, Actions or ROTI phase and not locked; the item is created under your name even on anonymous boards), or team_id to add it to a team outside any retrospective. Assign a team member with assignee_user_id, or a guest of that board with assignee_participant_id.';
 
     public function __construct(
         private McpContext $context,
@@ -78,7 +77,7 @@ class CreateAction extends SkrumTool
         $validated = $request->validate(ActionItemRules::create(allowsGuests: true), ActionItemRules::messages());
         $retro = $this->context->retro($boardId);
 
-        RetroGuard::phase($retro, RetroPhase::Discussing);
+        RetroGuard::takesActionItems($retro);
         RetroGuard::unlocked($retro);
 
         $actor = ActionItemActor::forParticipant($this->context->participantForWrite($retro));
@@ -86,7 +85,7 @@ class CreateAction extends SkrumTool
         return DB::transaction(function () use ($retro, $actor, $validated): ActionItem {
             $locked = Retro::query()->whereKey($retro->id)->lockForUpdate()->firstOrFail();
 
-            RetroGuard::phase($locked, RetroPhase::Discussing);
+            RetroGuard::takesActionItems($locked);
             RetroGuard::unlocked($locked);
 
             return $this->createActionItem->handle($locked->team, $locked, $actor, [

@@ -21,6 +21,7 @@ use Illuminate\Support\Str;
  * @property string|null $created_by_user_id
  * @property-read Collection<int, WorkspaceTemplateColumn> $columns
  * @property-read User|null $creator
+ * @property-read int|null $retros_count
  */
 #[Fillable(['name', 'category', 'created_by_user_id'])]
 class WorkspaceTemplate extends Model
@@ -58,6 +59,12 @@ class WorkspaceTemplate extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by_user_id');
+    }
+
+    /** @return HasMany<Retro, $this> */
+    public function retros(): HasMany
+    {
+        return $this->hasMany(Retro::class);
     }
 
     /** @return HasMany<WorkspaceTemplateColumn, $this> */

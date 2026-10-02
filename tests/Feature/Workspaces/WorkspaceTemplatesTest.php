@@ -27,8 +27,8 @@ function templatePayload(array $overrides = []): array
         'name' => 'Team pulse',
         'category' => 'team_mood',
         'columns' => [
-            ['title' => 'Energy', 'description' => 'How charged you feel', 'color' => 'green'],
-            ['title' => 'Blockers', 'color' => 'red'],
+            ['title' => 'Energy', 'description' => 'How charged you feel', 'color' => 'moss'],
+            ['title' => 'Blockers', 'color' => 'coral'],
         ],
         ...$overrides,
     ];
@@ -81,7 +81,7 @@ it('replaces the columns when a template is updated', function () {
     $this->actingAs($admin)
         ->patch(route('workspaces.templates.update', [$workspace, $template]), templatePayload([
             'name' => $template->name,
-            'columns' => [['title' => 'Only one', 'color' => 'blue']],
+            'columns' => [['title' => 'Only one', 'color' => 'sky']],
         ]))
         ->assertSessionHasNoErrors();
 
@@ -133,9 +133,10 @@ it('validates templates', function (array $overrides, string $field) {
     'long name' => [['name' => str_repeat('a', 81)], 'name'],
     'unknown category' => [['category' => 'fun'], 'category'],
     'no columns' => [['columns' => []], 'columns'],
-    'eleven columns' => [['columns' => array_fill(0, 11, ['title' => 'X', 'color' => 'green'])], 'columns'],
-    'long title' => [['columns' => [['title' => str_repeat('a', 101), 'color' => 'green']]], 'columns.0.title'],
-    'long description' => [['columns' => [['title' => 'X', 'description' => str_repeat('a', 201), 'color' => 'green']]], 'columns.0.description'],
+    'eleven columns' => [['columns' => array_fill(0, 11, ['title' => 'X', 'color' => 'moss'])], 'columns'],
+    'long title' => [['columns' => [['title' => str_repeat('a', 101), 'color' => 'moss']]], 'columns.0.title'],
+    'old color name' => [['columns' => [['title' => 'X', 'color' => 'green']]], 'columns.0.color'],
+    'long description' => [['columns' => [['title' => 'X', 'description' => str_repeat('a', 201), 'color' => 'moss']]], 'columns.0.description'],
     'unknown color' => [['columns' => [['title' => 'X', 'color' => 'pink']]], 'columns.0.color'],
 ]);
 
@@ -241,17 +242,65 @@ it('counts the games of the teams the user can view in the usage of a deck', fun
         ->assertInertia(fn (Assert $page) => $page->where('pokerDecks.0.usageCount', 3));
 });
 
-it('gives the author of a template, or null when the account is gone', function () {
+it('gives the author of a template and of a deck with an avatar, or null when the account is gone', function () {
     [$member, $workspace] = templatesWorkspace(WorkspaceRole::Member);
     $author = User::factory()->create(['name' => 'Ada Lovelace']);
     WorkspaceTemplate::factory()->for($workspace)->create(['name' => 'A', 'created_by_user_id' => $author->id]);
     WorkspaceTemplate::factory()->for($workspace)->create(['name' => 'B', 'created_by_user_id' => null]);
+    SavedPokerDeck::factory()->forWorkspace($workspace)->create(['name' => 'A', 'created_by_user_id' => $author->id]);
+    SavedPokerDeck::factory()->forWorkspace($workspace)->create(['name' => 'B', 'created_by_user_id' => null]);
 
     $this->actingAs($member)
         ->get(route('workspaces.templates.index', $workspace))
         ->assertInertia(fn (Assert $page) => $page
-            ->where('templates.0.author', 'Ada Lovelace')
-            ->where('templates.1.author', null));
+            ->where('templates.0.author', ['name' => 'Ada Lovelace', 'avatarUrl' => $author->avatarUrl()])
+            ->where('templates.1.author', null)
+            ->where('pokerDecks.0.author', ['name' => 'Ada Lovelace', 'avatarUrl' => $author->avatarUrl()])
+            ->where('pokerDecks.1.author', null));
+});
+
+it('counts the retros created from a template', function () {
+    [$member, $workspace] = templatesWorkspace(WorkspaceRole::Member);
+    $team = Team::factory()->for($workspace)->create();
+    $team->members()->attach($member);
+    $used = WorkspaceTemplate::factory()->for($workspace)->create(['name' => 'A']);
+    WorkspaceTemplate::factory()->for($workspace)->create(['name' => 'B']);
+    Retro::factory()->count(2)->create([
+        'team_id' => $team->id,
+        'template' => 'workspace',
+        'workspace_template_id' => $used->id,
+    ]);
+    Retro::factory()->create(['team_id' => $team->id]);
+
+    $this->actingAs($member)
+        ->get(route('workspaces.templates.index', $workspace))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('templates.0.usageCount', 2)
+            ->where('templates.1.usageCount', 0));
+});
+
+it('counts the retros of the teams the user can view in the usage of a template', function () {
+    [$member, $workspace] = templatesWorkspace(WorkspaceRole::Member);
+    $visibleTeam = Team::factory()->for($workspace)->create();
+    $hiddenTeam = Team::factory()->for($workspace)->create();
+    $visibleTeam->members()->attach($member);
+    $template = WorkspaceTemplate::factory()->for($workspace)->create();
+
+    foreach ([$visibleTeam, $visibleTeam, $hiddenTeam] as $team) {
+        Retro::factory()->create([
+            'team_id' => $team->id,
+            'template' => 'workspace',
+            'workspace_template_id' => $template->id,
+        ]);
+    }
+
+    $this->actingAs($member)
+        ->get(route('workspaces.templates.index', $workspace))
+        ->assertInertia(fn (Assert $page) => $page->where('templates.0.usageCount', 2));
+
+    $this->actingAs(workspaceManager($workspace))
+        ->get(route('workspaces.templates.index', $workspace))
+        ->assertInertia(fn (Assert $page) => $page->where('templates.0.usageCount', 3));
 });
 
 it('runs a constant number of queries whatever the number of templates and decks', function () {

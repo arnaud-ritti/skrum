@@ -163,7 +163,7 @@ export function TeamMembersCard({
                                     >
                                         <UserMinus aria-hidden />
                                         <span className="truncate @max-card-wide/card:sr-only">
-                                            {t('Remove')}
+                                            {t('Remove from team')}
                                         </span>
                                     </Button>
                                 )}
@@ -242,7 +242,7 @@ export function TeamMembersCard({
                     description={t(
                         'They stay in the workspace and can be added back to the team.',
                     )}
-                    confirmLabel={t('Remove')}
+                    confirmLabel={t('Remove from team')}
                     onConfirm={() =>
                         removing === null ? Promise.resolve() : remove(removing)
                     }

@@ -158,13 +158,21 @@ it('keeps ROTI ratings hidden until completion', function () {
 
     expect(mcpStructured(actingAsMcp($user)->tool(GetRoti::class, ['board_id' => $retro->id])->assertOk()))->toBe(['status' => 'not_started']);
 
-    $retro->update(['phase' => RetroPhase::Discussing]);
+    $retro->update(['phase' => RetroPhase::Roti]);
     RotiVote::factory()->create(['retro_id' => $retro->id, 'participant_id' => $participant->id, 'score' => 4]);
     RotiVote::factory()->create(['retro_id' => $retro->id, 'score' => 1]);
 
     expect(mcpStructured(actingAsMcp($user)->tool(GetRoti::class, ['board_id' => $retro->id])))
         ->toBe(['status' => 'collecting', 'respondents' => 2, 'myScore' => 4]);
 });
+
+it('reports the ROTI as not started before its phase', function (RetroPhase $phase) {
+    $retro = Retro::factory()->inPhase($phase)->create();
+    [$user, $participant] = retroMember($retro);
+    RotiVote::factory()->create(['retro_id' => $retro->id, 'participant_id' => $participant->id, 'score' => 4]);
+
+    expect(mcpStructured(actingAsMcp($user)->tool(GetRoti::class, ['board_id' => $retro->id])->assertOk()))->toBe(['status' => 'not_started']);
+})->with([RetroPhase::Discussing, RetroPhase::Actions]);
 
 it('reports the ROTI distribution and the team trend once completed', function () {
     $team = Team::factory()->create();

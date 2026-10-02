@@ -34,6 +34,7 @@ import { useMinWidth } from '@/hooks/use-min-width';
 import { useTrans } from '@/hooks/use-trans';
 import { cn } from '@/lib/utils';
 import type { EstimatedTaskRow, TeamSummary, WorkspaceSummary } from '@/types';
+import { TicketClasses } from './task-source';
 
 const AllGames = 'all';
 const VisibleVoters = 3;
@@ -49,6 +50,8 @@ export type EstimationHistoryProps = {
     filters: Filters;
     tasks: EstimatedTaskRow[];
     pagination: { currentPage: number; lastPage: number; total: number };
+    /** The whole history of the team, whatever the filters: the games that hold an estimate. */
+    summary: { gamesCount: number };
     /** Place of the page actions, at the end of the heading (the export of a later plan). */
     actions?: ReactNode;
     /** Place of further filters, after the game filter (deck, period, voted again). */
@@ -150,8 +153,19 @@ function TaskTitle({ task }: { task: EstimatedTaskRow }) {
             <span className="font-semibold wrap-anywhere text-foreground">
                 {task.title}
             </span>
-            <span className="text-xs wrap-anywhere text-muted-foreground">
-                {task.gameTitle}
+            <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5">
+                {task.ticketKey !== null && (
+                    <Badge
+                        variant="outline"
+                        data-slot="estimate-ticket"
+                        className={cn(TicketClasses, 'max-w-full')}
+                    >
+                        <span className="truncate">{task.ticketKey}</span>
+                    </Badge>
+                )}
+                <span className="min-w-0 text-xs wrap-anywhere text-muted-foreground">
+                    {task.gameTitle}
+                </span>
             </span>
         </div>
     );
@@ -281,6 +295,7 @@ export function EstimationHistory({
     filters,
     tasks,
     pagination,
+    summary,
     actions,
     extraFilters,
 }: EstimationHistoryProps) {
@@ -311,16 +326,26 @@ export function EstimationHistory({
         setExpanded((current) => (current === id ? null : id));
     };
 
-    const summary = (): string => {
+    const summaryLine = (): string => {
         if (filtered || pagination.total === 0) {
             return team.name;
         }
 
-        return pagination.total === 1
-            ? t('1 task estimated by :team', { team: team.name })
-            : t(':count tasks estimated by :team', {
+        if (pagination.total === 1) {
+            return t('1 task estimated by :team in 1 game', {
+                team: team.name,
+            });
+        }
+
+        return summary.gamesCount <= 1
+            ? t(':count tasks estimated by :team in 1 game', {
                   count: pagination.total,
                   team: team.name,
+              })
+            : t(':count tasks estimated by :team across :games games', {
+                  count: pagination.total,
+                  team: team.name,
+                  games: summary.gamesCount,
               });
     };
 
@@ -343,7 +368,7 @@ export function EstimationHistory({
                         {t('Estimation history')}
                     </h1>
                     <p className="text-sm wrap-anywhere text-muted-foreground">
-                        {summary()}
+                        {summaryLine()}
                     </p>
                 </div>
                 <div

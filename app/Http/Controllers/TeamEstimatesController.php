@@ -58,13 +58,29 @@ class TeamEstimatesController extends Controller
                 'lastPage' => $tasks->lastPage(),
                 'total' => $tasks->total(),
             ],
+            'summary' => ['gamesCount' => $this->estimatedGamesCount($games)],
         ]);
+    }
+
+    /**
+     * The games of the team that hold at least one saved estimate, whatever the filters.
+     *
+     * @param  Collection<int, PokerGame>  $games
+     */
+    private function estimatedGamesCount(Collection $games): int
+    {
+        return PokerTask::query()
+            ->whereIn('poker_game_id', $games->modelKeys())
+            ->whereNotNull('estimated_at')
+            ->distinct()
+            ->count('poker_game_id');
     }
 
     /**
      * @return array{
      *     id: string,
      *     title: string,
+     *     ticketKey: ?string,
      *     gameId: string,
      *     gameTitle: string,
      *     estimate: ?string,
@@ -89,6 +105,7 @@ class TeamEstimatesController extends Controller
         return [
             'id' => $task->id,
             'title' => $task->title,
+            'ticketKey' => $task->external_source === null ? null : $task->external_key,
             'gameId' => $game->id,
             'gameTitle' => $game->title,
             'estimate' => $task->estimate,

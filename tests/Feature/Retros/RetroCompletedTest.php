@@ -11,7 +11,7 @@ beforeEach(function () {
 });
 
 it('dispatches RetroCompleted once per transition into completed', function () {
-    $retro = Retro::factory()->inPhase(RetroPhase::Discussing)->create();
+    $retro = Retro::factory()->inPhase(RetroPhase::Roti)->create();
     [$user] = retroFacilitator($retro);
     $phaseRoute = route('retros.phase.update', $retro);
 
@@ -20,7 +20,7 @@ it('dispatches RetroCompleted once per transition into completed', function () {
     Event::assertDispatchedTimes(RetroCompleted::class, 1);
     Event::assertDispatched(fn (RetroCompleted $event) => $event->retro->is($retro));
 
-    $this->actingAs($user)->putJson($phaseRoute, ['phase' => 'discussing'])->assertOk();
+    $this->actingAs($user)->putJson($phaseRoute, ['phase' => 'roti'])->assertOk();
     $this->actingAs($user)->putJson($phaseRoute, ['phase' => 'completed'])->assertOk();
 
     Event::assertDispatchedTimes(RetroCompleted::class, 2);

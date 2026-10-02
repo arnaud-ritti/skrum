@@ -850,10 +850,15 @@ function ShareBody({
     const hasLink = invite.allowGuests && invite.url !== null;
     const url = invite.url ?? '';
     const canChange = canManage && onChange !== undefined;
+    // Whoever may post gets the handler: a workspace manager can post the
+    // link of a session they do not facilitate.
+    const hasChannelsExtra =
+        channelsExtra !== undefined &&
+        channelsExtra !== null &&
+        channelsExtra !== false;
     const showChannels =
-        canManage &&
         onShareToChannel !== undefined &&
-        (channels.length > 0 || Boolean(channelsExtra));
+        (channels.length > 0 || hasChannelsExtra);
     const expiresText =
         invite.expiresAt !== undefined && invite.expiresAt !== null
             ? formatDate(invite.expiresAt)
@@ -963,7 +968,7 @@ function ShareBody({
         </div>
     );
 
-    const noLinkNotice = !hasLink && (
+    const noLinkNotice = !invite.allowGuests && (
         <Alert
             variant="info"
             title={t('Guest link is off')}

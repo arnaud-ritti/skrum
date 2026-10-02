@@ -135,6 +135,7 @@ use App\Http\Controllers\StyledAvatarsController;
 use App\Http\Controllers\TeamDefaultPokerDecksController;
 use App\Http\Controllers\TeamEstimatesController;
 use App\Http\Controllers\TeamGameRoomsController;
+use App\Http\Controllers\TeamHealthChecksController;
 use App\Http\Controllers\TeamHealthStatementArchivalsController;
 use App\Http\Controllers\TeamHealthStatementOrdersController;
 use App\Http\Controllers\TeamHealthStatementsController;
@@ -344,6 +345,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             Route::post('teams/{team}/members', [TeamMembersController::class, 'store'])->name('teams.members.store');
             Route::delete('teams/{team}/members/{member}', [TeamMembersController::class, 'destroy'])->name('teams.members.destroy')->whereUuid('member');
 
+            Route::get('teams/{team}/health-check', [TeamHealthChecksController::class, 'show'])->name('teams.healthCheck.show');
             Route::post('teams/{team}/health-statements', [TeamHealthStatementsController::class, 'store'])->name('teams.healthStatements.store');
             Route::patch('teams/{team}/health-statements/{statement}', [TeamHealthStatementsController::class, 'update'])->name('teams.healthStatements.update');
             Route::put('teams/{team}/health-statement-order', [TeamHealthStatementOrdersController::class, 'update'])->name('teams.healthStatements.order.update');

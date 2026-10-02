@@ -10,7 +10,6 @@ use App\Actions\Retros\RetroGuard;
 use App\Enums\ActionItemPriority;
 use App\Enums\ActionItemRecurrence;
 use App\Enums\McpScope;
-use App\Enums\RetroPhase;
 use App\Mcp\McpContext;
 use App\Mcp\McpGrant;
 use App\Mcp\Presenters\McpActionItem;
@@ -33,7 +32,7 @@ class UpdateAction extends SkrumTool
 {
     protected string $name = 'retro.actions.update';
 
-    protected string $description = 'Update an action item: content, priority, due date, recurrence or assignee. Only its author, the retrospective\'s facilitator or a workspace admin can change it. Guests can be assigned only while the item\'s board is in the Discussing phase. Sub-tasks cannot be changed here.';
+    protected string $description = 'Update an action item: content, priority, due date, recurrence or assignee. Only its author, the retrospective\'s facilitator or a workspace admin can change it. Guests can be assigned only while the item\'s board is in the Discussing, Actions or ROTI phase. Sub-tasks cannot be changed here.';
 
     public function __construct(
         private McpContext $context,
@@ -50,7 +49,7 @@ class UpdateAction extends SkrumTool
             'due_on' => $schema->string()->format('date')->nullable()->description('YYYY-MM-DD, or null to clear.'),
             'recurrence' => $schema->string()->enum(array_column(ActionItemRecurrence::cases(), 'value'))->nullable()->description('Repeat after completion; needs a due date. Null stops repeating.'),
             'assignee_user_id' => $schema->string()->format('uuid')->nullable()->description('A team member, or null to unassign.'),
-            'assignee_participant_id' => $schema->string()->format('uuid')->description('A guest of the item\'s board (board in Discussing only).'),
+            'assignee_participant_id' => $schema->string()->format('uuid')->description('A guest of the item\'s board (board in Discussing, Actions or ROTI only).'),
         ];
     }
 
@@ -88,7 +87,7 @@ class UpdateAction extends SkrumTool
             if ($retro !== null) {
                 $locked->setRelation('retro', $retro);
 
-                RetroGuard::phase($retro, RetroPhase::Discussing);
+                RetroGuard::takesActionItems($retro);
                 RetroGuard::unlocked($retro);
             }
 

@@ -4,7 +4,7 @@ import type { Snapshot } from './types';
 
 const board = {
     writersCount: 1,
-    roti: { myScore: 3, respondents: 1, voterIds: ['a'] },
+    roti: { myScore: 3, respondents: 1, voterIds: ['a'], canVote: true },
 } as unknown as Snapshot;
 
 describe('boardReducer writers and ROTI voters', () => {
@@ -28,6 +28,7 @@ describe('boardReducer writers and ROTI voters', () => {
             myScore: 3,
             respondents: 2,
             voterIds: ['a', 'b'],
+            canVote: true,
         });
     });
 
@@ -43,6 +44,7 @@ describe('boardReducer writers and ROTI voters', () => {
             myScore: 5,
             respondents: 2,
             voterIds: ['a', 'me'],
+            canVote: true,
         });
     });
 
