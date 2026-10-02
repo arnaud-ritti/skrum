@@ -3866,5 +3866,9 @@
     "Password, two-factor authentication and passkeys.": "Password, two-factor authentication and passkeys.",
     "Password and two-factor authentication.": "Password and two-factor authentication.",
     "Password and passkeys.": "Password and passkeys.",
-    "The password of your account.": "The password of your account."
+    "The password of your account.": "The password of your account.",
+    "The theme is kept on this device. The language is saved on your account.": "The theme is kept on this device. The language is saved on your account.",
+    "Interface language. Guests follow their browser.": "Interface language. Guests follow their browser.",
+    "Choose what reaches you, and where.": "Choose what reaches you, and where.",
+    "In-app": "In-app"
 }

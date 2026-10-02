@@ -257,3 +257,58 @@ it('renders an enabled second factor with its recovery codes without overflow', 
         },
     );
 });
+
+it('renders the appearance settings without overflow', function () {
+    config(['app.name' => 'Skrum', 'skrum.mcp.enabled' => true]);
+    RateLimiter::for('login', fn (): Limit => Limit::none());
+
+    $member = p18eSettingsMember();
+
+    $this->captureVisuals(
+        'settings-appearance-page',
+        '/settings/appearance',
+        fn (string $path, array $options) => p18eSettingsVisit(
+            $member,
+            $path,
+            $options,
+            '[data-slot="settings-shell"] [data-slot="theme-picker"] [role="radio"][aria-checked="true"]',
+        )->assertPresent('[data-slot="language-field"] [role="radio"][aria-checked="true"]'),
+    );
+});
+
+it('renders the notification settings without overflow', function () {
+    config(['app.name' => 'Skrum', 'skrum.mcp.enabled' => true]);
+    RateLimiter::for('login', fn (): Limit => Limit::none());
+
+    $member = p18eSettingsMember();
+    $member->forceFill(['action_item_reminders_by_email' => false])->save();
+
+    $this->captureVisuals(
+        'settings-notifications-page',
+        '/settings/notifications',
+        fn (string $path, array $options) => p18eSettingsVisit(
+            $member,
+            $path,
+            $options,
+            '[data-slot="settings-shell"] [data-slot="notifications-card"] #action-item-reminders-in-app',
+        ),
+    );
+});
+
+it('renders the notification settings of an instance without reminders without overflow', function () {
+    config(['app.name' => 'Skrum', 'skrum.mcp.enabled' => true, 'skrum.action_item_reminders.enabled' => false]);
+    RateLimiter::for('login', fn (): Limit => Limit::none());
+
+    $member = p18eSettingsMember();
+
+    $this->captureVisuals(
+        'settings-notifications-reminders-off',
+        '/settings/notifications',
+        fn (string $path, array $options) => p18eSettingsVisit(
+            $member,
+            $path,
+            $options,
+            '[data-slot="settings-shell"] [data-slot="notifications-card"] [data-slot="alert"]',
+        ),
+    );
+});

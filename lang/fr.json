@@ -4089,5 +4089,9 @@
     "Password, two-factor authentication and passkeys.": "Mot de passe, double authentification et clés d'accès.",
     "Password and two-factor authentication.": "Mot de passe et double authentification.",
     "Password and passkeys.": "Mot de passe et clés d'accès.",
-    "The password of your account.": "Le mot de passe de votre compte."
+    "The password of your account.": "Le mot de passe de votre compte.",
+    "The theme is kept on this device. The language is saved on your account.": "Le thème est conservé sur cet appareil. La langue est enregistrée sur votre compte.",
+    "Interface language. Guests follow their browser.": "Langue de l'interface. Les invités suivent leur navigateur.",
+    "Choose what reaches you, and where.": "Choisissez ce qui vous parvient, et par quel canal.",
+    "In-app": "Dans l’app"
 }

@@ -21,6 +21,8 @@ export const ownLayoutPages: readonly string[] = [
     'whiteboards/show',
     'settings/profile',
     'settings/security',
+    'settings/appearance',
+    'settings/notifications',
 ];
 
 const ownLayoutPrefixes: readonly string[] = ['admin/', 'dev/'];

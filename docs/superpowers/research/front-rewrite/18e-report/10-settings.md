@@ -105,3 +105,44 @@ Nothing is rendered while they are undefined.
 | The description under "Security" names what the page has ("Password, two-factor authentication and passkeys."), not "signed-in devices and linked accounts" | D-25 (F) |
 | French badge "Activé" / "Désactivé", where the mockup has the feminine "Activée" / "Désactivée": the keys "On" and "Off" are shared | none: reported |
 | Width of the page and place of the sub-navigation: those of the settings shell of 10.1 | Task 10.1 |
+
+## Task 10.3 — appearance and notifications
+
+Pages `settings/appearance` and `settings/notifications` render `SettingsShell` themselves and are in `ownLayoutPages`. Containers: `settings/appearance/appearance-card.tsx` (`AppearanceCard`, reads `use-appearance`), `settings/appearance/language-field.tsx` (`LanguageField`), `settings/notifications-card.tsx` (`NotificationsCard`); presentational: `settings/appearance/theme-picker.tsx` (`ThemePicker`). `appearance-tabs.tsx` is deleted; `language-switcher.tsx` stays (auth pages and session headers). Captures: `settings-appearance-page-*`, `settings-notifications-page-*`, `settings-notifications-reminders-off-*`. Walkthrough: `[P18e-10-06]`, `[P18e-10-07]`.
+
+### Parity (brief 10 §3.3)
+
+| # | Action | Control | Done |
+|---|---|---|---|
+| 28 | Theme Light / Dark / System | three `RadioGroupCardItem` in a radio group named "Theme" (order of the mockup: System, Light, Dark), each with a small board drawn in a nested `.light` / `.dark` scope, System with both halves; `use-appearance` unchanged (local storage, cookie, `html.dark`) | yes |
+| 29 | Language | segmented `ToggleGroup` named "Language", built from the shared `locales` (four languages, each under its own name); PUT `locale.update` with `preserveScroll`; pressing the current language sends nothing | yes |
+| 30 | Reminders by email | `Switch#action-item-reminders-by-email` in the "Email" column, named "Email me about due and overdue action items" | yes |
+| 31 | Reminders in app | `Switch#action-item-reminders-in-app` in the "In-app" column, named "Show due and overdue action items in the notification bell" | yes |
+| 32 | Save preferences | footer `LoadingButton` "Save" (10-D6); PATCH `notificationPreferences.update`, `preserveScroll`; the toast comes from the server | yes |
+| 33 | Reminder time sentence | second line of the event, under "Action item reminders" | yes |
+| 34 | Reminders off message | info `Alert` above the table; the switches stay usable | yes |
+
+### Places left
+
+| Mockup element | Slot | Later |
+|---|---|---|
+| "Reduce animations" row, under the language | `AppearanceCard` prop `reduceAnimations` (rendered after a separator in `[data-slot="appearance-reduce-animations"]`) | AC-5 |
+| "Accessibility" card (`single_key_shortcuts`) | `AppearanceCard` prop `accessibility`, rendered under the Appearance card | plan 18f, B35 |
+| Other notification events ("Retro recap", MN-1) | `NotificationsCard` builds its table from a list of `NotificationRow` (`event`, `description?`, `inApp?`, `email?`); a row with one channel leaves the other cell empty. A new event is one more entry of the list and one more field of `NotificationPreferences` | plan 18f (B34), MN-1 |
+
+Nothing is rendered while the two slots are undefined.
+
+### Differences with the mockup (ScreenUserSettings, Appearance and Notifications)
+
+| Difference | Covered by |
+|---|---|
+| The sentence under "Appearance" is "The theme is kept on this device. The language is saved on your account.", not "Stored on this account, synced across devices.": the theme lives in the browser (local storage and a cookie) | rule 13, false statement: no row yet, reported |
+| No "Reduce animations" row | D-25; place left |
+| Four languages (English, Français, Español, Deutsch), the mockup has two; at 390 the control goes under its label | brief row 29 |
+| The checked theme card has the outer 2px ring of `RadioGroupCardItem` around its border; the mockup has a 1px inner line. The card keeps the card background (not the soft primary of the component) as the mockup | `RadioGroupCardItem` (18c); the 2px focus ring of rule 5 shares that ring |
+| At 390 the previews are 3.5rem high and the theme icon is hidden, so that "Système" and its radio fit a third of the card | README of the mockup ("3 colonnes compactes (aperçu réduit)") |
+| One event, "Action item reminders", with the time of the reminders under it; the mockup has six events | D-25 |
+| A "Save" footer under the table; the switches of the mockup save themselves | O: 10-D6 |
+| At 390 the table keeps its head and its two columns (4rem each) instead of "label + 2 switches" rows without a head: with one event the columns fit | none: reported |
+| An info alert above the table when the instance sends no reminders | parity row 34 |
+| One page per section, the "Settings" title and the sub-navigation of 10.1 | Task 10.1 |

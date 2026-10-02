@@ -66,3 +66,55 @@ it('[P18e-10-02] sets up the second factor inside its card, to "Finish", then sh
     expect($member->refresh()->two_factor_confirmed_at)->not->toBeNull()
         ->and($member->recoveryCodes())->toHaveCount(8);
 });
+
+it('[P18e-10-06] the "Dark" theme card darkens the page and survives a reload; the language control translates the sub-navigation', function () {
+    $member = p18eSettingsWalker();
+
+    $page = $this->signIn($member, '/settings/appearance');
+
+    $page->assertPresent('[role="radiogroup"] [role="radio"][aria-checked="true"]:has-text("System")')
+        ->assertScript('document.documentElement.classList.contains("dark")', false)
+        ->click('[role="radio"]:has-text("Dark")')
+        ->assertPresent('[role="radio"][aria-checked="true"]:has-text("Dark")')
+        ->assertScript('document.documentElement.classList.contains("dark")', true)
+        ->assertScript('document.cookie.includes("appearance=dark")', true)
+        ->navigate('/settings/appearance')
+        ->assertPresent('[role="radio"][aria-checked="true"]:has-text("Dark")')
+        ->assertScript('document.documentElement.classList.contains("dark")', true)
+        ->assertSeeIn('nav[aria-label="Settings"]', 'Appearance')
+        ->assertPresent('[role="radiogroup"][aria-label="Language"] [role="radio"][aria-checked="true"]:has-text("English")')
+        ->click('[role="radiogroup"][aria-label="Language"] [role="radio"]:has-text("Français")')
+        ->assertSeeIn('nav[aria-label="Paramètres"]', 'Apparence')
+        ->assertPresent('[role="radiogroup"][aria-label="Langue"] [role="radio"][aria-checked="true"]:has-text("Français")')
+        ->assertNoJavaScriptErrors();
+
+    expect($member->refresh()->locale)->toBe('fr');
+});
+
+it('[P18e-10-07] the two reminder switches are saved by "Save" only, and stay as saved', function () {
+    $member = p18eSettingsWalker();
+
+    $page = $this->signIn($member, '/settings/notifications');
+
+    $page->assertSee('Action item reminders')
+        ->assertAttribute('#action-item-reminders-in-app', 'aria-checked', 'true')
+        ->assertAttribute('#action-item-reminders-by-email', 'aria-checked', 'true')
+        ->click('#action-item-reminders-in-app')
+        ->click('#action-item-reminders-by-email')
+        ->assertAttribute('#action-item-reminders-in-app', 'aria-checked', 'false')
+        ->assertAttribute('#action-item-reminders-by-email', 'aria-checked', 'false');
+
+    expect($member->refresh()->action_item_reminders_in_app)->toBeTrue()
+        ->and($member->action_item_reminders_by_email)->toBeTrue();
+
+    $page->click('Save')
+        ->assertSee('Notification settings saved.');
+
+    expect($member->refresh()->action_item_reminders_in_app)->toBeFalse()
+        ->and($member->action_item_reminders_by_email)->toBeFalse();
+
+    $page->navigate('/settings/notifications')
+        ->assertAttribute('#action-item-reminders-in-app', 'aria-checked', 'false')
+        ->assertAttribute('#action-item-reminders-by-email', 'aria-checked', 'false')
+        ->assertNoJavaScriptErrors();
+});
