@@ -4,6 +4,7 @@ namespace App\Support\Gifs;
 
 use App\Models\Card;
 use App\Models\GameGifAnswer;
+use App\Support\InstanceSettings;
 use Closure;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
@@ -58,7 +59,7 @@ class GifCatalog
         }
 
         $query = trim($query);
-        $rating = (string) config('services.gifs.rating', 'pg');
+        $rating = (string) config('services.gifs.rating', InstanceSettings::DefaultGifRating);
         $cacheKey = "gifs:search:{$this->providerName()}:{$rating}:".hash('xxh128', mb_strtolower($query));
 
         /** @var array<int, array{id: string, previewUrl: string, fullUrl: string, width: int, height: int}> $items */

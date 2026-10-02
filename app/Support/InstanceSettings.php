@@ -5,9 +5,12 @@ namespace App\Support;
 use App\Enums\InstanceSettingKey;
 use App\Models\InstanceSetting;
 use Illuminate\Contracts\Encryption\DecryptException;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
+use SensitiveParameter;
 
 class InstanceSettings
 {
@@ -27,8 +30,12 @@ class InstanceSettings
 
     private const string DefaultAvatarStyle = 'thumbs';
 
+    private const int CacheTtlSeconds = 3600;
+
     /** @var ?array<string, mixed> */
     private ?array $stored = null;
+
+    private bool $hasUncommittedWrite = false;
 
     public function brandColor(): ?string
     {
@@ -38,7 +45,7 @@ class InstanceSettings
             return null;
         }
 
-        if (preg_match('/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/', $color) !== 1) {
+        if (preg_match('/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/D', $color) !== 1) {
             return null;
         }
 
@@ -139,30 +146,35 @@ class InstanceSettings
         return $this->gifKey() !== null;
     }
 
-    public function set(string $key, mixed $value): void
+    public function set(string $key, #[SensitiveParameter] mixed $value): void
     {
-        $setting = $this->key($key);
+        $this->setMany([$key => $value]);
+    }
 
-        if ($value === null || $value === '') {
-            $this->forget($key);
+    /** @param array<string, mixed> $values */
+    public function setMany(#[SensitiveParameter] array $values): void
+    {
+        $normalised = [];
 
-            return;
+        foreach ($values as $key => $value) {
+            $setting = $this->key($key);
+            $normalised[$setting->value] = $this->normalise($setting, $value);
         }
 
-        if ($setting === InstanceSettingKey::GifKey) {
-            $value = Crypt::encryptString((string) $value);
-        }
+        DB::transaction(function () use ($normalised): void {
+            foreach ($normalised as $key => $value) {
+                $this->write($key, $value);
+            }
+        });
 
-        InstanceSetting::query()->updateOrCreate(['key' => $setting->value], ['value' => $value]);
-
-        $this->flush();
+        $this->invalidateAfterCommit();
     }
 
     public function forget(string $key): void
     {
-        InstanceSetting::query()->where('key', $this->key($key)->value)->delete();
+        $this->write($this->key($key)->value, null);
 
-        $this->flush();
+        $this->invalidateAfterCommit();
     }
 
     /**
@@ -207,27 +219,123 @@ class InstanceSettings
             ?? throw new InvalidArgumentException("Unknown instance setting [{$key}].");
     }
 
-    private function flush(): void
+    private function write(string $key, #[SensitiveParameter] mixed $value): void
     {
-        Cache::forget(self::CacheKey);
+        if ($value === null) {
+            InstanceSetting::query()->where('key', $key)->delete();
 
+            return;
+        }
+
+        InstanceSetting::query()->updateOrCreate(['key' => $key], ['value' => $value]);
+    }
+
+    private function normalise(InstanceSettingKey $key, #[SensitiveParameter] mixed $value): mixed
+    {
+        if (is_string($value)) {
+            $value = trim($value);
+        }
+
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        return match ($key) {
+            InstanceSettingKey::PoweredBy,
+            InstanceSettingKey::AvatarMemberChoice,
+            InstanceSettingKey::GifEnabled => $this->booleanFrom($key, $value),
+            InstanceSettingKey::BrandRadius => $this->integerFrom($key, $value),
+            InstanceSettingKey::GifKey => Crypt::encryptString($this->stringFrom($key, $value)),
+            default => $value,
+        };
+    }
+
+    private function booleanFrom(InstanceSettingKey $key, mixed $value): bool
+    {
+        $boolean = is_scalar($value)
+            ? filter_var($value, FILTER_VALIDATE_BOOL, FILTER_NULL_ON_FAILURE)
+            : null;
+
+        return $boolean ?? throw new InvalidArgumentException("Instance setting [{$key->value}] expects a boolean.");
+    }
+
+    private function integerFrom(InstanceSettingKey $key, mixed $value): int
+    {
+        if (! is_numeric($value)) {
+            throw new InvalidArgumentException("Instance setting [{$key->value}] expects a number.");
+        }
+
+        return (int) $value;
+    }
+
+    private function stringFrom(InstanceSettingKey $key, #[SensitiveParameter] mixed $value): string
+    {
+        if (! is_string($value)) {
+            throw new InvalidArgumentException("Instance setting [{$key->value}] expects a string.");
+        }
+
+        return $value;
+    }
+
+    /**
+     * Until the write is committed this instance reads the table directly, so uncommitted rows never reach the cache.
+     */
+    private function invalidateAfterCommit(): void
+    {
+        $this->hasUncommittedWrite = true;
         $this->stored = null;
+
+        DB::afterCommit(function (): void {
+            Cache::forget(self::CacheKey);
+
+            $this->hasUncommittedWrite = false;
+            $this->stored = null;
+        });
     }
 
     private function stored(InstanceSettingKey $key): mixed
     {
-        $this->stored ??= $this->load();
+        if ($this->hasUncommittedWrite) {
+            return $this->rows()[$key->value] ?? null;
+        }
+
+        $this->stored ??= $this->load() ?? [];
 
         return $this->stored[$key->value] ?? null;
     }
 
-    /** @return array<string, mixed> */
-    private function load(): array
+    /** @return ?array<string, mixed> */
+    private function load(): ?array
     {
-        return Cache::rememberForever(
-            self::CacheKey,
-            fn (): array => InstanceSetting::query()->get()->pluck('value', 'key')->all(),
-        );
+        $cached = Cache::get(self::CacheKey);
+
+        if (is_array($cached)) {
+            return $cached;
+        }
+
+        $rows = $this->rows();
+
+        if ($rows === null) {
+            return null;
+        }
+
+        Cache::put(self::CacheKey, $rows, self::CacheTtlSeconds);
+
+        return $rows;
+    }
+
+    /**
+     * Null when the table cannot be read, as between a deploy and its migration.
+     *
+     * @return ?array<string, mixed>
+     */
+    private function rows(): ?array
+    {
+        try {
+            return InstanceSetting::query()->get()->pluck('value', 'key')->all();
+        } catch (QueryException) {
+            return null;
+        }
     }
 
     private function storedString(InstanceSettingKey $key): ?string
@@ -267,6 +375,6 @@ class InstanceSettings
             return null;
         }
 
-        return preg_match('/^[a-z0-9-]+$/', $value) === 1 ? $value : null;
+        return preg_match('/^[a-z0-9-]+$/D', $value) === 1 ? $value : null;
     }
 }
