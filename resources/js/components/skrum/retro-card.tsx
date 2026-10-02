@@ -658,10 +658,10 @@ export function RetroCard({
                                                   count: reaction.count,
                                               })
                                     }
-                                    aria-disabled={!onReact || undefined}
+                                    disabled={!onReact}
                                     onClick={() => onReact?.(reaction.emoji)}
                                     className={cn(
-                                        'inline-flex h-6 items-center gap-1 rounded-full border px-2 text-xs font-semibold outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                                        'inline-flex h-6 items-center gap-1 rounded-full border px-2 text-xs font-semibold outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed',
                                         reaction.mine
                                             ? 'border-transparent bg-skrum-primary-soft text-skrum-primary-text'
                                             : 'border-input bg-card text-foreground',
@@ -679,7 +679,20 @@ export function RetroCard({
                             return (
                                 <Tooltip key={reaction.emoji}>
                                     <TooltipTrigger asChild>
-                                        {chip}
+                                        {onReact ? (
+                                            chip
+                                        ) : (
+                                            // A disabled button takes no
+                                            // focus: the names stay reachable
+                                            // on the wrapper.
+                                            <span
+                                                tabIndex={0}
+                                                data-slot="retro-card-reaction-reader"
+                                                className="inline-flex rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                            >
+                                                {chip}
+                                            </span>
+                                        )}
                                     </TooltipTrigger>
                                     <TooltipContent data-slot="retro-card-reaction-names">
                                         {names.join(', ')}

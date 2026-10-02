@@ -375,6 +375,68 @@ describe('RetroCard', () => {
             ).toBeTruthy();
         });
 
+        it('disables the chips of a card nobody may react to, and keeps the names reachable', async () => {
+            renderWithProviders(
+                card({
+                    reactions: [
+                        {
+                            emoji: '👍',
+                            count: 1,
+                            mine: false,
+                            names: ['Alice'],
+                        },
+                        { emoji: '🎉', count: 1, mine: false },
+                    ],
+                }),
+            );
+
+            const chip = screen.getByRole('button', {
+                name: '👍, 1 reaction',
+            }) as HTMLButtonElement;
+            const reader = chip.closest(
+                '[data-slot="retro-card-reaction-reader"]',
+            ) as HTMLElement;
+
+            expect(chip.disabled).toBe(true);
+            expect(reader.tabIndex).toBe(0);
+            expect(
+                screen
+                    .getByRole('button', { name: '🎉, 1 reaction' })
+                    .closest('[data-slot="retro-card-reaction-reader"]'),
+            ).toBeNull();
+
+            fireEvent.focus(reader);
+
+            expect(
+                (await screen.findAllByText('Alice')).length,
+            ).toBeGreaterThan(0);
+        });
+
+        it('leaves the chips enabled, without a wrapper, when reacting is allowed', () => {
+            renderWithProviders(
+                card({
+                    onReact: vi.fn(),
+                    reactions: [
+                        {
+                            emoji: '👍',
+                            count: 1,
+                            mine: false,
+                            names: ['Alice'],
+                        },
+                    ],
+                }),
+            );
+
+            const chip = screen.getByRole('button', {
+                name: '👍, 1 reaction',
+            }) as HTMLButtonElement;
+
+            expect(chip.disabled).toBe(false);
+            expect(
+                chip.closest('[data-slot="retro-card-reaction-reader"]'),
+            ).toBeNull();
+        });
+
         it('names who reacted in a tooltip', async () => {
             renderWithProviders(
                 card({
