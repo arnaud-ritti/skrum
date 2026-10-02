@@ -31,9 +31,9 @@ The brief's `components/whiteboard/guest-join-form.tsx` is not written (K2): the
 |---|---|
 | No colour picker, no short code | D-32 |
 | The button reads "Join", the mockup "Rejoindre la session" | browser contract: `joinAsGuest` clicks "Join" (plan, Task 7.1 "Browser tests changed: none") |
-| No suggested random nickname: with an empty field the preview shows the generic avatar and the sentence "Suggested nickname if you leave it empty" without a name | no row: reported (the server has no random name for a whiteboard; the sentence comes from `skrum/GuestJoin`) |
-| The logo appears twice: in the header of the centred `AuthLayout` and in the card | no row: reported (Task 0.7 frame; the mockup shows the card alone) |
-| A language select in the header, "Powered by Skrüm" in the footer | no row: the centred `AuthLayout` of Task 0.7 |
+| No suggested random nickname: with an empty field there is no preview (avatar and "Suggested nickname if you leave it empty"); `skrum/GuestJoin` shows it only for a typed or a proposed name (fixed in the review: the sentence was shown with no name) | D-41 |
+| The logo appears twice: in the header of the centred `AuthLayout` and in the card | D-41 (Task 0.7 frame; the mockup shows the card alone) |
+| A language select in the header, "Powered by Skrüm" in the footer | D-41 |
 | Invalid link: a notice card, not in the GuestJoin mockup | brief 07 "No mockup" list; `AccessNotice` of Task 0.7 |
 
 ### Captures
@@ -47,9 +47,9 @@ The brief's `components/whiteboard/guest-join-form.tsx` is not written (K2): the
 | # | Action | New control | Done |
 |---|---|---|---|
 | 1 | Lazy canvas, skeleton, error and Retry | `pages/whiteboards/show.tsx`: the skeleton and the error render inside `SessionLayout` with the board title; the error is an `EmptyState` ("The canvas could not be loaded.", "Retry") | yes |
-| 2 | Page title | `<Head title>` in the page | yes |
+| 2 | Page title | `<Head title>` in the page for the loading and error frames, then in `Board` from the live state: a rename, local or remote, changes the document title | yes |
 | 3 | Back to the team | `SessionTitle` `backHref`: `a[aria-label="Back to the team"]`; absent for a guest | yes |
-| 4 | Board title | the page's `h1`, truncated; the facilitator renames it in place (M21) | yes |
+| 4 | Board title | the page's `h1`, truncated; the facilitator renames it in place (M21): Enter or leaving the field saves a changed name, Escape cancels; the field is read-only while it saves and stays open and focused after a refusal; the name button is described "Rename the board" | yes |
 | 5 | Who is online | `SessionPresence`: five avatars and the counter, the counter alone below 640 px; presence colour from `presence-slot.ts` | yes |
 | 14 | Send a reaction | `SessionReactions` (`.whiteboard-reactions`, no digit shortcuts, compact below 768 px) | yes |
 | 15 | Receive a reaction with the sender's name | the `.lr-overlay` layer of `SessionReactions`, origin at the sender's avatar | yes |
@@ -74,7 +74,7 @@ The brief's `components/whiteboard/guest-join-form.tsx` is not written (K2): the
 | 11 | Export | header button "Export" opens the canvas's export dialog ("Download board data"); the native menu entry stays (M21) | yes |
 | 26–28 | Guest link in the board menu | removed from the menu in this task (7-D2); the rest of the menu is Task 7.3 | yes |
 
-Cursor colours come from the presence tokens (7-D6): `presenceCursorColor` reads `--skrum-presence-N` of the member's slot, the same slot as the avatar.
+Cursor colours come from the presence tokens (7-D6): `presenceCursorColor` reads `--skrum-presence-N` of the member's slot, the same slot as the avatar, once per slot and theme. In the dark theme the library draws its canvases through `invert(93%) hue-rotate(180deg)`: the value given to the canvas is the one that filter turns back into the token (`compensateDarkFilter`), as near as the filter can reach. The canvas's own list of people (top right, shown while a cursor is known) gets the member's picture, since it is not drawn on the canvas.
 
 ### Places left
 
@@ -89,9 +89,9 @@ Cursor colours come from the presence tokens (7-D6): `presenceCursorColor` reads
 | Difference | Row |
 |---|---|
 | Excalidraw's own tool bar, zoom and history; no selection bar, minimap, dot grid, comments, sticky authors, "is writing" ring | D-21 |
-| The topbar has the application rail and a back arrow, not the logo and the breadcrumb "team › Whiteboards › name": the title alone is shown and renamed in place | no row: the session frame of Task 0 (`SessionFrame`, `SessionTitle`); the snapshot has no team name. Reported |
-| No "Synced" state while connected: the topbar state appears only while reconnecting | no row: `ConnectionState` renders nothing when connected (its README: "invisible when all is well"). Reported |
-| The facilitation tools (timer, lock, follow) sit in the header between the presence stack and the separator; a board menu follows "Share"; a reaction bar floats at the bottom | brief 07 §6 "no mockup": existing features |
+| The topbar has the application rail and a back arrow, not the logo and the breadcrumb "team › Whiteboards › name": the title alone is shown and renamed in place | D-37 |
+| No "Synced" state while connected: the topbar state appears only while reconnecting | D-38 |
+| The facilitation tools (timer, lock, follow) sit in the header between the presence stack and the separator; a board menu follows "Share"; a reaction bar floats at the bottom | D-40 |
 | Below 1024 px "Export" and "Share" are icon buttons; below 768 px "Export" is not in the header (the canvas menu has it) and the facilitation tools are a strip under the header | header budget of Task 0.14 |
 | Phone: no "Reading" pill, no "Edit" button, no "Follow" pill, no subtitle "Whiteboard · n online" | Task 7.5; WB-3 |
 | Dark theme: sticky colours are the canvas's filtered colours | Task 7.4 (`ExcalidrawTheme`) |
@@ -128,7 +128,7 @@ None: the mockup has no element in the menu or in these dialogs that a later pla
 
 | Difference | Row |
 |---|---|
-| The ScreenWhiteboard mockup has no board menu: its topbar ends with "Share". The menu holds existing features and follows the DropdownMenu mockup (icon on every action, separators edge to edge, destructive entry last) | brief 07 §6 "no mockup": existing features |
+| The ScreenWhiteboard mockup has no board menu: its topbar ends with "Share". The menu holds existing features and follows the DropdownMenu mockup (icon on every action, separators edge to edge, destructive entry last) | D-40 |
 | No section labels and no shortcuts in the menu | the DropdownMenu mockup shows them on a card menu; this menu has no shortcut and its groups are short. No row: reported |
 | Hand-over dialog: the select opens empty, without a placeholder | same as before; no mockup of this dialog |
 | At 390 the footer of a dialog stacks its buttons full width, the main action first | the Dialog primitive of plan 18c |
@@ -150,7 +150,7 @@ None: the mockup has no element in the menu or in these dialogs that a later pla
 | 52 | Sticky tool in the shapes toolbar | `use-whiteboard-toolbar-slot`, unchanged | yes |
 | 54 | Colour bar for new shapes and for the selection (7-D3) | `CanvasColors` under the tool bar: shown for the rectangle, diamond and ellipse tools and for a selection that holds such a shape. A colour recolours the selected filled shapes (fill and border, version bumped, one undo step) and becomes the fill of the next ones. The checked radio is the colour of the selection, or of the next shape; none is checked for a fill outside the eight or a selection of several colours. Hidden in view mode, while a dialog of the canvas is open, and while the sticky tool's colours are open (one radiogroup at a time). The wrapper class `skrum-whiteboard--fallback-colors` hides the canvas's quick picks; its colour picker ("more colours") stays | yes |
 
-A new filled shape is a Sun note with the Sun border (`ExcalidrawTheme` README). The current stroke follows the tool (`strokeForTool`): the border of the fill for rectangle, diamond and ellipse, Excalidraw's default stroke for every other tool. A stroke the user chose in the picker is left alone.
+A new filled shape is a Sun note with the Sun border (`ExcalidrawTheme` README). The current stroke follows the tool (`strokeForTool`): the border of the fill for rectangle, diamond and ellipse, Excalidraw's default stroke for every other tool. A stroke the user chose in the picker is left alone, the default one included: only a note border, or the stroke the board itself set last, is replaced. Known and left: the Sun fill stays the current background for the line and pencil tools, which have no colour bar, so a closed line or pencil loop is filled (not run; reported).
 
 Dead code removed: `StickyColors` (the six old hex), `CanvasDarkFilterClass`, `RequiredApi`, `RequiredProps` and the unused type re-exports of `lib/whiteboard/excalidraw.ts`.
 
@@ -167,7 +167,7 @@ Dead code removed: `StickyColors` (the six old hex), `CanvasDarkFilterClass`, `R
 |---|---|
 | The colour bar is alone under the tool bar: no "n elements" counter, no group / align / lock / convert / delete beside it (the canvas's own panel has them) | D-21 |
 | The colour bar sits under the canvas's hint line, 6rem from the top of the canvas, not right under the tool bar: the library writes its hint there | D-21 (the library's tool bar is kept) |
-| The canvas's property panel keeps its "Stroke" and "Background" rows, each reduced to its picker button (and the library's separator before it); the picker still offers the library's own colours. The mockup shows the eight swatches inside the panel | no row: answer 7-D3 and the README's fallback ("hide the native picks and show the sub-bar"). Reported |
+| The canvas's property panel keeps its "Stroke" and "Background" rows, each reduced to its picker button at the start of the row (the library's separator is hidden with the quick picks); the picker still offers the library's own colours. The mockup shows the eight swatches inside the panel | D-39 |
 | The mockup's sub-bar of the sticky tool shows five colours; built: the eight | answer 7-D1 |
 | A new filled shape has the border of its colour and lines, arrows, pencil and text keep the default stroke. The README's snippet sets the Sun border as the current stroke for every tool, which would write text and lines in a pale yellow that cannot be read | A (contrast); the README's own line "free strokes: `--foreground`". Reported |
 | `currentItemFontFamily: 5` is not set: it is the library's default in 0.18.1 | none needed |
@@ -185,7 +185,7 @@ Dead code removed: `StickyColors` (the six old hex), `CanvasDarkFilterClass`, `R
 | # | Action | New control | Done |
 |---|---|---|---|
 | — | A board opened below 768 px is in read mode | `useReadMode(isPhone)`: the canvas is in Excalidraw's view mode (pan and zoom, no tool bar, no sticky tool, no colour bar); the pill "Reading" (eye) is at the top left of the canvas | yes |
-| — | Edit, and back | `ReadModeToggle` in the bottom dock, at the right of the reactions: "Edit" (pencil, primary) while reading, "Read" (eye, outline) while editing; `aria-pressed` follows the read mode. French: "Modifier" / "Lire" | yes |
+| — | Edit, and back | `ReadModeToggle` in the bottom dock, at the right of the reactions: "Edit" (pencil, primary) while reading, "Read" (eye, outline) while editing; the label names the action, so the button has no `aria-pressed`, and the mode is announced by a polite region that stays mounted (`span[role="status"]`: the "Reading" pill, or "Editing" for assistive technology). French: "Modifier" / "Lire" | yes |
 | — | The mode is local | React state of the board: not stored, not sent; a reload on a phone reads again | yes |
 | 37 | Locked board, viewer who is not the facilitator | `viewModeEnabled = locked for the viewer or reading` (`isViewMode`): the lock keeps the last word; such a viewer has no toggle and no pill, only the notice "This board is locked." | yes |
 | — | From 768 px | no toggle, no pill, edit mode (unless locked), as before | yes |
@@ -212,8 +212,10 @@ French wording: `"Edit"` becomes "Modifier" (it was "Éditer") and `"Read"` beco
 | A "Read" button in edit mode: the mockup shows the read mode only | answer 7-D7 ("switches to edit mode and back", spec §6.4) |
 | The read mode is a view mode of this browser, not a right | D-36 |
 | Header: the counter "n online" alone, no subtitle "Whiteboard · n online", no small avatars; the board menu after "Share"; for the facilitator the facilitation tools in a strip under the header | header budget of Task 0.14; brief 07 §6 (existing features) |
-| The plan puts the toggle in the header (`board-header.tsx`): it is built in the canvas dock, where the mockup has it; below 768 px the header has no room for a labelled button | rule 13; reported |
+| The toggle is in the canvas dock, where the mockup has it (the plan's Task 7.5 now says so) | none needed |
 
 ### Captures
 
 `tests/Browser/Visual/WhiteboardVisualTest.php`: `whiteboard-board-*-390-*` is now the board as a phone opens it (read mode: the pill and "Edit"); the test opens the board at 390 and the 1440 capture is unchanged (no toggle). The other 390 captures of the facilitator (`-colors-`, `-sticky-colors-`, `-menu-`, `-save-template-`, `-hand-over-`, `-delete-`) open at the desktop width and are resized, so they show the phone in edit mode, with the "Read" button. `whiteboard-board-locked-guest-*-390-*` is unchanged: no toggle under the lock.
+
+Added in the review: `whiteboard-board-cursor-*` (the facilitator's view with the cursor of another member, light and dark, 390 and 1440, EN and FR). The 1440 captures of the board show the picture of a user created by the test, which differs from run to run: a capture that changes by that picture alone is not committed.
