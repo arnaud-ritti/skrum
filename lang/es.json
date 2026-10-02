@@ -3914,5 +3914,13 @@
     "Live updates are paused. Other people's changes appear when the connection returns.": "Las actualizaciones en directo están en pausa. Los cambios de los demás aparecerán cuando vuelva la conexión.",
     "Session shell, every slot filled, reaction bar over a tall content": "Marco de sesión, todos los espacios ocupados, barra de reacciones sobre un contenido alto",
     "Session shell, reconnecting: the banner of a retro above, then the sentence of each other session type": "Marco de sesión, reconectando: el aviso de una retro arriba y luego la frase de cada otro tipo de sesión",
-    "Session shell, session expired: inert content": "Marco de sesión, sesión caducada: contenido inerte"
+    "Session shell, session expired: inert content": "Marco de sesión, sesión caducada: contenido inerte",
+    "or with your e-mail": "o con tu correo electrónico",
+    "Open source · self-hostable": "Código abierto · autoalojable",
+    "Retros, planning poker, whiteboard and surveys for teams who want their rituals to be worth the time.": "Retros, planning poker, pizarra y encuestas para los equipos que quieren que sus rituales sirvan para algo.",
+    "Quarantine the flaky tests": "Poner en cuarentena los tests inestables",
+    "A single provider": "Un solo proveedor",
+    "Two providers": "Dos proveedores",
+    "Passkey, password confirmation": "Clave de acceso, confirmación de contraseña",
+    "The provided password is incorrect.": "La contraseña proporcionada es incorrecta."
 }
