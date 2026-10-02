@@ -1,4 +1,11 @@
-import { Bookmark, CircleCheck, Pencil, Plus, Trash2 } from 'lucide-react';
+import {
+    Bookmark,
+    Building2,
+    CircleCheck,
+    Pencil,
+    Plus,
+    Trash2,
+} from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { ConfirmDialog } from '@/components/skrum/confirm-dialog';
 import { Badge } from '@/components/ui/badge';
@@ -20,7 +27,10 @@ export interface Deck {
     values: string[];
     unknownCard: boolean;
     breakCard: boolean;
-    source: 'builtin' | 'saved';
+    /** `custom`: a deck typed for one game, saved nowhere. */
+    source: 'builtin' | 'saved' | 'custom';
+    /** Of a saved deck: `workspace` when every team of the workspace has it. */
+    scope?: 'team' | 'workspace';
     canManage?: boolean;
     createdBy?: { name: string };
 }
@@ -138,6 +148,34 @@ function PreviewValues({ cards }: { cards: string[] }) {
     );
 }
 
+function DeckSourceBadge({ deck }: { deck: Deck }) {
+    const { t } = useTrans();
+
+    if (deck.source === 'builtin') {
+        return <Badge variant="outline">{t('Built-in')}</Badge>;
+    }
+
+    if (deck.source === 'custom') {
+        return <Badge variant="outline">{t('This game only')}</Badge>;
+    }
+
+    if (deck.scope === 'workspace') {
+        return (
+            <Badge variant="muted">
+                <Building2 aria-hidden="true" />
+                {t('Workspace')}
+            </Badge>
+        );
+    }
+
+    return (
+        <Badge variant="muted">
+            <Bookmark aria-hidden="true" />
+            {t('Saved')}
+        </Badge>
+    );
+}
+
 export function DeckPicker({
     value,
     onValueChange,
@@ -191,7 +229,8 @@ export function DeckPicker({
                             count: cards.length,
                         });
                         const canManage =
-                            deck.source === 'saved' && deck.canManage === true;
+                            deck.source !== 'builtin' &&
+                            deck.canManage === true;
                         const canEdit = canManage && onEdit !== undefined;
                         const canDelete = canManage && onDelete !== undefined;
 
@@ -199,7 +238,7 @@ export function DeckPicker({
                             <div
                                 key={deck.id}
                                 data-slot="deck-option-wrapper"
-                                className="flex min-w-0 flex-col gap-1"
+                                className="flex min-w-0 flex-col gap-1 [&>input]:hidden"
                             >
                                 <RadioGroupCardItem
                                     value={deck.id}
@@ -225,16 +264,7 @@ export function DeckPicker({
                                     </span>
                                     <PreviewValues cards={cards} />
                                     <span className="flex min-w-0 items-center gap-1.5">
-                                        {deck.source === 'builtin' ? (
-                                            <Badge variant="outline">
-                                                {t('Built-in')}
-                                            </Badge>
-                                        ) : (
-                                            <Badge variant="muted">
-                                                <Bookmark aria-hidden="true" />
-                                                {t('Saved')}
-                                            </Badge>
-                                        )}
+                                        <DeckSourceBadge deck={deck} />
                                         {deck.createdBy ? (
                                             <span className="truncate text-xs text-muted-foreground">
                                                 {deck.createdBy.name}

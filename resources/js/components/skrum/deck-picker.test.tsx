@@ -105,6 +105,52 @@ describe('DeckPicker', () => {
         expect(screen.getByText('Ada')).toBeTruthy();
     });
 
+    it('marks a deck typed for one game and a deck of the workspace', () => {
+        const onEdit = vi.fn();
+
+        renderPicker({
+            onEdit,
+            onDelete: vi.fn(),
+            decks: [
+                ...decks.slice(0, 2),
+                {
+                    id: 'shared',
+                    name: 'Hours',
+                    values: ['1', '2', '4'],
+                    unknownCard: false,
+                    breakCard: false,
+                    source: 'saved',
+                    scope: 'workspace',
+                },
+                {
+                    id: 'custom',
+                    name: 'Custom deck',
+                    values: ['1', '2'],
+                    unknownCard: true,
+                    breakCard: false,
+                    source: 'custom',
+                    canManage: true,
+                },
+            ],
+        });
+
+        const shared = screen.getByRole('radio', { name: 'Hours, 3 cards' });
+        const custom = screen.getByRole('radio', {
+            name: 'Custom deck, 3 cards',
+        });
+
+        expect(within(shared).getByText('Workspace')).toBeTruthy();
+        expect(within(shared).queryByText('Saved')).toBeNull();
+        expect(within(custom).getByText('This game only')).toBeTruthy();
+
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Edit Custom deck' }),
+        );
+
+        expect(onEdit).toHaveBeenCalledWith('custom');
+        expect(screen.queryByRole('button', { name: 'Edit Hours' })).toBeNull();
+    });
+
     it('lists every value of the selected deck, specials with their label', () => {
         renderPicker();
 
