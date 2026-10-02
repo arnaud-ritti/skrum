@@ -118,6 +118,7 @@ use App\Http\Controllers\Retros\RetrosController;
 use App\Http\Controllers\Retros\RetroSettingsController;
 use App\Http\Controllers\Retros\RetroSnapshotsController;
 use App\Http\Controllers\Retros\RetroSummariesController;
+use App\Http\Controllers\Retros\RetroTimerExtensionsController;
 use App\Http\Controllers\Retros\RetroTimersController;
 use App\Http\Controllers\Retros\SuggestedActionPromotionsController;
 use App\Http\Controllers\Retros\SuggestedActionsController;
@@ -400,6 +401,7 @@ Route::prefix('retros/{retro}')
         Route::delete('/', [RetrosController::class, 'destroy'])->name('retros.destroy');
         Route::put('phase', [RetroPhasesController::class, 'update'])->name('retros.phase.update');
         Route::put('timer', [RetroTimersController::class, 'update'])->name('retros.timer.update');
+        Route::post('timer/extension', [RetroTimerExtensionsController::class, 'store'])->name('retros.timer.extension.store');
         Route::put('highlight', [RetroHighlightsController::class, 'update'])->name('retros.highlight.update');
         Route::patch('settings', [RetroSettingsController::class, 'update'])->name('retros.settings.update');
         Route::post('guest-token', [RetroGuestTokensController::class, 'store'])->name('retros.guest-token.store');

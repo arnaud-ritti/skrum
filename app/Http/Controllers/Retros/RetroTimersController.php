@@ -14,6 +14,8 @@ use Illuminate\Support\Facades\DB;
 
 class RetroTimersController extends Controller
 {
+    public const MaxSeconds = 7200;
+
     public function update(Request $request, Retro $retro, ScheduleIcebreakerExpiry $scheduleIcebreakerExpiry): JsonResponse
     {
         $participant = Participant::current($request);
@@ -22,7 +24,7 @@ class RetroTimersController extends Controller
         RetroGuard::open($retro);
 
         $validated = $request->validate([
-            'seconds' => ['present', 'nullable', 'integer', 'min:10', 'max:7200'],
+            'seconds' => ['present', 'nullable', 'integer', 'min:10', 'max:'.self::MaxSeconds],
         ]);
 
         // Whole seconds: a game expiry job compares its end time with the stored one.
