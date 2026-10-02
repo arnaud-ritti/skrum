@@ -311,4 +311,81 @@ describe('LoginForm', () => {
             }),
         ).toBeNull();
     });
+
+    it('folds the password form under "Administrator sign-in" when single sign-on is required', () => {
+        passkey.isSupported = true;
+        const { container } = renderForm({
+            ssoRequired: true,
+            canUseMagicLink: true,
+            ssoProviders: [{ key: 'oidc', label: 'Nordlys SSO' }],
+        });
+
+        const sso = container.querySelector('[data-slot="sso-buttons"]')!;
+        const sentence = screen.getByText(
+            'This instance signs in with single sign-on only.',
+        );
+        const disclosure = screen.getByRole('button', {
+            name: 'Administrator sign-in',
+        });
+
+        expect(sso.nextElementSibling).toBe(sentence);
+        expect(
+            sentence.compareDocumentPosition(disclosure) &
+                Node.DOCUMENT_POSITION_FOLLOWING,
+        ).toBeTruthy();
+        expect(disclosure.getAttribute('aria-expanded')).toBe('false');
+        expect(document.getElementById('email')).toBeNull();
+        expect(document.getElementById('password')).toBeNull();
+        expect(screen.queryByRole('button', { name: 'Log in' })).toBeNull();
+        expect(
+            container.querySelector('[data-slot="auth-separator"]'),
+        ).toBeNull();
+        expect(
+            container.querySelector('[data-slot="passkey-sign-in"]'),
+        ).toBeNull();
+
+        fireEvent.click(disclosure);
+
+        expect(document.activeElement).toBe(document.getElementById('email'));
+        expect(screen.getByLabelText('Password').id).toBe('password');
+        expect(
+            screen.getByRole('link', { name: 'Forgot your password?' }),
+        ).toBeTruthy();
+        expect(
+            screen
+                .getByRole('button', { name: 'Log in' })
+                .getAttribute('data-test'),
+        ).toBe('login-button');
+        expect(container.querySelector('form')?.getAttribute('action')).toBe(
+            '/login',
+        );
+        expect(screen.queryByLabelText('Remember me')).toBeNull();
+    });
+
+    it.each([false, true])(
+        'never offers a magic link nor a registration when single sign-on is required (phone: %s)',
+        (isPhone) => {
+            viewport.isPhone = isPhone;
+            const { container } = renderForm({
+                ssoRequired: true,
+                canUseMagicLink: true,
+                canRegister: true,
+                ssoProviders: [{ key: 'oidc', label: 'Nordlys SSO' }],
+            });
+
+            fireEvent.click(
+                screen.getByRole('button', { name: 'Administrator sign-in' }),
+            );
+
+            expect(
+                container.querySelector('[data-test="magic-link-button"]'),
+            ).toBeNull();
+            expect(
+                container.querySelector('[data-slot="login-method-tabs"]'),
+            ).toBeNull();
+            expect(
+                screen.queryByRole('link', { name: 'Create an account' }),
+            ).toBeNull();
+        },
+    );
 });

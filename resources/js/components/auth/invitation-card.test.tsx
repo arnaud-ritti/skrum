@@ -371,4 +371,30 @@ describe('InvitationCard', () => {
             screen.getByRole('button', { name: 'Decline invitation' }),
         ).toBeTruthy();
     });
+
+    it('offers only the providers, and names the invited address, when single sign-on is required', () => {
+        renderWithProviders(
+            <InvitationCard
+                {...pending}
+                canRegister={false}
+                ssoRequired
+                ssoProviders={[{ key: 'oidc', label: 'Nordlys SSO' }]}
+            />,
+        );
+
+        expect(state()).toBe('logged-out');
+        expect(
+            screen.getAllByRole('link').map((link) => link.textContent),
+        ).toEqual(['Continue with Nordlys SSO']);
+        expect(
+            screen.getByText(
+                'Use the account whose address is mona@example.com.',
+            ),
+        ).toBeTruthy();
+        expect(document.getElementById('email')).toBeNull();
+        expect(
+            document.querySelector('[data-slot="auth-separator"]'),
+        ).toBeNull();
+        expect(screen.queryByRole('button')).toBeNull();
+    });
 });

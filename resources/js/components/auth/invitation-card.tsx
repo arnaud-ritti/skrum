@@ -38,6 +38,8 @@ export type InvitationProps = {
     isLoggedIn?: boolean;
     emailMatches?: boolean;
     canRegister?: boolean;
+    /** Only single sign-on signs in: no account form, no link to the password page. */
+    ssoRequired?: boolean;
     ssoProviders?: SsoProviderOption[];
     inviter?: InvitationPerson | null;
     role?: InvitationRole;
@@ -91,6 +93,7 @@ export function InvitationCard({
     isLoggedIn = false,
     emailMatches = false,
     canRegister = false,
+    ssoRequired = false,
     ssoProviders = [],
     inviter = null,
     role,
@@ -265,7 +268,21 @@ export function InvitationCard({
 
             <Separator />
 
-            {state === 'logged-out' && (
+            {state === 'logged-out' && ssoRequired && (
+                <>
+                    <SsoButtons providers={ssoProviders} separator={false} />
+                    <p
+                        data-slot="invitation-sso-account"
+                        className="text-center text-sm break-words text-muted-foreground"
+                    >
+                        {t('Use the account whose address is :email.', {
+                            email,
+                        })}
+                    </p>
+                </>
+            )}
+
+            {state === 'logged-out' && !ssoRequired && (
                 <>
                     <SsoButtons providers={ssoProviders} />
 

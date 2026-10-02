@@ -1,5 +1,6 @@
 import { usePage } from '@inertiajs/react';
 import type { ReactNode } from 'react';
+import { SignInAlert } from '@/components/admin/sign-in-alert';
 import { NotificationsMenu } from '@/components/action-items/notifications-menu';
 import { NavUser } from '@/components/nav-user';
 import type { NavKey } from '@/components/skrum/app-sidebar';
@@ -41,6 +42,7 @@ export default function AppLayout({
                 />
             }
         >
+            <SignInAlert />
             {children}
         </AppFrame>
     );

@@ -57,6 +57,7 @@ class HandleInertiaRequests extends Middleware
             'signInAlert' => fn (): ?string => $request->user()?->can('manageInstance') && resolve(SignInPolicy::class)->isIgnored()
                 ? 'sso_required_ignored'
                 : null,
+            'ssoInForce' => fn (): bool => $request->user()?->can('manageInstance') === true && resolve(SignInPolicy::class)->ssoRequired(),
             'auth' => [
                 'user' => $this->user($request),
             ],

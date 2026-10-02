@@ -1,5 +1,6 @@
 import { Form, Link } from '@inertiajs/react';
 import { useRef, useState } from 'react';
+import { AdminSignInDisclosure } from '@/components/auth/admin-sign-in-disclosure';
 import { authLinkClass } from '@/components/auth/auth-link';
 import { AuthSeparator } from '@/components/auth/auth-separator';
 import { MagicLinkButton } from '@/components/auth/magic-link-request';
@@ -29,6 +30,11 @@ export type LoginFormProps = {
     ssoProviders: SsoProviderOption[];
     /** False when mail does not deliver or local credentials are closed. */
     canUseMagicLink?: boolean;
+    /**
+     * Only single sign-on signs in: the password form is folded under
+     * "Administrator sign-in", for every visitor alike.
+     */
+    ssoRequired?: boolean;
     /** Called with the address typed once the request for a link was accepted. */
     onMagicLinkSent?: (email: string) => void;
 };
@@ -39,6 +45,7 @@ export function LoginForm({
     canRegister,
     ssoProviders,
     canUseMagicLink = false,
+    ssoRequired = false,
     onMagicLinkSent,
 }: LoginFormProps) {
     const { t } = useTrans();
@@ -47,23 +54,122 @@ export function LoginForm({
     const [email, setEmail] = useState('');
     const [method, setMethod] = useState<SignInMethod>('password');
     const [addressMissing, setAddressMissing] = useState(false);
-    const hasMethodTabs = canUseMagicLink && isPhone;
+    const mayUseMagicLink = canUseMagicLink && !ssoRequired;
+    const hasMethodTabs = mayUseMagicLink && isPhone;
     const asksForLinkOnly = hasMethodTabs && method === 'magic-link';
-    const offersMagicLink = canUseMagicLink && (!isPhone || asksForLinkOnly);
+    const offersMagicLink = mayUseMagicLink && (!isPhone || asksForLinkOnly);
     const visibleStatus = status === 'magic-link-sent' ? undefined : status;
+
+    const passwordForm = (
+        <Form
+            {...store.form()}
+            resetOnSuccess={['password']}
+            className="flex min-w-0 flex-col gap-4"
+        >
+            {({ processing, errors }) => (
+                <>
+                    <TextField
+                        id="email"
+                        name="email"
+                        type="email"
+                        label={t('Work email')}
+                        required
+                        autoFocus={!ssoRequired}
+                        autoComplete="email"
+                        placeholder={t('email@example.com')}
+                        description={
+                            asksForLinkOnly
+                                ? t(
+                                      'We send you a sign-in link valid for 15 minutes.',
+                                  )
+                                : undefined
+                        }
+                        error={
+                            errors.email ??
+                            (addressMissing
+                                ? t('Enter your e-mail address first.')
+                                : undefined)
+                        }
+                        className="max-md:h-12"
+                        onChange={(event) => {
+                            setEmail(event.target.value);
+                            setAddressMissing(false);
+                        }}
+                        onKeyDown={(event) => {
+                            if (asksForLinkOnly && event.key === 'Enter') {
+                                event.preventDefault();
+                                magicLinkButton.current?.click();
+                            }
+                        }}
+                    />
+
+                    {!asksForLinkOnly && (
+                        <>
+                            <div className="relative min-w-0">
+                                <PasswordField
+                                    id="password"
+                                    name="password"
+                                    label={t('Password')}
+                                    required
+                                    autoComplete="current-password"
+                                    error={errors.password}
+                                    className="max-md:h-12"
+                                />
+                                {canResetPassword && (
+                                    <Link
+                                        href={request()}
+                                        className={`${authLinkClass} absolute top-0 right-0 text-sm/none`}
+                                    >
+                                        {t('Forgot your password?')}
+                                    </Link>
+                                )}
+                            </div>
+
+                            {!ssoRequired && (
+                                <Checkbox
+                                    id="remember"
+                                    name="remember"
+                                    label={t('Remember me')}
+                                />
+                            )}
+
+                            <LoadingButton
+                                type="submit"
+                                size="lg"
+                                className="w-full"
+                                loading={processing}
+                                data-test="login-button"
+                            >
+                                <span className="truncate">{t('Log in')}</span>
+                            </LoadingButton>
+                        </>
+                    )}
+                </>
+            )}
+        </Form>
+    );
 
     return (
         <div data-slot="login-form" className="flex min-w-0 flex-col gap-4">
             {visibleStatus && <Alert variant="success" title={visibleStatus} />}
 
             <SsoButtons providers={ssoProviders} separator={false} />
-            <PasskeySignIn
-                whenUnsupported={
-                    ssoProviders.length > 0 ? (
-                        <AuthSeparator label={t('or with your e-mail')} />
-                    ) : null
-                }
-            />
+            {ssoRequired ? (
+                <p
+                    data-slot="login-sso-only"
+                    className="text-center text-sm text-muted-foreground"
+                >
+                    {t('This instance signs in with single sign-on only.')}
+                </p>
+            ) : (
+                <PasskeySignIn
+                    whenUnsupported={
+                        ssoProviders.length > 0 ? (
+                            <AuthSeparator label={t('or with your e-mail')} />
+                        ) : null
+                    }
+                />
+            )}
 
             {hasMethodTabs && (
                 <Tabs
@@ -83,92 +189,11 @@ export function LoginForm({
                 </Tabs>
             )}
 
-            <Form
-                {...store.form()}
-                resetOnSuccess={['password']}
-                className="flex min-w-0 flex-col gap-4"
-            >
-                {({ processing, errors }) => (
-                    <>
-                        <TextField
-                            id="email"
-                            name="email"
-                            type="email"
-                            label={t('Work email')}
-                            required
-                            autoFocus
-                            autoComplete="email"
-                            placeholder={t('email@example.com')}
-                            description={
-                                asksForLinkOnly
-                                    ? t(
-                                          'We send you a sign-in link valid for 15 minutes.',
-                                      )
-                                    : undefined
-                            }
-                            error={
-                                errors.email ??
-                                (addressMissing
-                                    ? t('Enter your e-mail address first.')
-                                    : undefined)
-                            }
-                            className="max-md:h-12"
-                            onChange={(event) => {
-                                setEmail(event.target.value);
-                                setAddressMissing(false);
-                            }}
-                            onKeyDown={(event) => {
-                                if (asksForLinkOnly && event.key === 'Enter') {
-                                    event.preventDefault();
-                                    magicLinkButton.current?.click();
-                                }
-                            }}
-                        />
-
-                        {!asksForLinkOnly && (
-                            <>
-                                <div className="relative min-w-0">
-                                    <PasswordField
-                                        id="password"
-                                        name="password"
-                                        label={t('Password')}
-                                        required
-                                        autoComplete="current-password"
-                                        error={errors.password}
-                                        className="max-md:h-12"
-                                    />
-                                    {canResetPassword && (
-                                        <Link
-                                            href={request()}
-                                            className={`${authLinkClass} absolute top-0 right-0 text-sm/none`}
-                                        >
-                                            {t('Forgot your password?')}
-                                        </Link>
-                                    )}
-                                </div>
-
-                                <Checkbox
-                                    id="remember"
-                                    name="remember"
-                                    label={t('Remember me')}
-                                />
-
-                                <LoadingButton
-                                    type="submit"
-                                    size="lg"
-                                    className="w-full"
-                                    loading={processing}
-                                    data-test="login-button"
-                                >
-                                    <span className="truncate">
-                                        {t('Log in')}
-                                    </span>
-                                </LoadingButton>
-                            </>
-                        )}
-                    </>
-                )}
-            </Form>
+            {ssoRequired ? (
+                <AdminSignInDisclosure>{passwordForm}</AdminSignInDisclosure>
+            ) : (
+                passwordForm
+            )}
 
             {offersMagicLink && (
                 <div data-slot="login-magic-link" className="min-w-0">
@@ -185,7 +210,7 @@ export function LoginForm({
                 </div>
             )}
 
-            {canRegister && (
+            {canRegister && !ssoRequired && (
                 <p className="text-center text-sm text-muted-foreground">
                     {t("Don't have an account?")}{' '}
                     <Link href={register()} className={authLinkClass}>

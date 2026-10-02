@@ -14,6 +14,7 @@ type Props = Pick<
     | 'canRegister'
     | 'ssoProviders'
     | 'canUseMagicLink'
+    | 'ssoRequired'
 >;
 
 export default function Login(props: Props) {
