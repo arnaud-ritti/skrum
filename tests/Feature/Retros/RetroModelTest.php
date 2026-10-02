@@ -18,10 +18,10 @@ it('lists the enabled phases in order', function (bool $healthCheck, bool $icebr
     expect(array_map(fn (RetroPhase $phase) => $phase->value, $retro->phases()))->toBe($expected)
         ->and($retro->firstPhase()->value)->toBe($expected[0]);
 })->with([
-    'neither' => [false, false, ['writing', 'grouping', 'voting', 'discussing', 'completed']],
-    'health check' => [true, false, ['health_check', 'writing', 'grouping', 'voting', 'discussing', 'completed']],
-    'icebreaker' => [false, true, ['icebreaker', 'writing', 'grouping', 'voting', 'discussing', 'completed']],
-    'both' => [true, true, ['health_check', 'icebreaker', 'writing', 'grouping', 'voting', 'discussing', 'completed']],
+    'neither' => [false, false, ['writing', 'grouping', 'voting', 'discussing', 'actions', 'roti', 'completed']],
+    'health check' => [true, false, ['health_check', 'writing', 'grouping', 'voting', 'discussing', 'actions', 'roti', 'completed']],
+    'icebreaker' => [false, true, ['icebreaker', 'writing', 'grouping', 'voting', 'discussing', 'actions', 'roti', 'completed']],
+    'both' => [true, true, ['health_check', 'icebreaker', 'writing', 'grouping', 'voting', 'discussing', 'actions', 'roti', 'completed']],
 ]);
 
 it('moves only to neighbours among the enabled phases', function () {
@@ -42,7 +42,8 @@ it('moves only to neighbours among the enabled phases', function () {
     $retro->phase = RetroPhase::Completed;
 
     expect($retro->nextPhase())->toBeNull()
-        ->and($retro->canMoveTo(RetroPhase::Discussing))->toBeTrue();
+        ->and($retro->canMoveTo(RetroPhase::Roti))->toBeTrue()
+        ->and($retro->canMoveTo(RetroPhase::Discussing))->toBeFalse();
 });
 
 it('knows which phases are open and which hide the cards of others', function () {
@@ -51,7 +52,7 @@ it('knows which phases are open and which hide the cards of others', function ()
 
     expect(array_map(fn (RetroPhase $phase) => $phase->value, $hiding))->toBe(['health_check', 'icebreaker', 'writing'])
         ->and($open)->not->toContain(RetroPhase::Completed)
-        ->and($open)->toHaveCount(6);
+        ->and($open)->toHaveCount(8);
 });
 
 it('names members, guests and former members', function () {

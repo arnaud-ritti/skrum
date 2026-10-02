@@ -528,3 +528,86 @@ it('[P18e-02-14] creates an action item with "Create the ticket in Linear" and o
 
     expect($item->externalLinks()->count())->toBe(1);
 });
+
+it('[P18e-02-02] creates, assigns and completes an action item in the Actions phase for a guest to see live, moves the topic in discussion for both with "Next topic", and takes an item back with "Undo"', function () {
+    [$retro, $alice, , $cards] = p18eDiscussion();
+    $retro->update(['phase' => RetroPhase::Actions]);
+    $current = '[data-test="retro-topics"] > li[aria-current="true"]';
+    $order = "[...document.querySelectorAll('[data-test=\"retro-topics\"] > li')].map((topic) => topic.dataset.topicId).join(',')";
+    $panel = '[data-test="retro-action-items-panel"]';
+    $input = "{$panel} [aria-label=\"Add an action item…\"]";
+    $bar = '[data-slot="facilitator-bar"]';
+    $next = "{$bar} button:has-text(\"Next topic\")";
+
+    $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
+    $carolPage = $this->awaitRealtime($this->joinAsGuest("/join/{$retro->guest_token}", 'Carol Guest'));
+
+    foreach ([$alicePage, $carolPage] as $page) {
+        $page->assertSeeIn('[aria-current="step"]', 'Actions')
+            ->assertSee('Most voted topics')
+            ->assertScript($order, "{$cards['slow']->id},{$cards['flaky']->id},{$cards['quiet']->id}")
+            ->assertNotPresent($current)
+            ->assertNotPresent("#card-{$cards['slow']->id}")
+            ->assertSeeIn($panel, 'Retro actions')
+            ->assertSeeIn($panel, 'No action items yet.');
+    }
+
+    $carolPage->assertNotPresent($bar);
+
+    $alicePage->assertSeeIn($bar, 'Next phase')
+        ->fill($input, 'Quarantine the flaky tests')
+        ->click("{$panel} form [aria-label=\"Assignee\"]")
+        ->click('[role="option"]:has-text("Bob Stone")')
+        ->assertNotPresent('[role="listbox"]')
+        ->keys($input, 'Enter')
+        ->assertSee('Action created')
+        ->assertSeeIn($panel, 'Quarantine the flaky tests');
+
+    $item = ActionItem::query()->where('content', 'Quarantine the flaky tests')->sole();
+    $row = "#action-item-{$item->id}";
+
+    expect($item->assignee_user_id)->not->toBeNull();
+
+    $carolPage->assertSeeIn($row, 'Quarantine the flaky tests')
+        ->assertSeeIn($row, 'Bob Stone')
+        ->assertPresent("{$row} [aria-label=\"Mark as done\"]");
+
+    $alicePage->click("{$row} [aria-label=\"Mark as done\"]")
+        ->assertPresent("{$row} [aria-label=\"Reopen\"]");
+
+    $carolPage->assertPresent("{$row} [aria-label=\"Reopen\"]");
+
+    expect($item->fresh()->completed_at)->not->toBeNull();
+
+    $alicePage->click($next);
+
+    foreach ([$alicePage, $carolPage] as $page) {
+        $page->assertSeeIn($current, 'Slow CI')
+            ->assertSeeIn($current, 'In discussion');
+    }
+
+    $alicePage->click($next);
+
+    foreach ([$alicePage, $carolPage] as $page) {
+        $page->assertSeeIn($current, 'Flaky tests')
+            ->assertCount($current, 1);
+    }
+
+    expect($retro->fresh()->highlighted_card_id)->toBe($cards['flaky']->id);
+
+    $alicePage->fill($input, 'Buy a faster runner')
+        ->keys($input, 'Enter')
+        ->assertSeeIn($panel, 'Buy a faster runner');
+
+    $carolPage->assertSeeIn($panel, 'Buy a faster runner');
+
+    $alicePage->click('[data-sonner-toast] button:has-text("Undo") >> nth=0')
+        ->assertDontSeeIn($panel, 'Buy a faster runner')
+        ->assertNotPresent('[role="alertdialog"]');
+
+    $carolPage->assertDontSeeIn($panel, 'Buy a faster runner')
+        ->assertSeeIn($panel, 'Quarantine the flaky tests');
+
+    expect(ActionItem::query()->where('content', 'Buy a faster runner')->exists())->toBeFalse()
+        ->and(ActionItem::query()->where('retro_id', $retro->id)->count())->toBe(1);
+});

@@ -17,6 +17,27 @@ it('allows listed phases and refuses others with a translated message', function
         ->toThrow(AuthorizationException::class, 'This action is not available in the current phase.');
 });
 
+it('takes action items from discussing to the roti phase', function (RetroPhase $phase, bool $allowed) {
+    $retro = Retro::factory()->inPhase($phase)->make();
+
+    if ($allowed) {
+        RetroGuard::takesActionItems($retro);
+    }
+
+    if (! $allowed) {
+        expect(fn () => RetroGuard::takesActionItems($retro))
+            ->toThrow(AuthorizationException::class, 'This action is not available in the current phase.');
+    }
+
+    expect($phase->takesActionItems())->toBe($allowed);
+})->with([
+    'voting' => [RetroPhase::Voting, false],
+    'discussing' => [RetroPhase::Discussing, true],
+    'actions' => [RetroPhase::Actions, true],
+    'roti' => [RetroPhase::Roti, true],
+    'completed' => [RetroPhase::Completed, false],
+]);
+
 it('allows only the facilitator', function () {
     $retro = Retro::factory()->create();
     [, $facilitator] = retroFacilitator($retro);

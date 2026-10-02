@@ -118,6 +118,32 @@ describe('facilitatorActions', () => {
         expect(topics.onFollow).toHaveBeenCalledWith(false);
     });
 
+    it('offers "Next topic" alone in Actions, where the topic in focus is the one of everyone', () => {
+        const topics = {
+            canPrevious: true,
+            canNext: true,
+            onStep: vi.fn(),
+            onFollow: vi.fn(),
+        };
+        const [next, ...rest] = facilitatorActions(
+            'actions',
+            retroSnapshot({ retro: { phase: 'actions' } }),
+            { ...tools(), topics },
+        );
+
+        expect(rest).toEqual([]);
+        expect(next).toMatchObject({ id: 'next-topic', label: 'Next topic' });
+
+        next.onSelect();
+
+        expect(topics.onStep).toHaveBeenCalledWith(1);
+        expect(ids('actions')).toEqual([]);
+    });
+
+    it('keeps the lock in ROTI', () => {
+        expect(ids('roti')).toEqual(['lock']);
+    });
+
     it('has nothing once the retro is completed', () => {
         expect(ids('completed')).toEqual([]);
     });
@@ -168,11 +194,39 @@ describe('facilitatorPrimary', () => {
         expect(given.onPhase).toHaveBeenCalledWith('grouping');
     });
 
+    it('says "Next phase" in Actions, and leads to the ROTI', () => {
+        const given = tools();
+        const primary = facilitatorPrimary(
+            'actions',
+            retroSnapshot({ retro: { phase: 'actions' } }),
+            given,
+        );
+
+        expect(primary).toMatchObject({
+            id: 'next-phase',
+            label: 'Next phase',
+        });
+
+        primary?.onSelect();
+
+        expect(given.onPhase).toHaveBeenCalledWith('roti');
+    });
+
+    it('names Actions as the phase after Discussing', () => {
+        expect(
+            facilitatorPrimary(
+                'discussing',
+                retroSnapshot({ retro: { phase: 'discussing' } }),
+                tools(),
+            ),
+        ).toMatchObject({ id: 'next-phase', label: 'Actions' });
+    });
+
     it('ends the session from the last phase', () => {
         const given = tools();
         const primary = facilitatorPrimary(
-            'discussing',
-            retroSnapshot({ retro: { phase: 'discussing' } }),
+            'roti',
+            retroSnapshot({ retro: { phase: 'roti' } }),
             given,
         );
 

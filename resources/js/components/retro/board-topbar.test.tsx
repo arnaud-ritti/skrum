@@ -67,7 +67,14 @@ describe('BoardPhases', () => {
             ...rail.querySelectorAll('[data-slot="phase-step"]'),
         ].map((step) => step.querySelector('.truncate')?.textContent);
 
-        expect(steps).toEqual(['Writing', 'Grouping', 'Voting', 'Discussing']);
+        expect(steps).toEqual([
+            'Writing',
+            'Grouping',
+            'Voting',
+            'Discussing',
+            'Actions',
+            'ROTI',
+        ]);
         expect(
             rail.querySelector('[aria-current="step"]')?.textContent,
         ).toContain('Writing');
@@ -90,7 +97,7 @@ describe('BoardPhases', () => {
     it('completes from the last phase and reopens on it', () => {
         const last = renderInBoard(
             <BoardPhases />,
-            boardContext(retroSnapshot({ retro: { phase: 'discussing' } })),
+            boardContext(retroSnapshot({ retro: { phase: 'roti' } })),
         );
 
         fireEvent.click(screen.getByRole('button', { name: 'Complete' }));
@@ -109,7 +116,7 @@ describe('BoardPhases', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Reopen' }));
 
         expect(retroRequest).toHaveBeenLastCalledWith(expect.anything(), {
-            phase: 'discussing',
+            phase: 'roti',
         });
         expect(
             document.querySelector('[aria-current="step"]')?.textContent,

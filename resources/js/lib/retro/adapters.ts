@@ -35,6 +35,7 @@ export const GroupNamingPhases: RetroPhase[] = [
     'grouping',
     'voting',
     'discussing',
+    'actions',
 ];
 
 /** Phases in which a card takes reactions and comments. */
@@ -42,6 +43,15 @@ export const CardEngagementPhases: RetroPhase[] = [
     'grouping',
     'voting',
     'discussing',
+    'actions',
+];
+
+/** Phases in which the vote total of a card shows to everyone. */
+export const VoteTotalPhases: RetroPhase[] = [
+    'discussing',
+    'actions',
+    'roti',
+    'completed',
 ];
 
 export const CardMaxLength = 1000;

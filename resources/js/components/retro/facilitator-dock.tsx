@@ -125,6 +125,21 @@ export function facilitatorActions(
         ];
     }
 
+    if (phase === 'actions') {
+        // The topic in focus is the highlighted card: a move takes everyone.
+        return topics
+            ? [
+                  {
+                      id: 'next-topic',
+                      label: t('Next topic'),
+                      icon: SkipForward,
+                      disabled: !topics.canNext,
+                      onSelect: () => topics.onStep(1),
+                  },
+              ]
+            : [];
+    }
+
     return [lock];
 }
 
@@ -152,7 +167,9 @@ export function facilitatorPrimary(
 
     return {
         id: 'next-phase',
-        label: t(PhaseLabels[target]),
+        // Actions says "Next phase" (ruling 26): the mockup closes the retro
+        // from here, and the retro still has its ROTI to go through.
+        label: phase === 'actions' ? t('Next phase') : t(PhaseLabels[target]),
         icon: ArrowRight,
         iconPosition: 'end',
         disabled: busy,
@@ -279,17 +296,22 @@ export function FacilitatorDock({ start }: { start?: ReactNode }) {
         discussion?.topics.findIndex(
             (topic) => topic.id === discussion.current?.id,
         ) ?? -1;
+    const topicCount = discussion?.topics.length ?? 0;
 
     const tools: FacilitatorTools = {
         t,
         busy,
         topics:
-            discussion && phase === 'discussing'
+            discussion && (phase === 'discussing' || phase === 'actions')
                 ? {
                       canPrevious: topicIndex > 0,
+                      // In Actions no topic may be in focus yet: "Next
+                      // topic" then opens on the first.
                       canNext:
-                          topicIndex !== -1 &&
-                          topicIndex < discussion.topics.length - 1,
+                          !discussion.busy &&
+                          (topicIndex === -1
+                              ? phase === 'actions' && topicCount > 0
+                              : topicIndex < topicCount - 1),
                       onStep: discussion.step,
                       onFollow: discussion.setFollows,
                   }

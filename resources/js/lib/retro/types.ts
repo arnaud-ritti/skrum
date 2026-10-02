@@ -19,6 +19,8 @@ export type RetroPhase =
     | 'grouping'
     | 'voting'
     | 'discussing'
+    | 'actions'
+    | 'roti'
     | 'completed';
 export type ColumnColor =
     | 'sun'

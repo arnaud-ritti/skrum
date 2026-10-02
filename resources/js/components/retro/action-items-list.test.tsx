@@ -1,4 +1,5 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { toast } from 'sonner';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
     ActionItemsList,
@@ -13,6 +14,11 @@ const retroRequest = vi.hoisted(() => vi.fn());
 vi.mock('@/lib/retro/api', async (importOriginal) => ({
     ...(await importOriginal<typeof import('@/lib/retro/api')>()),
     retroRequest,
+}));
+
+vi.mock('sonner', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('sonner')>()),
+    toast: { success: vi.fn(), error: vi.fn() },
 }));
 
 vi.mock('@inertiajs/react', async (importOriginal) => ({
@@ -83,6 +89,7 @@ beforeAll(() => {
 beforeEach(() => {
     retroRequest.mockReset();
     retroRequest.mockResolvedValue(null);
+    vi.mocked(toast.success).mockReset();
 });
 
 describe('boardOwnerOptions', () => {
@@ -162,6 +169,52 @@ describe('ActionItemsList', () => {
             assignee_user_id: null,
             assignee_participant_id: null,
         });
+    });
+
+    it('rings the item just created in the card of the Actions phase, and no other', async () => {
+        const created = actionItemFixture({ id: 'new', content: 'New one' });
+        retroRequest.mockResolvedValue({ actionItem: created });
+
+        const { container } = renderInBoard(
+            <ActionItemsList variant="phase" />,
+            boardContext(
+                retroSnapshot({
+                    ...people,
+                    actionItems: [actionItemFixture(), created],
+                    retro: { phase: 'actions' },
+                }),
+            ),
+        );
+        const field = screen.getByLabelText('Add an action item…');
+
+        fireEvent.change(field, { target: { value: 'New one' } });
+        fireEvent.submit(field.closest('form') as HTMLFormElement);
+
+        await waitFor(() =>
+            expect(
+                container.querySelector('#action-item-new')?.className,
+            ).toContain('ring-skrum-success'),
+        );
+        expect(
+            container.querySelector('#action-item-item-1')?.className,
+        ).not.toContain('ring-skrum-success');
+    });
+
+    it('says nothing after a creation in the panel of the discussion', async () => {
+        const created = actionItemFixture({ id: 'new' });
+        retroRequest.mockResolvedValue({ actionItem: created });
+
+        const { ctx, container } = list({ actionItems: [created] });
+        const field = screen.getByLabelText('Add an action item…');
+
+        fireEvent.change(field, { target: { value: 'New one' } });
+        fireEvent.submit(field.closest('form') as HTMLFormElement);
+
+        await waitFor(() => expect(ctx.apply).toHaveBeenCalled());
+        expect(toast.success).not.toHaveBeenCalled();
+        expect(
+            container.querySelector('#action-item-new')?.className,
+        ).not.toContain('ring-skrum-success');
     });
 
     it('closes the form with "Create an action" and with Cancel', () => {

@@ -371,16 +371,32 @@ it('[P04-07] follows the facilitator through every phase, a reopen and a second 
         ->assertNotPresent('[aria-label="Add a vote"]')
         ->assertPresent('[aria-label="Add an action item…"]');
 
+    $alicePage->press('Next')->assertSeeIn($current, 'Actions');
+    $bobPage->assertSeeIn($current, 'Actions')
+        ->assertSee('Most voted topics')
+        ->assertSeeIn('[data-test="retro-topics"]', 'Pair on reviews')
+        ->assertPresent('[data-test="retro-action-items-panel"] [aria-label="Add an action item…"]');
+
+    $alicePage->press('Next')->assertSeeIn($current, 'ROTI');
+    $bobPage->assertSeeIn($current, 'ROTI')
+        ->assertNotPresent('[aria-label="Add an action item…"]');
+
     $alicePage->press('Complete')->assertSeeIn($current, 'Completed');
     $bobPage->assertSeeIn($current, 'Completed')
         ->assertSee('Top topics')
         ->assertNotPresent('[aria-label="Add an action item…"]');
     expect($retro->fresh()->completed_at)->not->toBeNull();
 
-    $alicePage->press('Reopen')->assertSeeIn($current, 'Discussing');
-    $bobPage->assertSeeIn($current, 'Discussing')
-        ->assertPresent('[aria-label="Add an action item…"]');
+    $alicePage->press('Reopen')->assertSeeIn($current, 'ROTI');
+    $bobPage->assertSeeIn($current, 'ROTI')
+        ->assertDontSee('Top topics');
     expect($retro->fresh()->completed_at)->toBeNull();
+
+    $alicePage->press('Previous')->assertSeeIn($current, 'Actions');
+    $bobPage->assertSeeIn($current, 'Actions')
+        ->assertPresent('[aria-label="Add an action item…"]');
+
+    $alicePage->press('Next')->assertSeeIn($current, 'ROTI');
 
     $alicePage->press('Complete')->assertSeeIn($current, 'Completed');
     $bobPage->assertSeeIn($current, 'Completed')->assertSee('Top topics');

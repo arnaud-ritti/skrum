@@ -5,9 +5,9 @@ import { useBoard } from './board-context';
 
 /**
  * During Voting a named pointer on a vote button would reveal who votes
- * where, so no cursor is sent or shown.
+ * where, and during ROTI who gives which score: no cursor is sent or shown.
  */
-const CursorlessPhases = ['voting', 'completed'];
+const CursorlessPhases = ['voting', 'roti', 'completed'];
 
 export function showsRetroCursors(retro: {
     cursorsEnabled: boolean;

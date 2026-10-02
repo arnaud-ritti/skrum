@@ -614,7 +614,11 @@ it('[P08c-07] closes every survey when the retro is completed and keeps them clo
     $carolPage->assertCount('section[aria-label="Surveys"] article', 3)
         ->assertDontSeeIn($single, 'Closed');
 
-    $alicePage->press('Complete')
+    $alicePage->press('Next')
+        ->assertSeeIn('[aria-current="step"]', 'Actions')
+        ->press('Next')
+        ->assertSeeIn('[aria-current="step"]', 'ROTI')
+        ->press('Complete')
         ->assertSeeIn('[aria-current="step"]', 'Completed');
 
     foreach ([$alicePage, $carolPage] as $page) {
@@ -630,6 +634,10 @@ it('[P08c-07] closes every survey when the retro is completed and keeps them clo
     expect($retro->surveys()->where('is_closed', false)->count())->toBe(0);
 
     $alicePage->press('Reopen')
+        ->assertSeeIn('[aria-current="step"]', 'ROTI')
+        ->press('Previous')
+        ->assertSeeIn('[aria-current="step"]', 'Actions')
+        ->press('Previous')
         ->assertSeeIn('[aria-current="step"]', 'Discussing');
 
     foreach ([$alicePage, $carolPage] as $page) {

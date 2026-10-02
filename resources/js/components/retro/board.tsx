@@ -5,7 +5,7 @@ import { SessionShell } from '@/components/session/session-shell';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useRetroBoard } from '@/hooks/use-retro-board';
 import { realtimeState } from '@/lib/realtime/realtime-state';
-import type { Snapshot } from '@/lib/retro/types';
+import type { RetroPhase, Snapshot } from '@/lib/retro/types';
 import { cn } from '@/lib/utils';
 import {
     BoardProvider,
@@ -20,7 +20,7 @@ import {
     BoardTimer,
     BoardTitle,
 } from './board-topbar';
-import { CarriedActionItemsPanel } from './carried-action-items-panel';
+import { CarriedItemsSheet } from './carried-items-sheet';
 import { ColumnsBoard } from './columns-board';
 import { FacilitatorDock } from './facilitator-dock';
 import { GroupNameSuggestionsProvider, SuggestGroupNames } from './board-group';
@@ -30,6 +30,7 @@ import {
     PhaseDiscussing,
     PresentationOverlay,
 } from './phase-discussing';
+import { PhaseActions } from './phase-actions';
 import { PhaseHealth } from './phase-health';
 import {
     CompletedPanelId,
@@ -41,8 +42,15 @@ import { ResultsView } from './results/results-view';
 import { AddSurveyButton } from './surveys-column';
 
 /**
+ * Grouping has its own banner for the suggestions; in Actions the groups are
+ * no longer on screen.
+ */
+const WithoutGroupNameTool: RetroPhase[] = ['grouping', 'actions'];
+
+/**
  * What the old board header held beside the chrome, until the task of each
- * phase gives it its place: carried action items (R10), "Add survey" (S1).
+ * phase gives it its place: "Add survey" (S1). The carried action items
+ * have no mockup: their button stays here on every phase.
  * Group name suggestions outside Grouping stay here: Voting and Discussing
  * have no banner of their own for them.
  */
@@ -54,8 +62,10 @@ function PhaseTools() {
             data-slot="retro-phase-tools"
             className="flex flex-wrap items-center gap-3 px-4 pt-3 empty:hidden"
         >
-            <CarriedActionItemsPanel />
-            {board.retro.phase !== 'grouping' && <SuggestGroupNames />}
+            <CarriedItemsSheet />
+            {!WithoutGroupNameTool.includes(board.retro.phase) && (
+                <SuggestGroupNames />
+            )}
             <AddSurveyButton />
         </div>
     );
@@ -98,6 +108,10 @@ function BoardBody({ hideMyCursor }: { hideMyCursor: boolean }) {
 
     if (phase === 'discussing') {
         return <PhaseDiscussing hideMyCursor={hideMyCursor} />;
+    }
+
+    if (phase === 'actions') {
+        return <PhaseActions hideMyCursor={hideMyCursor} />;
     }
 
     return (

@@ -8,6 +8,8 @@ export const PhaseLabels: Record<RetroPhase, string> = {
     grouping: 'Grouping',
     voting: 'Voting',
     discussing: 'Discussing',
+    actions: 'Actions',
+    roti: 'ROTI',
     completed: 'Completed',
 };
 

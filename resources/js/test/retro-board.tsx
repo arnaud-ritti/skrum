@@ -30,6 +30,8 @@ export function retroSnapshot({
                 'grouping',
                 'voting',
                 'discussing',
+                'actions',
+                'roti',
                 'completed',
             ],
             healthCheckEnabled: false,

@@ -121,7 +121,7 @@ function p18eRetroVisualBoard(RetroPhase $phase, bool $icebreakerRound = false):
         }
     }
 
-    if (in_array($phase, [RetroPhase::Grouping, RetroPhase::Voting, RetroPhase::Discussing], true)) {
+    if (in_array($phase, [RetroPhase::Grouping, RetroPhase::Voting, RetroPhase::Discussing, RetroPhase::Actions], true)) {
         $groups = [
             ['Went well', 'Client demo', 'The client signed off the flow without a single change.'],
             ['To improve', null, 'Requirements keep moving while we build.'],
@@ -161,7 +161,7 @@ function p18eRetroVisualBoard(RetroPhase $phase, bool $icebreakerRound = false):
         ]);
     }
 
-    if (in_array($phase, [RetroPhase::Voting, RetroPhase::Discussing], true)) {
+    if (in_array($phase, [RetroPhase::Voting, RetroPhase::Discussing, RetroPhase::Actions], true)) {
         $votes = [
             ['The client demo%', $people[0][1], 1],
             ['We discover scope changes%', $people[0][1], 2],
@@ -180,7 +180,7 @@ function p18eRetroVisualBoard(RetroPhase $phase, bool $icebreakerRound = false):
         }
     }
 
-    if ($phase === RetroPhase::Discussing) {
+    if ($phase->showsTopics()) {
         $actionItems = [
             ['Share the sprint backlog in #atlas-product every Monday', $people[0], ['assignee_user_id' => $people[1][0]->id, 'due_on' => '2031-10-14']],
             ['Apply a “one in, one out” rule to mid-sprint additions', $people[1], ['priority' => ActionItemPriority::High]],
@@ -194,6 +194,26 @@ function p18eRetroVisualBoard(RetroPhase $phase, bool $icebreakerRound = false):
                 ...$attributes,
             ]);
         }
+    }
+
+    if ($phase === RetroPhase::Actions) {
+        $topic = Card::query()->where('retro_id', $retro->id)->where('content', 'like', 'We discover scope changes%')->sole();
+        $retro->update(['highlighted_card_id' => $topic->id]);
+
+        $earlier = Retro::factory()->inPhase(RetroPhase::Completed)->create([
+            'id' => '0199b000-0000-7000-8000-000000000002',
+            'team_id' => $team->id,
+            'title' => 'Sprint 41 retro',
+            'created_at' => '2026-09-18 10:00:00',
+            'completed_at' => '2026-09-18 11:00:00',
+        ]);
+
+        ActionItem::factory()->create([
+            'retro_id' => $earlier->id,
+            'content' => 'Review the definition of ready with the product owner',
+            'assignee_user_id' => $people[0][0]->id,
+            'due_on' => '2026-09-29',
+        ]);
     }
 
     if ($phase === RetroPhase::HealthCheck) {
@@ -292,5 +312,7 @@ it('[P18e-R3-01] renders the board in its session shell without overflow', funct
     'participant, voting, locked' => ['retro-board-participant', RetroPhase::Voting, false, true],
     'facilitator, discussing' => ['retro-board-discussing', RetroPhase::Discussing, true, false],
     'participant, discussing, locked' => ['retro-board-discussing-locked', RetroPhase::Discussing, false, true],
+    'facilitator, actions' => ['retro-board-actions', RetroPhase::Actions, true, false],
+    'participant, actions, locked' => ['retro-board-actions-locked', RetroPhase::Actions, false, true],
     'facilitator, completed' => ['retro-board-completed', RetroPhase::Completed, true, false],
 ]);

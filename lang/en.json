@@ -3748,5 +3748,12 @@
     "The facilitator": "The facilitator",
     "Back to the topic": "Back to the topic",
     "No topics to discuss.": "No topics to discuss.",
-    "Nobody wrote a card in this retro.": "Nobody wrote a card in this retro."
+    "Nobody wrote a card in this retro.": "Nobody wrote a card in this retro.",
+    "Most voted topics": "Most voted topics",
+    "Sorted by votes": "Sorted by votes",
+    "In discussion": "In discussion",
+    "Retro actions": "Retro actions",
+    "Give each action an owner and a due date. They stay visible on the action items page of the team.": "Give each action an owner and a due date. They stay visible on the action items page of the team.",
+    "Quick add": "Quick add",
+    "Action created": "Action created"
 }

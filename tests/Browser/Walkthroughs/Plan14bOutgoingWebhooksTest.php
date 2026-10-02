@@ -404,6 +404,10 @@ it('[P14b-03c] sends retro.completed with the recap and hides who took part in a
     $page = $this->awaitRealtime($this->signIn($admin, "/retros/{$retro->id}"));
 
     $page->assertSeeIn('[aria-current="step"]', 'Discussing')
+        ->press('Next')
+        ->assertSeeIn('[aria-current="step"]', 'Actions')
+        ->press('Next')
+        ->assertSeeIn('[aria-current="step"]', 'ROTI')
         ->press('Complete')
         ->assertSeeIn('[aria-current="step"]', 'Completed');
 

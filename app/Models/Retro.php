@@ -93,7 +93,7 @@ class Retro extends Model implements DeliverySubject
 
     public function showsVoteTotals(): bool
     {
-        if (in_array($this->phase, [RetroPhase::Discussing, RetroPhase::Completed], true)) {
+        if (in_array($this->phase, [RetroPhase::Discussing, RetroPhase::Actions, RetroPhase::Roti, RetroPhase::Completed], true)) {
             return true;
         }
 

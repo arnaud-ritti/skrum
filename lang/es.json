@@ -3972,5 +3972,12 @@
     "The facilitator": "El facilitador",
     "Back to the topic": "Volver al tema",
     "No topics to discuss.": "No hay temas que tratar.",
-    "Nobody wrote a card in this retro.": "Nadie ha escrito una tarjeta en esta retro."
+    "Nobody wrote a card in this retro.": "Nadie ha escrito una tarjeta en esta retro.",
+    "Most voted topics": "Temas más votados",
+    "Sorted by votes": "Ordenados por votos",
+    "In discussion": "En discusión",
+    "Retro actions": "Acciones de la retro",
+    "Give each action an owner and a due date. They stay visible on the action items page of the team.": "Asigna a cada acción un responsable y una fecha límite. Siguen visibles en la página de acciones del equipo.",
+    "Quick add": "Añadido rápido",
+    "Action created": "Acción creada"
 }

@@ -1,35 +1,25 @@
 import { usePage } from '@inertiajs/react';
 import { Plus } from 'lucide-react';
 import { useId, useMemo, useState } from 'react';
+import { toast } from 'sonner';
 import type { ReactNode } from 'react';
 import ActionItemsController from '@/actions/App/Http/Controllers/Retros/ActionItemsController';
-import {
-    newItemToPayload,
-    toActionItemData,
-} from '@/components/action-items/action-item-adapters';
+import { newItemToPayload } from '@/components/action-items/action-item-adapters';
 import type { NewActionItem } from '@/components/action-items/action-item-adapters';
-import { ItemComments } from '@/components/action-items/item-comments';
 import { ItemCreateForm } from '@/components/action-items/item-create-form';
 import { ItemDeleteConfirm } from '@/components/action-items/item-delete-confirm';
-import {
-    ItemExport,
-    ItemExportDialog,
-} from '@/components/action-items/item-export';
+import { ItemExportDialog } from '@/components/action-items/item-export';
 import type { IntegrationScope } from '@/components/action-items/item-export';
-import { ItemSubtasks } from '@/components/action-items/item-subtasks';
 import {
     ActionItemMutationsContext,
     useActionItemMutations,
 } from '@/components/action-items/use-action-item-mutations';
-import { ActionItem } from '@/components/skrum/action-item';
 import type { ActionItemOwner } from '@/components/skrum/action-item';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useTrans } from '@/hooks/use-trans';
 import { boardActionItemEndpoints } from '@/lib/action-items/endpoints';
-import {
-    boardActionItemViewer,
-    canManageActionItem,
-} from '@/lib/action-items/permissions';
+import { boardActionItemViewer } from '@/lib/action-items/permissions';
 import { retroRequest } from '@/lib/retro/api';
 import type {
     ActionItem as ActionItemPayload,
@@ -37,6 +27,7 @@ import type {
 } from '@/lib/retro/types';
 import { cn } from '@/lib/utils';
 import type { ExportSource } from '@/types/integrations';
+import { ActionItemRows } from './action-item-rows';
 import { useBoard } from './board-context';
 
 /**
@@ -82,22 +73,40 @@ export function boardOwnerOptions(
 type Props = {
     /** What a new item is attached to, such as the topic in focus (RT-8). */
     linkedTo?: ReactNode;
+    /**
+     * `phase` is the card of the Actions phase: the count, what the list is
+     * for, the form first and always open, "Action created" with its Undo.
+     */
+    variant?: 'panel' | 'phase';
+    /** Place of what acts on the whole list, such as "Export to Jira" (RT-10). */
+    headerActions?: ReactNode;
+    /** Place of the topic an item belongs to (RT-8). */
+    itemMeta?: (item: ActionItemPayload) => ReactNode;
+    /** Items listed with those of the retro and counted with them. */
+    more?: { count: number; node: ReactNode };
     className?: string;
 };
 
 /** The action items of the retro, with the form that creates one. */
-export function ActionItemsList({ linkedTo, className }: Props) {
+export function ActionItemsList({
+    linkedTo,
+    variant = 'panel',
+    headerActions,
+    itemMeta,
+    more,
+    className,
+}: Props) {
     const ctx = useBoard();
     const { t } = useTrans();
     const { locale } = usePage().props;
     const { board } = ctx;
     const retroId = board.retro.id;
+    const isPhase = variant === 'phase';
     // Named by its heading: the suite finds the panel as the one aside
     // without an `aria-label`.
     const titleId = useId();
     const [creating, setCreating] = useState(true);
-    const [editingId, setEditingId] = useState<string | null>(null);
-    const [openComments, setOpenComments] = useState<Set<string>>(new Set());
+    const [createdId, setCreatedId] = useState<string | null>(null);
     const [deleting, setDeleting] = useState<ActionItemPayload | null>(null);
     const [ticket, setTicket] = useState<{
         item: ActionItemPayload;
@@ -152,170 +161,151 @@ export function ActionItemsList({ linkedTo, className }: Props) {
             return false;
         }
 
-        ctx.apply({
-            type: 'actionItem.upsert',
-            actionItem: response.actionItem,
-        });
+        const { actionItem } = response;
 
-        return response.actionItem;
+        ctx.apply({ type: 'actionItem.upsert', actionItem });
+
+        if (isPhase) {
+            setCreatedId(actionItem.id);
+            // The toast is the opposite of a confirmation: for a few
+            // seconds, one press takes the item back.
+            toast.success(t('Action created'), {
+                description: actionItem.assignee?.name,
+                action: {
+                    label: t('Undo'),
+                    onClick: () => void mutations.remove(actionItem),
+                },
+            });
+        }
+
+        return actionItem;
     };
-
-    const toggleComments = (itemId: string): void =>
-        setOpenComments((current) => {
-            const next = new Set(current);
-
-            if (!next.delete(itemId)) {
-                next.add(itemId);
-            }
-
-            return next;
-        });
 
     const ticketItem =
         ticket === null
             ? null
             : (board.actionItems.find((item) => item.id === ticket.item.id) ??
               ticket.item);
+    const count = board.actionItems.length + (more?.count ?? 0);
+
+    const form = (isPhase || creating) && (
+        <ItemCreateForm
+            members={members}
+            disabled={!editable}
+            showAnonymousNotice={board.retro.isAnonymous}
+            linkedTo={
+                isPhase ? (
+                    <>
+                        <span className="truncate">{t('Quick add')}</span>
+                        {linkedTo}
+                    </>
+                ) : (
+                    linkedTo
+                )
+            }
+            exportSources={scope === null ? [] : board.exportSources}
+            onCreate={create}
+            onCreatedWithTicket={(item, source) => setTicket({ item, source })}
+            onCancel={isPhase ? undefined : () => setCreating(false)}
+        />
+    );
+
+    const items =
+        count === 0 ? (
+            <p className="text-body-sm text-muted-foreground">
+                {t('No action items yet.')}
+            </p>
+        ) : (
+            <>
+                {board.actionItems.length > 0 && (
+                    <ActionItemRows
+                        items={board.actionItems}
+                        endpoints={endpoints}
+                        mutations={mutations}
+                        viewer={viewer}
+                        editable={editable}
+                        members={members}
+                        scope={scope}
+                        exportSources={board.exportSources}
+                        locale={locale}
+                        showAnonymousNotice={board.retro.isAnonymous}
+                        sourceLabel={null}
+                        idFor={(item) => `action-item-${item.id}`}
+                        classNameFor={(item) =>
+                            item.id === createdId
+                                ? 'ring-2 ring-skrum-success'
+                                : undefined
+                        }
+                        metaFor={itemMeta}
+                        onDelete={setDeleting}
+                    />
+                )}
+                {more?.node}
+            </>
+        );
 
     return (
         <aside
             data-test="retro-action-items-panel"
+            data-variant={variant}
             aria-labelledby={titleId}
             className={cn(
                 'flex min-w-0 flex-col gap-3 rounded-xl border bg-card p-3 shadow-card',
+                isPhase && 'gap-4 p-4 md:p-6',
                 className,
             )}
         >
-            <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
-                <h2
-                    id={titleId}
-                    className="min-w-0 truncate text-base font-title"
-                >
-                    {t('Action items')}
-                </h2>
-                <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    aria-expanded={creating}
-                    className={cn(
-                        'max-w-full min-w-0',
-                        creating &&
-                            'border-primary/45 bg-skrum-primary-soft text-skrum-primary-text hover:bg-skrum-primary-soft',
+            <div className="flex min-w-0 flex-col gap-1">
+                <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
+                    <h2
+                        id={titleId}
+                        className={cn(
+                            'flex min-w-0 items-center gap-2 text-base font-title',
+                            isPhase && 'text-lg',
+                        )}
+                    >
+                        <span className="truncate">
+                            {isPhase ? t('Retro actions') : t('Action items')}
+                        </span>
+                        {isPhase && (
+                            <Badge variant="muted" shape="pill">
+                                {count}
+                            </Badge>
+                        )}
+                    </h2>
+                    {headerActions}
+                    {!isPhase && (
+                        <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            aria-expanded={creating}
+                            className={cn(
+                                'max-w-full min-w-0',
+                                creating &&
+                                    'border-primary/45 bg-skrum-primary-soft text-skrum-primary-text hover:bg-skrum-primary-soft',
+                            )}
+                            onClick={() => setCreating((current) => !current)}
+                        >
+                            <Plus aria-hidden />
+                            <span className="truncate">
+                                {t('Create an action')}
+                            </span>
+                        </Button>
                     )}
-                    onClick={() => setCreating((current) => !current)}
-                >
-                    <Plus aria-hidden />
-                    <span className="truncate">{t('Create an action')}</span>
-                </Button>
+                </div>
+                {isPhase && (
+                    <p className="text-body-sm text-muted-foreground">
+                        {t(
+                            'Give each action an owner and a due date. They stay visible on the action items page of the team.',
+                        )}
+                    </p>
+                )}
             </div>
             <ActionItemMutationsContext value={mutations.value}>
-                {board.actionItems.length === 0 ? (
-                    <p className="text-body-sm text-muted-foreground">
-                        {t('No action items yet.')}
-                    </p>
-                ) : (
-                    <div role="list" className="flex min-w-0 flex-col gap-2">
-                        {board.actionItems.map((item) => {
-                            const { canComplete, ...data } = toActionItemData(
-                                item,
-                                { locale, viewer, sourceLabel: null },
-                            );
-                            const manages =
-                                editable && canManageActionItem(item, viewer);
-                            const completes = editable && canComplete;
-
-                            return (
-                                <ActionItem
-                                    key={item.id}
-                                    id={`action-item-${item.id}`}
-                                    {...data}
-                                    showOwnerName
-                                    canComplete={completes}
-                                    busy={mutations.busyId === item.id}
-                                    editing={manages && editingId === item.id}
-                                    commentsOpen={openComments.has(item.id)}
-                                    onToggleComments={() =>
-                                        toggleComments(item.id)
-                                    }
-                                    comments={
-                                        <ItemComments
-                                            item={item}
-                                            endpoints={endpoints}
-                                            revision={
-                                                item.commentsRevision ?? 0
-                                            }
-                                            viewer={viewer}
-                                            canWrite={editable}
-                                            showAnonymousNotice={
-                                                board.retro.isAnonymous
-                                            }
-                                        />
-                                    }
-                                    onStatusChange={(status) =>
-                                        void mutations.setStatus(
-                                            item,
-                                            status === 'completed'
-                                                ? 'completed'
-                                                : 'open',
-                                        )
-                                    }
-                                    {...(manages && {
-                                        members,
-                                        onEditStart: () =>
-                                            setEditingId(item.id),
-                                        onEditCancel: () => setEditingId(null),
-                                        onChange: (patch) => {
-                                            setEditingId(null);
-                                            void mutations.patch(item, patch);
-                                        },
-                                        onDelete: () => setDeleting(item),
-                                        onRetrySync: (link) =>
-                                            void mutations.retrySync(
-                                                item,
-                                                link,
-                                            ),
-                                        actions:
-                                            scope === null ? undefined : (
-                                                <ItemExport
-                                                    item={item}
-                                                    sources={
-                                                        board.exportSources
-                                                    }
-                                                    scope={scope}
-                                                />
-                                            ),
-                                    })}
-                                >
-                                    {(manages || item.subtasks.length > 0) && (
-                                        <ItemSubtasks
-                                            item={item}
-                                            endpoints={endpoints}
-                                            canManage={manages}
-                                            canComplete={completes}
-                                        />
-                                    )}
-                                </ActionItem>
-                            );
-                        })}
-                    </div>
-                )}
-                {creating && (
-                    <ItemCreateForm
-                        members={members}
-                        disabled={!editable}
-                        showAnonymousNotice={board.retro.isAnonymous}
-                        linkedTo={linkedTo}
-                        exportSources={
-                            scope === null ? [] : board.exportSources
-                        }
-                        onCreate={create}
-                        onCreatedWithTicket={(item, source) =>
-                            setTicket({ item, source })
-                        }
-                        onCancel={() => setCreating(false)}
-                    />
-                )}
+                {isPhase && form}
+                {items}
+                {!isPhase && form}
                 {ticket !== null && ticketItem !== null && scope !== null && (
                     <ItemExportDialog
                         item={ticketItem}

@@ -21,7 +21,7 @@ class RetroHighlightsController extends Controller
         $participant = Participant::current($request);
 
         RetroGuard::facilitator($retro, $participant);
-        RetroGuard::phase($retro, RetroPhase::Discussing);
+        RetroGuard::phase($retro, RetroPhase::Discussing, RetroPhase::Actions);
 
         $validated = $request->validate([
             'card_id' => [
@@ -36,7 +36,7 @@ class RetroHighlightsController extends Controller
             $locked = Retro::query()->whereKey($retro->id)->lockForUpdate()->firstOrFail();
 
             RetroGuard::facilitator($locked, $participant);
-            RetroGuard::phase($locked, RetroPhase::Discussing);
+            RetroGuard::phase($locked, RetroPhase::Discussing, RetroPhase::Actions);
 
             if ($validated['card_id'] !== null) {
                 $isTopLevel = $locked->cards()->whereKey($validated['card_id'])->whereNull('parent_card_id')->exists();

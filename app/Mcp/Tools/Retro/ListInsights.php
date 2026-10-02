@@ -54,7 +54,7 @@ class ListInsights extends SkrumTool
         $validated = $request->validate(['board_id' => ['required', 'uuid']]);
         $retro = $this->context->retro($validated['board_id']);
 
-        $insights = in_array($retro->phase, [RetroPhase::Discussing, RetroPhase::Completed], true)
+        $insights = $retro->phase->takesActionItems() || $retro->phase === RetroPhase::Completed
             ? $this->buildInsights->handle($retro)
             : null;
 

@@ -326,7 +326,11 @@ it('[P08d-04a] lands a member and a guest on the Results tab when the retro is c
 
     $carolPage->assertNotPresent('#completed-tab-results');
 
-    $alicePage->press('Complete')
+    $alicePage->press('Next')
+        ->assertSeeIn('[aria-current="step"]', 'Actions')
+        ->press('Next')
+        ->assertSeeIn('[aria-current="step"]', 'ROTI')
+        ->press('Complete')
         ->assertSeeIn('[aria-current="step"]', 'Completed');
 
     foreach ([$alicePage, $carolPage] as $page) {
@@ -557,13 +561,20 @@ it('[P08d-05b] switches between the Results and Board tabs and selects Results a
     }
 
     $alicePage->press('Reopen')
-        ->assertSeeIn('[aria-current="step"]', 'Discussing');
+        ->assertSeeIn('[aria-current="step"]', 'ROTI');
 
-    $carolPage->assertSeeIn('[aria-current="step"]', 'Discussing')
-        ->assertNotPresent('#completed-tab-results')
+    $carolPage->assertSeeIn('[aria-current="step"]', 'ROTI')
+        ->assertNotPresent('#completed-tab-results');
+
+    $alicePage->press('Previous')
+        ->assertSeeIn('[aria-current="step"]', 'Actions');
+
+    $carolPage->assertSeeIn('[aria-current="step"]', 'Actions')
         ->assertPresent('[aria-label="Add an action item…"]');
 
-    $alicePage->press('Complete')
+    $alicePage->press('Next')
+        ->assertSeeIn('[aria-current="step"]', 'ROTI')
+        ->press('Complete')
         ->assertSeeIn('[aria-current="step"]', 'Completed');
 
     foreach ([$alicePage, $carolPage] as $page) {

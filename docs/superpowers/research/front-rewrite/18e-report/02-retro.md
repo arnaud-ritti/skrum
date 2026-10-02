@@ -604,3 +604,93 @@ Captures `retro-board-discussing-*` (facilitator) and `retro-board-discussing-lo
 New: `[P18e-02-12]`, `[P18e-02-13]`, `[P18e-02-14]` in `Plan18eRetroTest.php`; captures `retro-board-discussing` and `retro-board-discussing-locked` in `RetroPagesVisualTest.php`.
 
 Component changes, in their own commits: `ActionItem` (`group` of an owner: the assignee options under headings; the sync state of a tracker chip is in its text again). No test was removed.
+
+## Task R10 — Actions phase (B1)
+
+`RetroPhase` has two more cases between `Discussing` and `Completed`: `Actions` and `Roti`. No migration: a retro in `discussing` gets two more steps. `components/retro/phase-actions.tsx` holds the Actions phase: the most voted topics on the left, the actions card on the right. `carried-items-sheet.tsx` replaces `carried-action-items-panel.tsx` on the shared containers of R8b. `action-item-rows.tsx` is the list of rows that `action-items-list.tsx` and the carried items share.
+
+How the focus works in Actions: nobody browses. The topic "In discussion" is the highlighted card of the retro, the same for everyone. A press on a topic by the facilitator, or "Next topic" in the facilitator bar, highlights it; with no topic highlighted yet, "Next topic" opens on the most voted one. The highlight is kept between Discussing and Actions and cleared on any other move. The presentation overlay never opens in Actions.
+
+The ROTI phase has no screen of its own yet: until R11 it shows the columns of the board, read-only, and the rating control stays in Discussing.
+
+### Back end (spec §9.1)
+
+| Capability | Guard | Done |
+|---|---|---|
+| Neighbour rule, phase list, labels | `RetroPhase` (`Actions`, `Roti`, `label()`), `Retro::phases()` unchanged in code | yes |
+| Vote totals visible in `actions` and `roti` | `Retro::showsVoteTotals()` | yes |
+| Highlight in `discussing` and `actions` | `RetroHighlightsController` | yes |
+| Highlight kept between `discussing` and `actions`, cleared on any other move | `ChangeRetroPhase::move()` reads the new `RetroPhase::showsTopics()` | yes |
+| Action items on the board routes in `discussing`, `actions`, `roti`, unless locked | `LocksDiscussingRetro` reads `RetroGuard::takesActionItems()` → `RetroPhase::takesActionItems()` | yes |
+| MCP `CreateAction`, `UpdateAction` | same guard; descriptions reworded | yes |
+| Suggested actions: `actions` and `roti` as `discussing` | `SuggestionGuard`; `PromoteSuggestion` description reworded | yes |
+| Insights readable | `BuildInsights`, MCP `ListInsights` | yes |
+| Group naming, card reactions, card comments: `actions` yes, `roti` no | `RetroGuard::groupNaming()`, `CardReactionsController`, `CardCommentsController` | yes |
+| Surveys | `SurveyGuard` unchanged: refused in `actions` and `roti` | yes |
+| MCP server instructions | the phase list names `actions` and `roti` | yes |
+| ROTI vote in `roti` only; MCP `GetRoti` | not in this task | R11 (B2) |
+
+### Parity (brief 02 §3.4 rows 73–83)
+
+| Row | Feature | Now | Done |
+|---|---|---|---|
+| 2-D9 | Topics by votes | `ol[data-test="retro-topics"]`: one card per group and per lone card, rank, title, votes, the first card of a named group as its excerpt, the colour of its column | yes |
+| 58, 60 | Highlight | the topic "In discussion" (`aria-current`, the info ring and badge); the facilitator presses a topic or "Next topic" | yes |
+| 73 | Suggestions panel | `aside[aria-label="Suggestions"]`, under the actions card | yes |
+| 74 | Create an action item | the "Quick add" form, always open, first in the card | yes |
+| M6 | "Create the ticket in :provider" | unchanged (`ItemCreateForm`) | yes |
+| M7 | "Action created" with "Undo" | toast after a creation in this phase, with the name of the owner; "Undo" deletes through the existing route, without a confirmation; the new item has a success ring | yes |
+| 75–82 | Done, reopen, edit, delete with its confirmation, sub-tasks, comments, export, tracker chips, anonymous notice | unchanged: the rows of R9, now `ActionItemRows` | yes |
+| 83 | Previous action items | `CarriedItemsSheet`: same button, same sheet (`[role="dialog"]`, `#action-item-{id}`, groups by retro, "Added outside a retro", "Open the action items page"), same automatic opening once in Writing; rows on `ActionItem` with their sub-tasks, comments and export, through the workspace routes | yes |
+| 83 | — | new in Actions: the follow-ups of earlier retros are also listed in the actions card, after the items of the retro, each with the name and date of its retro, and are counted in the badge (the mockup lists the late action of "Rétro sprint 41" there). Their DOM id is `carried-item-{id}` | yes |
+| — | Card comments, reactions, group names in Actions | accepted by the server (matrix); no control on screen: the mockup shows no card in Actions | yes |
+| — | Live cursors | on in Actions, over the whole phase body; off in ROTI | yes |
+| — | Flying reactions | on in Actions and ROTI | yes |
+| 4 | Facilitator bar | "Next topic", then "Next phase" (to ROTI). From Discussing the main button now names "Actions"; "End session" is the main button of ROTI | yes |
+| 5 | Reopen | a completed retro reopens on ROTI | yes |
+| — | "Suggest group names" | not offered in Actions (no group on screen) | yes |
+
+### Places left
+
+| Slot | Where | Roadmap |
+|---|---|---|
+| `exportAll` of `PhaseActions` (`headerActions` of `ActionItemsList`) | header of the actions card, right of the title | RT-10 |
+| `linkedTo` of `PhaseActions` | first line of the form, after "Quick add": "linked to « topic »" | RT-8 |
+| `itemTopic` of `PhaseActions` (`itemMeta` of `ActionItemsList`, `metaFor` of `ActionItemRows`) | meta line of an item: its topic | RT-8 |
+| `topicMeta` of `PhaseActions` | foot of a topic card: "n linked actions" | RT-8 |
+
+### Differences with the mockup
+
+Captures `retro-board-actions-*` (facilitator, a topic in discussion, a follow-up of an earlier retro) and `retro-board-actions-locked-*` (participant, closed board) against `ScreenRetroActions`, `ActionItem` and `FacilitatorBar`. Compared by the implementer on light 1440 EN, dark 1440 FR (participant) and dark 390 FR.
+
+| Difference | Covered by |
+|---|---|
+| No "Export to Jira" in the header of the card | D-13 |
+| No "linked to « topic »", no topic on an item, no "n linked actions" on a topic | N: an item is not linked to a topic (RT-8); places left |
+| Main button "Next phase", not "Close the retro" | D-04 |
+| The facilitator bar is at the bottom centre, under the reaction bar, as in every phase; the mockup puts it at the bottom left, under the topics, and shows no reaction bar | spec §6.4 (one ReactionBar, stacked above the FacilitatorBar), ruling 27. No row — reported |
+| The sentence of the card reads "Give each action an owner and a due date. They stay visible on the action items page of the team."; the mockup says "Each action has an owner and a due date. They stay visible on the team dashboard." | F: neither is required; the page that lists them is the action items page |
+| The form has a native date, a "Repeat" select and no ticket field (a "Create the ticket in :provider" checkbox when the team has a tracker); the hint says "↵ to create" only | reported in R8b; D-07 for ⌘J |
+| The toast names the owner only ("Bob Stone"); the mockup adds "ATLAS-1302 created in Jira" | F: the ticket does not exist when the item is created |
+| An item shows its status badge, edit, "Delete", the sub-task field and its comments; the mockup has a "…" button | parity rows 75–79; `ActionItem` mockup |
+| A "Previous action items (n)" button sits above the board, and the suggestions panel under the card | brief rows 83 and 73 (no mockup) |
+| The topics are cards of the column colour without the `RetroCard` chrome (no author, no reactions) | as the mockup draws them |
+| The header rail shows the current label only | reported in R3 |
+| Phone: the topics are stacked above the card, not a collapsible list; the form is not in a drawer | R13 |
+| The toast is not in the captures | — |
+
+### Browser tests changed
+
+Listed by the plan (B1, spec §6.4):
+
+| Test | Change |
+|---|---|
+| `Plan04` `P04-07` | walks Actions and ROTI; "Reopen" lands on ROTI; the action-item form after the reopen is read in Actions ("Previous" from ROTI), then "Next", "Complete" |
+| `Plan08c` `P08c-07` | Next, Next, Complete; "Reopen" lands on ROTI, then "Previous" twice to Discussing, where the closed surveys are read |
+| `Plan08d` `P08d-04a` | Next, Next, Complete |
+| `Plan08d` `P08d-05b` | "Reopen" lands on ROTI; the action-item form is read in Actions; Next, Complete |
+| `Plan08e` (7 tests), `Plan14b` (1) | Next, Next, Complete from a board in Discussing |
+
+New: `[P18e-02-02]` in `Plan18eRetroTest.php`. Captures: two datasets added to `RetroPagesVisualTest.php`; the captures of every other phase changed with the two new steps of the rail.
+
+Feature tests changed outside the plan's list: `tests/Feature/Integrations/WebhookEventsTest.php` (the retro completes from ROTI and reopens on it), `RetroStartTest.php`, `RetroSummaryJobTest.php`, `SurveyAnswersTest.php`, `BoardLockTest.php` (same cause).

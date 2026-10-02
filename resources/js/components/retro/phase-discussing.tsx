@@ -46,7 +46,7 @@ export function useOptionalDiscussion(): DiscussionValue | null {
     return useContext(DiscussionContext);
 }
 
-function useDiscussion(): DiscussionValue {
+export function useDiscussion(): DiscussionValue {
     const value = useContext(DiscussionContext);
 
     if (!value) {
@@ -59,16 +59,21 @@ function useDiscussion(): DiscussionValue {
 }
 
 /**
- * Who looks at which topic. Everyone browses the topics for themselves. A
- * card the facilitator highlights becomes the topic of everyone; while
- * "Everyone follows" is on, the facilitator's own moves highlight theirs.
+ * Who looks at which topic. While discussing, everyone browses the topics for
+ * themselves. A card the facilitator highlights becomes the topic of
+ * everyone; while "Everyone follows" is on, the facilitator's own moves
+ * highlight theirs.
+ *
+ * In Actions nobody browses: the one topic is the highlighted one, and every
+ * move of the facilitator highlights.
  */
 export function DiscussionProvider({ children }: { children: ReactNode }) {
     const ctx = useBoard();
     const { board } = ctx;
     const { retro, viewer } = board;
     const isDiscussing = retro.phase === 'discussing';
-    const topics = isDiscussing ? topicsFrom(board) : [];
+    const isActions = retro.phase === 'actions';
+    const topics = isDiscussing || isActions ? topicsFrom(board) : [];
     const shared = topicOfCard(topics, retro.highlightedCardId);
     const [ownId, setOwnId] = useState<string | null>(null);
     const [seenHighlight, setSeenHighlight] = useState(retro.highlightedCardId);
@@ -85,9 +90,11 @@ export function DiscussionProvider({ children }: { children: ReactNode }) {
         }
     }
 
-    const current =
-        topics.find((topic) => topic.id === ownId) ?? shared ?? topics[0];
+    const current = isActions
+        ? (shared ?? undefined)
+        : (topics.find((topic) => topic.id === ownId) ?? shared ?? topics[0]);
     const follows = retro.presentationMode;
+    const movesEveryone = isActions || follows;
     const sharedLead = board.cards.find(
         (card) => card.id === shared?.leadCardId,
     );
@@ -127,7 +134,11 @@ export function DiscussionProvider({ children }: { children: ReactNode }) {
     const goTo = (topic: Topic): void => {
         setOwnId(topic.id);
 
-        if (viewer.isFacilitator && follows && shared?.id !== topic.id) {
+        if (!viewer.isFacilitator) {
+            return;
+        }
+
+        if (movesEveryone && shared?.id !== topic.id) {
             void highlight(topic.leadCardId);
         }
     };
@@ -159,7 +170,12 @@ export function DiscussionProvider({ children }: { children: ReactNode }) {
         busy,
         goTo,
         step: (offset) => {
-            const target = stepTopic(topics, current?.id ?? null, offset);
+            // In Actions the list may start with no topic in focus: "Next
+            // topic" then opens on the most voted one.
+            const target =
+                current === undefined && offset === 1
+                    ? (topics[0] ?? null)
+                    : stepTopic(topics, current?.id ?? null, offset);
 
             if (target) {
                 goTo(target);

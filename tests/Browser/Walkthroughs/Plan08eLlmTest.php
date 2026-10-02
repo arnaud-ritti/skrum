@@ -190,7 +190,11 @@ it('[P08e-03a] completes a retro without a provider: no summary section, no card
 
     $page = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
 
-    $page->press('Complete')
+    $page->press('Next')
+        ->assertSeeIn('[aria-current="step"]', 'Actions')
+        ->press('Next')
+        ->assertSeeIn('[aria-current="step"]', 'ROTI')
+        ->press('Complete')
         ->assertSeeIn('[aria-current="step"]', 'Completed')
         ->assertSee('Top topics')
         ->assertNotPresent('[aria-labelledby="results-summary"]')
@@ -492,7 +496,11 @@ it('[P08e-07] generates the summary, themes, suggested actions and card insights
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
     $carolPage = $this->awaitRealtime($this->joinAsGuest("/join/{$retro->guest_token}", 'Carol Guest'));
 
-    $alicePage->press('Complete')
+    $alicePage->press('Next')
+        ->assertSeeIn('[aria-current="step"]', 'Actions')
+        ->press('Next')
+        ->assertSeeIn('[aria-current="step"]', 'ROTI')
+        ->press('Complete')
         ->assertSeeIn('[aria-current="step"]', 'Completed');
 
     foreach ([$alicePage, $carolPage] as $page) {
@@ -567,7 +575,11 @@ it('[P08e-08] lets the facilitator promote one suggestion and reject another, an
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
     $carolPage = $this->awaitRealtime($this->joinAsGuest("/join/{$retro->guest_token}", 'Carol Guest'));
 
-    $alicePage->press('Complete')
+    $alicePage->press('Next')
+        ->assertSeeIn('[aria-current="step"]', 'Actions')
+        ->press('Next')
+        ->assertSeeIn('[aria-current="step"]', 'ROTI')
+        ->press('Complete')
         ->assertSeeIn($summary, 'Generating the summary…');
 
     $this->workQueue();
@@ -632,7 +644,11 @@ it('[P08e-09] keeps handled suggestions on Regenerate, and on Remove clears the 
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
     $carolPage = $this->awaitRealtime($this->joinAsGuest("/join/{$retro->guest_token}", 'Carol Guest'));
 
-    $alicePage->press('Complete')
+    $alicePage->press('Next')
+        ->assertSeeIn('[aria-current="step"]', 'Actions')
+        ->press('Next')
+        ->assertSeeIn('[aria-current="step"]', 'ROTI')
+        ->press('Complete')
         ->assertSeeIn($summary, 'Generating the summary…');
 
     $this->workQueue();
@@ -728,7 +744,11 @@ it('[P08e-10b] sends nothing when an opted-out retro is completed, until the fac
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
     $carolPage = $this->awaitRealtime($this->joinAsGuest("/join/{$retro->guest_token}", 'Carol Guest'));
 
-    $alicePage->press('Complete')
+    $alicePage->press('Next')
+        ->assertSeeIn('[aria-current="step"]', 'Actions')
+        ->press('Next')
+        ->assertSeeIn('[aria-current="step"]', 'ROTI')
+        ->press('Complete')
         ->assertSeeIn('[aria-current="step"]', 'Completed')
         ->assertSeeIn($summary, 'Generate summary')
         ->assertSeeIn($summary, 'The board content is sent to Anthropic to write the summary.')
@@ -791,7 +811,11 @@ it('[P08e-11a] shows the failure to the facilitator after the provider failed th
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
     $carolPage = $this->awaitRealtime($this->joinAsGuest("/join/{$retro->guest_token}", 'Carol Guest'));
 
-    $alicePage->press('Complete')
+    $alicePage->press('Next')
+        ->assertSeeIn('[aria-current="step"]', 'Actions')
+        ->press('Next')
+        ->assertSeeIn('[aria-current="step"]', 'ROTI')
+        ->press('Complete')
         ->assertSeeIn($summary, 'Generating the summary…');
     $carolPage->assertSeeIn($summary, 'Generating the summary…');
 
@@ -845,7 +869,11 @@ it('[P08e-11b] treats a summary still pending after ten minutes as failed and le
 
     $alicePage = $this->awaitRealtime($this->signIn($alice, "/retros/{$retro->id}"));
 
-    $alicePage->press('Complete')
+    $alicePage->press('Next')
+        ->assertSeeIn('[aria-current="step"]', 'Actions')
+        ->press('Next')
+        ->assertSeeIn('[aria-current="step"]', 'ROTI')
+        ->press('Complete')
         ->assertSeeIn($summary, 'Generating the summary…');
 
     $this->travel(9)->minutes();

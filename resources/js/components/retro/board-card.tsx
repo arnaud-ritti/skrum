@@ -24,6 +24,7 @@ import {
     CardMaxLength,
     cardVoting,
     toCardProps,
+    VoteTotalPhases,
 } from '@/lib/retro/adapters';
 import { retroRequest } from '@/lib/retro/api';
 import type {
@@ -663,8 +664,7 @@ export function BoardCard({
     };
 
     const isEditing = editing && props.canEdit;
-    const showsTotal =
-        !isChild && (phase === 'discussing' || phase === 'completed');
+    const showsTotal = !isChild && VoteTotalPhases.includes(phase);
     const votingTotal = voting?.votes.total ?? null;
     const canHighlight =
         !isChild && phase === 'discussing' && viewer.isFacilitator;
