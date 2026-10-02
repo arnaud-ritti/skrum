@@ -1,6 +1,6 @@
-import { Head, router, setLayoutProps } from '@inertiajs/react';
+import { Head, Link, router, setLayoutProps } from '@inertiajs/react';
 import { useState } from 'react';
-import TextLink from '@/components/text-link';
+import { authLinkClass } from '@/components/auth/login-form';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { useTrans } from '@/hooks/use-trans';
@@ -48,7 +48,9 @@ export default function ReminderUnsubscribe({
                         {t('Unsubscribe')}
                     </Button>
                 )}
-                <TextLink href={login()}>{t('Log in')}</TextLink>
+                <Link href={login()} className={authLinkClass}>
+                    {t('Log in')}
+                </Link>
             </div>
         </>
     );
