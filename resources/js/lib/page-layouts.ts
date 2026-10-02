@@ -23,6 +23,7 @@ export const ownLayoutPages: readonly string[] = [
     'settings/security',
     'settings/appearance',
     'settings/notifications',
+    'settings/api-tokens',
 ];
 
 const ownLayoutPrefixes: readonly string[] = ['admin/', 'dev/'];

@@ -4093,5 +4093,10 @@
     "The theme is kept on this device. The language is saved on your account.": "El tema se guarda en este dispositivo. El idioma se guarda en tu cuenta.",
     "Interface language. Guests follow their browser.": "Idioma de la interfaz. Los invitados siguen su navegador.",
     "Choose what reaches you, and where.": "Elige qué te llega y por dónde.",
-    "In-app": "En la app"
+    "In-app": "En la app",
+    "Token name": "Nombre del token",
+    "Scopes": "Ámbitos",
+    "New API token": "Nuevo token de API",
+    "MCP server": "Servidor MCP",
+    "Revoke :name": "Revocar :name"
 }

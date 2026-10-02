@@ -146,3 +146,54 @@ Nothing is rendered while the two slots are undefined.
 | At 390 the table keeps its head and its two columns (4rem each) instead of "label + 2 switches" rows without a head: with one event the columns fit | none: reported |
 | An info alert above the table when the instance sends no reminders | parity row 34 |
 | One page per section, the "Settings" title and the sub-navigation of 10.1 | Task 10.1 |
+
+## Task 10.4 — API tokens with the inline creation form
+
+Page `settings/api-tokens` renders `SettingsShell` itself and is in `ownLayoutPages`. Containers in `resources/js/components/settings/api-tokens/`: `CreateTokenForm` (the form of the page, `form[aria-label="New API token"]`), `TokenList` (the card under it, with the revoke confirmation), `RevokeTokenDialog`, `ServerUrl`; presentational: `NewTokenPanel`, `TokensTable`, `TokenCards`; `lib/api-tokens.ts` holds the scope labels and the date formatter. The three old dialogs (`create-token-dialog`, `new-token-dialog`, `revoke-token-dialog` of `components/settings/`) are deleted. Captures: `settings-api-tokens-page-*`, `settings-api-tokens-empty-*`, `settings-api-tokens-error-*`, `settings-api-tokens-new-token-*`. Walkthrough: `[P18e-10-04]`; `Plan11bApiTokensTest` follows the inline form (10-D2).
+
+### Parity (brief 10 §3.4)
+
+| # | Action | Control | Done |
+|---|---|---|---|
+| 35 | Show and copy the server URL | "MCP server" group: read-only mono field `#mcp-url` (selected on focus) and "Copy", which becomes "Copied" with a check (no toast) | yes |
+| 36 | Notes | the two sentences, as a list under the field | yes |
+| 37 | Open the creation form | none: the form is in the page (10-D2) | decided |
+| 38 | Name | `TextField` `#token-name`, labelled "Token name", 60 characters; a refusal shows under the field, which takes the focus | yes |
+| 39 | Scopes | group "Scopes": `#scope-read` (checked, disabled), `#scope-write`, `#scope-delete`, each with its code (`mcp:read`…) and its label; the help of the delete scope under it | yes |
+| 40 | Team | `Select` `#token-team`, "All my teams" then the teams by workspace | yes |
+| 41 | Expiration | `Select` `#token-expiration`, options as sent | yes |
+| 42 | Submit | footer `LoadingButton` "Create token" with the plus icon | yes |
+| 43 | Token shown once | `NewTokenPanel` in the card, in place of the footer: success box with "Copy your token now. You won't be able to see it again.", the mono field `input[aria-label="API token"]` (focused and selected), "Copy" / "Copied" | yes |
+| 44 | Client snippets | tabs "Claude Code" / "Other clients (JSON)" named "Client configuration", one `[role="tabpanel"]`, "Copy configuration" | yes |
+| 45 | Done | "Done" in the panel: the footer and "Create token" come back | yes |
+| 46 | Token table | `Table`, the same eight columns in the same order (Name and hint, Scopes as badges, Team, Created, Expires, Last used, Status, Revoke) | yes |
+| 47 | Expired row | muted row, outline badge "Expired"; "Active" otherwise | yes |
+| 48 | Team no longer visible | "No access to this team anymore" under the team | yes |
+| 49 | Empty state | key icon and "No API tokens yet." in the card | yes |
+| 50 | Revoke | "Revoke" with the trash icon (named "Revoke :name"), then a destructive `ConfirmDialog` "Revoke this token?" | yes |
+| 51 | MCP off | no entry, page 404 (unchanged, server side) | yes |
+| 52 | Phone | the tokens as cards when the card is narrower than 42rem (container query); the table stays in the page, not displayed | yes |
+
+### Places left
+
+None: the task has no "Places left" line.
+
+### Differences with the mockup (ScreenUserSettings, API tokens)
+
+| Difference | Covered by |
+|---|---|
+| The table has eight columns (Name, Scopes, Team, Created, Expires, Last used, Status, action), not the mockup's four (Token with its scope codes, Last used, Expires, action); in the 50rem column the dates take two lines | plan, Task 10.4 ("eight columns in the same order", `Plan11bApiTokensTest`): no row, reported |
+| Dates are absolute ("Sep 14, 2026"), not relative ("2 h ago", "in 90 days") | `Plan11bApiTokensTest` (`p11bCellShowsDate`): no row, reported |
+| The scopes of a token are badges with their label ("Read"), not mono codes; the codes are in the form | `Plan11bApiTokensTest` (badges of the second cell): no row, reported |
+| No struck-through "revoked" row | D-25 |
+| A "Team" field beside name and expiration; three scopes (`mcp:read`, `mcp:write`, `mcp:delete`), reading always ticked | parity rows 39, 40 (N: the product's scopes) |
+| The sentence under the title is "Connect an AI assistant that supports MCP to skrum with a personal token.", not "Personal tokens for the Skrüm REST API and MCP server. They act as you.": there is no REST API | rule 13, false statement: no row yet, reported |
+| The success box says "Copy your token now. You won't be able to see it again." (the mockup: "Token created — copy it now, you won't see it again.") | `Plan11bApiTokensTest` P11b-02, P11b-18a: no row, reported |
+| While the new token is shown the footer and "Create token" are replaced by the panel, which also holds the client configuration tabs, "Copy configuration" and "Done"; the mockup shows the box and the footer together | plan, Task 10.4; parity rows 44, 45 |
+| `role="status"` is on the sentence of the box, not on the box (it holds a field and a button) | A |
+| "Revoke" has a trash icon; the mockup's is a label alone | A: rule 6 |
+| A "Status" badge (Active / Expired) and a "New" pill kept until "Done" | parity row 47; the mockup's "New" |
+| An "MCP server" group under the tokens (server URL, its help and the two notes), which the mockup does not have | parity rows 35, 36 |
+| An empty state in the list card | parity row 49 |
+| At 390 a token card names its values (Team, Created, Expires, Last used) and has a "Revoke" button with a border | README of the mockup ("table des jetons en cartes") |
+| One page per section, the "Settings" title and the sub-navigation of 10.1 | Task 10.1 |

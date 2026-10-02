@@ -3870,5 +3870,10 @@
     "The theme is kept on this device. The language is saved on your account.": "The theme is kept on this device. The language is saved on your account.",
     "Interface language. Guests follow their browser.": "Interface language. Guests follow their browser.",
     "Choose what reaches you, and where.": "Choose what reaches you, and where.",
-    "In-app": "In-app"
+    "In-app": "In-app",
+    "Token name": "Token name",
+    "Scopes": "Scopes",
+    "New API token": "New API token",
+    "MCP server": "MCP server",
+    "Revoke :name": "Revoke :name"
 }
