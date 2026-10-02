@@ -16,6 +16,11 @@ import {
     RetroTemplatesTab,
 } from '@/components/workspaces/retro-templates-tab';
 import { TemplatesSection } from '@/components/workspaces/template-card';
+import {
+    focusedElement,
+    templateCardMenu,
+    useMenuDialogFocus,
+} from '@/components/workspaces/use-menu-dialog-focus';
 import { TemplateEditorSheet } from '@/components/workspaces/template-editor-sheet';
 import type { TemplateEditorTarget } from '@/components/workspaces/template-editor-sheet';
 import { WhiteboardTemplatesTab } from '@/components/workspaces/whiteboard-templates-tab';
@@ -102,6 +107,13 @@ export function TemplatesPage({
         null,
     );
     const [deleteError, setDeleteError] = useState<string>();
+    const {
+        fallbackRef: retroHeadingRef,
+        openedFrom,
+        originRemoved,
+    } = useMenuDialogFocus<HTMLHeadingElement>(
+        deleting !== null || editor !== null,
+    );
 
     if (catalogue !== undefined) {
         lastCatalogue.current = catalogue;
@@ -137,8 +149,13 @@ export function TemplatesPage({
         ]),
     );
 
-    const openNew = (): void =>
+    const openNew = (): void => {
+        openedFrom(focusedElement());
         setEditor(editorTarget(null, blankTemplateDraft()));
+    };
+
+    const openedFromMenuOf = (template: WorkspaceTemplateSummary): void =>
+        openedFrom(templateCardMenu(`workspace-template-${template.id}`));
 
     const openCopy = (draft: TemplateDraft): void =>
         setEditor(
@@ -152,20 +169,26 @@ export function TemplatesPage({
 
     const actions = canManage
         ? {
-              onEdit: (template: WorkspaceTemplateSummary) =>
+              onEdit: (template: WorkspaceTemplateSummary) => {
+                  openedFromMenuOf(template);
                   setEditor(
                       editorTarget(template, draftFromTemplate(template)),
-                  ),
-              onDuplicate: (template: WorkspaceTemplateSummary) =>
-                  openCopy(draftFromTemplate(template)),
+                  );
+              },
+              onDuplicate: (template: WorkspaceTemplateSummary) => {
+                  openedFromMenuOf(template);
+                  openCopy(draftFromTemplate(template));
+              },
               onDelete: (template: WorkspaceTemplateSummary) => {
+                  openedFromMenuOf(template);
                   setDeleteError(undefined);
                   setDeleting(template);
               },
           }
         : undefined;
 
-    const duplicateFromPicker = (source: RetroTemplate): void =>
+    const duplicateFromPicker = (source: RetroTemplate): void => {
+        openedFrom(focusedElement());
         openCopy(
             draftFromTemplate({
                 name: source.name,
@@ -180,6 +203,7 @@ export function TemplatesPage({
                 })),
             }),
         );
+    };
 
     const remove = (template: WorkspaceTemplateSummary): Promise<void> =>
         deleteVisit(
@@ -187,7 +211,7 @@ export function TemplatesPage({
                 workspace: workspace.slug,
                 template: template.id,
             }),
-        ).catch((error: DeleteVisitError) => {
+        ).then(originRemoved, (error: DeleteVisitError) => {
             setDeleteError(
                 Object.values(error.errors)[0] ??
                     t('Something went wrong. Please try again.'),
@@ -219,6 +243,7 @@ export function TemplatesPage({
             icon={Layers}
             title={t('Retrospective')}
             hint={t('Columns and colours are copied into the new retro')}
+            headingRef={retroHeadingRef}
         >
             {templates.length === 0 ? (
                 <div
@@ -376,7 +401,7 @@ export function TemplatesPage({
                                     type="button"
                                     aria-label={t('Clear')}
                                     onClick={clearSearch}
-                                    className="absolute top-1/2 right-1.5 grid size-6 -translate-y-1/2 place-items-center rounded-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                                    className="absolute top-1/2 right-1.5 grid size-6 -translate-y-1/2 place-items-center rounded-sm text-muted-foreground outline-ring hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2"
                                 >
                                     <X aria-hidden className="size-3.5" />
                                 </button>

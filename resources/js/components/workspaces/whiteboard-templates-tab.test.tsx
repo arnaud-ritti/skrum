@@ -1,4 +1,4 @@
-import { act, screen, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -151,6 +151,93 @@ describe('WhiteboardTemplatesTab', () => {
 
         expect(mocks.delete.mock.calls[0][0]).toBe(
             '/w/nordlys/whiteboard-templates/board-1',
+        );
+    });
+
+    it('returns the focus to the menu of the card when a dialog opened from it is cancelled', async () => {
+        tab([template]);
+
+        const menu = screen.getByRole('button', {
+            name: 'Actions for Kickoff map',
+        });
+
+        await userEvent.click(menu);
+        await userEvent.click(screen.getByRole('menuitem', { name: 'Rename' }));
+        await userEvent.click(
+            within(screen.getByRole('dialog')).getByRole('button', {
+                name: 'Cancel',
+            }),
+        );
+
+        await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+        await waitFor(() => expect(document.activeElement).toBe(menu));
+
+        await userEvent.click(menu);
+        await userEvent.click(screen.getByRole('menuitem', { name: 'Delete' }));
+        await userEvent.click(
+            within(screen.getByRole('alertdialog')).getByRole('button', {
+                name: 'Cancel',
+            }),
+        );
+
+        await waitFor(() =>
+            expect(screen.queryByRole('alertdialog')).toBeNull(),
+        );
+        await waitFor(() => expect(document.activeElement).toBe(menu));
+    });
+
+    it('opens the rename form again with the values of the template after a cancel', async () => {
+        tab([template]);
+
+        const menu = screen.getByRole('button', {
+            name: 'Actions for Kickoff map',
+        });
+
+        await userEvent.click(menu);
+        await userEvent.click(screen.getByRole('menuitem', { name: 'Rename' }));
+        await userEvent.type(
+            within(screen.getByRole('dialog')).getByLabelText('Name'),
+            ' v2',
+        );
+        await userEvent.click(
+            within(screen.getByRole('dialog')).getByRole('button', {
+                name: 'Cancel',
+            }),
+        );
+        await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+
+        await userEvent.click(menu);
+        await userEvent.click(screen.getByRole('menuitem', { name: 'Rename' }));
+
+        expect(
+            (
+                within(screen.getByRole('dialog')).getByLabelText(
+                    'Name',
+                ) as HTMLInputElement
+            ).value,
+        ).toBe('Kickoff map');
+    });
+
+    it('moves the focus to the heading of the section when the template is deleted', async () => {
+        tab([template]);
+
+        await userEvent.click(
+            screen.getByRole('button', { name: 'Actions for Kickoff map' }),
+        );
+        await userEvent.click(screen.getByRole('menuitem', { name: 'Delete' }));
+        await userEvent.click(
+            within(screen.getByRole('alertdialog')).getByRole('button', {
+                name: 'Delete',
+            }),
+        );
+        await act(async () => {
+            (mocks.delete.mock.calls[0][1] as VisitOptions).onSuccess?.();
+        });
+
+        await waitFor(() =>
+            expect(document.activeElement).toBe(
+                screen.getByRole('heading', { name: 'Whiteboard' }),
+            ),
         );
     });
 });

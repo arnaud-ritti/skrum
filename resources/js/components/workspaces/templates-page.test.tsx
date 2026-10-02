@@ -1,4 +1,4 @@
-import { act, screen, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -366,6 +366,32 @@ describe('TemplatesPage', () => {
         });
 
         expect(screen.queryByRole('alertdialog')).toBeNull();
+        await waitFor(() =>
+            expect(document.activeElement).toBe(
+                screen.getByRole('heading', { name: 'Retrospective' }),
+            ),
+        );
+    });
+
+    it('returns the focus to the menu of the card when the deletion is cancelled', async () => {
+        page({ canManage: true });
+
+        const menu = screen.getByRole('button', {
+            name: 'Actions for Team pulse',
+        });
+
+        await userEvent.click(menu);
+        await userEvent.click(screen.getByRole('menuitem', { name: 'Delete' }));
+        await userEvent.click(
+            within(screen.getByRole('alertdialog')).getByRole('button', {
+                name: 'Cancel',
+            }),
+        );
+
+        await waitFor(() =>
+            expect(screen.queryByRole('alertdialog')).toBeNull(),
+        );
+        await waitFor(() => expect(document.activeElement).toBe(menu));
     });
 
     it('opens the editor on a template from the menu of its card', async () => {

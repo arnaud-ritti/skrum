@@ -2,7 +2,7 @@ import { Link } from '@inertiajs/react';
 import { Ellipsis } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useId } from 'react';
-import type { ReactNode } from 'react';
+import type { ReactNode, Ref } from 'react';
 import { columnColorClass } from '@/components/skrum/retro-template-picker';
 import { PersonAvatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -229,11 +229,14 @@ export function TemplatesSection({
     title,
     hint,
     actions,
+    headingRef,
     children,
 }: {
     icon: LucideIcon;
     title: string;
     hint?: string;
+    /** The heading takes the focus when a dialog closes on a card that is gone. */
+    headingRef?: Ref<HTMLHeadingElement>;
     actions?: ReactNode;
     children: ReactNode;
 }) {
@@ -248,7 +251,9 @@ export function TemplatesSection({
             <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-2">
                 <h2
                     id={headingId}
-                    className="flex min-w-0 items-center gap-2 text-base font-title"
+                    ref={headingRef}
+                    tabIndex={headingRef === undefined ? undefined : -1}
+                    className="flex min-w-0 items-center gap-2 rounded-sm text-base font-title outline-ring focus-visible:outline-2 focus-visible:outline-offset-2"
                 >
                     <Icon
                         aria-hidden

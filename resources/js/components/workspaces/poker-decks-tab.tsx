@@ -19,6 +19,11 @@ import {
     TemplateGridClass,
     TemplatesSection,
 } from '@/components/workspaces/template-card';
+import {
+    focusedElement,
+    templateCardMenu,
+    useMenuDialogFocus,
+} from '@/components/workspaces/use-menu-dialog-focus';
 import { useTrans } from '@/hooks/use-trans';
 import { deleteVisit } from '@/lib/delete-visit';
 import type { DeleteVisitError } from '@/lib/delete-visit';
@@ -67,6 +72,13 @@ export function PokerDecksTab({
     const [saving, setSaving] = useState(false);
     const [deleting, setDeleting] = useState<WorkspacePokerDeck | null>(null);
     const [deleteError, setDeleteError] = useState<string>();
+    const { fallbackRef, openedFrom, originRemoved } =
+        useMenuDialogFocus<HTMLHeadingElement>(
+            editor !== null || deleting !== null,
+        );
+
+    const openedFromMenuOf = (deck: WorkspacePokerDeck): void =>
+        openedFrom(templateCardMenu(`workspace-deck-${deck.id}`));
 
     const openEditor = (deck: WorkspacePokerDeck | null, draft?: DeckDraft) => {
         setErrors({});
@@ -80,13 +92,19 @@ export function PokerDecksTab({
         });
     };
 
+    const openNew = (): void => {
+        openedFrom(focusedElement());
+        openEditor(null);
+    };
+
     const closeEditor = (): void => {
         if (!saving) {
             setEditor(null);
         }
     };
 
-    const duplicate = (deck: WorkspacePokerDeck): void =>
+    const duplicate = (deck: WorkspacePokerDeck): void => {
+        openedFromMenuOf(deck);
         openEditor(null, {
             name: copyDeckName(
                 t('Copy of :name', { name: deck.name }),
@@ -94,6 +112,7 @@ export function PokerDecksTab({
             ),
             ...deckShapeFromCards(deck.cards),
         });
+    };
 
     const save = (): void => {
         if (editor === null) {
@@ -145,7 +164,7 @@ export function PokerDecksTab({
                 workspace: workspace.slug,
                 pokerDeck: deck.id,
             }),
-        ).catch((error: DeleteVisitError) => {
+        ).then(originRemoved, (error: DeleteVisitError) => {
             setDeleteError(
                 Object.values(error.errors)[0] ??
                     t('Something went wrong. Please try again.'),
@@ -162,7 +181,10 @@ export function PokerDecksTab({
                       type: 'item' as const,
                       label: t('Edit'),
                       icon: Pencil,
-                      onSelect: () => openEditor(deck),
+                      onSelect: () => {
+                          openedFromMenuOf(deck);
+                          openEditor(deck);
+                      },
                   },
               ]
             : []),
@@ -183,7 +205,10 @@ export function PokerDecksTab({
                       type: 'item' as const,
                       label: t('Delete'),
                       tone: 'danger' as const,
-                      onSelect: () => setDeleting(deck),
+                      onSelect: () => {
+                          openedFromMenuOf(deck);
+                          setDeleting(deck);
+                      },
                   },
               ]
             : []),
@@ -194,6 +219,7 @@ export function PokerDecksTab({
             icon={Spade}
             title={t('Planning poker')}
             hint={t('Deck values')}
+            headingRef={fallbackRef}
             actions={
                 canCreate && allDecks.length > 0 ? (
                     <Button
@@ -201,7 +227,7 @@ export function PokerDecksTab({
                         variant="outline"
                         size="sm"
                         className="max-w-full min-w-0"
-                        onClick={() => openEditor(null)}
+                        onClick={openNew}
                     >
                         <Plus aria-hidden />
                         <span className="truncate">{t('Create a deck')}</span>
@@ -227,7 +253,7 @@ export function PokerDecksTab({
                                       label: t('Create a deck'),
                                       icon: Plus,
                                       variant: 'outline',
-                                      onClick: () => openEditor(null),
+                                      onClick: openNew,
                                   }
                                 : undefined
                         }

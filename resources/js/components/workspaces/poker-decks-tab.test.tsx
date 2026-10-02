@@ -1,4 +1,4 @@
-import { act, screen, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -178,5 +178,37 @@ describe('PokerDecksTab', () => {
             within(screen.getByRole('alertdialog')).getByRole('alert')
                 .textContent,
         ).toContain('Something went wrong. Please try again.');
+    });
+
+    it('returns the focus to the menu of the card when a dialog opened from it is cancelled', async () => {
+        tab([deck], true);
+
+        const menu = screen.getByRole('button', {
+            name: 'Actions for T-shirt sizing',
+        });
+
+        await userEvent.click(menu);
+        await userEvent.click(screen.getByRole('menuitem', { name: 'Delete' }));
+        await userEvent.click(
+            within(screen.getByRole('alertdialog')).getByRole('button', {
+                name: 'Cancel',
+            }),
+        );
+
+        await waitFor(() =>
+            expect(screen.queryByRole('alertdialog')).toBeNull(),
+        );
+        await waitFor(() => expect(document.activeElement).toBe(menu));
+
+        await userEvent.click(menu);
+        await userEvent.click(screen.getByRole('menuitem', { name: 'Edit' }));
+        await userEvent.click(
+            within(screen.getByRole('dialog')).getByRole('button', {
+                name: 'Cancel',
+            }),
+        );
+
+        await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+        await waitFor(() => expect(document.activeElement).toBe(menu));
     });
 });

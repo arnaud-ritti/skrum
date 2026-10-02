@@ -12,6 +12,10 @@ import {
     TemplateGridClass,
     TemplatesSection,
 } from '@/components/workspaces/template-card';
+import {
+    templateCardMenu,
+    useMenuDialogFocus,
+} from '@/components/workspaces/use-menu-dialog-focus';
 import { useRouterAction } from '@/components/workspaces/use-router-action';
 import { useTrans } from '@/hooks/use-trans';
 import { deleteVisit } from '@/lib/delete-visit';
@@ -41,9 +45,17 @@ export function WhiteboardTemplatesTab({
     const rename = useRouterAction();
     const [renaming, setRenaming] =
         useState<WorkspaceWhiteboardTemplate | null>(null);
+    const [isRenaming, setIsRenaming] = useState(false);
     const [deleting, setDeleting] =
         useState<WorkspaceWhiteboardTemplate | null>(null);
     const [deleteError, setDeleteError] = useState<string>();
+    const { fallbackRef, openedFrom, originRemoved } =
+        useMenuDialogFocus<HTMLHeadingElement>(isRenaming || deleting !== null);
+
+    const openedFromMenuOf = (template: WorkspaceWhiteboardTemplate): void =>
+        openedFrom(
+            templateCardMenu(`workspace-whiteboard-template-${template.id}`),
+        );
 
     const urlOf = (template: WorkspaceWhiteboardTemplate) => ({
         workspace: workspace.slug,
@@ -55,7 +67,7 @@ export function WhiteboardTemplatesTab({
 
         return deleteVisit(
             WorkspaceWhiteboardTemplatesController.destroy.url(urlOf(template)),
-        ).catch((error: DeleteVisitError) => {
+        ).then(originRemoved, (error: DeleteVisitError) => {
             setDeleteError(
                 Object.values(error.errors)[0] ??
                     t('Something went wrong. Please try again.'),
@@ -72,20 +84,32 @@ export function WhiteboardTemplatesTab({
                       type: 'item',
                       label: t('Rename'),
                       icon: Pencil,
-                      onSelect: () => setRenaming(template),
+                      onSelect: () => {
+                          openedFromMenuOf(template);
+                          rename.reset();
+                          setRenaming(template);
+                          setIsRenaming(true);
+                      },
                   },
                   { type: 'separator' },
                   {
                       type: 'item',
                       label: t('Delete'),
                       tone: 'danger',
-                      onSelect: () => setDeleting(template),
+                      onSelect: () => {
+                          openedFromMenuOf(template);
+                          setDeleting(template);
+                      },
                   },
               ]
             : [];
 
     return (
-        <TemplatesSection icon={PenTool} title={t('Whiteboard')}>
+        <TemplatesSection
+            icon={PenTool}
+            title={t('Whiteboard')}
+            headingRef={fallbackRef}
+        >
             {total === 0 ? (
                 <div
                     data-slot="whiteboard-templates-empty"
@@ -131,12 +155,10 @@ export function WhiteboardTemplatesTab({
             )}
 
             <FormDialog
-                key={renaming?.id ?? 'none'}
-                open={renaming !== null}
+                open={isRenaming}
                 onOpenChange={(next) => {
                     if (!next) {
-                        rename.reset();
-                        setRenaming(null);
+                        setIsRenaming(false);
                     }
                 }}
                 title={t('Rename the template')}
