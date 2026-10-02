@@ -371,8 +371,8 @@ it('[P14c-03] writes the saved estimate to the story points field of the Jira Da
 
     $page->assertEnabled('[aria-label="Play 5"]')
         ->click('[aria-label="Play 5"]')
-        ->assertButtonEnabled('Show votes')
-        ->click('Show votes')
+        ->assertButtonEnabled('Reveal cards')
+        ->click('Reveal cards')
         ->assertVisible('[aria-label="Estimate"]')
         ->assertSeeIn('[aria-label="Estimate"]', '5')
         ->click('Save estimate')
@@ -556,8 +556,8 @@ it('[P14c-09a] writes the estimate of a Fibonacci game as one block at the end o
 
     $page->assertEnabled('[aria-label="Play 5"]')
         ->click('[aria-label="Play 5"]')
-        ->assertButtonEnabled('Show votes')
-        ->click('Show votes')
+        ->assertButtonEnabled('Reveal cards')
+        ->click('Reveal cards')
         ->assertSeeIn('[aria-label="Estimate"]', '5')
         ->click('Save estimate')
         ->assertSee('Estimate: 5')
@@ -597,8 +597,8 @@ it('[P14c-09b] writes the estimate of a T-shirt game as text into the GitHub iss
 
     $page->assertEnabled('[aria-label="Play XL"]')
         ->click('[aria-label="Play XL"]')
-        ->assertButtonEnabled('Show votes')
-        ->click('Show votes')
+        ->assertButtonEnabled('Reveal cards')
+        ->click('Reveal cards')
         ->assertSeeIn('[aria-label="Estimate"]', 'XL')
         ->click('Save estimate')
         ->assertSee('Estimate: XL')

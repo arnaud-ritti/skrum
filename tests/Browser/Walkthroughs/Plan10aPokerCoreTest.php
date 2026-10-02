@@ -296,14 +296,14 @@ it('[P10a-07a] shows the task picked by the facilitator as current to everyone',
     $facilitator->click('Login page')
         ->assertCount('[data-test="poker-task-row"][aria-current="true"]', 1)
         ->assertScript(p10aCurrentTaskScript(), 'Login page')
-        ->assertSee('Show votes')
-        ->assertButtonDisabled('Show votes');
+        ->assertSee('Reveal cards')
+        ->assertButtonDisabled('Reveal cards');
 
     $guest->assertCount('[data-test="poker-task-row"][aria-current="true"]', 1)
         ->assertScript(p10aCurrentTaskScript(), 'Login page')
         ->assertVisible('section[aria-labelledby^="poker-task-"]')
         ->assertEnabled('[aria-label="Play 5"]')
-        ->assertDontSee('Show votes');
+        ->assertDontSee('Reveal cards');
 });
 
 it('[P10a-07b] shows a played card face-down and never its value before the reveal', function () {
@@ -323,7 +323,7 @@ it('[P10a-07b] shows a played card face-down and never its value before the reve
         ->assertNotPresent('[aria-label="Visitor: 5"]')
         ->assertDontSeeIn('section[aria-label="Players"]', '5')
         ->assertScript('document.querySelector(\'section[aria-label="Players"]\').innerText.includes("5")', false)
-        ->assertButtonEnabled('Show votes')
+        ->assertButtonEnabled('Reveal cards')
         ->assertEnabled('[aria-label="Play 8"]')
         ->click('[aria-label="Play 8"]');
 
@@ -388,9 +388,9 @@ it('[P10a-08] reveals both votes with the result to everyone', function () {
     $facilitator = $this->awaitRealtime($this->signIn($ada, "/poker/{$game->id}"));
     $member = $this->awaitRealtime($this->signIn($bob, "/poker/{$game->id}"));
 
-    $facilitator->assertSee('Show votes')
-        ->assertButtonEnabled('Show votes')
-        ->click('Show votes');
+    $facilitator->assertSee('Reveal cards')
+        ->assertButtonEnabled('Reveal cards')
+        ->click('Reveal cards');
 
     foreach ([$facilitator, $member] as $page) {
         $page->assertVisible('[aria-label="Ada Facilitator: 8"]')
@@ -420,7 +420,7 @@ it('[P10a-09] re-votes to a consensus and saves the estimate for everyone', func
     $facilitator->assertSee('Re-vote')
         ->click('Re-vote')
         ->assertVisible('[aria-label="Ada Facilitator: Not voted yet"]')
-        ->assertSee('Show votes');
+        ->assertSee('Reveal cards');
 
     $member->assertVisible('[aria-label="Bob Member: Not voted yet"]')
         ->assertEnabled('[aria-label="Play 5"]');
@@ -431,8 +431,8 @@ it('[P10a-09] re-votes to a consensus and saves the estimate for everyone', func
 
     $facilitator->assertVisible('[aria-label="Bob Member: Voted"]')
         ->assertSee('Votes: 2')
-        ->assertButtonEnabled('Show votes')
-        ->click('Show votes');
+        ->assertButtonEnabled('Reveal cards')
+        ->click('Reveal cards');
 
     foreach ([$facilitator, $member] as $page) {
         $page->assertSee('Consensus')

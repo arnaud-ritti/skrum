@@ -254,8 +254,7 @@ it('[P10b-03] lets a guest join as a spectator who watches without a hand', func
     $c->assertSee("You're watching — switch to Play to vote")
         ->assertNotPresent('[role="group"][aria-label="Your cards"]');
 
-    $a->assertSeeIn('section[aria-label="Watching"]', 'Casey')
-        ->assertPresent("span:has(> img[data-presence-id=\"{$casey->id}\"]) svg[aria-label=\"Watching\"]");
+    $a->assertSeeIn('section[aria-label="Watching"]', 'Casey');
 
     $b->assertSeeIn('section[aria-label="Watching"]', 'Casey')
         ->assertEnabled('button[aria-label="Play 5"]')
@@ -298,14 +297,14 @@ it('[P10b-11a] lets the facilitator switch a player to spectator and back, and f
     $b->click('button[aria-label="Play 5"]');
 
     $a->assertPresent('[role="img"][aria-label="Bob: Voted"]')
-        ->assertSee('Show votes')
-        ->click('Show votes')
+        ->assertSee('Reveal cards')
+        ->click('Reveal cards')
         ->assertPresent('[role="img"][aria-label="Bob: 5"]')
         ->assertSee('Save estimate')
         ->click('Save estimate')
         ->assertSee('Estimate: 5')
         ->click('Re-vote')
-        ->assertSee('Show votes')
+        ->assertSee('Reveal cards')
         ->assertNotPresent('[role="group"][aria-label="Your cards"]');
 });
 
@@ -330,8 +329,8 @@ it('[P10b-11b] lets a player switch to watching, which withdraws the open vote, 
 
     expect($round->votes()->count())->toBe(0);
 
-    $b->assertSee('Play')
-        ->click('Play')
+    $b->assertSee('Join the vote')
+        ->click('Join the vote')
         ->assertEnabled('button[aria-label="Play 3"]');
 
     $a->assertPresent('[role="img"][aria-label="Bob: Not voted yet"]');
@@ -365,7 +364,7 @@ it('[P10b-10a] reveals an anonymous round as values without names', function () 
         ->click('button[aria-label="Play 5"]');
 
     $a->assertPresent('[role="img"][aria-label="Bob: Voted"]')
-        ->click('Show votes');
+        ->click('Reveal cards');
 
     foreach ([$a, $b] as $page) {
         $page->assertPresent('section[aria-label="Anonymous votes"]')
@@ -783,8 +782,8 @@ it('[P10b-08a] counts a round timer down for everyone and reveals at zero when a
     }
 
     $a->click('[aria-label="Timer"]')
-        ->assertSee('30 s')
-        ->click('30 s');
+        ->assertSee('1 min')
+        ->click('1 min');
 
     foreach ([$a, $b] as $page) {
         $page->assertSeeIn('[role="timer"]', '0:');
@@ -796,7 +795,7 @@ it('[P10b-08a] counts a round timer down for everyone and reveals at zero when a
     expect(DB::table('jobs')->count())->toBe(1)
         ->and($round->fresh()->revealed_at)->toBeNull();
 
-    $this->travel(31)->seconds();
+    $this->travel(61)->seconds();
     $this->workQueue();
 
     foreach ([$a, $b] as $page) {
@@ -808,7 +807,7 @@ it('[P10b-08a] counts a round timer down for everyone and reveals at zero when a
     expect($round->fresh()->reveal_reason)->toBe(PokerRevealReason::Timer);
 });
 
-it('[P10b-08b] only shows "Time\'s up!" at zero when auto-reveal is off and leaves the round open until "Show votes"', function () {
+it('[P10b-08b] only shows "Time\'s up!" at zero when auto-reveal is off and leaves the round open until "Reveal cards"', function () {
     config(['queue.default' => 'database']);
 
     ['game' => $game, 'ada' => $ada, 'bob' => $bob] = p10bTable();
@@ -822,8 +821,8 @@ it('[P10b-08b] only shows "Time\'s up!" at zero when auto-reveal is off and leav
     }
 
     $a->click('[aria-label="Timer"]')
-        ->assertSee('30 s')
-        ->click('30 s');
+        ->assertSee('1 min')
+        ->click('1 min');
 
     foreach ([$a, $b] as $page) {
         $page->assertSeeIn('[role="timer"]', '0:');
@@ -834,7 +833,7 @@ it('[P10b-08b] only shows "Time\'s up!" at zero when auto-reveal is off and leav
 
     expect(DB::table('jobs')->count())->toBe(1);
 
-    $this->travel(31)->seconds();
+    $this->travel(61)->seconds();
     $this->workQueue();
 
     expect(DB::table('jobs')->count())->toBe(0)
@@ -844,13 +843,13 @@ it('[P10b-08b] only shows "Time\'s up!" at zero when auto-reveal is off and leav
     $this->awaitRealtime($b->navigate("/poker/{$game->id}"));
 
     foreach ([$a, $b] as $page) {
-        $page->assertSeeIn('[role="timer"]', "Time's up!")
+        $page->assertAttribute('[role="timer"]', 'aria-label', "Time's up!")
             ->assertPresent('[role="img"][aria-label="Bob: Voted"]')
             ->assertDontSee('Revealed automatically');
     }
 
-    $a->assertSee('Show votes')
-        ->click('Show votes');
+    $a->assertSee('Reveal cards')
+        ->click('Reveal cards');
 
     foreach ([$a, $b] as $page) {
         $page->assertPresent('[role="img"][aria-label="Bob: 8"]')
@@ -874,8 +873,8 @@ it('[P10b-09] does not reveal at the original zero of a timer that was stopped',
     }
 
     $a->click('[aria-label="Timer"]')
-        ->assertSee('30 s')
-        ->click('30 s');
+        ->assertSee('1 min')
+        ->click('1 min');
 
     foreach ([$a, $b] as $page) {
         $page->assertSeeIn('[role="timer"]', '0:');
@@ -896,13 +895,13 @@ it('[P10b-09] does not reveal at the original zero of a timer that was stopped',
     expect(DB::table('jobs')->count())->toBe(1)
         ->and($round->fresh()->timer_ends_at)->toBeNull();
 
-    $this->travel(31)->seconds();
+    $this->travel(61)->seconds();
     $this->workQueue();
 
     expect(DB::table('jobs')->count())->toBe(0)
         ->and($round->fresh()->revealed_at)->toBeNull();
 
-    $a->assertSee('Show votes')
+    $a->assertSee('Reveal cards')
         ->assertPresent('[role="img"][aria-label="Bob: Voted"]')
         ->assertDontSee('Revealed automatically');
 

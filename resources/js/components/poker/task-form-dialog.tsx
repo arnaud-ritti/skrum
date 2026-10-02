@@ -15,7 +15,7 @@ import type { PokerTask } from '@/lib/poker/types';
 import { retroRequest } from '@/lib/retro/api';
 import { cn } from '@/lib/utils';
 import { useGame } from './game-context';
-import { MarkdownClasses } from './task-detail';
+import { MarkdownClasses } from './markdown-classes';
 
 type Props = {
     task: PokerTask | null;

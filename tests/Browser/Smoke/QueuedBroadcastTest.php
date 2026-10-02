@@ -21,8 +21,8 @@ it('delivers a broadcast made by a queued job to every open page', function () {
     }
 
     $facilitatorPage->click('[aria-label="Timer"]')
-        ->assertSee('30 s')
-        ->click('30 s');
+        ->assertSee('1 min')
+        ->click('1 min');
 
     foreach ([$facilitatorPage, $memberPage] as $page) {
         $page->assertSeeIn('[role="timer"]', '0:');
@@ -33,7 +33,7 @@ it('delivers a broadcast made by a queued job to every open page', function () {
 
     expect(DB::table('jobs')->count())->toBe(1);
 
-    $this->travel(31)->seconds();
+    $this->travel(61)->seconds();
     $this->workQueue();
 
     foreach ([$facilitatorPage, $memberPage] as $page) {
