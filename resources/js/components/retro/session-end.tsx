@@ -49,7 +49,7 @@ import { SurveyResultList } from './surveys/survey-result-list';
 
 export type CompletedView = 'results' | 'board';
 
-export function CompletedTabId(view: CompletedView): string {
+function CompletedTabId(view: CompletedView): string {
     return `completed-tab-${view}`;
 }
 

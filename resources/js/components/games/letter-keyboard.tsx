@@ -3,7 +3,7 @@ import { keyboardRows } from '@/lib/games/hangman';
 import type { KeyboardLayout } from '@/lib/games/hangman';
 import { cn } from '@/lib/utils';
 
-export type LetterKeyboardProps = {
+type LetterKeyboardProps = {
     layout: KeyboardLayout;
     picked: string[];
     /** The picked letters that are in the word; the other picked letters are misses. */

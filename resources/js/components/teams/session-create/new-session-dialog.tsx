@@ -30,11 +30,6 @@ import {
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTrans } from '@/hooks/use-trans';
 
-export type {
-    NewSessionIntent,
-    SessionType,
-} from '@/components/teams/session-create/use-new-session-intent';
-
 /** What the dialog hands to the form of a type. */
 export type SessionFormContext = {
     type: SessionType;
@@ -61,7 +56,7 @@ export type PokerSessionForm = SessionForm;
 export type WhiteboardSessionForm = SessionForm;
 export type IcebreakerSessionForm = SessionForm;
 
-export type NewSessionDialogProps = {
+type NewSessionDialogProps = {
     trigger: ReactNode;
     team: { id: string; name: string };
     intent?: NewSessionIntent | null;
@@ -78,7 +73,7 @@ const typeOrder: readonly SessionType[] = [
     'icebreaker',
 ];
 
-export type SessionFormFooterProps = {
+type SessionFormFooterProps = {
     context: SessionFormContext;
     /** Left of the footer: an option of the form, such as "Save as team template". */
     start?: ReactNode;

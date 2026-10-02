@@ -1,7 +1,7 @@
 import type { GameLeaderboardRow, GamePlayer, GamePointsAward } from './types';
 
 /** Same order as the server: points, then wins, then name (spec §4.7). */
-export function rankLeaderboard(
+function rankLeaderboard(
     rows: GameLeaderboardRow[],
     players: GamePlayer[],
 ): GameLeaderboardRow[] {

@@ -12,7 +12,7 @@ import { edit as editProfile } from '@/routes/profile';
 import { edit as editSecurity } from '@/routes/security';
 import type { Auth } from '@/types';
 
-export type SettingsSection =
+type SettingsSection =
     | 'profile'
     | 'security'
     | 'appearance'

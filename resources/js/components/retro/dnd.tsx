@@ -92,7 +92,7 @@ export function useDragAccessibility(board: Snapshot): {
 }
 
 /** The element of a card that starts its drag: what Space is pressed on. */
-export const DragHandleSelector = '[data-drag-handle]';
+const DragHandleSelector = '[data-drag-handle]';
 
 /**
  * Starts the keyboard move of the card a key was pressed on, exactly as

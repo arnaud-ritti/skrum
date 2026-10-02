@@ -170,7 +170,7 @@ export function recentItems(
         });
 }
 
-export type CommandMenuContext = {
+type CommandMenuContext = {
     /** Page of the current team, where the "New session" dialog lives. */
     teamUrl?: string;
     /** Members page of the current workspace, for those who may invite. */

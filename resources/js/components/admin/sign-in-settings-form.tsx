@@ -14,7 +14,7 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { useTrans } from '@/hooks/use-trans';
 
-export type SignInBlocker = 'no_provider' | 'no_identity' | 'no_second_factor';
+type SignInBlocker = 'no_provider' | 'no_identity' | 'no_second_factor';
 
 export type SignInSettingsState = {
     /** The stored setting. */
@@ -45,7 +45,7 @@ function stacked(bar: ReactNode, content: ReactNode): ReactNode {
     );
 }
 
-export type SignInSettingsCardProps = SignInSettingsState & {
+type SignInSettingsCardProps = SignInSettingsState & {
     /** The switch as it stands on the page, saved or not. */
     required: boolean;
     onRequiredChange: (required: boolean) => void;

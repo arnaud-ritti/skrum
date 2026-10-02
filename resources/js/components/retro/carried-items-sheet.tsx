@@ -29,7 +29,7 @@ import { useBoard } from './board-context';
 
 const OutsideRetro = 'outside';
 
-export type CarriedGroup = {
+type CarriedGroup = {
     key: string;
     title: string;
     createdAt: string | null;

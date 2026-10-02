@@ -23,7 +23,7 @@ export type GamePlayer = {
 
 export type GameOption = { value: GameKind; label: string; available: boolean };
 
-export type GameRoomInfo = {
+type GameRoomInfo = {
     id: string;
     name: string | null;
     game: GameKind;
@@ -45,7 +45,7 @@ export type GameRoomInfo = {
 /** One entry per character: separators and revealed letters, null for hidden letters. */
 export type GameMask = (string | null)[];
 
-export type GameLetterPick = { playerId: string; letter: string; hit: boolean };
+type GameLetterPick = { playerId: string; letter: string; hit: boolean };
 
 export type DrawingColor =
     | 'black'
@@ -139,7 +139,7 @@ export type GameRound = {
     myVote?: string | null;
 };
 
-export type GameHistoryRound = {
+type GameHistoryRound = {
     id: string;
     game: GameKind;
     outcome: GameRoundOutcome;

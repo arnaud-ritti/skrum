@@ -21,12 +21,12 @@ import { useTrans } from '@/hooks/use-trans';
 import { login, logout } from '@/routes';
 import type { SsoProviderOption } from '@/types';
 
-export type InvitationPerson = {
+type InvitationPerson = {
     name: string;
     avatarUrl: string;
 };
 
-export type InvitationRole = 'owner' | 'admin' | 'member';
+type InvitationRole = 'owner' | 'admin' | 'member';
 
 /**
  * Props of the page `invitations/show`. An invalid token sends `isInvalid` alone; an expired or
@@ -53,7 +53,7 @@ export type InvitationProps = {
     members?: InvitationPerson[];
 };
 
-export type InvitationCardProps = InvitationProps & {
+type InvitationCardProps = InvitationProps & {
     /** Place of the team's mark, over the corner of the inviter's avatar (IN-1). */
     team?: ReactNode;
     /** Place of the inviter's message, under the members line (IN-2). */
@@ -62,7 +62,7 @@ export type InvitationCardProps = InvitationProps & {
     decline?: ReactNode;
 };
 
-export type InvitationState = 'logged-out' | 'accept' | 'wrong-account';
+type InvitationState = 'logged-out' | 'accept' | 'wrong-account';
 
 const ShownMembers = 3;
 

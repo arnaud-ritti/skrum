@@ -22,7 +22,7 @@ import { cn } from '@/lib/utils';
 
 const Any = 'any';
 
-export type FilterAssignee = {
+type FilterAssignee = {
     id: string;
     name: string;
     avatarUrl?: string | null;

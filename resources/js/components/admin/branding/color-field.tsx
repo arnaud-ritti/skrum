@@ -20,7 +20,7 @@ function MiniSwatch({ hex }: { hex: string | null }) {
     );
 }
 
-export type ColorFieldProps = {
+type ColorFieldProps = {
     value: string;
     onChange: (value: string) => void;
     defaultColor: string;

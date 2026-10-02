@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { useTrans } from '@/hooks/use-trans';
 import { cn } from '@/lib/utils';
 
-export type UnsavedBarProps = {
+type UnsavedBarProps = {
     count: number;
     saving?: boolean;
     onCancel: () => void;

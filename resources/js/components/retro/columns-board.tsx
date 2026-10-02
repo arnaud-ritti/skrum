@@ -133,7 +133,7 @@ function AddColumnForm({ className }: { className?: string }) {
  * The line above the columns in Writing: what silent writing means, and how
  * far the room is.
  */
-export function WritingBanner({ typing }: { typing?: ReactNode }) {
+function WritingBanner({ typing }: { typing?: ReactNode }) {
     const ctx = useBoard();
     const { t } = useTrans();
     const { cards, written, present } = writingProgress(

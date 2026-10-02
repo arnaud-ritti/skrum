@@ -17,7 +17,7 @@ import { cn } from '@/lib/utils';
 import { AssetAccept, assetRejection } from './branding';
 import type { AssetRejection, ThemeName } from './branding';
 
-export type AssetUploaderProps = {
+type AssetUploaderProps = {
     label: string;
     description?: string;
     /** Replaces the line about the accepted formats. */

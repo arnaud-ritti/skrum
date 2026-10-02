@@ -5,9 +5,7 @@ import type {
     GameRound,
 } from './types';
 
-export function isRevealedAnswer(
-    answer: GameGifSlot,
-): answer is GameGifRevealed {
+function isRevealedAnswer(answer: GameGifSlot): answer is GameGifRevealed {
     return 'id' in answer;
 }
 

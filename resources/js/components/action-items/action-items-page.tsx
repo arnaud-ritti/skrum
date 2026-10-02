@@ -74,7 +74,7 @@ export type ActionItemsPageProps = {
  * Places left for the features that come after the rewrite. Each is a region
  * of the page; nothing is rendered while its slot is undefined.
  */
-export type ActionItemsPageSlots = {
+type ActionItemsPageSlots = {
     /** The selection box of a row, in the first column of the table (AI-1). */
     selectionCell?: (item: ActionItem) => ReactNode;
     /** The "select all" box, in the header of the first column (AI-1). */

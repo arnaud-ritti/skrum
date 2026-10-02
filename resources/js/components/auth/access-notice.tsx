@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
-export type AccessNoticeTone = 'default' | 'warning' | 'destructive';
+type AccessNoticeTone = 'default' | 'warning' | 'destructive';
 
 const markClasses: Record<AccessNoticeTone, string> = {
     default: 'bg-muted text-foreground',
@@ -11,7 +11,7 @@ const markClasses: Record<AccessNoticeTone, string> = {
     destructive: 'bg-skrum-destructive-soft text-skrum-destructive-text',
 };
 
-export type AccessNoticeProps = {
+type AccessNoticeProps = {
     icon: LucideIcon;
     title: string;
     description?: string;

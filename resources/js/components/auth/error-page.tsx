@@ -21,7 +21,7 @@ import { reloadDocument } from '@/lib/reload-document';
 import { dashboard, login, logout } from '@/routes';
 import type { Brand } from '@/types';
 
-export type ErrorPageProps = {
+type ErrorPageProps = {
     status: number;
     /** 500 only: the id written on every log line of the failed request. */
     requestId?: string | null;

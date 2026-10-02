@@ -32,7 +32,7 @@ export type AdminAvatarStyle = {
 };
 
 /** What applies while nothing is stored: the environment, else Skrüm. */
-export type BrandingDefaults = {
+type BrandingDefaults = {
     brandColor: string;
     brandRadius: number;
     displayName: string;
@@ -83,7 +83,7 @@ export type BrandingFormData = {
     gif_key_clear: boolean;
 };
 
-export type BrandingPayload = {
+type BrandingPayload = {
     brand_color: string | null;
     brand_radius: number | null;
     display_name: string | null;
@@ -99,12 +99,12 @@ export type BrandingPayload = {
 
 export const MinRadius = 0;
 export const MaxRadius = 16;
-export const MaxAssetBytes = 512 * 1024;
+const MaxAssetBytes = 512 * 1024;
 export const PreviewDelayMs = 250;
 
-export const RadiusPresets = [0, 4, 8, 16] as const;
+const RadiusPresets = [0, 4, 8, 16] as const;
 
-export type RadiusPreset = (typeof RadiusPresets)[number];
+type RadiusPreset = (typeof RadiusPresets)[number];
 
 export const BrandAssetNames: BrandAssetName[] = [
     'logo-light',
@@ -124,14 +124,14 @@ export const FeaturedAvatarStyles = [
     'fun-emoji',
 ];
 
-export const AssetMimeTypes = [
+const AssetMimeTypes = [
     'image/png',
     'image/jpeg',
     'image/webp',
     'image/svg+xml',
 ];
 
-export const AssetExtensions = ['png', 'jpg', 'jpeg', 'webp', 'svg'];
+const AssetExtensions = ['png', 'jpg', 'jpeg', 'webp', 'svg'];
 
 export const AssetAccept = [
     ...AssetExtensions.map((extension) => `.${extension}`),
@@ -182,7 +182,7 @@ export function nearestRadiusPreset(value: number): RadiusPreset {
     );
 }
 
-export type ContrastLevel = 'AAA' | 'AA' | 'below';
+type ContrastLevel = 'AAA' | 'AA' | 'below';
 
 export function contrastLevel(ratio: number): ContrastLevel {
     if (ratio >= 7) {
@@ -269,7 +269,7 @@ function storableName(
     return name === fallback ? null : name;
 }
 
-export type StoredBranding = Pick<
+type StoredBranding = Pick<
     BrandingPageProps,
     | 'brandRadius'
     | 'displayName'
@@ -337,7 +337,7 @@ export function toPayload(
     };
 }
 
-export type DefaultedField =
+type DefaultedField =
     | 'displayName'
     | 'poweredBy'
     | 'avatarStyle'

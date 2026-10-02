@@ -22,7 +22,7 @@ export type NotificationPreferences = {
     recap_in_app: boolean;
 };
 
-export type NotificationChannel = {
+type NotificationChannel = {
     id: string;
     field: keyof NotificationPreferences;
     /** Accessible name of the switch: the cell shows the switch alone. */
@@ -30,7 +30,7 @@ export type NotificationChannel = {
 };
 
 /** One event of the table. An event without a channel leaves that cell empty. */
-export type NotificationRow = {
+type NotificationRow = {
     key: string;
     event: string;
     description?: string;

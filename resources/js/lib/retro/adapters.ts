@@ -15,7 +15,7 @@ import type {
 } from './types';
 
 /** What the adapters read of a board. */
-export type BoardView = Pick<
+type BoardView = Pick<
     Snapshot,
     'retro' | 'viewer' | 'columns' | 'cards' | 'participants' | 'writersCount'
 >;
@@ -28,7 +28,7 @@ export const ColumnEditPhases: RetroPhase[] = [
 ];
 
 /** Phases in which an author may edit or delete their card. */
-export const CardEditPhases: RetroPhase[] = ['writing', 'grouping'];
+const CardEditPhases: RetroPhase[] = ['writing', 'grouping'];
 
 /** Phases in which anyone may name or rename a group. */
 export const GroupNamingPhases: RetroPhase[] = [
@@ -39,7 +39,7 @@ export const GroupNamingPhases: RetroPhase[] = [
 ];
 
 /** Phases in which a card takes reactions and comments. */
-export const CardEngagementPhases: RetroPhase[] = [
+const CardEngagementPhases: RetroPhase[] = [
     'grouping',
     'voting',
     'discussing',
@@ -56,11 +56,11 @@ export const VoteTotalPhases: RetroPhase[] = [
 
 export const CardMaxLength = 1000;
 
-export const GroupNameMaxLength = 60;
+const GroupNameMaxLength = 60;
 
 const FallbackColor: ColumnColor = 'moss';
 
-export type BoardCardProps = {
+type BoardCardProps = {
     id: string;
     text: string | null;
     color: ColumnColor;
@@ -74,7 +74,7 @@ export type BoardCardProps = {
     maxLength: number;
 };
 
-export type BoardColumnProps = {
+type BoardColumnProps = {
     id: string;
     title: string;
     color: ColumnColor;
@@ -89,7 +89,7 @@ export type BoardColumnProps = {
     hasCards: boolean;
 };
 
-export type BoardGroupProps = {
+type BoardGroupProps = {
     /** The id of the lead card: the server knows a group by it. */
     id: string;
     domId: string;
@@ -105,7 +105,7 @@ export type BoardGroupProps = {
 };
 
 /** What a card shows and takes of reactions and comments. */
-export type CardEngagement = {
+type CardEngagement = {
     reactions: ReactionSummary[];
     canReact: boolean;
     showsComments: boolean;
@@ -123,7 +123,7 @@ export type CardVoting = {
     blocked: 'locked' | 'spent' | null;
 };
 
-export function isBoardEditable(board: Pick<Snapshot, 'retro'>): boolean {
+function isBoardEditable(board: Pick<Snapshot, 'retro'>): boolean {
     return !board.retro.isLocked;
 }
 

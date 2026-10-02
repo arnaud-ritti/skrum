@@ -33,9 +33,7 @@ import { newDraftColumnId } from '@/lib/retro/template-adapter';
 import type { DraftColumn } from '@/lib/retro/template-adapter';
 import { cn } from '@/lib/utils';
 
-export type { DraftColumn } from '@/lib/retro/template-adapter';
-
-export type RetroColumnsEditorProps = {
+type RetroColumnsEditorProps = {
     value: DraftColumn[];
     onChange: (columns: DraftColumn[]) => void;
     max: number;

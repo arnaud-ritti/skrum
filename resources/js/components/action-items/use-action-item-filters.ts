@@ -66,7 +66,7 @@ export function readStoredFilters(workspaceId: string): StoredEntry | null {
     }
 }
 
-export function storeFilters(workspaceId: string, entry: StoredEntry): void {
+function storeFilters(workspaceId: string, entry: StoredEntry): void {
     try {
         window.localStorage.setItem(
             filterStorageKey(workspaceId),

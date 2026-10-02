@@ -3,17 +3,17 @@ import type { ReactElement, ReactNode } from 'react';
 import { useTrans } from '@/hooks/use-trans';
 import { cn } from '@/lib/utils';
 
-export type PasswordStrengthLevel = 'weak' | 'good' | 'strong';
+type PasswordStrengthLevel = 'weak' | 'good' | 'strong';
 
-export type PasswordStrengthEstimate = {
+type PasswordStrengthEstimate = {
     /** Segments of the meter that are on, from 0 (nothing typed) to 4. */
     score: 0 | 1 | 2 | 3 | 4;
     level: PasswordStrengthLevel | null;
 };
 
-export type PasswordCharacterClass = 'lower' | 'upper' | 'digit' | 'special';
+type PasswordCharacterClass = 'lower' | 'upper' | 'digit' | 'special';
 
-export type PasswordRule =
+type PasswordRule =
     | { kind: 'minlength'; count: number }
     | { kind: 'maxlength'; count: number }
     | { kind: 'required'; characters: PasswordCharacterClass };
@@ -94,10 +94,7 @@ export function parsePasswordRules(rules: string): PasswordRule[] {
         });
 }
 
-export function meetsPasswordRule(
-    rule: PasswordRule,
-    password: string,
-): boolean {
+function meetsPasswordRule(rule: PasswordRule, password: string): boolean {
     const length = Array.from(password).length;
 
     if (rule.kind === 'minlength') {

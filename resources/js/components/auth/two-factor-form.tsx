@@ -18,7 +18,7 @@ import { store } from '@/routes/two-factor/login';
 
 export type TwoFactorMode = 'code' | 'recovery';
 
-export type TwoFactorFormProps = {
+type TwoFactorFormProps = {
     mode: TwoFactorMode;
     onModeChange: (mode: TwoFactorMode) => void;
 };

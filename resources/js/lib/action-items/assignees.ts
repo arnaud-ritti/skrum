@@ -1,6 +1,6 @@
 import type { ActionItemAssignee } from '@/lib/retro/types';
 
-export const Unassigned = 'none';
+const Unassigned = 'none';
 
 export function assigneeValue(assignee: ActionItemAssignee | null): string {
     if (assignee === null) {

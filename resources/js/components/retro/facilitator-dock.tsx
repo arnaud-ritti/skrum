@@ -57,7 +57,7 @@ export type FacilitatorTools = {
  * "Nudge the last voters" and "Reveal ROTI" of the ROTI mockup: nothing
  * today, the distribution shows when the session ends.
  */
-export type RotiTools = {
+type RotiTools = {
     nudge?: FacilitatorAction;
     reveal?: FacilitatorAction;
 };

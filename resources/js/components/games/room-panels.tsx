@@ -11,7 +11,7 @@ import {
 import { GamePicker } from './game-picker';
 import { hasPlayersOnLeft, RoomPlayersSide, RoomSidebar } from './room-sidebar';
 
-export type RoomPanelsOptions = {
+type RoomPanelsOptions = {
     snapshot: GameSnapshot;
     lastEnded: GameRoundEnded | null;
     /**
@@ -27,7 +27,7 @@ export type RoomPanelsOptions = {
     gifPodium?: ReactNode;
 };
 
-export type RoomPanels = Required<Pick<GameLayoutProps, 'variant'>> &
+type RoomPanels = Required<Pick<GameLayoutProps, 'variant'>> &
     Pick<GameLayoutProps, 'left' | 'right' | 'chooser'>;
 
 /**

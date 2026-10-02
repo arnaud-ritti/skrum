@@ -45,7 +45,7 @@ export function removeTeamGameRoom(
     return rooms.filter((current) => current.id !== roomId);
 }
 
-export type TeamGamesChannelHandlers = {
+type TeamGamesChannelHandlers = {
     /** A round of a listed room has ended: its points are in the leaderboard. */
     onRoundEnded?: () => void;
     onRoomDeleted?: () => void;

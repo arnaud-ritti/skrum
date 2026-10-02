@@ -14,7 +14,7 @@ import type {
 import type { GameEvent, GameEventName } from './use-game-channel';
 import type { WhisperChannel } from '@/lib/realtime/whisper-transport';
 
-export const RetroEvents = [
+const RetroEvents = [
     'card.created',
     'card.updated',
     'card.deleted',
@@ -50,7 +50,7 @@ export const RetroEvents = [
  * Carried action items of earlier retros travel on a private channel only
  * members can join (spec §5).
  */
-export const MemberEvents = [
+const MemberEvents = [
     'carried-action-item.saved',
     'carried-action-item.removed',
     'carried-action-item.comments.changed',
@@ -63,7 +63,7 @@ export const MemberEvents = [
  */
 const ResyncCoalesceMs = 250;
 
-export type RetroEventName =
+type RetroEventName =
     | (typeof RetroEvents)[number]
     | (typeof MemberEvents)[number];
 
@@ -72,7 +72,7 @@ export type RetroEvent = {
     payload: Record<string, unknown>;
 };
 
-export type RetroChannelHandlers = {
+type RetroChannelHandlers = {
     onEvent: (event: RetroEvent) => void;
     onResync: () => void;
     onJoining: (member: PresenceMember) => void;

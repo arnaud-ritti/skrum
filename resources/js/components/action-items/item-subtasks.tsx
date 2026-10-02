@@ -23,7 +23,7 @@ import { retroRequest } from '@/lib/retro/api';
 import type { ActionItem } from '@/lib/retro/types';
 import { cn } from '@/lib/utils';
 
-export const MaxSubtasks = 20;
+const MaxSubtasks = 20;
 
 const SubtaskMaxLength = 200;
 

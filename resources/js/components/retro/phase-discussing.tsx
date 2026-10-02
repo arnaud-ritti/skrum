@@ -23,7 +23,7 @@ import { SurveysColumn } from './surveys/surveys-column';
 import { TopicFocus, TopicUpNext } from './topic-focus';
 import { TopicsList } from './topics-list';
 
-export type DiscussionValue = {
+type DiscussionValue = {
     topics: Topic[];
     /** The topic in front of the viewer. */
     current: Topic | null;
@@ -46,7 +46,7 @@ export type DiscussionValue = {
 const DiscussionContext = createContext<DiscussionValue | null>(null);
 
 /** The topic of the card, or of the row of the topics list, a key was pressed on. */
-export function topicOfFocus(
+function topicOfFocus(
     topics: Topic[],
     target: EventTarget | null,
 ): Topic | null {

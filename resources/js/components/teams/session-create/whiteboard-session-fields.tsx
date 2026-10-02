@@ -45,7 +45,7 @@ export function whiteboardSessionForm(
 }
 
 /** The item a link named (`?template=`), by its key or by its workspace template id; else Blank; else the first. */
-export function initialTemplateKey(
+function initialTemplateKey(
     gallery: WhiteboardGalleryItem[],
     intentTemplate?: string,
 ): string | null {

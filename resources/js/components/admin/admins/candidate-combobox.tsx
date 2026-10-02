@@ -23,7 +23,7 @@ import {
 import { Spinner } from '@/components/ui/spinner';
 import { useTrans } from '@/hooks/use-trans';
 
-export type CandidateComboboxProps = {
+type CandidateComboboxProps = {
     label: string;
     query: string;
     onQueryChange: (query: string) => void;

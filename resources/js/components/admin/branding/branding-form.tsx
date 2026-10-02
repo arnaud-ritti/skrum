@@ -52,7 +52,7 @@ import { useStagedAssets } from './use-staged-assets';
 
 type AssetState = Partial<Record<BrandAssetName, string>>;
 
-export type BrandingFormProps = BrandingPageProps & {
+type BrandingFormProps = BrandingPageProps & {
     /** The admin's own name: their avatar is the sample of each style. */
     adminName: string;
     /** Moves the focus to the form on mount, for the remount that follows a save. */

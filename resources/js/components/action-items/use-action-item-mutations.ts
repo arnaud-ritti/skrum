@@ -18,7 +18,7 @@ import type { ActionItem, ActionItemStatus } from '@/lib/retro/types';
 /** Resolves to `undefined` when the request failed and was reported. */
 export type RunMutation = <T>(request: Promise<T>) => Promise<T | undefined>;
 
-export type ActionItemMutationOptions = {
+type ActionItemMutationOptions = {
     /** Replaces the toast-and-resync `run`: the board has its own. */
     run?: RunMutation;
     /** Reloads what the screen shows after a failed request. */

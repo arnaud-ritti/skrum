@@ -1,9 +1,9 @@
 import type { ActionItem } from '@/lib/retro/types';
 
-export type ActionDueState = 'done' | 'overdue' | 'soon' | 'later' | 'none';
+type ActionDueState = 'done' | 'overdue' | 'soon' | 'later' | 'none';
 
 /** A due date this close is shown as a warning, with the days left. */
-export const DueSoonDays = 3;
+const DueSoonDays = 3;
 
 const DayMs = 86_400_000;
 

@@ -12,7 +12,7 @@ import {
     nearestRadiusPreset,
 } from './branding';
 
-export type RadiusControlProps = {
+type RadiusControlProps = {
     /** Radius of the form, 0 to 16. */
     value: number;
     onChange: (value: number) => void;

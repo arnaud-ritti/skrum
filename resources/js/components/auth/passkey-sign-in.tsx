@@ -7,7 +7,7 @@ import { AuthSeparator } from '@/components/auth/auth-separator';
 import { LoadingButton } from '@/components/skrum/loading-button';
 import { useTrans } from '@/hooks/use-trans';
 
-export type PasskeyRoutes = {
+type PasskeyRoutes = {
     options: UrlMethodPair;
     submit: UrlMethodPair;
 };

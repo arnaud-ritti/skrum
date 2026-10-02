@@ -19,8 +19,6 @@ import { store } from '@/routes/login';
 import { request } from '@/routes/password';
 import type { SsoProviderOption } from '@/types';
 
-export { authLinkClass };
-
 type SignInMethod = 'magic-link' | 'password';
 
 export type LoginFormProps = {

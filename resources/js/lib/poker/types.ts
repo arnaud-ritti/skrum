@@ -135,7 +135,7 @@ export type PokerPlayer = {
     isSpectator: boolean;
 };
 
-export type PokerGame = {
+type PokerGame = {
     id: string;
     title: string;
     deck: string;

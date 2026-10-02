@@ -5,9 +5,9 @@ import type {
 } from '@/components/skrum/survey-question';
 import type { BoardParticipant, SurveyPayload } from './types';
 
-export const SurveyTextMaxLength = 500;
+const SurveyTextMaxLength = 500;
 
-export type SurveyQuestionContext = {
+type SurveyQuestionContext = {
     participants: BoardParticipant[];
     mode: 'answer' | 'results';
 };

@@ -75,7 +75,7 @@ function typedValue(event: FormEvent<HTMLElement>): string | null {
         : null;
 }
 
-export function CardGifDialog({
+function CardGifDialog({
     gif,
     open,
     onOpenChange,
@@ -308,9 +308,7 @@ export function useGroupShortcut(): void {
 type ReactionsResponse = { cardId: string; reactions: ReactionSummary[] };
 
 /** Adds or takes back the viewer's reaction to a card, shown at once. */
-export function useCardReactionToggle(
-    card: BoardCardData,
-): (emoji: string) => void {
+function useCardReactionToggle(card: BoardCardData): (emoji: string) => void {
     const ctx = useBoard();
     const retroId = ctx.board.retro.id;
 
@@ -351,7 +349,7 @@ export function useCardReactionToggle(
  * Whether the comments of a card are open. Opening them marks them as read,
  * and so does a comment that arrives while they are open.
  */
-export function useCardComments(card: BoardCardData): {
+function useCardComments(card: BoardCardData): {
     open: boolean;
     toggle: () => void;
     isUnread: boolean;
@@ -369,7 +367,7 @@ export function useCardComments(card: BoardCardData): {
     return { open, toggle: () => setOpen((current) => !current), isUnread };
 }
 
-export function UnreadCommentsDot() {
+function UnreadCommentsDot() {
     const { t } = useTrans();
 
     return (
@@ -383,7 +381,7 @@ export function UnreadCommentsDot() {
 }
 
 /** The comments of a card, and the fields to write one when the phase allows. */
-export function CardThread({
+function CardThread({
     card,
     canWrite,
 }: {

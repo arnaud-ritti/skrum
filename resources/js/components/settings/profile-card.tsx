@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { useTrans } from '@/hooks/use-trans';
 import { send } from '@/routes/verification';
 
-export type ProfileUser = {
+type ProfileUser = {
     name: string;
     email: string;
     email_verified_at: string | null;

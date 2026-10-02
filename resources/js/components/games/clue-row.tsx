@@ -2,7 +2,7 @@ import { useTrans } from '@/hooks/use-trans';
 import { ClueSlots } from '@/lib/games/clue';
 import { cn } from '@/lib/utils';
 
-export type ClueSize = 'md' | 'lg';
+type ClueSize = 'md' | 'lg';
 
 type Props = {
     clue: string[];

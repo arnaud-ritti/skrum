@@ -2,11 +2,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { BrandAssetName } from './branding';
 
 /** An image chosen but not sent yet, or the removal of the stored one. */
-export type StagedAsset =
+type StagedAsset =
     | { type: 'file'; file: File; url: string }
     | { type: 'removal' };
 
-export type StagedAssets = Partial<Record<BrandAssetName, StagedAsset>>;
+type StagedAssets = Partial<Record<BrandAssetName, StagedAsset>>;
 
 function revoke(staged: StagedAsset | undefined): void {
     if (staged?.type === 'file') {

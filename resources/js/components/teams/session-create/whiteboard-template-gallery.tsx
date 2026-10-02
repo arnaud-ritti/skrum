@@ -6,7 +6,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useTrans } from '@/hooks/use-trans';
 import type { WhiteboardGalleryItem } from '@/types';
 
-export type WhiteboardTemplateGalleryProps = {
+type WhiteboardTemplateGalleryProps = {
     items: WhiteboardGalleryItem[];
     /** Key of the chosen item. */
     value: string;
