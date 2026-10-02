@@ -45,10 +45,11 @@ function p18eTeamPath(Team $team, string $query = ''): string
     return route('teams.show', [$team->workspace, $team], false).$query;
 }
 
-it('[P18e-01-01] opens one "New session" dialog on the Retrospective type, with the form of that type', function () {
+it('[P18e-01-01] opens one "New session" dialog on the Retrospective type and keeps the fields of each type when switching', function () {
     $team = Team::factory()->create(['name' => 'Atlas']);
     $alice = p18eMember($team);
-    $types = '[role="dialog"] [role="radiogroup"][aria-label="Session type"]';
+    $retroType = P18eTypes.' [role="radio"][data-type="retro"]';
+    $submitOf = fn (string $slot): string => "(() => { const buttons = document.querySelectorAll('[role=\"dialog\"] button[type=\"submit\"]'); const form = buttons[0]?.form; return buttons.length === 1 && form?.dataset.slot === '{$slot}' && form.offsetParent !== null && document.querySelectorAll('[role=\"dialog\"] [data-session-form]:not([hidden])').length === 1; })()";
 
     $page = $this->signIn($alice, p18eTeamPath($team));
 
@@ -56,20 +57,46 @@ it('[P18e-01-01] opens one "New session" dialog on the Retrospective type, with 
         ->click('New session')
         ->assertSeeIn('[role="dialog"]', 'New session')
         ->assertSeeIn('[role="dialog"]', 'Team Atlas')
-        ->assertAttribute("{$types} [role=\"radio\"][data-type=\"retro\"]", 'aria-checked', 'true')
-        ->assertNotPresent("{$types} [role=\"radio\"][data-type=\"survey\"]")
+        ->assertAttribute($retroType, 'aria-checked', 'true')
+        ->assertNotPresent(P18eTypes.' [role="radio"][data-type="survey"]')
         ->assertVisible('#new-retro-title')
-        ->assertCount('[role="dialog"] button[type="submit"]', 1)
         ->assertSeeIn('[role="dialog"] button[type="submit"]', 'Create & open')
-        ->fill('#new-retro-title', 'Kept while the dialog is open')
+        ->assertScript($submitOf('retro-session-fields'), true)
+        ->fill('#new-retro-title', 'Kept retro')
         ->click('#new-retro-anonymous')
-        ->click("{$types} [role=\"radio\"][data-type=\"retro\"]")
-        ->assertValue('#new-retro-title', 'Kept while the dialog is open')
+        ->click(P18ePokerType)
+        ->assertVisible('#new-poker-title')
+        ->assertScript('document.activeElement?.id', 'new-poker-title')
+        ->assertScript($submitOf('poker-session-fields'), true)
+        ->fill('#new-poker-title', 'Kept poker')
+        ->click('#new-poker-auto-reveal')
+        ->click(P18eWhiteboardType)
+        ->assertVisible('#whiteboard-title')
+        ->assertScript('document.activeElement?.id', 'whiteboard-title')
+        ->assertScript($submitOf('whiteboard-session-fields'), true)
+        ->fill('#whiteboard-title', 'Kept board')
+        ->click('#new-whiteboard-guests')
+        ->click($retroType)
+        ->assertVisible('#new-retro-title')
+        ->assertValue('#new-retro-title', 'Kept retro')
         ->assertAttribute('#new-retro-anonymous', 'aria-checked', 'true')
+        ->assertScript($submitOf('retro-session-fields'), true)
+        ->click(P18ePokerType)
+        ->assertVisible('#new-poker-title')
+        ->assertValue('#new-poker-title', 'Kept poker')
+        ->assertAttribute('#new-poker-auto-reveal', 'aria-checked', 'true')
+        ->assertScript($submitOf('poker-session-fields'), true)
+        ->click(P18eWhiteboardType)
+        ->assertVisible('#whiteboard-title')
+        ->assertValue('#whiteboard-title', 'Kept board')
+        ->assertAttribute('#new-whiteboard-guests', 'aria-checked', 'true')
+        ->assertScript($submitOf('whiteboard-session-fields'), true)
         ->click('Cancel')
         ->assertNotPresent('[role="dialog"]');
 
-    expect(Retro::query()->count())->toBe(0);
+    expect(Retro::query()->count())->toBe(0)
+        ->and(PokerGame::query()->count())->toBe(0)
+        ->and(Whiteboard::query()->count())->toBe(0);
 });
 
 it('[P18e-01-02] creates a retro from a workspace template found under "Browse", tab "My workspace"', function () {
@@ -101,6 +128,10 @@ it('[P18e-01-02] creates a retro from a workspace template found under "Browse",
         ->click('Browse')
         ->assertVisible('[aria-label="Search templates"]')
         ->click('[role="dialog"] [role="tab"]:has-text("My workspace")')
+        ->fill('[aria-label="Search templates"]', 'pulse')
+        ->keys('[aria-label="Search templates"]', 'Enter')
+        ->assertPathIs(p18eTeamPath($team))
+        ->assertVisible('[aria-label="Search templates"]')
         ->click(P18eTemplates.' [role="radio"]:has-text("Team pulse")')
         ->assertAttribute(P18eTemplates.' [role="radio"]:has-text("Team pulse")', 'aria-checked', 'true')
         ->click('[role="dialog"] button:has-text("Back")')
@@ -114,7 +145,8 @@ it('[P18e-01-02] creates a retro from a workspace template found under "Browse",
 
     $retro = Retro::query()->where('title', 'Pulse check')->sole();
 
-    expect($retro->template)->toBe('workspace')
+    expect(Retro::query()->count())->toBe(1)
+        ->and($retro->template)->toBe('workspace')
         ->and($retro->workspace_template_id)->toBe($template->id)
         ->and($retro->columns->pluck('title')->all())->toBe(['Energy', 'Blockers']);
 });

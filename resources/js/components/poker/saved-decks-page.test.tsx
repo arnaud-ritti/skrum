@@ -208,7 +208,7 @@ describe('SavedDecksPage', () => {
         renderPage({ deckLimit: 2 });
 
         expect(screen.getByRole('status').textContent).toBe(
-            'This team already has 30 saved decks.',
+            'This team already has 2 saved decks.',
         );
         expect(
             screen.queryByRole('button', { name: 'Create a deck' }),

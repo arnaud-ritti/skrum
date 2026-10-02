@@ -413,7 +413,7 @@ export function RetroSessionFields({
     };
 
     const saveTemplateThenCreate = (template: RetroTemplate): void => {
-        const name = title.trim().slice(0, MaxTemplateNameLength);
+        const name = title.trim().slice(0, MaxTemplateNameLength).trim();
 
         router.post(
             WorkspaceTemplatesController.store(workspaceSlug).url,
@@ -547,7 +547,7 @@ export function RetroSessionFields({
                                 id="new-retro-icebreaker-game"
                                 size="sm"
                                 aria-label={t('Icebreaker game')}
-                                className="w-36"
+                                className="max-w-40"
                             >
                                 <SelectValue />
                             </SelectTrigger>

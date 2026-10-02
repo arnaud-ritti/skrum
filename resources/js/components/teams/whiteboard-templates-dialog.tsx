@@ -242,7 +242,11 @@ function TemplateEditForm({
                     required
                     autoFocus
                     aria-invalid={errors.name !== undefined || undefined}
-                    aria-describedby={`${idPrefix}-name-error`}
+                    aria-describedby={
+                        errors.name === undefined
+                            ? undefined
+                            : `${idPrefix}-name-error`
+                    }
                     onChange={(event) => setName(event.target.value)}
                 />
                 {errors.name !== undefined && (
@@ -264,7 +268,11 @@ function TemplateEditForm({
                     value={description}
                     maxLength={300}
                     aria-invalid={errors.description !== undefined || undefined}
-                    aria-describedby={`${idPrefix}-description-error`}
+                    aria-describedby={
+                        errors.description === undefined
+                            ? undefined
+                            : `${idPrefix}-description-error`
+                    }
                     onChange={(event) => setDescription(event.target.value)}
                 />
                 {errors.description !== undefined && (

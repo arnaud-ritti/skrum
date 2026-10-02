@@ -1072,6 +1072,7 @@
     "Hide rounds": "Masquer les tours",
     "Only the deck's creator or a workspace admin can change it.": "Seuls la personne qui a créé ce jeu de cartes ou un administrateur de l'espace de travail peuvent le modifier.",
     "This team already has 30 saved decks.": "Cette équipe a déjà 30 jeux de cartes enregistrés.",
+    "This team already has :count saved decks.": "Cette équipe a déjà :count jeux de cartes enregistrés.",
     "This workspace already has 30 saved decks.": "Cet espace de travail a déjà 30 jeux de cartes enregistrés.",
     "Only a workspace admin can change a workspace deck.": "Seul un administrateur de l'espace de travail peut modifier un jeu de cartes de l'espace de travail.",
     "A deck with this name already exists.": "Un jeu de cartes porte déjà ce nom.",

@@ -223,6 +223,12 @@ describe('the icebreaker form', () => {
     it('shows the server errors under the name and under the games, and closes on success', () => {
         const dialog = open();
 
+        expect(
+            document
+                .querySelector('#new-icebreaker-name')
+                ?.hasAttribute('aria-describedby'),
+        ).toBe(false);
+
         typeName('Room');
         submit(dialog);
 

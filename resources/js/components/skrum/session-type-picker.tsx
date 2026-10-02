@@ -310,7 +310,7 @@ export function SessionTypePicker({
                                 compact &&
                                     'grid min-h-12 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-md px-2 py-1.5',
                                 inline &&
-                                    'flex w-52 min-w-0 shrink-0 items-center gap-3 rounded-lg px-3 py-2.5 @2xl/types:w-auto',
+                                    'flex max-w-64 min-w-44 shrink-0 items-center gap-3 rounded-lg px-3 py-2.5 @2xl/types:max-w-none @2xl/types:min-w-0',
                                 !compact &&
                                     !inline &&
                                     'flex flex-col items-start gap-1 rounded-lg p-3',

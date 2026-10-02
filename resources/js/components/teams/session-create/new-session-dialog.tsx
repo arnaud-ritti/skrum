@@ -271,7 +271,9 @@ function SessionDialogBody({
 /**
  * One trigger, one dialog. A type is offered when its form is passed. Each
  * visited form stays mounted while the dialog is open, so switching type
- * keeps what was typed; everything is reset when the dialog closes.
+ * keeps what was typed; everything is reset when the dialog closes, and also
+ * when the viewport crosses 768 px while it is open (the drawer and the dialog
+ * are two trees). An intent opens the dialog only on a type that can be used.
  */
 export function NewSessionDialog({
     trigger,
@@ -286,7 +288,9 @@ export function NewSessionDialog({
     const mobile = useIsMobile();
     const forms = { retro, poker, whiteboard, icebreaker };
     const initialType = firstType(forms, intent);
-    const [open, setOpen] = useState(intent !== null && initialType !== null);
+    const [open, setOpen] = useState(
+        intent !== null && initialType === intent.type,
+    );
 
     if (initialType === null) {
         return null;

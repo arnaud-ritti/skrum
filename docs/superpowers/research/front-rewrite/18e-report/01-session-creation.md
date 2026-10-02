@@ -47,14 +47,14 @@ Added by rule 13 (M1, M2): editable column list (`columns`), "Anonymous guests a
 | No "Max per card", "Timer per phase", "ROTI at the end" | D-07 |
 | No invitation link and "Copy link"; the header says "Team :team" only | D-08 |
 | Type tiles read "Retro", "Planning poker", "Whiteboard", "Icebreaker" (the mockup: "Poker") | plan, "Browser tests that change" (the type radio "Planning poker") |
-| "Votes per person" has an "Automatic" switch beside the stepper | no row: parity row 15, named in the task's composition |
-| "Icebreaker at the start" has a switch beside the select | no row: parity row 13 |
-| "Automatic AI summary" row | no row: no mockup, named in the task's composition |
-| "Health check" help reads "The team rates its health statements first" (the mockup: "6 statements, before the ROTI", false here: the count varies and the phase comes first) | no row: reason F |
-| The colour palette shows the six server colours with their names, not eight | K20, until R1 |
-| "Delete column" beside the palette title | no row: named in the task's composition |
-| A shortcut shows its category ("Essentials"), the mockup "Classic" | no row: the catalogue's own category |
-| "All templates" and "Browse" open the same full picker in place of the shortcuts; the picker shows its own read-only preview above the editable list | no row: 1-D3 |
+| "Votes per person" has an "Automatic" switch beside the stepper | D-40 (awaiting the owner) |
+| "Icebreaker at the start" has a switch beside the select | D-40 (awaiting the owner) |
+| "Automatic AI summary" row | D-41 (awaiting the owner) |
+| "Health check" help reads "The team rates its health statements first" (the mockup: "6 statements, before the ROTI", false here: the count varies and the phase comes first) | D-44 (awaiting the owner) |
+| The colour palette shows the six server colours with their names, not eight | D-42 (awaiting the owner); K20, until R1 |
+| "Delete column" beside the palette title | D-42 (awaiting the owner) |
+| A shortcut shows its category ("Essentials"), the mockup "Classic" | D-43 (awaiting the owner) |
+| "All templates" and "Browse" open the same full picker in place of the shortcuts; the picker shows its own read-only preview above the editable list | D-43 (awaiting the owner) |
 
 ## Task 1.2 — Poker form on DeckPicker and DeckEditor
 
@@ -90,11 +90,11 @@ Added by rule 13 (M2, M3): Tasks ("Type them", one title per line, 50 at most, a
 | No "Import from Jira" tab, no "Timer per task", "Change vote after reveal", "Write estimates to Jira", no Jira note | D-07 |
 | No "Schedule…" | D-06 |
 | No invitation link and "Copy link" | D-08 |
-| Deck tiles are the cards of `DeckPicker` (name, "n cards", value chips, badge; two per row in the dialog) and not the mockup's four small tiles with the values in mono; the list is taller, so the Tasks block is below the fold of the dialog with six decks | no row: the task's composition and `DeckPicker/README.md` |
-| "Create a deck" is the dashed card at the end of the grid, not a "New deck" button in the section header | no row: `DeckPicker/README.md`, plan "Browser tests changed" |
-| The value preview under the grid is the picker's strip of large cards on a canvas, with the deck's name | no row: `DeckPicker/README.md` |
-| "Anonymous votes" row | no row: no mockup, named in the task's composition |
-| "Auto reveal" and "Anonymous guests allowed" open off (the mockup shows them on): the defaults of today are kept | no row: parity rows 27, and 1.1 for the guests |
+| Deck tiles are the cards of `DeckPicker` (name, "n cards", value chips, badge; two per row in the dialog) and not the mockup's four small tiles with the values in mono; the list is taller, so the Tasks block is below the fold of the dialog with six decks | D-37, D-38 (awaiting the owner; D-38 is the one to decide first) |
+| "Create a deck" is the dashed card at the end of the grid, not a "New deck" button in the section header | D-39 (awaiting the owner) |
+| The value preview under the grid is the picker's strip of large cards on a canvas, with the deck's name | D-37 (awaiting the owner) |
+| "Anonymous votes" row | D-41 (awaiting the owner) |
+| "Auto reveal" and "Anonymous guests allowed" open off (the mockup shows them on): the defaults of today are kept | D-44 (awaiting the owner) |
 | FR: "Facilitateur en « Regarder seulement »" (the mockup: « Watch only »): the name the room gives that mode in French | no row |
 | The type row of the bench dialog shows one tile (only the poker form is passed there) | bench only |
 
@@ -168,7 +168,7 @@ ScreenSessionCreate draws the Icebreaker tile only, not its form: the form is bu
 | Difference | Row |
 |---|---|
 | Four types, no Poll | D-09 |
-| The Icebreaker tile shows the `Sparkles` icon of `SessionTypePicker` (the mockup: `party-popper`) | no row: the component of 18c, not changed here |
+| The Icebreaker tile shows `Sparkles` and the Retro tile `Layers` | not a difference: the tiles of the mockup show `sparkles` and `layers` (`party-popper` and `sticky-note` are in the page behind the dialog and in the icebreaker row) |
 | Game cards have no duration and no player range: the server has no such data (`IcebreakerGameCard` hides the line) | no row: reason N, already the component's documented behaviour |
 | The pitches are new sentences ("One draws, the others guess.", …): the bench's pitches name a 60-second limit and "3 emojis", which the games do not guarantee | no row: reason F |
 | No "Schedule…", no invitation link | D-06, D-08 |
@@ -201,13 +201,21 @@ None: the "Saved decks" panel of ScreenPokerQueue has no element left for a late
 | Difference | Row |
 |---|---|
 | The header button reads "Create a deck" (the mockup: "New deck") | owner answer 1-D7 |
-| The page sits in the application layout (sidebar, topbar with the breadcrumb "team › Saved decks"); "Back to the team" is a link above the title, not a bar of its own panel, and the breadcrumb is not "Atlas › Planning poker" | no row: the task's composition (`AppLayout active="sessions"`, breadcrumbs team › Saved decks) |
-| "Set as default" on each card that is not the default: the mockup only shows the badge. With it the footer of a card takes two lines at 15rem | no row: spec B21, named in the task's composition |
-| "Delete" on a custom card (the mockup: Edit and Duplicate only) | no row: parity row 34 |
-| "Workspace" badge on a workspace deck | no row: spec B30, named in the task's composition |
+| The page sits in the application layout (sidebar, topbar with the breadcrumb "team › Saved decks"); "Back to the team" is a link above the title, not a bar of its own panel, and the breadcrumb is not "Atlas › Planning poker" | D-46 (awaiting the owner) |
+| "Set as default" on each card that is not the default: the mockup only shows the badge. With it the footer of a card takes two lines at 15rem | D-45 (awaiting the owner) |
+| "Delete" on a custom card (the mockup: Edit and Duplicate only) | D-45 (awaiting the owner) |
+| "Workspace" badge on a workspace deck | D-45 (awaiting the owner) |
 | The usage reads "13 values · 31 games" and "Custom · by Malik K · 4 games" as the mockup; the plan's "Used n times" is not used | plan text against the mockup: the mockup wins |
-| Four built-in decks (Fibonacci, Modified Fibonacci, T-shirt sizes, Powers of 2) with the product's cards; the mockup shows two built-in decks and "Powers of 2" as a custom deck | no row: the product's data |
-| The footer buttons of a custom card are grouped on the left (the mockup: Edit left, Duplicate right) | no row: four actions do not fit a left / right pair |
-| The editor opens in a dialog; the mockup has no frame for the editor on this page | no row: `DeckPicker/README.md` ("the editor opens from Create a deck or Edit") |
+| Four built-in decks (Fibonacci, Modified Fibonacci, T-shirt sizes, Powers of 2) with the product's cards; the mockup shows two built-in decks and "Powers of 2" as a custom deck | D-45 (awaiting the owner) |
+| The footer buttons of a custom card are grouped on the left (the mockup: Edit left, Duplicate right) | D-45 (awaiting the owner) |
+| The editor opens in a dialog; the mockup has no frame for the editor on this page | D-46 (awaiting the owner) |
 | "No saved decks yet." in the creation tile when the team has none | no row: parity row 31, the mockup has no empty state |
 | FR: the title is "Jeux de cartes enregistrés" and the locked label "Intégrée" (the mockup: "Decks enregistrés", "Intégré"): existing translations of keys shared with other screens | no row |
+
+## Review of Group 1 (2026-10-02)
+
+- Enter in the template search, and in the name of the deck editor, no longer creates the session: the search ignores Enter, the deck name takes the deck ("Use this deck") when it has two values.
+- A saved deck deleted by someone else: the form reloads `pokerDecks` and goes back to the default deck.
+- An intent naming a type the user cannot use (`?new=whiteboard` without the right) no longer opens the dialog.
+- Known and accepted: the dialog is a `Drawer` below 768 px and a `Dialog` above, two trees. Crossing 768 px while it is open (rotation, resize) resets what was typed. Keeping it needs the state of the four forms lifted above the switch; not done.
+- Rows D-37 to D-46 of the plan carry the differences that had no row. They await the owner's word.

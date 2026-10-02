@@ -498,6 +498,17 @@ export function DeckEditor({
                             onChange={(event) =>
                                 onChange({ ...value, name: event.target.value })
                             }
+                            onKeyDown={(event) => {
+                                if (event.key !== 'Enter') {
+                                    return;
+                                }
+
+                                event.preventDefault();
+
+                                if (!saveDisabled) {
+                                    onSave();
+                                }
+                            }}
                             aria-invalid={errors?.name ? true : undefined}
                             aria-describedby={
                                 errors?.name

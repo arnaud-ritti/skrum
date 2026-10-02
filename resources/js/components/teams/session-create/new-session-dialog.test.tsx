@@ -302,6 +302,27 @@ describe('NewSessionDialog', () => {
         ]);
     });
 
+    it('stays closed when the intent names a type that is not offered', () => {
+        renderWithProviders(
+            <NewSessionDialog
+                trigger={<Button>New session</Button>}
+                team={team}
+                retro={retroSessionForm(retroProps)}
+                intent={{ type: 'whiteboard' }}
+            />,
+        );
+
+        expect(screen.queryByRole('dialog')).toBeNull();
+
+        fireEvent.click(screen.getByRole('button', { name: 'New session' }));
+
+        expect(
+            within(screen.getByRole('dialog'))
+                .getByRole('radio', { name: /Retro/ })
+                .getAttribute('aria-checked'),
+        ).toBe('true');
+    });
+
     it('closes with Cancel and comes back with fresh defaults', () => {
         open();
 
@@ -449,6 +470,20 @@ describe('the retro form', () => {
         expect(screen.getByText('Columns · 4')).toBeTruthy();
     });
 
+    it('does not create the retro when Enter is pressed in the template search', () => {
+        open();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Browse' }));
+
+        const search = screen.getByLabelText('Search templates');
+
+        fireEvent.change(search, { target: { value: 'sail' } });
+
+        expect(fireEvent.keyDown(search, { key: 'Enter' })).toBe(false);
+        expect(mocks.post).not.toHaveBeenCalled();
+        expect(screen.getByRole('radio', { name: /Sailboat/ })).toBeTruthy();
+    });
+
     it('shows the AI summary row only when a provider is configured', () => {
         open({
             retro: retroSessionForm({
@@ -521,6 +556,88 @@ describe('the retro form', () => {
         expect(lastPost()[0]).toContain('/retros');
         expect(lastPost()[1].template).toBe('workspace:new');
         expect(lastPost()[1]).not.toHaveProperty('columns');
+    });
+
+    it('names the template without the space a cut title ends with', () => {
+        open();
+
+        fireEvent.change(screen.getByLabelText('Name'), {
+            target: { value: `${'a'.repeat(79)} retro of the sprint` },
+        });
+        fireEvent.click(screen.getByLabelText('Save as team template'));
+        fireEvent.click(screen.getByRole('button', { name: 'Create & open' }));
+
+        expect(lastPost()[1].name).toBe('a'.repeat(79));
+    });
+
+    it('creates the retro from the chosen template when the saved one is not found', () => {
+        open();
+
+        fireEvent.change(screen.getByLabelText('Column 2 title'), {
+            target: { value: 'Rocks' },
+        });
+        fireEvent.click(screen.getByLabelText('Save as team template'));
+        fireEvent.click(screen.getByRole('button', { name: 'Create & open' }));
+
+        act(() => {
+            lastPost()[2].onSuccess?.({ props: { catalogue } });
+        });
+
+        expect(mocks.post).toHaveBeenCalledTimes(2);
+        expect(lastPost()[0]).toContain('/retros');
+        expect(lastPost()[1].template).toBe('sailboat');
+        expect(lastPost()[1].columns).toEqual([
+            { title: 'Wind', description: null, color: 'green' },
+            { title: 'Rocks', description: null, color: 'red' },
+        ]);
+    });
+
+    it('shows the refusal of the retro after the template is saved, and does not save it twice', () => {
+        open();
+
+        fireEvent.change(screen.getByLabelText('Name'), {
+            target: { value: 'Harbour retro' },
+        });
+        fireEvent.click(screen.getByLabelText('Save as team template'));
+        fireEvent.click(screen.getByRole('button', { name: 'Create & open' }));
+
+        act(() => {
+            lastPost()[2].onStart?.();
+            lastPost()[2].onSuccess?.({
+                props: {
+                    catalogue: [
+                        template(
+                            'workspace:new',
+                            'Harbour retro',
+                            ['Wind', 'Anchors'],
+                            { isWorkspace: true },
+                        ),
+                        ...catalogue,
+                    ],
+                },
+            });
+        });
+        act(() => {
+            lastPost()[2].onStart?.();
+            lastPost()[2].onError?.({
+                title: 'The title has already been taken.',
+            });
+            lastPost()[2].onFinish?.();
+        });
+
+        expect(screen.getByRole('alert').textContent).toBe(
+            'The title has already been taken.',
+        );
+        expect(
+            screen
+                .getByLabelText('Save as team template')
+                .getAttribute('aria-checked'),
+        ).toBe('false');
+
+        fireEvent.click(screen.getByRole('button', { name: 'Create & open' }));
+
+        expect(mocks.post).toHaveBeenCalledTimes(3);
+        expect(lastPost()[0]).toContain('/retros');
     });
 
     it('shows the refusal of the template name under the name and creates nothing', () => {

@@ -153,7 +153,11 @@ export function WhiteboardSessionFields({
                         required
                         autoFocus
                         aria-invalid={errors.title !== undefined || undefined}
-                        aria-describedby="whiteboard-title-error"
+                        aria-describedby={
+                            errors.title === undefined
+                                ? undefined
+                                : 'whiteboard-title-error'
+                        }
                         onChange={(event) => setTitle(event.target.value)}
                     />
                     <FieldError

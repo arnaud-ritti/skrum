@@ -6,7 +6,7 @@ import type { PokerSessionFormProps } from '@/components/teams/session-create/po
 import { Button } from '@/components/ui/button';
 import { renderWithProviders } from '@/test/render';
 
-const mocks = vi.hoisted(() => ({ post: vi.fn() }));
+const mocks = vi.hoisted(() => ({ post: vi.fn(), reload: vi.fn() }));
 
 vi.mock('@inertiajs/react', async (importOriginal) => {
     const original = await importOriginal<typeof import('@inertiajs/react')>();
@@ -14,7 +14,7 @@ vi.mock('@inertiajs/react', async (importOriginal) => {
     return {
         ...original,
         usePage: () => ({ props: { translations: {}, locale: 'en' } }),
-        router: { post: mocks.post },
+        router: { post: mocks.post, reload: mocks.reload },
     };
 });
 
@@ -117,6 +117,7 @@ function typeCards(value: string): void {
 
 beforeEach(() => {
     mocks.post.mockReset();
+    mocks.reload.mockReset();
 });
 
 describe('the poker form', () => {
@@ -421,6 +422,46 @@ describe('the poker form', () => {
             screen.getByText('Choose a saved deck of this team.'),
         ).toBeTruthy();
         expect(screen.getByRole('radiogroup', { name: 'Deck' })).toBeTruthy();
+        expect(mocks.reload).toHaveBeenCalledWith({ only: ['pokerDecks'] });
+        expect(checkedDeck()).toBe('Fibonacci, 8 cards');
+    });
+
+    it('takes the typed deck with Enter in its name, without creating the game', () => {
+        open();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Create a deck' }));
+
+        const name = (): Element =>
+            document.querySelector('#deck-custom-name') as Element;
+
+        expect(fireEvent.keyDown(name(), { key: 'Enter' })).toBe(false);
+        expect(document.querySelector('#deck-custom-name')).toBeTruthy();
+
+        typeCards('1, 2, 3');
+
+        expect(fireEvent.keyDown(name(), { key: 'Enter' })).toBe(false);
+        expect(mocks.post).not.toHaveBeenCalled();
+        expect(document.querySelector('#deck-custom-name')).toBeNull();
+        expect(checkedDeck()).toMatch(/^Custom deck/);
+    });
+
+    it('describes the name by its error only while there is one', () => {
+        const dialog = open();
+        const title = screen.getByLabelText('Name');
+
+        expect(title.hasAttribute('aria-describedby')).toBe(false);
+
+        submit(dialog);
+
+        act(() => {
+            lastPost()[2].onError?.({ title: 'The title is too long.' });
+        });
+
+        expect(
+            document.getElementById(
+                title.getAttribute('aria-describedby') ?? '',
+            )?.textContent,
+        ).toBe('The title is too long.');
     });
 
     it('closes the dialog when the game is created', () => {

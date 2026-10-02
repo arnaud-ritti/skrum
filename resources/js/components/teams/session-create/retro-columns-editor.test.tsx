@@ -179,6 +179,29 @@ describe('RetroColumnsEditor', () => {
         ).toBe('“Start” dropped at position 3 of 3');
     });
 
+    it('announces the drop when the focus leaves a picked up column', () => {
+        renderWithProviders(<Harness />);
+
+        const handle = screen.getByRole('button', {
+            name: 'Reorder “Start”, position 1 of 3',
+        });
+        const announcement = document.querySelector(
+            '[data-slot="columns-announcement"]',
+        );
+
+        fireEvent.keyDown(handle, { key: ' ' });
+        fireEvent.keyDown(handle, { key: 'ArrowRight' });
+        fireEvent.blur(handle);
+
+        expect(handle.hasAttribute('aria-pressed')).toBe(false);
+        expect(titles()).toEqual(['Stop', 'Start', 'Continue']);
+        expect(announcement?.textContent).toBe(
+            '“Start” dropped at position 2 of 3',
+        );
+        expect(announcement?.hasAttribute('role')).toBe(false);
+        expect(announcement?.getAttribute('aria-live')).toBe('assertive');
+    });
+
     it('puts the column back when the move is cancelled with Escape', () => {
         renderWithProviders(<Harness />);
 

@@ -822,6 +822,7 @@
     "Hide rounds": "Hide rounds",
     "Only the deck's creator or a workspace admin can change it.": "Only the deck's creator or a workspace admin can change it.",
     "This team already has 30 saved decks.": "This team already has 30 saved decks.",
+    "This team already has :count saved decks.": "This team already has :count saved decks.",
     "This workspace already has 30 saved decks.": "This workspace already has 30 saved decks.",
     "Only a workspace admin can change a workspace deck.": "Only a workspace admin can change a workspace deck.",
     "A deck with this name already exists.": "A deck with this name already exists.",

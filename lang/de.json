@@ -1072,6 +1072,7 @@
     "Hide rounds": "Runden ausblenden",
     "Only the deck's creator or a workspace admin can change it.": "Nur die Person, die das Deck erstellt hat, oder ein Admin des Arbeitsbereichs kann es ändern.",
     "This team already has 30 saved decks.": "Dieses Team hat bereits 30 gespeicherte Decks.",
+    "This team already has :count saved decks.": "Dieses Team hat bereits :count gespeicherte Decks.",
     "This workspace already has 30 saved decks.": "Dieser Arbeitsbereich hat bereits 30 gespeicherte Decks.",
     "Only a workspace admin can change a workspace deck.": "Nur ein Admin des Arbeitsbereichs kann ein Deck des Arbeitsbereichs ändern.",
     "A deck with this name already exists.": "Es gibt bereits ein Deck mit diesem Namen.",

@@ -430,9 +430,20 @@ export function RetroColumnsEditor({
                                         handleKeyDown(event, column)
                                     }
                                     onHandleBlur={() => {
-                                        if (grab?.id === column.id) {
-                                            setGrab(null);
+                                        if (grab?.id !== column.id) {
+                                            return;
                                         }
+
+                                        setGrab(null);
+                                        setAnnouncement(
+                                            t(
+                                                '“:title” dropped at position :position of :total',
+                                                describe(
+                                                    latest.current,
+                                                    column.id,
+                                                ),
+                                            ),
+                                        );
                                     }}
                                 />
                             ))}
@@ -494,7 +505,6 @@ export function RetroColumnsEditor({
                 </p>
             ))}
             <span
-                role="status"
                 aria-live="assertive"
                 data-slot="columns-announcement"
                 className="sr-only"

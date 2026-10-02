@@ -326,7 +326,9 @@ export function SavedDecksPage({
                     data-slot="saved-decks-limit"
                     className="text-body-sm text-muted-foreground"
                 >
-                    {t('This team already has 30 saved decks.')}
+                    {t('This team already has :count saved decks.', {
+                        count: deckLimit,
+                    })}
                 </p>
             ) : null}
 

@@ -210,6 +210,12 @@ describe('the whiteboard form', () => {
     it('shows the server errors under the name and under the gallery, and closes on success', () => {
         const dialog = open();
 
+        expect(
+            document
+                .querySelector('#whiteboard-title')
+                ?.hasAttribute('aria-describedby'),
+        ).toBe(false);
+
         typeName('Board');
         submit(dialog);
 

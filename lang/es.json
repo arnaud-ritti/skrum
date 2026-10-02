@@ -1072,6 +1072,7 @@
     "Hide rounds": "Ocultar rondas",
     "Only the deck's creator or a workspace admin can change it.": "Solo quien creó la baraja o un administrador del espacio de trabajo puede cambiarla.",
     "This team already has 30 saved decks.": "Este equipo ya tiene 30 barajas guardadas.",
+    "This team already has :count saved decks.": "Este equipo ya tiene :count barajas guardadas.",
     "This workspace already has 30 saved decks.": "Este espacio de trabajo ya tiene 30 barajas guardadas.",
     "Only a workspace admin can change a workspace deck.": "Solo un administrador del espacio de trabajo puede cambiar una baraja del espacio de trabajo.",
     "A deck with this name already exists.": "Ya existe una baraja con este nombre.",

@@ -211,6 +211,11 @@ export function PokerSessionFields({
                 onError: (failed) => {
                     setErrors(failed);
 
+                    if (failed.saved_deck_id !== undefined) {
+                        setPicked(null);
+                        router.reload({ only: ['pokerDecks'] });
+                    }
+
                     const failedDeck = serverErrorsToDeckErrors(failed);
 
                     if (
@@ -324,7 +329,11 @@ export function PokerSessionFields({
                         required
                         autoFocus
                         aria-invalid={errors.title !== undefined || undefined}
-                        aria-describedby="new-poker-title-error"
+                        aria-describedby={
+                            errors.title === undefined
+                                ? undefined
+                                : 'new-poker-title-error'
+                        }
                         onChange={(event) => setTitle(event.target.value)}
                     />
                     <FieldError

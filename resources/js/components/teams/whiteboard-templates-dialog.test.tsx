@@ -116,6 +116,9 @@ describe('the whiteboard templates manager', () => {
             '#whiteboard-template-a-description',
         ) as HTMLInputElement;
 
+        expect(name.hasAttribute('aria-describedby')).toBe(false);
+        expect(description.hasAttribute('aria-describedby')).toBe(false);
+
         expect(name.value).toBe('Kick-off');
         expect(name.maxLength).toBe(80);
         expect(name.required).toBe(true);

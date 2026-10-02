@@ -872,6 +872,11 @@ export function RetroTemplatePicker({
                             aria-keyshortcuts="/"
                             className="px-8 [&::-webkit-search-cancel-button]:hidden"
                             onChange={(event) => setQuery(event.target.value)}
+                            onKeyDown={(event) => {
+                                if (event.key === 'Enter') {
+                                    event.preventDefault();
+                                }
+                            }}
                         />
                         {query !== '' && (
                             <button

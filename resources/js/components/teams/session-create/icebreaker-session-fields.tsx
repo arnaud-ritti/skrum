@@ -155,7 +155,11 @@ export function IcebreakerSessionFields({
                         required
                         autoFocus
                         aria-invalid={errors.name !== undefined || undefined}
-                        aria-describedby="new-icebreaker-name-error"
+                        aria-describedby={
+                            errors.name === undefined
+                                ? undefined
+                                : 'new-icebreaker-name-error'
+                        }
                         onChange={(event) => setName(event.target.value)}
                     />
                     <FieldError
