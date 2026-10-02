@@ -15,10 +15,14 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const root = process.cwd();
-const [base] = process.argv.slice(2).filter((argument) => !argument.startsWith('--'));
+const [base] = process.argv
+    .slice(2)
+    .filter((argument) => !argument.startsWith('--'));
 
 if (base === undefined) {
-    console.error('usage: node bin/front-old-components.mjs <base commit> [--json]');
+    console.error(
+        'usage: node bin/front-old-components.mjs <base commit> [--json]',
+    );
     process.exit(2);
 }
 
@@ -52,12 +56,23 @@ const notReached = new Set([...unused.unreachedFiles, ...unused.testOnlyFiles]);
 
 const rendersMarkup = (path) =>
     /<[A-Za-z][\w.]*[\s/>]/.test(
-        readFileSync(join(root, path), 'utf8').replace(/<[A-Z]\w*(?:,\s*\w+)*>\(/g, '('),
+        readFileSync(join(root, path), 'utf8').replace(
+            /<[A-Z]\w*(?:,\s*\w+)*>\(/g,
+            '(',
+        ),
     );
 
-const candidates = git('ls-tree', '-r', '--name-only', base, '--', 'resources/js/components', 'resources/js/layouts')
+const candidates = git(
+    'ls-tree',
+    '-r',
+    '--name-only',
+    base,
+    '--',
+    'resources/js/components',
+    'resources/js/layouts',
+)
     .split('\n')
-    .filter((path) => path.endsWith('.tsx') && !/\.test\.tsx$/.test(path))
+    .filter((path) => path.endsWith('.tsx') && !path.endsWith('.test.tsx'))
     .filter((path) => !libraryFolders.some((folder) => path.startsWith(folder)))
     .filter((path) => existsSync(join(root, path)) && !notReached.has(path));
 
@@ -67,35 +82,52 @@ const untouched = candidates.filter(
 
 const importersOf = (path) => {
     const module = `@/${path.replace(/^resources\/js\//, '').replace(/\.tsx$/, '')}`;
-    const found = spawnSync('git', ['grep', '-lF', `'${module}'`, '--', 'resources/js'], {
-        cwd: root,
-        encoding: 'utf8',
-    }).stdout;
+    const found = spawnSync(
+        'git',
+        ['grep', '-lF', `'${module}'`, '--', 'resources/js'],
+        {
+            cwd: root,
+            encoding: 'utf8',
+        },
+    ).stdout;
 
     return found
         .split('\n')
-        .filter((file) => file !== '' && !/\.test\.tsx?$/.test(file) && file !== path);
+        .filter(
+            (file) =>
+                file !== '' && !/\.test\.tsx?$/.test(file) && file !== path,
+        );
 };
 
 const old = untouched
     .filter((path) => !notViews.has(path))
     .filter(rendersMarkup)
     .map((path) => ({ path, importers: importersOf(path) }));
-const headless = untouched.filter((path) => !notViews.has(path) && !rendersMarkup(path));
-const staleExemptions = [...notViews.keys()].filter((path) => !untouched.includes(path));
+const headless = untouched.filter(
+    (path) => !notViews.has(path) && !rendersMarkup(path),
+);
+const staleExemptions = [...notViews.keys()].filter(
+    (path) => !untouched.includes(path),
+);
 
 const report = { old, headless, exempt: [...notViews], staleExemptions };
 
 if (process.argv.includes('--json')) {
     console.log(JSON.stringify(report, null, 2));
 } else {
-    console.log(`\n## Old view components a page still reaches (${old.length})`);
+    console.log(
+        `\n## Old view components a page still reaches (${old.length})`,
+    );
 
     for (const { path, importers } of old) {
-        console.log(`${path} — imported by: ${importers.join(', ') || '(a relative import: git grep the file name)'}`);
+        console.log(
+            `${path} — imported by: ${importers.join(', ') || '(a relative import: git grep the file name)'}`,
+        );
     }
 
-    console.log(`\n## Untouched files without markup, to classify by reading (${headless.length})`);
+    console.log(
+        `\n## Untouched files without markup, to classify by reading (${headless.length})`,
+    );
 
     for (const path of headless) {
         console.log(path);
@@ -107,7 +139,9 @@ if (process.argv.includes('--json')) {
         console.log(`${path} — ${reason}`);
     }
 
-    console.log(`\n## Exemptions that no longer apply (${staleExemptions.length})`);
+    console.log(
+        `\n## Exemptions that no longer apply (${staleExemptions.length})`,
+    );
 
     for (const path of staleExemptions) {
         console.log(path);
