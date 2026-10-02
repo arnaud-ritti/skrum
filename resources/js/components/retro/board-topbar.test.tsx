@@ -83,6 +83,38 @@ describe('BoardTitle', () => {
     });
 });
 
+describe('BoardTitle on a phone', () => {
+    const subtitle = (container: HTMLElement) =>
+        container.querySelector('[data-slot="session-subtitle"]')?.textContent;
+
+    it('says the phase and its place under the title', () => {
+        const { container, unmount } = renderInBoard(
+            <BoardTitle />,
+            boardContext(),
+        );
+
+        expect(subtitle(container)).toBe('Writing · 1/6');
+
+        unmount();
+
+        const voting = renderInBoard(
+            <BoardTitle />,
+            boardContext(retroSnapshot({ retro: { phase: 'voting' } })),
+        );
+
+        expect(subtitle(voting.container)).toBe('Voting · 3/6');
+    });
+
+    it('says "Completed" once the retro is over', () => {
+        const { container } = renderInBoard(
+            <BoardTitle />,
+            boardContext(retroSnapshot({ retro: { phase: 'completed' } })),
+        );
+
+        expect(subtitle(container)).toBe('Completed');
+    });
+});
+
 describe('boardSelf', () => {
     it('is the viewer among the participants, a guest included', () => {
         expect(boardSelf(retroSnapshot())).toEqual({
@@ -172,6 +204,17 @@ describe('BoardPhases', () => {
         expect(
             document.querySelector('[aria-current="step"]')?.textContent,
         ).toContain('Completed');
+    });
+
+    it('is the rail alone on a phone, for the facilitator too', () => {
+        renderInBoard(<BoardPhases mobile />, boardContext());
+
+        expect(
+            screen
+                .getByRole('list', { name: 'Phases' })
+                .querySelectorAll('[data-slot="phase-step"]'),
+        ).toHaveLength(6);
+        expect(screen.queryByRole('button')).toBeNull();
     });
 
     it('gives a participant the rail only', () => {
@@ -381,5 +424,140 @@ describe('BoardActions', () => {
         );
 
         expect(screen.getByRole('menuitem', { name: 'Share…' })).toBeTruthy();
+    });
+
+    describe('on a phone', () => {
+        const phoneActions = (
+            <BoardActions
+                mobile
+                hideMyCursor={false}
+                onHideMyCursorChange={vi.fn()}
+            />
+        );
+        const openMenu = async (name = 'Facilitator menu') => {
+            const user = userEvent.setup();
+
+            await user.click(screen.getByRole('button', { name }));
+
+            return user;
+        };
+        const entries = () =>
+            screen.getAllByRole('menuitem').map((item) => item.textContent);
+
+        it('gives the facilitator "Previous" and "Next" at the top of the menu', async () => {
+            const { ctx } = renderInBoard(
+                phoneActions,
+                boardContext(retroSnapshot({ retro: { phase: 'grouping' } })),
+            );
+            const user = await openMenu();
+
+            expect(entries().slice(0, 3)).toEqual([
+                'Previous',
+                'Next',
+                'Settings…',
+            ]);
+
+            retroRequest.mockResolvedValue({ phase: 'voting' });
+            await user.click(screen.getByRole('menuitem', { name: 'Next' }));
+
+            await waitFor(() => expect(ctx.refetch).toHaveBeenCalled());
+            expect(retroRequest).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    url: expect.stringContaining('/retros/retro-1/phase'),
+                }),
+                { phase: 'voting' },
+            );
+        });
+
+        it('goes back with "Previous", which the first phase does not offer', async () => {
+            const first = renderInBoard(phoneActions, boardContext());
+
+            await openMenu();
+
+            expect(
+                screen
+                    .getByRole('menuitem', { name: 'Previous' })
+                    .getAttribute('aria-disabled'),
+            ).toBe('true');
+
+            first.unmount();
+
+            renderInBoard(
+                phoneActions,
+                boardContext(retroSnapshot({ retro: { phase: 'grouping' } })),
+            );
+            const user = await openMenu();
+
+            await user.click(
+                screen.getByRole('menuitem', { name: 'Previous' }),
+            );
+
+            expect(retroRequest).toHaveBeenLastCalledWith(expect.anything(), {
+                phase: 'writing',
+            });
+        });
+
+        it('completes from the last phase and reopens once completed', async () => {
+            const last = renderInBoard(
+                phoneActions,
+                boardContext(retroSnapshot({ retro: { phase: 'roti' } })),
+            );
+            let user = await openMenu();
+
+            expect(entries().slice(0, 2)).toEqual(['Previous', 'Complete']);
+
+            await user.click(
+                screen.getByRole('menuitem', { name: 'Complete' }),
+            );
+
+            expect(retroRequest).toHaveBeenLastCalledWith(expect.anything(), {
+                phase: 'completed',
+            });
+
+            last.unmount();
+
+            renderInBoard(
+                phoneActions,
+                boardContext(retroSnapshot({ retro: { phase: 'completed' } })),
+            );
+            user = await openMenu();
+
+            expect(entries()[0]).toBe('Reopen');
+            expect(
+                screen.queryByRole('menuitem', { name: 'Previous' }),
+            ).toBeNull();
+
+            await user.click(screen.getByRole('menuitem', { name: 'Reopen' }));
+
+            expect(retroRequest).toHaveBeenLastCalledWith(expect.anything(), {
+                phase: 'roti',
+            });
+        });
+
+        it('gives a participant no phase entry', async () => {
+            renderInBoard(
+                phoneActions,
+                boardContext(
+                    retroSnapshot({ viewer: { isFacilitator: false } }),
+                ),
+            );
+
+            await openMenu('Menu');
+
+            expect(entries()).not.toContain('Next');
+            expect(entries()).not.toContain('Previous');
+        });
+    });
+
+    it('keeps the phase moves out of the menu above the phone', async () => {
+        const user = userEvent.setup();
+
+        renderInBoard(actions, boardContext());
+
+        await user.click(
+            screen.getByRole('button', { name: 'Facilitator menu' }),
+        );
+
+        expect(screen.queryByRole('menuitem', { name: 'Next' })).toBeNull();
     });
 });

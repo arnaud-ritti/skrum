@@ -1,14 +1,19 @@
 import {
+    ArrowLeft,
+    ArrowRight,
+    CircleCheck,
     Ellipsis,
     Lock,
     MousePointer2,
     MousePointerBan,
+    RotateCcw,
     Settings2,
     Share2,
     Trash2,
     UserRoundCog,
 } from 'lucide-react';
 import { useRef, useState } from 'react';
+import type { ReactNode } from 'react';
 import RetroPhasesController from '@/actions/App/Http/Controllers/Retros/RetroPhasesController';
 import RetroTimerExtensionsController from '@/actions/App/Http/Controllers/Retros/RetroTimerExtensionsController';
 import RetroTimersController from '@/actions/App/Http/Controllers/Retros/RetroTimersController';
@@ -59,11 +64,19 @@ export function BoardTitle() {
         teamName === null
             ? t('Retrospective')
             : `${teamName} · ${t('Retrospective')}`;
+    const steps = stepperPhases(board.retro.phases);
+    const stepIndex = steps.indexOf(board.retro.phase);
+    const phaseLabel = t(PhaseLabels[board.retro.phase]);
+    const subtitle =
+        stepIndex === -1
+            ? phaseLabel
+            : `${phaseLabel} · ${stepIndex + 1}/${steps.length}`;
 
     return (
         <SessionTitle
             backHref={board.links.team}
             overline={overline}
+            subtitle={subtitle}
             badges={
                 board.retro.isLocked && (
                     <Badge variant="secondary" className="shrink-0 gap-1">
@@ -93,18 +106,18 @@ export function boardSelf(board: Snapshot): SessionSelf | null {
         : null;
 }
 
-export function BoardPhases({ mobile = false }: { mobile?: boolean }) {
+/** The move to another phase, and whether one is on its way. */
+function usePhaseMove(): { busy: boolean; move: (target: string) => void } {
     const ctx = useBoard();
-    const { t } = useTrans();
     const [busy, setBusy] = useState(false);
-    const { retro, viewer, participants } = ctx.board;
+    const retroId = ctx.board.retro.id;
 
     const move = async (target: string) => {
         setBusy(true);
 
         const response = await ctx.run(
             retroRequest<{ phase: RetroPhase }>(
-                RetroPhasesController.update(retro.id),
+                RetroPhasesController.update(retroId),
                 { phase: target },
             ),
         );
@@ -115,6 +128,19 @@ export function BoardPhases({ mobile = false }: { mobile?: boolean }) {
 
         setBusy(false);
     };
+
+    return { busy, move: (target) => void move(target) };
+}
+
+/**
+ * On a phone the rail is read (`mobile`): the facilitator moves the phases
+ * from the menu of the header, see `PhaseMenuItems`.
+ */
+export function BoardPhases({ mobile = false }: { mobile?: boolean }) {
+    const ctx = useBoard();
+    const { t } = useTrans();
+    const { busy, move } = usePhaseMove();
+    const { retro, viewer, participants } = ctx.board;
 
     return (
         <PhaseStepper
@@ -133,9 +159,74 @@ export function BoardPhases({ mobile = false }: { mobile?: boolean }) {
                         participant.id === retro.facilitatorParticipantId,
                 )?.name
             }
-            onPhaseChange={(phase) => void move(phase)}
+            onPhaseChange={move}
             className="*:justify-center"
         />
+    );
+}
+
+type PhaseMenuEntry = {
+    label: string;
+    icon: ReactNode;
+    target: RetroPhase | null;
+};
+
+/**
+ * "Previous" and "Next" of the facilitator on a phone, where the rail has no
+ * room for them: "Next" is "Complete" on the last phase, and "Reopen" is the
+ * only entry once the retro is completed.
+ */
+function PhaseMenuItems() {
+    const { board } = useBoard();
+    const { t } = useTrans();
+    const { busy, move } = usePhaseMove();
+    const { phase, phases } = board.retro;
+    const steps = stepperPhases(phases);
+    const index = steps.indexOf(phase);
+    const isCompleted = phase === 'completed';
+
+    const previous: PhaseMenuEntry = {
+        label: t('Previous'),
+        icon: <ArrowLeft aria-hidden />,
+        target: steps[index - 1] ?? null,
+    };
+    const forward: PhaseMenuEntry = isCompleted
+        ? {
+              label: t('Reopen'),
+              icon: <RotateCcw aria-hidden />,
+              target: reopenPhase(phases),
+          }
+        : index === steps.length - 1
+          ? {
+                label: t('Complete'),
+                icon: <CircleCheck aria-hidden />,
+                target: 'completed',
+            }
+          : {
+                label: t('Next'),
+                icon: <ArrowRight aria-hidden />,
+                target: index === -1 ? null : steps[index + 1],
+            };
+    const entries = isCompleted ? [forward] : [previous, forward];
+
+    return (
+        <>
+            {entries.map((entry) => (
+                <DropdownMenuItem
+                    key={entry.label}
+                    disabled={busy || entry.target === null}
+                    onSelect={() => {
+                        if (entry.target !== null) {
+                            move(entry.target);
+                        }
+                    }}
+                >
+                    {entry.icon}
+                    <span className="truncate">{entry.label}</span>
+                </DropdownMenuItem>
+            ))}
+            <DropdownMenuSeparator />
+        </>
     );
 }
 
@@ -234,7 +325,10 @@ type OpenPanel = 'settings' | 'share' | 'handover' | 'delete' | null;
 type ActionsProps = {
     hideMyCursor: boolean;
     onHideMyCursorChange: (hidden: boolean) => void;
-    /** Below `md` the header holds one menu: every entry moves into it. */
+    /**
+     * Below `md` the header holds one menu: every entry moves into it, the
+     * phase moves of the facilitator included.
+     */
     mobile?: boolean;
 };
 
@@ -363,6 +457,7 @@ export function BoardActions({
                             setPanel(target);
                         }}
                     >
+                        {mobile && viewer.isFacilitator && <PhaseMenuItems />}
                         <DropdownMenuItem onSelect={() => fromMenu('settings')}>
                             <Settings2 aria-hidden />
                             <span className="truncate">{t('Settings…')}</span>
