@@ -36,7 +36,10 @@ class BuildTeamMoodTrend
             ->where(fn (Builder $query) => $query->whereHas('healthCheckAnswers')->orHas('rotiVotes'))
             ->withAvg('rotiVotes', 'score')
             ->withCount('rotiVotes')
-            ->withCount(['participants as mood_voters_count' => fn (EloquentBuilder $participants) => $participants->whereHas('healthCheckAnswers')])
+            ->withCount(['participants as mood_voters_count' => fn (EloquentBuilder $participants) => $participants->whereHas(
+                'healthCheckAnswers',
+                fn (EloquentBuilder $answers) => $answers->whereColumn('health_check_answers.retro_id', 'participants.retro_id'),
+            )])
             ->orderByDesc('completed_at')
             ->get(['id', 'title', 'completed_at']);
 
