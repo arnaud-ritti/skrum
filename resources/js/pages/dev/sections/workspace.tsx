@@ -1,11 +1,14 @@
 import type { ReactNode } from 'react';
 import type { BenchGroup } from '@/components/dev/bench';
 import { CreateWorkspaceForm } from '@/components/workspaces/create-workspace-form';
+import { DeleteWorkspaceSection } from '@/components/workspaces/delete-workspace-section';
 import { LeaveWorkspacePanel } from '@/components/workspaces/leave-workspace-dialog';
+import { MembersTable } from '@/components/workspaces/members-table';
+import type { WorkspaceMembersProps } from '@/components/workspaces/members-table';
 import { WorkspaceOverview } from '@/components/workspaces/workspace-overview';
 import type { WorkspaceOverviewProps } from '@/components/workspaces/workspace-overview';
 import { useTrans } from '@/hooks/use-trans';
-import type { WorkspaceTeamTile } from '@/types';
+import type { WorkspaceRole, WorkspaceTeamTile } from '@/types';
 
 export const group: BenchGroup = 'layouts';
 
@@ -118,6 +121,62 @@ const longNames: WorkspaceOverviewProps = {
     ],
 };
 
+function person(name: string, role: WorkspaceRole, index: number) {
+    return {
+        id: `member-${index}`,
+        name,
+        email: `${name.toLowerCase().split(' ')[0]}@nordlys.example`,
+        avatarUrl: avatar((index % 10).toString()),
+        role,
+    };
+}
+
+const memberList: WorkspaceMembersProps = {
+    workspace,
+    members: [
+        person('Arnaud Ritti', 'owner', 0),
+        person('Camille Roux', 'admin', 1),
+        person('Ines Benali', 'admin', 2),
+        person('Malik Kone', 'member', 3),
+        person('Theo Martin', 'member', 4),
+    ],
+    invitations: [
+        {
+            id: 'invitation-1',
+            email: 'lucas.p@nordlys.example',
+            role: 'member',
+            isExpired: false,
+            invitedAt: '2026-09-26T09:00:00+00:00',
+        },
+        {
+            id: 'invitation-2',
+            email: 'sofia.ortega@nordlys.example',
+            role: 'admin',
+            isExpired: true,
+            invitedAt: '2026-09-12T09:00:00+00:00',
+        },
+    ],
+    isOwner: true,
+};
+
+const longMemberList: WorkspaceMembersProps = {
+    ...memberList,
+    members: [
+        memberList.members[0],
+        {
+            ...person('Maximilian', 'member', 5),
+            name: 'Maximilian-Alexander von Hohenberg-Lichtenstein zu Sachsen-Coburg',
+            email: 'maximilian-alexander.von.hohenberg-lichtenstein@northern-europe-business-unit.nordlys.example',
+        },
+    ],
+    invitations: [
+        {
+            ...memberList.invitations[0],
+            email: 'a.very.long.address.of.a.future.member@northern-europe-business-unit.nordlys.example',
+        },
+    ],
+};
+
 function Example({
     name,
     label,
@@ -199,6 +258,30 @@ export default function WorkspaceSection() {
                     adminsCount={2}
                     otherAdminName="Camille Roux"
                 />
+            </Example>
+            <Example name="members" label={t('Members page, for an owner')}>
+                <MembersTable
+                    {...memberList}
+                    currentUserId="member-0"
+                    invitationUrl="https://skrum.example/invitations/k3J9xPq7LmN2vB8sT4wY6zR1cD5fG0hA"
+                />
+            </Example>
+            <Example
+                name="members-admin"
+                label={t('Members page, for an admin')}
+            >
+                <MembersTable
+                    {...memberList}
+                    invitations={[]}
+                    isOwner={false}
+                    currentUserId="member-1"
+                />
+            </Example>
+            <Example name="members-long" label={t('Members page, long names')}>
+                <MembersTable {...longMemberList} currentUserId="member-0" />
+            </Example>
+            <Example name="delete-workspace" label={t('Deleting a workspace')}>
+                <DeleteWorkspaceSection workspace={workspace} />
             </Example>
             <Example name="create" label={t('Workspace creation')}>
                 <CreateWorkspaceForm autoFocus={false} />

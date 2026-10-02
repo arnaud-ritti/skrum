@@ -6,6 +6,7 @@ use App\Models\Retro;
 use App\Models\Team;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Models\WorkspaceInvitation;
 
 const P18eWorkspaceSwitcher = '[data-sidebar="header"] button[data-sidebar="menu-button"]';
 const P18eLeavePanel = '[role="alertdialog"][data-slot="leave-workspace-panel"]';
@@ -21,6 +22,21 @@ function p18eWorkspaceUser(Workspace $workspace, string $name, WorkspaceRole $ro
 function p18eWorkspacePath(Workspace $workspace): string
 {
     return route('workspaces.show', $workspace, false);
+}
+
+function p18eMembersPath(Workspace $workspace): string
+{
+    return route('workspaces.members.index', $workspace, false);
+}
+
+function p18eMemberRow(User $member): string
+{
+    return '[data-slot="member-row"][data-member-id="'.$member->id.'"]';
+}
+
+function p18eInvitationRow(string $email): string
+{
+    return '[data-slot="invitation-row"][data-invitation-email="'.$email.'"]';
 }
 
 it('[P18e-09-08] shows the counts of the workspace, the members of a team and the workspaces of the switcher as the database holds them', function () {
@@ -226,4 +242,196 @@ it('[P18e-09-03] lets a user with no workspace create one, under a sidebar that 
         ->assertSeeIn('[data-sidebar="content"] a[data-sidebar="menu-button"][aria-current="page"]', 'All teams')
         ->assertSeeIn(P18eWorkspaceSwitcher, 'Acme')
         ->assertNoJavaScriptErrors();
+});
+
+it('[P18e-09-04] lets an owner change a role and remove a member after a confirmation, and keeps the last owner', function () {
+    $workspace = Workspace::factory()->create(['name' => 'Nordlys']);
+    $arnaud = p18eWorkspaceUser($workspace, 'Arnaud Ritti', WorkspaceRole::Owner);
+    $camille = p18eWorkspaceUser($workspace, 'Camille Roux', WorkspaceRole::Admin);
+    $theo = p18eWorkspaceUser($workspace, 'Théo Martin');
+    $atlas = Team::factory()->for($workspace)->create(['name' => 'Atlas']);
+    $atlas->members()->attach($theo);
+
+    $page = $this->signIn($arnaud, p18eMembersPath($workspace));
+
+    $page->assertSeeIn('h1', 'Members')
+        ->assertSeeIn('nav[aria-label="Breadcrumb"]', 'Nordlys')
+        ->assertSeeIn('[data-slot="members-summary"]', '3 members')
+        ->assertCount('[data-slot="member-row"]', 3)
+        ->assertSeeIn(p18eMemberRow($arnaud), 'Arnaud Ritti (you)')
+        ->assertSeeIn(p18eMemberRow($camille), $camille->email)
+        ->assertCount('[data-slot="member-row"] [role="combobox"]', 3)
+        ->click(p18eMemberRow($theo).' [role="combobox"]')
+        ->click('[role="option"]:has-text("Admin")')
+        ->assertSeeIn(p18eMemberRow($theo).' [role="combobox"]', 'Admin')
+        ->assertNotPresent('[data-slot="member-role-error"]');
+
+    expect($theo->fresh()->roleIn($workspace))->toBe(WorkspaceRole::Admin);
+
+    $page->click(p18eMemberRow($arnaud).' [role="combobox"]')
+        ->click('[role="option"]:has-text("Member")')
+        ->assertSeeIn(p18eMemberRow($arnaud).' [data-slot="member-role-error"]', 'A workspace needs at least one owner.')
+        ->assertSeeIn(p18eMemberRow($arnaud).' [role="combobox"]', 'Owner');
+
+    expect($arnaud->fresh()->roleIn($workspace))->toBe(WorkspaceRole::Owner);
+
+    $page->click(p18eMemberRow($theo).' [data-member-menu]')
+        ->click('[role="menuitem"]:has-text("Remove from workspace")')
+        ->assertSeeIn('[role="alertdialog"]', 'Remove Théo Martin from this workspace?')
+        ->assertSeeIn('[role="alertdialog"]', 'They will lose access to the workspace and be removed from all of its teams.')
+        ->click('[role="alertdialog"] button:has-text("Cancel")')
+        ->assertNotPresent('[role="alertdialog"]')
+        ->assertPresent(p18eMemberRow($theo));
+
+    expect($theo->fresh()->belongsToWorkspace($workspace))->toBeTrue();
+
+    $page->click(p18eMemberRow($theo).' [data-member-menu]')
+        ->click('[role="menuitem"]:has-text("Remove from workspace")')
+        ->click('[role="alertdialog"] button:has-text("Remove from workspace")')
+        ->assertNotPresent(p18eMemberRow($theo))
+        ->assertNotPresent('[role="alertdialog"]')
+        ->assertSeeIn('[data-slot="members-summary"]', '2 members')
+        ->assertPathIs(p18eMembersPath($workspace))
+        ->assertNoJavaScriptErrors();
+
+    expect($theo->fresh()->belongsToWorkspace($workspace))->toBeFalse()
+        ->and($atlas->hasMember($theo))->toBeFalse();
+});
+
+it('[P18e-09-04b] shows an admin the owner without a role select, a menu or the deletion of the workspace', function () {
+    $workspace = Workspace::factory()->create(['name' => 'Nordlys']);
+    $arnaud = p18eWorkspaceUser($workspace, 'Arnaud Ritti', WorkspaceRole::Owner);
+    $camille = p18eWorkspaceUser($workspace, 'Camille Roux', WorkspaceRole::Admin);
+    $theo = p18eWorkspaceUser($workspace, 'Théo Martin');
+
+    $page = $this->signIn($camille, p18eMembersPath($workspace));
+
+    $page->assertSeeIn(p18eMemberRow($arnaud), 'Owner')
+        ->assertNotPresent(p18eMemberRow($arnaud).' [role="combobox"]')
+        ->assertNotPresent(p18eMemberRow($arnaud).' button')
+        ->assertPresent(p18eMemberRow($camille).' [role="combobox"]')
+        ->assertPresent(p18eMemberRow($theo).' [data-member-menu]')
+        ->click(p18eMemberRow($theo).' [role="combobox"]')
+        ->assertCount('[role="option"]', 2)
+        ->assertNotPresent('[role="option"]:has-text("Owner")')
+        ->keys('[role="listbox"]', 'Escape')
+        ->assertNotPresent('@delete-workspace-button')
+        ->click(p18eMemberRow($camille).' [data-member-menu]')
+        ->assertNotPresent('[role="menuitem"]:has-text("Remove from workspace")')
+        ->click('[role="menuitem"]:has-text("Leave")')
+        ->assertSeeIn('[role="dialog"]', 'Leave Nordlys?')
+        ->assertSeeIn('[role="dialog"]', "You're one of 2 admins — Arnaud Ritti stays admin.")
+        ->assertDisabled('@leave-workspace-confirm')
+        ->click('[role="dialog"] button:has-text("Cancel")')
+        ->assertNotPresent('[role="dialog"]')
+        ->assertNoJavaScriptErrors();
+
+    expect($camille->fresh()->belongsToWorkspace($workspace))->toBeTrue();
+});
+
+it('[P18e-09-05] invites someone, shows the link when no mail leaves the instance, sends it again and revokes it after a confirmation', function () {
+    config(['mail.default' => 'log']);
+
+    $workspace = Workspace::factory()->create(['name' => 'Nordlys']);
+    $camille = p18eWorkspaceUser($workspace, 'Camille Roux', WorkspaceRole::Admin);
+    WorkspaceInvitation::factory()->for($workspace)->expired()->create(['email' => 'late@example.com']);
+
+    $lucas = p18eInvitationRow('lucas@example.com');
+
+    $page = $this->signIn($camille, p18eMembersPath($workspace));
+
+    $page->assertSeeIn('[data-slot="members-summary"]', '1 member')
+        ->assertDontSeeIn('[data-slot="members-summary"]', 'pending')
+        ->assertSeeIn(p18eInvitationRow('late@example.com'), 'Expired')
+        ->assertDontSeeIn(p18eInvitationRow('late@example.com'), 'Invitation pending')
+        ->assertNotPresent('[data-slot="invitation-link"]')
+        ->click('[data-slot="members-header"] button:has-text("Invite")')
+        ->assertSeeIn('[role="dialog"]', 'Invite people')
+        ->fill('[role="dialog"] input[name="email"]', 'lucas@example.com')
+        ->click('@send-invitation')
+        ->assertNotPresent('[role="dialog"]')
+        ->assertSeeIn($lucas, 'Invitation pending')
+        ->assertSeeIn($lucas.' [data-slot="invitation-details"]', 'Member · Invited on')
+        ->assertSeeIn('[data-slot="members-summary"]', '1 member · 1 pending invitation')
+        ->assertSeeIn('[data-slot="invitation-link"]', 'Email is not configured on this instance. Share this link with the invited person:')
+        ->assertPresent('[data-slot="invitation-link"] input[readonly]')
+        ->assertSeeIn('[data-slot="invitation-link"]', 'Copy link');
+
+    $first = $workspace->invitations()->where('email', 'lucas@example.com')->sole();
+
+    expect($first->role)->toBe(WorkspaceRole::Member);
+
+    $page->click($lucas.' button:has-text("Resend")')
+        ->assertNotPresent('[data-invitation-id="'.$first->id.'"]')
+        ->assertSeeIn($lucas, 'Invitation pending')
+        ->assertPresent('[data-slot="invitation-link"] input[readonly]');
+
+    $second = $workspace->invitations()->where('email', 'lucas@example.com')->sole();
+
+    expect($second->id)->not->toBe($first->id)
+        ->and($second->token_hash)->not->toBe($first->token_hash);
+
+    $page->click($lucas.' button:has-text("Revoke")')
+        ->assertSeeIn('[role="alertdialog"]', 'Revoke the invitation of lucas@example.com?')
+        ->click('[role="alertdialog"] button:has-text("Cancel")')
+        ->assertNotPresent('[role="alertdialog"]')
+        ->assertPresent($lucas);
+
+    expect($workspace->invitations()->whereKey($second->id)->exists())->toBeTrue();
+
+    $page->click($lucas.' button:has-text("Revoke")')
+        ->click('[role="alertdialog"] button:has-text("Revoke")')
+        ->assertNotPresent($lucas)
+        ->assertPresent(p18eInvitationRow('late@example.com'))
+        ->assertNoJavaScriptErrors();
+
+    expect($workspace->invitations()->where('email', 'lucas@example.com')->exists())->toBeFalse()
+        ->and($workspace->invitations()->count())->toBe(1);
+});
+
+it('[P18e-09-05b] refuses to invite someone who is already a member, in the dialog', function () {
+    $workspace = Workspace::factory()->create(['name' => 'Nordlys']);
+    $camille = p18eWorkspaceUser($workspace, 'Camille Roux', WorkspaceRole::Admin);
+    $theo = p18eWorkspaceUser($workspace, 'Théo Martin');
+
+    $page = $this->signIn($camille, p18eMembersPath($workspace));
+
+    $page->click('[data-slot="members-header"] button:has-text("Invite")')
+        ->fill('[role="dialog"] input[name="email"]', $theo->email)
+        ->click('@send-invitation')
+        ->assertSeeIn('[role="dialog"] [role="alert"]', 'This person is already a member of the workspace.')
+        ->assertNotPresent('[data-slot="invitation-row"]')
+        ->assertNoJavaScriptErrors();
+
+    expect($workspace->invitations()->count())->toBe(0);
+});
+
+it('[P18e-09-06] lets the owner delete the workspace once its name is typed', function () {
+    $workspace = Workspace::factory()->create(['name' => 'Nordlys']);
+    $arnaud = p18eWorkspaceUser($workspace, 'Arnaud Ritti', WorkspaceRole::Owner);
+    Team::factory()->for($workspace)->create(['name' => 'Atlas']);
+
+    $page = $this->signIn($arnaud, p18eMembersPath($workspace));
+
+    $page->assertSeeIn('[data-slot="settings-card"][data-tone="destructive"]', 'This permanently deletes the workspace, its teams and their retrospectives.')
+        ->click('@delete-workspace-button')
+        ->assertSeeIn('[role="dialog"]', 'Delete this workspace?')
+        ->assertDisabled('@delete-workspace-confirm')
+        ->fill('[role="dialog"] input[name="confirmation"]', 'nordlys')
+        ->assertDisabled('@delete-workspace-confirm')
+        ->click('[role="dialog"] button:has-text("Cancel")')
+        ->assertNotPresent('[role="dialog"]');
+
+    expect(Workspace::query()->whereKey($workspace->id)->exists())->toBeTrue();
+
+    $page->click('@delete-workspace-button')
+        ->assertValue('[role="dialog"] input[name="confirmation"]', '')
+        ->fill('[role="dialog"] input[name="confirmation"]', 'Nordlys')
+        ->assertEnabled('@delete-workspace-confirm')
+        ->click('@delete-workspace-confirm')
+        ->assertPathIs('/workspaces/create')
+        ->assertNoJavaScriptErrors();
+
+    expect(Workspace::query()->whereKey($workspace->id)->exists())->toBeFalse()
+        ->and(Team::query()->where('workspace_id', $workspace->id)->exists())->toBeFalse();
 });

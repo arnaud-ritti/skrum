@@ -61,6 +61,7 @@ export type TeamMember = MemberSummary & {
 };
 
 export type WorkspaceMember = MemberSummary & {
+    avatarUrl: string;
     role: WorkspaceRole;
 };
 
@@ -69,6 +70,7 @@ export type PendingInvitation = {
     email: string;
     role: WorkspaceRole;
     isExpired: boolean;
+    invitedAt: string;
 };
 
 export type RetroSummary = {

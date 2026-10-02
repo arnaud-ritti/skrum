@@ -26,6 +26,7 @@ class WorkspaceMembersController extends Controller
             'workspace' => $workspace->only(['id', 'name', 'slug']),
             'members' => $workspace->members()->orderBy('name')->get()->map(fn (User $member): array => [
                 ...$member->only(['id', 'name', 'email']),
+                'avatarUrl' => $member->avatarUrl(),
                 'role' => $this->membershipOf($member)->role->value,
             ]),
             'invitations' => $workspace->invitations()->whereNull('accepted_at')->latest()->get()
@@ -34,6 +35,7 @@ class WorkspaceMembersController extends Controller
                     'email' => $invitation->email,
                     'role' => $invitation->role->value,
                     'isExpired' => ! $invitation->isPending(),
+                    'invitedAt' => $invitation->created_at->toIso8601String(),
                 ]),
             'canManage' => true,
             'isOwner' => $request->user()->roleIn($workspace) === WorkspaceRole::Owner,

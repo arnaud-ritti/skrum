@@ -8,6 +8,7 @@ use App\Models\Retro;
 use App\Models\Team;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Models\WorkspaceInvitation;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Support\Facades\RateLimiter;
 
@@ -113,6 +114,12 @@ it('[P18e-09-20b] renders the states of the workspace page on the bench without 
             ->assertNotPresent('[data-state="empty-member"] [data-slot="workspace-teams"]')
             ->assertCount('[data-state="long"] a[data-slot="team-tile"]', 2)
             ->assertCount('[data-state="leave"] [data-slot="leave-consequences"] li', 3)
+            ->assertCount('[data-state="members"] [data-slot="member-row"]', 5)
+            ->assertCount('[data-state="members"] [data-slot="invitation-row"]', 2)
+            ->assertPresent('[data-state="members"] [data-slot="invitation-link"]')
+            ->assertCount('[data-state="members-admin"] [data-slot="member-row"] [role="combobox"]', 4)
+            ->assertCount('[data-state="members-long"] [data-slot="member-row"]', 2)
+            ->assertPresent('[data-state="delete-workspace"] [data-slot="settings-card"][data-tone="destructive"]')
             ->assertPresent('[data-state="create"] [data-slot="create-workspace"] #name'),
     );
 });
@@ -131,4 +138,53 @@ it('[P18e-09-20c] renders the workspace creation page of a user without a worksp
     $this->captureVisuals('workspace-create', '/workspaces/create', fn (string $path, array $options) => workspaceVisualSignIn($user, $path, $options)
         ->assertPresent('[data-slot="create-workspace"] #name')
         ->assertPresent('[data-sidebar="sidebar"]'));
+});
+
+it('[P18e-09-20d] renders the members page of an owner without overflow', function () {
+    config(['app.name' => 'Skrum']);
+
+    $workspace = Workspace::factory()->create(['name' => 'Nordlys']);
+    $names = [
+        'Arnaud Ritti' => WorkspaceRole::Owner,
+        'Camille Roux' => WorkspaceRole::Admin,
+        'Inès Benali' => WorkspaceRole::Admin,
+        'Malik Kone' => WorkspaceRole::Member,
+        'Théo Martin' => WorkspaceRole::Member,
+    ];
+    $index = 60;
+    $owner = null;
+
+    foreach ($names as $name => $role) {
+        $user = User::factory()->create([
+            'id' => sprintf('0199a000-0000-7000-8000-0000000009%02d', $index++),
+            'name' => $name,
+            'email' => str($name)->slug('.').'@nordlys.example',
+        ]);
+        $workspace->members()->attach($user, ['role' => $role->value]);
+        $owner ??= $user;
+    }
+
+    WorkspaceInvitation::factory()->for($workspace)->create([
+        'email' => 'lucas.p@nordlys.example',
+        'created_at' => '2026-09-26 09:00:00',
+    ]);
+    WorkspaceInvitation::factory()->for($workspace)->expired()->create([
+        'email' => 'sofia.ortega@nordlys.example',
+        'role' => WorkspaceRole::Admin,
+        'created_at' => '2026-09-12 09:00:00',
+    ]);
+
+    RateLimiter::for('login', fn (): Limit => Limit::none());
+
+    $path = route('workspaces.members.index', $workspace, false);
+
+    $this->captureVisuals('workspace-members', $path, fn (string $path, array $options) => workspaceVisualSignIn($owner, $path, $options)
+        ->assertCount('[data-slot="member-row"]', 5)
+        ->assertCount('[data-slot="invitation-row"]', 2)
+        ->assertPresent('[data-slot="settings-card"][data-tone="destructive"]')
+        ->assertScript('document.querySelectorAll(\'[data-slot="person-avatar"] .animate-pulse\').length', 0));
+
+    $this->captureVisuals('workspace-members-invite', $path, fn (string $path, array $options) => workspaceVisualSignIn($owner, $path, $options)
+        ->click('[data-slot="members-header"] button')
+        ->assertPresent('[role="dialog"] input[name="email"]'));
 });

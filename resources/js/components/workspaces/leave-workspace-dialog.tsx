@@ -105,7 +105,8 @@ function useConsequences({
     return lines;
 }
 
-function ConfirmNameField({
+/** "Type :name to confirm", for the two actions that end a workspace for someone. */
+export function ConfirmNameField({
     id,
     name,
     value,
