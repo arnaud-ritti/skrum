@@ -23,9 +23,22 @@ export type WorkspaceTeamMember = {
     avatarUrl: string;
 };
 
+export type WorkspaceTeamActivity = {
+    /** Title of the newest retro that is not completed. */
+    openRetroTitle: string | null;
+    /** When the last completed retro ended. */
+    lastRetroAt: string | null;
+    openPokerGames: number;
+    openActionItems: number;
+    overdueActionItems: number;
+};
+
 export type WorkspaceTeamTile = TeamSummary & {
     membersCount: number;
     members: WorkspaceTeamMember[];
+    /** A manager sees every team; this is true for the ones they belong to. */
+    isMember: boolean;
+    activity: WorkspaceTeamActivity;
 };
 
 export type TeamSummary = {
@@ -48,6 +61,7 @@ export type TeamMember = MemberSummary & {
 };
 
 export type WorkspaceMember = MemberSummary & {
+    avatarUrl: string;
     role: WorkspaceRole;
 };
 
@@ -56,6 +70,7 @@ export type PendingInvitation = {
     email: string;
     role: WorkspaceRole;
     isExpired: boolean;
+    invitedAt: string;
 };
 
 export type RetroSummary = {
@@ -67,6 +82,8 @@ export type RetroSummary = {
     templateName: string;
     facilitator: { name: string; avatarUrl: string } | null;
     rotiAverage: number | null;
+    /** The viewer is already a participant of this open retro. */
+    viewerHasJoined: boolean;
 };
 
 export type TemplateCategory =
@@ -93,11 +110,18 @@ export type CatalogueTemplate = {
     columns: TemplateColumn[];
 };
 
+export type TemplateAuthor = {
+    name: string;
+    avatarUrl: string;
+};
+
 export type WorkspaceTemplateSummary = {
     id: string;
     name: string;
     category: TemplateCategory;
-    author: string | null;
+    author: TemplateAuthor | null;
+    /** Retros created from this template, in every team of the workspace. */
+    usageCount: number;
     columns: TemplateColumn[];
 };
 
@@ -114,6 +138,7 @@ export type WorkspacePokerDeck = {
     name: string;
     cards: string[];
     usageCount: number;
+    author: TemplateAuthor | null;
     canManage: boolean;
 };
 

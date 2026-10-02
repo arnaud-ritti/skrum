@@ -73,4 +73,20 @@ Rows D-76, D-77. The card is the mockup's compact list titled "Health check" wit
 ## Lane small
 
 ### RW-S4: Recovery codes — low-count alert and regenerate
-On the Security page (one two-factor card with two method rows, see PB-34 if the 18f lane has not built it yet: do not restructure the card here), when three or fewer recovery codes remain: an alert with the count and a "Regenerate codes" button (existing Fortify action); at zero the alert is the error tone. Spec B43 reworded: a used code is removed.
+On the Security page (one two-factor card with two method rows, see PB-34 if the 18f lane has not built it yet: do not restructure the card here), when three or fewer recovery codes remain: an alert with the count and a "Regenerate codes" button (existing Fortify action); at zero the alert is the error tone. Spec B43 reworded: a used code is removed. As built (deviation, to confirm by the integrator): the alert carries no button of its own and points to the "Regenerate codes" button of the same row (PB-51), since two buttons of the same name in one row would be ambiguous; the row has two buttons and no "generated on" date (PB-51); at zero codes "View recovery codes" is not offered; "Regenerate codes" asks for no confirmation, as the mockup's bare button (owner decision pending).
+
+---
+
+# Last run of plan 18e (wave 3b)
+
+Rules in force: no test runs; browser walkthroughs (tests/Browser/Walkthroughs, Smoke) are ignored by owner decision — not written, not updated, not run; unit and feature tests are still written and updated with the code. `pre-build-deviations.md` is binding. Portable database code, and the owner's later rule: Eloquent and the standard query builder only, no raw queries.
+
+## Lane guest join
+
+### RW-J1: Guest join — suggested nickname, "Join the session", a sentence that is true
+Rows D-51, PB-47 to PB-49 (see pre-build-deviations.md, group F). On the four guest-join pages (retro, poker, games, whiteboard), through the shared `GuestJoinPage` / `GuestJoin`: a suggested random nickname on every session type (the games' generator, shared), with the mockup's way to draw another one; the button reads "Join the session". The sentence "Your nickname is deleted when the session ends; your cards can stay anonymous." is checked against the code: search app/ for what happens to a guest's nickname when a session ends; keep only what is true, per session type (cards exist only in a retro). Feature and unit tests that bind the old label or the absence of a suggestion follow.
+
+## Lane auth (branch plan-18f-auth)
+
+### RW-A1: Invitation card — account creation on the card
+Row D-54 and PB-46 (option B): a logged-out visitor with a valid invitation creates the account on the card: the invited e-mail shown and locked, a name field and one password field (no confirmation), "Create my account and join". It reuses the registration action and its rules (password rules, e-mail normalisation, uniqueness), binds the account to the invited address (the address is never taken from the request), marks the address verified only because the invitation token proves it (same reasoning as the existing invitation acceptance), signs the user in with a regenerated session and joins the workspace in one transaction. Refused under `sso_required` (SSO buttons only, as Task 22/23 built), when registration by form is refused for another reason, for an expired or revoked invitation, and when an account already exists for the address (the card then offers sign-in, without saying more than the existing card says). Throttled like registration. Security rules of plan 18f apply; add a numbered rule S35 "an invitation creates an account only for its own address, once" with its feature tests (this lane runs its auth tests).

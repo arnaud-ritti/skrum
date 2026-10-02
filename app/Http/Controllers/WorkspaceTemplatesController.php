@@ -11,8 +11,10 @@ use App\Models\User;
 use App\Models\WhiteboardTemplate;
 use App\Models\Workspace;
 use App\Models\WorkspaceTemplate;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
@@ -25,14 +27,14 @@ class WorkspaceTemplatesController extends Controller
 
     public function index(Request $request, Workspace $workspace, BuildTemplateCatalogue $buildTemplateCatalogue): Response
     {
+        $visibleTeamIds = $workspace->teamsVisibleTo($request->user())->modelKeys();
+
         return Inertia::render('workspaces/templates', [
             'workspace' => $workspace->only(['id', 'name', 'slug']),
-            'templates' => $workspace->templates()->with(['columns', 'creator'])->orderBy('name')->get()
-                ->map(fn (WorkspaceTemplate $template): array => $this->present($template))
-                ->values(),
+            'templates' => $this->retroTemplates($workspace, $visibleTeamIds),
             'categories' => TemplateCategory::options(),
             'whiteboardTemplates' => $this->whiteboardTemplates($request->user(), $workspace),
-            'pokerDecks' => $this->pokerDecks($request->user(), $workspace),
+            'pokerDecks' => $this->pokerDecks($request->user(), $workspace, $visibleTeamIds),
             'canCreatePokerDeck' => $request->user()->can('createForWorkspace', [SavedPokerDeck::class, $workspace]),
             'canManage' => $request->user()->canManage($workspace),
             'catalogue' => Inertia::optional(fn (): array => $buildTemplateCatalogue->handle($workspace)),
@@ -86,6 +88,30 @@ class WorkspaceTemplatesController extends Controller
     }
 
     /**
+     * The usage of a template counts the retros of the teams the user can view, as the usage of a deck does.
+     *
+     * @param  array<int, string>  $visibleTeamIds
+     * @return Collection<int, array{
+     *     id: string,
+     *     name: string,
+     *     category: string,
+     *     author: array{name: string, avatarUrl: string}|null,
+     *     usageCount: int,
+     *     columns: array<int, array{title: string, description: ?string, color: string}>
+     * }>
+     */
+    private function retroTemplates(Workspace $workspace, array $visibleTeamIds): Collection
+    {
+        return $workspace->templates()
+            ->with(['columns', 'creator'])
+            ->withCount(['retros' => fn (Builder $retros) => $retros->whereIn('team_id', $visibleTeamIds)])
+            ->orderBy('name')
+            ->get()
+            ->map(fn (WorkspaceTemplate $template): array => $this->present($template))
+            ->values();
+    }
+
+    /**
      * @return array<int, array{
      *     id: string,
      *     name: string,
@@ -112,22 +138,24 @@ class WorkspaceTemplatesController extends Controller
     }
 
     /**
+     * @param  array<int, string>  $visibleTeamIds
      * @return array<int, array{
      *     id: string,
      *     name: string,
      *     cards: array<int, string>,
      *     usageCount: int,
+     *     author: array{name: string, avatarUrl: string}|null,
      *     canManage: bool
      * }>
      */
-    private function pokerDecks(User $user, Workspace $workspace): array
+    private function pokerDecks(User $user, Workspace $workspace, array $visibleTeamIds): array
     {
         $canManage = $user->canManage($workspace);
-        $decks = $workspace->pokerDecks()->orderBy('name')->get();
+        $decks = $workspace->pokerDecks()->with('creator')->orderBy('name')->get();
 
         $usageCounts = PokerGame::query()
             ->whereIn('saved_deck_id', $decks->modelKeys())
-            ->whereIn('team_id', $workspace->teamsVisibleTo($user)->modelKeys())
+            ->whereIn('team_id', $visibleTeamIds)
             ->selectRaw('saved_deck_id, count(*) as aggregate')
             ->groupBy('saved_deck_id')
             ->pluck('aggregate', 'saved_deck_id');
@@ -138,6 +166,7 @@ class WorkspaceTemplatesController extends Controller
                 'name' => $deck->name,
                 'cards' => $deck->cards,
                 'usageCount' => (int) ($usageCounts[$deck->id] ?? 0),
+                'author' => $this->author($deck->creator),
                 'canManage' => $canManage,
             ])
             ->all();
@@ -160,7 +189,8 @@ class WorkspaceTemplatesController extends Controller
      *     id: string,
      *     name: string,
      *     category: string,
-     *     author: ?string,
+     *     author: array{name: string, avatarUrl: string}|null,
+     *     usageCount: int,
      *     columns: array<int, array{title: string, description: ?string, color: string}>
      * }
      */
@@ -170,8 +200,27 @@ class WorkspaceTemplatesController extends Controller
             'id' => $template->id,
             'name' => $template->name,
             'category' => $template->category->value,
-            'author' => $template->creator?->name,
+            'author' => $this->author($template->creator),
+            'usageCount' => (int) $template->retros_count,
             'columns' => $template->presentColumns(),
+        ];
+    }
+
+    /**
+     * @return array{
+     *     name: string,
+     *     avatarUrl: string
+     * }|null
+     */
+    private function author(?User $creator): ?array
+    {
+        if ($creator === null) {
+            return null;
+        }
+
+        return [
+            'name' => $creator->name,
+            'avatarUrl' => $creator->avatarUrl(),
         ];
     }
 }

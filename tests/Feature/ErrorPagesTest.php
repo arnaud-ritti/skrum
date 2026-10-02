@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Session\TokenMismatchException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Exceptions;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -319,4 +320,36 @@ it('renders the static 503 view in maintenance mode', function () {
     } finally {
         $this->artisan('up');
     }
+});
+
+it('renders the 500 page without the message, the trace or the request data while the database is unreachable', function () {
+    config(['app.debug' => false]);
+    Route::middleware('web')->post('/error-pages-probe/failing', fn () => throw new RuntimeException('Secret detail of the failure.'));
+
+    withUnreachableDatabase(function (): void {
+        $response = $this->post('/error-pages-probe/failing', ['password' => 'hunter2-probe']);
+
+        $response->assertInternalServerError()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('errors/error')
+                ->where('status', 500)
+                ->where('requestId', $response->headers->get('X-Request-Id'))
+                ->missing('auth')
+                ->missing('errors'));
+
+        expect($response->getContent())
+            ->not->toContain('Secret detail')
+            ->not->toContain('RuntimeException')
+            ->not->toContain('hunter2-probe')
+            ->not->toContain(base_path());
+    });
+});
+
+it('answers a refused webhook delivery, which has no session, without reporting a failure of the page', function () {
+    Exceptions::fake();
+
+    $this->post('/integrations/webhooks/github', [], ['Accept' => '*/*'])
+        ->assertStatus(404);
+
+    Exceptions::assertNothingReported();
 });

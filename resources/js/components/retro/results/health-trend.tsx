@@ -31,7 +31,7 @@ export function HealthTrend({ points }: { points: HealthTrendPoint[] }) {
     const latest = points[points.length - 1];
 
     return (
-        <figure className="space-y-1">
+        <figure className="flex min-w-0 flex-col gap-1">
             <figcaption className="text-sm font-medium">
                 {t('Trend across retros')}
             </figcaption>
@@ -39,7 +39,7 @@ export function HealthTrend({ points }: { points: HealthTrendPoint[] }) {
                 viewBox={`0 0 ${Width} ${Height}`}
                 role="img"
                 aria-label={t('Trend across retros')}
-                className="h-14 w-56 overflow-visible"
+                className="h-14 w-56 max-w-full overflow-visible"
             >
                 <polyline
                     points={plotted.map(({ x, y }) => `${x},${y}`).join(' ')}

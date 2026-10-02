@@ -1,9 +1,14 @@
 <?php
 
+use App\Enums\RetroPhase;
 use App\Enums\WorkspaceRole;
+use App\Models\ActionItem;
+use App\Models\PokerGame;
+use App\Models\Retro;
 use App\Models\Team;
 use App\Models\User;
 use App\Models\Workspace;
+use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia as Assert;
 
 it('sends users without a workspace to the create page', function () {
@@ -157,4 +162,121 @@ it('leaves out of the workspace page a team the user cannot see', function () {
         ->assertInertia(fn (Assert $page) => $page
             ->has('teams', 1)
             ->where('teams.0.name', 'Visible'));
+});
+
+it('sends the open retro, the open poker games and the open and overdue action items of each team', function () {
+    $this->travelTo(now()->startOfSecond());
+    $workspace = Workspace::factory()->create();
+    $owner = workspaceManager($workspace, WorkspaceRole::Owner);
+    $alpha = Team::factory()->for($workspace)->create(['name' => 'Alpha']);
+    $beta = Team::factory()->for($workspace)->create(['name' => 'Beta']);
+    Team::factory()->for($workspace)->create(['name' => 'Gamma']);
+
+    Retro::factory()->for($alpha)->inPhase(RetroPhase::Completed)->create(['completed_at' => now()->subDays(9)]);
+    Retro::factory()->for($alpha)->inPhase(RetroPhase::Voting)->create(['title' => 'Sprint 41', 'created_at' => now()->subDays(2)]);
+    Retro::factory()->for($alpha)->inPhase(RetroPhase::Writing)->create(['title' => 'Sprint 42', 'created_at' => now()->subDay()]);
+    PokerGame::factory()->for($alpha)->count(2)->create();
+    PokerGame::factory()->for($alpha)->ended()->create();
+    ActionItem::factory()->withoutRetro($alpha, $owner)->count(2)->create();
+    ActionItem::factory()->withoutRetro($alpha, $owner)->overdue()->create();
+    ActionItem::factory()->withoutRetro($alpha, $owner)->overdue()->completed()->create();
+
+    Retro::factory()->for($beta)->inPhase(RetroPhase::Completed)->create(['completed_at' => now()->subDays(20)]);
+    Retro::factory()->for($beta)->inPhase(RetroPhase::Completed)->create(['completed_at' => now()->subDays(3)]);
+
+    $this->actingAs($owner)
+        ->get(route('workspaces.show', $workspace))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('teams.0.activity.openRetroTitle', 'Sprint 42')
+            ->where('teams.0.activity.lastRetroAt', now()->subDays(9)->toIso8601String())
+            ->where('teams.0.activity.openPokerGames', 2)
+            ->where('teams.0.activity.openActionItems', 3)
+            ->where('teams.0.activity.overdueActionItems', 1)
+            ->where('teams.1.activity.openRetroTitle', null)
+            ->where('teams.1.activity.lastRetroAt', now()->subDays(3)->toIso8601String())
+            ->where('teams.1.activity.openPokerGames', 0)
+            ->where('teams.1.activity.openActionItems', 0)
+            ->where('teams.1.activity.overdueActionItems', 0)
+            ->where('teams.2.activity', [
+                'openRetroTitle' => null,
+                'lastRetroAt' => null,
+                'openPokerGames' => 0,
+                'openActionItems' => 0,
+                'overdueActionItems' => 0,
+            ]));
+});
+
+it('says which teams of the workspace page the user belongs to', function () {
+    $workspace = Workspace::factory()->create();
+    $admin = workspaceManager($workspace, WorkspaceRole::Admin);
+    $joined = Team::factory()->for($workspace)->create(['name' => 'Joined']);
+    Team::factory()->for($workspace)->create(['name' => 'Managed only']);
+    $joined->members()->attach($admin);
+
+    $this->actingAs($admin)
+        ->get(route('workspaces.show', $workspace))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('teams.0.isMember', true)
+            ->where('teams.1.isMember', false));
+});
+
+it('names one other admin of the workspace to a manager only', function () {
+    $workspace = Workspace::factory()->create();
+    $owner = workspaceManager($workspace, WorkspaceRole::Owner);
+    $zoe = workspaceManager($workspace, WorkspaceRole::Admin);
+    $zoe->update(['name' => 'Zoe']);
+    $camille = workspaceManager($workspace, WorkspaceRole::Admin);
+    $camille->update(['name' => 'Camille']);
+    $member = workspaceManager($workspace, WorkspaceRole::Member);
+    $member->update(['name' => 'Aaron']);
+
+    $this->actingAs($owner)
+        ->get(route('workspaces.show', $workspace))
+        ->assertInertia(fn (Assert $page) => $page->where('otherAdminName', 'Camille'));
+
+    $this->actingAs($member)
+        ->get(route('workspaces.show', $workspace))
+        ->assertInertia(fn (Assert $page) => $page->where('otherAdminName', null));
+});
+
+it('names no other admin to the only manager of a workspace', function () {
+    $workspace = Workspace::factory()->create();
+    $owner = workspaceManager($workspace, WorkspaceRole::Owner);
+    workspaceManager($workspace, WorkspaceRole::Member);
+
+    $this->actingAs($owner)
+        ->get(route('workspaces.show', $workspace))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('adminsCount', 1)
+            ->where('otherAdminName', null));
+});
+
+it('reads the activity of the teams with the same number of queries for one team and for four', function () {
+    $workspace = Workspace::factory()->create();
+    $owner = workspaceManager($workspace, WorkspaceRole::Owner);
+    $countQueries = function () use ($owner, $workspace): int {
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+        $this->actingAs($owner)->get(route('workspaces.show', $workspace))->assertOk();
+        $count = count(DB::getQueryLog());
+        DB::disableQueryLog();
+
+        return $count;
+    };
+    $busyTeam = function () use ($workspace, $owner): void {
+        $team = Team::factory()->for($workspace)->create();
+        $team->members()->attach($owner);
+        Retro::factory()->for($team)->create();
+        PokerGame::factory()->for($team)->create();
+        ActionItem::factory()->withoutRetro($team, $owner)->create();
+    };
+
+    $busyTeam();
+    $this->actingAs($owner)->get(route('workspaces.show', $workspace))->assertOk();
+    $withOne = $countQueries();
+    $busyTeam();
+    $busyTeam();
+    $busyTeam();
+
+    expect($countQueries())->toBe($withOne);
 });

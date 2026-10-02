@@ -77,6 +77,7 @@ function round(
 const revoted: EstimatedTaskRow = {
     id: 'task-1',
     title: 'Email reminders for late action items',
+    ticketKey: 'ATLAS-1285',
     gameId: 'game-1',
     gameTitle: 'Sprint 43 refinement',
     estimate: '8',
@@ -101,6 +102,7 @@ const anonymous: EstimatedTaskRow = {
     ...revoted,
     id: 'task-2',
     title: 'Billing: proration on seat change',
+    ticketKey: null,
     gameTitle: 'Sizing workshop',
     estimate: 'L',
     deck: 'T-shirt',
@@ -121,6 +123,7 @@ const base: EstimationHistoryProps = {
     filters: { game: null, q: '' },
     tasks: [revoted, anonymous],
     pagination: { currentPage: 1, lastPage: 1, total: 2 },
+    summary: { gamesCount: 2 },
 };
 
 function viewport(wide: boolean): void {
@@ -196,12 +199,68 @@ describe('EstimationHistory', () => {
                 name: 'Estimation history',
             }),
         ).toBeTruthy();
-        expect(screen.getByText('2 tasks estimated by Atlas')).toBeTruthy();
+        expect(
+            screen.getByText('2 tasks estimated by Atlas across 2 games'),
+        ).toBeTruthy();
         expect(
             screen
                 .getByRole('link', { name: 'Back to the team' })
                 .getAttribute('href'),
         ).toContain('/teams/team-1');
+    });
+
+    it('shows the key of the ticket under the title of an imported task, and none on a task written by hand', () => {
+        renderWithProviders(<EstimationHistory {...base} />);
+
+        const [first, second] = rows();
+
+        expect(
+            first.querySelector('[data-slot="estimate-ticket"]')?.textContent,
+        ).toBe('ATLAS-1285');
+        expect(within(first).getByText('Sprint 43 refinement')).toBeTruthy();
+        expect(
+            second.querySelector('[data-slot="estimate-ticket"]'),
+        ).toBeNull();
+        expect(within(second).getByText('Sizing workshop')).toBeTruthy();
+    });
+
+    it('shows the key of the ticket on the card of a phone', () => {
+        viewport(false);
+        renderWithProviders(<EstimationHistory {...base} />);
+
+        expect(
+            rows()[0].querySelector('[data-slot="estimate-ticket"]')
+                ?.textContent,
+        ).toBe('ATLAS-1285');
+    });
+
+    it('counts the games of the summary, in the singular for one game or one task, and names the team alone under a filter', () => {
+        const { rerender } = renderWithProviders(
+            <EstimationHistory {...base} summary={{ gamesCount: 1 }} />,
+        );
+
+        expect(
+            screen.getByText('2 tasks estimated by Atlas in 1 game'),
+        ).toBeTruthy();
+
+        rerender(
+            <EstimationHistory
+                {...base}
+                tasks={[revoted]}
+                pagination={{ currentPage: 1, lastPage: 1, total: 1 }}
+                summary={{ gamesCount: 1 }}
+            />,
+        );
+
+        expect(
+            screen.getByText('1 task estimated by Atlas in 1 game'),
+        ).toBeTruthy();
+
+        rerender(
+            <EstimationHistory {...base} filters={{ game: 'game-1', q: '' }} />,
+        );
+
+        expect(screen.queryByText(/estimated by Atlas/)).toBeNull();
     });
 
     it('shows three voters as avatars with the count, and a warning badge on a task that was voted again', () => {

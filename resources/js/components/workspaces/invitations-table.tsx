@@ -1,0 +1,320 @@
+import { router } from '@inertiajs/react';
+import { Check, Copy, Mail, X } from 'lucide-react';
+import { useId, useState } from 'react';
+import { toast } from 'sonner';
+import WorkspaceInvitationsController from '@/actions/App/Http/Controllers/WorkspaceInvitationsController';
+import { ConfirmDialog } from '@/components/skrum/confirm-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Spinner } from '@/components/ui/spinner';
+import { TableCell, TableRow } from '@/components/ui/table';
+import { MembersLayout } from '@/components/workspaces/members-layout';
+import { useRouterAction } from '@/components/workspaces/use-router-action';
+import { useClipboard } from '@/hooks/use-clipboard';
+import { useTrans } from '@/hooks/use-trans';
+import type { PendingInvitation } from '@/types';
+
+export function invitationDay(invitedAt: string, locale: string): string {
+    return new Intl.DateTimeFormat(locale, {
+        day: 'numeric',
+        month: 'short',
+    }).format(new Date(invitedAt));
+}
+
+/**
+ * The link of the invitation just sent. It exists only in the answer to
+ * "Send invitation" or "Resend": the server keeps a hash of the token.
+ */
+export function InvitationLink({ url }: { url: string }) {
+    const { t } = useTrans();
+    const textId = useId();
+    const [copied, copy] = useClipboard();
+    const linkCopied = copied === url;
+
+    const copyLink = async (): Promise<void> => {
+        if (!(await copy(url))) {
+            toast.error(t('Something went wrong. Please try again.'));
+        }
+    };
+
+    return (
+        <div
+            role="status"
+            data-slot="invitation-link"
+            className="flex min-w-0 flex-col gap-2 border-b bg-skrum-info-soft px-5 py-3"
+        >
+            <p id={textId} className="text-body-sm text-skrum-info-text">
+                {t(
+                    'Email is not configured on this instance. Share this link with the invited person:',
+                )}
+            </p>
+            <div className="flex min-w-0 items-center gap-2">
+                <Input
+                    readOnly
+                    value={url}
+                    aria-labelledby={textId}
+                    className="min-w-0 flex-1 bg-card font-mono text-body-sm md:text-body-sm"
+                    onFocus={(event) => event.currentTarget.select()}
+                />
+                <Button
+                    type="button"
+                    variant="outline"
+                    className="shrink-0"
+                    onClick={() => void copyLink()}
+                >
+                    {linkCopied ? <Check aria-hidden /> : <Copy aria-hidden />}
+                    <span>{linkCopied ? t('Copied') : t('Copy link')}</span>
+                </Button>
+            </div>
+        </div>
+    );
+}
+
+function InvitationRow({
+    invitation,
+    locale,
+    resending,
+    error,
+    onResend,
+    onRevoke,
+}: {
+    invitation: PendingInvitation;
+    locale: string;
+    resending: boolean;
+    error?: string;
+    onResend: () => void;
+    onRevoke: () => void;
+}) {
+    const { t } = useTrans();
+    const roleLabel = {
+        owner: t('Owner'),
+        admin: t('Admin'),
+        member: t('Member'),
+    }[invitation.role];
+
+    return (
+        <TableRow
+            data-slot="invitation-row"
+            data-invitation-id={invitation.id}
+            data-invitation-email={invitation.email}
+            aria-busy={resending}
+            className={MembersLayout.row}
+        >
+            <TableCell className={MembersLayout.person}>
+                <span className="flex min-w-0 items-center gap-2">
+                    <span
+                        aria-hidden
+                        className="grid size-6 shrink-0 place-items-center rounded-full border border-input bg-card text-muted-foreground"
+                    >
+                        <Mail className="size-3.5" />
+                    </span>
+                    <span className="flex min-w-0 flex-col">
+                        <span className="truncate text-sm leading-4.5 font-semibold">
+                            {invitation.email}
+                        </span>
+                        <span
+                            data-slot="invitation-details"
+                            className="truncate text-xs text-muted-foreground"
+                        >
+                            {roleLabel}
+                            {' · '}
+                            {t('Invited on :date', {
+                                date: invitationDay(
+                                    invitation.invitedAt,
+                                    locale,
+                                ),
+                            })}
+                        </span>
+                        {error !== undefined && (
+                            <span
+                                role="alert"
+                                className="text-body-sm whitespace-normal text-skrum-destructive-text"
+                            >
+                                {error}
+                            </span>
+                        )}
+                    </span>
+                </span>
+            </TableCell>
+            <TableCell className={MembersLayout.wideCell}>
+                {invitation.isExpired ? (
+                    <Badge variant="destructive" shape="pill">
+                        {t('Expired')}
+                    </Badge>
+                ) : (
+                    <Badge variant="warning" shape="pill">
+                        {t('Invitation pending')}
+                    </Badge>
+                )}
+            </TableCell>
+            <TableCell className={MembersLayout.wideActions}>
+                <span className="inline-flex max-w-full flex-wrap items-center gap-1 @max-xl/card:-ml-3">
+                    <Button
+                        variant="link"
+                        size="sm"
+                        disabled={resending}
+                        aria-label={t('Resend the invitation of :email', {
+                            email: invitation.email,
+                        })}
+                        onClick={onResend}
+                    >
+                        {resending && <Spinner aria-label={t('Loading')} />}
+                        <span>{t('Resend')}</span>
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled={resending}
+                        aria-label={t('Revoke the invitation of :email', {
+                            email: invitation.email,
+                        })}
+                        onClick={onRevoke}
+                        className="text-skrum-destructive-text hover:bg-skrum-destructive-soft hover:text-skrum-destructive-text"
+                    >
+                        <X aria-hidden />
+                        <span>{t('Revoke')}</span>
+                    </Button>
+                </span>
+            </TableCell>
+        </TableRow>
+    );
+}
+
+/** What the rows and the confirmation share: one resend at a time, one invitation asked about. */
+export function useInvitationActions(workspaceSlug: string) {
+    const { t } = useTrans();
+    const revocation = useRouterAction();
+    const [confirming, setConfirming] = useState(false);
+    const [revoking, setRevoking] = useState<PendingInvitation | null>(null);
+    const [resendingEmail, setResendingEmail] = useState<string | null>(null);
+    const [resendError, setResendError] = useState<{
+        email: string;
+        message: string;
+    } | null>(null);
+
+    const resend = (invitation: PendingInvitation): void => {
+        if (resendingEmail !== null) {
+            return;
+        }
+
+        router.post(
+            WorkspaceInvitationsController.store.url(workspaceSlug),
+            { email: invitation.email, role: invitation.role },
+            {
+                preserveScroll: true,
+                onStart: () => {
+                    setResendingEmail(invitation.email);
+                    setResendError(null);
+                },
+                onSuccess: () => {
+                    toast.success(
+                        t('Invitation created for :email.', {
+                            email: invitation.email,
+                        }),
+                    );
+                },
+                onError: (errors) =>
+                    setResendError({
+                        email: invitation.email,
+                        message:
+                            Object.values(errors)[0] ??
+                            t('Something went wrong. Please try again.'),
+                    }),
+                onFinish: () => setResendingEmail(null),
+            },
+        );
+    };
+
+    const askToRevoke = (invitation: PendingInvitation): void => {
+        revocation.reset();
+        setRevoking(invitation);
+        setConfirming(true);
+    };
+
+    const revoke = (): Promise<void> => {
+        if (revoking === null) {
+            return Promise.resolve();
+        }
+
+        return revocation.run((options) =>
+            router.delete(
+                WorkspaceInvitationsController.destroy.url({
+                    workspace: workspaceSlug,
+                    invitation: revoking.id,
+                }),
+                options,
+            ),
+        );
+    };
+
+    return {
+        resend,
+        resendingEmail,
+        resendError,
+        askToRevoke,
+        revoke,
+        revoking,
+        revokeError: revocation.error,
+        confirming,
+        setConfirming,
+    };
+}
+
+export type InvitationActions = ReturnType<typeof useInvitationActions>;
+
+/** The invitations that wait for an answer, as rows of the members table. */
+export function InvitationRows({
+    invitations,
+    locale,
+    actions,
+}: {
+    invitations: PendingInvitation[];
+    locale: string;
+    actions: InvitationActions;
+}) {
+    return (
+        <>
+            {invitations.map((invitation) => (
+                <InvitationRow
+                    key={invitation.id}
+                    invitation={invitation}
+                    locale={locale}
+                    resending={actions.resendingEmail === invitation.email}
+                    error={
+                        actions.resendError?.email === invitation.email
+                            ? actions.resendError.message
+                            : undefined
+                    }
+                    onResend={() => actions.resend(invitation)}
+                    onRevoke={() => actions.askToRevoke(invitation)}
+                />
+            ))}
+        </>
+    );
+}
+
+export function RevokeInvitationDialog({
+    actions,
+}: {
+    actions: InvitationActions;
+}) {
+    const { t } = useTrans();
+
+    return (
+        <ConfirmDialog
+            open={actions.confirming}
+            onOpenChange={actions.setConfirming}
+            tone="destructive"
+            title={t('Revoke the invitation of :email?', {
+                email: actions.revoking?.email ?? '',
+            })}
+            description={t(
+                'The link of the invitation stops working. You can invite this person again later.',
+            )}
+            confirmLabel={t('Revoke')}
+            onConfirm={actions.revoke}
+            error={actions.revokeError}
+        />
+    );
+}

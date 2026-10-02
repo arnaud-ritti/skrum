@@ -97,7 +97,7 @@ export default function CardGroupSection() {
         .slice(0, 280);
     const thirty: RetroCardProps[] = Array.from({ length: 30 }, (_, index) => ({
         id: `thirty-${index}`,
-        color: 'amber',
+        color: 'sun',
         text:
             index === 1
                 ? longText
@@ -202,10 +202,10 @@ export default function CardGroupSection() {
                     <CardGroup
                         id="controls"
                         title={t('Code review quality')}
-                        color="red"
+                        color="coral"
                         cards={scoped('g7', coral).map((card) => ({
                             ...card,
-                            color: 'red',
+                            color: 'coral',
                             canEdit: true,
                             canVote: true,
                             isMine: true,
@@ -224,10 +224,10 @@ export default function CardGroupSection() {
                     <CardGroup
                         id="masked"
                         title=""
-                        color="blue"
+                        color="sky"
                         cards={scoped('g8', coralTwo).map((card) => ({
                             ...card,
-                            color: 'blue',
+                            color: 'sky',
                             text: null,
                             masked: true,
                         }))}
@@ -241,11 +241,11 @@ export default function CardGroupSection() {
                     <CardGroup
                         id="masked-collapsed"
                         title={t('Code review quality')}
-                        color="blue"
+                        color="sky"
                         collapsed
                         cards={scoped('g9', coralTwo).map((card, index) => ({
                             ...card,
-                            color: 'blue',
+                            color: 'sky',
                             text: index === 0 ? card.text : null,
                             masked: index > 0,
                         }))}
@@ -255,10 +255,10 @@ export default function CardGroupSection() {
                     <CardGroup
                         id="hint"
                         title=""
-                        color="green"
+                        color="moss"
                         cards={scoped('g10', coralTwo).map((card) => ({
                             ...card,
-                            color: 'green',
+                            color: 'moss',
                         }))}
                         canEdit
                         onRename={noop}
@@ -276,7 +276,7 @@ export default function CardGroupSection() {
                     <CardGroup
                         id="thirty-collapsed"
                         title={t('Everything about deployments')}
-                        color="amber"
+                        color="sun"
                         cards={scoped('g11', thirty)}
                         collapsed
                         votes={{ total: 200, mine: 5 }}
@@ -288,10 +288,10 @@ export default function CardGroupSection() {
                     <CardGroup
                         id="thirty"
                         title={t('Everything about deployments')}
-                        color="green"
+                        color="moss"
                         cards={scoped('g12', thirty).map((card) => ({
                             ...card,
-                            color: 'green',
+                            color: 'moss',
                         }))}
                         canEdit
                         votes={{ total: 200, mine: 5 }}

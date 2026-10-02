@@ -192,6 +192,7 @@ it('[P18e-10-03b] shows the recovery codes of an enabled second factor, regenera
         ->assertSeeIn('[data-slot="settings-card-header"] [data-slot="badge"]', 'On')
         ->assertSee('Added on March 12, 2026')
         ->assertSee('3 of 8 recovery codes left')
+        ->assertSeeIn('[data-slot="two-factor-row"] [data-slot="recovery-codes-alert"][role="status"]', 'Only 3 recovery codes left')
         ->assertNotPresent('ol[aria-label="Recovery codes"]')
         ->click('View recovery codes')
         ->assertSeeIn('ol[aria-label="Recovery codes"] li:nth-child(3)', 'code-three')
@@ -199,6 +200,7 @@ it('[P18e-10-03b] shows the recovery codes of an enabled second factor, regenera
         ->click('Regenerate codes')
         ->assertPresent('ol[aria-label="Recovery codes"] li:nth-child(8)')
         ->assertSee('8 of 8 recovery codes left')
+        ->assertNotPresent('[data-slot="recovery-codes-alert"]')
         ->assertDontSee('code-three');
 
     expect($member->refresh()->recoveryCodes())->toHaveCount(8)->not->toContain('code-three');
@@ -222,6 +224,32 @@ it('[P18e-10-03b] shows the recovery codes of an enabled second factor, regenera
 
     expect($member->refresh()->two_factor_secret)->toBeNull()
         ->and($member->two_factor_confirmed_at)->toBeNull();
+});
+
+it('[P18e-10-03c] warns in red when no recovery code is left, and regenerating from the row shows eight new codes', function () {
+    $member = p18eSettingsWalker();
+
+    $page = $this->signIn($member, '/settings/security');
+
+    $member->forceFill([
+        'two_factor_secret' => encrypt('JBSWY3DPEHPK3PXP'),
+        'two_factor_recovery_codes' => encrypt(json_encode([])),
+        'two_factor_confirmed_at' => '2026-03-12 12:00:00',
+    ])->save();
+
+    p18eConfirmPassword($page, '/settings/security')
+        ->assertSee('0 of 8 recovery codes left')
+        ->assertSeeIn('[data-slot="two-factor-row"] [data-slot="recovery-codes-alert"][role="alert"]', 'No recovery codes left')
+        ->assertNotPresent('ol[aria-label="Recovery codes"]')
+        ->assertDontSee('View recovery codes')
+        ->click('Regenerate codes')
+        ->assertPresent('ol[aria-label="Recovery codes"] li:nth-child(8)')
+        ->assertSee('8 of 8 recovery codes left')
+        ->assertNotPresent('[data-slot="recovery-codes-alert"]')
+        ->assertSee('Hide recovery codes')
+        ->assertNoJavaScriptErrors();
+
+    expect($member->refresh()->recoveryCodes())->toHaveCount(8);
 });
 
 it('[P18e-10-05] lists a passkey after the empty state and removes it after a confirmation', function () {

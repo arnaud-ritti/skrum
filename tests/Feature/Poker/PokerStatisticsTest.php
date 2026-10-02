@@ -84,7 +84,7 @@ it('ignores the question mark and the coffee card', function () {
         ->and($result['spread'])->toBe(['min' => 3.0, 'max' => 5.0])
         ->and($result['agreement'])->toBe(0.67)
         ->and($result['outliers']['low'])->toBe([$table['players'][2]->id])
-        ->and($result['outliers']['high'])->toBe([]);
+        ->and($result['outliers']['high'])->toBeEmpty();
 });
 
 it('gives nothing when only special cards were played', function () {

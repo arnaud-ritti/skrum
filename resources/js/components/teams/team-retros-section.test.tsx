@@ -2,6 +2,7 @@ import { screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import {
     TeamRetrosSection,
+    retroAction,
     retroTone,
 } from '@/components/teams/team-retros-section';
 import { renderWithProviders } from '@/test/render';
@@ -55,6 +56,7 @@ const writing: RetroSummary = {
     templateName: '4L',
     facilitator: { name: 'Camille Roux', avatarUrl: '/avatars/c.svg' },
     rotiAverage: null,
+    viewerHasJoined: false,
 };
 
 const closed: RetroSummary = {
@@ -73,6 +75,26 @@ describe('retroTone', () => {
         expect(retroTone('completed')).toBe('muted');
         expect(retroTone('writing')).toBe('info');
         expect(retroTone('discussing')).toBe('info');
+    });
+});
+
+describe('retroAction', () => {
+    it('resumes an open retro the viewer has joined and joins the others', () => {
+        expect(retroAction({ phase: 'writing', viewerHasJoined: false })).toBe(
+            'join',
+        );
+        expect(retroAction({ phase: 'voting', viewerHasJoined: true })).toBe(
+            'resume',
+        );
+    });
+
+    it('sends to the summary of a closed retro, joined or not', () => {
+        expect(retroAction({ phase: 'completed', viewerHasJoined: true })).toBe(
+            'summary',
+        );
+        expect(
+            retroAction({ phase: 'completed', viewerHasJoined: false }),
+        ).toBe('summary');
     });
 });
 
@@ -108,7 +130,23 @@ describe('the retrospectives of a team', () => {
             within(card).getByText('Facilitated by Camille Roux'),
         ).toBeTruthy();
         expect(within(card).getByText('Join')).toBeTruthy();
+        expect(within(card).queryByText('Resume')).toBeNull();
         expect(card.querySelector('[data-slot="retro-roti"]')).toBeNull();
+    });
+
+    it('reads "Resume" on an open retro the viewer has already joined', () => {
+        renderWithProviders(
+            <TeamRetrosSection
+                retros={[{ ...writing, viewerHasJoined: true }, closed]}
+            />,
+        );
+
+        const card = screen.getByRole('link', {
+            name: /Sprint 42 retrospective/,
+        });
+
+        expect(within(card).getByText('Resume')).toBeTruthy();
+        expect(within(card).queryByText('Join')).toBeNull();
     });
 
     it('shows the ROTI of a closed retro and sends to its summary', () => {

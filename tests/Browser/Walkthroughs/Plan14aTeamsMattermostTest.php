@@ -221,9 +221,9 @@ it('[P14a-03a] posts the board link to Microsoft Teams and to Mattermost with th
 
     $page = $this->awaitRealtime($this->signIn($fran, "/retros/{$retro->id}"));
 
-    $page->assertSeeIn('header > h1', 'Sprint *42*')
+    $page->assertSeeIn('header >> h1', 'Sprint *42*')
         ->click('Share')
-        ->assertSee('Share the board')
+        ->assertSee('Post a link')
         ->click('Post link to Microsoft Teams')
         ->assertSeeIn($lines, 'Sending to Microsoft Teams…')
         ->click('Post link to Mattermost')
@@ -318,7 +318,7 @@ it('[P14a-04a] shares the recap of an anonymous retro to both channels with a co
 
     $page = $this->awaitRealtime($this->signIn($fran, "/retros/{$retro->id}"));
 
-    $page->assertSee('Retrospective completed on')
+    $page->assertSee('Session ended')
         ->click('Share')
         ->assertSee('Share to Microsoft Teams')
         ->click('Share to Microsoft Teams')
@@ -374,7 +374,7 @@ it('[P14a-05a] shows "Reconnect required" after a share to a deleted Teams workf
     $page = $this->awaitRealtime($this->signIn($fran, "/retros/{$retro->id}"));
 
     $page->click('Share')
-        ->assertSee('Share the board')
+        ->assertSee('Post a link')
         ->click('Post link to Microsoft Teams')
         ->assertSeeIn($lines, 'Sending to Microsoft Teams…');
 

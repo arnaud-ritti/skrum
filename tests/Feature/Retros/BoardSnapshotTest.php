@@ -85,6 +85,8 @@ it('shows vote totals while voting unless hidden, and always shows own votes', f
     'voting, hidden' => [RetroPhase::Voting, true, null],
     'voting, visible' => [RetroPhase::Voting, false, 3],
     'discussing, hidden' => [RetroPhase::Discussing, true, 3],
+    'actions, hidden' => [RetroPhase::Actions, true, 3],
+    'roti, hidden' => [RetroPhase::Roti, true, 3],
     'completed' => [RetroPhase::Completed, false, 3],
 ]);
 
@@ -113,6 +115,8 @@ it('describes the viewer, participants, columns and links', function () {
         ->and(collect($snapshot['participants'])->firstWhere('id', $guest->id))->toMatchArray(['name' => 'Visitor', 'isGuest' => true, 'avatarUrl' => $guest->avatarUrl()])
         ->and($snapshot['links']['team'])->toBe(route('teams.show', [$retro->team->workspace, $retro->team]))
         ->and($guestSnapshot['links']['team'])->toBeNull()
+        ->and($snapshot['retro']['teamName'])->toBe($retro->team->name)
+        ->and($guestSnapshot['retro']['teamName'])->toBeNull()
         ->and(json_encode($snapshot))->not->toContain($retro->guest_token);
 });
 
@@ -354,7 +358,7 @@ it('exposes the enabled phases and toggles', function () {
 
     expect(snapshotFor($retro, $viewer)['retro'])->toMatchArray([
         'phase' => 'icebreaker',
-        'phases' => ['icebreaker', 'writing', 'grouping', 'voting', 'discussing', 'completed'],
+        'phases' => ['icebreaker', 'writing', 'grouping', 'voting', 'discussing', 'actions', 'roti', 'completed'],
         'healthCheckEnabled' => false,
         'icebreakerEnabled' => true,
     ]);

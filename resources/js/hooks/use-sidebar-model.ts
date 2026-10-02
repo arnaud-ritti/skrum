@@ -4,8 +4,8 @@ import TeamsController from '@/actions/App/Http/Controllers/TeamsController';
 import WorkspaceActionItemsController from '@/actions/App/Http/Controllers/WorkspaceActionItemsController';
 import WorkspacesController from '@/actions/App/Http/Controllers/WorkspacesController';
 import WorkspaceTemplatesController from '@/actions/App/Http/Controllers/WorkspaceTemplatesController';
-import TeamIntegrationsController from '@/actions/App/Http/Controllers/Integrations/TeamIntegrationsController';
 import type { AppSidebarProps, NavKey } from '@/components/skrum/app-sidebar';
+import { teamSettingsHref } from '@/lib/teams/settings-href';
 import { dashboard } from '@/routes';
 
 function initialsOf(name: string): string {
@@ -47,15 +47,14 @@ export function useSidebarModel(active?: NavKey): AppSidebarProps {
             links.members = `${teamUrl}#members`;
             links.games = TeamGameRoomsController.index(team);
 
-            if (currentWorkspace.role !== 'member') {
-                /**
-                 * The integrations page answers 404 while the instance has no
-                 * provider configured: the entry then leads to the settings
-                 * card of the team page.
-                 */
-                links.settings = features?.integrations
-                    ? TeamIntegrationsController.index(team)
-                    : `${teamUrl}#settings`;
+            const settings = teamSettingsHref({
+                ...team,
+                canManage: currentWorkspace.role !== 'member',
+                hasIntegrationsPage: features?.integrations === true,
+            });
+
+            if (settings !== undefined) {
+                links.settings = settings;
             }
         }
     }
@@ -84,6 +83,8 @@ export function useSidebarModel(active?: NavKey): AppSidebarProps {
             id: workspace.id,
             name: workspace.name,
             href: WorkspacesController.show(workspace.slug),
+            teamsCount: workspace.teamsCount,
+            role: workspace.role,
         })),
         newWorkspaceHref: WorkspacesController.create(),
         homeHref: dashboard(),

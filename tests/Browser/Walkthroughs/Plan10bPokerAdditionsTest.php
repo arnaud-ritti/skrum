@@ -67,10 +67,20 @@ function p10bDeckCardValues(string $name): string
 
 function p10bOpenSettings(mixed $page): mixed
 {
-    return $page->click('[aria-label="Facilitator menu"]')
-        ->assertSee('Settings…')
-        ->click('Settings…')
+    return $page->click('button[aria-label="Game settings"][aria-expanded="false"]')
+        ->assertPresent('button[aria-label="Game settings"][aria-expanded="true"]')
         ->assertSee('Game settings');
+}
+
+/**
+ * Applies the changes of the open settings popover, which stays open, then closes it.
+ */
+function p10bApplySettings(mixed $page, int $changes): mixed
+{
+    return $page->click('[role="dialog"] button:has-text("Apply ('.$changes.')")')
+        ->assertSee('No changes')
+        ->click('[role="dialog"] button[aria-label="Close"]')
+        ->assertPresent('button[aria-label="Game settings"][aria-expanded="false"]');
 }
 
 it('[P10b-01] saves a team deck, rejects a duplicate name and hides edit and delete from other members', function () {
@@ -346,11 +356,13 @@ it('[P10b-10a] reveals an anonymous round as values without names', function () 
     $a = $this->awaitRealtime($this->signIn($ada, "/poker/{$game->id}"));
     $b = $this->awaitRealtime($this->signIn($bob, "/poker/{$game->id}"));
 
-    p10bOpenSettings($a)
-        ->assertSee("With two voters, each can work out the other's vote from their own.")
-        ->click('#poker-anonymous-votes')
-        ->assertAriaAttribute('#poker-anonymous-votes', 'checked', 'true')
-        ->click('[data-slot="poker-settings"] button:has-text("Apply (1)")');
+    p10bApplySettings(
+        p10bOpenSettings($a)
+            ->assertSee("With two voters, each can work out the other's vote from their own.")
+            ->click('#poker-anonymous-votes')
+            ->assertAriaAttribute('#poker-anonymous-votes', 'checked', 'true'),
+        1,
+    );
 
     $b->assertSee('Anonymous votes');
 
@@ -398,10 +410,12 @@ it('[P10b-10b] keeps a revealed anonymous round anonymous in the history after a
         ->assertDontSee('Ada: 3')
         ->assertDontSee('Bob: 5');
 
-    p10bOpenSettings($a)
-        ->click('#poker-anonymous-votes')
-        ->assertSee('Applies from the next round.')
-        ->click('[data-slot="poker-settings"] button:has-text("Apply (1)")')
+    p10bApplySettings(
+        p10bOpenSettings($a)
+            ->click('#poker-anonymous-votes')
+            ->assertSee('Applies from the next round.'),
+        1,
+    )
         ->assertScript('document.querySelector("header").textContent.includes("Anonymous votes")', false)
         ->assertPresent('section[aria-label="Anonymous votes"]')
         ->assertSee('3 × 1')
@@ -425,14 +439,16 @@ it('[P10b-12] shows the four switches to the facilitator and removes the cursor 
 
     $b->assertNotPresent('[aria-label="Facilitator menu"]');
 
-    p10bOpenSettings($a)
-        ->assertSee('Reveal automatically when everyone has voted or the timer ends')
-        ->assertSee('Anonymous votes')
-        ->assertSee('Show live cursors')
-        ->assertSee('Show flying reactions')
-        ->click('#poker-cursors')
-        ->click('#poker-reactions')
-        ->click('[data-slot="poker-settings"] button:has-text("Apply (2)")');
+    p10bApplySettings(
+        p10bOpenSettings($a)
+            ->assertSee('Reveal automatically when everyone has voted or the timer ends')
+            ->assertSee('Anonymous votes')
+            ->assertSee('Show live cursors')
+            ->assertSee('Show flying reactions')
+            ->click('#poker-cursors')
+            ->click('#poker-reactions'),
+        2,
+    );
 
     foreach ([$a, $b] as $page) {
         $page->assertNotPresent('.lc-overlay')
@@ -440,12 +456,14 @@ it('[P10b-12] shows the four switches to the facilitator and removes the cursor 
             ->assertNotPresent('[aria-label="Hide my cursor"]');
     }
 
-    p10bOpenSettings($a)
-        ->assertAriaAttribute('#poker-cursors', 'checked', 'false')
-        ->assertAriaAttribute('#poker-reactions', 'checked', 'false')
-        ->click('#poker-cursors')
-        ->click('#poker-reactions')
-        ->click('[data-slot="poker-settings"] button:has-text("Apply (2)")');
+    p10bApplySettings(
+        p10bOpenSettings($a)
+            ->assertAriaAttribute('#poker-cursors', 'checked', 'false')
+            ->assertAriaAttribute('#poker-reactions', 'checked', 'false')
+            ->click('#poker-cursors')
+            ->click('#poker-reactions'),
+        2,
+    );
 
     foreach ([$a, $b] as $page) {
         $page->assertPresent('.lc-overlay')
@@ -706,10 +724,12 @@ it('[P10b-06] reveals by itself when the last online player votes, without waiti
             ->assertNotPresent('.lc-overlay');
     }
 
-    p10bOpenSettings($a)
-        ->click('#poker-auto-reveal')
-        ->assertAriaAttribute('#poker-auto-reveal', 'checked', 'true')
-        ->click('[data-slot="poker-settings"] button:has-text("Apply (1)")');
+    p10bApplySettings(
+        p10bOpenSettings($a)
+            ->click('#poker-auto-reveal')
+            ->assertAriaAttribute('#poker-auto-reveal', 'checked', 'true'),
+        1,
+    );
 
     foreach ([$a, $b, $c] as $page) {
         $page->assertSee('Auto-reveal');

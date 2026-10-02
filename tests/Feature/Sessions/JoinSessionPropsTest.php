@@ -26,6 +26,7 @@ it('sends the session of a retro guest link', function () {
                 'facilitatorName' => 'Grace',
                 'participantsCount' => 2,
                 'isLive' => true,
+                'hasAnonymousCards' => false,
             ]));
 });
 

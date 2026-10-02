@@ -204,11 +204,10 @@ it('[P18e-03-10] renders the game settings with the deck picker without overflow
             $french = str_starts_with($options['locale'], 'fr');
 
             return pokerVisualRoom($facilitator, $path, $options)
-                ->click($french ? '[aria-label="Menu de l\'animateur"]' : '[aria-label="Facilitator menu"]')
-                ->click($french ? 'Paramètres…' : 'Settings…')
-                ->assertPresent('[data-slot="poker-settings"] #poker-auto-reveal')
-                ->assertPresent('[data-slot="poker-settings"] [role="radio"]:has-text("Atlas scale")')
-                ->assertAttribute('[data-slot="poker-settings"] [role="radio"][value="fibonacci"]', 'aria-checked', 'true');
+                ->click($french ? 'button[aria-label="Paramètres de la partie"]' : 'button[aria-label="Game settings"]')
+                ->assertPresent('[role="dialog"] #poker-auto-reveal')
+                ->assertPresent('[role="dialog"] [role="radio"]:has-text("Atlas scale")')
+                ->assertAttribute('[role="dialog"] [role="radio"][value="fibonacci"]', 'aria-checked', 'true');
         },
     );
 });

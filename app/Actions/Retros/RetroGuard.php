@@ -23,6 +23,24 @@ class RetroGuard
         throw new AuthorizationException(__('This action is not available in the current phase.'));
     }
 
+    public static function takesActionItems(Retro $retro): void
+    {
+        if ($retro->phase->takesActionItems()) {
+            return;
+        }
+
+        throw new AuthorizationException(__('This action is not available in the current phase.'));
+    }
+
+    public static function takesRotiVotes(Retro $retro): void
+    {
+        if ($retro->takesRotiVotes()) {
+            return;
+        }
+
+        throw new AuthorizationException(__('This action is not available in the current phase.'));
+    }
+
     public static function open(Retro $retro): void
     {
         if ($retro->phase->isOpen()) {
@@ -34,7 +52,7 @@ class RetroGuard
 
     public static function groupNaming(Retro $retro): void
     {
-        self::phase($retro, RetroPhase::Grouping, RetroPhase::Voting, RetroPhase::Discussing);
+        self::phase($retro, RetroPhase::Grouping, RetroPhase::Voting, RetroPhase::Discussing, RetroPhase::Actions);
         self::unlocked($retro);
     }
 

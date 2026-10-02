@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\Retros\GuestCookie;
+use App\Models\User;
 use App\Models\Whiteboard;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -12,7 +13,21 @@ it('shows the join form for a valid link', function () {
         ->assertInertia(fn (Assert $page) => $page
             ->component('whiteboards/join')
             ->where('isInvalid', false)
-            ->where('boardTitle', 'Workshop'));
+            ->where('boardTitle', 'Workshop')
+            ->where('suggestedName', fn (string $name) => $name !== '' && mb_strlen($name) <= 50)
+            ->missing('randomName')
+            ->reloadOnly('randomName', fn (Assert $reload) => $reload
+                ->where('randomName', fn (string $name) => $name !== '' && mb_strlen($name) <= 50)));
+});
+
+it('prefills the name of a signed-in outsider', function () {
+    $board = Whiteboard::factory()->withGuestAccess()->create();
+    $outsider = User::factory()->create(['name' => 'Olga Outside']);
+
+    $this->actingAs($outsider)
+        ->get(route('whiteboards.join.show', $board->guest_token))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->where('suggestedName', 'Olga Outside'));
 });
 
 it('answers 404 for an unknown or disabled link', function () {

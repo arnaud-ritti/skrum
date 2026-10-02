@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { UsersIcon } from 'lucide-react';
+import { DoorOpenIcon, UsersIcon } from 'lucide-react';
 import { describe, expect, it, vi } from 'vitest';
 import { ConfirmDialog, FormDialog } from '@/components/skrum/confirm-dialog';
 import {
@@ -345,6 +345,28 @@ describe('FormDialog', () => {
         expect(submit().getAttribute('data-variant') ?? 'destructive').toBe(
             'destructive',
         );
+    });
+
+    it('shows the given icon on its submit button in place of the bin', () => {
+        render(
+            <FormDialog
+                open
+                onOpenChange={() => {}}
+                title="Leave Nordlys?"
+                submitLabel="Leave Nordlys"
+                submitIcon={DoorOpenIcon}
+                tone="destructive"
+                onSubmit={async () => {}}
+            >
+                <input aria-label="Workspace name" name="name" />
+            </FormDialog>,
+        );
+
+        const submit = screen.getByRole('button', { name: 'Leave Nordlys' });
+
+        expect(submit.querySelector('svg.lucide-door-open')).not.toBeNull();
+        expect(submit.querySelector('svg.lucide-trash-2')).toBeNull();
+        expect(submit.textContent).toBe('Leave Nordlys');
     });
 
     it('puts the given test hook on its submit button', () => {

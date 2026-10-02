@@ -59,7 +59,6 @@ function header(props: Partial<Parameters<typeof TeamHeader>[0]> = {}) {
             team={{ id: 'team-1', name: 'Atlas' }}
             members={members}
             openActionItemCount={7}
-            canManageIntegrations={false}
             {...props}
         />,
     );
@@ -122,29 +121,33 @@ describe('the team header', () => {
         );
     });
 
-    it('links to the games, and to the integrations only for who manages them', () => {
-        const { rerender } = header();
+    it('links to the games, and shows no gear to who can change nothing of the team', () => {
+        header();
 
         expect(
             screen.getByRole('link', { name: 'Games' }).getAttribute('href'),
         ).toMatch(/\/games$/);
-        expect(screen.queryByRole('link', { name: 'Integrations' })).toBeNull();
-
-        rerender(
-            <TeamHeader
-                workspace={{ id: 'w', name: 'Nordlys', slug: 'nordlys' }}
-                team={{ id: 'team-1', name: 'Atlas' }}
-                members={members}
-                openActionItemCount={0}
-                canManageIntegrations
-            />,
-        );
-
         expect(
-            screen
-                .getByRole('link', { name: 'Integrations' })
-                .getAttribute('href'),
-        ).toMatch(/\/integrations$/);
+            screen.queryByRole('link', { name: 'Team settings' }),
+        ).toBeNull();
+        expect(screen.queryByRole('link', { name: 'Integrations' })).toBeNull();
+    });
+
+    it('leads to the team settings with a gear named "Team settings", after "Games"', () => {
+        header({ settingsHref: '/w/nordlys/teams/team-1/integrations' });
+
+        const gear = screen.getByRole('link', { name: 'Team settings' });
+        const links = screen.getAllByRole('link');
+
+        expect(gear.getAttribute('href')).toBe(
+            '/w/nordlys/teams/team-1/integrations',
+        );
+        expect(gear.textContent).toBe('');
+        expect(gear.querySelector('svg[aria-hidden]')).not.toBeNull();
+        expect(links.indexOf(gear)).toBe(
+            links.indexOf(screen.getByRole('link', { name: 'Games' })) + 1,
+        );
+        expect(screen.queryByRole('link', { name: 'Integrations' })).toBeNull();
     });
 
     it('renders the new session trigger and leaves the schedule place empty', () => {

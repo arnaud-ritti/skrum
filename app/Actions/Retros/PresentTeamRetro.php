@@ -17,7 +17,8 @@ class PresentTeamRetro
      *     createdAt: ?string,
      *     templateName: string,
      *     facilitator: ?array{name: string, avatarUrl: string},
-     *     rotiAverage: ?float
+     *     rotiAverage: ?float,
+     *     viewerHasJoined: bool
      * }
      */
     public function handle(Retro $retro): array
@@ -34,6 +35,7 @@ class PresentTeamRetro
                 'avatarUrl' => $retro->facilitator->avatarUrl(),
             ],
             'rotiAverage' => $this->rotiAverage($retro),
+            'viewerHasJoined' => $this->viewerHasJoined($retro),
         ];
     }
 
@@ -44,6 +46,19 @@ class PresentTeamRetro
         }
 
         return TemplateCatalogue::find($retro->template)?->name() ?? $retro->template;
+    }
+
+    /**
+     * Read from the `viewer_has_joined` aggregate of the query: a retro loaded
+     * without it, or a completed one, has nothing to resume.
+     */
+    private function viewerHasJoined(Retro $retro): bool
+    {
+        if ($retro->phase === RetroPhase::Completed) {
+            return false;
+        }
+
+        return (bool) $retro->getAttribute('viewer_has_joined');
     }
 
     private function rotiAverage(Retro $retro): ?float

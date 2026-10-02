@@ -5,11 +5,7 @@ import BroadcastAuthorizationsController from '@/actions/App/Http/Controllers/Br
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { initializeTheme } from '@/hooks/use-appearance';
-import AppLayout from '@/layouts/app-layout';
-import AuthLayout from '@/layouts/auth-layout';
-import SettingsLayout from '@/layouts/settings/layout';
 import { loadDocumentOnMaintenance } from '@/lib/maintenance-reload';
-import { usesOwnLayout } from '@/lib/page-layouts';
 import { echoConnection } from '@/lib/reverb-config';
 
 const connection = typeof window !== 'undefined' ? echoConnection() : null;
@@ -51,28 +47,7 @@ void createInertiaApp({
 
         return title ? `${title} - ${appName}` : appName;
     },
-    layout: (name) => {
-        if (usesOwnLayout(name)) {
-            return null;
-        }
-
-        switch (true) {
-            case name === 'retros/join':
-            case name === 'retros/session-ended':
-            case name === 'poker/join':
-            case name === 'games/join':
-            case name === 'whiteboards/join':
-                return AuthLayout;
-            case name.startsWith('auth/'):
-                return AuthLayout;
-            case name.startsWith('invitations/'):
-                return AuthLayout;
-            case name.startsWith('settings/'):
-                return [AppLayout, SettingsLayout];
-            default:
-                return AppLayout;
-        }
-    },
+    layout: () => null,
     strictMode: true,
     withApp(app) {
         return (

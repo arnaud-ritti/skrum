@@ -11,7 +11,7 @@ type Props =
           isInvalid: false;
           guestToken: string;
           session: JoinSession;
-          suggestedName: string | null;
+          suggestedName: string;
       };
 
 export default function JoinPokerGame(props: Props) {

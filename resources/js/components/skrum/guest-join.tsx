@@ -40,10 +40,15 @@ export type GuestJoinProps = {
         status?: 'live' | 'scheduled';
         participants?: number;
         facilitator?: string;
+        /** Retro only: the cards of this retro do not show their author. */
+        anonymousCards?: boolean;
     };
     /** Random nickname proposed when the field is left empty. */
     defaultName?: string;
-    /** Pre-filled nickname; the field starts empty when absent. */
+    /**
+     * Pre-filled nickname; the field starts empty when absent. A new value
+     * (another random nickname was drawn) replaces what the field holds.
+     */
     initialName?: string;
     /** Backlog: the colour picker is only rendered when this list is given. */
     takenColors?: number[];
@@ -61,7 +66,10 @@ export type GuestJoinProps = {
     ) => void;
     /** Extra controls rendered between the nickname and the join button. */
     children?: ReactNode;
+    /** Draws another random nickname; the button is absent without it. */
     onRandomName?: () => void;
+    /** Another nickname is being drawn: the draw button ignores clicks. */
+    drawingName?: boolean;
     /** Pins the join button to the bottom of the viewport (phone). */
     stickyAction?: boolean;
     loginUrl: string;
@@ -143,6 +151,7 @@ export function GuestJoin({
     onSubmit,
     children,
     onRandomName,
+    drawingName = false,
     stickyAction = false,
     loginUrl,
     logo = true,
@@ -157,10 +166,19 @@ export function GuestJoin({
     const swatchRefs = useRef<Partial<Record<number, HTMLButtonElement>>>({});
 
     const [name, setName] = useState(initialName);
+    const [syncedInitialName, setSyncedInitialName] = useState(initialName);
     const [chosenColor, setChosenColor] = useState<AvatarPresence | null>(
         PresenceNumbers.find((n) => n === initialPresence) ?? null,
     );
     const [editedPast, setEditedPast] = useState<typeof error>(null);
+    const [announcedName, setAnnouncedName] = useState('');
+
+    if (initialName !== syncedInitialName) {
+        setSyncedInitialName(initialName);
+        setName(initialName);
+        setEditedPast(error);
+        setAnnouncedName(initialName);
+    }
 
     const showColors = takenColors !== undefined;
     const taken = takenColors ?? [];
@@ -494,30 +512,46 @@ export function GuestJoin({
                                     <span className="truncate text-muted-foreground">
                                         {previewName}
                                     </span>
-                                    <span className="text-xs text-muted-foreground">
-                                        {t(
-                                            'Suggested nickname if you leave it empty',
-                                        )}
-                                    </span>
+                                    {defaultName !== undefined && (
+                                        <span className="text-xs text-muted-foreground">
+                                            {t(
+                                                'Suggested nickname if you leave it empty',
+                                            )}
+                                        </span>
+                                    )}
                                 </>
                             )}
                         </span>
                     </div>
                 )}
 
-                {!hasName && onRandomName && (
-                    <Button
-                        type="button"
-                        variant="secondary"
-                        className="w-full"
-                        disabled={processing}
-                        onClick={onRandomName}
-                    >
-                        <Dices aria-hidden />
-                        <span className="truncate">
-                            {t('Another random nickname')}
+                {onRandomName && (
+                    <>
+                        <Button
+                            type="button"
+                            variant="secondary"
+                            className="w-full aria-disabled:opacity-50"
+                            disabled={processing}
+                            aria-disabled={drawingName || undefined}
+                            onClick={() => {
+                                if (!drawingName) {
+                                    onRandomName();
+                                }
+                            }}
+                        >
+                            <Dices aria-hidden />
+                            <span className="truncate">
+                                {t('Another random nickname')}
+                            </span>
+                        </Button>
+                        <span
+                            role="status"
+                            data-slot="guest-join-drawn-name"
+                            className="sr-only"
+                        >
+                            {announcedName}
                         </span>
-                    </Button>
+                    </>
                 )}
 
                 {children}
@@ -540,7 +574,7 @@ export function GuestJoin({
                         <span className="truncate">
                             {processing
                                 ? t('Connecting to the session…')
-                                : t('Join')}
+                                : t('Join the session')}
                         </span>
                         {!processing && <ArrowRight aria-hidden />}
                     </LoadingButton>
@@ -551,9 +585,14 @@ export function GuestJoin({
                         className="mt-px size-4 shrink-0 text-skrum-success-text"
                         aria-hidden
                     />
-                    {t(
-                        'No personal data is asked. Your nickname is deleted when the session ends; your cards can stay anonymous.',
-                    )}
+                    <span data-slot="guest-join-privacy">
+                        {t(
+                            'No account and no e-mail needed. The others see your nickname.',
+                        )}
+                        {session.kind === 'retro' && session.anonymousCards && (
+                            <> {t('Cards are anonymous in this retro.')}</>
+                        )}
+                    </span>
                 </p>
             </form>
 

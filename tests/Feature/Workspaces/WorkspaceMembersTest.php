@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\Workspaces\CreateWorkspaceInvitation;
 use App\Enums\WorkspaceRole;
 use App\Models\Team;
 use App\Models\User;
@@ -23,6 +24,40 @@ it('lists members and pending invitations for managers', function () {
             ->has('members', 1)
             ->has('invitations', 1)
             ->where('canManage', true));
+});
+
+it('sends the avatar of each member and the day of each invitation', function () {
+    $this->travelTo('2026-09-26 10:00:00');
+
+    $admin = User::factory()->create();
+    $workspace = Workspace::factory()->withMember($admin, WorkspaceRole::Admin)->create();
+    $workspace->invitations()->create([
+        'email' => 'pending@example.com',
+        'role' => WorkspaceRole::Member,
+        'token_hash' => str_repeat('a', 64),
+        'expires_at' => now()->addDay(),
+    ]);
+    $workspace->invitations()->create([
+        'email' => 'late@example.com',
+        'role' => WorkspaceRole::Admin,
+        'token_hash' => str_repeat('b', 64),
+        'expires_at' => now()->subDay(),
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('workspaces.members.index', $workspace))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('members.0.avatarUrl', $admin->avatarUrl())
+            ->where('members.0.role', 'admin')
+            ->has('invitations', 2)
+            ->where('invitations', fn ($invitations) => collect($invitations)->every(
+                fn (array $invitation): bool => $invitation['invitedAt'] === now()->toIso8601String(),
+            ))
+            ->where('invitations', fn ($invitations) => collect($invitations)->pluck('isExpired', 'email')->sortKeys()->all() === [
+                'late@example.com' => true,
+                'pending@example.com' => false,
+            ])
+            ->where('invitationValidForDays', CreateWorkspaceInvitation::ValidForDays));
 });
 
 it('forbids members from the members page', function () {

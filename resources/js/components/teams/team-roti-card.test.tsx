@@ -1,0 +1,83 @@
+import { screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { describe, expect, it, vi } from 'vitest';
+import { TeamRotiCard } from '@/components/teams/team-roti-card';
+import { renderWithProviders } from '@/test/render';
+import type { TeamMoodPoint } from '@/types';
+
+function point(
+    retroId: string,
+    values: Partial<TeamMoodPoint> = {},
+): TeamMoodPoint {
+    return {
+        retroId,
+        title: `Sprint ${retroId}`,
+        completedAt: '2026-09-01T10:00:00+00:00',
+        url: `/retros/${retroId}`,
+        mood: null,
+        moodVoters: 0,
+        roti: null,
+        rotiVoters: 0,
+        ...values,
+    };
+}
+
+const trend: TeamMoodPoint[] = [
+    point('40', { roti: 3.2, completedAt: '2026-08-04T10:00:00+00:00' }),
+    point('41', { mood: 6, moodVoters: 3 }),
+    point('42', { roti: 4.1, completedAt: '2026-09-01T10:00:00+00:00' }),
+];
+
+describe('the ROTI card of a team', () => {
+    it('shows a skeleton, named for assistive technology, while the trend loads', () => {
+        const { container } = renderWithProviders(<TeamRotiCard />);
+
+        expect(screen.getByRole('status').textContent).toBe('Loading chart');
+        expect(
+            container.querySelector('[data-slot="team-trend-loading"]'),
+        ).not.toBeNull();
+        expect(container.querySelector('[data-slot="roti-trend"]')).toBeNull();
+    });
+
+    it('draws one point per retro that has a ROTI, and none for a retro that only has a health score', () => {
+        const { container } = renderWithProviders(
+            <TeamRotiCard trend={trend} />,
+        );
+
+        expect(
+            screen.getByRole('heading', { level: 2, name: 'Mood trend' }),
+        ).toBeTruthy();
+        expect(
+            container.querySelectorAll('[data-slot="roti-trend-point"]'),
+        ).toHaveLength(2);
+        expect(
+            container.querySelector('[data-slot="roti-trend-bubble"]')
+                ?.textContent,
+        ).toBe('4.1 / 5');
+    });
+
+    it('says so for a team without a ROTI', () => {
+        const { container } = renderWithProviders(
+            <TeamRotiCard trend={[trend[1]]} />,
+        );
+
+        expect(
+            container.querySelector('[data-slot="roti-trend-empty"]')
+                ?.textContent,
+        ).toBe('No ROTI results yet.');
+    });
+
+    it('says the trend could not be loaded and offers to try again', async () => {
+        const onRetry = vi.fn();
+
+        renderWithProviders(<TeamRotiCard failed onRetry={onRetry} />);
+
+        expect(screen.getByRole('alert').textContent).toBe(
+            'The trend could not be loaded.',
+        );
+
+        await userEvent.click(screen.getByRole('button', { name: 'Retry' }));
+
+        expect(onRetry).toHaveBeenCalledOnce();
+    });
+});

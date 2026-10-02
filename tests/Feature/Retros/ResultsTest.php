@@ -38,7 +38,7 @@ it('only builds results once the retro is completed', function (RetroPhase $phas
     [, $viewer] = retroMember($retro);
 
     expect(resultsOf($retro, $viewer))->toBeNull();
-})->with([RetroPhase::Writing, RetroPhase::Voting, RetroPhase::Discussing]);
+})->with([RetroPhase::Writing, RetroPhase::Voting, RetroPhase::Discussing, RetroPhase::Actions, RetroPhase::Roti]);
 
 it('lists every participant and leaves games and summary empty', function () {
     $retro = Retro::factory()->inPhase(RetroPhase::Completed)->anonymous()->create();
@@ -196,14 +196,27 @@ it('counts the votes cast and the votes available', function () {
     expect(resultsOf($retro, $viewer)['stats'])->toMatchArray(['votesCast' => 4, 'votesAvailable' => 10]);
 });
 
-it('reports the participants against the team members', function () {
-    $retro = Retro::factory()->inPhase(RetroPhase::Completed)->create();
+it('reports the team members who took part against the team members', function () {
+    $retro = Retro::factory()->inPhase(RetroPhase::Completed)->withGuestAccess()->create();
     [, $viewer] = retroMember($retro);
-    $second = Participant::factory()->create(['retro_id' => $retro->id]);
+    retroMember($retro);
     $retro->team->members()->attach(User::factory()->create());
 
-    expect(resultsOf($retro, $viewer)['stats']['participation'])->toBe(['participants' => 2, 'teamMembers' => 2])
-        ->and($second->retro_id)->toBe($retro->id);
+    expect(resultsOf($retro, $viewer)['stats']['participation'])->toBe(['participants' => 2, 'teamMembers' => 3]);
+});
+
+it('leaves guests and people outside the team out of the participation, so it never exceeds the team', function () {
+    $retro = Retro::factory()->inPhase(RetroPhase::Completed)->withGuestAccess()->create(['votes_per_participant' => 3]);
+    [, $viewer] = retroMember($retro);
+    retroMember($retro);
+    Participant::factory()->guest()->create(['retro_id' => $retro->id]);
+    Participant::factory()->create(['retro_id' => $retro->id]);
+
+    $results = resultsOf($retro, $viewer);
+
+    expect($results['stats']['participation'])->toBe(['participants' => 2, 'teamMembers' => 2])
+        ->and($results['participants'])->toHaveCount(4)
+        ->and($results['stats']['votesAvailable'])->toBe(12);
 });
 
 it('carries the statistics to a guest without the health trend', function () {
