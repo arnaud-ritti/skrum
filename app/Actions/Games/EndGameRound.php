@@ -19,13 +19,21 @@ class EndGameRound
     public function __construct(
         private AwardRoundPoints $awardRoundPoints,
         private GameRulesRegistry $gameRulesRegistry,
+        private AnnounceTeamGameRoom $announceTeamGameRoom,
     ) {}
 
     /**
+     * A caller that goes on changing the room announces it to the team itself, once.
+     *
      * @return array<string, mixed>|null the game.round.ended payload, null when the round had already ended
      */
-    public function handle(GameRoom $room, GameRound $round, GameRoundOutcome $outcome, ?GamePlayer $winner = null): ?array
-    {
+    public function handle(
+        GameRoom $room,
+        GameRound $round,
+        GameRoundOutcome $outcome,
+        ?GamePlayer $winner = null,
+        bool $announcesToTeam = true,
+    ): ?array {
         if (! $round->isActive()) {
             return null;
         }
@@ -49,6 +57,10 @@ class EndGameRound
         ];
 
         (new GameRoundEnded($room, $payload))->sendToOthers();
+
+        if ($announcesToTeam) {
+            $this->announceTeamGameRoom->changed($room);
+        }
 
         return $payload;
     }

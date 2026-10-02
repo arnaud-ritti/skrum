@@ -1,6 +1,6 @@
 {
     "elements": [
-        {"id": "quick-win-note", "type": "rectangle", "x": 140, "y": 40, "width": 200, "height": 200, "strokeColor": "transparent", "backgroundColor": "#b2f2bb", "strokeWidth": 1, "frameId": "quick-wins", "customData": {"skrum": {"kind": "sticky"}}},
+        {"id": "quick-win-note", "type": "rectangle", "x": 140, "y": 40, "width": 200, "height": 200, "strokeColor": "#a5d39b", "backgroundColor": "#e1f8dc", "strokeWidth": 1, "frameId": "quick-wins", "customData": {"skrum": {"kind": "sticky"}}},
         {"id": "quick-win-note-text", "type": "text", "fontSize": 16, "containerId": "quick-win-note", "text": "quick_win_note"},
         {"id": "quick-wins", "type": "frame", "x": 100, "y": 0, "width": 500, "height": 400, "name": "quick_wins", "locked": true},
         {"id": "big-bets", "type": "frame", "x": 640, "y": 0, "width": 500, "height": 400, "name": "big_bets", "locked": true},

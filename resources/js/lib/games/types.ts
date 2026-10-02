@@ -29,6 +29,7 @@ export type GameRoomInfo = {
     game: GameKind;
     locale: string;
     access: GameRoomAccess;
+    reactionsEnabled: boolean;
     timerEndsAt: string | null;
     isHost: boolean;
     canManage: boolean;
@@ -53,6 +54,14 @@ export type DrawingColor =
     | 'green'
     | 'blue'
     | 'purple'
+    | 'sun'
+    | 'apricot'
+    | 'coral'
+    | 'plum'
+    | 'iris'
+    | 'sky'
+    | 'lagoon'
+    | 'moss'
     | 'white';
 
 export type DrawingSize = 4 | 10 | 24;

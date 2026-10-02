@@ -1,11 +1,11 @@
 {
     "elements": [
-        {"id": "question-note", "type": "rectangle", "x": 520, "y": 40, "width": 200, "height": 200, "strokeColor": "transparent", "backgroundColor": "#a5d8ff", "strokeWidth": 1, "frameId": "question", "customData": {"skrum": {"kind": "sticky"}}},
+        {"id": "question-note", "type": "rectangle", "x": 520, "y": 40, "width": 200, "height": 200, "strokeColor": "#8dccf9", "backgroundColor": "#e2f3ff", "strokeWidth": 1, "frameId": "question", "customData": {"skrum": {"kind": "sticky"}}},
         {"id": "question-note-text", "type": "text", "fontSize": 16, "containerId": "question-note", "text": "question_note"},
         {"id": "question", "type": "frame", "x": 0, "y": 0, "width": 1240, "height": 280, "name": "question", "locked": true},
-        {"id": "idea-note", "type": "rectangle", "x": 40, "y": 380, "width": 200, "height": 200, "strokeColor": "transparent", "backgroundColor": "#fff3bf", "strokeWidth": 1, "frameId": "ideas", "customData": {"skrum": {"kind": "sticky"}}},
+        {"id": "idea-note", "type": "rectangle", "x": 40, "y": 380, "width": 200, "height": 200, "strokeColor": "#ddc362", "backgroundColor": "#fdf1c2", "strokeWidth": 1, "frameId": "ideas", "customData": {"skrum": {"kind": "sticky"}}},
         {"id": "idea-note-text", "type": "text", "fontSize": 16, "containerId": "idea-note", "text": "idea_note"},
-        {"id": "build-note", "type": "rectangle", "x": 280, "y": 380, "width": 200, "height": 200, "strokeColor": "transparent", "backgroundColor": "#fff3bf", "strokeWidth": 1, "frameId": "ideas", "customData": {"skrum": {"kind": "sticky"}}},
+        {"id": "build-note", "type": "rectangle", "x": 280, "y": 380, "width": 200, "height": 200, "strokeColor": "#ddc362", "backgroundColor": "#fdf1c2", "strokeWidth": 1, "frameId": "ideas", "customData": {"skrum": {"kind": "sticky"}}},
         {"id": "build-note-text", "type": "text", "fontSize": 16, "containerId": "build-note", "text": "build_note"},
         {"id": "ideas", "type": "frame", "x": 0, "y": 340, "width": 800, "height": 640, "name": "ideas", "locked": true},
         {"id": "top-picks", "type": "frame", "x": 840, "y": 340, "width": 400, "height": 640, "name": "top_picks", "locked": true}

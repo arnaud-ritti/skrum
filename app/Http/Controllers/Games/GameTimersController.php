@@ -14,6 +14,8 @@ use Illuminate\Support\Facades\DB;
 
 class GameTimersController extends Controller
 {
+    public const MaxSeconds = 7200;
+
     public function update(Request $request, GameRoom $room, ScheduleRoundExpiry $scheduleRoundExpiry): JsonResponse
     {
         $player = GamePlayer::current($request);
@@ -22,7 +24,7 @@ class GameTimersController extends Controller
         GameGuard::host($room, $player);
 
         $validated = $request->validate([
-            'seconds' => ['present', 'nullable', 'integer', 'min:10', 'max:7200'],
+            'seconds' => ['present', 'nullable', 'integer', 'min:10', 'max:'.self::MaxSeconds],
         ]);
 
         // Whole seconds: the column keeps no fraction, and the job compares

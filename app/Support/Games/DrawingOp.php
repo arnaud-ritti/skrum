@@ -10,7 +10,10 @@ use Illuminate\Validation\ValidationException;
  */
 class DrawingOp
 {
-    public const Colors = ['black', 'red', 'orange', 'green', 'blue', 'purple', 'white'];
+    public const Colors = ['black', 'sun', 'apricot', 'coral', 'plum', 'iris', 'sky', 'lagoon', 'moss', 'white'];
+
+    /** Colours of drawings made before the eight theme inks. Still accepted and still drawn; no longer offered. */
+    public const LegacyColors = ['red', 'orange', 'green', 'blue', 'purple'];
 
     public const Sizes = [4, 10, 24];
 
@@ -37,7 +40,7 @@ class DrawingOp
 
         $color = $op['color'] ?? null;
 
-        if (! is_string($color) || ! in_array($color, self::Colors, true)) {
+        if (! is_string($color) || ! in_array($color, [...self::Colors, ...self::LegacyColors], true)) {
             throw self::invalid();
         }
 

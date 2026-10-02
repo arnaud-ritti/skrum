@@ -969,6 +969,7 @@
     "You no longer have access to this game.": "Ya no tienes acceso a esta partida.",
     "Voting is closed for this round.": "La votación de esta ronda está cerrada.",
     "No timer is running.": "No hay ningún temporizador en marcha.",
+    "A timer cannot run longer than two hours.": "Un temporizador no puede durar más de dos horas.",
     "A timer cannot run longer than one hour.": "Un temporizador no puede durar más de una hora.",
     "Join a planning poker game": "Unirse a una partida de planning poker",
     "Choose the name other players will see.": "Elige el nombre que verán los demás jugadores.",

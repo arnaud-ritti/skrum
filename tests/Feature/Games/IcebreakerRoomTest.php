@@ -264,3 +264,13 @@ it('offers the GIF game only with a GIF provider', function () {
         ->assertJsonPath('icebreakerGames.1', ['value' => 'gif', 'label' => 'Sprint in one GIF', 'available' => false])
         ->assertJsonPath('icebreakerGames.2.available', true);
 });
+
+it('refuses the reactions setting on an icebreaker room, which uses the bar of its retro', function () {
+    [, $facilitator, $room] = hangmanIcebreaker();
+
+    $this->actingAs($facilitator)
+        ->patchJson(route('games.update', $room), ['reactions_enabled' => false])
+        ->assertUnprocessable();
+
+    expect($room->fresh()->reactions_enabled)->toBeTrue();
+});

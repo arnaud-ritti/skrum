@@ -351,8 +351,8 @@ it('[P13b-05a] fills a closed shape identically for both players, undoes the fil
     p13bPointer($drawer, 'pointerup', [[0.3, 0.3]]);
 
     $drawer->assertScript(p13bDrawingLengthScript($room), 1)
-        ->click('[aria-label="Red"]')
-        ->assertAriaAttribute('[aria-label="Red"]', 'pressed', 'true')
+        ->click('[aria-label="Coral"]')
+        ->assertAriaAttribute('[aria-label="Coral"]', 'pressed', 'true')
         ->click('[aria-label="Fill"]')
         ->assertAriaAttribute('[aria-label="Fill"]', 'pressed', 'true');
 
@@ -361,7 +361,7 @@ it('[P13b-05a] fills a closed shape identically for both players, undoes the fil
     $drawer->assertScript(p13bDrawingLengthScript($room), 2);
 
     foreach ([[$drawer, 'Your drawing'], [$viewer, 'The drawing']] as [$page, $label]) {
-        $page->assertScript(p13bPixelScript($label, 400, 300), '220 38 38 255')
+        $page->assertScript(p13bPixelScript($label, 400, 300), '122 52 45 255')
             ->assertScript(p13bPixelScript($label, 240, 300), '23 23 23 255')
             ->assertScript(p13bPixelScript($label, 100, 100), '255 255 255 255');
     }
@@ -411,13 +411,13 @@ it('[P13b-05c] does not show a cleared stroke again to a viewer whose room was r
     p13bPointer($drawer, 'pointerup', [[0.75, 0.5]]);
 
     $drawer->assertScript(p13bDrawingLengthScript($room), 1)
-        ->click('[aria-label="Red"]')
+        ->click('[aria-label="Coral"]')
         ->click('[aria-label="Fill"]')
         ->assertAriaAttribute('[aria-label="Fill"]', 'pressed', 'true');
 
     p13bPointer($drawer, 'pointerdown', [[0.5, 0.2]]);
 
-    $viewer->assertScript(p13bPixelScript('The drawing', 400, 100), '220 38 38 255');
+    $viewer->assertScript(p13bPixelScript('The drawing', 400, 100), '122 52 45 255');
 
     GameRoom::query()->whereKey($room->id)->update(['name' => 'Renamed room']);
     app()->instance('request', Request::create(url('/')));

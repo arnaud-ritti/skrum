@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Actions\Auth\SignupGate;
+use App\Enums\SsoProvider;
+use App\Models\User;
 use App\Models\WorkspaceInvitation;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -33,15 +35,59 @@ class InvitationLinksController extends Controller
             redirect()->setIntendedUrl($request->fullUrl());
         }
 
+        $isPending = $invitation->isPending();
+
         return Inertia::render('invitations/show', [
             'token' => $token,
             'isInvalid' => false,
             'workspaceName' => $invitation->workspace->name,
             'email' => $invitation->email,
-            'isExpired' => ! $invitation->isPending(),
+            'isExpired' => ! $isPending,
             'isLoggedIn' => $user !== null,
             'emailMatches' => $user !== null && $invitation->matchesEmail($user->email),
             'canRegister' => $signupGate->canShowRegistration($invitation),
+            'ssoProviders' => $user === null && $isPending ? SsoProvider::options() : [],
+            'inviter' => $this->person($invitation->invitedBy),
+            'expiresAt' => $invitation->expires_at->toIso8601String(),
+            ...($isPending ? $this->pendingDetails($invitation) : []),
         ]);
+    }
+
+    /**
+     * @return array{
+     *     role: string,
+     *     membersCount: int,
+     *     members: array<int, array{name: string, avatarUrl: string}>
+     * }
+     */
+    private function pendingDetails(WorkspaceInvitation $invitation): array
+    {
+        $members = $invitation->workspace->members();
+
+        return [
+            'role' => $invitation->role->value,
+            'membersCount' => $members->count(),
+            'members' => $members
+                ->orderBy('users.name')
+                ->limit(5)
+                ->get()
+                ->map(fn (User $member): array => $this->person($member))
+                ->all(),
+        ];
+    }
+
+    /**
+     * @return array{name: string, avatarUrl: string}|null
+     */
+    private function person(?User $user): ?array
+    {
+        if ($user === null) {
+            return null;
+        }
+
+        return [
+            'name' => $user->name,
+            'avatarUrl' => $user->avatarUrl(),
+        ];
     }
 }

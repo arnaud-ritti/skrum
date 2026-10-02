@@ -17,6 +17,7 @@ class SwitchGame
     public function __construct(
         private GameRulesRegistry $gameRulesRegistry,
         private EndGameRound $endGameRound,
+        private AnnounceTeamGameRoom $announceTeamGameRoom,
     ) {}
 
     public function handle(GameRoom $room, GamePlayer $host, GameKind $game): void
@@ -40,12 +41,14 @@ class SwitchGame
                 : GameRound::query()->whereKey($locked->current_round_id)->lockForUpdate()->first();
 
             if ($round !== null) {
-                $this->endGameRound->handle($locked, $round, GameRoundOutcome::Abandoned);
+                $this->endGameRound->handle($locked, $round, GameRoundOutcome::Abandoned, announcesToTeam: false);
             }
 
             $locked->update(['game' => $game]);
 
             (new GameRoomChanged($locked))->sendToOthers();
+
+            $this->announceTeamGameRoom->changed($locked);
         });
     }
 }

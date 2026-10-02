@@ -27,6 +27,7 @@ use Illuminate\Support\Carbon;
  * @property GameKind $game
  * @property string $locale
  * @property GameRoomAccess $access
+ * @property bool $reactions_enabled
  * @property string $guest_token
  * @property Carbon|null $timer_ends_at
  * @property string|null $current_round_id
@@ -39,7 +40,7 @@ use Illuminate\Support\Carbon;
  */
 #[Fillable([
     'team_id', 'retro_id', 'name', 'created_by_user_id', 'host_player_id', 'game', 'locale',
-    'access', 'guest_token', 'timer_ends_at', 'current_round_id', 'scores_reset_at',
+    'access', 'reactions_enabled', 'guest_token', 'timer_ends_at', 'current_round_id', 'scores_reset_at',
 ])]
 #[Hidden(['guest_token'])]
 class GameRoom extends Model implements DeliverySubject
@@ -195,6 +196,7 @@ class GameRoom extends Model implements DeliverySubject
         return [
             'game' => GameKind::class,
             'access' => GameRoomAccess::class,
+            'reactions_enabled' => 'boolean',
             'timer_ends_at' => 'datetime',
             'scores_reset_at' => 'datetime',
         ];
