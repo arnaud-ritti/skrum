@@ -68,6 +68,9 @@ void createInertiaApp({
                 return [AppLayout, SettingsLayout];
             case name.startsWith('dev/'):
                 return null;
+            case name === 'about':
+            case name.startsWith('admin/'):
+                return null;
             default:
                 return AppLayout;
         }

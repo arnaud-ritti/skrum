@@ -7,11 +7,14 @@ export default function SettingsLayout({
     title,
     description,
     nav,
+    navLabel,
     children,
 }: {
     title: string;
     description?: string;
     nav: SubNavItem[];
+    /** Accessible name of the sub-navigation; "Settings" when absent. */
+    navLabel?: string;
     children: ReactNode;
 }) {
     const { t } = useTrans();
@@ -21,7 +24,7 @@ export default function SettingsLayout({
             title={title}
             description={description}
             nav={nav}
-            navLabel={t('Settings')}
+            navLabel={navLabel ?? t('Settings')}
         >
             {children}
         </SettingsFrame>
