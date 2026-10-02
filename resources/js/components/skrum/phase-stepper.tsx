@@ -31,11 +31,15 @@ export type PhaseStepperProps = {
     current: string;
     interactive?: boolean;
     /**
-     * Without `compact` or `mobile` the stepper follows its container: full
-     * rail from 56rem, markers with the current label from 36rem, "Phase n/m"
-     * with a progress bar below. `compact` never shows the full rail,
-     * `mobile` always shows the narrow form. Once completed the rail is its
-     * ticked markers beside the badge, and "Reopen" is the only action.
+     * Without `compact` or `mobile` the stepper follows two widths. Its own:
+     * markers with the current label from 36rem, "Phase n/m" with a progress
+     * bar below. That of the container named `session` (the session header):
+     * every label and the names of the actions from 105rem (`session-rail`),
+     * where they fit beside the title, the timer and the people present;
+     * without such a container around it the labels stay hidden. `compact`
+     * never shows the full rail, `mobile` always shows the narrow form. Once
+     * completed the rail is its ticked markers beside the badge, and "Reopen"
+     * is the only action.
      */
     compact?: boolean;
     mobile?: boolean;
@@ -87,7 +91,8 @@ function StepMarker({
 
 /**
  * A label that stays in the accessibility tree when it is not shown: read
- * only by assistive tech until the container is wide enough for the full rail.
+ * only by assistive tech until the session header is wide enough for the full
+ * rail.
  */
 function StepLabel({
     visibility,
@@ -107,7 +112,7 @@ function StepLabel({
             className={cn(
                 'sr-only',
                 visibility === 'full' &&
-                    '@4xl/phases:not-sr-only @4xl/phases:flex @4xl/phases:min-w-0',
+                    '@session-rail/session:not-sr-only @session-rail/session:flex @session-rail/session:min-w-0',
             )}
         >
             <span
@@ -153,7 +158,7 @@ function ActionButton({
             className={cn(
                 'max-w-40 min-w-0 shrink-0',
                 labelVisibility === 'full' &&
-                    'w-8 px-0 has-[>svg]:px-0 @4xl/phases:w-auto @4xl/phases:px-3 @4xl/phases:has-[>svg]:px-2.5',
+                    'w-8 px-0 has-[>svg]:px-0 @session-rail/session:w-auto @session-rail/session:px-3 @session-rail/session:has-[>svg]:px-2.5',
                 unavailable && 'cursor-not-allowed opacity-50',
             )}
         >
@@ -449,7 +454,7 @@ export function PhaseStepper({
                                     '@xl/phases:max-w-40 @xl/phases:bg-primary @xl/phases:pr-2.5 @xl/phases:pl-1.5 @xl/phases:font-medium @xl/phases:text-primary-foreground',
                                 !isCurrent &&
                                     otherLabels === 'full' &&
-                                    '@4xl/phases:pr-2.5',
+                                    '@session-rail/session:pr-2.5',
                             );
 
                             return (

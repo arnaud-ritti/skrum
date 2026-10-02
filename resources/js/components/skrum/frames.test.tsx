@@ -68,6 +68,20 @@ describe('SessionFrame', () => {
     });
 });
 
+describe('SessionFrame header as a container', () => {
+    it('is the container named session, whose width the phase rail follows', () => {
+        renderWithProviders(
+            <SessionFrame title="Sprint 42">
+                <p>board</p>
+            </SessionFrame>,
+        );
+
+        expect(screen.getByRole('banner').className).toContain(
+            '@container/session',
+        );
+    });
+});
+
 describe('SessionFrame header order', () => {
     it('puts the logo first, the connection state before the timer and the viewer last', () => {
         renderWithProviders(

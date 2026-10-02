@@ -171,6 +171,40 @@ describe('PhaseStepper', () => {
         expect(items[0].textContent).toContain('Health check');
     });
 
+    it('shows every label and the names of Previous and Next once the session header is wide enough for the full rail', () => {
+        renderWithProviders(
+            <PhaseStepper
+                phases={steps()}
+                current="voting"
+                interactive
+                onPhaseChange={vi.fn()}
+            />,
+        );
+
+        const items = Array.from(
+            document.querySelectorAll('[data-slot="phase-step"]'),
+        );
+        const hidden = items
+            .filter((item) => item.getAttribute('data-state') !== 'current')
+            .map((item) => item.querySelector('.sr-only')?.className ?? '');
+
+        expect(hidden).toHaveLength(5);
+
+        for (const className of hidden) {
+            expect(className).toContain('@session-rail/session:not-sr-only');
+        }
+
+        for (const name of ['Previous', 'Next']) {
+            expect(screen.getByRole('button', { name }).className).toContain(
+                '@session-rail/session:w-auto',
+            );
+        }
+
+        expect(
+            document.querySelector('[data-slot="phase-stepper"]')?.innerHTML,
+        ).not.toContain('@4xl/phases');
+    });
+
     it('names the list Phases, as the board header did', () => {
         renderWithProviders(<PhaseStepper phases={steps()} current="voting" />);
 

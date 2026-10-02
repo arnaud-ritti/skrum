@@ -101,7 +101,7 @@ export function SessionFrame({
 }) {
     const inset = (
         <Inset className="h-svh min-w-0 overflow-hidden bg-skrum-canvas">
-            <header className="z-30 flex h-14 shrink-0 items-center gap-3 border-b bg-background px-4">
+            <header className="@container/session z-30 flex h-14 shrink-0 items-center gap-3 border-b bg-background px-4">
                 {sidebar && <SidebarTrigger className="-ml-1 md:hidden" />}
                 {logo}
                 <div className="min-w-0 truncate text-base font-semibold">
