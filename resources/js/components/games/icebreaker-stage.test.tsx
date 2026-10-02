@@ -169,6 +169,12 @@ describe('IcebreakerStage', () => {
                 .getAttribute('aria-disabled'),
         ).toBe('true');
         expect(screen.queryByRole('combobox', { name: 'Game' })).toBeNull();
+        expect(
+            within(column).getByText('You choose the game, everyone plays.'),
+        ).toBeTruthy();
+        expect(
+            within(column).queryByText('The host starts, everyone plays.'),
+        ).toBeNull();
     });
 
     it('shows the cards to a player, who cannot choose', () => {

@@ -401,7 +401,7 @@ The 40 `games-room-*-1440-*` captures are the lane's files: they show the new la
 | 62 | The board timer drives the game; "Time's up" in the stage | `withBoardTimer`, then `TimeUpBadge` of `GameStage` | yes |
 | 63 | Retro results reuse | untouched | yes |
 
-PB-30 (option A): during the icebreaker the facilitator's main button reads "Go to the retro" (`facilitatorPrimary`); no duration badge, no second button in the header.
+PB-30 (built as option A, the recommendation; the owner's answer is not recorded in `pre-build-deviations.md`): during the icebreaker the facilitator's main button reads "Go to the retro" (`facilitatorPrimary`); no duration badge, no second button in the header.
 
 ### Places left
 
@@ -412,8 +412,9 @@ None filled: `useRoomPanels` keeps `settingsCard`, `turnOrder`, `gifCaption`, `g
 | Difference | Row |
 |---|---|
 | Four games, no settings card, no turn order, no "Round n of m", no whole-word guess | D-20, D-59 |
-| Draw & Guess and Sprint in one GIF have the players on the left: a player sees no game cards there, the facilitator changes game from "Choose a game" | D-57 |
-| On a screen narrower than 80rem a player has no sheet of the cards (the mockup: facilitator only) | none needed: as the mockup |
+| Draw & Guess and Sprint in one GIF have the players on the left: a player sees no game cards there, the facilitator changes game from "Choose a game". PB-31 says "cards visible to all": not met for these two games | D-57; owner to confirm against PB-31 |
+| On a screen narrower than 80rem a player has no sheet of the cards (the mockup: facilitator only), so a player sees the cards only from 80rem and only in Hangman-type games | as the mockup; owner to confirm against PB-31 |
+| The facilitator's panel reads "You choose the game, everyone plays." in a retro, where the game room says "The host starts, everyone plays.": a retro has no host | new key, four languages |
 | The reaction bar is the board's, fixed above the facilitator bar; the stage ends 8rem above the bottom of the screen (`pb-32` of the board body) so that neither bar covers the keyboard or a column | D-58; new row for the 8rem band |
 | The header is the retro's session header with its stepper; no "Warm-up · 10 min" badge | PB-30, RW-C2 |
 | A live cursor is placed against the stage wrapper, whose columns now scroll on their own: two people scrolled differently see a pointer at the same place of the frame, not on the same element | new row |

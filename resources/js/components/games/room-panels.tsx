@@ -68,6 +68,7 @@ export function useRoomPanels({
               content: (
                   <GamePicker
                       settings={playersOnLeft ? undefined : settingsCard}
+                      inRetro={watchChoice}
                   />
               ),
           }

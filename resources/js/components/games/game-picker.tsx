@@ -15,6 +15,8 @@ export type GamePickerProps = {
     settings?: ReactNode;
     /** For a player of a retro's icebreaker: the cards tell the game in play, the facilitator chooses. */
     readOnly?: boolean;
+    /** In a retro's icebreaker, where nobody is called a host. */
+    inRetro?: boolean;
 };
 
 /**
@@ -51,11 +53,18 @@ function focusAfterSwitch(): void {
  * The host's choice of game, one card per game the server lists. Switching
  * mid-round abandons the round for everyone (spec §4).
  */
-export function GamePicker({ settings, readOnly = false }: GamePickerProps) {
+export function GamePicker({
+    settings,
+    readOnly = false,
+    inRetro = false,
+}: GamePickerProps) {
     const ctx = useRoom();
     const { t } = useTrans();
     const [busy, setBusy] = useState(false);
     const { room, games } = ctx.snapshot;
+    const hostSubtitle = inRetro
+        ? t('You choose the game, everyone plays.')
+        : t('The host starts, everyone plays.');
 
     const change = async (game: GameKind) => {
         if (readOnly || busy || game === room.game) {
@@ -92,7 +101,7 @@ export function GamePicker({ settings, readOnly = false }: GamePickerProps) {
                 <p className="text-sm text-muted-foreground">
                     {readOnly
                         ? t('The facilitator chooses the game.')
-                        : t('The host starts, everyone plays.')}
+                        : hostSubtitle}
                 </p>
             </div>
             <IcebreakerGameGrid className="grid-cols-2 gap-3 sm:grid-cols-2">
