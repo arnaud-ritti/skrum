@@ -261,8 +261,8 @@ it('[P10a-06] lets a guest join through the link with a restricted view', functi
 
     visit($joinUrl)
         ->assertSee('Sprint 12 estimates')
-        ->assertSee('Choose the name other players will see.')
-        ->assertSee('Display name')
+        ->assertSee('Join as a guest')
+        ->assertSee('Your nickname')
         ->assertSee('Join as spectator');
 
     $facilitator = $this->awaitRealtime($this->signIn($ada, "/poker/{$game->id}"));

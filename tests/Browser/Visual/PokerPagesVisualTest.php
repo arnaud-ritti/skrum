@@ -300,3 +300,31 @@ it('[P18e-03-13] renders the story of an imported task whose estimate changed in
             ->assertPresent('[data-test="poker-task-row"] [data-slot="badge"] [role="img"]'),
     );
 });
+
+it('[P18e-03-14] renders the guest join page of a game without overflow', function () {
+    ['game' => $game] = pokerVisualGame();
+    $game->forceFill(['guest_access_enabled' => true])->save();
+
+    $this->captureVisuals(
+        'poker-join',
+        "/poker/join/{$game->guest_token}",
+        fn (string $path, array $options) => visit($path, $options)
+            ->assertAttribute('[data-slot="guest-join-session"]', 'data-kind', 'poker')
+            ->assertPresent('[data-slot="guest-join-facilitator"]')
+            ->assertPresent('[data-slot="guest-join-participants"]')
+            ->assertAttribute('#spectator', 'role', 'switch')
+            ->fill('#name', 'Nadia'),
+    );
+});
+
+it('[P18e-03-15] renders the notice of a guest link that is no longer valid without overflow', function () {
+    ['game' => $game] = pokerVisualGame();
+
+    $this->captureVisuals(
+        'poker-join-invalid',
+        "/poker/join/{$game->guest_token}",
+        fn (string $path, array $options) => visit($path, $options)
+            ->assertNotPresent('#name')
+            ->assertPresent('[data-slot="access-notice"]'),
+    );
+});

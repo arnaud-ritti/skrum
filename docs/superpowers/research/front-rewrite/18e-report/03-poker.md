@@ -136,3 +136,35 @@ The import dialog, the source block and the conflict have no mockup (brief §6).
 | The board is a search field and a select, not a `Combobox` (brief row 27): the search is done by the tracker (300 ms debounce, kept), `Combobox` filters its own options and has no query callback, and `[aria-label="Choose a board"]` then `[role="option"]` is the browser contract | no row: reported |
 | The ticket of a queue row shows a check when the issue is done in its tracker; the mockup's ticket has no state | browser contract (`P14d-10a`) |
 | The story of an imported task carries a block the mockup does not draw (assignee, tracker estimate, sync state, status, note): parity rows 29–31 | parity |
+
+## Task 3.2 — Guest join
+
+### Parity (brief 03 §3, rows 53–54; brief 11 §3, row 33)
+
+| # | Action | New control | Done |
+|---|---|---|---|
+| 53 | Join as a guest | `GuestJoinPage kind="poker"`: `#name` ("Your nickname", prefilled with the name of a signed-in user), "Join", posts to `poker/join/{token}`; the session card shows the game title, "Live", the number of players and who facilitates (M28); "Log in" link | yes |
+| 33 | Join as spectator | `Switch#spectator` (`role="switch"`, `name="spectator" value="1"`) with its label "Join as spectator" (3-D10); the POST carries `spectator=1` only when on (`P10b-03` reads `is_spectator` in the database) | yes |
+| 54 | Invalid link | `AccessNotice` in the centred `AuthLayout`: "Join a planning poker game", "This guest link is no longer valid.", HTTP 404, no form | yes |
+
+### Places left
+
+| Mockup element | Slot | Later |
+|---|---|---|
+| Avatar colour picker | `takenColors` of `GuestJoin` (not passed) | GU-1 |
+| Session code | `session.code` of `GuestJoin` (not passed) | GU-2 |
+
+Both belong to the shared component of Task 0.7; this page adds no slot of its own.
+
+### Differences with the mockup
+
+Compared with `GuestJoin/preview.html` on `poker-join-*` and `poker-join-invalid-*` (light and dark, 390 and 1440).
+
+| Difference | Row |
+|---|---|
+| No colour picker, no code; the avatar of the preview is neutral | D-32 |
+| The button reads "Join", the mockup "Join the session" | browser contract (`joinAsGuest` clicks "Join") |
+| "Join as spectator" switch between the preview and the button: the mockup has no poker variant | owner 3-D10 |
+| The logo is shown twice, in the frame and in the card | shared component; fixed on the integration branch by `550323e9`, which this lane does not hold |
+| The mark of the session is the poker spade on the iris tone, the mockup shows the retro icon on the primary tone | `GuestJoin` picks icon and tone per session type |
+| The invalid link is a notice card; no mockup draws it | brief row 54 |
