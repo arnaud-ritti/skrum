@@ -1,4 +1,4 @@
-import { act, fireEvent, screen } from '@testing-library/react';
+import { act, fireEvent, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { SessionReactions } from '@/components/session/session-reactions';
 import { renderWithProviders } from '@/test/render';
@@ -24,9 +24,16 @@ const online = [
     { id: 'bob', name: 'Bob Stone', avatarUrl: '/b.svg', isGuest: false },
 ];
 
-function renderBar(presence = channel(), toolbarProps = {}) {
+const emojiData = { baseUrl: '/emoji', locale: 'en' };
+
+function renderBar(
+    presence = channel(),
+    toolbarProps = {},
+    extra: { emojiData?: typeof emojiData; compact?: boolean } = {},
+) {
     renderWithProviders(
         <SessionReactions
+            {...extra}
             presence={presence}
             selfId="me"
             online={online}
@@ -106,5 +113,79 @@ describe('SessionReactions', () => {
         expect(
             document.querySelector('.lr-overlay')?.textContent ?? '',
         ).not.toContain('hello');
+    });
+
+    it('whispers the emoji picked in the grid and closes the popover', () => {
+        const presence = renderBar();
+
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Send a reaction' }),
+        );
+        fireEvent.click(
+            within(
+                screen.getByRole('group', { name: 'Send a reaction' }),
+            ).getByRole('button', { name: '🤔' }),
+        );
+
+        expect(presence.whisper).toHaveBeenCalledWith(
+            'reaction',
+            expect.objectContaining({ e: '🤔' }),
+        );
+        expect(
+            screen.queryByRole('group', { name: 'Send a reaction' }),
+        ).toBeNull();
+    });
+
+    it('opens the full emoji search from "More emoji…" when an emoji list exists', () => {
+        renderBar(channel(), {}, { emojiData });
+
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Send a reaction' }),
+        );
+        fireEvent.click(screen.getByRole('button', { name: 'More emoji…' }));
+
+        expect(
+            screen.getByRole('dialog', { name: 'Send a reaction' }),
+        ).toBeTruthy();
+    });
+
+    it('hides "More emoji…" without an emoji list', () => {
+        renderBar();
+
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Send a reaction' }),
+        );
+
+        expect(
+            screen.queryByRole('button', { name: 'More emoji…' }),
+        ).toBeNull();
+    });
+
+    it('reaches the full emoji search from the drawer of the compact bar', () => {
+        renderBar(channel(), {}, { emojiData, compact: true });
+
+        fireEvent.click(screen.getByRole('button', { name: 'More reactions' }));
+        fireEvent.click(screen.getByRole('button', { name: 'More emoji…' }));
+
+        expect(
+            screen.getByRole('dialog', { name: 'Send a reaction' }),
+        ).toBeTruthy();
+    });
+
+    it('makes the picker trigger one stop of the toolbar arrow keys', () => {
+        renderBar();
+
+        const trigger = screen.getByRole('button', { name: 'Send a reaction' });
+        const lastEmoji = screen.getByRole('button', {
+            name: 'Send a reaction 👎',
+        });
+
+        expect(trigger.getAttribute('tabindex')).toBe('-1');
+        expect(trigger.getAttribute('type')).toBe('button');
+
+        lastEmoji.focus();
+        fireEvent.keyDown(lastEmoji, { key: 'ArrowRight' });
+
+        expect(document.activeElement).toBe(trigger);
     });
 });

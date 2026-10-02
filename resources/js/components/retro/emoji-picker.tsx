@@ -75,6 +75,8 @@ type EmojiSearchDialogProps = {
     onPick: (emoji: string) => void;
     /** Where the full emoji list lives; defaults to the retro board's. */
     emojiData?: EmojiDataLocation;
+    /** Where focus goes on close, when the opener is no longer mounted. */
+    onCloseAutoFocus?: (event: Event) => void;
 };
 
 /** The full emoji set, searchable. Renders nothing without an emoji list. */
@@ -84,6 +86,7 @@ export function EmojiSearchDialog({
     label,
     onPick,
     emojiData,
+    onCloseAutoFocus,
 }: EmojiSearchDialogProps) {
     const { t } = useTrans();
     const data = useEmojiData(emojiData);
@@ -121,6 +124,7 @@ export function EmojiSearchDialog({
             <DialogContent
                 {...dragIsolation}
                 aria-describedby={undefined}
+                onCloseAutoFocus={onCloseAutoFocus}
                 className="max-w-sm"
             >
                 <DialogTitle>{label}</DialogTitle>
