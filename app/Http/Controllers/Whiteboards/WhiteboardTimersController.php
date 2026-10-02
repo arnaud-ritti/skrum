@@ -13,6 +13,8 @@ use Illuminate\Support\Facades\DB;
 
 class WhiteboardTimersController extends Controller
 {
+    public const MaxSeconds = 3600;
+
     public function update(Request $request, Whiteboard $board): JsonResponse
     {
         $member = WhiteboardMember::current($request);
@@ -20,7 +22,7 @@ class WhiteboardTimersController extends Controller
         WhiteboardGuard::facilitator($board, $member);
 
         $validated = $request->validate([
-            'seconds' => ['present', 'nullable', 'integer', 'min:10', 'max:3600'],
+            'seconds' => ['present', 'nullable', 'integer', 'min:10', 'max:'.self::MaxSeconds],
         ]);
 
         $endsAt = $validated['seconds'] === null ?

@@ -150,6 +150,7 @@ use App\Http\Controllers\Whiteboards\WhiteboardsController;
 use App\Http\Controllers\Whiteboards\WhiteboardSettingsController;
 use App\Http\Controllers\Whiteboards\WhiteboardSnapshotsController;
 use App\Http\Controllers\Whiteboards\WhiteboardTemplatesController;
+use App\Http\Controllers\Whiteboards\WhiteboardTimerExtensionsController;
 use App\Http\Controllers\Whiteboards\WhiteboardTimersController;
 use App\Http\Controllers\WorkspaceActionItemCommentsController;
 use App\Http\Controllers\WorkspaceActionItemsController;
@@ -523,6 +524,7 @@ Route::prefix('whiteboards/{board}')
         Route::post('guest-token', [WhiteboardGuestTokensController::class, 'store'])->name('whiteboards.guestToken.store');
         Route::put('facilitator', [WhiteboardFacilitatorsController::class, 'update'])->name('whiteboards.facilitator.update');
         Route::put('timer', [WhiteboardTimersController::class, 'update'])->name('whiteboards.timer.update');
+        Route::post('timer/extension', [WhiteboardTimerExtensionsController::class, 'store'])->name('whiteboards.timer.extension.store');
         Route::get('elements', [WhiteboardElementsController::class, 'index'])->name('whiteboards.elements.index');
         Route::put('elements', [WhiteboardElementsController::class, 'update'])->name('whiteboards.elements.update')->middleware('throttle:whiteboard-writes');
         Route::post('files', [WhiteboardFilesController::class, 'store'])->name('whiteboards.files.store');

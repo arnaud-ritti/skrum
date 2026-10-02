@@ -3887,5 +3887,6 @@
     "Default: :name": "Standard: :name",
     "The style of the environment applies until you choose another one.": "Der Stil der Umgebung gilt, bis Sie einen anderen wählen.",
     "No timer is running.": "Es läuft kein Timer.",
-    "A timer cannot run longer than two hours.": "Ein Timer darf nicht länger als zwei Stunden laufen."
+    "A timer cannot run longer than two hours.": "Ein Timer darf nicht länger als zwei Stunden laufen.",
+    "A timer cannot run longer than one hour.": "Ein Timer kann nicht länger als eine Stunde laufen."
 }

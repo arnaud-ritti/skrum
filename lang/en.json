@@ -3661,5 +3661,6 @@
     "Default: :name": "Default: :name",
     "The style of the environment applies until you choose another one.": "The style of the environment applies until you choose another one.",
     "No timer is running.": "No timer is running.",
-    "A timer cannot run longer than two hours.": "A timer cannot run longer than two hours."
+    "A timer cannot run longer than two hours.": "A timer cannot run longer than two hours.",
+    "A timer cannot run longer than one hour.": "A timer cannot run longer than one hour."
 }

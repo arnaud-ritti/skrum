@@ -3887,5 +3887,6 @@
     "Default: :name": "Par défaut : :name",
     "The style of the environment applies until you choose another one.": "Le style de l'environnement s'applique tant que vous n'en choisissez pas un autre.",
     "No timer is running.": "Aucun minuteur n'est en cours.",
-    "A timer cannot run longer than two hours.": "Un minuteur ne peut pas durer plus de deux heures."
+    "A timer cannot run longer than two hours.": "Un minuteur ne peut pas durer plus de deux heures.",
+    "A timer cannot run longer than one hour.": "Un minuteur ne peut pas durer plus d'une heure."
 }
