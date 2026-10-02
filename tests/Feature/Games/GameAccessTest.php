@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\Games\FindGamePlayer;
 use App\Actions\Retros\GuestCookie;
 use App\Enums\GameRoomAccess;
 use App\Enums\RetroPhase;
@@ -188,7 +189,12 @@ it('survives a concurrent first visit of the same member', function () {
     });
 
     DB::connection()->beforeStartingTransaction(function () use (&$raced, $room, $user): void {
-        if ($raced) {
+        $isStartedByThePlayerLookup = array_any(
+            debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS),
+            fn (array $frame): bool => ($frame['class'] ?? null) === FindGamePlayer::class,
+        );
+
+        if ($raced || ! $isStartedByThePlayerLookup) {
             return;
         }
 
