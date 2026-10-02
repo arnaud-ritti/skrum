@@ -1,10 +1,13 @@
 <?php
 
+use App\Actions\HealthCheck\FreezeHealthStatements;
 use App\Enums\ColumnColor;
+use App\Enums\HealthStatement;
 use App\Enums\RetroPhase;
 use App\Enums\WorkspaceRole;
 use App\Models\Card;
 use App\Models\Column;
+use App\Models\HealthCheckAnswer;
 use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\Team;
@@ -110,6 +113,29 @@ function p18eRetroVisualBoard(RetroPhase $phase): array
         }
     }
 
+    if ($phase === RetroPhase::HealthCheck) {
+        $retro->update(['health_check_enabled' => true]);
+        resolve(FreezeHealthStatements::class)->handle($retro);
+
+        $answers = [
+            [HealthStatement::Interaction, [8, 6]],
+            [HealthStatement::TaskClarity, [6, null]],
+            [HealthStatement::ManagerSupport, [null, 9]],
+            [HealthStatement::Vision, [10, 7]],
+        ];
+
+        foreach ($answers as [$statement, $scores]) {
+            foreach (array_filter($scores) as $index => $score) {
+                HealthCheckAnswer::factory()->create([
+                    'retro_id' => $retro->id,
+                    'participant_id' => $people[$index][1]->id,
+                    'statement' => $statement->value,
+                    'score' => $score,
+                ]);
+            }
+        }
+    }
+
     return [$retro->fresh(), $people[0][0], $people[1][0]];
 }
 
@@ -145,6 +171,8 @@ it('[P18e-R3-01] renders the board in its session shell without overflow', funct
         },
     );
 })->with([
+    'facilitator, health check' => ['retro-board-health', RetroPhase::HealthCheck, true, false],
+    'participant, health check, locked' => ['retro-board-health-locked', RetroPhase::HealthCheck, false, true],
     'facilitator, writing' => ['retro-board-facilitator', RetroPhase::Writing, true, false],
     'facilitator, writing, anonymous' => ['retro-board-anonymous', RetroPhase::Writing, true, false, true],
     'participant, voting, locked' => ['retro-board-participant', RetroPhase::Voting, false, true],

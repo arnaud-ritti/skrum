@@ -1,3 +1,4 @@
+import type { HealthCheckFormStatement } from '@/components/skrum/health-check-form';
 import type {
     RetroCardAuthor,
     RetroCardGif,
@@ -139,4 +140,36 @@ export function writingProgress(
         written: board.writersCount,
         present: Math.max(presentCount, board.writersCount),
     };
+}
+
+/**
+ * The statements of the health check as the form takes them. `answeredBy`
+ * holds participant ids; it is empty on an anonymous retro, where only the
+ * count is known.
+ */
+export function toHealthStatements(
+    board: Pick<Snapshot, 'healthCheck' | 'participants'>,
+): HealthCheckFormStatement[] {
+    return (board.healthCheck?.statements ?? []).map((statement) => ({
+        key: statement.key,
+        label: statement.label,
+        text: statement.text,
+        myScore: statement.myScore,
+        count: statement.count,
+        answeredBy: statement.answeredBy.flatMap((id) => {
+            const participant = board.participants.find(
+                (candidate) => candidate.id === id,
+            );
+
+            return participant
+                ? [
+                      {
+                          id: participant.id,
+                          name: participant.name,
+                          avatarUrl: participant.avatarUrl,
+                      },
+                  ]
+                : [];
+        }),
+    }));
 }

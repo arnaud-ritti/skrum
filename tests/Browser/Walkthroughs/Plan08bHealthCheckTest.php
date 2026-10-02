@@ -96,7 +96,7 @@ function p08bTeamStatements(): string
 
 function p08bBoardStatements(): string
 {
-    return "[...document.querySelectorAll('ol > li > [role=\"radiogroup\"]')].map((group) => group.getAttribute('aria-label')).join(' | ')";
+    return "[...document.querySelectorAll('ol > li [role=\"radiogroup\"]')].map((group) => group.getAttribute('aria-label')).join(' | ')";
 }
 
 /**

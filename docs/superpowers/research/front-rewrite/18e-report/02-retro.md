@@ -228,3 +228,54 @@ The plan lists none. Imposed by `RetroCard` and `RetroColumn` (their README), an
 | `P18e-02-05` | open "Color", then the radio item by its text | the colours are a submenu of `RetroColumn` |
 
 New: `[P18e-02-10]` (named and anonymous retro); capture `retro-board-anonymous`. No test was removed.
+
+## Task R5 — Health check phase
+
+`components/retro/phase-health.tsx` draws the health check on `skrum/HealthCheckForm`, above the columns (which stay editable by the facilitator in this phase); `toHealthStatements` of `lib/retro/adapters.ts` maps the snapshot. `health-check-panel.tsx` is deleted.
+
+### Parity (brief 02 §3.4 rows 68–70)
+
+| Row | Feature | Now | Done |
+|---|---|---|---|
+| 68 | Score 1 to 10, saved at once | `HealthCheckForm onAnswer` → `PUT retros/{retro}/health-check/{statement}`; the score shows at once and the answered progress replaces the counts. One request per statement at a time: a score chosen while one is on its way waits, and the last one chosen is sent | yes |
+| 68 | Keyboard | arrows and the digits (0 is 10) on the focused scale, from the form | yes |
+| 68 | Closed board | `disabled`: the 10 scores of every statement are disabled, no "Clear" | yes |
+| 68 | Refusal (closed board, other phase) | the toast and a new snapshot, through `ctx.run` | yes |
+| 69 | Clear the own answer | `onClear` → `DELETE`; the button reads "Clear" and is named "Clear: :label" | yes |
+| 70 | Who answered, how many | `answeredBy` resolved to the participants (picture with the name as its text), `count`; the count alone on an anonymous retro | yes |
+| — | "Answered" on the statements one has scored | a check after the label, named "Answered" | yes |
+| — | The sentence "Rate each statement from 1 (Awful) to 10 (Great). Only you see your own scores." | the help line above the form | yes |
+
+### Places left
+
+None: the plan names none for this task. `HealthCheckForm onSubmit` (the mockup's "Submit answers") is not passed, so the button is not drawn; the footer keeps the progress on its left and the button's place on its right.
+
+### Differences with the mockup
+
+Captures `retro-board-health-*` (facilitator) and `retro-board-health-locked-*` (participant, closed board) against the "Vue réponse participant" of `HealthCheck/preview.html`. The phase itself has no screen mockup (brief 02 §6: the form in a centred card of the ScreenRetroWriting frame). Compared by the implementer on light 1440 EN (both names) and dark 390 FR.
+
+| Difference | Covered by |
+|---|---|
+| The phase exists and is a step of the rail | D-03 |
+| The scale is 1 to 10 with the ends "Awful" and "Great"; the mockup has 1 to 5, "Strongly disagree" and "Strongly agree". Below 32rem of card the ten scores are two rows of five | the server rule (`score` 1..10) and `P08b-03c`. No row — reported |
+| No "Submit answers": each score is saved on its own and can be changed until the phase ends | N: no submit endpoint (the component's `onSubmit` is its place). No row — reported |
+| Under each scale: the pictures of who answered, "n answered", and "Clear" on one's own answers | parity rows 69 and 70. No row — reported |
+| A check after the label of a statement one has scored | parity row 68 ("Answered" is bound by `P08b-03a`). No row — reported |
+| "Anonymous" and "Your answers are anonymous. Only the team average is shown." are shown on every retro; on a named retro the pictures say who has answered, never what | as the mockup; the scores are never sent to anyone else. For the owner |
+| A help line above the card repeats that only the viewer sees their scores | brief 02 §6; `P08b-02` reads the sentence |
+| The columns, the add-column form and the reaction bar are under and over the form | parity (columns are editable in this phase), ruling 27 |
+
+### Browser tests changed
+
+The plan left it to the reading of `Plan08bHealthCheckTest.php` against `HealthCheckForm`. The form did not render what the tests bind; by the plan's rule, what the HealthCheck README does not impose was fixed in the component (commit `fix(skrum): health check form …`), and what it imposes changed the test.
+
+| Binding | Was in the form | Fix |
+|---|---|---|
+| `ol > li` around a statement | a `div` of `fieldset` | component: an `ol`, one `li` per `fieldset` |
+| `[role="radiogroup"][aria-label="<statement>"]` | named by the short label | component: named by the statement |
+| `[aria-label="Answered"]` only on one's own answers | the name of the list of respondents | component: a check named "Answered" in the legend; the list is named "n answered" |
+| `img[alt="<name>"]` | no `img` with a text | component: `imgProps` of `PersonAvatar` |
+| `[role="radio"]:disabled` on a closed board | `aria-disabled` | component: `disabled` disables; a sent form (`submitted`) stays `aria-disabled` and focusable |
+| `ol > li > [role="radiogroup"]` (`p08bBoardStatements`) | — | test: `ol > li [role="radiogroup"]`, because the README imposes the `fieldset` and its `legend` between the two |
+
+No test was removed.

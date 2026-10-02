@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
     toCardProps,
     toColumnProps,
+    toHealthStatements,
     writingProgress,
 } from '@/lib/retro/adapters';
 import type { BoardCard, BoardColumn } from '@/lib/retro/types';
@@ -218,6 +219,70 @@ describe('writingProgress', () => {
             cards: 0,
             written: 3,
             present: 3,
+        });
+    });
+});
+
+describe('toHealthStatements', () => {
+    const statement = {
+        key: 'interaction',
+        label: 'Interaction',
+        text: 'Interaction with colleagues was productive',
+        isBuiltin: true,
+        count: 3,
+        answeredBy: ['me', 'gone', 'carol'],
+        myScore: 7,
+    };
+
+    it('is empty on a retro without a health check', () => {
+        expect(toHealthStatements(retroSnapshot())).toEqual([]);
+    });
+
+    it('keeps the server fields and resolves who answered, leaving out someone the board no longer knows', () => {
+        const board = retroSnapshot({
+            healthCheck: { statements: [statement] },
+            participants: [
+                {
+                    id: 'me',
+                    name: 'Alice Martin',
+                    avatarUrl: '/a.svg',
+                    isGuest: false,
+                },
+                {
+                    id: 'carol',
+                    name: 'Carol Guest',
+                    avatarUrl: '/c.svg',
+                    isGuest: true,
+                },
+            ],
+        });
+
+        expect(toHealthStatements(board)).toEqual([
+            {
+                key: 'interaction',
+                label: 'Interaction',
+                text: 'Interaction with colleagues was productive',
+                myScore: 7,
+                count: 3,
+                answeredBy: [
+                    { id: 'me', name: 'Alice Martin', avatarUrl: '/a.svg' },
+                    { id: 'carol', name: 'Carol Guest', avatarUrl: '/c.svg' },
+                ],
+            },
+        ]);
+    });
+
+    it('has a count and nobody on an anonymous retro', () => {
+        const board = retroSnapshot({
+            healthCheck: {
+                statements: [{ ...statement, answeredBy: [], myScore: null }],
+            },
+        });
+
+        expect(toHealthStatements(board)[0]).toMatchObject({
+            count: 3,
+            answeredBy: [],
+            myScore: null,
         });
     });
 });

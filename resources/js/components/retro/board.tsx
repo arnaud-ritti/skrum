@@ -28,8 +28,8 @@ import {
     GroupNameSuggestionsProvider,
     SuggestGroupNamesButton,
 } from './group-name-suggestions';
-import { HealthCheckPanel } from './health-check-panel';
 import { IcebreakerStage } from './icebreaker-stage';
+import { PhaseHealth } from './phase-health';
 import { PresentationOverlay } from './presentation-overlay';
 import {
     CompletedPanelId,
@@ -100,7 +100,7 @@ function BoardBody({ hideMyCursor }: { hideMyCursor: boolean }) {
 
     return (
         <>
-            {phase === 'health_check' && <HealthCheckPanel />}
+            {phase === 'health_check' && <PhaseHealth />}
             {phase === 'completed' && (
                 <CompletedTabs
                     value={completedView}
