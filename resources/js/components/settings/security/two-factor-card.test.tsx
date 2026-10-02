@@ -584,3 +584,114 @@ describe('TwoFactorCard, on', () => {
         expect(twoFactor.clearTwoFactorAuthData).toHaveBeenCalledTimes(1);
     });
 });
+
+describe('TwoFactorCard, with the e-mail code', () => {
+    const emailOff = {
+        available: true,
+        enabled: false,
+        address: 'ada@example.test',
+        resendIn: 0,
+    };
+
+    it('lists the two methods in one card, "Off" while neither is on', () => {
+        renderWithProviders(
+            <TwoFactorCard
+                enabled={false}
+                requiresConfirmation
+                summary={off}
+                emailCode={emailOff}
+            />,
+        );
+
+        expect(card().querySelector('[data-slot="badge"]')?.textContent).toBe(
+            'Off',
+        );
+        expect(
+            Array.from(
+                card().querySelectorAll('[data-slot="two-factor-row"]'),
+            ).map((row) => row.querySelector('span')?.textContent),
+        ).toEqual(['Authenticator app', 'E-mail code']);
+        expect(screen.getByRole('button', { name: 'Enable 2FA' })).toBeTruthy();
+        expect(
+            screen.getByRole('button', { name: 'Send me a code' }),
+        ).toBeTruthy();
+    });
+
+    it('says "On" when the e-mail code alone is on, without recovery codes', () => {
+        renderWithProviders(
+            <TwoFactorCard
+                enabled={false}
+                requiresConfirmation
+                summary={off}
+                emailCode={{ ...emailOff, enabled: true }}
+            />,
+        );
+
+        expect(card().querySelector('[data-slot="badge"]')?.textContent).toBe(
+            'On',
+        );
+        expect(screen.queryByText('Recovery codes')).toBeNull();
+        expect(
+            screen.getByRole('button', { name: 'Turn off the e-mail code' }),
+        ).toBeTruthy();
+    });
+
+    it('turns each method off on its own row', async () => {
+        renderWithProviders(
+            <TwoFactorCard
+                enabled
+                requiresConfirmation
+                summary={on}
+                emailCode={{ ...emailOff, enabled: true }}
+            />,
+        );
+
+        expect(
+            screen.queryByRole('button', { name: 'Turn off 2FA' }),
+        ).toBeNull();
+        expect(screen.getByText('Recovery codes')).toBeTruthy();
+
+        await userEvent.click(
+            screen.getByRole('button', { name: 'Turn off the app' }),
+        );
+
+        const dialog = screen.getByRole('alertdialog', {
+            name: 'Turn off the authenticator app?',
+        });
+
+        expect(dialog.textContent).toContain(
+            'The e-mail code keeps protecting your account.',
+        );
+    });
+
+    it('lists the e-mail code alone when the server offers no authenticator app', () => {
+        renderWithProviders(
+            <TwoFactorCard
+                enabled={false}
+                requiresConfirmation
+                summary={off}
+                appAvailable={false}
+                emailCode={emailOff}
+            />,
+        );
+
+        expect(screen.queryByText('Authenticator app')).toBeNull();
+        expect(
+            screen.getByRole('button', { name: 'Send me a code' }),
+        ).toBeTruthy();
+    });
+
+    it('keeps the card of the authenticator app alone when mail does not deliver and the e-mail code is off', () => {
+        renderWithProviders(
+            <TwoFactorCard
+                enabled={false}
+                requiresConfirmation
+                summary={off}
+                emailCode={{ ...emailOff, available: false }}
+            />,
+        );
+
+        expect(screen.queryByText('E-mail code')).toBeNull();
+        expect(screen.getByRole('button', { name: 'Enable 2FA' })).toBeTruthy();
+    });
+});

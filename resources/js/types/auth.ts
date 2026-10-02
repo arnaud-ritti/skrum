@@ -38,6 +38,24 @@ export type SsoProviderOption = {
     label: string;
 };
 
+export type SecondFactorMethod = 'totp' | 'email';
+
+/** The e-mail code at the challenge; `sentTo` is the masked address. */
+export type EmailCodeChallengeState = {
+    sentTo: string;
+    resendIn: number;
+    available: boolean;
+};
+
+/** The e-mail code in the security settings. */
+export type EmailSecondFactor = {
+    /** Mail delivers on this instance. */
+    available: boolean;
+    enabled: boolean;
+    address: string;
+    resendIn: number;
+};
+
 export type TwoFactorSummary = {
     confirmedAt: string | null;
     recoveryCodesRemaining: number | null;
