@@ -41,7 +41,7 @@ class SwitchGame
                 : GameRound::query()->whereKey($locked->current_round_id)->lockForUpdate()->first();
 
             if ($round !== null) {
-                $this->endGameRound->handle($locked, $round, GameRoundOutcome::Abandoned);
+                $this->endGameRound->handle($locked, $round, GameRoundOutcome::Abandoned, announcesToTeam: false);
             }
 
             $locked->update(['game' => $game]);

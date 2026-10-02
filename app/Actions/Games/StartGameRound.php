@@ -85,7 +85,7 @@ class StartGameRound
             throw new ConflictHttpException(__('A round is already in progress.'));
         }
 
-        return $this->endGameRound->handle($room, $round, $outcome);
+        return $this->endGameRound->handle($room, $round, $outcome, announcesToTeam: false);
     }
 
     /**

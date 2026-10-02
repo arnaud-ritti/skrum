@@ -63,6 +63,16 @@ it('sends the room when it is renamed', function () {
     Event::assertDispatched(fn (TeamGameRoomChanged $event) => $event->broadcastWith()['room']['name'] === 'Coffee');
 });
 
+it('sends the room when its access changes', function () {
+    $room = GameRoom::factory()->create();
+    [$host] = gameRoomHost($room);
+
+    $this->actingAs($host)->patchJson(route('games.update', $room), ['access' => 'link'])->assertNoContent();
+
+    Event::assertDispatchedTimes(TeamGameRoomChanged::class, 1);
+    Event::assertDispatched(fn (TeamGameRoomChanged $event) => $event->broadcastWith()['room']['access'] === 'link');
+});
+
 it('sends the room when its host changes', function () {
     $room = GameRoom::factory()->create();
     [$host] = gameRoomHost($room);
@@ -95,6 +105,31 @@ it('sends the room as playing when a round starts', function () {
     Event::assertDispatchedTimes(TeamGameRoomChanged::class, 1);
     Event::assertDispatched(fn (TeamGameRoomChanged $event) => $event->broadcastWith()['room']['status'] === 'playing'
         && $event->broadcastWith()['room']['roundStartedAt'] === $round->started_at->toIso8601String());
+});
+
+it('sends the room once when a round starts over an active one', function () {
+    bindGameRules(new FakeGameRules(kind: GameKind::Hangman, nextRoundOutcome: GameRoundOutcome::Abandoned));
+    $room = GameRoom::factory()->create();
+    [$host] = gameRoomHost($room);
+    activeGameRound($room);
+
+    $this->actingAs($host)->postJson(route('games.rounds.store', $room))->assertCreated();
+
+    Event::assertDispatchedTimes(TeamGameRoomChanged::class, 1);
+    Event::assertDispatched(fn (TeamGameRoomChanged $event) => $event->broadcastWith()['room']['status'] === 'playing');
+});
+
+it('sends the room once when its game is switched during a round', function () {
+    bindGameRules(new FakeGameRules(kind: GameKind::Hangman), new FakeGameRules(kind: GameKind::DrawAndGuess));
+    $room = GameRoom::factory()->create();
+    [$host] = gameRoomHost($room);
+    activeGameRound($room);
+
+    $this->actingAs($host)->putJson(route('games.game.update', $room), ['game' => 'draw'])->assertNoContent();
+
+    Event::assertDispatchedTimes(TeamGameRoomChanged::class, 1);
+    Event::assertDispatched(fn (TeamGameRoomChanged $event) => $event->broadcastWith()['room']['game'] === 'draw'
+        && $event->broadcastWith()['room']['status'] === 'waiting');
 });
 
 it('sends the room as waiting when a round ends', function () {
@@ -170,15 +205,16 @@ it('lets a team member join the team games channel', function () {
     expect($response->json('auth'))->toStartWith('test-key:');
 });
 
-it('keeps other teams, room guests and visitors out of the team games channel', function (string $who) {
+it('keeps other teams, other workspaces, room guests and visitors out of the team games channel', function (string $who) {
     $room = GameRoom::factory()->linkAccess()->create();
     $team = $room->team;
     $request = match ($who) {
         'other team' => $this->actingAs(teamMember(Team::factory()->create(['workspace_id' => $team->workspace_id]))),
+        'other workspace' => $this->actingAs(teamMember(Team::factory()->create())),
         'guest' => $this->withCookies(gameGuestCookie(GamePlayer::factory()->guest()->create(['game_room_id' => $room->id])))->withCredentials(),
         'visitor' => $this,
     };
 
     $request->postJson(route('broadcasting.auth'), teamGamesChannelRequest("private-team-games.{$team->id}"))
         ->assertForbidden();
-})->with(['other team', 'guest', 'visitor']);
+})->with(['other team', 'other workspace', 'guest', 'visitor']);
