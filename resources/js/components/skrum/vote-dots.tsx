@@ -57,23 +57,21 @@ export function VoteBudget({
     const safeRemaining = Math.min(Math.max(remaining, 0), total);
     const isEmpty = safeRemaining === 0;
     const Icon = isEmpty ? CircleSlash : Vote;
-    const label = isEmpty
-        ? t('No votes left')
+    const isSingle = safeRemaining === 1;
+    const leftLabel = isSingle
+        ? t(':count vote left', { count: safeRemaining })
         : t(':count votes left', { count: safeRemaining });
+    const label = isEmpty ? t('No votes left') : leftLabel;
+    const leftOfTotalLabel = isSingle
+        ? t(':count vote left of :total', { count: safeRemaining, total })
+        : t(':count votes left of :total', { count: safeRemaining, total });
 
     return (
         <div
             data-slot="vote-budget"
             role="status"
             aria-live="polite"
-            aria-label={
-                isEmpty
-                    ? label
-                    : t(':count votes left of :total', {
-                          count: safeRemaining,
-                          total,
-                      })
-            }
+            aria-label={isEmpty ? label : leftOfTotalLabel}
             className={cn(
                 'inline-flex max-w-full items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-sm font-semibold shadow-card',
                 isEmpty ? 'text-muted-foreground' : 'text-foreground',

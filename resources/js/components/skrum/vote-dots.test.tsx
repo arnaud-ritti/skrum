@@ -25,6 +25,15 @@ describe('VoteBudget', () => {
         expect(filledDots(container)).toBe(2);
     });
 
+    it('says "1 vote left" for a single vote', () => {
+        renderWithProviders(<VoteBudget total={5} remaining={1} />);
+
+        const budget = screen.getByRole('status');
+
+        expect(budget.textContent).toContain('1 vote left');
+        expect(budget.getAttribute('aria-label')).toBe('1 vote left of 5');
+    });
+
     it('says no votes left with all dots empty at zero', () => {
         const { container } = renderWithProviders(
             <VoteBudget total={5} remaining={0} />,
