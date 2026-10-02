@@ -52,8 +52,6 @@ void createInertiaApp({
         }
 
         switch (true) {
-            case name === 'retros/join':
-            case name === 'retros/session-ended':
             case name === 'poker/join':
             case name === 'games/join':
             case name === 'whiteboards/join':
