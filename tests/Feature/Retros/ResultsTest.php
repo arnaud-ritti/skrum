@@ -215,3 +215,28 @@ it('carries the statistics to a guest without the health trend', function () {
     expect($results['stats'])->toHaveKeys(['votesCast', 'votesAvailable', 'participation', 'durationSeconds'])
         ->and($results['healthTrend'])->toBeNull();
 });
+
+it('hides the previous retro averages and the health trend from a guest', function () {
+    $previous = Retro::factory()->withHealthCheck()->inPhase(RetroPhase::Completed)->create(['completed_at' => now()->subWeek()]);
+    resolve(FreezeHealthStatements::class)->handle($previous);
+    HealthCheckAnswer::factory()->create([
+        'retro_id' => $previous->id,
+        'participant_id' => Participant::factory()->create(['retro_id' => $previous->id])->id,
+        'statement' => 'vision',
+        'score' => 6,
+    ]);
+    $retro = Retro::factory()->withHealthCheck()->inPhase(RetroPhase::Completed)->withGuestAccess()->create(['team_id' => $previous->team_id, 'completed_at' => now()]);
+    resolve(FreezeHealthStatements::class)->handle($retro);
+    [, $member] = retroMember($retro);
+    $guest = Participant::factory()->guest()->create(['retro_id' => $retro->id]);
+    HealthCheckAnswer::factory()->create(['retro_id' => $retro->id, 'participant_id' => $member->id, 'statement' => 'vision', 'score' => 8]);
+
+    $memberResults = resultsOf($retro, $member);
+    $guestResults = resultsOf($retro, $guest);
+
+    expect(collect($memberResults['health']['statements'])->firstWhere('key', 'vision')['previousAverage'])->toBe(6.0)
+        ->and($memberResults['healthTrend'])->toHaveCount(2)
+        ->and(collect($guestResults['health']['statements'])->firstWhere('key', 'vision'))->toMatchArray(['average' => 8.0, 'previousAverage' => null])
+        ->and(collect($guestResults['health']['statements'])->pluck('previousAverage')->unique()->all())->toBe([null])
+        ->and($guestResults['healthTrend'])->toBeNull();
+});

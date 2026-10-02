@@ -59,7 +59,7 @@ class BuildResults
 
         $retro->loadMissing('participants.user');
 
-        $health = $this->summarizeHealthCheck->handle($retro);
+        $health = $this->summarizeHealthCheck->handle($retro, $viewer);
         $canShare = $this->sharePermissions->retro($retro, $retro->participants->firstWhere('id', $viewer->id) ?? $viewer);
 
         return [

@@ -2,6 +2,7 @@
 
 namespace App\Actions\HealthCheck;
 
+use App\Models\Participant;
 use App\Models\Retro;
 use App\Models\RetroHealthStatement;
 use Illuminate\Support\Collection;
@@ -14,6 +15,8 @@ class SummarizeHealthCheck
     public function __construct(private PresentHealthStatement $presentHealthStatement) {}
 
     /**
+     * The previous averages come from another retro of the team, which a guest of this one must not see.
+     *
      * @return array{
      *     statements: array<int, array{key: string, label: string, text: string, isBuiltin: bool, average: ?float, count: int, consensus: ?float, previousAverage: ?float}>,
      *     score: float,
@@ -24,7 +27,7 @@ class SummarizeHealthCheck
      *     assessment: array{band: string, title: string, sentence: string}
      * }|null
      */
-    public function handle(Retro $retro): ?array
+    public function handle(Retro $retro, ?Participant $viewer = null): ?array
     {
         if (! $retro->health_check_enabled) {
             return null;
@@ -37,7 +40,7 @@ class SummarizeHealthCheck
             ->get()
             ->keyBy('statement');
 
-        $previousAverages = $this->previousAverages($retro);
+        $previousAverages = $viewer?->isGuest() ? [] : $this->previousAverages($retro);
 
         $statements = $retro->healthStatements()->get()->map(function (RetroHealthStatement $statement) use ($totals, $previousAverages): array {
             $row = $totals->get($statement->key);
