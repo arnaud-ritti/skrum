@@ -1,6 +1,8 @@
 <?php
 
 use App\Actions\ActionItems\SendActionItemReminders;
+use App\Actions\Workspaces\AcceptWorkspaceInvitation;
+use App\Actions\Workspaces\CreateWorkspaceInvitation;
 use App\Enums\ActionItemReminderKind;
 use App\Enums\RetroPhase;
 use App\Enums\WorkspaceRole;
@@ -22,6 +24,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Broadcasting\Broadcasters\NullBroadcaster;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Support\Facades\Broadcast;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Exceptions;
@@ -58,7 +61,7 @@ function invitedThroughTheBell(string $token = 'bell-invitation-token'): array
         'email' => 'known@example.test',
         'invited_by_id' => $inviter->id,
     ]);
-    $invited->notify(new WorkspaceInvitationReceivedNotification($invitation->id, route('invitations.show', $token)));
+    $invited->notify(new WorkspaceInvitationReceivedNotification($invitation->id, $token));
 
     return [$invited, $invitation, $token, $inviter];
 }
@@ -201,16 +204,118 @@ it('notifies the one verified account that owns the invited address', function (
     ])->and(array_keys($notification))->toBe(['id', 'kind', 'readAt', 'createdAt', 'actor', 'team', 'href']);
 });
 
-it('stores the invitation link encrypted and gives it to its owner only', function () {
+it('stores the invitation token encrypted, never a link, and gives the link to its owner only', function () {
     [$invited, $invitation, $token] = invitedThroughTheBell();
     $stored = (string) DB::table('notifications')->where('notifiable_id', $invited->id)->value('data');
+    $data = json_decode($stored, true);
 
     expect($stored)->not->toContain($token)
         ->and($stored)->not->toContain('invitations')
-        ->and(json_decode($stored, true)['invitationId'])->toBe($invitation->id)
+        ->and(array_keys($data))->toBe(['kind', 'invitationId', 'token'])
+        ->and($data['invitationId'])->toBe($invitation->id)
+        ->and(Crypt::decryptString($data['token']))->toBe($token)
         ->and(bellOf($invited)[0]['href'])->toBe(route('invitations.show', $token))
         ->and(bellOf(User::factory()->create()))->toBe([])
         ->and(bellOf($invitation->invitedBy))->toBe([]);
+});
+
+it('builds the invitation link on the host of the reader, whatever host the inviter came from', function () {
+    $admin = User::factory()->create();
+    $workspace = Workspace::factory()->withMember($admin, WorkspaceRole::Admin)->create();
+    $known = User::factory()->create(['email' => 'known@example.test']);
+
+    $this->actingAs($admin)
+        ->post('http://evil.test'.route('workspaces.invitations.store', $workspace, absolute: false), ['email' => 'known@example.test', 'role' => 'member'])
+        ->assertSessionHasNoErrors();
+
+    $href = $this->actingAs($known)
+        ->getJson('http://skrum.test'.route('notifications.index', absolute: false))
+        ->assertOk()
+        ->json('notifications.0.href');
+
+    expect($href)->toStartWith('http://skrum.test/invitations/')
+        ->and($href)->not->toContain('evil.test');
+});
+
+it('reads a link stored by an earlier version only when it is a link of this application to that invitation', function (Closure $link, bool $isKept) {
+    [$invited, $invitation, $token] = invitedThroughTheBell();
+    $invited->notifications()->update(['data' => json_encode([
+        'kind' => 'team_invite',
+        'invitationId' => $invitation->id,
+        'link' => Crypt::encryptString($link($token)),
+    ])]);
+
+    expect(array_column(bellOf($invited), 'href'))->toBe($isKept ? [route('invitations.show', $token)] : [])
+        ->and($invited->notifications()->count())->toBe($isKept ? 1 : 0);
+})->with([
+    'a link of this application' => [fn (string $token) => route('invitations.show', $token), true],
+    'a link to another host' => [fn (string $token) => 'https://evil.test/invitations/'.$token, false],
+    'another host that starts like this one' => [fn (string $token) => Str::replaceFirst('/invitations', '.evil.test/invitations', route('invitations.show', $token)), false],
+    'another page of this application' => [fn (string $token) => url('/login?token='.$token), false],
+    'a token that is not the one of the invitation' => [fn () => route('invitations.show', 'another-token'), false],
+]);
+
+it('forgets the notification of an invitation that is accepted, revoked or sent again', function (Closure $end) {
+    $admin = User::factory()->create();
+    $workspace = Workspace::factory()->withMember($admin, WorkspaceRole::Admin)->create();
+    $known = User::factory()->create(['email' => 'known@example.test']);
+    inviteByForm($admin, $workspace, 'known@example.test')->assertSessionHasNoErrors();
+    $bystander = User::factory()->create(['email' => 'bystander@example.test']);
+    $other = WorkspaceInvitation::factory()->withToken('other-token')->create(['email' => 'bystander@example.test']);
+    $bystander->notify(new WorkspaceInvitationReceivedNotification($other->id, 'other-token'));
+    $kept = DB::table('notifications')->where('notifiable_id', '!=', $known->id)->count();
+
+    expect($known->notifications()->count())->toBe(1);
+
+    $expected = $end($admin, $workspace, $known);
+
+    expect($known->notifications()->count())->toBe($expected)
+        ->and(DB::table('notifications')->where('notifiable_id', '!=', $known->id)->count())->toBe($kept);
+})->with([
+    'accepted' => [function (User $admin, Workspace $workspace, User $known): int {
+        app(AcceptWorkspaceInvitation::class)->handle($workspace->invitations()->sole(), $known);
+
+        return 0;
+    }],
+    'revoked' => [function (User $admin, Workspace $workspace): int {
+        test()->actingAs($admin)->delete(route('workspaces.invitations.destroy', [$workspace, $workspace->invitations()->sole()]))->assertRedirect();
+
+        return 0;
+    }],
+    'sent again' => [function (User $admin, Workspace $workspace): int {
+        inviteByForm($admin, $workspace, 'Known@example.test')->assertSessionHasNoErrors();
+
+        return 1;
+    }],
+]);
+
+it('never counts a dead invitation in the unread badge', function (Closure $kill) {
+    [$invited, $invitation] = invitedThroughTheBell();
+    $unreadCount = fn (): int => test()->actingAs($invited)->get(route('profile.edit'))->inertiaProps('notifications.unreadCount');
+
+    expect($unreadCount())->toBe(1);
+
+    $kill($invitation, $invited);
+
+    expect($unreadCount())->toBe(0)
+        ->and($invited->notifications()->count())->toBe(0);
+})->with([
+    'expired' => [fn () => test()->travel(CreateWorkspaceInvitation::ValidForDays + 1)->days()],
+    'revoked outside the application' => [fn (WorkspaceInvitation $invitation) => WorkspaceInvitation::query()->whereKey($invitation->id)->delete()],
+    'accepted outside the application' => [fn (WorkspaceInvitation $invitation) => $invitation->forceFill(['accepted_at' => now()])->save()],
+    'no longer the invited address' => [fn (WorkspaceInvitation $invitation, User $invited) => $invited->forceFill(['email' => 'moved@example.test'])->save()],
+]);
+
+it('refuses the load-more cursor and the read mark of a notification of another user', function () {
+    [$user] = remindedThroughTheBell();
+    [$other] = remindedThroughTheBell();
+    $foreign = $other->notifications()->sole();
+
+    $this->actingAs($user)->getJson(route('notifications.index', ['before' => $foreign->id]))->assertNotFound();
+    $this->actingAs($user)->patchJson(route('notifications.update', $foreign->id), ['read' => true])->assertNotFound();
+
+    expect($foreign->fresh()->read_at)->toBeNull()
+        ->and($user->notifications()->sole()->read_at)->toBeNull();
 });
 
 it('links an invitation notification to the invitation page and accepts nothing', function () {
@@ -301,7 +406,7 @@ it('tells the open page that a notification arrived, with a count only', functio
     $invitation = WorkspaceInvitation::factory()->withToken('another-token')->create(['email' => $user->email]);
 
     $user->notify(new RetroResultsNotification($retro->id));
-    $user->notify(new WorkspaceInvitationReceivedNotification($invitation->id, route('invitations.show', 'another-token')));
+    $user->notify(new WorkspaceInvitationReceivedNotification($invitation->id, 'another-token'));
 
     Event::assertDispatchedTimes(NotificationReceived::class, 3);
 

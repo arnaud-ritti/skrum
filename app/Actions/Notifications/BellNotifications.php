@@ -9,10 +9,14 @@ use Illuminate\Notifications\DatabaseNotification;
 
 /**
  * What the bell of a user holds: the list and the unread count read the
- * same rows, so a kind the user turned off is neither listed nor counted.
+ * same rows, so a kind the user turned off is neither listed nor counted,
+ * and neither is the notification of an invitation that can no longer be
+ * accepted.
  */
 class BellNotifications
 {
+    public function __construct(private ForgetInvitationNotifications $forgetInvitationNotifications) {}
+
     /**
      * @return MorphMany<DatabaseNotification, User>
      */
@@ -29,6 +33,8 @@ class BellNotifications
 
     public function unreadCount(User $user): int
     {
+        $this->forgetInvitationNotifications->forUser($user);
+
         return $this->query($user)->whereNull('read_at')->count();
     }
 }

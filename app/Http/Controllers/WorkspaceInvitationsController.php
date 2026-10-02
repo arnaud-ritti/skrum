@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Notifications\ForgetInvitationNotifications;
 use App\Actions\Workspaces\CreateWorkspaceInvitation;
 use App\Enums\WorkspaceRole;
 use App\Models\User;
@@ -50,7 +51,7 @@ class WorkspaceInvitationsController extends Controller
                 ->locale($recipientLocale ?? app()->getLocale()),
         );
 
-        $this->notifyExistingAccount($validated['email'], $issued->invitation, $url);
+        $this->notifyExistingAccount($validated['email'], $issued->invitation, $issued->token);
 
         if (config('mail.default') === 'log') {
             Inertia::flash('invitationUrl', $url);
@@ -61,10 +62,10 @@ class WorkspaceInvitationsController extends Controller
 
     /**
      * The bell of the one verified account that owns the invited address
-     * gets a link to the invitation page. The inviter's answer is the same
-     * whether or not such an account exists.
+     * is told of the invitation. The inviter's answer is the same whether
+     * or not such an account exists.
      */
-    private function notifyExistingAccount(string $email, WorkspaceInvitation $invitation, #[SensitiveParameter] string $url): void
+    private function notifyExistingAccount(string $email, WorkspaceInvitation $invitation, #[SensitiveParameter] string $token): void
     {
         $accounts = User::query()
             ->whereAddress($email)
@@ -76,14 +77,15 @@ class WorkspaceInvitationsController extends Controller
             return;
         }
 
-        $accounts->sole()->notify(new WorkspaceInvitationReceivedNotification($invitation->id, $url));
+        $accounts->sole()->notify(new WorkspaceInvitationReceivedNotification($invitation->id, $token));
     }
 
-    public function destroy(Workspace $workspace, WorkspaceInvitation $invitation): RedirectResponse
+    public function destroy(Workspace $workspace, WorkspaceInvitation $invitation, ForgetInvitationNotifications $forgetNotifications): RedirectResponse
     {
         Gate::authorize('manageMembers', $workspace);
 
         $invitation->delete();
+        $forgetNotifications->handle([$invitation->id]);
 
         return back();
     }

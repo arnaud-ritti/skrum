@@ -10,9 +10,10 @@ use Illuminate\Support\Facades\Crypt;
 use SensitiveParameter;
 
 /**
- * Tells an existing account, in the bell, that it was invited. It is a
- * link to the invitation page and accepts nothing; the link holds the
- * invitation token, so it is stored encrypted.
+ * Tells an existing account, in the bell, that it was invited. It leads
+ * to the invitation page and accepts nothing. Only the invitation token
+ * is stored, encrypted: the link is built when the bell is read, so no
+ * address made from the inviter's request is ever replayed.
  */
 class WorkspaceInvitationReceivedNotification extends Notification implements ShouldBeEncrypted, ShouldQueue
 {
@@ -22,7 +23,7 @@ class WorkspaceInvitationReceivedNotification extends Notification implements Sh
 
     public function __construct(
         public string $invitationId,
-        #[SensitiveParameter] public string $link,
+        #[SensitiveParameter] public string $token,
     ) {}
 
     /** @return array<int, string> */
@@ -35,7 +36,7 @@ class WorkspaceInvitationReceivedNotification extends Notification implements Sh
      * @return array{
      *     kind: string,
      *     invitationId: string,
-     *     link: string
+     *     token: string
      * }
      */
     public function toArray(object $notifiable): array
@@ -43,7 +44,7 @@ class WorkspaceInvitationReceivedNotification extends Notification implements Sh
         return [
             'kind' => self::Kind,
             'invitationId' => $this->invitationId,
-            'link' => Crypt::encryptString($this->link),
+            'token' => Crypt::encryptString($this->token),
         ];
     }
 }

@@ -294,7 +294,7 @@ it('renders the bell with the three kinds of notification without overflow', fun
     ]);
 
     $member->notify(new ActionItemReminderNotification($item->id, ActionItemReminderKind::Overdue, $team->workspace_id, now()->subDays(2)->toDateString()));
-    $member->notify(new WorkspaceInvitationReceivedNotification($invitation->id, route('invitations.show', 'bell-token')));
+    $member->notify(new WorkspaceInvitationReceivedNotification($invitation->id, 'bell-token'));
     $member->notify(new RetroResultsNotification($retro->id));
 
     $this->captureVisuals(
