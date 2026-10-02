@@ -1,4 +1,5 @@
 import { screen, within } from '@testing-library/react';
+import { User } from 'lucide-react';
 import { describe, expect, it } from 'vitest';
 import SessionLayout from '@/layouts/skrum/session-layout';
 import { renderWithProviders } from '@/test/render';
@@ -154,6 +155,41 @@ describe('SettingsFrame', () => {
             screen
                 .getByRole('link', { name: 'Security' })
                 .getAttribute('aria-current'),
+        ).toBeNull();
+    });
+
+    it('draws the icon of an entry before its label, hidden from assistive technology', () => {
+        renderWithProviders(
+            <SettingsFrame
+                title="Settings"
+                navLabel="Settings"
+                nav={[
+                    {
+                        label: 'Profile',
+                        href: '/settings/profile',
+                        current: true,
+                        icon: User,
+                    },
+                    {
+                        label: 'Security',
+                        href: '/settings/security',
+                        current: false,
+                    },
+                ]}
+            >
+                <p>form</p>
+            </SettingsFrame>,
+        );
+
+        const profile = screen.getByRole('link', { name: 'Profile' });
+        const icon = profile.querySelector('[data-slot="sub-nav-icon"]');
+
+        expect(icon?.getAttribute('aria-hidden')).toBe('true');
+        expect(profile.firstElementChild).toBe(icon);
+        expect(
+            screen
+                .getByRole('link', { name: 'Security' })
+                .querySelector('[data-slot="sub-nav-icon"]'),
         ).toBeNull();
     });
 });
