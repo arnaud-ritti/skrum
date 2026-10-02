@@ -2,9 +2,11 @@
 
 namespace App\Models;
 
+use App\Casts\DateOnly;
 use App\Concerns\HasSearchColumns;
 use App\Enums\ActionItemPriority;
 use App\Enums\ActionItemRecurrence;
+use App\Exceptions\ModelInvariantViolation;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Database\Factories\ActionItemFactory;
@@ -24,7 +26,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $retro_id
  * @property string $content
  * @property ActionItemPriority $priority
- * @property Carbon|null $due_on
+ * @property CarbonInterface|null $due_on
  * @property Carbon|null $completed_at
  * @property string|null $completed_via_source
  * @property string|null $assignee_user_id
@@ -191,17 +193,41 @@ class ActionItem extends Model
      * The rank is set here and not in a `saving` listener: a faked or muted event dispatcher
      * (Event::fake, saveQuietly) would skip the listener and leave the row without its rank.
      * A stored row keeps its rank unless one of the three columns it comes from changes: a model
-     * read without them knows nothing about its state.
+     * read without them knows nothing about its state. The three rules of the model are checked
+     * here for the same two reasons.
+     *
+     * The check reads the attributes the model holds: a row read with a partial select must have
+     * loaded every column of a rule before one of them is written. A query builder or mass update
+     * goes through no model and is not checked.
      *
      * @param  array<string, mixed>  $options
      */
     public function save(array $options = []): bool
     {
+        if (! $this->exists || $this->isDirty(['retro_id', 'assignee_user_id', 'assignee_participant_id', 'recurrence', 'due_on'])) {
+            $this->refuseBrokenRule();
+        }
+
         if (! $this->exists || $this->isDirty(['completed_at', 'due_on', 'priority'])) {
             $this->sort_rank = self::sortRankFor($this->completed_at !== null, $this->due_on?->toDateString(), $this->priority);
         }
 
         return parent::save($options);
+    }
+
+    private function refuseBrokenRule(): void
+    {
+        if ($this->assignee_user_id !== null && $this->assignee_participant_id !== null) {
+            throw ModelInvariantViolation::because($this, 'an item is assigned to a member or to a guest, never both');
+        }
+
+        if ($this->retro_id === null && $this->assignee_participant_id !== null) {
+            throw ModelInvariantViolation::because($this, 'a guest assignee needs a retro');
+        }
+
+        if ($this->recurrence !== null && $this->due_on === null) {
+            throw ModelInvariantViolation::because($this, 'a recurrence needs a due date');
+        }
     }
 
     public function isCompleted(): bool
@@ -238,7 +264,7 @@ class ActionItem extends Model
         return [
             'priority' => ActionItemPriority::class,
             'recurrence' => ActionItemRecurrence::class,
-            'due_on' => 'date',
+            'due_on' => DateOnly::class,
             'completed_at' => 'datetime',
             'sort_rank' => 'integer',
         ];

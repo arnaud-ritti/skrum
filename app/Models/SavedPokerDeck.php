@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Exceptions\ModelInvariantViolation;
 use App\Support\Database\NameKey;
 use Database\Factories\SavedPokerDeckFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -37,6 +38,28 @@ class SavedPokerDeck extends Model
     use HasFactory;
 
     use HasUuids;
+
+    /**
+     * The rule of the model is checked here and not in a `saving` listener, which a faked or muted
+     * event dispatcher skips. A stored row is checked when one of its owners changes: a model read
+     * without them knows nothing about its state.
+     *
+     * The check reads the attributes the model holds: a row read with a partial select must have
+     * loaded every column of a rule before one of them is written. A query builder or mass update
+     * goes through no model and is not checked.
+     *
+     * @param  array<string, mixed>  $options
+     */
+    public function save(array $options = []): bool
+    {
+        $changesOwner = ! $this->exists || $this->isDirty(['team_id', 'workspace_id']);
+
+        if ($changesOwner && ($this->team_id === null) === ($this->workspace_id === null)) {
+            throw ModelInvariantViolation::because($this, 'a deck belongs to a team or to a workspace, never both or neither');
+        }
+
+        return parent::save($options);
+    }
 
     /** @return BelongsTo<Team, $this> */
     public function team(): BelongsTo

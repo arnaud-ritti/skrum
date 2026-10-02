@@ -2,12 +2,11 @@
 
 use App\Actions\Poker\SavedPokerDeckRules;
 use App\Enums\WorkspaceRole;
+use App\Exceptions\ModelInvariantViolation;
 use App\Models\PokerGame;
 use App\Models\SavedPokerDeck;
 use App\Models\Team;
 use App\Models\Workspace;
-use Illuminate\Database\QueryException;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -257,18 +256,14 @@ it('refuses a workspace deck of another workspace as default', function () {
         ->assertSessionHasErrors('saved_deck_id');
 });
 
-it('refuses on the database a deck with both owners or none', function (bool $withTeam, bool $withWorkspace) {
-    if (DB::getDriverName() !== 'pgsql') {
-        $this->markTestSkipped('The owner check constraint is PostgreSQL only.');
-    }
-
+it('refuses a deck with both owners or none', function (bool $withTeam, bool $withWorkspace) {
     $team = Team::factory()->create();
     $attributes = [
         'team_id' => $withTeam ? $team->id : null,
         'workspace_id' => $withWorkspace ? $team->workspace_id : null,
     ];
 
-    expect(fn () => SavedPokerDeck::factory()->create($attributes))->toThrow(QueryException::class);
+    expect(fn () => SavedPokerDeck::factory()->create($attributes))->toThrow(ModelInvariantViolation::class);
 })->with([
     'both owners' => [true, true],
     'no owner' => [false, false],

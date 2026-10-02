@@ -2593,7 +2593,7 @@ From revision 1. Changed: no database constraint stands behind the model guards 
 
 **Interfaces:**
 - Consumes: nothing.
-- Produces: `App\Exceptions\ModelInvariantViolation::because(Model $model, string $rule): self`; `App\Casts\DateOnly` (reads `Illuminate\Support\Carbon` at midnight, writes `Y-m-d`).
+- Produces: `App\Exceptions\ModelInvariantViolation::because(Model $model, string $rule): self`; `App\Casts\DateOnly` (reads midnight of the day as a `Carbon\CarbonInterface` built by the `Date` facade, so the class set by `Date::use` is the one returned, as with Eloquent's own date cast: `CarbonImmutable` in this application; writes `Y-m-d`; keeps no cast object on the model, `$withoutObjectCaching = true`, so a date changed in place is never written back and a value just assigned is read back at midnight; serialises a date instance without going through its string form). The rule columns of a guarded model must be loaded when one of them is written: a stored row is checked on the attributes it holds.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -2679,6 +2679,7 @@ it('accepts the rows the rules allow', function () {
 <?php
 
 use App\Casts\DateOnly;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 
@@ -2700,7 +2701,7 @@ it('writes ten characters whatever it is given', function (mixed $value, ?string
 it('reads midnight of the stored day, from the short and from the long form', function (string $stored) {
     $read = (new DateOnly)->get(dateOnlyModel(), 'due_on', $stored, []);
 
-    expect($read)->toBeInstanceOf(Carbon::class)
+    expect($read)->toBeInstanceOf(CarbonInterface::class)
         ->and($read->toDateTimeString())->toBe('2026-10-10 00:00:00');
 })->with(['2026-10-10', '2026-10-10 00:00:00']);
 
@@ -2708,6 +2709,8 @@ it('reads null as null', function () {
     expect((new DateOnly)->get(dateOnlyModel(), 'due_on', null, []))->toBeNull();
 });
 ```
+
+The unit test boots no application, so it sees the facade's default class; `DateOnlyStorageTest` asserts `CarbonImmutable` on a model, that a date changed in place leaves the attribute clean, that a timed value just assigned is read back at midnight, and that serialisation does not depend on the string format of Carbon.
 
 `tests/Feature/Database/DateOnlyStorageTest.php`:
 
@@ -2778,31 +2781,39 @@ class ModelInvariantViolation extends DomainException
 
 namespace App\Casts;
 
+use Carbon\CarbonInterface;
 use DateTimeInterface;
 use Illuminate\Contracts\Database\Eloquent\CastsAttributes;
+use Illuminate\Contracts\Database\Eloquent\SerializesCastableAttributes;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Date;
 
 /**
  * A calendar day. Eloquent's own date cast writes a date and a time, which an engine
  * without a date type keeps as written; this one writes the day alone.
  *
- * @implements CastsAttributes<Carbon, DateTimeInterface|string>
+ * @implements CastsAttributes<CarbonInterface, DateTimeInterface|string>
  */
-class DateOnly implements CastsAttributes
+class DateOnly implements CastsAttributes, SerializesCastableAttributes
 {
     private const string Format = 'Y-m-d';
 
     /**
+     * Eloquent keeps the object a class cast returns and writes it back on save. Without that,
+     * a date changed in place is never stored, and a value just assigned is read back at midnight.
+     */
+    public bool $withoutObjectCaching = true;
+
+    /**
      * @param  array<string, mixed>  $attributes
      */
-    public function get(Model $model, string $key, mixed $value, array $attributes): ?Carbon
+    public function get(Model $model, string $key, mixed $value, array $attributes): ?CarbonInterface
     {
         if ($value === null) {
             return null;
         }
 
-        return Carbon::createFromFormat('!'.self::Format, substr((string) $value, 0, 10));
+        return Date::createFromFormat('!'.self::Format, substr((string) $value, 0, 10));
     }
 
     /**
@@ -2814,14 +2825,28 @@ class DateOnly implements CastsAttributes
             return null;
         }
 
-        return Carbon::parse($value)->format(self::Format);
+        return Date::parse($value)->format(self::Format);
+    }
+
+    /**
+     * The form Eloquent's date cast gives, so pages and API answers do not change.
+     *
+     * @param  array<string, mixed>  $attributes
+     */
+    public function serialize(Model $model, string $key, mixed $value, array $attributes): ?string
+    {
+        if ($value instanceof DateTimeInterface) {
+            return Date::instance($value)->startOfDay()->toJSON();
+        }
+
+        return $this->get($model, $key, $value, $attributes)?->toJSON();
     }
 }
 ```
 
 In `ActionItem::casts()` and `ActionItemReminder::casts()`: `'due_on' => DateOnly::class,`.
 
-Run the unit test and `DateOnlyStorageTest` on `sqlite` and on `pgsql`. Expected: PASS. If `toArray()['due_on']` is not the string written down in Step 1, make the cast also implement `Illuminate\Contracts\Database\Eloquent\SerializesCastableAttributes`, whose `serialize(Model $model, string $key, mixed $value, array $attributes)` returns `Carbon::instance($value)->startOfDay()->toJSON()` (the form Eloquent's date cast gave), and tighten the third storage test to the exact string.
+Run the unit test and `DateOnlyStorageTest` on `sqlite` and on `pgsql`. Expected: PASS. The cast implements `SerializesCastableAttributes` so `toArray()['due_on']` keeps the form Eloquent's date cast gave; the third storage test asserts the exact string.
 
 - [ ] **Step 3: Guard the three models**
 

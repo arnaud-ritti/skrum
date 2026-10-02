@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\HealthStatement;
+use App\Exceptions\ModelInvariantViolation;
 use Database\Factories\TeamHealthStatementFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -35,6 +36,26 @@ class TeamHealthStatement extends Model
         return $this->belongsTo(Team::class);
     }
 
+    /**
+     * The rule of the model is checked here and not in a `saving` listener, which a faked or muted
+     * event dispatcher skips. A stored row is checked when one of the three columns changes: a model
+     * read without them knows nothing about its state.
+     *
+     * The check reads the attributes the model holds: a row read with a partial select must have
+     * loaded every column of a rule before one of them is written. A query builder or mass update
+     * goes through no model and is not checked.
+     *
+     * @param  array<string, mixed>  $options
+     */
+    public function save(array $options = []): bool
+    {
+        if (! $this->exists || $this->isDirty(['builtin', 'text', 'label'])) {
+            $this->refuseBrokenRule();
+        }
+
+        return parent::save($options);
+    }
+
     public function key(): string
     {
         return $this->builtin->value ?? (string) $this->id;
@@ -48,6 +69,22 @@ class TeamHealthStatement extends Model
     public function isArchived(): bool
     {
         return $this->archived_at !== null;
+    }
+
+    private function refuseBrokenRule(): void
+    {
+        $isBuiltin = $this->builtin !== null && $this->text === null && $this->label === null;
+        $isCustom = $this->builtin === null && $this->text !== null && $this->label !== null;
+
+        if ($isBuiltin) {
+            return;
+        }
+
+        if ($isCustom) {
+            return;
+        }
+
+        throw ModelInvariantViolation::because($this, 'a statement is built-in without text and label, or custom with both');
     }
 
     protected function casts(): array
