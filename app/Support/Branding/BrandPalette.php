@@ -100,8 +100,8 @@ class BrandPalette
     public function toHex(): array
     {
         return [
-            'light' => array_map($this->oklchToHex(...), $this->light),
-            'dark' => array_map($this->oklchToHex(...), $this->dark),
+            'light' => array_map(self::oklchToHex(...), $this->light),
+            'dark' => array_map(self::oklchToHex(...), $this->dark),
         ];
     }
 
@@ -322,7 +322,7 @@ class BrandPalette
     /**
      * @param  Oklch  $color
      */
-    private function oklchToHex(array $color): string
+    public static function oklchToHex(array $color): string
     {
         [$red, $green, $blue] = self::toLinear(self::fit($color));
 

@@ -53,6 +53,14 @@ export type DrawingColor =
     | 'green'
     | 'blue'
     | 'purple'
+    | 'sun'
+    | 'apricot'
+    | 'coral'
+    | 'plum'
+    | 'iris'
+    | 'sky'
+    | 'lagoon'
+    | 'moss'
     | 'white';
 
 export type DrawingSize = 4 | 10 | 24;

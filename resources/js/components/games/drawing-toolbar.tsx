@@ -55,6 +55,14 @@ export function DrawingToolbar({
         green: t('Green'),
         blue: t('Blue'),
         purple: t('Purple'),
+        sun: t('Sun'),
+        apricot: t('Apricot'),
+        coral: t('Coral'),
+        plum: t('Plum'),
+        iris: t('Iris'),
+        sky: t('Sky'),
+        lagoon: t('Lagoon'),
+        moss: t('Moss'),
         white: t('White'),
     };
 
