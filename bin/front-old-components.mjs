@@ -40,7 +40,49 @@ const libraryFolders = [
  * §6.1). Each entry carries its reason. An entry is added only for a file
  * that returns no element of its own.
  */
-const notViews = new Map([]);
+const notViews = new Map([
+    [
+        'resources/js/components/poker/auto-reveal-triggers.tsx',
+        'timers and one request of the poker room; it returns null',
+    ],
+    [
+        'resources/js/components/retro/board-context.tsx',
+        'context of the retro board: a provider around its children, no element of its own',
+    ],
+]);
+
+/**
+ * Files that existed before the screen rewrite, are still untouched, render
+ * markup, and were read in plan 18g: each one is already drawn with the
+ * library and its tokens, so there is nothing to rewrite. Each entry carries
+ * what it stands on. Its Vitest file holds its states.
+ */
+const alreadyOnLibrary = new Map([
+    [
+        'resources/js/components/about/about-content.tsx',
+        'written in plan 18d on Card and Badge, for the About page',
+    ],
+    [
+        'resources/js/components/breadcrumbs.tsx',
+        'themed in plan 18a on the Breadcrumb primitive; the topbar of the library mounts it',
+    ],
+    [
+        'resources/js/components/dev/bench.tsx',
+        'the bench of the design system itself (plans 18a to 18d)',
+    ],
+    [
+        'resources/js/components/integrations/share/delivery-lines.tsx',
+        'a polite list on the muted and destructive tokens, slotted into ShareDialog; the library has no component for it',
+    ],
+    [
+        'resources/js/components/language-switcher.tsx',
+        'a Select of the library and one request',
+    ],
+    [
+        'resources/js/components/retro/results/health-radar.tsx',
+        'radar drawn by hand on the chart tokens, mounted by 18e as the children of HealthCheckResults',
+    ],
+]);
 
 const git = (...parameters) =>
     execFileSync('git', parameters, { cwd: root, encoding: 'utf8' }).trim();
@@ -100,17 +142,23 @@ const importersOf = (path) => {
 };
 
 const old = untouched
-    .filter((path) => !notViews.has(path))
+    .filter((path) => !notViews.has(path) && !alreadyOnLibrary.has(path))
     .filter(rendersMarkup)
     .map((path) => ({ path, importers: importersOf(path) }));
 const headless = untouched.filter(
     (path) => !notViews.has(path) && !rendersMarkup(path),
 );
-const staleExemptions = [...notViews.keys()].filter(
+const staleExemptions = [...notViews.keys(), ...alreadyOnLibrary.keys()].filter(
     (path) => !untouched.includes(path),
 );
 
-const report = { old, headless, exempt: [...notViews], staleExemptions };
+const report = {
+    old,
+    headless,
+    exempt: [...notViews],
+    alreadyOnLibrary: [...alreadyOnLibrary],
+    staleExemptions,
+};
 
 if (process.argv.includes('--json')) {
     console.log(JSON.stringify(report, null, 2));
@@ -136,6 +184,14 @@ if (process.argv.includes('--json')) {
     console.log(`\n## Exempt: not a view (${notViews.size})`);
 
     for (const [path, reason] of notViews) {
+        console.log(`${path} — ${reason}`);
+    }
+
+    console.log(
+        `\n## Read in plan 18g: already on the library (${alreadyOnLibrary.size})`,
+    );
+
+    for (const [path, reason] of alreadyOnLibrary) {
         console.log(`${path} — ${reason}`);
     }
 
