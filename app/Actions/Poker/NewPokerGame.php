@@ -8,6 +8,7 @@ readonly class NewPokerGame
 {
     /**
      * @param  array<int, string>  $cards
+     * @param  array<int, string>  $tasks
      */
     public function __construct(
         public string $title,
@@ -18,5 +19,8 @@ readonly class NewPokerGame
         public bool $autoReveal = false,
         public ?string $saveDeckAs = null,
         public ?string $savedDeckId = null,
+        public bool $guestAccessEnabled = false,
+        public bool $spectator = false,
+        public array $tasks = [],
     ) {}
 }

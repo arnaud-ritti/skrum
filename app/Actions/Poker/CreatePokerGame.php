@@ -10,6 +10,8 @@ use Illuminate\Support\Str;
 
 class CreatePokerGame
 {
+    public function __construct(private AddPokerTask $addPokerTask) {}
+
     public function handle(Team $team, User $creator, NewPokerGame $new): PokerGame
     {
         return DB::transaction(function () use ($team, $creator, $new): PokerGame {
@@ -33,12 +35,17 @@ class CreatePokerGame
                 'saved_deck_id' => $new->savedDeckId,
                 'anonymous_votes' => $new->anonymousVotes,
                 'auto_reveal' => $new->autoReveal,
+                'guest_access_enabled' => $new->guestAccessEnabled,
                 'guest_token' => Str::random(40),
             ]);
 
-            $player = $game->players()->create(['user_id' => $creator->id]);
+            $player = $game->players()->create(['user_id' => $creator->id, 'is_spectator' => $new->spectator]);
 
             $game->update(['facilitator_player_id' => $player->id]);
+
+            foreach ($new->tasks as $title) {
+                $this->addPokerTask->handle($game, $title, null);
+            }
 
             return $game;
         });

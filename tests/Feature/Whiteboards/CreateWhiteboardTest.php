@@ -42,3 +42,15 @@ it('refuses people who cannot view the team', function () {
         ->post(route('teams.whiteboards.store', [$team->workspace, $team]), ['title' => 'Nope'])
         ->assertForbidden();
 });
+
+it('stores the guest access flag of a board, false by default', function () {
+    $team = Team::factory()->create();
+    $user = teamMember($team);
+    $url = route('teams.whiteboards.store', [$team->workspace, $team]);
+
+    $this->actingAs($user)->post($url, ['title' => 'Open', 'guest_access_enabled' => true]);
+    $this->actingAs($user)->post($url, ['title' => 'Closed']);
+
+    expect(Whiteboard::query()->where('title', 'Open')->sole()->guest_access_enabled)->toBeTrue()
+        ->and(Whiteboard::query()->where('title', 'Closed')->sole()->guest_access_enabled)->toBeFalse();
+});

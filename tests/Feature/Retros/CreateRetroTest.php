@@ -197,3 +197,52 @@ it('lists the team retros newest first and loads the catalogue on demand', funct
                 ->where('catalogue.1.name', 'Went well, To improve, Action ideas')
                 ->where('catalogue.1.columns.0.description', 'What worked and is worth repeating on purpose next sprint')));
 });
+
+it('creates a retro with the given columns in order and keeps the template key', function () {
+    [$user, $workspace, $team] = teamWithMember();
+
+    $this->actingAs($user)->post(route('teams.retros.store', [$workspace, $team]), [
+        'title' => 'Custom',
+        'template' => 'sailboat',
+        'columns' => [
+            ['title' => 'Wind', 'description' => 'What pushes us', 'color' => 'green'],
+            ['title' => 'Anchor', 'description' => null, 'color' => 'red'],
+            ['title' => 'Rocks', 'color' => 'blue'],
+        ],
+    ])->assertRedirect();
+
+    $retro = $team->retros()->sole();
+
+    expect($retro->template)->toBe('sailboat')
+        ->and($retro->columns->map(fn ($column) => [$column->title, $column->description, $column->color->value, $column->position])->all())->toBe([
+            ['Wind', 'What pushes us', 'green', 0],
+            ['Anchor', null, 'red', 1],
+            ['Rocks', null, 'blue', 2],
+        ]);
+});
+
+it('refuses invalid columns', function (array $columns, string $field) {
+    [$user, $workspace, $team] = teamWithMember();
+
+    $this->actingAs($user)
+        ->post(route('teams.retros.store', [$workspace, $team]), ['title' => 'X', 'template' => 'four_ls', 'columns' => $columns])
+        ->assertSessionHasErrors($field);
+
+    expect(Retro::count())->toBe(0);
+})->with([
+    'unknown colour' => [[['title' => 'A', 'color' => 'chartreuse']], 'columns.0.color'],
+    'empty title' => [[['title' => '', 'color' => 'green']], 'columns.0.title'],
+    'too many columns' => [fn () => array_fill(0, 11, ['title' => 'A', 'color' => 'green']), 'columns'],
+    'no column' => [[], 'columns'],
+]);
+
+it('stores the guest access flag of a retro, false by default', function () {
+    [$user, $workspace, $team] = teamWithMember();
+    $url = route('teams.retros.store', [$workspace, $team]);
+
+    $this->actingAs($user)->post($url, ['title' => 'Open', 'template' => 'four_ls', 'guest_access_enabled' => true]);
+    $this->actingAs($user)->post($url, ['title' => 'Closed', 'template' => 'four_ls']);
+
+    expect($team->retros()->where('title', 'Open')->sole()->guest_access_enabled)->toBeTrue()
+        ->and($team->retros()->where('title', 'Closed')->sole()->guest_access_enabled)->toBeFalse();
+});

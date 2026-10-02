@@ -28,6 +28,7 @@ class TeamWhiteboardsController extends Controller
             'title' => ['required', 'string', 'max:120'],
             'template' => ['sometimes', 'nullable', 'string', Rule::in(BuiltInTemplates::keys())],
             'workspace_template_id' => ['sometimes', 'nullable', 'uuid'],
+            'guest_access_enabled' => ['sometimes', 'boolean'],
         ]);
 
         $board = $createWhiteboard->handle(
@@ -35,6 +36,7 @@ class TeamWhiteboardsController extends Controller
             $request->user(),
             $validated['title'],
             $this->scene($workspace, $validated['template'] ?? null, $validated['workspace_template_id'] ?? null),
+            (bool) ($validated['guest_access_enabled'] ?? false),
         );
 
         return to_route('whiteboards.show', $board);
