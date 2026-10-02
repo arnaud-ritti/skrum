@@ -1,5 +1,5 @@
 import { screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
     SessionPresence,
     toParticipants,
@@ -21,6 +21,25 @@ const online = [
     },
     { id: 'p3', name: 'Visitor', avatarUrl: '/avatars/c.svg', isGuest: true },
 ];
+
+function stubViewport(matching: string[]): void {
+    vi.spyOn(window, 'matchMedia').mockImplementation(
+        (query: string): MediaQueryList => ({
+            matches: matching.includes(query),
+            media: query,
+            onchange: null,
+            addEventListener: () => {},
+            removeEventListener: () => {},
+            addListener: () => {},
+            removeListener: () => {},
+            dispatchEvent: () => false,
+        }),
+    );
+}
+
+afterEach(() => {
+    vi.restoreAllMocks();
+});
 
 describe('toParticipants', () => {
     it('maps role, self and status', () => {
@@ -85,5 +104,31 @@ describe('SessionPresence', () => {
             5,
         );
         expect(screen.getByRole('group', { name: '10 online' })).toBeTruthy();
+    });
+
+    it('shows the counter alone below sm, without avatars or the overflow bubble', () => {
+        stubViewport(['(max-width: 639px)', '(max-width: 767px)']);
+
+        const { container } = renderWithProviders(
+            <SessionPresence online={online} selfId="p1" />,
+        );
+
+        expect(container.querySelector('[data-presence-id]')).toBeNull();
+        expect(
+            container.querySelector('[data-slot="presence-stack-more"]'),
+        ).toBeNull();
+        expect(screen.getByRole('group', { name: '3 online' })).toBeTruthy();
+    });
+
+    it('keeps the avatars between sm and md', () => {
+        stubViewport(['(max-width: 767px)']);
+
+        const { container } = renderWithProviders(
+            <SessionPresence online={online} selfId="p1" />,
+        );
+
+        expect(container.querySelectorAll('[data-presence-id]')).toHaveLength(
+            3,
+        );
     });
 });

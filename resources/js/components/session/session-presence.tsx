@@ -1,10 +1,27 @@
+import { useSyncExternalStore } from 'react';
 import { PresenceStack } from '@/components/skrum/presence-stack';
 import type { Participant } from '@/components/skrum/presence-stack';
-import { useIsMobile } from '@/hooks/use-mobile';
 import type { PresenceMember } from '@/lib/retro/types';
 
 /** Below `sm` the mockups show the counter alone; above, the stack's own five avatars. */
 const VisibleOnPhone = 0;
+const BelowSm = '(max-width: 639px)';
+
+function subscribeToBelowSm(onChange: () => void): () => void {
+    const query = window.matchMedia(BelowSm);
+
+    query.addEventListener('change', onChange);
+
+    return () => query.removeEventListener('change', onChange);
+}
+
+function useIsBelowSm(): boolean {
+    return useSyncExternalStore(
+        subscribeToBelowSm,
+        () => window.matchMedia(BelowSm).matches,
+        () => false,
+    );
+}
 
 export function toParticipants(
     online: PresenceMember[],
@@ -43,7 +60,7 @@ export function SessionPresence({
     presenceFor,
     className,
 }: SessionPresenceProps) {
-    const isMobile = useIsMobile();
+    const isBelowSm = useIsBelowSm();
 
     return (
         <PresenceStack
@@ -53,7 +70,7 @@ export function SessionPresence({
                 facilitatorId,
                 presenceFor,
             )}
-            max={isMobile ? VisibleOnPhone : undefined}
+            max={isBelowSm ? VisibleOnPhone : undefined}
             className={className}
         />
     );

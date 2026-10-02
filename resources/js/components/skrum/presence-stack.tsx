@@ -251,7 +251,7 @@ export function PresenceStack({
                                     )}
                                 />
                             ))}
-                            {hiddenCount > 0 && (
+                            {hiddenCount > 0 && visible.length > 0 && (
                                 <span
                                     data-slot="presence-stack-more"
                                     aria-hidden
