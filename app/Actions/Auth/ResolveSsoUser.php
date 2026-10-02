@@ -53,11 +53,11 @@ class ResolveSsoUser
             return $this->link($existingUser, $provider, $providerUserId);
         }
 
-        $isInvited = $invitation?->isPending() && $invitation->matchesEmail($email);
-
-        if ($verifiedEmail === null && ! $isInvited) {
+        if ($verifiedEmail === null) {
             throw SsoLoginRefused::emailNotVerified($provider);
         }
+
+        $isInvited = $invitation?->isPending() && $invitation->matchesEmail($email);
 
         if (! $this->signupGate->allows($email, $invitation)) {
             throw SsoLoginRefused::signupsRestricted();
