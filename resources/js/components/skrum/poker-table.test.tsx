@@ -1179,3 +1179,93 @@ describe('PokerTable layout and extreme data', () => {
         expect(container).toBeTruthy();
     });
 });
+
+describe('PokerTable, the names on the seats', () => {
+    it('shows the first name, the full name as tooltip and for a screen reader', () => {
+        renderTable({
+            seats: [
+                seat(0, 'voted', undefined, 'Camille Roux de Lys'),
+                seat(1, 'waiting', undefined, 'Theo'),
+                {
+                    ...seat(2, 'waiting', undefined, 'Ada Lovelace'),
+                    user: { id: 'u2', name: 'Ada Lovelace', isMe: true },
+                },
+            ],
+        });
+
+        const names = Array.from(
+            document.querySelectorAll<HTMLElement>(
+                '[data-slot="poker-seat-name"]',
+            ),
+        );
+
+        expect(names.map((name) => name.getAttribute('title'))).toEqual([
+            'Camille Roux de Lys',
+            null,
+            'Ada Lovelace',
+        ]);
+        expect(
+            names[0].querySelector('[aria-hidden="true"]')?.textContent,
+        ).toBe('Camille');
+        expect(names[0].querySelector('.sr-only')?.textContent).toBe(
+            'Camille Roux de Lys',
+        );
+        expect(names[1].textContent).toBe('Theo');
+        expect(names[2].textContent).toBe('You');
+        expect(
+            screen.getByRole('img', { name: 'Camille Roux de Lys: Voted' }),
+        ).toBeTruthy();
+    });
+});
+
+describe('PokerTable, the row of a phone', () => {
+    it('keeps the progress out of a row of seats that scrolls and can be reached with the keyboard', () => {
+        renderTable({ seatsLayout: 'row', facilitatorId: 'u0' });
+
+        const region = screen.getByRole('region', { name: 'Players' });
+        const row = within(region).getByRole('group', { name: 'Players' });
+
+        expect(region.getAttribute('data-layout')).toBe('row');
+        expect(row.getAttribute('tabindex')).toBe('0');
+        expect(row.className).toContain('overflow-x-auto');
+        expect(row.querySelectorAll('[data-slot="poker-seat"]')).toHaveLength(
+            4,
+        );
+        expect(
+            row.querySelector('[data-slot="poker-table-center"]'),
+        ).toBeNull();
+        expect(
+            region.querySelector(
+                '[data-slot="poker-bar"] [data-slot="poker-table-center"]',
+            ),
+        ).toBeTruthy();
+        expect(
+            within(row).getByRole('img', { name: 'Camille: Voted' }),
+        ).toBeTruthy();
+        expect(
+            within(row).getByRole('img', { name: 'Facilitator' }),
+        ).toBeTruthy();
+        expect(within(row).queryByText('thinking')).toBeNull();
+    });
+
+    it('keeps the row beyond twelve players and shows the cards once revealed', () => {
+        renderTable({
+            seatsLayout: 'row',
+            revealed: true,
+            result: dispersion,
+            showResult: false,
+            seats: Array.from({ length: 14 }, (_, index) =>
+                seat(index, 'voted', '5'),
+            ),
+        });
+
+        const region = screen.getByRole('region', { name: 'Players' });
+
+        expect(region.getAttribute('data-layout')).toBe('row');
+        expect(
+            region.querySelectorAll(
+                '[data-slot="poker-seat-card"][data-face="up"]',
+            ),
+        ).toHaveLength(14);
+    });
+});

@@ -27,6 +27,11 @@ export type PokerRoundsProps = {
     open?: boolean;
     defaultOpen?: boolean;
     onOpenChange?: (open: boolean) => void;
+    /**
+     * Caps the height of the list, which then scrolls and takes the keyboard
+     * focus: for a list shown open beside something that must stay in view.
+     */
+    scrollable?: boolean;
     className?: string;
 };
 
@@ -281,6 +286,7 @@ export function PokerRounds({
     open,
     defaultOpen,
     onOpenChange,
+    scrollable = false,
     className,
 }: PokerRoundsProps) {
     const { t } = useTrans();
@@ -337,7 +343,16 @@ export function PokerRounds({
                     </p>
                 )}
                 {status === 'ready' && rounds.length > 0 && (
-                    <ol className="mt-2 flex min-w-0 flex-col gap-2">
+                    <ol
+                        tabIndex={scrollable ? 0 : undefined}
+                        aria-label={scrollable ? t('Rounds') : undefined}
+                        data-scrollable={scrollable || undefined}
+                        className={cn(
+                            'mt-2 flex min-w-0 flex-col gap-2',
+                            scrollable &&
+                                'max-h-52 overflow-y-auto overscroll-y-contain rounded-lg outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
+                        )}
+                    >
                         {rounds.map((round) => (
                             <li
                                 key={round.id}

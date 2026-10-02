@@ -2,6 +2,7 @@ import {
     ArrowRight,
     Check,
     CircleCheck,
+    Clock,
     Crown,
     Eye,
     RotateCcw,
@@ -115,6 +116,12 @@ export interface PokerTableProps extends FacilitatorActionProps {
      * seats, and focus is left to whoever shows the result.
      */
     showResult?: boolean;
+    /**
+     * `row` on a phone: the progress bar, then the players in one row that
+     * scrolls sideways, the avatar pinned on the card. `table` (default) seats
+     * them around the oval.
+     */
+    seatsLayout?: 'table' | 'row';
     onReveal?: () => void;
     className?: string;
 }
@@ -209,6 +216,58 @@ function splitSeats(count: number): {
     };
 }
 
+/** The first word of a display name: what a seat has room for. */
+export function firstNameOf(name: string): string {
+    return name.trim().split(/\s+/)[0] ?? name;
+}
+
+/**
+ * The name under a seat. A seat shows the first name; the full name is the
+ * tooltip and what a screen reader says.
+ */
+function SeatName({
+    seat,
+    className,
+}: {
+    seat: PokerSeat;
+    className?: string;
+}) {
+    const { t } = useTrans();
+    const fullName = seat.user.name;
+    const firstName = firstNameOf(fullName);
+
+    if (seat.user.isMe) {
+        return (
+            <span
+                data-slot="poker-seat-name"
+                title={fullName}
+                className={className}
+            >
+                {t('You')}
+            </span>
+        );
+    }
+
+    if (firstName === fullName) {
+        return (
+            <span data-slot="poker-seat-name" className={className}>
+                {fullName}
+            </span>
+        );
+    }
+
+    return (
+        <span
+            data-slot="poker-seat-name"
+            title={fullName}
+            className={className}
+        >
+            <span aria-hidden>{firstName}</span>
+            <span className="sr-only">{fullName}</span>
+        </span>
+    );
+}
+
 function Trema() {
     return (
         <span aria-hidden className="inline-flex items-center gap-0.5">
@@ -254,6 +313,7 @@ function SeatView({
     isFacilitator,
     menu,
     reverse,
+    compact = false,
 }: {
     seat: PokerSeat;
     index: number;
@@ -263,15 +323,101 @@ function SeatView({
     isFacilitator: boolean;
     menu?: ReactNode;
     reverse?: boolean;
+    /** A seat of the phone row: the avatar on the card, the first name under it. */
+    compact?: boolean;
 }) {
     const { t } = useTrans();
-    const name = seat.user.isMe ? t('You') : seat.user.name;
     const hasCard = seat.state === 'voted';
     const shownValue =
         revealed && !anonymous && hasCard && seat.value != null
             ? seat.value
             : null;
     const hasMenu = menu !== null && menu !== undefined && menu !== false;
+
+    const card = (
+        <>
+            <PokerCard
+                value={shownValue ?? ''}
+                size="sm"
+                empty={!hasCard}
+                faceDown={hasCard && shownValue === null}
+                delay={Math.min(index * CascadeStepMs, CascadeMaxMs)}
+                label={seatLabel(t, seat, shownValue)}
+                className={cn(outlier && 'ring-2 ring-skrum-warning')}
+            />
+            {outlier && (
+                <span className="sr-only">{t('Worth discussing')}</span>
+            )}
+        </>
+    );
+    const crown = isFacilitator && (
+        <Crown
+            role="img"
+            aria-label={t('Facilitator')}
+            data-slot="poker-seat-facilitator"
+            className="size-3 shrink-0 text-skrum-warning-text"
+        />
+    );
+    const face = !hasCard ? 'empty' : shownValue !== null ? 'up' : 'down';
+
+    if (compact) {
+        return (
+            <div
+                data-slot="poker-seat"
+                data-state={seat.state}
+                className={cn(
+                    'flex w-13 shrink-0 flex-col items-center gap-1',
+                    (seat.state === 'absent' || seat.offline) && 'opacity-60',
+                )}
+            >
+                <span
+                    data-slot="poker-seat-card"
+                    data-face={face}
+                    data-outlier={outlier || undefined}
+                    className="relative mb-2 flex"
+                >
+                    {card}
+                    {!revealed && !hasCard && (
+                        <span
+                            aria-hidden
+                            className="pointer-events-none absolute inset-0 grid place-items-center pb-2 text-muted-foreground"
+                        >
+                            {seat.state === 'absent' || seat.offline ? (
+                                <Clock className="size-4" />
+                            ) : (
+                                <Trema />
+                            )}
+                        </span>
+                    )}
+                    <PersonAvatar
+                        name={seat.user.name}
+                        src={seat.user.avatarUrl}
+                        size="xs"
+                        decorative
+                        presence={toPresence(seat.user.presence)}
+                        className="absolute -bottom-2 left-1/2 -translate-x-1/2 ring-2 ring-background"
+                    />
+                </span>
+                <span className="inline-flex max-w-full min-w-0 items-center gap-0.5 text-xs font-medium whitespace-nowrap text-foreground">
+                    <SeatName seat={seat} className="truncate" />
+                    {crown}
+                </span>
+                {hasMenu && (
+                    <span
+                        data-slot="poker-seat-menu"
+                        className="flex max-w-full"
+                    >
+                        {menu}
+                    </span>
+                )}
+                {seat.offline && (
+                    <span className="max-w-full truncate text-overline text-muted-foreground">
+                        {t('Offline')}
+                    </span>
+                )}
+            </div>
+        );
+    }
 
     return (
         <div
@@ -285,24 +431,11 @@ function SeatView({
         >
             <span
                 data-slot="poker-seat-card"
-                data-face={
-                    !hasCard ? 'empty' : shownValue !== null ? 'up' : 'down'
-                }
+                data-face={face}
                 data-outlier={outlier || undefined}
                 className="flex"
             >
-                <PokerCard
-                    value={shownValue ?? ''}
-                    size="sm"
-                    empty={!hasCard}
-                    faceDown={hasCard && shownValue === null}
-                    delay={Math.min(index * CascadeStepMs, CascadeMaxMs)}
-                    label={seatLabel(t, seat, shownValue)}
-                    className={cn(outlier && 'ring-2 ring-skrum-warning')}
-                />
-                {outlier && (
-                    <span className="sr-only">{t('Worth discussing')}</span>
-                )}
+                {card}
             </span>
             <span className="inline-flex max-w-full min-w-0 items-center gap-1 text-xs font-medium whitespace-nowrap text-foreground">
                 <PersonAvatar
@@ -312,15 +445,8 @@ function SeatView({
                     decorative
                     presence={toPresence(seat.user.presence)}
                 />
-                <span className="truncate">{name}</span>
-                {isFacilitator && (
-                    <Crown
-                        role="img"
-                        aria-label={t('Facilitator')}
-                        data-slot="poker-seat-facilitator"
-                        className="size-3 shrink-0 text-skrum-warning-text"
-                    />
-                )}
+                <SeatName seat={seat} className="truncate" />
+                {crown}
             </span>
             {hasMenu && (
                 <span data-slot="poker-seat-menu" className="flex max-w-full">
@@ -1222,6 +1348,7 @@ export function PokerTable({
     showStory = true,
     resultId,
     showResult = true,
+    seatsLayout = 'table',
     onReveal,
     onRevote,
     onAccept,
@@ -1239,7 +1366,8 @@ export function PokerTable({
     const outlierIds = new Set(
         revealed && !anonymous ? outlierIdsOf(result) : [],
     );
-    const isOval = players.length <= MaxOvalSeats;
+    const isRow = seatsLayout === 'row';
+    const isOval = !isRow && players.length <= MaxOvalSeats;
     const hasVotes = players.some((seat) => seat.state === 'voted');
     const seatsLabel = tableLabel ?? t('Players');
     const votedCount = players.filter((seat) => seat.state === 'voted').length;
@@ -1326,6 +1454,7 @@ export function PokerTable({
 
     const renderSeat = (index: number, reverse?: boolean) => (
         <SeatView
+            compact={isRow}
             key={players[index].user.id}
             seat={players[index]}
             index={index}
@@ -1394,7 +1523,29 @@ export function PokerTable({
                     seatMenu={seatMenu}
                 />
             )}
-            {isOval ? (
+            {isRow && (
+                <section
+                    ref={seatsRef}
+                    tabIndex={-1}
+                    aria-label={seatsLabel}
+                    data-layout="row"
+                    className={cn('flex min-w-0 flex-col gap-3', seatsFocus)}
+                >
+                    <div data-slot="poker-bar" className={seatBar}>
+                        {center}
+                    </div>
+                    <div
+                        role="group"
+                        tabIndex={0}
+                        aria-label={seatsLabel}
+                        data-slot="poker-seats-row"
+                        className="flex min-w-0 gap-3 overflow-x-auto overscroll-x-contain rounded-lg px-1 pt-1 pb-2 outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                    >
+                        {players.map((_, index) => renderSeat(index))}
+                    </div>
+                </section>
+            )}
+            {isOval && (
                 <section
                     ref={seatsRef}
                     tabIndex={-1}
@@ -1428,7 +1579,8 @@ export function PokerTable({
                         {bottom.map((index) => renderSeat(index))}
                     </div>
                 </section>
-            ) : (
+            )}
+            {!isRow && !isOval && (
                 <section
                     ref={seatsRef}
                     tabIndex={-1}
