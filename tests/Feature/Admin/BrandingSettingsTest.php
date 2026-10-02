@@ -639,3 +639,21 @@ it('clears a stored switch when the form sends it back empty', function (string 
     $this->assertDatabaseMissing('instance_settings', ['key' => $field]);
     $this->assertDatabaseCount('instance_settings', 2);
 })->with(['powered_by', 'avatar_member_choice', 'gif_enabled']);
+
+it('keeps the toast of a save for the page when a helper request of that page reaches the server first', function (Closure $helperUrl) {
+    $admin = brandingAdmin($this);
+
+    $this->put(route('admin.branding.update'), brandingPayload(['brand_color' => '#2b63b0']))
+        ->assertRedirect(route('admin.branding.edit'))
+        ->assertInertiaFlash('toast.message', 'Branding saved.');
+
+    $this->get($helperUrl($admin))->assertOk();
+
+    $this->get(route('admin.branding.edit'))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->hasFlash('toast.message', 'Branding saved.'));
+})->with([
+    'colour preview' => [fn (User $admin): string => route('admin.brandingPreview.show', ['color' => 'ffd600'])],
+    'avatar preview' => [fn (User $admin): string => route('admin.avatarPreviews.show', ['style' => 'thumbs', 'seed' => $admin->avatarSeed()])],
+    'candidate search' => [fn (User $admin): string => route('admin.adminCandidates.index', ['query' => 'ada'])],
+]);

@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\AvatarPreviewsController;
 use App\Http\Controllers\Admin\BrandingAssetsController;
 use App\Http\Controllers\Admin\BrandingController;
 use App\Http\Controllers\Admin\BrandingPreviewsController;
+use App\Http\Middleware\KeepFlashedSessionData;
 use Illuminate\Auth\Middleware\RequirePassword;
 use Illuminate\Support\Facades\Route;
 
@@ -13,11 +14,12 @@ Route::middleware(['auth', 'verified', 'can:manageInstance'])->group(function ()
     Route::get('admin', fn () => to_route('admin.branding.edit'))->name('admin.index');
 
     Route::get('admin/branding/preview', [BrandingPreviewsController::class, 'show'])
-        ->middleware('throttle:120,1,brandingPreviews')
+        ->middleware(['throttle:120,1,brandingPreviews', KeepFlashedSessionData::class])
         ->name('admin.brandingPreview.show');
 
     Route::get('admin/avatar-previews/{style}/{seed}.svg', [AvatarPreviewsController::class, 'show'])
         ->where(['style' => '[a-z0-9-]+', 'seed' => '[a-f0-9]{32}'])
+        ->middleware(KeepFlashedSessionData::class)
         ->name('admin.avatarPreviews.show');
 
     Route::middleware(RequirePassword::class)->group(function (): void {
@@ -38,7 +40,7 @@ Route::middleware(['auth', 'verified', 'can:manageInstance'])->group(function ()
             ->whereUuid('user')
             ->name('admin.admins.destroy');
         Route::get('admin/admins/candidates', [AdminCandidatesController::class, 'index'])
-            ->middleware('throttle:60,1,adminCandidates')
+            ->middleware(['throttle:60,1,adminCandidates', KeepFlashedSessionData::class])
             ->name('admin.adminCandidates.index');
     });
 });
