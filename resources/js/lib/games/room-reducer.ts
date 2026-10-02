@@ -109,25 +109,37 @@ function requestResync(state: GameRoomState): GameRoomState {
 }
 
 /**
- * A fresh snapshot knows nothing of `committedOpIds` (client only). Dropping
- * them would let the live preview of a stroke committed moments ago show
- * again once that stroke is undone or the drawing is cleared.
+ * A fresh snapshot knows nothing of what only the client holds for the round
+ * in play. Dropping `committedOpIds` would let the live preview of a stroke
+ * committed moments ago show again once that stroke is undone or the drawing
+ * is cleared; dropping `recentPicks` would empty "Last letters" each time the
+ * room is fetched again in the middle of a hangman round.
  */
-function withCommittedOpIds(
+function withClientRoundState(
     fresh: GameSnapshot,
     previous: GameSnapshot,
 ): GameSnapshot {
-    const committedOpIds = previous.round?.committedOpIds;
-
-    if (
-        !fresh.round ||
-        fresh.round.id !== previous.round?.id ||
-        committedOpIds === undefined
-    ) {
+    if (!fresh.round || fresh.round.id !== previous.round?.id) {
         return fresh;
     }
 
-    return { ...fresh, round: { ...fresh.round, committedOpIds } };
+    const { committedOpIds, recentPicks } = previous.round;
+
+    if (committedOpIds === undefined && recentPicks === undefined) {
+        return fresh;
+    }
+
+    return {
+        ...fresh,
+        round: {
+            ...fresh.round,
+            ...(committedOpIds !== undefined ? { committedOpIds } : {}),
+            ...(recentPicks !== undefined &&
+            fresh.round.recentPicks === undefined
+                ? { recentPicks }
+                : {}),
+        },
+    };
 }
 
 export function roomReducer(
@@ -143,7 +155,7 @@ export function roomReducer(
 
             return {
                 ...state,
-                snapshot: withCommittedOpIds(action.snapshot, state.snapshot),
+                snapshot: withClientRoundState(action.snapshot, state.snapshot),
                 lastEnded: keepsEndCard ? state.lastEnded : null,
             };
         }
