@@ -1,4 +1,5 @@
 import { act, screen, within } from '@testing-library/react';
+import type { DndContextProps, DragEndEvent } from '@dnd-kit/core';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { HealthStatementsManagerProps } from '@/components/skrum/health-check-manager';
@@ -12,6 +13,7 @@ const mocks = vi.hoisted(() => ({
     put: vi.fn(),
     delete: vi.fn(),
     manager: null as unknown,
+    dnd: null as unknown,
     props: { translations: {}, locale: 'en' },
 }));
 
@@ -46,10 +48,24 @@ vi.mock('@/components/skrum/health-check-manager', async (importOriginal) => {
     };
 });
 
+vi.mock('@dnd-kit/core', async (importOriginal) => {
+    const original = await importOriginal<typeof import('@dnd-kit/core')>();
+
+    return {
+        ...original,
+        DndContext: (props: DndContextProps) => {
+            mocks.dnd = props;
+
+            return <original.DndContext {...props} />;
+        },
+    };
+});
+
 type VisitOptions = {
     preserveScroll?: boolean;
     onSuccess?: () => void;
     onError?: (errors: Record<string, string>) => void;
+    onFinish?: () => void;
 };
 
 const base = '/w/nordlys/teams/team-1/health-statements';
@@ -81,15 +97,41 @@ const statements: TeamHealthStatement[] = [
     },
 ];
 
-function card(canManage = true) {
+const secondCustom: TeamHealthStatement = {
+    id: 'custom-2',
+    key: 'custom-2',
+    label: 'Focus',
+    text: 'We were not interrupted',
+    isBuiltin: false,
+    isArchived: false,
+};
+
+function card(canManage = true, list = statements) {
     return renderWithProviders(
         <TeamHealthCard
             workspaceSlug="nordlys"
             teamId="team-1"
-            statements={statements}
+            statements={list}
             canManage={canManage}
         />,
     );
+}
+
+function activeLabels(): (string | null)[] {
+    return Array.from(
+        document.querySelectorAll(
+            '[data-slot="health-statements-active"] [data-slot="health-statement-label"]',
+        ),
+    ).map((label) => label.textContent);
+}
+
+async function drop(activeId: string, overId: string): Promise<void> {
+    await act(async () => {
+        (mocks.dnd as DndContextProps).onDragEnd?.({
+            active: { id: activeId },
+            over: { id: overId },
+        } as unknown as DragEndEvent);
+    });
 }
 
 function managerProps(): HealthStatementsManagerProps {
@@ -330,7 +372,7 @@ describe('the health check card of a team', () => {
         expect(screen.queryByRole('alert')).toBeNull();
     });
 
-    it('sends the new order of the active statements', () => {
+    it('sends the new order of the active statements', async () => {
         mocks.put.mockImplementation(
             (_url: string, _data: unknown, options: VisitOptions) =>
                 options.onError?.({
@@ -339,7 +381,9 @@ describe('the health check card of a team', () => {
         );
         card();
 
-        act(() => managerProps().onReorder(['custom-1', 'interaction']));
+        await act(async () => {
+            await managerProps().onReorder(['custom-1', 'interaction']);
+        });
 
         expect(mocks.put).toHaveBeenCalledWith(
             '/w/nordlys/teams/team-1/health-statement-order',
@@ -348,6 +392,135 @@ describe('the health check card of a team', () => {
         );
         expect(screen.getByRole('alert').textContent).toContain(
             'Send every active health check statement exactly once.',
+        );
+    });
+
+    it('frees the add form and says so when the request ends without an answer', async () => {
+        mocks.post.mockImplementation(
+            (_url: string, _data: unknown, options: VisitOptions) =>
+                options.onFinish?.(),
+        );
+        card();
+
+        await fillAddForm();
+
+        expect(
+            (
+                screen.getByRole('button', {
+                    name: 'Add statement',
+                }) as HTMLButtonElement
+            ).disabled,
+        ).toBe(false);
+        expect(
+            (
+                screen.getByRole('textbox', {
+                    name: 'Statement',
+                }) as HTMLInputElement
+            ).value,
+        ).toBe('Our meetings were useful');
+        expect(screen.getByRole('alert').textContent).toContain(
+            'Something went wrong. Please try again.',
+        );
+    });
+
+    it('frees the editor of a row when the request ends without an answer', async () => {
+        mocks.patch.mockImplementation(
+            (_url: string, _data: unknown, options: VisitOptions) =>
+                options.onFinish?.(),
+        );
+        card();
+
+        const custom = row('We shipped what we promised');
+
+        await userEvent.click(
+            within(custom).getByRole('button', { name: 'Edit' }),
+        );
+        await userEvent.click(
+            within(custom).getByRole('button', { name: 'Save' }),
+        );
+
+        expect(
+            (
+                within(custom).getByRole('button', {
+                    name: 'Save',
+                }) as HTMLButtonElement
+            ).disabled,
+        ).toBe(false);
+    });
+
+    it('does not show the refused rewording of one statement in the editor of another', async () => {
+        mocks.patch.mockImplementation(
+            (_url: string, _data: unknown, options: VisitOptions) =>
+                options.onError?.({ text: 'The text has already been taken.' }),
+        );
+        card(true, [...statements, secondCustom]);
+
+        const first = row('We shipped what we promised');
+
+        await userEvent.click(
+            within(first).getByRole('button', { name: 'Edit' }),
+        );
+        await userEvent.click(
+            within(first).getByRole('button', { name: 'Save' }),
+        );
+
+        expect(within(first).getByRole('alert')).toBeTruthy();
+
+        await userEvent.click(
+            within(first).getByRole('button', { name: 'Cancel' }),
+        );
+
+        const second = row('We were not interrupted');
+
+        await userEvent.click(
+            within(second).getByRole('button', { name: 'Edit' }),
+        );
+
+        expect(screen.queryByRole('alert')).toBeNull();
+        expect(
+            within(second)
+                .getByRole('textbox', { name: 'Statement' })
+                .getAttribute('aria-invalid'),
+        ).toBeNull();
+
+        await userEvent.click(
+            within(second).getByRole('button', { name: 'Cancel' }),
+        );
+        await userEvent.click(
+            within(first).getByRole('button', { name: 'Edit' }),
+        );
+
+        expect(screen.queryByRole('alert')).toBeNull();
+
+        await userEvent.click(
+            within(first).getByRole('button', { name: 'Save' }),
+        );
+
+        expect(within(first).getByRole('alert').textContent).toContain(
+            'The text has already been taken.',
+        );
+    });
+
+    it('keeps the dropped order while the server takes it', async () => {
+        card();
+
+        await drop('custom-1', 'interaction');
+
+        expect(activeLabels()).toEqual(['Delivery', 'Interaction']);
+    });
+
+    it('puts the list back in the saved order and says so when the reorder ends without an answer', async () => {
+        mocks.put.mockImplementation(
+            (_url: string, _data: unknown, options: VisitOptions) =>
+                options.onFinish?.(),
+        );
+        card();
+
+        await drop('custom-1', 'interaction');
+
+        expect(activeLabels()).toEqual(['Interaction', 'Delivery']);
+        expect(screen.getByRole('alert').textContent).toContain(
+            'Something went wrong. Please try again.',
         );
     });
 });

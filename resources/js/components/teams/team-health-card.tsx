@@ -8,6 +8,7 @@ import type {
     HealthStatementDraft,
     HealthStatementErrors,
 } from '@/components/skrum/health-check-manager';
+import { useTrans } from '@/hooks/use-trans';
 import type { TeamHealthStatement } from '@/types';
 
 type Props = {
@@ -23,6 +24,7 @@ type Outcome = {
     preserveScroll: true;
     onSuccess: () => void;
     onError: (errors: Errors) => void;
+    onFinish: () => void;
 };
 
 /** The health check statements of a team, saved through the team's routes. */
@@ -32,37 +34,69 @@ export function TeamHealthCard({
     statements,
     canManage,
 }: Props) {
+    const { t } = useTrans();
     const params = { workspace: workspaceSlug, team: teamId };
     const [addErrors, setAddErrors] = useState<HealthStatementErrors>();
     const [editErrors, setEditErrors] = useState<HealthStatementErrors>();
     const [listError, setListError] = useState<string>();
 
-    const saveDraft = (
+    /**
+     * Resolves to whether the server took the change. A visit that ends
+     * without an answer (network, 419, 500) calls neither `onSuccess` nor
+     * `onError`: `onFinish` settles it, with a message on the list.
+     */
+    const settle = (
         visit: (outcome: Outcome) => void,
-        setErrors: (errors: HealthStatementErrors | undefined) => void,
+        onRefused: (errors: Errors) => void,
     ): Promise<boolean> =>
         new Promise((resolve) => {
+            let answered = false;
+
             visit({
                 preserveScroll: true,
                 onSuccess: () => {
-                    setErrors(undefined);
+                    answered = true;
+                    setListError(undefined);
                     resolve(true);
                 },
                 onError: (errors) => {
-                    setErrors({ text: errors.text, label: errors.label });
+                    answered = true;
+                    onRefused(errors);
+                    resolve(false);
+                },
+                onFinish: () => {
+                    if (!answered) {
+                        setListError(
+                            t('Something went wrong. Please try again.'),
+                        );
+                    }
+
                     resolve(false);
                 },
             });
         });
 
-    const listOutcome: Outcome = {
-        preserveScroll: true,
-        onSuccess: () => setListError(undefined),
-        onError: (errors) =>
+    const saveDraft = async (
+        visit: (outcome: Outcome) => void,
+        setErrors: (errors: HealthStatementErrors | undefined) => void,
+    ): Promise<boolean> => {
+        const saved = await settle(visit, (errors) =>
+            setErrors({ text: errors.text, label: errors.label }),
+        );
+
+        if (saved) {
+            setErrors(undefined);
+        }
+
+        return saved;
+    };
+
+    const changeList = (visit: (outcome: Outcome) => void): Promise<boolean> =>
+        settle(visit, (errors) =>
             setListError(
                 errors.statements ?? errors.ids ?? Object.values(errors)[0],
             ),
-    };
+        );
 
     const add = (draft: HealthStatementDraft): Promise<boolean> =>
         saveDraft(
@@ -94,31 +128,38 @@ export function TeamHealthCard({
             statements={statements}
             canManage={canManage}
             onReorder={(ids) =>
-                router.put(
-                    TeamHealthStatementOrdersController.update.url(params),
-                    { ids },
-                    listOutcome,
+                changeList((outcome) =>
+                    router.put(
+                        TeamHealthStatementOrdersController.update.url(params),
+                        { ids },
+                        outcome,
+                    ),
                 )
             }
             onAdd={add}
             onEdit={edit}
+            onEditOpen={() => setEditErrors(undefined)}
             onArchive={(id) =>
-                router.put(
-                    TeamHealthStatementArchivalsController.update.url({
-                        ...params,
-                        statement: id,
-                    }),
-                    {},
-                    listOutcome,
+                void changeList((outcome) =>
+                    router.put(
+                        TeamHealthStatementArchivalsController.update.url({
+                            ...params,
+                            statement: id,
+                        }),
+                        {},
+                        outcome,
+                    ),
                 )
             }
             onRestore={(id) =>
-                router.delete(
-                    TeamHealthStatementArchivalsController.destroy.url({
-                        ...params,
-                        statement: id,
-                    }),
-                    listOutcome,
+                void changeList((outcome) =>
+                    router.delete(
+                        TeamHealthStatementArchivalsController.destroy.url({
+                            ...params,
+                            statement: id,
+                        }),
+                        outcome,
+                    ),
                 )
             }
             addErrors={addErrors}

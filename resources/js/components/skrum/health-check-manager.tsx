@@ -65,8 +65,11 @@ type SaveResult = void | boolean | Promise<void | boolean>;
 export interface HealthStatementsManagerProps {
     statements: HealthStatement[];
     canManage: boolean;
-    /** Ids of the active statements, in their new order. */
-    onReorder: (orderedIds: string[]) => void;
+    /**
+     * Ids of the active statements, in their new order. Resolving to `false`
+     * puts the list back in the server order (the order was not saved).
+     */
+    onReorder: (orderedIds: string[]) => SaveResult;
     onAdd: (statement: HealthStatementDraft) => SaveResult;
     /** Custom statements only; "Edit" is rendered only when given. */
     onEdit?: (id: string, statement: HealthStatementDraft) => SaveResult;
@@ -74,6 +77,8 @@ export interface HealthStatementsManagerProps {
     onRestore?: (id: string) => void;
     /** Server errors of the add form. */
     addErrors?: HealthStatementErrors;
+    /** An editor opens: the errors of an earlier save are to be dropped. */
+    onEditOpen?: (id: string) => void;
     /** Server errors of the open editor. */
     editErrors?: HealthStatementErrors;
     /** Error on the list itself (reorder, archive). */
@@ -461,6 +466,7 @@ export function HealthStatementsManager({
     onReorder,
     onAdd,
     onEdit,
+    onEditOpen,
     onArchive,
     onRestore,
     addErrors,
@@ -641,8 +647,16 @@ export function HealthStatementsManager({
             return;
         }
 
-        setPending({ source: statements, ids: next });
-        onReorder(next);
+        const optimistic = { source: statements, ids: next };
+
+        setPending(optimistic);
+        void Promise.resolve(onReorder(next)).then((saved) => {
+            if (saved === false) {
+                setPending((current) =>
+                    current === optimistic ? null : current,
+                );
+            }
+        });
     }
 
     return (
@@ -752,9 +766,10 @@ export function HealthStatementsManager({
                                             canManage={canManage}
                                             editing={editingId === statement.id}
                                             editErrors={editErrors}
-                                            onEditRequest={() =>
-                                                setEditingId(statement.id)
-                                            }
+                                            onEditRequest={() => {
+                                                onEditOpen?.(statement.id);
+                                                setEditingId(statement.id);
+                                            }}
                                             onEditClose={() =>
                                                 closeEditor(statement.id)
                                             }
