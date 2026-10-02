@@ -62,3 +62,27 @@ Captures were not made; the list is read from the code against `SurveyQuestion/p
 | Voters' avatars, reactions, comments, close / reopen / withdraw, the AI draft, "Submit" / "Update answer" on each card, answers as a list | PB-28 |
 | The surveys column, the editor dialog, the actions menu and the discussion foot have no mockup: they are composed from the neighbours (column header, `FormDialog`, card menu, card reactions) | no row needed (PB group C heading) |
 | The editor dialog is the small `FormDialog` (27.5rem), where the old dialog was 32rem | new row, or none: no mockup |
+
+## Task S2 — Surveys in the completed results
+
+Nothing ran: no Pest, Vitest or browser test, no capture (owner decision). `Plan08dResultsTest.php` under `tests/Browser/Walkthroughs` was not edited (owner decision): `P08d-04c` still reads the bar as `li div.bg-primary`, where the card now gives `[data-slot="survey-result-bar"] > div`.
+
+### Parity (brief 08 §3, row 36)
+
+| # | Action | New control | Done |
+|---|---|---|---|
+| 36 | Results tab of a completed retro: the surveys, read only | `surveys/survey-result-list.tsx`, mounted by `session-end.tsx` after "Top topics": the card "Surveys" (`section` with its `h2`), one `SurveyQuestion` per survey in `mode="results"`, `closed`, named by its question (`article[aria-label]`), without inputs, Submit, "Withdraw my answer" or the actions menu. The foot is `SurveyDiscussion`: reactions shown without "Add a reaction", comments opened by "Comments (n)", no composer and no "Reply" (`completed` is not a survey phase). "No answers yet." for a text survey without answers. Nothing is rendered when the retro has no survey | yes |
+
+### Places left
+
+None.
+
+### Differences with the mockup
+
+Read from the code against `SurveyQuestion/preview.html` and `ScreenSurvey/preview.html`; no capture.
+
+| Difference | Row |
+|---|---|
+| The surveys of a completed retro are the cards of the board, read only, in a "Surveys" card of the session end: no results page with the tabs Summary / Free answers / Compare, no CSV, no "Send to whiteboard" | PB-29, D-22 |
+| Every card carries the "Closed" badge, whether or not the facilitator closed the survey before the end (brief 08 row 36: `closed`). The old card had no badge | new row, or the badge only on a survey the facilitator closed |
+| A result reads "n · p%" for single and multiple choice | PB-24 (decided A) |

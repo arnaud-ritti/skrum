@@ -2,6 +2,7 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { BoardProvider } from '@/components/retro/board-context';
 import { SurveyBoardCard } from '@/components/retro/surveys/survey-board-card';
+import { SurveyResultList } from '@/components/retro/surveys/survey-result-list';
 import { SurveysColumn } from '@/components/retro/surveys/surveys-column';
 import type { SurveyPayload } from '@/lib/retro/types';
 import { boardContext, renderInBoard, retroSnapshot } from '@/test/retro-board';
@@ -402,5 +403,133 @@ describe('SurveyBoardCard', () => {
         expect(
             within(card()).getByRole('button', { name: 'Add a reaction' }),
         ).toBeTruthy();
+    });
+});
+
+describe('SurveyResultList', () => {
+    const completed = () =>
+        boardContext(retroSnapshot({ retro: { phase: 'completed' } }));
+
+    it('lists the surveys read only under "Surveys", each named by its question', () => {
+        renderInBoard(
+            <SurveyResultList
+                surveys={[
+                    answered(),
+                    answered({
+                        id: 'survey-2',
+                        kind: 'multiple',
+                        question: 'What helped?',
+                    }),
+                ]}
+            />,
+            completed(),
+        );
+
+        const section = screen.getByRole('region', { name: 'Surveys' });
+
+        expect(section.querySelector(':scope > h2')?.textContent).toBe(
+            'Surveys',
+        );
+        expect(within(section).getAllByRole('article')).toHaveLength(2);
+        expect(
+            section.querySelector('article[aria-label="What helped?"]'),
+        ).not.toBeNull();
+        expect(within(section).queryByRole('radio')).toBeNull();
+        expect(within(section).queryByRole('checkbox')).toBeNull();
+        expect(
+            within(section).queryByRole('button', { name: 'Submit' }),
+        ).toBeNull();
+        expect(
+            within(section).queryByRole('button', {
+                name: 'Withdraw my answer',
+            }),
+        ).toBeNull();
+        expect(retroRequest).not.toHaveBeenCalled();
+    });
+
+    it('gives no survey actions, even to the facilitator', () => {
+        renderInBoard(<SurveyResultList surveys={[answered()]} />, completed());
+
+        expect(
+            document.querySelector('[aria-label="Survey actions"]'),
+        ).toBeNull();
+    });
+
+    it('draws one bar per option with its "count · percent"', () => {
+        renderInBoard(<SurveyResultList surveys={[answered()]} />, completed());
+
+        const bars = [
+            ...card().querySelectorAll<HTMLElement>(
+                '[data-slot="survey-result-bar"] > div',
+            ),
+        ];
+
+        expect(bars.map((bar) => bar.style.width)).toEqual(['100%', '0%']);
+        expect(within(card()).getByText('1 · 100%')).toBeTruthy();
+        expect(within(card()).getByText('1 response')).toBeTruthy();
+    });
+
+    it('says "No answers yet." for a text survey nobody answered', () => {
+        renderInBoard(
+            <SurveyResultList
+                surveys={[
+                    survey({
+                        kind: 'text',
+                        options: [],
+                        resultsVisible: true,
+                        textAnswers: null,
+                    }),
+                ]}
+            />,
+            completed(),
+        );
+
+        expect(within(card()).getByText('No answers yet.')).toBeTruthy();
+        expect(within(card()).queryByRole('textbox')).toBeNull();
+    });
+
+    it('opens the comments without a field to write one', () => {
+        renderInBoard(
+            <SurveyResultList
+                surveys={[
+                    answered({
+                        commentCount: 1,
+                        comments: [
+                            {
+                                id: 'comment-1',
+                                surveyId: 'survey-1',
+                                parentCommentId: null,
+                                isMine: true,
+                                deleted: false,
+                                content: 'Agreed.',
+                                author: null,
+                                createdAt: '2026-10-02T09:00:00Z',
+                                replies: [],
+                            },
+                        ],
+                    }),
+                ]}
+            />,
+            completed(),
+        );
+
+        fireEvent.click(
+            within(card()).getByRole('button', { name: 'Comments (1)' }),
+        );
+
+        expect(within(card()).getByText('Agreed.')).toBeTruthy();
+        expect(within(card()).queryByRole('textbox')).toBeNull();
+        expect(
+            within(card()).queryByRole('button', { name: 'Reply' }),
+        ).toBeNull();
+    });
+
+    it('renders nothing without a survey', () => {
+        const { container } = renderInBoard(
+            <SurveyResultList surveys={[]} />,
+            completed(),
+        );
+
+        expect(container.querySelector('section')).toBeNull();
     });
 });
