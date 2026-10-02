@@ -486,7 +486,7 @@ it('[P10a-10] moves to the next task and drops a deleted current task for everyo
         ->assertVisible('[aria-label="Delete task"]')
         ->click('[aria-label="Delete task"]')
         ->assertSee('Delete this task?')
-        ->click('[role="dialog"] button:has-text("Delete")');
+        ->click('[role="alertdialog"] button:has-text("Delete")');
 
     $facilitator->assertSee('Pick a task to start voting')
         ->assertCount('@poker-task-row', 1);

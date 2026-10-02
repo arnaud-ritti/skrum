@@ -4,16 +4,10 @@ import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import PokerRoundsController from '@/actions/App/Http/Controllers/Poker/PokerRoundsController';
 import PokerTasksController from '@/actions/App/Http/Controllers/Poker/PokerTasksController';
+import { ConfirmDialog } from '@/components/skrum/confirm-dialog';
 import { PokerRounds } from '@/components/skrum/poker-rounds';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogTitle,
-} from '@/components/ui/dialog';
 import { useTrans } from '@/hooks/use-trans';
 import { taskPosition } from '@/lib/poker/room-adapters';
 import type { PokerRound, PokerTask } from '@/lib/poker/types';
@@ -21,7 +15,7 @@ import { retroRequest } from '@/lib/retro/api';
 import { cn } from '@/lib/utils';
 import { useGame } from './game-context';
 import { MarkdownClasses } from './markdown-classes';
-import { TaskFormDialog } from './room-dialogs';
+import { Rejected, TaskFormDialog } from './room-dialogs';
 import { TaskSourceDetails, TaskSourceLink } from './task-source';
 
 type LoadedRounds =
@@ -95,27 +89,23 @@ export function StoryCard({ task, details, className }: Props) {
     const { t } = useTrans();
     const [editing, setEditing] = useState(false);
     const [confirmingDelete, setConfirmingDelete] = useState(false);
-    const [busy, setBusy] = useState(false);
     const { game, me } = snapshot;
     const isEnded = game.endedAt !== null;
     const position = taskPosition(snapshot.tasks, task.id);
     const hasRounds = task.roundsCount > 0;
 
-    const destroy = async () => {
-        setBusy(true);
-
+    const destroy = async (): Promise<void> => {
         const result = await run(
             retroRequest(
                 PokerTasksController.destroy({ game: game.id, task: task.id }),
             ),
         );
 
-        setBusy(false);
-
-        if (result !== undefined) {
-            setConfirmingDelete(false);
-            apply({ type: 'task.remove', taskId: task.id });
+        if (result === undefined) {
+            throw new Rejected();
         }
+
+        apply({ type: 'task.remove', taskId: task.id });
     };
 
     return (
@@ -221,32 +211,15 @@ export function StoryCard({ task, details, className }: Props) {
                 onOpenChange={setEditing}
             />
 
-            <Dialog open={confirmingDelete} onOpenChange={setConfirmingDelete}>
-                <DialogContent>
-                    <DialogTitle>{t('Delete this task?')}</DialogTitle>
-                    <DialogDescription>
-                        {t('Its rounds and votes are deleted too.')}
-                    </DialogDescription>
-                    <DialogFooter className="gap-2">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => setConfirmingDelete(false)}
-                        >
-                            {t('Cancel')}
-                        </Button>
-                        <Button
-                            type="button"
-                            variant="destructive"
-                            disabled={busy}
-                            onClick={() => void destroy()}
-                        >
-                            <Trash2 aria-hidden />
-                            {t('Delete')}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            <ConfirmDialog
+                open={confirmingDelete}
+                onOpenChange={setConfirmingDelete}
+                tone="destructive"
+                title={t('Delete this task?')}
+                description={t('Its rounds and votes are deleted too.')}
+                confirmLabel={t('Delete')}
+                onConfirm={destroy}
+            />
         </section>
     );
 }

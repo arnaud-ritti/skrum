@@ -1,7 +1,15 @@
-import { screen } from '@testing-library/react';
+import { act, fireEvent, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { StoryCard } from '@/components/poker/story-card';
 import { pokerSnapshot, pokerTask, renderInRoom } from '@/test/poker-room';
+
+const mocks = vi.hoisted(() => ({ request: vi.fn() }));
+
+vi.mock('@/lib/retro/api', async (importOriginal) => {
+    const original = await importOriginal<typeof import('@/lib/retro/api')>();
+
+    return { ...original, retroRequest: mocks.request };
+});
 
 vi.mock('sonner', () => ({
     toast: { success: vi.fn(), warning: vi.fn(), error: vi.fn() },
@@ -76,5 +84,33 @@ describe('StoryCard, a task typed in the game', () => {
         expect(screen.queryByRole('link')).toBeNull();
         expect(screen.queryByText(/managed in/)).toBeNull();
         expect(screen.getByRole('button', { name: 'Edit task' })).toBeTruthy();
+    });
+});
+
+describe('StoryCard, deleting the task', () => {
+    it('asks in an alert dialog, then removes the task', async () => {
+        mocks.request.mockResolvedValue(null);
+        const { ctx } = story(manual);
+
+        fireEvent.click(screen.getByRole('button', { name: 'Delete task' }));
+
+        const dialog = await screen.findByRole('alertdialog', {
+            name: 'Delete this task?',
+        });
+
+        expect(
+            within(dialog).getByText('Its rounds and votes are deleted too.'),
+        ).toBeTruthy();
+
+        await act(async () => {
+            fireEvent.click(
+                within(dialog).getByRole('button', { name: 'Delete' }),
+            );
+        });
+
+        expect(ctx.apply).toHaveBeenCalledWith({
+            type: 'task.remove',
+            taskId: 't2',
+        });
     });
 });

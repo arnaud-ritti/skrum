@@ -632,7 +632,7 @@ describe('TaskFormDialog', () => {
 
 describe('CustomTimerDialog', () => {
     it('starts a timer of the minutes typed', async () => {
-        const onStart = vi.fn(async () => {});
+        const onStart = vi.fn(async () => true);
         const onOpenChange = vi.fn();
 
         renderWithProviders(
@@ -657,5 +657,58 @@ describe('CustomTimerDialog', () => {
 
         expect(onStart).toHaveBeenCalledWith(420);
         expect(onOpenChange).toHaveBeenCalledWith(false);
+    });
+
+    it('stays open when the server refuses the timer', async () => {
+        const onStart = vi.fn(async () => false);
+        const onOpenChange = vi.fn();
+
+        renderWithProviders(
+            <CustomTimerDialog
+                open
+                onOpenChange={onOpenChange}
+                onStart={onStart}
+            />,
+        );
+
+        const dialog = await screen.findByRole('dialog');
+
+        await act(async () => {
+            fireEvent.click(
+                within(dialog).getByRole('button', { name: 'Start timer' }),
+            );
+        });
+
+        expect(onStart).toHaveBeenCalledWith(300);
+        expect(onOpenChange).not.toHaveBeenCalled();
+    });
+
+    it('says why a number of minutes out of range is not started', async () => {
+        const onStart = vi.fn(async () => true);
+        const onOpenChange = vi.fn();
+
+        renderWithProviders(
+            <CustomTimerDialog
+                open
+                onOpenChange={onOpenChange}
+                onStart={onStart}
+            />,
+        );
+
+        const dialog = await screen.findByRole('dialog');
+
+        fireEvent.change(dialog.querySelector('#poker-timer-minutes')!, {
+            target: { value: '90' },
+        });
+
+        await act(async () => {
+            fireEvent.submit(dialog.querySelector('form')!);
+        });
+
+        expect(within(dialog).getByRole('alert').textContent).toBe(
+            'Choose between 1 and 60 minutes.',
+        );
+        expect(onStart).not.toHaveBeenCalled();
+        expect(onOpenChange).not.toHaveBeenCalled();
     });
 });

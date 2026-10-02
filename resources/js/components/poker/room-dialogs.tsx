@@ -67,7 +67,7 @@ export type RoomDialog = 'settings' | 'share' | 'transfer' | 'end' | 'delete';
 type DialogProps = { open: boolean; onOpenChange: (open: boolean) => void };
 
 /** Thrown to keep a dialog open: the reason has already been shown. */
-class Rejected extends Error {}
+export class Rejected extends Error {}
 
 /** How many times the dialog was opened: a key that gives each opening fresh fields. */
 function useOpenings(open: boolean): number {
@@ -954,25 +954,39 @@ export function CustomTimerDialog({
     open,
     onOpenChange,
     onStart,
-}: DialogProps & { onStart: (seconds: number) => Promise<void> }) {
+}: DialogProps & {
+    /** Resolves to false when the server refused the timer. */
+    onStart: (seconds: number) => Promise<boolean>;
+}) {
     const { t } = useTrans();
+    const [isOutOfRange, setIsOutOfRange] = useState(false);
 
     const start = async (data: FormData): Promise<void> => {
         const minutes = Number(data.get('minutes'));
+        const isInRange =
+            Number.isInteger(minutes) && minutes >= 1 && minutes <= 60;
 
-        if (!Number.isInteger(minutes) || minutes < 1 || minutes > 60) {
+        setIsOutOfRange(!isInRange);
+
+        if (!isInRange || !(await onStart(minutes * 60))) {
             throw new Rejected();
         }
+    };
 
-        await onStart(minutes * 60);
+    const change = (isOpen: boolean): void => {
+        setIsOutOfRange(false);
+        onOpenChange(isOpen);
     };
 
     return (
         <FormDialog
             open={open}
-            onOpenChange={onOpenChange}
+            onOpenChange={change}
             title={t('Custom minutes')}
             submitLabel={t('Start timer')}
+            error={
+                isOutOfRange ? t('Choose between 1 and 60 minutes.') : undefined
+            }
             onSubmit={start}
         >
             <div className="grid gap-2">
