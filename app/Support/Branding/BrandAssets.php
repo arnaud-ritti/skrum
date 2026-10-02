@@ -40,7 +40,7 @@ class BrandAssets
 
     private const string StoredPathPattern = '/^branding\/[a-z0-9]{40}\.(png|jpg|webp|svg)$/D';
 
-    private const string SvgPattern = '/^\s*(?:<\?xml[^>]*\?>\s*)?(?:<!--.*?-->\s*)*(?:<!DOCTYPE[^>\[]*>\s*)?(?:<!--.*?-->\s*)*<svg[\s>\/]/is';
+    private const string SvgPattern = '/^\s*+(?:<\?xml[^>]*\?>\s*+)?+(?:<!--.*?-->\s*+)*+(?:<!DOCTYPE[^>\[]*+>\s*+)?+(?:<!--.*?-->\s*+)*+<svg[\s>\/]/is';
 
     public function __construct(private InstanceSettings $settings) {}
 
@@ -83,7 +83,7 @@ class BrandAssets
             return null;
         }
 
-        return route('brand.show', ['asset' => $asset, 'v' => substr(hash('sha256', $path), 0, 16)], absolute: false);
+        return route('brand.show', ['asset' => $asset, 'v' => $this->version($path)], absolute: false);
     }
 
     public function mime(string $asset): ?string
@@ -100,7 +100,8 @@ class BrandAssets
     /**
      * @return array{
      *     contents: string,
-     *     mime: string
+     *     mime: string,
+     *     version: string
      * }|null
      */
     public function read(string $asset): ?array
@@ -120,7 +121,13 @@ class BrandAssets
         return [
             'contents' => $contents,
             'mime' => self::MimeTypes[pathinfo($path, PATHINFO_EXTENSION)],
+            'version' => $this->version($path),
         ];
+    }
+
+    private function version(string $path): string
+    {
+        return substr(hash('sha256', $path), 0, 16);
     }
 
     private function key(string $asset): InstanceSettingKey

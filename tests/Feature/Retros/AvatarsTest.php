@@ -11,7 +11,7 @@ it('renders a cacheable svg avatar', function () {
         ->assertHeader('Content-Type', 'image/svg+xml')
         ->assertHeader('Cache-Control', 'immutable, max-age=31536000, public')
         ->assertHeader('X-Content-Type-Options', 'nosniff')
-        ->assertHeader('Content-Security-Policy', "default-src 'none'; style-src 'unsafe-inline'");
+        ->assertHeader('Content-Security-Policy', "default-src 'none'; style-src 'unsafe-inline'; form-action 'none'; sandbox");
 
     expect($response->getContent())->toStartWith('<svg');
 });

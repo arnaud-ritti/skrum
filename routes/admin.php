@@ -16,10 +16,6 @@ Route::middleware(['auth', 'verified', 'can:manageInstance'])->group(function ()
         ->middleware('throttle:120,1,brandingPreviews')
         ->name('admin.brandingPreview.show');
 
-    Route::get('admin/admins/candidates', [AdminCandidatesController::class, 'index'])
-        ->middleware('throttle:60,1,adminCandidates')
-        ->name('admin.adminCandidates.index');
-
     Route::get('admin/avatar-previews/{style}/{seed}.svg', [AvatarPreviewsController::class, 'show'])
         ->where(['style' => '[a-z0-9-]+', 'seed' => '[a-f0-9]{32}'])
         ->name('admin.avatarPreviews.show');
@@ -41,5 +37,8 @@ Route::middleware(['auth', 'verified', 'can:manageInstance'])->group(function ()
         Route::delete('admin/admins/{user}', [AdminsController::class, 'destroy'])
             ->whereUuid('user')
             ->name('admin.admins.destroy');
+        Route::get('admin/admins/candidates', [AdminCandidatesController::class, 'index'])
+            ->middleware('throttle:60,1,adminCandidates')
+            ->name('admin.adminCandidates.index');
     });
 });

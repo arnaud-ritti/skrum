@@ -241,3 +241,12 @@ it('keeps the candidate search away from non-admins', function () {
         ->assertForbidden()
         ->assertJsonMissingPath('candidates');
 });
+
+it('keeps the candidate search away from an admin who has not confirmed their password', function () {
+    $this->actingAs(User::factory()->instanceAdmin()->create());
+    User::factory()->create(['name' => 'Marta']);
+
+    $this->getJson(route('admin.adminCandidates.index', ['query' => 'mart']))
+        ->assertStatus(423)
+        ->assertJsonMissingPath('candidates');
+});

@@ -4,12 +4,13 @@ namespace App\Support\Gifs;
 
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Http;
+use SensitiveParameter;
 
 class TenorProvider implements GifProvider
 {
     private const array ContentFilters = ['g' => 'high', 'pg' => 'medium', 'pg-13' => 'low', 'r' => 'off'];
 
-    public function __construct(private string $key) {}
+    public function __construct(#[SensitiveParameter] private string $key) {}
 
     public function search(string $query, string $rating, int $limit): array
     {

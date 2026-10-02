@@ -515,3 +515,12 @@ it('resets every setting and removes the images', function () {
 
     expect($html)->not->toContain('skrum-brand');
 });
+
+it('strips bidirectional overrides and zero-width characters from the display name', function () {
+    brandingAdmin($this);
+
+    $this->put(route('admin.branding.update'), brandingPayload(['display_name' => "Skr\u{202E}üm\u{200B}"]))
+        ->assertSessionHasNoErrors();
+
+    expect(storedBrandingSettings()->displayName())->toBe('Skrüm');
+});

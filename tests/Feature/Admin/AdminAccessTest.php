@@ -41,7 +41,7 @@ dataset('adminRoutes', [
     'admins page' => ['get', fn () => route('admin.admins.index'), fn () => [], 200, true],
     'admin grant' => ['post', fn () => route('admin.admins.store'), fn () => ['user_id' => User::factory()->create()->id], 302, true],
     'admin revocation' => ['delete', fn () => route('admin.admins.destroy', User::factory()->instanceAdmin()->create()), fn () => [], 302, true],
-    'admin candidates' => ['get', fn () => route('admin.adminCandidates.index', ['query' => 'ab']), fn () => [], 200, false],
+    'admin candidates' => ['get', fn () => route('admin.adminCandidates.index', ['query' => 'ab']), fn () => [], 200, true],
     'avatar preview' => ['get', fn () => route('admin.avatarPreviews.show', ['style' => 'thumbs', 'seed' => AdminAccessSeed]), fn () => [], 200, false],
 ]);
 

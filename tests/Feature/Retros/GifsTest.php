@@ -4,6 +4,8 @@ use App\Enums\RetroPhase;
 use App\Models\Card;
 use App\Models\Column;
 use App\Models\Retro;
+use App\Support\Gifs\GiphyProvider;
+use App\Support\Gifs\TenorProvider;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Exceptions;
 use Illuminate\Support\Facades\Http;
@@ -283,3 +285,10 @@ it('stores gifs under the requested id', function () {
 
     Storage::assertExists('gifs/giphy/abc123-preview');
 });
+
+it('keeps the provider key out of stack traces', function (string $provider) {
+    $key = (new ReflectionMethod($provider, '__construct'))->getParameters()[0];
+
+    expect($key->getName())->toBe('key')
+        ->and($key->getAttributes(SensitiveParameter::class))->toHaveCount(1);
+})->with([GiphyProvider::class, TenorProvider::class]);

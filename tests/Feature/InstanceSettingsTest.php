@@ -157,14 +157,14 @@ it('runs one query for a cold read across several getters and none once the cach
     expect(DB::getQueryLog())->toBeEmpty();
 });
 
-it('caches the settings for one hour rather than forever', function () {
+it('caches the settings for five minutes, which bounds a stale re-cache', function () {
     freshInstanceSettings()->displayName();
 
-    $this->travel(59)->minutes();
+    $this->travel(299)->seconds();
 
     expect(Cache::has(InstanceSettings::CacheKey))->toBeTrue();
 
-    $this->travel(2)->minutes();
+    $this->travel(2)->seconds();
 
     expect(Cache::has(InstanceSettings::CacheKey))->toBeFalse();
 });

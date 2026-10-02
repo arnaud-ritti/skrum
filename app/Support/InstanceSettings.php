@@ -30,7 +30,7 @@ class InstanceSettings
 
     private const string DefaultAvatarStyle = 'thumbs';
 
-    private const int CacheTtlSeconds = 3600;
+    private const int CacheTtlSeconds = 300;
 
     /** @var ?array<string, mixed> */
     private ?array $stored = null;

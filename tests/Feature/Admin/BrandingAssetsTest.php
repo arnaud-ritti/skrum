@@ -114,7 +114,7 @@ it('accepts an svg with a script and serves it inert', function () {
         ->assertOk()
         ->assertHeader('Content-Type', 'image/svg+xml')
         ->assertHeader('X-Content-Type-Options', 'nosniff')
-        ->assertHeader('Content-Security-Policy', "default-src 'none'; style-src 'unsafe-inline'");
+        ->assertHeader('Content-Security-Policy', "default-src 'none'; style-src 'unsafe-inline'; form-action 'none'; sandbox");
 
     app()->forgetScopedInstances();
     $html = $this->get(route('admin.branding.edit'))->assertOk()->getContent();

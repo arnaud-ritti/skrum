@@ -4,10 +4,11 @@ namespace App\Support\Gifs;
 
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Http;
+use SensitiveParameter;
 
 class GiphyProvider implements GifProvider
 {
-    public function __construct(private string $key) {}
+    public function __construct(#[SensitiveParameter] private string $key) {}
 
     public function search(string $query, string $rating, int $limit): array
     {

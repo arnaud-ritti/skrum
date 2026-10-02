@@ -149,7 +149,7 @@ it('serves a styled avatar with safe, cacheable headers and no cookie', function
         ->assertHeader('Content-Type', 'image/svg+xml')
         ->assertHeader('Cache-Control', 'immutable, max-age=31536000, public')
         ->assertHeader('X-Content-Type-Options', 'nosniff')
-        ->assertHeader('Content-Security-Policy', "default-src 'none'; style-src 'unsafe-inline'");
+        ->assertHeader('Content-Security-Policy', "default-src 'none'; style-src 'unsafe-inline'; form-action 'none'; sandbox");
 
     expect($response->getContent())->toStartWith('<svg')
         ->and($response->headers->getCookies())->toBe([]);
@@ -193,7 +193,7 @@ it('links the initials style to a drawing of the initials of the name', function
         ->assertOk()
         ->assertHeader('Content-Type', 'image/svg+xml')
         ->assertHeader('X-Content-Type-Options', 'nosniff')
-        ->assertHeader('Content-Security-Policy', "default-src 'none'; style-src 'unsafe-inline'")
+        ->assertHeader('Content-Security-Policy', "default-src 'none'; style-src 'unsafe-inline'; form-action 'none'; sandbox")
         ->getContent();
 
     expect($svg)->toContain('>ÉT</text>');

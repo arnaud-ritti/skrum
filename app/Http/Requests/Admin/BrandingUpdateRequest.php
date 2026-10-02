@@ -79,7 +79,7 @@ class BrandingUpdateRequest extends FormRequest
     {
         $this->merge([
             'brand_color' => $this->normalisedColor($this->input('brand_color')),
-            'display_name' => $this->withoutControlCharacters($this->input('display_name')),
+            'display_name' => $this->withoutInvisibleCharacters($this->input('display_name')),
         ]);
     }
 
@@ -108,13 +108,13 @@ class BrandingUpdateRequest extends FormRequest
         return "#{$digits}";
     }
 
-    private function withoutControlCharacters(mixed $name): mixed
+    private function withoutInvisibleCharacters(mixed $name): mixed
     {
         if (! is_string($name)) {
             return $name;
         }
 
-        $name = trim((string) preg_replace('/\p{Cc}+/u', '', $name));
+        $name = trim((string) preg_replace('/[\p{Cc}\p{Cf}]+/u', '', $name));
 
         return $name === '' ? null : $name;
     }

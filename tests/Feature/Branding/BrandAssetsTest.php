@@ -57,6 +57,7 @@ it('serves a stored PNG to a guest with safe, cacheable headers', function () {
 
     expect($response->getContent())->toBe(brandPngBytes())
         ->and($response->headers->get('Content-Type'))->toBe('image/png')
+        ->and($response->headers->get('Content-Security-Policy'))->toBe("default-src 'none'; style-src 'unsafe-inline'; form-action 'none'; sandbox")
         ->and($response->headers->get('X-Content-Type-Options'))->toBe('nosniff')
         ->and($response->headers->get('Cache-Control'))->toContain('public')
         ->toContain('max-age=31536000')
@@ -72,7 +73,7 @@ it('serves a stored SVG inert, behind a content security policy', function () {
 
     expect($response->getContent())->toBe(HostileBrandSvg)
         ->and($response->headers->get('Content-Type'))->toBe('image/svg+xml')
-        ->and($response->headers->get('Content-Security-Policy'))->toBe("default-src 'none'; style-src 'unsafe-inline'")
+        ->and($response->headers->get('Content-Security-Policy'))->toBe("default-src 'none'; style-src 'unsafe-inline'; form-action 'none'; sandbox")
         ->and($response->headers->get('X-Content-Type-Options'))->toBe('nosniff');
 });
 
@@ -217,3 +218,62 @@ it('falls back to no asset when the stored file has disappeared', function () {
 
     $this->get('/brand/logo-light')->assertNotFound();
 });
+
+it('answers without a long-lived cache when the version is missing or is not the current one', function (?string $version) {
+    $assets = resolve(BrandAssets::class);
+    $assets->store('logo-light', brandUpload('logo.png', brandPngBytes()));
+
+    $response = $this->get(route('brand.show', array_filter(['asset' => 'logo-light', 'v' => $version])))->assertOk();
+
+    expect($response->getContent())->toBe(brandPngBytes())
+        ->and($response->headers->get('Cache-Control'))->toContain('no-cache')
+        ->not->toContain('immutable')
+        ->not->toContain('max-age')
+        ->not->toContain('public');
+})->with([
+    'no version' => [null],
+    'another version' => ['0123456789abcdef'],
+    'an empty version' => [''],
+]);
+
+it('answers without a long-lived cache when the version is not a string', function () {
+    $assets = resolve(BrandAssets::class);
+    $assets->store('logo-light', brandUpload('logo.png', brandPngBytes()));
+
+    $response = $this->get('/brand/logo-light?v[]=1')->assertOk();
+
+    expect($response->headers->get('Cache-Control'))->toContain('no-cache')
+        ->not->toContain('immutable');
+});
+
+it('stops caching the address of a replaced asset for a year', function () {
+    $assets = resolve(BrandAssets::class);
+    $assets->store('logo-light', brandUpload('logo.png', brandPngBytes()));
+    $firstUrl = $assets->url('logo-light');
+
+    $assets->store('logo-light', brandUpload('logo.svg', HostileBrandSvg));
+
+    expect($this->get($firstUrl)->assertOk()->headers->get('Cache-Control'))->toContain('no-cache')
+        ->not->toContain('immutable')
+        ->and($this->get($assets->url('logo-light'))->assertOk()->headers->get('Cache-Control'))->toContain('immutable');
+});
+
+it('decides on a file with thousands of leading comments without exhausting the pattern engine', function (string $root, bool $isAccepted) {
+    $assets = resolve(BrandAssets::class);
+    $contents = str_repeat("<!-- c -->\n", 5000).$root;
+
+    try {
+        $assets->store('logo-light', brandUpload('logo.svg', $contents));
+        $wasAccepted = true;
+    } catch (InvalidBrandAsset) {
+        $wasAccepted = false;
+    }
+
+    expect(preg_last_error())->toBe(PREG_NO_ERROR)
+        ->and($wasAccepted)->toBe($isAccepted)
+        ->and($assets->mime('logo-light'))->toBe($isAccepted ? 'image/svg+xml' : null);
+})->with([
+    'followed by an svg' => ['<svg xmlns="http://www.w3.org/2000/svg"></svg>', true],
+    'followed by an html page' => ['<html><body><svg xmlns="http://www.w3.org/2000/svg"/></body></html>', false],
+    'followed by a doctype with an internal subset' => ['<!DOCTYPE svg [<!ENTITY a "aaaa">]><svg xmlns="http://www.w3.org/2000/svg">&a;</svg>', false],
+]);

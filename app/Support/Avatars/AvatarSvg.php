@@ -2,6 +2,7 @@
 
 namespace App\Support\Avatars;
 
+use App\Support\InertImage;
 use DiceBear\Avatar;
 use DiceBear\Style;
 use Illuminate\Http\Response;
@@ -39,7 +40,7 @@ class AvatarSvg
             'Content-Type' => 'image/svg+xml',
             'Cache-Control' => $cacheControl,
             'X-Content-Type-Options' => 'nosniff',
-            'Content-Security-Policy' => "default-src 'none'; style-src 'unsafe-inline'",
+            'Content-Security-Policy' => InertImage::ContentSecurityPolicy,
         ]);
     }
 }

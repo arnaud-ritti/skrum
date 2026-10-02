@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Support\Avatars\AvatarStyleCatalogue;
+use App\Support\InertImage;
 use DiceBear\Avatar;
 use DiceBear\Style;
 use Illuminate\Http\Response;
@@ -25,7 +26,7 @@ class AvatarPreviewsController extends Controller
             'Content-Type' => 'image/svg+xml',
             'Cache-Control' => 'private, max-age=86400',
             'X-Content-Type-Options' => 'nosniff',
-            'Content-Security-Policy' => "default-src 'none'; style-src 'unsafe-inline'",
+            'Content-Security-Policy' => InertImage::ContentSecurityPolicy,
         ]);
     }
 }
