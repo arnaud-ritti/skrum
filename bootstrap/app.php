@@ -1,17 +1,22 @@
 <?php
 
+use App\Http\ErrorPageResponder;
 use App\Http\Middleware\AssignRequestId;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\SetLocale;
 use App\Http\Middleware\TrustProxies;
+use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use Illuminate\Http\Middleware\TrustProxies as FrameworkTrustProxies;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Route;
+use Inertia\ExceptionResponse;
+use Symfony\Component\HttpFoundation\Response;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -47,4 +52,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request): bool => $request->is('api/*') || $request->expectsJson(),
         );
+
+        $exceptions->respond(fn (Response $response, Throwable $exception, Request $request): Response => resolve(ErrorPageResponder::class)(
+            new ExceptionResponse($exception, $request, $response, resolve(Router::class), resolve(Kernel::class)),
+        ) ?? $response);
     })->create();

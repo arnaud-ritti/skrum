@@ -5,6 +5,15 @@
  */
 export const ownLayoutPages: readonly string[] = [
     'about',
+    'auth/login',
+    'auth/register',
+    'auth/forgot-password',
+    'auth/reset-password',
+    'auth/verify-email',
+    'auth/two-factor-challenge',
+    'auth/confirm-password',
+    'invitations/show',
+    'errors/error',
     'retros/show',
     'poker/show',
     'poker/decks',

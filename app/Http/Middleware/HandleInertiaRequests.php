@@ -173,7 +173,7 @@ class HandleInertiaRequests extends Middleware
     /**
      * @return array<string, string>
      */
-    private function translations(string $locale): array
+    public function translations(string $locale): array
     {
         $path = lang_path("{$locale}.json");
 
