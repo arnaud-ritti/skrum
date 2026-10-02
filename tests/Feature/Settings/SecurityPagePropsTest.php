@@ -69,18 +69,48 @@ class SecurityPagePropsTest extends TestCase
         );
     }
 
-    public function test_recovery_codes_left_drops_after_one_is_used(): void
+    public function test_recovery_codes_left_drops_after_one_is_used_to_sign_in(): void
+    {
+        $user = $this->userWithConfirmedSecondFactor();
+        $usedCode = $user->recoveryCodes()[0];
+
+        $this->withSession(['login.id' => $user->id, 'login.remember' => false])
+            ->post(route('two-factor.login'), ['recovery_code' => $usedCode])
+            ->assertRedirect();
+
+        $this->assertAuthenticatedAs($user);
+        $this->assertNotContains($usedCode, $user->refresh()->recoveryCodes());
+
+        $this->getSecurityPage($user)->assertInertia(fn (Assert $page) => $page
+            ->where('twoFactor.recoveryCodesRemaining', 7)
+            ->where('twoFactor.recoveryCodesTotal', 8),
+        );
+    }
+
+    public function test_a_used_recovery_code_cannot_sign_in_again(): void
+    {
+        $user = $this->userWithConfirmedSecondFactor();
+        $usedCode = $user->recoveryCodes()[0];
+
+        $user->replaceRecoveryCode($usedCode);
+
+        $this->withSession(['login.id' => $user->id, 'login.remember' => false])
+            ->post(route('two-factor.login'), ['recovery_code' => $usedCode])
+            ->assertSessionHasErrors('recovery_code');
+
+        $this->assertGuest();
+    }
+
+    public function test_no_recovery_code_is_left_after_the_last_one_is_used(): void
     {
         $user = $this->userWithConfirmedSecondFactor();
 
-        $remainingCodes = array_slice($user->recoveryCodes(), 1);
-
-        $user->forceFill([
-            'two_factor_recovery_codes' => encrypt(json_encode($remainingCodes)),
-        ])->save();
+        foreach ($user->recoveryCodes() as $code) {
+            $user->replaceRecoveryCode($code);
+        }
 
         $this->getSecurityPage($user->refresh())->assertInertia(fn (Assert $page) => $page
-            ->where('twoFactor.recoveryCodesRemaining', 7),
+            ->where('twoFactor.recoveryCodesRemaining', 0),
         );
     }
 
