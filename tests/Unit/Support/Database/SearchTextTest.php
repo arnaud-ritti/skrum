@@ -7,6 +7,13 @@ it('folds case and keeps accents', function () {
         ->and(SearchText::fold(null))->toBeNull();
 });
 
+it('folds a letter the same way wherever it stands in a word', function () {
+    expect(SearchText::fold('ΦΟΣ'))->toBe('φοσ')
+        ->and(SearchText::fold('ΦΟΣΑ'))->toBe('φοσα')
+        ->and(SearchText::pattern('ΦΟΣ'))->toBe('%φοσ%')
+        ->and(SearchText::contains('ΦΟΣΑ', 'ΦΟΣ'))->toBeTrue();
+});
+
 it('builds a pattern in which a wildcard character stands for any one character', function (string $term, string $pattern) {
     expect(SearchText::pattern($term))->toBe($pattern);
 })->with([

@@ -7,7 +7,8 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Keeps a folded copy of the columns a model is searched by, and searches it. The match is
+ * Keeps a folded copy of the columns a model is searched by, and searches it. The copy is written
+ * when the text changes, and when it is missing (a row written without the model). The match is
  * case-sensitive on purpose: both sides are already lower-case, and a case-sensitive LIKE is the
  * one form that means the same on PostgreSQL, MySQL, MariaDB and SQLite.
  *
@@ -24,11 +25,14 @@ trait HasSearchColumns
     {
         static::saving(function (Model $model): void {
             foreach ($model->searchColumns() as $column => $folded) {
-                if ($model->exists && ! $model->isDirty($column)) {
+                $text = $model->getAttribute($column);
+                $isMissing = $text !== null && $model->getAttribute($folded) === null;
+
+                if (! $model->isDirty($column) && ! $isMissing) {
                     continue;
                 }
 
-                $model->setAttribute($folded, SearchText::fold($model->getAttribute($column)));
+                $model->setAttribute($folded, SearchText::fold($text));
             }
         });
     }
