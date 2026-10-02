@@ -54,6 +54,43 @@ describe('SessionCard', () => {
         expect(screen.queryByText('38')).toBeNull();
     });
 
+    it('takes the tone of a phase for its badge, with or without the live dot', () => {
+        const { container, rerender } = render(
+            <SessionCard
+                {...base}
+                status="live"
+                statusLabel="Voting"
+                statusTone="warning"
+                statusDot={false}
+            />,
+        );
+        const badge = (): HTMLElement =>
+            container.querySelector(
+                '[data-slot="session-card-status"]',
+            ) as HTMLElement;
+
+        expect(badge().dataset.tone).toBe('warning');
+        expect(badge().className).toContain('bg-skrum-warning-soft');
+        expect(
+            container.querySelector('[data-slot="session-card-dot"]'),
+        ).toBeNull();
+
+        rerender(
+            <SessionCard
+                {...base}
+                status="live"
+                statusLabel="Writing"
+                statusTone="info"
+            />,
+        );
+
+        expect(badge().dataset.tone).toBe('info');
+        expect(
+            container.querySelector('[data-slot="session-card-dot"]')
+                ?.className,
+        ).toContain('bg-skrum-info');
+    });
+
     it('moves from live to ended on rerender with the final counters', () => {
         const { rerender } = render(
             <SessionCard
@@ -83,6 +120,16 @@ describe('SessionCard', () => {
 
         expect(screen.getByText('Scheduled')).toBeTruthy();
         expect(screen.queryByText('cards')).toBeNull();
+    });
+
+    it('keeps the date whole beside a team or template name that is cut', () => {
+        const { container } = render(<SessionCard {...base} />);
+        const when = container.querySelector('[data-slot="session-card-when"]');
+
+        expect(when?.textContent).toBe(` · ${base.when}`);
+        expect(when?.className).toContain('shrink-0');
+        expect(when?.previousElementSibling?.textContent).toBe(base.team);
+        expect(when?.previousElementSibling?.className).toContain('truncate');
     });
 
     it('shows the status word the host gives and a meta line', () => {

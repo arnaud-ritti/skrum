@@ -85,8 +85,8 @@ it('[P13a-01] creates a Hangman room open by link from the team games page', fun
 
     $page = $this->signIn($ada, route('teams.show', [$team->workspace, $team], false));
 
-    $page->assertVisible('a[href$="/games"]')
-        ->click('a[href$="/games"]')
+    $page->assertVisible('main a[href$="/games"]')
+        ->click('main a[href$="/games"]')
         ->assertPathIs($gamesPath)
         ->assertSee('No game rooms yet.')
         ->click('New room')

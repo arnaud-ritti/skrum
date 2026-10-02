@@ -81,8 +81,8 @@ it('[P10b-01] saves a team deck, rejects a duplicate name and hides edit and del
 
     $a = $this->signIn($ada, $teamPath);
 
-    $a->assertSee('Saved decks')
-        ->click('Saved decks')
+    $a->click('[aria-label="Planning poker actions"]')
+        ->click('[role="menuitem"]:has-text("Saved decks")')
         ->assertPathEndsWith('/poker-decks')
         ->assertSee('No saved decks yet.')
         ->click('Create a deck')
@@ -107,8 +107,8 @@ it('[P10b-01] saves a team deck, rejects a duplicate name and hides edit and del
 
     $b = $this->signIn($bob, $teamPath);
 
-    $b->assertSee('Saved decks')
-        ->click('Saved decks')
+    $b->click('[aria-label="Planning poker actions"]')
+        ->click('[role="menuitem"]:has-text("Saved decks")')
         ->assertPathEndsWith('/poker-decks')
         ->assertSeeIn('[data-slot="saved-decks-grid"]', 'Team scale')
         ->assertNotPresent('[aria-label="Edit Team scale"]')
@@ -149,8 +149,8 @@ it('[P10b-02a] creates a game from a saved deck and keeps its cards when the dec
         ->and($game->auto_reveal)->toBeFalse();
 
     $page->navigate($teamPath)
-        ->assertSee('Saved decks')
-        ->click('Saved decks')
+        ->click('[aria-label="Planning poker actions"]')
+        ->click('[role="menuitem"]:has-text("Saved decks")')
         ->assertPathEndsWith('/poker-decks')
         ->assertPresent('[aria-label="Edit Team scale"]')
         ->click('[aria-label="Edit Team scale"]')
@@ -183,8 +183,8 @@ it('[P10b-02b] keeps a game unchanged when its saved deck is deleted', function 
 
     $page = $this->signIn($ada, route('teams.show', [$game->team->workspace, $game->team], false));
 
-    $page->assertSee('Saved decks')
-        ->click('Saved decks')
+    $page->click('[aria-label="Planning poker actions"]')
+        ->click('[role="menuitem"]:has-text("Saved decks")')
         ->assertPathEndsWith('/poker-decks')
         ->assertPresent('[aria-label="Delete Team scale"]')
         ->click('[aria-label="Delete Team scale"]')

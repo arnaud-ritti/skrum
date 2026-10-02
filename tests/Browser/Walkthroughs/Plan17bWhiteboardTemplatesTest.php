@@ -691,7 +691,8 @@ it('[P17b-12] renames a template and edits its description in the templates dial
 
     $page = $this->signIn($fran, p17bTeamPath($team));
 
-    $page->click('button:text-is("Whiteboard templates")')
+    $page->click('[aria-label="Whiteboards actions"]')
+        ->click('[role="menuitem"]:has-text("Whiteboard templates")')
         ->assertPresent(p17bTemplateRow('Kick-off'))
         ->assertPresent(p17bTemplateRow('Second'))
         ->click(p17bTemplateRow('Kick-off').' button:text-is("Edit")')
@@ -740,7 +741,8 @@ it('[P17b-13] offers neither Edit nor Delete on a template to a member who did n
 
     $page = $this->signIn($mia, p17bTeamPath($team));
 
-    $page->click('button:text-is("Whiteboard templates")')
+    $page->click('[aria-label="Whiteboards actions"]')
+        ->click('[role="menuitem"]:has-text("Whiteboard templates")')
         ->assertPresent(p17bTemplateRow('Kick-off'))
         ->assertSeeIn(p17bTemplateRow('Kick-off'), 'How we start a project')
         ->assertNotPresent('[role="dialog"] li button');
@@ -763,7 +765,8 @@ it('[P17b-14] lets a workspace admin who created neither template edit one and d
 
     $page = $this->signIn($ada, p17bTeamPath($team));
 
-    $page->click('button:text-is("Whiteboard templates")')
+    $page->click('[aria-label="Whiteboards actions"]')
+        ->click('[role="menuitem"]:has-text("Whiteboard templates")')
         ->assertPresent(p17bTemplateRow('Kick-off').' button:text-is("Edit")')
         ->assertPresent(p17bTemplateRow('Kick-off').' button:text-is("Delete")')
         ->assertPresent(p17bTemplateRow('Second').' button:text-is("Edit")')
@@ -799,7 +802,8 @@ it('[P17b-15] still opens a board created from a template, with its elements and
 
     $page = $this->signIn($fran, p17bTeamPath($team));
 
-    $page->click('button:text-is("Whiteboard templates")')
+    $page->click('[aria-label="Whiteboards actions"]')
+        ->click('[role="menuitem"]:has-text("Whiteboard templates")')
         ->click(p17bTemplateRow('Kick-off').' button[aria-label="Delete Kick-off"]')
         ->assertSeeIn('[role="alertdialog"]', 'Delete this template?')
         ->click('[role="alertdialog"] button:has-text("Delete")')

@@ -77,6 +77,19 @@ function activeRows(): HTMLElement[] {
 }
 
 describe('HealthStatementsManager', () => {
+    it('is a region named by its heading', () => {
+        setup();
+
+        expect(
+            within(
+                screen.getByRole('region', { name: 'Health check statements' }),
+            ).getByRole('heading', {
+                level: 2,
+                name: 'Health check statements',
+            }),
+        ).toBeTruthy();
+    });
+
     it('lists active statements in the server order with built-in and custom badges', () => {
         setup({ statements: [statements[2], statements[0], statements[1]] });
 

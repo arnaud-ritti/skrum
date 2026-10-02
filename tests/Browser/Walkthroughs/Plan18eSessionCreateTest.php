@@ -529,7 +529,8 @@ it('[P18e-01-16] keeps a whiteboard template when its deletion is cancelled in t
 
     $page = $this->signIn($alice, p18eTeamPath($team));
 
-    $page->click('button:text-is("Whiteboard templates")')
+    $page->click('[aria-label="Whiteboards actions"]')
+        ->click('[role="menuitem"]:has-text("Whiteboard templates")')
         ->assertPresent($row)
         ->click("{$row} button[aria-label=\"Delete Kick-off map\"]")
         ->assertSeeIn('[role="alertdialog"]', 'Delete this template?')
