@@ -97,16 +97,31 @@ function p13cTile(string $gifId): string
     return "figure:has(img[src=\"/gifs/{$gifId}/preview\"])";
 }
 
-function p13cPick(mixed $page, string $opener, string $query, string $gifId): mixed
-{
-    $result = "[role=\"dialog\"] [role=\"option\"]:has(img[src=\"/gifs/{$gifId}/preview\"])";
+const P13cPicker = '[data-slot="gif-answer-stage"] [data-slot="gif-picker"]';
+const P13cYourPick = '[data-slot="gif-your-pick"]';
 
-    return $page->click($opener)
-        ->assertSee('Powered by GIPHY')
-        ->fill('[role="dialog"] [aria-label="Search GIPHY"]', $query)
-        ->assertPresent($result)
-        ->click($result)
-        ->assertNotPresent('[role="dialog"]');
+function p13cResult(string $gifId): string
+{
+    return P13cPicker." [role=\"option\"]:has(img[src=\"/gifs/{$gifId}/preview\"])";
+}
+
+function p13cDraft(mixed $page, string $query, string $gifId): mixed
+{
+    return $page->assertNotPresent('[role="dialog"]')
+        ->assertSeeIn(P13cPicker, 'Powered by GIPHY')
+        ->fill(P13cPicker.' [aria-label="Search GIPHY"]', $query)
+        ->assertPresent(p13cResult($gifId))
+        ->click(p13cResult($gifId))
+        ->assertSeeIn(P13cYourPick, 'Draft')
+        ->assertSeeIn(p13cTile($gifId), 'Your GIF');
+}
+
+function p13cPick(mixed $page, string $query, string $gifId): mixed
+{
+    return p13cDraft($page, $query, $gifId)
+        ->click('Send my GIF')
+        ->assertSeeIn(P13cYourPick, 'Sent')
+        ->assertDontSeeIn(P13cYourPick, 'Draft');
 }
 
 it('[P13c-01] lets the host switch to Sprint in one GIF, start, shuffle and edit the question until the first answer', function () {
@@ -171,7 +186,7 @@ it('[P13c-01] lets the host switch to Sprint in one GIF, start, shuffle and edit
             ->assertDontSee($second);
     }
 
-    p13cPick($c, 'Choose a GIF', 'party', 'partyone');
+    p13cPick($c, 'party', 'partyone');
 
     $a->assertSeeIn('ul[aria-label="Answers"]', 'Casey answered')
         ->assertDontSee('Shuffle question')
@@ -198,7 +213,21 @@ it('[P13c-02] lets each player search, pick, change and remove a GIF while the o
             ->assertSee('No GIFs yet.');
     }
 
-    p13cPick($a, 'Choose a GIF', 'party', 'partyone');
+    p13cDraft($a, 'party', 'partytwo')
+        ->assertDontSee('Change GIF')
+        ->assertAriaAttribute(p13cResult('partytwo'), 'selected', 'true');
+
+    expect($round->gifAnswers()->count())->toBe(0);
+
+    $c->assertSee('No GIFs yet.')
+        ->assertNotPresent('ul[aria-label="Answers"]');
+
+    $a->click(P13cYourPick.' button:has-text("Change")')
+        ->assertNotPresent(p13cTile('partytwo'))
+        ->assertSeeIn(P13cYourPick, 'Choose a GIF')
+        ->assertScript('document.activeElement.getAttribute("aria-label")', 'Search GIPHY');
+
+    p13cPick($a, 'party', 'partyone');
 
     $a->assertSeeIn(p13cTile('partyone'), 'Your GIF')
         ->assertScript('document.querySelector("figure img").naturalWidth', 1)
@@ -214,7 +243,15 @@ it('[P13c-02] lets each player search, pick, change and remove a GIF while the o
     expect($body)->toContain('"answered":true')
         ->not->toContain('partyone');
 
-    p13cPick($a, 'Change GIF', 'coffee', 'coffeeone');
+    $a->click('Change GIF')
+        ->assertScript('document.activeElement.getAttribute("aria-label")', 'Search GIPHY');
+
+    p13cDraft($a, 'coffee', 'coffeeone');
+
+    expect($round->gifAnswers()->where('player_id', $adaPlayer->id)->sole()->gif_id)->toBe('partyone');
+
+    $a->click('Send my GIF')
+        ->assertSeeIn(P13cYourPick, 'Sent');
 
     $a->assertSeeIn(p13cTile('coffeeone'), 'Your GIF')
         ->assertNotPresent(p13cTile('partyone'));
@@ -226,7 +263,7 @@ it('[P13c-02] lets each player search, pick, change and remove a GIF while the o
         ->and($round->gifAnswers()->where('player_id', $adaPlayer->id)->sole()->gif_id)->toBe('coffeeone');
 
     $a->click('Remove GIF')
-        ->assertSee('Choose a GIF')
+        ->assertSeeIn(P13cYourPick, 'Choose a GIF')
         ->assertDontSee('Your GIF');
 
     $c->assertNotPresent('ul[aria-label="Answers"]')
@@ -234,7 +271,7 @@ it('[P13c-02] lets each player search, pick, change and remove a GIF while the o
 
     expect($round->gifAnswers()->count())->toBe(0);
 
-    p13cPick($c, 'Choose a GIF', 'tada', 'tadaone');
+    p13cPick($c, 'tada', 'tadaone');
 
     $c->assertSeeIn(p13cTile('tadaone'), 'Your GIF');
 
@@ -506,7 +543,9 @@ it('[P13c-06] closes a round in its voting window with its points when the host 
             ->assertDontSee('Vote for your favourite GIF.');
     }
 
-    $b->assertNotPresent('[role="tab"]')
+    $b->assertNotPresent('[data-slot="game-left"] [role="tab"]')
+        ->assertNotPresent('[data-slot="game-right"] [role="tab"]')
+        ->assertPresent('[data-slot="game-right"] [data-slot="gif-your-pick"]')
         ->assertPresent('[data-slot="game-right"] [data-slot="room-scores"] li:has-text("Ada") [aria-label="2 points"]')
         ->assertNotPresent('[data-slot="game-left"] [data-slot="player-points"]');
 

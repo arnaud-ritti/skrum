@@ -89,6 +89,73 @@ describe('RoomSidebar', () => {
         expect(screen.queryByText('How it works')).toBeNull();
     });
 
+    it('heads the column with "Your pick" while the players of Sprint in one GIF pick, the scores under it', () => {
+        const ctx = {
+            snapshot: {
+                room: { id: 'r1', game: 'gif', hostPlayerId: 'ada' },
+                me: { playerId: 'ada' },
+                players: [player('ada'), player('bob')],
+                leaderboard: [],
+                history: [],
+                round: {
+                    id: 'round',
+                    game: 'gif',
+                    revealedAt: null,
+                    answers: [],
+                    myAnswer: null,
+                },
+            },
+            lastEnded: null,
+            online: [{ id: 'presence-ada' }],
+        } as unknown as RoomContextValue;
+
+        vi.spyOn(window, 'matchMedia').mockImplementation(
+            (query: string) =>
+                ({
+                    matches: true,
+                    media: query,
+                    addEventListener: () => undefined,
+                    removeEventListener: () => undefined,
+                }) as unknown as MediaQueryList,
+        );
+
+        const { unmount } = renderWithProviders(
+            <RoomProvider value={ctx}>
+                <RoomSidebar highlightPlayerId={null} />
+            </RoomProvider>,
+        );
+
+        expect(
+            screen
+                .getAllByRole('heading')
+                .map((heading) => heading.textContent),
+        ).toEqual(['Your pick', 'Scores']);
+
+        unmount();
+        renderWithProviders(
+            <RoomProvider
+                value={
+                    {
+                        ...ctx,
+                        snapshot: {
+                            ...ctx.snapshot,
+                            round: {
+                                ...ctx.snapshot.round,
+                                revealedAt: '2026-10-02T10:00:00Z',
+                            },
+                        },
+                    } as unknown as RoomContextValue
+                }
+            >
+                <RoomSidebar highlightPlayerId={null} />
+            </RoomProvider>,
+        );
+
+        expect(screen.queryByRole('heading', { name: 'Your pick' })).toBeNull();
+
+        vi.restoreAllMocks();
+    });
+
     it('leaves the players of Draw & Guess to the left column', () => {
         const ctx = {
             snapshot: {

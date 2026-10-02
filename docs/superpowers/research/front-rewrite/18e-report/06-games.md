@@ -297,7 +297,55 @@ No test removed. Vitest: `room-sidebar.test.tsx` rewritten for `RoomPlayersSide`
 | Decoded: game cards on the left, not the "Rounds" list; "Scores" and guesses on the right, not a round leaderboard and totals | D-57 |
 | Draw & Guess, Sprint in one GIF: "Choose a game" at the foot of the left column (host) | D-57 |
 | "Host" badge in the list; no "found · 0:18"; no guesses column between two rounds of Draw & Guess | D-57 |
-| Sprint in one GIF: "Scores" on the right, "Your pick" still on the stage | D-61 (RW-G2) |
+| Sprint in one GIF: "Scores" on the right, "Your pick" still on the stage | done in RW-G2, below |
 | Turn order, settings card, podium | D-20 |
 | Left column of the players variant is 18.75rem wide; a long name is cut next to "(you)" and "Host" | fix later if the owner asks: the badge could go to the second line |
 
+## Rework RW-G2 (owner round 4, row D-61): picker on the stage, draft then send
+
+While the players pick, the stage holds the question and the `GifPicker` open in the page (`inline`: a `group` as wide as the 40rem stage column, no focus taken, Escape left to the page, tiles of 10rem at most). A click on a tile is a draft: it is ticked in the picker and shown in "Your pick" with the badge "Draft", "Send my GIF" and "Change". Nothing reaches the server before "Send my GIF" (`PUT games.answers.update`); "Change" drops the draft and gives the keyboard back to the search. A sent GIF reads "Sent" with "Change GIF" (keyboard to the search; the next pick is a draft over the sent GIF, which stays sent until "Send my GIF") and "Remove GIF".
+
+"Your pick" (`gif-your-pick.tsx`) heads the right column from 64rem, above "Already sent · n" (hidden tiles: eye-off and the avatar; the name is read by a screen reader and shown when a player has no avatar) and the "Scores" list. Under 64rem, and in the retro icebreaker under its `lg` column, it is a card under the picker, scrolled into view after a pick. The draft is shared by the two columns through `gif-draft.tsx` (`GifDraftProvider`, mounted by `RoomProvider`; `useGifDraft(roundId)`); it never leaves the browser.
+
+The retro keeps `GifSearchDialog` for the GIF of a card; the games no longer import it.
+
+| Place | Slot | Feature |
+|---|---|---|
+| "Your pick", under "Your GIF stays hidden until the reveal." | `GameRoom gifCaption` → `RoomSidebar gifCaption` (right column) and `GameStage gifCaption` → … → `GifAnswerStage caption` (card on the stage) → `GifYourPick caption` | caption of a GIF (GM-3) |
+
+### Parity (row 50, rewritten)
+
+| # | Action | New control | Done |
+|---|---|---|---|
+| 50 | Choose a GIF | picker open on the stage: search, categories, tiles; a click is a draft | done |
+| 50 | Send | "Send my GIF" in "Your pick" | done |
+| 50 | Change | "Change" (draft) / "Change GIF" (sent), then another tile | done |
+| 50 | Remove | "Remove GIF" (sent) | done |
+| 50 | Who has sent | "Already sent · n", `ul[aria-label="Answers"]`, ":name answered"; "No GIFs yet." | done |
+| 51 | Reveal | "Reveal the GIFs" (host), under the picker | done |
+
+### Browser tests changed
+
+| Test | Change | Why |
+|---|---|---|
+| `Plan13cSprintGifTest` helper `p13cPick` | no opener and no dialog: searches in `[data-slot="gif-answer-stage"] [data-slot="gif-picker"]`, clicks the tile, reads "Draft" and the tile "Your GIF" in `[data-slot="gif-your-pick"]`, clicks "Send my GIF", reads "Sent" (new helper `p13cDraft` for the first half) | picker on the stage, draft then send (mockup, D-61) |
+| `P13c-01`, `P13c-02` | call the new helper | same |
+| `P13c-02` | added: a draft is ticked, sends nothing (no answer in the database, the other player still reads "No GIFs yet."), "Change" drops it and focuses the search; "Change GIF" focuses the search, and the sent GIF stays the answer until the new draft is sent; after "Remove GIF", "Choose a GIF" is read in "Your pick" | draft |
+| `P13c-06` | `assertNotPresent('[role="tab"]')` is scoped to the two side columns (the categories of the picker are tabs, per the README of GifPicker); added: "Your pick" is in the right column | picker on the stage |
+| `GamesPagesVisualTest`, "picking a GIF" | the viewer has sent nothing and clicks the first tile (a draft, as the mockup); three players have sent; eight GIFs in the fake search | the capture shows the mockup's state |
+
+No test removed. Vitest: new `gif-your-pick.test.tsx`, `gif-answer-stage.test.tsx`; one more case in `room-sidebar.test.tsx` and in `skrum/gif-picker.test.tsx`.
+
+### Differences with the mockup that remain
+
+| Difference | Row |
+|---|---|
+| "Scores" list under "Already sent" in the right column | D-61 (no feature lost) |
+| No title, duration, "loops" under the preview; the tile reads "Your GIF" | D-62 |
+| No caption field and counter | D-20 (place left) |
+| "Sent" state with "Change GIF" / "Remove GIF"; "Reveal the GIFs" under the picker (host); "Pass" and "History" in the stage head | D-61 |
+| Hint "Pick a GIF that answers the question. GIFs stay hidden until the reveal."; the mockup adds "A short caption helps people vote." | D-20 |
+| No "to pick" timer on the stage; no settings card | D-20, one room timer in the header |
+| Tiles are the proxied pictures (4:3 in the fake provider), stills are placeholders under reduced motion; no duration pill, no title on hover | D-62 |
+| The picker is a `group`, the mockup a `dialog` | D-61 (A) |
+| Phone: picker in the flow of the stage (16rem body), "Your pick" under it; the mockup asks for a full-screen drawer | D-61 |

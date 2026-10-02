@@ -12,7 +12,7 @@ export type GifTileAuthor = {
 };
 
 type Props = {
-    gif: GameGif;
+    gif: Pick<GameGif, 'previewUrl'>;
     caption: string;
     /** Who sent the GIF: an avatar before the caption. */
     author?: GifTileAuthor | null;

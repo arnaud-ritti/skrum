@@ -296,7 +296,7 @@ function p18eVisualGifs(): void
             $endpoint = basename((string) parse_url($request->url(), PHP_URL_PATH));
 
             if (in_array($endpoint, ['search', 'trending'], true)) {
-                return Http::response(['data' => array_map(gameGiphyItem(...), ['gifone', 'giftwo', 'gifthree', 'giffour'])]);
+                return Http::response(['data' => array_map(gameGiphyItem(...), ['gifone', 'giftwo', 'gifthree', 'giffour', 'giffive', 'gifsix', 'gifseven', 'gifeight'])]);
             }
 
             return Http::response(['data' => gameGiphyItem($endpoint)]);
@@ -341,7 +341,7 @@ it('renders a Sprint in one GIF room without overflow', function (string $name, 
         ...($step === 'results' ? ['outcome' => GameRoundOutcome::Revealed, 'ended_at' => now()->startOfSecond()] : []),
     ]);
 
-    $senders = $step === 'picking' ? [0, 1, 2, 3, 6] : [0, 1, 2, 3, 4, 6];
+    $senders = $step === 'picking' ? [1, 2, 3] : [0, 1, 2, 3, 4, 6];
     $answers = [];
 
     foreach ($senders as $index) {
@@ -367,13 +367,22 @@ it('renders a Sprint in one GIF room without overflow', function (string $name, 
     $this->captureVisuals(
         $name,
         "/games/{$room->id}",
-        fn (string $path, array $options) => p18eVisualGamesVisit($users[0], $path, $options, $marker)
-            ->assertAttribute('[data-realtime]', 'data-realtime', 'connected')
-            ->assertCount('[data-realtime]', 1)
-            ->assertScript('[...document.querySelectorAll(\'[data-slot="gif-tile"] img\')].every((image) => image.complete && image.naturalWidth > 0)', true),
+        function (string $path, array $options) use ($users, $marker, $step) {
+            $page = p18eVisualGamesVisit($users[0], $path, $options, $marker)
+                ->assertAttribute('[data-realtime]', 'data-realtime', 'connected')
+                ->assertCount('[data-realtime]', 1);
+
+            if ($step === 'picking') {
+                $page->click('[data-slot="gif-answer-stage"] [role="listbox"] > div:first-child > [role="option"]:first-child')
+                    ->assertSeeIn('[data-slot="gif-your-pick"]', str_starts_with($options['locale'], 'fr') ? 'Brouillon' : 'Draft')
+                    ->assertPresent('[data-slot="gif-your-pick"] [data-slot="gif-tile"]');
+            }
+
+            return $page->assertScript('[...document.querySelectorAll(\'[data-slot="gif-tile"] img\')].every((image) => image.complete && image.naturalWidth > 0)', true);
+        },
     );
 })->with([
-    'picking a GIF' => ['games-room-gif', 'picking', '[data-slot="gif-answer-stage"] [data-slot="gif-tile"]'],
+    'picking a GIF' => ['games-room-gif', 'picking', '[data-slot="gif-answer-stage"] [data-slot="gif-picker"] [role="option"]'],
     'voting' => ['games-room-gif-voting', 'voting', '[data-slot="gif-gallery"] [data-slot="gif-tile"]'],
     'the results' => ['games-room-gif-results', 'results', '[data-slot="gif-results"] [data-slot="gif-tile"][data-winner]'],
 ]);

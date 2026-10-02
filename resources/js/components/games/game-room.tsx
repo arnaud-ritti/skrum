@@ -89,6 +89,9 @@ export function GameRoom({
     const winnerPlayerId = round ? null : (lastEnded?.winnerPlayerId ?? null);
     const playersOnLeft = hasPlayersOnLeft(snapshot.room.game);
     const isDraw = snapshot.room.game === 'draw';
+    /** "Your pick" heads the right column while the players pick their GIF. */
+    const isPickingGif =
+        hasRightColumn && round?.game === 'gif' && round.revealedAt === null;
     const choice: GameLayoutPanel | undefined = snapshot.room.isHost
         ? {
               id: 'choice',
@@ -106,6 +109,7 @@ export function GameRoom({
             highlightPlayerId={winnerPlayerId}
             turnOrder={turnOrder}
             gifPodium={gifPodium}
+            gifCaption={gifCaption}
         />
     );
     /**
@@ -139,7 +143,7 @@ export function GameRoom({
                           : undefined
                       : {
                             id: 'scores',
-                            label: t('Scores'),
+                            label: isPickingGif ? t('Your pick') : t('Scores'),
                             icon: Trophy,
                             content: side,
                         },

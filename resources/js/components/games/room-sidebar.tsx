@@ -3,6 +3,7 @@ import { useTrans } from '@/hooks/use-trans';
 import type { GameKind } from '@/lib/games/types';
 import { useHasRightColumn } from './game-layout';
 import { GifSteps, useGifStep } from './gif-steps';
+import { GifYourPick } from './gif-your-pick';
 import { GuessChat } from './guess-chat';
 import { HangmanFeed } from './hangman-feed';
 import { useRoom } from './room-context';
@@ -63,17 +64,21 @@ export type RoomSidebarProps = {
     turnOrder?: ReactNode;
     /** Place left for the podium of a Sprint in one GIF round (GM-3). */
     gifPodium?: ReactNode;
+    /** Place left under the chosen GIF of Sprint in one GIF (GM-3). */
+    gifCaption?: ReactNode;
 };
 
 /**
  * The right column of a game: one "Scores" list, then what the game in play
  * adds. Draw & Guess has its players on the left, and only the guesses of the
- * round in play here.
+ * round in play here. While the players of Sprint in one GIF pick, "Your pick"
+ * stands above the scores; where the column is a sheet, the stage holds it.
  */
 export function RoomSidebar({
     highlightPlayerId,
     turnOrder,
     gifPodium,
+    gifCaption,
 }: RoomSidebarProps) {
     const { snapshot } = useRoom();
     const { t } = useTrans();
@@ -95,9 +100,18 @@ export function RoomSidebar({
     }
 
     const isGif = room.game === 'gif';
+    const isPickingGif =
+        hasRightColumn && round?.game === 'gif' && round.revealedAt === null;
 
     return (
         <>
+            {isPickingGif && (
+                <GifYourPick
+                    round={round}
+                    caption={gifCaption}
+                    className="border-b pb-5"
+                />
+            )}
             <RoomPlayers
                 title={t('Scores')}
                 headingId={isGif ? 'game-scores' : 'game-players'}
