@@ -571,15 +571,37 @@ function ShareGameDialog({ open, onOpenChange }: DialogProps) {
     const isMobile = useIsMobile();
     const { game, me, share, deliveries } = ctx.snapshot;
 
-    const setGuests = async (allowGuests: boolean): Promise<void> => {
+    const [confirmingGuestsOff, setConfirmingGuestsOff] = useState(false);
+
+    const setGuests = async (allowGuests: boolean): Promise<boolean> => {
         const result = await ctx.run(
             retroRequest(PokerSettingsController.update(game.id), {
                 guest_access_enabled: allowGuests,
             }),
         );
 
-        if (result !== undefined) {
-            await ctx.refetch();
+        if (result === undefined) {
+            return false;
+        }
+
+        await ctx.refetch();
+
+        return true;
+    };
+
+    const changeGuests = (allowGuests: boolean): void => {
+        if (!allowGuests && ctx.online.some((member) => member.isGuest)) {
+            setConfirmingGuestsOff(true);
+
+            return;
+        }
+
+        void setGuests(allowGuests);
+    };
+
+    const turnGuestsOff = async (): Promise<void> => {
+        if (!(await setGuests(false))) {
+            throw new Rejected();
         }
     };
 
@@ -636,33 +658,44 @@ function ShareGameDialog({ open, onOpenChange }: DialogProps) {
     };
 
     return (
-        <ShareDialog
-            open={open}
-            onOpenChange={onOpenChange}
-            session={{
-                id: game.id,
-                kind: 'poker',
-                title: game.title,
-                presentCount: ctx.online.length,
-            }}
-            invite={{
-                url: game.guestUrl,
-                allowGuests: game.guestAccessEnabled,
-            }}
-            canManage={me.isFacilitator && game.endedAt === null}
-            onCopy={copy}
-            onChange={(patch) => {
-                if (patch.allowGuests !== undefined) {
-                    void setGuests(patch.allowGuests);
-                }
-            }}
-            onRegenerate={regenerate}
-            channels={ShareChannels.filter((channel) => share[channel])}
-            onShareToChannel={post}
-            channelsExtra={<DeliveryLines deliveries={deliveries} />}
-            isMobile={isMobile}
-            guestSwitchId="poker-guest-link-access"
-        />
+        <>
+            <ShareDialog
+                open={open}
+                onOpenChange={onOpenChange}
+                session={{
+                    id: game.id,
+                    kind: 'poker',
+                    title: game.title,
+                    presentCount: ctx.online.length,
+                }}
+                invite={{
+                    url: game.guestUrl,
+                    allowGuests: game.guestAccessEnabled,
+                }}
+                canManage={me.isFacilitator && game.endedAt === null}
+                onCopy={copy}
+                onChange={(patch) => {
+                    if (patch.allowGuests !== undefined) {
+                        changeGuests(patch.allowGuests);
+                    }
+                }}
+                onRegenerate={regenerate}
+                channels={ShareChannels.filter((channel) => share[channel])}
+                onShareToChannel={post}
+                channelsExtra={<DeliveryLines deliveries={deliveries} />}
+                isMobile={isMobile}
+                guestSwitchId="poker-guest-link-access"
+            />
+            <ConfirmDialog
+                open={confirmingGuestsOff}
+                onOpenChange={setConfirmingGuestsOff}
+                tone="destructive"
+                title={t('Turn off guest access?')}
+                description={t('Guests in this game lose access.')}
+                confirmLabel={t('Turn off guest access')}
+                onConfirm={turnGuestsOff}
+            />
+        </>
     );
 }
 

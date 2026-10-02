@@ -354,6 +354,79 @@ describe('share', () => {
         expect(ctx.refetch).toHaveBeenCalledTimes(1);
     });
 
+    it('asks before closing guest access while a guest is in the game', async () => {
+        const snapshot = pokerSnapshot({
+            game: {
+                guestAccessEnabled: true,
+                guestUrl: 'https://skrum.test/poker/join/abc',
+            },
+        });
+
+        open('share', snapshot, {
+            online: [
+                {
+                    id: 'guest-1',
+                    name: 'Visitor',
+                    avatarUrl: '',
+                    isGuest: true,
+                },
+            ],
+        });
+
+        const dialog = await screen.findByRole('dialog');
+
+        fireEvent.click(dialog.querySelector('#poker-guest-link-access')!);
+
+        expect(mocks.request).not.toHaveBeenCalled();
+
+        const confirm = await screen.findByRole('alertdialog');
+
+        expect(
+            within(confirm).getByText('Guests in this game lose access.'),
+        ).toBeTruthy();
+
+        await act(async () => {
+            fireEvent.click(
+                within(confirm).getByRole('button', {
+                    name: 'Turn off guest access',
+                }),
+            );
+        });
+
+        expect(sent()).toEqual([
+            {
+                route: 'PATCH /poker/game-1/settings',
+                body: { guest_access_enabled: false },
+            },
+        ]);
+    });
+
+    it('closes guest access at once when no guest is in the game', async () => {
+        open(
+            'share',
+            pokerSnapshot({
+                game: {
+                    guestAccessEnabled: true,
+                    guestUrl: 'https://skrum.test/poker/join/abc',
+                },
+            }),
+        );
+
+        const dialog = await screen.findByRole('dialog');
+
+        await act(async () => {
+            fireEvent.click(dialog.querySelector('#poker-guest-link-access')!);
+        });
+
+        expect(screen.queryByRole('alertdialog')).toBeNull();
+        expect(sent()).toEqual([
+            {
+                route: 'PATCH /poker/game-1/settings',
+                body: { guest_access_enabled: false },
+            },
+        ]);
+    });
+
     it('shows the guest link and asks before creating a new one', async () => {
         mocks.request.mockResolvedValue({ guestUrl: 'https://skrum.test/new' });
 

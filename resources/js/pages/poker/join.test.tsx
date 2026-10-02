@@ -4,6 +4,7 @@ import { renderWithProviders } from '@/test/render';
 import JoinPokerGame from './join';
 
 const post = vi.hoisted(() => vi.fn());
+const headTitles = vi.hoisted(() => [] as string[]);
 
 vi.mock('@inertiajs/react', async (importOriginal) => ({
     ...(await importOriginal<typeof import('@inertiajs/react')>()),
@@ -23,6 +24,11 @@ vi.mock('@inertiajs/react', async (importOriginal) => ({
         },
     }),
     router: { post },
+    Head: ({ title }: { title: string }) => {
+        headTitles.push(title);
+
+        return null;
+    },
 }));
 
 vi.mock('@/hooks/use-mobile', () => ({ useIsMobile: () => false }));
@@ -42,9 +48,22 @@ const valid = {
 
 beforeEach(() => {
     post.mockClear();
+    headTitles.length = 0;
 });
 
 describe('poker join page', () => {
+    it('names the document after the game, or after the page when the link is dead', () => {
+        const { unmount } = renderWithProviders(<JoinPokerGame {...valid} />);
+
+        expect(headTitles).toContain('Sprint 12 estimates');
+
+        unmount();
+        headTitles.length = 0;
+        renderWithProviders(<JoinPokerGame isInvalid />);
+
+        expect(headTitles).toContain('Join a planning poker game');
+    });
+
     it('shows the game with its facilitator, its players and its state', () => {
         renderWithProviders(<JoinPokerGame {...valid} />);
 
