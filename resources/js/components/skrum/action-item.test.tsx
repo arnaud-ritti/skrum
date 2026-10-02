@@ -224,6 +224,14 @@ describe('ActionItem', () => {
         });
         expect(jira.getAttribute('target')).toBe('_blank');
         expect(jira.getAttribute('rel')).toContain('noopener');
+        // The sync state is also in the text of the chip, where the old
+        // chip had it: the browser suite reads it there.
+        expect(jira.textContent).toBe('Jira · ATLAS-1287');
+        expect(
+            screen.getByRole('link', {
+                name: 'Open skrum#12 in GitHub · Closed in GitHub',
+            }).textContent,
+        ).toBe('GitHub · skrum#12Closed in GitHub');
         expect(
             screen.getByRole('link', {
                 name: 'Open skrum#12 in GitHub · Closed in GitHub',

@@ -541,6 +541,7 @@ export function ActionItemLinkChip({
             <span className="truncate">
                 {provider} · {link.key}
             </span>
+            {summary && <span className="sr-only">{summary}</span>}
         </a>
     );
 
