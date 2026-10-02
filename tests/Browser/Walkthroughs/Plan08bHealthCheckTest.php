@@ -91,7 +91,7 @@ function p08bBuiltIns(): string
 
 function p08bTeamStatements(): string
 {
-    return "[...[...document.querySelectorAll('section')].find((section) => section.querySelector('h2')?.textContent === 'Health check statements').querySelectorAll('ol > li')].map((row) => row.querySelector('div > div').textContent).join(' | ')";
+    return "[...[...document.querySelectorAll('section')].find((section) => section.querySelector('h2')?.textContent === 'Health check statements').querySelectorAll('ol > li')].map((row) => row.querySelector('p').textContent).join(' | ')";
 }
 
 function p08bBoardStatements(): string
@@ -171,7 +171,7 @@ it('[P08b-01a] lets an Owner add, archive, reorder, reword and restore the healt
         ->assertAttribute($handle, 'aria-pressed', 'true');
     $page->script('() => new Promise((resolve) => setTimeout(() => resolve(true), 0))');
     $page->keys($handle, 'ArrowDown')
-        ->assertScript($announcement, 'Moved Interaction to position 2.')
+        ->assertScript($announcement, 'Moving: Interaction. Position 2 of 6.')
         ->keys($handle, 'Space')
         ->assertAttributeMissing($handle, 'aria-pressed');
 

@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import type { BenchGroup } from '@/components/dev/bench';
+import { TeamHealthCard } from '@/components/teams/team-health-card';
 import { TeamMembersCard } from '@/components/teams/team-members-card';
 import { TeamPage } from '@/components/teams/team-page';
 import type { TeamPageProps } from '@/components/teams/team-page';
@@ -7,7 +8,11 @@ import { TeamPokerSection } from '@/components/teams/team-poker-section';
 import { TeamRetrosSection } from '@/components/teams/team-retros-section';
 import { TeamWhiteboardsSection } from '@/components/teams/team-whiteboards-section';
 import { useTrans } from '@/hooks/use-trans';
-import type { PokerGameSummary, TeamMember } from '@/types';
+import type {
+    PokerGameSummary,
+    TeamHealthStatement,
+    TeamMember,
+} from '@/types';
 
 export const group: BenchGroup = 'layouts';
 
@@ -32,6 +37,44 @@ const members: TeamMember[] = [
     email: `${name.toLowerCase().replaceAll(' ', '.')}@nordlys.example`,
     avatarUrl: avatar(index.toString()),
 }));
+
+const healthStatements: TeamHealthStatement[] = [
+    [
+        'interaction',
+        'Interaction',
+        'Interaction with colleagues was productive',
+    ],
+    ['task_clarity', 'Clear tasks', 'Tasks assigned to me were clear'],
+    ['vision', 'Vision', 'The vision and goals are clear to me'],
+    ['processes', 'Processes', 'Our processes let me work without blockers'],
+    ['motivation', 'Motivation', 'I felt motivated in my work'],
+].map(([key, label, text]) => ({
+    id: key,
+    key,
+    label,
+    text,
+    isBuiltin: true,
+    isArchived: false,
+}));
+
+healthStatements.push(
+    {
+        id: 'custom-1',
+        key: 'custom-1',
+        label: 'Delivery',
+        text: 'We shipped what we promised at the start of the sprint, without cutting the scope',
+        isBuiltin: false,
+        isArchived: false,
+    },
+    {
+        id: 'manager_support',
+        key: 'manager_support',
+        label: 'Manager support',
+        text: 'My manager was understanding and supportive',
+        isBuiltin: true,
+        isArchived: true,
+    },
+);
 
 const minutesAgo = (minutes: number): string =>
     new Date(Date.now() - minutes * 60_000).toISOString();
@@ -129,8 +172,8 @@ const page: TeamPageProps = {
     topTemplates: [],
     catalogue: [],
     canCreateRetro: true,
-    healthStatements: [],
-    canManageHealthStatements: false,
+    healthStatements,
+    canManageHealthStatements: true,
     llm: { enabled: false, provider: null },
     icebreakerGames: [],
     gameOptions: [],
@@ -227,6 +270,19 @@ export default function TeamSection() {
                             canManage={false}
                         />
                     </div>
+                </div>
+            </Example>
+            <Example
+                name="health-member"
+                label={t('Health check card, for a member who cannot manage')}
+            >
+                <div className="max-w-90">
+                    <TeamHealthCard
+                        workspaceSlug="nordlys"
+                        teamId="atlas"
+                        statements={healthStatements}
+                        canManage={false}
+                    />
                 </div>
             </Example>
             <Example

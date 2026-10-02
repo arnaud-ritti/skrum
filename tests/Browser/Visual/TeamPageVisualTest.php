@@ -103,6 +103,7 @@ it('[P18e-04-02] renders the team page of a manager without overflow', function 
             ->assertCount('[data-slot="team-whiteboards"] [data-slot="card"]', 3)
             ->assertCount('#members [data-slot="team-members"] li', 6)
             ->assertPresent('[data-slot="team-settings"]')
+            ->assertCount('#mood [data-slot="health-statements-active"] [data-action="reorder"]', 6)
             ->assertNotPresent('[data-slot="poker-presence-loading"]')
             ->assertScript('document.querySelectorAll(\'[data-slot="person-avatar"] .animate-pulse\').length', 0);
     });
@@ -116,6 +117,9 @@ it('[P18e-04-02b] renders the states of the team page on the bench without overf
             ->assertPresent('[data-bench-section="team"]')
             ->assertPresent('[data-state="manager"] [data-slot="team-page"]')
             ->assertCount('[data-state="empty"] [data-slot="empty-state"]', 3)
+            ->assertCount('[data-state="manager"] #mood [data-slot="health-statement"] [data-action="archive"]', 6)
+            ->assertCount('[data-state="health-member"] [data-slot="health-statement"]', 6)
+            ->assertNotPresent('[data-state="health-member"] [data-action="reorder"]')
             ->assertCount('[data-state="presence-loading"] [data-slot="poker-presence-loading"]', 2),
     );
 });

@@ -1,7 +1,6 @@
 import { usePage } from '@inertiajs/react';
 import { Plus } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { HealthStatementsSection } from '@/components/teams/health-statements-section';
 import {
     icebreakerSessionForm,
     roomLimitReason,
@@ -12,13 +11,13 @@ import { retroSessionForm } from '@/components/teams/session-create/retro-sessio
 import { useNewSessionIntent } from '@/components/teams/session-create/use-new-session-intent';
 import { whiteboardSessionForm } from '@/components/teams/session-create/whiteboard-session-fields';
 import { TeamHeader } from '@/components/teams/team-header';
+import { TeamHealthCard } from '@/components/teams/team-health-card';
 import { TeamMembersCard } from '@/components/teams/team-members-card';
 import { TeamPokerSection } from '@/components/teams/team-poker-section';
 import { TeamRetrosSection } from '@/components/teams/team-retros-section';
 import { TeamSettingsCard } from '@/components/teams/team-settings-card';
 import { TeamWhiteboardsSection } from '@/components/teams/team-whiteboards-section';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { useTrans } from '@/hooks/use-trans';
 import type {
     CatalogueTemplate,
@@ -103,7 +102,6 @@ export function TeamPage({
     const { currentWorkspace } = usePage().props;
     const newSessionIntent = useNewSessionIntent();
     const { workspace, team } = props;
-    const params = { workspace: workspace.slug, team: team.id };
     const canManageTemplates =
         currentWorkspace?.role === 'owner' ||
         currentWorkspace?.role === 'admin';
@@ -204,13 +202,12 @@ export function TeamPage({
                         id="mood"
                         className="flex min-w-0 scroll-mt-20 flex-col gap-8"
                     >
-                        <Card className="p-5">
-                            <HealthStatementsSection
-                                statements={props.healthStatements}
-                                canManage={props.canManageHealthStatements}
-                                params={params}
-                            />
-                        </Card>
+                        <TeamHealthCard
+                            workspaceSlug={workspace.slug}
+                            teamId={team.id}
+                            statements={props.healthStatements}
+                            canManage={props.canManageHealthStatements}
+                        />
                     </div>
                     <div id="members" className="min-w-0 scroll-mt-20">
                         <TeamMembersCard

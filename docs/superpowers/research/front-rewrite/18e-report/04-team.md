@@ -35,7 +35,7 @@
 | 40 | Heading "Retrospectives" | `h2` with icon and count | yes |
 | 41 | Headings "Planning poker", "Whiteboards" | `h2` with icon; count on Whiteboards | yes |
 
-Rows 24–31 (health check statements) are Task 4.2: the old section is mounted as it was, in a card inside `#mood`.
+Rows 24–31 (health check statements) are Task 4.2, below.
 
 Added by rule 13: template, facilitator and ROTI on a retro card (M16); "n in the room" from the deferred `pokerPresence` (M17), a skeleton while it loads, nothing when the presence server does not answer.
 
@@ -71,6 +71,35 @@ The plan names "grid areas" for TM-2, TM-3 and TM-4; they are slots, because an 
 | The row button of a game without players is "Open the game", not "Open" | to report: the key "Open" is the status of an action item ("Ouverte") |
 | "Join" on a game row only when someone is in the room | mockup, read as such |
 | "Ended games" group, the trash of a whiteboard, the add and remove controls of members, the "Team settings" card | no mockup: parity rows 14, 17, 33, 34, 4, 5 |
-| Health check card: the old manager, not the compact read-only card | Task 4.2 |
 | The two-column grid starts at 80rem of viewport (the mockup says about 64rem of content) | to report: with the sidebar, 64rem of viewport leaves 18rem to the main column |
 | "Remove" reads "Supprimer" in French on a member row (existing key); the dialog title says "Retirer" | to report |
+
+## Task 4.2 — Health check card on the new manager
+
+`TeamHealthCard` (`components/teams/team-health-card.tsx`) mounts `HealthStatementsManager` inside `#mood` and saves through the five routes of the team. The manager is now a `section` named by its `h2`, like the other cards of the page.
+
+### Parity (brief 04 §3, rows 24–31)
+
+| # | Action | New control | Done |
+|---|---|---|---|
+| 24 | Reorder statements | handle `[aria-label="Drag to reorder"]`, PUT `teams.healthStatements.order.update` `{ids}`; the manager shows the new order until the props come back; announcement "Moving: :label. Position :position of :total." | yes |
+| 25 | Add a statement | `[aria-label="Statement"]`, `[aria-label="Axis label"]`, "Add statement"; the draft stays with the server error under its field when refused | yes |
+| 26 | Edit a custom statement | "Edit", `input[name="text"]`, "Save", "Cancel"; no "Edit" on a built-in | yes |
+| 27 | Archive | "Archive" per active row | yes |
+| 28 | Archived list, restore | "Archived (n)", "Restore" | yes |
+| 29 | Read-only list for a member | same card with `canManage` false: no handle, no form, no Archive or Restore | yes |
+| 30–31 | Errors of the list (3 to 10 active statements, order) | the manager's alert above the list, cleared by the next success | yes |
+
+### Places left
+
+None in this card.
+
+### Differences with the mockup
+
+| Difference | Covered by |
+|---|---|
+| The card is the manager (handles, "Archive", the add form, "Archived (n)"), not the compact list with a "Manage" link | to report: brief 04 §4, parity rows 24–28; there is no other page to manage the statements |
+| Title "Health check statements", not "Health check" | to report: browser contract (P08b-01a, 01b) and `HealthCheck/README.md` |
+| No sentence "6 statements asked at the end of each retro, scored 1–5" | F: the count varies, the phase comes first and the scale is 1 to 10 (as D-44) |
+| The note "Changes apply…" is above the list, the "Built-in" badge is outlined, the statement is on its own line under the label | `HealthCheck/README.md` (the component's anatomy) |
+| The trend card is not above this card yet | Task 4.3 |
